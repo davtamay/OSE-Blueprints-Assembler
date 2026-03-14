@@ -320,6 +320,7 @@ GameObject:
   - component: {fileID: 840000002}
   - component: {fileID: 840000003}
   - component: {fileID: 840000004}
+  - component: {fileID: 840000005}
   m_Layer: 0
   m_Name: Test Scene Setup
   m_TagString: Untagged
@@ -354,7 +355,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5117a6d78b132ef4ebaeffb6125e17b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _verboseLogging: 0
+  _verboseLogging: 1
 --- !u!114 &840000003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -383,6 +384,29 @@ MonoBehaviour:
   _previewProfile: {fileID: 11400000, guid: e690c2bce8f24f8b9e81dd4f536a9124, type: 2}
   _statusMessage: Awaiting package load.
   _loadedMachineName: 
+--- !u!114 &840000005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 840000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a7b3c9d1e5f6483290ab1def34567890, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _packageId: tutorial_build
+  _sessionMode: 1
+  _autoStartOnPlay: 1
+  _lifecycle: "\u2014"
+  _currentAssemblyId: "\u2014"
+  _currentStepId: "\u2014"
+  _stepIndex: 0
+  _totalSteps: 0
+  _elapsedSeconds: 0
+  _mistakeCount: 0
+  _hintsUsed: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

@@ -1,4 +1,6 @@
+using OSE.App;
 using OSE.Core;
+using OSE.Runtime;
 using UnityEngine;
 
 namespace OSE.Bootstrap
@@ -20,9 +22,9 @@ namespace OSE.Bootstrap
 
         private void RegisterCoreServices()
         {
-            // Core services are registered here as concrete implementations
-            // are created in later phases. Placeholders prevent null-ref during
-            // early development.
+            var sessionController = new MachineSessionController();
+            ServiceRegistry.Register<MachineSessionController>(sessionController);
+
             OseLog.Info("[Bootstrap] Core services registered.");
         }
 
