@@ -5,6 +5,7 @@ using UnityEngine.UIElements;
 
 namespace OSE.UI.Bindings
 {
+    [ExecuteAlways]
     [DisallowMultipleComponent]
     [RequireComponent(typeof(UIDocument))]
     public sealed class UIDocumentBootstrap : MonoBehaviour

@@ -10,6 +10,7 @@ using UnityEngine.UIElements;
 
 namespace OSE.UI.Root
 {
+    [ExecuteAlways]
     [DisallowMultipleComponent]
     [RequireComponent(typeof(UIDocumentBootstrap))]
     public sealed class UIRootCoordinator : MonoBehaviour, IPresentationAdapter
@@ -38,15 +39,7 @@ namespace OSE.UI.Root
 
         private void Awake()
         {
-            if (_documentBootstrap == null)
-            {
-                _documentBootstrap = GetComponent<UIDocumentBootstrap>();
-            }
-
-            _stepPresenter = new StepPanelPresenter();
-            _partInfoPresenter = new PartInfoPanelPresenter();
-            _stepPanelController = new StepPanelController();
-            _partInfoPanelController = new PartInfoPanelController();
+            EnsureDependencies();
         }
 
         private void OnEnable()
@@ -150,6 +143,8 @@ namespace OSE.UI.Root
 
         public bool TryInitialize()
         {
+            EnsureDependencies();
+
             if (!_isBuilt && !BuildUi())
             {
                 return false;
@@ -279,6 +274,20 @@ namespace OSE.UI.Root
         private void Reset()
         {
             _documentBootstrap = GetComponent<UIDocumentBootstrap>();
+            EnsureDependencies();
+        }
+
+        private void EnsureDependencies()
+        {
+            if (_documentBootstrap == null)
+            {
+                _documentBootstrap = GetComponent<UIDocumentBootstrap>();
+            }
+
+            _stepPresenter ??= new StepPanelPresenter();
+            _partInfoPresenter ??= new PartInfoPanelPresenter();
+            _stepPanelController ??= new StepPanelController();
+            _partInfoPanelController ??= new PartInfoPanelController();
         }
     }
 }
