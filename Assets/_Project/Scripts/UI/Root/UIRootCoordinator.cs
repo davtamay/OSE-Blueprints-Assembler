@@ -34,6 +34,7 @@ namespace OSE.UI.Root
         private string _partSearchTerms = "Search terms will be supplied by runtime content.";
 
         private bool _isBuilt;
+        private bool _isPresentationAdapterRegistered;
 
         private void Awake()
         {
@@ -50,12 +51,7 @@ namespace OSE.UI.Root
 
         private void OnEnable()
         {
-            if (!BuildUi())
-            {
-                return;
-            }
-
-            RegisterPresentationAdapter();
+            TryInitialize();
         }
 
         private void OnDisable()
@@ -152,6 +148,17 @@ namespace OSE.UI.Root
             RefreshPartInfoPanel();
         }
 
+        public bool TryInitialize()
+        {
+            if (!_isBuilt && !BuildUi())
+            {
+                return false;
+            }
+
+            RegisterPresentationAdapter();
+            return true;
+        }
+
         private bool BuildUi()
         {
             VisualElement root = _documentBootstrap != null
@@ -231,6 +238,11 @@ namespace OSE.UI.Root
 
         private void RegisterPresentationAdapter()
         {
+            if (_isPresentationAdapterRegistered)
+            {
+                return;
+            }
+
             if (ServiceRegistry.TryGet<IPresentationAdapter>(out IPresentationAdapter existingAdapter) &&
                 !ReferenceEquals(existingAdapter, this))
             {
@@ -238,15 +250,23 @@ namespace OSE.UI.Root
             }
 
             ServiceRegistry.Register<IPresentationAdapter>(this);
+            _isPresentationAdapterRegistered = true;
         }
 
         private void UnregisterPresentationAdapter()
         {
+            if (!_isPresentationAdapterRegistered)
+            {
+                return;
+            }
+
             if (ServiceRegistry.TryGet<IPresentationAdapter>(out IPresentationAdapter existingAdapter) &&
                 ReferenceEquals(existingAdapter, this))
             {
                 ServiceRegistry.Unregister<IPresentationAdapter>();
             }
+
+            _isPresentationAdapterRegistered = false;
         }
 
         private void TeardownUi()
