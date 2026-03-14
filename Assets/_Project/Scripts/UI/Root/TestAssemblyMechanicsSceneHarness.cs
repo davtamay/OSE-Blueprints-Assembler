@@ -10,6 +10,13 @@ namespace OSE.UI.Root
     [DisallowMultipleComponent]
     public sealed class TestAssemblyMechanicsSceneHarness : MonoBehaviour
     {
+        private const string PreviewRootName = "Preview Scaffold";
+        private const string LegacyPreviewRootName = "Generated Preview";
+        private const string FloorName = "Preview Floor";
+        private const string TargetMarkerName = "Placement Target";
+        private const string SamplePartName = "Sample Beam";
+        private const string UiHostName = "UI Root";
+
         [Header("Edit Mode Preview")]
         [SerializeField] private bool _previewInEditMode = true;
         [SerializeField] private bool _showGeometryPreview = true;
@@ -45,49 +52,47 @@ namespace OSE.UI.Root
         private UIRootCoordinator _uiRootCoordinator;
         private UIDocumentBootstrap _uiDocumentBootstrap;
         private UIDocument _uiDocument;
+        private GameObject _uiHost;
         private Transform _previewRoot;
         private GameObject _floor;
         private GameObject _targetMarker;
         private GameObject _samplePart;
-        private bool _editModePreviewApplied;
+        private bool _previewStateApplied;
+        private bool _playModeSequenceStarted;
 
         private void OnEnable()
         {
-            _editModePreviewApplied = false;
-
-            if (Application.isPlaying)
-            {
-                EnsurePreviewScaffold();
-                ApplyPreviewState();
-                StartCoroutine(PlayModeSequence());
-                return;
-            }
-
-            if (_previewInEditMode)
-            {
-                EnsurePreviewScaffold();
-                ApplyPreviewState();
-            }
-            else
-            {
-                ClearPreviewScaffold();
-            }
+            _previewStateApplied = false;
+            _playModeSequenceStarted = false;
+            ConfigureForCurrentMode();
         }
 
         private void Update()
         {
-            if (Application.isPlaying || !_previewInEditMode)
+            if (Application.isPlaying)
+            {
+                if (!_previewStateApplied)
+                {
+                    ConfigureForCurrentMode();
+                }
+
+                StartPlayModeSequenceIfNeeded();
+                return;
+            }
+
+            if (!_previewInEditMode)
+            {
+                CachePreviewScaffold();
+                SetPreviewScaffoldActive(false);
+                return;
+            }
+
+            if (_previewStateApplied)
             {
                 return;
             }
 
-            if (_editModePreviewApplied)
-            {
-                return;
-            }
-
-            EnsurePreviewScaffold();
-            ApplyPreviewState();
+            ConfigureForCurrentMode();
         }
 
         private void OnValidate()
@@ -97,31 +102,15 @@ namespace OSE.UI.Root
             _playModeStepNumber = Mathf.Max(1, _playModeStepNumber);
             _playModeAdvanceDelay = Mathf.Max(0f, _playModeAdvanceDelay);
 
-            _editModePreviewApplied = false;
+            _previewStateApplied = false;
+            _playModeSequenceStarted = false;
 
-            if (Application.isPlaying)
+            if (!isActiveAndEnabled)
             {
-                ApplyPreviewState();
                 return;
             }
 
-            if (_previewInEditMode)
-            {
-                EnsurePreviewScaffold();
-                ApplyPreviewState();
-            }
-            else
-            {
-                ClearPreviewScaffold();
-            }
-        }
-
-        private void OnDestroy()
-        {
-            if (!Application.isPlaying)
-            {
-                ClearPreviewScaffold();
-            }
+            ConfigureForCurrentMode();
         }
 
         private void ConfigureCamera()
@@ -139,59 +128,97 @@ namespace OSE.UI.Root
             mainCamera.backgroundColor = new Color(0.11f, 0.18f, 0.27f, 1f);
         }
 
+        private void ConfigureForCurrentMode()
+        {
+            if (!Application.isPlaying && !_previewInEditMode)
+            {
+                CachePreviewScaffold();
+                SetPreviewScaffoldActive(false);
+                return;
+            }
+
+            EnsurePreviewScaffold();
+            SetPreviewScaffoldActive(true);
+            ApplyPreviewState();
+            StartPlayModeSequenceIfNeeded();
+        }
+
+        private void CachePreviewScaffold()
+        {
+            if (_previewRoot == null)
+            {
+                _previewRoot = transform.Find(PreviewRootName);
+
+                if (_previewRoot == null)
+                {
+                    _previewRoot = transform.Find(LegacyPreviewRootName);
+
+                    if (_previewRoot != null)
+                    {
+                        _previewRoot.name = PreviewRootName;
+                    }
+                }
+            }
+
+            if (_previewRoot == null)
+            {
+                return;
+            }
+
+            _floor = FindPreviewChild(FloorName);
+            _targetMarker = FindPreviewChild(TargetMarkerName);
+            _samplePart = FindPreviewChild(SamplePartName);
+            _uiHost = FindPreviewChild(UiHostName);
+
+            if (_uiHost == null)
+            {
+                _uiDocument = null;
+                _uiDocumentBootstrap = null;
+                _uiRootCoordinator = null;
+                return;
+            }
+
+            _uiDocument = _uiHost.GetComponent<UIDocument>();
+            _uiDocumentBootstrap = _uiHost.GetComponent<UIDocumentBootstrap>();
+            _uiRootCoordinator = _uiHost.GetComponent<UIRootCoordinator>();
+        }
+
         private void EnsurePreviewScaffold()
         {
-            _previewRoot = GetOrCreateChildTransform("Generated Preview");
+            CachePreviewScaffold();
+            _previewRoot = GetOrCreateChildTransform(PreviewRootName);
 
-            if (_showGeometryPreview)
-            {
-                _floor = GetOrCreatePrimitive("Preview Floor", PrimitiveType.Plane);
-                _targetMarker = GetOrCreatePrimitive("Placement Target", PrimitiveType.Cylinder);
-                _samplePart = GetOrCreatePrimitive("Sample Beam", PrimitiveType.Cube);
-            }
-            else
-            {
-                DestroyPreviewObject(ref _floor);
-                DestroyPreviewObject(ref _targetMarker);
-                DestroyPreviewObject(ref _samplePart);
-            }
+            _floor = GetOrCreatePrimitive(FloorName, PrimitiveType.Plane);
+            _targetMarker = GetOrCreatePrimitive(TargetMarkerName, PrimitiveType.Cylinder);
+            _samplePart = GetOrCreatePrimitive(SamplePartName, PrimitiveType.Cube);
+            SetPreviewObjectActive(_floor, _showGeometryPreview);
+            SetPreviewObjectActive(_targetMarker, _showGeometryPreview);
+            SetPreviewObjectActive(_samplePart, _showGeometryPreview);
 
-            if (_showUiPreview)
-            {
-                EnsureUiHost();
-            }
-            else
-            {
-                DestroyPreviewObject(ref _uiRootCoordinator);
-                DestroyPreviewObject(ref _uiDocumentBootstrap);
-                DestroyPreviewObject(ref _uiDocument);
-            }
+            EnsureUiHost();
+            SetPreviewObjectActive(_uiHost, _showUiPreview);
         }
 
         private void EnsureUiHost()
         {
-            GameObject uiHost = GetOrCreateChildObject("UI Root");
-            _uiDocument = GetOrAddComponent<UIDocument>(uiHost);
-            _uiDocumentBootstrap = GetOrAddComponent<UIDocumentBootstrap>(uiHost);
-            _uiRootCoordinator = GetOrAddComponent<UIRootCoordinator>(uiHost);
+            _uiHost = GetOrCreateChildObject(UiHostName);
+            _uiDocument = GetOrAddComponent<UIDocument>(_uiHost);
+            _uiDocumentBootstrap = GetOrAddComponent<UIDocumentBootstrap>(_uiHost);
+            _uiRootCoordinator = GetOrAddComponent<UIRootCoordinator>(_uiHost);
         }
 
         private void ApplyPreviewState()
         {
             ConfigureCamera();
             ApplyGeometryPreview();
-            ApplyUiPreview(
+            bool uiApplied = ApplyUiPreview(
                 _previewStepNumber,
                 _previewStepTitle,
                 _previewInstruction,
                 _previewPartFunction,
                 _previewPartTool,
                 _previewPartSearchTerms);
-
-            if (!Application.isPlaying)
-            {
-                _editModePreviewApplied = true;
-            }
+            _previewStateApplied = !_showUiPreview || uiApplied;
         }
 
         private void ApplyGeometryPreview()
@@ -230,7 +257,7 @@ namespace OSE.UI.Root
             }
         }
 
-        private void ApplyUiPreview(
+        private bool ApplyUiPreview(
             int stepNumber,
             string stepTitle,
             string instruction,
@@ -238,15 +265,19 @@ namespace OSE.UI.Root
             string tool,
             string searchTerms)
         {
-            if (!_showUiPreview || _uiRootCoordinator == null)
+            if (!_showUiPreview)
             {
-                return;
+                return true;
+            }
+
+            if (_uiRootCoordinator == null)
+            {
+                return false;
             }
 
             if (!_uiRootCoordinator.TryInitialize())
             {
-                _editModePreviewApplied = false;
-                return;
+                return false;
             }
 
             _uiRootCoordinator.ShowPartInfoShell(
@@ -261,6 +292,8 @@ namespace OSE.UI.Root
                 _previewTotalSteps,
                 stepTitle,
                 instruction);
+
+            return true;
         }
 
         private IEnumerator PlayModeSequence()
@@ -287,31 +320,45 @@ namespace OSE.UI.Root
                 _playModePartSearchTerms);
         }
 
+        private void StartPlayModeSequenceIfNeeded()
+        {
+            if (!Application.isPlaying || _playModeSequenceStarted || !_previewStateApplied)
+            {
+                return;
+            }
+
+            _playModeSequenceStarted = true;
+            StartCoroutine(PlayModeSequence());
+        }
+
         [ContextMenu("Refresh Preview")]
         private void RefreshPreview()
         {
-            _editModePreviewApplied = false;
-            EnsurePreviewScaffold();
-            ApplyPreviewState();
+            _previewStateApplied = false;
+            _playModeSequenceStarted = false;
+            ConfigureForCurrentMode();
         }
 
         [ContextMenu("Clear Preview")]
         private void ClearPreviewScaffold()
         {
-            DestroyPreviewObject(ref _uiRootCoordinator);
-            DestroyPreviewObject(ref _uiDocumentBootstrap);
-            DestroyPreviewObject(ref _uiDocument);
-            DestroyPreviewObject(ref _samplePart);
-            DestroyPreviewObject(ref _targetMarker);
-            DestroyPreviewObject(ref _floor);
+            CachePreviewScaffold();
 
             if (_previewRoot != null)
             {
                 DestroyPreviewObject(_previewRoot.gameObject);
-                _previewRoot = null;
             }
 
-            _editModePreviewApplied = false;
+            _previewRoot = null;
+            _uiHost = null;
+            _uiRootCoordinator = null;
+            _uiDocumentBootstrap = null;
+            _uiDocument = null;
+            _samplePart = null;
+            _targetMarker = null;
+            _floor = null;
+            _previewStateApplied = false;
+            _playModeSequenceStarted = false;
         }
 
         private GameObject GetOrCreatePrimitive(string name, PrimitiveType primitiveType)
@@ -323,7 +370,6 @@ namespace OSE.UI.Root
                 instance = GameObject.CreatePrimitive(primitiveType);
                 instance.name = name;
                 instance.transform.SetParent(_previewRoot, false);
-                ApplyPreviewHideFlags(instance);
             }
 
             return instance;
@@ -339,7 +385,6 @@ namespace OSE.UI.Root
 
             GameObject instance = new GameObject(name);
             instance.transform.SetParent(_previewRoot, false);
-            ApplyPreviewHideFlags(instance);
             return instance;
         }
 
@@ -348,13 +393,11 @@ namespace OSE.UI.Root
             Transform existingChild = transform.Find(name);
             if (existingChild != null)
             {
-                ApplyPreviewHideFlags(existingChild.gameObject);
                 return existingChild;
             }
 
             GameObject instance = new GameObject(name);
             instance.transform.SetParent(transform, false);
-            ApplyPreviewHideFlags(instance);
             return instance.transform;
         }
 
@@ -366,14 +409,7 @@ namespace OSE.UI.Root
                 return existing;
             }
 
-            T created = target.AddComponent<T>();
-
-            if (!Application.isPlaying)
-            {
-                created.hideFlags = HideFlags.DontSaveInEditor;
-            }
-
-            return created;
+            return target.AddComponent<T>();
         }
 
         private static void ApplyPreviewMaterial(GameObject target, string materialName, Color color)
@@ -399,11 +435,6 @@ namespace OSE.UI.Root
                     name = materialName
                 };
 
-                if (!Application.isPlaying)
-                {
-                    material.hideFlags = HideFlags.DontSaveInEditor;
-                }
-
                 renderer.sharedMaterial = material;
             }
 
@@ -423,22 +454,30 @@ namespace OSE.UI.Root
             }
         }
 
-        private static void ApplyPreviewHideFlags(GameObject target)
+        private GameObject FindPreviewChild(string name)
         {
-            if (Application.isPlaying)
+            if (_previewRoot == null)
             {
-                return;
+                return null;
             }
 
-            target.hideFlags = HideFlags.DontSaveInEditor;
+            Transform child = _previewRoot.Find(name);
+            return child != null ? child.gameObject : null;
+        }
 
-            Component[] components = target.GetComponents<Component>();
-            for (int i = 0; i < components.Length; i++)
+        private void SetPreviewScaffoldActive(bool isActive)
+        {
+            if (_previewRoot != null && _previewRoot.gameObject.activeSelf != isActive)
             {
-                if (components[i] != null)
-                {
-                    components[i].hideFlags = HideFlags.DontSaveInEditor;
-                }
+                _previewRoot.gameObject.SetActive(isActive);
+            }
+        }
+
+        private static void SetPreviewObjectActive(GameObject target, bool isActive)
+        {
+            if (target != null && target.activeSelf != isActive)
+            {
+                target.SetActive(isActive);
             }
         }
 
