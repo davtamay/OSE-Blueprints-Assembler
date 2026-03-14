@@ -95,6 +95,7 @@ These rules are enforced by the docs in this folder and by the current code layo
   - `tutorial_build`
   - `power_cube_frame_corner`
 - The mechanics preview scene now reads content-driven step and part data from a machine package instead of relying only on hardcoded UI strings.
+- Preview configuration was simplified after Phase 6 by moving scene-facing preview data into ScriptableObject assets under `Assets/_Project/Data/Preview/`.
 
 ---
 
@@ -115,16 +116,21 @@ What the scene currently provides:
 How it behaves:
 
 - In edit mode, the scene shows the preview scaffold directly in the editor so progress is visible before pressing Play.
-- The `MachinePackagePreviewDriver` on `Test Scene Setup` loads `tutorial_build` and pushes real package data into the step and part panels.
+- `MechanicsSceneVisualProfile_Default.asset` drives the scene camera/geometry preview settings.
+- `SceneContentPreviewProfile_Tutorial.asset` drives which package and step the preview UI shows.
+- The `SceneContentPreviewDriver` on `Test Scene Setup` loads `tutorial_build` and pushes real package data into the step and part panels.
 - In play mode, the same scaffold remains present, the sample beam moves closer to the target, and the package-driven preview advances to the next authored step.
 - If the package id is changed in the inspector, the UI should update to the chosen package after the content reload completes.
 
 Primary script:
 
 - `Assets/_Project/Scripts/UI/Root/TestAssemblyMechanicsSceneHarness.cs`
-- `Assets/_Project/Scripts/Runtime/Preview/MachinePackagePreviewDriver.cs`
+- `Assets/_Project/Scripts/Runtime/Preview/SceneContentPreviewDriver.cs`
+- `Assets/_Project/Scripts/Runtime/Preview/MechanicsSceneVisualProfile.cs`
+- `Assets/_Project/Scripts/Runtime/Preview/SceneContentPreviewProfile.cs`
 
-This harness is a visualization bridge. It is not the future runtime authority for real content or progression logic.
+The harness and preview driver are visualization bridges.  
+They are not the future runtime authority for real content or progression logic.
 
 ---
 
@@ -143,7 +149,9 @@ This harness is a visualization bridge. It is not the future runtime authority f
 - `Assets/_Project/Scripts/Content/Definitions/MachinePackageDefinition.cs`
 - `Assets/_Project/Scripts/Content/Validation/MachinePackageValidator.cs`
 - `Assets/_Project/Scripts/Content/Loading/MachinePackageLoader.cs`
-- `Assets/_Project/Scripts/Runtime/Preview/MachinePackagePreviewDriver.cs`
+- `Assets/_Project/Scripts/Runtime/Preview/SceneContentPreviewDriver.cs`
+- `Assets/_Project/Scripts/Runtime/Preview/MechanicsSceneVisualProfile.cs`
+- `Assets/_Project/Scripts/Runtime/Preview/SceneContentPreviewProfile.cs`
 - `Assets/_Project/Scripts/UI/Bindings/UIDocumentBootstrap.cs`
 - `Assets/_Project/Scripts/UI/Root/UIRootCoordinator.cs`
 - `Assets/_Project/Scripts/UI/Root/TestAssemblyMechanicsSceneHarness.cs`
@@ -198,7 +206,10 @@ This should introduce:
 - Direct headless Unity validation may fail while the editor is already open.
 - When that happens, use a compile-only verification path against the Unity assemblies and then verify visually in the open editor.
 - The mechanics scene harness is intentionally temporary and content-agnostic.
-- The `MachinePackagePreviewDriver` is a bridge for visualization, not the long-term authoritative runtime.
+- The scene preview now uses a hybrid pattern:
+  - JSON machine packages remain the runtime content contract.
+  - ScriptableObject preview profiles are editor-facing setup data for fast swapping and readability.
+- The `SceneContentPreviewDriver` is a bridge for visualization, not the long-term authoritative runtime.
 - The UI shell is still a foundation layer, not a complete runtime UI system.
 
 ---

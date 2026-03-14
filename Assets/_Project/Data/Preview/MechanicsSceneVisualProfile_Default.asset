@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ecb8d94956546e7a8fa78097ab6877a, type: 3}
+  m_Name: MechanicsSceneVisualProfile_Default
+  m_EditorClassIdentifier: 
+  _previewInEditMode: 1
+  _showGeometryPreview: 1
+  _showUiPreview: 1
+  _camera:
+    position: {x: 0, y: 2.8, z: -8.4}
+    eulerAngles: {x: 14, y: 0, z: 0}
+    backgroundColor: {r: 0.11, g: 0.18, b: 0.27, a: 1}
+  _floor:
+    position: {x: 0, y: 0, z: 0}
+    scale: {x: 1.7, y: 1, z: 1.7}
+    color: {r: 0.2, g: 0.24, b: 0.28, a: 1}
+  _targetMarker:
+    position: {x: 0, y: 0.04, z: 0}
+    scale: {x: 0.9, y: 0.04, z: 0.9}
+    color: {r: 0.2, g: 0.84, b: 0.58, a: 1}
+  _samplePartStart:
+    position: {x: -2, y: 0.55, z: 0}
+    scale: {x: 1.45, y: 0.28, z: 0.38}
+    color: {r: 0.94, g: 0.55, b: 0.18, a: 1}
+  _samplePartPlay:
+    position: {x: -0.6, y: 0.55, z: 0.15}
+    scale: {x: 1.35, y: 0.28, z: 0.38}
+    color: {r: 0.94, g: 0.55, b: 0.18, a: 1}
+  _animateSamplePartOnPlay: 1
+  _playModeAdvanceDelay: 2.5

@@ -367,6 +367,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c852ae79c654334ab276927b4ad789d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualProfile: {fileID: 11400000, guid: 9304e1f02c024ec0b0c64fdfe26af7f9, type: 2}
 --- !u!114 &840000004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -379,12 +380,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3c1f6528f1d4324a8d8db0fef7b8a91, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _previewInEditMode: 1
-  _packageId: tutorial_build
-  _previewStepSequenceIndex: 1
-  _advanceOnPlay: 1
-  _playModeStepSequenceIndex: 2
-  _playModeAdvanceDelay: 2.5
+  _previewProfile: {fileID: 11400000, guid: e690c2bce8f24f8b9e81dd4f536a9124, type: 2}
   _statusMessage: Awaiting package load.
   _loadedMachineName: 
 --- !u!1660057539 &9223372036854775807

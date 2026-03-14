@@ -11,15 +11,9 @@ namespace OSE.Runtime.Preview
 {
     [ExecuteAlways]
     [DisallowMultipleComponent]
-    public sealed class MachinePackagePreviewDriver : MonoBehaviour
+    public sealed class SceneContentPreviewDriver : MonoBehaviour
     {
-        [Header("Package Preview")]
-        [SerializeField] private bool _previewInEditMode = true;
-        [SerializeField] private string _packageId = "tutorial_build";
-        [SerializeField, Min(1)] private int _previewStepSequenceIndex = 1;
-        [SerializeField] private bool _advanceOnPlay = true;
-        [SerializeField, Min(1)] private int _playModeStepSequenceIndex = 2;
-        [SerializeField, Min(0f)] private float _playModeAdvanceDelay = 2.5f;
+        [SerializeField] private SceneContentPreviewProfile _previewProfile = null;
 
         [Header("Debug Status")]
         [SerializeField, TextArea(2, 6)] private string _statusMessage = "Awaiting package load.";
@@ -30,6 +24,7 @@ namespace OSE.Runtime.Preview
         private bool _previewApplied;
         private bool _playModeAdvanceStarted;
         private int _loadVersion;
+        private SceneContentPreviewProfile _builtInPreviewProfile;
 
         private void OnEnable()
         {
@@ -40,14 +35,14 @@ namespace OSE.Runtime.Preview
 
         private void Update()
         {
-            if (!Application.isPlaying && !_previewInEditMode)
+            if (!Application.isPlaying && !ActiveProfile.PreviewInEditMode)
             {
                 return;
             }
 
             if (!_previewApplied)
             {
-                TryApplyPreview(_previewStepSequenceIndex);
+                TryApplyPreview(ActiveProfile.PreviewStepSequenceIndex);
             }
 
             StartPlayModeAdvanceIfNeeded();
@@ -55,16 +50,31 @@ namespace OSE.Runtime.Preview
 
         private void OnValidate()
         {
-            _previewStepSequenceIndex = Mathf.Max(1, _previewStepSequenceIndex);
-            _playModeStepSequenceIndex = Mathf.Max(1, _playModeStepSequenceIndex);
-            _playModeAdvanceDelay = Mathf.Max(0f, _playModeAdvanceDelay);
-
             if (!isActiveAndEnabled)
             {
                 return;
             }
 
             RequestRefresh();
+        }
+
+        private void OnDestroy()
+        {
+            if (_builtInPreviewProfile == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(_builtInPreviewProfile);
+            }
+            else
+            {
+                DestroyImmediate(_builtInPreviewProfile);
+            }
+
+            _builtInPreviewProfile = null;
         }
 
         private void RequestRefresh()
@@ -76,7 +86,7 @@ namespace OSE.Runtime.Preview
 
         private async Task ReloadPackageAsync(int loadVersion)
         {
-            string packageId = string.IsNullOrWhiteSpace(_packageId) ? string.Empty : _packageId.Trim();
+            string packageId = ActiveProfile.PackageId;
             _statusMessage = string.IsNullOrWhiteSpace(packageId)
                 ? "Package id is required."
                 : $"Loading package '{packageId}'...";
@@ -105,7 +115,7 @@ namespace OSE.Runtime.Preview
                 _statusMessage = BuildFailureMessage(result);
             }
 
-            TryApplyPreview(_previewStepSequenceIndex);
+            TryApplyPreview(ActiveProfile.PreviewStepSequenceIndex);
         }
 
         private bool TryApplyPreview(int stepSequenceIndex)
@@ -124,7 +134,7 @@ namespace OSE.Runtime.Preview
             {
                 ApplyFailurePreview(
                     presentationAdapter,
-                    "Package Preview Unavailable",
+                    "Scene Content Preview Unavailable",
                     _statusMessage);
                 _previewApplied = true;
                 return true;
@@ -168,16 +178,16 @@ namespace OSE.Runtime.Preview
         {
             presentationAdapter.ShowStepShell(0, 0, title, instruction);
             presentationAdapter.ShowPartInfoShell(
-                string.IsNullOrWhiteSpace(_packageId) ? "No Package Id" : _packageId.Trim(),
+                string.IsNullOrWhiteSpace(ActiveProfile.PackageId) ? "No Package Id" : ActiveProfile.PackageId,
                 instruction,
                 _loadedMachineName,
-                MachinePackageLoader.BuildMachineJsonPath(string.IsNullOrWhiteSpace(_packageId) ? string.Empty : _packageId.Trim()),
-                "machine package preview");
+                MachinePackageLoader.BuildMachineJsonPath(ActiveProfile.PackageId),
+                "scene content preview");
         }
 
         private void StartPlayModeAdvanceIfNeeded()
         {
-            if (!Application.isPlaying || !_advanceOnPlay || _playModeAdvanceStarted || !_previewApplied)
+            if (!Application.isPlaying || !ActiveProfile.AdvanceOnPlay || _playModeAdvanceStarted || !_previewApplied)
             {
                 return;
             }
@@ -188,13 +198,13 @@ namespace OSE.Runtime.Preview
 
         private IEnumerator AdvancePreviewStepCoroutine()
         {
-            yield return new WaitForSeconds(_playModeAdvanceDelay);
+            yield return new WaitForSeconds(ActiveProfile.PlayModeAdvanceDelay);
             _previewApplied = false;
-            TryApplyPreview(_playModeStepSequenceIndex);
+            TryApplyPreview(ActiveProfile.PlayModeStepSequenceIndex);
         }
 
         private bool ShouldApplyPreviewNow() =>
-            Application.isPlaying || _previewInEditMode;
+            Application.isPlaying || ActiveProfile.PreviewInEditMode;
 
         private static StepDefinition ResolveStep(StepDefinition[] orderedSteps, int sequenceIndex)
         {
@@ -345,7 +355,21 @@ namespace OSE.Runtime.Preview
 
             return builder.Length > 0
                 ? builder.ToString()
-                : "Machine package preview failed to load.";
+                : "Scene content preview failed to load.";
+        }
+
+        private SceneContentPreviewProfile ActiveProfile
+        {
+            get
+            {
+                if (_previewProfile != null)
+                {
+                    return _previewProfile;
+                }
+
+                _builtInPreviewProfile ??= SceneContentPreviewProfile.CreateBuiltInDefault();
+                return _builtInPreviewProfile;
+            }
         }
     }
 }

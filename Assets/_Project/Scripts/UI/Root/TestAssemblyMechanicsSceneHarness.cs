@@ -1,5 +1,6 @@
 using System.Collections;
 using OSE.Core;
+using OSE.Runtime.Preview;
 using OSE.UI.Bindings;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -17,37 +18,7 @@ namespace OSE.UI.Root
         private const string SamplePartName = "Sample Beam";
         private const string UiHostName = "UI Root";
 
-        [Header("Edit Mode Preview")]
-        [SerializeField] private bool _previewInEditMode = true;
-        [SerializeField] private bool _showGeometryPreview = true;
-        [SerializeField] private bool _showUiPreview = true;
-        [SerializeField] private bool _animatePreviewOnPlay = true;
-        [SerializeField, Min(0f)] private float _playModeAdvanceDelay = 2.5f;
-
-        [Header("Preview Step")]
-        [SerializeField, Min(1)] private int _previewStepNumber = 1;
-        [SerializeField, Min(1)] private int _previewTotalSteps = 3;
-        [SerializeField] private string _previewStepTitle = "Inspect the chassis beam";
-        [SerializeField, TextArea(2, 5)] private string _previewInstruction =
-            "Compare the orange beam to the green target marker. This panel mirrors the kind of guidance that will come from runtime systems later.";
-
-        [Header("Preview Part Info")]
-        [SerializeField] private string _previewPartName = "Chassis Beam";
-        [SerializeField, TextArea(2, 4)] private string _previewPartFunction =
-            "Connects two frame members and keeps the assembly square.";
-        [SerializeField] private string _previewPartMaterial = "Mild steel box tubing";
-        [SerializeField] private string _previewPartTool = "Tape measure, clamps";
-        [SerializeField] private string _previewPartSearchTerms = "frame beam crossmember steel tubing";
-
-        [Header("Play Mode Transition")]
-        [SerializeField, Min(1)] private int _playModeStepNumber = 2;
-        [SerializeField] private string _playModeStepTitle = "Move the beam toward the target";
-        [SerializeField, TextArea(2, 5)] private string _playModeInstruction =
-            "When you press Play, the sample part slides closer to the target after a short delay so you can separate static editor preview from runtime behavior.";
-        [SerializeField, TextArea(2, 4)] private string _playModePartFunction =
-            "Supports frame alignment before fastening or welding.";
-        [SerializeField] private string _playModePartTool = "Square, clamps, welder";
-        [SerializeField] private string _playModePartSearchTerms = "frame alignment chassis beam crossmember";
+        [SerializeField] private MechanicsSceneVisualProfile _visualProfile = null;
 
         private UIRootCoordinator _uiRootCoordinator;
         private UIDocumentBootstrap _uiDocumentBootstrap;
@@ -59,6 +30,7 @@ namespace OSE.UI.Root
         private GameObject _samplePart;
         private bool _previewStateApplied;
         private bool _playModeSequenceStarted;
+        private MechanicsSceneVisualProfile _builtInVisualProfile;
 
         private void OnEnable()
         {
@@ -80,7 +52,7 @@ namespace OSE.UI.Root
                 return;
             }
 
-            if (!_previewInEditMode)
+            if (!ActiveProfile.PreviewInEditMode)
             {
                 CachePreviewScaffold();
                 SetPreviewScaffoldActive(false);
@@ -97,11 +69,6 @@ namespace OSE.UI.Root
 
         private void OnValidate()
         {
-            _previewStepNumber = Mathf.Max(1, _previewStepNumber);
-            _previewTotalSteps = Mathf.Max(1, _previewTotalSteps);
-            _playModeStepNumber = Mathf.Max(1, _playModeStepNumber);
-            _playModeAdvanceDelay = Mathf.Max(0f, _playModeAdvanceDelay);
-
             _previewStateApplied = false;
             _playModeSequenceStarted = false;
 
@@ -111,6 +78,25 @@ namespace OSE.UI.Root
             }
 
             ConfigureForCurrentMode();
+        }
+
+        private void OnDestroy()
+        {
+            if (_builtInVisualProfile == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(_builtInVisualProfile);
+            }
+            else
+            {
+                DestroyImmediate(_builtInVisualProfile);
+            }
+
+            _builtInVisualProfile = null;
         }
 
         private void ConfigureCamera()
@@ -123,14 +109,15 @@ namespace OSE.UI.Root
             }
 
             Transform cameraTransform = mainCamera.transform;
-            cameraTransform.position = new Vector3(0f, 2.8f, -8.4f);
-            cameraTransform.rotation = Quaternion.Euler(14f, 0f, 0f);
-            mainCamera.backgroundColor = new Color(0.11f, 0.18f, 0.27f, 1f);
+            PreviewCameraSettings camera = ActiveProfile.Camera;
+            cameraTransform.position = camera.position;
+            cameraTransform.rotation = Quaternion.Euler(camera.eulerAngles);
+            mainCamera.backgroundColor = camera.backgroundColor;
         }
 
         private void ConfigureForCurrentMode()
         {
-            if (!Application.isPlaying && !_previewInEditMode)
+            if (!Application.isPlaying && !ActiveProfile.PreviewInEditMode)
             {
                 CachePreviewScaffold();
                 SetPreviewScaffoldActive(false);
@@ -191,12 +178,12 @@ namespace OSE.UI.Root
             _floor = GetOrCreatePrimitive(FloorName, PrimitiveType.Plane);
             _targetMarker = GetOrCreatePrimitive(TargetMarkerName, PrimitiveType.Cylinder);
             _samplePart = GetOrCreatePrimitive(SamplePartName, PrimitiveType.Cube);
-            SetPreviewObjectActive(_floor, _showGeometryPreview);
-            SetPreviewObjectActive(_targetMarker, _showGeometryPreview);
-            SetPreviewObjectActive(_samplePart, _showGeometryPreview);
+            SetPreviewObjectActive(_floor, ActiveProfile.ShowGeometryPreview);
+            SetPreviewObjectActive(_targetMarker, ActiveProfile.ShowGeometryPreview);
+            SetPreviewObjectActive(_samplePart, ActiveProfile.ShowGeometryPreview);
 
             EnsureUiHost();
-            SetPreviewObjectActive(_uiHost, _showUiPreview);
+            SetPreviewObjectActive(_uiHost, ActiveProfile.ShowUiPreview);
         }
 
         private void EnsureUiHost()
@@ -211,34 +198,29 @@ namespace OSE.UI.Root
         {
             ConfigureCamera();
             ApplyGeometryPreview();
-            bool uiApplied = !ShouldDriveLocalUiPreview() || ApplyUiPreview(
-                _previewStepNumber,
-                _previewStepTitle,
-                _previewInstruction,
-                _previewPartFunction,
-                _previewPartTool,
-                _previewPartSearchTerms);
-            _previewStateApplied = !_showUiPreview || uiApplied;
+            _previewStateApplied = true;
         }
 
         private void ApplyGeometryPreview()
         {
-            if (!_showGeometryPreview)
+            if (!ActiveProfile.ShowGeometryPreview)
             {
                 return;
             }
 
             if (_floor != null)
             {
-                _floor.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
-                _floor.transform.localScale = new Vector3(1.7f, 1f, 1.7f);
-                ApplyPreviewMaterial(_floor, "Preview Floor Material", new Color(0.20f, 0.24f, 0.28f, 1f));
+                PreviewObjectAppearance floor = ActiveProfile.Floor;
+                _floor.transform.SetLocalPositionAndRotation(floor.position, Quaternion.identity);
+                _floor.transform.localScale = floor.scale;
+                ApplyPreviewMaterial(_floor, "Preview Floor Material", floor.color);
             }
 
             if (_targetMarker != null)
             {
-                _targetMarker.transform.SetLocalPositionAndRotation(new Vector3(0f, 0.04f, 0f), Quaternion.identity);
-                _targetMarker.transform.localScale = new Vector3(0.9f, 0.04f, 0.9f);
+                PreviewObjectAppearance targetMarker = ActiveProfile.TargetMarker;
+                _targetMarker.transform.SetLocalPositionAndRotation(targetMarker.position, Quaternion.identity);
+                _targetMarker.transform.localScale = targetMarker.scale;
 
                 Collider targetCollider = _targetMarker.GetComponent<Collider>();
                 if (targetCollider != null)
@@ -246,80 +228,37 @@ namespace OSE.UI.Root
                     targetCollider.enabled = false;
                 }
 
-                ApplyPreviewMaterial(_targetMarker, "Preview Target Material", new Color(0.20f, 0.84f, 0.58f, 1f));
+                ApplyPreviewMaterial(_targetMarker, "Preview Target Material", targetMarker.color);
             }
 
             if (_samplePart != null)
             {
-                _samplePart.transform.SetLocalPositionAndRotation(new Vector3(-2f, 0.55f, 0f), Quaternion.identity);
-                _samplePart.transform.localScale = new Vector3(1.45f, 0.28f, 0.38f);
-                ApplyPreviewMaterial(_samplePart, "Preview Part Material", new Color(0.94f, 0.55f, 0.18f, 1f));
+                PreviewObjectAppearance samplePart = ActiveProfile.SamplePartStart;
+                _samplePart.transform.SetLocalPositionAndRotation(samplePart.position, Quaternion.identity);
+                _samplePart.transform.localScale = samplePart.scale;
+                ApplyPreviewMaterial(_samplePart, "Preview Part Material", samplePart.color);
             }
-        }
 
-        private bool ApplyUiPreview(
-            int stepNumber,
-            string stepTitle,
-            string instruction,
-            string function,
-            string tool,
-            string searchTerms)
-        {
-            if (!_showUiPreview)
+            if (_uiRootCoordinator != null)
             {
-                return true;
+                _uiRootCoordinator.TryInitialize();
             }
-
-            if (_uiRootCoordinator == null)
-            {
-                return false;
-            }
-
-            if (!_uiRootCoordinator.TryInitialize())
-            {
-                return false;
-            }
-
-            _uiRootCoordinator.ShowPartInfoShell(
-                _previewPartName,
-                function,
-                _previewPartMaterial,
-                tool,
-                searchTerms);
-
-            _uiRootCoordinator.ShowStepShell(
-                stepNumber,
-                _previewTotalSteps,
-                stepTitle,
-                instruction);
-
-            return true;
         }
 
         private IEnumerator PlayModeSequence()
         {
-            if (!_animatePreviewOnPlay)
+            if (!ActiveProfile.AnimateSamplePartOnPlay)
             {
                 yield break;
             }
 
-            yield return new WaitForSeconds(_playModeAdvanceDelay);
+            yield return new WaitForSeconds(ActiveProfile.PlayModeAdvanceDelay);
 
             if (_samplePart != null)
             {
-                _samplePart.transform.localPosition = new Vector3(-0.6f, 0.55f, 0.15f);
-                _samplePart.transform.localScale = new Vector3(1.35f, 0.28f, 0.38f);
-            }
-
-            if (ShouldDriveLocalUiPreview())
-            {
-                ApplyUiPreview(
-                    _playModeStepNumber,
-                    _playModeStepTitle,
-                    _playModeInstruction,
-                    _playModePartFunction,
-                    _playModePartTool,
-                    _playModePartSearchTerms);
+                PreviewObjectAppearance samplePartPlay = ActiveProfile.SamplePartPlay;
+                _samplePart.transform.localPosition = samplePartPlay.position;
+                _samplePart.transform.localScale = samplePartPlay.scale;
             }
         }
 
@@ -333,9 +272,6 @@ namespace OSE.UI.Root
             _playModeSequenceStarted = true;
             StartCoroutine(PlayModeSequence());
         }
-
-        private bool ShouldDriveLocalUiPreview() =>
-            _showUiPreview && GetComponent("MachinePackagePreviewDriver") == null;
 
         [ContextMenu("Refresh Preview")]
         private void RefreshPreview()
@@ -535,6 +471,20 @@ namespace OSE.UI.Root
             else
             {
                 DestroyImmediate(target);
+            }
+        }
+
+        private MechanicsSceneVisualProfile ActiveProfile
+        {
+            get
+            {
+                if (_visualProfile != null)
+                {
+                    return _visualProfile;
+                }
+
+                _builtInVisualProfile ??= MechanicsSceneVisualProfile.CreateBuiltInDefault();
+                return _builtInVisualProfile;
             }
         }
     }
