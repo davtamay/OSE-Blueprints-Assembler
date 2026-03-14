@@ -44,6 +44,10 @@ Input → Runtime → Presentation
 
 This prevents tight coupling and protects long-term scalability.
 
+5. **APP_CURRENT_PROGRESS_FOR_AGENT.md**  
+   Live implementation-state handoff for agents and developers.  
+   Use this first when resuming work to see the current completed phase, the active visual validation path, and the next recommended phase.
+
 ---
 
 # System Architecture
@@ -176,6 +180,9 @@ Defines the recommended order for implementing the system from:
 4. UI layer
 5. content pipeline
 6. vertical slice
+
+Keep **APP_CURRENT_PROGRESS_FOR_AGENT.md** updated alongside this checklist.  
+It tracks what has already been completed in the real codebase and what the next active phase should be.
 
 ---
 

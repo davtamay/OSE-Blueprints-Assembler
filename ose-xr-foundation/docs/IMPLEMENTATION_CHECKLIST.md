@@ -37,6 +37,7 @@ These rules apply to every phase.
 11. Keep multiplayer-open boundaries in mind even when building single-player first.
 12. Keep performance in mind from the beginning, especially for web delivery.
 13. Preserve fun, clarity, and instructional quality as equal priorities alongside technical correctness.
+14. Update `docs/APP_CURRENT_PROGRESS_FOR_AGENT.md` after every completed phase or major validated integration pass.
 
 ---
 
@@ -52,6 +53,7 @@ Before a changeset is staged and committed, verify:
 - no unrelated files were changed accidentally
 - the feature behaves at least at its intended slice level
 - a visual validation path exists if the feature is user-visible
+- `docs/APP_CURRENT_PROGRESS_FOR_AGENT.md` reflects the new current state and next phase
 
 Suggested commit style:
 
