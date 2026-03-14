@@ -1,0 +1,347 @@
+{
+  "schemaVersion": "1.0.0",
+  "packageVersion": "0.1.0",
+  "machine": {
+    "id": "power_cube_frame_corner",
+    "name": "Power Cube Frame Corner",
+    "displayName": "Power Cube Frame Corner Preview",
+    "description": "A small Power Cube-aligned frame corner package used to prove the content schema with real machine-oriented metadata.",
+    "difficulty": "beginner",
+    "estimatedBuildTimeMinutes": 12,
+    "learningObjectives": [
+      "Identify the relationship between a frame plate and bracket",
+      "Understand why alignment matters before fastening",
+      "Read machine-package-driven assembly instructions"
+    ],
+    "recommendedMode": "guided",
+    "entryAssemblyIds": [
+      "assembly_frame_corner"
+    ],
+    "prerequisiteNotes": [
+      "Learner should understand the difference between a plate, bracket, and fastener."
+    ],
+    "sourceReferences": [
+      {
+        "id": "source_power_cube_frame_corner",
+        "type": "blueprint",
+        "title": "Power Cube frame corner reference",
+        "referencePath": "sources/power_cube/frame_corner_reference_01.png",
+        "notes": "Used to define the initial step ordering and bracket relationship."
+      }
+    ]
+  },
+  "assemblies": [
+    {
+      "id": "assembly_frame_corner",
+      "name": "Frame Corner Assembly",
+      "description": "A compact structural corner subassembly from the Power Cube path.",
+      "machineId": "power_cube_frame_corner",
+      "subassemblyIds": [
+        "subassembly_corner_bracket_unit"
+      ],
+      "stepIds": [
+        "step_place_frame_plate",
+        "step_attach_corner_bracket"
+      ],
+      "learningFocus": "Structural alignment before fastening."
+    }
+  ],
+  "subassemblies": [
+    {
+      "id": "subassembly_corner_bracket_unit",
+      "name": "Corner Bracket Unit",
+      "assemblyId": "assembly_frame_corner",
+      "description": "Pairs a structural plate with a corner bracket.",
+      "partIds": [
+        "frame_plate_a",
+        "corner_bracket_a",
+        "m8_hex_bolt"
+      ],
+      "stepIds": [
+        "step_place_frame_plate",
+        "step_attach_corner_bracket"
+      ],
+      "milestoneMessage": "The frame corner reinforcement is staged and ready for fastening."
+    }
+  ],
+  "parts": [
+    {
+      "id": "frame_plate_a",
+      "name": "Frame Plate",
+      "displayName": "Frame Plate A",
+      "category": "plate",
+      "material": "Steel plate",
+      "function": "Provides the flat structural surface that receives the corner bracket.",
+      "structuralRole": "Primary frame member",
+      "quantity": 1,
+      "toolIds": [
+        "tool_square"
+      ],
+      "assetRef": "assets/parts/frame_plate_a.glb",
+      "searchTerms": [
+        "power cube frame plate",
+        "steel frame plate"
+      ],
+      "allowPhysicalSubstitution": true,
+      "defaultOrientationHint": "Keep the plate face flush with the frame edge.",
+      "tags": [
+        "power_cube",
+        "frame"
+      ]
+    },
+    {
+      "id": "corner_bracket_a",
+      "name": "Corner Bracket",
+      "displayName": "Corner Bracket A",
+      "category": "bracket",
+      "material": "Steel",
+      "function": "Connects the frame plate to the reinforcing edge at the corner.",
+      "structuralRole": "Reinforcement bracket",
+      "quantity": 1,
+      "toolIds": [
+        "tool_square",
+        "tool_wrench_13mm"
+      ],
+      "assetRef": "assets/parts/corner_bracket_a.glb",
+      "ghostAssetRef": "assets/parts/corner_bracket_a_ghost.glb",
+      "searchTerms": [
+        "power cube corner bracket",
+        "frame reinforcement bracket"
+      ],
+      "allowPhysicalSubstitution": true,
+      "defaultOrientationHint": "Match the inside face of the bracket to the outer plate corner.",
+      "tags": [
+        "power_cube",
+        "bracket"
+      ]
+    },
+    {
+      "id": "m8_hex_bolt",
+      "name": "M8 Hex Bolt",
+      "displayName": "M8 Hex Bolt",
+      "category": "fastener",
+      "material": "Zinc-coated steel",
+      "function": "Secures the bracket to the plate once the geometry is aligned.",
+      "structuralRole": "Fastener",
+      "quantity": 2,
+      "toolIds": [
+        "tool_wrench_13mm"
+      ],
+      "assetRef": "assets/parts/m8_hex_bolt.glb",
+      "searchTerms": [
+        "m8 bolt",
+        "metric hex bolt"
+      ],
+      "allowPhysicalSubstitution": true,
+      "tags": [
+        "power_cube",
+        "fastener"
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "id": "tool_square",
+      "name": "Framing Square",
+      "category": "measurement",
+      "purpose": "Verifies the bracket and plate meet at a true corner.",
+      "usageNotes": "Use during initial alignment."
+    },
+    {
+      "id": "tool_wrench_13mm",
+      "name": "13mm Wrench",
+      "category": "hand_tool",
+      "purpose": "Tightens the M8 bolts used in the frame corner.",
+      "usageNotes": "Use after the bracket is seated correctly."
+    }
+  ],
+  "steps": [
+    {
+      "id": "step_place_frame_plate",
+      "name": "Stage the frame plate",
+      "assemblyId": "assembly_frame_corner",
+      "subassemblyId": "subassembly_corner_bracket_unit",
+      "sequenceIndex": 1,
+      "instructionText": "Place the frame plate so its outer edge lines up with the intended corner reference.",
+      "whyItMattersText": "A square foundation prevents cumulative frame error later in the build.",
+      "requiredPartIds": [
+        "frame_plate_a"
+      ],
+      "relevantToolIds": [
+        "tool_square"
+      ],
+      "targetIds": [
+        "target_frame_plate_slot"
+      ],
+      "completionMode": "confirmation_only",
+      "validationRuleIds": [
+        "validation_frame_plate_presence"
+      ],
+      "hintIds": [
+        "hint_plate_corner_reference"
+      ],
+      "effectTriggerIds": [
+        "effect_frame_preview_pulse"
+      ],
+      "allowAutoSnap": false,
+      "allowSkip": false,
+      "requiresConfirmation": true,
+      "challengeFlags": {
+        "penalizeHintUsage": false,
+        "penalizeInvalidPlacement": false,
+        "stricterToleranceAvailable": false
+      },
+      "eventTags": [
+        "power_cube",
+        "frame"
+      ]
+    },
+    {
+      "id": "step_attach_corner_bracket",
+      "name": "Attach the corner bracket",
+      "assemblyId": "assembly_frame_corner",
+      "subassemblyId": "subassembly_corner_bracket_unit",
+      "sequenceIndex": 2,
+      "instructionText": "Align the corner bracket against the plate and move it into position before tightening the bolts.",
+      "whyItMattersText": "The bracket reinforces the corner and helps the frame resist deformation once loaded.",
+      "requiredPartIds": [
+        "corner_bracket_a"
+      ],
+      "optionalPartIds": [
+        "m8_hex_bolt"
+      ],
+      "relevantToolIds": [
+        "tool_square",
+        "tool_wrench_13mm"
+      ],
+      "targetIds": [
+        "target_corner_bracket_slot_a"
+      ],
+      "completionMode": "virtual_or_physical",
+      "validationRuleIds": [
+        "validation_corner_bracket_alignment"
+      ],
+      "hintIds": [
+        "hint_align_bracket_edge"
+      ],
+      "effectTriggerIds": [
+        "effect_valid_placement_pulse"
+      ],
+      "allowAutoSnap": true,
+      "allowSkip": false,
+      "requiresConfirmation": false,
+      "challengeFlags": {
+        "penalizeHintUsage": true,
+        "penalizeInvalidPlacement": true,
+        "stricterToleranceAvailable": true
+      },
+      "eventTags": [
+        "power_cube",
+        "bracket"
+      ]
+    }
+  ],
+  "validationRules": [
+    {
+      "id": "validation_frame_plate_presence",
+      "type": "confirmation",
+      "expectedPartId": "frame_plate_a",
+      "requiredPartIds": [
+        "frame_plate_a"
+      ],
+      "failureMessage": "Stage the frame plate before moving on."
+    },
+    {
+      "id": "validation_corner_bracket_alignment",
+      "type": "placement",
+      "targetId": "target_corner_bracket_slot_a",
+      "expectedPartId": "corner_bracket_a",
+      "positionToleranceMm": 6.0,
+      "rotationToleranceDeg": 12.0,
+      "failureMessage": "The bracket is not aligned closely enough to the intended frame corner.",
+      "correctionHintId": "hint_align_bracket_edge"
+    }
+  ],
+  "effects": [
+    {
+      "id": "effect_frame_preview_pulse",
+      "type": "placement_feedback",
+      "fallbackRef": "assets/effects/frame_preview_pulse.prefab",
+      "triggerPolicy": "on_step_enter",
+      "notes": "Highlights the initial plate location."
+    },
+    {
+      "id": "effect_valid_placement_pulse",
+      "type": "success_feedback",
+      "fallbackRef": "assets/effects/placement_success.prefab",
+      "triggerPolicy": "on_success",
+      "notes": "Signals that the bracket has reached a valid candidate location."
+    }
+  ],
+  "hints": [
+    {
+      "id": "hint_plate_corner_reference",
+      "type": "text",
+      "title": "Find the outside corner",
+      "message": "Use the framing square to understand where the outside edge of the plate should land.",
+      "targetId": "target_frame_plate_slot",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_align_bracket_edge",
+      "type": "highlight",
+      "title": "Match the inner bracket face",
+      "message": "Seat the inside face of the bracket against the outer plate corner before tightening.",
+      "targetId": "target_corner_bracket_slot_a",
+      "partId": "corner_bracket_a",
+      "toolId": "tool_square",
+      "priority": "high"
+    }
+  ],
+  "targets": [
+    {
+      "id": "target_frame_plate_slot",
+      "name": "Frame Plate Reference",
+      "anchorRef": "anchors/power_cube/frame_plate_slot",
+      "description": "Reference location for the plate within the frame corner preview.",
+      "associatedPartId": "frame_plate_a",
+      "tags": [
+        "power_cube",
+        "frame"
+      ]
+    },
+    {
+      "id": "target_corner_bracket_slot_a",
+      "name": "Corner Bracket Slot",
+      "anchorRef": "anchors/power_cube/corner_bracket_slot_a",
+      "description": "Reference location for the reinforcing corner bracket.",
+      "associatedPartId": "corner_bracket_a",
+      "tags": [
+        "power_cube",
+        "bracket"
+      ]
+    }
+  ],
+  "challengeConfig": {
+    "enabled": true,
+    "trackTime": true,
+    "trackRetries": true,
+    "trackHintUsage": true,
+    "leaderboardReady": false,
+    "strictValidationModeAvailable": true
+  },
+  "assetManifest": {
+    "modelRefs": [
+      "assets/parts/frame_plate_a.glb",
+      "assets/parts/corner_bracket_a.glb",
+      "assets/parts/m8_hex_bolt.glb"
+    ],
+    "effectRefs": [
+      "assets/effects/frame_preview_pulse.prefab",
+      "assets/effects/placement_success.prefab"
+    ],
+    "uiRefs": [
+      "ui/power_cube/frame_corner"
+    ]
+  }
+}

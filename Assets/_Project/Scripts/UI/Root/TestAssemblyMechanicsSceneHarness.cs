@@ -211,7 +211,7 @@ namespace OSE.UI.Root
         {
             ConfigureCamera();
             ApplyGeometryPreview();
-            bool uiApplied = ApplyUiPreview(
+            bool uiApplied = !ShouldDriveLocalUiPreview() || ApplyUiPreview(
                 _previewStepNumber,
                 _previewStepTitle,
                 _previewInstruction,
@@ -311,13 +311,16 @@ namespace OSE.UI.Root
                 _samplePart.transform.localScale = new Vector3(1.35f, 0.28f, 0.38f);
             }
 
-            ApplyUiPreview(
-                _playModeStepNumber,
-                _playModeStepTitle,
-                _playModeInstruction,
-                _playModePartFunction,
-                _playModePartTool,
-                _playModePartSearchTerms);
+            if (ShouldDriveLocalUiPreview())
+            {
+                ApplyUiPreview(
+                    _playModeStepNumber,
+                    _playModeStepTitle,
+                    _playModeInstruction,
+                    _playModePartFunction,
+                    _playModePartTool,
+                    _playModePartSearchTerms);
+            }
         }
 
         private void StartPlayModeSequenceIfNeeded()
@@ -330,6 +333,9 @@ namespace OSE.UI.Root
             _playModeSequenceStarted = true;
             StartCoroutine(PlayModeSequence());
         }
+
+        private bool ShouldDriveLocalUiPreview() =>
+            _showUiPreview && GetComponent("MachinePackagePreviewDriver") == null;
 
         [ContextMenu("Refresh Preview")]
         private void RefreshPreview()

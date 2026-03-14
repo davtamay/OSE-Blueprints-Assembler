@@ -44,6 +44,8 @@ namespace OSE.Core
         void ShowToolInfo(string toolId);
         void ShowProgressUpdate(int completedSteps, int totalSteps);
         void ShowMilestoneFeedback(string milestoneKey);
+        void ShowStepShell(int currentStepNumber, int totalSteps, string title, string instruction);
+        void ShowPartInfoShell(string partName, string function, string material, string tool, string searchTerms);
         void HideAll();
     }
 

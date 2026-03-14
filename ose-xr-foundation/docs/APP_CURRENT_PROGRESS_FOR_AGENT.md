@@ -86,6 +86,16 @@ These rules are enforced by the docs in this folder and by the current code layo
 - Presenter/controller split is established.
 - UI remains presentation-only and does not own runtime state.
 
+### Phase 6: Content Model Implementation
+
+- Machine package definitions now exist for machines, assemblies, subassemblies, parts, tools, steps, validation rules, hints, effects, targets, challenge config, asset manifests, and source references.
+- `MachinePackageValidator` validates ids, required fields, enum-like schema values, and cross-definition references.
+- `MachinePackageLoader` loads `machine.json` packages from `Assets/StreamingAssets/MachinePackages/`.
+- Two sample packages now exist:
+  - `tutorial_build`
+  - `power_cube_frame_corner`
+- The mechanics preview scene now reads content-driven step and part data from a machine package instead of relying only on hardcoded UI strings.
+
 ---
 
 ## Current Visual Validation Path
@@ -100,15 +110,19 @@ What the scene currently provides:
 - a runtime `UIDocument` host
 - the step shell panel
 - the part info shell panel
+- a package-driven preview component that loads machine content from `StreamingAssets`
 
 How it behaves:
 
 - In edit mode, the scene shows the preview scaffold directly in the editor so progress is visible before pressing Play.
-- In play mode, the same scaffold remains present and the harness runs a small transition so the sample part moves and the UI updates to a later step.
+- The `MachinePackagePreviewDriver` on `Test Scene Setup` loads `tutorial_build` and pushes real package data into the step and part panels.
+- In play mode, the same scaffold remains present, the sample beam moves closer to the target, and the package-driven preview advances to the next authored step.
+- If the package id is changed in the inspector, the UI should update to the chosen package after the content reload completes.
 
 Primary script:
 
 - `Assets/_Project/Scripts/UI/Root/TestAssemblyMechanicsSceneHarness.cs`
+- `Assets/_Project/Scripts/Runtime/Preview/MachinePackagePreviewDriver.cs`
 
 This harness is a visualization bridge. It is not the future runtime authority for real content or progression logic.
 
@@ -126,6 +140,10 @@ This harness is a visualization bridge. It is not the future runtime authority f
 - `Assets/_Project/Scripts/Input/InputActionRouter.cs`
 - `Assets/_Project/Scripts/Interaction/XRIInteractionAdapter.cs`
 - `Assets/_Project/Scripts/Interaction/SelectionService.cs`
+- `Assets/_Project/Scripts/Content/Definitions/MachinePackageDefinition.cs`
+- `Assets/_Project/Scripts/Content/Validation/MachinePackageValidator.cs`
+- `Assets/_Project/Scripts/Content/Loading/MachinePackageLoader.cs`
+- `Assets/_Project/Scripts/Runtime/Preview/MachinePackagePreviewDriver.cs`
 - `Assets/_Project/Scripts/UI/Bindings/UIDocumentBootstrap.cs`
 - `Assets/_Project/Scripts/UI/Root/UIRootCoordinator.cs`
 - `Assets/_Project/Scripts/UI/Root/TestAssemblyMechanicsSceneHarness.cs`
@@ -140,41 +158,38 @@ This harness is a visualization bridge. It is not the future runtime authority f
 
 ### Current Completed Phase
 
-- **Phase 5: UI Toolkit Foundation**
+- **Phase 6: Content Model Implementation**
 
 Why this phase is considered complete:
 
-- the UI Toolkit root path exists
-- the controller/presenter conventions are established
-- the shell panels render
-- the mechanics test scene provides an editor-visible and play-mode-visible validation path
-- UI state is still routed through presentation objects instead of becoming gameplay truth
+- the machine package definitions exist
+- package validation rules exist
+- machine package loading exists
+- tutorial and sample machine packages exist
+- the mechanics test scene now has a content-driven preview path tied to `machine.json` data
+- content remains outside scene-specific gameplay logic
 
 ### Next Formal Phase
 
-- **Phase 6: Content Model Implementation**
+- **Phase 7: Machine Session and Step Runtime Skeleton**
 
 This should introduce:
 
-- `MachineDefinition`
-- `AssemblyDefinition`
-- `SubassemblyDefinition`
-- `StepDefinition`
-- `PartDefinition`
-- `ToolDefinition`
-- `EffectDefinition`
-- machine package metadata and validation/loading
+- `MachineSessionController`
+- `AssemblyRuntimeController`
+- `StepController`
+- `ProgressionController`
+- explicit step activation and advancement flow
+- state-driven progression that consumes the content package data now available
 
 ---
 
 ## Recommended Next Tasks
 
-1. Implement the Phase 6 content definition classes in the `OSE.Content` module.
-2. Create at least one small sample machine package and one tutorial package.
-3. Replace hardcoded preview text in the mechanics scene harness with data loaded from content models.
-4. Keep `Test_Assembly_Mechanics.unity` as the visual integration sandbox while Phase 6 and Phase 7 come online.
-
-Do not skip to full runtime progression before the content model exists.
+1. Implement `MachineSessionController`, `StepController`, and `ProgressionController` in the `OSE.Runtime` module.
+2. Feed the active step and selected part from runtime state rather than directly from the preview driver.
+3. Keep `Test_Assembly_Mechanics.unity` as the integration sandbox while Phase 7 comes online.
+4. Preserve the package-driven preview path as a fallback diagnostic scene while runtime controllers are still early.
 
 ---
 
@@ -183,6 +198,7 @@ Do not skip to full runtime progression before the content model exists.
 - Direct headless Unity validation may fail while the editor is already open.
 - When that happens, use a compile-only verification path against the Unity assemblies and then verify visually in the open editor.
 - The mechanics scene harness is intentionally temporary and content-agnostic.
+- The `MachinePackagePreviewDriver` is a bridge for visualization, not the long-term authoritative runtime.
 - The UI shell is still a foundation layer, not a complete runtime UI system.
 
 ---

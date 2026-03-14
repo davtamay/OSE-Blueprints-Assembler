@@ -2,6 +2,7 @@
     "name": "OSE.Runtime",
     "rootNamespace": "OSE.Runtime",
     "references": [
+        "OSE.App",
         "OSE.Core",
         "OSE.Content"
     ],
