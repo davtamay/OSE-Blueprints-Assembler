@@ -53,7 +53,8 @@ Before a changeset is staged and committed, verify:
 - no unrelated files were changed accidentally
 - the feature behaves at least at its intended slice level
 - a visual validation path exists if the feature is user-visible
-- `docs/APP_CURRENT_PROGRESS_FOR_AGENT.md` reflects the new current state and next phase
+- when a phase is complete, the test scene (`Test_Assembly_Mechanics.unity`) has been updated so the phase's work is observable on Play
+- `docs/APP_CURRENT_PROGRESS_FOR_AGENT.md` reflects the new current state, scene changes, and next phase
 
 Suggested commit style:
 

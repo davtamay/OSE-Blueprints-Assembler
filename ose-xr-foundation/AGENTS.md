@@ -353,6 +353,36 @@ After every meaningful validated changeset, agents should:
 - create a clear commit
 - keep the repo history understandable
 
+After every completed phase, agents should:
+
+- update `docs/APP_CURRENT_PROGRESS_FOR_AGENT.md`
+- update the test scene (`Test_Assembly_Mechanics.unity`) so the phase's work is visible
+
+### Phase Visualization Requirement
+
+Every completed phase must leave behind something observable in the test scene.
+
+The test scene (`Assets/Scenes/Test_Assembly_Mechanics.unity`) is the project's living proof-of-work. It should grow incrementally alongside the codebase so that anyone opening the scene can see and interact with what has been built so far.
+
+This means:
+
+- if the phase adds runtime logic, add a lightweight scene driver or harness component that exercises it on Play and exposes state in the inspector
+- if the phase adds UI, make sure it renders in the scene
+- if the phase adds interaction, make sure there is a way to trigger it in the scene
+- if the phase adds content loading, make sure the scene loads and displays content
+- if the phase adds effects, make sure at least one effect plays in the scene
+
+Scene drivers and harness components are **diagnostic bridges**, not runtime authorities. They exist only to make the underlying systems observable. They must not own gameplay truth, alter the architecture, or introduce coupling that would not exist without them. They read state, call public APIs, and display results.
+
+When a later phase replaces a driver's responsibility with a real system, the driver should be simplified or removed.
+
+This discipline ensures:
+
+- progress is always demonstrable
+- regressions are immediately visible
+- agents can verify their work without guessing
+- the test scene is a reliable handoff artifact
+
 Agents should avoid quick hacks and focus on scalable solutions.
 
 ---

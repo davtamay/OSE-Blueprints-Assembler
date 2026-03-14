@@ -16,7 +16,7 @@ It should answer three questions quickly:
 
 ## Last Updated
 
-- March 14, 2026
+- March 14, 2026 (Phase 7 implementation)
 
 ---
 
@@ -97,6 +97,20 @@ These rules are enforced by the docs in this folder and by the current code layo
 - The mechanics preview scene now reads content-driven step and part data from a machine package instead of relying only on hardcoded UI strings.
 - Preview configuration was simplified after Phase 6 by moving scene-facing preview data into ScriptableObject assets under `Assets/_Project/Data/Preview/`.
 
+### Phase 7: Machine Session and Step Runtime Skeleton
+
+- `RuntimeEventBus` added to `OSE.Core` for decoupled cross-system event communication.
+- Six event structs defined: `SessionLifecycleChanged`, `SessionCompleted`, `StepActivated`, `StepStateChanged`, `AssemblyStarted`, `AssemblyCompleted`.
+- `MachineSessionController` implemented as the top-level session orchestrator. Loads machine packages, manages session lifecycle, creates child controllers.
+- `AssemblyRuntimeController` implemented for assembly-level orchestration. Resolves assembly steps from package data, coordinates step activation and advancement.
+- `StepController` implemented with a guarded step state machine. Manages transitions (Locked → Available → Active → Completed), publishes events, logs diagnostics.
+- `ProgressionController` implemented for step ordering, cursor advancement, and completion history tracking.
+- All controllers are plain C# classes registered through `ServiceRegistry`, not MonoBehaviours.
+- `AppBootstrap` updated to register `MachineSessionController` on startup.
+- Session state (`MachineSessionState`) is updated atomically at each transition for persistence safety.
+- `RuntimeSessionDriver` MonoBehaviour added as a scene bridge that starts a session on Play, ticks elapsed time, and exposes runtime state in the inspector.
+- `Test_Assembly_Mechanics.unity` scene updated with `RuntimeSessionDriver` component and verbose logging enabled.
+
 ---
 
 ## Current Visual Validation Path
@@ -112,6 +126,7 @@ What the scene currently provides:
 - the step shell panel
 - the part info shell panel
 - a package-driven preview component that loads machine content from `StreamingAssets`
+- a `RuntimeSessionDriver` that starts a live session on Play and exposes runtime state in the inspector
 
 How it behaves:
 
@@ -119,18 +134,25 @@ How it behaves:
 - `MechanicsSceneVisualProfile_Default.asset` drives the scene camera/geometry preview settings.
 - `SceneContentPreviewProfile_Tutorial.asset` drives which package and step the preview UI shows.
 - The `SceneContentPreviewDriver` on `Test Scene Setup` loads `tutorial_build` and pushes real package data into the step and part panels.
-- In play mode, the same scaffold remains present, the sample beam moves closer to the target, and the package-driven preview advances to the next authored step.
-- If the package id is changed in the inspector, the UI should update to the chosen package after the content reload completes.
+- In play mode, the `RuntimeSessionDriver` automatically starts a `MachineSessionController` session:
+  - the console shows session lifecycle transitions and step state changes
+  - the inspector on `Test Scene Setup` shows live runtime state (lifecycle, current assembly, current step, elapsed time, etc.)
+  - right-click the `RuntimeSessionDriver` component and use **Complete Current Step** to manually advance through steps
+  - the session auto-advances through assemblies and completes when all steps are done
+- Verbose logging is enabled so all `[Step]` and `[Session]` events appear in the console.
+- If the package id is changed in the `RuntimeSessionDriver` inspector, the session will use that package on next Play.
 
-Primary script:
+Primary scripts:
 
 - `Assets/_Project/Scripts/UI/Root/TestAssemblyMechanicsSceneHarness.cs`
 - `Assets/_Project/Scripts/Runtime/Preview/SceneContentPreviewDriver.cs`
+- `Assets/_Project/Scripts/Runtime/Preview/RuntimeSessionDriver.cs`
 - `Assets/_Project/Scripts/Runtime/Preview/MechanicsSceneVisualProfile.cs`
 - `Assets/_Project/Scripts/Runtime/Preview/SceneContentPreviewProfile.cs`
 
-The harness and preview driver are visualization bridges.  
+The harness and preview drivers are visualization bridges.
 They are not the future runtime authority for real content or progression logic.
+The `RuntimeSessionDriver` is a scene bridge for testing the Phase 7 runtime controllers.
 
 ---
 
@@ -149,7 +171,13 @@ They are not the future runtime authority for real content or progression logic.
 - `Assets/_Project/Scripts/Content/Definitions/MachinePackageDefinition.cs`
 - `Assets/_Project/Scripts/Content/Validation/MachinePackageValidator.cs`
 - `Assets/_Project/Scripts/Content/Loading/MachinePackageLoader.cs`
+- `Assets/_Project/Scripts/Core/RuntimeEvents.cs`
+- `Assets/_Project/Scripts/Runtime/Session/MachineSessionController.cs`
+- `Assets/_Project/Scripts/Runtime/Session/AssemblyRuntimeController.cs`
+- `Assets/_Project/Scripts/Runtime/Session/StepController.cs`
+- `Assets/_Project/Scripts/Runtime/Session/ProgressionController.cs`
 - `Assets/_Project/Scripts/Runtime/Preview/SceneContentPreviewDriver.cs`
+- `Assets/_Project/Scripts/Runtime/Preview/RuntimeSessionDriver.cs`
 - `Assets/_Project/Scripts/Runtime/Preview/MechanicsSceneVisualProfile.cs`
 - `Assets/_Project/Scripts/Runtime/Preview/SceneContentPreviewProfile.cs`
 - `Assets/_Project/Scripts/UI/Bindings/UIDocumentBootstrap.cs`
@@ -166,38 +194,41 @@ They are not the future runtime authority for real content or progression logic.
 
 ### Current Completed Phase
 
-- **Phase 6: Content Model Implementation**
+- **Phase 7: Machine Session and Step Runtime Skeleton**
 
 Why this phase is considered complete:
 
-- the machine package definitions exist
-- package validation rules exist
-- machine package loading exists
-- tutorial and sample machine packages exist
-- the mechanics test scene now has a content-driven preview path tied to `machine.json` data
-- content remains outside scene-specific gameplay logic
+- `RuntimeEventBus` provides decoupled event communication across all modules
+- `MachineSessionController` manages full session lifecycle from package loading through completion
+- `AssemblyRuntimeController` orchestrates assembly-level step flow
+- `StepController` implements a guarded step state machine with diagnostic logging
+- `ProgressionController` manages step ordering, cursor advancement, and completion history
+- controllers are plain C# classes registered via `ServiceRegistry` (testable, multiplayer-safe)
+- `MachineSessionState` is updated atomically at each transition for persistence safety
+- all state transitions publish events and log via `OseLog`
 
 ### Next Formal Phase
 
-- **Phase 7: Machine Session and Step Runtime Skeleton**
+- **Phase 8: Part Presentation and Basic Interaction**
 
 This should introduce:
 
-- `MachineSessionController`
-- `AssemblyRuntimeController`
-- `StepController`
-- `ProgressionController`
-- explicit step activation and advancement flow
-- state-driven progression that consumes the content package data now available
+- basic part spawning from content references
+- inspection flow through the selection service
+- manipulation flow for the first supported platform
+- placement targets and ghost/preview representation
+- part info and tool info display wired to runtime state
+- step instruction panel driven by runtime controllers instead of preview driver
 
 ---
 
 ## Recommended Next Tasks
 
-1. Implement `MachineSessionController`, `StepController`, and `ProgressionController` in the `OSE.Runtime` module.
-2. Feed the active step and selected part from runtime state rather than directly from the preview driver.
-3. Keep `Test_Assembly_Mechanics.unity` as the integration sandbox while Phase 7 comes online.
-4. Preserve the package-driven preview path as a fallback diagnostic scene while runtime controllers are still early.
+1. Wire the UI presenters (StepPanelPresenter, PartInfoPanelPresenter) to subscribe to `StepStateChanged` events from the runtime controllers instead of relying on the preview driver.
+2. Implement basic part spawning from content package asset references.
+3. Implement placement targets that the runtime step data can reference.
+4. Keep `Test_Assembly_Mechanics.unity` as the integration sandbox.
+5. Preserve the package-driven preview path as a fallback diagnostic while Phase 8 interaction comes online.
 
 ---
 
@@ -221,7 +252,23 @@ After each phase or major validated integration pass, update this file with:
 - current completed phase
 - what was added
 - how to visualize or validate it
+- what was added to the test scene to make the phase observable
 - known limitations
 - next recommended phase
+
+### Scene Visualization Rule
+
+Every completed phase must update `Assets/Scenes/Test_Assembly_Mechanics.unity` so the phase's work is visible when the scene is opened and played.
+
+This typically means adding or updating a lightweight driver or harness component that:
+
+- exercises the phase's systems on Play
+- exposes key runtime state in the inspector
+- provides context menu actions for manual testing
+- logs diagnostic output to the console
+
+These components are diagnostic bridges. They must not own runtime truth or alter the architecture. When a later phase provides real systems that replace a driver's role, the driver should be simplified or removed.
+
+The test scene is the project's living proof-of-work. It should always reflect the cumulative state of all completed phases.
 
 If this file and the code disagree, update the file immediately as part of the same changeset.

@@ -97,6 +97,21 @@ Examples:
 
 Validation steps should allow confirmation in less than 2 minutes.
 
+## 5.1 Phase Completion Scene Update
+
+When a phase is completed, the test scene (`Assets/Scenes/Test_Assembly_Mechanics.unity`) must be updated so the phase's work is observable.
+
+This may involve:
+
+- adding a lightweight driver or harness MonoBehaviour that exercises the new systems on Play
+- exposing runtime state in the inspector via serialized fields
+- providing context menu actions for manual testing
+- ensuring console logs confirm expected behavior
+
+These scene components are **diagnostic bridges only**. They must not own runtime truth or introduce architectural coupling. They call public APIs, read state, and display results.
+
+The goal is that opening the test scene and pressing Play always shows the current state of the project, from Phase 1 through the latest completed phase.
+
 ---
 
 # 6. Commit Discipline
