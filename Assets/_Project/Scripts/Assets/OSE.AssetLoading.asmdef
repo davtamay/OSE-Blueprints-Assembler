@@ -1,0 +1,17 @@
+{
+    "name": "OSE.AssetLoading",
+    "rootNamespace": "OSE.AssetLoading",
+    "references": [
+        "OSE.Core",
+        "OSE.Content"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

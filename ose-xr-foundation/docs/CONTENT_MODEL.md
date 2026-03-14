@@ -1,0 +1,182 @@
+# CONTENT_MODEL.md
+## OSE XR Foundation – Conceptual Content Model
+
+This document describes the conceptual structure of machine training content.
+
+For canonical schema definitions see:
+
+DATA_SCHEMA.md
+
+---
+
+# Purpose
+
+The content model defines how Open Source Ecology blueprints are transformed into structured XR training experiences.
+
+The model supports:
+
+- modular machine assemblies
+- reusable components
+- scalable machine libraries
+- deterministic assembly validation
+
+---
+
+# Content Hierarchy
+
+Machine content is structured as:
+
+Machine
+ └ Assembly
+     └ Subassembly
+         └ Step
+             ├ Part
+             ├ Tool
+             └ Instruction
+
+---
+
+# Machine
+
+Represents a complete buildable machine.
+
+Examples:
+
+- Brick Press
+- Tractor
+- CNC Torch Table
+- Power Cube
+
+Contains:
+
+- metadata
+- assemblies
+- references
+- asset manifests
+
+---
+
+# Assembly
+
+Major subsystem of a machine.
+
+Examples:
+
+- frame
+- hydraulic system
+- electrical system
+- engine mount
+
+---
+
+# Subassembly
+
+Mechanical grouping inside an assembly.
+
+Examples:
+
+- wheel hub
+- pump mount
+- frame cross‑brace
+
+---
+
+# Step
+
+A single instructional action.
+
+Examples:
+
+- place component
+- insert bolt
+- tighten fastener
+- align part
+
+Each step defines:
+
+- instructions
+- required parts
+- required tools
+- validation rules
+
+---
+
+# Parts
+
+Physical components used during assembly.
+
+Examples:
+
+- bolts
+- plates
+- bearings
+- hoses
+
+Parts may include:
+
+- 3D assets
+- metadata
+- purchasing references
+
+---
+
+# Tools
+
+Instruments used during assembly.
+
+Examples:
+
+- wrench
+- drill
+- welder
+- socket
+
+---
+
+# Instructions
+
+Guidance provided to the learner.
+
+May include:
+
+- text
+- diagrams
+- animations
+- hints
+- validation feedback
+
+---
+
+# Runtime Relationship
+
+During runtime:
+
+- content packages are loaded
+- assembly steps drive the training session
+- validation confirms correct actions
+- UI presents contextual information
+
+---
+
+# Design Principles
+
+Modularity – machines decomposed into reusable pieces.
+
+Scalability – supports simple tools up to complex builds.
+
+Educational clarity – steps scaffold learning.
+
+Data‑driven design – machines defined by structured data, not hardcoded logic.
+
+---
+
+# Relationship to DATA_SCHEMA.md
+
+CONTENT_MODEL.md describes the conceptual structure.
+
+DATA_SCHEMA.md defines:
+
+- canonical JSON schema
+- field definitions
+- validation constraints
+- package structure

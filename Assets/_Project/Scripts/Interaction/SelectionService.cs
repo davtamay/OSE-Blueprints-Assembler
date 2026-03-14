@@ -1,0 +1,82 @@
+using System;
+using OSE.Core;
+using OSE.Input;
+using UnityEngine;
+
+namespace OSE.Interaction
+{
+    /// <summary>
+    /// Tracks which interactable is currently selected or inspected.
+    /// Consumes canonical actions from IInputRouter; never polls XRI directly.
+    /// </summary>
+    public class SelectionService : MonoBehaviour
+    {
+        public event Action<GameObject> OnSelected;
+        public event Action<GameObject> OnDeselected;
+        public event Action<GameObject> OnInspected;
+
+        public GameObject CurrentSelection { get; private set; }
+        public GameObject CurrentInspection { get; private set; }
+
+        [SerializeField] private InputActionRouter _router;
+
+        private void Awake()
+        {
+            if (_router == null)
+                _router = FindFirstObjectByType<InputActionRouter>();
+        }
+
+        private void OnEnable()
+        {
+            if (_router != null)
+                _router.OnAction += HandleAction;
+        }
+
+        private void OnDisable()
+        {
+            if (_router != null)
+                _router.OnAction -= HandleAction;
+        }
+
+        private void HandleAction(CanonicalAction action)
+        {
+            switch (action)
+            {
+                case CanonicalAction.Select:
+                    OseLog.VerboseInfo("[Selection] Select action received.");
+                    break;
+                case CanonicalAction.Inspect:
+                    OseLog.VerboseInfo("[Selection] Inspect action received.");
+                    break;
+                case CanonicalAction.Cancel:
+                    Deselect();
+                    break;
+            }
+        }
+
+        public void NotifySelected(GameObject target)
+        {
+            if (CurrentSelection == target) return;
+            CurrentSelection = target;
+            OseLog.VerboseInfo($"[Selection] Selected: {target?.name}");
+            OnSelected?.Invoke(target);
+        }
+
+        public void NotifyInspected(GameObject target)
+        {
+            CurrentInspection = target;
+            OseLog.VerboseInfo($"[Selection] Inspected: {target?.name}");
+            OnInspected?.Invoke(target);
+        }
+
+        public void Deselect()
+        {
+            if (CurrentSelection == null) return;
+            var previous = CurrentSelection;
+            CurrentSelection = null;
+            CurrentInspection = null;
+            OseLog.VerboseInfo($"[Selection] Deselected: {previous?.name}");
+            OnDeselected?.Invoke(previous);
+        }
+    }
+}

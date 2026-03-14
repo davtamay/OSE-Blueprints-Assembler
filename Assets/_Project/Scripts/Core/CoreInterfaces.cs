@@ -1,0 +1,82 @@
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace OSE.Core
+{
+    public interface IContentLoader
+    {
+        Task<MachineSessionState> LoadMachineAsync(string machineId, CancellationToken cancellationToken = default);
+        bool IsVersionCompatible(string machineId, string contentVersion);
+    }
+
+    public interface IPlacementValidator
+    {
+        PlacementValidationResult Validate(PlacementValidationRequest request);
+    }
+
+    public interface IEffectPlayer
+    {
+        void Play(EffectRole role, UnityEngine.Vector3 worldPosition);
+        void Stop(EffectRole role);
+        bool IsPlaying(EffectRole role);
+    }
+
+    public interface IPersistenceService
+    {
+        void SaveSession(MachineSessionState state);
+        MachineSessionState LoadSession(string machineId);
+        bool HasSavedSession(string machineId);
+        void ClearSession(string machineId);
+    }
+
+    public interface IInputRouter
+    {
+        event System.Action<CanonicalAction> OnAction;
+        void SetContext(InputContext context);
+        InputContext CurrentContext { get; }
+    }
+
+    public interface IPresentationAdapter
+    {
+        void ShowInstruction(string instructionKey);
+        void ShowHint(string hintKey);
+        void ShowPartInfo(string partId);
+        void ShowToolInfo(string toolId);
+        void ShowProgressUpdate(int completedSteps, int totalSteps);
+        void ShowMilestoneFeedback(string milestoneKey);
+        void HideAll();
+    }
+
+    public enum CanonicalAction
+    {
+        Select,
+        Inspect,
+        Grab,
+        Move,
+        Rotate,
+        Place,
+        Confirm,
+        Cancel,
+        Navigate,
+        Zoom,
+        Orbit,
+        RequestHint,
+        Next,
+        Previous,
+        Pause,
+        TogglePhysicalMode,
+        ChallengeRestart
+    }
+
+    public enum InputContext
+    {
+        None,
+        Frontend,
+        MachineSelection,
+        SessionActive,
+        StepInteraction,
+        Inspection,
+        Paused,
+        ChallengeSummary
+    }
+}

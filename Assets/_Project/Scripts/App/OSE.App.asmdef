@@ -1,0 +1,17 @@
+{
+    "name": "OSE.App",
+    "rootNamespace": "OSE.App",
+    "references": [
+        "OSE.Core",
+        "OSE.Platform"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

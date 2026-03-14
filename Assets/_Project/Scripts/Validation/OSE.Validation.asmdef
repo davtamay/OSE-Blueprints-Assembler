@@ -1,0 +1,18 @@
+{
+    "name": "OSE.Validation",
+    "rootNamespace": "OSE.Validation",
+    "references": [
+        "OSE.Core",
+        "OSE.Content",
+        "OSE.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,27 @@
+{
+    "name": "OSE.Tests.PlayMode",
+    "rootNamespace": "OSE.Tests.PlayMode",
+    "references": [
+        "OSE.Core",
+        "OSE.Content",
+        "OSE.Runtime",
+        "OSE.Interaction",
+        "OSE.Validation",
+        "OSE.Challenge",
+        "OSE.Persistence",
+        "OSE.UI"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

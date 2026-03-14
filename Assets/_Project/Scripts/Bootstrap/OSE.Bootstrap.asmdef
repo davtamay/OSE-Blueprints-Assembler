@@ -1,0 +1,20 @@
+{
+    "name": "OSE.Bootstrap",
+    "rootNamespace": "OSE.Bootstrap",
+    "references": [
+        "OSE.Core",
+        "OSE.App",
+        "OSE.Platform",
+        "OSE.Content",
+        "OSE.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

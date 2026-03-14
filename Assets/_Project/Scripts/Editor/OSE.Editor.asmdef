@@ -1,0 +1,21 @@
+{
+    "name": "OSE.Editor",
+    "rootNamespace": "OSE.Editor",
+    "references": [
+        "OSE.Core",
+        "OSE.Content",
+        "OSE.Runtime",
+        "OSE.Authoring"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,16 @@
+{
+    "name": "OSE.Content",
+    "rootNamespace": "OSE.Content",
+    "references": [
+        "OSE.Core"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
