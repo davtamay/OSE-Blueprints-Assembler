@@ -39,6 +39,8 @@ namespace OSE.Runtime.Preview
         menuName = "OSE/Preview/Mechanics Scene Visual Profile")]
     public sealed class MechanicsSceneVisualProfile : ScriptableObject
     {
+        public static event Action<MechanicsSceneVisualProfile> Changed;
+
         [Header("Visibility")]
         [SerializeField] private bool _previewInEditMode = true;
         [SerializeField] private bool _showGeometryPreview = true;
@@ -97,11 +99,14 @@ namespace OSE.Runtime.Preview
             {
                 ApplyDefaults();
             }
+
+            NotifyChanged();
         }
 
         private void OnValidate()
         {
             _playModeAdvanceDelay = Mathf.Max(0f, _playModeAdvanceDelay);
+            NotifyChanged();
         }
 
         private void ApplyDefaults()
@@ -128,6 +133,11 @@ namespace OSE.Runtime.Preview
                 _samplePartStart.color);
             _animateSamplePartOnPlay = true;
             _playModeAdvanceDelay = 2.5f;
+        }
+
+        private void NotifyChanged()
+        {
+            Changed?.Invoke(this);
         }
     }
 }

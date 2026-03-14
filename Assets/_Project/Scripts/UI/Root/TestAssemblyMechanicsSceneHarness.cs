@@ -34,9 +34,15 @@ namespace OSE.UI.Root
 
         private void OnEnable()
         {
+            MechanicsSceneVisualProfile.Changed += HandleProfileChanged;
             _previewStateApplied = false;
             _playModeSequenceStarted = false;
             ConfigureForCurrentMode();
+        }
+
+        private void OnDisable()
+        {
+            MechanicsSceneVisualProfile.Changed -= HandleProfileChanged;
         }
 
         private void Update()
@@ -82,6 +88,8 @@ namespace OSE.UI.Root
 
         private void OnDestroy()
         {
+            MechanicsSceneVisualProfile.Changed -= HandleProfileChanged;
+
             if (_builtInVisualProfile == null)
             {
                 return;
@@ -279,6 +287,16 @@ namespace OSE.UI.Root
             _previewStateApplied = false;
             _playModeSequenceStarted = false;
             ConfigureForCurrentMode();
+        }
+
+        private void HandleProfileChanged(MechanicsSceneVisualProfile profile)
+        {
+            if (profile == null || profile != _visualProfile)
+            {
+                return;
+            }
+
+            RefreshPreview();
         }
 
         [ContextMenu("Clear Preview")]
