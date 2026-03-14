@@ -52,17 +52,6 @@ namespace OSE.Runtime.Preview
         [Header("Floor")]
         [SerializeField] private PreviewObjectAppearance _floor = default;
 
-        [Header("Target Marker")]
-        [SerializeField] private PreviewObjectAppearance _targetMarker = default;
-
-        [Header("Sample Part")]
-        [SerializeField] private PreviewObjectAppearance _samplePartStart = default;
-        [SerializeField] private PreviewObjectAppearance _samplePartPlay = default;
-
-        [Header("Play Mode Motion")]
-        [SerializeField] private bool _animateSamplePartOnPlay = true;
-        [SerializeField, Min(0f)] private float _playModeAdvanceDelay = 2.5f;
-
         public bool PreviewInEditMode => _previewInEditMode;
 
         public bool ShowGeometryPreview => _showGeometryPreview;
@@ -72,16 +61,6 @@ namespace OSE.Runtime.Preview
         public PreviewCameraSettings Camera => _camera;
 
         public PreviewObjectAppearance Floor => _floor;
-
-        public PreviewObjectAppearance TargetMarker => _targetMarker;
-
-        public PreviewObjectAppearance SamplePartStart => _samplePartStart;
-
-        public PreviewObjectAppearance SamplePartPlay => _samplePartPlay;
-
-        public bool AnimateSamplePartOnPlay => _animateSamplePartOnPlay;
-
-        public float PlayModeAdvanceDelay => _playModeAdvanceDelay;
 
         public static MechanicsSceneVisualProfile CreateBuiltInDefault()
         {
@@ -105,7 +84,6 @@ namespace OSE.Runtime.Preview
 
         private void OnValidate()
         {
-            _playModeAdvanceDelay = Mathf.Max(0f, _playModeAdvanceDelay);
             NotifyChanged();
         }
 
@@ -119,20 +97,6 @@ namespace OSE.Runtime.Preview
                 Vector3.zero,
                 new Vector3(1.7f, 1f, 1.7f),
                 new Color(0.20f, 0.24f, 0.28f, 1f));
-            _targetMarker = PreviewObjectAppearance.Create(
-                new Vector3(0f, 0.04f, 0f),
-                new Vector3(0.9f, 0.04f, 0.9f),
-                new Color(0.20f, 0.84f, 0.58f, 1f));
-            _samplePartStart = PreviewObjectAppearance.Create(
-                new Vector3(-2f, 0.55f, 0f),
-                new Vector3(1.45f, 0.28f, 0.38f),
-                new Color(0.94f, 0.55f, 0.18f, 1f));
-            _samplePartPlay = PreviewObjectAppearance.Create(
-                new Vector3(-0.6f, 0.55f, 0.15f),
-                new Vector3(1.35f, 0.28f, 0.38f),
-                _samplePartStart.color);
-            _animateSamplePartOnPlay = true;
-            _playModeAdvanceDelay = 2.5f;
         }
 
         private void NotifyChanged()

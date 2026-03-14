@@ -2,6 +2,8 @@
     "name": "OSE.Editor",
     "rootNamespace": "OSE.Editor",
     "references": [
+        "glTFast",
+        "glTFast.Export",
         "OSE.Core",
         "OSE.Content",
         "OSE.Runtime",

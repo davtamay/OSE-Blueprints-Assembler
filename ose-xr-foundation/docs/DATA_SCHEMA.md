@@ -342,7 +342,6 @@ Represents an individual build item.
 - `quantity` : integer
 - `toolIds` : array<string> (optional)
 - `assetRef` : string
-- `ghostAssetRef` : string (optional)
 - `searchTerms` : array<string> (optional)
 - `allowPhysicalSubstitution` : boolean
 - `defaultOrientationHint` : string (optional)
@@ -361,7 +360,6 @@ Represents an individual build item.
   "quantity": 1,
   "toolIds": ["tool_wrench_13mm"],
   "assetRef": "assets/parts/corner_bracket_a.glb",
-  "ghostAssetRef": "assets/parts/corner_bracket_a_ghost.glb",
   "searchTerms": ["steel corner bracket", "power cube frame bracket"],
   "allowPhysicalSubstitution": true
 }

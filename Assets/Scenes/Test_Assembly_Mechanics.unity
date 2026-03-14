@@ -319,8 +319,9 @@ GameObject:
   - component: {fileID: 840000001}
   - component: {fileID: 840000002}
   - component: {fileID: 840000003}
-  - component: {fileID: 840000004}
   - component: {fileID: 840000005}
+  - component: {fileID: 840000006}
+  - component: {fileID: 840000004}
   m_Layer: 0
   m_Name: Test Scene Setup
   m_TagString: Untagged
@@ -365,25 +366,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 840000000}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c852ae79c654334ab276927b4ad789d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Script: {fileID: 11500000, guid: b8f4410929bda1141a3f7fbbf5fb0e3c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
   _visualProfile: {fileID: 11400000, guid: 9304e1f02c024ec0b0c64fdfe26af7f9, type: 2}
---- !u!114 &840000004
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 840000000}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d3c1f6528f1d4324a8d8db0fef7b8a91, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _previewProfile: {fileID: 11400000, guid: e690c2bce8f24f8b9e81dd4f536a9124, type: 2}
-  _statusMessage: Awaiting package load.
-  _loadedMachineName: 
 --- !u!114 &840000005
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -393,12 +379,38 @@ MonoBehaviour:
   m_GameObject: {fileID: 840000000}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a7b3c9d1e5f6483290ab1def34567890, type: 3}
+  m_Script: {fileID: 11500000, guid: 5d26e42ea8d053e489d9063a4a34f033, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+--- !u!114 &840000006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 840000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f7585959fc78844489be059e6dd274e6, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+--- !u!114 &840000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 840000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8c4d2e1f3a5467891cd2eaf45678901, type: 3}
   m_Name:
   m_EditorClassIdentifier:
   _packageId: tutorial_build
   _sessionMode: 1
   _autoStartOnPlay: 1
+  _previewInEditMode: 1
+  _previewStepSequenceIndex: 1
   _lifecycle: "\u2014"
   _currentAssemblyId: "\u2014"
   _currentStepId: "\u2014"

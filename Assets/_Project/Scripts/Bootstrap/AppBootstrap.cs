@@ -25,6 +25,12 @@ namespace OSE.Bootstrap
             var sessionController = new MachineSessionController();
             ServiceRegistry.Register<MachineSessionController>(sessionController);
 
+            var partController = new PartRuntimeController();
+            ServiceRegistry.Register<PartRuntimeController>(partController);
+
+            var placementValidator = new PlacementValidator();
+            ServiceRegistry.Register<IPlacementValidator>(placementValidator);
+
             OseLog.Info("[Bootstrap] Core services registered.");
         }
 

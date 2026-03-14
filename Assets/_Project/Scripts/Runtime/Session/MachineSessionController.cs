@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using OSE.App;
 using OSE.Content;
 using OSE.Content.Loading;
 using OSE.Core;
@@ -18,12 +19,22 @@ namespace OSE.Runtime
         private MachineSessionState _sessionState;
         private MachinePackageDefinition _package;
         private AssemblyRuntimeController _assemblyController;
+        private PartRuntimeController _partController;
         private string[] _assemblyOrder;
         private int _currentAssemblyIndex;
+
+        /// <summary>
+        /// Fires after the package is loaded and controllers are initialized,
+        /// but before the first assembly begins (i.e. before any StepStateChanged events).
+        /// Subscribers can use this to set up scene objects that need to exist before
+        /// step events fire.
+        /// </summary>
+        public event Action<MachinePackageDefinition> PackageReady;
 
         public MachineSessionState SessionState => _sessionState;
         public MachinePackageDefinition Package => _package;
         public AssemblyRuntimeController AssemblyController => _assemblyController;
+        public PartRuntimeController PartController => _partController;
 
         /// <summary>
         /// Loads a machine package and starts a new session.
@@ -79,11 +90,20 @@ namespace OSE.Runtime
             _assemblyController.Initialize(_package);
             _assemblyController.OnAssemblyCompleted += HandleAssemblyCompleted;
 
+            // Initialize part runtime controller if registered
+            if (ServiceRegistry.TryGet<PartRuntimeController>(out _partController))
+            {
+                _partController.Initialize(_package);
+            }
+
             // Subscribe to step events to keep session state current
             RuntimeEventBus.Subscribe<StepStateChanged>(HandleStepStateChanged);
 
             _currentAssemblyIndex = 0;
             SetLifecycle(SessionLifecycle.SessionActive);
+
+            // Notify listeners before any step events fire
+            PackageReady?.Invoke(_package);
 
             // Begin the first assembly
             BeginCurrentAssembly();
@@ -119,6 +139,12 @@ namespace OSE.Runtime
                 return;
 
             RuntimeEventBus.Unsubscribe<StepStateChanged>(HandleStepStateChanged);
+
+            if (_partController != null)
+            {
+                _partController.Dispose();
+                _partController = null;
+            }
 
             if (_assemblyController != null)
             {

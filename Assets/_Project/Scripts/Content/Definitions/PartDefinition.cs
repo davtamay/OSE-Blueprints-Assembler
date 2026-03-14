@@ -15,7 +15,6 @@ namespace OSE.Content
         public int quantity;
         public string[] toolIds;
         public string assetRef;
-        public string ghostAssetRef;
         public string[] searchTerms;
         public bool allowPhysicalSubstitution;
         public string defaultOrientationHint;

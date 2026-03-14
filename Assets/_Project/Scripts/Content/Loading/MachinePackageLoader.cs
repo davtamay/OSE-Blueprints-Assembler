@@ -46,6 +46,7 @@ namespace OSE.Content.Loading
                 }
 
                 MachinePackageValidationResult validation = MachinePackageValidator.Validate(package);
+                package.packageId = sanitizedPackageId;
                 if (validation.HasErrors)
                 {
                     OseLog.Error($"[Content] Package '{sanitizedPackageId}' failed validation.\n{validation.FormatSummary()}");
@@ -81,8 +82,22 @@ namespace OSE.Content.Loading
             }
         }
 
-        public static string BuildMachineJsonPath(string packageId) =>
-            Path.Combine(Application.streamingAssetsPath, MachinePackagesFolderName, packageId, MachineJsonFileName);
+        public static string BuildMachineJsonPath(string packageId)
+        {
+#if UNITY_EDITOR
+            // In the editor, read directly from the authoring folder so you never
+            // need to sync to StreamingAssets just to press Play or preview content.
+            string authoringPath = Path.Combine(
+                Application.dataPath,
+                "_Project", "Data", "Packages",
+                packageId, MachineJsonFileName);
+            if (File.Exists(authoringPath))
+                return authoringPath;
+#endif
+            return Path.Combine(
+                Application.streamingAssetsPath,
+                MachinePackagesFolderName, packageId, MachineJsonFileName);
+        }
 
         private static async Task<string> ReadTextAsync(
             string path,

@@ -3,9 +3,11 @@
     "rootNamespace": "OSE.UI",
     "references": [
         "OSE.App",
+        "OSE.Content",
         "OSE.Core",
         "OSE.Presentation",
-        "OSE.Runtime"
+        "OSE.Runtime",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

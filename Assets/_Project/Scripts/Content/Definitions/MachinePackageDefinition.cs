@@ -5,6 +5,12 @@ namespace OSE.Content
     [Serializable]
     public sealed class MachinePackageDefinition
     {
+        /// <summary>
+        /// Set by MachinePackageLoader after JSON deserialization.
+        /// Matches the folder name under Assets/_Project/Data/Packages/ and StreamingAssets/MachinePackages/.
+        /// Not persisted in machine.json — JsonUtility skips [NonSerialized] fields.
+        /// </summary>
+        [NonSerialized] public string packageId;
         public string schemaVersion;
         public string packageVersion;
         public MachineDefinition machine;
@@ -19,6 +25,7 @@ namespace OSE.Content
         public TargetDefinition[] targets;
         public ChallengeConfigDefinition challengeConfig;
         public AssetManifestDefinition assetManifest;
+        public PackagePreviewConfig previewConfig;
 
         public AssemblyDefinition[] GetAssemblies() => assemblies ?? Array.Empty<AssemblyDefinition>();
 

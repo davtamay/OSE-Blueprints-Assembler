@@ -104,6 +104,42 @@ namespace OSE.Core
         }
     }
 
+    // ── Part Events ──
+
+    public readonly struct PartStateChanged
+    {
+        public readonly string PartId;
+        public readonly string StepId;
+        public readonly PartPlacementState Previous;
+        public readonly PartPlacementState Current;
+
+        public PartStateChanged(string partId, string stepId, PartPlacementState previous, PartPlacementState current)
+        {
+            PartId = partId;
+            StepId = stepId;
+            Previous = previous;
+            Current = current;
+        }
+    }
+
+    public readonly struct PlacementAttempted
+    {
+        public readonly string PartId;
+        public readonly string TargetId;
+        public readonly bool IsValid;
+        public readonly float PositionError;
+        public readonly float RotationError;
+
+        public PlacementAttempted(string partId, string targetId, bool isValid, float positionError, float rotationError)
+        {
+            PartId = partId;
+            TargetId = targetId;
+            IsValid = isValid;
+            PositionError = positionError;
+            RotationError = rotationError;
+        }
+    }
+
     // ── Assembly Events ──
 
     public readonly struct AssemblyStarted
