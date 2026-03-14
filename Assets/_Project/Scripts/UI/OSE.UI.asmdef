@@ -4,7 +4,8 @@
     "references": [
         "OSE.App",
         "OSE.Core",
-        "OSE.Presentation"
+        "OSE.Presentation",
+        "OSE.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
