@@ -7,6 +7,8 @@ namespace OSE.Runtime.Preview
         menuName = "OSE/Preview/Scene Content Preview Profile")]
     public sealed class SceneContentPreviewProfile : ScriptableObject
     {
+        public static event System.Action<SceneContentPreviewProfile> Changed;
+
         [Header("Content Source")]
         [SerializeField] private bool _previewInEditMode = true;
         [SerializeField] private string _packageId = "tutorial_build";
@@ -36,11 +38,22 @@ namespace OSE.Runtime.Preview
             return profile;
         }
 
+        private void OnEnable()
+        {
+            NotifyChanged();
+        }
+
         private void OnValidate()
         {
             _previewStepSequenceIndex = Mathf.Max(1, _previewStepSequenceIndex);
             _playModeStepSequenceIndex = Mathf.Max(1, _playModeStepSequenceIndex);
             _playModeAdvanceDelay = Mathf.Max(0f, _playModeAdvanceDelay);
+            NotifyChanged();
+        }
+
+        private void NotifyChanged()
+        {
+            Changed?.Invoke(this);
         }
     }
 }

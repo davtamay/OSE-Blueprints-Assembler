@@ -28,15 +28,22 @@ namespace OSE.Runtime.Preview
 
         private void OnEnable()
         {
+            SceneContentPreviewProfile.Changed += HandleProfileChanged;
             _previewApplied = false;
             _playModeAdvanceStarted = false;
             RequestRefresh();
+        }
+
+        private void OnDisable()
+        {
+            SceneContentPreviewProfile.Changed -= HandleProfileChanged;
         }
 
         private void Update()
         {
             if (!Application.isPlaying && !ActiveProfile.PreviewInEditMode)
             {
+                HidePreviewIfPossible();
                 return;
             }
 
@@ -60,6 +67,8 @@ namespace OSE.Runtime.Preview
 
         private void OnDestroy()
         {
+            SceneContentPreviewProfile.Changed -= HandleProfileChanged;
+
             if (_builtInPreviewProfile == null)
             {
                 return;
@@ -81,6 +90,13 @@ namespace OSE.Runtime.Preview
         {
             _previewApplied = false;
             _playModeAdvanceStarted = false;
+
+            if (!Application.isPlaying && !ActiveProfile.PreviewInEditMode)
+            {
+                HidePreviewIfPossible();
+                return;
+            }
+
             _ = ReloadPackageAsync(++_loadVersion);
         }
 
@@ -205,6 +221,26 @@ namespace OSE.Runtime.Preview
 
         private bool ShouldApplyPreviewNow() =>
             Application.isPlaying || ActiveProfile.PreviewInEditMode;
+
+        private void HandleProfileChanged(SceneContentPreviewProfile profile)
+        {
+            if (profile == null || profile != _previewProfile)
+            {
+                return;
+            }
+
+            RequestRefresh();
+        }
+
+        private void HidePreviewIfPossible()
+        {
+            if (!ServiceRegistry.TryGet<IPresentationAdapter>(out IPresentationAdapter presentationAdapter))
+            {
+                return;
+            }
+
+            presentationAdapter.HideAll();
+        }
 
         private static StepDefinition ResolveStep(StepDefinition[] orderedSteps, int sequenceIndex)
         {
