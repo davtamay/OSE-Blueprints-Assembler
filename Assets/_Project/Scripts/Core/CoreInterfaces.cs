@@ -38,14 +38,19 @@ namespace OSE.Core
 
     public interface IPresentationAdapter
     {
+        void SetSessionMode(SessionMode mode);
+        bool IsHintDisplayAllowed { get; }
         void ShowInstruction(string instructionKey);
         void ShowHint(string hintKey);
+        void ShowHintContent(string title, string message, string hintType);
         void ShowPartInfo(string partId);
         void ShowToolInfo(string toolId);
         void ShowProgressUpdate(int completedSteps, int totalSteps);
         void ShowMilestoneFeedback(string milestoneKey);
-        void ShowStepShell(int currentStepNumber, int totalSteps, string title, string instruction);
+        void ShowStepShell(int currentStepNumber, int totalSteps, string title, string instruction, bool showConfirmButton = false, bool showHintButton = false, ConfirmGate confirmGate = ConfirmGate.None);
         void ShowPartInfoShell(string partName, string function, string material, string tool, string searchTerms);
+        void ShowChallengeMetrics(int hintsUsed, int failedAttempts, float currentStepSeconds, float totalSeconds, bool challengeActive);
+        void ShowStepCompletionToast(string message);
         void HideAll();
     }
 
@@ -80,5 +85,12 @@ namespace OSE.Core
         Inspection,
         Paused,
         ChallengeSummary
+    }
+
+    public enum ConfirmGate
+    {
+        None,
+        SelectPart,
+        RequestHint
     }
 }

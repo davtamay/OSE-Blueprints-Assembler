@@ -3,6 +3,13 @@ using OSE.Content;
 using OSE.Core;
 using OSE.Runtime.Preview;
 using UnityEngine;
+using UnityEngine.XR.Interaction.Toolkit;
+using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.Receiver.Rendering;
+using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.Rendering;
+using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.State;
+using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.Theme;
+using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.Theme.Primitives;
+using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 namespace OSE.UI.Root
 {
@@ -20,6 +27,8 @@ namespace OSE.UI.Root
     public sealed class PackagePartSpawner : MonoBehaviour
     {
         private const string SamplePartName = "Sample Beam";
+        private static readonly Color HoveredAffordanceColor = new Color(0.40f, 0.85f, 1.0f, 1.0f);
+        private static readonly Color SelectedAffordanceColor = new Color(1.0f, 0.85f, 0.2f, 1.0f);
 
         private PreviewSceneSetup _setup;
         private MachinePackageDefinition _currentPackage;
@@ -140,6 +149,7 @@ namespace OSE.UI.Root
         private void SpawnPackageParts()
         {
             _spawnedParts.Clear();
+            bool enableRuntimeGrab = Application.isPlaying;
 
             if (_currentPackage?.parts == null || _currentPackage.parts.Length == 0)
             {
@@ -157,6 +167,8 @@ namespace OSE.UI.Root
                 {
                     if (Application.isPlaying)
                         EnsureColliders(existing.gameObject);
+                    if (enableRuntimeGrab)
+                        TryEnableXRGrabInteractable(existing.gameObject);
                     _spawnedParts.Add(existing.gameObject);
                     continue;
                 }
@@ -164,6 +176,8 @@ namespace OSE.UI.Root
                 GameObject go = TryLoadPackageAsset(part.assetRef)
                              ?? GetOrCreatePrimitive(part.id, PrimitiveType.Cube);
                 go.name = part.id;
+                if (enableRuntimeGrab)
+                    TryEnableXRGrabInteractable(go);
                 _spawnedParts.Add(go);
             }
 
@@ -209,6 +223,7 @@ namespace OSE.UI.Root
                 partGo.transform.SetLocalPositionAndRotation(pos, rot);
                 partGo.transform.localScale = scale;
                 MaterialHelper.Apply(partGo, "Preview Part Material", col);
+                TryApplyAffordanceState(partGo, AffordanceStateShortcuts.idle);
             }
         }
 
@@ -262,6 +277,158 @@ namespace OSE.UI.Root
             prim.name = name;
             prim.transform.SetParent(_setup.PreviewRoot, false);
             return prim;
+        }
+
+        private static void TryEnableXRGrabInteractable(GameObject target)
+        {
+            if (target == null)
+                return;
+
+            XRGrabInteractable grabInteractable = target.GetComponent<XRGrabInteractable>();
+            if (grabInteractable == null)
+            {
+                var rb = target.GetComponent<Rigidbody>();
+                if (rb == null)
+                    rb = target.AddComponent<Rigidbody>();
+
+                rb.isKinematic = true;
+                rb.useGravity = false;
+
+                grabInteractable = target.AddComponent<XRGrabInteractable>();
+            }
+
+            EnsurePartColorAffordance(target, grabInteractable);
+            TryApplyAffordanceState(target, AffordanceStateShortcuts.idle);
+        }
+
+        private static void EnsurePartColorAffordance(GameObject target, XRGrabInteractable grabInteractable)
+        {
+            if (target == null || grabInteractable == null)
+                return;
+
+            var stateProvider = target.GetComponent<XRInteractableAffordanceStateProvider>();
+            if (stateProvider == null)
+                stateProvider = target.AddComponent<XRInteractableAffordanceStateProvider>();
+
+            stateProvider.interactableSource = grabInteractable;
+            stateProvider.transitionDuration = 0.08f;
+            stateProvider.ignoreHoverEvents = true;
+            stateProvider.ignoreHoverPriorityEvents = true;
+            stateProvider.ignoreFocusEvents = true;
+            stateProvider.ignoreSelectEvents = true;
+            stateProvider.ignoreActivateEvents = true;
+            stateProvider.selectClickAnimationMode = XRInteractableAffordanceStateProvider.SelectClickAnimationMode.None;
+            stateProvider.activateClickAnimationMode = XRInteractableAffordanceStateProvider.ActivateClickAnimationMode.None;
+
+            ColorAffordanceTheme theme = CreatePartColorAffordanceTheme();
+            var renderers = target.GetComponentsInChildren<Renderer>(includeInactive: true);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Renderer renderer = renderers[i];
+                if (renderer == null || renderer.sharedMaterial == null)
+                    continue;
+
+                var blockHelper = renderer.GetComponent<MaterialPropertyBlockHelper>();
+                if (blockHelper == null)
+                    blockHelper = renderer.gameObject.AddComponent<MaterialPropertyBlockHelper>();
+                blockHelper.rendererTarget = renderer;
+                blockHelper.materialIndex = 0;
+
+                var colorReceiver = renderer.GetComponent<ColorMaterialPropertyAffordanceReceiver>();
+                if (colorReceiver == null)
+                    colorReceiver = renderer.gameObject.AddComponent<ColorMaterialPropertyAffordanceReceiver>();
+
+                colorReceiver.affordanceStateProvider = stateProvider;
+                colorReceiver.replaceIdleStateValueWithInitialValue = true;
+                colorReceiver.materialPropertyBlockHelper = blockHelper;
+                colorReceiver.colorPropertyName = ResolveColorPropertyName(renderer.sharedMaterial);
+
+                colorReceiver.affordanceTheme = theme;
+            }
+        }
+
+        private static string ResolveColorPropertyName(Material material)
+        {
+            if (material != null)
+            {
+                if (material.HasProperty("_BaseColor"))
+                    return "_BaseColor";
+
+                if (material.HasProperty("_Color"))
+                    return "_Color";
+            }
+
+            return "_BaseColor";
+        }
+
+        private static ColorAffordanceTheme CreatePartColorAffordanceTheme()
+        {
+            var theme = new ColorAffordanceTheme
+            {
+                colorBlendMode = ColorBlendMode.Solid,
+                blendAmount = 1f
+            };
+            theme.SetAnimationCurve(AnimationCurve.Linear(0f, 0f, 1f, 1f));
+            theme.SetAffordanceThemeDataList(new List<AffordanceThemeData<Color>>
+            {
+                new AffordanceThemeData<Color>
+                {
+                    stateName = nameof(AffordanceStateShortcuts.disabled),
+                    animationStateStartValue = Color.clear,
+                    animationStateEndValue = Color.clear
+                },
+                new AffordanceThemeData<Color>
+                {
+                    stateName = nameof(AffordanceStateShortcuts.idle),
+                    animationStateStartValue = Color.clear,
+                    animationStateEndValue = Color.clear
+                },
+                new AffordanceThemeData<Color>
+                {
+                    stateName = nameof(AffordanceStateShortcuts.hovered),
+                    animationStateStartValue = HoveredAffordanceColor,
+                    animationStateEndValue = HoveredAffordanceColor
+                },
+                new AffordanceThemeData<Color>
+                {
+                    stateName = nameof(AffordanceStateShortcuts.hoveredPriority),
+                    animationStateStartValue = HoveredAffordanceColor,
+                    animationStateEndValue = HoveredAffordanceColor
+                },
+                new AffordanceThemeData<Color>
+                {
+                    stateName = nameof(AffordanceStateShortcuts.selected),
+                    animationStateStartValue = SelectedAffordanceColor,
+                    animationStateEndValue = SelectedAffordanceColor
+                },
+                new AffordanceThemeData<Color>
+                {
+                    stateName = nameof(AffordanceStateShortcuts.activated),
+                    animationStateStartValue = SelectedAffordanceColor,
+                    animationStateEndValue = SelectedAffordanceColor
+                },
+                new AffordanceThemeData<Color>
+                {
+                    stateName = nameof(AffordanceStateShortcuts.focused),
+                    animationStateStartValue = SelectedAffordanceColor,
+                    animationStateEndValue = SelectedAffordanceColor
+                }
+            });
+
+            return theme;
+        }
+
+        private static bool TryApplyAffordanceState(GameObject target, byte stateIndex, float transitionAmount = 1f)
+        {
+            if (target == null)
+                return false;
+
+            var stateProvider = target.GetComponent<XRInteractableAffordanceStateProvider>();
+            if (stateProvider == null)
+                return false;
+
+            stateProvider.UpdateAffordanceState(new AffordanceStateData(stateIndex, transitionAmount));
+            return true;
         }
 
         /// <summary>

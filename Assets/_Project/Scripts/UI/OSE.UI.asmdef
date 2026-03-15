@@ -5,8 +5,11 @@
         "OSE.App",
         "OSE.Content",
         "OSE.Core",
+        "OSE.Input",
+        "OSE.Interaction",
         "OSE.Presentation",
         "OSE.Runtime",
+        "Unity.XR.Interaction.Toolkit",
         "Unity.InputSystem"
     ],
     "includePlatforms": [],

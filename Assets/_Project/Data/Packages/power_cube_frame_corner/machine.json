@@ -40,8 +40,8 @@
         "subassembly_corner_bracket_unit"
       ],
       "stepIds": [
-        "step_place_frame_plate",
-        "step_attach_corner_bracket"
+        "step_stage_plate_and_bracket",
+        "step_fasten_bolts"
       ],
       "learningFocus": "Structural alignment before fastening."
     }
@@ -58,8 +58,8 @@
         "m8_hex_bolt"
       ],
       "stepIds": [
-        "step_place_frame_plate",
-        "step_attach_corner_bracket"
+        "step_stage_plate_and_bracket",
+        "step_fasten_bolts"
       ],
       "milestoneMessage": "The frame corner reinforcement is staged and ready for fastening."
     }
@@ -156,77 +156,37 @@
   ],
   "steps": [
     {
-      "id": "step_place_frame_plate",
-      "name": "Stage the frame plate",
+      "id": "step_stage_plate_and_bracket",
+      "name": "Stage the plate and bracket together",
       "assemblyId": "assembly_frame_corner",
       "subassemblyId": "subassembly_corner_bracket_unit",
       "sequenceIndex": 1,
-      "instructionText": "Place the frame plate so its outer edge lines up with the intended corner reference.",
-      "whyItMattersText": "A square foundation prevents cumulative frame error later in the build.",
+      "instructionText": "Place the frame plate and corner bracket into their reference positions. Both parts must be placed before the step completes.",
+      "whyItMattersText": "Staging both parts simultaneously lets you verify alignment before committing fasteners.",
       "requiredPartIds": [
-        "frame_plate_a"
+        "frame_plate_a",
+        "corner_bracket_a"
       ],
       "relevantToolIds": [
         "tool_square"
       ],
       "targetIds": [
-        "target_frame_plate_slot"
+        "target_frame_plate_slot",
+        "target_corner_bracket_slot_a"
       ],
-      "completionMode": "confirmation_only",
+      "completionMode": "virtual_or_physical",
       "validationRuleIds": [
-        "validation_frame_plate_presence"
+        "validation_frame_plate_presence",
+        "validation_corner_bracket_alignment"
       ],
       "hintIds": [
-        "hint_plate_corner_reference"
+        "hint_plate_corner_reference",
+        "hint_align_bracket_edge"
       ],
       "effectTriggerIds": [
         "effect_frame_preview_pulse"
       ],
       "allowAutoSnap": false,
-      "allowSkip": false,
-      "requiresConfirmation": true,
-      "challengeFlags": {
-        "penalizeHintUsage": false,
-        "penalizeInvalidPlacement": false,
-        "stricterToleranceAvailable": false
-      },
-      "eventTags": [
-        "power_cube",
-        "frame"
-      ]
-    },
-    {
-      "id": "step_attach_corner_bracket",
-      "name": "Attach the corner bracket",
-      "assemblyId": "assembly_frame_corner",
-      "subassemblyId": "subassembly_corner_bracket_unit",
-      "sequenceIndex": 2,
-      "instructionText": "Align the corner bracket against the plate and move it into position before tightening the bolts.",
-      "whyItMattersText": "The bracket reinforces the corner and helps the frame resist deformation once loaded.",
-      "requiredPartIds": [
-        "corner_bracket_a"
-      ],
-      "optionalPartIds": [
-        "m8_hex_bolt"
-      ],
-      "relevantToolIds": [
-        "tool_square",
-        "tool_wrench_13mm"
-      ],
-      "targetIds": [
-        "target_corner_bracket_slot_a"
-      ],
-      "completionMode": "virtual_or_physical",
-      "validationRuleIds": [
-        "validation_corner_bracket_alignment"
-      ],
-      "hintIds": [
-        "hint_align_bracket_edge"
-      ],
-      "effectTriggerIds": [
-        "effect_valid_placement_pulse"
-      ],
-      "allowAutoSnap": true,
       "allowSkip": false,
       "requiresConfirmation": false,
       "challengeFlags": {
@@ -236,7 +196,44 @@
       },
       "eventTags": [
         "power_cube",
-        "bracket"
+        "frame",
+        "multi_target"
+      ]
+    },
+    {
+      "id": "step_fasten_bolts",
+      "name": "Fasten the bolts",
+      "assemblyId": "assembly_frame_corner",
+      "subassemblyId": "subassembly_corner_bracket_unit",
+      "sequenceIndex": 2,
+      "instructionText": "Insert and tighten the M8 hex bolts to secure the bracket to the plate.",
+      "whyItMattersText": "The bolts lock the bracket in place so the frame corner resists deformation under load.",
+      "requiredPartIds": [
+        "m8_hex_bolt"
+      ],
+      "relevantToolIds": [
+        "tool_wrench_13mm"
+      ],
+      "targetIds": [
+        "target_bolt_slot"
+      ],
+      "completionMode": "confirmation_only",
+      "validationRuleIds": [],
+      "hintIds": [],
+      "effectTriggerIds": [
+        "effect_valid_placement_pulse"
+      ],
+      "allowAutoSnap": true,
+      "allowSkip": false,
+      "requiresConfirmation": true,
+      "challengeFlags": {
+        "penalizeHintUsage": false,
+        "penalizeInvalidPlacement": false,
+        "stricterToleranceAvailable": false
+      },
+      "eventTags": [
+        "power_cube",
+        "fastener"
       ]
     }
   ],
@@ -319,6 +316,17 @@
         "power_cube",
         "bracket"
       ]
+    },
+    {
+      "id": "target_bolt_slot",
+      "name": "Bolt Fastening Point",
+      "anchorRef": "anchors/power_cube/bolt_slot",
+      "description": "Where the M8 bolts secure the bracket to the plate.",
+      "associatedPartId": "m8_hex_bolt",
+      "tags": [
+        "power_cube",
+        "fastener"
+      ]
     }
   ],
   "challengeConfig": {
@@ -354,14 +362,48 @@
         "playPosition":  { "x": 0.0,  "y": 0.05, "z": 0.0 },
         "playRotation":  { "x": 0.0,  "y": 0.0,  "z": 0.0, "w": 1.0 },
         "playScale":     { "x": 1.2,  "y": 0.08, "z": 0.8 }
+      },
+      {
+        "partId":        "corner_bracket_a",
+        "startPosition": { "x": 2.0,  "y": 0.55, "z": 0.0 },
+        "startRotation": { "x": 0.0,  "y": 0.0,  "z": 0.0, "w": 1.0 },
+        "startScale":    { "x": 0.3,  "y": 0.6,  "z": 0.3 },
+        "color":         { "r": 0.75, "g": 0.55, "b": 0.30, "a": 1.0 },
+        "playPosition":  { "x": 0.55, "y": 0.15, "z": 0.35 },
+        "playRotation":  { "x": 0.0,  "y": 0.0,  "z": 0.0, "w": 1.0 },
+        "playScale":     { "x": 0.3,  "y": 0.6,  "z": 0.3 }
+      },
+      {
+        "partId":        "m8_hex_bolt",
+        "startPosition": { "x": 0.0,  "y": 0.55, "z": -2.0 },
+        "startRotation": { "x": 0.0,  "y": 0.0,  "z": 0.0, "w": 1.0 },
+        "startScale":    { "x": 0.25, "y": 0.5,  "z": 0.25 },
+        "color":         { "r": 0.80, "g": 0.80, "b": 0.82, "a": 1.0 },
+        "playPosition":  { "x": 0.55, "y": 0.10, "z": 0.35 },
+        "playRotation":  { "x": 0.0,  "y": 0.0,  "z": 0.0, "w": 1.0 },
+        "playScale":     { "x": 0.25, "y": 0.5,  "z": 0.25 }
       }
     ],
     "targetPlacements": [
       {
         "targetId": "target_frame_plate_slot",
-        "position": { "x": 0.0, "y": 0.04, "z": 0.0 },
-        "rotation": { "x": 0.0, "y": 0.0,  "z": 0.0, "w": 1.0 },
-        "scale":    { "x": 1.2, "y": 0.04, "z": 0.8 },
+        "position": { "x": 0.0,  "y": 0.04, "z": 0.0 },
+        "rotation": { "x": 0.0,  "y": 0.0,  "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 1.2,  "y": 0.04, "z": 0.8 },
+        "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
+      },
+      {
+        "targetId": "target_corner_bracket_slot_a",
+        "position": { "x": 0.55, "y": 0.15, "z": 0.35 },
+        "rotation": { "x": 0.0,  "y": 0.0,  "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.3,  "y": 0.6,  "z": 0.3 },
+        "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
+      },
+      {
+        "targetId": "target_bolt_slot",
+        "position": { "x": 0.55, "y": 0.10, "z": 0.35 },
+        "rotation": { "x": 0.0,  "y": 0.0,  "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.25, "y": 0.5,  "z": 0.25 },
         "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
       }
     ]

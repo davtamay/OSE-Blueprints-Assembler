@@ -163,6 +163,7 @@ namespace OSE.UI.Root
         {
             Camera mainCamera = Camera.main;
             if (mainCamera == null) return;
+            if (!Application.isPlaying) return;
             PreviewCameraSettings cam = ActiveProfile.Camera;
             mainCamera.transform.position = cam.position;
             mainCamera.transform.rotation = Quaternion.Euler(cam.eulerAngles);

@@ -104,6 +104,18 @@ namespace OSE.Core
         }
     }
 
+    public readonly struct HintRequested
+    {
+        public readonly string StepId;
+        public readonly int TotalHintsForStep;
+
+        public HintRequested(string stepId, int totalHintsForStep)
+        {
+            StepId = stepId;
+            TotalHintsForStep = totalHintsForStep;
+        }
+    }
+
     // ── Part Events ──
 
     public readonly struct PartStateChanged

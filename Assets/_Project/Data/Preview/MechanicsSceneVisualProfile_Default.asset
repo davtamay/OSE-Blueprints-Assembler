@@ -23,17 +23,5 @@ MonoBehaviour:
     position: {x: 0, y: 0, z: 0}
     scale: {x: 1.7, y: 1, z: 1.7}
     color: {r: 0.2, g: 0.24, b: 0.28, a: 1}
-  _targetMarker:
-    position: {x: 0, y: 0.04, z: 0}
-    scale: {x: 0.9, y: 0.04, z: 0.9}
-    color: {r: 0.2, g: 0.84, b: 0.58, a: 1}
-  _samplePartStart:
-    position: {x: -2, y: 0.55, z: 0}
-    scale: {x: 1.45, y: 0.28, z: 0.38}
-    color: {r: 0.94, g: 0.55, b: 0.18, a: 1}
-  _samplePartPlay:
-    position: {x: -0.6, y: 0.55, z: 0.15}
-    scale: {x: 1.35, y: 0.28, z: 0.38}
-    color: {r: 0.94, g: 0.55, b: 0.18, a: 1}
-  _animateSamplePartOnPlay: 1
-  _playModeAdvanceDelay: 2.5
+  _anchorAssemblyToCamera: 0
+  _assemblyOffset: {x: 0, y: 0, z: 0}

@@ -16,7 +16,23 @@ It should answer three questions quickly:
 
 ## Last Updated
 
-- March 14, 2026 (Phase 9 complete — Drag-and-Drop Placement and Validation Feedback; Phase 8 harness refactored into 3 focused components)
+- March 14, 2026 (Phase 11 onboarding tutorial vertical slice: new 5-step tutorial package, confirmation step Continue button, step completion toast, session completion banner, progress bar in step panel)
+
+---
+
+## Phase Numbering Authority
+
+Use this file as the **canonical active phase track** for current implementation sequencing.
+
+To remove ambiguity with long-horizon planning docs:
+
+- Active **Phase 10** = XR Grab Interaction and Canonical Input Wiring (this file).
+- Active **Phase 11** = XR Validation and Challenge UX (this file).
+- `IMPLEMENTATION_CHECKLIST.md` uses legacy roadmap numbering where:
+  - Legacy Checklist Phase 10 = Physical Substitution Workflow.
+  - Legacy Checklist Phase 11 = Tutorial Vertical Slice.
+
+When phase numbers conflict across docs, this file is the execution source of truth.
 
 ---
 
@@ -143,6 +159,8 @@ What the scene currently provides:
 - a runtime `UIDocument` host
 - the step shell panel
 - the part info shell panel
+- a Session HUD panel (hint guidance inline + compact challenge metrics row when challenge mode is active)
+- a world hint bubble anchored to the hint target
 - a `SessionDriver` that handles both edit-mode content preview and play-mode runtime sessions
 
 How it behaves:
@@ -153,16 +171,21 @@ How it behaves:
   - the console shows session lifecycle transitions, step state changes, and part state changes
   - the inspector on `Test Scene Setup` shows live runtime state (lifecycle, current assembly, current step, elapsed time, etc.)
   - **click a part** to select it (yellow highlight), its info appears in the part info panel
-  - **drag a part** toward the ghost/target position and release — if within tolerance, the part snaps to target (green) and the step auto-completes; if too far, the part flashes red and returns to start
+  - selection and grab now route through `InputActionRouter` + `SelectionService`; XR grab works when an `XRInteractionManager` is present
+  - **drag a part** toward the ghost/target position and release — if within tolerance, the part snaps to target (green) and the step auto-completes; if too far, the part flashes red and stays where dropped
   - **ghost parts** appear at target positions when a step activates, showing placement targets with transparent blue material
   - right-click the `SessionDriver` component and use **Complete Current Step** to manually advance through steps
   - right-click the `PartInteractionBridge` and use **Place Selected Part at Target** as a debug shortcut
   - when a step completes, its required parts move to their assembled (play) positions and turn green; ghost parts are cleared
+  - a **Session HUD** panel shows challenge metrics (step/total time, failed attempts, hints) only when challenge mode is active
+  - requesting a hint shows guidance inline in the Session HUD plus a world bubble; the target ghost flashes to draw attention
+- UI panels are mode-aware via a per-session UI profile on `UIRootCoordinator` (tutorial/guided show hints; standard/review hide Session HUD by default)
   - **touch input** works the same as mouse — touch to select, drag to place
   - the UI step and part info panels update live as steps activate and parts are selected
   - the session auto-advances through assemblies and completes when all steps are done
 - Verbose logging is enabled so all `[Step]`, `[Session]`, and `[PartRuntime]` events appear in the console.
 - If the package id is changed in the `SessionDriver` inspector, the session will use that package on next Play.
+- XR rig switching is available: the scene now contains both a controller rig and a hands rig, and `XRRigModeSwitcher` activates the appropriate one based on tracked devices at runtime.
 
 Primary scripts:
 
@@ -189,6 +212,7 @@ They are not the future runtime authority for real content or progression logic.
 - `Assets/_Project/Scripts/Core/PlacementValidationResult.cs`
 - `Assets/_Project/Scripts/Input/InputActionRouter.cs`
 - `Assets/_Project/Scripts/Interaction/XRIInteractionAdapter.cs`
+- `Assets/_Project/Scripts/Interaction/XRRigModeSwitcher.cs`
 - `Assets/_Project/Scripts/Interaction/SelectionService.cs`
 - `Assets/_Project/Scripts/Content/Definitions/MachinePackageDefinition.cs`
 - `Assets/_Project/Scripts/Content/Validation/MachinePackageValidator.cs`
@@ -202,12 +226,15 @@ They are not the future runtime authority for real content or progression logic.
 - `Assets/_Project/Scripts/Runtime/Preview/MechanicsSceneVisualProfile.cs`
 - `Assets/_Project/Scripts/UI/Bindings/UIDocumentBootstrap.cs`
 - `Assets/_Project/Scripts/UI/Root/UIRootCoordinator.cs`
+- `Assets/_Project/Scripts/UI/Root/HintWorldCanvas.cs`
 - `Assets/_Project/Scripts/UI/Root/PreviewSceneSetup.cs`
 - `Assets/_Project/Scripts/UI/Root/PackagePartSpawner.cs`
 - `Assets/_Project/Scripts/UI/Root/PartInteractionBridge.cs`
 - `Assets/_Project/Scripts/UI/Root/MaterialHelper.cs`
 - `Assets/_Project/Scripts/UI/Controllers/StepPanelController.cs`
 - `Assets/_Project/Scripts/UI/Controllers/PartInfoPanelController.cs`
+- `Assets/_Project/Scripts/UI/Controllers/SessionHudPanelController.cs`
+- `Assets/_Project/Scripts/UI/Presenters/SessionHudPanelPresenter.cs`
 - `Assets/_Project/Scripts/UI/Presenters/StepPanelPresenter.cs`
 - `Assets/_Project/Scripts/UI/Presenters/PartInfoPanelPresenter.cs`
 - `Assets/_Project/Scripts/Content/Definitions/PackagePreviewConfig.cs`
@@ -215,6 +242,7 @@ They are not the future runtime authority for real content or progression logic.
 - `Assets/_Project/Scripts/Runtime/Session/PlacementValidator.cs`
 - `Assets/_Project/Scripts/Editor/PackageSyncTool.cs`
 - `Assets/_Project/Scripts/Editor/PackageBrowserWindow.cs`
+- `Assets/_Project/Data/Packages/onboarding_tutorial/machine.json`
 
 ---
 
@@ -222,19 +250,25 @@ They are not the future runtime authority for real content or progression logic.
 
 ### Current Completed Phase
 
-- **Phase 9: Drag-and-Drop Placement and Validation Feedback**
+- **Phase 11: Onboarding Tutorial Vertical Slice**
 
 Why this phase is considered complete:
 
-- Mouse drag-to-place: click part → drag with mouse → release near ghost/target → validates placement via `PlacementValidator` with tolerance values from package `ValidationRuleDefinition`
-- Touch drag-to-place: same flow via `Touchscreen.current` from Input System
-- Snap-to-target: valid placements lerp-animate to exact target position/rotation/scale
-- Visual feedback: grabbed parts turn orange, valid placements snap + turn green, invalid placements flash red and return to start position
-- Tolerance-based validation: reads `positionToleranceMm` and `rotationToleranceDeg` from the step's validation rules
-- Drag threshold (5px) distinguishes click-to-select from drag-to-place
-- "Place Selected Part at Target" context menu remains as a debug shortcut
-- Parts return to their start position on invalid placement
-- All interaction routes through `PartRuntimeController` state machine (Selected → Grabbed → ValidPlacement/InvalidPlacement)
+- XRGrabInteractable is added to spawned parts when XR is active (via `PackagePartSpawner`).
+- XRIInteractionAdapter now notifies `SelectionService` and injects canonical Grab/Place actions.
+- `PartInteractionBridge` listens to canonical actions for Select/Inspect/Grab/Place/RequestHint.
+- `SelectionService` drives `PartRuntimeController` selection (no raw click bypass).
+- Multi-target steps now complete only after all required parts are placed at their matching targets.
+- Challenge metrics tracked in `MachineSessionState`: hints used, failed attempts, and per-step timing.
+
+### Phase 10 Hardening: Multi-Target Regression Test
+
+- **`power_cube_frame_corner` restructured**: The two sequential single-part steps (`step_place_frame_plate`, `step_attach_corner_bracket`) were replaced with a single multi-target step (`step_stage_plate_and_bracket`) requiring both `frame_plate_a` and `corner_bracket_a` placed in the same step, followed by a bolt fastening step (`step_fasten_bolts`).
+- **Missing previewConfig entries added**: `corner_bracket_a` and `m8_hex_bolt` now have full `partPlacements` entries (start/play positions, colors). `target_corner_bracket_slot_a` and `target_bolt_slot` now have `targetPlacements` entries. Ghost spawning and snap-to-target now have data for all parts and targets.
+- **Snap animation: single-slot → list-based**: `_snappingPart` (single field) was replaced with `_activeSnaps` (list of `SnapEntry`). Multiple parts can now snap-animate concurrently in multi-target steps without overwriting each other's target pose.
+- **Flash animation: single-slot → list-based**: `_flashPart` (single field) was replaced with `_activeFlashes` (list of `FlashEntry`). Multiple parts can now flash red concurrently.
+- **Per-part ghost removal**: When a part successfully snaps to its target, only that part's ghost is destroyed via `RemoveGhostForPart(partId)`. Remaining ghosts stay visible so the user knows which targets still need parts. Full `ClearGhosts()` still runs on step completion.
+- **Multi-target validation flow**: `FindNearestGhostForPart` enforces per-part matching (a part can only snap to its own ghost via `GhostPlacementInfo.MatchesPart`). Wrong-part/wrong-target drops fail. `AreActiveStepRequiredPartsPlaced()` gates step completion on all required parts being `PlacedVirtually`.
 
 ### Phase 8: Part Presentation and Basic Interaction
 
@@ -279,9 +313,32 @@ Ghost parts now reuse the same `assetRef` mesh with a transparent material appli
 - **Tolerance-based validation**: `ResolveTolerances()` looks up the active step's `validationRuleIds`, finds the rule matching the target, and reads `positionToleranceMm` / `rotationToleranceDeg`. Falls back to 50mm / 30° if no rule is found.
 - **PlacementValidationRequest**: built with the part's current local position/rotation vs the expected target position from `previewConfig.partPlacements[].playPosition`.
 - **Snap animation**: valid placements lerp to exact target position/rotation/scale over multiple frames using `SnapLerpSpeed = 12`.
-- **Invalid flash**: invalid placements flash red for 0.3 seconds, then the part returns to its start position and is deselected.
+- **Invalid flash**: invalid placements flash red for 0.3 seconds, then the part stays where dropped and is deselected.
 - **Visual feedback colors**: Selected = yellow (1.0, 0.85, 0.2), Grabbed = orange (1.0, 0.65, 0.1), Completed = green (0.3, 0.9, 0.4), Invalid flash = red (1.0, 0.2, 0.2).
 - **Context menu preserved**: "Place Selected Part at Target" still works as a debug shortcut for exact placement.
+- **Post-completion updates**:
+  - Drag plane is camera-facing (`new Plane(-cam.transform.forward, partPosition)`) so parts follow the pointer naturally, not constrained to Y-up.
+  - Depth control while dragging: Shift+drag vertical, Q/E keys, mouse scroll wheel, touch pinch (mobile), right/middle mouse drag.
+  - Parts now stay where dropped outside the snap zone (red flash only, no return to start).
+  - Laptop touchpad two-finger input does not drive depth — OS abstracts it as mouse, no raw finger data.
+  - All updates live in `Assets/_Project/Scripts/UI/Root/PartInteractionBridge.cs`.
+  - User confirmed basic drag and snap-to-ghost works; Shift+drag depth not yet re-confirmed after latest fix.
+
+### Phase 10: XR Grab Interaction and Canonical Input Wiring
+
+- **XR grab setup**: `PackagePartSpawner` adds `XRGrabInteractable` (plus kinematic `Rigidbody`) to spawned parts when XR is active.
+- **SelectionService wiring**: `PartInteractionBridge` now routes Select/Inspect through `SelectionService` and canonical actions.
+- **XRI adapter routing**: `XRIInteractionAdapter` notifies `SelectionService` and injects canonical Grab/Place on XR select enter/exit.
+- **Canonical grab/place**: `PartInteractionBridge` handles Grab/Place actions for mouse/touch/XR and validates placement on release.
+- **Multi-target steps**: ghost matching is per-part; steps only complete after all required parts are placed. `PartRuntimeController.AreActiveStepRequiredPartsPlaced()` added.
+- **Challenge metrics**: `MachineSessionState` tracks hints used, failed attempts, and per-step timing; `HintRequested` events added.
+- **SessionDriver** shows per-step timing metrics in the inspector.
+- **XR rig switching**: `Test_Assembly_Mechanics.unity` now includes both `XR Origin Hands (XR Rig)` and a controller rig (`XR Origin (Controllers)`), with `XRRigModeSwitcher` enabling the correct rig based on tracked devices (hands vs controllers). The switcher can auto-add `XRIInteractionAdapter` to active interactors.
+- **XRI sample content imported**: Starter Assets, Hands Interaction Demo, and XR Interaction Simulator samples are copied into `Assets/XRI/` so prefab references resolve in-scene.
+- **XR ghost proximity fix**: `PartInteractionBridge` now tracks XR grabs to update ghost highlight and perform placement on release without relying on pointer drag state.
+- **XR canonical wiring hardening**: `PartInteractionBridge` now guarantees `InputActionRouter` + `SelectionService` availability in play mode for the mechanics harness and forces `InputContext.StepInteraction` so injected XR actions are not context-gated.
+- **XRI dependency late-binding**: `XRIInteractionAdapter` now re-resolves `InputActionRouter`/`SelectionService` on enable and on select enter/exit, preventing initialization-order null refs from dropping XR Grab/Place dispatch.
+- **Pointer drag bounds**: pointer-driven drag now clamps to floor bounds and viewport margin; dragged parts can no longer be moved below the floor or outside the usable camera area.
 
 ### Package Authoring Workflow
 
@@ -293,30 +350,38 @@ Ghost parts now reuse the same `assetRef` mesh with a transparent material appli
 - To **add a new package**: create a folder under `Assets/_Project/Data/Packages/<package-id>/`, add a `machine.json`, place any model files in an `assets/` subfolder. The browser and loader pick it up immediately.
 
 
+### Phase 11: Onboarding Tutorial Vertical Slice
+
+- **New tutorial package**: `onboarding_tutorial` — 5-step package teaching every core interaction in order: Orient Yourself, Select & Inspect, Drag & Place (beam), Use a Hint, Place the Bracket. 2 parts, 2 targets, 2 hints. Platform-neutral instruction text throughout ("tap or click", "drag or grab"). `challengeConfig.enabled: false`, `recommendedMode: "tutorial"`.
+- **Confirmation step button**: Steps with `completionMode: "confirmation_only"` now show a green "Continue" button (44px min height for touch accessibility) in the step panel. Button wires to `StepController.CompleteStep()`. Auto-hides for non-confirmation steps.
+- **Step completion toast**: When a step completes, a green "Step Complete!" banner appears in the Session HUD for 2 seconds and auto-hides. Uses the same timer pattern as hint toasts.
+- **Session completion banner**: When `SessionCompleted` fires, a persistent green "Tutorial Complete! (Xm Xs)" card appears in the Session HUD showing total time.
+- **Progress bar**: A thin green progress bar below the step panel header shows completion ratio (current step / total steps). Updates on each step transition.
+- **SessionDriver defaults**: `_packageId` changed from `"tutorial_build"` to `"onboarding_tutorial"`, `_sessionMode` changed from `Guided` to `Tutorial`.
+- **IPresentationAdapter extended**: `ShowStepShell` now accepts `bool showConfirmButton`, new `ShowStepCompletionToast(string)` method added.
+- **SessionHudViewModel extended**: Added `ShowStepToast`, `StepToastMessage`, `ShowMilestone`, `MilestoneMessage` fields.
+- **StreamingAssets synced**: `onboarding_tutorial/machine.json` copied to `Assets/StreamingAssets/MachinePackages/onboarding_tutorial/`.
+
 ### Next Formal Phase
 
-- **Phase 10: XR Grab Interaction and Canonical Input Wiring**
+- **Phase 12: XR Validation and Challenge UX (TBD)**
 
-This phase adds XR-native grab interaction and wires all input through the canonical action system.
+Scope (proposed, pending validation):
 
-Scope:
-
-- **XR near/far grab**: parts become `XRGrabInteractable` objects. Controller or hand grab drags them, release near target validates placement. Routes through `XRIInteractionAdapter` → canonical actions → `PartRuntimeController`.
-- **Wire `SelectionService`** to `PartRuntimeController` so canonical actions drive selection instead of raw pointer raycast in `PartInteractionBridge`.
-- **Multi-target step support**: steps with multiple `requiredPartIds` and multiple `targetIds` — each part must be placed at its matching target before the step completes. Currently only the first target is matched.
-- **Challenge mode metrics**: track hints used, failed placement attempts, and time per step via `MachineSessionState`.
+- Validate XR grab interaction in headset and refine interaction layers / attach behavior.
+- Re-confirm depth controls (Shift+drag, scroll, pinch) and tune sensitivity.
+- Decide whether to reintroduce tolerance-based validation vs snap-zone only.
+- Tune hint bubble placement/scale for XR readability and confirm ghost highlight timing.
 
 ---
 
 ## Recommended Next Tasks
 
-1. Add `XRGrabInteractable` to spawned parts in play mode when XR is active.
-2. Wire `XRIInteractionAdapter` grab/release events to `PartRuntimeController.GrabPart()` / `AttemptPlacement()`.
-3. Wire `SelectionService` to `PartRuntimeController` for canonical input-driven selection.
-4. Support steps with multiple required parts — only complete step when all parts are placed.
-5. Track challenge metrics (hints, failed attempts, time) in `MachineSessionState`.
-6. Test with `power_cube_frame_corner` package (3 parts, 2 steps, multiple targets).
-7. Keep `Test_Assembly_Mechanics.unity` as the integration sandbox.
+1. Open `Test_Assembly_Mechanics.unity`, enter Play mode, and walk through the 5-step onboarding tutorial end-to-end. Verify Continue button, step toast, progress bar, and session completion banner.
+2. Validate XR grab (near + far) with both controllers and hands; confirm rig switching behaves as expected.
+3. Re-confirm depth controls (Shift+drag, scroll, pinch) and tune sensitivity values if needed.
+4. Tune hint bubble placement/scale for XR readability and confirm ghost highlight timing.
+5. Regression test multi-target steps with `power_cube_frame_corner`.
 
 ---
 
@@ -327,13 +392,15 @@ Scope:
 - The scene harness components (PreviewSceneSetup, PackagePartSpawner, PartInteractionBridge) are intentionally temporary and content-agnostic.
 - `MechanicsSceneVisualProfile` now only controls camera position, floor appearance, and visibility flags. All part and target scene placement comes from `previewConfig` in the package JSON.
 - The UI shell is still a foundation layer, not a complete runtime UI system.
-- Part selection currently uses raw pointer raycast in `PartInteractionBridge`. Phase 10 should wire `SelectionService` for canonical input-driven selection.
-- **Known Phase 9 drag bug**: Dragging uses `new Plane(Vector3.up, partPosition)` which constrains movement to a horizontal plane at the part's Y height. This feels "stuck on an axis" — the part can only slide horizontally and cannot be raised/lowered toward targets at different heights. The fix is to use a camera-facing plane instead: `new Plane(-cam.transform.forward, partPosition)` so the part follows the pointer naturally on the camera's view plane regardless of Y position. This bug was confirmed by the user but not yet fixed.
-- Mouse and touch drag-to-place is implemented in Phase 9. XR grab interaction via XRI interactables is Phase 10.
-- Multi-target steps (multiple parts per step) are not yet supported — only the first matching target is validated. Phase 10 should add this.
+- **Depth control validation**: Shift+drag depth adjustment has not yet been re-confirmed after the camera-facing drag plane fix.
+- **Touchpad limitation**: Laptop touchpad two-finger gestures do not provide raw touch data; they are exposed as mouse input only.
+- **XR validation pending**: XR grab interaction is implemented but not yet validated in-headset.
+- **XR rig switching pending validation**: controller vs hand activation is implemented but still needs in-headset confirmation across devices.
+- **Multi-target validation**: Multi-target steps are supported and `power_cube_frame_corner` now exercises them (`step_stage_plate_and_bracket` requires two parts). In-editor visual regression test pending.
+- **Hint world bubble is display-only**: the world hint `UIDocument` is non-interactive and uses UI Toolkit visuals only (no XR UI interaction yet).
 - Ghost parts use a basic transparent URP/Lit material via `MaterialHelper.ApplyGhost()`. URP shader graph ghost effects could be added later.
 - `MaterialHelper.Apply()` replaces renderer materials with a fresh URP/Lit material. This works for dummy meshes but may strip textures/properties from production GLB assets with authored materials. Consider preserving existing Lit-shader materials and only overriding color properties when real assets are used.
-- `StreamingAssets/MachinePackages/` is generated by `PackageSyncTool`. Do not hand-edit files there — edit the authoring copies in `Assets/_Project/Data/Packages/` instead.
+- `StreamingAssets/MachinePackages/` is generated by `PackageSyncTool`. Do not hand-edit files there ? edit the authoring copies in `Assets/_Project/Data/Packages/` instead.
 
 ---
 

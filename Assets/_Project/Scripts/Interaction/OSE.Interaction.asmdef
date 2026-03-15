@@ -5,6 +5,7 @@
         "OSE.Core",
         "OSE.Input",
         "OSE.Runtime",
+        "Unity.XR.Hands",
         "Unity.XR.Interaction.Toolkit",
         "Unity.InputSystem"
     ],

@@ -5,7 +5,6 @@ using UnityEngine.InputSystem;
 
 namespace OSE.Input
 {
-    [RequireComponent(typeof(PlayerInput))]
     public class InputActionRouter : MonoBehaviour, IInputRouter
     {
         public event Action<CanonicalAction> OnAction;
@@ -17,7 +16,8 @@ namespace OSE.Input
         private void Awake()
         {
             _playerInput = GetComponent<PlayerInput>();
-            _playerInput.notificationBehavior = PlayerNotifications.InvokeUnityEvents;
+            if (_playerInput != null)
+                _playerInput.notificationBehavior = PlayerNotifications.InvokeUnityEvents;
         }
 
         public void SetContext(InputContext context)

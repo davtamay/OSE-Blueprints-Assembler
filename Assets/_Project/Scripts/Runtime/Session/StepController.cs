@@ -102,6 +102,7 @@ namespace OSE.Runtime
                 _currentState.CompletedAtSeconds);
 
             OseLog.VerboseInfo($"[StepController] Hint requested for step '{_currentStep.id}'. Total hints: {_currentState.HintsUsed}");
+            RuntimeEventBus.Publish(new HintRequested(_currentStep.id, _currentState.HintsUsed));
         }
 
         public void SuspendStep()

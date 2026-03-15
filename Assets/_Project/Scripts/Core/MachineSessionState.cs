@@ -20,6 +20,11 @@ namespace OSE.Core
         public bool ChallengeActive;
         public int MistakeCount;
         public int HintsUsed;
+        public float CurrentStepStartSeconds;
+        public float CurrentStepElapsedSeconds;
+        public float LastStepDurationSeconds;
+        public float TotalStepDurationSeconds;
+        public int CompletedStepCount;
 
         // Lifecycle
         public SessionLifecycle Lifecycle;

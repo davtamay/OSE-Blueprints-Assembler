@@ -1,0 +1,419 @@
+{
+  "schemaVersion": "1.0.0",
+  "packageVersion": "0.1.0",
+  "machine": {
+    "id": "onboarding_tutorial",
+    "name": "Onboarding Tutorial",
+    "displayName": "Welcome Tutorial",
+    "description": "A short guided tutorial that teaches navigation, selection, placement, hints, and step progression. Designed so a new user can complete it without prior knowledge.",
+    "difficulty": "beginner",
+    "estimatedBuildTimeMinutes": 3,
+    "learningObjectives": [
+      "Orient yourself in the assembly scene",
+      "Select and inspect a part to read its info",
+      "Drag or grab a part to place it at a target",
+      "Request and read a hint",
+      "Complete a multi-step assembly sequence"
+    ],
+    "recommendedMode": "tutorial",
+    "entryAssemblyIds": [
+      "assembly_onboarding"
+    ],
+    "prerequisiteNotes": [
+      "No prior knowledge is required."
+    ],
+    "sourceReferences": []
+  },
+  "assemblies": [
+    {
+      "id": "assembly_onboarding",
+      "name": "Onboarding Assembly",
+      "description": "Walks the user through every core interaction one step at a time.",
+      "machineId": "onboarding_tutorial",
+      "subassemblyIds": [
+        "subassembly_training_parts"
+      ],
+      "stepIds": [
+        "step_orient",
+        "step_select_inspect",
+        "step_drag_place_beam",
+        "step_use_hint",
+        "step_place_bracket"
+      ],
+      "learningFocus": "Core interactions: observe, select, place, hint, progression."
+    }
+  ],
+  "subassemblies": [
+    {
+      "id": "subassembly_training_parts",
+      "name": "Training Parts",
+      "assemblyId": "assembly_onboarding",
+      "description": "Contains the two training parts used throughout the tutorial.",
+      "partIds": [
+        "training_beam",
+        "training_bracket"
+      ],
+      "stepIds": [
+        "step_orient",
+        "step_select_inspect",
+        "step_drag_place_beam",
+        "step_use_hint",
+        "step_place_bracket"
+      ],
+      "milestoneMessage": "You completed the onboarding tutorial!"
+    }
+  ],
+  "parts": [
+    {
+      "id": "training_beam",
+      "name": "Training Beam",
+      "displayName": "Training Beam",
+      "category": "custom",
+      "material": "Painted steel box tubing",
+      "function": "A practice beam used to learn selection and placement.",
+      "structuralRole": "Training part",
+      "quantity": 1,
+      "toolIds": [
+        "tool_tape_measure"
+      ],
+      "assetRef": "assets/parts/training_beam.glb",
+      "searchTerms": [
+        "training beam",
+        "tutorial beam",
+        "practice part"
+      ],
+      "allowPhysicalSubstitution": true,
+      "defaultOrientationHint": "Keep the beam parallel to the floor.",
+      "tags": [
+        "tutorial",
+        "onboarding"
+      ]
+    },
+    {
+      "id": "training_bracket",
+      "name": "Training Bracket",
+      "displayName": "Training Bracket",
+      "category": "bracket",
+      "material": "Steel",
+      "function": "A practice bracket used to learn hint usage and a second placement.",
+      "structuralRole": "Training part",
+      "quantity": 1,
+      "toolIds": [
+        "tool_tape_measure"
+      ],
+      "assetRef": "assets/parts/training_bracket.glb",
+      "searchTerms": [
+        "training bracket",
+        "tutorial bracket",
+        "practice bracket"
+      ],
+      "allowPhysicalSubstitution": true,
+      "defaultOrientationHint": "Align the bracket face with the target marker.",
+      "tags": [
+        "tutorial",
+        "onboarding"
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "id": "tool_tape_measure",
+      "name": "Tape Measure",
+      "category": "measurement",
+      "purpose": "Helps compare part size to target spacing.",
+      "usageNotes": "Observe the part dimensions before placing."
+    }
+  ],
+  "steps": [
+    {
+      "id": "step_orient",
+      "name": "Orient yourself",
+      "assemblyId": "assembly_onboarding",
+      "subassemblyId": "subassembly_training_parts",
+      "sequenceIndex": 1,
+      "instructionText": "Welcome! Look around the scene. You can see parts on the left and right, and target markers in the center. The panels on screen show step instructions and part details. When you are ready, tap Continue.",
+      "whyItMattersText": "Observing the workspace before acting helps you plan each placement.",
+      "requiredPartIds": [],
+      "relevantToolIds": [],
+      "targetIds": [],
+      "completionMode": "confirmation_only",
+      "validationRuleIds": [],
+      "hintIds": [],
+      "effectTriggerIds": [],
+      "allowAutoSnap": false,
+      "allowSkip": false,
+      "requiresConfirmation": true,
+      "challengeFlags": {
+        "penalizeHintUsage": false,
+        "penalizeInvalidPlacement": false,
+        "stricterToleranceAvailable": false
+      },
+      "eventTags": [
+        "tutorial",
+        "orient"
+      ]
+    },
+    {
+      "id": "step_select_inspect",
+      "name": "Select and inspect a part",
+      "assemblyId": "assembly_onboarding",
+      "subassemblyId": "subassembly_training_parts",
+      "sequenceIndex": 2,
+      "instructionText": "Tap or click the orange beam on the left. Its name, material, and tool info will appear in the Part Info panel on the right. Select the part to unlock the Continue button.",
+      "whyItMattersText": "Inspecting parts before placement ensures you pick the right piece for the job.",
+      "requiredPartIds": [],
+      "optionalPartIds": [
+        "training_beam",
+        "training_bracket"
+      ],
+      "relevantToolIds": [
+        "tool_tape_measure"
+      ],
+      "targetIds": [],
+      "completionMode": "confirmation_only",
+      "validationRuleIds": [],
+      "hintIds": [],
+      "effectTriggerIds": [],
+      "allowAutoSnap": false,
+      "allowSkip": false,
+      "requiresConfirmation": true,
+      "challengeFlags": {
+        "penalizeHintUsage": false,
+        "penalizeInvalidPlacement": false,
+        "stricterToleranceAvailable": false
+      },
+      "eventTags": [
+        "tutorial",
+        "select"
+      ]
+    },
+    {
+      "id": "step_drag_place_beam",
+      "name": "Drag the beam to its target",
+      "assemblyId": "assembly_onboarding",
+      "subassemblyId": "subassembly_training_parts",
+      "sequenceIndex": 3,
+      "instructionText": "Drag or grab the orange beam and move it toward the transparent ghost shape in the center. When it is close enough it will snap into place automatically.",
+      "whyItMattersText": "Placing parts at target positions is the core assembly action.",
+      "requiredPartIds": [
+        "training_beam"
+      ],
+      "relevantToolIds": [],
+      "targetIds": [
+        "target_beam_slot"
+      ],
+      "completionMode": "virtual_or_physical",
+      "validationRuleIds": [
+        "validation_beam_placement"
+      ],
+      "hintIds": [
+        "hint_beam_placement"
+      ],
+      "effectTriggerIds": [],
+      "allowAutoSnap": true,
+      "allowSkip": false,
+      "requiresConfirmation": false,
+      "challengeFlags": {
+        "penalizeHintUsage": false,
+        "penalizeInvalidPlacement": false,
+        "stricterToleranceAvailable": false
+      },
+      "eventTags": [
+        "tutorial",
+        "place"
+      ]
+    },
+    {
+      "id": "step_use_hint",
+      "name": "Request a hint",
+      "assemblyId": "assembly_onboarding",
+      "subassemblyId": "subassembly_training_parts",
+      "sequenceIndex": 4,
+      "instructionText": "Sometimes you need guidance. Tap the Request Hint button below to see a hint. A message will appear in the panel and a bubble will point to the target. After reading the hint, tap Continue.",
+      "whyItMattersText": "Hints guide you when placement is unclear — using them is encouraged during learning.",
+      "requiredPartIds": [],
+      "optionalPartIds": [
+        "training_bracket"
+      ],
+      "relevantToolIds": [],
+      "targetIds": [],
+      "completionMode": "confirmation_only",
+      "validationRuleIds": [],
+      "hintIds": [
+        "hint_bracket_guidance"
+      ],
+      "effectTriggerIds": [],
+      "allowAutoSnap": false,
+      "allowSkip": false,
+      "requiresConfirmation": true,
+      "challengeFlags": {
+        "penalizeHintUsage": false,
+        "penalizeInvalidPlacement": false,
+        "stricterToleranceAvailable": false
+      },
+      "eventTags": [
+        "tutorial",
+        "hint"
+      ]
+    },
+    {
+      "id": "step_place_bracket",
+      "name": "Place the bracket",
+      "assemblyId": "assembly_onboarding",
+      "subassemblyId": "subassembly_training_parts",
+      "sequenceIndex": 5,
+      "instructionText": "Now drag or grab the blue bracket and move it to its ghost target. Remember: each part only fits its own target — dropping the wrong part will flash red.",
+      "whyItMattersText": "Placing the correct part at the correct target is how every assembly step works.",
+      "requiredPartIds": [
+        "training_bracket"
+      ],
+      "relevantToolIds": [],
+      "targetIds": [
+        "target_bracket_slot"
+      ],
+      "completionMode": "virtual_or_physical",
+      "validationRuleIds": [
+        "validation_bracket_placement"
+      ],
+      "hintIds": [
+        "hint_bracket_guidance"
+      ],
+      "effectTriggerIds": [],
+      "allowAutoSnap": true,
+      "allowSkip": false,
+      "requiresConfirmation": false,
+      "challengeFlags": {
+        "penalizeHintUsage": false,
+        "penalizeInvalidPlacement": false,
+        "stricterToleranceAvailable": false
+      },
+      "eventTags": [
+        "tutorial",
+        "place"
+      ]
+    }
+  ],
+  "validationRules": [
+    {
+      "id": "validation_beam_placement",
+      "type": "placement",
+      "targetId": "target_beam_slot",
+      "expectedPartId": "training_beam",
+      "positionToleranceMm": 50.0,
+      "rotationToleranceDeg": 30.0,
+      "failureMessage": "Move the beam closer to the ghost target.",
+      "correctionHintId": "hint_beam_placement"
+    },
+    {
+      "id": "validation_bracket_placement",
+      "type": "placement",
+      "targetId": "target_bracket_slot",
+      "expectedPartId": "training_bracket",
+      "positionToleranceMm": 50.0,
+      "rotationToleranceDeg": 30.0,
+      "failureMessage": "Move the bracket closer to its ghost target.",
+      "correctionHintId": "hint_bracket_guidance"
+    }
+  ],
+  "effects": [],
+  "hints": [
+    {
+      "id": "hint_beam_placement",
+      "type": "highlight",
+      "title": "Aim for the ghost",
+      "message": "Drag the beam toward the transparent shape in the center. Release when it turns green.",
+      "targetId": "target_beam_slot",
+      "partId": "training_beam",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_bracket_guidance",
+      "type": "highlight",
+      "title": "Bracket target",
+      "message": "The bracket goes to the right-side ghost. Drag it close and release to snap it into place.",
+      "targetId": "target_bracket_slot",
+      "partId": "training_bracket",
+      "priority": "medium"
+    }
+  ],
+  "targets": [
+    {
+      "id": "target_beam_slot",
+      "name": "Beam Target",
+      "anchorRef": "anchors/tutorial/beam_slot",
+      "description": "Where the training beam should be placed.",
+      "associatedPartId": "training_beam",
+      "tags": [
+        "tutorial",
+        "onboarding"
+      ]
+    },
+    {
+      "id": "target_bracket_slot",
+      "name": "Bracket Target",
+      "anchorRef": "anchors/tutorial/bracket_slot",
+      "description": "Where the training bracket should be placed.",
+      "associatedPartId": "training_bracket",
+      "tags": [
+        "tutorial",
+        "onboarding"
+      ]
+    }
+  ],
+  "challengeConfig": {
+    "enabled": false,
+    "trackTime": true,
+    "trackRetries": false,
+    "trackHintUsage": false,
+    "leaderboardReady": false,
+    "strictValidationModeAvailable": false
+  },
+  "assetManifest": {
+    "modelRefs": [
+      "assets/parts/training_beam.glb",
+      "assets/parts/training_bracket.glb"
+    ],
+    "effectRefs": [],
+    "uiRefs": []
+  },
+  "previewConfig": {
+    "partPlacements": [
+      {
+        "partId":        "training_beam",
+        "startPosition": { "x": -2.0, "y": 0.55, "z": 0.0 },
+        "startRotation": { "x": 0.0,  "y": 0.0,  "z": 0.0, "w": 1.0 },
+        "startScale":    { "x": 1.2,  "y": 0.3,  "z": 0.4 },
+        "color":         { "r": 0.94, "g": 0.55, "b": 0.18, "a": 1.0 },
+        "playPosition":  { "x": -0.3, "y": 0.05, "z": 0.0 },
+        "playRotation":  { "x": 0.0,  "y": 0.0,  "z": 0.0, "w": 1.0 },
+        "playScale":     { "x": 1.2,  "y": 0.3,  "z": 0.4 }
+      },
+      {
+        "partId":        "training_bracket",
+        "startPosition": { "x": 2.0,  "y": 0.55, "z": 0.0 },
+        "startRotation": { "x": 0.0,  "y": 0.0,  "z": 0.0, "w": 1.0 },
+        "startScale":    { "x": 0.4,  "y": 0.6,  "z": 0.4 },
+        "color":         { "r": 0.30, "g": 0.55, "b": 0.85, "a": 1.0 },
+        "playPosition":  { "x": 0.8,  "y": 0.15, "z": 0.4 },
+        "playRotation":  { "x": 0.0,  "y": 0.0,  "z": 0.0, "w": 1.0 },
+        "playScale":     { "x": 0.4,  "y": 0.6,  "z": 0.4 }
+      }
+    ],
+    "targetPlacements": [
+      {
+        "targetId": "target_beam_slot",
+        "position": { "x": -0.3, "y": 0.04, "z": 0.0 },
+        "rotation": { "x": 0.0,  "y": 0.0,  "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 1.2,  "y": 0.04, "z": 0.4 },
+        "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
+      },
+      {
+        "targetId": "target_bracket_slot",
+        "position": { "x": 0.8,  "y": 0.15, "z": 0.4 },
+        "rotation": { "x": 0.0,  "y": 0.0,  "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.4,  "y": 0.6,  "z": 0.4 },
+        "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
+      }
+    ]
+  }
+}

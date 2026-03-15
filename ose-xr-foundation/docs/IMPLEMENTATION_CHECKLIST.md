@@ -20,6 +20,21 @@ The goal is to move from zero to a stable first vertical slice, then expand safe
 
 ---
 
+## Phase Numbering Note
+
+This checklist is a long-horizon roadmap and keeps its original numbering.
+
+Current execution phase numbering is maintained in `docs/APP_CURRENT_PROGRESS_FOR_AGENT.md`.
+If phase labels conflict between this file and `APP_CURRENT_PROGRESS_FOR_AGENT.md`, use `APP_CURRENT_PROGRESS_FOR_AGENT.md` as the active implementation source of truth.
+
+To make the difference explicit:
+
+- Legacy Checklist Phase 10 = Physical Substitution Workflow.
+- Legacy Checklist Phase 11 = Tutorial Vertical Slice.
+- Active runtime track Phase 10/11 (XR-focused) lives in `APP_CURRENT_PROGRESS_FOR_AGENT.md`.
+
+---
+
 # Core Execution Rules
 
 These rules apply to every phase.
@@ -459,7 +474,7 @@ Make assembly behavior correct, explainable, and recoverable.
 
 ---
 
-# Phase 10 - Physical Substitution Workflow
+# Legacy Checklist Phase 10 - Physical Substitution Workflow
 
 ## Goal
 
@@ -487,7 +502,7 @@ Support real-world assembly alongside virtual training.
 
 ---
 
-# Phase 11 - Tutorial Vertical Slice
+# Legacy Checklist Phase 11 - Tutorial Vertical Slice
 
 ## Goal
 

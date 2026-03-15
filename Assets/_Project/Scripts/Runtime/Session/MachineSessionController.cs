@@ -75,6 +75,7 @@ namespace OSE.Runtime
 
             _package = result.Package;
             _sessionState.MachineVersion = _package.packageVersion ?? string.Empty;
+            _sessionState.ChallengeActive = ResolveChallengeActive(mode, _package);
 
             // Determine assembly order
             _assemblyOrder = ResolveAssemblyOrder();
@@ -98,6 +99,7 @@ namespace OSE.Runtime
 
             // Subscribe to step events to keep session state current
             RuntimeEventBus.Subscribe<StepStateChanged>(HandleStepStateChanged);
+            RuntimeEventBus.Subscribe<HintRequested>(HandleHintRequested);
 
             _currentAssemblyIndex = 0;
             SetLifecycle(SessionLifecycle.SessionActive);
@@ -107,6 +109,17 @@ namespace OSE.Runtime
 
             // Begin the first assembly
             BeginCurrentAssembly();
+
+            return true;
+        }
+
+        private static bool ResolveChallengeActive(SessionMode mode, MachinePackageDefinition package)
+        {
+            if (mode != SessionMode.Challenge)
+                return false;
+
+            if (package?.challengeConfig != null)
+                return package.challengeConfig.enabled;
 
             return true;
         }
@@ -139,6 +152,7 @@ namespace OSE.Runtime
                 return;
 
             RuntimeEventBus.Unsubscribe<StepStateChanged>(HandleStepStateChanged);
+            RuntimeEventBus.Unsubscribe<HintRequested>(HandleHintRequested);
 
             if (_partController != null)
             {
@@ -178,6 +192,11 @@ namespace OSE.Runtime
                 _sessionState.Lifecycle == SessionLifecycle.StepActive)
             {
                 _sessionState.ElapsedSeconds += deltaTime;
+                if (_sessionState.CurrentStepStartSeconds >= 0f)
+                {
+                    _sessionState.CurrentStepElapsedSeconds =
+                        _sessionState.ElapsedSeconds - _sessionState.CurrentStepStartSeconds;
+                }
             }
         }
 
@@ -212,11 +231,31 @@ namespace OSE.Runtime
             if (evt.Current == StepState.Active)
             {
                 _sessionState.CurrentStepId = evt.StepId;
+                _sessionState.CurrentStepStartSeconds = evt.AtSeconds;
+                _sessionState.CurrentStepElapsedSeconds = 0f;
             }
             else if (evt.Current == StepState.FailedAttempt)
             {
                 _sessionState.MistakeCount++;
             }
+            else if (evt.Current == StepState.Completed)
+            {
+                float duration = evt.AtSeconds - _sessionState.CurrentStepStartSeconds;
+                if (duration < 0f) duration = 0f;
+
+                _sessionState.LastStepDurationSeconds = duration;
+                _sessionState.TotalStepDurationSeconds += duration;
+                _sessionState.CompletedStepCount++;
+                _sessionState.CurrentStepElapsedSeconds = duration;
+            }
+        }
+
+        private void HandleHintRequested(HintRequested evt)
+        {
+            if (_sessionState == null)
+                return;
+
+            _sessionState.HintsUsed++;
         }
 
         private void HandleAssemblyCompleted(string assemblyId)

@@ -29,8 +29,8 @@ namespace OSE.Runtime.Preview
         public static event Action<MachinePackageDefinition> PackageChanged;
 
         [Header("Session Configuration")]
-        [SerializeField] private string _packageId = "tutorial_build";
-        [SerializeField] private SessionMode _sessionMode = SessionMode.Guided;
+        [SerializeField] private string _packageId = "onboarding_tutorial";
+        [SerializeField] private SessionMode _sessionMode = SessionMode.Tutorial;
         [SerializeField] private bool _autoStartOnPlay = true;
 
         [Header("Edit Mode Preview")]
@@ -45,12 +45,16 @@ namespace OSE.Runtime.Preview
         [SerializeField] private int _stepNumber;
         [SerializeField] private int _totalSteps;
         [SerializeField] private float _elapsedSeconds;
+        [SerializeField] private float _currentStepElapsedSeconds;
+        [SerializeField] private float _lastStepDurationSeconds;
+        [SerializeField] private int _completedStepCount;
         [SerializeField] private int _mistakeCount;
         [SerializeField] private int _hintsUsed;
 
         private MachineSessionController _session;
         private bool _sessionStarted;
         private string _lastPlayModePackageId;
+        private SessionMode _lastPlayModeSessionMode;
 
         // Edit-mode preview state
         private readonly MachinePackageLoader _loader = new MachinePackageLoader();
@@ -102,6 +106,13 @@ namespace OSE.Runtime.Preview
                 if (_sessionStarted && _lastPlayModePackageId != _packageId)
                 {
                     RestartSession();
+                    return;
+                }
+
+                if (_sessionStarted && _lastPlayModeSessionMode != _sessionMode)
+                {
+                    OseLog.Info($"[SessionDriver] Session mode changed to {_sessionMode}. Restarting session.");
+                    RestartSession();
                 }
             }
             else
@@ -134,6 +145,7 @@ namespace OSE.Runtime.Preview
 
             _session.TickElapsed(Time.deltaTime);
             RefreshInspectorState();
+            PushChallengeMetricsToUI();
         }
 
         [ContextMenu("Start Session")]
@@ -229,6 +241,11 @@ namespace OSE.Runtime.Preview
             // Fire PackageChanged before step events so scene objects exist in time
             _session.PackageReady += HandlePackageReady;
 
+            if (ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
+            {
+                ui.SetSessionMode(_sessionMode);
+            }
+
             OseLog.Info($"[SessionDriver] Starting session for '{_packageId}' in {_sessionMode} mode.");
 
             bool success = await _session.StartSessionAsync(_packageId, _sessionMode);
@@ -236,6 +253,7 @@ namespace OSE.Runtime.Preview
             if (success)
             {
                 _lastPlayModePackageId = _packageId;
+                _lastPlayModeSessionMode = _sessionMode;
             }
             else
             {
@@ -262,6 +280,13 @@ namespace OSE.Runtime.Preview
             if (evt.Current == StepState.Active)
             {
                 PushStepToUI();
+            }
+            else if (evt.Current == StepState.Completed)
+            {
+                if (ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
+                {
+                    ui.ShowStepCompletionToast("Step Complete!");
+                }
             }
         }
 
@@ -298,6 +323,14 @@ namespace OSE.Runtime.Preview
         {
             OseLog.Info($"[SessionDriver] Session '{evt.MachineId}' completed in {evt.TotalSeconds:F1}s.");
             RefreshInspectorState();
+
+            if (ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
+            {
+                int minutes = (int)(evt.TotalSeconds / 60f);
+                int secs = (int)(evt.TotalSeconds % 60f);
+                string timeStr = minutes > 0 ? $"{minutes}m {secs}s" : $"{secs}s";
+                ui.ShowMilestoneFeedback($"Tutorial Complete! ({timeStr})");
+            }
         }
 
         private void PushStepToUI()
@@ -378,6 +411,9 @@ namespace OSE.Runtime.Preview
             if (!ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
                 return;
 
+            ui.SetSessionMode(_sessionMode);
+            ui.ShowChallengeMetrics(0, 0, 0f, 0f, ResolveChallengeActive(_sessionMode, _editModePackage));
+
             if (_editModePackage == null)
             {
                 ui.ShowStepShell(0, 0, "Preview Unavailable", "Package not loaded.");
@@ -420,13 +456,28 @@ namespace OSE.Runtime.Preview
             int stepNumber,
             int totalSteps)
         {
+            bool showConfirm = string.Equals(step.completionMode, "confirmation_only",
+                StringComparison.OrdinalIgnoreCase);
+
+            ConfirmGate gate = ConfirmGate.None;
+            if (showConfirm)
+                gate = ResolveConfirmGate(step);
+
+            // Only show the hint button when hint interaction is the teaching goal
+            bool showHintButton = gate == ConfirmGate.RequestHint;
+
             ui.ShowStepShell(
                 stepNumber,
                 totalSteps,
                 step.GetDisplayName(),
-                step.BuildInstructionBody());
+                step.BuildInstructionBody(),
+                showConfirm,
+                showHintButton,
+                gate);
 
-            string partId = GetFirstNonEmpty(step.requiredPartIds) ?? GetFirstNonEmpty(step.optionalPartIds);
+            // Only auto-push part info for required parts.
+            // Optional parts should only show info when the user selects them.
+            string partId = GetFirstNonEmpty(step.requiredPartIds);
 
             if (!string.IsNullOrEmpty(partId) && package.TryGetPart(partId, out PartDefinition part))
             {
@@ -465,6 +516,9 @@ namespace OSE.Runtime.Preview
                 _stepNumber = 0;
                 _totalSteps = 0;
                 _elapsedSeconds = 0f;
+                _currentStepElapsedSeconds = 0f;
+                _lastStepDurationSeconds = 0f;
+                _completedStepCount = 0;
                 _mistakeCount = 0;
                 _hintsUsed = 0;
                 return;
@@ -474,6 +528,9 @@ namespace OSE.Runtime.Preview
             _currentAssemblyId = state.CurrentAssemblyId ?? "—";
             _currentStepId = state.CurrentStepId ?? "—";
             _elapsedSeconds = state.ElapsedSeconds;
+            _currentStepElapsedSeconds = state.CurrentStepElapsedSeconds;
+            _lastStepDurationSeconds = state.LastStepDurationSeconds;
+            _completedStepCount = state.CompletedStepCount;
             _mistakeCount = state.MistakeCount;
             _hintsUsed = state.HintsUsed;
 
@@ -485,9 +542,42 @@ namespace OSE.Runtime.Preview
             }
         }
 
+        private void PushChallengeMetricsToUI()
+        {
+            if (!ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
+                return;
+
+            MachineSessionState state = _session?.SessionState;
+            if (state == null)
+                return;
+
+            ui.ShowChallengeMetrics(
+                state.HintsUsed,
+                state.MistakeCount,
+                state.CurrentStepElapsedSeconds,
+                state.ElapsedSeconds,
+                state.ChallengeActive);
+        }
+
         // --------------------------------------------------------------------
         // Helpers
         // --------------------------------------------------------------------
+
+        private static ConfirmGate ResolveConfirmGate(StepDefinition step)
+        {
+            string[] tags = step.eventTags;
+            if (tags != null)
+            {
+                for (int i = 0; i < tags.Length; i++)
+                {
+                    if (string.Equals(tags[i], "select", StringComparison.OrdinalIgnoreCase))
+                        return ConfirmGate.SelectPart;
+                    if (string.Equals(tags[i], "hint", StringComparison.OrdinalIgnoreCase))
+                        return ConfirmGate.RequestHint;
+                }
+            }
+            return ConfirmGate.None;
+        }
 
         private static StepDefinition ResolveStepBySequenceIndex(StepDefinition[] orderedSteps, int sequenceIndex)
         {
@@ -544,6 +634,17 @@ namespace OSE.Runtime.Preview
                 sb.Append(values[i].Trim());
             }
             return sb.ToString();
+        }
+
+        private static bool ResolveChallengeActive(SessionMode mode, MachinePackageDefinition package)
+        {
+            if (mode != SessionMode.Challenge)
+                return false;
+
+            if (package?.challengeConfig != null)
+                return package.challengeConfig.enabled;
+
+            return true;
         }
     }
 }

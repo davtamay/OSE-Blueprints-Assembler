@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using OSE.Content;
+using OSE.Core;
 using UnityEditor;
 using UnityEngine;
 

@@ -71,5 +71,28 @@ namespace OSE.UI.Root
                 renderer.sharedMaterial = ghostMat;
             }
         }
+
+        /// <summary>
+        /// Updates the color of existing materials on the target without allocating new ones.
+        /// Useful for lightweight highlight pulses.
+        /// </summary>
+        public static void SetMaterialColor(GameObject target, Color color)
+        {
+            var renderers = target.GetComponentsInChildren<Renderer>(includeInactive: true);
+            if (renderers == null || renderers.Length == 0) return;
+
+            foreach (var renderer in renderers)
+            {
+                Material material = renderer.sharedMaterial;
+                if (material == null) continue;
+
+                if (material.HasProperty("_BaseColor"))
+                    material.SetColor("_BaseColor", color);
+                if (material.HasProperty("_Color"))
+                    material.SetColor("_Color", color);
+                if (material.HasProperty("_EmissionColor"))
+                    material.SetColor("_EmissionColor", color * 0.08f);
+            }
+        }
     }
 }

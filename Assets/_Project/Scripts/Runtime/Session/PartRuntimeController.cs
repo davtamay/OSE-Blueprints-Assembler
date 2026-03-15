@@ -16,6 +16,7 @@ namespace OSE.Runtime
         private MachinePackageDefinition _package;
         private readonly Dictionary<string, PartPlacementState> _partStates = new Dictionary<string, PartPlacementState>(StringComparer.OrdinalIgnoreCase);
         private string _selectedPartId;
+        private PartPlacementState _selectedPartPreviousState;
         private string _activeStepId;
 
         public string SelectedPartId => _selectedPartId;
@@ -71,9 +72,7 @@ namespace OSE.Runtime
                 return false;
 
             var currentState = GetPartState(partId);
-            if (currentState == PartPlacementState.NotIntroduced ||
-                currentState == PartPlacementState.Completed ||
-                currentState == PartPlacementState.PlacedVirtually)
+            if (currentState == PartPlacementState.NotIntroduced)
                 return false;
 
             // Deselect previous
@@ -81,6 +80,7 @@ namespace OSE.Runtime
                 DeselectPart();
 
             _selectedPartId = partId;
+            _selectedPartPreviousState = currentState;
             TransitionPart(partId, PartPlacementState.Selected);
             return true;
         }
@@ -93,11 +93,22 @@ namespace OSE.Runtime
             if (_selectedPartId == null) return;
 
             string partId = _selectedPartId;
+            var previousState = _selectedPartPreviousState;
             _selectedPartId = null;
+            _selectedPartPreviousState = PartPlacementState.Available;
 
             var state = GetPartState(partId);
-            if (state == PartPlacementState.Selected || state == PartPlacementState.Inspected)
-                TransitionPart(partId, PartPlacementState.Available);
+            if (state == PartPlacementState.Selected ||
+                state == PartPlacementState.Inspected ||
+                state == PartPlacementState.Grabbed)
+            {
+                // Restore to original state if it was Completed or PlacedVirtually
+                var restoreState = (previousState == PartPlacementState.Completed ||
+                                    previousState == PartPlacementState.PlacedVirtually)
+                    ? previousState
+                    : PartPlacementState.Available;
+                TransitionPart(partId, restoreState);
+            }
         }
 
         /// <summary>
@@ -125,9 +136,12 @@ namespace OSE.Runtime
             if (string.IsNullOrEmpty(partId)) return false;
 
             var currentState = GetPartState(partId);
+            bool requiredInActiveStep = IsPartRequiredInActiveStep(partId);
             if (currentState != PartPlacementState.Selected &&
                 currentState != PartPlacementState.Available &&
-                currentState != PartPlacementState.Inspected)
+                currentState != PartPlacementState.Inspected &&
+                (currentState != PartPlacementState.Completed || !requiredInActiveStep) &&
+                (currentState != PartPlacementState.PlacedVirtually || !requiredInActiveStep))
                 return false;
 
             TransitionPart(partId, PartPlacementState.Grabbed);
@@ -200,17 +214,85 @@ namespace OSE.Runtime
             return step.requiredPartIds ?? Array.Empty<string>();
         }
 
+        /// <summary>
+        /// Returns true if all required parts for the active step are placed (PlacedVirtually or Completed).
+        /// </summary>
+        public bool AreActiveStepRequiredPartsPlaced()
+        {
+            if (_package == null || string.IsNullOrEmpty(_activeStepId))
+                return false;
+
+            if (!_package.TryGetStep(_activeStepId, out var step))
+                return false;
+
+            string[] required = step.requiredPartIds;
+            if (required == null || required.Length == 0)
+                return true;
+
+            for (int i = 0; i < required.Length; i++)
+            {
+                string partId = required[i];
+                if (string.IsNullOrEmpty(partId))
+                    continue;
+
+                var state = GetPartState(partId);
+                if (state != PartPlacementState.PlacedVirtually && state != PartPlacementState.Completed)
+                    return false;
+            }
+
+            return true;
+        }
+
         private void HandleStepStateChanged(StepStateChanged evt)
         {
+            // Always clear selection on any step transition
+            if (_selectedPartId != null)
+            {
+                string prevSelected = _selectedPartId;
+                var previousState = _selectedPartPreviousState;
+                _selectedPartId = null;
+                _selectedPartPreviousState = PartPlacementState.Available;
+                var state = GetPartState(prevSelected);
+                if (state == PartPlacementState.Selected ||
+                    state == PartPlacementState.Inspected ||
+                    state == PartPlacementState.Grabbed)
+                {
+                    var restoreState = (previousState == PartPlacementState.Completed ||
+                                        previousState == PartPlacementState.PlacedVirtually)
+                        ? previousState
+                        : PartPlacementState.Available;
+                    TransitionPart(prevSelected, restoreState);
+                }
+            }
+
             if (evt.Current == StepState.Active)
             {
                 _activeStepId = evt.StepId;
+                ResetAllTransientStates();
                 IntroduceStepParts(evt.StepId);
             }
             else if (evt.Current == StepState.Completed)
             {
                 CompleteStepParts(evt.StepId);
             }
+        }
+
+        /// <summary>
+        /// Resets any part stuck in a transient state (Selected, Inspected, Grabbed)
+        /// back to Available. Guarantees no stuck state across step transitions.
+        /// </summary>
+        private void ResetAllTransientStates()
+        {
+            var keysToReset = new List<string>();
+            foreach (var kvp in _partStates)
+            {
+                if (kvp.Value == PartPlacementState.Selected ||
+                    kvp.Value == PartPlacementState.Inspected ||
+                    kvp.Value == PartPlacementState.Grabbed)
+                    keysToReset.Add(kvp.Key);
+            }
+            for (int i = 0; i < keysToReset.Count; i++)
+                TransitionPart(keysToReset[i], PartPlacementState.Available);
         }
 
         private void IntroduceStepParts(string stepId)
@@ -225,7 +307,7 @@ namespace OSE.Runtime
                 {
                     if (string.IsNullOrEmpty(partIds[i])) continue;
                     var current = GetPartState(partIds[i]);
-                    if (current == PartPlacementState.NotIntroduced)
+                    if (current != PartPlacementState.Available)
                         TransitionPart(partIds[i], PartPlacementState.Available);
                 }
             }
@@ -237,7 +319,7 @@ namespace OSE.Runtime
                 {
                     if (string.IsNullOrEmpty(optionalIds[i])) continue;
                     var current = GetPartState(optionalIds[i]);
-                    if (current == PartPlacementState.NotIntroduced)
+                    if (current != PartPlacementState.Available)
                         TransitionPart(optionalIds[i], PartPlacementState.Available);
                 }
             }
@@ -251,14 +333,30 @@ namespace OSE.Runtime
                 return;
 
             string[] partIds = step.requiredPartIds;
-            if (partIds == null) return;
-
-            for (int i = 0; i < partIds.Length; i++)
+            if (partIds != null)
             {
-                if (string.IsNullOrEmpty(partIds[i])) continue;
-                var current = GetPartState(partIds[i]);
-                if (current != PartPlacementState.Completed)
-                    TransitionPart(partIds[i], PartPlacementState.Completed);
+                for (int i = 0; i < partIds.Length; i++)
+                {
+                    if (string.IsNullOrEmpty(partIds[i])) continue;
+                    var current = GetPartState(partIds[i]);
+                    if (current != PartPlacementState.Completed)
+                        TransitionPart(partIds[i], PartPlacementState.Completed);
+                }
+            }
+
+            // Reset optional parts that were selected/inspected back to Available
+            string[] optionalIds = step.optionalPartIds;
+            if (optionalIds != null)
+            {
+                for (int i = 0; i < optionalIds.Length; i++)
+                {
+                    if (string.IsNullOrEmpty(optionalIds[i])) continue;
+                    var current = GetPartState(optionalIds[i]);
+                    if (current == PartPlacementState.Selected ||
+                        current == PartPlacementState.Inspected ||
+                        current == PartPlacementState.Grabbed)
+                        TransitionPart(optionalIds[i], PartPlacementState.Available);
+                }
             }
 
             _selectedPartId = null;
@@ -270,6 +368,27 @@ namespace OSE.Runtime
             _partStates[partId] = newState;
 
             RuntimeEventBus.Publish(new PartStateChanged(partId, _activeStepId ?? string.Empty, previous, newState));
+        }
+
+        private bool IsPartRequiredInActiveStep(string partId)
+        {
+            if (_package == null || string.IsNullOrEmpty(_activeStepId) || string.IsNullOrEmpty(partId))
+                return false;
+
+            if (!_package.TryGetStep(_activeStepId, out var step) || step.requiredPartIds == null)
+                return false;
+
+            for (int i = 0; i < step.requiredPartIds.Length; i++)
+            {
+                string requiredPartId = step.requiredPartIds[i];
+                if (string.IsNullOrEmpty(requiredPartId))
+                    continue;
+
+                if (string.Equals(requiredPartId, partId, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
         }
     }
 }

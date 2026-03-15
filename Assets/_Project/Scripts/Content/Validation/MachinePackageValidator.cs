@@ -247,7 +247,7 @@ namespace OSE.Content.Validation
                 ValidateOptionalReference(step.subassemblyId, subassemblyIds, $"{path}.subassemblyId", issues);
                 ValidateRequiredText(step.instructionText, $"{path}.instructionText", issues);
                 ValidateRequiredEnum(step.completionMode, CompletionModeValues, $"{path}.completionMode", issues);
-                ValidateRequiredReferences(step.requiredPartIds, partIds, $"{path}.requiredPartIds", issues);
+                ValidateOptionalReferences(step.requiredPartIds, partIds, $"{path}.requiredPartIds", issues);
                 ValidateOptionalReferences(step.optionalPartIds, partIds, $"{path}.optionalPartIds", issues);
                 ValidateOptionalReferences(step.relevantToolIds, toolIds, $"{path}.relevantToolIds", issues);
                 ValidateOptionalReferences(step.targetIds, targetIds, $"{path}.targetIds", issues);
