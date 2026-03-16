@@ -1509,11 +1509,14 @@ namespace OSE.UI.Root
         private void HandleStepStateChanged(StepStateChanged evt)
         {
             // On any step transition, force-clear drag state so nothing gets stuck.
-            // Keep selection until explicit click-away/cancel.
             ResetDragState();
 
             if (evt.Current == StepState.Active)
             {
+                // Clear any stale SelectionService selection so the dedup guard in
+                // NotifySelected doesn't block re-selection of the same part on the
+                // new step (e.g. beam selected on step 2 → must be selectable again on step 3).
+                DeselectFromSelectionService();
                 SpawnGhostsForStep(evt.StepId);
             }
             else if (evt.Current == StepState.Completed)
