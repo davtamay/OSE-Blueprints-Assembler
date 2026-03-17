@@ -306,6 +306,10 @@ namespace OSE.Interaction.V2
             if (!_bootstrapped)
                 return;
 
+            // Block all interaction while the intro overlay is displayed
+            if (OSE.Runtime.Preview.SessionDriver.IsIntroActive)
+                return;
+
             if (IsToolModeLockedForParts() && CurrentState == InteractionState.DraggingPart)
             {
                 if (_legacyBridge != null)
@@ -435,6 +439,41 @@ namespace OSE.Interaction.V2
                 t = t.parent;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Raycast for ghost trigger colliders at a screen position and focus camera if hit.
+        /// Uses RaycastAll because ghost colliders are triggers that may sit behind solid
+        /// environment colliders — a single Raycast would stop at the floor.
+        /// </summary>
+        private bool TryFocusGhost(Vector2 screenPos)
+        {
+            if (_cameraRig == null || _camera == null) return false;
+
+            Ray ray = _camera.ScreenPointToRay(screenPos);
+            RaycastHit[] hits = Physics.RaycastAll(ray, 100f, ~0, QueryTriggerInteraction.Collide);
+
+            for (int i = 0; i < hits.Length; i++)
+            {
+                if (!hits[i].collider.isTrigger) continue;
+
+                // Walk up hierarchy to find any MonoBehaviour whose type name contains "GhostPlacement"
+                Transform t = hits[i].collider.transform;
+                while (t != null)
+                {
+                    foreach (var comp in t.GetComponents<MonoBehaviour>())
+                    {
+                        if (comp != null && comp.GetType().Name == "GhostPlacementInfo")
+                        {
+                            _cameraRig.FocusOn(t.position);
+                            OseLog.Info($"[Orchestrator] Ghost focused at {t.position}");
+                            return true;
+                        }
+                    }
+                    t = t.parent;
+                }
+            }
+            return false;
         }
 
         private void ProcessIntent(InteractionIntent intent)
@@ -601,9 +640,17 @@ namespace OSE.Interaction.V2
                 else
                     _actionBridge?.OnPartSelected(intent.HitTarget);
 
-                // Smart pivot: shift camera to orbit around selected part
+                // Smart pivot: shift camera to orbit around placement target (or part if no ghost)
                 if (_settings.EnableSmartPivot && _cameraRig != null)
-                    _cameraRig.SetPivot(intent.HitTarget.transform.position);
+                {
+                    Vector3 pivotPos = intent.HitTarget.transform.position;
+                    if (_settings.EnablePivotToTarget && _legacyBridge != null &&
+                        _legacyBridge.TryGetGhostWorldPosForPart(intent.HitTarget.name, out Vector3 ghostPos))
+                    {
+                        pivotPos = ghostPos;
+                    }
+                    _cameraRig.SetPivot(pivotPos);
+                }
             }
             else
             {
@@ -612,6 +659,10 @@ namespace OSE.Interaction.V2
                 // takes priority over camera navigation).
                 if (SelectedPart != null && _legacyBridge != null &&
                     _legacyBridge.TryClickToPlace(intent.ScreenPosition))
+                    return;
+
+                // Check if click was on a ghost part → focus camera on it.
+                if (TryFocusGhost(intent.ScreenPosition))
                     return;
 
                 // Check if click was near a pulsating tool target → focus camera on it.

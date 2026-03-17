@@ -121,6 +121,13 @@ namespace OSE.UI.Root
         private string[] _requiredPartIdsForStep; // parts the user needs to grab for the current placement step
         private Vector3 _lastToolActionWorldPos;
 
+        // Step-based part visibility — only reveal parts when their step activates
+        private readonly HashSet<string> _revealedPartIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private const float PartLayoutRadius = 3.5f;      // distance from center for part staging
+        private const float PartLayoutArcDegrees = 140f;   // arc spread in front of camera
+        private const float PartLayoutBaseAngle = -70f;     // start angle offset (centered on -Z facing camera)
+        private const float PartLayoutY = 0.55f;            // height above floor
+
         // Sequential target ordering — tracks which targetId index is active
         // when the step uses targetOrder == "sequential".
         private int _sequentialTargetIndex;
@@ -160,6 +167,7 @@ namespace OSE.UI.Root
             RuntimeEventBus.Subscribe<PartStateChanged>(HandlePartStateChanged);
             RuntimeEventBus.Subscribe<HintRequested>(HandleHintRequested);
             RuntimeEventBus.Subscribe<ActiveToolChanged>(HandleActiveToolChanged);
+            RuntimeEventBus.Subscribe<SessionRestored>(HandleSessionRestored);
 
             EnsureInputWiring();
 
@@ -184,6 +192,7 @@ namespace OSE.UI.Root
             RuntimeEventBus.Unsubscribe<PartStateChanged>(HandlePartStateChanged);
             RuntimeEventBus.Unsubscribe<HintRequested>(HandleHintRequested);
             RuntimeEventBus.Unsubscribe<ActiveToolChanged>(HandleActiveToolChanged);
+            RuntimeEventBus.Unsubscribe<SessionRestored>(HandleSessionRestored);
 
             if (_actionRouter != null)
                 _actionRouter.OnAction -= HandleCanonicalAction;
@@ -197,6 +206,7 @@ namespace OSE.UI.Root
 
             ClearPartHoverVisual();
             _partStates.Clear();
+            _revealedPartIds.Clear();
             ClearRequiredPartEmission();
             _requiredPartIdsForStep = null;
             ClearToolGhostIndicator();
@@ -206,7 +216,13 @@ namespace OSE.UI.Root
 
         private void Update()
         {
+            // Startup sync must run even during intro so parts are revealed
             TrySyncStartupState();
+
+            // Block all interaction while the intro overlay is displayed
+            if (SessionDriver.IsIntroActive)
+                return;
+
             HandlePointerInput();
             UpdateSnapAnimation();
             UpdateInvalidFlash();
@@ -269,6 +285,8 @@ namespace OSE.UI.Root
 
         private void HandleCanonicalAction(CanonicalAction action)
         {
+            if (SessionDriver.IsIntroActive) return;
+
             switch (action)
             {
                 case CanonicalAction.Select:
@@ -1388,6 +1406,112 @@ namespace OSE.UI.Root
             }
         }
 
+        /// <summary>
+        /// Shows and positions all parts belonging to the current step's subassembly.
+        /// When the first step of a subassembly activates, all parts for that entire
+        /// subassembly appear at once — matching how a real workbench is organized.
+        /// Parts are arranged in an arc on the near side of the floor,
+        /// keeping the center clear for the machine being assembled.
+        /// </summary>
+        private void RevealStepParts(string stepId)
+        {
+            var package = _spawner?.CurrentPackage;
+            if (package == null || !package.TryGetStep(stepId, out var step))
+                return;
+
+            // Determine which subassembly we're in
+            string subassemblyId = step.subassemblyId;
+
+            // Collect all part ids for this subassembly (from all its steps)
+            var subassemblyPartIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrWhiteSpace(subassemblyId))
+            {
+                StepDefinition[] allSteps = package.GetOrderedSteps();
+                for (int s = 0; s < allSteps.Length; s++)
+                {
+                    if (!string.Equals(allSteps[s].subassemblyId, subassemblyId, StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    string[] rp = allSteps[s].requiredPartIds;
+                    if (rp == null) continue;
+                    for (int p = 0; p < rp.Length; p++)
+                    {
+                        if (!string.IsNullOrWhiteSpace(rp[p]))
+                            subassemblyPartIds.Add(rp[p]);
+                    }
+                }
+            }
+            else
+            {
+                // No subassembly — fall back to just this step's parts
+                string[] rp = step.requiredPartIds;
+                if (rp != null)
+                {
+                    for (int p = 0; p < rp.Length; p++)
+                    {
+                        if (!string.IsNullOrWhiteSpace(rp[p]))
+                            subassemblyPartIds.Add(rp[p]);
+                    }
+                }
+            }
+
+            if (subassemblyPartIds.Count == 0)
+                return;
+
+            // Filter to parts not yet revealed
+            var toReveal = new List<string>();
+            foreach (string partId in subassemblyPartIds)
+            {
+                if (!_revealedPartIds.Contains(partId))
+                    toReveal.Add(partId);
+            }
+
+            if (toReveal.Count == 0)
+                return;
+
+            // Layout: arrange new parts in an arc in front of the camera (negative Z side)
+            float arcStep = toReveal.Count > 1
+                ? PartLayoutArcDegrees / (toReveal.Count - 1)
+                : 0f;
+            float startAngle = toReveal.Count > 1
+                ? PartLayoutBaseAngle
+                : 0f; // single part goes straight ahead
+
+            for (int i = 0; i < toReveal.Count; i++)
+            {
+                string partId = toReveal[i];
+                GameObject partGo = FindSpawnedPart(partId);
+                if (partGo == null) continue;
+
+                // Calculate position on the arc
+                float angleDeg = startAngle + arcStep * i;
+                float angleRad = angleDeg * Mathf.Deg2Rad;
+                float x = Mathf.Sin(angleRad) * PartLayoutRadius;
+                float z = -Mathf.Cos(angleRad) * PartLayoutRadius;
+
+                // Use previewConfig scale if available, otherwise default
+                PartPreviewPlacement pp = _spawner.FindPartPlacement(partId);
+                Vector3 scale = pp != null
+                    ? new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z)
+                    : Vector3.one;
+
+                partGo.transform.localPosition = new Vector3(x, PartLayoutY, z);
+                partGo.transform.localRotation = Quaternion.identity;
+                partGo.transform.localScale = scale;
+                partGo.SetActive(true);
+
+                // Apply preview material color
+                Color col = pp != null
+                    ? new Color(pp.color.r, pp.color.g, pp.color.b, pp.color.a)
+                    : new Color(0.94f, 0.55f, 0.18f, 1f);
+                MaterialHelper.Apply(partGo, "Preview Part Material", col);
+
+                _revealedPartIds.Add(partId);
+                OseLog.VerboseInfo($"[PartInteraction] Revealed part '{partId}' at ({x:F1}, {PartLayoutY:F1}, {z:F1})");
+            }
+
+            OseLog.Info($"[PartInteraction] Revealed {toReveal.Count} part(s) for subassembly '{subassemblyId}'.");
+        }
+
         private void RefreshRequiredPartIds(string stepId)
         {
             ClearRequiredPartEmission();
@@ -1488,6 +1612,19 @@ namespace OSE.UI.Root
 
             _hintGhost = null;
             _hintHighlightUntil = 0f;
+        }
+
+        /// <summary>
+        /// Returns the world position of the nearest ghost target matching the given part ID.
+        /// Used by the V2 orchestrator to pivot the camera toward the placement target.
+        /// </summary>
+        public bool TryGetGhostWorldPosForPart(string partId, out Vector3 worldPos)
+        {
+            worldPos = Vector3.zero;
+            GhostPlacementInfo ghost = FindNearestGhostForPart(partId, Vector3.zero, out _);
+            if (ghost == null) return false;
+            worldPos = ghost.transform.position;
+            return true;
         }
 
         private GhostPlacementInfo FindNearestGhostForPart(string partId, Vector3 worldPos, out float nearestDist)
@@ -1651,6 +1788,24 @@ namespace OSE.UI.Root
         }
 
         // ── Runtime event handlers ──
+
+        private void HandleSessionRestored(SessionRestored evt)
+        {
+            if (evt.CompletedStepCount <= 0) return;
+
+            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+                return;
+
+            var progression = session.AssemblyController?.ProgressionController;
+            if (progression == null) return;
+
+            StepDefinition[] completedSteps = progression.GetStepsUpTo(evt.CompletedStepCount);
+            if (completedSteps.Length == 0) return;
+
+            RestoreCompletedStepParts(completedSteps);
+
+            OseLog.Info($"[PartInteraction] Restored visual state for {completedSteps.Length} completed steps.");
+        }
 
         private void HandleStepStateChanged(StepStateChanged evt)
         {
@@ -2883,24 +3038,61 @@ namespace OSE.UI.Root
             if (partIds == null) return;
 
             foreach (string partId in partIds)
+                MovePartToPlayPosition(partId);
+        }
+
+        /// <summary>
+        /// Moves parts from all given steps to their play positions and applies
+        /// completed visuals. Used by session restore to position parts in bulk
+        /// without replaying step events.
+        /// </summary>
+        public void RestoreCompletedStepParts(StepDefinition[] steps)
+        {
+            var package = _spawner?.CurrentPackage;
+            if (package == null || steps == null) return;
+
+            for (int s = 0; s < steps.Length; s++)
             {
-                if (string.IsNullOrEmpty(partId)) continue;
+                string[] partIds = steps[s].requiredPartIds;
+                if (partIds == null) continue;
 
-                PartPreviewPlacement pp = _spawner.FindPartPlacement(partId);
-                if (pp == null) continue;
+                for (int p = 0; p < partIds.Length; p++)
+                {
+                    string partId = partIds[p];
+                    if (string.IsNullOrEmpty(partId)) continue;
 
-                GameObject partGo = FindSpawnedPart(partId);
-                if (partGo == null) continue;
+                    MovePartToPlayPosition(partId);
 
-                Vector3    pPos   = new Vector3(pp.playPosition.x, pp.playPosition.y, pp.playPosition.z);
-                Vector3    pScale = new Vector3(pp.playScale.x, pp.playScale.y, pp.playScale.z);
-                Quaternion pRot   = !pp.playRotation.IsIdentity
-                    ? new Quaternion(pp.playRotation.x, pp.playRotation.y, pp.playRotation.z, pp.playRotation.w)
-                    : Quaternion.identity;
+                    GameObject partGo = FindSpawnedPart(partId);
+                    if (partGo != null)
+                    {
+                        MaterialHelper.Apply(partGo, "Preview Part Material", CompletedPartColor);
+                        MaterialHelper.SetEmission(partGo, Color.black);
+                    }
 
-                partGo.transform.SetLocalPositionAndRotation(pPos, pRot);
-                partGo.transform.localScale = pScale;
+                    _partStates[partId] = PartPlacementState.Completed;
+                }
             }
+        }
+
+        private void MovePartToPlayPosition(string partId)
+        {
+            if (string.IsNullOrEmpty(partId)) return;
+
+            PartPreviewPlacement pp = _spawner.FindPartPlacement(partId);
+            if (pp == null) return;
+
+            GameObject partGo = FindSpawnedPart(partId);
+            if (partGo == null) return;
+
+            Vector3    pPos   = new Vector3(pp.playPosition.x, pp.playPosition.y, pp.playPosition.z);
+            Vector3    pScale = new Vector3(pp.playScale.x, pp.playScale.y, pp.playScale.z);
+            Quaternion pRot   = !pp.playRotation.IsIdentity
+                ? new Quaternion(pp.playRotation.x, pp.playRotation.y, pp.playRotation.z, pp.playRotation.w)
+                : Quaternion.identity;
+
+            partGo.transform.SetLocalPositionAndRotation(pPos, pRot);
+            partGo.transform.localScale = pScale;
         }
 
         // ── Context menu: place selected part at target (debug shortcut) ──

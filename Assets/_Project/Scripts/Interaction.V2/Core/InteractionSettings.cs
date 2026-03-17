@@ -22,6 +22,8 @@ namespace OSE.Interaction.V2
         public bool EnableAutoFraming = true;
         public bool EnableVisibilitySolver = false;
         public bool EnableSmartPivot = true;
+        [Tooltip("When enabled, selecting a part pivots the camera to its ghost target (where it goes) instead of the part itself.")]
+        public bool EnablePivotToTarget = true;
         public bool EnableSuggestedViews = true;
         public bool EnableOrbitGizmo = false;
         public bool EnableVisionProInteractionModel = false;

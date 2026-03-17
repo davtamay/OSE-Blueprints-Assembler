@@ -27,6 +27,7 @@ namespace OSE.Interaction.V2.Integration
         private MethodInfo _tryExternalClickToPlaceMethod;
         private MethodInfo _tryExternalToolActionMethod;
         private MethodInfo _getNearestToolTargetWorldPosMethod;
+        private MethodInfo _tryGetGhostWorldPosForPartMethod;
         private PropertyInfo _lastToolActionWorldPosProperty;
         private GameObject _lastHoveredPart;
 
@@ -52,6 +53,8 @@ namespace OSE.Interaction.V2.Integration
             _tryExternalToolActionMethod = _legacyBridge.GetType().GetMethod("TryExternalToolAction",
                 BindingFlags.Public | BindingFlags.Instance);
             _getNearestToolTargetWorldPosMethod = _legacyBridge.GetType().GetMethod("TryGetNearestToolTargetWorldPos",
+                BindingFlags.Public | BindingFlags.Instance);
+            _tryGetGhostWorldPosForPartMethod = _legacyBridge.GetType().GetMethod("TryGetGhostWorldPosForPart",
                 BindingFlags.Public | BindingFlags.Instance);
             _lastToolActionWorldPosProperty = _legacyBridge.GetType().GetProperty("LastToolActionWorldPos",
                 BindingFlags.Public | BindingFlags.Instance);
@@ -85,6 +88,7 @@ namespace OSE.Interaction.V2.Integration
             _tryExternalClickToPlaceMethod = null;
             _tryExternalToolActionMethod = null;
             _getNearestToolTargetWorldPosMethod = null;
+            _tryGetGhostWorldPosForPartMethod = null;
             _lastToolActionWorldPosProperty = null;
             _lastHoveredPart = null;
         }
@@ -159,6 +163,26 @@ namespace OSE.Interaction.V2.Integration
 
             object[] args = { screenPos, Vector3.zero };
             object result = _getNearestToolTargetWorldPosMethod.Invoke(_legacyBridge, args);
+            if (result is true)
+            {
+                worldPos = (Vector3)args[1];
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Returns the world position of the ghost target for the given part ID.
+        /// Used to pivot the camera toward the placement destination on selection.
+        /// </summary>
+        public bool TryGetGhostWorldPosForPart(string partId, out Vector3 worldPos)
+        {
+            worldPos = Vector3.zero;
+            if (_legacyBridge == null || _tryGetGhostWorldPosForPartMethod == null)
+                return false;
+
+            object[] args = { partId, Vector3.zero };
+            object result = _tryGetGhostWorldPosForPartMethod.Invoke(_legacyBridge, args);
             if (result is true)
             {
                 worldPos = (Vector3)args[1];
