@@ -53,6 +53,23 @@ namespace OSE.UI.Controllers
             if (stepController == null || !stepController.HasActiveStep)
                 return;
 
+            if (session.ToolController != null)
+            {
+                // Check if this step requires a tool action to complete.
+                // If it does, the Confirm button must NOT bypass it.
+                if (session.ToolController.TryGetPrimaryActionSnapshot(
+                        out ToolRuntimeController.ToolActionSnapshot snapshot)
+                    && snapshot.IsConfigured && !snapshot.IsCompleted)
+                {
+                    ToolRuntimeController.ToolActionExecutionResult toolResult =
+                        session.ToolController.TryExecutePrimaryAction();
+
+                    // Block completion unless the tool action says the step is done.
+                    if (!toolResult.ShouldCompleteStep)
+                        return;
+                }
+            }
+
             stepController.CompleteStep(session.GetElapsedSeconds());
         }
 

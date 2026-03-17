@@ -1,7 +1,8 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
-using GLTFast.Export;
+using System.Reflection;
+using System.Threading.Tasks;
 using OSE.Content;
 using UnityEditor;
 using UnityEngine;
@@ -9,7 +10,7 @@ using UnityEngine;
 namespace OSE.Editor
 {
     /// <summary>
-    /// Generates minimal dummy .glb stubs for every part assetRef referenced in each
+    /// Generates minimal dummy .glb stubs for every part/tool assetRef referenced in each
     /// machine package's machine.json. These are Unity primitive shapes (Cube, Capsule,
     /// Cylinder) that give the harness something real to load and render until proper
     /// modelled assets are dropped into the package.
@@ -29,6 +30,7 @@ namespace OSE.Editor
     public static class PackageDummyMeshGenerator
     {
         private const string AuthoringRoot = "Assets/_Project/Data/Packages";
+        private const string GameObjectExportTypeName = "GLTFast.Export.GameObjectExport";
 
         private static readonly (string keyword, PrimitiveType shape)[] ShapeRules =
         {
@@ -44,6 +46,7 @@ namespace OSE.Editor
             ("sphere", PrimitiveType.Sphere),
         };
 
+        [MenuItem("OSE/Generate Dummy Package Meshes (Parts + Tools)")]
         [MenuItem("OSE/Generate Dummy Part Meshes")]
         private static async void GenerateDummyMeshes()
         {
@@ -54,13 +57,23 @@ namespace OSE.Editor
                 return;
             }
 
+            if (!TryResolveGltfExportApi(out var exportType, out var addSceneMethod, out var saveMethod))
+            {
+                const string message =
+                    "[PackageDummyMeshGenerator] glTFast export API is unavailable. " +
+                    "Install the glTFast package to generate .glb dummy meshes.";
+                Debug.LogError(message);
+                EditorUtility.DisplayDialog("Dummy Mesh Generation", message, "OK");
+                return;
+            }
+
             int generated = 0;
             int skipped   = 0;
             var tempObjects = new List<GameObject>();
 
             try
             {
-                EditorUtility.DisplayProgressBar("Generating Dummy Part Meshes", "Reading packages...", 0f);
+                EditorUtility.DisplayProgressBar("Generating Dummy Package Meshes", "Reading packages...", 0f);
 
                 var packageDirs = Directory.GetDirectories(fullRoot);
 
@@ -74,23 +87,50 @@ namespace OSE.Editor
 
                     float progress = (float)pi / packageDirs.Length;
                     EditorUtility.DisplayProgressBar(
-                        "Generating Dummy Part Meshes",
+                        "Generating Dummy Package Meshes",
                         $"Package: {packageId}", progress);
 
                     var pkg = JsonUtility.FromJson<MachinePackageDefinition>(
                         File.ReadAllText(jsonPath));
 
-                    if (pkg?.parts == null) continue;
+                    if (pkg == null) continue;
 
-                    // Collect unique assetRef paths across all parts
-                    var refs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                    foreach (var part in pkg.parts)
+                    // Collect unique assetRef paths across all parts + tools
+                    var refs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+                    if (pkg.parts != null)
                     {
-                        if (!string.IsNullOrWhiteSpace(part.assetRef)) refs.Add(part.assetRef);
+                        foreach (var part in pkg.parts)
+                        {
+                            if (part == null ||
+                                string.IsNullOrWhiteSpace(part.assetRef) ||
+                                string.IsNullOrWhiteSpace(part.id))
+                            {
+                                continue;
+                            }
+
+                            AddAssetRef(refs, part.assetRef, part.id);
+                        }
                     }
 
-                    foreach (string assetRef in refs)
+                    if (pkg.tools != null)
                     {
+                        foreach (var tool in pkg.tools)
+                        {
+                            if (tool == null ||
+                                string.IsNullOrWhiteSpace(tool.assetRef) ||
+                                string.IsNullOrWhiteSpace(tool.id))
+                            {
+                                continue;
+                            }
+
+                            AddAssetRef(refs, tool.assetRef, tool.id);
+                        }
+                    }
+
+                    foreach (var assetEntry in refs)
+                    {
+                        string assetRef = assetEntry.Key;
                         string outPath = Path.Combine(packageDir, assetRef.Replace('/', Path.DirectorySeparatorChar));
 
                         if (File.Exists(outPath))
@@ -101,18 +141,8 @@ namespace OSE.Editor
 
                         Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
 
-                        // Determine which part this ref belongs to (for shape choice)
-                        string partId = assetRef;
-                        foreach (var part in pkg.parts)
-                        {
-                            if (string.Equals(part.assetRef, assetRef, StringComparison.OrdinalIgnoreCase))
-                            {
-                                partId = part.id;
-                                break;
-                            }
-                        }
-
-                        PrimitiveType shape = PickShape(partId);
+                        string sourceId = assetEntry.Value;
+                        PrimitiveType shape = PickShape(sourceId);
 
                         // Create the primitive, export, destroy
                         GameObject go = GameObject.CreatePrimitive(shape);
@@ -123,9 +153,12 @@ namespace OSE.Editor
 
                         tempObjects.Add(go);
 
-                        var export = new GameObjectExport();
-                        export.AddScene(new[] { go });
-                        bool ok = await export.SaveToFileAndDispose(outPath);
+                        bool ok = await ExportWithGltfFastAsync(
+                            exportType,
+                            addSceneMethod,
+                            saveMethod,
+                            go,
+                            outPath);
 
                         if (ok)
                         {
@@ -168,6 +201,15 @@ namespace OSE.Editor
                 if (lower.Contains(keyword)) return shape;
             }
 
+            if (lower.Contains("wrench") || lower.Contains("spanner"))
+                return PrimitiveType.Cylinder;
+
+            if (lower.Contains("hammer") || lower.Contains("mallet"))
+                return PrimitiveType.Capsule;
+
+            if (lower.Contains("measure") || lower.Contains("square"))
+                return PrimitiveType.Cube;
+
             // flat plate heuristics
             if (lower.Contains("plate") || lower.Contains("panel") ||
                 lower.Contains("sheet") || lower.Contains("frame"))
@@ -176,6 +218,130 @@ namespace OSE.Editor
             }
 
             return PrimitiveType.Cube;
+        }
+
+        private static void AddAssetRef(Dictionary<string, string> refs, string assetRef, string sourceId)
+        {
+            if (string.IsNullOrWhiteSpace(assetRef))
+                return;
+
+            string normalizedRef = assetRef.Trim();
+            if (refs.ContainsKey(normalizedRef))
+                return;
+
+            refs[normalizedRef] = string.IsNullOrWhiteSpace(sourceId)
+                ? normalizedRef
+                : sourceId.Trim();
+        }
+
+        private static bool TryResolveGltfExportApi(
+            out Type exportType,
+            out MethodInfo addSceneMethod,
+            out MethodInfo saveMethod)
+        {
+            exportType = null;
+            addSceneMethod = null;
+            saveMethod = null;
+
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                exportType = assembly.GetType(GameObjectExportTypeName, throwOnError: false);
+                if (exportType != null)
+                    break;
+            }
+
+            if (exportType == null)
+                return false;
+
+            addSceneMethod = exportType.GetMethod(
+                "AddScene",
+                BindingFlags.Public | BindingFlags.Instance,
+                null,
+                new[] { typeof(GameObject[]) },
+                null);
+
+            if (addSceneMethod == null)
+            {
+                MethodInfo[] candidates = exportType.GetMethods(BindingFlags.Public | BindingFlags.Instance);
+                for (int i = 0; i < candidates.Length; i++)
+                {
+                    MethodInfo candidate = candidates[i];
+                    if (!string.Equals(candidate.Name, "AddScene", StringComparison.Ordinal))
+                        continue;
+
+                    if (candidate.GetParameters().Length == 1)
+                    {
+                        addSceneMethod = candidate;
+                        break;
+                    }
+                }
+            }
+
+            saveMethod = exportType.GetMethod(
+                "SaveToFileAndDispose",
+                BindingFlags.Public | BindingFlags.Instance,
+                null,
+                new[] { typeof(string) },
+                null);
+
+            return addSceneMethod != null && saveMethod != null;
+        }
+
+        private static async Task<bool> ExportWithGltfFastAsync(
+            Type exportType,
+            MethodInfo addSceneMethod,
+            MethodInfo saveMethod,
+            GameObject sourceRoot,
+            string outPath)
+        {
+            object exporter = null;
+
+            try
+            {
+                exporter = Activator.CreateInstance(exportType);
+                if (exporter == null)
+                    return false;
+
+                ParameterInfo[] addSceneParams = addSceneMethod.GetParameters();
+                object[] addArgs;
+
+                if (addSceneParams.Length == 1)
+                {
+                    addArgs = new object[] { new[] { sourceRoot } };
+                }
+                else
+                {
+                    Debug.LogError("[PackageDummyMeshGenerator] Unsupported AddScene signature on GLTFast exporter.");
+                    return false;
+                }
+
+                addSceneMethod.Invoke(exporter, addArgs);
+                object saveResult = saveMethod.Invoke(exporter, new object[] { outPath });
+
+                if (saveResult is Task<bool> boolTask)
+                    return await boolTask;
+
+                if (saveResult is Task task)
+                {
+                    await task;
+                    return true;
+                }
+
+                if (saveResult is bool boolResult)
+                    return boolResult;
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[PackageDummyMeshGenerator] glTFast export invocation failed: {ex}");
+                return false;
+            }
+            finally
+            {
+                if (exporter is IDisposable disposable)
+                    disposable.Dispose();
+            }
         }
     }
 }

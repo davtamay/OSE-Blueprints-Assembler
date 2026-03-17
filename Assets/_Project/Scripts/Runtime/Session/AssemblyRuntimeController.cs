@@ -18,6 +18,7 @@ namespace OSE.Runtime
         public string CurrentAssemblyId => _currentAssemblyId;
         public StepController StepController { get; } = new StepController();
         public ProgressionController ProgressionController { get; } = new ProgressionController();
+        private readonly StepPreflightValidator _preflightValidator = new StepPreflightValidator();
 
         /// <summary>
         /// Raised when an assembly completes all its steps.
@@ -59,6 +60,7 @@ namespace OSE.Runtime
 
             // Activate the first step
             StepDefinition firstStep = ProgressionController.GetCurrentStep();
+            _preflightValidator.Validate(_package, firstStep);
             StepController.ActivateStep(firstStep, getElapsed());
         }
 
@@ -84,6 +86,7 @@ namespace OSE.Runtime
 
             if (nextStep != null)
             {
+                _preflightValidator.Validate(_package, nextStep);
                 StepController.ActivateStep(nextStep, evt.AtSeconds);
             }
             else

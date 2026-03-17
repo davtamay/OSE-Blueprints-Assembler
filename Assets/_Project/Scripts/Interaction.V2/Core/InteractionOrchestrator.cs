@@ -184,6 +184,8 @@ namespace OSE.Interaction.V2
                 OseLog.Warn("[InteractionOrchestrator] PackagePartSpawner not found. Part hit validation disabled.");
 
             RuntimeEventBus.Subscribe<PartStateChanged>(HandlePartStateChanged);
+            RuntimeEventBus.Subscribe<StepStateChanged>(HandleStepStateChanged);
+            RuntimeEventBus.Subscribe<RepositionModeChanged>(HandleRepositionModeChanged);
 
             _bootstrapped = true;
             OseLog.Info($"[InteractionOrchestrator] V2 READY. Mode={mode} Camera={_camera.name} LegacyBridge={_legacyBridge.IsConnected}");
@@ -227,7 +229,56 @@ namespace OSE.Interaction.V2
         private void OnDestroy()
         {
             RuntimeEventBus.Unsubscribe<PartStateChanged>(HandlePartStateChanged);
+            RuntimeEventBus.Unsubscribe<StepStateChanged>(HandleStepStateChanged);
+            RuntimeEventBus.Unsubscribe<RepositionModeChanged>(HandleRepositionModeChanged);
             _legacyBridge?.Disconnect();
+        }
+
+        private void HandleStepStateChanged(StepStateChanged evt)
+        {
+            if (!_bootstrapped) return;
+            if (evt.Current != StepState.Active) return;
+
+            // Clear stale selection/drag state so the new step starts from Idle.
+            // PartInteractionBridge and PartRuntimeController handle their own cleanup;
+            // this just keeps the Orchestrator's own fields in sync.
+            SelectedPart = null;
+            DraggedPart = null;
+            TransitionTo(InteractionState.Idle);
+        }
+
+        private void HandleRepositionModeChanged(RepositionModeChanged evt)
+        {
+            if (!_bootstrapped) return;
+
+            if (evt.IsActive)
+            {
+                // Release any in-progress drag and deselect
+                if (CurrentState == InteractionState.DraggingPart && DraggedPart != null)
+                {
+                    if (_legacyBridge != null)
+                        _legacyBridge.ReleasePart();
+                    else
+                        _actionBridge?.OnPartReleased();
+                    DraggedPart = null;
+                }
+
+                if (SelectedPart != null)
+                {
+                    SelectedPart = null;
+                    if (_legacyBridge != null)
+                        _legacyBridge.DeselectAll();
+                    else
+                        _actionBridge?.OnDeselected();
+                }
+
+                HoveredPart = null;
+                TransitionTo(InteractionState.RepositioningAssembly);
+            }
+            else
+            {
+                TransitionTo(InteractionState.Idle);
+            }
         }
 
         private void HandlePartStateChanged(PartStateChanged evt)
@@ -388,6 +439,14 @@ namespace OSE.Interaction.V2
 
         private void ProcessIntent(InteractionIntent intent)
         {
+            // Suppress all intents during reposition mode (Cancel exits via event bus)
+            if (CurrentState == InteractionState.RepositioningAssembly)
+            {
+                if (intent.IntentKind == InteractionIntent.Kind.Cancel)
+                    RuntimeEventBus.Publish(new RepositionModeChanged(false));
+                return;
+            }
+
             // UI takes priority — intent provider should already suppress,
             // but double-check here.
             if (intent.IsOverUI)
@@ -769,6 +828,15 @@ namespace OSE.Interaction.V2
                 // Focus camera on the executed target so the user can see the result.
                 if (_cameraRig != null && _legacyBridge.TryGetLastToolActionWorldPos(out Vector3 actionWorldPos))
                     _cameraRig.FocusOn(actionWorldPos);
+                return;
+            }
+
+            // Tool action failed (wrong tool, no tool equipped, etc.) — still focus
+            // camera on the nearest target sphere so the user can navigate to it.
+            if (_cameraRig != null &&
+                _legacyBridge.TryGetNearestToolTargetWorldPos(screenPos, out Vector3 nearestTargetPos))
+            {
+                _cameraRig.FocusOn(nearestTargetPos);
                 return;
             }
 

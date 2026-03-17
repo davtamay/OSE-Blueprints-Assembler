@@ -35,6 +35,8 @@ namespace OSE.Input
         public void OnConfirm(InputAction.CallbackContext ctx)          { if (ctx.performed) Dispatch(CanonicalAction.Confirm); }
         public void OnCancel(InputAction.CallbackContext ctx)           { if (ctx.performed) Dispatch(CanonicalAction.Cancel); }
         public void OnRequestHint(InputAction.CallbackContext ctx)      { if (ctx.performed) Dispatch(CanonicalAction.RequestHint); }
+        public void OnToggleToolMenu(InputAction.CallbackContext ctx)   { if (ctx.performed) Dispatch(CanonicalAction.ToggleToolMenu); }
+        public void OnToolPrimaryAction(InputAction.CallbackContext ctx) { if (ctx.performed) Dispatch(CanonicalAction.ToolPrimaryAction); }
         public void OnTogglePhysicalMode(InputAction.CallbackContext ctx) { if (ctx.performed) Dispatch(CanonicalAction.TogglePhysicalMode); }
         public void OnNext(InputAction.CallbackContext ctx)             { if (ctx.performed) Dispatch(CanonicalAction.Next); }
         public void OnPrevious(InputAction.CallbackContext ctx)         { if (ctx.performed) Dispatch(CanonicalAction.Previous); }

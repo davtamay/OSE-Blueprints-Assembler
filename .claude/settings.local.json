@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep:*)",
+      "Bash(grep -E \"\\\\.\\(cs|meta\\)$\")",
+      "Bash(grep -n \"^\\\\s*//\" \"/c/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Scripts/Runtime/Session/PartRuntimeController.cs\")",
+      "Bash(grep -n \"TODO\\\\|FIXME\\\\|HACK\\\\|XXX\" \"/c/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Scripts/Runtime/Session/\"*.cs)",
+      "Bash(grep -n \"^\\\\s*//.*\" \"/c/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Scripts/UI/Root/UIRootCoordinator.cs\")",
+      "Bash(grep -v \"^[0-9]*:\\\\s*///\")",
+      "Bash(node -e \":*)",
+      "WebSearch",
+      "Bash(find 'c:/Users/davta/Repos/OSE Blueprints Assembler/Assets' -path */Packages/* -name *.gltf -o -path */Packages/* -name *.glb)",
+      "Bash(md5sum \"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Data/Packages/power_cube_frame_corner/assets/parts/\"*.glb \"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Data/Packages/onboarding_tutorial/assets/parts/\"*.bin)",
+      "Bash(SA=\"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/StreamingAssets/MachinePackages/power_cube_frame\" mkdir -p \"$SA/assets/parts\" \"$SA/assets/tools\" __NEW_LINE_81a30dac1b24c3f5__ cp -r \"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Data/Packages/power_cube_frame/assets/parts/\"* \"$SA/assets/parts/\" cp -r \"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Data/Packages/power_cube_frame/assets/tools/\"* \"$SA/assets/tools/\" __NEW_LINE_81a30dac1b24c3f5__ echo \"StreamingAssets structure:\" find \"$SA\" -type f)"
+    ]
+  }
+}

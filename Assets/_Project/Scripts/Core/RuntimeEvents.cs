@@ -116,6 +116,97 @@ namespace OSE.Core
         }
     }
 
+    // ── Tool Events ──
+
+    public readonly struct ActiveToolChanged
+    {
+        public readonly string PreviousToolId;
+        public readonly string CurrentToolId;
+        public readonly bool IsRequiredForActiveStep;
+
+        public ActiveToolChanged(string previousToolId, string currentToolId, bool isRequiredForActiveStep)
+        {
+            PreviousToolId = previousToolId;
+            CurrentToolId = currentToolId;
+            IsRequiredForActiveStep = isRequiredForActiveStep;
+        }
+    }
+
+    public readonly struct ToolActionProgressed
+    {
+        public readonly string StepId;
+        public readonly string ToolId;
+        public readonly ToolActionType ActionType;
+        public readonly int CurrentCount;
+        public readonly int RequiredCount;
+        public readonly string Message;
+
+        public ToolActionProgressed(
+            string stepId,
+            string toolId,
+            ToolActionType actionType,
+            int currentCount,
+            int requiredCount,
+            string message)
+        {
+            StepId = stepId;
+            ToolId = toolId;
+            ActionType = actionType;
+            CurrentCount = currentCount;
+            RequiredCount = requiredCount;
+            Message = message;
+        }
+    }
+
+    public readonly struct ToolActionCompleted
+    {
+        public readonly string StepId;
+        public readonly string ToolId;
+        public readonly ToolActionType ActionType;
+        public readonly int RequiredCount;
+        public readonly string Message;
+
+        public ToolActionCompleted(
+            string stepId,
+            string toolId,
+            ToolActionType actionType,
+            int requiredCount,
+            string message)
+        {
+            StepId = stepId;
+            ToolId = toolId;
+            ActionType = actionType;
+            RequiredCount = requiredCount;
+            Message = message;
+        }
+    }
+
+    public readonly struct ToolActionFailed
+    {
+        public readonly string StepId;
+        public readonly string RequiredToolId;
+        public readonly string ActiveToolId;
+        public readonly ToolActionType ActionType;
+        public readonly ToolActionFailureReason FailureReason;
+        public readonly string Message;
+
+        public ToolActionFailed(
+            string stepId,
+            string requiredToolId,
+            string activeToolId,
+            ToolActionType actionType,
+            ToolActionFailureReason failureReason,
+            string message)
+        {
+            StepId = stepId;
+            RequiredToolId = requiredToolId;
+            ActiveToolId = activeToolId;
+            ActionType = actionType;
+            FailureReason = failureReason;
+            Message = message;
+        }
+    }
+
     // ── Part Events ──
 
     public readonly struct PartStateChanged
@@ -152,6 +243,22 @@ namespace OSE.Core
         }
     }
 
+    // ── Step Readiness Events ──
+
+    public readonly struct StepReadinessChecked
+    {
+        public readonly string StepId;
+        public readonly bool IsReady;
+        public readonly string[] Issues;
+
+        public StepReadinessChecked(string stepId, bool isReady, string[] issues)
+        {
+            StepId = stepId;
+            IsReady = isReady;
+            Issues = issues;
+        }
+    }
+
     // ── Assembly Events ──
 
     public readonly struct AssemblyStarted
@@ -171,6 +278,26 @@ namespace OSE.Core
         public AssemblyCompleted(string assemblyId)
         {
             AssemblyId = assemblyId;
+        }
+    }
+
+    public readonly struct MachineIntroDismissed
+    {
+        public readonly string MachineId;
+
+        public MachineIntroDismissed(string machineId)
+        {
+            MachineId = machineId;
+        }
+    }
+
+    public readonly struct RepositionModeChanged
+    {
+        public readonly bool IsActive;
+
+        public RepositionModeChanged(bool isActive)
+        {
+            IsActive = isActive;
         }
     }
 }

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using OSE.Content;
 using OSE.Core;
 using OSE.Runtime.Preview;
+using System.IO;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.Receiver.Rendering;
@@ -27,8 +28,9 @@ namespace OSE.UI.Root
     public sealed class PackagePartSpawner : MonoBehaviour
     {
         private const string SamplePartName = "Sample Beam";
-        private static readonly Color HoveredAffordanceColor = new Color(0.40f, 0.85f, 1.0f, 1.0f);
+        private static readonly Color HoveredAffordanceColor = new Color(0.60f, 0.82f, 1.0f, 1.0f);
         private static readonly Color SelectedAffordanceColor = new Color(1.0f, 0.85f, 0.2f, 1.0f);
+        private static readonly HashSet<string> MissingAssetWarnings = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
 
         private PreviewSceneSetup _setup;
         private MachinePackageDefinition _currentPackage;
@@ -47,6 +49,12 @@ namespace OSE.UI.Root
         {
             _setup = GetComponent<PreviewSceneSetup>();
             SessionDriver.PackageChanged += HandlePackageChanged;
+
+            // Catch up if this component enabled after the latest package event.
+            if (SessionDriver.CurrentPackage != null)
+            {
+                HandlePackageChanged(SessionDriver.CurrentPackage);
+            }
         }
 
         private void OnDisable()
@@ -80,7 +88,19 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
-        /// Loads a GLB asset from AssetDatabase and returns a new scene instance
+        /// Applies a package snapshot immediately. Used by late-initializing listeners
+        /// that need deterministic startup behavior in play mode.
+        /// </summary>
+        public void ApplyPackageSnapshot(MachinePackageDefinition package)
+        {
+            if (package == null)
+                return;
+
+            HandlePackageChanged(package);
+        }
+
+        /// <summary>
+        /// Loads a package model asset from AssetDatabase and returns a new scene instance
         /// parented under PreviewRoot, or null if the asset isn't imported yet.
         /// Play-mode instances get MeshColliders; edit-mode colliders are stripped.
         /// </summary>
@@ -101,9 +121,29 @@ namespace OSE.UI.Root
                     if (asset is GameObject go) { prefab = go; break; }
             }
 
+            if (prefab == null && assetPath.EndsWith(".glb"))
+            {
+                string gltfPath = Path.ChangeExtension(assetPath, ".gltf");
+                prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(gltfPath);
+                if (prefab == null)
+                {
+                    foreach (var asset in UnityEditor.AssetDatabase.LoadAllAssetsAtPath(gltfPath))
+                        if (asset is GameObject go) { prefab = go; break; }
+                }
+
+                if (prefab != null)
+                    OseLog.Warn($"[PackagePartSpawner] Fallback loaded GLTF for missing GLB ref: {assetPath} -> {gltfPath}");
+            }
+
             if (prefab == null)
             {
-                OseLog.Warn($"[PackagePartSpawner] GLB not in AssetDatabase: {assetPath}");
+                if (MissingAssetWarnings.Add(assetPath))
+                {
+                    if (File.Exists(assetPath))
+                        OseLog.Warn($"[PackagePartSpawner] Model exists but could not be imported as a GameObject: {assetPath}. Falling back to primitive preview.");
+                    else
+                        OseLog.Warn($"[PackagePartSpawner] Asset prefab not in AssetDatabase: {assetPath}");
+                }
                 return null;
             }
 

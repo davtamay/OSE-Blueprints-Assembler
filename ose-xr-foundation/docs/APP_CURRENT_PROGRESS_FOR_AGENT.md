@@ -16,23 +16,20 @@ It should answer three questions quickly:
 
 ## Last Updated
 
-- March 14, 2026 (Phase 11 onboarding tutorial vertical slice: new 5-step tutorial package, confirmation step Continue button, step completion toast, session completion banner, progress bar in step panel)
+- March 16, 2026 (Phase 12 Slice 3: onboarding tutorial upgraded to a 6-step tool flow with equip/use tool-action gating, movement lock hardening, and package cleanup/sync)
 
 ---
 
 ## Phase Numbering Authority
 
-Use this file as the **canonical active phase track** for current implementation sequencing.
+This file and `IMPLEMENTATION_CHECKLIST.md` now use one canonical phase sequence.
 
-To remove ambiguity with long-horizon planning docs:
+- Completed through **Phase 11** = Onboarding Tutorial Vertical Slice.
+- Next **Phase 12** = Tool Use Framework and Modular Tool Actions.
+- Following **Phase 13** = XR Validation and Challenge UX.
 
-- Active **Phase 10** = XR Grab Interaction and Canonical Input Wiring (this file).
-- Active **Phase 11** = XR Validation and Challenge UX (this file).
-- `IMPLEMENTATION_CHECKLIST.md` uses legacy roadmap numbering where:
-  - Legacy Checklist Phase 10 = Physical Substitution Workflow.
-  - Legacy Checklist Phase 11 = Tutorial Vertical Slice.
-
-When phase numbers conflict across docs, this file is the execution source of truth.
+If a mismatch appears, update both docs in the same changeset.
+During active implementation, this file remains the execution source of truth.
 
 ---
 
@@ -122,7 +119,7 @@ These rules are enforced by the docs in this folder and by the current code layo
 - `MachinePackageValidator` validates ids, required fields, enum-like schema values, and cross-definition references.
 - `MachinePackageLoader` loads `machine.json` packages from `Assets/StreamingAssets/MachinePackages/`.
 - Two sample packages now exist:
-  - `tutorial_build`
+  - `onboarding_tutorial`
   - `power_cube_frame_corner`
 - The mechanics preview scene now reads content-driven step and part data from a machine package instead of relying only on hardcoded UI strings.
 - Preview configuration was simplified after Phase 6 by moving scene-facing preview data into ScriptableObject assets under `Assets/_Project/Data/Preview/`. These were later consolidated into `SessionDriver` (see Phase 7).
@@ -254,12 +251,42 @@ They are not the future runtime authority for real content or progression logic.
 
 Why this phase is considered complete:
 
-- XRGrabInteractable is added to spawned parts when XR is active (via `PackagePartSpawner`).
-- XRIInteractionAdapter now notifies `SelectionService` and injects canonical Grab/Place actions.
-- `PartInteractionBridge` listens to canonical actions for Select/Inspect/Grab/Place/RequestHint.
-- `SelectionService` drives `PartRuntimeController` selection (no raw click bypass).
-- Multi-target steps now complete only after all required parts are placed at their matching targets.
-- Challenge metrics tracked in `MachineSessionState`: hints used, failed attempts, and per-step timing.
+- `onboarding_tutorial` package now runs a full 6-step interaction-first flow with tool equip/use inserted between beam and bracket placement.
+- `completionMode: "confirmation_only"` steps now show a touch-friendly Continue button wired to `StepController.CompleteStep()`.
+- Session HUD now shows a short step-completion toast and a persistent session-completion milestone banner.
+- Step panel now includes a progress bar reflecting current step / total steps.
+- Session defaults switched to tutorial mode and the onboarding package for immediate end-to-end validation.
+
+### Active Phase In Progress
+
+- **Phase 12: Tool Use Framework and Modular Tool Actions (Slice 1-3 implemented)**
+
+What is now implemented:
+
+- `ToolRuntimeController` added and registered via `AppBootstrap`; tracks package tools, active step required tools (`relevantToolIds`), and active equipped tool.
+- `MachineSessionController` now initializes/disposes `ToolRuntimeController` with the active package lifecycle.
+- New bottom-center UI Toolkit tool dock menu added with:
+  - collapsible Tools button
+  - package-driven tool list
+  - required-tools-first ordering per active step
+  - active tool status display
+- New tool info panel added in the right column (under part info), showing hovered/selected tool metadata (category, purpose, usage, safety).
+- Tool menu selection now equips a runtime-active tool and updates tool info presentation immediately.
+- `Test_Assembly_Mechanics.unity` now defaults to `onboarding_tutorial` in tutorial mode for immediate end-to-end onboarding validation.
+- Core tool-action contracts/events now exist (`ToolActionType`, `ToolActionFailureReason`, `ActiveToolChanged`, `ToolActionProgressed`, `ToolActionCompleted`, `ToolActionFailed`).
+- `step_fasten_bolts` now includes `requiredToolActions` content and requires `tool_wrench_13mm` tighten actions (count = 3) before completion.
+- Confirmation flow now routes through `ToolRuntimeController.TryExecutePrimaryAction()`; steps with required tool actions no longer complete until tool-action criteria are satisfied.
+- Canonical action groundwork now includes `CanonicalAction.ToolPrimaryAction` and `CanonicalAction.ToggleToolMenu`.
+- Tool schema usage now requires `tools[].assetRef`; `MachinePackageValidator` validates this so packages explicitly declare tool assets.
+- Package authoring now expects `assets/tools/` as a sibling to `assets/parts/`; dummy tool GLBs were seeded in package folders for immediate preview/runtime use.
+- `PackageDummyMeshGenerator` now generates missing dummy meshes from both part and tool `assetRef` entries (single pass across package JSON).
+- Tool dock now supports explicit unequip UX (`Clear Active Tool`) and re-click on equipped tool chip to toggle unequip.
+- Active equipped tool now renders as a pointer-follow cursor badge with mouse/touch-aware offsets (touch badge is offset above finger to avoid occlusion).
+- `PartInteractionBridge` now spawns a tool-ghost indicator at the required tool-action target when the matching tool is equipped for the active step.
+- Tool-action failures now increment session mistake count (`MachineSessionState.MistakeCount`) via `ToolActionFailed` event handling.
+- Active tool persistence now coexists with part placement: tool mode only hard-locks parts while a step has an unresolved primary tool action.
+- Drag start now re-validates part lock state so already placed/completed tutorial parts cannot be re-grabbed.
+- `onboarding_tutorial` now uses explicit tool-action steps: `step_equip_tape_measure` (confirmation-gated equip) and `step_use_tape_measure` (targeted measure pass on `target_bracket_slot`).
 
 ### Phase 10 Hardening: Multi-Target Regression Test
 
@@ -347,28 +374,41 @@ Ghost parts now reuse the same `assetRef` mesh with a transparent material appli
 - **In-editor loader**: `MachinePackageLoader` reads from the authoring folder during play-in-editor (`#if UNITY_EDITOR`). No sync step needed to press Play.
 - **PackageSyncTool**: `OSE → Sync Packages to StreamingAssets` copies JSON and binary assets, skipping `.meta` files. Also runs automatically before every build via `IPreprocessBuildWithReport` so builds always ship the latest authored packages.
 - **PackageBrowserWindow**: `OSE → Package Browser` — read-only tree view of all packages in the Data folder. Shows machine info, assemblies, steps, parts, tools. Clicking a part's `assetRef` pings the file in the Project window. Includes a Sync button.
+- **Package cleanup**: `tutorial_build` package has been retired/removed; onboarding now serves as the canonical starter tutorial package.
 - To **add a new package**: create a folder under `Assets/_Project/Data/Packages/<package-id>/`, add a `machine.json`, place any model files in an `assets/` subfolder. The browser and loader pick it up immediately.
 
 
 ### Phase 11: Onboarding Tutorial Vertical Slice
 
-- **New tutorial package**: `onboarding_tutorial` — 5-step package teaching every core interaction in order: Orient Yourself, Select & Inspect, Drag & Place (beam), Use a Hint, Place the Bracket. 2 parts, 2 targets, 2 hints. Platform-neutral instruction text throughout ("tap or click", "drag or grab"). `challengeConfig.enabled: false`, `recommendedMode: "tutorial"`.
+- **New tutorial package**: `onboarding_tutorial` - 6-step package teaching every core interaction in order: Orient Yourself, Select & Inspect, Drag & Place (beam), Equip Tape Measure, Use Tape Measure on bracket target, Place the Bracket. 2 parts, 2 targets, 3 hints. Platform-neutral instruction text throughout ("tap or click", "drag or grab"). `challengeConfig.enabled: false`, `recommendedMode: "tutorial"`.
 - **Confirmation step button**: Steps with `completionMode: "confirmation_only"` now show a green "Continue" button (44px min height for touch accessibility) in the step panel. Button wires to `StepController.CompleteStep()`. Auto-hides for non-confirmation steps.
 - **Step completion toast**: When a step completes, a green "Step Complete!" banner appears in the Session HUD for 2 seconds and auto-hides. Uses the same timer pattern as hint toasts.
 - **Session completion banner**: When `SessionCompleted` fires, a persistent green "Tutorial Complete! (Xm Xs)" card appears in the Session HUD showing total time.
 - **Progress bar**: A thin green progress bar below the step panel header shows completion ratio (current step / total steps). Updates on each step transition.
-- **SessionDriver defaults**: `_packageId` changed from `"tutorial_build"` to `"onboarding_tutorial"`, `_sessionMode` changed from `Guided` to `Tutorial`.
+- **SessionDriver defaults**: `_packageId` set to `"onboarding_tutorial"` and `_sessionMode` set to `Tutorial`.
 - **IPresentationAdapter extended**: `ShowStepShell` now accepts `bool showConfirmButton`, new `ShowStepCompletionToast(string)` method added.
 - **SessionHudViewModel extended**: Added `ShowStepToast`, `StepToastMessage`, `ShowMilestone`, `MilestoneMessage` fields.
 - **StreamingAssets synced**: `onboarding_tutorial/machine.json` copied to `Assets/StreamingAssets/MachinePackages/onboarding_tutorial/`.
 
 ### Next Formal Phase
 
-- **Phase 12: XR Validation and Challenge UX (TBD)**
+- **Phase 12: Tool Use Framework and Modular Tool Actions**
 
 Scope (proposed, pending validation):
 
-- Validate XR grab interaction in headset and refine interaction layers / attach behavior.
+- Define canonical tool action intents and runtime states (equip/select/use/release) that work across mouse, touch, and XR.
+- Add a modular tool runtime layer (`ToolRuntimeController` + events) so tools are not hardcoded into part interaction scripts.
+- Extend package schema usage for step-level tool requirements (tool id + action type + optional target/tolerance metadata).
+- Implement at least two concrete tool actions in the mechanics scene (for example: wrench tighten and hammer strike) with visual/UI feedback.
+- Route tool actions through canonical input and interaction orchestration so existing architecture boundaries remain intact.
+
+### Following Phase
+
+- **Phase 13: XR Validation and Challenge UX**
+
+Scope (proposed, pending validation):
+
+- Validate XR grab and tool actions in-headset and refine interaction layers / attach behavior.
 - Re-confirm depth controls (Shift+drag, scroll, pinch) and tune sensitivity.
 - Decide whether to reintroduce tolerance-based validation vs snap-zone only.
 - Tune hint bubble placement/scale for XR readability and confirm ghost highlight timing.
@@ -377,11 +417,12 @@ Scope (proposed, pending validation):
 
 ## Recommended Next Tasks
 
-1. Open `Test_Assembly_Mechanics.unity`, enter Play mode, and walk through the 5-step onboarding tutorial end-to-end. Verify Continue button, step toast, progress bar, and session completion banner.
-2. Validate XR grab (near + far) with both controllers and hands; confirm rig switching behaves as expected.
-3. Re-confirm depth controls (Shift+drag, scroll, pinch) and tune sensitivity values if needed.
-4. Tune hint bubble placement/scale for XR readability and confirm ghost highlight timing.
-5. Regression test multi-target steps with `power_cube_frame_corner`.
+1. Enter Play mode in `Test_Assembly_Mechanics.unity` and validate full tighten loop: equip 13mm wrench, trigger tighten action 3x, confirm step completion gates correctly, and verify wrong-tool feedback.
+2. Add explicit `IToolActionHandler` abstraction so action logic is pluggable per tool/action type instead of centralized in `ToolRuntimeController`.
+3. Implement second action type (`strike`) with content + runtime handling and verify coexistence with tighten.
+4. Add active-tool cursor/reticle/hand visual representation per platform (mouse/touch/XR), keeping runtime truth in services.
+5. Wire canonical `ToolPrimaryAction` bindings for desktop/mobile/XR input maps and verify parity.
+6. After two action types are stable, execute Phase 13 XR validation in-headset for grab + tool interactions.
 
 ---
 
@@ -395,6 +436,8 @@ Scope (proposed, pending validation):
 - **Depth control validation**: Shift+drag depth adjustment has not yet been re-confirmed after the camera-facing drag plane fix.
 - **Touchpad limitation**: Laptop touchpad two-finger gestures do not provide raw touch data; they are exposed as mouse input only.
 - **XR validation pending**: XR grab interaction is implemented but not yet validated in-headset.
+- **Tool mechanics partial**: First tool action flow (`tighten`) is implemented; pluggable multi-action handler architecture (`IToolActionHandler`) is still pending.
+- **Tool menu status**: Tool dock/menu + tool info panel are implemented and now drive active-tool-gated tighten progression.
 - **XR rig switching pending validation**: controller vs hand activation is implemented but still needs in-headset confirmation across devices.
 - **Multi-target validation**: Multi-target steps are supported and `power_cube_frame_corner` now exercises them (`step_stage_plate_and_bracket` requires two parts). In-editor visual regression test pending.
 - **Hint world bubble is display-only**: the world hint `UIDocument` is non-interactive and uses UI Toolkit visuals only (no XR UI interaction yet).

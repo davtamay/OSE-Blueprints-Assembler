@@ -1,0 +1,2727 @@
+{
+  "schemaVersion": "1.0.0",
+  "packageVersion": "0.2.0",
+  "machine": {
+    "id": "power_cube_frame",
+    "name": "Power Cube Frame",
+    "displayName": "Power Cube — Frame & Module Install (Hours 1–2)",
+    "description": "Build the steel frame and install core modules of the Power Cube hydraulic power unit. Hour 1 covers measuring, cutting, and welding the 4×4 tubular steel frame. Hour 2 covers mounting the engine plate, installing the engine, hydraulic pump and coupling, reservoir, pressure and return hoses, and oil cooler. By the end you will have a complete Power Cube ready for hydraulic tool connections.",
+    "difficulty": "intermediate",
+    "estimatedBuildTimeMinutes": 120,
+    "learningObjectives": [
+      "Read a cut list and mark steel tubing to correct lengths",
+      "Identify which tubes form the base vs. vertical posts",
+      "Lay out a rectangular base frame from four tubes",
+      "Tack-weld corners before committing to full welds",
+      "Use a framing square to verify 90° corners",
+      "Full-weld all base joints for structural integrity",
+      "Position vertical posts at each corner of the base",
+      "Complete the top ring to form the cube frame",
+      "Verify the finished frame is square and plumb",
+      "Cut and weld an engine mounting plate to the frame top",
+      "Align and torque an engine to its mounting plate",
+      "Install a pump coupling and mount a hydraulic gear pump",
+      "Mount a hydraulic reservoir and plumb pressure and return lines",
+      "Install an oil cooler and verify all fittings are leak-free"
+    ],
+    "recommendedMode": "guided",
+    "entryAssemblyIds": [
+      "assembly_frame"
+    ],
+    "introImageRef": "power_cube_frame/intro.png",
+    "prerequisiteNotes": [
+      "Familiarity with basic steel fabrication terms (tack weld, full weld, tube stock).",
+      "Access to an angle grinder or cutting torch for steel cutting.",
+      "Comfort using a MIG or stick welder."
+    ],
+    "sourceReferences": [
+      {
+        "id": "source_power_cube_wiki",
+        "type": "blueprint",
+        "title": "Power Cube — OSE Wiki",
+        "referencePath": "https://wiki.opensourceecology.org/wiki/Power_Cube",
+        "notes": "Primary reference for frame dimensions and assembly order."
+      },
+      {
+        "id": "source_power_cube_bom",
+        "type": "reference_doc",
+        "title": "Power Cube VII Bill of Materials",
+        "referencePath": "https://wiki.opensourceecology.org/wiki/Power_Cube_VII/Bill_of_Materials",
+        "notes": "Cut list for 4×4 tubular steel."
+      }
+    ]
+  },
+  "assemblies": [
+    {
+      "id": "assembly_frame",
+      "name": "Power Cube Frame Assembly",
+      "description": "Full cube frame from cut steel tubing — base rectangle, vertical posts, and top ring.",
+      "machineId": "power_cube_frame",
+      "subassemblyIds": [
+        "subassembly_base_frame",
+        "subassembly_vertical_posts",
+        "subassembly_top_ring",
+        "subassembly_engine_mount",
+        "subassembly_hydraulic_drive",
+        "subassembly_hydraulic_plumbing"
+      ],
+      "stepIds": [
+        "step_measure_base_long_tubes",
+        "step_cut_base_long_tubes",
+        "step_measure_base_short_tubes",
+        "step_cut_base_short_tubes",
+        "step_layout_base_rectangle",
+        "step_tack_weld_base_corners",
+        "step_square_check_base",
+        "step_full_weld_base",
+        "step_cut_vertical_posts",
+        "step_place_vertical_posts",
+        "step_weld_vertical_posts",
+        "step_place_top_ring_tubes",
+        "step_weld_top_ring",
+        "step_final_square_check",
+        "step_cut_mount_plate",
+        "step_place_mount_plate",
+        "step_weld_mount_plate",
+        "step_place_engine",
+        "step_torque_engine_bolts",
+        "step_install_pump_coupling",
+        "step_mount_hydraulic_pump",
+        "step_torque_pump_bolts",
+        "step_mount_reservoir",
+        "step_torque_reservoir_bolts",
+        "step_connect_pressure_hose",
+        "step_connect_return_hose",
+        "step_mount_oil_cooler",
+        "step_tighten_fittings_check"
+      ],
+      "learningFocus": "Steel cutting, layout, tack-welding, squareness checks, full welding, engine and pump mounting, hydraulic plumbing, and torque specifications."
+    }
+  ],
+  "subassemblies": [
+    {
+      "id": "subassembly_base_frame",
+      "name": "Base Frame Rectangle",
+      "assemblyId": "assembly_frame",
+      "description": "Four tubes forming the flat bottom rectangle of the Power Cube frame.",
+      "partIds": [
+        "base_tube_long_1",
+        "base_tube_long_2",
+        "base_tube_short_1",
+        "base_tube_short_2"
+      ],
+      "stepIds": [
+        "step_measure_base_long_tubes",
+        "step_cut_base_long_tubes",
+        "step_measure_base_short_tubes",
+        "step_cut_base_short_tubes",
+        "step_layout_base_rectangle",
+        "step_tack_weld_base_corners",
+        "step_square_check_base",
+        "step_full_weld_base"
+      ],
+      "milestoneMessage": "Base frame rectangle is welded and square. Ready for vertical posts!"
+    },
+    {
+      "id": "subassembly_vertical_posts",
+      "name": "Vertical Corner Posts",
+      "assemblyId": "assembly_frame",
+      "description": "Four vertical tubes at each corner of the base rectangle.",
+      "partIds": [
+        "vertical_post_1",
+        "vertical_post_2",
+        "vertical_post_3",
+        "vertical_post_4"
+      ],
+      "stepIds": [
+        "step_cut_vertical_posts",
+        "step_place_vertical_posts",
+        "step_weld_vertical_posts"
+      ],
+      "milestoneMessage": "All four vertical posts are welded to the base. Almost there!"
+    },
+    {
+      "id": "subassembly_top_ring",
+      "name": "Top Ring",
+      "assemblyId": "assembly_frame",
+      "description": "Four tubes forming the top rectangle, completing the cube frame.",
+      "partIds": [
+        "top_tube_long_1",
+        "top_tube_long_2",
+        "top_tube_short_1",
+        "top_tube_short_2"
+      ],
+      "stepIds": [
+        "step_place_top_ring_tubes",
+        "step_weld_top_ring",
+        "step_final_square_check"
+      ],
+      "milestoneMessage": "The Power Cube frame is complete! All 12 tubes are welded into a rigid cube."
+    },
+    {
+      "id": "subassembly_engine_mount",
+      "name": "Engine Mounting",
+      "assemblyId": "assembly_frame",
+      "description": "Steel mounting plate welded to frame top and engine bolted to it.",
+      "partIds": [
+        "engine_mount_plate",
+        "engine"
+      ],
+      "stepIds": [
+        "step_cut_mount_plate",
+        "step_place_mount_plate",
+        "step_weld_mount_plate",
+        "step_place_engine",
+        "step_torque_engine_bolts"
+      ],
+      "milestoneMessage": "Engine is mounted and torqued to spec. Ready for the hydraulic drive!"
+    },
+    {
+      "id": "subassembly_hydraulic_drive",
+      "name": "Hydraulic Pump & Coupling",
+      "assemblyId": "assembly_frame",
+      "description": "Spider coupling connects engine output shaft to a 2-section hydraulic gear pump.",
+      "partIds": [
+        "pump_coupling",
+        "hydraulic_pump"
+      ],
+      "stepIds": [
+        "step_install_pump_coupling",
+        "step_mount_hydraulic_pump",
+        "step_torque_pump_bolts"
+      ],
+      "milestoneMessage": "Hydraulic pump is coupled to the engine and torqued. Time to plumb the hydraulics!"
+    },
+    {
+      "id": "subassembly_hydraulic_plumbing",
+      "name": "Reservoir, Hoses & Cooler",
+      "assemblyId": "assembly_frame",
+      "description": "Hydraulic oil reservoir, pressure and return hoses, and oil cooler complete the hydraulic circuit.",
+      "partIds": [
+        "reservoir",
+        "pressure_hose",
+        "return_hose",
+        "oil_cooler"
+      ],
+      "stepIds": [
+        "step_mount_reservoir",
+        "step_torque_reservoir_bolts",
+        "step_connect_pressure_hose",
+        "step_connect_return_hose",
+        "step_mount_oil_cooler",
+        "step_tighten_fittings_check"
+      ],
+      "milestoneMessage": "Hydraulic circuit is complete! The Power Cube is ready for tool connections."
+    }
+  ],
+  "parts": [
+    {
+      "id": "base_tube_long_1",
+      "name": "Base Long Tube 1",
+      "displayName": "Base Long Tube (Front)",
+      "category": "pipe",
+      "material": "4×4 tubular steel, 11-gauge wall",
+      "function": "Front rail of the base frame rectangle.",
+      "structuralRole": "Primary frame member",
+      "quantity": 1,
+      "toolIds": ["tool_tape_measure", "tool_angle_grinder", "tool_welder"],
+      "assetRef": "assets/parts/base_tube_long.glb",
+      "searchTerms": ["base tube", "long tube", "front rail", "4x4 steel tube"],
+      "allowPhysicalSubstitution": true,
+      "defaultOrientationHint": "Lay flat with the cut ends facing left and right.",
+      "tags": ["power_cube", "frame", "base"]
+    },
+    {
+      "id": "base_tube_long_2",
+      "name": "Base Long Tube 2",
+      "displayName": "Base Long Tube (Back)",
+      "category": "pipe",
+      "material": "4×4 tubular steel, 11-gauge wall",
+      "function": "Back rail of the base frame rectangle.",
+      "structuralRole": "Primary frame member",
+      "quantity": 1,
+      "toolIds": ["tool_tape_measure", "tool_angle_grinder", "tool_welder"],
+      "assetRef": "assets/parts/base_tube_long.glb",
+      "searchTerms": ["base tube", "long tube", "back rail", "4x4 steel tube"],
+      "allowPhysicalSubstitution": true,
+      "defaultOrientationHint": "Lay flat, parallel to the front tube.",
+      "tags": ["power_cube", "frame", "base"]
+    },
+    {
+      "id": "base_tube_short_1",
+      "name": "Base Short Tube 1",
+      "displayName": "Base Short Tube (Left)",
+      "category": "pipe",
+      "material": "4×4 tubular steel, 11-gauge wall",
+      "function": "Left side of the base frame rectangle.",
+      "structuralRole": "Primary frame member",
+      "quantity": 1,
+      "toolIds": ["tool_tape_measure", "tool_angle_grinder", "tool_welder"],
+      "assetRef": "assets/parts/base_tube_short.glb",
+      "searchTerms": ["base tube", "short tube", "left side", "4x4 steel tube"],
+      "allowPhysicalSubstitution": true,
+      "defaultOrientationHint": "Lay flat, connecting front and back tubes on the left.",
+      "tags": ["power_cube", "frame", "base"]
+    },
+    {
+      "id": "base_tube_short_2",
+      "name": "Base Short Tube 2",
+      "displayName": "Base Short Tube (Right)",
+      "category": "pipe",
+      "material": "4×4 tubular steel, 11-gauge wall",
+      "function": "Right side of the base frame rectangle.",
+      "structuralRole": "Primary frame member",
+      "quantity": 1,
+      "toolIds": ["tool_tape_measure", "tool_angle_grinder", "tool_welder"],
+      "assetRef": "assets/parts/base_tube_short.glb",
+      "searchTerms": ["base tube", "short tube", "right side", "4x4 steel tube"],
+      "allowPhysicalSubstitution": true,
+      "defaultOrientationHint": "Lay flat, connecting front and back tubes on the right.",
+      "tags": ["power_cube", "frame", "base"]
+    },
+    {
+      "id": "vertical_post_1",
+      "name": "Vertical Post 1",
+      "displayName": "Vertical Post (Front-Left)",
+      "category": "pipe",
+      "material": "4×4 tubular steel, 11-gauge wall",
+      "function": "Front-left vertical corner post.",
+      "structuralRole": "Vertical frame member",
+      "quantity": 1,
+      "toolIds": ["tool_tape_measure", "tool_angle_grinder", "tool_welder"],
+      "assetRef": "assets/parts/vertical_post.glb",
+      "searchTerms": ["vertical post", "corner post", "upright", "4x4 steel tube"],
+      "allowPhysicalSubstitution": true,
+      "defaultOrientationHint": "Stand upright on the base corner.",
+      "tags": ["power_cube", "frame", "vertical"]
+    },
+    {
+      "id": "vertical_post_2",
+      "name": "Vertical Post 2",
+      "displayName": "Vertical Post (Front-Right)",
+      "category": "pipe",
+      "material": "4×4 tubular steel, 11-gauge wall",
+      "function": "Front-right vertical corner post.",
+      "structuralRole": "Vertical frame member",
+      "quantity": 1,
+      "toolIds": ["tool_tape_measure", "tool_angle_grinder", "tool_welder"],
+      "assetRef": "assets/parts/vertical_post.glb",
+      "searchTerms": ["vertical post", "corner post", "upright"],
+      "allowPhysicalSubstitution": true,
+      "defaultOrientationHint": "Stand upright on the base corner.",
+      "tags": ["power_cube", "frame", "vertical"]
+    },
+    {
+      "id": "vertical_post_3",
+      "name": "Vertical Post 3",
+      "displayName": "Vertical Post (Back-Left)",
+      "category": "pipe",
+      "material": "4×4 tubular steel, 11-gauge wall",
+      "function": "Back-left vertical corner post.",
+      "structuralRole": "Vertical frame member",
+      "quantity": 1,
+      "toolIds": ["tool_tape_measure", "tool_angle_grinder", "tool_welder"],
+      "assetRef": "assets/parts/vertical_post.glb",
+      "searchTerms": ["vertical post", "corner post", "upright"],
+      "allowPhysicalSubstitution": true,
+      "defaultOrientationHint": "Stand upright on the base corner.",
+      "tags": ["power_cube", "frame", "vertical"]
+    },
+    {
+      "id": "vertical_post_4",
+      "name": "Vertical Post 4",
+      "displayName": "Vertical Post (Back-Right)",
+      "category": "pipe",
+      "material": "4×4 tubular steel, 11-gauge wall",
+      "function": "Back-right vertical corner post.",
+      "structuralRole": "Vertical frame member",
+      "quantity": 1,
+      "toolIds": ["tool_tape_measure", "tool_angle_grinder", "tool_welder"],
+      "assetRef": "assets/parts/vertical_post.glb",
+      "searchTerms": ["vertical post", "corner post", "upright"],
+      "allowPhysicalSubstitution": true,
+      "defaultOrientationHint": "Stand upright on the base corner.",
+      "tags": ["power_cube", "frame", "vertical"]
+    },
+    {
+      "id": "top_tube_long_1",
+      "name": "Top Long Tube 1",
+      "displayName": "Top Long Tube (Front)",
+      "category": "pipe",
+      "material": "4×4 tubular steel, 11-gauge wall",
+      "function": "Front rail of the top ring.",
+      "structuralRole": "Top frame member",
+      "quantity": 1,
+      "toolIds": ["tool_tape_measure", "tool_welder"],
+      "assetRef": "assets/parts/base_tube_long.glb",
+      "searchTerms": ["top tube", "long tube", "top ring front"],
+      "allowPhysicalSubstitution": true,
+      "defaultOrientationHint": "Horizontal across the tops of the front vertical posts.",
+      "tags": ["power_cube", "frame", "top"]
+    },
+    {
+      "id": "top_tube_long_2",
+      "name": "Top Long Tube 2",
+      "displayName": "Top Long Tube (Back)",
+      "category": "pipe",
+      "material": "4×4 tubular steel, 11-gauge wall",
+      "function": "Back rail of the top ring.",
+      "structuralRole": "Top frame member",
+      "quantity": 1,
+      "toolIds": ["tool_tape_measure", "tool_welder"],
+      "assetRef": "assets/parts/base_tube_long.glb",
+      "searchTerms": ["top tube", "long tube", "top ring back"],
+      "allowPhysicalSubstitution": true,
+      "defaultOrientationHint": "Horizontal across the tops of the back vertical posts.",
+      "tags": ["power_cube", "frame", "top"]
+    },
+    {
+      "id": "top_tube_short_1",
+      "name": "Top Short Tube 1",
+      "displayName": "Top Short Tube (Left)",
+      "category": "pipe",
+      "material": "4×4 tubular steel, 11-gauge wall",
+      "function": "Left side of the top ring.",
+      "structuralRole": "Top frame member",
+      "quantity": 1,
+      "toolIds": ["tool_tape_measure", "tool_welder"],
+      "assetRef": "assets/parts/base_tube_short.glb",
+      "searchTerms": ["top tube", "short tube", "top ring left"],
+      "allowPhysicalSubstitution": true,
+      "defaultOrientationHint": "Connects front and back top tubes on the left.",
+      "tags": ["power_cube", "frame", "top"]
+    },
+    {
+      "id": "top_tube_short_2",
+      "name": "Top Short Tube 2",
+      "displayName": "Top Short Tube (Right)",
+      "category": "pipe",
+      "material": "4×4 tubular steel, 11-gauge wall",
+      "function": "Right side of the top ring.",
+      "structuralRole": "Top frame member",
+      "quantity": 1,
+      "toolIds": ["tool_tape_measure", "tool_welder"],
+      "assetRef": "assets/parts/base_tube_short.glb",
+      "searchTerms": ["top tube", "short tube", "top ring right"],
+      "allowPhysicalSubstitution": true,
+      "defaultOrientationHint": "Connects front and back top tubes on the right.",
+      "tags": ["power_cube", "frame", "top"]
+    },
+    {
+      "id": "engine_mount_plate",
+      "name": "Engine Mounting Plate",
+      "displayName": "Engine Mounting Plate",
+      "category": "plate",
+      "material": "1/4\" flat steel plate",
+      "function": "Provides a flat mounting surface for the engine on top of the frame.",
+      "structuralRole": "Engine support platform",
+      "quantity": 1,
+      "toolIds": ["tool_tape_measure", "tool_angle_grinder", "tool_welder"],
+      "assetRef": "assets/parts/engine_mount_plate.glb",
+      "searchTerms": ["mount plate", "engine plate", "flat plate", "steel plate"],
+      "allowPhysicalSubstitution": false,
+      "defaultOrientationHint": "Lay flat across the top of the frame, centered.",
+      "tags": ["power_cube", "module", "engine"]
+    },
+    {
+      "id": "engine",
+      "name": "Engine",
+      "displayName": "27 HP Engine",
+      "category": "housing",
+      "material": "Cast iron block, aluminum head, steel mounting feet",
+      "function": "Provides mechanical power to drive the hydraulic pump via the coupling.",
+      "structuralRole": "Prime mover",
+      "quantity": 1,
+      "toolIds": ["tool_torque_wrench"],
+      "assetRef": "assets/parts/engine.glb",
+      "searchTerms": ["engine", "motor", "27HP", "Kohler", "prime mover"],
+      "allowPhysicalSubstitution": true,
+      "defaultOrientationHint": "Output shaft faces the pump side of the frame. Mounting feet sit on the plate.",
+      "tags": ["power_cube", "module", "engine"]
+    },
+    {
+      "id": "pump_coupling",
+      "name": "Pump Coupling",
+      "displayName": "Spider Coupling (Lovejoy)",
+      "category": "shaft",
+      "material": "Cast iron hubs with polyurethane spider insert",
+      "function": "Connects the engine output shaft to the hydraulic pump input shaft with flexible vibration damping.",
+      "structuralRole": "Power transmission",
+      "quantity": 1,
+      "toolIds": ["tool_torque_wrench"],
+      "assetRef": "assets/parts/pump_coupling.glb",
+      "searchTerms": ["coupling", "lovejoy", "spider coupling", "shaft coupler"],
+      "allowPhysicalSubstitution": true,
+      "defaultOrientationHint": "Slide one hub onto the engine shaft, the other onto the pump shaft, with the spider between.",
+      "tags": ["power_cube", "module", "hydraulic"]
+    },
+    {
+      "id": "hydraulic_pump",
+      "name": "Hydraulic Pump",
+      "displayName": "2-Section Gear Pump",
+      "category": "housing",
+      "material": "Cast iron body, hardened steel gears",
+      "function": "Converts engine rotational power into hydraulic fluid flow and pressure.",
+      "structuralRole": "Hydraulic power source",
+      "quantity": 1,
+      "toolIds": ["tool_torque_wrench"],
+      "assetRef": "assets/parts/hydraulic_pump.glb",
+      "searchTerms": ["pump", "gear pump", "hydraulic pump", "2-section"],
+      "allowPhysicalSubstitution": true,
+      "defaultOrientationHint": "Input shaft aligns with coupling. Outlet ports face outward for hose access.",
+      "tags": ["power_cube", "module", "hydraulic"]
+    },
+    {
+      "id": "reservoir",
+      "name": "Hydraulic Reservoir",
+      "displayName": "Hydraulic Oil Tank (10 gal)",
+      "category": "housing",
+      "material": "Welded steel tank with internal baffles",
+      "function": "Stores hydraulic oil, allows air separation, and provides suction head for the pump.",
+      "structuralRole": "Fluid storage",
+      "quantity": 1,
+      "toolIds": ["tool_torque_wrench"],
+      "assetRef": "assets/parts/reservoir.glb",
+      "searchTerms": ["reservoir", "tank", "oil tank", "hydraulic tank"],
+      "allowPhysicalSubstitution": true,
+      "defaultOrientationHint": "Fill cap on top, drain plug at bottom. Suction port faces the pump.",
+      "tags": ["power_cube", "module", "hydraulic"]
+    },
+    {
+      "id": "pressure_hose",
+      "name": "Pressure Hose",
+      "displayName": "High-Pressure Hydraulic Hose",
+      "category": "pipe",
+      "material": "SAE 100R2 steel-braided hose, 3/4\" ID, rated 3000 PSI",
+      "function": "Carries pressurized hydraulic fluid from the pump outlet to the quick couplers.",
+      "structuralRole": "Pressure line",
+      "quantity": 1,
+      "toolIds": ["tool_line_wrench"],
+      "assetRef": "assets/parts/pressure_hose.glb",
+      "searchTerms": ["pressure hose", "hydraulic hose", "high pressure line"],
+      "allowPhysicalSubstitution": true,
+      "defaultOrientationHint": "Connects pump outlet port to the pressure manifold.",
+      "tags": ["power_cube", "module", "hydraulic", "plumbing"]
+    },
+    {
+      "id": "return_hose",
+      "name": "Return Hose",
+      "displayName": "Return Line Hose",
+      "category": "pipe",
+      "material": "SAE 100R1 rubber hose, 1\" ID, rated 1000 PSI",
+      "function": "Returns low-pressure hydraulic fluid from the tools back to the reservoir.",
+      "structuralRole": "Return line",
+      "quantity": 1,
+      "toolIds": ["tool_line_wrench"],
+      "assetRef": "assets/parts/return_hose.glb",
+      "searchTerms": ["return hose", "return line", "low pressure hose"],
+      "allowPhysicalSubstitution": true,
+      "defaultOrientationHint": "Connects return manifold to the reservoir return port.",
+      "tags": ["power_cube", "module", "hydraulic", "plumbing"]
+    },
+    {
+      "id": "oil_cooler",
+      "name": "Oil Cooler",
+      "displayName": "Hydraulic Oil Cooler",
+      "category": "panel",
+      "material": "Aluminum fin-and-tube heat exchanger",
+      "function": "Cools hydraulic oil to prevent overheating during sustained operation.",
+      "structuralRole": "Thermal management",
+      "quantity": 1,
+      "toolIds": ["tool_torque_wrench", "tool_line_wrench"],
+      "assetRef": "assets/parts/oil_cooler.glb",
+      "searchTerms": ["cooler", "oil cooler", "heat exchanger", "radiator"],
+      "allowPhysicalSubstitution": true,
+      "defaultOrientationHint": "Mount vertically on the frame side with fins exposed to airflow.",
+      "tags": ["power_cube", "module", "hydraulic", "cooling"]
+    }
+  ],
+  "tools": [
+    {
+      "id": "tool_tape_measure",
+      "name": "Tape Measure",
+      "category": "measurement",
+      "purpose": "Measures and marks steel tubing to the cut list dimensions.",
+      "usageNotes": "Hook the end on the tube edge, pull taut, mark with soapstone at the target length.",
+      "assetRef": "assets/tools/tool_tape_measure.glb"
+    },
+    {
+      "id": "tool_angle_grinder",
+      "name": "Angle Grinder",
+      "category": "power_tool",
+      "purpose": "Cuts 4×4 tubular steel to length using a cutting disc.",
+      "usageNotes": "Wear eye and ear protection. Clamp the tube securely before cutting. Cut on the waste side of the mark.",
+      "safetyNotes": "Always wear safety glasses, face shield, and hearing protection. Keep the guard in place.",
+      "assetRef": "assets/tools/tool_angle_grinder.glb"
+    },
+    {
+      "id": "tool_welder",
+      "name": "MIG Welder",
+      "category": "power_tool",
+      "purpose": "Joins steel tubes at frame joints using MIG welding.",
+      "usageNotes": "Tack-weld corners first to hold geometry, then run full beads after squareness is confirmed.",
+      "safetyNotes": "Wear welding helmet (shade 10+), leather gloves, and long sleeves. Ensure adequate ventilation.",
+      "assetRef": "assets/tools/tool_welder.glb"
+    },
+    {
+      "id": "tool_framing_square",
+      "name": "Framing Square",
+      "category": "measurement",
+      "purpose": "Verifies corners are at exactly 90 degrees.",
+      "usageNotes": "Place the square against both tubes at a corner. Both edges should make full contact with no gaps.",
+      "assetRef": "assets/tools/tool_framing_square.glb"
+    },
+    {
+      "id": "tool_clamp",
+      "name": "C-Clamp",
+      "category": "hand_tool",
+      "purpose": "Holds tubes in alignment during tack-welding.",
+      "usageNotes": "Clamp tubes flush before tacking. Remove clamps only after tack welds have cooled.",
+      "assetRef": "assets/tools/tool_clamp.glb"
+    },
+    {
+      "id": "tool_torque_wrench",
+      "name": "Torque Wrench",
+      "category": "hand_tool",
+      "purpose": "Tightens bolts to a precise torque specification to prevent under- or over-tightening.",
+      "usageNotes": "Set the desired torque on the micrometer scale. Pull smoothly until the wrench clicks — stop immediately at the click. Always torque in a star pattern.",
+      "safetyNotes": "Never use a torque wrench to loosen bolts. Store at the lowest torque setting to preserve calibration.",
+      "assetRef": "assets/tools/tool_torque_wrench.glb"
+    },
+    {
+      "id": "tool_line_wrench",
+      "name": "Line Wrench (Flare-Nut)",
+      "category": "hand_tool",
+      "purpose": "Tightens hydraulic hose fittings without rounding the soft brass or steel hex nuts.",
+      "usageNotes": "Slide over the hose, seat fully on the fitting hex, and turn 1/4 past finger-tight. Check for leaks before applying pressure.",
+      "safetyNotes": "Never tighten fittings while the system is pressurized. Wipe up any spilled hydraulic fluid immediately — it is slippery.",
+      "assetRef": "assets/tools/tool_line_wrench.glb"
+    }
+  ],
+  "steps": [
+    {
+      "id": "step_measure_base_long_tubes",
+      "name": "Measure the long base tubes",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_base_frame",
+      "sequenceIndex": 1,
+      "instructionText": "Use the tape measure to mark two lengths of 4×4 tubular steel at 24 inches each. These will form the front and back rails of the base frame. Hook the tape on one end and mark at 24\" with soapstone.",
+      "whyItMattersText": "Accurate measurements prevent misalignment when the frame is welded together. Even 1/8\" off compounds at every joint.",
+      "requiredPartIds": [],
+      "optionalPartIds": ["base_tube_long_1", "base_tube_long_2"],
+      "relevantToolIds": ["tool_tape_measure"],
+      "targetIds": ["target_base_long_1_measure"],
+      "completionType": "tool_action",
+      "requiredToolActions": [
+        {
+          "id": "action_measure_long_tubes",
+          "toolId": "tool_tape_measure",
+          "actionType": "measure",
+          "targetId": "target_base_long_1_measure",
+          "requiredCount": 1,
+          "successMessage": "Long tube lengths marked at 24 inches.",
+          "failureMessage": "Use the tape measure on the long tube marking point."
+        }
+      ],
+      "validationRuleIds": [],
+      "hintIds": ["hint_measure_long_tubes"],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": false, "penalizeInvalidPlacement": false, "stricterToleranceAvailable": false },
+      "eventTags": ["power_cube", "frame", "measure"]
+    },
+    {
+      "id": "step_cut_base_long_tubes",
+      "name": "Cut the long base tubes",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_base_frame",
+      "sequenceIndex": 2,
+      "instructionText": "Equip the angle grinder and cut both long tubes at the marked lines. Clamp each tube to the worktable before cutting. Cut on the waste side of the line.",
+      "whyItMattersText": "Clean, straight cuts ensure the tube ends mate flush for strong welds. Cutting on the waste side preserves the marked dimension.",
+      "requiredPartIds": [],
+      "optionalPartIds": ["base_tube_long_1", "base_tube_long_2"],
+      "relevantToolIds": ["tool_angle_grinder"],
+      "targetIds": ["target_base_long_1_cut", "target_base_long_2_cut"],
+      "completionType": "tool_action",
+      "requiredToolActions": [
+        {
+          "id": "action_cut_long_tube_1",
+          "toolId": "tool_angle_grinder",
+          "actionType": "strike",
+          "targetId": "target_base_long_1_cut",
+          "requiredCount": 1,
+          "successMessage": "Front base tube cut to length.",
+          "failureMessage": "Equip the angle grinder and cut at the marked line on the front tube."
+        },
+        {
+          "id": "action_cut_long_tube_2",
+          "toolId": "tool_angle_grinder",
+          "actionType": "strike",
+          "targetId": "target_base_long_2_cut",
+          "requiredCount": 1,
+          "successMessage": "Back base tube cut to length.",
+          "failureMessage": "Cut the second long tube at the marked line."
+        }
+      ],
+      "validationRuleIds": [],
+      "hintIds": ["hint_cut_safety"],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": false, "penalizeInvalidPlacement": false, "stricterToleranceAvailable": false },
+      "eventTags": ["power_cube", "frame", "cut"]
+    },
+    {
+      "id": "step_measure_base_short_tubes",
+      "name": "Measure the short base tubes",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_base_frame",
+      "sequenceIndex": 3,
+      "instructionText": "Measure and mark two more tubes at 16 inches each. These shorter tubes form the left and right sides of the base rectangle.",
+      "whyItMattersText": "The short sides set the width of the frame. The Power Cube's square-ish footprint depends on these being precisely matched.",
+      "requiredPartIds": [],
+      "optionalPartIds": ["base_tube_short_1", "base_tube_short_2"],
+      "relevantToolIds": ["tool_tape_measure"],
+      "targetIds": ["target_base_short_1_measure"],
+      "completionType": "tool_action",
+      "requiredToolActions": [
+        {
+          "id": "action_measure_short_tubes",
+          "toolId": "tool_tape_measure",
+          "actionType": "measure",
+          "targetId": "target_base_short_1_measure",
+          "requiredCount": 1,
+          "successMessage": "Short tube lengths marked at 16 inches.",
+          "failureMessage": "Use the tape measure on the short tube marking point."
+        }
+      ],
+      "validationRuleIds": [],
+      "hintIds": [],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": false, "penalizeInvalidPlacement": false, "stricterToleranceAvailable": false },
+      "eventTags": ["power_cube", "frame", "measure"]
+    },
+    {
+      "id": "step_cut_base_short_tubes",
+      "name": "Cut the short base tubes",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_base_frame",
+      "sequenceIndex": 4,
+      "instructionText": "Cut both short tubes at the marked 16-inch lines using the angle grinder. Same technique: clamp, cut on waste side, deburr the ends.",
+      "whyItMattersText": "Both short tubes must be identical length so the frame sits flat and the corners are square.",
+      "requiredPartIds": [],
+      "optionalPartIds": ["base_tube_short_1", "base_tube_short_2"],
+      "relevantToolIds": ["tool_angle_grinder"],
+      "targetIds": ["target_base_short_1_cut", "target_base_short_2_cut"],
+      "completionType": "tool_action",
+      "requiredToolActions": [
+        {
+          "id": "action_cut_short_tube_1",
+          "toolId": "tool_angle_grinder",
+          "actionType": "strike",
+          "targetId": "target_base_short_1_cut",
+          "requiredCount": 1,
+          "successMessage": "Left base tube cut to length.",
+          "failureMessage": "Equip the angle grinder and cut the left short tube."
+        },
+        {
+          "id": "action_cut_short_tube_2",
+          "toolId": "tool_angle_grinder",
+          "actionType": "strike",
+          "targetId": "target_base_short_2_cut",
+          "requiredCount": 1,
+          "successMessage": "Right base tube cut to length.",
+          "failureMessage": "Cut the second short tube."
+        }
+      ],
+      "validationRuleIds": [],
+      "hintIds": [],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": false, "penalizeInvalidPlacement": false, "stricterToleranceAvailable": false },
+      "eventTags": ["power_cube", "frame", "cut"]
+    },
+    {
+      "id": "step_layout_base_rectangle",
+      "name": "Lay out the base rectangle",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_base_frame",
+      "sequenceIndex": 5,
+      "instructionText": "Arrange the four cut tubes on a flat surface to form a rectangle. The two long tubes (24\") are front and back, the two short tubes (16\") connect them on left and right. Butt the short tube ends against the inside faces of the long tubes.",
+      "whyItMattersText": "Layout determines the final frame shape. Getting the rectangle right before tacking saves hours of rework.",
+      "requiredPartIds": [
+        "base_tube_long_1",
+        "base_tube_long_2",
+        "base_tube_short_1",
+        "base_tube_short_2"
+      ],
+      "relevantToolIds": ["tool_clamp"],
+      "targetIds": [
+        "target_base_long_1_slot",
+        "target_base_long_2_slot",
+        "target_base_short_1_slot",
+        "target_base_short_2_slot"
+      ],
+      "completionType": "placement",
+      "targetOrder": "parallel",
+      "validationRuleIds": [
+        "validation_base_long_1",
+        "validation_base_long_2",
+        "validation_base_short_1",
+        "validation_base_short_2"
+      ],
+      "hintIds": ["hint_layout_rectangle"],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": true, "penalizeInvalidPlacement": true, "stricterToleranceAvailable": true },
+      "eventTags": ["power_cube", "frame", "placement", "multi_target"]
+    },
+    {
+      "id": "step_tack_weld_base_corners",
+      "name": "Tack-weld the base corners",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_base_frame",
+      "sequenceIndex": 6,
+      "instructionText": "Equip the welder. Place a small tack weld (about 1/2 inch) at each of the four corners where the tubes meet. Tack welds hold the geometry while you verify squareness — don't run full beads yet.",
+      "whyItMattersText": "Tack welds are easy to break and redo. Full welds are permanent. Always tack first, check square, then commit.",
+      "requiredPartIds": [],
+      "relevantToolIds": ["tool_welder"],
+      "targetIds": [
+        "target_tack_corner_fl",
+        "target_tack_corner_fr",
+        "target_tack_corner_bl",
+        "target_tack_corner_br"
+      ],
+      "completionType": "tool_action",
+      "requiredToolActions": [
+        {
+          "id": "action_tack_fl",
+          "toolId": "tool_welder",
+          "actionType": "weld_pass",
+          "targetId": "target_tack_corner_fl",
+          "requiredCount": 1,
+          "successMessage": "Front-left corner tacked.",
+          "failureMessage": "Equip the welder and tack the front-left corner."
+        },
+        {
+          "id": "action_tack_fr",
+          "toolId": "tool_welder",
+          "actionType": "weld_pass",
+          "targetId": "target_tack_corner_fr",
+          "requiredCount": 1,
+          "successMessage": "Front-right corner tacked.",
+          "failureMessage": "Tack the front-right corner."
+        },
+        {
+          "id": "action_tack_bl",
+          "toolId": "tool_welder",
+          "actionType": "weld_pass",
+          "targetId": "target_tack_corner_bl",
+          "requiredCount": 1,
+          "successMessage": "Back-left corner tacked.",
+          "failureMessage": "Tack the back-left corner."
+        },
+        {
+          "id": "action_tack_br",
+          "toolId": "tool_welder",
+          "actionType": "weld_pass",
+          "targetId": "target_tack_corner_br",
+          "requiredCount": 1,
+          "successMessage": "Back-right corner tacked.",
+          "failureMessage": "Tack the back-right corner."
+        }
+      ],
+      "validationRuleIds": [],
+      "hintIds": ["hint_tack_technique"],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": false, "penalizeInvalidPlacement": false, "stricterToleranceAvailable": false },
+      "eventTags": ["power_cube", "frame", "weld"]
+    },
+    {
+      "id": "step_square_check_base",
+      "name": "Check the base for square",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_base_frame",
+      "sequenceIndex": 7,
+      "instructionText": "Use the framing square at each corner to verify 90° angles. Also measure both diagonals — they should be equal. If the frame is racked, break a tack weld, adjust, and re-tack.",
+      "whyItMattersText": "A frame that's even 1° out of square will cause every subsequent module to fit poorly. This is the critical quality gate.",
+      "requiredPartIds": [],
+      "relevantToolIds": ["tool_framing_square", "tool_tape_measure"],
+      "targetIds": ["target_square_check_point"],
+      "completionType": "tool_action",
+      "requiredToolActions": [
+        {
+          "id": "action_square_check_base",
+          "toolId": "tool_framing_square",
+          "actionType": "measure",
+          "targetId": "target_square_check_point",
+          "requiredCount": 1,
+          "successMessage": "Base frame is square! Diagonals match within 1/16\".",
+          "failureMessage": "Place the framing square against a corner to check for 90°."
+        }
+      ],
+      "validationRuleIds": [],
+      "hintIds": ["hint_diagonal_check"],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": false, "penalizeInvalidPlacement": false, "stricterToleranceAvailable": false },
+      "eventTags": ["power_cube", "frame", "measure", "quality"]
+    },
+    {
+      "id": "step_full_weld_base",
+      "name": "Full-weld the base frame",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_base_frame",
+      "sequenceIndex": 8,
+      "instructionText": "Now that the base is confirmed square, run full weld beads on all four corners. Weld both sides of each joint for maximum strength. Let each weld cool before moving to the next to minimize warping.",
+      "whyItMattersText": "Full welds provide the structural strength to support the engine, pump, and hydraulic modules. Tack welds alone would fail under vibration.",
+      "requiredPartIds": [],
+      "relevantToolIds": ["tool_welder"],
+      "targetIds": [
+        "target_tack_corner_fl",
+        "target_tack_corner_fr",
+        "target_tack_corner_bl",
+        "target_tack_corner_br"
+      ],
+      "completionType": "tool_action",
+      "requiredToolActions": [
+        {
+          "id": "action_full_weld_base",
+          "toolId": "tool_welder",
+          "actionType": "weld_pass",
+          "targetId": "target_tack_corner_fl",
+          "requiredCount": 4,
+          "successMessage": "All four base corners fully welded. Solid foundation!",
+          "failureMessage": "Equip the welder and weld all four base corners."
+        }
+      ],
+      "validationRuleIds": [],
+      "hintIds": ["hint_weld_cooling"],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": false, "penalizeInvalidPlacement": false, "stricterToleranceAvailable": false },
+      "eventTags": ["power_cube", "frame", "weld"]
+    },
+    {
+      "id": "step_cut_vertical_posts",
+      "name": "Cut the four vertical posts",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_vertical_posts",
+      "sequenceIndex": 9,
+      "instructionText": "Measure and cut four vertical posts at 20 inches each from 4×4 tubular steel. These posts will stand upright at each corner of the base.",
+      "whyItMattersText": "The vertical posts define the cube height. All four must be identical so the top ring sits level.",
+      "requiredPartIds": [],
+      "optionalPartIds": ["vertical_post_1", "vertical_post_2", "vertical_post_3", "vertical_post_4"],
+      "relevantToolIds": ["tool_tape_measure", "tool_angle_grinder"],
+      "targetIds": ["target_vertical_cut_point"],
+      "completionType": "tool_action",
+      "requiredToolActions": [
+        {
+          "id": "action_cut_verticals",
+          "toolId": "tool_angle_grinder",
+          "actionType": "strike",
+          "targetId": "target_vertical_cut_point",
+          "requiredCount": 1,
+          "successMessage": "All four vertical posts cut to 20 inches.",
+          "failureMessage": "Use the angle grinder to cut the vertical post stock."
+        }
+      ],
+      "validationRuleIds": [],
+      "hintIds": [],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": false, "penalizeInvalidPlacement": false, "stricterToleranceAvailable": false },
+      "eventTags": ["power_cube", "frame", "cut"]
+    },
+    {
+      "id": "step_place_vertical_posts",
+      "name": "Stand up the vertical posts",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_vertical_posts",
+      "sequenceIndex": 10,
+      "instructionText": "Place each vertical post upright at its base corner. The post should sit on top of the base tube intersection. Use clamps to hold each post plumb while you prepare to weld.",
+      "whyItMattersText": "Posts must be perfectly vertical (plumb) or the top ring won't sit flat and the cube will be racked.",
+      "requiredPartIds": [
+        "vertical_post_1",
+        "vertical_post_2",
+        "vertical_post_3",
+        "vertical_post_4"
+      ],
+      "relevantToolIds": ["tool_clamp", "tool_framing_square"],
+      "targetIds": [
+        "target_post_fl",
+        "target_post_fr",
+        "target_post_bl",
+        "target_post_br"
+      ],
+      "completionType": "placement",
+      "targetOrder": "parallel",
+      "validationRuleIds": [
+        "validation_post_fl",
+        "validation_post_fr",
+        "validation_post_bl",
+        "validation_post_br"
+      ],
+      "hintIds": ["hint_plumb_posts"],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": true, "penalizeInvalidPlacement": true, "stricterToleranceAvailable": true },
+      "eventTags": ["power_cube", "frame", "placement", "multi_target"]
+    },
+    {
+      "id": "step_weld_vertical_posts",
+      "name": "Weld the vertical posts to the base",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_vertical_posts",
+      "sequenceIndex": 11,
+      "instructionText": "Tack-weld each post to the base first, check plumb with the framing square, then run full welds around each post base. Weld on opposite sides alternately to reduce heat distortion.",
+      "whyItMattersText": "The vertical post welds carry the weight of the engine and all top-mounted modules. They must be solid and plumb.",
+      "requiredPartIds": [],
+      "relevantToolIds": ["tool_welder", "tool_framing_square"],
+      "targetIds": [
+        "target_post_fl",
+        "target_post_fr",
+        "target_post_bl",
+        "target_post_br"
+      ],
+      "completionType": "tool_action",
+      "requiredToolActions": [
+        {
+          "id": "action_weld_posts",
+          "toolId": "tool_welder",
+          "actionType": "weld_pass",
+          "targetId": "target_post_fl",
+          "requiredCount": 4,
+          "successMessage": "All four vertical posts welded to the base.",
+          "failureMessage": "Equip the welder and weld each vertical post to the base."
+        }
+      ],
+      "validationRuleIds": [],
+      "hintIds": ["hint_alternate_sides"],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": false, "penalizeInvalidPlacement": false, "stricterToleranceAvailable": false },
+      "eventTags": ["power_cube", "frame", "weld"]
+    },
+    {
+      "id": "step_place_top_ring_tubes",
+      "name": "Place the top ring tubes",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_top_ring",
+      "sequenceIndex": 12,
+      "instructionText": "Place the four top ring tubes across the tops of the vertical posts, forming the same rectangle pattern as the base. Long tubes front and back, short tubes left and right.",
+      "whyItMattersText": "The top ring locks the vertical posts together and creates the mounting surface for the engine plate and pump module.",
+      "requiredPartIds": [
+        "top_tube_long_1",
+        "top_tube_long_2",
+        "top_tube_short_1",
+        "top_tube_short_2"
+      ],
+      "relevantToolIds": ["tool_clamp"],
+      "targetIds": [
+        "target_top_long_1_slot",
+        "target_top_long_2_slot",
+        "target_top_short_1_slot",
+        "target_top_short_2_slot"
+      ],
+      "completionType": "placement",
+      "targetOrder": "parallel",
+      "validationRuleIds": [
+        "validation_top_long_1",
+        "validation_top_long_2",
+        "validation_top_short_1",
+        "validation_top_short_2"
+      ],
+      "hintIds": ["hint_top_ring_layout"],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": true, "penalizeInvalidPlacement": true, "stricterToleranceAvailable": true },
+      "eventTags": ["power_cube", "frame", "placement", "multi_target"]
+    },
+    {
+      "id": "step_weld_top_ring",
+      "name": "Weld the top ring",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_top_ring",
+      "sequenceIndex": 13,
+      "instructionText": "Tack-weld the top ring corners first, verify squareness and plumb one last time, then full-weld all top joints. The cube frame is almost complete.",
+      "whyItMattersText": "These final welds close the cube structure, making it rigid in all three dimensions.",
+      "requiredPartIds": [],
+      "relevantToolIds": ["tool_welder"],
+      "targetIds": [
+        "target_top_weld_fl",
+        "target_top_weld_fr",
+        "target_top_weld_bl",
+        "target_top_weld_br"
+      ],
+      "completionType": "tool_action",
+      "requiredToolActions": [
+        {
+          "id": "action_weld_top_ring",
+          "toolId": "tool_welder",
+          "actionType": "weld_pass",
+          "targetId": "target_top_weld_fl",
+          "requiredCount": 4,
+          "successMessage": "Top ring fully welded!",
+          "failureMessage": "Equip the welder and weld the top ring corners."
+        }
+      ],
+      "validationRuleIds": [],
+      "hintIds": [],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": false, "penalizeInvalidPlacement": false, "stricterToleranceAvailable": false },
+      "eventTags": ["power_cube", "frame", "weld"]
+    },
+    {
+      "id": "step_final_square_check",
+      "name": "Final squareness and plumb check",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_top_ring",
+      "sequenceIndex": 14,
+      "instructionText": "Use the framing square and tape measure to do a final quality inspection. Check corners for 90°, measure diagonals on all six faces, and verify the frame sits flat. Congratulations — the Power Cube frame is complete!",
+      "whyItMattersText": "This final check ensures the frame will accept all modules (engine, pump, reservoir, cooler) without shimming or rework.",
+      "requiredPartIds": [],
+      "relevantToolIds": ["tool_framing_square", "tool_tape_measure"],
+      "targetIds": ["target_final_check_point"],
+      "completionType": "tool_action",
+      "requiredToolActions": [
+        {
+          "id": "action_final_inspection",
+          "toolId": "tool_framing_square",
+          "actionType": "measure",
+          "targetId": "target_final_check_point",
+          "requiredCount": 1,
+          "successMessage": "Frame passes inspection! Square, plumb, and ready for module installation.",
+          "failureMessage": "Use the framing square to do the final inspection."
+        }
+      ],
+      "validationRuleIds": [],
+      "hintIds": [],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": false, "penalizeInvalidPlacement": false, "stricterToleranceAvailable": false },
+      "eventTags": ["power_cube", "frame", "quality", "milestone"]
+    },
+    {
+      "id": "step_cut_mount_plate",
+      "name": "Cut the engine mounting plate",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_engine_mount",
+      "sequenceIndex": 15,
+      "instructionText": "Measure and cut a 1/4\" steel plate to fit across the top of the frame. The plate should span the full width and depth of the top ring, resting on the top tubes.",
+      "whyItMattersText": "The mounting plate distributes the engine weight across all four top tubes. A plate that's too small concentrates stress and can crack welds.",
+      "requiredPartIds": [],
+      "optionalPartIds": ["engine_mount_plate"],
+      "relevantToolIds": ["tool_tape_measure", "tool_angle_grinder"],
+      "targetIds": ["target_mount_plate_cut"],
+      "completionType": "tool_action",
+      "requiredToolActions": [
+        {
+          "id": "action_cut_mount_plate",
+          "toolId": "tool_angle_grinder",
+          "actionType": "strike",
+          "targetId": "target_mount_plate_cut",
+          "requiredCount": 1,
+          "successMessage": "Mounting plate cut to size.",
+          "failureMessage": "Use the angle grinder to cut the mounting plate to size."
+        }
+      ],
+      "validationRuleIds": [],
+      "hintIds": ["hint_plate_fit"],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": false, "penalizeInvalidPlacement": false, "stricterToleranceAvailable": false },
+      "eventTags": ["power_cube", "module", "cut"]
+    },
+    {
+      "id": "step_place_mount_plate",
+      "name": "Place the mounting plate on the frame",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_engine_mount",
+      "sequenceIndex": 16,
+      "instructionText": "Set the cut plate flat on top of the frame, centered so it rests evenly on all four top tubes. The plate edges should be flush with or slightly inside the outer faces of the tubes.",
+      "whyItMattersText": "Centering the plate ensures the engine sits balanced on the frame and that weld access is equal on all sides.",
+      "requiredPartIds": ["engine_mount_plate"],
+      "relevantToolIds": ["tool_clamp"],
+      "targetIds": ["target_mount_plate_slot"],
+      "completionType": "placement",
+      "targetOrder": "parallel",
+      "validationRuleIds": ["validation_mount_plate"],
+      "hintIds": ["hint_center_plate"],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": true, "penalizeInvalidPlacement": true, "stricterToleranceAvailable": true },
+      "eventTags": ["power_cube", "module", "placement"]
+    },
+    {
+      "id": "step_weld_mount_plate",
+      "name": "Weld the mounting plate to the frame",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_engine_mount",
+      "sequenceIndex": 17,
+      "instructionText": "Tack-weld the plate at each corner first, verify it's still centered, then run full fillet welds along all four edges where the plate meets the top tubes.",
+      "whyItMattersText": "Full perimeter welds provide maximum strength. The plate must support engine vibration, so tacks alone would crack.",
+      "requiredPartIds": [],
+      "relevantToolIds": ["tool_welder"],
+      "targetIds": [
+        "target_plate_weld_fl",
+        "target_plate_weld_fr",
+        "target_plate_weld_bl",
+        "target_plate_weld_br"
+      ],
+      "completionType": "tool_action",
+      "requiredToolActions": [
+        {
+          "id": "action_weld_mount_plate",
+          "toolId": "tool_welder",
+          "actionType": "weld_pass",
+          "targetId": "target_plate_weld_fl",
+          "requiredCount": 4,
+          "successMessage": "Mounting plate fully welded to frame.",
+          "failureMessage": "Equip the welder and weld the plate at all four corners."
+        }
+      ],
+      "validationRuleIds": [],
+      "hintIds": ["hint_plate_weld_sequence"],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": false, "penalizeInvalidPlacement": false, "stricterToleranceAvailable": false },
+      "eventTags": ["power_cube", "module", "weld"]
+    },
+    {
+      "id": "step_place_engine",
+      "name": "Place the engine on the mounting plate",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_engine_mount",
+      "sequenceIndex": 18,
+      "instructionText": "Lift the engine onto the mounting plate. Orient it so the output shaft faces the pump side of the frame (left side). Align the engine mounting feet with the bolt holes in the plate.",
+      "whyItMattersText": "Correct shaft orientation is critical — the pump coupling requires precise alignment. Getting it right now prevents having to unbolt and reposition later.",
+      "requiredPartIds": ["engine"],
+      "relevantToolIds": ["tool_torque_wrench"],
+      "targetIds": ["target_engine_slot"],
+      "completionType": "placement",
+      "targetOrder": "parallel",
+      "validationRuleIds": ["validation_engine"],
+      "hintIds": ["hint_engine_orientation"],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": true, "penalizeInvalidPlacement": true, "stricterToleranceAvailable": true },
+      "eventTags": ["power_cube", "module", "placement", "engine"]
+    },
+    {
+      "id": "step_torque_engine_bolts",
+      "name": "Torque the engine mounting bolts",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_engine_mount",
+      "sequenceIndex": 19,
+      "instructionText": "Insert bolts through the engine feet and plate. Torque all four bolts to 35 ft-lbs in a star pattern: front-left, back-right, front-right, back-left.",
+      "whyItMattersText": "Star-pattern torquing ensures the engine seats evenly. Under-torqued bolts vibrate loose; over-torqued bolts strip threads or warp the plate.",
+      "requiredPartIds": [],
+      "relevantToolIds": ["tool_torque_wrench"],
+      "targetIds": ["target_engine_bolt_point"],
+      "completionType": "tool_action",
+      "requiredToolActions": [
+        {
+          "id": "action_torque_engine",
+          "toolId": "tool_torque_wrench",
+          "actionType": "tighten",
+          "targetId": "target_engine_bolt_point",
+          "requiredCount": 4,
+          "successMessage": "All engine bolts torqued to 35 ft-lbs.",
+          "failureMessage": "Use the torque wrench on the engine mounting bolts."
+        }
+      ],
+      "validationRuleIds": [],
+      "hintIds": ["hint_star_pattern"],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": false, "penalizeInvalidPlacement": false, "stricterToleranceAvailable": false },
+      "eventTags": ["power_cube", "module", "torque", "engine"]
+    },
+    {
+      "id": "step_install_pump_coupling",
+      "name": "Install the pump coupling",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_hydraulic_drive",
+      "sequenceIndex": 20,
+      "instructionText": "Slide one coupling hub onto the engine output shaft and secure it with the set screw. Place the spider insert into the hub jaws. The second hub will engage when the pump is mounted.",
+      "whyItMattersText": "The spider coupling absorbs vibration and minor misalignment. Without it, shaft-to-shaft contact would transmit destructive vibrations to the pump bearings.",
+      "requiredPartIds": ["pump_coupling"],
+      "relevantToolIds": ["tool_torque_wrench"],
+      "targetIds": ["target_coupling_slot"],
+      "completionType": "placement",
+      "targetOrder": "parallel",
+      "validationRuleIds": ["validation_coupling"],
+      "hintIds": ["hint_coupling_alignment"],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": true, "penalizeInvalidPlacement": true, "stricterToleranceAvailable": true },
+      "eventTags": ["power_cube", "module", "placement", "hydraulic"]
+    },
+    {
+      "id": "step_mount_hydraulic_pump",
+      "name": "Mount the hydraulic pump",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_hydraulic_drive",
+      "sequenceIndex": 21,
+      "instructionText": "Position the hydraulic pump so its input shaft engages the second coupling hub. The pump body should rest on the mounting bracket welded to the frame side. Slide the pump shaft into the coupling jaws.",
+      "whyItMattersText": "Precise shaft-to-coupling alignment prevents premature bearing failure. The pump must be supported by its bracket — never hanging from the coupling alone.",
+      "requiredPartIds": ["hydraulic_pump"],
+      "relevantToolIds": ["tool_torque_wrench"],
+      "targetIds": ["target_pump_slot"],
+      "completionType": "placement",
+      "targetOrder": "parallel",
+      "validationRuleIds": ["validation_pump"],
+      "hintIds": ["hint_pump_shaft_engagement"],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": true, "penalizeInvalidPlacement": true, "stricterToleranceAvailable": true },
+      "eventTags": ["power_cube", "module", "placement", "hydraulic"]
+    },
+    {
+      "id": "step_torque_pump_bolts",
+      "name": "Torque the pump mounting bolts",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_hydraulic_drive",
+      "sequenceIndex": 22,
+      "instructionText": "Torque the pump bracket bolts to 25 ft-lbs. Check that the pump shaft spins freely by hand after torquing — if it binds, loosen and realign.",
+      "whyItMattersText": "Over-tightening can distort the pump body and bind the gears. The free-spin check confirms alignment is correct.",
+      "requiredPartIds": [],
+      "relevantToolIds": ["tool_torque_wrench"],
+      "targetIds": ["target_pump_bolt_point"],
+      "completionType": "tool_action",
+      "requiredToolActions": [
+        {
+          "id": "action_torque_pump",
+          "toolId": "tool_torque_wrench",
+          "actionType": "tighten",
+          "targetId": "target_pump_bolt_point",
+          "requiredCount": 2,
+          "successMessage": "Pump bolts torqued. Shaft spins freely — alignment is good!",
+          "failureMessage": "Use the torque wrench on the pump mounting bolts."
+        }
+      ],
+      "validationRuleIds": [],
+      "hintIds": ["hint_free_spin_check"],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": false, "penalizeInvalidPlacement": false, "stricterToleranceAvailable": false },
+      "eventTags": ["power_cube", "module", "torque", "hydraulic"]
+    },
+    {
+      "id": "step_mount_reservoir",
+      "name": "Mount the hydraulic reservoir",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_hydraulic_plumbing",
+      "sequenceIndex": 23,
+      "instructionText": "Position the reservoir on the right side of the frame. The suction port should face the pump, and the fill cap must be accessible from above. Secure it to the frame with the mounting straps.",
+      "whyItMattersText": "The reservoir must be higher than the pump suction inlet to maintain positive suction head. Gravity-feeding prevents pump cavitation.",
+      "requiredPartIds": ["reservoir"],
+      "relevantToolIds": ["tool_torque_wrench"],
+      "targetIds": ["target_reservoir_slot"],
+      "completionType": "placement",
+      "targetOrder": "parallel",
+      "validationRuleIds": ["validation_reservoir"],
+      "hintIds": ["hint_reservoir_height"],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": true, "penalizeInvalidPlacement": true, "stricterToleranceAvailable": true },
+      "eventTags": ["power_cube", "module", "placement", "hydraulic"]
+    },
+    {
+      "id": "step_torque_reservoir_bolts",
+      "name": "Torque the reservoir mounting bolts",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_hydraulic_plumbing",
+      "sequenceIndex": 24,
+      "instructionText": "Torque the reservoir strap bolts to 20 ft-lbs. The tank should be snug but not deformed — the straps should grip without crushing the tank walls.",
+      "whyItMattersText": "The reservoir holds 10 gallons of oil (about 75 lbs). Loose straps let it shift under vibration; overtight straps can dent the tank and cause leaks.",
+      "requiredPartIds": [],
+      "relevantToolIds": ["tool_torque_wrench"],
+      "targetIds": ["target_reservoir_bolt_point"],
+      "completionType": "tool_action",
+      "requiredToolActions": [
+        {
+          "id": "action_torque_reservoir",
+          "toolId": "tool_torque_wrench",
+          "actionType": "tighten",
+          "targetId": "target_reservoir_bolt_point",
+          "requiredCount": 2,
+          "successMessage": "Reservoir secured. Tank is snug and level.",
+          "failureMessage": "Use the torque wrench on the reservoir mounting straps."
+        }
+      ],
+      "validationRuleIds": [],
+      "hintIds": [],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": false, "penalizeInvalidPlacement": false, "stricterToleranceAvailable": false },
+      "eventTags": ["power_cube", "module", "torque", "hydraulic"]
+    },
+    {
+      "id": "step_connect_pressure_hose",
+      "name": "Connect the pressure hose",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_hydraulic_plumbing",
+      "sequenceIndex": 25,
+      "instructionText": "Route the high-pressure hose from the pump outlet port to the pressure manifold. Avoid sharp bends — maintain at least a 4-inch bend radius. Thread the fittings finger-tight for now.",
+      "whyItMattersText": "The pressure line carries 2500+ PSI. Sharp bends weaken the hose, and a blown pressure line is extremely dangerous.",
+      "requiredPartIds": ["pressure_hose"],
+      "relevantToolIds": ["tool_line_wrench"],
+      "targetIds": ["target_pressure_hose_slot"],
+      "completionType": "placement",
+      "targetOrder": "parallel",
+      "validationRuleIds": ["validation_pressure_hose"],
+      "hintIds": ["hint_hose_routing"],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": true, "penalizeInvalidPlacement": true, "stricterToleranceAvailable": true },
+      "eventTags": ["power_cube", "module", "placement", "plumbing"]
+    },
+    {
+      "id": "step_connect_return_hose",
+      "name": "Connect the return hose",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_hydraulic_plumbing",
+      "sequenceIndex": 26,
+      "instructionText": "Route the return hose from the return manifold back to the reservoir return port. The return line is lower pressure than the pressure line but still needs proper routing without kinks.",
+      "whyItMattersText": "A restricted return line causes back-pressure, overheating, and potential seal failures in the hydraulic motors.",
+      "requiredPartIds": ["return_hose"],
+      "relevantToolIds": ["tool_line_wrench"],
+      "targetIds": ["target_return_hose_slot"],
+      "completionType": "placement",
+      "targetOrder": "parallel",
+      "validationRuleIds": ["validation_return_hose"],
+      "hintIds": ["hint_return_routing"],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": true, "penalizeInvalidPlacement": true, "stricterToleranceAvailable": true },
+      "eventTags": ["power_cube", "module", "placement", "plumbing"]
+    },
+    {
+      "id": "step_mount_oil_cooler",
+      "name": "Mount the oil cooler",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_hydraulic_plumbing",
+      "sequenceIndex": 27,
+      "instructionText": "Bolt the oil cooler to the front face of the frame, oriented vertically for maximum airflow. Connect the cooler inlet hose from the return line tee and the cooler outlet to the reservoir.",
+      "whyItMattersText": "Hydraulic oil above 180°F degrades rapidly. The cooler keeps oil temperature in the safe range during sustained operation like brick pressing.",
+      "requiredPartIds": ["oil_cooler"],
+      "relevantToolIds": ["tool_torque_wrench", "tool_line_wrench"],
+      "targetIds": ["target_cooler_slot"],
+      "completionType": "placement",
+      "targetOrder": "parallel",
+      "validationRuleIds": ["validation_cooler"],
+      "hintIds": ["hint_cooler_airflow"],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": true, "penalizeInvalidPlacement": true, "stricterToleranceAvailable": true },
+      "eventTags": ["power_cube", "module", "placement", "cooling"]
+    },
+    {
+      "id": "step_tighten_fittings_check",
+      "name": "Tighten all fittings and system check",
+      "assemblyId": "assembly_frame",
+      "subassemblyId": "subassembly_hydraulic_plumbing",
+      "sequenceIndex": 28,
+      "instructionText": "Go back through every hydraulic fitting and tighten with the line wrench — 1/4 turn past finger-tight. Check that all hoses are routed clear of the engine exhaust and moving parts. The Power Cube is complete!",
+      "whyItMattersText": "A single loose fitting under 2500 PSI creates a dangerous injection hazard. This final pass catches any fittings that were left finger-tight during assembly.",
+      "requiredPartIds": [],
+      "relevantToolIds": ["tool_line_wrench"],
+      "targetIds": ["target_fitting_check_point"],
+      "completionType": "tool_action",
+      "requiredToolActions": [
+        {
+          "id": "action_tighten_fittings",
+          "toolId": "tool_line_wrench",
+          "actionType": "tighten",
+          "targetId": "target_fitting_check_point",
+          "requiredCount": 1,
+          "successMessage": "All fittings tight. The Power Cube is ready for first start-up!",
+          "failureMessage": "Use the line wrench to tighten all hydraulic fittings."
+        }
+      ],
+      "validationRuleIds": [],
+      "hintIds": ["hint_injection_hazard"],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": { "penalizeHintUsage": false, "penalizeInvalidPlacement": false, "stricterToleranceAvailable": false },
+      "eventTags": ["power_cube", "module", "plumbing", "quality", "milestone"]
+    }
+  ],
+  "validationRules": [
+    {
+      "id": "validation_base_long_1",
+      "type": "placement",
+      "targetId": "target_base_long_1_slot",
+      "expectedPartId": "base_tube_long_1",
+      "positionToleranceMm": 40.0,
+      "rotationToleranceDeg": 20.0,
+      "failureMessage": "Place the front long tube at the front of the base rectangle.",
+      "correctionHintId": "hint_layout_rectangle"
+    },
+    {
+      "id": "validation_base_long_2",
+      "type": "placement",
+      "targetId": "target_base_long_2_slot",
+      "expectedPartId": "base_tube_long_2",
+      "positionToleranceMm": 40.0,
+      "rotationToleranceDeg": 20.0,
+      "failureMessage": "Place the back long tube parallel to the front tube.",
+      "correctionHintId": "hint_layout_rectangle"
+    },
+    {
+      "id": "validation_base_short_1",
+      "type": "placement",
+      "targetId": "target_base_short_1_slot",
+      "expectedPartId": "base_tube_short_1",
+      "positionToleranceMm": 40.0,
+      "rotationToleranceDeg": 20.0,
+      "failureMessage": "Place the left short tube connecting the front and back tubes.",
+      "correctionHintId": "hint_layout_rectangle"
+    },
+    {
+      "id": "validation_base_short_2",
+      "type": "placement",
+      "targetId": "target_base_short_2_slot",
+      "expectedPartId": "base_tube_short_2",
+      "positionToleranceMm": 40.0,
+      "rotationToleranceDeg": 20.0,
+      "failureMessage": "Place the right short tube connecting the front and back tubes.",
+      "correctionHintId": "hint_layout_rectangle"
+    },
+    {
+      "id": "validation_post_fl",
+      "type": "placement",
+      "targetId": "target_post_fl",
+      "expectedPartId": "vertical_post_1",
+      "positionToleranceMm": 35.0,
+      "rotationToleranceDeg": 15.0,
+      "failureMessage": "Stand the front-left post upright at the corner.",
+      "correctionHintId": "hint_plumb_posts"
+    },
+    {
+      "id": "validation_post_fr",
+      "type": "placement",
+      "targetId": "target_post_fr",
+      "expectedPartId": "vertical_post_2",
+      "positionToleranceMm": 35.0,
+      "rotationToleranceDeg": 15.0,
+      "failureMessage": "Stand the front-right post upright at the corner.",
+      "correctionHintId": "hint_plumb_posts"
+    },
+    {
+      "id": "validation_post_bl",
+      "type": "placement",
+      "targetId": "target_post_bl",
+      "expectedPartId": "vertical_post_3",
+      "positionToleranceMm": 35.0,
+      "rotationToleranceDeg": 15.0,
+      "failureMessage": "Stand the back-left post upright at the corner.",
+      "correctionHintId": "hint_plumb_posts"
+    },
+    {
+      "id": "validation_post_br",
+      "type": "placement",
+      "targetId": "target_post_br",
+      "expectedPartId": "vertical_post_4",
+      "positionToleranceMm": 35.0,
+      "rotationToleranceDeg": 15.0,
+      "failureMessage": "Stand the back-right post upright at the corner.",
+      "correctionHintId": "hint_plumb_posts"
+    },
+    {
+      "id": "validation_top_long_1",
+      "type": "placement",
+      "targetId": "target_top_long_1_slot",
+      "expectedPartId": "top_tube_long_1",
+      "positionToleranceMm": 40.0,
+      "rotationToleranceDeg": 20.0,
+      "failureMessage": "Place the front top tube across the two front posts."
+    },
+    {
+      "id": "validation_top_long_2",
+      "type": "placement",
+      "targetId": "target_top_long_2_slot",
+      "expectedPartId": "top_tube_long_2",
+      "positionToleranceMm": 40.0,
+      "rotationToleranceDeg": 20.0,
+      "failureMessage": "Place the back top tube across the two back posts."
+    },
+    {
+      "id": "validation_top_short_1",
+      "type": "placement",
+      "targetId": "target_top_short_1_slot",
+      "expectedPartId": "top_tube_short_1",
+      "positionToleranceMm": 40.0,
+      "rotationToleranceDeg": 20.0,
+      "failureMessage": "Place the left top tube connecting front and back top tubes."
+    },
+    {
+      "id": "validation_top_short_2",
+      "type": "placement",
+      "targetId": "target_top_short_2_slot",
+      "expectedPartId": "top_tube_short_2",
+      "positionToleranceMm": 40.0,
+      "rotationToleranceDeg": 20.0,
+      "failureMessage": "Place the right top tube connecting front and back top tubes."
+    },
+    {
+      "id": "validation_mount_plate",
+      "type": "placement",
+      "targetId": "target_mount_plate_slot",
+      "expectedPartId": "engine_mount_plate",
+      "positionToleranceMm": 45.0,
+      "rotationToleranceDeg": 20.0,
+      "failureMessage": "Center the mounting plate flat across the top of the frame.",
+      "correctionHintId": "hint_center_plate"
+    },
+    {
+      "id": "validation_engine",
+      "type": "placement",
+      "targetId": "target_engine_slot",
+      "expectedPartId": "engine",
+      "positionToleranceMm": 40.0,
+      "rotationToleranceDeg": 15.0,
+      "failureMessage": "Place the engine on the plate with the output shaft facing the pump side.",
+      "correctionHintId": "hint_engine_orientation"
+    },
+    {
+      "id": "validation_coupling",
+      "type": "placement",
+      "targetId": "target_coupling_slot",
+      "expectedPartId": "pump_coupling",
+      "positionToleranceMm": 25.0,
+      "rotationToleranceDeg": 30.0,
+      "failureMessage": "Slide the coupling onto the engine output shaft.",
+      "correctionHintId": "hint_coupling_alignment"
+    },
+    {
+      "id": "validation_pump",
+      "type": "placement",
+      "targetId": "target_pump_slot",
+      "expectedPartId": "hydraulic_pump",
+      "positionToleranceMm": 35.0,
+      "rotationToleranceDeg": 15.0,
+      "failureMessage": "Mount the pump with its shaft engaging the coupling.",
+      "correctionHintId": "hint_pump_shaft_engagement"
+    },
+    {
+      "id": "validation_reservoir",
+      "type": "placement",
+      "targetId": "target_reservoir_slot",
+      "expectedPartId": "reservoir",
+      "positionToleranceMm": 45.0,
+      "rotationToleranceDeg": 20.0,
+      "failureMessage": "Mount the reservoir on the right side of the frame with the suction port facing the pump.",
+      "correctionHintId": "hint_reservoir_height"
+    },
+    {
+      "id": "validation_pressure_hose",
+      "type": "placement",
+      "targetId": "target_pressure_hose_slot",
+      "expectedPartId": "pressure_hose",
+      "positionToleranceMm": 50.0,
+      "rotationToleranceDeg": 45.0,
+      "failureMessage": "Route the pressure hose from the pump outlet to the pressure manifold.",
+      "correctionHintId": "hint_hose_routing"
+    },
+    {
+      "id": "validation_return_hose",
+      "type": "placement",
+      "targetId": "target_return_hose_slot",
+      "expectedPartId": "return_hose",
+      "positionToleranceMm": 50.0,
+      "rotationToleranceDeg": 45.0,
+      "failureMessage": "Route the return hose from the return manifold to the reservoir.",
+      "correctionHintId": "hint_return_routing"
+    },
+    {
+      "id": "validation_cooler",
+      "type": "placement",
+      "targetId": "target_cooler_slot",
+      "expectedPartId": "oil_cooler",
+      "positionToleranceMm": 45.0,
+      "rotationToleranceDeg": 20.0,
+      "failureMessage": "Mount the oil cooler on the front face of the frame.",
+      "correctionHintId": "hint_cooler_airflow"
+    }
+  ],
+  "effects": [],
+  "hints": [
+    {
+      "id": "hint_measure_long_tubes",
+      "type": "text",
+      "title": "Measuring technique",
+      "message": "Hook the tape on the tube end, pull taut to 24 inches, and mark with soapstone. Double-check by measuring from the mark back to the end.",
+      "toolId": "tool_tape_measure",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_cut_safety",
+      "type": "text",
+      "title": "Cutting safety",
+      "message": "Clamp the tube to a stable surface. Wear safety glasses and hearing protection. Let the grinder do the work — don't force it through the steel.",
+      "toolId": "tool_angle_grinder",
+      "priority": "high"
+    },
+    {
+      "id": "hint_layout_rectangle",
+      "type": "highlight",
+      "title": "Base rectangle layout",
+      "message": "Long tubes go front and back. Short tubes butt against the inside faces of the long tubes on left and right. The result should be a flat rectangle on your work surface.",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_tack_technique",
+      "type": "text",
+      "title": "Tack welding tips",
+      "message": "A tack weld is a short (1/2 inch) spot weld that holds parts in position. Do one tack per corner, alternating opposite corners (front-left, then back-right) to distribute heat evenly.",
+      "toolId": "tool_welder",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_diagonal_check",
+      "type": "text",
+      "title": "Diagonal check for squareness",
+      "message": "Measure corner-to-corner diagonally in both directions. If the two diagonals are equal (within 1/16\"), the frame is square. If not, push the long diagonal shorter and re-tack.",
+      "toolId": "tool_tape_measure",
+      "priority": "high"
+    },
+    {
+      "id": "hint_weld_cooling",
+      "type": "text",
+      "title": "Manage heat distortion",
+      "message": "Weld opposite corners in sequence (front-left, then back-right, then front-right, then back-left). This distributes heat and minimizes frame warping.",
+      "toolId": "tool_welder",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_plumb_posts",
+      "type": "highlight",
+      "title": "Keep posts plumb",
+      "message": "Hold the framing square against the post and the base tube. The post should be perfectly vertical in both directions. Clamp it in place before tacking.",
+      "toolId": "tool_framing_square",
+      "priority": "high"
+    },
+    {
+      "id": "hint_alternate_sides",
+      "type": "text",
+      "title": "Alternate welding sides",
+      "message": "When welding around a post base, weld one side, skip to the opposite side, then fill in the remaining two sides. This prevents heat from pulling the post out of plumb.",
+      "toolId": "tool_welder",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_top_ring_layout",
+      "type": "highlight",
+      "title": "Top ring matches base",
+      "message": "The top ring is the same rectangle as the base — same tube lengths, same orientation. Long tubes front/back, short tubes left/right.",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_plate_fit",
+      "type": "text",
+      "title": "Plate sizing",
+      "message": "The plate should span the full top ring area. Measure inside the outer tube faces and cut 1/8\" undersize for easy fitment. You can always weld over small gaps.",
+      "toolId": "tool_angle_grinder",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_center_plate",
+      "type": "highlight",
+      "title": "Center the mounting plate",
+      "message": "The plate should sit evenly on all four top tubes. Check that the overhang is equal on all sides — use the tape measure to verify.",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_plate_weld_sequence",
+      "type": "text",
+      "title": "Plate welding order",
+      "message": "Tack opposite corners first (front-left, then back-right), check centering, then run full beads. Weld opposite edges alternately to minimize warping.",
+      "toolId": "tool_welder",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_engine_orientation",
+      "type": "highlight",
+      "title": "Engine shaft direction",
+      "message": "The engine output shaft must face the left side of the frame where the pump will mount. Look for the keyway on the shaft — that's the output end.",
+      "priority": "high"
+    },
+    {
+      "id": "hint_star_pattern",
+      "type": "text",
+      "title": "Star-pattern torquing",
+      "message": "Torque bolts in a cross pattern: front-left → back-right → front-right → back-left. This seats the engine evenly and prevents the plate from flexing.",
+      "toolId": "tool_torque_wrench",
+      "priority": "high"
+    },
+    {
+      "id": "hint_coupling_alignment",
+      "type": "highlight",
+      "title": "Coupling installation",
+      "message": "Push the hub onto the shaft until the set screw aligns with the shaft flat. Tighten the set screw. Insert the spider — it should fit snugly in the hub jaws with no force.",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_pump_shaft_engagement",
+      "type": "highlight",
+      "title": "Pump alignment",
+      "message": "The pump shaft should slide into the coupling hub smoothly. If you have to force it, the shafts are misaligned — shim the pump bracket until the shaft drops in freely.",
+      "priority": "high"
+    },
+    {
+      "id": "hint_free_spin_check",
+      "type": "text",
+      "title": "Free-spin test",
+      "message": "After torquing the pump bolts, grab the coupling and spin it by hand. It should turn smoothly with no tight spots. Binding means misalignment — loosen and adjust.",
+      "toolId": "tool_torque_wrench",
+      "priority": "high"
+    },
+    {
+      "id": "hint_reservoir_height",
+      "type": "highlight",
+      "title": "Reservoir placement height",
+      "message": "Mount the reservoir so the suction port is above the pump inlet. This gravity-feeds oil to the pump and prevents cavitation on startup.",
+      "priority": "high"
+    },
+    {
+      "id": "hint_hose_routing",
+      "type": "text",
+      "title": "Pressure hose routing",
+      "message": "Route hoses away from the engine exhaust, fan belt, and any moving parts. Maintain at least a 4-inch bend radius — tight bends weaken the braided reinforcement.",
+      "toolId": "tool_line_wrench",
+      "priority": "high"
+    },
+    {
+      "id": "hint_return_routing",
+      "type": "text",
+      "title": "Return line routing",
+      "message": "The return line is lower pressure but higher flow. Use the full 1\" ID hose — don't reduce the size. Route it below the reservoir return port so oil flows downhill.",
+      "toolId": "tool_line_wrench",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_cooler_airflow",
+      "type": "highlight",
+      "title": "Cooler placement",
+      "message": "Mount the cooler where it gets maximum airflow — the front face of the frame is ideal. Leave at least 2 inches between the cooler and any obstruction.",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_injection_hazard",
+      "type": "text",
+      "title": "Hydraulic injection hazard",
+      "message": "A pinhole leak at 2500 PSI can inject fluid through skin, causing severe tissue damage. Never run your hand along a pressurized hose to check for leaks — use cardboard instead.",
+      "toolId": "tool_line_wrench",
+      "priority": "high"
+    }
+  ],
+  "targets": [
+    {
+      "id": "target_base_long_1_measure",
+      "name": "Long Tube Measuring Point",
+      "anchorRef": "anchors/power_cube/base_long_1_measure",
+      "description": "Where to use the tape measure on the long tube stock.",
+      "tags": ["power_cube", "frame", "measure"]
+    },
+    {
+      "id": "target_base_long_1_cut",
+      "name": "Long Tube 1 Cut Point",
+      "anchorRef": "anchors/power_cube/base_long_1_cut",
+      "description": "Cut line for the front base tube.",
+      "tags": ["power_cube", "frame", "cut"]
+    },
+    {
+      "id": "target_base_long_2_cut",
+      "name": "Long Tube 2 Cut Point",
+      "anchorRef": "anchors/power_cube/base_long_2_cut",
+      "description": "Cut line for the back base tube.",
+      "tags": ["power_cube", "frame", "cut"]
+    },
+    {
+      "id": "target_base_short_1_measure",
+      "name": "Short Tube Measuring Point",
+      "anchorRef": "anchors/power_cube/base_short_1_measure",
+      "description": "Where to use the tape measure on the short tube stock.",
+      "tags": ["power_cube", "frame", "measure"]
+    },
+    {
+      "id": "target_base_short_1_cut",
+      "name": "Short Tube 1 Cut Point",
+      "anchorRef": "anchors/power_cube/base_short_1_cut",
+      "description": "Cut line for the left base tube.",
+      "tags": ["power_cube", "frame", "cut"]
+    },
+    {
+      "id": "target_base_short_2_cut",
+      "name": "Short Tube 2 Cut Point",
+      "anchorRef": "anchors/power_cube/base_short_2_cut",
+      "description": "Cut line for the right base tube.",
+      "tags": ["power_cube", "frame", "cut"]
+    },
+    {
+      "id": "target_base_long_1_slot",
+      "name": "Front Base Tube Position",
+      "anchorRef": "anchors/power_cube/base_long_1_slot",
+      "description": "Where the front long tube sits in the base rectangle.",
+      "associatedPartId": "base_tube_long_1",
+      "tags": ["power_cube", "frame", "base"]
+    },
+    {
+      "id": "target_base_long_2_slot",
+      "name": "Back Base Tube Position",
+      "anchorRef": "anchors/power_cube/base_long_2_slot",
+      "description": "Where the back long tube sits in the base rectangle.",
+      "associatedPartId": "base_tube_long_2",
+      "tags": ["power_cube", "frame", "base"]
+    },
+    {
+      "id": "target_base_short_1_slot",
+      "name": "Left Base Tube Position",
+      "anchorRef": "anchors/power_cube/base_short_1_slot",
+      "description": "Where the left short tube sits in the base rectangle.",
+      "associatedPartId": "base_tube_short_1",
+      "tags": ["power_cube", "frame", "base"]
+    },
+    {
+      "id": "target_base_short_2_slot",
+      "name": "Right Base Tube Position",
+      "anchorRef": "anchors/power_cube/base_short_2_slot",
+      "description": "Where the right short tube sits in the base rectangle.",
+      "associatedPartId": "base_tube_short_2",
+      "tags": ["power_cube", "frame", "base"]
+    },
+    {
+      "id": "target_tack_corner_fl",
+      "name": "Front-Left Corner Weld Point",
+      "anchorRef": "anchors/power_cube/tack_fl",
+      "description": "Tack/weld point at the front-left base corner.",
+      "tags": ["power_cube", "frame", "weld"]
+    },
+    {
+      "id": "target_tack_corner_fr",
+      "name": "Front-Right Corner Weld Point",
+      "anchorRef": "anchors/power_cube/tack_fr",
+      "description": "Tack/weld point at the front-right base corner.",
+      "tags": ["power_cube", "frame", "weld"]
+    },
+    {
+      "id": "target_tack_corner_bl",
+      "name": "Back-Left Corner Weld Point",
+      "anchorRef": "anchors/power_cube/tack_bl",
+      "description": "Tack/weld point at the back-left base corner.",
+      "tags": ["power_cube", "frame", "weld"]
+    },
+    {
+      "id": "target_tack_corner_br",
+      "name": "Back-Right Corner Weld Point",
+      "anchorRef": "anchors/power_cube/tack_br",
+      "description": "Tack/weld point at the back-right base corner.",
+      "tags": ["power_cube", "frame", "weld"]
+    },
+    {
+      "id": "target_square_check_point",
+      "name": "Squareness Check Point",
+      "anchorRef": "anchors/power_cube/square_check",
+      "description": "Where to place the framing square to check the base for 90°.",
+      "tags": ["power_cube", "frame", "quality"]
+    },
+    {
+      "id": "target_vertical_cut_point",
+      "name": "Vertical Post Cut Point",
+      "anchorRef": "anchors/power_cube/vertical_cut",
+      "description": "Cutting point for vertical post stock.",
+      "tags": ["power_cube", "frame", "cut"]
+    },
+    {
+      "id": "target_post_fl",
+      "name": "Front-Left Post Position",
+      "anchorRef": "anchors/power_cube/post_fl",
+      "description": "Where the front-left vertical post stands.",
+      "associatedPartId": "vertical_post_1",
+      "tags": ["power_cube", "frame", "vertical"]
+    },
+    {
+      "id": "target_post_fr",
+      "name": "Front-Right Post Position",
+      "anchorRef": "anchors/power_cube/post_fr",
+      "description": "Where the front-right vertical post stands.",
+      "associatedPartId": "vertical_post_2",
+      "tags": ["power_cube", "frame", "vertical"]
+    },
+    {
+      "id": "target_post_bl",
+      "name": "Back-Left Post Position",
+      "anchorRef": "anchors/power_cube/post_bl",
+      "description": "Where the back-left vertical post stands.",
+      "associatedPartId": "vertical_post_3",
+      "tags": ["power_cube", "frame", "vertical"]
+    },
+    {
+      "id": "target_post_br",
+      "name": "Back-Right Post Position",
+      "anchorRef": "anchors/power_cube/post_br",
+      "description": "Where the back-right vertical post stands.",
+      "associatedPartId": "vertical_post_4",
+      "tags": ["power_cube", "frame", "vertical"]
+    },
+    {
+      "id": "target_top_long_1_slot",
+      "name": "Top Front Tube Position",
+      "anchorRef": "anchors/power_cube/top_long_1_slot",
+      "description": "Where the front top tube sits across the front posts.",
+      "associatedPartId": "top_tube_long_1",
+      "tags": ["power_cube", "frame", "top"]
+    },
+    {
+      "id": "target_top_long_2_slot",
+      "name": "Top Back Tube Position",
+      "anchorRef": "anchors/power_cube/top_long_2_slot",
+      "description": "Where the back top tube sits across the back posts.",
+      "associatedPartId": "top_tube_long_2",
+      "tags": ["power_cube", "frame", "top"]
+    },
+    {
+      "id": "target_top_short_1_slot",
+      "name": "Top Left Tube Position",
+      "anchorRef": "anchors/power_cube/top_short_1_slot",
+      "description": "Where the left top tube connects the front and back top tubes.",
+      "associatedPartId": "top_tube_short_1",
+      "tags": ["power_cube", "frame", "top"]
+    },
+    {
+      "id": "target_top_short_2_slot",
+      "name": "Top Right Tube Position",
+      "anchorRef": "anchors/power_cube/top_short_2_slot",
+      "description": "Where the right top tube connects the front and back top tubes.",
+      "associatedPartId": "top_tube_short_2",
+      "tags": ["power_cube", "frame", "top"]
+    },
+    {
+      "id": "target_top_weld_fl",
+      "name": "Top Front-Left Weld Point",
+      "anchorRef": "anchors/power_cube/top_weld_fl",
+      "description": "Weld point at the top front-left corner.",
+      "tags": ["power_cube", "frame", "weld", "top"]
+    },
+    {
+      "id": "target_top_weld_fr",
+      "name": "Top Front-Right Weld Point",
+      "anchorRef": "anchors/power_cube/top_weld_fr",
+      "description": "Weld point at the top front-right corner.",
+      "tags": ["power_cube", "frame", "weld", "top"]
+    },
+    {
+      "id": "target_top_weld_bl",
+      "name": "Top Back-Left Weld Point",
+      "anchorRef": "anchors/power_cube/top_weld_bl",
+      "description": "Weld point at the top back-left corner.",
+      "tags": ["power_cube", "frame", "weld", "top"]
+    },
+    {
+      "id": "target_top_weld_br",
+      "name": "Top Back-Right Weld Point",
+      "anchorRef": "anchors/power_cube/top_weld_br",
+      "description": "Weld point at the top back-right corner.",
+      "tags": ["power_cube", "frame", "weld", "top"]
+    },
+    {
+      "id": "target_final_check_point",
+      "name": "Final Inspection Point",
+      "anchorRef": "anchors/power_cube/final_check",
+      "description": "Central reference for the final squareness and plumb inspection.",
+      "tags": ["power_cube", "frame", "quality"]
+    },
+    {
+      "id": "target_mount_plate_cut",
+      "name": "Mounting Plate Cut Point",
+      "anchorRef": "anchors/power_cube/mount_plate_cut",
+      "description": "Cutting point for the engine mounting plate.",
+      "tags": ["power_cube", "module", "cut"]
+    },
+    {
+      "id": "target_mount_plate_slot",
+      "name": "Mounting Plate Position",
+      "anchorRef": "anchors/power_cube/mount_plate_slot",
+      "description": "Where the mounting plate sits across the frame top.",
+      "associatedPartId": "engine_mount_plate",
+      "tags": ["power_cube", "module", "engine"]
+    },
+    {
+      "id": "target_plate_weld_fl",
+      "name": "Plate Weld Front-Left",
+      "anchorRef": "anchors/power_cube/plate_weld_fl",
+      "description": "Front-left weld point for the mounting plate.",
+      "tags": ["power_cube", "module", "weld"]
+    },
+    {
+      "id": "target_plate_weld_fr",
+      "name": "Plate Weld Front-Right",
+      "anchorRef": "anchors/power_cube/plate_weld_fr",
+      "description": "Front-right weld point for the mounting plate.",
+      "tags": ["power_cube", "module", "weld"]
+    },
+    {
+      "id": "target_plate_weld_bl",
+      "name": "Plate Weld Back-Left",
+      "anchorRef": "anchors/power_cube/plate_weld_bl",
+      "description": "Back-left weld point for the mounting plate.",
+      "tags": ["power_cube", "module", "weld"]
+    },
+    {
+      "id": "target_plate_weld_br",
+      "name": "Plate Weld Back-Right",
+      "anchorRef": "anchors/power_cube/plate_weld_br",
+      "description": "Back-right weld point for the mounting plate.",
+      "tags": ["power_cube", "module", "weld"]
+    },
+    {
+      "id": "target_engine_slot",
+      "name": "Engine Position",
+      "anchorRef": "anchors/power_cube/engine_slot",
+      "description": "Where the engine sits on the mounting plate.",
+      "associatedPartId": "engine",
+      "tags": ["power_cube", "module", "engine"]
+    },
+    {
+      "id": "target_engine_bolt_point",
+      "name": "Engine Bolt Point",
+      "anchorRef": "anchors/power_cube/engine_bolt",
+      "description": "Torque point for engine mounting bolts.",
+      "tags": ["power_cube", "module", "torque"]
+    },
+    {
+      "id": "target_coupling_slot",
+      "name": "Coupling Position",
+      "anchorRef": "anchors/power_cube/coupling_slot",
+      "description": "Where the spider coupling mounts on the engine shaft.",
+      "associatedPartId": "pump_coupling",
+      "tags": ["power_cube", "module", "hydraulic"]
+    },
+    {
+      "id": "target_pump_slot",
+      "name": "Hydraulic Pump Position",
+      "anchorRef": "anchors/power_cube/pump_slot",
+      "description": "Where the pump mounts, aligned to the coupling.",
+      "associatedPartId": "hydraulic_pump",
+      "tags": ["power_cube", "module", "hydraulic"]
+    },
+    {
+      "id": "target_pump_bolt_point",
+      "name": "Pump Bolt Point",
+      "anchorRef": "anchors/power_cube/pump_bolt",
+      "description": "Torque point for pump mounting bolts.",
+      "tags": ["power_cube", "module", "torque"]
+    },
+    {
+      "id": "target_reservoir_slot",
+      "name": "Reservoir Position",
+      "anchorRef": "anchors/power_cube/reservoir_slot",
+      "description": "Where the reservoir mounts on the frame side.",
+      "associatedPartId": "reservoir",
+      "tags": ["power_cube", "module", "hydraulic"]
+    },
+    {
+      "id": "target_reservoir_bolt_point",
+      "name": "Reservoir Bolt Point",
+      "anchorRef": "anchors/power_cube/reservoir_bolt",
+      "description": "Torque point for reservoir mounting straps.",
+      "tags": ["power_cube", "module", "torque"]
+    },
+    {
+      "id": "target_pressure_hose_slot",
+      "name": "Pressure Hose Route",
+      "anchorRef": "anchors/power_cube/pressure_hose_slot",
+      "description": "Routing path for the high-pressure hose from pump to manifold.",
+      "associatedPartId": "pressure_hose",
+      "tags": ["power_cube", "module", "plumbing"]
+    },
+    {
+      "id": "target_return_hose_slot",
+      "name": "Return Hose Route",
+      "anchorRef": "anchors/power_cube/return_hose_slot",
+      "description": "Routing path for the return hose from manifold to reservoir.",
+      "associatedPartId": "return_hose",
+      "tags": ["power_cube", "module", "plumbing"]
+    },
+    {
+      "id": "target_cooler_slot",
+      "name": "Oil Cooler Position",
+      "anchorRef": "anchors/power_cube/cooler_slot",
+      "description": "Where the oil cooler mounts on the front of the frame.",
+      "associatedPartId": "oil_cooler",
+      "tags": ["power_cube", "module", "cooling"]
+    },
+    {
+      "id": "target_fitting_check_point",
+      "name": "Fitting Tightening Check Point",
+      "anchorRef": "anchors/power_cube/fitting_check",
+      "description": "Central reference point for final fitting tightening and system check.",
+      "tags": ["power_cube", "module", "quality"]
+    }
+  ],
+  "challengeConfig": {
+    "enabled": true,
+    "trackTime": true,
+    "trackRetries": true,
+    "trackHintUsage": true,
+    "leaderboardReady": false,
+    "strictValidationModeAvailable": true
+  },
+  "assetManifest": {
+    "modelRefs": [
+      "assets/parts/base_tube_long.glb",
+      "assets/parts/base_tube_short.glb",
+      "assets/parts/vertical_post.glb",
+      "assets/parts/engine_mount_plate.glb",
+      "assets/parts/engine.glb",
+      "assets/parts/pump_coupling.glb",
+      "assets/parts/hydraulic_pump.glb",
+      "assets/parts/reservoir.glb",
+      "assets/parts/pressure_hose.glb",
+      "assets/parts/return_hose.glb",
+      "assets/parts/oil_cooler.glb",
+      "assets/tools/tool_tape_measure.glb",
+      "assets/tools/tool_angle_grinder.glb",
+      "assets/tools/tool_welder.glb",
+      "assets/tools/tool_framing_square.glb",
+      "assets/tools/tool_clamp.glb",
+      "assets/tools/tool_torque_wrench.glb",
+      "assets/tools/tool_line_wrench.glb"
+    ],
+    "effectRefs": [],
+    "uiRefs": []
+  },
+  "previewConfig": {
+    "partPlacements": [
+      {
+        "partId": "base_tube_long_1",
+        "startPosition": { "x": -3.5, "y": 0.55, "z": -3.5 },
+        "startRotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "startScale":    { "x": 1.6, "y": 0.25, "z": 0.25 },
+        "color":         { "r": 0.55, "g": 0.58, "b": 0.62, "a": 1.0 },
+        "playPosition":  { "x": 0.0, "y": 0.05, "z": -0.6 },
+        "playRotation":  { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "playScale":     { "x": 1.6, "y": 0.25, "z": 0.25 }
+      },
+      {
+        "partId": "base_tube_long_2",
+        "startPosition": { "x": -3.5, "y": 0.55, "z": -3.0 },
+        "startRotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "startScale":    { "x": 1.6, "y": 0.25, "z": 0.25 },
+        "color":         { "r": 0.55, "g": 0.58, "b": 0.62, "a": 1.0 },
+        "playPosition":  { "x": 0.0, "y": 0.05, "z": 0.6 },
+        "playRotation":  { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "playScale":     { "x": 1.6, "y": 0.25, "z": 0.25 }
+      },
+      {
+        "partId": "base_tube_short_1",
+        "startPosition": { "x": -3.5, "y": 0.55, "z": -2.0 },
+        "startRotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "startScale":    { "x": 0.25, "y": 0.25, "z": 1.0 },
+        "color":         { "r": 0.60, "g": 0.62, "b": 0.66, "a": 1.0 },
+        "playPosition":  { "x": -0.7, "y": 0.05, "z": 0.0 },
+        "playRotation":  { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "playScale":     { "x": 0.25, "y": 0.25, "z": 1.0 }
+      },
+      {
+        "partId": "base_tube_short_2",
+        "startPosition": { "x": -3.5, "y": 0.55, "z": -0.8 },
+        "startRotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "startScale":    { "x": 0.25, "y": 0.25, "z": 1.0 },
+        "color":         { "r": 0.60, "g": 0.62, "b": 0.66, "a": 1.0 },
+        "playPosition":  { "x": 0.7, "y": 0.05, "z": 0.0 },
+        "playRotation":  { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "playScale":     { "x": 0.25, "y": 0.25, "z": 1.0 }
+      },
+      {
+        "partId": "vertical_post_1",
+        "startPosition": { "x": 3.5, "y": 0.55, "z": -3.0 },
+        "startRotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "startScale":    { "x": 0.25, "y": 1.2, "z": 0.25 },
+        "color":         { "r": 0.72, "g": 0.55, "b": 0.30, "a": 1.0 },
+        "playPosition":  { "x": -0.7, "y": 0.65, "z": -0.6 },
+        "playRotation":  { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "playScale":     { "x": 0.25, "y": 1.2, "z": 0.25 }
+      },
+      {
+        "partId": "vertical_post_2",
+        "startPosition": { "x": 3.5, "y": 0.55, "z": -2.4 },
+        "startRotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "startScale":    { "x": 0.25, "y": 1.2, "z": 0.25 },
+        "color":         { "r": 0.72, "g": 0.55, "b": 0.30, "a": 1.0 },
+        "playPosition":  { "x": 0.7, "y": 0.65, "z": -0.6 },
+        "playRotation":  { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "playScale":     { "x": 0.25, "y": 1.2, "z": 0.25 }
+      },
+      {
+        "partId": "vertical_post_3",
+        "startPosition": { "x": 3.5, "y": 0.55, "z": -1.8 },
+        "startRotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "startScale":    { "x": 0.25, "y": 1.2, "z": 0.25 },
+        "color":         { "r": 0.72, "g": 0.55, "b": 0.30, "a": 1.0 },
+        "playPosition":  { "x": -0.7, "y": 0.65, "z": 0.6 },
+        "playRotation":  { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "playScale":     { "x": 0.25, "y": 1.2, "z": 0.25 }
+      },
+      {
+        "partId": "vertical_post_4",
+        "startPosition": { "x": 3.5, "y": 0.55, "z": -1.2 },
+        "startRotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "startScale":    { "x": 0.25, "y": 1.2, "z": 0.25 },
+        "color":         { "r": 0.72, "g": 0.55, "b": 0.30, "a": 1.0 },
+        "playPosition":  { "x": 0.7, "y": 0.65, "z": 0.6 },
+        "playRotation":  { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "playScale":     { "x": 0.25, "y": 1.2, "z": 0.25 }
+      },
+      {
+        "partId": "top_tube_long_1",
+        "startPosition": { "x": -3.5, "y": 0.55, "z": 0.5 },
+        "startRotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "startScale":    { "x": 1.6, "y": 0.25, "z": 0.25 },
+        "color":         { "r": 0.45, "g": 0.58, "b": 0.72, "a": 1.0 },
+        "playPosition":  { "x": 0.0, "y": 1.3, "z": -0.6 },
+        "playRotation":  { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "playScale":     { "x": 1.6, "y": 0.25, "z": 0.25 }
+      },
+      {
+        "partId": "top_tube_long_2",
+        "startPosition": { "x": -3.5, "y": 0.55, "z": 1.0 },
+        "startRotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "startScale":    { "x": 1.6, "y": 0.25, "z": 0.25 },
+        "color":         { "r": 0.45, "g": 0.58, "b": 0.72, "a": 1.0 },
+        "playPosition":  { "x": 0.0, "y": 1.3, "z": 0.6 },
+        "playRotation":  { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "playScale":     { "x": 1.6, "y": 0.25, "z": 0.25 }
+      },
+      {
+        "partId": "top_tube_short_1",
+        "startPosition": { "x": -3.5, "y": 0.55, "z": 2.0 },
+        "startRotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "startScale":    { "x": 0.25, "y": 0.25, "z": 1.0 },
+        "color":         { "r": 0.50, "g": 0.62, "b": 0.76, "a": 1.0 },
+        "playPosition":  { "x": -0.7, "y": 1.3, "z": 0.0 },
+        "playRotation":  { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "playScale":     { "x": 0.25, "y": 0.25, "z": 1.0 }
+      },
+      {
+        "partId": "top_tube_short_2",
+        "startPosition": { "x": -3.5, "y": 0.55, "z": 3.2 },
+        "startRotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "startScale":    { "x": 0.25, "y": 0.25, "z": 1.0 },
+        "color":         { "r": 0.50, "g": 0.62, "b": 0.76, "a": 1.0 },
+        "playPosition":  { "x": 0.7, "y": 1.3, "z": 0.0 },
+        "playRotation":  { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "playScale":     { "x": 0.25, "y": 0.25, "z": 1.0 }
+      },
+      {
+        "partId": "engine_mount_plate",
+        "startPosition": { "x": 5.0, "y": 0.55, "z": -3.5 },
+        "startRotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "startScale":    { "x": 1.4, "y": 0.04, "z": 1.0 },
+        "color":         { "r": 0.50, "g": 0.52, "b": 0.55, "a": 1.0 },
+        "playPosition":  { "x": 0.0, "y": 1.42, "z": 0.0 },
+        "playRotation":  { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "playScale":     { "x": 1.4, "y": 0.04, "z": 1.0 }
+      },
+      {
+        "partId": "engine",
+        "startPosition": { "x": 5.0, "y": 0.55, "z": -2.0 },
+        "startRotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "startScale":    { "x": 0.6, "y": 0.5, "z": 0.5 },
+        "color":         { "r": 0.35, "g": 0.38, "b": 0.42, "a": 1.0 },
+        "playPosition":  { "x": 0.15, "y": 1.72, "z": 0.0 },
+        "playRotation":  { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "playScale":     { "x": 0.6, "y": 0.5, "z": 0.5 }
+      },
+      {
+        "partId": "pump_coupling",
+        "startPosition": { "x": 5.0, "y": 0.55, "z": -0.8 },
+        "startRotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "startScale":    { "x": 0.18, "y": 0.18, "z": 0.18 },
+        "color":         { "r": 0.65, "g": 0.60, "b": 0.45, "a": 1.0 },
+        "playPosition":  { "x": -0.5, "y": 1.55, "z": 0.0 },
+        "playRotation":  { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "playScale":     { "x": 0.18, "y": 0.18, "z": 0.18 }
+      },
+      {
+        "partId": "hydraulic_pump",
+        "startPosition": { "x": 5.0, "y": 0.55, "z": 0.0 },
+        "startRotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "startScale":    { "x": 0.35, "y": 0.3, "z": 0.4 },
+        "color":         { "r": 0.30, "g": 0.32, "b": 0.38, "a": 1.0 },
+        "playPosition":  { "x": -0.9, "y": 1.45, "z": 0.0 },
+        "playRotation":  { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "playScale":     { "x": 0.35, "y": 0.3, "z": 0.4 }
+      },
+      {
+        "partId": "reservoir",
+        "startPosition": { "x": -5.5, "y": 0.55, "z": -3.0 },
+        "startRotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "startScale":    { "x": 0.4, "y": 0.55, "z": 0.35 },
+        "color":         { "r": 0.25, "g": 0.30, "b": 0.45, "a": 1.0 },
+        "playPosition":  { "x": 0.95, "y": 0.8, "z": 0.0 },
+        "playRotation":  { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "playScale":     { "x": 0.4, "y": 0.55, "z": 0.35 }
+      },
+      {
+        "partId": "pressure_hose",
+        "startPosition": { "x": -5.5, "y": 0.55, "z": -1.5 },
+        "startRotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "startScale":    { "x": 0.08, "y": 0.08, "z": 0.8 },
+        "color":         { "r": 0.15, "g": 0.15, "b": 0.18, "a": 1.0 },
+        "playPosition":  { "x": -0.4, "y": 1.2, "z": -0.3 },
+        "playRotation":  { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "playScale":     { "x": 0.08, "y": 0.08, "z": 0.8 }
+      },
+      {
+        "partId": "return_hose",
+        "startPosition": { "x": -5.5, "y": 0.55, "z": -0.5 },
+        "startRotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "startScale":    { "x": 0.1, "y": 0.1, "z": 0.7 },
+        "color":         { "r": 0.18, "g": 0.18, "b": 0.20, "a": 1.0 },
+        "playPosition":  { "x": 0.3, "y": 0.7, "z": -0.3 },
+        "playRotation":  { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "playScale":     { "x": 0.1, "y": 0.1, "z": 0.7 }
+      },
+      {
+        "partId": "oil_cooler",
+        "startPosition": { "x": -5.5, "y": 0.55, "z": 0.8 },
+        "startRotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "startScale":    { "x": 0.5, "y": 0.4, "z": 0.1 },
+        "color":         { "r": 0.60, "g": 0.62, "b": 0.58, "a": 1.0 },
+        "playPosition":  { "x": 0.0, "y": 0.55, "z": -0.75 },
+        "playRotation":  { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "playScale":     { "x": 0.5, "y": 0.4, "z": 0.1 }
+      }
+    ],
+    "targetPlacements": [
+      {
+        "targetId": "target_base_long_1_measure",
+        "position": { "x": -2.5, "y": 0.75, "z": -1.5 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.3, "y": 0.3, "z": 0.3 },
+        "color":    { "r": 0.90, "g": 0.75, "b": 0.20, "a": 1.0 }
+      },
+      {
+        "targetId": "target_base_long_1_cut",
+        "position": { "x": -2.2, "y": 0.75, "z": -1.5 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.3, "y": 0.3, "z": 0.3 },
+        "color":    { "r": 0.85, "g": 0.30, "b": 0.20, "a": 1.0 }
+      },
+      {
+        "targetId": "target_base_long_2_cut",
+        "position": { "x": -2.2, "y": 0.75, "z": -1.0 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.3, "y": 0.3, "z": 0.3 },
+        "color":    { "r": 0.85, "g": 0.30, "b": 0.20, "a": 1.0 }
+      },
+      {
+        "targetId": "target_base_short_1_measure",
+        "position": { "x": -2.5, "y": 0.75, "z": -0.5 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.3, "y": 0.3, "z": 0.3 },
+        "color":    { "r": 0.90, "g": 0.75, "b": 0.20, "a": 1.0 }
+      },
+      {
+        "targetId": "target_base_short_1_cut",
+        "position": { "x": -2.2, "y": 0.75, "z": -0.5 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.3, "y": 0.3, "z": 0.3 },
+        "color":    { "r": 0.85, "g": 0.30, "b": 0.20, "a": 1.0 }
+      },
+      {
+        "targetId": "target_base_short_2_cut",
+        "position": { "x": -2.2, "y": 0.75, "z": 0.0 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.3, "y": 0.3, "z": 0.3 },
+        "color":    { "r": 0.85, "g": 0.30, "b": 0.20, "a": 1.0 }
+      },
+      {
+        "targetId": "target_base_long_1_slot",
+        "position": { "x": 0.0, "y": 0.04, "z": -0.6 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 1.6, "y": 0.04, "z": 0.25 },
+        "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
+      },
+      {
+        "targetId": "target_base_long_2_slot",
+        "position": { "x": 0.0, "y": 0.04, "z": 0.6 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 1.6, "y": 0.04, "z": 0.25 },
+        "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
+      },
+      {
+        "targetId": "target_base_short_1_slot",
+        "position": { "x": -0.7, "y": 0.04, "z": 0.0 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.25, "y": 0.04, "z": 1.0 },
+        "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
+      },
+      {
+        "targetId": "target_base_short_2_slot",
+        "position": { "x": 0.7, "y": 0.04, "z": 0.0 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.25, "y": 0.04, "z": 1.0 },
+        "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
+      },
+      {
+        "targetId": "target_tack_corner_fl",
+        "position": { "x": -0.7, "y": 0.15, "z": -0.6 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.2, "y": 0.2, "z": 0.2 },
+        "color":    { "r": 0.95, "g": 0.55, "b": 0.15, "a": 1.0 }
+      },
+      {
+        "targetId": "target_tack_corner_fr",
+        "position": { "x": 0.7, "y": 0.15, "z": -0.6 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.2, "y": 0.2, "z": 0.2 },
+        "color":    { "r": 0.95, "g": 0.55, "b": 0.15, "a": 1.0 }
+      },
+      {
+        "targetId": "target_tack_corner_bl",
+        "position": { "x": -0.7, "y": 0.15, "z": 0.6 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.2, "y": 0.2, "z": 0.2 },
+        "color":    { "r": 0.95, "g": 0.55, "b": 0.15, "a": 1.0 }
+      },
+      {
+        "targetId": "target_tack_corner_br",
+        "position": { "x": 0.7, "y": 0.15, "z": 0.6 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.2, "y": 0.2, "z": 0.2 },
+        "color":    { "r": 0.95, "g": 0.55, "b": 0.15, "a": 1.0 }
+      },
+      {
+        "targetId": "target_square_check_point",
+        "position": { "x": -0.7, "y": 0.25, "z": -0.6 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.25, "y": 0.25, "z": 0.25 },
+        "color":    { "r": 0.30, "g": 0.70, "b": 0.90, "a": 1.0 }
+      },
+      {
+        "targetId": "target_vertical_cut_point",
+        "position": { "x": 3.0, "y": 0.75, "z": -1.5 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.3, "y": 0.3, "z": 0.3 },
+        "color":    { "r": 0.85, "g": 0.30, "b": 0.20, "a": 1.0 }
+      },
+      {
+        "targetId": "target_post_fl",
+        "position": { "x": -0.7, "y": 0.65, "z": -0.6 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.25, "y": 1.2, "z": 0.25 },
+        "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
+      },
+      {
+        "targetId": "target_post_fr",
+        "position": { "x": 0.7, "y": 0.65, "z": -0.6 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.25, "y": 1.2, "z": 0.25 },
+        "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
+      },
+      {
+        "targetId": "target_post_bl",
+        "position": { "x": -0.7, "y": 0.65, "z": 0.6 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.25, "y": 1.2, "z": 0.25 },
+        "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
+      },
+      {
+        "targetId": "target_post_br",
+        "position": { "x": 0.7, "y": 0.65, "z": 0.6 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.25, "y": 1.2, "z": 0.25 },
+        "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
+      },
+      {
+        "targetId": "target_top_long_1_slot",
+        "position": { "x": 0.0, "y": 1.3, "z": -0.6 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 1.6, "y": 0.04, "z": 0.25 },
+        "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
+      },
+      {
+        "targetId": "target_top_long_2_slot",
+        "position": { "x": 0.0, "y": 1.3, "z": 0.6 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 1.6, "y": 0.04, "z": 0.25 },
+        "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
+      },
+      {
+        "targetId": "target_top_short_1_slot",
+        "position": { "x": -0.7, "y": 1.3, "z": 0.0 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.25, "y": 0.04, "z": 1.0 },
+        "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
+      },
+      {
+        "targetId": "target_top_short_2_slot",
+        "position": { "x": 0.7, "y": 1.3, "z": 0.0 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.25, "y": 0.04, "z": 1.0 },
+        "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
+      },
+      {
+        "targetId": "target_top_weld_fl",
+        "position": { "x": -0.7, "y": 1.4, "z": -0.6 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.2, "y": 0.2, "z": 0.2 },
+        "color":    { "r": 0.95, "g": 0.55, "b": 0.15, "a": 1.0 }
+      },
+      {
+        "targetId": "target_top_weld_fr",
+        "position": { "x": 0.7, "y": 1.4, "z": -0.6 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.2, "y": 0.2, "z": 0.2 },
+        "color":    { "r": 0.95, "g": 0.55, "b": 0.15, "a": 1.0 }
+      },
+      {
+        "targetId": "target_top_weld_bl",
+        "position": { "x": -0.7, "y": 1.4, "z": 0.6 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.2, "y": 0.2, "z": 0.2 },
+        "color":    { "r": 0.95, "g": 0.55, "b": 0.15, "a": 1.0 }
+      },
+      {
+        "targetId": "target_top_weld_br",
+        "position": { "x": 0.7, "y": 1.4, "z": 0.6 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.2, "y": 0.2, "z": 0.2 },
+        "color":    { "r": 0.95, "g": 0.55, "b": 0.15, "a": 1.0 }
+      },
+      {
+        "targetId": "target_final_check_point",
+        "position": { "x": 0.0, "y": 0.7, "z": 0.0 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.35, "y": 0.35, "z": 0.35 },
+        "color":    { "r": 0.30, "g": 0.70, "b": 0.90, "a": 1.0 }
+      },
+      {
+        "targetId": "target_mount_plate_cut",
+        "position": { "x": -2.5, "y": 0.75, "z": 1.5 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.3, "y": 0.3, "z": 0.3 },
+        "color":    { "r": 0.85, "g": 0.30, "b": 0.20, "a": 1.0 }
+      },
+      {
+        "targetId": "target_mount_plate_slot",
+        "position": { "x": 0.0, "y": 1.42, "z": 0.0 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 1.4, "y": 0.04, "z": 1.0 },
+        "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
+      },
+      {
+        "targetId": "target_plate_weld_fl",
+        "position": { "x": -0.65, "y": 1.45, "z": -0.45 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.18, "y": 0.18, "z": 0.18 },
+        "color":    { "r": 0.95, "g": 0.55, "b": 0.15, "a": 1.0 }
+      },
+      {
+        "targetId": "target_plate_weld_fr",
+        "position": { "x": 0.65, "y": 1.45, "z": -0.45 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.18, "y": 0.18, "z": 0.18 },
+        "color":    { "r": 0.95, "g": 0.55, "b": 0.15, "a": 1.0 }
+      },
+      {
+        "targetId": "target_plate_weld_bl",
+        "position": { "x": -0.65, "y": 1.45, "z": 0.45 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.18, "y": 0.18, "z": 0.18 },
+        "color":    { "r": 0.95, "g": 0.55, "b": 0.15, "a": 1.0 }
+      },
+      {
+        "targetId": "target_plate_weld_br",
+        "position": { "x": 0.65, "y": 1.45, "z": 0.45 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.18, "y": 0.18, "z": 0.18 },
+        "color":    { "r": 0.95, "g": 0.55, "b": 0.15, "a": 1.0 }
+      },
+      {
+        "targetId": "target_engine_slot",
+        "position": { "x": 0.15, "y": 1.47, "z": 0.0 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.6, "y": 0.04, "z": 0.5 },
+        "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
+      },
+      {
+        "targetId": "target_engine_bolt_point",
+        "position": { "x": 0.15, "y": 1.55, "z": 0.0 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.25, "y": 0.25, "z": 0.25 },
+        "color":    { "r": 0.90, "g": 0.75, "b": 0.20, "a": 1.0 }
+      },
+      {
+        "targetId": "target_coupling_slot",
+        "position": { "x": -0.5, "y": 1.55, "z": 0.0 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.18, "y": 0.04, "z": 0.18 },
+        "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
+      },
+      {
+        "targetId": "target_pump_slot",
+        "position": { "x": -0.9, "y": 1.45, "z": 0.0 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.35, "y": 0.04, "z": 0.4 },
+        "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
+      },
+      {
+        "targetId": "target_pump_bolt_point",
+        "position": { "x": -0.9, "y": 1.35, "z": 0.0 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.2, "y": 0.2, "z": 0.2 },
+        "color":    { "r": 0.90, "g": 0.75, "b": 0.20, "a": 1.0 }
+      },
+      {
+        "targetId": "target_reservoir_slot",
+        "position": { "x": 0.95, "y": 0.55, "z": 0.0 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.4, "y": 0.04, "z": 0.35 },
+        "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
+      },
+      {
+        "targetId": "target_reservoir_bolt_point",
+        "position": { "x": 0.95, "y": 0.65, "z": 0.0 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.2, "y": 0.2, "z": 0.2 },
+        "color":    { "r": 0.90, "g": 0.75, "b": 0.20, "a": 1.0 }
+      },
+      {
+        "targetId": "target_pressure_hose_slot",
+        "position": { "x": -0.4, "y": 1.2, "z": -0.3 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.08, "y": 0.04, "z": 0.8 },
+        "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
+      },
+      {
+        "targetId": "target_return_hose_slot",
+        "position": { "x": 0.3, "y": 0.7, "z": -0.3 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.1, "y": 0.04, "z": 0.7 },
+        "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
+      },
+      {
+        "targetId": "target_cooler_slot",
+        "position": { "x": 0.0, "y": 0.55, "z": -0.75 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.5, "y": 0.04, "z": 0.1 },
+        "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }
+      },
+      {
+        "targetId": "target_fitting_check_point",
+        "position": { "x": 0.0, "y": 1.0, "z": 0.0 },
+        "rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+        "scale":    { "x": 0.35, "y": 0.35, "z": 0.35 },
+        "color":    { "r": 0.30, "g": 0.70, "b": 0.90, "a": 1.0 }
+      }
+    ]
+  }
+}

@@ -17,6 +17,7 @@
     "entryAssemblyIds": [
       "assembly_frame_corner"
     ],
+    "introImageRef": "power_cube_frame_corner/intro.png",
     "prerequisiteNotes": [
       "Learner should understand the difference between a plate, bracket, and fastener."
     ],
@@ -41,6 +42,7 @@
       ],
       "stepIds": [
         "step_stage_plate_and_bracket",
+        "step_place_bolt",
         "step_fasten_bolts"
       ],
       "learningFocus": "Structural alignment before fastening."
@@ -59,6 +61,7 @@
       ],
       "stepIds": [
         "step_stage_plate_and_bracket",
+        "step_place_bolt",
         "step_fasten_bolts"
       ],
       "milestoneMessage": "The frame corner reinforcement is staged and ready for fastening."
@@ -144,14 +147,16 @@
       "name": "Framing Square",
       "category": "measurement",
       "purpose": "Verifies the bracket and plate meet at a true corner.",
-      "usageNotes": "Use during initial alignment."
+      "usageNotes": "Use during initial alignment.",
+      "assetRef": "assets/tools/tool_square.glb"
     },
     {
       "id": "tool_wrench_13mm",
       "name": "13mm Wrench",
       "category": "hand_tool",
       "purpose": "Tightens the M8 bolts used in the frame corner.",
-      "usageNotes": "Use after the bracket is seated correctly."
+      "usageNotes": "Use after the bracket is seated correctly.",
+      "assetRef": "assets/tools/tool_wrench_13mm.glb"
     }
   ],
   "steps": [
@@ -174,7 +179,8 @@
         "target_frame_plate_slot",
         "target_corner_bracket_slot_a"
       ],
-      "completionMode": "virtual_or_physical",
+      "completionType": "placement",
+      "targetOrder": "sequential",
       "validationRuleIds": [
         "validation_frame_plate_presence",
         "validation_corner_bracket_alignment"
@@ -186,9 +192,7 @@
       "effectTriggerIds": [
         "effect_frame_preview_pulse"
       ],
-      "allowAutoSnap": false,
       "allowSkip": false,
-      "requiresConfirmation": false,
       "challengeFlags": {
         "penalizeHintUsage": true,
         "penalizeInvalidPlacement": true,
@@ -201,31 +205,68 @@
       ]
     },
     {
+      "id": "step_place_bolt",
+      "name": "Place the hex bolt",
+      "assemblyId": "assembly_frame_corner",
+      "subassemblyId": "subassembly_corner_bracket_unit",
+      "sequenceIndex": 2,
+      "instructionText": "Position the M8 hex bolt at the bolt slot on the bracket.",
+      "whyItMattersText": "The bolt must be seated in the correct hole before tightening to ensure proper thread engagement.",
+      "requiredPartIds": [
+        "m8_hex_bolt"
+      ],
+      "relevantToolIds": [],
+      "targetIds": [
+        "target_bolt_slot"
+      ],
+      "completionType": "placement",
+      "validationRuleIds": [],
+      "hintIds": [],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": {
+        "penalizeHintUsage": false,
+        "penalizeInvalidPlacement": true,
+        "stricterToleranceAvailable": false
+      },
+      "eventTags": [
+        "power_cube",
+        "fastener"
+      ]
+    },
+    {
       "id": "step_fasten_bolts",
       "name": "Fasten the bolts",
       "assemblyId": "assembly_frame_corner",
       "subassemblyId": "subassembly_corner_bracket_unit",
-      "sequenceIndex": 2,
-      "instructionText": "Insert and tighten the M8 hex bolts to secure the bracket to the plate.",
+      "sequenceIndex": 3,
+      "instructionText": "Use the 13mm wrench to tighten the M8 hex bolts and secure the bracket to the plate.",
       "whyItMattersText": "The bolts lock the bracket in place so the frame corner resists deformation under load.",
-      "requiredPartIds": [
-        "m8_hex_bolt"
-      ],
+      "requiredPartIds": [],
       "relevantToolIds": [
         "tool_wrench_13mm"
+      ],
+      "requiredToolActions": [
+        {
+          "id": "action_tighten_corner_bolts",
+          "toolId": "tool_wrench_13mm",
+          "actionType": "tighten",
+          "targetId": "target_bolt_slot",
+          "requiredCount": 3,
+          "successMessage": "Bolts tightened and bracket secured.",
+          "failureMessage": "Use the 13mm wrench to tighten the bolts."
+        }
       ],
       "targetIds": [
         "target_bolt_slot"
       ],
-      "completionMode": "confirmation_only",
+      "completionType": "tool_action",
       "validationRuleIds": [],
       "hintIds": [],
       "effectTriggerIds": [
         "effect_valid_placement_pulse"
       ],
-      "allowAutoSnap": true,
       "allowSkip": false,
-      "requiresConfirmation": true,
       "challengeFlags": {
         "penalizeHintUsage": false,
         "penalizeInvalidPlacement": false,
@@ -341,7 +382,9 @@
     "modelRefs": [
       "assets/parts/frame_plate_a.glb",
       "assets/parts/corner_bracket_a.glb",
-      "assets/parts/m8_hex_bolt.glb"
+      "assets/parts/m8_hex_bolt.glb",
+      "assets/tools/tool_square.glb",
+      "assets/tools/tool_wrench_13mm.glb"
     ],
     "effectRefs": [
       "assets/effects/frame_preview_pulse.prefab",
@@ -379,7 +422,7 @@
         "startRotation": { "x": 0.0,  "y": 0.0,  "z": 0.0, "w": 1.0 },
         "startScale":    { "x": 0.25, "y": 0.5,  "z": 0.25 },
         "color":         { "r": 0.80, "g": 0.80, "b": 0.82, "a": 1.0 },
-        "playPosition":  { "x": 0.55, "y": 0.10, "z": 0.35 },
+        "playPosition":  { "x": 0.55, "y": 0.55, "z": 0.35 },
         "playRotation":  { "x": 0.0,  "y": 0.0,  "z": 0.0, "w": 1.0 },
         "playScale":     { "x": 0.25, "y": 0.5,  "z": 0.25 }
       }
@@ -401,7 +444,7 @@
       },
       {
         "targetId": "target_bolt_slot",
-        "position": { "x": 0.55, "y": 0.10, "z": 0.35 },
+        "position": { "x": 0.55, "y": 0.55, "z": 0.35 },
         "rotation": { "x": 0.0,  "y": 0.0,  "z": 0.0, "w": 1.0 },
         "scale":    { "x": 0.25, "y": 0.5,  "z": 0.25 },
         "color":    { "r": 0.20, "g": 0.84, "b": 0.58, "a": 1.0 }

@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9490eeb6924c01640afbf424f0538935, type: 3}
+  m_Name: InteractionSettings_Default
+  m_EditorClassIdentifier: OSE.Interaction.V2::OSE.Interaction.V2.InteractionSettings
+  UseV2Interaction: 1
+  EnableCameraAssist: 1
+  EnableAutoFraming: 1
+  EnableVisibilitySolver: 0
+  EnableSmartPivot: 1
+  EnableSuggestedViews: 1
+  EnableOrbitGizmo: 0
+  EnableVisionProInteractionModel: 0
+  EnableCameraConstraintSphere: 1
+  OrbitSensitivity: 0.3
+  PanSensitivity: 0.005
+  ZoomSensitivity: 1
+  OrbitSmoothing: 8
+  PanSmoothing: 8
+  ZoomSmoothing: 6
+  PivotSmoothing: 4
+  MinCameraDistance: 0.3
+  MaxCameraDistance: 10
+  MinPitch: -10
+  MaxPitch: 85
+  EnableMagneticPlacement: 1
+  EnablePlacementCorridors: 0
+  EnableGhostPathGuidance: 0
+  MagneticRadiusMultiplier: 2
+  CorridorHalfAngle: 45
+  EnableStepViewGuidance: 1
+  EnableExplodedStepPreview: 0
+  DragThresholdPixels: 5
+  LongPressDuration: 0.4
+  DoubleTapWindow: 0.3
+  SnapLerpSpeed: 12
+  InvalidFlashDuration: 0.3
+  PartLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295

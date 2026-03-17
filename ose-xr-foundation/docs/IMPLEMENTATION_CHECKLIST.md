@@ -22,16 +22,9 @@ The goal is to move from zero to a stable first vertical slice, then expand safe
 
 ## Phase Numbering Note
 
-This checklist is a long-horizon roadmap and keeps its original numbering.
-
-Current execution phase numbering is maintained in `docs/APP_CURRENT_PROGRESS_FOR_AGENT.md`.
-If phase labels conflict between this file and `APP_CURRENT_PROGRESS_FOR_AGENT.md`, use `APP_CURRENT_PROGRESS_FOR_AGENT.md` as the active implementation source of truth.
-
-To make the difference explicit:
-
-- Legacy Checklist Phase 10 = Physical Substitution Workflow.
-- Legacy Checklist Phase 11 = Tutorial Vertical Slice.
-- Active runtime track Phase 10/11 (XR-focused) lives in `APP_CURRENT_PROGRESS_FOR_AGENT.md`.
+This checklist and `docs/APP_CURRENT_PROGRESS_FOR_AGENT.md` now share one canonical phase sequence.
+If phase labels conflict, update both files in the same changeset.
+During active implementation, use `APP_CURRENT_PROGRESS_FOR_AGENT.md` as the day-to-day execution source of truth.
 
 ---
 
@@ -474,7 +467,7 @@ Make assembly behavior correct, explainable, and recoverable.
 
 ---
 
-# Legacy Checklist Phase 10 - Physical Substitution Workflow
+# Phase 10 - Physical Substitution Workflow
 
 ## Goal
 
@@ -502,7 +495,7 @@ Support real-world assembly alongside virtual training.
 
 ---
 
-# Legacy Checklist Phase 11 - Tutorial Vertical Slice
+# Phase 11 - Tutorial Vertical Slice
 
 ## Goal
 
@@ -540,7 +533,92 @@ Create the first onboarding experience that teaches interaction and confidence.
 
 ---
 
-# Phase 12 - First Real OSE Machine Vertical Slice
+# Phase 12 - Tool Use Framework and Modular Tool Actions
+
+## Goal
+
+Implement a modular tool-use system that supports current and future tools (for example wrench, hammer, welder) without hardcoding behavior into unrelated systems.
+
+## Checklist
+
+- [ ] Define canonical tool action vocabulary and state model:
+  - equip/select tool
+  - begin use
+  - end use
+  - complete action
+  - fail/cancel action
+- [ ] Add tool action definitions in core contracts (intents, payloads, outcomes, event types).
+- [ ] Implement `ToolRuntimeController` as a plain C# runtime service registered through `ServiceRegistry`.
+- [ ] Keep tool ownership and lifecycle outside UI and outside scene-specific harness scripts.
+- [ ] Extend step content support for required tool actions:
+  - required `toolId`
+  - required `actionType`
+  - optional `targetId`
+  - optional tolerance or threshold parameters
+  - optional attempt/confirmation requirements
+- [ ] Extend package validation to enforce tool-action references and schema correctness.
+- [ ] Integrate canonical tool actions through the interaction layer (`InputActionRouter` and interaction adapters).
+- [ ] Add a pluggable action-handler pattern so each tool behavior is modular (for example `IToolActionHandler`).
+- [ ] Implement at least two concrete tool behaviors in the mechanics validation path:
+  - tighten/torque-style action
+  - strike/impact-style action
+- [ ] Provide clear learner feedback for tool correctness:
+  - correct tool
+  - incorrect tool
+  - action progress
+  - completion confirmation
+
+## Validation
+
+- [ ] Tool actions are step-aware and data-driven.
+- [ ] Adding a new tool behavior does not require editing unrelated runtime systems.
+- [ ] Incorrect tool usage fails safely with understandable feedback.
+- [ ] Tool logic remains modular and testable.
+- [ ] Existing non-tool step flows still work.
+
+## Commit
+
+- [ ] Stage and commit tool runtime framework and first tool behaviors.
+
+---
+
+# Phase 13 - XR Validation and Challenge UX
+
+## Goal
+
+Validate and harden XR interaction quality for both part placement and tool actions, while improving challenge readability and guidance quality.
+
+## Checklist
+
+- [ ] Validate XR grab and release in-headset across hands and controllers.
+- [ ] Validate tool action input flow in-headset (near/far interactions as applicable).
+- [ ] Verify rig switching and interaction routing under realistic device conditions.
+- [ ] Re-confirm depth-control behavior and tune sensitivity where needed.
+- [ ] Validate hint world bubble readability and target highlight timing in XR.
+- [ ] Decide and lock validation strictness model:
+  - tolerance-based placement
+  - snap-zone placement
+  - mode-based strictness (tutorial vs challenge)
+- [ ] Improve challenge UX clarity for:
+  - failed attempts
+  - hint usage
+  - per-step timing
+  - completion feedback
+
+## Validation
+
+- [ ] In-headset flow is stable and consistent.
+- [ ] Tool interactions behave predictably in XR.
+- [ ] Challenge feedback is understandable and non-intrusive.
+- [ ] No platform-specific hacks leak into core runtime logic.
+
+## Commit
+
+- [ ] Stage and commit XR validation and challenge UX hardening.
+
+---
+
+# Phase 14 - First Real OSE Machine Vertical Slice
 
 ## Goal
 
@@ -571,7 +649,7 @@ Create the first authentic machine learning experience from Open Source Ecology 
 
 ---
 
-# Phase 13 - Effects, Process Visuals, and Instructional Feedback
+# Phase 15 - Effects, Process Visuals, and Instructional Feedback
 
 ## Goal
 
@@ -614,7 +692,7 @@ Add process-specific effects that help communicate construction steps and make t
 
 ---
 
-# Phase 14 - Persistence and Recovery
+# Phase 16 - Persistence and Recovery
 
 ## Goal
 
@@ -648,7 +726,7 @@ Make progress durable and resilient.
 
 ---
 
-# Phase 15 - Platform Capability and Performance Tiering
+# Phase 17 - Platform Capability and Performance Tiering
 
 ## Goal
 
@@ -682,7 +760,7 @@ Keep the app responsive and portable across desktop, mobile, and XR.
 
 ---
 
-# Phase 16 - Cross-Platform Expansion Pass
+# Phase 18 - Cross-Platform Expansion Pass
 
 ## Goal
 
@@ -710,7 +788,7 @@ Broaden support after the first stable slice exists.
 
 ---
 
-# Phase 17 - Challenge Mode and Fun Layer
+# Phase 19 - Challenge Mode and Fun Layer
 
 ## Goal
 
@@ -744,7 +822,7 @@ Make the experience more enjoyable, replayable, and motivating without harming i
 
 ---
 
-# Phase 18 - Multiplayer-Ready Boundaries
+# Phase 20 - Multiplayer-Ready Boundaries
 
 ## Goal
 
@@ -776,7 +854,7 @@ Prepare the codebase for future optimal multiplayer without prematurely overbuil
 
 ---
 
-# Phase 19 - Optional Multiplayer Prototype
+# Phase 21 - Optional Multiplayer Prototype
 
 ## Goal
 
@@ -806,7 +884,7 @@ Only after the single-player vertical slice is stable, explore a minimal multipl
 
 ---
 
-# Phase 20 - Authoring Tooling
+# Phase 22 - Authoring Tooling
 
 ## Goal
 
@@ -832,7 +910,7 @@ Make it easier to add more machines and steps without manual chaos.
 
 ---
 
-# Phase 21 - QA and Stability Pass
+# Phase 23 - QA and Stability Pass
 
 ## Goal
 
@@ -879,16 +957,18 @@ Use this as the shortest reliable path:
 10. Placement validation
 11. Physical substitution
 12. Tutorial slice
-13. First OSE machine slice
-14. Effects/process visuals
-15. Persistence
-16. Performance tiering
-17. Cross-platform hardening
-18. Challenge hooks
-19. Multiplayer-ready boundaries
-20. Optional multiplayer prototype
-21. Authoring tools
-22. Stability pass
+13. Tool use framework and modular tool actions
+14. XR validation and challenge UX
+15. First OSE machine slice
+16. Effects/process visuals
+17. Persistence
+18. Performance tiering
+19. Cross-platform hardening
+20. Challenge hooks
+21. Multiplayer-ready boundaries
+22. Optional multiplayer prototype
+23. Authoring tools
+24. Stability pass
 
 ---
 

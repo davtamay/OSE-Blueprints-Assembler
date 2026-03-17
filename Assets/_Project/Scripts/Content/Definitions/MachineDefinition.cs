@@ -16,6 +16,7 @@ namespace OSE.Content
         public string[] entryAssemblyIds;
         public string[] prerequisiteNotes;
         public SourceReferenceDefinition[] sourceReferences;
+        public string introImageRef;
 
         public string GetDisplayName()
         {

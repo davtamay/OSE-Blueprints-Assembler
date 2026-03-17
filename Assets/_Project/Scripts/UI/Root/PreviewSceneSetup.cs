@@ -165,8 +165,6 @@ namespace OSE.UI.Root
             if (mainCamera == null) return;
             if (!Application.isPlaying) return;
             PreviewCameraSettings cam = ActiveProfile.Camera;
-            mainCamera.transform.position = cam.position;
-            mainCamera.transform.rotation = Quaternion.Euler(cam.eulerAngles);
             mainCamera.backgroundColor = cam.backgroundColor;
         }
 
@@ -185,6 +183,15 @@ namespace OSE.UI.Root
             // Default placement — PackagePartSpawner overrides from previewConfig
             Collider col = TargetMarker.GetComponent<Collider>();
             if (col != null) col.enabled = false;
+
+            // The cylinder only exists as an authoring anchor for scene-capture tools.
+            // Hide its renderer at runtime so it doesn't appear in the game view;
+            // it remains active so SessionDriverEditor can still find and read its transform.
+            if (Application.isPlaying)
+            {
+                var mr = TargetMarker.GetComponent<MeshRenderer>();
+                if (mr != null) mr.enabled = false;
+            }
         }
 
         // ── Events ──

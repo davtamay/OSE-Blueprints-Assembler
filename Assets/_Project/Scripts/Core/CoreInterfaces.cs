@@ -51,6 +51,9 @@ namespace OSE.Core
         void ShowPartInfoShell(string partName, string function, string material, string tool, string searchTerms);
         void ShowChallengeMetrics(int hintsUsed, int failedAttempts, float currentStepSeconds, float totalSeconds, bool challengeActive);
         void ShowStepCompletionToast(string message);
+        void ShowMachineIntro(string title, string description, string difficulty, int estimatedMinutes, string[] learningObjectives, string imageRef);
+        void DismissMachineIntro();
+        void HidePartInfoPanel();
         void HideAll();
     }
 
@@ -68,6 +71,8 @@ namespace OSE.Core
         Zoom,
         Orbit,
         RequestHint,
+        ToggleToolMenu,
+        ToolPrimaryAction,
         Next,
         Previous,
         Pause,
@@ -91,6 +96,7 @@ namespace OSE.Core
     {
         None,
         SelectPart,
-        RequestHint
+        RequestHint,
+        EquipTool
     }
 }

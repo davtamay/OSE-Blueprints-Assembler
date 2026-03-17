@@ -908,7 +908,7 @@ For machine packages intended for runtime loading:
 ```text
 Assets/StreamingAssets/
   MachinePackages/
-    tutorial_build/
+    onboarding_tutorial/
     power_cube/
 ```
 

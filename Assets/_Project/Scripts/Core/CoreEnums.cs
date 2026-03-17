@@ -69,6 +69,26 @@ namespace OSE.Core
         UsageCompleted
     }
 
+    public enum ToolActionType
+    {
+        None,
+        Measure,
+        Tighten,
+        Strike,
+        WeldPass
+    }
+
+    public enum ToolActionFailureReason
+    {
+        None,
+        NoActionConfigured,
+        NoActiveToolEquipped,
+        WrongToolEquipped,
+        WrongTarget,
+        AlreadyCompleted,
+        InvalidStepState
+    }
+
     public enum CapabilityTier
     {
         Minimal,

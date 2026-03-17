@@ -136,16 +136,50 @@ namespace OSE.Runtime
             if (string.IsNullOrEmpty(partId)) return false;
 
             var currentState = GetPartState(partId);
-            bool requiredInActiveStep = IsPartRequiredInActiveStep(partId);
+            if (currentState == PartPlacementState.Grabbed)
+                return !IsPartLockedForMovement(partId);
+
+            // Lock parts once they are placed/completed so users cannot drag
+            // them away from validated ghost/target positions.
+            if (IsPartLockedForMovement(partId))
+                return false;
+
             if (currentState != PartPlacementState.Selected &&
                 currentState != PartPlacementState.Available &&
-                currentState != PartPlacementState.Inspected &&
-                (currentState != PartPlacementState.Completed || !requiredInActiveStep) &&
-                (currentState != PartPlacementState.PlacedVirtually || !requiredInActiveStep))
+                currentState != PartPlacementState.Inspected)
                 return false;
 
             TransitionPart(partId, PartPlacementState.Grabbed);
             return true;
+        }
+
+        /// <summary>
+        /// Returns true when a part should be immovable (placed/completed), including
+        /// when currently selected/inspected after coming from a placed/completed state.
+        /// </summary>
+        public bool IsPartLockedForMovement(string partId)
+        {
+            if (string.IsNullOrEmpty(partId))
+                return false;
+
+            PartPlacementState currentState = GetPartState(partId);
+            if (currentState == PartPlacementState.PlacedVirtually ||
+                currentState == PartPlacementState.Completed)
+            {
+                return true;
+            }
+
+            if (_selectedPartId != null &&
+                string.Equals(_selectedPartId, partId, StringComparison.OrdinalIgnoreCase) &&
+                (currentState == PartPlacementState.Selected ||
+                 currentState == PartPlacementState.Inspected ||
+                 currentState == PartPlacementState.Grabbed))
+            {
+                return _selectedPartPreviousState == PartPlacementState.PlacedVirtually ||
+                       _selectedPartPreviousState == PartPlacementState.Completed;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -273,6 +307,12 @@ namespace OSE.Runtime
             }
             else if (evt.Current == StepState.Completed)
             {
+                // Step-complete events can arrive after the next step has already
+                // become active (event ordering across listeners). Ignore stale
+                // completion to avoid re-locking parts needed by the new step.
+                if (!string.Equals(_activeStepId, evt.StepId, StringComparison.OrdinalIgnoreCase))
+                    return;
+
                 CompleteStepParts(evt.StepId);
             }
         }
@@ -307,8 +347,17 @@ namespace OSE.Runtime
                 {
                     if (string.IsNullOrEmpty(partIds[i])) continue;
                     var current = GetPartState(partIds[i]);
-                    if (current != PartPlacementState.Available)
+                    // Only introduce parts not yet seen. Parts already Completed or
+                    // PlacedVirtually from prior steps must keep their state.
+                    if (current == PartPlacementState.NotIntroduced)
+                    {
                         TransitionPart(partIds[i], PartPlacementState.Available);
+                        OseLog.VerboseInfo($"[PartRuntime] Part '{partIds[i]}' introduced (NotIntroduced → Available) for step '{stepId}'.");
+                    }
+                    else
+                    {
+                        OseLog.VerboseInfo($"[PartRuntime] Part '{partIds[i]}' already in state '{current}', skipping introduction for step '{stepId}'.");
+                    }
                 }
             }
 
@@ -319,12 +368,12 @@ namespace OSE.Runtime
                 {
                     if (string.IsNullOrEmpty(optionalIds[i])) continue;
                     var current = GetPartState(optionalIds[i]);
-                    if (current != PartPlacementState.Available)
+                    if (current == PartPlacementState.NotIntroduced)
                         TransitionPart(optionalIds[i], PartPlacementState.Available);
                 }
             }
 
-            OseLog.VerboseInfo($"[PartRuntime] Parts introduced for step '{stepId}'.");
+            OseLog.VerboseInfo($"[PartRuntime] Part introduction complete for step '{stepId}'. Required: {partIds?.Length ?? 0}, Optional: {optionalIds?.Length ?? 0}.");
         }
 
         private void CompleteStepParts(string stepId)
@@ -368,27 +417,6 @@ namespace OSE.Runtime
             _partStates[partId] = newState;
 
             RuntimeEventBus.Publish(new PartStateChanged(partId, _activeStepId ?? string.Empty, previous, newState));
-        }
-
-        private bool IsPartRequiredInActiveStep(string partId)
-        {
-            if (_package == null || string.IsNullOrEmpty(_activeStepId) || string.IsNullOrEmpty(partId))
-                return false;
-
-            if (!_package.TryGetStep(_activeStepId, out var step) || step.requiredPartIds == null)
-                return false;
-
-            for (int i = 0; i < step.requiredPartIds.Length; i++)
-            {
-                string requiredPartId = step.requiredPartIds[i];
-                if (string.IsNullOrEmpty(requiredPartId))
-                    continue;
-
-                if (string.Equals(requiredPartId, partId, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
-
-            return false;
         }
     }
 }

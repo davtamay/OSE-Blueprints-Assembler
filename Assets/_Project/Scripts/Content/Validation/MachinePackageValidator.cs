@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using OSE.Content;
 
 namespace OSE.Content.Validation
 {
@@ -9,10 +10,12 @@ namespace OSE.Content.Validation
         private static readonly HashSet<string> RecommendedModeValues = CreateSet("tutorial", "guided", "standard", "challenge");
         private static readonly HashSet<string> PartCategoryValues = CreateSet("plate", "bracket", "fastener", "shaft", "panel", "housing", "pipe", "custom");
         private static readonly HashSet<string> ToolCategoryValues = CreateSet("hand_tool", "power_tool", "measurement", "safety", "specialty");
-        private static readonly HashSet<string> CompletionModeValues = CreateSet("virtual_only", "physical_only", "virtual_or_physical", "confirmation_only", "multi_part_required");
+        private static readonly HashSet<string> CompletionTypeValues = CreateSet("placement", "tool_action", "confirmation");
+        private static readonly HashSet<string> TargetOrderValues = CreateSet("sequential", "parallel");
         private static readonly HashSet<string> ValidationTypeValues = CreateSet("placement", "orientation", "part_identity", "dependency", "multi_part", "confirmation");
         private static readonly HashSet<string> HintTypeValues = CreateSet("text", "highlight", "ghost", "directional", "explanatory", "tool_reminder");
         private static readonly HashSet<string> HintPriorityValues = CreateSet("low", "medium", "high");
+        private static readonly HashSet<string> ToolActionTypeValues = CreateSet("measure", "tighten", "strike", "weld_pass");
         private static readonly HashSet<string> EffectTypeValues = CreateSet("placement_feedback", "success_feedback", "error_feedback", "welding", "sparks", "heat_glow", "fire", "dust", "milestone");
         private static readonly HashSet<string> EffectTriggerValues = CreateSet("on_step_enter", "on_valid_candidate", "on_success", "on_failure", "on_completion");
         private static readonly HashSet<string> SourceTypeValues = CreateSet("blueprint", "photo", "diagram", "author_note", "reference_doc");
@@ -59,6 +62,7 @@ namespace OSE.Content.Validation
             ValidateHints(package.GetHints(), partIds, toolIds, targetIds, issues);
             ValidateEffects(package.GetEffects(), issues);
             ValidateTargets(package.GetTargets(), partIds, issues);
+            ValidatePreviewConfigCoverage(package, partIds, targetIds, issues);
 
             return new MachinePackageValidationResult(issues.ToArray());
         }
@@ -214,6 +218,7 @@ namespace OSE.Content.Validation
                 ValidateRequiredText(tool.name, $"{path}.name", issues);
                 ValidateRequiredEnum(tool.category, ToolCategoryValues, $"{path}.category", issues);
                 ValidateRequiredText(tool.purpose, $"{path}.purpose", issues);
+                ValidateRequiredText(tool.assetRef, $"{path}.assetRef", issues);
             }
         }
 
@@ -246,7 +251,8 @@ namespace OSE.Content.Validation
                 ValidateSingleReference(step.assemblyId, assemblyIds, $"{path}.assemblyId", issues);
                 ValidateOptionalReference(step.subassemblyId, subassemblyIds, $"{path}.subassemblyId", issues);
                 ValidateRequiredText(step.instructionText, $"{path}.instructionText", issues);
-                ValidateRequiredEnum(step.completionMode, CompletionModeValues, $"{path}.completionMode", issues);
+                ValidateRequiredEnum(step.completionType, CompletionTypeValues, $"{path}.completionType", issues);
+                ValidateOptionalEnum(step.targetOrder, TargetOrderValues, $"{path}.targetOrder", issues);
                 ValidateOptionalReferences(step.requiredPartIds, partIds, $"{path}.requiredPartIds", issues);
                 ValidateOptionalReferences(step.optionalPartIds, partIds, $"{path}.optionalPartIds", issues);
                 ValidateOptionalReferences(step.relevantToolIds, toolIds, $"{path}.relevantToolIds", issues);
@@ -254,6 +260,7 @@ namespace OSE.Content.Validation
                 ValidateOptionalReferences(step.validationRuleIds, validationRuleIds, $"{path}.validationRuleIds", issues);
                 ValidateOptionalReferences(step.hintIds, hintIds, $"{path}.hintIds", issues);
                 ValidateOptionalReferences(step.effectTriggerIds, effectIds, $"{path}.effectTriggerIds", issues);
+                ValidateToolActions(step.requiredToolActions, toolIds, targetIds, $"{path}.requiredToolActions", issues);
 
                 if (step.sequenceIndex < 1)
                 {
@@ -272,6 +279,44 @@ namespace OSE.Content.Validation
                     {
                         issues.Add(Warning($"{path}.sequenceIndex", $"Sequence index '{step.sequenceIndex}' is reused inside assembly '{assemblyKey}'."));
                     }
+                }
+
+                // Cross-reference: tool action targets should be in step's targetIds
+                ValidateToolActionCrossReferences(step, $"{path}", issues);
+            }
+        }
+
+        private static void ValidateToolActionCrossReferences(
+            StepDefinition step,
+            string path,
+            List<MachinePackageValidationIssue> issues)
+        {
+            if (step.requiredToolActions == null)
+                return;
+
+            HashSet<string> stepTargetIds = step.targetIds != null
+                ? new HashSet<string>(step.targetIds, StringComparer.OrdinalIgnoreCase)
+                : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            HashSet<string> stepToolIds = step.relevantToolIds != null
+                ? new HashSet<string>(step.relevantToolIds, StringComparer.OrdinalIgnoreCase)
+                : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            for (int i = 0; i < step.requiredToolActions.Length; i++)
+            {
+                ToolActionDefinition action = step.requiredToolActions[i];
+                if (action == null) continue;
+
+                if (!string.IsNullOrWhiteSpace(action.targetId) && !stepTargetIds.Contains(action.targetId))
+                {
+                    issues.Add(Warning($"{path}.requiredToolActions[{i}].targetId",
+                        $"Tool action target '{action.targetId}' is not listed in step's targetIds. Ghost/marker may not spawn."));
+                }
+
+                if (!string.IsNullOrWhiteSpace(action.toolId) && !stepToolIds.Contains(action.toolId))
+                {
+                    issues.Add(Warning($"{path}.requiredToolActions[{i}].toolId",
+                        $"Tool action tool '{action.toolId}' is not listed in step's relevantToolIds. Tool may not be offered to user."));
                 }
             }
         }
@@ -301,6 +346,38 @@ namespace OSE.Content.Validation
                 ValidateOptionalReferences(validationRule.requiredStepIds, stepIds, $"{path}.requiredStepIds", issues);
                 ValidateOptionalReferences(validationRule.requiredPartIds, partIds, $"{path}.requiredPartIds", issues);
                 ValidateOptionalReference(validationRule.correctionHintId, hintIds, $"{path}.correctionHintId", issues);
+            }
+        }
+
+        private static void ValidateToolActions(
+            ToolActionDefinition[] toolActions,
+            HashSet<string> toolIds,
+            HashSet<string> targetIds,
+            string path,
+            List<MachinePackageValidationIssue> issues)
+        {
+            if (toolActions == null || toolActions.Length == 0)
+                return;
+
+            for (int i = 0; i < toolActions.Length; i++)
+            {
+                ToolActionDefinition toolAction = toolActions[i];
+                string actionPath = $"{path}[{i}]";
+
+                if (toolAction == null)
+                {
+                    issues.Add(Error(actionPath, "Tool action definition is null."));
+                    continue;
+                }
+
+                ValidateSingleReference(toolAction.toolId, toolIds, $"{actionPath}.toolId", issues);
+                ValidateRequiredEnum(toolAction.actionType, ToolActionTypeValues, $"{actionPath}.actionType", issues);
+                ValidateOptionalReference(toolAction.targetId, targetIds, $"{actionPath}.targetId", issues);
+
+                if (toolAction.requiredCount < 1)
+                {
+                    issues.Add(Error($"{actionPath}.requiredCount", "Tool action requiredCount must be at least 1."));
+                }
             }
         }
 
@@ -367,6 +444,53 @@ namespace OSE.Content.Validation
 
                 ValidateRequiredText(target.anchorRef, $"{path}.anchorRef", issues);
                 ValidateOptionalReference(target.associatedPartId, partIds, $"{path}.associatedPartId", issues);
+            }
+        }
+
+        private static void ValidatePreviewConfigCoverage(
+            MachinePackageDefinition package,
+            HashSet<string> partIds,
+            HashSet<string> targetIds,
+            List<MachinePackageValidationIssue> issues)
+        {
+            PackagePreviewConfig previewConfig = package.previewConfig;
+            if (previewConfig == null)
+            {
+                if (partIds.Count > 0)
+                    issues.Add(Warning("previewConfig", "No previewConfig defined but package has parts. Parts will use fallback positioning."));
+                return;
+            }
+
+            // Check part placement coverage
+            HashSet<string> coveredParts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (previewConfig.partPlacements != null)
+            {
+                for (int i = 0; i < previewConfig.partPlacements.Length; i++)
+                {
+                    if (previewConfig.partPlacements[i] != null)
+                        coveredParts.Add(previewConfig.partPlacements[i].partId);
+                }
+            }
+            foreach (string partId in partIds)
+            {
+                if (!coveredParts.Contains(partId))
+                    issues.Add(Warning("previewConfig.partPlacements", $"Part '{partId}' has no placement entry. It will use fallback positioning."));
+            }
+
+            // Check target placement coverage
+            HashSet<string> coveredTargets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (previewConfig.targetPlacements != null)
+            {
+                for (int i = 0; i < previewConfig.targetPlacements.Length; i++)
+                {
+                    if (previewConfig.targetPlacements[i] != null)
+                        coveredTargets.Add(previewConfig.targetPlacements[i].targetId);
+                }
+            }
+            foreach (string tId in targetIds)
+            {
+                if (!coveredTargets.Contains(tId))
+                    issues.Add(Warning("previewConfig.targetPlacements", $"Target '{tId}' has no placement entry. Ghost will use fallback positioning."));
             }
         }
 

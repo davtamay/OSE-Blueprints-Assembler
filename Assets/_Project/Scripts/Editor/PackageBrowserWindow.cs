@@ -161,7 +161,7 @@ namespace OSE.Editor
                         DrawField("Instruction", step.instructionText);
                         DrawField("Parts",       string.Join(", ", step.requiredPartIds ?? new string[0]));
                         DrawField("Tools",       string.Join(", ", step.relevantToolIds ?? new string[0]));
-                        DrawField("Completion",  step.completionMode);
+                        DrawField("Completion",  step.completionType);
                     });
                 }
             });

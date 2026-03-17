@@ -15,7 +15,7 @@ namespace OSE.Editor
     ///      final assembled state. Name each object with the exact partId or targetId from
     ///      machine.json (e.g. "tutorial_beam", "target_beam_slot").
     ///   2. Export as GLB or FBX and drop it into any sub-folder under the package folder
-    ///      (e.g. Assets/_Project/Data/Packages/tutorial_build/assets/parts/).
+    ///      (e.g. Assets/_Project/Data/Packages/onboarding_tutorial/assets/parts/).
     ///   3. Unity imports the file. This postprocessor detects it, traverses its node
     ///      hierarchy, matches node names to partIds/targetIds, and writes the assembled
     ///      transforms into the package's machine.json previewConfig automatically.

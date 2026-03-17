@@ -425,20 +425,19 @@ Represents one coherent learner action.
 - `optionalPartIds` : array<string> (optional)
 - `relevantToolIds` : array<string> (optional)
 - `targetIds` : array<string> (optional)
-- `completionMode` : enum  
-  Suggested values:
-  - `virtual_only`
-  - `physical_only`
-  - `virtual_or_physical`
-  - `confirmation_only`
-  - `multi_part_required`
+- `completionType` : enum (required)
+  - `placement` — user drags parts onto ghost targets
+  - `tool_action` — user performs tool actions (e.g. tighten bolts)
+  - `confirmation` — user presses a Continue/Confirm button
+
+- `targetOrder` : enum (optional, default `"parallel"`)
+  - `parallel` — all ghosts and tool targets visible simultaneously
+  - `sequential` — one target at a time, in `targetIds` array order
 
 - `validationRuleIds` : array<string> (optional)
 - `hintIds` : array<string> (optional)
 - `effectTriggerIds` : array<string> (optional)
-- `allowAutoSnap` : boolean (optional)
 - `allowSkip` : boolean (optional)
-- `requiresConfirmation` : boolean (optional)
 - `challengeFlags` : StepChallengeFlagsDefinition (optional)
 - `eventTags` : array<string> (optional)
 
@@ -456,11 +455,10 @@ Represents one coherent learner action.
   "requiredPartIds": ["corner_bracket_a"],
   "relevantToolIds": ["tool_wrench_13mm"],
   "targetIds": ["target_corner_bracket_slot_a"],
-  "completionMode": "virtual_or_physical",
+  "completionType": "placement",
   "validationRuleIds": ["validation_corner_bracket_alignment"],
   "hintIds": ["hint_align_bracket_edge"],
-  "effectTriggerIds": ["effect_valid_placement_pulse"],
-  "allowAutoSnap": true
+  "effectTriggerIds": ["effect_valid_placement_pulse"]
 }
 ```
 
@@ -756,7 +754,7 @@ Physical substitution is a first-class workflow.
 
 ## 18.2 Step-Level Control
 
-`completionMode` on `StepDefinition` determines whether physical substitution can satisfy the step.
+`completionType` on `StepDefinition` determines the step's completion mechanism (`placement`, `tool_action`, or `confirmation`).
 
 ## 18.3 Rule
 

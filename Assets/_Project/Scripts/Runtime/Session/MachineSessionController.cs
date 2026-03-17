@@ -20,6 +20,7 @@ namespace OSE.Runtime
         private MachinePackageDefinition _package;
         private AssemblyRuntimeController _assemblyController;
         private PartRuntimeController _partController;
+        private ToolRuntimeController _toolController;
         private string[] _assemblyOrder;
         private int _currentAssemblyIndex;
 
@@ -35,6 +36,7 @@ namespace OSE.Runtime
         public MachinePackageDefinition Package => _package;
         public AssemblyRuntimeController AssemblyController => _assemblyController;
         public PartRuntimeController PartController => _partController;
+        public ToolRuntimeController ToolController => _toolController;
 
         /// <summary>
         /// Loads a machine package and starts a new session.
@@ -97,9 +99,15 @@ namespace OSE.Runtime
                 _partController.Initialize(_package);
             }
 
+            if (ServiceRegistry.TryGet<ToolRuntimeController>(out _toolController))
+            {
+                _toolController.Initialize(_package);
+            }
+
             // Subscribe to step events to keep session state current
             RuntimeEventBus.Subscribe<StepStateChanged>(HandleStepStateChanged);
             RuntimeEventBus.Subscribe<HintRequested>(HandleHintRequested);
+            RuntimeEventBus.Subscribe<ToolActionFailed>(HandleToolActionFailed);
 
             _currentAssemblyIndex = 0;
             SetLifecycle(SessionLifecycle.SessionActive);
@@ -153,11 +161,18 @@ namespace OSE.Runtime
 
             RuntimeEventBus.Unsubscribe<StepStateChanged>(HandleStepStateChanged);
             RuntimeEventBus.Unsubscribe<HintRequested>(HandleHintRequested);
+            RuntimeEventBus.Unsubscribe<ToolActionFailed>(HandleToolActionFailed);
 
             if (_partController != null)
             {
                 _partController.Dispose();
                 _partController = null;
+            }
+
+            if (_toolController != null)
+            {
+                _toolController.Dispose();
+                _toolController = null;
             }
 
             if (_assemblyController != null)
@@ -256,6 +271,14 @@ namespace OSE.Runtime
                 return;
 
             _sessionState.HintsUsed++;
+        }
+
+        private void HandleToolActionFailed(ToolActionFailed evt)
+        {
+            if (_sessionState == null)
+                return;
+
+            _sessionState.MistakeCount++;
         }
 
         private void HandleAssemblyCompleted(string assemblyId)

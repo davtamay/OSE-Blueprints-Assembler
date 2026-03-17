@@ -391,6 +391,19 @@ namespace OSE.Runtime
                 _requiredToolIds = ResolveRequiredToolIds(evt.StepId);
                 _primaryToolAction = ResolvePrimaryToolAction(evt.StepId);
 
+                if (_primaryToolAction.IsConfigured)
+                {
+                    OseLog.Info($"[ToolRuntime] Step '{evt.StepId}' activated with tool action: " +
+                        $"tool='{_primaryToolAction.ToolId}', action='{_primaryToolAction.ActionType}', " +
+                        $"target='{_primaryToolAction.TargetId}', required={_primaryToolAction.RequiredCount}.");
+                }
+                else if (_package != null && _package.TryGetStep(evt.StepId, out var stepDef)
+                         && stepDef.requiredToolActions != null && stepDef.requiredToolActions.Length > 0)
+                {
+                    OseLog.Warn($"[ToolRuntime] Step '{evt.StepId}' has {stepDef.requiredToolActions.Length} " +
+                        $"required tool action(s) in JSON but ResolvePrimaryToolAction returned unconfigured.");
+                }
+
                 if (!string.IsNullOrWhiteSpace(_activeToolId)
                     && !TryGetTool(_activeToolId, out _))
                 {

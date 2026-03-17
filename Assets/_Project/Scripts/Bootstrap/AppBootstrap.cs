@@ -28,6 +28,9 @@ namespace OSE.Bootstrap
             var partController = new PartRuntimeController();
             ServiceRegistry.Register<PartRuntimeController>(partController);
 
+            var toolController = new ToolRuntimeController();
+            ServiceRegistry.Register<ToolRuntimeController>(toolController);
+
             var placementValidator = new PlacementValidator();
             ServiceRegistry.Register<IPlacementValidator>(placementValidator);
 
