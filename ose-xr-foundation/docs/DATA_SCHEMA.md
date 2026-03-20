@@ -35,7 +35,7 @@ This file should be used together with:
 - `TECH_STACK.md`
 - `docs/CONTENT_MODEL.md`
 - `docs/ASSEMBLY_RUNTIME.md`
-- `docs/CONTENT_AUTHORING_PIPELINE.md`
+- `docs/PART_AUTHORING_PIPELINE.md`
 - `docs/RUNTIME_EVENT_MODEL.md`
 - `docs/IMPLEMENTATION_CHECKLIST.md`
 

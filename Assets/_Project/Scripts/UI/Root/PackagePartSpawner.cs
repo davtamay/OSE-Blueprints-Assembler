@@ -205,16 +205,44 @@ namespace OSE.UI.Root
                 Transform existing = _setup.PreviewRoot.Find(part.id);
                 if (existing != null)
                 {
+                    // Mark imported models that were already in the scene (e.g. from a prior spawn)
+                    if (!MaterialHelper.IsImportedModel(existing.gameObject)
+                        && existing.GetComponentInChildren<MeshFilter>() != null
+                        && !IsPrimitive(existing.gameObject))
+                    {
+                        MaterialHelper.MarkAsImported(existing.gameObject);
+                    }
+
                     if (Application.isPlaying)
-                        EnsureColliders(existing.gameObject);
+                    {
+                        // Spline parts use SplineMeshColliderBinder for deferred MeshCollider — skip EnsureColliders
+                        if (existing.GetComponent<SplineMeshColliderBinder>() == null)
+                            EnsureColliders(existing.gameObject);
+                    }
                     if (enableRuntimeGrab)
                         TryEnableXRGrabInteractable(existing.gameObject);
                     _spawnedParts.Add(existing.gameObject);
                     continue;
                 }
 
-                GameObject go = TryLoadPackageAsset(part.assetRef)
-                             ?? GetOrCreatePrimitive(part.id, PrimitiveType.Cube);
+                // Spline-based parts (hoses, cables) — create procedural tube mesh
+                PartPreviewPlacement splinePP = FindPartPlacement(part.id);
+                if (SplinePartFactory.HasSplineData(splinePP))
+                {
+                    Color sc = new Color(splinePP.color.r, splinePP.color.g, splinePP.color.b, splinePP.color.a);
+                    GameObject splineGo = SplinePartFactory.Create(part.id, splinePP.splinePath, sc, _setup.PreviewRoot);
+                    MaterialHelper.MarkAsImported(splineGo);
+                    if (enableRuntimeGrab)
+                        TryEnableXRGrabInteractable(splineGo);
+                    _spawnedParts.Add(splineGo);
+                    continue;
+                }
+
+                GameObject go = TryLoadPackageAsset(part.assetRef);
+                if (go != null)
+                    MaterialHelper.MarkAsImported(go);
+                else
+                    go = GetOrCreatePrimitive(part.id, PrimitiveType.Cube);
                 go.name = part.id;
                 if (enableRuntimeGrab)
                     TryEnableXRGrabInteractable(go);
@@ -226,17 +254,205 @@ namespace OSE.UI.Root
                 SetObjectActive(p, showGeometry);
         }
 
+        // Layout constants for auto-positioning parts around the floor perimeter
+        private const float LayoutRadius = 3.8f;           // distance from center
+        private const float LayoutArcDegrees = 220f;       // total arc spread
+        private const float LayoutArcStartDeg = -110f;     // centered on negative Z (camera side)
+        private const float LayoutY = 0.55f;               // height above floor
+        private const float LayoutPadding = 0.15f;         // gap between parts within a group
+        private const float LayoutGroupGap = 0.3f;         // extra gap between different groups on the arc
+
         private void PositionParts()
         {
             if (!_setup.ActiveProfile.ShowGeometryPreview)
                 return;
+
+            if (!Application.isPlaying || _currentPackage?.parts == null)
+            {
+                PositionPartsFallback();
+                return;
+            }
+
+            // Group parts by assetRef so identical parts cluster together
+            var groups = new List<List<int>>();
+            var assetToGroup = new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase);
 
             for (int i = 0; i < _spawnedParts.Count; i++)
             {
                 var partGo = _spawnedParts[i];
                 if (partGo == null) continue;
 
+                string assetRef = null;
+                foreach (var part in _currentPackage.parts)
+                {
+                    if (string.Equals(part.id, partGo.name, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        assetRef = part.assetRef;
+                        break;
+                    }
+                }
+
+                string groupKey = assetRef ?? partGo.name;
+                if (assetToGroup.TryGetValue(groupKey, out int groupIdx))
+                {
+                    groups[groupIdx].Add(i);
+                }
+                else
+                {
+                    assetToGroup[groupKey] = groups.Count;
+                    groups.Add(new List<int> { i });
+                }
+            }
+
+            int groupCount = groups.Count;
+            if (groupCount == 0) return;
+
+            // Pre-resolve scale for every part (needed for bounds-aware spacing)
+            var partScales = new Vector3[_spawnedParts.Count];
+            for (int i = 0; i < _spawnedParts.Count; i++)
+            {
+                var go = _spawnedParts[i];
+                if (go == null) { partScales[i] = Vector3.one; continue; }
+                PartPreviewPlacement pp = FindPartPlacement(go.name);
+                partScales[i] = pp != null
+                    ? new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z)
+                    : Vector3.one;
+            }
+
+            // Compute the tangent-direction width of each part at a given angle.
+            // The tangent is perpendicular to the radius on the XZ plane.
+            // Part footprint on tangent = |scale.x * cos(angle)| + |scale.z * sin(angle)|
+            // This gives the maximum extent along the tangent direction.
+
+            // For each group, compute its total tangent span (sum of member widths + padding).
+            // We'll use a representative angle (will refine after layout) — start with even spacing.
+            float[] groupSpans = new float[groupCount];
+            float totalSpan = 0f;
+
+            // First pass: estimate spans using evenly-spaced angles
+            float roughArcStep = groupCount > 1 ? LayoutArcDegrees / (groupCount - 1) : 0f;
+            for (int g = 0; g < groupCount; g++)
+            {
+                float angle = (LayoutArcStartDeg + roughArcStep * g) * Mathf.Deg2Rad;
+                float tanX = Mathf.Abs(Mathf.Cos(angle));
+                float tanZ = Mathf.Abs(Mathf.Sin(angle));
+
+                var members = groups[g];
+                float span = 0f;
+                for (int m = 0; m < members.Count; m++)
+                {
+                    Vector3 s = partScales[members[m]];
+                    float memberWidth = s.x * tanX + s.z * tanZ;
+                    span += memberWidth;
+                    if (m < members.Count - 1)
+                        span += LayoutPadding;
+                }
+                groupSpans[g] = span;
+                totalSpan += span;
+            }
+
+            // Add inter-group gaps
+            totalSpan += (groupCount - 1) * LayoutGroupGap;
+
+            // Convert total linear span to arc degrees at LayoutRadius
+            float totalArcNeeded = (totalSpan / (LayoutRadius * Mathf.Deg2Rad)) * (180f / Mathf.PI);
+            // If the needed arc exceeds available, scale radius up to fit
+            float effectiveRadius = LayoutRadius;
+            if (totalArcNeeded > LayoutArcDegrees && totalSpan > 0f)
+            {
+                // Increase radius so everything fits within the arc
+                float arcLengthAvailable = LayoutArcDegrees * Mathf.Deg2Rad * LayoutRadius;
+                if (totalSpan > arcLengthAvailable)
+                    effectiveRadius = totalSpan / (LayoutArcDegrees * Mathf.Deg2Rad);
+            }
+
+            // Distribute groups proportionally along the arc based on their span
+            float arcLength = LayoutArcDegrees * Mathf.Deg2Rad * effectiveRadius;
+            float cursor = 0f; // linear position along the arc
+
+            for (int g = 0; g < groupCount; g++)
+            {
+                float groupCenter = cursor + groupSpans[g] * 0.5f;
+                float groupAngleRad = (LayoutArcStartDeg * Mathf.Deg2Rad) + (groupCenter / effectiveRadius);
+
+                float cx = Mathf.Sin(groupAngleRad) * effectiveRadius;
+                float cz = -Mathf.Cos(groupAngleRad) * effectiveRadius;
+
+                var members = groups[g];
+
+                // Tangent direction at this angle
+                float tangentX = Mathf.Cos(groupAngleRad);
+                float tangentZ = Mathf.Sin(groupAngleRad);
+                float absTanX = Mathf.Abs(tangentX);
+                float absTanZ = Mathf.Abs(tangentZ);
+
+                // Compute individual member widths along tangent
+                float[] memberWidths = new float[members.Count];
+                float groupTotalWidth = 0f;
+                for (int m = 0; m < members.Count; m++)
+                {
+                    Vector3 s = partScales[members[m]];
+                    memberWidths[m] = s.x * absTanX + s.z * absTanZ;
+                    groupTotalWidth += memberWidths[m];
+                    if (m < members.Count - 1)
+                        groupTotalWidth += LayoutPadding;
+                }
+
+                // Place members centered on group center
+                float memberCursor = -groupTotalWidth * 0.5f;
+                for (int m = 0; m < members.Count; m++)
+                {
+                    int partIdx = members[m];
+                    var partGo = _spawnedParts[partIdx];
+                    if (partGo == null) continue;
+
+                    // Skip spline parts — their geometry is defined by spline knots
+                    PartPreviewPlacement spCheck = FindPartPlacement(partGo.name);
+                    if (SplinePartFactory.HasSplineData(spCheck)) continue;
+
+                    float offset = memberCursor + memberWidths[m] * 0.5f;
+                    float px = cx + tangentX * offset;
+                    float pz = cz + tangentZ * offset;
+
+                    PartPreviewPlacement pp = FindPartPlacement(partGo.name);
+                    Vector3 scale = partScales[partIdx];
+                    Color col = pp != null
+                        ? new Color(pp.color.r, pp.color.g, pp.color.b, pp.color.a)
+                        : new Color(0.94f, 0.55f, 0.18f, 1f);
+                    Quaternion rot = pp != null && !pp.startRotation.IsIdentity
+                        ? new Quaternion(pp.startRotation.x, pp.startRotation.y, pp.startRotation.z, pp.startRotation.w)
+                        : Quaternion.identity;
+
+                    partGo.transform.SetLocalPositionAndRotation(new Vector3(px, LayoutY, pz), rot);
+                    partGo.transform.localScale = scale;
+
+                    // Preserve original GLB materials; only apply solid color to primitives
+                    if (!MaterialHelper.IsImportedModel(partGo))
+                        MaterialHelper.Apply(partGo, "Preview Part Material", col);
+
+                    TryApplyAffordanceState(partGo, AffordanceStateShortcuts.idle);
+
+                    memberCursor += memberWidths[m] + LayoutPadding;
+                }
+
+                cursor += groupSpans[g] + LayoutGroupGap;
+            }
+        }
+
+        /// <summary>
+        /// Edit-mode fallback: use previewConfig positions or linear grid.
+        /// </summary>
+        private void PositionPartsFallback()
+        {
+            for (int i = 0; i < _spawnedParts.Count; i++)
+            {
+                var partGo = _spawnedParts[i];
+                if (partGo == null) continue;
+
                 PartPreviewPlacement pp = FindPartPlacement(partGo.name);
+
+                // Skip spline parts — their geometry is defined by spline knots
+                if (SplinePartFactory.HasSplineData(pp)) continue;
 
                 Vector3 pos;
                 Vector3 scale;
@@ -262,7 +478,11 @@ namespace OSE.UI.Root
 
                 partGo.transform.SetLocalPositionAndRotation(pos, rot);
                 partGo.transform.localScale = scale;
-                MaterialHelper.Apply(partGo, "Preview Part Material", col);
+
+                // Preserve original GLB materials; only apply solid color to primitives
+                if (!MaterialHelper.IsImportedModel(partGo))
+                    MaterialHelper.Apply(partGo, "Preview Part Material", col);
+
                 TryApplyAffordanceState(partGo, AffordanceStateShortcuts.idle);
             }
         }
@@ -337,7 +557,11 @@ namespace OSE.UI.Root
                 grabInteractable = target.AddComponent<XRGrabInteractable>();
             }
 
-            EnsurePartColorAffordance(target, grabInteractable);
+            // Skip affordance color system for imported models — their original materials
+            // should not be overridden by MaterialPropertyBlock. State colors are handled
+            // by ApplyTint/ClearTint in PartInteractionBridge instead.
+            if (!MaterialHelper.IsImportedModel(target))
+                EnsurePartColorAffordance(target, grabInteractable);
             TryApplyAffordanceState(target, AffordanceStateShortcuts.idle);
         }
 
@@ -480,6 +704,11 @@ namespace OSE.UI.Root
             if (target.GetComponentInChildren<Collider>(true) != null)
                 return;
 
+            // Spline parts have a deferred binder that adds a MeshCollider once
+            // the SplineExtrude mesh is generated — don't add a fallback BoxCollider.
+            if (target.GetComponent<SplineMeshColliderBinder>() != null)
+                return;
+
             var meshFilters = target.GetComponentsInChildren<MeshFilter>(true);
             if (meshFilters.Length > 0)
             {
@@ -519,6 +748,17 @@ namespace OSE.UI.Root
             if (target == null) return;
             if (Application.isPlaying) Destroy(target);
             else DestroyImmediate(target);
+        }
+
+        private static bool IsPrimitive(GameObject go)
+        {
+            // Unity primitives created by GetOrCreatePrimitive have a MeshFilter
+            // with a shared mesh named after the primitive type
+            var mf = go.GetComponent<MeshFilter>();
+            if (mf == null || mf.sharedMesh == null) return false;
+            string meshName = mf.sharedMesh.name;
+            return meshName == "Cube" || meshName == "Sphere" || meshName == "Cylinder"
+                || meshName == "Capsule" || meshName == "Plane" || meshName == "Quad";
         }
     }
 }

@@ -6,7 +6,8 @@
         "OSE.App",
         "OSE.Platform",
         "OSE.Content",
-        "OSE.Runtime"
+        "OSE.Runtime",
+        "OSE.Persistence"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

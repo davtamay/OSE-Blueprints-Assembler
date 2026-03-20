@@ -1,4 +1,4 @@
-# SOURCE_OF_TRUTH_MAP.md
+﻿# SOURCE_OF_TRUTH_MAP.md
 
 ## Purpose
 
@@ -30,7 +30,7 @@ This file should be used together with:
 - `docs/UNITY_PROJECT_STRUCTURE.md`
 - `docs/INTERACTION_MODEL.md`
 - `docs/UI_ARCHITECTURE.md`
-- `docs/CONTENT_AUTHORING_PIPELINE.md`
+- `docs/PART_AUTHORING_PIPELINE.md`
 - `docs/DATA_SCHEMA.md`
 - `docs/RUNTIME_EVENT_MODEL.md`
 - `docs/IMPLEMENTATION_CHECKLIST.md`
@@ -229,7 +229,7 @@ This section defines which subsystem owns which categories of runtime truth.
 ### Primary Docs
 
 - `docs/DATA_SCHEMA.md`
-- `docs/CONTENT_AUTHORING_PIPELINE.md`
+- `docs/PART_AUTHORING_PIPELINE.md`
 - `docs/UI_ARCHITECTURE.md`
 
 ---
@@ -524,7 +524,7 @@ This section defines which document is authoritative for each domain.
 
 ### Authoritative Doc
 
-- `docs/CONTENT_AUTHORING_PIPELINE.md`
+- `docs/PART_AUTHORING_PIPELINE.md`
 
 ### Governs
 
@@ -701,7 +701,7 @@ Likely code areas:
 Inspect:
 
 - `docs/DATA_SCHEMA.md`
-- `docs/CONTENT_AUTHORING_PIPELINE.md`
+- `docs/PART_AUTHORING_PIPELINE.md`
 - `docs/ASSEMBLY_RUNTIME.md`
 - `TEST_STRATEGY.md`
 
@@ -924,3 +924,4 @@ This map exists so human developers and agents can answer three critical questio
 3. **Which module should I inspect first?**
 
 If those are clear, the project can grow safely.
+

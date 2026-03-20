@@ -51,7 +51,7 @@ namespace OSE.Core
         void ShowPartInfoShell(string partName, string function, string material, string tool, string searchTerms);
         void ShowChallengeMetrics(int hintsUsed, int failedAttempts, float currentStepSeconds, float totalSeconds, bool challengeActive);
         void ShowStepCompletionToast(string message);
-        void ShowMachineIntro(string title, string description, string difficulty, int estimatedMinutes, string[] learningObjectives, string imageRef);
+        void ShowMachineIntro(string title, string description, string difficulty, int estimatedMinutes, string[] learningObjectives, string imageRef, int savedCompletedSteps = 0, int savedTotalSteps = 0);
         void DismissMachineIntro();
         void HidePartInfoPanel();
         void HideAll();

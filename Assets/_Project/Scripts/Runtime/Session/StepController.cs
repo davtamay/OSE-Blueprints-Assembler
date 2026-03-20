@@ -1,3 +1,4 @@
+using OSE.App;
 using OSE.Content;
 using OSE.Core;
 
@@ -39,6 +40,32 @@ namespace OSE.Runtime
 
         public void CompleteStep(float atSeconds)
         {
+            // Failsafe: never complete a step during explicit navigation.
+            if (ServiceRegistry.TryGet<MachineSessionController>(out var navSession))
+            {
+                if (navSession.IsNavigating)
+                {
+                    OseLog.Warn($"[StepController] BLOCKED CompleteStep during navigation for step '{_currentStep?.id}'. " +
+                        $"Caller stack: {System.Environment.StackTrace}");
+                    return;
+                }
+
+                // Block completion within 1 frame of navigation.
+                // Unity runs Update() (InteractionOrchestrator) BEFORE UpdatePanels()
+                // (UIToolkit), so navigation sets LastNavigationFrame on frame N,
+                // and the next back-click's tool action fires on frame N+1 in Update()
+                // before UIToolkit can process the button. A 1-frame cooldown window
+                // ensures the stale click can't re-complete the step.
+                int framesSinceNav = UnityEngine.Time.frameCount - navSession.LastNavigationFrame;
+                if (framesSinceNav >= 0 && framesSinceNav <= 1)
+                {
+                    OseLog.Warn($"[StepController] BLOCKED CompleteStep within navigation cooldown " +
+                        $"(navFrame={navSession.LastNavigationFrame}, curFrame={UnityEngine.Time.frameCount}) " +
+                        $"for step '{_currentStep?.id}'.");
+                    return;
+                }
+            }
+
             if (!HasActiveStep)
             {
                 OseLog.Warn("[StepController] CompleteStep called but no active step exists.");

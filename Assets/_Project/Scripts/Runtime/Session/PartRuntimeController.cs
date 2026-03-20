@@ -221,6 +221,74 @@ namespace OSE.Runtime
         }
 
         /// <summary>
+        /// Recomputes all part states for step navigation.
+        /// Parts from steps before targetIndex become Completed.
+        /// Parts from the target step become Available (unless already Completed from a prior step).
+        /// Parts from steps after targetIndex stay NotIntroduced.
+        /// Does NOT publish PartStateChanged events — the caller publishes StepNavigated
+        /// for the visual layer to reposition parts in bulk.
+        /// </summary>
+        public void RecomputePartsForNavigation(int targetIndex, StepDefinition[] allSteps)
+        {
+            if (_package == null || allSteps == null) return;
+
+            _partStates.Clear();
+            _selectedPartId = null;
+            _selectedPartPreviousState = PartPlacementState.Available;
+            _activeStepId = null;
+
+            for (int i = 0; i < targetIndex && i < allSteps.Length; i++)
+            {
+                string[] partIds = allSteps[i].requiredPartIds;
+                if (partIds == null) continue;
+                for (int p = 0; p < partIds.Length; p++)
+                {
+                    if (!string.IsNullOrEmpty(partIds[p]))
+                        _partStates[partIds[p]] = PartPlacementState.Completed;
+                }
+            }
+
+            if (targetIndex >= 0 && targetIndex < allSteps.Length)
+            {
+                string[] partIds = allSteps[targetIndex].requiredPartIds;
+                if (partIds != null)
+                {
+                    for (int p = 0; p < partIds.Length; p++)
+                    {
+                        if (!string.IsNullOrEmpty(partIds[p]) && GetPartState(partIds[p]) != PartPlacementState.Completed)
+                            _partStates[partIds[p]] = PartPlacementState.Available;
+                    }
+                }
+            }
+
+            OseLog.Info($"[PartRuntime] Recomputed part states for navigation to step {targetIndex}.");
+        }
+
+        /// <summary>
+        /// Marks all required parts from the given steps as Completed in bulk.
+        /// Used by session restore to set part states directly without replaying
+        /// the full step event cascade.
+        /// </summary>
+        public void BulkCompletePartsForSteps(StepDefinition[] steps)
+        {
+            if (_package == null || steps == null) return;
+
+            for (int s = 0; s < steps.Length; s++)
+            {
+                string[] partIds = steps[s].requiredPartIds;
+                if (partIds == null) continue;
+
+                for (int p = 0; p < partIds.Length; p++)
+                {
+                    if (string.IsNullOrEmpty(partIds[p])) continue;
+                    _partStates[partIds[p]] = PartPlacementState.Completed;
+                }
+            }
+
+            OseLog.Info($"[PartRuntime] Bulk-completed parts for {steps.Length} restored steps.");
+        }
+
+        /// <summary>
         /// Returns the target IDs for the currently active step, or empty if none.
         /// </summary>
         public string[] GetActiveStepTargetIds()
@@ -307,12 +375,6 @@ namespace OSE.Runtime
             }
             else if (evt.Current == StepState.Completed)
             {
-                // Step-complete events can arrive after the next step has already
-                // become active (event ordering across listeners). Ignore stale
-                // completion to avoid re-locking parts needed by the new step.
-                if (!string.Equals(_activeStepId, evt.StepId, StringComparison.OrdinalIgnoreCase))
-                    return;
-
                 CompleteStepParts(evt.StepId);
             }
         }

@@ -289,13 +289,14 @@ namespace OSE.UI.Root
         }
 
         public void ShowMachineIntro(string title, string description, string difficulty,
-            int estimatedMinutes, string[] learningObjectives, string imageRef)
+            int estimatedMinutes, string[] learningObjectives, string imageRef,
+            int savedCompletedSteps = 0, int savedTotalSteps = 0)
         {
             if (!_isBuilt) return;
 
             _introMachineId = title;
             _introVisible = true;
-            BuildIntroOverlay(title, description, difficulty, estimatedMinutes, learningObjectives, imageRef);
+            BuildIntroOverlay(title, description, difficulty, estimatedMinutes, learningObjectives, imageRef, savedCompletedSteps, savedTotalSteps);
             HideAll();
         }
 
@@ -894,6 +895,10 @@ namespace OSE.UI.Root
             if (_autoCompletingTargetlessToolStep || _toolRuntimeController == null)
                 return;
 
+            // Suppress auto-advance during explicit step navigation.
+            if (ServiceRegistry.TryGet<MachineSessionController>(out var navCheck) && navCheck.IsNavigating)
+                return;
+
             if (!_toolRuntimeController.TryGetPrimaryActionSnapshot(out ToolRuntimeController.ToolActionSnapshot snapshot) ||
                 !snapshot.IsConfigured ||
                 snapshot.IsCompleted ||
@@ -935,6 +940,10 @@ namespace OSE.UI.Root
         private void TryAutoAdvanceEquipTaggedStepIfSatisfied()
         {
             if (_autoCompletingEquipTaggedStep || _toolRuntimeController == null)
+                return;
+
+            // Suppress auto-advance during explicit step navigation.
+            if (ServiceRegistry.TryGet<MachineSessionController>(out var navSession) && navSession.IsNavigating)
                 return;
 
             string activeToolId = _toolRuntimeController.ActiveToolId;
@@ -1270,7 +1279,8 @@ namespace OSE.UI.Root
         // ── Machine Intro Overlay ──
 
         private void BuildIntroOverlay(string title, string description, string difficulty,
-            int estimatedMinutes, string[] learningObjectives, string imageRef)
+            int estimatedMinutes, string[] learningObjectives, string imageRef,
+            int savedCompletedSteps = 0, int savedTotalSteps = 0)
         {
             if (_introOverlay != null)
             {
@@ -1281,6 +1291,8 @@ namespace OSE.UI.Root
             var doc = GetComponent<UIDocument>();
             VisualElement root = doc != null ? doc.rootVisualElement : null;
             if (root == null) return;
+
+            bool hasSavedProgress = savedCompletedSteps > 0 && savedTotalSteps > 0;
 
             // Fullscreen semi-transparent backdrop
             _introOverlay = new VisualElement();
@@ -1295,19 +1307,20 @@ namespace OSE.UI.Root
             _introOverlay.style.justifyContent = Justify.Center;
             _introOverlay.pickingMode = PickingMode.Position;
 
-            // Card container
+            // Card container — fits within screen without scrolling
             var card = new VisualElement();
             card.style.backgroundColor = new Color(0.12f, 0.13f, 0.16f, 0.98f);
             card.style.borderTopLeftRadius = 16f;
             card.style.borderTopRightRadius = 16f;
             card.style.borderBottomLeftRadius = 16f;
             card.style.borderBottomRightRadius = 16f;
-            card.style.paddingTop = 32f;
-            card.style.paddingBottom = 32f;
-            card.style.paddingLeft = 36f;
-            card.style.paddingRight = 36f;
-            card.style.maxWidth = 520f;
-            card.style.minWidth = 340f;
+            card.style.paddingTop = 24f;
+            card.style.paddingBottom = 28f;
+            card.style.paddingLeft = 32f;
+            card.style.paddingRight = 32f;
+            card.style.maxWidth = 480f;
+            card.style.minWidth = 320f;
+            card.style.maxHeight = new Length(92f, LengthUnit.Percent);
             card.style.alignItems = Align.Center;
             // Subtle border
             card.style.borderTopWidth = 1f;
@@ -1317,18 +1330,24 @@ namespace OSE.UI.Root
             card.style.borderTopColor = new Color(0.25f, 0.27f, 0.32f, 0.6f);
             card.style.borderBottomColor = new Color(0.25f, 0.27f, 0.32f, 0.6f);
             card.style.borderLeftColor = new Color(0.25f, 0.27f, 0.32f, 0.6f);
-            card.style.borderRightColor = new Color(0.25f, 0.27f, 0.6f, 0.6f);
+            card.style.borderRightColor = new Color(0.25f, 0.27f, 0.32f, 0.6f);
+
+            // Content area — can shrink/scroll if needed, buttons stay fixed below
+            var contentArea = new ScrollView(ScrollViewMode.Vertical);
+            contentArea.style.flexGrow = 1f;
+            contentArea.style.flexShrink = 1f;
+            contentArea.style.alignItems = Align.Center;
 
             // Image placeholder (will show actual image when imageRef is loaded)
             var imageContainer = new VisualElement();
-            imageContainer.style.width = 280f;
-            imageContainer.style.height = 180f;
+            imageContainer.style.width = 240f;
+            imageContainer.style.height = 140f;
             imageContainer.style.backgroundColor = new Color(0.18f, 0.20f, 0.24f, 1f);
             imageContainer.style.borderTopLeftRadius = 10f;
             imageContainer.style.borderTopRightRadius = 10f;
             imageContainer.style.borderBottomLeftRadius = 10f;
             imageContainer.style.borderBottomRightRadius = 10f;
-            imageContainer.style.marginBottom = 20f;
+            imageContainer.style.marginBottom = 14f;
             imageContainer.style.alignItems = Align.Center;
             imageContainer.style.justifyContent = Justify.Center;
 
@@ -1343,21 +1362,23 @@ namespace OSE.UI.Root
                 imageContainer.Add(placeholder);
             }
 
-            card.Add(imageContainer);
+            contentArea.Add(imageContainer);
 
             // Title
             var titleLabel = new Label(title);
-            titleLabel.style.fontSize = 22f;
+            titleLabel.style.fontSize = 20f;
             titleLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
             titleLabel.style.color = new Color(0.95f, 0.96f, 0.98f);
             titleLabel.style.marginBottom = 8f;
             titleLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
-            card.Add(titleLabel);
+            titleLabel.style.whiteSpace = WhiteSpace.Normal;
+            titleLabel.style.maxWidth = 420f;
+            contentArea.Add(titleLabel);
 
             // Difficulty + time badges
             var badgeRow = new VisualElement();
             badgeRow.style.flexDirection = FlexDirection.Row;
-            badgeRow.style.marginBottom = 14f;
+            badgeRow.style.marginBottom = 10f;
 
             if (!string.IsNullOrWhiteSpace(difficulty))
             {
@@ -1375,65 +1396,126 @@ namespace OSE.UI.Root
                 badgeRow.Add(timeBadge);
             }
 
-            card.Add(badgeRow);
+            contentArea.Add(badgeRow);
 
             // Description
             if (!string.IsNullOrWhiteSpace(description))
             {
                 var descLabel = new Label(description);
-                descLabel.style.fontSize = 13f;
+                descLabel.style.fontSize = 12f;
                 descLabel.style.color = new Color(0.75f, 0.78f, 0.82f);
                 descLabel.style.whiteSpace = WhiteSpace.Normal;
-                descLabel.style.marginBottom = 16f;
+                descLabel.style.marginBottom = 10f;
                 descLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
-                descLabel.style.maxWidth = 440f;
-                card.Add(descLabel);
+                descLabel.style.maxWidth = 400f;
+                contentArea.Add(descLabel);
             }
 
             // Learning objectives
             if (learningObjectives != null && learningObjectives.Length > 0)
             {
                 var objectivesHeader = new Label("What you'll learn:");
-                objectivesHeader.style.fontSize = 12f;
+                objectivesHeader.style.fontSize = 11f;
                 objectivesHeader.style.unityFontStyleAndWeight = FontStyle.Bold;
                 objectivesHeader.style.color = new Color(0.6f, 0.75f, 0.9f);
-                objectivesHeader.style.marginBottom = 6f;
+                objectivesHeader.style.marginBottom = 4f;
                 objectivesHeader.style.unityTextAlign = TextAnchor.MiddleLeft;
                 objectivesHeader.style.alignSelf = Align.FlexStart;
-                card.Add(objectivesHeader);
+                contentArea.Add(objectivesHeader);
 
-                for (int i = 0; i < learningObjectives.Length; i++)
+                int maxObjectives = Mathf.Min(learningObjectives.Length, 4);
+                for (int i = 0; i < maxObjectives; i++)
                 {
                     if (string.IsNullOrWhiteSpace(learningObjectives[i])) continue;
 
                     var objLabel = new Label($"  \u2022  {learningObjectives[i].Trim()}");
-                    objLabel.style.fontSize = 12f;
+                    objLabel.style.fontSize = 11f;
                     objLabel.style.color = new Color(0.68f, 0.72f, 0.78f);
-                    objLabel.style.marginBottom = 3f;
+                    objLabel.style.marginBottom = 2f;
                     objLabel.style.whiteSpace = WhiteSpace.Normal;
                     objLabel.style.alignSelf = Align.FlexStart;
-                    card.Add(objLabel);
+                    contentArea.Add(objLabel);
                 }
-
-                // Spacer after objectives
-                var spacer = new VisualElement();
-                spacer.style.height = 14f;
-                card.Add(spacer);
             }
 
-            // Continue button
+            card.Add(contentArea);
+
+            // ── Separator line before action area ──
+            var separator = new VisualElement();
+            separator.style.width = new Length(90f, LengthUnit.Percent);
+            separator.style.height = 1f;
+            separator.style.backgroundColor = new Color(0.25f, 0.27f, 0.32f, 0.5f);
+            separator.style.marginTop = 10f;
+            separator.style.marginBottom = 14f;
+            separator.style.flexShrink = 0f;
+            card.Add(separator);
+
+            // ── Progress display (only when saved progress exists) ──
+            if (hasSavedProgress)
+            {
+                float percent = (float)savedCompletedSteps / savedTotalSteps;
+                int percentInt = Mathf.RoundToInt(percent * 100f);
+
+                // Percent label
+                var percentLabel = new Label($"{percentInt}% Complete");
+                percentLabel.style.fontSize = 15f;
+                percentLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+                percentLabel.style.color = new Color(0.5f, 0.85f, 0.6f);
+                percentLabel.style.marginBottom = 3f;
+                percentLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+                card.Add(percentLabel);
+
+                // Step X of Y
+                var stepLabel = new Label($"Step {savedCompletedSteps} of {savedTotalSteps}");
+                stepLabel.style.fontSize = 11f;
+                stepLabel.style.color = new Color(0.6f, 0.63f, 0.68f);
+                stepLabel.style.marginBottom = 6f;
+                stepLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+                card.Add(stepLabel);
+
+                // Progress bar
+                var progressBarBg = new VisualElement();
+                progressBarBg.style.width = new Length(80f, LengthUnit.Percent);
+                progressBarBg.style.height = 8f;
+                progressBarBg.style.backgroundColor = new Color(0.2f, 0.22f, 0.26f, 1f);
+                progressBarBg.style.borderTopLeftRadius = 5f;
+                progressBarBg.style.borderTopRightRadius = 5f;
+                progressBarBg.style.borderBottomLeftRadius = 5f;
+                progressBarBg.style.borderBottomRightRadius = 5f;
+                progressBarBg.style.marginBottom = 14f;
+
+                var progressBarFill = new VisualElement();
+                progressBarFill.style.width = new Length(percent * 100f, LengthUnit.Percent);
+                progressBarFill.style.height = 8f;
+                progressBarFill.style.backgroundColor = new Color(0.2f, 0.65f, 0.4f, 1f);
+                progressBarFill.style.borderTopLeftRadius = 5f;
+                progressBarFill.style.borderTopRightRadius = 5f;
+                progressBarFill.style.borderBottomLeftRadius = 5f;
+                progressBarFill.style.borderBottomRightRadius = 5f;
+                progressBarBg.Add(progressBarFill);
+
+                card.Add(progressBarBg);
+            }
+
+            // ── Button area — never shrinks, always visible ──
+            var buttonArea = new VisualElement();
+            buttonArea.style.alignItems = Align.Center;
+            buttonArea.style.width = new Length(100f, LengthUnit.Percent);
+            buttonArea.style.flexShrink = 0f;
+
+            // Continue / Resume button
             var continueBtn = new Button();
-            continueBtn.text = "Continue";
-            continueBtn.style.height = 46f;
+            continueBtn.text = hasSavedProgress ? "Resume" : "Begin Assembly";
+            continueBtn.style.height = 42f;
             continueBtn.style.width = 200f;
-            continueBtn.style.fontSize = 16f;
+            continueBtn.style.fontSize = 15f;
             continueBtn.style.unityFontStyleAndWeight = FontStyle.Bold;
             continueBtn.style.backgroundColor = new Color(0.2f, 0.65f, 0.4f, 1f);
             continueBtn.style.color = Color.white;
-            continueBtn.style.borderTopLeftRadius = 12f;
-            continueBtn.style.borderTopRightRadius = 12f;
-            continueBtn.style.borderBottomLeftRadius = 12f;
-            continueBtn.style.borderBottomRightRadius = 12f;
+            continueBtn.style.borderTopLeftRadius = 14f;
+            continueBtn.style.borderTopRightRadius = 14f;
+            continueBtn.style.borderBottomLeftRadius = 14f;
+            continueBtn.style.borderBottomRightRadius = 14f;
             continueBtn.style.borderTopWidth = 0f;
             continueBtn.style.borderBottomWidth = 0f;
             continueBtn.style.borderLeftWidth = 0f;
@@ -1443,7 +1525,40 @@ namespace OSE.UI.Root
                 DismissMachineIntro();
                 RuntimeEventBus.Publish(new MachineIntroDismissed(_introMachineId ?? string.Empty));
             };
-            card.Add(continueBtn);
+            buttonArea.Add(continueBtn);
+
+            // Reset Progress button (only when saved progress exists)
+            if (hasSavedProgress)
+            {
+                var resetBtn = new Button();
+                resetBtn.text = "Reset Progress";
+                resetBtn.style.height = 30f;
+                resetBtn.style.width = 200f;
+                resetBtn.style.fontSize = 11f;
+                resetBtn.style.marginTop = 8f;
+                resetBtn.style.backgroundColor = new Color(0.16f, 0.16f, 0.20f, 1f);
+                resetBtn.style.color = new Color(0.75f, 0.38f, 0.38f);
+                resetBtn.style.borderTopLeftRadius = 10f;
+                resetBtn.style.borderTopRightRadius = 10f;
+                resetBtn.style.borderBottomLeftRadius = 10f;
+                resetBtn.style.borderBottomRightRadius = 10f;
+                resetBtn.style.borderTopWidth = 1f;
+                resetBtn.style.borderBottomWidth = 1f;
+                resetBtn.style.borderLeftWidth = 1f;
+                resetBtn.style.borderRightWidth = 1f;
+                resetBtn.style.borderTopColor = new Color(0.5f, 0.25f, 0.25f, 0.4f);
+                resetBtn.style.borderBottomColor = new Color(0.5f, 0.25f, 0.25f, 0.4f);
+                resetBtn.style.borderLeftColor = new Color(0.5f, 0.25f, 0.25f, 0.4f);
+                resetBtn.style.borderRightColor = new Color(0.5f, 0.25f, 0.25f, 0.4f);
+                resetBtn.clicked += () =>
+                {
+                    DismissMachineIntro();
+                    RuntimeEventBus.Publish(new MachineIntroReset(_introMachineId ?? string.Empty));
+                };
+                buttonArea.Add(resetBtn);
+            }
+
+            card.Add(buttonArea);
 
             _introOverlay.Add(card);
             root.Add(_introOverlay);

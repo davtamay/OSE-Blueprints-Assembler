@@ -29,6 +29,12 @@ namespace OSE.Runtime.Preview
         public static event Action<MachinePackageDefinition> PackageChanged;
         public static MachinePackageDefinition CurrentPackage { get; private set; }
 
+        /// <summary>
+        /// True while the machine intro overlay is displayed.
+        /// Checked by PartInteractionBridge to block 3D interaction during intro.
+        /// </summary>
+        public static bool IsIntroActive { get; private set; }
+
         [Header("Session Configuration")]
         [SerializeField] private string _packageId = "onboarding_tutorial";
         [SerializeField] private SessionMode _sessionMode = SessionMode.Tutorial;
@@ -57,6 +63,10 @@ namespace OSE.Runtime.Preview
         private bool _introActive;
         private string _lastPlayModePackageId;
         private SessionMode _lastPlayModeSessionMode;
+
+        // Persistence / restore
+        private int _savedCompletedSteps;
+        private int _savedTotalSteps;
 
         // Edit-mode preview state
         private readonly MachinePackageLoader _loader = new MachinePackageLoader();
@@ -137,6 +147,7 @@ namespace OSE.Runtime.Preview
                 RuntimeEventBus.Unsubscribe<ToolActionCompleted>(HandleToolActionCompleted);
                 RuntimeEventBus.Unsubscribe<ToolActionFailed>(HandleToolActionFailed);
                 RuntimeEventBus.Unsubscribe<MachineIntroDismissed>(HandleIntroDismissed);
+                RuntimeEventBus.Unsubscribe<MachineIntroReset>(HandleIntroReset);
             }
         }
 
@@ -220,11 +231,15 @@ namespace OSE.Runtime.Preview
                 RuntimeEventBus.Unsubscribe<ToolActionCompleted>(HandleToolActionCompleted);
                 RuntimeEventBus.Unsubscribe<ToolActionFailed>(HandleToolActionFailed);
                 RuntimeEventBus.Unsubscribe<MachineIntroDismissed>(HandleIntroDismissed);
+                RuntimeEventBus.Unsubscribe<MachineIntroReset>(HandleIntroReset);
                 _session.EndSession();
                 _session = null;
             }
             _sessionStarted = false;
             _introActive = false;
+            IsIntroActive = false;
+            _savedCompletedSteps = 0;
+            _savedTotalSteps = 0;
 
             OseLog.Info($"[SessionDriver] Restarting session with package '{_packageId}'.");
             await StartSessionAsync();
@@ -252,6 +267,7 @@ namespace OSE.Runtime.Preview
             RuntimeEventBus.Subscribe<ToolActionCompleted>(HandleToolActionCompleted);
             RuntimeEventBus.Subscribe<ToolActionFailed>(HandleToolActionFailed);
             RuntimeEventBus.Subscribe<MachineIntroDismissed>(HandleIntroDismissed);
+            RuntimeEventBus.Subscribe<MachineIntroReset>(HandleIntroReset);
 
             // Fire PackageChanged before step events so scene objects exist in time
             _session.PackageReady += HandlePackageReady;
@@ -269,6 +285,22 @@ namespace OSE.Runtime.Preview
             {
                 _lastPlayModePackageId = _packageId;
                 _lastPlayModeSessionMode = _sessionMode;
+
+                // Check for saved progress
+                _savedCompletedSteps = 0;
+                _savedTotalSteps = 0;
+                if (ServiceRegistry.TryGet<IPersistenceService>(out var persistence)
+                    && persistence.HasSavedSession(_packageId))
+                {
+                    var saved = persistence.LoadSession(_packageId);
+                    if (saved != null && saved.CompletedStepCount > 0)
+                    {
+                        _savedCompletedSteps = saved.CompletedStepCount;
+                        var progression = _session.AssemblyController?.ProgressionController;
+                        _savedTotalSteps = progression?.TotalSteps ?? 0;
+                    }
+                }
+
                 TryShowMachineIntro();
             }
             else
@@ -397,6 +429,11 @@ namespace OSE.Runtime.Preview
 
             MachineDefinition machine = _session.Package.machine;
             _introActive = true;
+            IsIntroActive = true;
+
+            int totalSteps = _savedTotalSteps > 0
+                ? _savedTotalSteps
+                : (_session.AssemblyController?.ProgressionController?.TotalSteps ?? 0);
 
             ui.ShowMachineIntro(
                 machine.GetDisplayName(),
@@ -404,7 +441,26 @@ namespace OSE.Runtime.Preview
                 machine.difficulty ?? string.Empty,
                 machine.estimatedBuildTimeMinutes,
                 machine.learningObjectives,
-                machine.introImageRef);
+                machine.introImageRef,
+                _savedCompletedSteps,
+                totalSteps);
+        }
+
+        private void HandleIntroReset(MachineIntroReset evt)
+        {
+            _introActive = false;
+            IsIntroActive = false;
+            _savedCompletedSteps = 0;
+            _savedTotalSteps = 0;
+
+            // Clear saved progress using the actual package ID
+            if (ServiceRegistry.TryGet<IPersistenceService>(out var persistence))
+            {
+                persistence.ClearSession(_packageId);
+            }
+
+            OseLog.Info("[SessionDriver] Progress reset. Restarting session.");
+            RestartSession();
         }
 
         private void HandleIntroDismissed(MachineIntroDismissed evt)
@@ -412,6 +468,16 @@ namespace OSE.Runtime.Preview
             if (!_introActive) return;
 
             _introActive = false;
+            IsIntroActive = false;
+
+            // Restore saved progress if available
+            if (_savedCompletedSteps > 0 && _session != null)
+            {
+                OseLog.Info($"[SessionDriver] Restoring {_savedCompletedSteps} completed steps.");
+                _session.RestoreToStep(_savedCompletedSteps);
+                _savedCompletedSteps = 0;
+            }
+
             OseLog.Info("[SessionDriver] Machine intro dismissed. Pushing step UI.");
             PushStepToUI();
         }
@@ -645,6 +711,38 @@ namespace OSE.Runtime.Preview
                 state.CurrentStepElapsedSeconds,
                 state.ElapsedSeconds,
                 state.ChallengeActive);
+        }
+
+        // --------------------------------------------------------------------
+        // External Notifications
+        // --------------------------------------------------------------------
+
+        /// <summary>
+        /// Called by editor tooling (e.g. AssetPostprocessor) when a package's
+        /// content files change on disk. If the active SessionDriver is
+        /// showing this package in edit-mode preview, it triggers a reload.
+        /// </summary>
+        public static void NotifyPackageContentChanged(string packageId)
+        {
+#if UNITY_EDITOR
+            if (string.IsNullOrEmpty(packageId))
+                return;
+
+            foreach (var driver in FindObjectsByType<SessionDriver>(FindObjectsSortMode.None))
+            {
+                if (!driver.isActiveAndEnabled)
+                    continue;
+
+                if (!string.Equals(driver._packageId, packageId, StringComparison.Ordinal))
+                    continue;
+
+                if (Application.isPlaying)
+                    continue;
+
+                OseLog.Info($"[SessionDriver] Package content changed for '{packageId}' — reloading preview.");
+                driver.RequestEditModeRefresh();
+            }
+#endif
         }
 
         // --------------------------------------------------------------------

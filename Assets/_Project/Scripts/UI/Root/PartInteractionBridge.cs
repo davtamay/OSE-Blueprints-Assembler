@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using OSE.App;
 using OSE.Content;
@@ -32,7 +32,6 @@ namespace OSE.UI.Root
         private static readonly Color CompletedPartColor = new Color(0.3f, 0.9f, 0.4f, 1.0f);
         private static readonly Color InvalidFlashColor = new Color(1.0f, 0.2f, 0.2f, 1.0f);
         private static readonly Color GhostReadyColor = new Color(0.3f, 1.0f, 0.5f, 0.4f);
-        private static readonly Color ToolCursorColor = new Color(1.0f, 0.75f, 0.22f, 0.40f);
         private static readonly Color ToolTargetIdleColor = new Color(0.25f, 0.9f, 1.0f, 0.62f);
         private static readonly Color ToolTargetHoverColor = new Color(0.55f, 1.0f, 1.0f, 0.9f);
         private static readonly Color ToolTargetFailColor = new Color(1.0f, 0.35f, 0.25f, 0.9f);
@@ -55,23 +54,17 @@ namespace OSE.UI.Root
         private const float DragFloorEpsilon = 0.001f;
         private const float HintHighlightDuration = 6f;
         private const float HintHighlightPulseSpeed = 4f;
-        private const float ToolCursorUniformScale = 0.16f;
-        private const float ToolCursorRayDistance = 0.75f;
-        private const float ToolCursorVerticalOffset = -0.08f;
         private const float ToolTargetPulseSpeed = 3.6f;
         private const float ToolTargetScalePulse = 0.12f;
         private const float ToolTargetHeightPulse = 0.05f;
         private const float ToolTargetColliderRadius = 1.5f;
-        private const float ScreenProximityDesktop = 70f;
-        private const float ScreenProximityMobile = 120f;
+        private const float ScreenProximityDesktop = 120f;
+        private const float ScreenProximityMobile = 180f;
         private const float GhostSelectedPulseSpeed = 3.0f;     // Hz for ghost "click here" pulse
         private const float RequiredPartPulseSpeed = 0.8f;     // Hz for "grab this part" pulse
-        private const float ToolCursorScreenProximityReady = 150f;  // screen pixels — cursor changes color
-        private const float ToolTargetFadeStartDistance = 3.0f; // world units — starts fading
-        private const float ToolTargetFadeEndDistance = 0.8f;   // world units — fully transparent
+        private const float ToolTargetFadeStartDistance = 3.0f; // world units â€” starts fading
+        private const float ToolTargetFadeEndDistance = 0.8f;   // world units â€” fully transparent
         private const float ToolTargetFocusDistance = 2.5f;     // camera distance after focus
-        private static readonly Color ToolCursorReadyColor = new Color(0.3f, 1.0f, 0.5f, 0.65f); // bright green
-
         // Toggled automatically by V2 InteractionOrchestrator at runtime via reflection.
         // When true, this bridge skips pointer input polling (V2 handles input instead).
         [HideInInspector] public bool ExternalControlEnabled;
@@ -86,12 +79,14 @@ namespace OSE.UI.Root
         private PreviewSceneSetup _setup;
         private readonly List<GameObject> _spawnedGhosts = new List<GameObject>();
         private readonly List<GameObject> _spawnedToolActionTargets = new List<GameObject>();
-        private GameObject _toolGhostIndicator;
+        private ToolCursorManager _cursorManager;
+        private ToolCursorManager CursorManager => _cursorManager ??= new ToolCursorManager(transform);
         private GameObject _hoveredToolActionTarget;
         [SerializeField] private InputActionRouter _actionRouter;
         [SerializeField] private SelectionService _selectionService;
         private bool _suppressSelectionEvents;
         private GameObject _pendingSelectPart;
+        private int _selectionFrame; // frame when last selection happened
         private Vector2 _pointerDownScreenPos;
         private Camera _pointerDownCamera;
 
@@ -116,24 +111,26 @@ namespace OSE.UI.Root
         private readonly Dictionary<string, PartPlacementState> _partStates = new Dictionary<string, PartPlacementState>(StringComparer.OrdinalIgnoreCase);
         private GameObject _hoveredPart;
         private bool _startupSyncPending;
-        private bool _toolCursorInReadyState;
         private string _ghostPulsePartId; // part id whose matching ghosts are pulsing
         private string[] _requiredPartIdsForStep; // parts the user needs to grab for the current placement step
         private Vector3 _lastToolActionWorldPos;
 
-        // Step-based part visibility — only reveal parts when their step activates
+        // Step-based part visibility â€” only reveal parts when their step activates
         private readonly HashSet<string> _revealedPartIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private const float PartLayoutRadius = 3.5f;      // distance from center for part staging
-        private const float PartLayoutArcDegrees = 140f;   // arc spread in front of camera
-        private const float PartLayoutBaseAngle = -70f;     // start angle offset (centered on -Z facing camera)
+        private const float PartGridSpacing = 0.6f;         // spacing between grid cells (X and Z)
+        private const float PartGridStartZ = -2.8f;        // Z of the first row (closest to camera)
         private const float PartLayoutY = 0.55f;            // height above floor
 
-        // Sequential target ordering — tracks which targetId index is active
+        // Sequential target ordering â€” tracks which targetId index is active
         // when the step uses targetOrder == "sequential".
         private int _sequentialTargetIndex;
         private bool _isSequentialStep;
 
-        // Deferred retry for tool action target spawning — handles event ordering
+        // Pipe-connection interaction — two-click port tethering
+        private readonly List<GameObject> _spawnedPortSpheres = new List<GameObject>();
+        private bool _pipePortAConfirmed;
+
+        // Deferred retry for tool action target spawning â€” handles event ordering
         // race where PartInteractionBridge processes StepStateChanged before
         // ToolRuntimeController has resolved the primary tool action.
         private bool _toolTargetRetryPending;
@@ -157,7 +154,7 @@ namespace OSE.UI.Root
         }
         private readonly List<FlashEntry> _activeFlashes = new List<FlashEntry>();
 
-        // ── Lifecycle ──
+        // â”€â”€ Lifecycle â”€â”€
 
         private void OnEnable()
         {
@@ -168,6 +165,7 @@ namespace OSE.UI.Root
             RuntimeEventBus.Subscribe<HintRequested>(HandleHintRequested);
             RuntimeEventBus.Subscribe<ActiveToolChanged>(HandleActiveToolChanged);
             RuntimeEventBus.Subscribe<SessionRestored>(HandleSessionRestored);
+            RuntimeEventBus.Subscribe<StepNavigated>(HandleStepNavigated);
 
             EnsureInputWiring();
 
@@ -193,6 +191,7 @@ namespace OSE.UI.Root
             RuntimeEventBus.Unsubscribe<HintRequested>(HandleHintRequested);
             RuntimeEventBus.Unsubscribe<ActiveToolChanged>(HandleActiveToolChanged);
             RuntimeEventBus.Unsubscribe<SessionRestored>(HandleSessionRestored);
+            RuntimeEventBus.Unsubscribe<StepNavigated>(HandleStepNavigated);
 
             if (_actionRouter != null)
                 _actionRouter.OnAction -= HandleCanonicalAction;
@@ -281,7 +280,7 @@ namespace OSE.UI.Root
             _startupSyncPending = false;
         }
 
-        // â”€â”€ Canonical actions â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬ Canonical actions Ã¢â€â‚¬Ã¢â€â‚¬
 
         private void HandleCanonicalAction(CanonicalAction action)
         {
@@ -389,7 +388,7 @@ namespace OSE.UI.Root
                 return;
 
             // When the step has required tool actions, route through the tool execution path.
-            // Do NOT fall through to confirmation-only completion — the tool action result
+            // Do NOT fall through to confirmation-only completion â€” the tool action result
             // determines when the step completes via HandleToolPrimaryResult.
             bool stepHasToolActions = step.requiredToolActions != null && step.requiredToolActions.Length > 0;
 
@@ -438,6 +437,11 @@ namespace OSE.UI.Root
         {
             if (!Application.isPlaying || !ExternalControlEnabled)
                 return false;
+
+            // Pipe connection steps use port spheres instead of ghosts — handle before click-to-place.
+            if (TryHandlePipeConnectionPointerDown(screenPos))
+                return true;
+
             return TryHandleClickToPlace(screenPos);
         }
 
@@ -450,6 +454,10 @@ namespace OSE.UI.Root
         {
             if (!Application.isPlaying)
                 return false;
+
+            // Pipe connection steps: handle even when a tool is held.
+            if (TryHandlePipeConnectionPointerDown(screenPos))
+                return true;
 
             if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
                 return false;
@@ -496,6 +504,18 @@ namespace OSE.UI.Root
 
             OseLog.Info($"[PartInteraction] TryExternalToolAction: success on '{interactedTargetId}'.");
             return HandleToolPrimaryResult(session, stepController, shouldCompleteStep);
+        }
+
+        /// <summary>
+        /// Called by V2 orchestrator via LegacyBridgeAdapter for any tap (regardless of
+        /// selection or tool state). Handles pipe connection port sphere clicks.
+        /// Returns true if a port sphere was hit and the interaction was consumed.
+        /// </summary>
+        public bool TryExternalPipeConnection(Vector2 screenPos)
+        {
+            if (!Application.isPlaying)
+                return false;
+            return TryHandlePipeConnectionPointerDown(screenPos);
         }
 
         /// <summary>
@@ -608,6 +628,7 @@ namespace OSE.UI.Root
             }
 
             OseLog.Info($"[PartInteraction] Selected part '{target.name}'");
+            _selectionFrame = Time.frameCount;
             StartGhostSelectionPulse(target.name);
             TryAutoCompleteSelectionStep(target.name);
 
@@ -815,7 +836,7 @@ namespace OSE.UI.Root
             return FindPartFromHit(hit.transform);
         }
 
-        // ── Pointer input (mouse + touch) ──
+        // â”€â”€ Pointer input (mouse + touch) â”€â”€
 
         private void HandlePointerInput()
         {
@@ -877,10 +898,13 @@ namespace OSE.UI.Root
         {
             if (IsRepositioning()) return;
 
-            // Click on a pulsating tool target sphere → focus camera on it
+            // Click on a pulsating tool target sphere â†’ focus camera on it
             TryFocusCameraOnToolTarget(screenPos);
 
             if (TryHandleToolActionPointerDown(screenPos))
+                return;
+
+            if (TryHandlePipeConnectionPointerDown(screenPos))
                 return;
 
             if (TryHandleClickToPlace(screenPos))
@@ -1030,7 +1054,7 @@ namespace OSE.UI.Root
                     _dragRayDistance -= ScrollDepthSpeed * Time.deltaTime * 3f;
             }
 
-            // Touch pinch → push/pull along camera forward (mobile)
+            // Touch pinch â†’ push/pull along camera forward (mobile)
             var touch = Touchscreen.current;
             if (touch != null && touch.touches.Count >= 2)
             {
@@ -1164,7 +1188,7 @@ namespace OSE.UI.Root
             }
         }
 
-        // ── Click-to-place ──
+        // â”€â”€ Click-to-place â”€â”€
 
         /// <summary>
         /// Attempts click-to-place: if a part is selected and the pointer hits (or is near)
@@ -1178,6 +1202,13 @@ namespace OSE.UI.Root
             // Need a selected part that isn't being dragged.
             GameObject selected = _selectionService != null ? _selectionService.CurrentSelection : null;
             if (selected == null || _draggedPart != null)
+                return false;
+
+            // Skip click-to-place on the same frame the part was selected.
+            // The Input System Select callback can fire before HandlePointerDown
+            // in the same frame, which would cause the very first click on a part
+            // to be consumed as a placement attempt instead of a selection.
+            if (Time.frameCount == _selectionFrame)
                 return false;
 
             string partId = selected.name;
@@ -1289,7 +1320,7 @@ namespace OSE.UI.Root
             }
         }
 
-        // ── Ghost proximity detection ──
+        // â”€â”€ Ghost proximity detection â”€â”€
 
         private void UpdateGhostProximity()
         {
@@ -1309,7 +1340,7 @@ namespace OSE.UI.Root
                 // Auto-snap: trigger placement immediately when entering the snap zone
                 // instead of waiting for the user to release the pointer.
                 // Instantly move the part to the ghost position so there's no visible
-                // "fly from drag position" animation — the user sees it lock in place.
+                // "fly from drag position" animation â€” the user sees it lock in place.
                 if (nearestInfo != null && _isDragging)
                 {
                     OseLog.Info($"[PartInteraction] Auto-snap: '{_draggedPartId}' entered snap zone of '{nearestInfo.TargetId}'.");
@@ -1319,7 +1350,13 @@ namespace OSE.UI.Root
                     // Teleport part to ghost pose before starting snap/placement.
                     partGo.transform.localPosition = nearestInfo.transform.localPosition;
                     partGo.transform.localRotation = nearestInfo.transform.localRotation;
-                    partGo.transform.localScale = nearestInfo.transform.localScale;
+
+                    // Resolve through ghost pose first so snap keeps the same
+                    // dimensions users see on the ghost/source part.
+                    if (TryResolveSnapPose(_draggedPartId, nearestInfo.TargetId, out _, out _, out Vector3 snapScale))
+                        partGo.transform.localScale = snapScale;
+                    else
+                        partGo.transform.localScale = nearestInfo.transform.localScale;
 
                     ResetDragState();
                     AttemptPlacementForPart(partGo, partId);
@@ -1340,10 +1377,13 @@ namespace OSE.UI.Root
             _ghostHighlighted = false;
         }
 
-        // ── Ghost "click here" pulse when a part is selected ──
+        // â”€â”€ Ghost "click here" pulse when a part is selected â”€â”€
 
         private void StartGhostSelectionPulse(string partId)
         {
+            // Clean up previous ghost pulse so the old ghost reverts to its
+            // default material before we start pulsing a different one.
+            StopGhostSelectionPulse();
             _ghostPulsePartId = partId;
         }
 
@@ -1370,15 +1410,14 @@ namespace OSE.UI.Root
             if (_ghostPulsePartId == null || _spawnedGhosts.Count == 0)
                 return;
 
-            // Stop pulsing once dragging starts — the proximity highlight takes over.
+            // Stop pulsing once dragging starts â€” the proximity highlight takes over.
             if (_draggedPart != null)
             {
                 StopGhostSelectionPulse();
                 return;
             }
 
-            float t = 0.5f + 0.5f * Mathf.Sin(Time.time * GhostSelectedPulseSpeed);
-            Color pulseColor = Color.Lerp(GhostSelectedPulseA, GhostSelectedPulseB, t);
+            Color pulseColor = ColorPulseHelper.Lerp(GhostSelectedPulseA, GhostSelectedPulseB, GhostSelectedPulseSpeed);
 
             for (int i = 0; i < _spawnedGhosts.Count; i++)
             {
@@ -1393,7 +1432,7 @@ namespace OSE.UI.Root
             }
         }
 
-        // ── Required-part pulse (highlights parts the user needs to grab) ──
+        // â”€â”€ Required-part pulse (highlights parts the user needs to grab) â”€â”€
 
         private void ClearRequiredPartEmission()
         {
@@ -1409,7 +1448,7 @@ namespace OSE.UI.Root
         /// <summary>
         /// Shows and positions all parts belonging to the current step's subassembly.
         /// When the first step of a subassembly activates, all parts for that entire
-        /// subassembly appear at once — matching how a real workbench is organized.
+        /// subassembly appear at once â€” matching how a real workbench is organized.
         /// Parts are arranged in an arc on the near side of the floor,
         /// keeping the center clear for the machine being assembled.
         /// </summary>
@@ -1442,7 +1481,7 @@ namespace OSE.UI.Root
             }
             else
             {
-                // No subassembly — fall back to just this step's parts
+                // No subassembly â€” fall back to just this step's parts
                 string[] rp = step.requiredPartIds;
                 if (rp != null)
                 {
@@ -1468,13 +1507,9 @@ namespace OSE.UI.Root
             if (toReveal.Count == 0)
                 return;
 
-            // Layout: arrange new parts in an arc in front of the camera (negative Z side)
-            float arcStep = toReveal.Count > 1
-                ? PartLayoutArcDegrees / (toReveal.Count - 1)
-                : 0f;
-            float startAngle = toReveal.Count > 1
-                ? PartLayoutBaseAngle
-                : 0f; // single part goes straight ahead
+            // Layout: arrange new parts in a grid between camera (back) and construction zone (front)
+            int cols = Mathf.CeilToInt(Mathf.Sqrt(toReveal.Count));
+            if (cols < 1) cols = 1;
 
             for (int i = 0; i < toReveal.Count; i++)
             {
@@ -1482,11 +1517,12 @@ namespace OSE.UI.Root
                 GameObject partGo = FindSpawnedPart(partId);
                 if (partGo == null) continue;
 
-                // Calculate position on the arc
-                float angleDeg = startAngle + arcStep * i;
-                float angleRad = angleDeg * Mathf.Deg2Rad;
-                float x = Mathf.Sin(angleRad) * PartLayoutRadius;
-                float z = -Mathf.Cos(angleRad) * PartLayoutRadius;
+                int col = i % cols;
+                int row = i / cols;
+
+                // Center columns on X=0, rows advance toward construction zone (+Z)
+                float x = (col - (cols - 1) * 0.5f) * PartGridSpacing;
+                float z = PartGridStartZ + row * PartGridSpacing;
 
                 // Use previewConfig scale if available, otherwise default
                 PartPreviewPlacement pp = _spawner.FindPartPlacement(partId);
@@ -1499,11 +1535,15 @@ namespace OSE.UI.Root
                 partGo.transform.localScale = scale;
                 partGo.SetActive(true);
 
-                // Apply preview material color
-                Color col = pp != null
+                // Preserve original GLB textures; only apply solid color to primitives/placeholders
+                Color partColor = pp != null
                     ? new Color(pp.color.r, pp.color.g, pp.color.b, pp.color.a)
                     : new Color(0.94f, 0.55f, 0.18f, 1f);
-                MaterialHelper.Apply(partGo, "Preview Part Material", col);
+
+                if (!MaterialHelper.IsImportedModel(partGo))
+                    MaterialHelper.Apply(partGo, "Preview Part Material", partColor);
+                else
+                    MaterialHelper.ClearTint(partGo);
 
                 _revealedPartIds.Add(partId);
                 OseLog.VerboseInfo($"[PartInteraction] Revealed part '{partId}' at ({x:F1}, {PartLayoutY:F1}, {z:F1})");
@@ -1521,7 +1561,7 @@ namespace OSE.UI.Root
             if (package == null || !package.TryGetStep(stepId, out var step))
                 return;
 
-            // Only highlight for placement steps — tool_action steps don't need part grabbing.
+            // Only highlight for placement steps â€” tool_action steps don't need part grabbing.
             // Also include steps with no completionType (defaults to placement).
             if (!step.IsPlacement)
                 return;
@@ -1551,8 +1591,7 @@ namespace OSE.UI.Root
             if (_requiredPartIdsForStep == null || _requiredPartIdsForStep.Length == 0)
                 return;
 
-            float t = 0.5f + 0.5f * Mathf.Sin(Time.time * RequiredPartPulseSpeed * Mathf.PI * 2f);
-            Color emissionColor = Color.Lerp(RequiredPartEmissionA, RequiredPartEmissionB, t);
+            Color emissionColor = ColorPulseHelper.Lerp(RequiredPartEmissionA, RequiredPartEmissionB, RequiredPartPulseSpeed * Mathf.PI * 2f);
 
             for (int i = 0; i < _requiredPartIdsForStep.Length; i++)
             {
@@ -1560,7 +1599,7 @@ namespace OSE.UI.Root
                 GameObject partGo = FindSpawnedPart(partId);
                 if (partGo == null) continue;
 
-                // Suppress glow while interacting — let affordance system handle visual
+                // Suppress glow while interacting â€” let affordance system handle visual
                 PartPlacementState state = GetPartState(partId);
                 if (state == PartPlacementState.Selected || state == PartPlacementState.Grabbed
                     || state == PartPlacementState.Inspected)
@@ -1591,9 +1630,7 @@ namespace OSE.UI.Root
             if (_ghostHighlighted && _hoveredGhost == _hintGhost)
                 return;
 
-            float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * HintHighlightPulseSpeed);
-            Color color = Color.Lerp(HintHighlightColorA, HintHighlightColorB, pulse);
-            MaterialHelper.SetMaterialColor(_hintGhost, color);
+            MaterialHelper.SetMaterialColor(_hintGhost, ColorPulseHelper.Lerp(HintHighlightColorA, HintHighlightColorB, HintHighlightPulseSpeed));
         }
 
         private void ClearHintHighlight()
@@ -1702,7 +1739,7 @@ namespace OSE.UI.Root
 
             return null;
         }
-        // ── Snap animation (list-based for multi-target) ──
+        // â”€â”€ Snap animation (list-based for multi-target) â”€â”€
 
         private void UpdateSnapAnimation()
         {
@@ -1733,7 +1770,7 @@ namespace OSE.UI.Root
             }
         }
 
-        // ── Invalid placement flash (list-based for multi-target) ──
+        // â”€â”€ Invalid placement flash (list-based for multi-target) â”€â”€
 
         private void FlashInvalid(GameObject partGo, string partId)
         {
@@ -1748,7 +1785,11 @@ namespace OSE.UI.Root
             Color originalColor = pp != null
                 ? new Color(pp.color.r, pp.color.g, pp.color.b, pp.color.a)
                 : new Color(0.94f, 0.55f, 0.18f, 1f);
-            MaterialHelper.Apply(partGo, "Preview Part Material", InvalidFlashColor);
+
+            if (MaterialHelper.IsImportedModel(partGo))
+                MaterialHelper.ApplyTint(partGo, InvalidFlashColor);
+            else
+                MaterialHelper.Apply(partGo, "Preview Part Material", InvalidFlashColor);
 
             _activeFlashes.Add(new FlashEntry
             {
@@ -1787,7 +1828,7 @@ namespace OSE.UI.Root
             }
         }
 
-        // ── Runtime event handlers ──
+        // â”€â”€ Runtime event handlers â”€â”€
 
         private void HandleSessionRestored(SessionRestored evt)
         {
@@ -1807,12 +1848,49 @@ namespace OSE.UI.Root
             OseLog.Info($"[PartInteraction] Restored visual state for {completedSteps.Length} completed steps.");
         }
 
+        /// <summary>
+        /// Handles step navigation (back/forward). Repositions all parts based on
+        /// their recomputed states: completed parts move to play positions,
+        /// available parts return to their arc layout positions, and future parts
+        /// are hidden. The subsequent StepStateChanged(Active) spawns new ghosts.
+        /// </summary>
+        private void HandleStepNavigated(StepNavigated evt)
+        {
+            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+                return;
+
+            var package = _spawner?.CurrentPackage;
+            if (package == null) return;
+
+            var progression = session.AssemblyController?.ProgressionController;
+            if (progression == null) return;
+
+            // Clear current visual state
+            ClearGhosts();
+            ClearRequiredPartEmission();
+            _requiredPartIdsForStep = null;
+            _revealedPartIds.Clear();
+
+            // Reposition completed parts at their play positions
+            StepDefinition[] completedSteps = progression.GetStepsUpTo(evt.TargetStepIndex);
+            if (completedSteps.Length > 0)
+                RestoreCompletedStepParts(completedSteps);
+
+            // Revert parts from the target step onward back to start positions
+            // so they visually "rewind" when navigating backward.
+            StepDefinition[] allSteps = progression.GetStepsUpTo(evt.TotalSteps);
+            if (evt.TargetStepIndex < allSteps.Length)
+                RevertFutureStepParts(allSteps, evt.TargetStepIndex);
+
+            OseLog.Info($"[PartInteraction] Navigated from step {evt.PreviousStepIndex + 1} to {evt.TargetStepIndex + 1}: repositioned parts.");
+        }
+
         private void HandleStepStateChanged(StepStateChanged evt)
         {
             // On any step transition, force-clear drag state so nothing gets stuck.
             ResetDragState();
 
-            // FailedAttempt is a transient state within the same step (Active → FailedAttempt → Active).
+            // FailedAttempt is a transient state within the same step (Active â†’ FailedAttempt â†’ Active).
             // Preserve ghosts and sequential progress for both the transition INTO FailedAttempt
             // and the auto-return back to Active.
             bool isFailRelated = evt.Current == StepState.FailedAttempt
@@ -1829,14 +1907,14 @@ namespace OSE.UI.Root
             {
                 if (isFailRelated)
                 {
-                    // Ghost and sequential state are still valid — skip re-spawn.
-                    OseLog.VerboseInfo($"[PartInteraction] Step '{evt.StepId}' re-activated after failed attempt — keeping {_spawnedGhosts.Count} ghost(s).");
+                    // Ghost and sequential state are still valid â€” skip re-spawn.
+                    OseLog.VerboseInfo($"[PartInteraction] Step '{evt.StepId}' re-activated after failed attempt â€” keeping {_spawnedGhosts.Count} ghost(s).");
                 }
                 else
                 {
                     // Clear any stale SelectionService selection so the dedup guard in
                     // NotifySelected doesn't block re-selection of the same part on the
-                    // new step (e.g. beam selected on step 2 → must be selectable again on step 3).
+                    // new step (e.g. beam selected on step 2 â†’ must be selectable again on step 3).
                     DeselectFromSelectionService();
                     SpawnGhostsForStep(evt.StepId);
                     OseLog.VerboseInfo($"[PartInteraction] Step '{evt.StepId}' active: spawned {_spawnedGhosts.Count} ghost(s).");
@@ -1844,8 +1922,10 @@ namespace OSE.UI.Root
             }
             else if (evt.Current == StepState.Completed)
             {
+                TryRenderPipeSpline(evt.StepId);
                 MoveStepPartsToPlayPosition(evt.StepId);
                 ClearGhosts();
+                ClearPortSpheres();
                 ClearRequiredPartEmission();
                 _requiredPartIdsForStep = null;
             }
@@ -1970,11 +2050,12 @@ namespace OSE.UI.Root
             }
         }
 
-        // ── Ghost parts ──
+        // â”€â”€ Ghost parts â”€â”€
 
         private void SpawnGhostsForStep(string stepId)
         {
             ClearGhosts();
+            ClearPortSpheres();
             var package = _spawner.CurrentPackage;
             if (package == null || !package.TryGetStep(stepId, out var step))
                 return;
@@ -1982,6 +2063,13 @@ namespace OSE.UI.Root
             string[] targetIds = step.targetIds;
             if (targetIds == null || targetIds.Length == 0)
                 return;
+
+            // Pipe connection: spawn clickable port spheres instead of placement ghosts.
+            if (step.IsPipeConnection)
+            {
+                SpawnPortSpheresForStep(package, step);
+                return;
+            }
 
             _isSequentialStep = step.IsSequential;
             _sequentialTargetIndex = 0;
@@ -2062,35 +2150,70 @@ namespace OSE.UI.Root
                 if (partState == PartPlacementState.Completed ||
                     partState == PartPlacementState.PlacedVirtually)
                 {
-                    OseLog.VerboseInfo($"[PartInteraction] SpawnGhostForTarget: skipping ghost for '{associatedPartId}' — already {partState}.");
+                    OseLog.VerboseInfo($"[PartInteraction] SpawnGhostForTarget: skipping ghost for '{associatedPartId}' â€” already {partState}.");
                     return;
                 }
                 OseLog.VerboseInfo($"[PartInteraction] SpawnGhostForTarget: part '{associatedPartId}' state={partState}, proceeding with ghost.");
             }
 
-            string ghostRef = part.assetRef;
-            if (string.IsNullOrEmpty(ghostRef)) { OseLog.Warn($"[PartInteraction] SpawnGhostForTarget: part '{associatedPartId}' has no assetRef."); return; }
-
             Transform previewRoot = _setup != null ? _setup.PreviewRoot : null;
 
             TargetPreviewPlacement tp = _spawner.FindTargetPlacement(targetId);
             PartPreviewPlacement pp = _spawner.FindPartPlacement(associatedPartId);
+
+            // --- Spline parts: create a procedural ghost tube instead of loading a GLB ---
+            if (SplinePartFactory.HasSplineData(pp))
+            {
+                GameObject splineGhost = SplinePartFactory.CreateGhost(associatedPartId, pp.splinePath, previewRoot);
+                if (splineGhost == null)
+                {
+                    OseLog.Warn($"[PartInteraction] SpawnGhostForTarget: failed to create spline ghost for '{associatedPartId}'.");
+                    return;
+                }
+
+                GhostPlacementInfo splineInfo = splineGhost.AddComponent<GhostPlacementInfo>();
+                splineInfo.TargetId = targetId;
+                splineInfo.PartId = associatedPartId;
+
+                // Spline ghost sits at play position (0,0,0) / scale (1,1,1) — knots define the routing
+                splineGhost.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+                splineGhost.transform.localScale = Vector3.one;
+
+                // Convert existing colliders to triggers for click-to-place
+                foreach (var col in splineGhost.GetComponentsInChildren<Collider>(true))
+                    col.isTrigger = true;
+
+                MaterialHelper.ApplyGhost(splineGhost);
+                _spawnedGhosts.Add(splineGhost);
+                OseLog.Info($"[PartInteraction] Spline ghost spawned for '{associatedPartId}' at target '{targetId}'. Total ghosts: {_spawnedGhosts.Count}");
+                return;
+            }
+
+            // --- Standard GLB-based ghost ---
+            string ghostRef = part.assetRef;
+            if (string.IsNullOrEmpty(ghostRef)) { OseLog.Warn($"[PartInteraction] SpawnGhostForTarget: part '{associatedPartId}' has no assetRef."); return; }
+
             Vector3 ghostPos;
             Quaternion ghostRot;
             Vector3 ghostScale;
 
-            if (tp != null)
-            {
-                ghostPos = new Vector3(tp.position.x, tp.position.y, tp.position.z);
-                ghostRot = !tp.rotation.IsIdentity
-                    ? new Quaternion(tp.rotation.x, tp.rotation.y, tp.rotation.z, tp.rotation.w)
-                    : Quaternion.identity;
-            }
-            else if (pp != null)
+            // playPosition is the single source of truth for where a part ends up
+            // when placed. Ghost must appear at the same location so there is no
+            // discrepancy between the ghost preview and the actual placement.
+            // TargetPreviewPlacement is only used as fallback for targets without
+            // an associated part placement (tool-action targets, checkpoints, etc.).
+            if (pp != null)
             {
                 ghostPos = new Vector3(pp.playPosition.x, pp.playPosition.y, pp.playPosition.z);
                 ghostRot = !pp.playRotation.IsIdentity
                     ? new Quaternion(pp.playRotation.x, pp.playRotation.y, pp.playRotation.z, pp.playRotation.w)
+                    : Quaternion.identity;
+            }
+            else if (tp != null)
+            {
+                ghostPos = new Vector3(tp.position.x, tp.position.y, tp.position.z);
+                ghostRot = !tp.rotation.IsIdentity
+                    ? new Quaternion(tp.rotation.x, tp.rotation.y, tp.rotation.z, tp.rotation.w)
                     : Quaternion.identity;
             }
             else
@@ -2099,12 +2222,28 @@ namespace OSE.UI.Root
                 ghostRot = Quaternion.identity;
             }
 
-            if (pp != null)
-                ghostScale = new Vector3(pp.playScale.x, pp.playScale.y, pp.playScale.z);
+            // Ghost should mirror the live source part dimensions exactly.
+            GameObject sourcePart = FindSpawnedPart(associatedPartId);
+            if (sourcePart != null)
+            {
+                ghostScale = sourcePart.transform.localScale;
+            }
+            else if (pp != null)
+            {
+                Vector3 authoredStartScale = new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z);
+                Vector3 authoredPlayScale = new Vector3(pp.playScale.x, pp.playScale.y, pp.playScale.z);
+                ghostScale = authoredStartScale.sqrMagnitude > 0f
+                    ? authoredStartScale
+                    : (authoredPlayScale.sqrMagnitude > 0f ? authoredPlayScale : Vector3.one);
+            }
             else if (tp != null)
+            {
                 ghostScale = new Vector3(tp.scale.x, tp.scale.y, tp.scale.z);
+            }
             else
+            {
                 ghostScale = Vector3.one * 0.5f;
+            }
 
             GameObject ghost = _spawner.TryLoadPackageAsset(ghostRef);
             if (ghost == null)
@@ -2160,96 +2299,19 @@ namespace OSE.UI.Root
         }
 
         private void RefreshToolGhostIndicator()
-        {
-            ClearToolGhostIndicator();
-
-            if (!Application.isPlaying || _spawner == null || _setup == null)
-                return;
-
-            if (!TryGetActiveToolDefinition(out string activeToolId, out ToolDefinition tool))
-                return;
-
-            GameObject ghostTool = !string.IsNullOrWhiteSpace(tool.assetRef)
-                ? _spawner.TryLoadPackageAsset(tool.assetRef)
-                : null;
-
-            if (ghostTool == null)
-            {
-                ghostTool = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            }
-
-            _toolGhostIndicator = ghostTool;
-            _toolGhostIndicator.name = $"CursorTool_{activeToolId}";
-            _toolGhostIndicator.transform.SetParent(transform, false);
-            _toolGhostIndicator.transform.localScale = Vector3.one * ToolCursorUniformScale;
-
-            foreach (Collider col in _toolGhostIndicator.GetComponentsInChildren<Collider>(true))
-                Destroy(col);
-
-            MaterialHelper.ApplyToolCursor(_toolGhostIndicator, ToolCursorColor);
-            UpdateToolGhostIndicatorPosition();
-        }
+            => CursorManager.Refresh(_spawner, _setup, _hintGhost == CursorManager.ToolGhost, ClearHintHighlight);
 
         private void UpdateToolGhostIndicatorPosition()
         {
-            if (_toolGhostIndicator == null)
-                return;
-
-            if (_isDragging)
-            {
-                _toolGhostIndicator.SetActive(false);
-                return;
-            }
-
-            Camera cam = Camera.main;
-            if (cam == null)
-                return;
-
             if (!TryGetPointerPosition(out Vector2 screenPos))
-            {
-                _toolGhostIndicator.SetActive(false);
-                return;
-            }
-
-            if (!_toolGhostIndicator.activeSelf)
-                _toolGhostIndicator.SetActive(true);
-
-            Ray ray = cam.ScreenPointToRay(screenPos);
-            Vector3 worldPos = ray.GetPoint(ToolCursorRayDistance) + (cam.transform.up * ToolCursorVerticalOffset);
-            _toolGhostIndicator.transform.position = worldPos;
-            _toolGhostIndicator.transform.rotation = Quaternion.LookRotation(cam.transform.forward, cam.transform.up);
+                screenPos = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+            CursorManager.UpdatePosition(_isDragging, screenPos);
         }
 
-        private static bool TryGetActiveToolDefinition(out string toolId, out ToolDefinition tool)
-        {
-            toolId = null;
-            tool = null;
 
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
-                return false;
-
-            if (session == null || session.Package == null || session.ToolController == null)
-                return false;
-
-            toolId = session.ToolController.ActiveToolId;
-            if (string.IsNullOrWhiteSpace(toolId))
-                return false;
-
-            return session.Package.TryGetTool(toolId, out tool);
-        }
 
         private void ClearToolGhostIndicator()
-        {
-            if (_toolGhostIndicator == null)
-                return;
-
-            if (_hintGhost == _toolGhostIndicator)
-                ClearHintHighlight();
-
-            Destroy(_toolGhostIndicator);
-            _toolGhostIndicator = null;
-            _toolCursorInReadyState = false;
-        }
+            => CursorManager.Clear(_hintGhost == CursorManager.ToolGhost, ClearHintHighlight);
 
         private bool IsToolModeLockedForParts()
         {
@@ -2268,6 +2330,10 @@ namespace OSE.UI.Root
         private bool TryHandleToolActionPointerDown(Vector2 screenPos)
         {
             if (!IsToolModeLockedForParts())
+                return false;
+
+            // Don't block pipe_connection steps — port sphere clicks need to pass through.
+            if (_spawnedPortSpheres.Count > 0)
                 return false;
 
             if (!TryGetPrimaryToolActionSnapshot(out ToolRuntimeController.ToolActionSnapshot actionSnapshot, out _))
@@ -2371,7 +2437,7 @@ namespace OSE.UI.Root
 
             // Only treat as success when the action actually ran (FailureReason == None).
             // "Handled" being true on a Failed result means the controller understood the request
-            // but rejected it (wrong tool, wrong target, etc.) — NOT a successful execution.
+            // but rejected it (wrong tool, wrong target, etc.) â€” NOT a successful execution.
             bool actionRan = handled && toolResult.FailureReason == ToolActionFailureReason.None;
             if (!actionRan)
             {
@@ -2537,7 +2603,7 @@ namespace OSE.UI.Root
                 Mathf.Clamp01(0.55f + 0.35f * pulse));
 
             // When the tool cursor is in "ready" state (near a target), make targets glow brighter too.
-            bool cursorNearTarget = _toolCursorInReadyState;
+            bool cursorNearTarget = CursorManager.CursorInReadyState;
 
             Camera cam = Camera.main;
 
@@ -2585,22 +2651,22 @@ namespace OSE.UI.Root
         /// Checks screen-space proximity between the pointer (or tool cursor) and tool action targets.
         /// When near: tool cursor turns green ("ready") and target glows brighter.
         /// When overlapping: auto-triggers the tool action (same as clicking).
-        /// Works with or without a tool ghost indicator — uses pointer position directly.
+        /// Works with or without a tool ghost indicator â€” uses pointer position directly.
         /// </summary>
         private void UpdateToolCursorProximity()
         {
             if (_spawnedToolActionTargets.Count == 0)
             {
-                if (_toolCursorInReadyState)
-                    RestoreToolCursorColor();
+                if (CursorManager.CursorInReadyState)
+                    CursorManager.RestoreColor();
                 return;
             }
 
             Camera cam = Camera.main;
             if (cam == null)
             {
-                if (_toolCursorInReadyState)
-                    RestoreToolCursorColor();
+                if (CursorManager.CursorInReadyState)
+                    CursorManager.RestoreColor();
                 return;
             }
 
@@ -2608,9 +2674,9 @@ namespace OSE.UI.Root
             // Also get pointer screen position as a fallback
             Vector2 cursorScreen = Vector2.zero;
             bool hasCursorScreen = false;
-            if (_toolGhostIndicator != null && _toolGhostIndicator.activeSelf)
+            if (CursorManager.ToolGhost != null && CursorManager.ToolGhost.activeSelf)
             {
-                Vector3 cursorWorldScreen = cam.WorldToScreenPoint(_toolGhostIndicator.transform.position);
+                Vector3 cursorWorldScreen = cam.WorldToScreenPoint(CursorManager.ToolGhost.transform.position);
                 if (cursorWorldScreen.z > 0f)
                 {
                     cursorScreen = new Vector2(cursorWorldScreen.x, cursorWorldScreen.y);
@@ -2623,8 +2689,8 @@ namespace OSE.UI.Root
 
             if (!hasCursorScreen && !hasPointer)
             {
-                if (_toolCursorInReadyState)
-                    RestoreToolCursorColor();
+                if (CursorManager.CursorInReadyState)
+                    CursorManager.RestoreColor();
                 return;
             }
 
@@ -2656,28 +2722,14 @@ namespace OSE.UI.Root
             }
 
             // Visual feedback: tool cursor turns green when near a target.
-            if (closestScreenDist <= ToolCursorScreenProximityReady)
-            {
-                if (!_toolCursorInReadyState)
-                {
-                    if (_toolGhostIndicator != null && _toolGhostIndicator.activeSelf)
-                        MaterialHelper.ApplyToolCursor(_toolGhostIndicator, ToolCursorReadyColor);
-                    _toolCursorInReadyState = true;
-                }
-            }
-            else if (_toolCursorInReadyState)
-            {
-                RestoreToolCursorColor();
-            }
+            if (closestScreenDist <= ToolCursorManager.ScreenProximityReadyPx)
+                CursorManager.SetReadyState(true);
+            else
+                CursorManager.SetReadyState(false);
 
         }
 
-        private void RestoreToolCursorColor()
-        {
-            _toolCursorInReadyState = false;
-            if (_toolGhostIndicator != null)
-                MaterialHelper.ApplyToolCursor(_toolGhostIndicator, ToolCursorColor);
-        }
+
 
         private void ClearToolActionTargets()
         {
@@ -2851,7 +2903,7 @@ namespace OSE.UI.Root
         {
             worldPos = Vector3.zero;
             // Use the full detection pipeline: raycast first (hits the enlarged SphereCollider),
-            // then screen-space proximity fallback — not just proximity alone.
+            // then screen-space proximity fallback â€” not just proximity alone.
             if (!TryGetToolActionTargetAtScreen(screenPos, out ToolActionTargetInfo info))
                 return false;
             worldPos = info.transform.position;
@@ -3026,7 +3078,7 @@ namespace OSE.UI.Root
             }
         }
 
-        // ── Step completion: move parts to assembled position ──
+        // â”€â”€ Step completion: move parts to assembled position â”€â”€
 
         private void MoveStepPartsToPlayPosition(string stepId)
         {
@@ -3066,7 +3118,10 @@ namespace OSE.UI.Root
                     GameObject partGo = FindSpawnedPart(partId);
                     if (partGo != null)
                     {
-                        MaterialHelper.Apply(partGo, "Preview Part Material", CompletedPartColor);
+                        if (MaterialHelper.IsImportedModel(partGo))
+                            MaterialHelper.RestoreOriginals(partGo);
+                        else
+                            MaterialHelper.Apply(partGo, "Preview Part Material", CompletedPartColor);
                         MaterialHelper.SetEmission(partGo, Color.black);
                     }
 
@@ -3095,7 +3150,45 @@ namespace OSE.UI.Root
             partGo.transform.localScale = pScale;
         }
 
-        // ── Context menu: place selected part at target (debug shortcut) ──
+        /// <summary>
+        /// Reverts parts from steps at or after <paramref name="fromStepIndex"/> back
+        /// to their start positions with available visuals, undoing any play-position
+        /// placement. Called during backward navigation so future parts visually rewind.
+        /// </summary>
+        private void RevertFutureStepParts(StepDefinition[] allSteps, int fromStepIndex)
+        {
+            var package = _spawner?.CurrentPackage;
+            if (package == null || allSteps == null) return;
+
+            for (int s = fromStepIndex; s < allSteps.Length; s++)
+            {
+                string[] partIds = allSteps[s].requiredPartIds;
+                if (partIds == null) continue;
+
+                for (int p = 0; p < partIds.Length; p++)
+                {
+                    string partId = partIds[p];
+                    if (string.IsNullOrEmpty(partId)) continue;
+
+                    GameObject partGo = FindSpawnedPart(partId);
+                    if (partGo == null) continue;
+
+                    PartPreviewPlacement pp = _spawner.FindPartPlacement(partId);
+                    if (pp != null)
+                    {
+                        Vector3 sPos = new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z);
+                        Vector3 sScale = new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z);
+                        partGo.transform.SetLocalPositionAndRotation(sPos, Quaternion.identity);
+                        partGo.transform.localScale = sScale;
+                    }
+
+                    ApplyAvailablePartVisual(partGo, partId);
+                    _partStates[partId] = PartPlacementState.Available;
+                }
+            }
+        }
+
+        // â”€â”€ Context menu: place selected part at target (debug shortcut) â”€â”€
 
         [ContextMenu("Place Selected Part at Target")]
         private void PlaceSelectedPartAtTarget()
@@ -3171,7 +3264,7 @@ namespace OSE.UI.Root
             }
         }
 
-        // ── UI push ──
+        // â”€â”€ UI push â”€â”€
 
         private void PushPartInfoToUI(string partId, bool isHoverInfo = false)
         {
@@ -3221,7 +3314,7 @@ namespace OSE.UI.Root
             }
         }
 
-        // ── Helpers ──
+        // â”€â”€ Helpers â”€â”€
 
         private void BeginDragTracking(GameObject partGo)
         {
@@ -3431,7 +3524,10 @@ namespace OSE.UI.Root
 
                 case PartPlacementState.PlacedVirtually:
                 case PartPlacementState.Completed:
-                    MaterialHelper.Apply(partGo, "Preview Part Material", CompletedPartColor);
+                    if (MaterialHelper.IsImportedModel(partGo))
+                        MaterialHelper.RestoreOriginals(partGo);
+                    else
+                        MaterialHelper.Apply(partGo, "Preview Part Material", CompletedPartColor);
                     break;
 
                 case PartPlacementState.Available:
@@ -3446,6 +3542,11 @@ namespace OSE.UI.Root
             if (TryApplyAffordanceState(partGo, AffordanceStateShortcuts.idle))
                 return;
 
+            // Restore original textured materials if available
+            if (MaterialHelper.RestoreOriginals(partGo))
+                return;
+
+            // Fallback for parts without original textures (primitives/placeholders)
             PartPreviewPlacement placement = _spawner != null ? _spawner.FindPartPlacement(partId) : null;
             Color baseColor = placement != null
                 ? new Color(placement.color.r, placement.color.g, placement.color.b, placement.color.a)
@@ -3457,13 +3558,23 @@ namespace OSE.UI.Root
         private void ApplyHoveredPartVisual(GameObject partGo)
         {
             if (!TryApplyAffordanceState(partGo, AffordanceStateShortcuts.hovered))
-                MaterialHelper.Apply(partGo, "Preview Part Material", HoveredPartColor);
+            {
+                if (MaterialHelper.IsImportedModel(partGo))
+                    MaterialHelper.ApplyTint(partGo, HoveredPartColor);
+                else
+                    MaterialHelper.Apply(partGo, "Preview Part Material", HoveredPartColor);
+            }
         }
 
         private void ApplySelectedPartVisual(GameObject partGo)
         {
             if (!TryApplyAffordanceState(partGo, AffordanceStateShortcuts.selected))
-                MaterialHelper.Apply(partGo, "Preview Part Material", SelectedPartColor);
+            {
+                if (MaterialHelper.IsImportedModel(partGo))
+                    MaterialHelper.ApplyTint(partGo, SelectedPartColor);
+                else
+                    MaterialHelper.Apply(partGo, "Preview Part Material", SelectedPartColor);
+            }
         }
 
         private static bool TryApplyAffordanceState(GameObject partGo, byte stateIndex, float transitionAmount = 1f)
@@ -3511,6 +3622,10 @@ namespace OSE.UI.Root
 
         private bool TryResolveSnapPose(string partId, string targetId, out Vector3 pos, out Quaternion rot, out Vector3 scale)
         {
+            // Prefer live ghost transform so ghost and placed part dimensions match.
+            if (TryGetGhostTargetPose(targetId, out pos, out rot, out scale))
+                return true;
+
             TargetPreviewPlacement tp = _spawner.FindTargetPlacement(targetId);
             PartPreviewPlacement pp = _spawner.FindPartPlacement(partId);
             if (tp != null)
@@ -3708,5 +3823,283 @@ namespace OSE.UI.Root
                    controller != null &&
                    controller.IsRepositioning;
         }
+
+        // ── Pipe-connection interaction ──
+
+        private void SpawnPortSpheresForStep(MachinePackageDefinition package, StepDefinition step)
+        {
+            ClearGhosts();
+            ClearPortSpheres();
+            if (_setup == null) return;
+            Transform previewRoot = _setup.PreviewRoot;
+            if (previewRoot == null) return;
+
+            string[] targetIds = step.targetIds;
+            if (targetIds == null) return;
+
+            foreach (string targetId in targetIds)
+            {
+                TargetPreviewPlacement tp = _spawner.FindTargetPlacement(targetId);
+                if (tp == null)
+                {
+                    OseLog.Warn($"[PartInteraction] Pipe: no target placement for '{targetId}'.");
+                    continue;
+                }
+
+                Vector3 portAPos = new Vector3(tp.portA.x, tp.portA.y, tp.portA.z);
+                Vector3 portBPos = new Vector3(tp.portB.x, tp.portB.y, tp.portB.z);
+
+                if (portAPos == Vector3.zero && portBPos == Vector3.zero)
+                {
+                    OseLog.Warn($"[PartInteraction] Pipe: target '{targetId}' has no portA/portB authored. Using fallback offset.");
+                    Vector3 c = new Vector3(tp.position.x, tp.position.y, tp.position.z);
+                    portAPos = c + new Vector3(-0.12f, 0.06f, 0f);
+                    portBPos = c + new Vector3( 0.12f, 0.06f, 0f);
+                }
+
+                SpawnPortSphere(portAPos, isPortA: true, previewRoot);
+                SpawnPortSphere(portBPos, isPortA: false, previewRoot);
+
+                // Ghost cable preview — shows the connection path while the user taps the ports.
+                // Same semi-transparent ghost material as placement targets.
+                string partName = (step.requiredPartIds?.Length > 0) ? step.requiredPartIds[0] : targetId;
+                var ghostPath = new SplinePathDefinition
+                {
+                    radius    = 0.018f,
+                    segments  = 8,
+                    metallic  = 0f,
+                    smoothness = 0.25f,
+                    knots = new SceneFloat3[]
+                    {
+                        new SceneFloat3 { x = portAPos.x, y = portAPos.y, z = portAPos.z },
+                        new SceneFloat3 { x = (portAPos.x + portBPos.x) * 0.5f,
+                                          y = Mathf.Min(portAPos.y, portBPos.y) - 0.04f,
+                                          z = (portAPos.z + portBPos.z) * 0.5f },
+                        new SceneFloat3 { x = portBPos.x, y = portBPos.y, z = portBPos.z },
+                    }
+                };
+                GameObject cableGhost = SplinePartFactory.CreateGhost(partName, ghostPath, previewRoot);
+                if (cableGhost != null)
+                {
+                    MaterialHelper.ApplyGhost(cableGhost);
+                    _spawnedGhosts.Add(cableGhost);
+                }
+            }
+
+            OseLog.Info($"[PartInteraction] Pipe step '{step.id}': spawned {_spawnedPortSpheres.Count} port sphere(s).");
+
+            // Spawn a cable ghost on the cursor so the user can see what they're connecting,
+            // mirroring the tool ghost pattern during tool-action steps.
+            SpawnPipeCursorGhost(package, step);
+        }
+
+        private void SpawnPortSphere(Vector3 localPos, bool isPortA, Transform parent)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            go.name = isPortA ? "PortSphere_A" : "PortSphere_B";
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPos;
+            go.transform.localScale = Vector3.one * 0.12f; // big enough to see easily
+
+            // Trigger — doesn't block part raycasts; pipe taps use screen-proximity only.
+            var col = go.GetComponent<SphereCollider>();
+            if (col != null) col.isTrigger = true;
+
+            var mr = go.GetComponent<MeshRenderer>();
+            if (mr != null)
+            {
+                // portA = RED, portB = BLUE — distinct so you can verify both are visible
+                Color c = isPortA
+                    ? new Color(1.00f, 0.18f, 0.18f, 1f)  // red
+                    : new Color(0.18f, 0.50f, 1.00f, 1f); // blue
+
+                // Custom shader with ZTest Always hardcoded in the pass — not a material property.
+                // This guarantees the sphere renders on top of all geometry regardless of depth.
+                var shader = Shader.Find("OSE/PortSphereOnTop")
+                          ?? Shader.Find("Universal Render Pipeline/Unlit")
+                          ?? Shader.Find("Universal Render Pipeline/Lit");
+
+                var mat = shader != null ? new Material(shader) : new Material(mr.sharedMaterial);
+                mat.name = go.name + "_Mat";
+
+                if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", c);
+                if (mat.HasProperty("_Color"))     mat.SetColor("_Color",     c);
+
+                mr.sharedMaterial = mat;
+            }
+
+            _spawnedPortSpheres.Add(go);
+        }
+
+        private bool TryHandlePipeConnectionPointerDown(Vector2 screenPos)
+        {
+            if (_spawnedPortSpheres.Count == 0)
+                return false;
+
+            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+                return false;
+
+            StepController stepController = session.AssemblyController?.StepController;
+            if (stepController == null || !stepController.HasActiveStep)
+                return false;
+
+            StepDefinition step = stepController.CurrentStepDefinition;
+            if (step == null || !step.IsPipeConnection)
+                return false;
+
+            // Use screen-proximity detection (same pattern as tool action targets) so the
+            // sphere is clickable even when machine geometry partially occludes it.
+            GameObject hitGo = FindNearestPortSphereByScreenProximity(screenPos);
+            if (hitGo == null)
+                return false;
+
+            bool isPortA = hitGo.name == "PortSphere_A";
+
+            if (!_pipePortAConfirmed)
+            {
+                // First confirmed port — accept either sphere.
+                _pipePortAConfirmed = true;
+                SetPortSphereConfirmed(hitGo);
+                OseLog.Info($"[PartInteraction] Pipe: first port confirmed ('{hitGo.name}'). Click the other sphere to complete.");
+                return true;
+            }
+
+            // Second port — must be the other sphere.
+            bool firstWasA  = _spawnedPortSpheres.Count >= 2
+                && _spawnedPortSpheres[0].name == "PortSphere_A"
+                && !IsPortSphereConfirmed(_spawnedPortSpheres[0])
+                && hitGo.name == "PortSphere_A";
+
+            bool isDifferent = (isPortA && !IsPortSphereConfirmed(hitGo))
+                            || (!isPortA && !IsPortSphereConfirmed(hitGo));
+
+            // Accept any unconfirmed sphere as the second click.
+            if (!IsPortSphereConfirmed(hitGo))
+            {
+                SetPortSphereConfirmed(hitGo);
+                OseLog.Info("[PartInteraction] Pipe: second port confirmed. Completing step.");
+                stepController.CompleteStep(session.GetElapsedSeconds());
+                return true;
+            }
+
+            return true; // consumed
+        }
+
+        private GameObject FindNearestPortSphereByScreenProximity(Vector2 screenPos)
+        {
+            Camera cam = Camera.main;
+            if (cam == null) return null;
+
+            float threshold = Application.isMobilePlatform ? ScreenProximityMobile : ScreenProximityDesktop;
+            float closestDist = threshold;
+            GameObject closest = null;
+
+            for (int i = 0; i < _spawnedPortSpheres.Count; i++)
+            {
+                GameObject sphere = _spawnedPortSpheres[i];
+                if (sphere == null) continue;
+
+                Vector3 sp = cam.WorldToScreenPoint(sphere.transform.position);
+                if (sp.z <= 0f) continue;
+
+                float dist = Vector2.Distance(screenPos, new Vector2(sp.x, sp.y));
+                if (dist < closestDist)
+                {
+                    closestDist = dist;
+                    closest = sphere;
+                }
+            }
+            return closest;
+        }
+
+        private static bool IsPortSphereConfirmed(GameObject sphere)
+        {
+            var mr = sphere?.GetComponent<MeshRenderer>();
+            if (mr?.sharedMaterial == null) return false;
+            // Green base color = confirmed.
+            Color c = mr.sharedMaterial.GetColor("_BaseColor");
+            return c.g > 0.9f && c.r < 0.5f;
+        }
+
+        private static void SetPortSphereConfirmed(GameObject sphere)
+        {
+            var mr = sphere.GetComponent<MeshRenderer>();
+            if (mr == null) return;
+            var mat = mr.material;
+            if (mat == null) return;
+            Color green = new Color(0.25f, 1.00f, 0.35f, 1f);
+            mat.SetColor("_BaseColor", green);
+            mat.SetColor("_EmissionColor", green * 0.6f);
+        }
+
+        private void TryRenderPipeSpline(string stepId)
+        {
+            var package = _spawner?.CurrentPackage;
+            if (package == null || _setup == null) return;
+            if (!package.TryGetStep(stepId, out var step)) return;
+            if (!step.IsPipeConnection) return;
+
+            string[] targetIds = step.targetIds;
+            if (targetIds == null || targetIds.Length == 0) return;
+
+            Transform previewRoot = _setup.PreviewRoot;
+            if (previewRoot == null) return;
+
+            foreach (string targetId in targetIds)
+            {
+                TargetPreviewPlacement tp = _spawner.FindTargetPlacement(targetId);
+                if (tp == null) continue;
+
+                Vector3 portAPos = new Vector3(tp.portA.x, tp.portA.y, tp.portA.z);
+                Vector3 portBPos = new Vector3(tp.portB.x, tp.portB.y, tp.portB.z);
+                if (portAPos == Vector3.zero && portBPos == Vector3.zero) continue;
+
+                // Build 3-knot spline: portA → slight sag midpoint → portB
+                float midX = (portAPos.x + portBPos.x) * 0.5f;
+                float midY = Mathf.Min(portAPos.y, portBPos.y) - 0.04f;
+                float midZ = (portAPos.z + portBPos.z) * 0.5f;
+
+                var path = new SplinePathDefinition
+                {
+                    radius    = 0.018f,
+                    segments  = 8,
+                    metallic  = 0f,
+                    smoothness = 0.25f,
+                    knots = new SceneFloat3[]
+                    {
+                        new SceneFloat3 { x = portAPos.x, y = portAPos.y, z = portAPos.z },
+                        new SceneFloat3 { x = midX,       y = midY,       z = midZ       },
+                        new SceneFloat3 { x = portBPos.x, y = portBPos.y, z = portBPos.z },
+                    }
+                };
+
+                string partName = (step.requiredPartIds?.Length > 0) ? step.requiredPartIds[0] : targetId;
+                Color hoseColor = new Color(0.15f, 0.15f, 0.15f, 1f); // rubber hose black
+
+                GameObject splineGo = SplinePartFactory.Create(partName, path, hoseColor, previewRoot);
+                if (splineGo != null)
+                {
+                    MaterialHelper.MarkAsImported(splineGo);
+                    OseLog.Info($"[PartInteraction] Rendered pipe spline for '{partName}'.");
+                }
+            }
+        }
+
+        private void ClearPortSpheres()
+        {
+            foreach (var s in _spawnedPortSpheres)
+            {
+                if (s == null) continue;
+                Destroy(s);
+            }
+            _spawnedPortSpheres.Clear();
+            _pipePortAConfirmed = false;
+
+            // Also destroy the cursor ghost that follows the pointer during this step.
+            CursorManager.ClearPipeCursorGhost();
+        }
+
+        private void SpawnPipeCursorGhost(MachinePackageDefinition package, StepDefinition step)
+            => CursorManager.SpawnPipeCursorGhost(package, step, FindSpawnedPart, _spawner);
     }
 }

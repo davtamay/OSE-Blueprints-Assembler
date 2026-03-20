@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.UIElements;
 
 namespace OSE.Interaction.V2
 {
@@ -42,6 +43,10 @@ namespace OSE.Interaction.V2
         private GameObject _leftDownHitTarget;
         private bool _leftShiftHeldOnDown;
 
+        // Cached UIDocument lookup to avoid per-frame FindObjectsByType.
+        private static UIDocument[] _uiDocCache;
+        private static int _uiDocCacheFrame = -1;
+
         public bool IsActive => Mouse.current != null;
 
         public DesktopIntentProvider(Camera camera, InteractionSettings settings)
@@ -64,6 +69,8 @@ namespace OSE.Interaction.V2
             Vector2 pos = mouse.position.ReadValue();
             Vector2 delta = mouse.delta.ReadValue();
             bool overUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+            if (!overUI)
+                overUI = IsPointerOverUIToolkit(pos);
 
             float scroll = _scrollAction.ReadValue<Vector2>().y;
 
@@ -244,6 +251,35 @@ namespace OSE.Interaction.V2
             if (Physics.Raycast(ray, out RaycastHit hit, 100f, _settings.PartLayerMask))
                 return hit.rigidbody != null ? hit.rigidbody.gameObject : hit.collider.gameObject;
             return null;
+        }
+
+        /// <summary>
+        /// Returns true when the pointer is over a UIToolkit VisualElement
+        /// (buttons, panels, etc.) that EventSystem.IsPointerOverGameObject
+        /// does not detect.
+        /// </summary>
+        private static bool IsPointerOverUIToolkit(Vector2 screenPosition)
+        {
+            int frame = Time.frameCount;
+            if (_uiDocCacheFrame != frame)
+            {
+                _uiDocCache = Object.FindObjectsByType<UIDocument>(FindObjectsSortMode.None);
+                _uiDocCacheFrame = frame;
+            }
+
+            foreach (var doc in _uiDocCache)
+            {
+                if (doc == null) continue;
+                var root = doc.rootVisualElement;
+                if (root?.panel == null) continue;
+
+                var panelPos = RuntimePanelUtils.ScreenToPanel(root.panel, screenPosition);
+                var picked = root.panel.Pick(panelPos);
+                if (picked != null && picked != root)
+                    return true;
+            }
+
+            return false;
         }
     }
 }

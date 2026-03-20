@@ -2,6 +2,7 @@
     "name": "OSE.Persistence",
     "rootNamespace": "OSE.Persistence",
     "references": [
+        "OSE.App",
         "OSE.Core",
         "OSE.Runtime"
     ],

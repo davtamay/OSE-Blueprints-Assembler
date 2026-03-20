@@ -98,20 +98,30 @@ namespace OSE.Interaction.V2
         {
             if (part == null) return;
             TryApplyAffordanceState(part, AffordanceStateShortcuts.hovered);
-            MaterialHelper.SetMaterialColor(part, HoverColor);
+            if (MaterialHelper.IsImportedModel(part))
+                MaterialHelper.ApplyTint(part, HoverColor);
+            else
+                MaterialHelper.SetMaterialColor(part, HoverColor);
         }
 
         public void ApplySelectedHover(GameObject part)
         {
             if (part == null) return;
             TryApplyAffordanceState(part, AffordanceStateShortcuts.hoveredPriority);
-            MaterialHelper.SetMaterialColor(part, SelectedHoverColor);
+            if (MaterialHelper.IsImportedModel(part))
+                MaterialHelper.ApplyTint(part, SelectedHoverColor);
+            else
+                MaterialHelper.SetMaterialColor(part, SelectedHoverColor);
         }
 
         public void ClearHover(GameObject part)
         {
             if (part == null) return;
-            if (!TryApplyAffordanceState(part, AffordanceStateShortcuts.idle))
+            if (TryApplyAffordanceState(part, AffordanceStateShortcuts.idle))
+                return;
+            if (MaterialHelper.IsImportedModel(part))
+                MaterialHelper.ClearTint(part);
+            else
                 MaterialHelper.SetMaterialColor(part, Color.white);
         }
 
@@ -140,13 +150,20 @@ namespace OSE.Interaction.V2
         {
             if (part == null) return;
             TryApplyAffordanceState(part, AffordanceStateShortcuts.selected);
-            MaterialHelper.SetMaterialColor(part, SelectedColor);
+            if (MaterialHelper.IsImportedModel(part))
+                MaterialHelper.ApplyTint(part, SelectedColor);
+            else
+                MaterialHelper.SetMaterialColor(part, SelectedColor);
         }
 
         public void ClearSelection(GameObject part)
         {
             if (part == null) return;
-            if (!TryApplyAffordanceState(part, AffordanceStateShortcuts.idle))
+            if (TryApplyAffordanceState(part, AffordanceStateShortcuts.idle))
+                return;
+            if (MaterialHelper.IsImportedModel(part))
+                MaterialHelper.ClearTint(part);
+            else
                 MaterialHelper.SetMaterialColor(part, Color.white);
         }
 

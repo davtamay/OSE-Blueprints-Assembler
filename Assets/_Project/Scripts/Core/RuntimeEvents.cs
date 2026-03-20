@@ -291,6 +291,50 @@ namespace OSE.Core
         }
     }
 
+    public readonly struct MachineIntroReset
+    {
+        public readonly string MachineId;
+
+        public MachineIntroReset(string machineId)
+        {
+            MachineId = machineId;
+        }
+    }
+
+    /// <summary>
+    /// Published after a saved session is restored. Carries the number of
+    /// steps that were skipped so visual-layer listeners can position
+    /// completed parts without replaying step events.
+    /// </summary>
+    public readonly struct SessionRestored
+    {
+        public readonly int CompletedStepCount;
+
+        public SessionRestored(int completedStepCount)
+        {
+            CompletedStepCount = completedStepCount;
+        }
+    }
+
+    /// <summary>
+    /// Published when the user navigates to a different step via back/forward controls.
+    /// The visual layer uses this to reposition parts and clear/re-spawn ghosts.
+    /// Fires BEFORE StepStateChanged(Active) for the target step.
+    /// </summary>
+    public readonly struct StepNavigated
+    {
+        public readonly int PreviousStepIndex;
+        public readonly int TargetStepIndex;
+        public readonly int TotalSteps;
+
+        public StepNavigated(int previousStepIndex, int targetStepIndex, int totalSteps)
+        {
+            PreviousStepIndex = previousStepIndex;
+            TargetStepIndex = targetStepIndex;
+            TotalSteps = totalSteps;
+        }
+    }
+
     public readonly struct RepositionModeChanged
     {
         public readonly bool IsActive;

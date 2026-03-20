@@ -100,5 +100,74 @@ namespace OSE.UI.Utilities
             label.style.unityFontStyleAndWeight = FontStyle.Bold;
             return label;
         }
+
+        /// <summary>
+        /// Narrower panel surface for compact info chips (Part/Tool info).
+        /// </summary>
+        public static void ApplyCompactPanelSurface(VisualElement element)
+        {
+            element.style.width = 280f;
+            element.style.maxWidth = 320f;
+            element.style.paddingLeft = 14f;
+            element.style.paddingRight = 14f;
+            element.style.paddingTop = 10f;
+            element.style.paddingBottom = 10f;
+            element.style.marginBottom = 8f;
+            element.style.flexDirection = FlexDirection.Column;
+            element.style.backgroundColor = PanelBackgroundColor;
+            element.style.borderTopColor = PanelBorderColor;
+            element.style.borderRightColor = PanelBorderColor;
+            element.style.borderBottomColor = PanelBorderColor;
+            element.style.borderLeftColor = PanelBorderColor;
+            element.style.borderTopWidth = 1f;
+            element.style.borderRightWidth = 1f;
+            element.style.borderBottomWidth = 1f;
+            element.style.borderLeftWidth = 1f;
+            element.style.borderTopLeftRadius = 10f;
+            element.style.borderTopRightRadius = 10f;
+            element.style.borderBottomLeftRadius = 10f;
+            element.style.borderBottomRightRadius = 10f;
+            element.style.unityTextAlign = TextAnchor.UpperLeft;
+            element.pickingMode = PickingMode.Ignore;
+        }
+
+        /// <summary>
+        /// Small chevron toggle button for expand/collapse (\u25B8 / \u25BE).
+        /// </summary>
+        public static Button CreateChevronButton(bool expanded = false)
+        {
+            var btn = new Button();
+            btn.text = expanded ? "\u25BE" : "\u25B8";
+            btn.style.width = 28f;
+            btn.style.height = 28f;
+            btn.style.fontSize = 14f;
+            btn.style.backgroundColor = Color.clear;
+            btn.style.color = AccentTextColor;
+            btn.style.borderTopWidth = 0f;
+            btn.style.borderRightWidth = 0f;
+            btn.style.borderBottomWidth = 0f;
+            btn.style.borderLeftWidth = 0f;
+            btn.style.paddingLeft = 0f;
+            btn.style.paddingRight = 0f;
+            btn.style.paddingTop = 0f;
+            btn.style.paddingBottom = 0f;
+            btn.style.marginLeft = 0f;
+            btn.style.marginRight = 0f;
+            btn.style.unityTextAlign = TextAnchor.MiddleCenter;
+            return btn;
+        }
+
+        public static Label CreateCompactTitleLabel(string text)
+        {
+            Label label = new Label(text);
+            label.style.fontSize = 14f;
+            label.style.color = PanelTextColor;
+            label.style.unityFontStyleAndWeight = FontStyle.Bold;
+            label.style.whiteSpace = WhiteSpace.NoWrap;
+            label.style.overflow = Overflow.Hidden;
+            label.style.flexGrow = 1f;
+            label.style.flexShrink = 1f;
+            return label;
+        }
     }
 }

@@ -45,6 +45,17 @@ namespace OSE.Content.Loading
                     return Failure(sanitizedPackageId, packagePath, "Package JSON did not deserialize into a valid machine package.");
                 }
 
+                // DEBUG: verify tool orientation fields survived deserialization
+                if (package.tools != null)
+                {
+                    foreach (var t in package.tools)
+                        OseLog.Info($"[Loader DEBUG] tool={t.id} useOrientationOverride={t.useOrientationOverride} orientationEuler={t.orientationEuler}");
+                }
+                OseLog.Info($"[Loader DEBUG] JSON contains 'useOrientationOverride': {json.Contains("useOrientationOverride")} path={packagePath}");
+
+                // Inflate compact JSON conventions (templates, inferred parent IDs, etc.)
+                MachinePackageNormalizer.Normalize(package);
+
                 MachinePackageValidationResult validation = MachinePackageValidator.Validate(package);
                 package.packageId = sanitizedPackageId;
                 if (validation.HasErrors)

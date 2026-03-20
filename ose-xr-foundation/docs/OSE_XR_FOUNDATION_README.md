@@ -115,7 +115,7 @@ Documents:
 - **DATA_SCHEMA.md**  
   Canonical machine package format.
 
-- **CONTENT_AUTHORING_PIPELINE.md**  
+- **PART_AUTHORING_PIPELINE.md**  
   Workflow for turning real-world machines into digital training content.
 
 ---

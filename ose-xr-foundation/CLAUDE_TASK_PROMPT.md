@@ -125,7 +125,7 @@ Defines:
 
 10. `docs/CONTENT_MODEL.md`
 11. `docs/DATA_SCHEMA.md`
-12. `docs/CONTENT_AUTHORING_PIPELINE.md`
+12. `docs/PART_AUTHORING_PIPELINE.md`
 
 Defines:
 

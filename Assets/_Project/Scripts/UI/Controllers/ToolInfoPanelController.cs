@@ -34,41 +34,90 @@ namespace OSE.UI.Controllers
 
         private sealed class ToolInfoPanelView : VisualElement
         {
+            private readonly VisualElement _detailContainer;
+            private readonly Button _chevron;
+            private bool _expanded;
+
             public ToolInfoPanelView()
             {
-                UIToolkitStyleUtility.ApplyPanelSurface(this);
+                UIToolkitStyleUtility.ApplyCompactPanelSurface(this);
                 style.alignSelf = Align.FlexStart;
                 style.marginTop = 4f;
 
-                Add(UIToolkitStyleUtility.CreateEyebrowLabel("Tool Info"));
-                Add(ToolNameLabel);
-                Add(CreateFieldBlock("Category", CategoryValueLabel));
-                Add(CreateFieldBlock("Purpose", PurposeValueLabel));
-                Add(CreateFieldBlock("Usage", UsageValueLabel));
-                Add(CreateFieldBlock("Safety", SafetyValueLabel));
+                // --- Header row: eyebrow + name + chevron ---
+                var headerRow = new VisualElement();
+                headerRow.style.flexDirection = FlexDirection.Row;
+                headerRow.style.alignItems = Align.Center;
+                headerRow.style.justifyContent = Justify.SpaceBetween;
+                headerRow.pickingMode = PickingMode.Position;
+                headerRow.RegisterCallback<ClickEvent>(OnHeaderClicked);
+
+                var headerLeft = new VisualElement();
+                headerLeft.style.flexDirection = FlexDirection.Row;
+                headerLeft.style.alignItems = Align.Center;
+                headerLeft.style.flexGrow = 1f;
+                headerLeft.style.flexShrink = 1f;
+                headerLeft.style.overflow = Overflow.Hidden;
+
+                var eyebrow = UIToolkitStyleUtility.CreateEyebrowLabel("TOOL");
+                eyebrow.style.marginBottom = 0f;
+                eyebrow.style.marginRight = 8f;
+                eyebrow.style.flexShrink = 0f;
+                headerLeft.Add(eyebrow);
+                headerLeft.Add(ToolNameLabel);
+
+                _chevron = UIToolkitStyleUtility.CreateChevronButton(false);
+                _chevron.clicked += ToggleExpanded;
+
+                headerRow.Add(headerLeft);
+                headerRow.Add(_chevron);
+                Add(headerRow);
+
+                // --- Detail container (collapsed by default) ---
+                _detailContainer = new VisualElement();
+                _detailContainer.style.display = DisplayStyle.None;
+                _detailContainer.style.marginTop = 8f;
+                _detailContainer.Add(CreateFieldBlock("Category", CategoryValueLabel));
+                _detailContainer.Add(CreateFieldBlock("Purpose", PurposeValueLabel));
+                _detailContainer.Add(CreateFieldBlock("Usage", UsageValueLabel));
+                _detailContainer.Add(CreateFieldBlock("Safety", SafetyValueLabel));
+                Add(_detailContainer);
             }
 
             public Label ToolNameLabel { get; } =
-                UIToolkitStyleUtility.CreateTitleLabel("Selected Tool");
+                UIToolkitStyleUtility.CreateCompactTitleLabel("Selected Tool");
 
             public Label CategoryValueLabel { get; } =
-                UIToolkitStyleUtility.CreateBodyLabel("Tool category metadata will be supplied by runtime content.");
+                UIToolkitStyleUtility.CreateBodyLabel("—");
 
             public Label PurposeValueLabel { get; } =
-                UIToolkitStyleUtility.CreateBodyLabel("Tool purpose metadata will be supplied by runtime content.");
+                UIToolkitStyleUtility.CreateBodyLabel("—");
 
             public Label UsageValueLabel { get; } =
-                UIToolkitStyleUtility.CreateBodyLabel("Tool usage notes metadata will be supplied by runtime content.");
+                UIToolkitStyleUtility.CreateBodyLabel("—");
 
             public Label SafetyValueLabel { get; } =
-                UIToolkitStyleUtility.CreateBodyLabel("Tool safety notes metadata will be supplied by runtime content.");
+                UIToolkitStyleUtility.CreateBodyLabel("—");
+
+            private void OnHeaderClicked(ClickEvent evt)
+            {
+                ToggleExpanded();
+                evt.StopPropagation();
+            }
+
+            private void ToggleExpanded()
+            {
+                _expanded = !_expanded;
+                _detailContainer.style.display = _expanded ? DisplayStyle.Flex : DisplayStyle.None;
+                _chevron.text = _expanded ? "\u25BE" : "\u25B8";
+            }
 
             private static VisualElement CreateFieldBlock(string labelText, Label valueLabel)
             {
                 VisualElement block = new VisualElement();
                 block.style.flexDirection = FlexDirection.Column;
-                block.style.marginTop = 10f;
-                block.style.paddingTop = 10f;
+                block.style.marginTop = 8f;
+                block.style.paddingTop = 8f;
                 block.style.borderTopWidth = 1f;
                 block.style.borderTopColor = new Color(0.28f, 0.36f, 0.46f, 0.8f);
                 block.Add(UIToolkitStyleUtility.CreateFieldLabel(labelText));

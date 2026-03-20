@@ -35,7 +35,7 @@ This file should be used together with:
 - `docs/UNITY_PROJECT_STRUCTURE.md`
 - `docs/INTERACTION_MODEL.md`
 - `docs/UI_ARCHITECTURE.md`
-- `docs/CONTENT_AUTHORING_PIPELINE.md`
+- `docs/PART_AUTHORING_PIPELINE.md`
 - `docs/TEST_STRATEGY.md`
 - `TASK_EXECUTION_PROTOCOL.md`
 

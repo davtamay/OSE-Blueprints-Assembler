@@ -10,6 +10,83 @@ namespace OSE.UI.Root
     {
         private static readonly Color GhostColor = new Color(0.4f, 0.8f, 1.0f, 0.3f);
 
+        // ── Original-material preservation ──────────────────────────────
+
+        /// <summary>
+        /// Caches the current materials on all renderers so they can be restored later.
+        /// Call this once before any Apply/ApplyGhost that might replace materials.
+        /// </summary>
+        public static void SaveOriginals(GameObject target)
+        {
+            if (target == null) return;
+            var cache = target.GetComponent<OriginalMaterialCache>();
+            if (cache == null)
+                cache = target.AddComponent<OriginalMaterialCache>();
+            cache.Save();
+        }
+
+        /// <summary>
+        /// Marks this GameObject as an imported model (from GLB/GLTF, not a primitive).
+        /// When marked, the system preserves original materials instead of replacing
+        /// them with solid colors.
+        /// </summary>
+        public static void MarkAsImported(GameObject target)
+        {
+            if (target == null) return;
+            var cache = target.GetComponent<OriginalMaterialCache>();
+            if (cache == null)
+                cache = target.AddComponent<OriginalMaterialCache>();
+            cache.MarkAsImported();
+            cache.Save();
+        }
+
+        /// <summary>
+        /// Restores the original cached materials on all renderers, clearing any
+        /// MaterialPropertyBlock overrides. Returns false if no cache exists.
+        /// </summary>
+        public static bool RestoreOriginals(GameObject target)
+        {
+            if (target == null) return false;
+            var cache = target.GetComponent<OriginalMaterialCache>();
+            if (cache == null || !cache.HasSavedMaterials) return false;
+            cache.Restore();
+            return true;
+        }
+
+        /// <summary>
+        /// Returns true if this is an imported model with original materials to preserve.
+        /// </summary>
+        public static bool IsImportedModel(GameObject target)
+        {
+            if (target == null) return false;
+            var cache = target.GetComponent<OriginalMaterialCache>();
+            return cache != null && cache.IsImportedModel;
+        }
+
+        /// <summary>
+        /// Shows a colored outline around imported/textured models.
+        /// Uses inverted-hull child objects — the original materials stay untouched.
+        /// </summary>
+        public static void ApplyTint(GameObject target, Color tint)
+        {
+            if (target == null) return;
+            var cache = target.GetComponent<OriginalMaterialCache>();
+            if (cache != null)
+                cache.ShowOutline(tint);
+        }
+
+        /// <summary>
+        /// Hides the outline effect, returning the model to its idle visual state.
+        /// Does not touch original materials or emission set by other systems.
+        /// </summary>
+        public static void ClearTint(GameObject target)
+        {
+            if (target == null) return;
+            var cache = target.GetComponent<OriginalMaterialCache>();
+            if (cache != null)
+                cache.HideOutline();
+        }
+
         /// <summary>
         /// Applies an opaque URP/Lit material with the given color to all renderers
         /// on the target GameObject (including children).
@@ -81,6 +158,61 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
+        /// Clones each renderer's materials and makes them semi-transparent while
+        /// preserving original textures and colors. Returns the cloned material arrays
+        /// per renderer so they can be stored and restored later.
+        /// </summary>
+        public static Material[][] MakeTransparent(GameObject target, float alpha = 0.55f)
+        {
+            var renderers = target.GetComponentsInChildren<Renderer>(includeInactive: true);
+            if (renderers == null || renderers.Length == 0) return System.Array.Empty<Material[]>();
+
+            var result = new Material[renderers.Length][];
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                var originals = renderers[i].sharedMaterials;
+                var clones = new Material[originals.Length];
+                for (int j = 0; j < originals.Length; j++)
+                {
+                    if (originals[j] == null) { clones[j] = null; continue; }
+                    var mat = new Material(originals[j]);
+
+                    // Switch to transparent rendering
+                    mat.SetFloat("_Surface", 1f);
+                    mat.SetFloat("_Blend", 0f);
+                    mat.SetOverrideTag("RenderType", "Transparent");
+                    mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                    mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                    mat.SetInt("_ZWrite", 1);
+                    mat.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.LessEqual);
+                    mat.renderQueue = 4000;
+                    if (originals[j].HasProperty("_Cull"))
+                        mat.SetInt("_Cull", originals[j].GetInt("_Cull"));
+                    mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+
+                    // Apply alpha to base color
+                    if (mat.HasProperty("_BaseColor"))
+                    {
+                        Color c = mat.GetColor("_BaseColor");
+                        c.a = alpha;
+                        mat.SetColor("_BaseColor", c);
+                    }
+                    if (mat.HasProperty("_Color"))
+                    {
+                        Color c = mat.GetColor("_Color");
+                        c.a = alpha;
+                        mat.SetColor("_Color", c);
+                    }
+
+                    clones[j] = mat;
+                }
+                renderers[i].sharedMaterials = clones;
+                result[i] = clones;
+            }
+            return result;
+        }
+
+        /// <summary>
         /// Applies a transparent "tool in hand" material style that is visually
         /// distinct from placement ghosts.
         /// </summary>
@@ -102,7 +234,8 @@ namespace OSE.UI.Root
                 toolMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
                 toolMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
                 toolMat.SetInt("_ZWrite", 0);
-                toolMat.renderQueue = 3001;
+                toolMat.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.Always);
+                toolMat.renderQueue = 4000;
 
                 if (toolMat.HasProperty("_BaseColor"))
                     toolMat.SetColor("_BaseColor", toolColor);
@@ -164,22 +297,30 @@ namespace OSE.UI.Root
 
             foreach (var renderer in renderers)
             {
-                Material material = renderer.sharedMaterial;
+                // Use .material to get a per-renderer instance (see SetEmission).
+                Material material = renderer.material;
                 if (material == null) continue;
 
+                // URP/Lit
                 if (material.HasProperty("_BaseColor"))
                     material.SetColor("_BaseColor", color);
                 if (material.HasProperty("_Color"))
                     material.SetColor("_Color", color);
                 if (material.HasProperty("_EmissionColor"))
                     material.SetColor("_EmissionColor", color * 0.08f);
+
+                // glTFast Shader Graph (glTF-pbrMetallicRoughness)
+                if (material.HasProperty("baseColorFactor"))
+                    material.SetColor("baseColorFactor", color);
+                if (material.HasProperty("emissiveFactor"))
+                    material.SetColor("emissiveFactor", color * 0.08f);
             }
         }
 
         /// <summary>
         /// Sets emission glow on existing materials without affecting base color.
-        /// Works alongside the XRI affordance system which only overrides _BaseColor
-        /// via MaterialPropertyBlock — emission on the shared material passes through.
+        /// Supports both URP/Lit (<c>_EmissionColor</c> + <c>_EMISSION</c>) and
+        /// glTFast Shader Graph (<c>emissiveFactor</c> + <c>_EMISSIVE</c>).
         /// Pass <see cref="Color.black"/> to clear emission.
         /// </summary>
         public static void SetEmission(GameObject target, Color emissionColor)
@@ -191,14 +332,31 @@ namespace OSE.UI.Root
 
             foreach (var renderer in renderers)
             {
-                Material material = renderer.sharedMaterial;
+                // Use .material (not .sharedMaterial) so each renderer gets its
+                // own instance.  This prevents emission changes from bleeding to
+                // every object that shares the same source material asset.
+                Material material = renderer.material;
                 if (material == null) continue;
 
-                if (hasEmission)
-                    material.EnableKeyword("_EMISSION");
-
+                // URP/Lit shader
                 if (material.HasProperty("_EmissionColor"))
+                {
                     material.SetColor("_EmissionColor", emissionColor);
+                    if (hasEmission)
+                        material.EnableKeyword("_EMISSION");
+                    else
+                        material.DisableKeyword("_EMISSION");
+                }
+
+                // glTFast Shader Graph (glTF-pbrMetallicRoughness)
+                if (material.HasProperty("emissiveFactor"))
+                {
+                    material.SetColor("emissiveFactor", emissionColor);
+                    if (hasEmission)
+                        material.EnableKeyword("_EMISSIVE");
+                    else
+                        material.DisableKeyword("_EMISSIVE");
+                }
             }
         }
     }

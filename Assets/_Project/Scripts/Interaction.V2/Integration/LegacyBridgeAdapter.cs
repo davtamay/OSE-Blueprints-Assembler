@@ -26,6 +26,7 @@ namespace OSE.Interaction.V2.Integration
         private MethodInfo _setExternalHoveredPartMethod;
         private MethodInfo _tryExternalClickToPlaceMethod;
         private MethodInfo _tryExternalToolActionMethod;
+        private MethodInfo _tryExternalPipeConnectionMethod;
         private MethodInfo _getNearestToolTargetWorldPosMethod;
         private MethodInfo _tryGetGhostWorldPosForPartMethod;
         private PropertyInfo _lastToolActionWorldPosProperty;
@@ -51,6 +52,8 @@ namespace OSE.Interaction.V2.Integration
             _tryExternalClickToPlaceMethod = _legacyBridge.GetType().GetMethod("TryExternalClickToPlace",
                 BindingFlags.Public | BindingFlags.Instance);
             _tryExternalToolActionMethod = _legacyBridge.GetType().GetMethod("TryExternalToolAction",
+                BindingFlags.Public | BindingFlags.Instance);
+            _tryExternalPipeConnectionMethod = _legacyBridge.GetType().GetMethod("TryExternalPipeConnection",
                 BindingFlags.Public | BindingFlags.Instance);
             _getNearestToolTargetWorldPosMethod = _legacyBridge.GetType().GetMethod("TryGetNearestToolTargetWorldPos",
                 BindingFlags.Public | BindingFlags.Instance);
@@ -87,6 +90,7 @@ namespace OSE.Interaction.V2.Integration
             _setExternalHoveredPartMethod = null;
             _tryExternalClickToPlaceMethod = null;
             _tryExternalToolActionMethod = null;
+            _tryExternalPipeConnectionMethod = null;
             _getNearestToolTargetWorldPosMethod = null;
             _tryGetGhostWorldPosForPartMethod = null;
             _lastToolActionWorldPosProperty = null;
@@ -128,6 +132,20 @@ namespace OSE.Interaction.V2.Integration
             }
 
             object result = _tryExternalToolActionMethod.Invoke(_legacyBridge, new object[] { screenPos });
+            return result is true;
+        }
+
+        /// <summary>
+        /// Attempts to handle a pipe connection port sphere click at the given screen position.
+        /// Call this for any tap — it returns true only when a pipe step is active and a port
+        /// sphere was close enough to the tap to be consumed.
+        /// </summary>
+        public bool TryPipeConnection(Vector2 screenPos)
+        {
+            if (_legacyBridge == null || _tryExternalPipeConnectionMethod == null)
+                return false;
+
+            object result = _tryExternalPipeConnectionMethod.Invoke(_legacyBridge, new object[] { screenPos });
             return result is true;
         }
 

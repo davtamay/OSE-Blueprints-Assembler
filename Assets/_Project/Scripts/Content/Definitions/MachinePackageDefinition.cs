@@ -16,6 +16,7 @@ namespace OSE.Content
         public MachineDefinition machine;
         public AssemblyDefinition[] assemblies;
         public SubassemblyDefinition[] subassemblies;
+        public PartTemplateDefinition[] partTemplates;
         public PartDefinition[] parts;
         public ToolDefinition[] tools;
         public StepDefinition[] steps;

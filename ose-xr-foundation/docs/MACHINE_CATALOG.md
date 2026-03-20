@@ -51,12 +51,8 @@ The current version (Power Cube VII / 7s) uses a 28 HP Briggs & Stratton Profess
 
 | Package ID | Scope | Parts | Steps | Tools | Status |
 |------------|-------|-------|-------|-------|--------|
-| `power_cube_frame_corner` | Frame corner subassembly (stage 2 subset) | 3 | 3 | 2 | Complete (proof-of-concept) |
-| `power_cube_frame` | Full frame build — stages 1-2 (1hr) | 12 | 14 | 5 | Authored (primitive shapes) |
-| `power_cube_engine` | Engine + pump mounting (stages 6-8) | — | — | — | Not started |
-| `power_cube_hydraulics` | Plumbing + reservoir (stages 4, 10) | — | — | — | Not started |
-| `power_cube_electrical` | Wiring harness (stage 11) | — | — | — | Not started |
-| `power_cube_full` | Complete build (all stages) | — | — | — | Not started |
+| ~~`power_cube_frame_corner`~~ | ~~Frame corner subassembly (stage 2 subset)~~ | ~~3~~ | ~~3~~ | ~~2~~ | Deleted (superseded by full package) |
+| `power_cube_frame` | **Complete Power Cube build — all 12 stages** | 29 | 43 | 10 | **Authored (primitive shapes)** |
 
 ### OSE References
 

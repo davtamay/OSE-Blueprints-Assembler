@@ -38,6 +38,22 @@ namespace OSE.Runtime
         public PartRuntimeController PartController => _partController;
         public ToolRuntimeController ToolController => _toolController;
 
+        // ── Step Navigation ──
+
+        /// <summary>True while an explicit back/forward navigation is in progress.
+        /// Auto-completion logic should check this and bail out to avoid
+        /// undoing the navigation via reentrant step completion.</summary>
+        public bool IsNavigating { get; private set; }
+
+        /// <summary>
+        /// The frame number when the last navigation completed.
+        /// Used to prevent same-frame tool actions from re-completing a step.
+        /// </summary>
+        public int LastNavigationFrame { get; private set; } = -1;
+
+        public bool CanStepBack => _assemblyController?.ProgressionController?.HasPreviousStep ?? false;
+        public bool CanStepForward => _assemblyController?.ProgressionController?.CanNavigateForward ?? false;
+
         /// <summary>
         /// Loads a machine package and starts a new session.
         /// Returns true if the session started successfully.
@@ -260,8 +276,15 @@ namespace OSE.Runtime
 
                 _sessionState.LastStepDurationSeconds = duration;
                 _sessionState.TotalStepDurationSeconds += duration;
-                _sessionState.CompletedStepCount++;
                 _sessionState.CurrentStepElapsedSeconds = duration;
+
+                // Only count and save for first-time completions
+                var progression = _assemblyController?.ProgressionController;
+                if (progression != null && progression.LastAdvanceWasFirstTime)
+                {
+                    _sessionState.CompletedStepCount++;
+                    AutoSave();
+                }
             }
         }
 
@@ -296,6 +319,159 @@ namespace OSE.Runtime
             }
         }
 
+        private void AutoSave()
+        {
+            if (_sessionState == null) return;
+
+            if (ServiceRegistry.TryGet<IPersistenceService>(out var persistence))
+            {
+                persistence.SaveSession(_sessionState);
+            }
+        }
+
+        /// <summary>
+        /// Restores a previously saved session by advancing the progression cursor
+        /// directly to the saved step, marking all skipped parts as Completed,
+        /// and activating the next step normally.
+        ///
+        /// This avoids replaying the full event cascade (ghost spawn/clear, tool
+        /// action setup/teardown, visual updates) for every skipped step.
+        /// </summary>
+        public bool RestoreToStep(int completedStepCount)
+        {
+            if (_sessionState == null || _assemblyController == null)
+                return false;
+
+            var progression = _assemblyController.ProgressionController;
+            if (progression == null || completedStepCount <= 0)
+                return false;
+
+            OseLog.Info($"[MachineSessionController] Restoring session — skipping {completedStepCount} completed steps.");
+
+            _sessionState.IsRestored = true;
+            _sessionState.CompletedStepCount = completedStepCount;
+
+            // 1. Advance the progression cursor and collect skipped step definitions
+            StepDefinition[] skippedSteps = progression.SkipToIndex(completedStepCount);
+            if (skippedSteps.Length == 0)
+                return false;
+
+            // 2. Mark all parts from skipped steps as Completed (state only, no events)
+            if (_partController != null)
+                _partController.BulkCompletePartsForSteps(skippedSteps);
+
+            // 3. Notify visual layer so it can position completed parts
+            RuntimeEventBus.Publish(new SessionRestored(completedStepCount));
+
+            // 4. Activate the current step normally — this fires a single
+            //    StepStateChanged(Active) so all listeners set up correctly
+            StepDefinition currentStep = progression.GetCurrentStep();
+            if (currentStep != null)
+            {
+                _assemblyController.StepController.ActivateStep(currentStep, _sessionState.ElapsedSeconds);
+            }
+            else
+            {
+                // All steps were completed — session is done
+                CompleteSession();
+            }
+
+            return true;
+        }
+
+        // ── Step Navigation ──
+
+        /// <summary>
+        /// Navigates one step backward. Parts from the current step revert to
+        /// Available; parts from subsequent steps become NotIntroduced.
+        /// </summary>
+        public bool StepBack()
+        {
+            if (_assemblyController == null || _partController == null)
+            {
+                OseLog.Warn("[MachineSessionController] StepBack: assemblyController or partController is null.");
+                return false;
+            }
+
+            var progression = _assemblyController.ProgressionController;
+            OseLog.Info($"[Nav] StepBack: currentIndex={progression.CurrentStepIndex}, HasPreviousStep={progression.HasPreviousStep}, IsNavigating={IsNavigating}");
+
+            if (!progression.HasPreviousStep)
+            {
+                OseLog.Warn($"[Nav] StepBack BLOCKED: HasPreviousStep=false (currentIndex={progression.CurrentStepIndex}).");
+                return false;
+            }
+
+            bool result = NavigateToStepInternal(progression.CurrentStepIndex - 1);
+            OseLog.Info($"[Nav] StepBack result={result}, new currentIndex={progression.CurrentStepIndex}");
+            return result;
+        }
+
+        /// <summary>
+        /// Navigates one step forward within already-completed steps.
+        /// Parts from the current step are marked Completed; the next step activates.
+        /// </summary>
+        public bool StepForward()
+        {
+            if (_assemblyController == null || _partController == null)
+                return false;
+
+            var progression = _assemblyController.ProgressionController;
+            OseLog.Info($"[Nav] StepForward: currentIndex={progression.CurrentStepIndex}, CanNavigateForward={progression.CanNavigateForward}");
+
+            if (!progression.CanNavigateForward)
+                return false;
+
+            return NavigateToStepInternal(progression.CurrentStepIndex + 1);
+        }
+
+        private bool NavigateToStepInternal(int targetIndex)
+        {
+            var progression = _assemblyController.ProgressionController;
+            int previousIndex = progression.CurrentStepIndex;
+
+            OseLog.Info($"[Nav] NavigateToStepInternal: from index {previousIndex} to {targetIndex}, totalSteps={progression.TotalSteps}");
+
+            IsNavigating = true;
+            try
+            {
+                // 1. Recompute part states for the target step
+                StepDefinition[] allSteps = progression.GetStepsUpTo(progression.TotalSteps);
+                _partController.RecomputePartsForNavigation(targetIndex, allSteps);
+
+                // 2. Publish navigation event so visual layer can reposition parts
+                RuntimeEventBus.Publish(new StepNavigated(previousIndex, targetIndex, progression.TotalSteps));
+
+                // 3. Navigate the assembly controller (resets step, moves cursor, activates target)
+                _assemblyController.NavigateToStep(targetIndex, () => _sessionState.ElapsedSeconds);
+
+                // Verify cursor actually moved
+                int actualIndex = progression.CurrentStepIndex;
+                if (actualIndex != targetIndex)
+                    OseLog.Warn($"[Nav] CURSOR MISMATCH: expected {targetIndex} but got {actualIndex} after NavigateToStep!");
+
+                // 4. Update session state
+                if (_assemblyController.StepController.HasActiveStep)
+                {
+                    _sessionState.CurrentStepId = _assemblyController.StepController.CurrentStepState.StepId;
+                }
+
+                OseLog.Info($"[Nav] Navigated from step {previousIndex + 1} to step {targetIndex + 1}. " +
+                    $"HasPreviousStep={progression.HasPreviousStep}, CanNavigateForward={progression.CanNavigateForward}");
+                return true;
+            }
+            catch (System.Exception ex)
+            {
+                OseLog.Warn($"[Nav] EXCEPTION during navigation to step {targetIndex + 1}: {ex.Message}\n{ex.StackTrace}");
+                return false;
+            }
+            finally
+            {
+                IsNavigating = false;
+                LastNavigationFrame = UnityEngine.Time.frameCount;
+            }
+        }
+
         private void CompleteSession()
         {
             float totalSeconds = _sessionState.ElapsedSeconds;
@@ -304,6 +480,13 @@ namespace OSE.Runtime
             SetLifecycle(SessionLifecycle.Completing);
 
             OseLog.Info($"[MachineSessionController] Session '{machineId}' completed in {totalSeconds:F1}s.");
+
+            // Clear saved progress — the session is done
+            if (ServiceRegistry.TryGet<IPersistenceService>(out var persistence))
+            {
+                persistence.ClearSession(machineId);
+            }
+
             RuntimeEventBus.Publish(new SessionCompleted(machineId, totalSeconds));
 
             SetLifecycle(SessionLifecycle.Completed);

@@ -1,5 +1,6 @@
 using OSE.App;
 using OSE.Core;
+using OSE.Persistence;
 using OSE.Runtime;
 using UnityEngine;
 
@@ -33,6 +34,9 @@ namespace OSE.Bootstrap
 
             var placementValidator = new PlacementValidator();
             ServiceRegistry.Register<IPlacementValidator>(placementValidator);
+
+            var persistence = new PlayerPrefsPersistenceService();
+            ServiceRegistry.Register<IPersistenceService>(persistence);
 
             OseLog.Info("[Bootstrap] Core services registered.");
         }

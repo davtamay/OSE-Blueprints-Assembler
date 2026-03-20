@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using OSE.Content;
 using OSE.Core;
+using OSE.Runtime.Preview;
 using UnityEditor;
 using UnityEngine;
 
@@ -47,6 +49,8 @@ namespace OSE.Editor
             string[] movedAssets,
             string[] movedFromAsset)
         {
+            HashSet<string> changedPackageIds = null;
+
             foreach (string path in importedAssets)
             {
                 string ext = Path.GetExtension(path);
@@ -56,10 +60,26 @@ namespace OSE.Editor
 
                 if (!IsPackageModel(path)) continue;
 
+                // Track which packages had content changes
+                string packageId = ExtractPackageId(path);
+                if (packageId != null)
+                    (changedPackageIds ??= new HashSet<string>()).Add(packageId);
+
                 // glTFast produces a prefab-style asset loadable as GameObject
                 var go = AssetDatabase.LoadAssetAtPath<GameObject>(path);
                 if (go != null)
                     ProcessModelImport(path, go);
+            }
+
+            // If any package content changed, sync to StreamingAssets and reload
+            if (changedPackageIds != null)
+            {
+                int copied = PackageSyncTool.Sync();
+                if (copied > 0)
+                    OseLog.Info($"[PackageAssetPostprocessor] Auto-synced {copied} file(s) to StreamingAssets.");
+
+                foreach (string packageId in changedPackageIds)
+                    SessionDriver.NotifyPackageContentChanged(packageId);
             }
         }
 
@@ -67,6 +87,13 @@ namespace OSE.Editor
 
         private static bool IsPackageModel(string path) =>
             path.StartsWith(PackagesDataPath, StringComparison.OrdinalIgnoreCase);
+
+        private static string ExtractPackageId(string path)
+        {
+            string rel = path.Substring(PackagesDataPath.Length).TrimStart('/', '\\');
+            string id  = rel.Split(new[] { '/', '\\' }, 2)[0];
+            return string.IsNullOrEmpty(id) ? null : id;
+        }
 
         private static void ProcessModelImport(string modelPath, GameObject root)
         {

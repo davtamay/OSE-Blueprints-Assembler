@@ -424,6 +424,10 @@ namespace OSE.Runtime
             if (_package == null || !_primaryToolAction.IsConfigured || _primaryToolAction.IsCompleted)
                 return;
 
+            // Suppress auto-completion during explicit step navigation.
+            if (ServiceRegistry.TryGet<MachineSessionController>(out var session) && session.IsNavigating)
+                return;
+
             if (!string.IsNullOrWhiteSpace(_primaryToolAction.TargetId))
                 return;
 
@@ -433,7 +437,7 @@ namespace OSE.Runtime
                 return;
             }
 
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (session == null)
                 return;
 
             StepController stepController = session.AssemblyController?.StepController;

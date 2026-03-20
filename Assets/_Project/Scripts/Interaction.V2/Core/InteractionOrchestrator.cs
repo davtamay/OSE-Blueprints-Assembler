@@ -629,6 +629,11 @@ namespace OSE.Interaction.V2
                 return;
             }
 
+            // Pipe connection port spheres: screen-proximity check runs BEFORE part-hit resolution
+            // so that a part occluding a sphere in the raycast never swallows the tap.
+            if (_legacyBridge != null && _legacyBridge.TryPipeConnection(intent.ScreenPosition))
+                return;
+
             if (intent.HitTarget != null)
             {
                 // Clicked on a part → select it
@@ -690,6 +695,10 @@ namespace OSE.Interaction.V2
 
         private void HandleBeginDrag(InteractionIntent intent)
         {
+            // Pipe connection port spheres: screen-proximity check runs before drag logic
+            if (_legacyBridge != null && _legacyBridge.TryPipeConnection(intent.ScreenPosition))
+                return;
+
             if (IsToolModeLockedForParts())
             {
                 RouteToolAction(intent.ScreenPosition);

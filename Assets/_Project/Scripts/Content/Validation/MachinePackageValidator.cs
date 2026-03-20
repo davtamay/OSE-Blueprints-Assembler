@@ -10,7 +10,7 @@ namespace OSE.Content.Validation
         private static readonly HashSet<string> RecommendedModeValues = CreateSet("tutorial", "guided", "standard", "challenge");
         private static readonly HashSet<string> PartCategoryValues = CreateSet("plate", "bracket", "fastener", "shaft", "panel", "housing", "pipe", "custom");
         private static readonly HashSet<string> ToolCategoryValues = CreateSet("hand_tool", "power_tool", "measurement", "safety", "specialty");
-        private static readonly HashSet<string> CompletionTypeValues = CreateSet("placement", "tool_action", "confirmation");
+        private static readonly HashSet<string> CompletionTypeValues = CreateSet("placement", "tool_action", "confirmation", "pipe_connection");
         private static readonly HashSet<string> TargetOrderValues = CreateSet("sequential", "parallel");
         private static readonly HashSet<string> ValidationTypeValues = CreateSet("placement", "orientation", "part_identity", "dependency", "multi_part", "confirmation");
         private static readonly HashSet<string> HintTypeValues = CreateSet("text", "highlight", "ghost", "directional", "explanatory", "tool_reminder");
@@ -491,6 +491,66 @@ namespace OSE.Content.Validation
             {
                 if (!coveredTargets.Contains(tId))
                     issues.Add(Warning("previewConfig.targetPlacements", $"Target '{tId}' has no placement entry. Ghost will use fallback positioning."));
+            }
+
+            // Cross-check: targetPlacement positions must match the associated part's
+            // playPosition. A mismatch means the ghost preview and the actual placed
+            // position will disagree — confusing for the user.
+            ValidateGhostPlayPositionConsistency(package, previewConfig, coveredParts, issues);
+        }
+
+        private const float PositionTolerance = 0.001f;
+
+        private static void ValidateGhostPlayPositionConsistency(
+            MachinePackageDefinition package,
+            PackagePreviewConfig previewConfig,
+            HashSet<string> coveredPartIds,
+            List<MachinePackageValidationIssue> issues)
+        {
+            if (previewConfig.targetPlacements == null || previewConfig.partPlacements == null)
+                return;
+
+            // Build partId -> placement lookup
+            var partLookup = new Dictionary<string, PartPreviewPlacement>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pp in previewConfig.partPlacements)
+            {
+                if (pp != null && !string.IsNullOrEmpty(pp.partId))
+                    partLookup[pp.partId] = pp;
+            }
+
+            // Build targetId -> associatedPartId lookup
+            TargetDefinition[] targets = package.GetTargets();
+            var targetPartLookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var t in targets)
+            {
+                if (t != null && !string.IsNullOrEmpty(t.id) && !string.IsNullOrEmpty(t.associatedPartId))
+                    targetPartLookup[t.id] = t.associatedPartId;
+            }
+
+            foreach (var tp in previewConfig.targetPlacements)
+            {
+                if (tp == null || string.IsNullOrEmpty(tp.targetId))
+                    continue;
+                if (!targetPartLookup.TryGetValue(tp.targetId, out string partId))
+                    continue;
+                if (!partLookup.TryGetValue(partId, out var pp))
+                    continue;
+
+                float dx = tp.position.x - pp.playPosition.x;
+                float dy = tp.position.y - pp.playPosition.y;
+                float dz = tp.position.z - pp.playPosition.z;
+                float distSq = dx * dx + dy * dy + dz * dz;
+
+                if (distSq > PositionTolerance * PositionTolerance)
+                {
+                    float dist = (float)Math.Sqrt(distSq);
+                    issues.Add(Warning(
+                        $"previewConfig.targetPlacements[{tp.targetId}]",
+                        $"Ghost position ({tp.position.x:F3}, {tp.position.y:F3}, {tp.position.z:F3}) differs from " +
+                        $"part '{partId}' playPosition ({pp.playPosition.x:F3}, {pp.playPosition.y:F3}, {pp.playPosition.z:F3}) " +
+                        $"by {dist:F4}m. Ghost will appear at the wrong location. " +
+                        $"Update targetPlacement to match playPosition or the ghost code will override it."));
+                }
             }
         }
 

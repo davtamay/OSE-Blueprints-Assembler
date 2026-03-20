@@ -38,3 +38,6 @@ UserSettings/
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# Build tools (download locally, not tracked)
+Tools/*.exe

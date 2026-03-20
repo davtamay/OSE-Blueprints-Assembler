@@ -48,6 +48,32 @@ namespace OSE.Content
         public SceneFloat3    playPosition;
         public SceneQuaternion playRotation;
         public SceneFloat3    playScale;
+
+        /// <summary>
+        /// Optional spline path data. When present, the spawner creates a tube mesh
+        /// via SplineContainer + SplineExtrude instead of loading a GLB asset.
+        /// Used for hoses, cables, and other tubular parts.
+        /// </summary>
+        public SplinePathDefinition splinePath;
+    }
+
+    /// <summary>
+    /// Defines a tubular spline path for procedural hose/cable rendering.
+    /// Knot positions are in PreviewRoot local space (same coordinate system as playPosition).
+    /// </summary>
+    [Serializable]
+    public sealed class SplinePathDefinition
+    {
+        /// <summary>Tube radius in meters (e.g. 0.0095 for 19mm OD hose).</summary>
+        public float radius;
+        /// <summary>Number of radial segments for the tube cross-section.</summary>
+        public int segments;
+        /// <summary>PBR metallic value (0 = rubber/plastic, 0.8 = braided steel).</summary>
+        public float metallic;
+        /// <summary>PBR smoothness value (0 = rough rubber, 0.5 = polished metal).</summary>
+        public float smoothness;
+        /// <summary>Ordered spline control points in PreviewRoot local space.</summary>
+        public SceneFloat3[] knots;
     }
 
     /// <summary>
@@ -62,6 +88,10 @@ namespace OSE.Content
         public SceneQuaternion rotation;
         public SceneFloat3    scale;
         public SceneFloat4    color;
+        /// <summary>World-space port A position for pipe_connection steps (e.g. one end of a hose).</summary>
+        public SceneFloat3 portA;
+        /// <summary>World-space port B position for pipe_connection steps (e.g. other end of a hose).</summary>
+        public SceneFloat3 portB;
     }
 
     /// <summary>

@@ -57,6 +57,9 @@ namespace OSE.Content
         public bool IsConfirmation =>
             string.Equals(completionType, "confirmation", System.StringComparison.OrdinalIgnoreCase);
 
+        public bool IsPipeConnection =>
+            string.Equals(completionType, "pipe_connection", System.StringComparison.OrdinalIgnoreCase);
+
         public string GetDisplayName()
         {
             if (!string.IsNullOrWhiteSpace(name))

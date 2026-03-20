@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using OSE.App;
 using OSE.Content;
 using OSE.Core;
 
@@ -73,9 +74,38 @@ namespace OSE.Runtime
             _package = null;
         }
 
+        /// <summary>
+        /// Navigates to a specific step index without completing the current step.
+        /// The caller must recompute part states and publish StepNavigated before calling this.
+        /// </summary>
+        public void NavigateToStep(int targetIndex, Func<float> getElapsed)
+        {
+            if (_package == null)
+            {
+                OseLog.Error("[AssemblyRuntimeController] Cannot navigate — not initialized.");
+                return;
+            }
+
+            StepController.Reset();
+            ProgressionController.SetCurrentIndex(targetIndex);
+
+            StepDefinition step = ProgressionController.GetCurrentStep();
+            if (step != null)
+            {
+                _preflightValidator.Validate(_package, step);
+                StepController.ActivateStep(step, getElapsed());
+                OseLog.Info($"[AssemblyRuntimeController] Navigated to step {targetIndex + 1}/{ProgressionController.TotalSteps}: '{step.id}'");
+            }
+        }
+
         private void HandleStepStateChanged(StepStateChanged evt)
         {
             if (evt.Current != StepState.Completed)
+                return;
+
+            // During explicit navigation, suppress auto-advance so the user
+            // stays on the step they navigated to.
+            if (ServiceRegistry.TryGet<MachineSessionController>(out var session) && session.IsNavigating)
                 return;
 
             // Record the completed step
