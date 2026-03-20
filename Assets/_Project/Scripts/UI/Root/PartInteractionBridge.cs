@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using OSE.App;
 using OSE.Content;
@@ -32,9 +32,6 @@ namespace OSE.UI.Root
         private static readonly Color CompletedPartColor = new Color(0.3f, 0.9f, 0.4f, 1.0f);
         private static readonly Color InvalidFlashColor = new Color(1.0f, 0.2f, 0.2f, 1.0f);
         private static readonly Color GhostReadyColor = new Color(0.3f, 1.0f, 0.5f, 0.4f);
-        private static readonly Color ToolTargetIdleColor = new Color(0.25f, 0.9f, 1.0f, 0.62f);
-        private static readonly Color ToolTargetHoverColor = new Color(0.55f, 1.0f, 1.0f, 0.9f);
-        private static readonly Color ToolTargetFailColor = new Color(1.0f, 0.35f, 0.25f, 0.9f);
         private static readonly Color HintHighlightColorA = new Color(0.95f, 0.85f, 0.2f, 0.4f);
         private static readonly Color HintHighlightColorB = new Color(1.0f, 0.95f, 0.35f, 0.7f);
         private static readonly Color GhostSelectedPulseA = new Color(0.35f, 0.85f, 1.0f, 0.35f);
@@ -54,17 +51,10 @@ namespace OSE.UI.Root
         private const float DragFloorEpsilon = 0.001f;
         private const float HintHighlightDuration = 6f;
         private const float HintHighlightPulseSpeed = 4f;
-        private const float ToolTargetPulseSpeed = 3.6f;
-        private const float ToolTargetScalePulse = 0.12f;
-        private const float ToolTargetHeightPulse = 0.05f;
-        private const float ToolTargetColliderRadius = 1.5f;
         private const float ScreenProximityDesktop = 120f;
         private const float ScreenProximityMobile = 180f;
         private const float GhostSelectedPulseSpeed = 3.0f;     // Hz for ghost "click here" pulse
         private const float RequiredPartPulseSpeed = 0.8f;     // Hz for "grab this part" pulse
-        private const float ToolTargetFadeStartDistance = 3.0f; // world units â€” starts fading
-        private const float ToolTargetFadeEndDistance = 0.8f;   // world units â€” fully transparent
-        private const float ToolTargetFocusDistance = 2.5f;     // camera distance after focus
         // Toggled automatically by V2 InteractionOrchestrator at runtime via reflection.
         // When true, this bridge skips pointer input polling (V2 handles input instead).
         [HideInInspector] public bool ExternalControlEnabled;
@@ -78,10 +68,9 @@ namespace OSE.UI.Root
         private PackagePartSpawner _spawner;
         private PreviewSceneSetup _setup;
         private readonly List<GameObject> _spawnedGhosts = new List<GameObject>();
-        private readonly List<GameObject> _spawnedToolActionTargets = new List<GameObject>();
         private ToolCursorManager _cursorManager;
         private ToolCursorManager CursorManager => _cursorManager ??= new ToolCursorManager(transform);
-        private GameObject _hoveredToolActionTarget;
+        private UseStepHandler _useHandler;
         [SerializeField] private InputActionRouter _actionRouter;
         [SerializeField] private SelectionService _selectionService;
         private bool _suppressSelectionEvents;
@@ -130,11 +119,6 @@ namespace OSE.UI.Root
         private readonly List<GameObject> _spawnedPortSpheres = new List<GameObject>();
         private bool _pipePortAConfirmed;
 
-        // Deferred retry for tool action target spawning â€” handles event ordering
-        // race where PartInteractionBridge processes StepStateChanged before
-        // ToolRuntimeController has resolved the primary tool action.
-        private bool _toolTargetRetryPending;
-
         // Snap animation (list-based for multi-target steps)
         private struct SnapEntry
         {
@@ -160,6 +144,7 @@ namespace OSE.UI.Root
         {
             _spawner = GetComponent<PackagePartSpawner>();
             _setup = GetComponent<PreviewSceneSetup>();
+            _useHandler ??= new UseStepHandler(_spawner, () => _setup, () => CursorManager, _spawnedGhosts, GetCurrentSequentialTargetId);
             RuntimeEventBus.Subscribe<StepStateChanged>(HandleStepStateChanged);
             RuntimeEventBus.Subscribe<PartStateChanged>(HandlePartStateChanged);
             RuntimeEventBus.Subscribe<HintRequested>(HandleHintRequested);
@@ -210,6 +195,7 @@ namespace OSE.UI.Root
             _requiredPartIdsForStep = null;
             ClearToolGhostIndicator();
             ClearToolActionTargets();
+            _useHandler?.Cleanup();
             _startupSyncPending = false;
         }
 
@@ -235,11 +221,7 @@ namespace OSE.UI.Root
             UpdateGhostSelectionPulse();
             UpdateRequiredPartPulse();
             UpdateToolGhostIndicatorPosition();
-            UpdateToolCursorProximity();
-            UpdateToolActionTargetVisuals();
-
-            if (_toolTargetRetryPending)
-                RefreshToolActionTargets();
+            _useHandler?.Tick();
         }
 
         private void TrySyncStartupState()
@@ -387,21 +369,21 @@ namespace OSE.UI.Root
             if (step == null)
                 return;
 
-            // When the step has required tool actions, route through the tool execution path.
-            // Do NOT fall through to confirmation-only completion â€” the tool action result
-            // determines when the step completes via HandleToolPrimaryResult.
             bool stepHasToolActions = step.requiredToolActions != null && step.requiredToolActions.Length > 0;
+            bool allowToolActionStepCompletion = !step.IsPlacement;
 
             if (stepHasToolActions)
             {
-                if (!TryExecuteToolPrimaryActionFromPointer(session, stepController))
+                if (TryExecuteToolPrimaryActionFromPointer(session, stepController, allowToolActionStepCompletion))
+                    return;
+
+                if (step.IsToolAction)
                 {
-                    // Tool action failed (wrong tool, no target hit, etc.).
-                    // Flash visual feedback if we have spawned tool targets.
-                    if (_spawnedToolActionTargets.Count > 0)
+                    if ((_useHandler?.SpawnedTargetCount ?? 0) > 0)
                         FlashToolTargetOnFailure();
+
+                    return;
                 }
-                return;
             }
 
             // Non-tool-action steps: try tool action first (for measurement/equip steps),
@@ -447,8 +429,8 @@ namespace OSE.UI.Root
 
         /// <summary>
         /// Called by V2 orchestrator via LegacyBridgeAdapter when tool mode is locked.
-        /// Directly executes the tool primary action using screen position + auto-resolve,
-        /// bypassing the canonical action router to avoid wiring failures.
+        /// Directly executes the tool primary action using a direct hit on a spawned
+        /// tool target sphere, bypassing the canonical action router to avoid wiring failures.
         /// </summary>
         public bool TryExternalToolAction(Vector2 screenPos)
         {
@@ -466,32 +448,25 @@ namespace OSE.UI.Root
             if (stepController == null || !stepController.HasActiveStep)
                 return false;
 
-            OseLog.Info($"[PartInteraction] TryExternalToolAction at ({screenPos.x:F0},{screenPos.y:F0}). Spawned={_spawnedToolActionTargets.Count}. Tool='{session.ToolController?.ActiveToolId ?? "none"}'.");
+            StepDefinition step = stepController.CurrentStepDefinition;
+            bool allowToolActionStepCompletion = step == null || !step.IsPlacement;
+
+            int spawnedTargetCount = _useHandler?.SpawnedTargetCount ?? 0;
+            OseLog.Info($"[PartInteraction] TryExternalToolAction at ({screenPos.x:F0},{screenPos.y:F0}). Spawned={spawnedTargetCount}. Tool='{session.ToolController?.ActiveToolId ?? "none"}'.");
             string interactedTargetId = null;
 
             ToolActionTargetInfo resolvedTarget = null;
-            if (TryGetToolActionTargetAtScreen(screenPos, out resolvedTarget))
+            if (TryGetToolActionTargetForExecution(screenPos, out resolvedTarget))
                 interactedTargetId = resolvedTarget.TargetId;
 
             if (interactedTargetId == null)
-                interactedTargetId = TryAutoResolveSingleToolTarget();
-
-            if (interactedTargetId == null)
             {
-                OseLog.Info($"[PartInteraction] TryExternalToolAction: no target found at ({screenPos.x:F0},{screenPos.y:F0}). Spawned={_spawnedToolActionTargets.Count}.");
+                OseLog.Info($"[PartInteraction] TryExternalToolAction: no ready tool target resolved at ({screenPos.x:F0},{screenPos.y:F0}). Spawned={spawnedTargetCount}.");
                 return false;
             }
 
             // Capture world position before executing (the target may be destroyed/refreshed after).
-            if (resolvedTarget != null)
-                _lastToolActionWorldPos = resolvedTarget.transform.position;
-            else
-            {
-                // Single-target auto-resolve: get position from the spawned target.
-                var singleTarget = _spawnedToolActionTargets.Count == 1 ? _spawnedToolActionTargets[0] : null;
-                if (singleTarget != null)
-                    _lastToolActionWorldPos = singleTarget.transform.position;
-            }
+            _lastToolActionWorldPos = resolvedTarget.transform.position;
 
             if (!TryExecuteToolPrimaryAction(interactedTargetId, out bool shouldCompleteStep, out bool handled))
             {
@@ -503,6 +478,9 @@ namespace OSE.UI.Root
                 return false;
 
             OseLog.Info($"[PartInteraction] TryExternalToolAction: success on '{interactedTargetId}'.");
+            if (!allowToolActionStepCompletion)
+                return true;
+
             return HandleToolPrimaryResult(session, stepController, shouldCompleteStep);
         }
 
@@ -541,8 +519,6 @@ namespace OSE.UI.Root
 
             if (_externalHoveredPartForUi != null)
             {
-                // Re-push every frame while hovered so hover info remains visible
-                // even if selected/info updates occur during drag/place events.
                 PushPartInfoToUI(_externalHoveredPartForUi.name, isHoverInfo: true);
                 return;
             }
@@ -563,6 +539,40 @@ namespace OSE.UI.Root
                 ui.HidePartInfoPanel();
             }
         }
+
+        private bool TryFocusCameraOnToolTarget(Vector2 screenPos)
+            => _useHandler != null && _useHandler.TryFocusCameraOnToolTarget(screenPos);
+
+        private void FlashToolTargetOnFailure()
+            => _useHandler?.FlashToolTargetOnFailure();
+
+        private bool TryExecuteToolPrimaryActionFromPointer(
+            MachineSessionController session,
+            StepController stepController,
+            bool allowStepCompletion = true)
+            => _useHandler != null && _useHandler.TryExecuteToolPrimaryActionFromPointer(session, stepController, allowStepCompletion);
+
+        private bool TryExecuteToolPrimaryAction(
+            string interactedTargetId,
+            out bool shouldCompleteStep,
+            out bool handled)
+        {
+            if (_useHandler != null)
+                return _useHandler.TryExecuteToolPrimaryAction(interactedTargetId, out shouldCompleteStep, out handled);
+
+            shouldCompleteStep = false;
+            handled = false;
+            return false;
+        }
+
+        private bool HandleToolPrimaryResult(
+            MachineSessionController session,
+            StepController stepController,
+            bool shouldCompleteStep)
+            => UseStepHandler.HandleToolPrimaryResult(session, stepController, shouldCompleteStep);
+
+        private void RefreshToolActionTargets()
+            => _useHandler?.RefreshToolActionTargets();
 
         private void TrySelectFromPointer(bool isInspect)
         {
@@ -589,8 +599,6 @@ namespace OSE.UI.Root
             else
                 _selectionService.NotifySelected(candidate);
 
-            // Keep pending candidate alive through selection callbacks so pointer-down
-            // drag tracking can start from HandleSelectionServiceSelection.
             _pendingSelectPart = null;
         }
 
@@ -2299,7 +2307,7 @@ namespace OSE.UI.Root
         }
 
         private void RefreshToolGhostIndicator()
-            => CursorManager.Refresh(_spawner, _setup, _hintGhost == CursorManager.ToolGhost, ClearHintHighlight);
+            => _ = CursorManager.RefreshAsync(_spawner, _setup, _hintGhost == CursorManager.ToolGhost, ClearHintHighlight);
 
         private void UpdateToolGhostIndicatorPosition()
         {
@@ -2336,562 +2344,25 @@ namespace OSE.UI.Root
             if (_spawnedPortSpheres.Count > 0)
                 return false;
 
-            if (!TryGetPrimaryToolActionSnapshot(out ToolRuntimeController.ToolActionSnapshot actionSnapshot, out _))
-                return false;
-
             // Block pointer-down from reaching part selection/drag when tool mode is active.
             // The actual tool action execution is handled exclusively by the canonical action
             // path (HandleConfirmOrToolPrimaryAction) to prevent double-execution per click.
             return true;
         }
 
-        private bool TryFocusCameraOnToolTarget(Vector2 screenPos)
-        {
-            if (_spawnedToolActionTargets.Count == 0)
-                return false;
-
-            if (!TryGetToolActionTargetAtScreen(screenPos, out ToolActionTargetInfo targetInfo))
-                return false;
-
-            if (targetInfo == null)
-                return false;
-
-            Camera cam = Camera.main;
-            if (cam == null)
-                return true;
-
-            // Use SendMessage to call FocusOn on AssemblyCameraRig without a direct
-            // assembly reference to OSE.Interaction.V2.
-            cam.SendMessage("FocusOn", targetInfo.transform.position, SendMessageOptions.DontRequireReceiver);
-
-            return true;
-        }
-
-        private void FlashToolTargetOnFailure()
-        {
-            for (int i = 0; i < _spawnedToolActionTargets.Count; i++)
-            {
-                if (_spawnedToolActionTargets[i] == null) continue;
-                MaterialHelper.ApplyToolTargetMarker(_spawnedToolActionTargets[i], ToolTargetFailColor);
-            }
-            // Reset color next frame via UpdateToolActionTargetVisuals
-        }
-
-        private bool TryExecuteToolPrimaryActionFromPointer(
-            MachineSessionController session,
-            StepController stepController)
-        {
-            string interactedTargetId = null;
-
-            // Use screen-based detection (includes enlarged collider + proximity fallback)
-            // instead of hover state which may be suppressed when tool mode is locked.
-            if (TryGetPointerPosition(out Vector2 pointerPos) &&
-                TryGetToolActionTargetAtScreen(pointerPos, out ToolActionTargetInfo resolvedTarget))
-                interactedTargetId = resolvedTarget.TargetId;
-
-            // Single-target auto-resolve.
-            if (interactedTargetId == null)
-            {
-                interactedTargetId = TryAutoResolveSingleToolTarget();
-                if (interactedTargetId != null)
-                    OseLog.VerboseInfo($"[PartInteraction] Tool action auto-resolved to single target '{interactedTargetId}'.");
-            }
-
-            if (interactedTargetId == null)
-            {
-                OseLog.VerboseInfo($"[PartInteraction] Tool action: no target resolved. Spawned targets={_spawnedToolActionTargets.Count}.");
-                return false;
-            }
-
-            if (!TryExecuteToolPrimaryAction(interactedTargetId, out bool shouldCompleteStep, out bool handled))
-            {
-                OseLog.VerboseInfo($"[PartInteraction] Tool action failed for target '{interactedTargetId}'. Check ToolRuntimeController logs.");
-                return false;
-            }
-
-            if (!handled)
-                return false;
-
-            return HandleToolPrimaryResult(session, stepController, shouldCompleteStep);
-        }
-
-        private bool TryExecuteToolPrimaryAction(
-            string interactedTargetId,
-            out bool shouldCompleteStep,
-            out bool handled)
-        {
-            shouldCompleteStep = false;
-            handled = false;
-
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session) || session.ToolController == null)
-            {
-                OseLog.VerboseInfo("[PartInteraction] TryExecuteToolPrimaryAction: no session or tool controller.");
-                return false;
-            }
-
-            ToolRuntimeController.ToolActionExecutionResult toolResult =
-                session.ToolController.TryExecutePrimaryAction(interactedTargetId);
-
-            handled = toolResult.Handled;
-            shouldCompleteStep = toolResult.ShouldCompleteStep;
-
-            // Only treat as success when the action actually ran (FailureReason == None).
-            // "Handled" being true on a Failed result means the controller understood the request
-            // but rejected it (wrong tool, wrong target, etc.) â€” NOT a successful execution.
-            bool actionRan = handled && toolResult.FailureReason == ToolActionFailureReason.None;
-            if (!actionRan)
-            {
-                if (toolResult.FailureReason != ToolActionFailureReason.None)
-                    OseLog.Info($"[PartInteraction] Tool action rejected ({toolResult.FailureReason}): {toolResult.Message}.");
-                return false;
-            }
-
-            RefreshToolActionTargets();
-            return true;
-        }
-
-        private bool HandleToolPrimaryResult(
-            MachineSessionController session,
-            StepController stepController,
-            bool shouldCompleteStep)
-        {
-            if (!shouldCompleteStep)
-                return true;
-
-            stepController.CompleteStep(session.GetElapsedSeconds());
-            return true;
-        }
-
-        /// <summary>
-        /// When exactly one tool action target is spawned, return its id so any tap triggers the action.
-        /// </summary>
-        private string TryAutoResolveSingleToolTarget()
-        {
-            if (_spawnedToolActionTargets.Count != 1)
-                return null;
-
-            GameObject single = _spawnedToolActionTargets[0];
-            if (single == null)
-                return null;
-
-            var info = single.GetComponent<ToolActionTargetInfo>();
-            return info != null ? info.TargetId : null;
-        }
-
-        private void RefreshToolActionTargets()
-        {
-            ClearToolActionTargets();
-            _toolTargetRetryPending = false;
-
-            if (!Application.isPlaying || _spawner == null || _setup == null)
-                return;
-
-            // No targets needed if there's no active (non-terminal) step.
-            if (ServiceRegistry.TryGet<MachineSessionController>(out var earlySession))
-            {
-                StepController earlyStepCtrl = earlySession?.AssemblyController?.StepController;
-                if (earlyStepCtrl == null || !earlyStepCtrl.HasActiveStep)
-                    return;
-            }
-
-            MachineSessionController session = null;
-            string requiredToolId = null;
-            string targetId = null;
-
-            if (TryGetPrimaryToolActionSnapshot(out ToolRuntimeController.ToolActionSnapshot actionSnapshot, out session))
-            {
-                if (actionSnapshot.IsCompleted)
-                    return;
-
-                requiredToolId = actionSnapshot.ToolId;
-                targetId = actionSnapshot.TargetId;
-            }
-            else
-            {
-                if (!TryResolveFallbackStepToolActionTarget(out session, out requiredToolId, out targetId))
-                {
-                    // If the active step defines required tool actions but the
-                    // snapshot is not yet available (event ordering race), schedule
-                    // a one-frame retry instead of giving up.
-                    if (ActiveStepHasRequiredToolActions())
-                    {
-                        _toolTargetRetryPending = true;
-                        return;
-                    }
-                    TryWarnMissingPrimaryToolActionSnapshot();
-                    return;
-                }
-
-                StepController stepController = session?.AssemblyController?.StepController;
-                OseLog.Warn($"[PartInteraction] Falling back to step-defined tool target for step '{stepController?.CurrentStepDefinition?.id}'.");
-            }
-
-            if (string.IsNullOrWhiteSpace(targetId))
-                return;
-
-            // In sequential mode, only show tool targets for the current active target.
-            string seqTarget = GetCurrentSequentialTargetId();
-            if (seqTarget != null && !string.Equals(targetId, seqTarget, System.StringComparison.OrdinalIgnoreCase))
-                return;
-
-            if (!TryResolveToolActionTargetPose(session.Package, targetId, out Vector3 markerPos, out Quaternion markerRot, out Vector3 markerScale))
-            {
-                OseLog.Warn($"[PartInteraction] Could not resolve tool target pose for '{targetId}'.");
-                return;
-            }
-
-            // Prefer anchoring the marker to the currently spawned ghost when available.
-            // This keeps Step 5 guidance aligned with what the user is already looking at.
-            if (TryGetGhostTargetPose(targetId, out Vector3 ghostPos, out Quaternion ghostRot, out Vector3 ghostScale))
-            {
-                markerPos = ghostPos;
-                markerRot = ghostRot;
-                markerScale = ghostScale;
-            }
-
-            Transform previewRoot = _setup.PreviewRoot;
-            GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            if (previewRoot != null)
-                marker.transform.SetParent(previewRoot, false);
-
-            marker.name = $"ToolTarget_{requiredToolId}_{targetId}";
-            marker.transform.SetLocalPositionAndRotation(markerPos, markerRot);
-            marker.transform.localScale = ResolveToolTargetMarkerScale(markerScale);
-            float markerLift = Mathf.Max(markerScale.y * 0.75f, marker.transform.localScale.y * 0.6f);
-            marker.transform.position += Vector3.up * markerLift;
-
-            PackagePartSpawner.EnsureColliders(marker);
-            // Enlarge collider for more forgiving tap detection.
-            var toolCol = marker.GetComponent<SphereCollider>();
-            if (toolCol != null)
-                toolCol.radius = ToolTargetColliderRadius;
-            MaterialHelper.ApplyToolTargetMarker(marker, ToolTargetIdleColor);
-
-            ToolActionTargetInfo info = marker.GetComponent<ToolActionTargetInfo>();
-            if (info == null)
-                info = marker.AddComponent<ToolActionTargetInfo>();
-            info.TargetId = targetId;
-            info.RequiredToolId = requiredToolId;
-            info.BaseScale = marker.transform.localScale;
-            info.BaseLocalPosition = marker.transform.localPosition;
-
-            _spawnedToolActionTargets.Add(marker);
-
-            OseLog.VerboseInfo(
-                $"[PartInteraction] Spawned tool target marker '{marker.name}' for target '{info.TargetId}' at local {info.BaseLocalPosition} / world {marker.transform.position}.");
-        }
-
-        private void UpdateToolActionTargetVisuals()
-        {
-            if (_spawnedToolActionTargets.Count == 0)
-            {
-                _hoveredToolActionTarget = null;
-                return;
-            }
-
-            _hoveredToolActionTarget = TryGetHoveredToolActionTarget(out ToolActionTargetInfo hoveredTarget)
-                ? hoveredTarget.gameObject
-                : null;
-
-            Color idlePulseColor = ToolTargetIdleColor;
-            float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * ToolTargetPulseSpeed);
-            float intensity = Mathf.Lerp(0.75f, 1.25f, pulse);
-            idlePulseColor = new Color(
-                Mathf.Clamp01(idlePulseColor.r * intensity),
-                Mathf.Clamp01(idlePulseColor.g * intensity),
-                Mathf.Clamp01(idlePulseColor.b * intensity),
-                Mathf.Clamp01(0.55f + 0.35f * pulse));
-
-            // When the tool cursor is in "ready" state (near a target), make targets glow brighter too.
-            bool cursorNearTarget = CursorManager.CursorInReadyState;
-
-            Camera cam = Camera.main;
-
-            for (int i = _spawnedToolActionTargets.Count - 1; i >= 0; i--)
-            {
-                GameObject target = _spawnedToolActionTargets[i];
-                if (target == null)
-                {
-                    _spawnedToolActionTargets.RemoveAt(i);
-                    continue;
-                }
-
-                Color targetColor = (target == _hoveredToolActionTarget || cursorNearTarget)
-                    ? ToolTargetHoverColor
-                    : idlePulseColor;
-
-                // Proximity-based transparency: fade out as camera gets closer
-                if (cam != null)
-                {
-                    float dist = Vector3.Distance(cam.transform.position, target.transform.position);
-                    if (dist < ToolTargetFadeStartDistance)
-                    {
-                        float t = Mathf.InverseLerp(ToolTargetFadeEndDistance, ToolTargetFadeStartDistance, dist);
-                        targetColor.a *= t;
-                    }
-                }
-
-                MaterialHelper.SetMaterialColor(target, targetColor);
-
-                ToolActionTargetInfo info = target.GetComponent<ToolActionTargetInfo>();
-                Vector3 baseScale = info != null && info.BaseScale.sqrMagnitude > 0f
-                    ? info.BaseScale
-                    : target.transform.localScale;
-                float scaleFactor = 1f + (ToolTargetScalePulse * pulse);
-                target.transform.localScale = baseScale * scaleFactor;
-
-                Vector3 baseLocalPosition = info != null
-                    ? info.BaseLocalPosition
-                    : target.transform.localPosition;
-                target.transform.localPosition = baseLocalPosition + (Vector3.up * (ToolTargetHeightPulse * (pulse - 0.5f)));
-            }
-        }
-
-        /// <summary>
-        /// Checks screen-space proximity between the pointer (or tool cursor) and tool action targets.
-        /// When near: tool cursor turns green ("ready") and target glows brighter.
-        /// When overlapping: auto-triggers the tool action (same as clicking).
-        /// Works with or without a tool ghost indicator â€” uses pointer position directly.
-        /// </summary>
-        private void UpdateToolCursorProximity()
-        {
-            if (_spawnedToolActionTargets.Count == 0)
-            {
-                if (CursorManager.CursorInReadyState)
-                    CursorManager.RestoreColor();
-                return;
-            }
-
-            Camera cam = Camera.main;
-            if (cam == null)
-            {
-                if (CursorManager.CursorInReadyState)
-                    CursorManager.RestoreColor();
-                return;
-            }
-
-            // Compute the tool cursor's screen position from its world position (most accurate)
-            // Also get pointer screen position as a fallback
-            Vector2 cursorScreen = Vector2.zero;
-            bool hasCursorScreen = false;
-            if (CursorManager.ToolGhost != null && CursorManager.ToolGhost.activeSelf)
-            {
-                Vector3 cursorWorldScreen = cam.WorldToScreenPoint(CursorManager.ToolGhost.transform.position);
-                if (cursorWorldScreen.z > 0f)
-                {
-                    cursorScreen = new Vector2(cursorWorldScreen.x, cursorWorldScreen.y);
-                    hasCursorScreen = true;
-                }
-            }
-
-            Vector2 pointerScreen = Vector2.zero;
-            bool hasPointer = TryGetPointerPosition(out pointerScreen);
-
-            if (!hasCursorScreen && !hasPointer)
-            {
-                if (CursorManager.CursorInReadyState)
-                    CursorManager.RestoreColor();
-                return;
-            }
-
-            float closestScreenDist = float.MaxValue;
-            ToolActionTargetInfo closestTarget = null;
-
-            for (int i = 0; i < _spawnedToolActionTargets.Count; i++)
-            {
-                GameObject target = _spawnedToolActionTargets[i];
-                if (target == null) continue;
-
-                Vector3 targetScreen = cam.WorldToScreenPoint(target.transform.position);
-                if (targetScreen.z <= 0f) continue;
-
-                Vector2 targetScreen2D = new Vector2(targetScreen.x, targetScreen.y);
-
-                // Use the CLOSER of: tool cursor screen pos vs pointer screen pos
-                float dist = float.MaxValue;
-                if (hasCursorScreen)
-                    dist = Vector2.Distance(cursorScreen, targetScreen2D);
-                if (hasPointer)
-                    dist = Mathf.Min(dist, Vector2.Distance(pointerScreen, targetScreen2D));
-
-                if (dist < closestScreenDist)
-                {
-                    closestScreenDist = dist;
-                    closestTarget = target.GetComponent<ToolActionTargetInfo>();
-                }
-            }
-
-            // Visual feedback: tool cursor turns green when near a target.
-            if (closestScreenDist <= ToolCursorManager.ScreenProximityReadyPx)
-                CursorManager.SetReadyState(true);
-            else
-                CursorManager.SetReadyState(false);
-
-        }
-
-
-
         private void ClearToolActionTargets()
-        {
-            if (_hoveredToolActionTarget != null)
-                _hoveredToolActionTarget = null;
-
-            for (int i = _spawnedToolActionTargets.Count - 1; i >= 0; i--)
-            {
-                GameObject marker = _spawnedToolActionTargets[i];
-                if (marker == null)
-                    continue;
-
-                Destroy(marker);
-            }
-
-            _spawnedToolActionTargets.Clear();
-        }
-
-        private bool TryGetPrimaryToolActionSnapshot(
-            out ToolRuntimeController.ToolActionSnapshot snapshot,
-            out MachineSessionController session)
-        {
-            snapshot = default;
-            session = null;
-
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out session) ||
-                session == null ||
-                session.Package == null ||
-                session.ToolController == null)
-            {
-                return false;
-            }
-
-            return session.ToolController.TryGetPrimaryActionSnapshot(out snapshot);
-        }
-
-        private void TryWarnMissingPrimaryToolActionSnapshot()
-        {
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session) || session == null)
-                return;
-
-            StepController stepController = session.AssemblyController?.StepController;
-            if (stepController == null || !stepController.HasActiveStep)
-                return;
-
-            StepDefinition step = stepController.CurrentStepDefinition;
-            if (step?.requiredToolActions == null || step.requiredToolActions.Length == 0)
-                return;
-
-            OseLog.Warn($"[PartInteraction] Active step '{step.id}' has required tool actions, but no primary tool action snapshot was available.");
-        }
-
-        private bool ActiveStepHasRequiredToolActions()
-        {
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session) || session == null)
-                return false;
-
-            StepController stepController = session.AssemblyController?.StepController;
-            if (stepController == null || !stepController.HasActiveStep)
-                return false;
-
-            StepDefinition step = stepController.CurrentStepDefinition;
-            return step?.requiredToolActions != null && step.requiredToolActions.Length > 0;
-        }
-
-        private bool TryResolveFallbackStepToolActionTarget(
-            out MachineSessionController session,
-            out string requiredToolId,
-            out string targetId)
-        {
-            session = null;
-            requiredToolId = null;
-            targetId = null;
-
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out session) ||
-                session == null ||
-                session.Package == null)
-            {
-                return false;
-            }
-
-            StepController stepController = session.AssemblyController?.StepController;
-            // Only fall back if there's an active (non-terminal) step.
-            // After step/session completion, don't re-spawn tool targets.
-            if (stepController == null || !stepController.HasActiveStep)
-                return false;
-
-            StepDefinition step = stepController.CurrentStepDefinition;
-            if (step?.requiredToolActions == null || step.requiredToolActions.Length == 0)
-                return false;
-
-            for (int i = 0; i < step.requiredToolActions.Length; i++)
-            {
-                ToolActionDefinition action = step.requiredToolActions[i];
-                if (action == null)
-                    continue;
-
-                if (string.IsNullOrWhiteSpace(requiredToolId) && !string.IsNullOrWhiteSpace(action.toolId))
-                    requiredToolId = action.toolId.Trim();
-                if (string.IsNullOrWhiteSpace(targetId) && !string.IsNullOrWhiteSpace(action.targetId))
-                    targetId = action.targetId.Trim();
-            }
-
-            if (string.IsNullOrWhiteSpace(requiredToolId) && step.relevantToolIds != null)
-            {
-                for (int i = 0; i < step.relevantToolIds.Length; i++)
-                {
-                    if (!string.IsNullOrWhiteSpace(step.relevantToolIds[i]))
-                    {
-                        requiredToolId = step.relevantToolIds[i].Trim();
-                        break;
-                    }
-                }
-            }
-
-            if (string.IsNullOrWhiteSpace(targetId) && step.targetIds != null)
-            {
-                for (int i = 0; i < step.targetIds.Length; i++)
-                {
-                    if (!string.IsNullOrWhiteSpace(step.targetIds[i]))
-                    {
-                        targetId = step.targetIds[i].Trim();
-                        break;
-                    }
-                }
-            }
-
-            if (string.IsNullOrWhiteSpace(requiredToolId) && session.ToolController != null)
-                requiredToolId = session.ToolController.ActiveToolId;
-
-            return !string.IsNullOrWhiteSpace(targetId);
-        }
-
-        private bool TryGetHoveredToolActionTarget(out ToolActionTargetInfo targetInfo)
-        {
-            targetInfo = null;
-            if (!TryGetPointerPosition(out Vector2 screenPos))
-                return false;
-
-            return TryGetToolActionTargetAtScreen(screenPos, out targetInfo);
-        }
+            => _useHandler?.ClearToolActionTargets();
 
         private bool TryGetToolActionTargetAtScreen(Vector2 screenPos, out ToolActionTargetInfo targetInfo)
         {
             targetInfo = null;
+            return _useHandler != null && _useHandler.TryGetToolActionTargetAtScreen(screenPos, out targetInfo);
+        }
 
-            Camera cam = Camera.main;
-            if (cam == null)
-                return false;
-
-            // Layer 1: Direct raycast (now hits enlarged collider).
-            // Explicitly ignore triggers so ghost trigger colliders don't block the ray.
-            Ray ray = cam.ScreenPointToRay(screenPos);
-            if (Physics.Raycast(ray, out RaycastHit hit, 100f, ~0, QueryTriggerInteraction.Ignore))
-            {
-                targetInfo = FindToolActionTargetFromHit(hit.transform);
-                if (targetInfo != null)
-                    return true;
-            }
-
-            // Layer 2: Screen-space proximity fallback.
-            return TryGetNearestToolTargetByScreenProximity(screenPos, out targetInfo);
+        private bool TryGetToolActionTargetForExecution(Vector2 screenPos, out ToolActionTargetInfo targetInfo)
+        {
+            targetInfo = null;
+            return _useHandler != null && _useHandler.TryResolveToolActionTargetForExecution(screenPos, out targetInfo);
         }
 
         /// <summary>
@@ -2902,96 +2373,7 @@ namespace OSE.UI.Root
         public bool TryGetNearestToolTargetWorldPos(Vector2 screenPos, out Vector3 worldPos)
         {
             worldPos = Vector3.zero;
-            // Use the full detection pipeline: raycast first (hits the enlarged SphereCollider),
-            // then screen-space proximity fallback â€” not just proximity alone.
-            if (!TryGetToolActionTargetAtScreen(screenPos, out ToolActionTargetInfo info))
-                return false;
-            worldPos = info.transform.position;
-            return true;
-        }
-
-        private bool TryGetNearestToolTargetByScreenProximity(Vector2 screenPos, out ToolActionTargetInfo targetInfo)
-        {
-            targetInfo = null;
-            Camera cam = Camera.main;
-            if (cam == null) return false;
-
-            float threshold = Application.isMobilePlatform ? ScreenProximityMobile : ScreenProximityDesktop;
-            float closestDist = threshold;
-
-            for (int i = 0; i < _spawnedToolActionTargets.Count; i++)
-            {
-                GameObject target = _spawnedToolActionTargets[i];
-                if (target == null) continue;
-
-                Vector3 sp = cam.WorldToScreenPoint(target.transform.position);
-                if (sp.z <= 0f) continue;
-
-                float dist = Vector2.Distance(screenPos, new Vector2(sp.x, sp.y));
-                if (dist < closestDist)
-                {
-                    closestDist = dist;
-                    var info = target.GetComponent<ToolActionTargetInfo>();
-                    if (info != null)
-                        targetInfo = info;
-                }
-            }
-            return targetInfo != null;
-        }
-
-        private static ToolActionTargetInfo FindToolActionTargetFromHit(Transform hitTransform)
-        {
-            while (hitTransform != null)
-            {
-                ToolActionTargetInfo info = hitTransform.GetComponent<ToolActionTargetInfo>();
-                if (info != null)
-                    return info;
-
-                hitTransform = hitTransform.parent;
-            }
-
-            return null;
-        }
-
-        private bool TryResolveToolActionTargetPose(
-            MachinePackageDefinition package,
-            string targetId,
-            out Vector3 position,
-            out Quaternion rotation,
-            out Vector3 scale)
-        {
-            position = Vector3.zero;
-            rotation = Quaternion.identity;
-            scale = Vector3.one * 0.25f;
-
-            TargetPreviewPlacement targetPlacement = _spawner.FindTargetPlacement(targetId);
-            if (targetPlacement != null)
-            {
-                position = new Vector3(targetPlacement.position.x, targetPlacement.position.y, targetPlacement.position.z);
-                rotation = !targetPlacement.rotation.IsIdentity
-                    ? new Quaternion(targetPlacement.rotation.x, targetPlacement.rotation.y, targetPlacement.rotation.z, targetPlacement.rotation.w)
-                    : Quaternion.identity;
-                scale = new Vector3(targetPlacement.scale.x, targetPlacement.scale.y, targetPlacement.scale.z);
-                return true;
-            }
-
-            if (package != null &&
-                package.TryGetTarget(targetId, out TargetDefinition targetDef) &&
-                !string.IsNullOrWhiteSpace(targetDef.associatedPartId))
-            {
-                PartPreviewPlacement partPlacement = _spawner.FindPartPlacement(targetDef.associatedPartId);
-                if (partPlacement != null)
-                {
-                    position = new Vector3(partPlacement.playPosition.x, partPlacement.playPosition.y, partPlacement.playPosition.z);
-                    rotation = !partPlacement.playRotation.IsIdentity
-                        ? new Quaternion(partPlacement.playRotation.x, partPlacement.playRotation.y, partPlacement.playRotation.z, partPlacement.playRotation.w)
-                        : Quaternion.identity;
-                    scale = new Vector3(partPlacement.playScale.x, partPlacement.playScale.y, partPlacement.playScale.z);
-                    return true;
-                }
-            }
-
-            return false;
+            return _useHandler != null && _useHandler.TryGetNearestToolTargetWorldPos(screenPos, out worldPos);
         }
 
         private bool TryGetGhostTargetPose(
@@ -3037,14 +2419,6 @@ namespace OSE.UI.Root
 
             return false;
         }
-
-        private static Vector3 ResolveToolTargetMarkerScale(Vector3 sourceScale)
-        {
-            float dominant = Mathf.Max(sourceScale.x, Mathf.Max(sourceScale.y, sourceScale.z));
-            float uniform = Mathf.Clamp(dominant * 0.85f, 0.30f, 0.75f);
-            return Vector3.one * uniform;
-        }
-
         /// <summary>
         /// Removes the ghost associated with a specific part (used when a part is placed
         /// in a multi-target step so remaining ghosts stay visible).
@@ -3797,7 +3171,7 @@ namespace OSE.UI.Root
             return null;
         }
 
-        private sealed class ToolActionTargetInfo : MonoBehaviour
+        internal sealed class ToolActionTargetInfo : MonoBehaviour
         {
             public string TargetId;
             public string RequiredToolId;
@@ -3805,7 +3179,7 @@ namespace OSE.UI.Root
             public Vector3 BaseLocalPosition;
         }
 
-        private sealed class GhostPlacementInfo : MonoBehaviour
+        internal sealed class GhostPlacementInfo : MonoBehaviour
         {
             public string TargetId;
             public string PartId;
@@ -4100,6 +3474,6 @@ namespace OSE.UI.Root
         }
 
         private void SpawnPipeCursorGhost(MachinePackageDefinition package, StepDefinition step)
-            => CursorManager.SpawnPipeCursorGhost(package, step, FindSpawnedPart, _spawner);
+            => _ = CursorManager.SpawnPipeCursorGhostAsync(package, step, FindSpawnedPart, _spawner);
     }
 }

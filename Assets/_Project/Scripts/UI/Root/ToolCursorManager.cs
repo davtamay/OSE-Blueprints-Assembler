@@ -1,4 +1,6 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using OSE.App;
 using OSE.Content;
 using OSE.Core;
@@ -57,8 +59,9 @@ namespace OSE.UI.Root
         }
 
         /// <summary>Loads the active tool model, parents it to the camera and configures it as the cursor ghost.</summary>
-        public void Refresh(PackagePartSpawner spawner, PreviewSceneSetup setup,
-                            bool toolGhostIsHintGhost, Action clearHintCallback)
+        public async Task RefreshAsync(PackagePartSpawner spawner, PreviewSceneSetup setup,
+                            bool toolGhostIsHintGhost, Action clearHintCallback,
+                            CancellationToken ct = default)
         {
             Clear(toolGhostIsHintGhost, clearHintCallback);
 
@@ -68,9 +71,11 @@ namespace OSE.UI.Root
             if (!TryGetActiveToolDefinition(out string activeToolId, out ToolDefinition tool))
                 return;
 
-            GameObject ghostTool = !string.IsNullOrWhiteSpace(tool.assetRef)
-                ? spawner.TryLoadPackageAsset(tool.assetRef)
-                : null;
+            GameObject ghostTool = null;
+            if (!string.IsNullOrWhiteSpace(tool.assetRef))
+            {
+                ghostTool = await spawner.LoadPackageAssetAsync(tool.assetRef, ct: ct);
+            }
 
             if (ghostTool == null)
                 ghostTool = GameObject.CreatePrimitive(PrimitiveType.Capsule);
@@ -156,8 +161,9 @@ namespace OSE.UI.Root
         }
 
         /// <summary>Spawns a semi-transparent clone of the pipe part that tracks the cursor.</summary>
-        public void SpawnPipeCursorGhost(MachinePackageDefinition package, StepDefinition step,
-                                         Func<string, GameObject> findSpawnedPart, PackagePartSpawner spawner)
+        public async Task SpawnPipeCursorGhostAsync(MachinePackageDefinition package, StepDefinition step,
+                                         Func<string, GameObject> findSpawnedPart, PackagePartSpawner spawner,
+                                         CancellationToken ct = default)
         {
             ClearPipeCursorGhost();
 
@@ -174,7 +180,7 @@ namespace OSE.UI.Root
             else if (package.TryGetPart(partId, out PartDefinition partDef)
                      && !string.IsNullOrWhiteSpace(partDef.assetRef))
             {
-                ghost = spawner.TryLoadPackageAsset(partDef.assetRef);
+                ghost = await spawner.LoadPackageAssetAsync(partDef.assetRef, ct: ct);
             }
 
             if (ghost == null)

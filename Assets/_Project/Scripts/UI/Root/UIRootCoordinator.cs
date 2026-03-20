@@ -55,9 +55,20 @@ namespace OSE.UI.Root
         private Button _repositionButton;
         private Button _resetPositionButton;
         private bool _repositionActive;
+        private VisualElement _rootElement;
         private VisualElement _introOverlay;
         private bool _introVisible;
+        private bool _introDismissedThisSession;
         private string _introMachineId;
+        private bool _pendingIntroOverlayBuild;
+        private string _pendingIntroTitle;
+        private string _pendingIntroDescription;
+        private string _pendingIntroDifficulty;
+        private int _pendingIntroEstimatedMinutes;
+        private string[] _pendingIntroLearningObjectives;
+        private string _pendingIntroImageRef;
+        private int _pendingIntroSavedCompletedSteps;
+        private int _pendingIntroSavedTotalSteps;
         private const float ToolCursorBadgeWidth = 172f;
         private const float ToolCursorBadgeHeight = 34f;
         private const float MouseCursorOffsetY = 22f;
@@ -128,11 +139,29 @@ namespace OSE.UI.Root
         {
             TryInitialize();
             RuntimeEventBus.Subscribe<RepositionModeChanged>(HandleRepositionModeChangedUI);
+            RuntimeEventBus.Subscribe<StepStateChanged>(HandleRuntimeStepStateChanged);
+            RuntimeEventBus.Subscribe<StepNavigated>(HandleRuntimeStepNavigated);
+            RuntimeEventBus.Subscribe<SessionCompleted>(HandleRuntimeSessionCompleted);
+        }
+
+        private void Start()
+        {
+            // UIDocument.rootVisualElement may be null during OnEnable on the first frame.
+            // Retry here where the document is guaranteed to be fully initialized.
+            if (!_isBuilt)
+            {
+                OseLog.Info("[UI] UIRootCoordinator.Start: not yet built, calling TryInitialize.");
+                TryInitialize();
+                OseLog.Info($"[UI] UIRootCoordinator.Start: after TryInitialize, _isBuilt={_isBuilt}");
+            }
         }
 
         private void OnDisable()
         {
             RuntimeEventBus.Unsubscribe<RepositionModeChanged>(HandleRepositionModeChangedUI);
+            RuntimeEventBus.Unsubscribe<StepStateChanged>(HandleRuntimeStepStateChanged);
+            RuntimeEventBus.Unsubscribe<StepNavigated>(HandleRuntimeStepNavigated);
+            RuntimeEventBus.Unsubscribe<SessionCompleted>(HandleRuntimeSessionCompleted);
             UnsubscribeFromToolRuntime();
             UnregisterPresentationAdapter();
             TeardownUi();
@@ -140,6 +169,20 @@ namespace OSE.UI.Root
 
         private void Update()
         {
+            // Invariant: keep this retry path. First-frame UIDocument readiness is not stable,
+            // and removing it reintroduces missing UI on initial play.
+            if (!_isBuilt)
+            {
+                TryInitialize();
+                if (!_isBuilt) return;
+            }
+
+            if (_introVisible && _pendingIntroOverlayBuild && TryBuildPendingIntroOverlay())
+            {
+                _pendingIntroOverlayBuild = false;
+                HideAll();
+            }
+
             if (Application.isPlaying)
             {
                 EnsureToolRuntimeSubscription();
@@ -179,6 +222,25 @@ namespace OSE.UI.Root
         }
 
         public bool IsHintDisplayAllowed => _hasActiveModeProfile ? _activeModeProfile.AllowHints : true;
+        public bool IsMachineIntroVisible => _introVisible;
+
+        public void ResetMachineIntroState()
+        {
+            _introDismissedThisSession = false;
+            _pendingIntroOverlayBuild = false;
+            _activeToolId = null;
+            _hoveredToolId = null;
+            _suppressAutoEquip = false;
+            _lastAutoEquipStepId = null;
+            _autoCompletingTargetlessToolStep = false;
+            _autoCompletingEquipTaggedStep = false;
+            if (_introOverlay != null)
+            {
+                _introOverlay.RemoveFromHierarchy();
+                _introOverlay = null;
+            }
+            _introVisible = false;
+        }
 
         public void ShowInstruction(string instructionKey)
         {
@@ -292,12 +354,31 @@ namespace OSE.UI.Root
             int estimatedMinutes, string[] learningObjectives, string imageRef,
             int savedCompletedSteps = 0, int savedTotalSteps = 0)
         {
-            if (!_isBuilt) return;
+            if (_introDismissedThisSession)
+                return;
+
+            if (!_isBuilt)
+                TryInitialize();
 
             _introMachineId = title;
             _introVisible = true;
-            BuildIntroOverlay(title, description, difficulty, estimatedMinutes, learningObjectives, imageRef, savedCompletedSteps, savedTotalSteps);
-            HideAll();
+            _pendingIntroTitle = title;
+            _pendingIntroDescription = description;
+            _pendingIntroDifficulty = difficulty;
+            _pendingIntroEstimatedMinutes = estimatedMinutes;
+            _pendingIntroLearningObjectives = learningObjectives;
+            _pendingIntroImageRef = imageRef;
+            _pendingIntroSavedCompletedSteps = savedCompletedSteps;
+            _pendingIntroSavedTotalSteps = savedTotalSteps;
+
+            if (TryBuildPendingIntroOverlay())
+            {
+                _pendingIntroOverlayBuild = false;
+                HideAll();
+                return;
+            }
+
+            _pendingIntroOverlayBuild = true;
         }
 
         public void DismissMachineIntro()
@@ -305,15 +386,127 @@ namespace OSE.UI.Root
             if (!_introVisible) return;
 
             _introVisible = false;
+            _introDismissedThisSession = true;
+            _pendingIntroOverlayBuild = false;
             if (_introOverlay != null)
             {
                 _introOverlay.RemoveFromHierarchy();
                 _introOverlay = null;
             }
 
-            // Re-show panels that were hidden when the intro overlay was displayed
+            // Invariant: intro dismissal must eagerly rebuild runtime panels here.
+            // Deferring this back to event order reintroduced the missing-shell regressions.
+            if (!TryRestoreRuntimePanelsAfterIntroDismiss())
+            {
+                RefreshStepPanel();
+                RefreshSessionHudPanel();
+                RefreshPartInfoPanel();
+            }
             RefreshToolDockPanel();
             RefreshToolInfoPanel();
+        }
+
+        private bool TryRestoreRuntimePanelsAfterIntroDismiss()
+        {
+            if (!Application.isPlaying)
+                return false;
+
+            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+                return false;
+
+            MachinePackageDefinition package = session.Package;
+            StepController stepController = session.AssemblyController?.StepController;
+            StepDefinition step = stepController?.CurrentStepDefinition;
+            if (package == null || stepController == null || !stepController.HasActiveStep || step == null)
+                return false;
+
+            StepDefinition[] orderedSteps = package.GetOrderedSteps();
+            int totalSteps = orderedSteps.Length;
+            int stepNumber = StepUiContentUtility.ResolveDisplayStepNumber(orderedSteps, step);
+            if (stepNumber <= 0)
+            {
+                ProgressionController progression = session.AssemblyController?.ProgressionController;
+                if (progression == null)
+                    return false;
+
+                stepNumber = progression.CurrentStepIndex + 1;
+                totalSteps = progression.TotalSteps;
+            }
+
+            StepUiContentUtility.StepShellContent stepShell = StepUiContentUtility.BuildStepShellContent(step);
+
+            ShowStepShell(
+                stepNumber,
+                totalSteps,
+                stepShell.Title,
+                stepShell.Instruction,
+                stepShell.ShowConfirmButton,
+                stepShell.ShowHintButton,
+                stepShell.ConfirmGate);
+
+            StepUiContentUtility.PartInfoShellContent partInfo =
+                StepUiContentUtility.BuildStepPartInfoShellContent(package, step, includeFallbackWhenNoRequiredPart: false);
+            if (partInfo.HasContent)
+            {
+                ShowPartInfoShell(
+                    partInfo.PartName,
+                    partInfo.Function,
+                    partInfo.Material,
+                    partInfo.Tool,
+                    partInfo.SearchTerms);
+            }
+
+            ShowProgressUpdate(stepNumber > 0 ? stepNumber - 1 : 0, totalSteps);
+
+            MachineSessionState state = session.SessionState;
+            if (state != null)
+            {
+                ShowChallengeMetrics(
+                    state.HintsUsed,
+                    state.MistakeCount,
+                    state.CurrentStepElapsedSeconds,
+                    state.ElapsedSeconds,
+                    state.ChallengeActive);
+            }
+
+            return true;
+        }
+
+        private void HandleRuntimeStepStateChanged(StepStateChanged evt)
+        {
+            if (!Application.isPlaying || _introVisible || evt.Current != StepState.Active)
+                return;
+
+            // Ensure the tool-runtime subscription is wired up so the auto-equip
+            // mechanism fires even if ShowStepShell hasn't been called yet for this step.
+            EnsureToolRuntimeSubscription();
+            TryRestoreRuntimePanelsAfterIntroDismiss();
+        }
+
+        private void HandleRuntimeStepNavigated(StepNavigated evt)
+        {
+            if (!Application.isPlaying || _introVisible)
+                return;
+
+            TryRestoreRuntimePanelsAfterIntroDismiss();
+        }
+
+        private void HandleRuntimeSessionCompleted(SessionCompleted evt)
+        {
+            if (!Application.isPlaying)
+                return;
+
+            int minutes = (int)(evt.TotalSeconds / 60f);
+            int secs = (int)(evt.TotalSeconds % 60f);
+            string timeStr = minutes > 0 ? $"{minutes}m {secs}s" : $"{secs}s";
+
+            string machineName = "Assembly";
+            if (ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            {
+                machineName = session?.Package?.machine?.GetDisplayName() ?? machineName;
+            }
+
+            ShowMilestoneFeedback($"{machineName} Complete! ({timeStr})");
         }
 
         public void ShowChallengeMetrics(
@@ -463,9 +656,11 @@ namespace OSE.UI.Root
 
             if (root == null)
             {
-                OseLog.Warn("[UI] Root coordinator could not prepare a UIDocument root.");
+                OseLog.Warn($"[UI] BuildUi failed: _documentBootstrap={((_documentBootstrap == null) ? "NULL" : "ok")}, rootVisualElement={((_documentBootstrap != null && GetComponent<UnityEngine.UIElements.UIDocument>()?.rootVisualElement == null) ? "NULL" : "ok")}");
                 return false;
             }
+
+            _rootElement = root;
 
             UIToolkitStyleUtility.ApplyRootLayout(root);
 
@@ -837,27 +1032,42 @@ namespace OSE.UI.Root
             if (step == null)
                 return;
 
-            // Only auto-equip for steps that actually require a tool action.
-            // Placement steps may list relevantToolIds for context (e.g. clamps)
-            // but those are informational — don't force-equip them.
-            bool isToolActionStep = string.Equals(step.completionType, "tool_action", StringComparison.OrdinalIgnoreCase)
-                || (step.requiredToolActions != null && step.requiredToolActions.Length > 0);
+            bool hasRequiredToolActions = step.requiredToolActions != null && step.requiredToolActions.Length > 0;
+            bool shouldKeepToolEquipped = step.IsToolAction;
+            string toolId = ResolveRequiredToolForStep(step);
 
-            if (!isToolActionStep)
+            if (hasRequiredToolActions)
             {
-                // Not a tool step — auto-unequip whatever is held
+                if (step.IsPlacement)
+                {
+                    bool toolActionPending = true;
+                    if (_toolRuntimeController.TryGetPrimaryActionSnapshot(out ToolRuntimeController.ToolActionSnapshot snapshot) &&
+                        snapshot.IsConfigured)
+                    {
+                        toolActionPending = !snapshot.IsCompleted;
+                        if (!string.IsNullOrWhiteSpace(snapshot.ToolId))
+                            toolId = snapshot.ToolId.Trim();
+                    }
+
+                    shouldKeepToolEquipped = toolActionPending;
+                }
+                else
+                {
+                    shouldKeepToolEquipped = true;
+                }
+            }
+
+            if (!shouldKeepToolEquipped)
+            {
                 if (!string.IsNullOrWhiteSpace(_toolRuntimeController.ActiveToolId))
                 {
                     _toolRuntimeController.UnequipTool();
                     _activeToolId = _toolRuntimeController.ActiveToolId;
-                    OseLog.Info("[UI] Auto-unequipped tool (step doesn't require one).");
+                    OseLog.Info("[UI] Auto-unequipped tool (active step is in part-placement mode).");
                 }
                 return;
             }
 
-            // Resolve the correct tool from requiredToolActions first,
-            // then fall back to relevantToolIds.
-            string toolId = ResolveRequiredToolForStep(step);
             if (string.IsNullOrWhiteSpace(toolId))
                 return;
 
@@ -1176,8 +1386,17 @@ namespace OSE.UI.Root
             _toolInfoPanelController?.Unbind();
             _toolDockPanelController?.Unbind();
             _isBuilt = false;
+            _rootElement = null;
             _toolCursorBadge = null;
             _toolCursorLabel = null;
+            _introDismissedThisSession = false;
+            _pendingIntroOverlayBuild = false;
+            _activeToolId = null;
+            _hoveredToolId = null;
+            _suppressAutoEquip = false;
+            _lastAutoEquipStepId = null;
+            _autoCompletingTargetlessToolStep = false;
+            _autoCompletingEquipTaggedStep = false;
 
             if (_repositionButton != null)
             {
@@ -1278,7 +1497,23 @@ namespace OSE.UI.Root
 
         // ── Machine Intro Overlay ──
 
-        private void BuildIntroOverlay(string title, string description, string difficulty,
+        private bool TryBuildPendingIntroOverlay()
+        {
+            if (!_isBuilt)
+                return false;
+
+            return BuildIntroOverlay(
+                _pendingIntroTitle,
+                _pendingIntroDescription,
+                _pendingIntroDifficulty,
+                _pendingIntroEstimatedMinutes,
+                _pendingIntroLearningObjectives,
+                _pendingIntroImageRef,
+                _pendingIntroSavedCompletedSteps,
+                _pendingIntroSavedTotalSteps);
+        }
+
+        private bool BuildIntroOverlay(string title, string description, string difficulty,
             int estimatedMinutes, string[] learningObjectives, string imageRef,
             int savedCompletedSteps = 0, int savedTotalSteps = 0)
         {
@@ -1288,9 +1523,17 @@ namespace OSE.UI.Root
                 _introOverlay = null;
             }
 
-            var doc = GetComponent<UIDocument>();
-            VisualElement root = doc != null ? doc.rootVisualElement : null;
-            if (root == null) return;
+            VisualElement root = _rootElement;
+            if (root == null)
+            {
+                var doc = GetComponent<UIDocument>();
+                root = doc != null ? doc.rootVisualElement : null;
+                if (root != null)
+                    _rootElement = root;
+            }
+
+            if (root == null)
+                return false;
 
             bool hasSavedProgress = savedCompletedSteps > 0 && savedTotalSteps > 0;
 
@@ -1562,6 +1805,7 @@ namespace OSE.UI.Root
 
             _introOverlay.Add(card);
             root.Add(_introOverlay);
+            return true;
         }
 
         private static VisualElement CreateBadge(string text, Color bgColor)

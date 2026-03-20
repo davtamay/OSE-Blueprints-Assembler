@@ -2,7 +2,8 @@
     "name": "OSE.Content",
     "rootNamespace": "OSE.Content",
     "references": [
-        "OSE.Core"
+        "OSE.Core",
+        "glTFast"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

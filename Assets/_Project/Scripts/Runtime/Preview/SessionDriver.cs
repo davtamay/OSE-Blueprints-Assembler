@@ -1,5 +1,4 @@
 using System;
-using System.Text;
 using System.Threading.Tasks;
 using OSE.App;
 using OSE.Content;
@@ -38,7 +37,6 @@ namespace OSE.Runtime.Preview
         [Header("Session Configuration")]
         [SerializeField] private string _packageId = "onboarding_tutorial";
         [SerializeField] private SessionMode _sessionMode = SessionMode.Tutorial;
-        [SerializeField] private bool _autoStartOnPlay = true;
 
         [Header("Edit Mode Preview")]
         [SerializeField] private bool _previewInEditMode = true;
@@ -61,6 +59,8 @@ namespace OSE.Runtime.Preview
         private MachineSessionController _session;
         private bool _sessionStarted;
         private bool _introActive;
+        private bool _introDismissed;
+        private bool _pendingStepUiPush;
         private string _lastPlayModePackageId;
         private SessionMode _lastPlayModeSessionMode;
 
@@ -84,15 +84,49 @@ namespace OSE.Runtime.Preview
             {
                 _editModePreviewApplied = false;
                 RequestEditModeRefresh();
+
+                HidePreviewIfPossible();
             }
+
+        }
+
+        private void OnDisable()
+        {
+            // Always reset session state when disabled, regardless of play/edit mode.
+            // With Domain Reload disabled and [ExecuteAlways], OnDisable fires AFTER
+            // Application.isPlaying becomes true during play mode entry, so guarding
+            // with !Application.isPlaying would silently skip the reset and leave
+            // _sessionStarted=true from the previous session, blocking StartSessionAsync.
+            if (_session != null)
+            {
+                _session.PackageReady -= HandlePackageReady;
+                RuntimeEventBus.Unsubscribe<StepStateChanged>(HandleStepStateChanged);
+                RuntimeEventBus.Unsubscribe<PartStateChanged>(HandlePartStateChanged);
+                RuntimeEventBus.Unsubscribe<AssemblyCompleted>(HandleAssemblyCompleted);
+                RuntimeEventBus.Unsubscribe<SessionCompleted>(HandleSessionCompleted);
+                RuntimeEventBus.Unsubscribe<ToolActionProgressed>(HandleToolActionProgressed);
+                RuntimeEventBus.Unsubscribe<ToolActionCompleted>(HandleToolActionCompleted);
+                RuntimeEventBus.Unsubscribe<ToolActionFailed>(HandleToolActionFailed);
+                RuntimeEventBus.Unsubscribe<MachineIntroDismissed>(HandleIntroDismissed);
+                RuntimeEventBus.Unsubscribe<MachineIntroReset>(HandleIntroReset);
+            }
+            _sessionStarted = false;
+            _introActive = false;
+            _introDismissed = false;
+            _pendingStepUiPush = false;
+            IsIntroActive = false;
+            _session = null;
+            _editModePreviewApplied = false;
         }
 
         private void Start()
         {
-            if (Application.isPlaying && _autoStartOnPlay)
-            {
-                _ = StartSessionAsync();
-            }
+            HidePreviewIfPossible();
+        }
+
+        private System.Collections.IEnumerator DeferredStartSession()
+        {
+            yield break; // unused — session start is now triggered from UpdatePlayMode
         }
 
         private void Update()
@@ -157,8 +191,26 @@ namespace OSE.Runtime.Preview
 
         private void UpdatePlayMode()
         {
+            // Invariant: auto-start stays in Update, not OnEnable/Start. The UI/presentation
+            // adapter is not reliably registered earlier when ExecuteAlways and no-domain-reload
+            // are both active.
+            if (!_sessionStarted || _session == null || _session.SessionState == null)
+            {
+                _ = StartSessionAsync();
+                return;
+            }
+
             if (_session == null)
                 return;
+
+            // Invariant: keep intro self-heal polling before step pushes. This recovers the
+            // intro overlay when first-frame UI build order shifts.
+            EnsureMachineIntroVisible();
+
+            if (_pendingStepUiPush && !_introActive && PushStepToUI())
+            {
+                _pendingStepUiPush = false;
+            }
 
             _session.TickElapsed(Time.deltaTime);
             RefreshInspectorState();
@@ -237,6 +289,8 @@ namespace OSE.Runtime.Preview
             }
             _sessionStarted = false;
             _introActive = false;
+            _introDismissed = false;
+            _pendingStepUiPush = false;
             IsIntroActive = false;
             _savedCompletedSteps = 0;
             _savedTotalSteps = 0;
@@ -254,11 +308,31 @@ namespace OSE.Runtime.Preview
 
             if (!ServiceRegistry.TryGet<MachineSessionController>(out _session))
             {
-                OseLog.Error("[SessionDriver] MachineSessionController not found in ServiceRegistry. Is AppBootstrap present?");
-                _lifecycle = "ERROR: No session controller";
+                // Transient — Bootstrap may not have registered the controller yet.
+                // Reset so UpdatePlayMode can retry next frame.
+                OseLog.Warn("[SessionDriver] MachineSessionController not in ServiceRegistry yet — will retry.");
+                _lifecycle = "Waiting for session controller...";
+                _sessionStarted = false;
+                _session = null;
                 return;
             }
 
+            // Invariant: PackageReady stays subscribed before StartSessionAsync, and the rest of
+            // the runtime events stay subscribed after the await. Changing that ordering caused
+            // step UI pushes to race ahead of intro activation.
+            _session.PackageReady += HandlePackageReady;
+
+            if (ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
+            {
+                ui.SetSessionMode(_sessionMode);
+                ui.ResetMachineIntroState();
+            }
+
+            OseLog.Info($"[SessionDriver] Starting session for '{_packageId}' in {_sessionMode} mode.");
+
+            bool success = await _session.StartSessionAsync(_packageId, _sessionMode);
+
+            // Subscribe to runtime events now that startup step events have already fired.
             RuntimeEventBus.Subscribe<StepStateChanged>(HandleStepStateChanged);
             RuntimeEventBus.Subscribe<PartStateChanged>(HandlePartStateChanged);
             RuntimeEventBus.Subscribe<AssemblyCompleted>(HandleAssemblyCompleted);
@@ -269,22 +343,12 @@ namespace OSE.Runtime.Preview
             RuntimeEventBus.Subscribe<MachineIntroDismissed>(HandleIntroDismissed);
             RuntimeEventBus.Subscribe<MachineIntroReset>(HandleIntroReset);
 
-            // Fire PackageChanged before step events so scene objects exist in time
-            _session.PackageReady += HandlePackageReady;
-
-            if (ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
-            {
-                ui.SetSessionMode(_sessionMode);
-            }
-
-            OseLog.Info($"[SessionDriver] Starting session for '{_packageId}' in {_sessionMode} mode.");
-
-            bool success = await _session.StartSessionAsync(_packageId, _sessionMode);
-
             if (success)
             {
                 _lastPlayModePackageId = _packageId;
                 _lastPlayModeSessionMode = _sessionMode;
+                _introDismissed = false;
+                _pendingStepUiPush = false;
 
                 // Check for saved progress
                 _savedCompletedSteps = 0;
@@ -296,17 +360,22 @@ namespace OSE.Runtime.Preview
                     if (saved != null && saved.CompletedStepCount > 0)
                     {
                         _savedCompletedSteps = saved.CompletedStepCount;
-                        var progression = _session.AssemblyController?.ProgressionController;
-                        _savedTotalSteps = progression?.TotalSteps ?? 0;
+                        _savedTotalSteps = _session.Package?.GetOrderedSteps().Length ?? 0;
                     }
                 }
 
                 TryShowMachineIntro();
+
+                // If the package has no machine definition (no intro possible), show step directly.
+                if (_session?.Package?.machine == null)
+                    _pendingStepUiPush = !PushStepToUI();
             }
             else
             {
                 _lifecycle = "ERROR: Session failed to start";
                 OseLog.Error($"[SessionDriver] Session failed to start for '{_packageId}'.");
+                // Reset so Restart Session or package-ID change can retry cleanly.
+                _sessionStarted = false;
             }
 
             RefreshInspectorState();
@@ -328,7 +397,9 @@ namespace OSE.Runtime.Preview
             if (evt.Current == StepState.Active)
             {
                 if (!_introActive)
-                    PushStepToUI();
+                {
+                    _pendingStepUiPush = !PushStepToUI();
+                }
             }
             else if (evt.Current == StepState.Completed)
             {
@@ -358,8 +429,8 @@ namespace OSE.Runtime.Preview
                 part.GetDisplayName(),
                 part.function ?? string.Empty,
                 part.material ?? string.Empty,
-                ResolveToolNames(_session.Package, part.toolIds),
-                JoinStrings(part.searchTerms));
+                StepUiContentUtility.ResolveToolNames(_session.Package, part.toolIds),
+                StepUiContentUtility.JoinStrings(part.searchTerms));
         }
 
         private void HandleAssemblyCompleted(AssemblyCompleted evt)
@@ -371,6 +442,7 @@ namespace OSE.Runtime.Preview
         private void HandleSessionCompleted(SessionCompleted evt)
         {
             OseLog.Info($"[SessionDriver] Session '{evt.MachineId}' completed in {evt.TotalSeconds:F1}s.");
+            _pendingStepUiPush = false;
             RefreshInspectorState();
 
             if (ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
@@ -422,18 +494,26 @@ namespace OSE.Runtime.Preview
         private void TryShowMachineIntro()
         {
             if (_session?.Package?.machine == null)
+            {
+                OseLog.Warn("[SessionDriver] TryShowMachineIntro: no machine data.");
+                _introActive = false;
+                IsIntroActive = false;
                 return;
+            }
 
             if (!ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
+            {
+                OseLog.Error("[SessionDriver] TryShowMachineIntro: IPresentationAdapter not registered.");
+                _introActive = false;
+                IsIntroActive = false;
                 return;
+            }
 
             MachineDefinition machine = _session.Package.machine;
-            _introActive = true;
-            IsIntroActive = true;
 
             int totalSteps = _savedTotalSteps > 0
                 ? _savedTotalSteps
-                : (_session.AssemblyController?.ProgressionController?.TotalSteps ?? 0);
+                : (_session.Package?.GetOrderedSteps().Length ?? 0);
 
             ui.ShowMachineIntro(
                 machine.GetDisplayName(),
@@ -444,11 +524,15 @@ namespace OSE.Runtime.Preview
                 machine.introImageRef,
                 _savedCompletedSteps,
                 totalSteps);
+
+            _introActive = ui.IsMachineIntroVisible;
+            IsIntroActive = _introActive;
         }
 
         private void HandleIntroReset(MachineIntroReset evt)
         {
             _introActive = false;
+            _introDismissed = false;
             IsIntroActive = false;
             _savedCompletedSteps = 0;
             _savedTotalSteps = 0;
@@ -465,9 +549,9 @@ namespace OSE.Runtime.Preview
 
         private void HandleIntroDismissed(MachineIntroDismissed evt)
         {
-            if (!_introActive) return;
-
             _introActive = false;
+            _introDismissed = true;
+            _pendingStepUiPush = true;
             IsIntroActive = false;
 
             // Restore saved progress if available
@@ -479,26 +563,64 @@ namespace OSE.Runtime.Preview
             }
 
             OseLog.Info("[SessionDriver] Machine intro dismissed. Pushing step UI.");
-            PushStepToUI();
+            if (PushStepToUI())
+            {
+                _pendingStepUiPush = false;
+            }
         }
 
-        private void PushStepToUI()
+        private void EnsureMachineIntroVisible()
         {
-            if (_session?.Package == null)
+            if (_introDismissed || _session?.Package?.machine == null)
                 return;
 
             if (!ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
                 return;
 
+            if (ui.IsMachineIntroVisible)
+            {
+                _introActive = true;
+                IsIntroActive = true;
+                return;
+            }
+
+            TryShowMachineIntro();
+        }
+
+        private bool PushStepToUI()
+        {
+            if (_session?.Package == null)
+                return false;
+
+            if (!ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
+                return false;
+
             var stepController = _session.AssemblyController?.StepController;
             if (stepController == null || !stepController.HasActiveStep)
-                return;
+                return false;
 
             StepDefinition step = stepController.CurrentStepDefinition;
-            var progression = _session.AssemblyController.ProgressionController;
+            if (step == null)
+                return false;
+
+            StepDefinition[] orderedSteps = _session.Package.GetOrderedSteps();
+            int totalSteps = orderedSteps.Length;
+            int stepNumber = StepUiContentUtility.ResolveDisplayStepNumber(orderedSteps, step);
+
+            if (stepNumber <= 0)
+            {
+                var progression = _session.AssemblyController.ProgressionController;
+                if (progression == null)
+                    return false;
+
+                stepNumber = progression.CurrentStepIndex + 1;
+                totalSteps = progression.TotalSteps;
+            }
 
             PushStepAndPartToUI(ui, _session.Package, step,
-                progression.CurrentStepIndex + 1, progression.TotalSteps);
+                stepNumber, totalSteps);
+
+            return true;
         }
 
         // --------------------------------------------------------------------
@@ -611,45 +733,31 @@ namespace OSE.Runtime.Preview
             int stepNumber,
             int totalSteps)
         {
-            bool showConfirm = step.IsConfirmation;
-
-            ConfirmGate gate = ConfirmGate.None;
-            if (showConfirm)
-                gate = ResolveConfirmGate(step);
-
-            // Only show the hint button when hint interaction is the teaching goal
-            bool showHintButton = gate == ConfirmGate.RequestHint;
+            StepUiContentUtility.StepShellContent stepShell = StepUiContentUtility.BuildStepShellContent(step);
 
             ui.ShowStepShell(
                 stepNumber,
                 totalSteps,
-                step.GetDisplayName(),
-                step.BuildInstructionBody(),
-                showConfirm,
-                showHintButton,
-                gate);
+                stepShell.Title,
+                stepShell.Instruction,
+                stepShell.ShowConfirmButton,
+                stepShell.ShowHintButton,
+                stepShell.ConfirmGate);
 
             // Only auto-push part info for required parts.
             // Optional parts should only show info when the user selects them.
-            string partId = GetFirstNonEmpty(step.requiredPartIds);
-
-            if (!string.IsNullOrEmpty(partId) && package.TryGetPart(partId, out PartDefinition part))
+            // For preview/runtime bootstrap, keep the existing fallback payload when no
+            // required part is authored so the shell still shows useful context.
+            StepUiContentUtility.PartInfoShellContent partInfo =
+                StepUiContentUtility.BuildStepPartInfoShellContent(package, step, includeFallbackWhenNoRequiredPart: true);
+            if (partInfo.HasContent)
             {
                 ui.ShowPartInfoShell(
-                    part.GetDisplayName(),
-                    part.function ?? string.Empty,
-                    part.material ?? string.Empty,
-                    ResolveToolNames(package, part.toolIds),
-                    JoinStrings(part.searchTerms));
-            }
-            else
-            {
-                ui.ShowPartInfoShell(
-                    "No part referenced",
-                    step.instructionText ?? string.Empty,
-                    string.Empty,
-                    ResolveToolNames(package, step.relevantToolIds),
-                    string.Empty);
+                    partInfo.PartName,
+                    partInfo.Function,
+                    partInfo.Material,
+                    partInfo.Tool,
+                    partInfo.SearchTerms);
             }
 
             ui.ShowProgressUpdate(stepNumber > 0 ? stepNumber - 1 : 0, totalSteps);
@@ -749,46 +857,6 @@ namespace OSE.Runtime.Preview
         // Helpers
         // --------------------------------------------------------------------
 
-        private static ConfirmGate ResolveConfirmGate(StepDefinition step)
-        {
-            string[] tags = step.eventTags;
-            if (tags != null)
-            {
-                for (int i = 0; i < tags.Length; i++)
-                {
-                    if (string.Equals(tags[i], "select", StringComparison.OrdinalIgnoreCase))
-                        return ConfirmGate.SelectPart;
-                    if (string.Equals(tags[i], "hint", StringComparison.OrdinalIgnoreCase))
-                        return ConfirmGate.RequestHint;
-                }
-            }
-
-            // If the step is a tool-action type shown as confirmation, lock Continue
-            // until the required tool is equipped.
-            if (step.IsToolAction)
-                return ConfirmGate.EquipTool;
-
-            // If the step requires a part selection, lock Continue until user selects one.
-            if (HasAnyNonEmpty(step.requiredPartIds))
-                return ConfirmGate.SelectPart;
-
-            return ConfirmGate.None;
-        }
-
-        private static bool HasAnyNonEmpty(string[] values)
-        {
-            if (values == null || values.Length == 0)
-                return false;
-
-            for (int i = 0; i < values.Length; i++)
-            {
-                if (!string.IsNullOrWhiteSpace(values[i]))
-                    return true;
-            }
-
-            return false;
-        }
-
         private static StepDefinition ResolveStepBySequenceIndex(StepDefinition[] orderedSteps, int sequenceIndex)
         {
             for (int i = 0; i < orderedSteps.Length; i++)
@@ -798,52 +866,6 @@ namespace OSE.Runtime.Preview
             }
 
             return orderedSteps[0];
-        }
-
-        private static string GetFirstNonEmpty(string[] values)
-        {
-            if (values == null) return null;
-            for (int i = 0; i < values.Length; i++)
-            {
-                if (!string.IsNullOrWhiteSpace(values[i]))
-                    return values[i].Trim();
-            }
-            return null;
-        }
-
-        private static string ResolveToolNames(MachinePackageDefinition package, string[] toolIds)
-        {
-            if (toolIds == null || toolIds.Length == 0)
-                return string.Empty;
-
-            var sb = new StringBuilder();
-            for (int i = 0; i < toolIds.Length; i++)
-            {
-                if (string.IsNullOrWhiteSpace(toolIds[i]))
-                    continue;
-                if (package.TryGetTool(toolIds[i], out ToolDefinition tool))
-                {
-                    if (sb.Length > 0) sb.Append(", ");
-                    sb.Append(tool.GetDisplayName());
-                }
-            }
-            return sb.ToString();
-        }
-
-        private static string JoinStrings(string[] values)
-        {
-            if (values == null || values.Length == 0)
-                return string.Empty;
-
-            var sb = new StringBuilder();
-            for (int i = 0; i < values.Length; i++)
-            {
-                if (string.IsNullOrWhiteSpace(values[i]))
-                    continue;
-                if (sb.Length > 0) sb.Append(' ');
-                sb.Append(values[i].Trim());
-            }
-            return sb.ToString();
         }
 
         private static bool ResolveChallengeActive(SessionMode mode, MachinePackageDefinition package)

@@ -129,6 +129,42 @@ Suggested modules:
 - `StepCompletionEvaluator`
 - `ConstraintValidationService`
 
+### 3.3.1 Step Family Resolution
+
+When a step activates, the runtime resolves its **family** and **profile** to determine which interaction handler, validation strategy, and feedback behavior to use.
+
+Resolution rules:
+
+1. If the step defines `family`, use it directly.
+2. If `family` is absent, derive it from `completionType` using the legacy mapping defined in `STEP_CAPABILITY_MATRIX.md` §6.
+3. If both are absent, default to `Place`.
+
+Family determines the top-level dispatch:
+
+- **Place** → spawn ghost targets, enable drag-to-snap, validate position/rotation tolerance
+- **Use** → equip tool, enable tool-on-target activation, validate target coverage
+- **Connect** → spawn port markers, enable two-click endpoint selection, validate pairing
+- **Confirm** → show Continue button, validate on user acknowledgement
+
+As of Phase 15d, extracted family handlers share the `IStepFamilyHandler` interface defined in `OSE.Runtime`. `StepExecutionRouter` exists as the common dispatch abstraction, and the current mechanics harness delegates directly from `PartInteractionBridge` into the extracted handlers where that wiring is complete. The handler interface has five lifecycle methods:
+
+- `OnStepActivated(context)` — setup visuals/state when step becomes active
+- `TryHandlePointerAction(context)` — family-specific confirm/tool-primary handling; returns `true` if consumed
+- `TryHandlePointerDown(context, screenPos)` — family-specific pointer-down handling (e.g. port sphere clicks); returns `true` if consumed
+- `Update(context, deltaTime)` — per-frame animation ticking (snap lerp, flash timers, pulse colors)
+- `OnStepCompleted(context)` — cleanup when step completes
+
+Extracted handlers:
+
+- **`ConfirmStepHandler`** (Phase 15a, `OSE.Runtime`): Completes the step on pointer action. No pointer-down, update, or cleanup logic.
+- **`ConnectStepHandler`** (Phase 15b, `OSE.UI.Root`): Spawns port spheres and cable ghost on activation. Two-click confirmation via pointer-down. Renders final pipe spline and clears visuals on completion. Lives in `OSE.UI.Root` due to dependency on UI-layer types (`PackagePartSpawner`, `SplinePartFactory`, etc.).
+- **`PlaceStepHandler`** (Phase 15c, `OSE.UI.Root`): Owns ghost proximity detection, click-to-place matching, snap/flash animation, ghost selection pulse, and required-part emission pulse. Receives shared `_spawnedGhosts` list by reference. 9 constructor dependencies including `Func<>` callbacks for sequential step management.
+- **`UseStepHandler`** (Phase 15d, `OSE.UI.Root`): Owns tool-action target spawning/cleanup, target pulse/fade visuals, tool-ready evaluation, camera focus on tool targets, and tool-step execution/step completion. The bridge now delegates its tool-target and tool-primary-action entry points to this handler.
+
+Profile refines behavior within a family (e.g. `Use.Torque` shows a torque gauge, `Use.Weld` triggers welding effects). Unknown profiles fall back to the family default.
+
+The five capability payloads — guidance, validation, feedback, reinforcement, and difficulty — are resolved from the step data regardless of family. See `STEP_CAPABILITY_MATRIX.md` for the full capability shape definition.
+
 ---
 
 ## 3.4 Interaction Layer

@@ -44,7 +44,7 @@ namespace OSE.Content
         public SceneFloat3    startScale;
         public SceneFloat4    color;
 
-        // Play state — assembled position; populated from Blender layout GLB or scene capture
+        // Play state — assembled position; populated from the current preview/layout authoring pipeline
         public SceneFloat3    playPosition;
         public SceneQuaternion playRotation;
         public SceneFloat3    playScale;
@@ -118,8 +118,7 @@ namespace OSE.Content
     /// Engine-free quaternion for JSON-serializable rotations.
     /// Identity = { x:0, y:0, z:0, w:1 }.
     /// Convert to UnityEngine.Quaternion at the scene boundary.
-    /// Populated automatically by PackageAssetPostprocessor when a layout GLB/FBX is imported,
-    /// or manually via the SessionDriver "Capture from Scene" buttons.
+    /// Populated automatically by the active preview/layout import pipeline.
     /// </summary>
     [Serializable]
     public struct SceneQuaternion

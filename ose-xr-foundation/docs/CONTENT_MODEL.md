@@ -85,12 +85,16 @@ Examples:
 
 A single instructional action.
 
-Examples:
+Every step belongs to one of four **families** that define its fundamental interaction shape:
 
-- place component
-- insert bolt
-- tighten fastener
-- align part
+- **Place** — move a part to a target position (e.g. place component, insert bolt)
+- **Use** — wield a tool against targets (e.g. tighten fastener, weld joint)
+- **Connect** — link two endpoints (e.g. attach hose, route cable)
+- **Confirm** — acknowledge or verify without spatial interaction (e.g. safety check, review)
+
+A step may optionally declare a **profile** — a family-scoped refinement that selects specific behavior, effects, or validation within its family. Examples: `Place.Clamp`, `Use.Torque`, `Use.Weld`, `Connect.Cable`.
+
+For the full step capability taxonomy see `STEP_CAPABILITY_MATRIX.md`.
 
 Each step defines:
 
@@ -98,6 +102,7 @@ Each step defines:
 - required parts
 - required tools
 - validation rules
+- five capability payloads: guidance, validation, feedback, reinforcement, difficulty
 
 ---
 

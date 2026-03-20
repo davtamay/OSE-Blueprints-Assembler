@@ -1,5 +1,8 @@
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using OSE.Content;
+using OSE.Content.Loading;
 using OSE.Core;
 using OSE.Runtime.Preview;
 using System.IO;
@@ -43,11 +46,21 @@ namespace OSE.UI.Root
         public MachinePackageDefinition CurrentPackage => _currentPackage;
         public PackagePreviewConfig CurrentPreviewConfig => _currentPreviewConfig;
 
+        /// <summary>
+        /// Controls where GLB assets are fetched from at runtime.
+        /// Defaults to <see cref="StreamingAssetsSource"/> (reads from the build's StreamingAssets folder).
+        /// Swap for a <see cref="RemoteAssetSource"/> to load from S3, a CDN, or any HTTP server.
+        /// </summary>
+        public IAssetSource AssetSource { get; set; }
+
         // ── Lifecycle ──
 
         private void OnEnable()
         {
             _setup = GetComponent<PreviewSceneSetup>();
+#if !UNITY_EDITOR
+            AssetSource ??= new StreamingAssetsSource();
+#endif
             SessionDriver.PackageChanged += HandlePackageChanged;
 
             // Catch up if this component enabled after the latest package event.
@@ -100,9 +113,45 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
+        /// Asynchronously loads a package model asset using the registered <see cref="AssetSource"/>.
+        /// Returns the instantiated root GameObject parented under <paramref name="parent"/> (or
+        /// <see cref="PreviewSceneSetup.PreviewRoot"/> when null), or null on failure.
+        /// In the Editor this falls back to the synchronous AssetDatabase path so Play-mode and
+        /// edit-mode previews continue to work without glTFast round-trips.
+        /// </summary>
+        public async Task<GameObject> LoadPackageAssetAsync(
+            string assetRef,
+            Transform parent = null,
+            CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(assetRef) ||
+                string.IsNullOrWhiteSpace(_currentPackage?.packageId))
+                return null;
+
+            Transform target = parent != null ? parent : _setup.PreviewRoot;
+
+#if UNITY_EDITOR
+            // In the editor use the synchronous AssetDatabase path so imports are immediate.
+            return TryLoadPackageAsset(assetRef);
+#else
+            if (AssetSource == null)
+            {
+                OseLog.Warn("[PackagePartSpawner] AssetSource is null — cannot load asset at runtime.");
+                return null;
+            }
+
+            GameObject go = await AssetSource.LoadAsync(_currentPackage.packageId, assetRef, target, ct);
+            if (go != null)
+                EnsureColliders(go);
+            return go;
+#endif
+        }
+
+        /// <summary>
         /// Loads a package model asset from AssetDatabase and returns a new scene instance
         /// parented under PreviewRoot, or null if the asset isn't imported yet.
         /// Play-mode instances get MeshColliders; edit-mode colliders are stripped.
+        /// <para>In builds, prefer <see cref="LoadPackageAssetAsync"/> instead.</para>
         /// </summary>
         public GameObject TryLoadPackageAsset(string assetRef)
         {
@@ -160,6 +209,8 @@ namespace OSE.UI.Root
             }
             return instance;
 #else
+            // In builds use LoadPackageAssetAsync instead.
+            OseLog.Warn("[PackagePartSpawner] TryLoadPackageAsset called in a build — use LoadPackageAssetAsync.");
             return null;
 #endif
         }
@@ -181,9 +232,71 @@ namespace OSE.UI.Root
             if (_setup.PreviewRoot == null)
                 return;
 
+#if UNITY_EDITOR
             SpawnPackageParts();
             PositionParts();
             PositionTargetMarker();
+#else
+            _ = SpawnPackagePartsAsync();
+#endif
+        }
+
+        private async Task SpawnPackagePartsAsync()
+        {
+            SpawnPackageParts();          // allocates primitives / spline parts synchronously
+            await SpawnGlbPartsAsync();   // then fills in GLB models asynchronously
+            PositionParts();
+            PositionTargetMarker();
+        }
+
+        /// <summary>
+        /// Async pass: for each part that still has a primitive placeholder, load the real GLB
+        /// and replace the placeholder. Runs after <see cref="SpawnPackageParts"/> has populated
+        /// the list (with primitives where assets weren't available synchronously).
+        /// </summary>
+        private async Task SpawnGlbPartsAsync()
+        {
+            if (_currentPackage?.parts == null || AssetSource == null)
+                return;
+
+            for (int i = 0; i < _spawnedParts.Count; i++)
+            {
+                GameObject existing = _spawnedParts[i];
+                if (existing == null) continue;
+
+                // Find the PartDefinition for this slot
+                PartDefinition partDef = null;
+                foreach (var p in _currentPackage.parts)
+                {
+                    if (string.Equals(p.id, existing.name, System.StringComparison.OrdinalIgnoreCase))
+                    { partDef = p; break; }
+                }
+
+                if (partDef == null || string.IsNullOrWhiteSpace(partDef.assetRef))
+                    continue;
+
+                // Skip if this is already an imported model (not a primitive placeholder)
+                if (MaterialHelper.IsImportedModel(existing))
+                    continue;
+
+                // Skip spline parts
+                PartPreviewPlacement splinePP = FindPartPlacement(partDef.id);
+                if (SplinePartFactory.HasSplineData(splinePP))
+                    continue;
+
+                GameObject loaded = await LoadPackageAssetAsync(partDef.assetRef, _setup.PreviewRoot);
+                if (loaded == null) continue;
+
+                // Swap placeholder for real model
+                loaded.name = partDef.id;
+                MaterialHelper.MarkAsImported(loaded);
+                if (Application.isPlaying)
+                    TryEnableXRGrabInteractable(loaded);
+
+                // Destroy placeholder, insert real model at same list index
+                SafeDestroy(existing);
+                _spawnedParts[i] = loaded;
+            }
         }
 
         private void SpawnPackageParts()
@@ -423,7 +536,12 @@ namespace OSE.UI.Root
                         ? new Quaternion(pp.startRotation.x, pp.startRotation.y, pp.startRotation.z, pp.startRotation.w)
                         : Quaternion.identity;
 
-                    partGo.transform.SetLocalPositionAndRotation(new Vector3(px, LayoutY, pz), rot);
+                    // Use the authored startPosition when available; fall back to arc for un-configured parts.
+                    Vector3 pos = (pp != null && (pp.startPosition.x != 0f || pp.startPosition.y != 0f || pp.startPosition.z != 0f))
+                        ? new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z)
+                        : new Vector3(px, LayoutY, pz);
+
+                    partGo.transform.SetLocalPositionAndRotation(pos, rot);
                     partGo.transform.localScale = scale;
 
                     // Preserve original GLB materials; only apply solid color to primitives

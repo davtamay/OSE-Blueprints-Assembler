@@ -16,7 +16,7 @@ It should answer three questions quickly:
 
 ## Last Updated
 
-- March 16, 2026 (Phase 12 Slice 3: onboarding tutorial upgraded to a 6-step tool flow with equip/use tool-action gating, movement lock hardening, and package cleanup/sync)
+- Phase 15c: PlaceStepHandler Extraction — ghost interaction, snap/flash animation, ghost selection pulse, and required-part emission pulse moved from bridge to `PlaceStepHandler`
 
 ---
 
@@ -402,11 +402,159 @@ Scope (proposed, pending validation):
 - Implement at least two concrete tool actions in the mechanics scene (for example: wrench tighten and hammer strike) with visual/UI feedback.
 - Route tool actions through canonical input and interaction orchestration so existing architecture boundaries remain intact.
 
+### Phase 14a: Step Capability Matrix Schema Bridge
+
+This phase adds the data-model bridge for the Step Capability Matrix without changing any runtime behavior.
+
+What was added:
+
+- `StepDefinition.cs`: New optional `family` (string) and `profile` (string) fields with XML doc comments. New `ResolvedFamily` property that returns `family` when set, otherwise derives from `completionType` via legacy mapping (`placement`→Place, `tool_action`→Use, `pipe_connection`→Connect, `confirmation`→Confirm, default→Place). Updated `completionType` doc comment to note legacy status and point to `family`/`profile`.
+- `MachinePackageValidator.cs`: Added `FamilyValues` HashSet (Place, Use, Connect, Confirm). Added family-scoped profile HashSets (`PlaceProfileValues`, `UseProfileValues`, `ConnectProfileValues`). `ValidateSteps` now calls `ValidateOptionalEnum` for `family` and a new `ValidateStepProfile` method. `ValidateStepProfile` resolves family (explicit or via `ResolvedFamily`), looks up the profile against the family-scoped allowed set, and emits warnings for unrecognized profiles.
+- Architecture docs created/updated in the same changeset (see `STEP_CAPABILITY_MATRIX.md`, `DATA_SCHEMA.md`, `CONTENT_MODEL.md`, `ASSEMBLY_RUNTIME.md`, `SOURCE_OF_TRUTH_MAP.md`, `IMPLEMENTATION_CHECKLIST.md`).
+
+What was NOT changed:
+
+- No runtime dispatch logic. `completionType` remains the active runtime field.
+- No machine.json content was modified — existing packages continue to work unchanged.
+- No UI or interaction changes.
+
+Validation:
+
+- Zero compilation errors.
+- Existing packages pass validation unchanged (new fields are optional, profile warnings are non-blocking).
+- `ResolvedFamily` correctly maps all four `completionType` values.
+
+### Phase 14b: Step Capability Matrix Payload Grouping
+
+This phase introduces typed payload objects that group related step capabilities into structured sub-objects on `StepDefinition`. Legacy flat fields remain as fallback via resolver properties.
+
+What was added:
+
+- Five new payload classes in `Assets/_Project/Scripts/Content/Definitions/`:
+  - `StepGuidancePayload.cs` — `instructionText`, `whyItMattersText`, `hintIds`, `contextualDiagramRef`
+  - `StepValidationPayload.cs` — `validationRuleIds`
+  - `StepFeedbackPayload.cs` — `effectTriggerIds`
+  - `StepReinforcementPayload.cs` — `milestoneMessage`, `consequenceText`, `safetyNote`, `counterfactualText`
+  - `StepDifficultyPayload.cs` — `allowSkip`, `challengeFlags`, `timeLimitSeconds`, `hintAvailability`
+- `StepDefinition.cs`: Five optional payload fields (`guidance`, `validation`, `feedback`, `reinforcement`, `difficulty`). Seven `Resolved*` accessor properties that read payload first, fall back to flat fields (`ResolvedInstructionText`, `ResolvedWhyItMattersText`, `ResolvedHintIds`, `ResolvedValidationRuleIds`, `ResolvedEffectTriggerIds`, `ResolvedAllowSkip`, `ResolvedChallengeFlags`).
+- `MachinePackageValidator.cs`: Four payload validation methods (`ValidateGuidancePayload`, `ValidateValidationPayload`, `ValidateFeedbackPayload`, `ValidateDifficultyPayload`) that validate cross-references within payloads. `HintAvailabilityValues` enum set added. Negative `timeLimitSeconds` check added.
+- `DATA_SCHEMA.md` §10 updated: "Schema-Ready" section replaced with "Schema-Bridge Fields" section documenting all wired payload fields.
+- `STEP_CAPABILITY_MATRIX.md` §8 updated: Phases 1–3 marked complete.
+- `IMPLEMENTATION_CHECKLIST.md`: Phase 14b inserted with full checklist.
+
+What was NOT changed:
+
+- No runtime consumer migrations — existing code continues reading flat fields directly.
+- No machine.json content modified — existing packages work unchanged.
+- No dispatch logic changes. `completionType` remains the active runtime field.
+
+### Phase 14c: Step Capability Matrix Profile-Aware Dispatch
+
+This phase replaces string-based `completionType` dispatch with enum-based family dispatch. All 9 runtime dispatch sites now resolve through the `StepFamily` enum.
+
+What was added:
+
+- `StepFamily.cs`: New `StepFamily` enum (Place, Use, Connect, Confirm) in `OSE.Content` namespace.
+- `StepDefinition.cs`: `ResolvedFamily` now returns `StepFamily` enum (was `string`). All `Is*` boolean properties (`IsPlacement`, `IsToolAction`, `IsConfirmation`, `IsPipeConnection`, `IsConfirm`) rewritten to derive from `ResolvedFamily` enum instead of raw `completionType` string comparisons.
+- `UIRootCoordinator.cs`: Raw `string.Equals(step.completionType, "tool_action", ...)` migrated to `step.IsToolAction`.
+- `MachinePackageValidator.cs`: `ValidateStepProfile` uses `StepFamily` enum switch instead of string switch.
+
+What this means:
+
+- All 9 dispatch sites across `PartInteractionBridge`, `UIRootCoordinator`, and `SessionDriver` now dispatch via the family enum.
+- Setting `"family": "Use"` on a step without `"completionType": "tool_action"` works correctly — the family field takes precedence.
+- Profile is accessible at all dispatch sites via `step.profile` for future per-profile behavior extensions.
+- `completionType` is still read for legacy fallback via `ResolvedFamily`, but no dispatch site directly compares it anymore.
+
+Migration status: **All four phases complete.** The Step Capability Matrix architecture is fully implemented at the data model and dispatch layer.
+
+### Phase 15a: Step Family Handler Interface + Confirm Extraction
+
+This phase introduces the handler extraction pattern that will progressively decompose the monolithic `PartInteractionBridge` into per-family handlers routed by `StepFamily` enum.
+
+What was added:
+
+- `IStepFamilyHandler.cs`: Interface with three lifecycle methods — `OnStepActivated`, `TryHandlePointerAction`, `OnStepCompleted`. Shared `StepHandlerContext` readonly struct passes step data to handlers.
+- `StepExecutionRouter.cs`: Dictionary-based router mapping `StepFamily` → `IStepFamilyHandler`. Falls back to `null` for unregistered families (bridge handles them inline).
+- `ConfirmStepHandler.cs`: First extracted handler. Handles `Confirm` family steps — completes the step on pointer action when `IsConfirmation` is true.
+- `PartInteractionBridge.cs`: Lazily creates router, registers `ConfirmStepHandler`. `HandleConfirmOrToolPrimaryAction` delegates to router after tool-action checks. `HandleStepStateChanged` calls router lifecycle for step activation and completion.
+
+What this means:
+
+- Confirm steps are now handled by a dedicated `ConfirmStepHandler` instead of inline bridge logic.
+- Place, Use, and Connect families are completely untouched — still handled inline by the bridge.
+- The router pattern is proven and ready for further family extractions (15b–15d).
+- Zero behavior change for any existing machine package.
+
+### Phase 15b: ConnectStepHandler Extraction
+
+This phase extracts all pipe-connection (Connect family) interaction logic from `PartInteractionBridge` into a dedicated `ConnectStepHandler`.
+
+What was added:
+
+- `ConnectStepHandler.cs` (in `OSE.UI.Root`): Self-contained handler for `StepFamily.Connect` steps. Owns all pipe-specific state (`_spawnedPortSpheres`, `_pipePortAConfirmed`, `_cableGhosts`). Contains all extracted pipe methods: port-sphere spawning, two-click confirmation, screen-proximity hit detection, pipe spline rendering, cable ghost preview, cursor ghost. Takes constructor dependencies via `Func<>` accessors for lazy resolution.
+- `IStepFamilyHandler.cs`: Added `TryHandlePointerDown(in StepHandlerContext context, Vector2 screenPos)` — a new lifecycle method for pointer-down events distinct from the confirm/tool-primary canonical action path.
+- `StepExecutionRouter.cs`: Added `TryHandlePointerDown` relay method that routes to the registered handler.
+- `ConfirmStepHandler.cs`: Added `TryHandlePointerDown` returning `false` (no pointer-down handling needed).
+
+What was changed in `PartInteractionBridge`:
+
+- `BuildStepRouter()`: Now non-static. Registers `ConnectStepHandler` with dependencies (`_spawner`, `() => _setup`, `() => CursorManager`, `FindSpawnedPart`).
+- Added `TryBuildActiveStepContext()` helper — builds `StepHandlerContext` from the current active step (no stepId parameter needed).
+- `HandlePointerDown`, `TryExternalClickToPlace`, `TryExternalToolAction`, `TryExternalPipeConnection`: All pipe-connection checks replaced with `StepRouter.TryHandlePointerDown()` calls.
+- `TryHandleToolActionPointerDown`: Guard changed from `_spawnedPortSpheres.Count > 0` to `step.IsPipeConnection`.
+- `SpawnGhostsForStep`: `IsPipeConnection` branch simplified to `return;` (handler does work in `OnStepActivated`). Removed `ClearPortSpheres()` call.
+- `HandleStepStateChanged` (Completed): Removed `TryRenderPipeSpline()` and `ClearPortSpheres()` calls (handler does both in `OnStepCompleted`).
+- Removed: `_spawnedPortSpheres` field, `_pipePortAConfirmed` field, and 9 pipe methods (`SpawnPortSpheresForStep`, `SpawnPortSphere`, `TryHandlePipeConnectionPointerDown`, `FindNearestPortSphereByScreenProximity`, `IsPortSphereConfirmed`, `SetPortSphereConfirmed`, `TryRenderPipeSpline`, `ClearPortSpheres`, `SpawnPipeCursorGhost`).
+
+What this means:
+
+- Connect steps are now fully handled by `ConnectStepHandler` — the bridge has zero pipe-specific code.
+- The handler lives in `OSE.UI.Root` (not `OSE.Runtime`) because it depends on UI-layer types (`PackagePartSpawner`, `PreviewSceneSetup`, `ToolCursorManager`, `SplinePartFactory`, `MaterialHelper`).
+- The `TryHandlePointerDown` interface addition establishes the pattern for future pointer-down delegation (Place handler will use it for click-to-place).
+- `PartInteractionBridge` reduced by ~280 lines of pipe-specific code.
+
+### Phase 15c: PlaceStepHandler Extraction
+
+This phase extracts all Place-family (ghost interaction, snap/flash animation, ghost selection pulse, required-part emission) logic from `PartInteractionBridge` into a dedicated `PlaceStepHandler`.
+
+#### New Files
+
+- `PlaceStepHandler.cs` (in `OSE.UI.Root`): Self-contained handler for `StepFamily.Place` steps. Owns all ghost-proximity state (`_hoveredGhost`, `_ghostHighlighted`, `_ghostPulsePartId`, `_requiredPartIdsForStep`, `_activeSnaps`, `_activeFlashes`). Contains all extracted methods: ghost raycast/proximity, click-to-place matching, snap animation, invalid flash, ghost selection pulse, required-part emission pulse. Takes 9 constructor dependencies including shared `_spawnedGhosts` list reference and `Func<>` callbacks.
+
+#### Interface Changes
+
+- `IStepFamilyHandler`: Added `void Update(in StepHandlerContext context, float deltaTime)` — called every frame for animation ticking (snap lerp, flash timers, pulse colors).
+- `StepExecutionRouter`: Added `Update` relay method.
+- `ConfirmStepHandler` / `ConnectStepHandler`: Added empty `Update` implementations.
+
+#### PartInteractionBridge Changes
+
+- `_placeHandler` field and `BuildStepRouter()` registration with 9 deps (`_spawner`, `GetSetup`, `FindSpawnedPart`, `GetPartState`, `RestorePartVisual`, `ResetDragState`, `_spawnedGhosts`, `IsSequentialStep`, `AdvanceSequentialTarget`).
+- `Update()`: `UpdateSnapAnimation()` + `UpdateInvalidFlash()` replaced with `StepRouter.Update()`. Ghost selection and required-part pulse removed from bridge loop.
+- Call site delegations: `HandlePointerUp` → `_placeHandler.AttemptPlacement()`, `HandlePointerDrag` → `_placeHandler.UpdateDragProximity()`, selection events → `_placeHandler.Start/StopGhostSelectionPulse()`, `HandlePlaceAction` → `_placeHandler.AttemptPlacement()`.
+- `TryHandleClickToPlace`: Keeps guard logic on bridge, delegates ghost matching to `_placeHandler.TryClickToPlace()`.
+- Event handlers: `HandleStepStateChanged(Completed)` / `HandleStepNavigated` / `OnDisable` now delegate emission cleanup to handler. `HandlePartStateChanged` delegates `RemoveFromRequiredPartIds` to handler. `TrySyncStartupState` triggers `StepRouter.OnStepActivated` instead of direct `RefreshRequiredPartIds`.
+- `UpdateXRGhostProximity` / `ResetDragState` / `RemoveGhostForPart`: Updated to delegate to handler.
+- `BeginSnapToTarget`: Simplified to delegate to handler (bridge's snap list removed).
+- Hint highlight code (`UpdateHintHighlight`, `ClearHintHighlight`): Updated to use `_placeHandler.IsGhostHighlighted` and `_placeHandler.HoveredGhost` properties.
+- Removed ~16 methods, ~8 fields/structs, 5 constants, 5 colors from bridge (~400 lines).
+
+What this means:
+
+- Place steps' ghost interaction is now owned by `PlaceStepHandler` — the bridge delegates all ghost proximity, selection pulse, and required-part pulse to the handler.
+- Shared ghost list (`_spawnedGhosts`) is passed by reference so both bridge (for spawning/clearing/hints) and handler (for proximity/pulse) operate on the same data.
+- Bridge still owns ghost spawning/clearing (`SpawnGhostsForStep`, `ClearGhosts`), hint highlighting, and context-menu placement (`PlaceSelectedPartAtTarget`).
+- `PartInteractionBridge` reduced by ~400 additional lines of Place-specific code.
+
+### Phase 15d: Use handler extraction
+
+- `UseStepHandler` is now the live owner of Use/tool-action step behavior.
+- `PartInteractionBridge` delegates tool-target refresh/cleanup, focus, fail flash, target resolution, and tool-primary execution to `UseStepHandler`.
+- The handler now owns the current ready-state rule: the active tool turns green when its projected bounds overlap a valid tool target, and click execution resolves against that same ready target.
+- External/V2 tool-action entry points now flow through the same Use handler logic as the canonical desktop path.
+
 ### Following Phase
-
-- **Phase 13: XR Validation and Challenge UX**
-
-Scope (proposed, pending validation):
 
 - Validate XR grab and tool actions in-headset and refine interaction layers / attach behavior.
 - Re-confirm depth controls (Shift+drag, scroll, pinch) and tune sensitivity.

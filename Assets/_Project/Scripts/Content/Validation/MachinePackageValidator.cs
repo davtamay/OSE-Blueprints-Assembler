@@ -11,6 +11,10 @@ namespace OSE.Content.Validation
         private static readonly HashSet<string> PartCategoryValues = CreateSet("plate", "bracket", "fastener", "shaft", "panel", "housing", "pipe", "custom");
         private static readonly HashSet<string> ToolCategoryValues = CreateSet("hand_tool", "power_tool", "measurement", "safety", "specialty");
         private static readonly HashSet<string> CompletionTypeValues = CreateSet("placement", "tool_action", "confirmation", "pipe_connection");
+        private static readonly HashSet<string> FamilyValues = CreateSet("Place", "Use", "Connect", "Confirm");
+        private static readonly HashSet<string> PlaceProfileValues = CreateSet("Clamp");
+        private static readonly HashSet<string> UseProfileValues = CreateSet("Torque", "Weld", "Cut");
+        private static readonly HashSet<string> ConnectProfileValues = CreateSet("Cable");
         private static readonly HashSet<string> TargetOrderValues = CreateSet("sequential", "parallel");
         private static readonly HashSet<string> ValidationTypeValues = CreateSet("placement", "orientation", "part_identity", "dependency", "multi_part", "confirmation");
         private static readonly HashSet<string> HintTypeValues = CreateSet("text", "highlight", "ghost", "directional", "explanatory", "tool_reminder");
@@ -19,6 +23,7 @@ namespace OSE.Content.Validation
         private static readonly HashSet<string> EffectTypeValues = CreateSet("placement_feedback", "success_feedback", "error_feedback", "welding", "sparks", "heat_glow", "fire", "dust", "milestone");
         private static readonly HashSet<string> EffectTriggerValues = CreateSet("on_step_enter", "on_valid_candidate", "on_success", "on_failure", "on_completion");
         private static readonly HashSet<string> SourceTypeValues = CreateSet("blueprint", "photo", "diagram", "author_note", "reference_doc");
+        private static readonly HashSet<string> HintAvailabilityValues = CreateSet("always", "limited", "none");
 
         public static MachinePackageValidationResult Validate(MachinePackageDefinition package)
         {
@@ -252,6 +257,8 @@ namespace OSE.Content.Validation
                 ValidateOptionalReference(step.subassemblyId, subassemblyIds, $"{path}.subassemblyId", issues);
                 ValidateRequiredText(step.instructionText, $"{path}.instructionText", issues);
                 ValidateRequiredEnum(step.completionType, CompletionTypeValues, $"{path}.completionType", issues);
+                ValidateOptionalEnum(step.family, FamilyValues, $"{path}.family", issues);
+                ValidateStepProfile(step, $"{path}", issues);
                 ValidateOptionalEnum(step.targetOrder, TargetOrderValues, $"{path}.targetOrder", issues);
                 ValidateOptionalReferences(step.requiredPartIds, partIds, $"{path}.requiredPartIds", issues);
                 ValidateOptionalReferences(step.optionalPartIds, partIds, $"{path}.optionalPartIds", issues);
@@ -261,6 +268,12 @@ namespace OSE.Content.Validation
                 ValidateOptionalReferences(step.hintIds, hintIds, $"{path}.hintIds", issues);
                 ValidateOptionalReferences(step.effectTriggerIds, effectIds, $"{path}.effectTriggerIds", issues);
                 ValidateToolActions(step.requiredToolActions, toolIds, targetIds, $"{path}.requiredToolActions", issues);
+
+                // Payload sub-object validation
+                ValidateGuidancePayload(step.guidance, hintIds, $"{path}.guidance", issues);
+                ValidateValidationPayload(step.validation, validationRuleIds, $"{path}.validation", issues);
+                ValidateFeedbackPayload(step.feedback, effectIds, $"{path}.feedback", issues);
+                ValidateDifficultyPayload(step.difficulty, $"{path}.difficulty", issues);
 
                 if (step.sequenceIndex < 1)
                 {
@@ -319,6 +332,83 @@ namespace OSE.Content.Validation
                         $"Tool action tool '{action.toolId}' is not listed in step's relevantToolIds. Tool may not be offered to user."));
                 }
             }
+        }
+
+        private static void ValidateStepProfile(
+            StepDefinition step,
+            string path,
+            List<MachinePackageValidationIssue> issues)
+        {
+            if (string.IsNullOrWhiteSpace(step.profile))
+                return;
+
+            StepFamily resolvedFamily = step.ResolvedFamily;
+            HashSet<string> allowedProfiles;
+
+            switch (resolvedFamily)
+            {
+                case StepFamily.Place:   allowedProfiles = PlaceProfileValues;   break;
+                case StepFamily.Use:     allowedProfiles = UseProfileValues;     break;
+                case StepFamily.Connect: allowedProfiles = ConnectProfileValues; break;
+                case StepFamily.Confirm: allowedProfiles = null;                 break;
+                default:                 allowedProfiles = null;                 break;
+            }
+
+            if (allowedProfiles == null)
+            {
+                issues.Add(Warning($"{path}.profile",
+                    $"Profile '{step.profile}' is set but family '{resolvedFamily}' has no defined profiles."));
+                return;
+            }
+
+            if (!allowedProfiles.Contains(step.profile))
+            {
+                issues.Add(Warning($"{path}.profile",
+                    $"Profile '{step.profile}' is not a recognized profile for family '{resolvedFamily}'. " +
+                    $"Accepted: {string.Join(", ", allowedProfiles)}."));
+            }
+        }
+
+        private static void ValidateGuidancePayload(
+            StepGuidancePayload guidance,
+            HashSet<string> hintIds,
+            string path,
+            List<MachinePackageValidationIssue> issues)
+        {
+            if (guidance == null) return;
+            ValidateOptionalReferences(guidance.hintIds, hintIds, $"{path}.hintIds", issues);
+        }
+
+        private static void ValidateValidationPayload(
+            StepValidationPayload validation,
+            HashSet<string> validationRuleIds,
+            string path,
+            List<MachinePackageValidationIssue> issues)
+        {
+            if (validation == null) return;
+            ValidateOptionalReferences(validation.validationRuleIds, validationRuleIds, $"{path}.validationRuleIds", issues);
+        }
+
+        private static void ValidateFeedbackPayload(
+            StepFeedbackPayload feedback,
+            HashSet<string> effectIds,
+            string path,
+            List<MachinePackageValidationIssue> issues)
+        {
+            if (feedback == null) return;
+            ValidateOptionalReferences(feedback.effectTriggerIds, effectIds, $"{path}.effectTriggerIds", issues);
+        }
+
+        private static void ValidateDifficultyPayload(
+            StepDifficultyPayload difficulty,
+            string path,
+            List<MachinePackageValidationIssue> issues)
+        {
+            if (difficulty == null) return;
+            ValidateOptionalEnum(difficulty.hintAvailability, HintAvailabilityValues, $"{path}.hintAvailability", issues);
+
+            if (difficulty.timeLimitSeconds < 0)
+                issues.Add(Error($"{path}.timeLimitSeconds", "Time limit cannot be negative."));
         }
 
         private static void ValidateValidationRules(

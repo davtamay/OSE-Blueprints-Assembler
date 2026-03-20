@@ -425,9 +425,10 @@ Represents one coherent learner action.
 - `optionalPartIds` : array<string> (optional)
 - `relevantToolIds` : array<string> (optional)
 - `targetIds` : array<string> (optional)
-- `completionType` : enum (required)
+- `completionType` : enum (required — legacy, see deprecation note below)
   - `placement` — user drags parts onto ghost targets
   - `tool_action` — user performs tool actions (e.g. tighten bolts)
+  - `pipe_connection` — user selects two endpoints to form a connection
   - `confirmation` — user presses a Continue/Confirm button
 
 - `targetOrder` : enum (optional, default `"parallel"`)
@@ -440,6 +441,58 @@ Represents one coherent learner action.
 - `allowSkip` : boolean (optional)
 - `challengeFlags` : StepChallengeFlagsDefinition (optional)
 - `eventTags` : array<string> (optional)
+
+#### Schema-Bridge Fields (Phase 14a + Phase 3)
+
+The following fields are implemented in `StepDefinition.cs` with full validator support. Legacy flat fields remain supported as fallback. See `STEP_CAPABILITY_MATRIX.md` for the full taxonomy.
+
+##### Family and Profile (Phase 14a — wired)
+
+- `family` : enum (optional)
+  - `Place` — spatial placement onto ghost targets
+  - `Use` — tool activation on targets
+  - `Connect` — two-endpoint connection
+  - `Confirm` — non-spatial acknowledgement/verification
+
+  When absent, derived from `completionType` using the legacy mapping in `STEP_CAPABILITY_MATRIX.md` §6.
+
+- `profile` : string (optional)
+  Family-scoped refinement. Examples: `Place.Clamp`, `Use.Torque`, `Use.Weld`, `Use.Cut`, `Connect.Cable`.
+  When absent, the family default behavior applies.
+
+##### Capability Payloads (Phase 3 — wired)
+
+Each payload groups related step capabilities into a single optional object. When a payload is present, its fields take precedence over the corresponding flat fields on StepDefinition. When absent, the flat fields are used as fallback via `Resolved*` accessor properties.
+
+- `guidance` : StepGuidancePayload (optional)
+  - `instructionText` : string — what to do
+  - `whyItMattersText` : string — why this step exists
+  - `hintIds` : array\<string\> — progressive hints
+  - `contextualDiagramRef` : string — optional diagram asset reference
+
+- `validation` : StepValidationPayload (optional)
+  - `validationRuleIds` : array\<string\> — references to validation rule definitions
+
+- `feedback` : StepFeedbackPayload (optional)
+  - `effectTriggerIds` : array\<string\> — references to effect definitions
+
+- `reinforcement` : StepReinforcementPayload (optional)
+  - `milestoneMessage` : string — completion achievement summary
+  - `consequenceText` : string — structural consequence explanation
+  - `safetyNote` : string — safety implication
+  - `counterfactualText` : string — "what would happen if..." explanation
+
+- `difficulty` : StepDifficultyPayload (optional)
+  - `allowSkip` : boolean
+  - `challengeFlags` : StepChallengeFlagsDefinition
+  - `timeLimitSeconds` : number
+  - `hintAvailability` : enum — `"always"` (default), `"limited"`, `"none"`
+
+#### Deprecation Note: `completionType`
+
+`completionType` remains the **active runtime field** and is required for all current authored content. It will not be removed.
+
+The target direction replaces `completionType` with `family` + `profile`. When `family` is present on a step, it takes precedence. When absent, the runtime derives `family` from `completionType`. See `STEP_CAPABILITY_MATRIX.md` §6 for the mapping and §8 for the migration path.
 
 ### Example
 
@@ -754,7 +807,7 @@ Physical substitution is a first-class workflow.
 
 ## 18.2 Step-Level Control
 
-`completionType` on `StepDefinition` determines the step's completion mechanism (`placement`, `tool_action`, or `confirmation`).
+`completionType` on `StepDefinition` determines the step's completion mechanism (`placement`, `tool_action`, `pipe_connection`, or `confirmation`). The target direction replaces this with `family` + `profile` — see `STEP_CAPABILITY_MATRIX.md`.
 
 ## 18.3 Rule
 

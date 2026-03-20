@@ -649,6 +649,225 @@ Create the first authentic machine learning experience from Open Source Ecology 
 
 ---
 
+# Phase 14a - Step Capability Matrix Schema Bridge
+
+## Goal
+
+Introduce `family` and `profile` fields into the runtime step model as the first implementation step of the Step Capability Matrix architecture.
+
+This phase adds the schema bridge only — no behavioral changes, no new dispatch logic, no machine.json migrations.
+
+## Checklist
+
+- [x] Add `family` (optional string) and `profile` (optional string) to `StepDefinition.cs`.
+- [x] Add a step family resolver: if `family` is null, derive from `completionType` using the mapping in `STEP_CAPABILITY_MATRIX.md` §6.
+- [x] Add `family` and initial profile values to `MachinePackageValidator.cs` accepted values.
+- [x] Add `IsConfirm` convenience property alongside existing `IsPlacement`, `IsToolAction`, `IsPipeConnection`, `IsConfirmation`.
+- [x] Verify that all existing `machine.json` packages pass validation without changes.
+- [ ] Verify zero behavior change: enter Play mode with `onboarding_tutorial` and `power_cube_frame` — all steps work identically.
+- [ ] Add one authored test: manually add `"family": "Place"` to a placement step in a test package and verify identical behavior.
+- [x] Update `APP_CURRENT_PROGRESS_FOR_AGENT.md` to reflect the schema bridge completion.
+
+## Validation
+
+- [ ] All existing machine packages load and run without errors.
+- [ ] Console shows no warnings about unknown family/profile values.
+- [ ] No behavioral difference between steps with and without `family` field.
+- [ ] `MachinePackageValidator` accepts both legacy `completionType` and new `family` + `profile` fields.
+
+## Commit
+
+- [x] Stage and commit Step Capability Matrix schema bridge.
+
+## Reference
+
+- `docs/STEP_CAPABILITY_MATRIX.md` — authoritative capability taxonomy
+- `docs/DATA_SCHEMA.md` §10 — schema-ready field definitions
+
+---
+
+# Phase 14b - Step Capability Matrix Payload Grouping
+
+## Goal
+
+Introduce typed payload objects that group related step capabilities (guidance, validation, feedback, reinforcement, difficulty) into structured sub-objects on `StepDefinition`. Legacy flat fields remain as fallback; resolver properties read payload-first.
+
+This phase adds data model grouping only — no runtime consumer migrations.
+
+## Checklist
+
+- [x] Create `StepGuidancePayload.cs` — `instructionText`, `whyItMattersText`, `hintIds`, `contextualDiagramRef`.
+- [x] Create `StepValidationPayload.cs` — `validationRuleIds`.
+- [x] Create `StepFeedbackPayload.cs` — `effectTriggerIds`.
+- [x] Create `StepReinforcementPayload.cs` — `milestoneMessage`, `consequenceText`, `safetyNote`, `counterfactualText`.
+- [x] Create `StepDifficultyPayload.cs` — `allowSkip`, `challengeFlags`, `timeLimitSeconds`, `hintAvailability`.
+- [x] Add optional payload fields (`guidance`, `validation`, `feedback`, `reinforcement`, `difficulty`) to `StepDefinition.cs`.
+- [x] Add `Resolved*` accessor properties: `ResolvedInstructionText`, `ResolvedWhyItMattersText`, `ResolvedHintIds`, `ResolvedValidationRuleIds`, `ResolvedEffectTriggerIds`, `ResolvedAllowSkip`, `ResolvedChallengeFlags`.
+- [x] Add payload validation to `MachinePackageValidator.cs`: cross-reference checks for hintIds, validationRuleIds, effectTriggerIds within payloads; enum validation for `hintAvailability`; range check for `timeLimitSeconds`.
+- [x] Verify zero compilation errors.
+- [ ] Verify existing packages pass validation unchanged.
+- [x] Update `DATA_SCHEMA.md` §10 to reflect payload fields as wired.
+- [x] Update `STEP_CAPABILITY_MATRIX.md` §8 to mark Phase 3 complete.
+- [x] Update `APP_CURRENT_PROGRESS_FOR_AGENT.md`.
+
+## Validation
+
+- [ ] All existing machine packages load and run without errors.
+- [ ] No behavioral difference — runtime consumers still read flat fields.
+- [ ] `MachinePackageValidator` accepts payloads with valid cross-references and rejects invalid ones.
+
+## Commit
+
+- [ ] Stage and commit Step Capability Matrix payload grouping.
+
+## Reference
+
+- `docs/STEP_CAPABILITY_MATRIX.md` §4 — capability payload definitions
+- `docs/DATA_SCHEMA.md` §10 — payload field schema
+
+---
+
+# Phase 14c - Step Capability Matrix Profile-Aware Dispatch
+
+## Goal
+
+Replace string-based `completionType` branching with enum-based family dispatch. All runtime dispatch sites resolve through the `StepFamily` enum, making the step model fully family-aware.
+
+## Checklist
+
+- [x] Create `StepFamily` enum (Place, Use, Connect, Confirm) in `OSE.Content`.
+- [x] Change `ResolvedFamily` return type from `string` to `StepFamily` enum.
+- [x] Rewrite `IsPlacement`, `IsToolAction`, `IsConfirmation`, `IsPipeConnection`, `IsConfirm` to derive from `ResolvedFamily` enum.
+- [x] Migrate raw `completionType` string comparison in `UIRootCoordinator.cs` to `step.IsToolAction`.
+- [x] Update `MachinePackageValidator.ValidateStepProfile` to use `StepFamily` enum switch.
+- [x] Verify zero compilation errors.
+- [ ] Verify existing packages work unchanged in Play mode.
+- [x] Update `STEP_CAPABILITY_MATRIX.md` §8 — mark Phase 4 complete.
+- [x] Update `APP_CURRENT_PROGRESS_FOR_AGENT.md`.
+
+## Validation
+
+- [ ] All 9 dispatch sites resolve through family enum (no direct `completionType` string comparisons remain in runtime code).
+- [ ] Existing packages produce identical runtime behavior.
+- [ ] Setting `"family"` without `"completionType"` on a test step works correctly.
+
+## Commit
+
+- [ ] Stage and commit Step Capability Matrix profile-aware dispatch.
+
+## Reference
+
+- `docs/STEP_CAPABILITY_MATRIX.md` §8 — migration path (all phases complete)
+
+---
+
+# Phase 15a - Step Family Handler Interface + Confirm Extraction
+
+## Goal
+
+Introduce `IStepFamilyHandler` interface, `StepExecutionRouter`, and extract `ConfirmStepHandler` as the first family-specific handler. Prove the extraction pattern without touching complex families.
+
+## Checklist
+
+- [x] Create `IStepFamilyHandler` interface with `OnStepActivated`, `TryHandlePointerAction`, `OnStepCompleted`.
+- [x] Create `StepHandlerContext` readonly struct for handler lifecycle data.
+- [x] Create `StepExecutionRouter` with dictionary-based family-to-handler mapping.
+- [x] Create `ConfirmStepHandler` implementing `IStepFamilyHandler`.
+- [x] Wire router into `PartInteractionBridge` — lazy init, register `ConfirmStepHandler`.
+- [x] Delegate `HandleConfirmOrToolPrimaryAction` confirm branch to router.
+- [x] Wire `HandleStepStateChanged` to call router lifecycle on activation and completion.
+- [x] Verify zero compilation errors.
+- [ ] Verify confirm steps still complete on button press in Play mode.
+- [ ] Verify placement, tool-action, and pipe steps are unaffected.
+- [x] Update `APP_CURRENT_PROGRESS_FOR_AGENT.md`.
+- [x] Update `ASSEMBLY_RUNTIME.md` §3.3.1.
+
+## Validation
+
+- [ ] Confirm steps complete identically to pre-15a behavior.
+- [ ] All other step families produce identical runtime behavior.
+- [ ] Router log line appears in console: `[StepRouter] Registered handler for Confirm: ConfirmStepHandler`.
+
+## Commit
+
+- [ ] `refactor(runtime): extract IStepFamilyHandler + ConfirmStepHandler from bridge`
+
+---
+
+# Phase 15b - ConnectStepHandler Extraction
+
+## Goal
+
+Extract all pipe-connection (Connect family) interaction logic from `PartInteractionBridge` into a dedicated `ConnectStepHandler`, proving the handler pattern scales to stateful families.
+
+## Checklist
+
+- [x] Add `TryHandlePointerDown(in StepHandlerContext, Vector2)` to `IStepFamilyHandler`.
+- [x] Add `TryHandlePointerDown` relay to `StepExecutionRouter`.
+- [x] Add `TryHandlePointerDown` → `false` to `ConfirmStepHandler`.
+- [x] Create `ConnectStepHandler.cs` in `OSE.UI.Root` with full pipe logic.
+- [x] Register `ConnectStepHandler` in `BuildStepRouter()` with constructor dependencies.
+- [x] Add `TryBuildActiveStepContext()` helper to bridge.
+- [x] Replace all 4 pointer-down pipe checks with `StepRouter.TryHandlePointerDown()`.
+- [x] Replace `_spawnedPortSpheres.Count > 0` guard with `step.IsPipeConnection`.
+- [x] Simplify `SpawnGhostsForStep` IsPipeConnection branch to just `return`.
+- [x] Remove `TryRenderPipeSpline` and `ClearPortSpheres` from completion handler.
+- [x] Remove pipe fields and 9 pipe methods from bridge.
+- [x] Verify zero compilation errors.
+- [ ] Verify pipe-connection steps still work in Play mode (port sphere spawn, two-click, spline render).
+- [ ] Verify placement and tool-action steps are unaffected.
+- [x] Update `APP_CURRENT_PROGRESS_FOR_AGENT.md`.
+
+## Validation
+
+- [ ] Pipe steps produce identical runtime behavior to pre-15b.
+- [ ] Router log line: `[StepRouter] Registered handler for Connect: ConnectStepHandler`.
+- [ ] Bridge line count reduced by ~280 lines.
+
+## Commit
+
+- [ ] `refactor(ui): extract ConnectStepHandler from PartInteractionBridge`
+
+---
+
+# Phase 15c - PlaceStepHandler Extraction
+
+## Goal
+
+Extract all Place-family ghost interaction logic (proximity detection, snap/flash animation, ghost selection pulse, required-part emission pulse) from `PartInteractionBridge` into a dedicated `PlaceStepHandler`.
+
+## Checklist
+
+- [x] Add `Update(in StepHandlerContext, float)` to `IStepFamilyHandler`.
+- [x] Add `Update` relay to `StepExecutionRouter`.
+- [x] Add empty `Update` to `ConfirmStepHandler` and `ConnectStepHandler`.
+- [x] Create `PlaceStepHandler.cs` in `OSE.UI.Root` (~530 lines).
+- [x] Register `PlaceStepHandler` in `BuildStepRouter()` with 9 constructor deps.
+- [x] Replace bridge `Update()` snap/flash/pulse calls with `StepRouter.Update()`.
+- [x] Delegate 6+ bridge call sites to handler methods.
+- [x] Rewrite `TryHandleClickToPlace` to keep guards, delegate matching to handler.
+- [x] Update event handlers (`HandleStepStateChanged`, `HandlePartStateChanged`, `HandleStepNavigated`, `OnDisable`) to use handler.
+- [x] Update `UpdateXRGhostProximity`, `ResetDragState`, `RemoveGhostForPart` to delegate to handler.
+- [x] Delegate `BeginSnapToTarget` to handler (bridge's snap list removed).
+- [x] Update hint code to use `_placeHandler.IsGhostHighlighted` / `HoveredGhost`.
+- [x] Remove ~16 methods, ~8 fields/structs, 5 constants, 5 colors from bridge.
+- [x] Verify zero compilation errors.
+- [ ] Verify placement steps still work in Play mode (ghost proximity, click-to-place, snap animation, required-part pulse).
+- [ ] Verify XR grab auto-snap works.
+- [x] Update `APP_CURRENT_PROGRESS_FOR_AGENT.md`.
+
+## Validation
+
+- [ ] Place steps produce identical runtime behavior to pre-15c.
+- [ ] Router log line: `[StepRouter] Registered handler for Place: PlaceStepHandler`.
+- [ ] Bridge line count reduced by ~400 lines.
+
+## Commit
+
+- [ ] `refactor(ui): extract PlaceStepHandler from PartInteractionBridge`
+
+---
+
 # Phase 15 - Effects, Process Visuals, and Instructional Feedback
 
 ## Goal

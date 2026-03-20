@@ -18,14 +18,27 @@ namespace OSE.Content
         public string[] relevantToolIds;
         public string[] targetIds;
         /// <summary>
-        /// How the step is completed.
-        /// <list type="bullet">
-        ///   <item>"placement" — user drags parts onto ghost targets.</item>
-        ///   <item>"tool_action" — user performs tool actions (e.g. tighten bolts).</item>
-        ///   <item>"confirmation" — user presses a Continue/Confirm button.</item>
-        /// </list>
+        /// Legacy field — how the step is completed.
+        /// <para>Accepted values: "placement", "tool_action", "pipe_connection", "confirmation".</para>
+        /// <para>Target direction: use <see cref="family"/> + <see cref="profile"/> instead.
+        /// When <see cref="family"/> is present it takes precedence.
+        /// When absent, <see cref="ResolvedFamily"/> derives the family from this field.</para>
         /// </summary>
         public string completionType;
+
+        /// <summary>
+        /// Step family — the fundamental interaction shape.
+        /// <para>Accepted values: "Place", "Use", "Connect", "Confirm".</para>
+        /// <para>Optional. When null/empty, derived from <see cref="completionType"/> via <see cref="ResolvedFamily"/>.</para>
+        /// </summary>
+        public string family;
+
+        /// <summary>
+        /// Family-scoped profile that refines behavior within a family.
+        /// <para>Examples: "Clamp" (Place), "Torque"/"Weld"/"Cut" (Use), "Cable" (Connect).</para>
+        /// <para>Optional. When null/empty, the family default behavior applies.</para>
+        /// </summary>
+        public string profile;
 
         public string[] validationRuleIds;
         public string[] hintIds;
@@ -34,6 +47,53 @@ namespace OSE.Content
         public bool allowSkip;
         public StepChallengeFlagsDefinition challengeFlags;
         public string[] eventTags;
+
+        // --- Capability payloads (Phase 3 — optional grouped objects) ---
+
+        /// <summary>Optional grouped guidance payload. When present, its fields take precedence over flat equivalents.</summary>
+        public StepGuidancePayload guidance;
+
+        /// <summary>Optional grouped validation payload. When present, its fields take precedence over flat equivalents.</summary>
+        public StepValidationPayload validation;
+
+        /// <summary>Optional grouped feedback payload. When present, its fields take precedence over flat equivalents.</summary>
+        public StepFeedbackPayload feedback;
+
+        /// <summary>Optional grouped reinforcement payload. Entirely new — no flat-field equivalent.</summary>
+        public StepReinforcementPayload reinforcement;
+
+        /// <summary>Optional grouped difficulty payload. When present, its fields take precedence over flat equivalents.</summary>
+        public StepDifficultyPayload difficulty;
+
+        // --- Resolved accessors (payload-first, flat-fallback) ---
+
+        /// <summary>Guidance instruction text: payload first, then flat field.</summary>
+        public string ResolvedInstructionText =>
+            !string.IsNullOrEmpty(guidance?.instructionText) ? guidance.instructionText : instructionText;
+
+        /// <summary>Guidance why-it-matters text: payload first, then flat field.</summary>
+        public string ResolvedWhyItMattersText =>
+            !string.IsNullOrEmpty(guidance?.whyItMattersText) ? guidance.whyItMattersText : whyItMattersText;
+
+        /// <summary>Guidance hint IDs: payload first, then flat field.</summary>
+        public string[] ResolvedHintIds =>
+            guidance?.hintIds ?? hintIds;
+
+        /// <summary>Validation rule IDs: payload first, then flat field.</summary>
+        public string[] ResolvedValidationRuleIds =>
+            validation?.validationRuleIds ?? validationRuleIds;
+
+        /// <summary>Feedback effect trigger IDs: payload first, then flat field.</summary>
+        public string[] ResolvedEffectTriggerIds =>
+            feedback?.effectTriggerIds ?? effectTriggerIds;
+
+        /// <summary>Difficulty allow-skip: payload first, then flat field.</summary>
+        public bool ResolvedAllowSkip =>
+            difficulty != null ? difficulty.allowSkip : allowSkip;
+
+        /// <summary>Difficulty challenge flags: payload first, then flat field.</summary>
+        public StepChallengeFlagsDefinition ResolvedChallengeFlags =>
+            difficulty?.challengeFlags ?? challengeFlags;
 
         /// <summary>
         /// Controls whether targets within this step are processed all at once or one at a time.
@@ -47,18 +107,54 @@ namespace OSE.Content
         public bool IsSequential =>
             string.Equals(targetOrder, "sequential", System.StringComparison.OrdinalIgnoreCase);
 
-        public bool IsPlacement =>
-            string.IsNullOrEmpty(completionType) ||
-            string.Equals(completionType, "placement", System.StringComparison.OrdinalIgnoreCase);
+        /// <summary>True when the resolved family is Place.</summary>
+        public bool IsPlacement => ResolvedFamily == StepFamily.Place;
 
-        public bool IsToolAction =>
-            string.Equals(completionType, "tool_action", System.StringComparison.OrdinalIgnoreCase);
+        /// <summary>True when the resolved family is Use.</summary>
+        public bool IsToolAction => ResolvedFamily == StepFamily.Use;
 
-        public bool IsConfirmation =>
-            string.Equals(completionType, "confirmation", System.StringComparison.OrdinalIgnoreCase);
+        /// <summary>True when the resolved family is Confirm.</summary>
+        public bool IsConfirmation => ResolvedFamily == StepFamily.Confirm;
 
-        public bool IsPipeConnection =>
-            string.Equals(completionType, "pipe_connection", System.StringComparison.OrdinalIgnoreCase);
+        /// <summary>True when the resolved family is Connect.</summary>
+        public bool IsPipeConnection => ResolvedFamily == StepFamily.Connect;
+
+        /// <summary>True when the resolved family is Confirm (alias for <see cref="IsConfirmation"/>).</summary>
+        public bool IsConfirm => ResolvedFamily == StepFamily.Confirm;
+
+        /// <summary>
+        /// Resolves the step family enum. Returns the parsed <see cref="family"/> if set,
+        /// otherwise derives from <see cref="completionType"/> using the legacy mapping.
+        /// </summary>
+        public StepFamily ResolvedFamily
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(family))
+                {
+                    switch (family)
+                    {
+                        case "Place":   return StepFamily.Place;
+                        case "Use":     return StepFamily.Use;
+                        case "Connect": return StepFamily.Connect;
+                        case "Confirm": return StepFamily.Confirm;
+                        default:        return StepFamily.Place;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(completionType))
+                    return StepFamily.Place;
+
+                switch (completionType.ToLowerInvariant())
+                {
+                    case "placement":       return StepFamily.Place;
+                    case "tool_action":     return StepFamily.Use;
+                    case "pipe_connection": return StepFamily.Connect;
+                    case "confirmation":    return StepFamily.Confirm;
+                    default:                return StepFamily.Place;
+                }
+            }
+        }
 
         public string GetDisplayName()
         {

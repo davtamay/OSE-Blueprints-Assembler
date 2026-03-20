@@ -404,6 +404,35 @@ Likely future sync-relevant state includes:
 
 ---
 
+## 2.13 Step Capability Shape
+
+### Authoritative Owner
+
+- step authoring data (machine package JSON)
+- `STEP_CAPABILITY_MATRIX.md`
+
+### Owns
+
+- family classification (Place, Use, Connect, Confirm)
+- profile selection (family-scoped refinement)
+- capability payload shape contract (guidance, validation, feedback, reinforcement, difficulty)
+- legacy mapping from `completionType` to family
+- rules for extending the family and profile taxonomy
+
+### Must Not Be Owned By
+
+- runtime dispatch branches without documented family backing
+- UI assumptions about step type
+- one-off mechanic scripts
+
+### Primary Docs
+
+- `docs/STEP_CAPABILITY_MATRIX.md`
+- `docs/DATA_SCHEMA.md`
+- `docs/ASSEMBLY_RUNTIME.md`
+
+---
+
 # 3. Document Authority Map
 
 This section defines which document is authoritative for each domain.
