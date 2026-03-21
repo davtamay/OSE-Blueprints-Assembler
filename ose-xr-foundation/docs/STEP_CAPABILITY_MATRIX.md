@@ -510,6 +510,17 @@ The migration from `completionType` to the full capability matrix proceeds in ph
 - All other `tool_action` steps remain legacy (`completionType` only) and work unchanged via fallback.
 - **Key discovery:** In editor, machine.json loads from `Assets/_Project/Data/Packages/` (authoring folder), not `StreamingAssets`. Both copies must have the fields. Documented in `CLAUDE.md`.
 
+## Phase 6 — Router wiring + Feedback payload runtime (Use.Torque slice) ✅
+
+- `StepExecutionRouter` wired into `PartInteractionBridge` — `OnStepActivated` and `OnStepCompleted` now fire through the router on genuine step transitions (not fail-retries).
+- `TryBuildHandlerContext` helper builds `StepHandlerContext` from current session state.
+- `StepFeedbackPayload` extended with `completionEffectColor` (hex string) and `completionPulseScale` (float).
+- `UseStepHandler.OnStepActivated` caches feedback payload values — color parsed via `ColorUtility.TryParseHtmlString`, scale checked `> 0f`.
+- `ToolActionClickEffect.Spawn` now accepts `Color` and `float pulseScale` params instead of hardcoded constants.
+- Fallback chain: `feedback payload → profile default → family default (green, 1.8x)`.
+- Two torque steps authored with distinct feedback payloads (#33FF66/2.5x and #66CCFF/2.0x); third torque step has no feedback to prove fallback.
+- First proof that **authored payload data drives runtime presentation**.
+
 ---
 
 # 9. Rules for Extending the Matrix

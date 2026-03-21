@@ -1822,6 +1822,10 @@
       "hintIds": [
         "hint_star_pattern"
       ],
+      "feedback": {
+        "completionEffectColor": "#33FF66",
+        "completionPulseScale": 2.5
+      },
       "eventTags": [
         "power_cube",
         "module",
@@ -1917,6 +1921,10 @@
       "hintIds": [
         "hint_free_spin_check"
       ],
+      "feedback": {
+        "completionEffectColor": "#66CCFF",
+        "completionPulseScale": 2.0
+      },
       "eventTags": [
         "power_cube",
         "module",

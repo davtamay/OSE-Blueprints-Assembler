@@ -71,6 +71,7 @@ namespace OSE.UI.Root
         private ToolCursorManager _cursorManager;
         private ToolCursorManager CursorManager => _cursorManager ??= new ToolCursorManager(transform);
         private UseStepHandler _useHandler;
+        private StepExecutionRouter _router;
         [SerializeField] private InputActionRouter _actionRouter;
         [SerializeField] private SelectionService _selectionService;
         private bool _suppressSelectionEvents;
@@ -145,6 +146,8 @@ namespace OSE.UI.Root
             _spawner = GetComponent<PackagePartSpawner>();
             _setup = GetComponent<PreviewSceneSetup>();
             _useHandler ??= new UseStepHandler(_spawner, () => _setup, () => CursorManager, _spawnedGhosts, GetCurrentSequentialTargetId);
+            _router ??= new StepExecutionRouter();
+            _router.Register(StepFamily.Use, _useHandler);
             RuntimeEventBus.Subscribe<StepStateChanged>(HandleStepStateChanged);
             RuntimeEventBus.Subscribe<PartStateChanged>(HandlePartStateChanged);
             RuntimeEventBus.Subscribe<HintRequested>(HandleHintRequested);
@@ -271,9 +274,13 @@ namespace OSE.UI.Root
             switch (action)
             {
                 case CanonicalAction.Select:
+                    if (ExternalControlEnabled)
+                        break;
                     TrySelectFromPointer(isInspect: false);
                     break;
                 case CanonicalAction.Inspect:
+                    if (ExternalControlEnabled)
+                        break;
                     TrySelectFromPointer(isInspect: true);
                     break;
                 case CanonicalAction.Grab:
@@ -411,20 +418,48 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
-        /// Called by V2 orchestrator via LegacyBridgeAdapter. If the screen position
-        /// hits (or is near) a ghost matching the currently selected part, snaps the
-        /// part to the ghost target and returns true. Otherwise returns false.
+        /// Called by V2 orchestrator via LegacyBridgeAdapter. Attempts placement for the
+        /// already-selected part at the given screen position without re-deriving click intent.
         /// </summary>
-        public bool TryExternalClickToPlace(Vector2 screenPos)
+        public bool TryExternalClickToPlace(GameObject selectedPart, Vector2 screenPos)
         {
             if (!Application.isPlaying || !ExternalControlEnabled)
                 return false;
 
-            // Pipe connection steps use port spheres instead of ghosts — handle before click-to-place.
-            if (TryHandlePipeConnectionPointerDown(screenPos))
-                return true;
+            return TryHandleClickToPlace(selectedPart, screenPos);
+        }
 
-            return TryHandleClickToPlace(screenPos);
+        /// <summary>
+        /// Called by V2 orchestrator via LegacyBridgeAdapter when tool mode is locked.
+        /// Resolves the executable tool target for the current click without executing it.
+        /// </summary>
+        public bool TryResolveExternalToolActionTarget(Vector2 screenPos, out string interactedTargetId, out Vector3 targetWorldPos)
+        {
+            interactedTargetId = null;
+            targetWorldPos = Vector3.zero;
+
+            if (!Application.isPlaying)
+                return false;
+
+            ToolActionTargetInfo resolvedTarget = null;
+            if (!TryGetToolActionTargetForExecution(screenPos, out resolvedTarget) || resolvedTarget == null)
+                return false;
+
+            interactedTargetId = resolvedTarget.TargetId;
+            targetWorldPos = resolvedTarget.transform.position;
+            return !string.IsNullOrWhiteSpace(interactedTargetId);
+        }
+
+        /// <summary>
+        /// Called by V2 orchestrator via LegacyBridgeAdapter when tool mode is locked.
+        /// Executes the tool primary action for an explicitly resolved target id.
+        /// </summary>
+        public bool TryExecuteExternalToolAction(string interactedTargetId)
+        {
+            if (!Application.isPlaying)
+                return false;
+
+            return TryHandleExternalToolAction(interactedTargetId);
         }
 
         /// <summary>
@@ -453,31 +488,47 @@ namespace OSE.UI.Root
 
             int spawnedTargetCount = _useHandler?.SpawnedTargetCount ?? 0;
             OseLog.Info($"[PartInteraction] TryExternalToolAction at ({screenPos.x:F0},{screenPos.y:F0}). Spawned={spawnedTargetCount}. Tool='{session.ToolController?.ActiveToolId ?? "none"}'.");
-            string interactedTargetId = null;
-
-            ToolActionTargetInfo resolvedTarget = null;
-            if (TryGetToolActionTargetForExecution(screenPos, out resolvedTarget))
-                interactedTargetId = resolvedTarget.TargetId;
-
-            if (interactedTargetId == null)
+            if (!TryResolveExternalToolActionTarget(screenPos, out string interactedTargetId, out Vector3 targetWorldPos))
             {
                 OseLog.Info($"[PartInteraction] TryExternalToolAction: no ready tool target resolved at ({screenPos.x:F0},{screenPos.y:F0}). Spawned={spawnedTargetCount}.");
                 return false;
             }
 
             // Capture world position before executing (the target may be destroyed/refreshed after).
-            _lastToolActionWorldPos = resolvedTarget.transform.position;
+            _lastToolActionWorldPos = targetWorldPos;
+
+            return TryHandleExternalToolAction(interactedTargetId);
+        }
+
+        private bool TryHandleExternalToolAction(string interactedTargetId)
+        {
+            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+                return false;
+
+            StepController stepController = session.AssemblyController?.StepController;
+            if (stepController == null || !stepController.HasActiveStep)
+                return false;
+
+            StepDefinition step = stepController.CurrentStepDefinition;
+            bool allowToolActionStepCompletion = step == null || !step.IsPlacement;
+
+            int spawnedTargetCount = _useHandler?.SpawnedTargetCount ?? 0;
+            if (string.IsNullOrWhiteSpace(interactedTargetId))
+            {
+                OseLog.Info($"[PartInteraction] TryExecuteExternalToolAction: no target id provided. Spawned={spawnedTargetCount}.");
+                return false;
+            }
 
             if (!TryExecuteToolPrimaryAction(interactedTargetId, out bool shouldCompleteStep, out bool handled))
             {
-                OseLog.Info($"[PartInteraction] TryExternalToolAction: action rejected for '{interactedTargetId}'.");
+                OseLog.Info($"[PartInteraction] TryExecuteExternalToolAction: action rejected for '{interactedTargetId}'.");
                 return false;
             }
 
             if (!handled)
                 return false;
 
-            OseLog.Info($"[PartInteraction] TryExternalToolAction: success on '{interactedTargetId}'.");
+            OseLog.Info($"[PartInteraction] TryExecuteExternalToolAction: success on '{interactedTargetId}'.");
             if (!allowToolActionStepCompletion)
                 return true;
 
@@ -489,11 +540,51 @@ namespace OSE.UI.Root
         /// selection or tool state). Handles pipe connection port sphere clicks.
         /// Returns true if a port sphere was hit and the interaction was consumed.
         /// </summary>
+        public bool TryResolveExternalPipeConnectionTarget(Vector2 screenPos, out string targetId)
+        {
+            targetId = null;
+
+            if (!Application.isPlaying)
+                return false;
+
+            GameObject hitGo = FindNearestPortSphereByScreenProximity(screenPos);
+            if (hitGo == null)
+                return false;
+
+            targetId = hitGo.name;
+            return !string.IsNullOrWhiteSpace(targetId);
+        }
+
+        /// <summary>
+        /// Called by V2 orchestrator via LegacyBridgeAdapter with an explicitly resolved
+        /// pipe connection target id.
+        /// </summary>
+        public bool TryExecuteExternalPipeConnection(string targetId)
+        {
+            if (!Application.isPlaying)
+                return false;
+
+            GameObject hitGo = FindPortSphereByName(targetId);
+            if (hitGo == null)
+                return false;
+
+            return TryHandleResolvedPipeConnection(hitGo);
+        }
+
+        /// <summary>
+        /// Called by V2 orchestrator via LegacyBridgeAdapter for any tap (regardless of
+        /// selection or tool state). Handles pipe connection port sphere clicks.
+        /// Returns true if a port sphere was hit and the interaction was consumed.
+        /// </summary>
         public bool TryExternalPipeConnection(Vector2 screenPos)
         {
             if (!Application.isPlaying)
                 return false;
-            return TryHandlePipeConnectionPointerDown(screenPos);
+
+            if (!TryResolveExternalPipeConnectionTarget(screenPos, out string targetId))
+                return false;
+
+            return TryExecuteExternalPipeConnection(targetId);
         }
 
         /// <summary>
@@ -576,6 +667,12 @@ namespace OSE.UI.Root
 
         private void TrySelectFromPointer(bool isInspect)
         {
+            if (ExternalControlEnabled)
+            {
+                _pendingSelectPart = null;
+                return;
+            }
+
             if (IsToolModeLockedForParts())
                 return;
 
@@ -1204,11 +1301,16 @@ namespace OSE.UI.Root
         /// </summary>
         private bool TryHandleClickToPlace(Vector2 screenPos)
         {
+            GameObject selected = _selectionService != null ? _selectionService.CurrentSelection : null;
+            return TryHandleClickToPlace(selected, screenPos);
+        }
+
+        private bool TryHandleClickToPlace(GameObject selected, Vector2 screenPos)
+        {
             if (_spawnedGhosts.Count == 0)
                 return false;
 
             // Need a selected part that isn't being dragged.
-            GameObject selected = _selectionService != null ? _selectionService.CurrentSelection : null;
             if (selected == null || _draggedPart != null)
                 return false;
 
@@ -1926,10 +2028,16 @@ namespace OSE.UI.Root
                     DeselectFromSelectionService();
                     SpawnGhostsForStep(evt.StepId);
                     OseLog.VerboseInfo($"[PartInteraction] Step '{evt.StepId}' active: spawned {_spawnedGhosts.Count} ghost(s).");
+
+                    if (TryBuildHandlerContext(out var activatedCtx))
+                        _router.OnStepActivated(in activatedCtx);
                 }
             }
             else if (evt.Current == StepState.Completed)
             {
+                if (TryBuildHandlerContext(out var completedCtx))
+                    _router.OnStepCompleted(in completedCtx);
+
                 TryRenderPipeSpline(evt.StepId);
                 MoveStepPartsToPlayPosition(evt.StepId);
                 ClearGhosts();
@@ -1946,6 +2054,19 @@ namespace OSE.UI.Root
             RefreshToolActionTargets();
             if (IsToolModeLockedForParts())
                 ClearPartHoverVisual();
+        }
+
+        private bool TryBuildHandlerContext(out StepHandlerContext context)
+        {
+            context = default;
+            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+                return false;
+            var stepCtrl = session.AssemblyController?.StepController;
+            if (stepCtrl == null || !stepCtrl.HasActiveStep)
+                return false;
+            var step = stepCtrl.CurrentStepDefinition;
+            context = new StepHandlerContext(step, stepCtrl, step.id, session.GetElapsedSeconds());
+            return true;
         }
 
         private void HandleActiveToolChanged(ActiveToolChanged evt)
@@ -3307,7 +3428,15 @@ namespace OSE.UI.Root
 
         private bool TryHandlePipeConnectionPointerDown(Vector2 screenPos)
         {
-            if (_spawnedPortSpheres.Count == 0)
+            if (!TryResolveExternalPipeConnectionTarget(screenPos, out string targetId))
+                return false;
+
+            return TryExecuteExternalPipeConnection(targetId);
+        }
+
+        private bool TryHandleResolvedPipeConnection(GameObject hitGo)
+        {
+            if (hitGo == null || _spawnedPortSpheres.Count == 0)
                 return false;
 
             if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
@@ -3321,14 +3450,6 @@ namespace OSE.UI.Root
             if (step == null || !step.IsPipeConnection)
                 return false;
 
-            // Use screen-proximity detection (same pattern as tool action targets) so the
-            // sphere is clickable even when machine geometry partially occludes it.
-            GameObject hitGo = FindNearestPortSphereByScreenProximity(screenPos);
-            if (hitGo == null)
-                return false;
-
-            bool isPortA = hitGo.name == "PortSphere_A";
-
             if (!_pipePortAConfirmed)
             {
                 // First confirmed port — accept either sphere.
@@ -3337,15 +3458,6 @@ namespace OSE.UI.Root
                 OseLog.Info($"[PartInteraction] Pipe: first port confirmed ('{hitGo.name}'). Click the other sphere to complete.");
                 return true;
             }
-
-            // Second port — must be the other sphere.
-            bool firstWasA  = _spawnedPortSpheres.Count >= 2
-                && _spawnedPortSpheres[0].name == "PortSphere_A"
-                && !IsPortSphereConfirmed(_spawnedPortSpheres[0])
-                && hitGo.name == "PortSphere_A";
-
-            bool isDifferent = (isPortA && !IsPortSphereConfirmed(hitGo))
-                            || (!isPortA && !IsPortSphereConfirmed(hitGo));
 
             // Accept any unconfirmed sphere as the second click.
             if (!IsPortSphereConfirmed(hitGo))
@@ -3357,6 +3469,24 @@ namespace OSE.UI.Root
             }
 
             return true; // consumed
+        }
+
+        private GameObject FindPortSphereByName(string targetId)
+        {
+            if (string.IsNullOrWhiteSpace(targetId) || _spawnedPortSpheres.Count == 0)
+                return null;
+
+            for (int i = 0; i < _spawnedPortSpheres.Count; i++)
+            {
+                GameObject sphere = _spawnedPortSpheres[i];
+                if (sphere == null)
+                    continue;
+
+                if (string.Equals(sphere.name, targetId, StringComparison.Ordinal))
+                    return sphere;
+            }
+
+            return null;
         }
 
         private GameObject FindNearestPortSphereByScreenProximity(Vector2 screenPos)

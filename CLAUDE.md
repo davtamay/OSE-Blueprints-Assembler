@@ -7,6 +7,6 @@
 - **Authoring (editor reads this):** `Assets/_Project/Data/Packages/<packageId>/machine.json`
 - **StreamingAssets (runtime/build only):** `Assets/StreamingAssets/MachinePackages/<packageId>/machine.json`
 
-When editing machine.json content (steps, parts, tools, targets, etc.), **always edit the authoring copy** under `Assets/_Project/Data/Packages/`. The StreamingAssets copy is for builds only. See `MachinePackageLoader.BuildMachineJsonPath()` for the resolution logic.
+When editing machine.json content (steps, parts, tools, targets, etc.), **always edit the authoring copy** under `Assets/_Project/Data/Packages/`. The StreamingAssets copy is for builds only and is synced during the build process. See `MachinePackageLoader.BuildMachineJsonPath()` for the resolution logic.
 
-If both copies exist, keep them in sync — but the authoring copy is the source of truth for editor Play mode.
+**Do NOT manually copy or sync to StreamingAssets.** Only edit the authoring copy. The build pipeline handles the rest.

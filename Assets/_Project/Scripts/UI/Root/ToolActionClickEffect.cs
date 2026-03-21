@@ -13,14 +13,13 @@ namespace OSE.UI.Root
         private float _elapsed;
         private Renderer _renderer;
         private Material _material;
+        private Color _startColor;
+        private Color _endColor;
+        private float _pulseScale;
 
         private const float Duration = 0.35f;
-        private const float ScaleMultiplier = 1.8f;
 
-        private static readonly Color StartColor = new Color(0.2f, 1.0f, 0.4f, 0.9f);
-        private static readonly Color EndColor = new Color(0.2f, 1.0f, 0.4f, 0.0f);
-
-        public static void Spawn(Vector3 worldPosition, Vector3 baseScale)
+        public static void Spawn(Vector3 worldPosition, Vector3 baseScale, Color color, float pulseScale)
         {
             GameObject go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             go.name = "ToolClickEffect";
@@ -34,6 +33,9 @@ namespace OSE.UI.Root
 
             var effect = go.AddComponent<ToolActionClickEffect>();
             effect._baseScale = baseScale;
+            effect._startColor = color;
+            effect._endColor = new Color(color.r, color.g, color.b, 0f);
+            effect._pulseScale = pulseScale;
         }
 
         private void Awake()
@@ -54,7 +56,7 @@ namespace OSE.UI.Root
                 return;
             }
 
-            _material = new Material(shader) { name = "ClickEffect", color = StartColor };
+            _material = new Material(shader) { name = "ClickEffect", color = _startColor };
             _renderer.sharedMaterial = _material;
         }
 
@@ -64,11 +66,11 @@ namespace OSE.UI.Root
             float t = Mathf.Clamp01(_elapsed / Duration);
 
             // Scale: pop up then settle
-            float scaleCurve = 1f + (ScaleMultiplier - 1f) * Mathf.Sin(t * Mathf.PI);
+            float scaleCurve = 1f + (_pulseScale - 1f) * Mathf.Sin(t * Mathf.PI);
             transform.localScale = _baseScale * scaleCurve;
 
             // Fade out
-            _material.color = Color.Lerp(StartColor, EndColor, t);
+            _material.color = Color.Lerp(_startColor, _endColor, t);
 
             if (t >= 1f)
                 Destroy(gameObject);

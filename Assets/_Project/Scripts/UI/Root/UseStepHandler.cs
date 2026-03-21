@@ -44,12 +44,18 @@ namespace OSE.UI.Root
         // ── Profile constants ──
         private const string ProfileTorque = "Torque";
 
+        // ── Feedback defaults ──
+        private static readonly Color DefaultCompletionColor = new Color(0.2f, 1.0f, 0.4f, 0.9f);
+        private const float DefaultPulseScale = 1.8f;
+
         // ── State ──
         private readonly List<GameObject> _spawnedToolActionTargets = new();
         private GameObject _hoveredToolActionTarget;
         private ToolActionTargetInfo _readyToolActionTarget;
         private bool _retryPending;
         private string _activeProfile;
+        private Color _completionEffectColor = DefaultCompletionColor;
+        private float _completionPulseScale = DefaultPulseScale;
 
         public UseStepHandler(
             PackagePartSpawner spawner,
@@ -89,6 +95,13 @@ namespace OSE.UI.Root
         public void OnStepActivated(in StepHandlerContext context)
         {
             _activeProfile = context.Step.profile;
+
+            var fb = context.Step.feedback;
+            _completionEffectColor = TryParseHexColor(fb?.completionEffectColor, DefaultCompletionColor);
+            _completionPulseScale = fb != null && fb.completionPulseScale > 0f
+                ? fb.completionPulseScale
+                : DefaultPulseScale;
+
             RefreshToolActionTargets();
         }
 
@@ -265,7 +278,8 @@ namespace OSE.UI.Root
                 if (info == null || !string.Equals(info.TargetId, targetId, StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                ToolActionClickEffect.Spawn(marker.transform.position, marker.transform.localScale);
+                ToolActionClickEffect.Spawn(marker.transform.position, marker.transform.localScale,
+                    _completionEffectColor, _completionPulseScale);
                 return;
             }
         }
@@ -948,6 +962,13 @@ namespace OSE.UI.Root
 
             screenPos = Vector2.zero;
             return false;
+        }
+
+        private static Color TryParseHexColor(string hex, Color fallback)
+        {
+            if (string.IsNullOrEmpty(hex))
+                return fallback;
+            return ColorUtility.TryParseHtmlString(hex, out var parsed) ? parsed : fallback;
         }
     }
 }
