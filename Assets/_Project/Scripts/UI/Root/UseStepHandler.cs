@@ -18,9 +18,10 @@ namespace OSE.UI.Root
     internal sealed class UseStepHandler : IStepFamilyHandler
     {
         // ── Colours ──
-        private static readonly Color ToolTargetIdleColor  = new Color(0.25f, 0.9f, 1.0f, 0.62f);
-        private static readonly Color ToolTargetHoverColor = new Color(0.55f, 1.0f, 1.0f, 0.9f);
-        private static readonly Color ToolTargetFailColor  = new Color(1.0f, 0.35f, 0.25f, 0.9f);
+        private static readonly Color ToolTargetIdleColor        = new Color(0.25f, 0.9f, 1.0f, 0.62f);
+
+        private static readonly Color ToolTargetHoverColor       = new Color(0.55f, 1.0f, 1.0f, 0.9f);
+        private static readonly Color ToolTargetFailColor        = new Color(1.0f, 0.35f, 0.25f, 0.9f);
 
         // ── Tuning ──
         private const float ToolTargetPulseSpeed     = 3.6f;
@@ -40,11 +41,15 @@ namespace OSE.UI.Root
         private readonly List<GameObject> _spawnedGhosts;
         private readonly Func<string> _getSequentialTargetId;
 
+        // ── Profile constants ──
+        private const string ProfileTorque = "Torque";
+
         // ── State ──
         private readonly List<GameObject> _spawnedToolActionTargets = new();
         private GameObject _hoveredToolActionTarget;
         private ToolActionTargetInfo _readyToolActionTarget;
         private bool _retryPending;
+        private string _activeProfile;
 
         public UseStepHandler(
             PackagePartSpawner spawner,
@@ -83,6 +88,7 @@ namespace OSE.UI.Root
 
         public void OnStepActivated(in StepHandlerContext context)
         {
+            _activeProfile = context.Step.profile;
             RefreshToolActionTargets();
         }
 
@@ -115,6 +121,7 @@ namespace OSE.UI.Root
         public void Cleanup()
         {
             ClearToolActionTargets();
+            _activeProfile = null;
         }
 
         // ====================================================================
@@ -140,6 +147,10 @@ namespace OSE.UI.Root
             StepController earlyStepCtrl = earlySession?.AssemblyController?.StepController;
             if (earlyStepCtrl == null || !earlyStepCtrl.HasActiveStep)
                 return;
+
+            // Sync profile from current step so color/behavior is correct
+            // regardless of whether OnStepActivated was called.
+            _activeProfile = earlyStepCtrl.CurrentStepDefinition?.profile;
 
             string requiredToolId = null;
             string targetId = null;
@@ -239,6 +250,26 @@ namespace OSE.UI.Root
             _spawnedToolActionTargets.Clear();
         }
 
+        private void SpawnClickEffectForTarget(string targetId)
+        {
+            if (string.IsNullOrEmpty(_activeProfile))
+                return;
+            if (!string.Equals(_activeProfile, ProfileTorque, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            for (int i = 0; i < _spawnedToolActionTargets.Count; i++)
+            {
+                GameObject marker = _spawnedToolActionTargets[i];
+                if (marker == null) continue;
+                var info = marker.GetComponent<ToolActionTargetInfo>();
+                if (info == null || !string.Equals(info.TargetId, targetId, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                ToolActionClickEffect.Spawn(marker.transform.position, marker.transform.localScale);
+                return;
+            }
+        }
+
         /// <summary>
         /// Executes the tool primary action via ToolRuntimeController.
         /// </summary>
@@ -270,6 +301,7 @@ namespace OSE.UI.Root
                 return false;
             }
 
+            SpawnClickEffectForTarget(interactedTargetId);
             RefreshToolActionTargets();
             return true;
         }

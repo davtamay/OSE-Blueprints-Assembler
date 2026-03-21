@@ -1797,6 +1797,8 @@
     {
       "id": "step_torque_engine_bolts",
       "name": "Torque the engine mounting bolts",
+      "family": "Use",
+      "profile": "Torque",
       "sequenceIndex": 19,
       "instructionText": "Insert bolts through the engine feet and plate. Torque all four bolts to 35 ft-lbs in a star pattern: front-left, back-right, front-right, back-left.",
       "whyItMattersText": "Star-pattern torquing ensures the engine seats evenly. Under-torqued bolts vibrate loose; over-torqued bolts strip threads or warp the plate.",
@@ -1890,6 +1892,8 @@
     {
       "id": "step_torque_pump_bolts",
       "name": "Torque the pump mounting bolts",
+      "family": "Use",
+      "profile": "Torque",
       "sequenceIndex": 22,
       "instructionText": "Torque the pump bracket bolts to 25 ft-lbs. Check that the pump shaft spins freely by hand after torquing â€” if it binds, loosen and realign.",
       "whyItMattersText": "Over-tightening can distort the pump body and bind the gears. The free-spin check confirms alignment is correct.",
@@ -1953,6 +1957,8 @@
     {
       "id": "step_torque_reservoir_bolts",
       "name": "Torque the reservoir mounting bolts",
+      "family": "Use",
+      "profile": "Torque",
       "sequenceIndex": 24,
       "instructionText": "Torque the reservoir strap bolts to 20 ft-lbs. The tank should be snug but not deformed â€” the straps should grip without crushing the tank walls.",
       "whyItMattersText": "The reservoir holds 10 gallons of oil (about 75 lbs). Loose straps let it shift under vibration; overtight straps can dent the tank and cause leaks.",

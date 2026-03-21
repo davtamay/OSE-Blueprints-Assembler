@@ -498,7 +498,17 @@ The migration from `completionType` to the full capability matrix proceeds in ph
 - One raw `completionType` string comparison in `UIRootCoordinator.cs` migrated to `step.IsToolAction`.
 - `MachinePackageValidator.ValidateStepProfile` uses `StepFamily` enum switch.
 - Profile is accessible at all dispatch sites via `step.profile` for future per-profile behavior.
-- Unknown profiles fall back to family default (no profile-specific runtime handlers yet).
+- Unknown profiles fall back to family default.
+
+## Phase 5 — First profile-aware handler (Use.Torque) ✅
+
+- `UseStepHandler` reads `profile` from the current step definition and stores it as `_activeProfile`.
+- Profile sync happens in `RefreshToolActionTargets` (the actual call site from `PartInteractionBridge`), not only in `OnStepActivated`.
+- Torque profile triggers a green "click pop" effect (`ToolActionClickEffect`) on successful tool action — proof that profile-specific visual feedback works.
+- Null or unknown profiles fall back to the existing default behavior — zero regression.
+- Three torque-wrench steps in `power_cube_frame/machine.json` now declare `"family": "Use", "profile": "Torque"`.
+- All other `tool_action` steps remain legacy (`completionType` only) and work unchanged via fallback.
+- **Key discovery:** In editor, machine.json loads from `Assets/_Project/Data/Packages/` (authoring folder), not `StreamingAssets`. Both copies must have the fields. Documented in `CLAUDE.md`.
 
 ---
 

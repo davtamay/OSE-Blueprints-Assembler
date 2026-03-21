@@ -16,7 +16,7 @@ It should answer three questions quickly:
 
 ## Last Updated
 
-- Phase 15c: PlaceStepHandler Extraction — ghost interaction, snap/flash animation, ghost selection pulse, and required-part emission pulse moved from bridge to `PlaceStepHandler`
+- Profile Behavior Extraction (Use.Torque): `UseStepHandler` reads `step.profile` and fires profile-specific behavior — Torque steps spawn a green "click pop" effect (`ToolActionClickEffect`) on successful tool action. Three torque-wrench steps in `power_cube_frame/machine.json` declare `"family": "Use", "profile": "Torque"`. Both authoring (`Assets/_Project/Data/Packages/`) and StreamingAssets copies have the fields. `StepExecutionRouter` exists but is not yet wired into `PartInteractionBridge` — profile sync currently happens in `RefreshToolActionTargets` directly.
 
 ---
 
