@@ -415,6 +415,7 @@ Likely future sync-relevant state includes:
 
 - family classification (Place, Use, Connect, Confirm)
 - profile selection (family-scoped refinement)
+- interaction pattern resolution rules (family + profile + step data → pattern)
 - capability payload shape contract (guidance, validation, feedback, reinforcement, difficulty)
 - legacy mapping from `completionType` to family
 - rules for extending the family and profile taxonomy
@@ -428,6 +429,7 @@ Likely future sync-relevant state includes:
 ### Primary Docs
 
 - `docs/STEP_CAPABILITY_MATRIX.md`
+- `docs/INTERACTION_PATTERN_MATRIX.md`
 - `docs/DATA_SCHEMA.md`
 - `docs/ASSEMBLY_RUNTIME.md`
 
@@ -669,6 +671,22 @@ This section defines which document is authoritative for each domain.
 - tutorial slice
 - first authentic OSE slice
 - recommended Power Cube-aligned starting point
+
+---
+
+## 3.16 Interaction Patterns
+
+### Authoritative Doc
+
+- `docs/INTERACTION_PATTERN_MATRIX.md`
+
+### Governs
+
+- interaction pattern catalog (PlaceOnZone, SelectPair, TargetHit, OrderedTargets, HoldOnTarget, PathProgress, SingleConfirm)
+- family-to-pattern mapping rules
+- entity role definitions
+- rules for adding new patterns
+- pattern resolution logic (pattern is NOT a schema field — resolved at runtime)
 
 ---
 

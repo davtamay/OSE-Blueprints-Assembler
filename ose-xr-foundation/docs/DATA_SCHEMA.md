@@ -460,6 +460,8 @@ The following fields are implemented in `StepDefinition.cs` with full validator 
   Family-scoped refinement. Examples: `Place.Clamp`, `Use.Torque`, `Use.Weld`, `Use.Cut`, `Connect.Cable`.
   When absent, the family default behavior applies.
 
+Note: **Interaction pattern** (e.g. PlaceOnZone, SelectPair, TargetHit) is NOT an authored schema field. It is resolved at runtime from the combination of `family`, `profile`, and step data shape. See `INTERACTION_PATTERN_MATRIX.md` for the pattern catalog and resolution rules.
+
 ##### Capability Payloads (Phase 3 — wired)
 
 Each payload groups related step capabilities into a single optional object. When a payload is present, its fields take precedence over the corresponding flat fields on StepDefinition. When absent, the flat fields are used as fallback via `Resolved*` accessor properties.

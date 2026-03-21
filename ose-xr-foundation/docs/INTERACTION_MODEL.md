@@ -220,6 +220,16 @@ These are the shared interaction actions the runtime should understand.
 
 These actions are canonical. Devices should map into them.
 
+## 5.5 Step-Level Interaction Patterns
+
+The canonical actions above (Select, Grab, Place, Confirm, etc.) are **atomic** — they describe a single user intent. During step execution, these atomic actions compose into **interaction patterns**: reusable, step-level interaction contracts that define the full learner-facing physical interaction for completing a step.
+
+For example, the **SelectPair** pattern composes two Select actions into a tap-A-then-tap-B sequence used by both measurement (Use.Measure) and cable connection (Connect.Cable) steps.
+
+Interaction patterns are distinct from step families (semantic meaning) and profiles (behavioral refinement). The runtime resolves the correct pattern automatically from family + profile + step data.
+
+For the full pattern catalog and family-to-pattern mapping, see `INTERACTION_PATTERN_MATRIX.md`.
+
 ---
 
 # 6. Interaction Contexts

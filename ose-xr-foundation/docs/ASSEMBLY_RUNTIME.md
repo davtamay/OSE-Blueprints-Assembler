@@ -139,12 +139,12 @@ Resolution rules:
 2. If `family` is absent, derive it from `completionType` using the legacy mapping defined in `STEP_CAPABILITY_MATRIX.md` §6.
 3. If both are absent, default to `Place`.
 
-Family determines the top-level dispatch:
+Family determines the top-level dispatch. Each family resolves to an **interaction pattern** — a reusable learner-facing physical interaction contract (see `INTERACTION_PATTERN_MATRIX.md`):
 
-- **Place** → spawn ghost targets, enable drag-to-snap, validate position/rotation tolerance
-- **Use** → equip tool, enable tool-on-target activation, validate target coverage
-- **Connect** → spawn port markers, enable two-click endpoint selection, validate pairing
-- **Confirm** → show Continue button, validate on user acknowledgement
+- **Place** → PlaceOnZone pattern: spawn ghost targets, enable drag-to-snap, validate position/rotation tolerance
+- **Use** → TargetHit, OrderedTargets, or SelectPair pattern (depends on profile and step data): equip tool, enable tool-on-target activation, validate target coverage
+- **Connect** → SelectPair pattern: spawn port markers, enable two-click endpoint selection, validate pairing. Reuses `AnchorToAnchorInteraction` — the same pattern class used by Use.Measure
+- **Confirm** → SingleConfirm pattern: show Continue button, validate on user acknowledgement
 
 As of Phase 15d, extracted family handlers share the `IStepFamilyHandler` interface defined in `OSE.Runtime`. `StepExecutionRouter` exists as the common dispatch abstraction, and the current mechanics harness delegates directly from `PartInteractionBridge` into the extracted handlers where that wiring is complete. The handler interface has five lifecycle methods:
 

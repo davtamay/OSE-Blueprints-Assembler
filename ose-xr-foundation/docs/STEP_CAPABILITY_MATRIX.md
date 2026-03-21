@@ -15,6 +15,7 @@ This file should be used together with:
 - `docs/ASSEMBLY_RUNTIME.md`
 - `docs/SOURCE_OF_TRUTH_MAP.md`
 - `docs/IMPLEMENTATION_CHECKLIST.md`
+- `docs/INTERACTION_PATTERN_MATRIX.md`
 
 ---
 
@@ -24,10 +25,11 @@ The runtime must not contain a unique code path for every kind of assembly actio
 
 Instead, every step is classified by:
 
-1. **Family** — the fundamental interaction shape
+1. **Family** — the semantic meaning of the step (what it achieves)
 2. **Profile** — a family-scoped refinement that selects specific behavior, effects, or validation within that family
+3. **Interaction Pattern** — the reusable learner-facing physical interaction that implements the step (see `INTERACTION_PATTERN_MATRIX.md`)
 
-The runtime dispatches on family first, then applies profile-specific adjustments.
+The runtime dispatches on family first, then applies profile-specific adjustments. The interaction pattern is resolved automatically from family + profile + step data — it is not authored explicitly.
 
 Unknown profiles fall back to the family default — no crashes, no one-off code.
 
@@ -52,6 +54,8 @@ The user moves a source object to a target position and releases it.
 - Insert a bolt into a hole
 - Seat a bearing into a housing
 
+**Default interaction pattern:** PlaceOnZone (see `INTERACTION_PATTERN_MATRIX.md` §3.1)
+
 **Current runtime mapping:** `completionType: "placement"`
 
 ---
@@ -72,6 +76,8 @@ The user wields a tool against one or more targets.
 - Cut a plate with an angle grinder
 - Measure a gap with a tape measure
 
+**Default interaction pattern:** TargetHit; varies by profile — see `INTERACTION_PATTERN_MATRIX.md` §4
+
 **Current runtime mapping:** `completionType: "tool_action"`
 
 ---
@@ -91,6 +97,8 @@ The user links two endpoints to form a connection.
 - Route an electrical cable between terminals
 - Connect a rigid pipe between flanges
 
+**Default interaction pattern:** SelectPair (see `INTERACTION_PATTERN_MATRIX.md` §3.2)
+
 **Current runtime mapping:** `completionType: "pipe_connection"`
 
 ---
@@ -109,6 +117,8 @@ The user acknowledges, verifies, or continues without a spatial interaction.
 - Acknowledge a safety warning before proceeding
 - Verify a measurement reading matches a spec
 - Review a completed subassembly before the next phase
+
+**Default interaction pattern:** SingleConfirm (see `INTERACTION_PATTERN_MATRIX.md` §3.7)
 
 **Current runtime mapping:** `completionType: "confirmation"`
 
@@ -136,26 +146,27 @@ These profiles are defined based on authored content that exists or is planned.
 
 ### Place profiles
 
-| Profile | Behavior refinement |
-|---|---|
-| *(default)* | Standard ghost-target drag-and-snap |
-| `Clamp` | Placement where a clamp or fixture secures the part; may involve a secondary confirmation |
+| Profile | Behavior refinement | Default Pattern |
+|---|---|---|
+| *(default)* | Standard ghost-target drag-and-snap | PlaceOnZone |
+| `Clamp` | Placement where a clamp or fixture secures the part; may involve a secondary confirmation | PlaceOnZone |
 
 ### Use profiles
 
-| Profile | Behavior refinement |
-|---|---|
-| *(default)* | Generic tool-on-target tap interaction |
-| `Torque` | Wrench on bolt; may show torque gauge; completion on click/threshold |
-| `Weld` | Welder on joint; hold-duration validation; welding effects (sparks, glow) |
-| `Cut` | Grinder/saw on material; path-following validation; cutting effects (sparks, dust) |
+| Profile | Behavior refinement | Default Pattern |
+|---|---|---|
+| *(default)* | Generic tool-on-target tap interaction | TargetHit |
+| `Torque` | Wrench on bolt; may show torque gauge; completion on click/threshold | TargetHit / OrderedTargets |
+| `Measure` | Tape measure between two anchors; distance label display | SelectPair |
+| `Weld` | Welder on joint; hold-duration validation; welding effects (sparks, glow) | HoldOnTarget *(future)* |
+| `Cut` | Grinder/saw on material; path-following validation; cutting effects (sparks, dust) | PathProgress *(future)* |
 
 ### Connect profiles
 
-| Profile | Behavior refinement |
-|---|---|
-| *(default)* | Two-click endpoint connection with spline rendering |
-| `Cable` | Flexible cable/hose rendering; sag physics; flow animation on completion |
+| Profile | Behavior refinement | Default Pattern |
+|---|---|---|
+| *(default)* | Two-click endpoint connection with spline rendering | SelectPair |
+| `Cable` | Flexible cable/hose rendering; sag physics; flow animation on completion | SelectPair |
 
 ### Confirm profiles
 
@@ -173,7 +184,7 @@ No profiles are defined for Confirm at this time. The family default covers all 
 
 # 4. Capability Shape
 
-Every step in the system has the following authored shape:
+Every step in the system has the following authored shape. Note that **interaction pattern** is not an authored field — it is resolved at runtime from family + profile + step data (see `INTERACTION_PATTERN_MATRIX.md` §6).
 
 ```
 Step

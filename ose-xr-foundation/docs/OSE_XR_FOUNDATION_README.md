@@ -71,6 +71,10 @@ These documents define how the runtime system is structured.
 
 Defines canonical interaction actions across platforms and the interaction-stack direction.
 
+- **INTERACTION_PATTERN_MATRIX.md**
+
+Defines reusable step-level interaction patterns (PlaceOnZone, SelectPair, TargetHit, etc.), the family-to-pattern mapping, and entity role classification. Patterns are the learner-facing physical interaction contracts that implement step execution.
+
 The current XR interaction baseline is:
 
 - **Unity XR Interaction Toolkit (XRI)** as the primary XR interaction framework

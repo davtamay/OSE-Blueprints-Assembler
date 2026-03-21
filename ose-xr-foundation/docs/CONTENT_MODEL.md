@@ -94,7 +94,7 @@ Every step belongs to one of four **families** that define its fundamental inter
 
 A step may optionally declare a **profile** — a family-scoped refinement that selects specific behavior, effects, or validation within its family. Examples: `Place.Clamp`, `Use.Torque`, `Use.Weld`, `Connect.Cable`.
 
-For the full step capability taxonomy see `STEP_CAPABILITY_MATRIX.md`.
+For the full step capability taxonomy see `STEP_CAPABILITY_MATRIX.md`. The runtime automatically resolves the learner-facing **interaction pattern** (e.g. PlaceOnZone, SelectPair, TargetHit) from the family + profile — see `INTERACTION_PATTERN_MATRIX.md`.
 
 Each step defines:
 
