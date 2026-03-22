@@ -248,9 +248,24 @@ namespace OSE.Interaction.V2
         {
             if (_camera == null) return null;
             Ray ray = _camera.ScreenPointToRay(screenPos);
-            if (Physics.Raycast(ray, out RaycastHit hit, 100f, _settings.PartLayerMask))
-                return hit.rigidbody != null ? hit.rigidbody.gameObject : hit.collider.gameObject;
-            return null;
+            RaycastHit[] hits = Physics.RaycastAll(ray, 100f, _settings.PartLayerMask, QueryTriggerInteraction.Ignore);
+            if (hits == null || hits.Length == 0)
+                return null;
+
+            System.Array.Sort(hits, (left, right) => left.distance.CompareTo(right.distance));
+
+            GameObject fallback = null;
+            for (int i = 0; i < hits.Length; i++)
+            {
+                GameObject candidate = hits[i].rigidbody != null ? hits[i].rigidbody.gameObject : hits[i].collider.gameObject;
+                if (fallback == null)
+                    fallback = candidate;
+
+                if (hits[i].rigidbody != null)
+                    return candidate;
+            }
+
+            return fallback;
         }
 
         /// <summary>

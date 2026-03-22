@@ -1,0 +1,3671 @@
+{
+  "schemaVersion": "1.0.0",
+  "packageVersion": "0.2.0",
+  "machine": {
+    "id": "d3d_v18_10",
+    "name": "D3D v18.10",
+    "displayName": "D3D v18.10 - Full Frame Layup",
+    "description": "Full six-side D3D frame layup package. Authors all six 14 inch square frame sides from 24 mild-steel flat bars and verifies each panel for squareness before final cube joining.",
+    "difficulty": "beginner",
+    "estimatedBuildTimeMinutes": 45,
+    "learningObjectives": [
+      "Recognize the stock dimensions used to fabricate the D3D frame sides",
+      "Place all 24 flat bars in their real 14 inch square side geometry",
+      "Preserve the 1 inch overlap that converts 13 inch bar stock into a 14 inch outer square",
+      "Check each side for squareness before full frame joining"
+    ],
+    "recommendedMode": "guided",
+    "entryAssemblyIds": [
+      "assembly_d3d_frame"
+    ],
+    "prerequisiteNotes": [
+      "The six panel work zones are a tighter raised teaching layout so small real-size stock remains readable and selectable while preserving exact panel geometry.",
+      "This package covers side layup and squareness checks before final cube joining."
+    ],
+    "sourceReferences": [
+      {
+        "id": "source_d3d_main",
+        "type": "reference_doc",
+        "title": "OSE D3D",
+        "referencePath": "https://wiki.opensourceecology.org/wiki/D3D",
+        "notes": "Primary machine page for the OSE 3D printer platform."
+      },
+      {
+        "id": "source_d3d_manual",
+        "type": "reference_doc",
+        "title": "OSE 3D Printer Manual",
+        "referencePath": "https://wiki.opensourceecology.org/wiki/3D_Printer_Manual",
+        "notes": "Manual and build documentation for D3D workshop builds."
+      },
+      {
+        "id": "source_frame_construction_set",
+        "type": "reference_doc",
+        "title": "OSE Frame Construction Set",
+        "referencePath": "https://wiki.opensourceecology.org/wiki/Frame_Construction_Set",
+        "notes": "States that 1/8 inch by 1 inch flats are cut to 13 inch lengths and overlap to create a 14 inch square frame side."
+      }
+    ]
+  },
+  "assemblies": [
+    {
+      "id": "assembly_d3d_frame",
+      "name": "D3D Frame",
+      "description": "Complete set of six D3D frame sides authored as source-backed layup panels.",
+      "machineId": "d3d_v18_10",
+      "subassemblyIds": [
+        "subassembly_bottom_frame_side",
+        "subassembly_top_frame_side",
+        "subassembly_left_frame_side",
+        "subassembly_right_frame_side",
+        "subassembly_front_frame_side",
+        "subassembly_rear_frame_side"
+      ],
+      "stepIds": [
+        "step_bottom_place_bars",
+        "step_bottom_verify_square",
+        "step_top_place_bars",
+        "step_top_verify_square",
+        "step_left_place_bars",
+        "step_left_verify_square",
+        "step_right_place_bars",
+        "step_right_verify_square",
+        "step_front_place_bars",
+        "step_front_verify_square",
+        "step_rear_place_bars",
+        "step_rear_verify_square"
+      ],
+      "learningFocus": "Repeatable frame-side geometry, overlap logic, and squareness across the full D3D frame."
+    }
+  ],
+  "subassemblies": [
+    {
+      "id": "subassembly_bottom_frame_side",
+      "name": "Bottom Frame Side",
+      "assemblyId": "assembly_d3d_frame",
+      "description": "Lays out the bottom frame side as one 14 inch square panel.",
+      "partIds": [
+        "d3d_frame_bottom_top_bar",
+        "d3d_frame_bottom_right_bar",
+        "d3d_frame_bottom_bottom_bar",
+        "d3d_frame_bottom_left_bar"
+      ],
+      "stepIds": [
+        "step_bottom_place_bars",
+        "step_bottom_verify_square"
+      ],
+      "milestoneMessage": "Bottom Frame Side laid out and checked for square."
+    },
+    {
+      "id": "subassembly_top_frame_side",
+      "name": "Top Frame Side",
+      "assemblyId": "assembly_d3d_frame",
+      "description": "Lays out the top frame side as one 14 inch square panel.",
+      "partIds": [
+        "d3d_frame_top_top_bar",
+        "d3d_frame_top_right_bar",
+        "d3d_frame_top_bottom_bar",
+        "d3d_frame_top_left_bar"
+      ],
+      "stepIds": [
+        "step_top_place_bars",
+        "step_top_verify_square"
+      ],
+      "milestoneMessage": "Top Frame Side laid out and checked for square."
+    },
+    {
+      "id": "subassembly_left_frame_side",
+      "name": "Left Frame Side",
+      "assemblyId": "assembly_d3d_frame",
+      "description": "Lays out the left frame side as one 14 inch square panel.",
+      "partIds": [
+        "d3d_frame_left_top_bar",
+        "d3d_frame_left_right_bar",
+        "d3d_frame_left_bottom_bar",
+        "d3d_frame_left_left_bar"
+      ],
+      "stepIds": [
+        "step_left_place_bars",
+        "step_left_verify_square"
+      ],
+      "milestoneMessage": "Left Frame Side laid out and checked for square."
+    },
+    {
+      "id": "subassembly_right_frame_side",
+      "name": "Right Frame Side",
+      "assemblyId": "assembly_d3d_frame",
+      "description": "Lays out the right frame side as one 14 inch square panel.",
+      "partIds": [
+        "d3d_frame_right_top_bar",
+        "d3d_frame_right_right_bar",
+        "d3d_frame_right_bottom_bar",
+        "d3d_frame_right_left_bar"
+      ],
+      "stepIds": [
+        "step_right_place_bars",
+        "step_right_verify_square"
+      ],
+      "milestoneMessage": "Right Frame Side laid out and checked for square."
+    },
+    {
+      "id": "subassembly_front_frame_side",
+      "name": "Front Frame Side",
+      "assemblyId": "assembly_d3d_frame",
+      "description": "Lays out the front frame side as one 14 inch square panel.",
+      "partIds": [
+        "d3d_frame_front_top_bar",
+        "d3d_frame_front_right_bar",
+        "d3d_frame_front_bottom_bar",
+        "d3d_frame_front_left_bar"
+      ],
+      "stepIds": [
+        "step_front_place_bars",
+        "step_front_verify_square"
+      ],
+      "milestoneMessage": "Front Frame Side laid out and checked for square."
+    },
+    {
+      "id": "subassembly_rear_frame_side",
+      "name": "Rear Frame Side",
+      "assemblyId": "assembly_d3d_frame",
+      "description": "Lays out the rear frame side as one 14 inch square panel.",
+      "partIds": [
+        "d3d_frame_rear_top_bar",
+        "d3d_frame_rear_right_bar",
+        "d3d_frame_rear_bottom_bar",
+        "d3d_frame_rear_left_bar"
+      ],
+      "stepIds": [
+        "step_rear_place_bars",
+        "step_rear_verify_square"
+      ],
+      "milestoneMessage": "Rear Frame Side laid out and checked for square."
+    }
+  ],
+  "partTemplates": [
+    {
+      "id": "template_d3d_frame_flat_bar",
+      "name": "D3D Frame Flat Bar",
+      "displayName": "D3D Frame Flat Bar",
+      "category": "plate",
+      "material": "Mild steel flat bar, hot-rolled mill finish",
+      "function": "Forms one edge of a D3D frame side.",
+      "structuralRole": "Frame side member",
+      "quantity": 1,
+      "toolIds": [
+        "tool_framing_square"
+      ],
+      "assetRef": "assets/parts/d3d_frame_flat_bar_approved.glb",
+      "searchTerms": [
+        "d3d frame flat bar",
+        "13 inch x 1 inch flat bar",
+        "mild steel frame strip"
+      ],
+      "allowPhysicalSubstitution": false,
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal.",
+      "tags": [
+        "d3d",
+        "frame",
+        "steel"
+      ]
+    }
+  ],
+  "parts": [
+    {
+      "id": "d3d_frame_bottom_top_bar",
+      "name": "Bottom Frame Side Top Bar",
+      "displayName": "Bottom Frame Side Top Bar",
+      "function": "Forms the top edge of the bottom frame side.",
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal and the long edge running left to right.",
+      "templateId": "template_d3d_frame_flat_bar"
+    },
+    {
+      "id": "d3d_frame_bottom_right_bar",
+      "name": "Bottom Frame Side Right Bar",
+      "displayName": "Bottom Frame Side Right Bar",
+      "function": "Forms the right edge of the bottom frame side.",
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal and rotate so the long edge runs front to back.",
+      "templateId": "template_d3d_frame_flat_bar"
+    },
+    {
+      "id": "d3d_frame_bottom_bottom_bar",
+      "name": "Bottom Frame Side Bottom Bar",
+      "displayName": "Bottom Frame Side Bottom Bar",
+      "function": "Forms the bottom edge of the bottom frame side.",
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal and the long edge running left to right.",
+      "templateId": "template_d3d_frame_flat_bar"
+    },
+    {
+      "id": "d3d_frame_bottom_left_bar",
+      "name": "Bottom Frame Side Left Bar",
+      "displayName": "Bottom Frame Side Left Bar",
+      "function": "Forms the left edge of the bottom frame side.",
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal and rotate so the long edge runs front to back.",
+      "templateId": "template_d3d_frame_flat_bar"
+    },
+    {
+      "id": "d3d_frame_top_top_bar",
+      "name": "Top Frame Side Top Bar",
+      "displayName": "Top Frame Side Top Bar",
+      "function": "Forms the top edge of the top frame side.",
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal and the long edge running left to right.",
+      "templateId": "template_d3d_frame_flat_bar"
+    },
+    {
+      "id": "d3d_frame_top_right_bar",
+      "name": "Top Frame Side Right Bar",
+      "displayName": "Top Frame Side Right Bar",
+      "function": "Forms the right edge of the top frame side.",
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal and rotate so the long edge runs front to back.",
+      "templateId": "template_d3d_frame_flat_bar"
+    },
+    {
+      "id": "d3d_frame_top_bottom_bar",
+      "name": "Top Frame Side Bottom Bar",
+      "displayName": "Top Frame Side Bottom Bar",
+      "function": "Forms the bottom edge of the top frame side.",
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal and the long edge running left to right.",
+      "templateId": "template_d3d_frame_flat_bar"
+    },
+    {
+      "id": "d3d_frame_top_left_bar",
+      "name": "Top Frame Side Left Bar",
+      "displayName": "Top Frame Side Left Bar",
+      "function": "Forms the left edge of the top frame side.",
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal and rotate so the long edge runs front to back.",
+      "templateId": "template_d3d_frame_flat_bar"
+    },
+    {
+      "id": "d3d_frame_left_top_bar",
+      "name": "Left Frame Side Top Bar",
+      "displayName": "Left Frame Side Top Bar",
+      "function": "Forms the top edge of the left frame side.",
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal and the long edge running left to right.",
+      "templateId": "template_d3d_frame_flat_bar"
+    },
+    {
+      "id": "d3d_frame_left_right_bar",
+      "name": "Left Frame Side Right Bar",
+      "displayName": "Left Frame Side Right Bar",
+      "function": "Forms the right edge of the left frame side.",
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal and rotate so the long edge runs front to back.",
+      "templateId": "template_d3d_frame_flat_bar"
+    },
+    {
+      "id": "d3d_frame_left_bottom_bar",
+      "name": "Left Frame Side Bottom Bar",
+      "displayName": "Left Frame Side Bottom Bar",
+      "function": "Forms the bottom edge of the left frame side.",
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal and the long edge running left to right.",
+      "templateId": "template_d3d_frame_flat_bar"
+    },
+    {
+      "id": "d3d_frame_left_left_bar",
+      "name": "Left Frame Side Left Bar",
+      "displayName": "Left Frame Side Left Bar",
+      "function": "Forms the left edge of the left frame side.",
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal and rotate so the long edge runs front to back.",
+      "templateId": "template_d3d_frame_flat_bar"
+    },
+    {
+      "id": "d3d_frame_right_top_bar",
+      "name": "Right Frame Side Top Bar",
+      "displayName": "Right Frame Side Top Bar",
+      "function": "Forms the top edge of the right frame side.",
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal and the long edge running left to right.",
+      "templateId": "template_d3d_frame_flat_bar"
+    },
+    {
+      "id": "d3d_frame_right_right_bar",
+      "name": "Right Frame Side Right Bar",
+      "displayName": "Right Frame Side Right Bar",
+      "function": "Forms the right edge of the right frame side.",
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal and rotate so the long edge runs front to back.",
+      "templateId": "template_d3d_frame_flat_bar"
+    },
+    {
+      "id": "d3d_frame_right_bottom_bar",
+      "name": "Right Frame Side Bottom Bar",
+      "displayName": "Right Frame Side Bottom Bar",
+      "function": "Forms the bottom edge of the right frame side.",
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal and the long edge running left to right.",
+      "templateId": "template_d3d_frame_flat_bar"
+    },
+    {
+      "id": "d3d_frame_right_left_bar",
+      "name": "Right Frame Side Left Bar",
+      "displayName": "Right Frame Side Left Bar",
+      "function": "Forms the left edge of the right frame side.",
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal and rotate so the long edge runs front to back.",
+      "templateId": "template_d3d_frame_flat_bar"
+    },
+    {
+      "id": "d3d_frame_front_top_bar",
+      "name": "Front Frame Side Top Bar",
+      "displayName": "Front Frame Side Top Bar",
+      "function": "Forms the top edge of the front frame side.",
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal and the long edge running left to right.",
+      "templateId": "template_d3d_frame_flat_bar"
+    },
+    {
+      "id": "d3d_frame_front_right_bar",
+      "name": "Front Frame Side Right Bar",
+      "displayName": "Front Frame Side Right Bar",
+      "function": "Forms the right edge of the front frame side.",
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal and rotate so the long edge runs front to back.",
+      "templateId": "template_d3d_frame_flat_bar"
+    },
+    {
+      "id": "d3d_frame_front_bottom_bar",
+      "name": "Front Frame Side Bottom Bar",
+      "displayName": "Front Frame Side Bottom Bar",
+      "function": "Forms the bottom edge of the front frame side.",
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal and the long edge running left to right.",
+      "templateId": "template_d3d_frame_flat_bar"
+    },
+    {
+      "id": "d3d_frame_front_left_bar",
+      "name": "Front Frame Side Left Bar",
+      "displayName": "Front Frame Side Left Bar",
+      "function": "Forms the left edge of the front frame side.",
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal and rotate so the long edge runs front to back.",
+      "templateId": "template_d3d_frame_flat_bar"
+    },
+    {
+      "id": "d3d_frame_rear_top_bar",
+      "name": "Rear Frame Side Top Bar",
+      "displayName": "Rear Frame Side Top Bar",
+      "function": "Forms the top edge of the rear frame side.",
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal and the long edge running left to right.",
+      "templateId": "template_d3d_frame_flat_bar"
+    },
+    {
+      "id": "d3d_frame_rear_right_bar",
+      "name": "Rear Frame Side Right Bar",
+      "displayName": "Rear Frame Side Right Bar",
+      "function": "Forms the right edge of the rear frame side.",
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal and rotate so the long edge runs front to back.",
+      "templateId": "template_d3d_frame_flat_bar"
+    },
+    {
+      "id": "d3d_frame_rear_bottom_bar",
+      "name": "Rear Frame Side Bottom Bar",
+      "displayName": "Rear Frame Side Bottom Bar",
+      "function": "Forms the bottom edge of the rear frame side.",
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal and the long edge running left to right.",
+      "templateId": "template_d3d_frame_flat_bar"
+    },
+    {
+      "id": "d3d_frame_rear_left_bar",
+      "name": "Rear Frame Side Left Bar",
+      "displayName": "Rear Frame Side Left Bar",
+      "function": "Forms the left edge of the rear frame side.",
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal and rotate so the long edge runs front to back.",
+      "templateId": "template_d3d_frame_flat_bar"
+    }
+  ],
+  "tools": [
+    {
+      "id": "tool_framing_square",
+      "name": "Framing Square",
+      "category": "measurement",
+      "purpose": "Confirms that each D3D frame side corner is square before final joining.",
+      "usageNotes": "Seat both legs of the square against adjacent flat bars.",
+      "assetRef": "assets/tools/tool_framing_square.glb",
+      "defaultOrientationHint": "Hold the inside corner of the square against the bar intersection."
+    }
+  ],
+  "steps": [
+    {
+      "id": "step_bottom_place_bars",
+      "name": "Place all four bottom frame side bars",
+      "assemblyId": "assembly_d3d_frame",
+      "subassemblyId": "subassembly_bottom_frame_side",
+      "sequenceIndex": 1,
+      "instructionText": "Place all four bars of the bottom frame side into their target positions. Keep each bar flat and preserve the 1 inch overlap that produces the 14 inch outer square.",
+      "whyItMattersText": "All four edges of the bottom frame side must stay true to the 14 inch square geometry or the full D3D frame will drift out of square.",
+      "requiredPartIds": [
+        "d3d_frame_bottom_top_bar",
+        "d3d_frame_bottom_right_bar",
+        "d3d_frame_bottom_bottom_bar",
+        "d3d_frame_bottom_left_bar"
+      ],
+      "relevantToolIds": [],
+      "targetIds": [
+        "target_bottom_top_bar",
+        "target_bottom_right_bar",
+        "target_bottom_bottom_bar",
+        "target_bottom_left_bar"
+      ],
+      "targetOrder": "parallel",
+      "completionType": "placement",
+      "family": "Place",
+      "validationRuleIds": [
+        "validation_bottom_top_bar",
+        "validation_bottom_right_bar",
+        "validation_bottom_bottom_bar",
+        "validation_bottom_left_bar"
+      ],
+      "hintIds": [
+        "hint_bottom_top_bar",
+        "hint_bottom_right_bar",
+        "hint_bottom_bottom_bar",
+        "hint_bottom_left_bar"
+      ],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": {
+        "penalizeHintUsage": false,
+        "penalizeInvalidPlacement": false,
+        "stricterToleranceAvailable": true
+      },
+      "eventTags": [
+        "d3d",
+        "frame",
+        "bottom",
+        "place"
+      ]
+    },
+    {
+      "id": "step_bottom_verify_square",
+      "name": "Verify the bottom frame side is square",
+      "assemblyId": "assembly_d3d_frame",
+      "subassemblyId": "subassembly_bottom_frame_side",
+      "sequenceIndex": 2,
+      "instructionText": "Equip the framing square and check the upper-left corner marker on the bottom frame side before final joining.",
+      "whyItMattersText": "A square bottom frame side prevents twist and keeps the D3D frame geometry consistent across all six sides.",
+      "requiredPartIds": [],
+      "optionalPartIds": [
+        "d3d_frame_bottom_top_bar",
+        "d3d_frame_bottom_right_bar",
+        "d3d_frame_bottom_bottom_bar",
+        "d3d_frame_bottom_left_bar"
+      ],
+      "relevantToolIds": [
+        "tool_framing_square"
+      ],
+      "targetIds": [
+        "target_bottom_square_check"
+      ],
+      "completionType": "tool_action",
+      "family": "Use",
+      "profile": "Measure",
+      "validationRuleIds": [],
+      "hintIds": [
+        "hint_bottom_square_check"
+      ],
+      "effectTriggerIds": [],
+      "requiredToolActions": [
+        {
+          "id": "action_bottom_square_check",
+          "toolId": "tool_framing_square",
+          "actionType": "measure",
+          "targetId": "target_bottom_square_check",
+          "requiredCount": 1,
+          "successMessage": "Bottom Frame Side checked for square.",
+          "failureMessage": "Equip the framing square and use it on the pulsing corner marker."
+        }
+      ],
+      "allowSkip": false,
+      "challengeFlags": {
+        "penalizeHintUsage": false,
+        "penalizeInvalidPlacement": false,
+        "stricterToleranceAvailable": true
+      },
+      "eventTags": [
+        "d3d",
+        "frame",
+        "bottom",
+        "measure"
+      ]
+    },
+    {
+      "id": "step_top_place_bars",
+      "name": "Place all four top frame side bars",
+      "assemblyId": "assembly_d3d_frame",
+      "subassemblyId": "subassembly_top_frame_side",
+      "sequenceIndex": 3,
+      "instructionText": "Place all four bars of the top frame side into their target positions. Keep each bar flat and preserve the 1 inch overlap that produces the 14 inch outer square.",
+      "whyItMattersText": "All four edges of the top frame side must stay true to the 14 inch square geometry or the full D3D frame will drift out of square.",
+      "requiredPartIds": [
+        "d3d_frame_top_top_bar",
+        "d3d_frame_top_right_bar",
+        "d3d_frame_top_bottom_bar",
+        "d3d_frame_top_left_bar"
+      ],
+      "relevantToolIds": [],
+      "targetIds": [
+        "target_top_top_bar",
+        "target_top_right_bar",
+        "target_top_bottom_bar",
+        "target_top_left_bar"
+      ],
+      "targetOrder": "parallel",
+      "completionType": "placement",
+      "family": "Place",
+      "validationRuleIds": [
+        "validation_top_top_bar",
+        "validation_top_right_bar",
+        "validation_top_bottom_bar",
+        "validation_top_left_bar"
+      ],
+      "hintIds": [
+        "hint_top_top_bar",
+        "hint_top_right_bar",
+        "hint_top_bottom_bar",
+        "hint_top_left_bar"
+      ],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": {
+        "penalizeHintUsage": false,
+        "penalizeInvalidPlacement": false,
+        "stricterToleranceAvailable": true
+      },
+      "eventTags": [
+        "d3d",
+        "frame",
+        "top",
+        "place"
+      ]
+    },
+    {
+      "id": "step_top_verify_square",
+      "name": "Verify the top frame side is square",
+      "assemblyId": "assembly_d3d_frame",
+      "subassemblyId": "subassembly_top_frame_side",
+      "sequenceIndex": 4,
+      "instructionText": "Equip the framing square and check the upper-left corner marker on the top frame side before final joining.",
+      "whyItMattersText": "A square top frame side prevents twist and keeps the D3D frame geometry consistent across all six sides.",
+      "requiredPartIds": [],
+      "optionalPartIds": [
+        "d3d_frame_top_top_bar",
+        "d3d_frame_top_right_bar",
+        "d3d_frame_top_bottom_bar",
+        "d3d_frame_top_left_bar"
+      ],
+      "relevantToolIds": [
+        "tool_framing_square"
+      ],
+      "targetIds": [
+        "target_top_square_check"
+      ],
+      "completionType": "tool_action",
+      "family": "Use",
+      "profile": "Measure",
+      "validationRuleIds": [],
+      "hintIds": [
+        "hint_top_square_check"
+      ],
+      "effectTriggerIds": [],
+      "requiredToolActions": [
+        {
+          "id": "action_top_square_check",
+          "toolId": "tool_framing_square",
+          "actionType": "measure",
+          "targetId": "target_top_square_check",
+          "requiredCount": 1,
+          "successMessage": "Top Frame Side checked for square.",
+          "failureMessage": "Equip the framing square and use it on the pulsing corner marker."
+        }
+      ],
+      "allowSkip": false,
+      "challengeFlags": {
+        "penalizeHintUsage": false,
+        "penalizeInvalidPlacement": false,
+        "stricterToleranceAvailable": true
+      },
+      "eventTags": [
+        "d3d",
+        "frame",
+        "top",
+        "measure"
+      ]
+    },
+    {
+      "id": "step_left_place_bars",
+      "name": "Place all four left frame side bars",
+      "assemblyId": "assembly_d3d_frame",
+      "subassemblyId": "subassembly_left_frame_side",
+      "sequenceIndex": 5,
+      "instructionText": "Place all four bars of the left frame side into their target positions. Keep each bar flat and preserve the 1 inch overlap that produces the 14 inch outer square.",
+      "whyItMattersText": "All four edges of the left frame side must stay true to the 14 inch square geometry or the full D3D frame will drift out of square.",
+      "requiredPartIds": [
+        "d3d_frame_left_top_bar",
+        "d3d_frame_left_right_bar",
+        "d3d_frame_left_bottom_bar",
+        "d3d_frame_left_left_bar"
+      ],
+      "relevantToolIds": [],
+      "targetIds": [
+        "target_left_top_bar",
+        "target_left_right_bar",
+        "target_left_bottom_bar",
+        "target_left_left_bar"
+      ],
+      "targetOrder": "parallel",
+      "completionType": "placement",
+      "family": "Place",
+      "validationRuleIds": [
+        "validation_left_top_bar",
+        "validation_left_right_bar",
+        "validation_left_bottom_bar",
+        "validation_left_left_bar"
+      ],
+      "hintIds": [
+        "hint_left_top_bar",
+        "hint_left_right_bar",
+        "hint_left_bottom_bar",
+        "hint_left_left_bar"
+      ],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": {
+        "penalizeHintUsage": false,
+        "penalizeInvalidPlacement": false,
+        "stricterToleranceAvailable": true
+      },
+      "eventTags": [
+        "d3d",
+        "frame",
+        "left",
+        "place"
+      ]
+    },
+    {
+      "id": "step_left_verify_square",
+      "name": "Verify the left frame side is square",
+      "assemblyId": "assembly_d3d_frame",
+      "subassemblyId": "subassembly_left_frame_side",
+      "sequenceIndex": 6,
+      "instructionText": "Equip the framing square and check the upper-left corner marker on the left frame side before final joining.",
+      "whyItMattersText": "A square left frame side prevents twist and keeps the D3D frame geometry consistent across all six sides.",
+      "requiredPartIds": [],
+      "optionalPartIds": [
+        "d3d_frame_left_top_bar",
+        "d3d_frame_left_right_bar",
+        "d3d_frame_left_bottom_bar",
+        "d3d_frame_left_left_bar"
+      ],
+      "relevantToolIds": [
+        "tool_framing_square"
+      ],
+      "targetIds": [
+        "target_left_square_check"
+      ],
+      "completionType": "tool_action",
+      "family": "Use",
+      "profile": "Measure",
+      "validationRuleIds": [],
+      "hintIds": [
+        "hint_left_square_check"
+      ],
+      "effectTriggerIds": [],
+      "requiredToolActions": [
+        {
+          "id": "action_left_square_check",
+          "toolId": "tool_framing_square",
+          "actionType": "measure",
+          "targetId": "target_left_square_check",
+          "requiredCount": 1,
+          "successMessage": "Left Frame Side checked for square.",
+          "failureMessage": "Equip the framing square and use it on the pulsing corner marker."
+        }
+      ],
+      "allowSkip": false,
+      "challengeFlags": {
+        "penalizeHintUsage": false,
+        "penalizeInvalidPlacement": false,
+        "stricterToleranceAvailable": true
+      },
+      "eventTags": [
+        "d3d",
+        "frame",
+        "left",
+        "measure"
+      ]
+    },
+    {
+      "id": "step_right_place_bars",
+      "name": "Place all four right frame side bars",
+      "assemblyId": "assembly_d3d_frame",
+      "subassemblyId": "subassembly_right_frame_side",
+      "sequenceIndex": 7,
+      "instructionText": "Place all four bars of the right frame side into their target positions. Keep each bar flat and preserve the 1 inch overlap that produces the 14 inch outer square.",
+      "whyItMattersText": "All four edges of the right frame side must stay true to the 14 inch square geometry or the full D3D frame will drift out of square.",
+      "requiredPartIds": [
+        "d3d_frame_right_top_bar",
+        "d3d_frame_right_right_bar",
+        "d3d_frame_right_bottom_bar",
+        "d3d_frame_right_left_bar"
+      ],
+      "relevantToolIds": [],
+      "targetIds": [
+        "target_right_top_bar",
+        "target_right_right_bar",
+        "target_right_bottom_bar",
+        "target_right_left_bar"
+      ],
+      "targetOrder": "parallel",
+      "completionType": "placement",
+      "family": "Place",
+      "validationRuleIds": [
+        "validation_right_top_bar",
+        "validation_right_right_bar",
+        "validation_right_bottom_bar",
+        "validation_right_left_bar"
+      ],
+      "hintIds": [
+        "hint_right_top_bar",
+        "hint_right_right_bar",
+        "hint_right_bottom_bar",
+        "hint_right_left_bar"
+      ],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": {
+        "penalizeHintUsage": false,
+        "penalizeInvalidPlacement": false,
+        "stricterToleranceAvailable": true
+      },
+      "eventTags": [
+        "d3d",
+        "frame",
+        "right",
+        "place"
+      ]
+    },
+    {
+      "id": "step_right_verify_square",
+      "name": "Verify the right frame side is square",
+      "assemblyId": "assembly_d3d_frame",
+      "subassemblyId": "subassembly_right_frame_side",
+      "sequenceIndex": 8,
+      "instructionText": "Equip the framing square and check the upper-left corner marker on the right frame side before final joining.",
+      "whyItMattersText": "A square right frame side prevents twist and keeps the D3D frame geometry consistent across all six sides.",
+      "requiredPartIds": [],
+      "optionalPartIds": [
+        "d3d_frame_right_top_bar",
+        "d3d_frame_right_right_bar",
+        "d3d_frame_right_bottom_bar",
+        "d3d_frame_right_left_bar"
+      ],
+      "relevantToolIds": [
+        "tool_framing_square"
+      ],
+      "targetIds": [
+        "target_right_square_check"
+      ],
+      "completionType": "tool_action",
+      "family": "Use",
+      "profile": "Measure",
+      "validationRuleIds": [],
+      "hintIds": [
+        "hint_right_square_check"
+      ],
+      "effectTriggerIds": [],
+      "requiredToolActions": [
+        {
+          "id": "action_right_square_check",
+          "toolId": "tool_framing_square",
+          "actionType": "measure",
+          "targetId": "target_right_square_check",
+          "requiredCount": 1,
+          "successMessage": "Right Frame Side checked for square.",
+          "failureMessage": "Equip the framing square and use it on the pulsing corner marker."
+        }
+      ],
+      "allowSkip": false,
+      "challengeFlags": {
+        "penalizeHintUsage": false,
+        "penalizeInvalidPlacement": false,
+        "stricterToleranceAvailable": true
+      },
+      "eventTags": [
+        "d3d",
+        "frame",
+        "right",
+        "measure"
+      ]
+    },
+    {
+      "id": "step_front_place_bars",
+      "name": "Place all four front frame side bars",
+      "assemblyId": "assembly_d3d_frame",
+      "subassemblyId": "subassembly_front_frame_side",
+      "sequenceIndex": 9,
+      "instructionText": "Place all four bars of the front frame side into their target positions. Keep each bar flat and preserve the 1 inch overlap that produces the 14 inch outer square.",
+      "whyItMattersText": "All four edges of the front frame side must stay true to the 14 inch square geometry or the full D3D frame will drift out of square.",
+      "requiredPartIds": [
+        "d3d_frame_front_top_bar",
+        "d3d_frame_front_right_bar",
+        "d3d_frame_front_bottom_bar",
+        "d3d_frame_front_left_bar"
+      ],
+      "relevantToolIds": [],
+      "targetIds": [
+        "target_front_top_bar",
+        "target_front_right_bar",
+        "target_front_bottom_bar",
+        "target_front_left_bar"
+      ],
+      "targetOrder": "parallel",
+      "completionType": "placement",
+      "family": "Place",
+      "validationRuleIds": [
+        "validation_front_top_bar",
+        "validation_front_right_bar",
+        "validation_front_bottom_bar",
+        "validation_front_left_bar"
+      ],
+      "hintIds": [
+        "hint_front_top_bar",
+        "hint_front_right_bar",
+        "hint_front_bottom_bar",
+        "hint_front_left_bar"
+      ],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": {
+        "penalizeHintUsage": false,
+        "penalizeInvalidPlacement": false,
+        "stricterToleranceAvailable": true
+      },
+      "eventTags": [
+        "d3d",
+        "frame",
+        "front",
+        "place"
+      ]
+    },
+    {
+      "id": "step_front_verify_square",
+      "name": "Verify the front frame side is square",
+      "assemblyId": "assembly_d3d_frame",
+      "subassemblyId": "subassembly_front_frame_side",
+      "sequenceIndex": 10,
+      "instructionText": "Equip the framing square and check the upper-left corner marker on the front frame side before final joining.",
+      "whyItMattersText": "A square front frame side prevents twist and keeps the D3D frame geometry consistent across all six sides.",
+      "requiredPartIds": [],
+      "optionalPartIds": [
+        "d3d_frame_front_top_bar",
+        "d3d_frame_front_right_bar",
+        "d3d_frame_front_bottom_bar",
+        "d3d_frame_front_left_bar"
+      ],
+      "relevantToolIds": [
+        "tool_framing_square"
+      ],
+      "targetIds": [
+        "target_front_square_check"
+      ],
+      "completionType": "tool_action",
+      "family": "Use",
+      "profile": "Measure",
+      "validationRuleIds": [],
+      "hintIds": [
+        "hint_front_square_check"
+      ],
+      "effectTriggerIds": [],
+      "requiredToolActions": [
+        {
+          "id": "action_front_square_check",
+          "toolId": "tool_framing_square",
+          "actionType": "measure",
+          "targetId": "target_front_square_check",
+          "requiredCount": 1,
+          "successMessage": "Front Frame Side checked for square.",
+          "failureMessage": "Equip the framing square and use it on the pulsing corner marker."
+        }
+      ],
+      "allowSkip": false,
+      "challengeFlags": {
+        "penalizeHintUsage": false,
+        "penalizeInvalidPlacement": false,
+        "stricterToleranceAvailable": true
+      },
+      "eventTags": [
+        "d3d",
+        "frame",
+        "front",
+        "measure"
+      ]
+    },
+    {
+      "id": "step_rear_place_bars",
+      "name": "Place all four rear frame side bars",
+      "assemblyId": "assembly_d3d_frame",
+      "subassemblyId": "subassembly_rear_frame_side",
+      "sequenceIndex": 11,
+      "instructionText": "Place all four bars of the rear frame side into their target positions. Keep each bar flat and preserve the 1 inch overlap that produces the 14 inch outer square.",
+      "whyItMattersText": "All four edges of the rear frame side must stay true to the 14 inch square geometry or the full D3D frame will drift out of square.",
+      "requiredPartIds": [
+        "d3d_frame_rear_top_bar",
+        "d3d_frame_rear_right_bar",
+        "d3d_frame_rear_bottom_bar",
+        "d3d_frame_rear_left_bar"
+      ],
+      "relevantToolIds": [],
+      "targetIds": [
+        "target_rear_top_bar",
+        "target_rear_right_bar",
+        "target_rear_bottom_bar",
+        "target_rear_left_bar"
+      ],
+      "targetOrder": "parallel",
+      "completionType": "placement",
+      "family": "Place",
+      "validationRuleIds": [
+        "validation_rear_top_bar",
+        "validation_rear_right_bar",
+        "validation_rear_bottom_bar",
+        "validation_rear_left_bar"
+      ],
+      "hintIds": [
+        "hint_rear_top_bar",
+        "hint_rear_right_bar",
+        "hint_rear_bottom_bar",
+        "hint_rear_left_bar"
+      ],
+      "effectTriggerIds": [],
+      "allowSkip": false,
+      "challengeFlags": {
+        "penalizeHintUsage": false,
+        "penalizeInvalidPlacement": false,
+        "stricterToleranceAvailable": true
+      },
+      "eventTags": [
+        "d3d",
+        "frame",
+        "rear",
+        "place"
+      ]
+    },
+    {
+      "id": "step_rear_verify_square",
+      "name": "Verify the rear frame side is square",
+      "assemblyId": "assembly_d3d_frame",
+      "subassemblyId": "subassembly_rear_frame_side",
+      "sequenceIndex": 12,
+      "instructionText": "Equip the framing square and check the upper-left corner marker on the rear frame side before final joining.",
+      "whyItMattersText": "A square rear frame side prevents twist and keeps the D3D frame geometry consistent across all six sides.",
+      "requiredPartIds": [],
+      "optionalPartIds": [
+        "d3d_frame_rear_top_bar",
+        "d3d_frame_rear_right_bar",
+        "d3d_frame_rear_bottom_bar",
+        "d3d_frame_rear_left_bar"
+      ],
+      "relevantToolIds": [
+        "tool_framing_square"
+      ],
+      "targetIds": [
+        "target_rear_square_check"
+      ],
+      "completionType": "tool_action",
+      "family": "Use",
+      "profile": "Measure",
+      "validationRuleIds": [],
+      "hintIds": [
+        "hint_rear_square_check"
+      ],
+      "effectTriggerIds": [],
+      "requiredToolActions": [
+        {
+          "id": "action_rear_square_check",
+          "toolId": "tool_framing_square",
+          "actionType": "measure",
+          "targetId": "target_rear_square_check",
+          "requiredCount": 1,
+          "successMessage": "Rear Frame Side checked for square.",
+          "failureMessage": "Equip the framing square and use it on the pulsing corner marker."
+        }
+      ],
+      "allowSkip": false,
+      "challengeFlags": {
+        "penalizeHintUsage": false,
+        "penalizeInvalidPlacement": false,
+        "stricterToleranceAvailable": true
+      },
+      "eventTags": [
+        "d3d",
+        "frame",
+        "rear",
+        "measure"
+      ]
+    }
+  ],
+  "validationRules": [
+    {
+      "id": "validation_bottom_top_bar",
+      "type": "placement",
+      "targetId": "target_bottom_top_bar",
+      "expectedPartId": "d3d_frame_bottom_top_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the bottom frame side top bar flat and align it to the highlighted top edge.",
+      "correctionHintId": "hint_bottom_top_bar"
+    },
+    {
+      "id": "validation_bottom_right_bar",
+      "type": "placement",
+      "targetId": "target_bottom_right_bar",
+      "expectedPartId": "d3d_frame_bottom_right_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the bottom frame side right bar flat and align it to the highlighted right edge.",
+      "correctionHintId": "hint_bottom_right_bar"
+    },
+    {
+      "id": "validation_bottom_bottom_bar",
+      "type": "placement",
+      "targetId": "target_bottom_bottom_bar",
+      "expectedPartId": "d3d_frame_bottom_bottom_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the bottom frame side bottom bar flat and align it to the highlighted bottom edge.",
+      "correctionHintId": "hint_bottom_bottom_bar"
+    },
+    {
+      "id": "validation_bottom_left_bar",
+      "type": "placement",
+      "targetId": "target_bottom_left_bar",
+      "expectedPartId": "d3d_frame_bottom_left_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the bottom frame side left bar flat and align it to the highlighted left edge.",
+      "correctionHintId": "hint_bottom_left_bar"
+    },
+    {
+      "id": "validation_top_top_bar",
+      "type": "placement",
+      "targetId": "target_top_top_bar",
+      "expectedPartId": "d3d_frame_top_top_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the top frame side top bar flat and align it to the highlighted top edge.",
+      "correctionHintId": "hint_top_top_bar"
+    },
+    {
+      "id": "validation_top_right_bar",
+      "type": "placement",
+      "targetId": "target_top_right_bar",
+      "expectedPartId": "d3d_frame_top_right_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the top frame side right bar flat and align it to the highlighted right edge.",
+      "correctionHintId": "hint_top_right_bar"
+    },
+    {
+      "id": "validation_top_bottom_bar",
+      "type": "placement",
+      "targetId": "target_top_bottom_bar",
+      "expectedPartId": "d3d_frame_top_bottom_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the top frame side bottom bar flat and align it to the highlighted bottom edge.",
+      "correctionHintId": "hint_top_bottom_bar"
+    },
+    {
+      "id": "validation_top_left_bar",
+      "type": "placement",
+      "targetId": "target_top_left_bar",
+      "expectedPartId": "d3d_frame_top_left_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the top frame side left bar flat and align it to the highlighted left edge.",
+      "correctionHintId": "hint_top_left_bar"
+    },
+    {
+      "id": "validation_left_top_bar",
+      "type": "placement",
+      "targetId": "target_left_top_bar",
+      "expectedPartId": "d3d_frame_left_top_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the left frame side top bar flat and align it to the highlighted top edge.",
+      "correctionHintId": "hint_left_top_bar"
+    },
+    {
+      "id": "validation_left_right_bar",
+      "type": "placement",
+      "targetId": "target_left_right_bar",
+      "expectedPartId": "d3d_frame_left_right_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the left frame side right bar flat and align it to the highlighted right edge.",
+      "correctionHintId": "hint_left_right_bar"
+    },
+    {
+      "id": "validation_left_bottom_bar",
+      "type": "placement",
+      "targetId": "target_left_bottom_bar",
+      "expectedPartId": "d3d_frame_left_bottom_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the left frame side bottom bar flat and align it to the highlighted bottom edge.",
+      "correctionHintId": "hint_left_bottom_bar"
+    },
+    {
+      "id": "validation_left_left_bar",
+      "type": "placement",
+      "targetId": "target_left_left_bar",
+      "expectedPartId": "d3d_frame_left_left_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the left frame side left bar flat and align it to the highlighted left edge.",
+      "correctionHintId": "hint_left_left_bar"
+    },
+    {
+      "id": "validation_right_top_bar",
+      "type": "placement",
+      "targetId": "target_right_top_bar",
+      "expectedPartId": "d3d_frame_right_top_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the right frame side top bar flat and align it to the highlighted top edge.",
+      "correctionHintId": "hint_right_top_bar"
+    },
+    {
+      "id": "validation_right_right_bar",
+      "type": "placement",
+      "targetId": "target_right_right_bar",
+      "expectedPartId": "d3d_frame_right_right_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the right frame side right bar flat and align it to the highlighted right edge.",
+      "correctionHintId": "hint_right_right_bar"
+    },
+    {
+      "id": "validation_right_bottom_bar",
+      "type": "placement",
+      "targetId": "target_right_bottom_bar",
+      "expectedPartId": "d3d_frame_right_bottom_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the right frame side bottom bar flat and align it to the highlighted bottom edge.",
+      "correctionHintId": "hint_right_bottom_bar"
+    },
+    {
+      "id": "validation_right_left_bar",
+      "type": "placement",
+      "targetId": "target_right_left_bar",
+      "expectedPartId": "d3d_frame_right_left_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the right frame side left bar flat and align it to the highlighted left edge.",
+      "correctionHintId": "hint_right_left_bar"
+    },
+    {
+      "id": "validation_front_top_bar",
+      "type": "placement",
+      "targetId": "target_front_top_bar",
+      "expectedPartId": "d3d_frame_front_top_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the front frame side top bar flat and align it to the highlighted top edge.",
+      "correctionHintId": "hint_front_top_bar"
+    },
+    {
+      "id": "validation_front_right_bar",
+      "type": "placement",
+      "targetId": "target_front_right_bar",
+      "expectedPartId": "d3d_frame_front_right_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the front frame side right bar flat and align it to the highlighted right edge.",
+      "correctionHintId": "hint_front_right_bar"
+    },
+    {
+      "id": "validation_front_bottom_bar",
+      "type": "placement",
+      "targetId": "target_front_bottom_bar",
+      "expectedPartId": "d3d_frame_front_bottom_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the front frame side bottom bar flat and align it to the highlighted bottom edge.",
+      "correctionHintId": "hint_front_bottom_bar"
+    },
+    {
+      "id": "validation_front_left_bar",
+      "type": "placement",
+      "targetId": "target_front_left_bar",
+      "expectedPartId": "d3d_frame_front_left_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the front frame side left bar flat and align it to the highlighted left edge.",
+      "correctionHintId": "hint_front_left_bar"
+    },
+    {
+      "id": "validation_rear_top_bar",
+      "type": "placement",
+      "targetId": "target_rear_top_bar",
+      "expectedPartId": "d3d_frame_rear_top_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the rear frame side top bar flat and align it to the highlighted top edge.",
+      "correctionHintId": "hint_rear_top_bar"
+    },
+    {
+      "id": "validation_rear_right_bar",
+      "type": "placement",
+      "targetId": "target_rear_right_bar",
+      "expectedPartId": "d3d_frame_rear_right_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the rear frame side right bar flat and align it to the highlighted right edge.",
+      "correctionHintId": "hint_rear_right_bar"
+    },
+    {
+      "id": "validation_rear_bottom_bar",
+      "type": "placement",
+      "targetId": "target_rear_bottom_bar",
+      "expectedPartId": "d3d_frame_rear_bottom_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the rear frame side bottom bar flat and align it to the highlighted bottom edge.",
+      "correctionHintId": "hint_rear_bottom_bar"
+    },
+    {
+      "id": "validation_rear_left_bar",
+      "type": "placement",
+      "targetId": "target_rear_left_bar",
+      "expectedPartId": "d3d_frame_rear_left_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the rear frame side left bar flat and align it to the highlighted left edge.",
+      "correctionHintId": "hint_rear_left_bar"
+    }
+  ],
+  "effects": [],
+  "hints": [
+    {
+      "id": "hint_bottom_top_bar",
+      "type": "highlight",
+      "title": "Bottom Frame Side Top Bar",
+      "message": "This bar defines the top edge of the bottom frame side. Keep the 1 inch corner overlap consistent.",
+      "targetId": "target_bottom_top_bar",
+      "partId": "d3d_frame_bottom_top_bar",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_bottom_right_bar",
+      "type": "highlight",
+      "title": "Bottom Frame Side Right Bar",
+      "message": "This bar defines the right edge of the bottom frame side. Keep the 1 inch corner overlap consistent.",
+      "targetId": "target_bottom_right_bar",
+      "partId": "d3d_frame_bottom_right_bar",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_bottom_bottom_bar",
+      "type": "highlight",
+      "title": "Bottom Frame Side Bottom Bar",
+      "message": "This bar defines the bottom edge of the bottom frame side. Keep the 1 inch corner overlap consistent.",
+      "targetId": "target_bottom_bottom_bar",
+      "partId": "d3d_frame_bottom_bottom_bar",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_bottom_left_bar",
+      "type": "highlight",
+      "title": "Bottom Frame Side Left Bar",
+      "message": "This bar defines the left edge of the bottom frame side. Keep the 1 inch corner overlap consistent.",
+      "targetId": "target_bottom_left_bar",
+      "partId": "d3d_frame_bottom_left_bar",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_bottom_square_check",
+      "type": "tool_reminder",
+      "title": "Check bottom frame side squareness",
+      "message": "Use the framing square on the highlighted upper-left corner of the bottom frame side before final joining.",
+      "toolId": "tool_framing_square",
+      "targetId": "target_bottom_square_check",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_top_top_bar",
+      "type": "highlight",
+      "title": "Top Frame Side Top Bar",
+      "message": "This bar defines the top edge of the top frame side. Keep the 1 inch corner overlap consistent.",
+      "targetId": "target_top_top_bar",
+      "partId": "d3d_frame_top_top_bar",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_top_right_bar",
+      "type": "highlight",
+      "title": "Top Frame Side Right Bar",
+      "message": "This bar defines the right edge of the top frame side. Keep the 1 inch corner overlap consistent.",
+      "targetId": "target_top_right_bar",
+      "partId": "d3d_frame_top_right_bar",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_top_bottom_bar",
+      "type": "highlight",
+      "title": "Top Frame Side Bottom Bar",
+      "message": "This bar defines the bottom edge of the top frame side. Keep the 1 inch corner overlap consistent.",
+      "targetId": "target_top_bottom_bar",
+      "partId": "d3d_frame_top_bottom_bar",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_top_left_bar",
+      "type": "highlight",
+      "title": "Top Frame Side Left Bar",
+      "message": "This bar defines the left edge of the top frame side. Keep the 1 inch corner overlap consistent.",
+      "targetId": "target_top_left_bar",
+      "partId": "d3d_frame_top_left_bar",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_top_square_check",
+      "type": "tool_reminder",
+      "title": "Check top frame side squareness",
+      "message": "Use the framing square on the highlighted upper-left corner of the top frame side before final joining.",
+      "toolId": "tool_framing_square",
+      "targetId": "target_top_square_check",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_left_top_bar",
+      "type": "highlight",
+      "title": "Left Frame Side Top Bar",
+      "message": "This bar defines the top edge of the left frame side. Keep the 1 inch corner overlap consistent.",
+      "targetId": "target_left_top_bar",
+      "partId": "d3d_frame_left_top_bar",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_left_right_bar",
+      "type": "highlight",
+      "title": "Left Frame Side Right Bar",
+      "message": "This bar defines the right edge of the left frame side. Keep the 1 inch corner overlap consistent.",
+      "targetId": "target_left_right_bar",
+      "partId": "d3d_frame_left_right_bar",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_left_bottom_bar",
+      "type": "highlight",
+      "title": "Left Frame Side Bottom Bar",
+      "message": "This bar defines the bottom edge of the left frame side. Keep the 1 inch corner overlap consistent.",
+      "targetId": "target_left_bottom_bar",
+      "partId": "d3d_frame_left_bottom_bar",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_left_left_bar",
+      "type": "highlight",
+      "title": "Left Frame Side Left Bar",
+      "message": "This bar defines the left edge of the left frame side. Keep the 1 inch corner overlap consistent.",
+      "targetId": "target_left_left_bar",
+      "partId": "d3d_frame_left_left_bar",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_left_square_check",
+      "type": "tool_reminder",
+      "title": "Check left frame side squareness",
+      "message": "Use the framing square on the highlighted upper-left corner of the left frame side before final joining.",
+      "toolId": "tool_framing_square",
+      "targetId": "target_left_square_check",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_right_top_bar",
+      "type": "highlight",
+      "title": "Right Frame Side Top Bar",
+      "message": "This bar defines the top edge of the right frame side. Keep the 1 inch corner overlap consistent.",
+      "targetId": "target_right_top_bar",
+      "partId": "d3d_frame_right_top_bar",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_right_right_bar",
+      "type": "highlight",
+      "title": "Right Frame Side Right Bar",
+      "message": "This bar defines the right edge of the right frame side. Keep the 1 inch corner overlap consistent.",
+      "targetId": "target_right_right_bar",
+      "partId": "d3d_frame_right_right_bar",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_right_bottom_bar",
+      "type": "highlight",
+      "title": "Right Frame Side Bottom Bar",
+      "message": "This bar defines the bottom edge of the right frame side. Keep the 1 inch corner overlap consistent.",
+      "targetId": "target_right_bottom_bar",
+      "partId": "d3d_frame_right_bottom_bar",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_right_left_bar",
+      "type": "highlight",
+      "title": "Right Frame Side Left Bar",
+      "message": "This bar defines the left edge of the right frame side. Keep the 1 inch corner overlap consistent.",
+      "targetId": "target_right_left_bar",
+      "partId": "d3d_frame_right_left_bar",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_right_square_check",
+      "type": "tool_reminder",
+      "title": "Check right frame side squareness",
+      "message": "Use the framing square on the highlighted upper-left corner of the right frame side before final joining.",
+      "toolId": "tool_framing_square",
+      "targetId": "target_right_square_check",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_front_top_bar",
+      "type": "highlight",
+      "title": "Front Frame Side Top Bar",
+      "message": "This bar defines the top edge of the front frame side. Keep the 1 inch corner overlap consistent.",
+      "targetId": "target_front_top_bar",
+      "partId": "d3d_frame_front_top_bar",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_front_right_bar",
+      "type": "highlight",
+      "title": "Front Frame Side Right Bar",
+      "message": "This bar defines the right edge of the front frame side. Keep the 1 inch corner overlap consistent.",
+      "targetId": "target_front_right_bar",
+      "partId": "d3d_frame_front_right_bar",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_front_bottom_bar",
+      "type": "highlight",
+      "title": "Front Frame Side Bottom Bar",
+      "message": "This bar defines the bottom edge of the front frame side. Keep the 1 inch corner overlap consistent.",
+      "targetId": "target_front_bottom_bar",
+      "partId": "d3d_frame_front_bottom_bar",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_front_left_bar",
+      "type": "highlight",
+      "title": "Front Frame Side Left Bar",
+      "message": "This bar defines the left edge of the front frame side. Keep the 1 inch corner overlap consistent.",
+      "targetId": "target_front_left_bar",
+      "partId": "d3d_frame_front_left_bar",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_front_square_check",
+      "type": "tool_reminder",
+      "title": "Check front frame side squareness",
+      "message": "Use the framing square on the highlighted upper-left corner of the front frame side before final joining.",
+      "toolId": "tool_framing_square",
+      "targetId": "target_front_square_check",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_rear_top_bar",
+      "type": "highlight",
+      "title": "Rear Frame Side Top Bar",
+      "message": "This bar defines the top edge of the rear frame side. Keep the 1 inch corner overlap consistent.",
+      "targetId": "target_rear_top_bar",
+      "partId": "d3d_frame_rear_top_bar",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_rear_right_bar",
+      "type": "highlight",
+      "title": "Rear Frame Side Right Bar",
+      "message": "This bar defines the right edge of the rear frame side. Keep the 1 inch corner overlap consistent.",
+      "targetId": "target_rear_right_bar",
+      "partId": "d3d_frame_rear_right_bar",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_rear_bottom_bar",
+      "type": "highlight",
+      "title": "Rear Frame Side Bottom Bar",
+      "message": "This bar defines the bottom edge of the rear frame side. Keep the 1 inch corner overlap consistent.",
+      "targetId": "target_rear_bottom_bar",
+      "partId": "d3d_frame_rear_bottom_bar",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_rear_left_bar",
+      "type": "highlight",
+      "title": "Rear Frame Side Left Bar",
+      "message": "This bar defines the left edge of the rear frame side. Keep the 1 inch corner overlap consistent.",
+      "targetId": "target_rear_left_bar",
+      "partId": "d3d_frame_rear_left_bar",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_rear_square_check",
+      "type": "tool_reminder",
+      "title": "Check rear frame side squareness",
+      "message": "Use the framing square on the highlighted upper-left corner of the rear frame side before final joining.",
+      "toolId": "tool_framing_square",
+      "targetId": "target_rear_square_check",
+      "priority": "medium"
+    }
+  ],
+  "targets": [
+    {
+      "id": "target_bottom_top_bar",
+      "name": "Bottom Frame Side Top Bar Target",
+      "anchorRef": "anchors/d3d/frame/bottom/top_bar",
+      "description": "Top Bar target for the bottom frame side.",
+      "associatedPartId": "d3d_frame_bottom_top_bar",
+      "tags": [
+        "d3d",
+        "frame",
+        "bottom"
+      ]
+    },
+    {
+      "id": "target_bottom_right_bar",
+      "name": "Bottom Frame Side Right Bar Target",
+      "anchorRef": "anchors/d3d/frame/bottom/right_bar",
+      "description": "Right Bar target for the bottom frame side.",
+      "associatedPartId": "d3d_frame_bottom_right_bar",
+      "tags": [
+        "d3d",
+        "frame",
+        "bottom"
+      ]
+    },
+    {
+      "id": "target_bottom_bottom_bar",
+      "name": "Bottom Frame Side Bottom Bar Target",
+      "anchorRef": "anchors/d3d/frame/bottom/bottom_bar",
+      "description": "Bottom Bar target for the bottom frame side.",
+      "associatedPartId": "d3d_frame_bottom_bottom_bar",
+      "tags": [
+        "d3d",
+        "frame",
+        "bottom"
+      ]
+    },
+    {
+      "id": "target_bottom_left_bar",
+      "name": "Bottom Frame Side Left Bar Target",
+      "anchorRef": "anchors/d3d/frame/bottom/left_bar",
+      "description": "Left Bar target for the bottom frame side.",
+      "associatedPartId": "d3d_frame_bottom_left_bar",
+      "tags": [
+        "d3d",
+        "frame",
+        "bottom"
+      ]
+    },
+    {
+      "id": "target_bottom_square_check",
+      "name": "Bottom Frame Side Square Check",
+      "anchorRef": "anchors/d3d/frame/bottom/square_check",
+      "description": "Square-check target for the bottom frame side.",
+      "tags": [
+        "d3d",
+        "frame",
+        "bottom",
+        "measure"
+      ]
+    },
+    {
+      "id": "target_top_top_bar",
+      "name": "Top Frame Side Top Bar Target",
+      "anchorRef": "anchors/d3d/frame/top/top_bar",
+      "description": "Top Bar target for the top frame side.",
+      "associatedPartId": "d3d_frame_top_top_bar",
+      "tags": [
+        "d3d",
+        "frame",
+        "top"
+      ]
+    },
+    {
+      "id": "target_top_right_bar",
+      "name": "Top Frame Side Right Bar Target",
+      "anchorRef": "anchors/d3d/frame/top/right_bar",
+      "description": "Right Bar target for the top frame side.",
+      "associatedPartId": "d3d_frame_top_right_bar",
+      "tags": [
+        "d3d",
+        "frame",
+        "top"
+      ]
+    },
+    {
+      "id": "target_top_bottom_bar",
+      "name": "Top Frame Side Bottom Bar Target",
+      "anchorRef": "anchors/d3d/frame/top/bottom_bar",
+      "description": "Bottom Bar target for the top frame side.",
+      "associatedPartId": "d3d_frame_top_bottom_bar",
+      "tags": [
+        "d3d",
+        "frame",
+        "top"
+      ]
+    },
+    {
+      "id": "target_top_left_bar",
+      "name": "Top Frame Side Left Bar Target",
+      "anchorRef": "anchors/d3d/frame/top/left_bar",
+      "description": "Left Bar target for the top frame side.",
+      "associatedPartId": "d3d_frame_top_left_bar",
+      "tags": [
+        "d3d",
+        "frame",
+        "top"
+      ]
+    },
+    {
+      "id": "target_top_square_check",
+      "name": "Top Frame Side Square Check",
+      "anchorRef": "anchors/d3d/frame/top/square_check",
+      "description": "Square-check target for the top frame side.",
+      "tags": [
+        "d3d",
+        "frame",
+        "top",
+        "measure"
+      ]
+    },
+    {
+      "id": "target_left_top_bar",
+      "name": "Left Frame Side Top Bar Target",
+      "anchorRef": "anchors/d3d/frame/left/top_bar",
+      "description": "Top Bar target for the left frame side.",
+      "associatedPartId": "d3d_frame_left_top_bar",
+      "tags": [
+        "d3d",
+        "frame",
+        "left"
+      ]
+    },
+    {
+      "id": "target_left_right_bar",
+      "name": "Left Frame Side Right Bar Target",
+      "anchorRef": "anchors/d3d/frame/left/right_bar",
+      "description": "Right Bar target for the left frame side.",
+      "associatedPartId": "d3d_frame_left_right_bar",
+      "tags": [
+        "d3d",
+        "frame",
+        "left"
+      ]
+    },
+    {
+      "id": "target_left_bottom_bar",
+      "name": "Left Frame Side Bottom Bar Target",
+      "anchorRef": "anchors/d3d/frame/left/bottom_bar",
+      "description": "Bottom Bar target for the left frame side.",
+      "associatedPartId": "d3d_frame_left_bottom_bar",
+      "tags": [
+        "d3d",
+        "frame",
+        "left"
+      ]
+    },
+    {
+      "id": "target_left_left_bar",
+      "name": "Left Frame Side Left Bar Target",
+      "anchorRef": "anchors/d3d/frame/left/left_bar",
+      "description": "Left Bar target for the left frame side.",
+      "associatedPartId": "d3d_frame_left_left_bar",
+      "tags": [
+        "d3d",
+        "frame",
+        "left"
+      ]
+    },
+    {
+      "id": "target_left_square_check",
+      "name": "Left Frame Side Square Check",
+      "anchorRef": "anchors/d3d/frame/left/square_check",
+      "description": "Square-check target for the left frame side.",
+      "tags": [
+        "d3d",
+        "frame",
+        "left",
+        "measure"
+      ]
+    },
+    {
+      "id": "target_right_top_bar",
+      "name": "Right Frame Side Top Bar Target",
+      "anchorRef": "anchors/d3d/frame/right/top_bar",
+      "description": "Top Bar target for the right frame side.",
+      "associatedPartId": "d3d_frame_right_top_bar",
+      "tags": [
+        "d3d",
+        "frame",
+        "right"
+      ]
+    },
+    {
+      "id": "target_right_right_bar",
+      "name": "Right Frame Side Right Bar Target",
+      "anchorRef": "anchors/d3d/frame/right/right_bar",
+      "description": "Right Bar target for the right frame side.",
+      "associatedPartId": "d3d_frame_right_right_bar",
+      "tags": [
+        "d3d",
+        "frame",
+        "right"
+      ]
+    },
+    {
+      "id": "target_right_bottom_bar",
+      "name": "Right Frame Side Bottom Bar Target",
+      "anchorRef": "anchors/d3d/frame/right/bottom_bar",
+      "description": "Bottom Bar target for the right frame side.",
+      "associatedPartId": "d3d_frame_right_bottom_bar",
+      "tags": [
+        "d3d",
+        "frame",
+        "right"
+      ]
+    },
+    {
+      "id": "target_right_left_bar",
+      "name": "Right Frame Side Left Bar Target",
+      "anchorRef": "anchors/d3d/frame/right/left_bar",
+      "description": "Left Bar target for the right frame side.",
+      "associatedPartId": "d3d_frame_right_left_bar",
+      "tags": [
+        "d3d",
+        "frame",
+        "right"
+      ]
+    },
+    {
+      "id": "target_right_square_check",
+      "name": "Right Frame Side Square Check",
+      "anchorRef": "anchors/d3d/frame/right/square_check",
+      "description": "Square-check target for the right frame side.",
+      "tags": [
+        "d3d",
+        "frame",
+        "right",
+        "measure"
+      ]
+    },
+    {
+      "id": "target_front_top_bar",
+      "name": "Front Frame Side Top Bar Target",
+      "anchorRef": "anchors/d3d/frame/front/top_bar",
+      "description": "Top Bar target for the front frame side.",
+      "associatedPartId": "d3d_frame_front_top_bar",
+      "tags": [
+        "d3d",
+        "frame",
+        "front"
+      ]
+    },
+    {
+      "id": "target_front_right_bar",
+      "name": "Front Frame Side Right Bar Target",
+      "anchorRef": "anchors/d3d/frame/front/right_bar",
+      "description": "Right Bar target for the front frame side.",
+      "associatedPartId": "d3d_frame_front_right_bar",
+      "tags": [
+        "d3d",
+        "frame",
+        "front"
+      ]
+    },
+    {
+      "id": "target_front_bottom_bar",
+      "name": "Front Frame Side Bottom Bar Target",
+      "anchorRef": "anchors/d3d/frame/front/bottom_bar",
+      "description": "Bottom Bar target for the front frame side.",
+      "associatedPartId": "d3d_frame_front_bottom_bar",
+      "tags": [
+        "d3d",
+        "frame",
+        "front"
+      ]
+    },
+    {
+      "id": "target_front_left_bar",
+      "name": "Front Frame Side Left Bar Target",
+      "anchorRef": "anchors/d3d/frame/front/left_bar",
+      "description": "Left Bar target for the front frame side.",
+      "associatedPartId": "d3d_frame_front_left_bar",
+      "tags": [
+        "d3d",
+        "frame",
+        "front"
+      ]
+    },
+    {
+      "id": "target_front_square_check",
+      "name": "Front Frame Side Square Check",
+      "anchorRef": "anchors/d3d/frame/front/square_check",
+      "description": "Square-check target for the front frame side.",
+      "tags": [
+        "d3d",
+        "frame",
+        "front",
+        "measure"
+      ]
+    },
+    {
+      "id": "target_rear_top_bar",
+      "name": "Rear Frame Side Top Bar Target",
+      "anchorRef": "anchors/d3d/frame/rear/top_bar",
+      "description": "Top Bar target for the rear frame side.",
+      "associatedPartId": "d3d_frame_rear_top_bar",
+      "tags": [
+        "d3d",
+        "frame",
+        "rear"
+      ]
+    },
+    {
+      "id": "target_rear_right_bar",
+      "name": "Rear Frame Side Right Bar Target",
+      "anchorRef": "anchors/d3d/frame/rear/right_bar",
+      "description": "Right Bar target for the rear frame side.",
+      "associatedPartId": "d3d_frame_rear_right_bar",
+      "tags": [
+        "d3d",
+        "frame",
+        "rear"
+      ]
+    },
+    {
+      "id": "target_rear_bottom_bar",
+      "name": "Rear Frame Side Bottom Bar Target",
+      "anchorRef": "anchors/d3d/frame/rear/bottom_bar",
+      "description": "Bottom Bar target for the rear frame side.",
+      "associatedPartId": "d3d_frame_rear_bottom_bar",
+      "tags": [
+        "d3d",
+        "frame",
+        "rear"
+      ]
+    },
+    {
+      "id": "target_rear_left_bar",
+      "name": "Rear Frame Side Left Bar Target",
+      "anchorRef": "anchors/d3d/frame/rear/left_bar",
+      "description": "Left Bar target for the rear frame side.",
+      "associatedPartId": "d3d_frame_rear_left_bar",
+      "tags": [
+        "d3d",
+        "frame",
+        "rear"
+      ]
+    },
+    {
+      "id": "target_rear_square_check",
+      "name": "Rear Frame Side Square Check",
+      "anchorRef": "anchors/d3d/frame/rear/square_check",
+      "description": "Square-check target for the rear frame side.",
+      "tags": [
+        "d3d",
+        "frame",
+        "rear",
+        "measure"
+      ]
+    }
+  ],
+  "challengeConfig": {
+    "enabled": false,
+    "trackTime": true,
+    "trackRetries": true,
+    "trackHintUsage": true,
+    "leaderboardReady": false,
+    "strictValidationModeAvailable": true
+  },
+  "assetManifest": {
+    "modelRefs": [
+      "assets/parts/d3d_frame_flat_bar_approved.glb",
+      "assets/tools/tool_framing_square.glb"
+    ],
+    "effectRefs": [],
+    "uiRefs": []
+  },
+  "previewConfig": {
+    "defaultAssemblyScaleMultiplier": 2,
+    "partPlacements": [
+      {
+        "partId": "d3d_frame_bottom_top_bar",
+        "startPosition": {
+          "x": -1,
+          "y": 0.5515875,
+          "z": 0.495
+        },
+        "startRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "startScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.43,
+          "g": 0.43,
+          "b": 0.46,
+          "a": 1
+        },
+        "playPosition": {
+          "x": -0.38,
+          "y": 0.5515875,
+          "z": 0.5851
+        },
+        "playRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "playScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        }
+      },
+      {
+        "partId": "d3d_frame_bottom_right_bar",
+        "startPosition": {
+          "x": -1,
+          "y": 0.5515875,
+          "z": 0.445
+        },
+        "startRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "startScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.43,
+          "g": 0.43,
+          "b": 0.46,
+          "a": 1
+        },
+        "playPosition": {
+          "x": -0.2149,
+          "y": 0.5515875,
+          "z": 0.42
+        },
+        "playRotation": {
+          "x": 0,
+          "y": 0.7071068,
+          "z": 0,
+          "w": 0.7071068
+        },
+        "playScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        }
+      },
+      {
+        "partId": "d3d_frame_bottom_bottom_bar",
+        "startPosition": {
+          "x": -1,
+          "y": 0.5515875,
+          "z": 0.395
+        },
+        "startRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "startScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.43,
+          "g": 0.43,
+          "b": 0.46,
+          "a": 1
+        },
+        "playPosition": {
+          "x": -0.38,
+          "y": 0.5515875,
+          "z": 0.2549
+        },
+        "playRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "playScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        }
+      },
+      {
+        "partId": "d3d_frame_bottom_left_bar",
+        "startPosition": {
+          "x": -1,
+          "y": 0.5515875,
+          "z": 0.345
+        },
+        "startRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "startScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.43,
+          "g": 0.43,
+          "b": 0.46,
+          "a": 1
+        },
+        "playPosition": {
+          "x": -0.5451,
+          "y": 0.5515875,
+          "z": 0.42
+        },
+        "playRotation": {
+          "x": 0,
+          "y": 0.7071068,
+          "z": 0,
+          "w": 0.7071068
+        },
+        "playScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        }
+      },
+      {
+        "partId": "d3d_frame_top_top_bar",
+        "startPosition": {
+          "x": 1,
+          "y": 0.5515875,
+          "z": 0.495
+        },
+        "startRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "startScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.43,
+          "g": 0.43,
+          "b": 0.46,
+          "a": 1
+        },
+        "playPosition": {
+          "x": 0.38,
+          "y": 0.5515875,
+          "z": 0.5851
+        },
+        "playRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "playScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        }
+      },
+      {
+        "partId": "d3d_frame_top_right_bar",
+        "startPosition": {
+          "x": 1,
+          "y": 0.5515875,
+          "z": 0.445
+        },
+        "startRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "startScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.43,
+          "g": 0.43,
+          "b": 0.46,
+          "a": 1
+        },
+        "playPosition": {
+          "x": 0.5451,
+          "y": 0.5515875,
+          "z": 0.42
+        },
+        "playRotation": {
+          "x": 0,
+          "y": 0.7071068,
+          "z": 0,
+          "w": 0.7071068
+        },
+        "playScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        }
+      },
+      {
+        "partId": "d3d_frame_top_bottom_bar",
+        "startPosition": {
+          "x": 1,
+          "y": 0.5515875,
+          "z": 0.395
+        },
+        "startRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "startScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.43,
+          "g": 0.43,
+          "b": 0.46,
+          "a": 1
+        },
+        "playPosition": {
+          "x": 0.38,
+          "y": 0.5515875,
+          "z": 0.2549
+        },
+        "playRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "playScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        }
+      },
+      {
+        "partId": "d3d_frame_top_left_bar",
+        "startPosition": {
+          "x": 1,
+          "y": 0.5515875,
+          "z": 0.345
+        },
+        "startRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "startScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.43,
+          "g": 0.43,
+          "b": 0.46,
+          "a": 1
+        },
+        "playPosition": {
+          "x": 0.2149,
+          "y": 0.5515875,
+          "z": 0.42
+        },
+        "playRotation": {
+          "x": 0,
+          "y": 0.7071068,
+          "z": 0,
+          "w": 0.7071068
+        },
+        "playScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        }
+      },
+      {
+        "partId": "d3d_frame_left_top_bar",
+        "startPosition": {
+          "x": -1,
+          "y": 0.5515875,
+          "z": 0.075
+        },
+        "startRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "startScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.43,
+          "g": 0.43,
+          "b": 0.46,
+          "a": 1
+        },
+        "playPosition": {
+          "x": -0.38,
+          "y": 0.5515875,
+          "z": 0.1651
+        },
+        "playRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "playScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        }
+      },
+      {
+        "partId": "d3d_frame_left_right_bar",
+        "startPosition": {
+          "x": -1,
+          "y": 0.5515875,
+          "z": 0.025
+        },
+        "startRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "startScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.43,
+          "g": 0.43,
+          "b": 0.46,
+          "a": 1
+        },
+        "playPosition": {
+          "x": -0.2149,
+          "y": 0.5515875,
+          "z": 0
+        },
+        "playRotation": {
+          "x": 0,
+          "y": 0.7071068,
+          "z": 0,
+          "w": 0.7071068
+        },
+        "playScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        }
+      },
+      {
+        "partId": "d3d_frame_left_bottom_bar",
+        "startPosition": {
+          "x": -1,
+          "y": 0.5515875,
+          "z": -0.025
+        },
+        "startRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "startScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.43,
+          "g": 0.43,
+          "b": 0.46,
+          "a": 1
+        },
+        "playPosition": {
+          "x": -0.38,
+          "y": 0.5515875,
+          "z": -0.1651
+        },
+        "playRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "playScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        }
+      },
+      {
+        "partId": "d3d_frame_left_left_bar",
+        "startPosition": {
+          "x": -1,
+          "y": 0.5515875,
+          "z": -0.075
+        },
+        "startRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "startScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.43,
+          "g": 0.43,
+          "b": 0.46,
+          "a": 1
+        },
+        "playPosition": {
+          "x": -0.5451,
+          "y": 0.5515875,
+          "z": 0
+        },
+        "playRotation": {
+          "x": 0,
+          "y": 0.7071068,
+          "z": 0,
+          "w": 0.7071068
+        },
+        "playScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        }
+      },
+      {
+        "partId": "d3d_frame_right_top_bar",
+        "startPosition": {
+          "x": 1,
+          "y": 0.5515875,
+          "z": 0.075
+        },
+        "startRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "startScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.43,
+          "g": 0.43,
+          "b": 0.46,
+          "a": 1
+        },
+        "playPosition": {
+          "x": 0.38,
+          "y": 0.5515875,
+          "z": 0.1651
+        },
+        "playRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "playScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        }
+      },
+      {
+        "partId": "d3d_frame_right_right_bar",
+        "startPosition": {
+          "x": 1,
+          "y": 0.5515875,
+          "z": 0.025
+        },
+        "startRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "startScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.43,
+          "g": 0.43,
+          "b": 0.46,
+          "a": 1
+        },
+        "playPosition": {
+          "x": 0.5451,
+          "y": 0.5515875,
+          "z": 0
+        },
+        "playRotation": {
+          "x": 0,
+          "y": 0.7071068,
+          "z": 0,
+          "w": 0.7071068
+        },
+        "playScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        }
+      },
+      {
+        "partId": "d3d_frame_right_bottom_bar",
+        "startPosition": {
+          "x": 1,
+          "y": 0.5515875,
+          "z": -0.025
+        },
+        "startRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "startScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.43,
+          "g": 0.43,
+          "b": 0.46,
+          "a": 1
+        },
+        "playPosition": {
+          "x": 0.38,
+          "y": 0.5515875,
+          "z": -0.1651
+        },
+        "playRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "playScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        }
+      },
+      {
+        "partId": "d3d_frame_right_left_bar",
+        "startPosition": {
+          "x": 1,
+          "y": 0.5515875,
+          "z": -0.075
+        },
+        "startRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "startScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.43,
+          "g": 0.43,
+          "b": 0.46,
+          "a": 1
+        },
+        "playPosition": {
+          "x": 0.2149,
+          "y": 0.5515875,
+          "z": 0
+        },
+        "playRotation": {
+          "x": 0,
+          "y": 0.7071068,
+          "z": 0,
+          "w": 0.7071068
+        },
+        "playScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        }
+      },
+      {
+        "partId": "d3d_frame_front_top_bar",
+        "startPosition": {
+          "x": -1,
+          "y": 0.5515875,
+          "z": -0.345
+        },
+        "startRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "startScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.43,
+          "g": 0.43,
+          "b": 0.46,
+          "a": 1
+        },
+        "playPosition": {
+          "x": -0.38,
+          "y": 0.5515875,
+          "z": -0.2549
+        },
+        "playRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "playScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        }
+      },
+      {
+        "partId": "d3d_frame_front_right_bar",
+        "startPosition": {
+          "x": -1,
+          "y": 0.5515875,
+          "z": -0.395
+        },
+        "startRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "startScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.43,
+          "g": 0.43,
+          "b": 0.46,
+          "a": 1
+        },
+        "playPosition": {
+          "x": -0.2149,
+          "y": 0.5515875,
+          "z": -0.42
+        },
+        "playRotation": {
+          "x": 0,
+          "y": 0.7071068,
+          "z": 0,
+          "w": 0.7071068
+        },
+        "playScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        }
+      },
+      {
+        "partId": "d3d_frame_front_bottom_bar",
+        "startPosition": {
+          "x": -1,
+          "y": 0.5515875,
+          "z": -0.445
+        },
+        "startRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "startScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.43,
+          "g": 0.43,
+          "b": 0.46,
+          "a": 1
+        },
+        "playPosition": {
+          "x": -0.38,
+          "y": 0.5515875,
+          "z": -0.5851
+        },
+        "playRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "playScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        }
+      },
+      {
+        "partId": "d3d_frame_front_left_bar",
+        "startPosition": {
+          "x": -1,
+          "y": 0.5515875,
+          "z": -0.495
+        },
+        "startRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "startScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.43,
+          "g": 0.43,
+          "b": 0.46,
+          "a": 1
+        },
+        "playPosition": {
+          "x": -0.5451,
+          "y": 0.5515875,
+          "z": -0.42
+        },
+        "playRotation": {
+          "x": 0,
+          "y": 0.7071068,
+          "z": 0,
+          "w": 0.7071068
+        },
+        "playScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        }
+      },
+      {
+        "partId": "d3d_frame_rear_top_bar",
+        "startPosition": {
+          "x": 1,
+          "y": 0.5515875,
+          "z": -0.345
+        },
+        "startRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "startScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.43,
+          "g": 0.43,
+          "b": 0.46,
+          "a": 1
+        },
+        "playPosition": {
+          "x": 0.38,
+          "y": 0.5515875,
+          "z": -0.2549
+        },
+        "playRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "playScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        }
+      },
+      {
+        "partId": "d3d_frame_rear_right_bar",
+        "startPosition": {
+          "x": 1,
+          "y": 0.5515875,
+          "z": -0.395
+        },
+        "startRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "startScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.43,
+          "g": 0.43,
+          "b": 0.46,
+          "a": 1
+        },
+        "playPosition": {
+          "x": 0.5451,
+          "y": 0.5515875,
+          "z": -0.42
+        },
+        "playRotation": {
+          "x": 0,
+          "y": 0.7071068,
+          "z": 0,
+          "w": 0.7071068
+        },
+        "playScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        }
+      },
+      {
+        "partId": "d3d_frame_rear_bottom_bar",
+        "startPosition": {
+          "x": 1,
+          "y": 0.5515875,
+          "z": -0.445
+        },
+        "startRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "startScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.43,
+          "g": 0.43,
+          "b": 0.46,
+          "a": 1
+        },
+        "playPosition": {
+          "x": 0.38,
+          "y": 0.5515875,
+          "z": -0.5851
+        },
+        "playRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "playScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        }
+      },
+      {
+        "partId": "d3d_frame_rear_left_bar",
+        "startPosition": {
+          "x": 1,
+          "y": 0.5515875,
+          "z": -0.495
+        },
+        "startRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "startScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.43,
+          "g": 0.43,
+          "b": 0.46,
+          "a": 1
+        },
+        "playPosition": {
+          "x": 0.2149,
+          "y": 0.5515875,
+          "z": -0.42
+        },
+        "playRotation": {
+          "x": 0,
+          "y": 0.7071068,
+          "z": 0,
+          "w": 0.7071068
+        },
+        "playScale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        }
+      }
+    ],
+    "targetPlacements": [
+      {
+        "targetId": "target_bottom_top_bar",
+        "position": {
+          "x": -0.38,
+          "y": 0.5515875,
+          "z": 0.5851
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "scale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_bottom_right_bar",
+        "position": {
+          "x": -0.2149,
+          "y": 0.5515875,
+          "z": 0.42
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0.7071068,
+          "z": 0,
+          "w": 0.7071068
+        },
+        "scale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_bottom_bottom_bar",
+        "position": {
+          "x": -0.38,
+          "y": 0.5515875,
+          "z": 0.2549
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "scale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_bottom_left_bar",
+        "position": {
+          "x": -0.5451,
+          "y": 0.5515875,
+          "z": 0.42
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0.7071068,
+          "z": 0,
+          "w": 0.7071068
+        },
+        "scale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_bottom_square_check",
+        "position": {
+          "x": -0.5451,
+          "y": 0.6015875,
+          "z": 0.5851
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "scale": {
+          "x": 0.04,
+          "y": 0.04,
+          "z": 0.04
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_top_top_bar",
+        "position": {
+          "x": 0.38,
+          "y": 0.5515875,
+          "z": 0.5851
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "scale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_top_right_bar",
+        "position": {
+          "x": 0.5451,
+          "y": 0.5515875,
+          "z": 0.42
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0.7071068,
+          "z": 0,
+          "w": 0.7071068
+        },
+        "scale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_top_bottom_bar",
+        "position": {
+          "x": 0.38,
+          "y": 0.5515875,
+          "z": 0.2549
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "scale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_top_left_bar",
+        "position": {
+          "x": 0.2149,
+          "y": 0.5515875,
+          "z": 0.42
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0.7071068,
+          "z": 0,
+          "w": 0.7071068
+        },
+        "scale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_top_square_check",
+        "position": {
+          "x": 0.2149,
+          "y": 0.6015875,
+          "z": 0.5851
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "scale": {
+          "x": 0.04,
+          "y": 0.04,
+          "z": 0.04
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_left_top_bar",
+        "position": {
+          "x": -0.38,
+          "y": 0.5515875,
+          "z": 0.1651
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "scale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_left_right_bar",
+        "position": {
+          "x": -0.2149,
+          "y": 0.5515875,
+          "z": 0
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0.7071068,
+          "z": 0,
+          "w": 0.7071068
+        },
+        "scale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_left_bottom_bar",
+        "position": {
+          "x": -0.38,
+          "y": 0.5515875,
+          "z": -0.1651
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "scale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_left_left_bar",
+        "position": {
+          "x": -0.5451,
+          "y": 0.5515875,
+          "z": 0
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0.7071068,
+          "z": 0,
+          "w": 0.7071068
+        },
+        "scale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_left_square_check",
+        "position": {
+          "x": -0.5451,
+          "y": 0.6015875,
+          "z": 0.1651
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "scale": {
+          "x": 0.04,
+          "y": 0.04,
+          "z": 0.04
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_right_top_bar",
+        "position": {
+          "x": 0.38,
+          "y": 0.5515875,
+          "z": 0.1651
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "scale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_right_right_bar",
+        "position": {
+          "x": 0.5451,
+          "y": 0.5515875,
+          "z": 0
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0.7071068,
+          "z": 0,
+          "w": 0.7071068
+        },
+        "scale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_right_bottom_bar",
+        "position": {
+          "x": 0.38,
+          "y": 0.5515875,
+          "z": -0.1651
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "scale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_right_left_bar",
+        "position": {
+          "x": 0.2149,
+          "y": 0.5515875,
+          "z": 0
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0.7071068,
+          "z": 0,
+          "w": 0.7071068
+        },
+        "scale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_right_square_check",
+        "position": {
+          "x": 0.2149,
+          "y": 0.6015875,
+          "z": 0.1651
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "scale": {
+          "x": 0.04,
+          "y": 0.04,
+          "z": 0.04
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_front_top_bar",
+        "position": {
+          "x": -0.38,
+          "y": 0.5515875,
+          "z": -0.2549
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "scale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_front_right_bar",
+        "position": {
+          "x": -0.2149,
+          "y": 0.5515875,
+          "z": -0.42
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0.7071068,
+          "z": 0,
+          "w": 0.7071068
+        },
+        "scale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_front_bottom_bar",
+        "position": {
+          "x": -0.38,
+          "y": 0.5515875,
+          "z": -0.5851
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "scale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_front_left_bar",
+        "position": {
+          "x": -0.5451,
+          "y": 0.5515875,
+          "z": -0.42
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0.7071068,
+          "z": 0,
+          "w": 0.7071068
+        },
+        "scale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_front_square_check",
+        "position": {
+          "x": -0.5451,
+          "y": 0.6015875,
+          "z": -0.2549
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "scale": {
+          "x": 0.04,
+          "y": 0.04,
+          "z": 0.04
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_rear_top_bar",
+        "position": {
+          "x": 0.38,
+          "y": 0.5515875,
+          "z": -0.2549
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "scale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_rear_right_bar",
+        "position": {
+          "x": 0.5451,
+          "y": 0.5515875,
+          "z": -0.42
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0.7071068,
+          "z": 0,
+          "w": 0.7071068
+        },
+        "scale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_rear_bottom_bar",
+        "position": {
+          "x": 0.38,
+          "y": 0.5515875,
+          "z": -0.5851
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "scale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_rear_left_bar",
+        "position": {
+          "x": 0.2149,
+          "y": 0.5515875,
+          "z": -0.42
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0.7071068,
+          "z": 0,
+          "w": 0.7071068
+        },
+        "scale": {
+          "x": 0.3302,
+          "y": 0.003175,
+          "z": 0.0254
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      },
+      {
+        "targetId": "target_rear_square_check",
+        "position": {
+          "x": 0.2149,
+          "y": 0.6015875,
+          "z": -0.2549
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "scale": {
+          "x": 0.04,
+          "y": 0.04,
+          "z": 0.04
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.84,
+          "b": 0.58,
+          "a": 1
+        }
+      }
+    ]
+  }
+}

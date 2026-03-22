@@ -13,8 +13,9 @@ namespace OSE.Content.Validation
         private static readonly HashSet<string> CompletionTypeValues = CreateSet("placement", "tool_action", "confirmation", "pipe_connection");
         private static readonly HashSet<string> FamilyValues = CreateSet("Place", "Use", "Connect", "Confirm");
         private static readonly HashSet<string> PlaceProfileValues = CreateSet("Clamp");
-        private static readonly HashSet<string> UseProfileValues = CreateSet("Torque", "Weld", "Cut");
+        private static readonly HashSet<string> UseProfileValues = CreateSet("Torque", "Weld", "Cut", "Measure");
         private static readonly HashSet<string> ConnectProfileValues = CreateSet("Cable");
+        private static readonly HashSet<string> ViewModeValues = CreateSet("SourceAndTarget", "PairEndpoints", "WorkZone", "PathView", "Overview", "Inspect");
         private static readonly HashSet<string> TargetOrderValues = CreateSet("sequential", "parallel");
         private static readonly HashSet<string> ValidationTypeValues = CreateSet("placement", "orientation", "part_identity", "dependency", "multi_part", "confirmation");
         private static readonly HashSet<string> HintTypeValues = CreateSet("text", "highlight", "ghost", "directional", "explanatory", "tool_reminder");
@@ -259,6 +260,7 @@ namespace OSE.Content.Validation
                 ValidateRequiredEnum(step.completionType, CompletionTypeValues, $"{path}.completionType", issues);
                 ValidateOptionalEnum(step.family, FamilyValues, $"{path}.family", issues);
                 ValidateStepProfile(step, $"{path}", issues);
+                ValidateOptionalEnum(step.viewMode, ViewModeValues, $"{path}.viewMode", issues);
                 ValidateOptionalEnum(step.targetOrder, TargetOrderValues, $"{path}.targetOrder", issues);
                 ValidateOptionalReferences(step.requiredPartIds, partIds, $"{path}.requiredPartIds", issues);
                 ValidateOptionalReferences(step.optionalPartIds, partIds, $"{path}.optionalPartIds", issues);

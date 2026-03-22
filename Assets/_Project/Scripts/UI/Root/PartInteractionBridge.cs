@@ -30,6 +30,8 @@ namespace OSE.UI.Root
         private static readonly Color GrabbedPartColor = new Color(1.0f, 0.65f, 0.1f, 1.0f);
         private static readonly Color HoveredPartColor = new Color(0.60f, 0.82f, 1.0f, 1.0f);
         private static readonly Color CompletedPartColor = new Color(0.3f, 0.9f, 0.4f, 1.0f);
+        private static readonly Color DimmedPartColor = new Color(0.5f, 0.5f, 0.5f, 0.4f);
+        private static readonly Color ActiveStepEmission = new Color(0.15f, 0.35f, 0.6f);
         private static readonly Color GhostReadyColor = new Color(0.3f, 1.0f, 0.5f, 0.4f);
         private static readonly Color HintHighlightColorA = new Color(0.95f, 0.85f, 0.2f, 0.4f);
         private static readonly Color HintHighlightColorB = new Color(1.0f, 0.95f, 0.35f, 0.7f);
@@ -93,6 +95,8 @@ namespace OSE.UI.Root
 
         // Step-based part visibility â€” only reveal parts when their step activates
         private readonly HashSet<string> _revealedPartIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _activeStepPartIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private bool _partsHiddenOnSpawn;
         private const float PartGridSpacing = 0.6f;         // spacing between grid cells (X and Z)
         private const float PartGridStartZ = -2.8f;        // Z of the first row (closest to camera)
         private const float PartLayoutY = 0.55f;            // height above floor
@@ -173,6 +177,8 @@ namespace OSE.UI.Root
             ClearPartHoverVisual();
             _partStates.Clear();
             _revealedPartIds.Clear();
+            _activeStepPartIds.Clear();
+            _partsHiddenOnSpawn = false;
             ClearToolGhostIndicator();
             ClearToolActionTargets();
             _router?.CleanupAll();
@@ -232,6 +238,10 @@ namespace OSE.UI.Root
                     string activeStepId = stepController.CurrentStepState.StepId;
                     if (!string.IsNullOrWhiteSpace(activeStepId))
                     {
+                        HideNonIntroducedParts();
+                        RevealStepParts(activeStepId);
+                        ApplyStepPartHighlighting(activeStepId);
+
                         SpawnGhostsForStep(activeStepId);
                         if (TryBuildHandlerContext(out var syncCtx))
                             _router.OnStepActivated(in syncCtx);
@@ -367,9 +377,11 @@ namespace OSE.UI.Root
 
             if (stepHasToolActions)
             {
+                OseLog.Info($"[PartInteraction] V1 tool action path: step='{step.id}', allowCompletion={allowToolActionStepCompletion}, spawnedTargets={_useHandler?.SpawnedTargetCount ?? 0}.");
                 if (TryExecuteToolPrimaryActionFromPointer(session, stepController, allowToolActionStepCompletion))
                     return;
 
+                OseLog.Info($"[PartInteraction] V1 tool action path: TryExecuteToolPrimaryActionFromPointer returned false.");
                 if (step.IsToolAction)
                 {
                     if ((_useHandler?.SpawnedTargetCount ?? 0) > 0)
@@ -505,12 +517,16 @@ namespace OSE.UI.Root
             }
 
             if (!handled)
+            {
+                OseLog.Info($"[PartInteraction] TryExecuteExternalToolAction: not handled for '{interactedTargetId}'.");
                 return false;
+            }
 
-            OseLog.Info($"[PartInteraction] TryExecuteExternalToolAction: success on '{interactedTargetId}'.");
+            OseLog.Info($"[PartInteraction] TryExecuteExternalToolAction: success on '{interactedTargetId}'. shouldComplete={shouldCompleteStep}, allowCompletion={allowToolActionStepCompletion}.");
             if (!allowToolActionStepCompletion)
                 return true;
 
+            OseLog.Info($"[PartInteraction] TryExecuteExternalToolAction: calling HandleToolPrimaryResult shouldComplete={shouldCompleteStep}.");
             return HandleToolPrimaryResult(session, stepController, shouldCompleteStep);
         }
 
@@ -876,12 +892,7 @@ namespace OSE.UI.Root
             if (cam == null)
                 return null;
 
-            // Ignore triggers so ghost/click-to-place colliders don't block part selection.
-            Ray ray = cam.ScreenPointToRay(screenPos);
-            if (!Physics.Raycast(ray, out RaycastHit hit, 100f, ~0, QueryTriggerInteraction.Ignore))
-                return null;
-
-            return FindPartFromHit(hit.transform);
+            return RaycastSpawnedPart(cam.ScreenPointToRay(screenPos));
         }
 
         // â”€â”€ Pointer input (mouse + touch) â”€â”€
@@ -965,11 +976,7 @@ namespace OSE.UI.Root
             Camera cam = Camera.main;
             if (cam == null) return;
 
-            Ray ray = cam.ScreenPointToRay(screenPos);
-            if (!Physics.Raycast(ray, out RaycastHit hit, 100f, ~0, QueryTriggerInteraction.Ignore))
-                return;
-
-            GameObject matchedPart = FindPartFromHit(hit.transform);
+            GameObject matchedPart = RaycastSpawnedPart(cam.ScreenPointToRay(screenPos));
             if (matchedPart == null)
                 return;
 
@@ -1239,6 +1246,35 @@ namespace OSE.UI.Root
         /// Parts are arranged in an arc on the near side of the floor,
         /// keeping the center clear for the machine being assembled.
         /// </summary>
+        private void HideNonIntroducedParts()
+        {
+            if (_partsHiddenOnSpawn) return;
+            _partsHiddenOnSpawn = true;
+
+            var parts = _spawner?.SpawnedParts;
+            if (parts == null) return;
+
+            for (int i = 0; i < parts.Count; i++)
+            {
+                if (parts[i] == null) continue;
+
+                string partId = parts[i].name;
+
+                // Keep completed/placed parts visible
+                if (_partStates.TryGetValue(partId, out var state) &&
+                    state is PartPlacementState.Completed or PartPlacementState.PlacedVirtually)
+                    continue;
+
+                // Keep already-revealed parts visible
+                if (_revealedPartIds.Contains(partId))
+                    continue;
+
+                parts[i].SetActive(false);
+            }
+
+            OseLog.Info($"[PartInteraction] Hid non-introduced parts for hybrid presentation.");
+        }
+
         private void RevealStepParts(string stepId)
         {
             var package = _spawner?.CurrentPackage;
@@ -1294,9 +1330,11 @@ namespace OSE.UI.Root
             if (toReveal.Count == 0)
                 return;
 
-            // Layout: arrange new parts in a grid between camera (back) and construction zone (front)
-            int cols = Mathf.CeilToInt(Mathf.Sqrt(toReveal.Count));
-            if (cols < 1) cols = 1;
+            // Activate, position, and style each newly-revealed part.
+            // Use the authored startPosition/Rotation/Scale from previewConfig when
+            // available so parts stage near the assembly (matching edit-mode layout).
+            // Fall back to a computed row for parts without authored placements.
+            var unplacedParts = new List<(string partId, GameObject go, float width)>();
 
             for (int i = 0; i < toReveal.Count; i++)
             {
@@ -1304,23 +1342,43 @@ namespace OSE.UI.Root
                 GameObject partGo = FindSpawnedPart(partId);
                 if (partGo == null) continue;
 
-                int col = i % cols;
-                int row = i / cols;
-
-                // Center columns on X=0, rows advance toward construction zone (+Z)
-                float x = (col - (cols - 1) * 0.5f) * PartGridSpacing;
-                float z = PartGridStartZ + row * PartGridSpacing;
-
-                // Use previewConfig scale if available, otherwise default
                 PartPreviewPlacement pp = _spawner.FindPartPlacement(partId);
                 Vector3 scale = pp != null
                     ? new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z)
                     : Vector3.one;
 
-                partGo.transform.localPosition = new Vector3(x, PartLayoutY, z);
-                partGo.transform.localRotation = Quaternion.identity;
                 partGo.transform.localScale = scale;
                 partGo.SetActive(true);
+
+                bool hasAuthored = pp != null &&
+                    (!Mathf.Approximately(pp.startPosition.x, 0f) ||
+                     !Mathf.Approximately(pp.startPosition.y, 0f) ||
+                     !Mathf.Approximately(pp.startPosition.z, 0f));
+
+                if (hasAuthored)
+                {
+                    Vector3 pos = new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z);
+                    Quaternion rot = !pp.startRotation.IsIdentity
+                        ? new Quaternion(pp.startRotation.x, pp.startRotation.y, pp.startRotation.z, pp.startRotation.w)
+                        : Quaternion.identity;
+                    partGo.transform.SetLocalPositionAndRotation(pos, rot);
+                }
+                else
+                {
+                    partGo.transform.localRotation = Quaternion.identity;
+
+                    // Measure extents for fallback row layout
+                    float width = PartGridSpacing;
+                    var renderers = partGo.GetComponentsInChildren<Renderer>(true);
+                    if (renderers.Length > 0)
+                    {
+                        Bounds combined = renderers[0].bounds;
+                        for (int r = 1; r < renderers.Length; r++)
+                            combined.Encapsulate(renderers[r].bounds);
+                        width = Mathf.Max(combined.size.x, combined.size.z, PartGridSpacing);
+                    }
+                    unplacedParts.Add((partId, partGo, width));
+                }
 
                 // Preserve original GLB textures; only apply solid color to primitives/placeholders
                 Color partColor = pp != null
@@ -1333,10 +1391,78 @@ namespace OSE.UI.Root
                     MaterialHelper.ClearTint(partGo);
 
                 _revealedPartIds.Add(partId);
-                OseLog.VerboseInfo($"[PartInteraction] Revealed part '{partId}' at ({x:F1}, {PartLayoutY:F1}, {z:F1})");
+            }
+
+            // Fallback row layout for parts without authored start positions.
+            if (unplacedParts.Count > 0)
+            {
+                float padding = 0.15f;
+                float totalWidth = 0f;
+                for (int i = 0; i < unplacedParts.Count; i++)
+                    totalWidth += unplacedParts[i].width + (i > 0 ? padding : 0f);
+
+                float cursor = -totalWidth * 0.5f;
+                for (int i = 0; i < unplacedParts.Count; i++)
+                {
+                    var (_, partGo, width) = unplacedParts[i];
+                    float x = cursor + width * 0.5f;
+                    cursor += width + padding;
+                    partGo.transform.localPosition = new Vector3(x, PartLayoutY, PartGridStartZ);
+                }
             }
 
             OseLog.Info($"[PartInteraction] Revealed {toReveal.Count} part(s) for subassembly '{subassemblyId}'.");
+        }
+
+        /// <summary>
+        /// Highlights the active step's required parts with emission glow and dims
+        /// previously-revealed parts that belong to the subassembly but aren't needed
+        /// for the current step.
+        /// </summary>
+        private void ApplyStepPartHighlighting(string stepId)
+        {
+            var package = _spawner?.CurrentPackage;
+            if (package == null || !package.TryGetStep(stepId, out var step))
+                return;
+
+            // Build set of current step's required parts
+            _activeStepPartIds.Clear();
+            if (step.requiredPartIds != null)
+            {
+                for (int i = 0; i < step.requiredPartIds.Length; i++)
+                {
+                    if (!string.IsNullOrEmpty(step.requiredPartIds[i]))
+                        _activeStepPartIds.Add(step.requiredPartIds[i]);
+                }
+            }
+
+            // Walk all revealed parts: highlight active, dim the rest
+            foreach (string partId in _revealedPartIds)
+            {
+                // Skip completed/placed parts — they already have their own visual
+                if (_partStates.TryGetValue(partId, out var state) &&
+                    state is PartPlacementState.Completed or PartPlacementState.PlacedVirtually)
+                    continue;
+
+                GameObject partGo = FindSpawnedPart(partId);
+                if (partGo == null) continue;
+
+                if (_activeStepPartIds.Contains(partId))
+                {
+                    // Active step part: restore normal visual + soft emission highlight
+                    ApplyAvailablePartVisual(partGo, partId);
+                    MaterialHelper.SetEmission(partGo, ActiveStepEmission);
+                }
+                else
+                {
+                    // Revealed but not needed right now: dim it
+                    if (MaterialHelper.IsImportedModel(partGo))
+                        MaterialHelper.ApplyTint(partGo, DimmedPartColor);
+                    else
+                        MaterialHelper.Apply(partGo, "Preview Part Material", DimmedPartColor);
+                    MaterialHelper.SetEmission(partGo, Color.black);
+                }
+            }
         }
 
         // RefreshRequiredPartIds and UpdateRequiredPartPulse are now owned by PlaceStepHandler
@@ -1486,6 +1612,7 @@ namespace OSE.UI.Root
             // Clear current visual state
             ClearGhosts();
             ClearRequiredPartEmission();
+            _connectHandler?.ClearTransientVisuals();
             _revealedPartIds.Clear();
 
             // Reposition completed parts at their play positions
@@ -1518,6 +1645,10 @@ namespace OSE.UI.Root
                 // Reset sequential tracking only on genuine new-step transitions.
                 _isSequentialStep = false;
                 _sequentialTargetIndex = 0;
+
+                // Connect-step markers are transient step visuals and must not leak
+                // into unrelated steps or navigation states.
+                _connectHandler?.ClearTransientVisuals();
             }
 
             if (evt.Current == StepState.Active)
@@ -1530,11 +1661,17 @@ namespace OSE.UI.Root
                 else
                 {
                     // Clear any stale SelectionService selection so the dedup guard in
-                    // NotifySelected doesn't block re-selection of the same part on the
+                    // NotifySelected doesn’t block re-selection of the same part on the
                     // new step (e.g. beam selected on step 2 â†’ must be selectable again on step 3).
                     DeselectFromSelectionService();
+
+                    // Hybrid presentation: hide all parts on first step, then reveal per-subassembly
+                    HideNonIntroducedParts();
+                    RevealStepParts(evt.StepId);
+                    ApplyStepPartHighlighting(evt.StepId);
+
                     SpawnGhostsForStep(evt.StepId);
-                    OseLog.VerboseInfo($"[PartInteraction] Step '{evt.StepId}' active: spawned {_spawnedGhosts.Count} ghost(s).");
+                    OseLog.VerboseInfo($"[PartInteraction] Step ‘{evt.StepId}’ active: spawned {_spawnedGhosts.Count} ghost(s).");
 
                     if (TryBuildHandlerContext(out var activatedCtx))
                         _router.OnStepActivated(in activatedCtx);
@@ -1935,7 +2072,17 @@ namespace OSE.UI.Root
             if (!session.ToolController.TryGetPrimaryActionSnapshot(out ToolRuntimeController.ToolActionSnapshot snapshot))
                 return false;
 
-            return snapshot.IsConfigured && !snapshot.IsCompleted;
+            if (!snapshot.IsConfigured || snapshot.IsCompleted)
+                return false;
+
+            // Mixed placement+tool steps: don't lock parts until all placements are done.
+            if (ServiceRegistry.TryGet<PartRuntimeController>(out var partController) &&
+                !partController.AreActiveStepRequiredPartsPlaced())
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private bool TryHandleToolActionPointerDown(Vector2 screenPos)
@@ -2088,17 +2235,11 @@ namespace OSE.UI.Root
                     GameObject partGo = FindSpawnedPart(partId);
                     if (partGo == null) continue;
 
-                    PartPreviewPlacement pp = _spawner.FindPartPlacement(partId);
-                    if (pp != null)
-                    {
-                        Vector3 sPos = new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z);
-                        Vector3 sScale = new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z);
-                        partGo.transform.SetLocalPositionAndRotation(sPos, Quaternion.identity);
-                        partGo.transform.localScale = sScale;
-                    }
-
-                    ApplyAvailablePartVisual(partGo, partId);
-                    _partStates[partId] = PartPlacementState.Available;
+                    // Hide future parts instead of repositioning — they'll be revealed
+                    // when their step activates via RevealStepParts.
+                    partGo.SetActive(false);
+                    _revealedPartIds.Remove(partId);
+                    _partStates[partId] = PartPlacementState.NotIntroduced;
                 }
             }
         }
@@ -2371,11 +2512,7 @@ namespace OSE.UI.Root
             if (cam == null)
                 return null;
 
-            Ray ray = cam.ScreenPointToRay(mouse.position.ReadValue());
-            if (!Physics.Raycast(ray, out RaycastHit hit, 100f, ~0, QueryTriggerInteraction.Ignore))
-                return null;
-
-            return FindPartFromHit(hit.transform);
+            return RaycastSpawnedPart(cam.ScreenPointToRay(mouse.position.ReadValue()));
         }
 
         private bool CanApplyHoverVisual(GameObject partGo, string partId)
@@ -2651,6 +2788,26 @@ namespace OSE.UI.Root
                 }
                 hitTransform = hitTransform.parent;
             }
+            return null;
+        }
+
+        private GameObject RaycastSpawnedPart(Ray ray)
+        {
+            // Use RaycastAll because low-profile parts may sit nearly flush with the floor.
+            // A single raycast would stop at the environment collider before reaching the part.
+            RaycastHit[] hits = Physics.RaycastAll(ray, 100f, ~0, QueryTriggerInteraction.Ignore);
+            if (hits == null || hits.Length == 0)
+                return null;
+
+            Array.Sort(hits, (left, right) => left.distance.CompareTo(right.distance));
+
+            for (int i = 0; i < hits.Length; i++)
+            {
+                GameObject matchedPart = FindPartFromHit(hits[i].transform);
+                if (matchedPart != null)
+                    return matchedPart;
+            }
+
             return null;
         }
 

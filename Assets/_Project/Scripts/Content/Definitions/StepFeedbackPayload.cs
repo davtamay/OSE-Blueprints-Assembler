@@ -16,5 +16,11 @@ namespace OSE.Content
 
         /// <summary>Scale multiplier for the completion pulse effect. 0 = profile/family default.</summary>
         public float completionPulseScale;
+
+        /// <summary>
+        /// Named particle effect to spawn on completion, e.g. "torque_sparks", "weld_glow".
+        /// Null/empty = no particle effect. The runtime resolves this to a procedurally built ParticleSystem.
+        /// </summary>
+        public string completionParticleId;
     }
 }

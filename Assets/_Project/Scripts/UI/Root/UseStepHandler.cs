@@ -43,6 +43,7 @@ namespace OSE.UI.Root
 
         // ── Profile constants ──
         private const string ProfileTorque = "Torque";
+        private const string ProfileMeasure = "Measure";
 
         // ── Feedback defaults ──
         private static readonly Color DefaultCompletionColor = new Color(0.2f, 1.0f, 0.4f, 0.9f);
@@ -55,7 +56,13 @@ namespace OSE.UI.Root
         private bool _retryPending;
         private string _activeProfile;
         private Color _completionEffectColor = DefaultCompletionColor;
+        private string _completionParticleId;
         private float _completionPulseScale = DefaultPulseScale;
+
+        // ── Measure state ──
+        private StepMeasurementPayload _measurePayload;
+        private Vector3? _measureAnchorAWorldPos;
+        private AnchorToAnchorInteraction _anchorInteraction;
 
         public UseStepHandler(
             PackagePartSpawner spawner,
@@ -83,6 +90,7 @@ namespace OSE.UI.Root
         {
             UpdateToolActionTargetVisuals();
             UpdateToolCursorProximity();
+            _anchorInteraction?.Tick();
 
             if (_retryPending)
                 RefreshToolActionTargets();
@@ -101,14 +109,20 @@ namespace OSE.UI.Root
             _completionPulseScale = fb != null && fb.completionPulseScale > 0f
                 ? fb.completionPulseScale
                 : DefaultPulseScale;
+            _completionParticleId = fb?.completionParticleId;
+
+            // Measure profile state — JsonUtility creates default instances for
+            // [Serializable] class fields even when absent from JSON, so check IsConfigured.
+            var rawMeasurement = context.Step.measurement;
+            _measurePayload = (rawMeasurement != null && rawMeasurement.IsConfigured) ? rawMeasurement : null;
+            _measureAnchorAWorldPos = null;
+            CleanupAnchorInteraction();
 
             RefreshToolActionTargets();
         }
 
         public bool TryHandlePointerAction(in StepHandlerContext context)
         {
-            // Tool action execution is driven by the bridge's canonical action
-            // path or external V2 orchestrator — not by the handler directly.
             return false;
         }
 
@@ -129,12 +143,16 @@ namespace OSE.UI.Root
         public void OnStepCompleted(in StepHandlerContext context)
         {
             ClearToolActionTargets();
+            CleanupAnchorInteraction();
         }
 
         public void Cleanup()
         {
             ClearToolActionTargets();
+            CleanupAnchorInteraction();
             _activeProfile = null;
+            _measurePayload = null;
+            _measureAnchorAWorldPos = null;
         }
 
         // ====================================================================
@@ -267,7 +285,10 @@ namespace OSE.UI.Root
         {
             if (string.IsNullOrEmpty(_activeProfile))
                 return;
-            if (!string.Equals(_activeProfile, ProfileTorque, StringComparison.OrdinalIgnoreCase))
+
+            bool isTorque = string.Equals(_activeProfile, ProfileTorque, StringComparison.OrdinalIgnoreCase);
+            bool isMeasure = string.Equals(_activeProfile, ProfileMeasure, StringComparison.OrdinalIgnoreCase);
+            if (!isTorque && !isMeasure)
                 return;
 
             for (int i = 0; i < _spawnedToolActionTargets.Count; i++)
@@ -278,14 +299,214 @@ namespace OSE.UI.Root
                 if (info == null || !string.Equals(info.TargetId, targetId, StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                ToolActionClickEffect.Spawn(marker.transform.position, marker.transform.localScale,
+                Vector3 markerWorldPos = marker.transform.position;
+
+                ToolActionClickEffect.Spawn(markerWorldPos, marker.transform.localScale,
                     _completionEffectColor, _completionPulseScale);
+                CompletionParticleEffect.TrySpawn(_completionParticleId,
+                    markerWorldPos, marker.transform.localScale);
+
+                // Cache anchor position for measurement line drawing
+                if (isMeasure && _measurePayload != null)
+                {
+                    if (string.Equals(targetId, _measurePayload.startAnchorTargetId, StringComparison.OrdinalIgnoreCase))
+                        _measureAnchorAWorldPos = markerWorldPos;
+                }
+
                 return;
+            }
+        }
+
+        private bool IsMeasureProfile()
+        {
+            return string.Equals(_activeProfile, ProfileMeasure, StringComparison.OrdinalIgnoreCase);
+        }
+
+        // ====================================================================
+        //  Measure — thin adapter over AnchorToAnchorInteraction
+        // ====================================================================
+
+        private void BeginMeasurePhase2()
+        {
+            if (!_measureAnchorAWorldPos.HasValue || _measurePayload == null)
+                return;
+
+            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+                return;
+
+            if (!TryResolveToolActionTargetPose(session.Package, _measurePayload.endAnchorTargetId,
+                    out Vector3 pos, out Quaternion rot, out Vector3 scale))
+            {
+                OseLog.Warn($"[UseStepHandler] Could not resolve end anchor pose for '{_measurePayload.endAnchorTargetId}'.");
+                return;
+            }
+
+            if (TryGetGhostTargetPose(_measurePayload.endAnchorTargetId, out Vector3 gp, out Quaternion gr, out Vector3 gs))
+            {
+                pos = gp;
+                rot = gr;
+                scale = gs;
+            }
+
+            // Spawn end anchor marker (pulsing sphere the user must tap)
+            SpawnMeasureEndMarker(pos, rot, scale);
+
+            // Compute end anchor world position (same transform as marker spawning)
+            Vector3 endWorldPos = ResolveMarkerWorldPos(pos, scale);
+
+            // Create reusable anchor-to-anchor interaction
+            float screenThreshold = Application.isMobilePlatform ? ScreenProximityMobile : ScreenProximityDesktop;
+            Color liveColor = new Color(1f, 0.8f, 0.2f, 0.9f);
+            Color resultColor = new Color(1f, 0.8f, 0.2f, 1f);
+            var config = new AnchorToAnchorInteraction.Config
+            {
+                AnchorA = _measureAnchorAWorldPos.Value,
+                AnchorB = endWorldPos,
+                DisplayUnit = _measurePayload.displayUnit ?? "mm",
+                NearBScreenThreshold = screenThreshold,
+                LiveVisualFactory = (a, b) => MeasurementLineVisual.Spawn(a, b, "", liveColor),
+                ResultVisualFactory = (a, b) =>
+                {
+                    float d = Vector3.Distance(a, b);
+                    string lbl = MeasurementLineVisual.FormatDistance(d, _measurePayload.displayUnit ?? "mm");
+                    return MeasurementLineVisual.Spawn(a, b, lbl, resultColor);
+                }
+            };
+
+            _anchorInteraction = new AnchorToAnchorInteraction(config);
+            _anchorInteraction.NearBChanged += HighlightEndAnchorMarker;
+            _anchorInteraction.Completed += OnAnchorInteractionCompleted;
+            _anchorInteraction.StartFromAnchor();
+
+            OseLog.Info($"[UseStepHandler] Measure phase 2: live line tracking cursor, end marker spawned.");
+        }
+
+        private bool TryCompleteMeasurePhase2(string interactedTargetId, out bool shouldCompleteStep)
+        {
+            shouldCompleteStep = false;
+
+            if (_anchorInteraction == null || !_anchorInteraction.IsActive || _measurePayload == null)
+                return false;
+
+            if (!string.Equals(interactedTargetId, _measurePayload.endAnchorTargetId, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            // Get end marker world position for the completion check
+            Vector3 endWorldPos = Vector3.zero;
+            for (int i = 0; i < _spawnedToolActionTargets.Count; i++)
+            {
+                var marker = _spawnedToolActionTargets[i];
+                if (marker == null) continue;
+                var info = marker.GetComponent<ToolActionTargetInfo>();
+                if (info != null && string.Equals(info.TargetId, interactedTargetId, StringComparison.OrdinalIgnoreCase))
+                {
+                    endWorldPos = marker.transform.position;
+                    break;
+                }
+            }
+
+            // Force-complete since the user explicitly tapped the end anchor target
+            if (!_anchorInteraction.TryCompleteAtAnchor(endWorldPos, forceComplete: true))
+                return false;
+
+            SpawnClickEffectForTarget(interactedTargetId);
+            ClearToolActionTargets();
+            shouldCompleteStep = true;
+            return true;
+        }
+
+        private void OnAnchorInteractionCompleted(AnchorToAnchorInteraction.Result result)
+        {
+            // Soft validation — log only
+            if (_measurePayload != null && _measurePayload.toleranceMm > 0f)
+            {
+                float measuredMm = result.DistanceMeters * 1000f;
+                float error = Mathf.Abs(measuredMm - _measurePayload.expectedValueMm);
+                if (error > _measurePayload.toleranceMm)
+                    OseLog.Warn($"[UseStepHandler] Measure validation: {measuredMm:F1}mm vs expected {_measurePayload.expectedValueMm:F1}mm (error {error:F1}mm > tol {_measurePayload.toleranceMm:F1}mm).");
+                else
+                    OseLog.Info($"[UseStepHandler] Measure validation passed: {measuredMm:F1}mm.");
+            }
+
+            OseLog.Info($"[UseStepHandler] Measure complete: {result.FormattedLabel} ({result.DistanceMeters:F4}m).");
+        }
+
+        private void HighlightEndAnchorMarker(bool ready)
+        {
+            if (_measurePayload == null)
+                return;
+
+            Color color = ready
+                ? new Color(0.2f, 1f, 0.4f, 0.9f)
+                : ToolTargetIdleColor;
+
+            for (int i = 0; i < _spawnedToolActionTargets.Count; i++)
+            {
+                var marker = _spawnedToolActionTargets[i];
+                if (marker == null) continue;
+                var info = marker.GetComponent<ToolActionTargetInfo>();
+                if (info != null && string.Equals(info.TargetId, _measurePayload.endAnchorTargetId, StringComparison.OrdinalIgnoreCase))
+                {
+                    MaterialHelper.SetMaterialColor(marker, color);
+                    return;
+                }
+            }
+        }
+
+        private void SpawnMeasureEndMarker(Vector3 localPos, Quaternion localRot, Vector3 scale)
+        {
+            PreviewSceneSetup setup = _getSetup();
+            Transform previewRoot = setup?.PreviewRoot;
+
+            GameObject guide = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            if (previewRoot != null)
+                guide.transform.SetParent(previewRoot, false);
+
+            guide.name = $"MeasureEndGuide_{_measurePayload.endAnchorTargetId}";
+            guide.transform.SetLocalPositionAndRotation(localPos, localRot);
+            guide.transform.localScale = ResolveToolTargetMarkerScale(scale);
+            float lift = Mathf.Max(scale.y * 0.75f, guide.transform.localScale.y * 0.6f);
+            guide.transform.position += Vector3.up * lift;
+
+            PackagePartSpawner.EnsureColliders(guide);
+            var col = guide.GetComponent<SphereCollider>();
+            if (col != null) col.radius = ToolTargetColliderRadius;
+            MaterialHelper.ApplyToolTargetMarker(guide, ToolTargetIdleColor);
+
+            var info = guide.AddComponent<ToolActionTargetInfo>();
+            info.TargetId = _measurePayload.endAnchorTargetId;
+            info.RequiredToolId = null;
+            info.BaseScale = guide.transform.localScale;
+            info.BaseLocalPosition = guide.transform.localPosition;
+
+            _spawnedToolActionTargets.Add(guide);
+        }
+
+        private Vector3 ResolveMarkerWorldPos(Vector3 localPos, Vector3 scale)
+        {
+            float lift = Mathf.Max(scale.y * 0.75f, ResolveToolTargetMarkerScale(scale).y * 0.6f);
+            PreviewSceneSetup setup = _getSetup();
+            if (setup?.PreviewRoot != null)
+                return setup.PreviewRoot.TransformPoint(localPos) + Vector3.up * lift;
+            return localPos + Vector3.up * lift;
+        }
+
+        private void CleanupAnchorInteraction()
+        {
+            if (_anchorInteraction != null)
+            {
+                _anchorInteraction.NearBChanged -= HighlightEndAnchorMarker;
+                _anchorInteraction.Completed -= OnAnchorInteractionCompleted;
+                _anchorInteraction.Cleanup();
+                _anchorInteraction = null;
             }
         }
 
         /// <summary>
         /// Executes the tool primary action via ToolRuntimeController.
+        /// For Measure profile, the first anchor click suppresses step completion
+        /// and spawns the end anchor guide. The second click (end anchor) completes
+        /// the measurement and the step.
         /// </summary>
         public bool TryExecuteToolPrimaryAction(
             string interactedTargetId,
@@ -295,12 +516,21 @@ namespace OSE.UI.Root
             shouldCompleteStep = false;
             handled = false;
 
+            // Phase 2: end anchor tap — bypass ToolRuntimeController (action already completed)
+            if (_anchorInteraction != null && _anchorInteraction.IsActive
+                && TryCompleteMeasurePhase2(interactedTargetId, out shouldCompleteStep))
+            {
+                handled = true;
+                return true;
+            }
+
             if (!ServiceRegistry.TryGet<MachineSessionController>(out var session) || session.ToolController == null)
             {
                 OseLog.VerboseInfo("[UseStepHandler] TryExecuteToolPrimaryAction: no session or tool controller.");
                 return false;
             }
 
+            // Normal tool action execution via ToolRuntimeController
             ToolRuntimeController.ToolActionExecutionResult toolResult =
                 session.ToolController.TryExecutePrimaryAction(interactedTargetId);
 
@@ -315,7 +545,20 @@ namespace OSE.UI.Root
                 return false;
             }
 
+            OseLog.Info($"[UseStepHandler] Tool action succeeded on '{interactedTargetId}'. shouldComplete={shouldCompleteStep}, profile={_activeProfile}, hasMeasurePayload={_measurePayload != null}.");
+
             SpawnClickEffectForTarget(interactedTargetId);
+
+            // Measure profile: suppress step completion after first anchor, enter drag mode
+            if (IsMeasureProfile() && shouldCompleteStep && _measurePayload != null)
+            {
+                shouldCompleteStep = false;
+                ClearToolActionTargets();
+                BeginMeasurePhase2();
+                OseLog.Info("[UseStepHandler] Measure phase 1 complete — tap end anchor to finish.");
+                return true;
+            }
+
             RefreshToolActionTargets();
             return true;
         }
@@ -329,8 +572,13 @@ namespace OSE.UI.Root
             bool shouldCompleteStep)
         {
             if (!shouldCompleteStep)
+            {
+                OseLog.Info("[UseStepHandler] HandleToolPrimaryResult: shouldCompleteStep=false — not completing.");
                 return true;
+            }
 
+            string stepId = stepController?.CurrentStepState.StepId ?? "unknown";
+            OseLog.Info($"[UseStepHandler] HandleToolPrimaryResult: COMPLETING step '{stepId}'.");
             stepController.CompleteStep(session.GetElapsedSeconds());
             return true;
         }
@@ -349,6 +597,15 @@ namespace OSE.UI.Root
             if (TryGetPointerPosition(out Vector2 pointerPos) &&
                 TryResolveToolActionTargetForExecution(pointerPos, out ToolActionTargetInfo resolvedTarget))
                 interactedTargetId = resolvedTarget.TargetId;
+
+            // Measure phase 2 fallback: the normal resolution requires tool ghost
+            // bounds overlap which is too strict for the end anchor. Fall back to
+            // raycast + screen proximity so a simple tap/click works.
+            if (interactedTargetId == null && _anchorInteraction != null && _anchorInteraction.IsActive)
+            {
+                if (TryGetToolActionTargetAtScreen(pointerPos, out ToolActionTargetInfo hitTarget))
+                    interactedTargetId = hitTarget.TargetId;
+            }
 
             if (interactedTargetId == null)
             {
@@ -407,8 +664,10 @@ namespace OSE.UI.Root
             if (cursorManager?.ToolGhost == null || !cursorManager.ToolGhost.activeSelf)
                 return TryGetToolActionTargetByDirectHit(screenPos, out targetInfo);
 
-            targetInfo = null;
-            return false;
+            // Tool ghost is active but not overlapping a target — fall back to
+            // raycast + screen-proximity so clicks near the target still register
+            // even when the ghost bounding rect misses due to offset/orientation.
+            return TryGetToolActionTargetAtScreen(screenPos, out targetInfo);
         }
 
         /// <summary>

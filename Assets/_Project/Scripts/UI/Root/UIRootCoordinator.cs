@@ -54,6 +54,9 @@ namespace OSE.UI.Root
         private Label _toolCursorLabel;
         private Button _repositionButton;
         private Button _resetPositionButton;
+        private Button _decreaseScaleButton;
+        private Button _increaseScaleButton;
+        private Label _assemblyScaleLabel;
         private bool _repositionActive;
         private VisualElement _rootElement;
         private VisualElement _introOverlay;
@@ -189,6 +192,7 @@ namespace OSE.UI.Root
             }
 
             UpdateToolCursorVisual();
+            RefreshAssemblyScaleUi();
 
             if (!_isBuilt || _sessionHudPanelController == null || !_sessionHudPanelController.IsBound)
                 return;
@@ -1408,6 +1412,17 @@ namespace OSE.UI.Root
                 _resetPositionButton.clicked -= HandleResetPositionClicked;
                 _resetPositionButton = null;
             }
+            if (_decreaseScaleButton != null)
+            {
+                _decreaseScaleButton.clicked -= HandleDecreaseScaleClicked;
+                _decreaseScaleButton = null;
+            }
+            if (_increaseScaleButton != null)
+            {
+                _increaseScaleButton.clicked -= HandleIncreaseScaleClicked;
+                _increaseScaleButton = null;
+            }
+            _assemblyScaleLabel = null;
         }
 
         // ── Reposition UI ──
@@ -1436,6 +1451,58 @@ namespace OSE.UI.Root
             ApplyRepositionButtonStyle(false);
             _repositionButton.clicked += HandleRepositionToggleClicked;
 
+            var scaleCluster = new VisualElement();
+            scaleCluster.name = "ose-assembly-scale-cluster";
+            scaleCluster.style.flexDirection = FlexDirection.Row;
+            scaleCluster.style.alignItems = Align.Center;
+            scaleCluster.style.marginLeft = 8f;
+            scaleCluster.style.paddingLeft = 8f;
+            scaleCluster.style.paddingRight = 8f;
+            scaleCluster.style.paddingTop = 4f;
+            scaleCluster.style.paddingBottom = 4f;
+            scaleCluster.style.backgroundColor = new Color(0.16f, 0.16f, 0.19f, 0.92f);
+            scaleCluster.style.borderTopLeftRadius = 10f;
+            scaleCluster.style.borderTopRightRadius = 10f;
+            scaleCluster.style.borderBottomLeftRadius = 10f;
+            scaleCluster.style.borderBottomRightRadius = 10f;
+
+            _decreaseScaleButton = new Button();
+            _decreaseScaleButton.text = "-";
+            _decreaseScaleButton.style.width = 30f;
+            _decreaseScaleButton.style.height = 30f;
+            _decreaseScaleButton.style.fontSize = 16f;
+            _decreaseScaleButton.style.unityFontStyleAndWeight = FontStyle.Bold;
+            _decreaseScaleButton.style.backgroundColor = new Color(0.28f, 0.28f, 0.31f, 0.95f);
+            _decreaseScaleButton.style.color = new Color(0.92f, 0.92f, 0.92f);
+            _decreaseScaleButton.style.borderTopLeftRadius = 8f;
+            _decreaseScaleButton.style.borderTopRightRadius = 8f;
+            _decreaseScaleButton.style.borderBottomLeftRadius = 8f;
+            _decreaseScaleButton.style.borderBottomRightRadius = 8f;
+            _decreaseScaleButton.clicked += HandleDecreaseScaleClicked;
+
+            _assemblyScaleLabel = new Label("Scale 1.00x");
+            _assemblyScaleLabel.style.minWidth = 88f;
+            _assemblyScaleLabel.style.marginLeft = 8f;
+            _assemblyScaleLabel.style.marginRight = 8f;
+            _assemblyScaleLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+            _assemblyScaleLabel.style.color = new Color(0.95f, 0.92f, 0.82f);
+            _assemblyScaleLabel.style.fontSize = 13f;
+            _assemblyScaleLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+
+            _increaseScaleButton = new Button();
+            _increaseScaleButton.text = "+";
+            _increaseScaleButton.style.width = 30f;
+            _increaseScaleButton.style.height = 30f;
+            _increaseScaleButton.style.fontSize = 16f;
+            _increaseScaleButton.style.unityFontStyleAndWeight = FontStyle.Bold;
+            _increaseScaleButton.style.backgroundColor = new Color(0.28f, 0.28f, 0.31f, 0.95f);
+            _increaseScaleButton.style.color = new Color(0.92f, 0.92f, 0.92f);
+            _increaseScaleButton.style.borderTopLeftRadius = 8f;
+            _increaseScaleButton.style.borderTopRightRadius = 8f;
+            _increaseScaleButton.style.borderBottomLeftRadius = 8f;
+            _increaseScaleButton.style.borderBottomRightRadius = 8f;
+            _increaseScaleButton.clicked += HandleIncreaseScaleClicked;
+
             _resetPositionButton = new Button();
             _resetPositionButton.text = "Reset";
             _resetPositionButton.style.height = 34f;
@@ -1453,8 +1520,13 @@ namespace OSE.UI.Root
             _resetPositionButton.clicked += HandleResetPositionClicked;
 
             row.Add(_repositionButton);
+            scaleCluster.Add(_decreaseScaleButton);
+            scaleCluster.Add(_assemblyScaleLabel);
+            scaleCluster.Add(_increaseScaleButton);
+            row.Add(scaleCluster);
             row.Add(_resetPositionButton);
             parent.Insert(0, row);
+            RefreshAssemblyScaleUi();
         }
 
         private void ApplyRepositionButtonStyle(bool active)
@@ -1484,15 +1556,61 @@ namespace OSE.UI.Root
         {
             if (ServiceRegistry.TryGet<AssemblyRepositionController>(out var controller))
                 controller.ResetPosition();
+
+            RefreshAssemblyScaleUi();
         }
 
         private void HandleRepositionModeChangedUI(RepositionModeChanged evt)
         {
             _repositionActive = evt.IsActive;
             ApplyRepositionButtonStyle(evt.IsActive);
+            RefreshAssemblyScaleUi();
+        }
+
+        private void HandleDecreaseScaleClicked()
+        {
+            if (ServiceRegistry.TryGet<AssemblyRepositionController>(out var controller))
+                controller.DecreaseScale();
+
+            RefreshAssemblyScaleUi();
+        }
+
+        private void HandleIncreaseScaleClicked()
+        {
+            if (ServiceRegistry.TryGet<AssemblyRepositionController>(out var controller))
+                controller.IncreaseScale();
+
+            RefreshAssemblyScaleUi();
+        }
+
+        private void RefreshAssemblyScaleUi()
+        {
+            if (_assemblyScaleLabel == null)
+                return;
+
+            float scale = 1f;
+            float defaultScale = 1f;
+            bool canDecrease = false;
+            bool canIncrease = false;
+
+            if (ServiceRegistry.TryGet<AssemblyRepositionController>(out var controller) && controller != null)
+            {
+                scale = controller.CurrentScaleMultiplier;
+                defaultScale = controller.DefaultScaleMultiplier;
+                canDecrease = controller.CanDecreaseScale;
+                canIncrease = controller.CanIncreaseScale;
+            }
+
+            _assemblyScaleLabel.text = $"Scale {scale:0.00}x";
+            _assemblyScaleLabel.tooltip = $"1.00x = authored package size in Unity units (meters-based content). Reset returns to {defaultScale:0.00}x for this package.";
+            _decreaseScaleButton?.SetEnabled(canDecrease);
+            _increaseScaleButton?.SetEnabled(canIncrease);
 
             if (_resetPositionButton != null)
-                _resetPositionButton.style.display = evt.IsActive ? DisplayStyle.Flex : DisplayStyle.None;
+            {
+                bool showReset = _repositionActive || Mathf.Abs(scale - defaultScale) > 0.001f;
+                _resetPositionButton.style.display = showReset ? DisplayStyle.Flex : DisplayStyle.None;
+            }
         }
 
         // ── Machine Intro Overlay ──

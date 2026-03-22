@@ -3,9 +3,9 @@
   "packageVersion": "0.3.0",
   "machine": {
     "id": "power_cube_frame",
-    "name": "Power Cube Frame",
-    "displayName": "Power Cube â€” Complete Build (Hours 1â€“3)",
-    "description": "Build the steel frame, install modules, wire the electrical system, and commission the Power Cube hydraulic power unit. Hour 1: measuring, cutting, and welding the 4Ã—4 tubular steel frame. Hour 2: mounting the engine plate, engine, hydraulic pump and coupling, reservoir, hoses, and oil cooler. Hour 3: fuel system, electrical wiring harness, and first-start commissioning. By the end you will have a fully operational Power Cube ready for hydraulic tool connections.",
+    "name": "Power Cube",
+    "displayName": "Power Cube - Complete Build (Hours 1-3)",
+    "description": "Build the complete Power Cube: fabricate the frame, install the hydraulic, fuel, and electrical modules, and commission the hydraulic power unit. Hour 1 covers measuring, cutting, and welding the 4x4 tubular steel frame. Hour 2 covers the engine plate, engine, pump coupling, hydraulic pump, reservoir, hoses, and oil cooler. Hour 3 covers the fuel system, electrical wiring, and first-start commissioning.",
     "difficulty": "intermediate",
     "estimatedBuildTimeMinutes": 180,
     "learningObjectives": [
@@ -159,8 +159,8 @@
   "assemblies": [
     {
       "id": "assembly_frame",
-      "name": "Power Cube Frame Assembly",
-      "description": "Full cube frame from cut steel tubing â€” base rectangle, vertical posts, and top ring.",
+      "name": "Power Cube Assembly",
+      "description": "Complete Power Cube assembly from cut steel tubing through module installation and commissioning.",
       "machineId": "power_cube_frame",
       "subassemblyIds": [
         "subassembly_base_frame",
@@ -1109,6 +1109,8 @@
       "id": "step_measure_base_long_tubes",
       "name": "Measure the long base tubes",
       "sequenceIndex": 1,
+      "family": "Use",
+      "profile": "Measure",
       "instructionText": "Use the tape measure to mark two lengths of 4Ã—4 tubular steel at 24 inches each. These will form the front and back rails of the base frame. Hook the tape on one end and mark at 24\" with soapstone.",
       "whyItMattersText": "Accurate measurements prevent misalignment when the frame is welded together. Even 1/8\" off compounds at every joint.",
       "optionalPartIds": [
@@ -1127,10 +1129,21 @@
           "toolId": "tool_tape_measure",
           "actionType": "measure",
           "targetId": "target_base_long_1_measure",
-          "successMessage": "Long tube lengths marked at 24 inches.",
-          "failureMessage": "Use the tape measure on the long tube marking point."
+          "successMessage": "Tape hooked on tube end.",
+          "failureMessage": "Hook the tape measure on the end of the long tube."
         }
       ],
+      "measurement": {
+        "startAnchorTargetId": "target_base_long_1_measure",
+        "endAnchorTargetId": "target_base_long_1_measure_end",
+        "expectedValueMm": 609.6,
+        "toleranceMm": 5.0,
+        "displayUnit": "inches"
+      },
+      "feedback": {
+        "completionEffectColor": "#FFCC33",
+        "completionPulseScale": 2.0
+      },
       "hintIds": [
         "hint_measure_long_tubes"
       ],
@@ -1187,6 +1200,8 @@
       "id": "step_measure_base_short_tubes",
       "name": "Measure the short base tubes",
       "sequenceIndex": 3,
+      "family": "Use",
+      "profile": "Measure",
       "instructionText": "Measure and mark two more tubes at 16 inches each. These shorter tubes form the left and right sides of the base rectangle.",
       "whyItMattersText": "The short sides set the width of the frame. The Power Cube's square-ish footprint depends on these being precisely matched.",
       "optionalPartIds": [
@@ -1209,6 +1224,17 @@
           "failureMessage": "Use the tape measure on the short tube marking point."
         }
       ],
+      "measurement": {
+        "startAnchorTargetId": "target_base_short_1_measure",
+        "endAnchorTargetId": "target_base_short_1_measure_end",
+        "expectedValueMm": 406.4,
+        "toleranceMm": 5.0,
+        "displayUnit": "inches"
+      },
+      "feedback": {
+        "completionEffectColor": "#FFCC33",
+        "completionPulseScale": 2.0
+      },
       "eventTags": [
         "power_cube",
         "frame",
@@ -1822,6 +1848,11 @@
       "hintIds": [
         "hint_star_pattern"
       ],
+      "feedback": {
+        "completionEffectColor": "#33FF66",
+        "completionPulseScale": 2.5,
+        "completionParticleId": "torque_sparks"
+      },
       "eventTags": [
         "power_cube",
         "module",
@@ -1917,6 +1948,11 @@
       "hintIds": [
         "hint_free_spin_check"
       ],
+      "feedback": {
+        "completionEffectColor": "#66CCFF",
+        "completionPulseScale": 2.0,
+        "completionParticleId": "weld_glow"
+      },
       "eventTags": [
         "power_cube",
         "module",
@@ -2544,7 +2580,7 @@
       "id": "step_final_signoff",
       "name": "Final commissioning sign-off",
       "sequenceIndex": 43,
-      "instructionText": "With the engine at full throttle, visually inspect: (1) No hydraulic leaks at any fitting. (2) No fuel drips. (3) Oil cooler fan spinning. (4) Pressure gauge steady at 2500â€“3000 PSI. (5) Engine temperature normal. Shut down the engine, check the oil level one more time, and sign off the build.",
+      "instructionText": "With the engine at full throttle, visually inspect: (1) No hydraulic leaks at any fitting. (2) No fuel drips. (3) Oil cooler mounted securely with airflow path clear. (4) Pressure gauge steady at 2500-3000 PSI. (5) Engine temperature normal. Shut down the engine, check the oil level one more time, and sign off the build.",
       "whyItMattersText": "The final inspection catches any issue that only appears under load. Signing off means you are confident the Power Cube is safe and ready for field use.",
       "optionalPartIds": [],
       "relevantToolIds": [
@@ -3133,20 +3169,35 @@
       "id": "hint_final_checklist",
       "type": "text",
       "title": "Final inspection checklist",
-      "message": "Under load at full throttle, check: hydraulic fittings (dry?), fuel connections (dry?), cooler fan (spinning?), gauge (2500â€“3000 PSI?), engine temp (normal?). One fail = shut down and investigate.",
+      "message": "Under load at full throttle, check: hydraulic fittings (dry?), fuel connections (dry?), cooler secure with clear airflow, gauge (2500-3000 PSI?), engine temp (normal?). One fail = shut down and investigate.",
       "priority": "high"
     }
   ],
   "targets": [
     {
       "id": "target_base_long_1_measure",
-      "name": "Long Tube Measuring Point",
+      "name": "Long Tube Start (Hook End)",
       "anchorRef": "anchors/power_cube/base_long_1_measure",
-      "description": "Where to use the tape measure on the long tube stock.",
+      "description": "Hook the tape measure on this end of the long tube.",
+      "associatedPartId": "base_tube_long_1",
       "tags": [
         "power_cube",
         "frame",
-        "measure"
+        "measure",
+        "start"
+      ]
+    },
+    {
+      "id": "target_base_long_1_measure_end",
+      "name": "Long Tube 24in Mark",
+      "anchorRef": "anchors/power_cube/base_long_1_measure_end",
+      "description": "Mark the tube at 24 inches from the hooked end.",
+      "associatedPartId": "base_tube_long_1",
+      "tags": [
+        "power_cube",
+        "frame",
+        "measure",
+        "end"
       ]
     },
     {
@@ -3173,13 +3224,27 @@
     },
     {
       "id": "target_base_short_1_measure",
-      "name": "Short Tube Measuring Point",
+      "name": "Short Tube Start (Hook End)",
       "anchorRef": "anchors/power_cube/base_short_1_measure",
-      "description": "Where to use the tape measure on the short tube stock.",
+      "description": "Where to hook the tape measure on the short tube stock.",
+      "associatedPartId": "base_tube_short_1",
       "tags": [
         "power_cube",
         "frame",
         "measure"
+      ]
+    },
+    {
+      "id": "target_base_short_1_measure_end",
+      "name": "Short Tube 16in Mark",
+      "anchorRef": "anchors/power_cube/base_short_1_measure_end",
+      "description": "Mark the tube at 16 inches from the hooked end.",
+      "associatedPartId": "base_tube_short_1",
+      "tags": [
+        "power_cube",
+        "frame",
+        "measure",
+        "end"
       ]
     },
     {
@@ -5463,9 +5528,34 @@
           "w": 1.0
         },
         "scale": {
-          "x": 0.30000001192092896,
-          "y": 0.30000001192092896,
-          "z": 0.30000001192092896
+          "x": 0.15,
+          "y": 0.15,
+          "z": 0.15
+        },
+        "color": {
+          "r": 0.8999999761581421,
+          "g": 0.75,
+          "b": 0.20000000298023224,
+          "a": 1.0
+        }
+      },
+      {
+        "targetId": "target_base_long_1_measure_end",
+        "position": {
+          "x": -1.8904,
+          "y": 0.75,
+          "z": -1.5
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.15,
+          "y": 0.15,
+          "z": 0.15
         },
         "color": {
           "r": 0.8999999761581421,
@@ -5538,9 +5628,34 @@
           "w": 1.0
         },
         "scale": {
-          "x": 0.30000001192092896,
-          "y": 0.30000001192092896,
-          "z": 0.30000001192092896
+          "x": 0.15,
+          "y": 0.15,
+          "z": 0.15
+        },
+        "color": {
+          "r": 0.8999999761581421,
+          "g": 0.75,
+          "b": 0.20000000298023224,
+          "a": 1.0
+        }
+      },
+      {
+        "targetId": "target_base_short_1_measure_end",
+        "position": {
+          "x": -2.5,
+          "y": 0.75,
+          "z": -0.9064
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.15,
+          "y": 0.15,
+          "z": 0.15
         },
         "color": {
           "r": 0.8999999761581421,

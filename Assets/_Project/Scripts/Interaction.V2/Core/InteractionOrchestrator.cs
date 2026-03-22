@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using OSE.App;
+using OSE.Content;
 using OSE.Core;
 using OSE.Input;
 using OSE.Interaction;
@@ -55,6 +57,7 @@ namespace OSE.Interaction.V2
         private CanonicalActionBridge _actionBridge;
         private PlacementAssistService _placementAssist;
         private InteractionFeedbackPresenter _feedbackPresenter;
+        private StepGuidanceService _guidanceService;
 
         // ── Internal state ──
 
@@ -65,6 +68,12 @@ namespace OSE.Interaction.V2
         // Part validation (resolved via reflection to avoid circular asmdef dependency)
         private object _spawnerRef;
         private PropertyInfo _spawnedPartsProperty;
+
+        // Guidance service package context (resolved lazily via reflection on spawner)
+        private bool _guidanceContextProvided;
+        private PropertyInfo _currentPackageProperty;
+        private MethodInfo _findTargetPlacementMethod;
+        private PropertyInfo _previewRootProperty; // on PreviewSceneSetup
 
         // ── Lifecycle ──
 
@@ -183,8 +192,29 @@ namespace OSE.Interaction.V2
             if (_spawnerRef == null)
                 OseLog.Warn("[InteractionOrchestrator] PackagePartSpawner not found. Part hit validation disabled.");
 
+            // ── 10. Step Guidance Service ──
+            _guidanceService = new StepGuidanceService(_settings, _cameraRig);
+
+            // Cache reflection handles for lazy package context injection
+            if (_spawnerRef != null)
+            {
+                var spawnerType = _spawnerRef.GetType();
+                _currentPackageProperty = spawnerType.GetProperty("CurrentPackage");
+                _findTargetPlacementMethod = spawnerType.GetMethod("FindTargetPlacement");
+
+                // PreviewSceneSetup is on the same GameObject (or discoverable via field)
+                var setupField = spawnerType.GetField("_setup", BindingFlags.NonPublic | BindingFlags.Instance);
+                if (setupField != null)
+                {
+                    object setup = setupField.GetValue(_spawnerRef);
+                    if (setup != null)
+                        _previewRootProperty = setup.GetType().GetProperty("PreviewRoot");
+                }
+            }
+
             RuntimeEventBus.Subscribe<PartStateChanged>(HandlePartStateChanged);
             RuntimeEventBus.Subscribe<StepStateChanged>(HandleStepStateChanged);
+            RuntimeEventBus.Subscribe<StepActivated>(HandleStepActivated);
             RuntimeEventBus.Subscribe<RepositionModeChanged>(HandleRepositionModeChanged);
 
             _bootstrapped = true;
@@ -230,6 +260,7 @@ namespace OSE.Interaction.V2
         {
             RuntimeEventBus.Unsubscribe<PartStateChanged>(HandlePartStateChanged);
             RuntimeEventBus.Unsubscribe<StepStateChanged>(HandleStepStateChanged);
+            RuntimeEventBus.Unsubscribe<StepActivated>(HandleStepActivated);
             RuntimeEventBus.Unsubscribe<RepositionModeChanged>(HandleRepositionModeChanged);
             _legacyBridge?.Disconnect();
         }
@@ -245,6 +276,49 @@ namespace OSE.Interaction.V2
             SelectedPart = null;
             DraggedPart = null;
             TransitionTo(InteractionState.Idle);
+        }
+
+        private void HandleStepActivated(StepActivated evt)
+        {
+            if (!_bootstrapped || _guidanceService == null) return;
+
+            // Lazily provide package context on first activation
+            if (!_guidanceContextProvided)
+                TryProvideGuidanceContext();
+
+            _guidanceService.OnStepActivated(evt);
+        }
+
+        private void TryProvideGuidanceContext()
+        {
+            if (_spawnerRef == null || _currentPackageProperty == null || _findTargetPlacementMethod == null)
+                return;
+
+            var package = _currentPackageProperty.GetValue(_spawnerRef) as MachinePackageDefinition;
+            if (package == null) return;
+
+            // Build Func<string, TargetPreviewPlacement> via reflection
+            object spawner = _spawnerRef;
+            MethodInfo findMethod = _findTargetPlacementMethod;
+            Func<string, TargetPreviewPlacement> findTarget = targetId =>
+                findMethod.Invoke(spawner, new object[] { targetId }) as TargetPreviewPlacement;
+
+            // Resolve PreviewRoot
+            Transform previewRoot = null;
+            if (_previewRootProperty != null)
+            {
+                var setupField = _spawnerRef.GetType().GetField("_setup", BindingFlags.NonPublic | BindingFlags.Instance);
+                if (setupField != null)
+                {
+                    object setup = setupField.GetValue(_spawnerRef);
+                    if (setup != null)
+                        previewRoot = _previewRootProperty.GetValue(setup) as Transform;
+                }
+            }
+
+            _guidanceService.SetPackageContext(package, findTarget, previewRoot);
+            _guidanceContextProvided = true;
+            OseLog.Info("[InteractionOrchestrator] Guidance service package context provided.");
         }
 
         private void HandleRepositionModeChanged(RepositionModeChanged evt)
@@ -397,15 +471,7 @@ namespace OSE.Interaction.V2
             }
 
             Vector2 screenPos = mouse.position.ReadValue();
-            Ray ray = _camera.ScreenPointToRay(screenPos);
-            if (Physics.Raycast(ray, out RaycastHit hit, 100f, _settings.PartLayerMask))
-            {
-                HoveredPart = ValidatePartHit(hit.collider.gameObject);
-            }
-            else
-            {
-                HoveredPart = null;
-            }
+            HoveredPart = RaycastValidPart(screenPos);
         }
 
         // ── Public API ──
@@ -438,6 +504,28 @@ namespace OSE.Interaction.V2
                 }
                 t = t.parent;
             }
+            return null;
+        }
+
+        private GameObject RaycastValidPart(Vector2 screenPos)
+        {
+            if (_camera == null)
+                return null;
+
+            Ray ray = _camera.ScreenPointToRay(screenPos);
+            RaycastHit[] hits = Physics.RaycastAll(ray, 100f, _settings.PartLayerMask, QueryTriggerInteraction.Ignore);
+            if (hits == null || hits.Length == 0)
+                return null;
+
+            Array.Sort(hits, (left, right) => left.distance.CompareTo(right.distance));
+
+            for (int i = 0; i < hits.Length; i++)
+            {
+                GameObject validPart = ValidatePartHit(hits[i].collider != null ? hits[i].collider.gameObject : null);
+                if (validPart != null)
+                    return validPart;
+            }
+
             return null;
         }
 
@@ -627,6 +715,7 @@ namespace OSE.Interaction.V2
                 return;
 
             bool toolLocked = IsToolModeLockedForParts();
+            OseLog.VerboseInfo($"[V2] HandleSelect: toolLocked={toolLocked}, hitTarget={intent.HitTarget?.name ?? "null"}");
 
             if (toolLocked)
             {
@@ -901,19 +990,23 @@ namespace OSE.Interaction.V2
             OseLog.Info($"[V2] RouteToolAction resolve at ({screenPos.x:F0},{screenPos.y:F0})");
             if (_legacyBridge.TryResolveToolActionTarget(screenPos, out string targetId, out Vector3 targetWorldPos))
             {
+                OseLog.Info($"[V2] RouteToolAction: resolved target='{targetId}' at {targetWorldPos}. Executing...");
                 if (_legacyBridge.TryToolAction(targetId))
                 {
+                    OseLog.Info($"[V2] RouteToolAction: TryToolAction SUCCESS for '{targetId}'.");
                     if (_cameraRig != null)
                         _cameraRig.FocusOn(targetWorldPos);
                     return;
                 }
 
+                OseLog.Warn($"[V2] RouteToolAction: TryToolAction FAILED for '{targetId}' — execution rejected.");
                 // Execution was rejected (wrong tool, missing tool, etc.). Keep the
                 // fallback ordering in V2 by focusing the already-resolved target.
                 if (_cameraRig != null)
                     _cameraRig.FocusOn(targetWorldPos);
                 return;
             }
+            OseLog.Info("[V2] RouteToolAction: TryResolveToolActionTarget returned false.");
 
             // Tool action failed (wrong tool, no tool equipped, etc.) — still focus
             // camera on the nearest target sphere so the user can navigate to it.
@@ -937,15 +1030,27 @@ namespace OSE.Interaction.V2
                 return false;
             }
 
-            // Check both: is a tool equipped, OR does the current step have a
-            // configured (incomplete) tool action? Either condition locks parts.
+            // If a tool is actively equipped, always lock parts.
             if (!string.IsNullOrWhiteSpace(session.ToolController.ActiveToolId))
                 return true;
 
+            // If the step has a configured (incomplete) tool action, only lock parts
+            // after all required part placements are done. Mixed placement+tool steps
+            // (e.g. "place 4 posts then clamp") must allow part interaction first.
             if (session.ToolController.TryGetPrimaryActionSnapshot(
                     out ToolRuntimeController.ToolActionSnapshot snapshot))
             {
-                return snapshot.IsConfigured && !snapshot.IsCompleted;
+                if (!snapshot.IsConfigured || snapshot.IsCompleted)
+                    return false;
+
+                // Check if the step still has outstanding part placements
+                if (ServiceRegistry.TryGet<PartRuntimeController>(out var partController) &&
+                    !partController.AreActiveStepRequiredPartsPlaced())
+                {
+                    return false; // parts still need placing — don't lock for tools yet
+                }
+
+                return true;
             }
 
             return false;

@@ -35,6 +35,10 @@ This file should be used together with:
 - `UI_ARCHITECTURE.md`
 - `TASK_EXECUTION_PROTOCOL.md`
 
+The canonical physical-fidelity requirements for dimensions, placement, orientation,
+appearance, and AI asset prompting live in `docs/CONTENT_MODEL.md` under
+`Physical Fidelity Standard`.
+
 ---
 
 # 1. Core Principle

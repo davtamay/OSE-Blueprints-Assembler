@@ -1,7 +1,8 @@
 # TOOL_AUTHORING_PIPELINE.md
 
 > Complete reference for creating, importing, and deploying 3D tool assets in OSE XR training packages.
-> Companion to [PART_AUTHORING_PIPELINE.md](PART_AUTHORING_PIPELINE.md) — same infrastructure, tool-specific conventions.
+> Companion to [PART_AUTHORING_PIPELINE.md](PART_AUTHORING_PIPELINE.md) - same infrastructure, tool-specific conventions.
+> Canonical physical-fidelity requirements live in [CONTENT_MODEL.md](CONTENT_MODEL.md) under `Physical Fidelity Standard`.
 
 ---
 

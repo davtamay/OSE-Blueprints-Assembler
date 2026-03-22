@@ -40,6 +40,13 @@ namespace OSE.Content
         /// </summary>
         public string profile;
 
+        /// <summary>
+        /// Semantic view mode override for camera framing.
+        /// <para>Accepted values: "SourceAndTarget", "PairEndpoints", "WorkZone", "PathView", "Overview", "Inspect".</para>
+        /// <para>Optional. When null/empty, resolved from family + profile via <see cref="ViewModeResolver"/>.</para>
+        /// </summary>
+        public string viewMode;
+
         public string[] validationRuleIds;
         public string[] hintIds;
         public string[] effectTriggerIds;
@@ -64,6 +71,9 @@ namespace OSE.Content
 
         /// <summary>Optional grouped difficulty payload. When present, its fields take precedence over flat equivalents.</summary>
         public StepDifficultyPayload difficulty;
+
+        /// <summary>Optional measurement payload for anchor-to-anchor measurement steps (Use.Measure profile).</summary>
+        public StepMeasurementPayload measurement;
 
         // --- Resolved accessors (payload-first, flat-fallback) ---
 

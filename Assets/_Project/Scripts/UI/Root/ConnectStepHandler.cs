@@ -131,12 +131,17 @@ namespace OSE.UI.Root
             CleanupAnchorInteraction();
         }
 
-        public void Cleanup()
+        public void ClearTransientVisuals()
         {
             ClearPortSpheres();
             ClearCableGhosts();
-            ClearRenderedPipeSplines();
             CleanupAnchorInteraction();
+        }
+
+        public void Cleanup()
+        {
+            ClearTransientVisuals();
+            ClearRenderedPipeSplines();
         }
 
         // ── Port-sphere spawning ──

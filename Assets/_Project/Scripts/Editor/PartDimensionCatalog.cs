@@ -65,6 +65,35 @@ namespace OSE.Editor
             { "tool_line_wrench",     new Vector3(0.20f,  0.03f, 0.02f) },
             { "tool_wire_crimper",    new Vector3(0.22f,  0.06f, 0.02f) },
             { "tool_multimeter",      new Vector3(0.08f,  0.15f, 0.04f) },
+
+            // --- D3D v18.10 starter slice ---
+            // Source: OSE Frame Construction Set / D3D frame notes
+            // 1/8" x 1" mild steel flat bar, cut to 13" lengths.
+            // Four bars overlap at the corners to form one 14" square frame side.
+            { "d3d_frame_bottom_top_bar",    new Vector3(0.3302f, 0.0254f, 0.003175f) },
+            { "d3d_frame_bottom_right_bar",  new Vector3(0.3302f, 0.0254f, 0.003175f) },
+            { "d3d_frame_bottom_bottom_bar", new Vector3(0.3302f, 0.0254f, 0.003175f) },
+            { "d3d_frame_bottom_left_bar",   new Vector3(0.3302f, 0.0254f, 0.003175f) },
+            { "d3d_frame_top_top_bar",       new Vector3(0.3302f, 0.0254f, 0.003175f) },
+            { "d3d_frame_top_right_bar",     new Vector3(0.3302f, 0.0254f, 0.003175f) },
+            { "d3d_frame_top_bottom_bar",    new Vector3(0.3302f, 0.0254f, 0.003175f) },
+            { "d3d_frame_top_left_bar",      new Vector3(0.3302f, 0.0254f, 0.003175f) },
+            { "d3d_frame_left_top_bar",      new Vector3(0.3302f, 0.0254f, 0.003175f) },
+            { "d3d_frame_left_right_bar",    new Vector3(0.3302f, 0.0254f, 0.003175f) },
+            { "d3d_frame_left_bottom_bar",   new Vector3(0.3302f, 0.0254f, 0.003175f) },
+            { "d3d_frame_left_left_bar",     new Vector3(0.3302f, 0.0254f, 0.003175f) },
+            { "d3d_frame_right_top_bar",     new Vector3(0.3302f, 0.0254f, 0.003175f) },
+            { "d3d_frame_right_right_bar",   new Vector3(0.3302f, 0.0254f, 0.003175f) },
+            { "d3d_frame_right_bottom_bar",  new Vector3(0.3302f, 0.0254f, 0.003175f) },
+            { "d3d_frame_right_left_bar",    new Vector3(0.3302f, 0.0254f, 0.003175f) },
+            { "d3d_frame_front_top_bar",     new Vector3(0.3302f, 0.0254f, 0.003175f) },
+            { "d3d_frame_front_right_bar",   new Vector3(0.3302f, 0.0254f, 0.003175f) },
+            { "d3d_frame_front_bottom_bar",  new Vector3(0.3302f, 0.0254f, 0.003175f) },
+            { "d3d_frame_front_left_bar",    new Vector3(0.3302f, 0.0254f, 0.003175f) },
+            { "d3d_frame_rear_top_bar",      new Vector3(0.3302f, 0.0254f, 0.003175f) },
+            { "d3d_frame_rear_right_bar",    new Vector3(0.3302f, 0.0254f, 0.003175f) },
+            { "d3d_frame_rear_bottom_bar",   new Vector3(0.3302f, 0.0254f, 0.003175f) },
+            { "d3d_frame_rear_left_bar",     new Vector3(0.3302f, 0.0254f, 0.003175f) },
         };
 
         /// <summary>

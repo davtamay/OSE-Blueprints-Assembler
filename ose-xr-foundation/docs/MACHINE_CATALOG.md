@@ -52,7 +52,15 @@ The current version (Power Cube VII / 7s) uses a 28 HP Briggs & Stratton Profess
 | Package ID | Scope | Parts | Steps | Tools | Status |
 |------------|-------|-------|-------|-------|--------|
 | ~~`power_cube_frame_corner`~~ | ~~Frame corner subassembly (stage 2 subset)~~ | ~~3~~ | ~~3~~ | ~~2~~ | Deleted (superseded by full package) |
-| `power_cube_frame` | **Complete Power Cube build — all 12 stages** | 29 | 43 | 10 | **Authored (primitive shapes)** |
+| `power_cube_frame` | **Complete Power Cube build - all 12 stages** | 29 | 43 | 10 | **Authored (primitive shapes, legacy package id retained for compatibility)** |
+
+### Current Package Coverage (`power_cube_frame`)
+- The package id `power_cube_frame` is legacy. The authored content is a full Power Cube trainer, not a frame-only subset.
+- Current authored coverage spans all 12 catalog stages in a guided 43-step flow with 29 parts and 10 tools.
+- Represented directly as standalone parts or major steps: structural frame tubes, vertical posts, top ring, engine mount plate, engine, pump coupling, hydraulic pump, reservoir, pressure hose, return hose, oil cooler, fuel tank, fuel line, fuel shutoff valve, battery, battery cables, key switch, choke cable, throttle cable, inline pressure gauge, and commissioning checks.
+- Represented as composite or abstracted items rather than decomposed BOM entries: the fuel line includes the inline filter, the oil cooler is a single authored part rather than separate cooler/fan/guard pieces, battery cables include their terminal ends, and several mounting interactions are represented by placement/torque steps without separate hardware parts.
+- Not separately authored today: quick-connect couplers and hydraulic manifolds, oil-cooler fan and guard as separate parts, individual brackets/straps/bolt sets, detailed wiring terminals/connectors, reservoir fabrication from raw flanges/ports, and frame accessory hardware such as quick-attach mounts.
+- This is an intentional trainer-level compression of the machine. It is complete at the assembly-flow level, but not a one-to-one decomposition of the real-world bill of materials.
 
 ### OSE References
 
@@ -63,6 +71,46 @@ The current version (Power Cube VII / 7s) uses a 28 HP Briggs & Stratton Profess
 - [Power Cube VII / Bill of Materials](https://wiki.opensourceecology.org/wiki/Power_Cube_VII/Bill_of_Materials)
 - [Structural Power Cube](https://wiki.opensourceecology.org/wiki/Structural_Power_Cube)
 - [Power Cube Design Rationale](https://wiki.opensourceecology.org/wiki/Power_Cube_Design_Rationale)
+
+---
+
+## D3D 3D Printer
+
+**Category:** Digital Fabrication
+**Difficulty:** Beginner-Intermediate
+**Real-world build time:** Workshop-scale, multi-session build
+**Material cost:** Varies by build version and sourced components
+
+### What It Is
+
+The D3D is Open Source Ecology's open-source 3D printer platform. Its structure is built
+around repeatable square frame geometry so the machine can be fabricated from common stock,
+kept repairable, and adapted across workshop contexts.
+
+The current authored package focuses on the frame-construction layer first because the
+available OSE source material is strongest there: 1/8 inch x 1 inch flat stock cut to
+13 inch lengths, overlapped to produce 14 inch square frame sides.
+
+### Current Authoring Scope
+
+| Package ID | Scope | Parts | Steps | Tools | Status |
+|------------|-------|-------|-------|-------|--------|
+| `d3d_v18_10` | **Full six-side frame layup package** | 24 | 30 | 1 | **Authored in data (exact side geometry, shared flat-bar GLB generated, broader frame/joining content still pending)** |
+
+### Current Package Coverage (`d3d_v18_10`)
+
+- Covers all six frame sides as separate layup subassemblies.
+- Uses source-backed stock dimensions: 13 inch x 1 inch x 1/8 inch mild-steel flat bar.
+- Encodes the real 14 inch square side geometry and 1 inch corner overlap for every panel.
+- Includes square-check steps with the framing square for each side before final joining.
+- Uses separate teaching work zones for the six panels. This is a documented instructional staging choice, not a change to the real panel geometry.
+- Does not yet cover final cube joining, clamping sequence, weld order, rails, gantry, motion system, electronics, or extrusion hardware.
+
+### OSE References
+
+- [D3D - OSE Wiki](https://wiki.opensourceecology.org/wiki/D3D)
+- [3D Printer Manual](https://wiki.opensourceecology.org/wiki/3D_Printer_Manual)
+- [Frame Construction Set](https://wiki.opensourceecology.org/wiki/Frame_Construction_Set)
 
 ---
 

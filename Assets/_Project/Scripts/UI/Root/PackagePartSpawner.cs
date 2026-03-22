@@ -1,9 +1,11 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using OSE.App;
 using OSE.Content;
 using OSE.Content.Loading;
 using OSE.Core;
+using OSE.Runtime;
 using OSE.Runtime.Preview;
 using System.IO;
 using UnityEngine;
@@ -375,6 +377,15 @@ namespace OSE.UI.Root
         private const float LayoutPadding = 0.15f;         // gap between parts within a group
         private const float LayoutGroupGap = 0.3f;         // extra gap between different groups on the arc
 
+        public void RefreshLoosePartPresentationLayout()
+        {
+            if (_setup?.PreviewRoot == null)
+                return;
+
+            PositionParts();
+            PositionTargetMarker();
+        }
+
         private void PositionParts()
         {
             if (!_setup.ActiveProfile.ShowGeometryPreview)
@@ -537,11 +548,12 @@ namespace OSE.UI.Root
                         : Quaternion.identity;
 
                     // Use the authored startPosition when available; fall back to arc for un-configured parts.
-                    Vector3 pos = (pp != null && (pp.startPosition.x != 0f || pp.startPosition.y != 0f || pp.startPosition.z != 0f))
-                        ? new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z)
+                    Vector3 pos = (pp != null && HasAuthoredStartPosition(pp))
+                        ? ResolvePresentationStartPosition(pp)
                         : new Vector3(px, LayoutY, pz);
 
-                    partGo.transform.SetLocalPositionAndRotation(pos, rot);
+                    if (!ShouldPreservePartTransform(partGo.name))
+                        partGo.transform.SetLocalPositionAndRotation(pos, rot);
                     partGo.transform.localScale = scale;
 
                     // Preserve original GLB materials; only apply solid color to primitives
@@ -579,7 +591,9 @@ namespace OSE.UI.Root
 
                 if (pp != null)
                 {
-                    pos   = new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z);
+                    pos   = HasAuthoredStartPosition(pp)
+                        ? ResolvePresentationStartPosition(pp)
+                        : new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z);
                     scale = new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z);
                     col   = new Color(pp.color.r, pp.color.g, pp.color.b, pp.color.a);
                     rot   = !pp.startRotation.IsIdentity
@@ -594,7 +608,8 @@ namespace OSE.UI.Root
                     rot   = Quaternion.identity;
                 }
 
-                partGo.transform.SetLocalPositionAndRotation(pos, rot);
+                if (!ShouldPreservePartTransform(partGo.name))
+                    partGo.transform.SetLocalPositionAndRotation(pos, rot);
                 partGo.transform.localScale = scale;
 
                 // Preserve original GLB materials; only apply solid color to primitives
@@ -819,40 +834,127 @@ namespace OSE.UI.Root
         /// </summary>
         public static void EnsureColliders(GameObject target)
         {
-            if (target.GetComponentInChildren<Collider>(true) != null)
-                return;
-
             // Spline parts have a deferred binder that adds a MeshCollider once
             // the SplineExtrude mesh is generated — don't add a fallback BoxCollider.
             if (target.GetComponent<SplineMeshColliderBinder>() != null)
                 return;
 
-            var meshFilters = target.GetComponentsInChildren<MeshFilter>(true);
-            if (meshFilters.Length > 0)
+            bool hasAnyCollider = target.GetComponentInChildren<Collider>(true) != null;
+
+            if (!hasAnyCollider)
             {
-                foreach (var mf in meshFilters)
+                var meshFilters = target.GetComponentsInChildren<MeshFilter>(true);
+                if (meshFilters.Length > 0)
                 {
-                    if (mf.sharedMesh != null && mf.GetComponent<Collider>() == null)
-                        mf.gameObject.AddComponent<MeshCollider>();
-                }
-            }
-            else
-            {
-                var renderers = target.GetComponentsInChildren<Renderer>(true);
-                if (renderers.Length > 0)
-                {
-                    Bounds bounds = renderers[0].bounds;
-                    for (int i = 1; i < renderers.Length; i++)
-                        bounds.Encapsulate(renderers[i].bounds);
-                    var box = target.AddComponent<BoxCollider>();
-                    box.center = target.transform.InverseTransformPoint(bounds.center);
-                    box.size = target.transform.InverseTransformVector(bounds.size);
+                    foreach (var mf in meshFilters)
+                    {
+                        if (mf.sharedMesh != null && mf.GetComponent<Collider>() == null)
+                            mf.gameObject.AddComponent<MeshCollider>();
+                    }
                 }
                 else
                 {
-                    target.AddComponent<BoxCollider>();
+                    var renderers = target.GetComponentsInChildren<Renderer>(true);
+                    if (renderers.Length > 0)
+                    {
+                        Bounds bounds = renderers[0].bounds;
+                        for (int i = 1; i < renderers.Length; i++)
+                            bounds.Encapsulate(renderers[i].bounds);
+                        var box = target.AddComponent<BoxCollider>();
+                        box.center = target.transform.InverseTransformPoint(bounds.center);
+                        box.size = target.transform.InverseTransformVector(bounds.size);
+                    }
+                    else
+                    {
+                        target.AddComponent<BoxCollider>();
+                    }
                 }
             }
+
+            EnsureThinPartSelectionProxy(target);
+        }
+
+        private static void EnsureThinPartSelectionProxy(GameObject target)
+        {
+            if (target == null)
+                return;
+
+            if (target.GetComponent<BoxCollider>() != null)
+                return;
+
+            var renderers = target.GetComponentsInChildren<Renderer>(true);
+            if (renderers.Length == 0)
+                return;
+
+            Bounds bounds = renderers[0].bounds;
+            for (int i = 1; i < renderers.Length; i++)
+                bounds.Encapsulate(renderers[i].bounds);
+
+            Vector3 localSize = AbsVector(target.transform.InverseTransformVector(bounds.size));
+            float minAxis = Mathf.Min(localSize.x, Mathf.Min(localSize.y, localSize.z));
+
+            const float MinClickableAxisMeters = 0.012f;
+            if (minAxis >= MinClickableAxisMeters)
+                return;
+
+            var proxy = target.AddComponent<BoxCollider>();
+            proxy.center = target.transform.InverseTransformPoint(bounds.center);
+            proxy.size = new Vector3(
+                Mathf.Max(localSize.x, MinClickableAxisMeters),
+                Mathf.Max(localSize.y, MinClickableAxisMeters),
+                Mathf.Max(localSize.z, MinClickableAxisMeters));
+        }
+
+        private static Vector3 AbsVector(Vector3 value)
+        {
+            return new Vector3(
+                Mathf.Abs(value.x),
+                Mathf.Abs(value.y),
+                Mathf.Abs(value.z));
+        }
+
+        private static Vector3 ResolvePresentationStartPosition(PartPreviewPlacement placement)
+        {
+            // Return the authored start position directly. Because loose parts
+            // and ghosts are both children of PreviewRoot, uniform scaling is
+            // purely presentational — the local-space layout is identical at
+            // every scale factor, so no compensation is needed or wanted.
+            return new Vector3(
+                placement.startPosition.x,
+                placement.startPosition.y,
+                placement.startPosition.z);
+        }
+
+        private static bool HasAuthoredStartPosition(PartPreviewPlacement placement)
+        {
+            return placement != null && HasAnyValue(new Vector3(
+                placement.startPosition.x,
+                placement.startPosition.y,
+                placement.startPosition.z));
+        }
+
+        private static bool HasAnyValue(Vector3 value)
+        {
+            return !Mathf.Approximately(value.x, 0f) ||
+                   !Mathf.Approximately(value.y, 0f) ||
+                   !Mathf.Approximately(value.z, 0f);
+        }
+
+        private static bool ShouldPreservePartTransform(string partId)
+        {
+            if (!Application.isPlaying || string.IsNullOrWhiteSpace(partId))
+                return false;
+
+            if (!ServiceRegistry.TryGet<PartRuntimeController>(out var partController) ||
+                partController == null)
+            {
+                return false;
+            }
+
+            PartPlacementState state = partController.GetPartState(partId);
+            return state == PartPlacementState.Grabbed ||
+                   state == PartPlacementState.PlacedVirtually ||
+                   state == PartPlacementState.Completed;
         }
 
         private static void SetObjectActive(GameObject target, bool active)

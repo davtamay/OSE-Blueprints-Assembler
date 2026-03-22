@@ -41,3 +41,8 @@ Desktop.ini
 
 # Build tools (download locally, not tracked)
 Tools/*.exe
+
+# Local environment files
+.env
+.env.*
+!.env.example

@@ -146,10 +146,10 @@ namespace OSE.UI.Root
         {
             if (_spawnedGhosts.Count == 0) return false;
 
-            GhostPlacementInfo ghostInfo = RaycastGhostAtScreen(screenPos);
+            GhostPlacementInfo ghostInfo = RaycastGhostAtScreen(screenPos, partId);
             if (ghostInfo == null)
                 ghostInfo = FindNearestGhostByScreenProximity(screenPos, partId);
-            if (ghostInfo == null || !ghostInfo.MatchesPart(partId))
+            if (ghostInfo == null)
                 return false;
 
             ExecuteClickToPlace(partId, partGo, ghostInfo);
@@ -499,16 +499,36 @@ namespace OSE.UI.Root
             }
         }
 
-        private GhostPlacementInfo RaycastGhostAtScreen(Vector2 screenPos)
+        private GhostPlacementInfo RaycastGhostAtScreen(Vector2 screenPos, string partId)
         {
             Camera cam = Camera.main;
             if (cam == null) return null;
 
             Ray ray = cam.ScreenPointToRay(screenPos);
-            if (!Physics.Raycast(ray, out RaycastHit hit, 100f, ~0, QueryTriggerInteraction.Collide))
+            RaycastHit[] hits = Physics.RaycastAll(ray, 100f, ~0, QueryTriggerInteraction.Collide);
+            if (hits == null || hits.Length == 0)
                 return null;
 
-            return FindGhostInfoFromHit(hit.transform);
+            GhostPlacementInfo best = null;
+            float bestDistance = float.PositiveInfinity;
+
+            for (int i = 0; i < hits.Length; i++)
+            {
+                GhostPlacementInfo info = FindGhostInfoFromHit(hits[i].transform);
+                if (info == null)
+                    continue;
+
+                if (!string.IsNullOrEmpty(partId) && !info.MatchesPart(partId))
+                    continue;
+
+                if (hits[i].distance < bestDistance)
+                {
+                    best = info;
+                    bestDistance = hits[i].distance;
+                }
+            }
+
+            return best;
         }
 
         private static GhostPlacementInfo FindGhostInfoFromHit(Transform hitTransform)
@@ -573,7 +593,15 @@ namespace OSE.UI.Root
                     continue;
 
                 Transform tx = ghost.transform;
-                if (previewRoot != null)
+                if (previewRoot != null && tx.parent == previewRoot)
+                {
+                    // Ghosts are authored and spawned directly in PreviewRoot local space.
+                    // Re-deriving that pose from scaled world transforms creates drift as
+                    // the assembly scale changes, so prefer the stored local transform.
+                    position = tx.localPosition;
+                    rotation = tx.localRotation;
+                }
+                else if (previewRoot != null)
                 {
                     position = previewRoot.InverseTransformPoint(tx.position);
                     rotation = Quaternion.Inverse(previewRoot.rotation) * tx.rotation;

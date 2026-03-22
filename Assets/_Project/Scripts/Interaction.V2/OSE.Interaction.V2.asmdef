@@ -3,6 +3,7 @@
     "rootNamespace": "OSE.Interaction.V2",
     "references": [
         "OSE.App",
+        "OSE.Content",
         "OSE.Core",
         "OSE.Input",
         "OSE.Interaction",

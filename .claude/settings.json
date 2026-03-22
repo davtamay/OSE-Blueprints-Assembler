@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \":*)",
+      "Bash(find 'c:\\\\Users\\\\davta\\\\Repos\\\\OSE Blueprints Assembler\\\\Assets\\\\_Project\\\\Scripts\\\\Interaction.V2' -name *.cs)",
+      "Bash(python3 -c \":*)",
+      "Read(//c/Users/davta/Repos/OSE Blueprints Assembler/**)",
+      "Read(//c/Users/davta/Repos/OSE Blueprints Assembler/NR % 4 == 1 { id=$0; gsub\\(/.*\"\"\"\"\"\"\"\"step_\\([^\"\"\"\"\"\"\"\"]+\\)\"\"\"\"\"\"\"\".*/,\"\"\"\"\"\"\"\"/1\"\"\"\"\"\"\"\",id\\); next }\n  NR % 4 == 2 { fam=$0; gsub\\(/.*\"\"\"\"\"\"\"\"\\([^\"\"\"\"\"\"\"\"]+\\)\"\"\"\"\"\"\"\".*/,\"\"\"\"\"\"\"\"/1\"\"\"\"\"\"\"\",fam\\); next }\n  NR % 4 == 3 { prof=$0; gsub\\(/.*\"\"\"\"\"\"\"\"\\([^\"\"\"\"\"\"\"\"]+\\)\"\"\"\"\"\"\"\".*/,\"\"\"\"\"\"\"\"/1\"\"\"\"\"\"\"\",prof\\); next }\n  NR % 4 == 0 { comp=$0; gsub\\(/.*\"\"\"\"\"\"\"\"\\([^\"\"\"\"\"\"\"\"]+\\)\"\"\"\"\"\"\"\".*/,\"\"\"\"\"\"\"\"/**)",
+      "Bash(node -e \":*)"
+    ]
+  }
+}

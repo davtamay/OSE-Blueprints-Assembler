@@ -15,6 +15,13 @@ namespace OSE.Content
     public sealed class PackagePreviewConfig
     {
         /// <summary>
+        /// Optional initial presentation scale for the entire preview assembly.
+        /// `1.0` means authored size. The runtime UI reports scale relative to this
+        /// authored baseline, not relative to the package's chosen default.
+        /// </summary>
+        public float defaultAssemblyScaleMultiplier = 1f;
+
+        /// <summary>
         /// Per-part visual placement overrides for the preview scene.
         /// The harness matches entries by partId to position and color each part.
         /// </summary>

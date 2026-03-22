@@ -127,6 +127,149 @@ Parts may include:
 
 ---
 
+# Physical Fidelity Standard
+
+Instructional content is allowed to simplify complexity, but it is not allowed to
+silently fake physical reality.
+
+Every authored machine package must preserve the real-world relationships that matter
+for learning:
+
+- what each object is
+- how large it is
+- where it sits relative to neighboring parts
+- how it is oriented
+- what it looks like
+- what is known exactly vs inferred
+
+If the runtime uses simplified collision, exaggerated ghosting, or proxy geometry,
+the authored source data must still reflect the real machine as closely as the source
+material allows.
+
+## Measurement Requirements
+
+Every authored part and tool must have source-backed physical dimensions.
+
+At minimum, authoring records must capture:
+
+- width, height, and depth in meters
+- the source of those dimensions
+- whether the value is exact, converted, estimated, or inferred
+- any important secondary dimensions that affect recognition or assembly
+
+Examples of secondary dimensions:
+
+- hole spacing
+- tube outer diameter and wall thickness
+- bracket leg lengths
+- hose inner and outer diameter
+- wrench drive size
+
+If exact dimensions are unknown:
+
+- infer carefully from the best available source
+- record the assumption explicitly
+- prefer a documented approximation over an undocumented guess
+
+The dimension catalog and package metadata should represent real-world scale, not just
+"what looks right in Unity."
+
+## Placement and Orientation Requirements
+
+Step targets, preview layouts, and final assembled positions must be authored from the
+real machine layout, not arbitrary spacing.
+
+For every placed or connected item, the content author should know:
+
+- where the part attaches in the real assembly
+- which face, edge, hole, or port is the intended interface
+- which direction the part faces when installed
+- what neighboring parts constrain its orientation
+
+If the instructional experience needs visual separation for clarity, that offset must
+be a deliberate presentation choice, not a replacement for the real assembled pose.
+The real pose should remain recoverable in the source package.
+
+## Appearance Requirements
+
+Every authored part or tool should be described in terms a modeler or generator can
+execute reliably.
+
+Appearance descriptions should specify:
+
+- base shape and silhouette
+- material family
+- surface finish
+- dominant colors
+- notable hardware details
+- functional features that affect recognition
+- what should be omitted
+
+Examples:
+
+- "black powder-coated square steel tube"
+- "zinc-plated hex-head fastener with washer"
+- "cast aluminum motor housing with cooling fins"
+- "rubber hydraulic hose with crimped silver fittings"
+
+Avoid vague descriptions like:
+
+- "metal bracket"
+- "engine part"
+- "tool handle"
+
+## AI Asset Prompt Requirements
+
+When using Meshy or any other text/image-to-3D workflow, the prompt is part of the
+content definition and must be treated as engineering input, not marketing copy.
+
+Every prompt should include:
+
+- exact or explicitly approximate dimensions with units
+- the dominant aspect ratio
+- the intended upright orientation
+- the real-world material and finish
+- visible connection or mounting features
+- the intended level of completeness
+- negative constraints for unwanted details
+
+A good prompt answers:
+
+- what is this object
+- what are its exact measurements
+- what is it made of
+- how is it oriented
+- which details are essential for recognition
+- which decorative or misleading details must be excluded
+
+Example structure:
+
+"Corner bracket for D3D printer frame, right-angle steel bracket, 65 mm wide, 65 mm tall,
+8 mm thick, black powder-coated steel, two bolt holes on each leg, crisp machined edges,
+upright with bracket corner at world origin, no logos, no text, no background, no people."
+
+## Source Provenance Rule
+
+Physical fidelity claims must be traceable.
+
+For each authored slice, keep a source record that identifies:
+
+- which document, drawing, photo, or BOM informed the dimensions
+- which source established placement and orientation
+- which source established appearance
+- which details were inferred by the author
+- which details still need confirmation
+
+This provenance belongs in the package research notes and should be easy to audit later.
+
+## Canonical Rule
+
+If there is a conflict between "looks good enough" and "matches the real machine,"
+the real machine wins unless the deviation is explicitly documented as an instructional
+simplification.
+
+---
+
 # Tools
 
 Instruments used during assembly.
