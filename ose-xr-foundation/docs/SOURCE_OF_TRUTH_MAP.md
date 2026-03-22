@@ -34,6 +34,7 @@ This file should be used together with:
 - `docs/DATA_SCHEMA.md`
 - `docs/RUNTIME_EVENT_MODEL.md`
 - `docs/IMPLEMENTATION_CHECKLIST.md`
+- `docs/STEP_VIEW_FRAMING.md`
 - `TASK_EXECUTION_PROTOCOL.md`
 - `TEST_STRATEGY.md`
 - `PERFORMANCE_ARCHITECTURE.md`
@@ -435,6 +436,36 @@ Likely future sync-relevant state includes:
 
 ---
 
+## 2.14 Step View Framing
+
+### Authoritative Owner
+
+- step authoring data (machine package JSON)
+- `STEP_VIEW_FRAMING.md`
+
+### Owns
+
+- view mode classification (SourceAndTarget, PairEndpoints, WorkZone, PathView, Overview, Inspect)
+- family-to-view-mode default mapping
+- profile-to-view-mode override mapping
+- framing behavior rules (on step activation, on selection, on completion)
+- recovery affordance definitions (Back, Step Home)
+- view mode resolution order (explicit > profile > family default)
+
+### Must Not Be Owned By
+
+- camera rig implementation details
+- UI panel state
+- hardcoded viewpoint presets without semantic backing
+
+### Primary Docs
+
+- `docs/STEP_VIEW_FRAMING.md`
+- `docs/STEP_CAPABILITY_MATRIX.md`
+- `docs/ASSEMBLY_RUNTIME.md`
+
+---
+
 # 3. Document Authority Map
 
 This section defines which document is authoritative for each domain.
@@ -687,6 +718,23 @@ This section defines which document is authoritative for each domain.
 - entity role definitions
 - rules for adding new patterns
 - pattern resolution logic (pattern is NOT a schema field — resolved at runtime)
+
+---
+
+## 3.17 Step View Framing
+
+### Authoritative Doc
+
+- `docs/STEP_VIEW_FRAMING.md`
+
+### Governs
+
+- view mode catalog and descriptions
+- family-to-view-mode and profile-to-view-mode mapping
+- framing behavior rules (when and how the camera transitions)
+- recovery affordances (Back, Step Home)
+- schema integration for the optional `viewMode` field
+- design principles for guided camera behavior
 
 ---
 

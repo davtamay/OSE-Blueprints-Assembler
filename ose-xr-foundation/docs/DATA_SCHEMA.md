@@ -460,6 +460,11 @@ The following fields are implemented in `StepDefinition.cs` with full validator 
   Family-scoped refinement. Examples: `Place.Clamp`, `Use.Torque`, `Use.Weld`, `Use.Cut`, `Connect.Cable`.
   When absent, the family default behavior applies.
 
+- `viewMode` : string (optional)
+  Semantic classification of how the camera should frame the step's spatial context. Valid values: `SourceAndTarget`, `PairEndpoints`, `WorkZone`, `PathView`, `Overview`, `Inspect`.
+  When absent, resolved from family + profile using the default mapping in `STEP_VIEW_FRAMING.md` section 4.
+  This is NOT an authored camera angle (yaw/pitch/distance) -- it is a semantic intent that the runtime resolves into camera parameters using the step's spatial data.
+
 Note: **Interaction pattern** (e.g. PlaceOnZone, SelectPair, TargetHit) is NOT an authored schema field. It is resolved at runtime from the combination of `family`, `profile`, and step data shape. See `INTERACTION_PATTERN_MATRIX.md` for the pattern catalog and resolution rules.
 
 ##### Capability Payloads (Phase 3 — wired)

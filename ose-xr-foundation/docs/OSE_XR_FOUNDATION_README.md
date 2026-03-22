@@ -91,6 +91,21 @@ Interaction semantics must remain platform-agnostic even while XR implementation
 
 ---
 
+# View System
+
+- **STEP_VIEW_FRAMING.md**
+
+Defines how the camera should frame each assembly step's spatial context. Establishes the sixth canonical concept alongside Entity Role, Step Family, Interaction Pattern, Profile, and Payloads.
+
+Key concepts:
+
+- **View Modes** -- semantic classifications (SourceAndTarget, PairEndpoints, WorkZone, PathView, Overview, Inspect)
+- **Framing Behavior** -- soft animated transitions on step activation; selection does not reframe
+- **Recovery Affordances** -- Back (previous step's framing) and Step Home (current step's authored framing)
+- **Resolution** -- view mode resolved from family + profile defaults, or explicitly authored per step
+
+---
+
 # UI System
 
 - **UI_ARCHITECTURE.md**

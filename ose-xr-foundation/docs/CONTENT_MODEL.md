@@ -96,6 +96,8 @@ A step may optionally declare a **profile** — a family-scoped refinement that 
 
 For the full step capability taxonomy see `STEP_CAPABILITY_MATRIX.md`. The runtime automatically resolves the learner-facing **interaction pattern** (e.g. PlaceOnZone, SelectPair, TargetHit) from the family + profile — see `INTERACTION_PATTERN_MATRIX.md`.
 
+Each step resolves a **view mode** that defines how the camera should frame the step's spatial context. View modes are resolved automatically from family + profile, or declared explicitly. See `STEP_VIEW_FRAMING.md`.
+
 Each step defines:
 
 - instructions

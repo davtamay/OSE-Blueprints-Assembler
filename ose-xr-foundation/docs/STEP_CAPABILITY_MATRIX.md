@@ -16,6 +16,7 @@ This file should be used together with:
 - `docs/SOURCE_OF_TRUTH_MAP.md`
 - `docs/IMPLEMENTATION_CHECKLIST.md`
 - `docs/INTERACTION_PATTERN_MATRIX.md`
+- `docs/STEP_VIEW_FRAMING.md`
 
 ---
 
@@ -56,6 +57,8 @@ The user moves a source object to a target position and releases it.
 
 **Default interaction pattern:** PlaceOnZone (see `INTERACTION_PATTERN_MATRIX.md` §3.1)
 
+**Default view mode:** SourceAndTarget (see `STEP_VIEW_FRAMING.md` §4)
+
 **Current runtime mapping:** `completionType: "placement"`
 
 ---
@@ -76,7 +79,9 @@ The user wields a tool against one or more targets.
 - Cut a plate with an angle grinder
 - Measure a gap with a tape measure
 
-**Default interaction pattern:** TargetHit; varies by profile — see `INTERACTION_PATTERN_MATRIX.md` §4
+**Default interaction pattern:** TargetHit; varies by profile -- see `INTERACTION_PATTERN_MATRIX.md` §4
+
+**Default view mode:** WorkZone; varies by profile -- see `STEP_VIEW_FRAMING.md` §4
 
 **Current runtime mapping:** `completionType: "tool_action"`
 
@@ -99,6 +104,8 @@ The user links two endpoints to form a connection.
 
 **Default interaction pattern:** SelectPair (see `INTERACTION_PATTERN_MATRIX.md` §3.2)
 
+**Default view mode:** PairEndpoints (see `STEP_VIEW_FRAMING.md` §4)
+
 **Current runtime mapping:** `completionType: "pipe_connection"`
 
 ---
@@ -119,6 +126,8 @@ The user acknowledges, verifies, or continues without a spatial interaction.
 - Review a completed subassembly before the next phase
 
 **Default interaction pattern:** SingleConfirm (see `INTERACTION_PATTERN_MATRIX.md` §3.7)
+
+**Default view mode:** Overview (see `STEP_VIEW_FRAMING.md` §4)
 
 **Current runtime mapping:** `completionType: "confirmation"`
 
@@ -146,27 +155,27 @@ These profiles are defined based on authored content that exists or is planned.
 
 ### Place profiles
 
-| Profile | Behavior refinement | Default Pattern |
-|---|---|---|
-| *(default)* | Standard ghost-target drag-and-snap | PlaceOnZone |
-| `Clamp` | Placement where a clamp or fixture secures the part; may involve a secondary confirmation | PlaceOnZone |
+| Profile | Behavior refinement | Default Pattern | Default View Mode |
+|---|---|---|---|
+| *(default)* | Standard ghost-target drag-and-snap | PlaceOnZone | SourceAndTarget |
+| `Clamp` | Placement where a clamp or fixture secures the part; may involve a secondary confirmation | PlaceOnZone | SourceAndTarget |
 
 ### Use profiles
 
-| Profile | Behavior refinement | Default Pattern |
-|---|---|---|
-| *(default)* | Generic tool-on-target tap interaction | TargetHit |
-| `Torque` | Wrench on bolt; may show torque gauge; completion on click/threshold | TargetHit / OrderedTargets |
-| `Measure` | Tape measure between two anchors; distance label display | SelectPair |
-| `Weld` | Welder on joint; hold-duration validation; welding effects (sparks, glow) | HoldOnTarget *(future)* |
-| `Cut` | Grinder/saw on material; path-following validation; cutting effects (sparks, dust) | PathProgress *(future)* |
+| Profile | Behavior refinement | Default Pattern | Default View Mode |
+|---|---|---|---|
+| *(default)* | Generic tool-on-target tap interaction | TargetHit | WorkZone |
+| `Torque` | Wrench on bolt; may show torque gauge; completion on click/threshold | TargetHit / OrderedTargets | WorkZone |
+| `Measure` | Tape measure between two anchors; distance label display | SelectPair | PairEndpoints |
+| `Weld` | Welder on joint; hold-duration validation; welding effects (sparks, glow) | HoldOnTarget *(future)* | PathView |
+| `Cut` | Grinder/saw on material; path-following validation; cutting effects (sparks, dust) | PathProgress *(future)* | PathView |
 
 ### Connect profiles
 
-| Profile | Behavior refinement | Default Pattern |
-|---|---|---|
-| *(default)* | Two-click endpoint connection with spline rendering | SelectPair |
-| `Cable` | Flexible cable/hose rendering; sag physics; flow animation on completion | SelectPair |
+| Profile | Behavior refinement | Default Pattern | Default View Mode |
+|---|---|---|---|
+| *(default)* | Two-click endpoint connection with spline rendering | SelectPair | PairEndpoints |
+| `Cable` | Flexible cable/hose rendering; sag physics; flow animation on completion | SelectPair | PairEndpoints |
 
 ### Confirm profiles
 

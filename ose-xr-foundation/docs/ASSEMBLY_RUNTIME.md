@@ -163,7 +163,9 @@ Extracted handlers:
 
 Profile refines behavior within a family (e.g. `Use.Torque` shows a torque gauge, `Use.Weld` triggers welding effects). Unknown profiles fall back to the family default.
 
-The five capability payloads — guidance, validation, feedback, reinforcement, and difficulty — are resolved from the step data regardless of family. See `STEP_CAPABILITY_MATRIX.md` for the full capability shape definition.
+The five capability payloads -- guidance, validation, feedback, reinforcement, and difficulty -- are resolved from the step data regardless of family. See `STEP_CAPABILITY_MATRIX.md` for the full capability shape definition.
+
+On step activation, the runtime also resolves the step's **view mode** -- a semantic classification of how the camera should frame the step's spatial context. The view mode is resolved from `viewMode` (if explicitly authored), then profile, then family default. The camera applies a soft animated transition to the resolved framing. See `STEP_VIEW_FRAMING.md` for the view mode catalog, framing behavior rules, and recovery affordances (Back / Step Home).
 
 ---
 
