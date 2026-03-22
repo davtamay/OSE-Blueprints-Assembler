@@ -621,6 +621,11 @@ namespace OSE.Interaction.V2
 
         private void HandleSelect(InteractionIntent intent)
         {
+            // Pipe connection port spheres: screen-proximity check runs BEFORE any
+            // tool-mode routing so pipe steps are not hidden behind tool-locked flow.
+            if (TryHandlePipeConnection(intent.ScreenPosition))
+                return;
+
             bool toolLocked = IsToolModeLockedForParts();
 
             if (toolLocked)
@@ -628,11 +633,6 @@ namespace OSE.Interaction.V2
                 RouteToolAction(intent.ScreenPosition);
                 return;
             }
-
-            // Pipe connection port spheres: screen-proximity check runs BEFORE part-hit resolution
-            // so that a part occluding a sphere in the raycast never swallows the tap.
-            if (_legacyBridge != null && _legacyBridge.TryPipeConnection(intent.ScreenPosition))
-                return;
 
             if (intent.HitTarget != null)
             {
@@ -643,7 +643,7 @@ namespace OSE.Interaction.V2
                 if (_legacyBridge != null)
                     _legacyBridge.SelectPart(intent.HitTarget);
                 else
-                    _actionBridge?.OnPartSelected(intent.HitTarget);
+                    _actionBridge?.OnExternallyResolvedPartSelected(intent.HitTarget);
 
                 // Smart pivot: shift camera to orbit around placement target (or part if no ghost)
                 if (_settings.EnableSmartPivot && _cameraRig != null)
@@ -659,44 +659,14 @@ namespace OSE.Interaction.V2
             }
             else
             {
-                // Clicked on empty space.
-                // If a part is selected, try click-to-place first (explicit placement intent
-                // takes priority over camera navigation).
-                if (SelectedPart != null && _legacyBridge != null &&
-                    _legacyBridge.TryClickToPlace(intent.ScreenPosition))
-                    return;
-
-                // Check if click was on a ghost part → focus camera on it.
-                if (TryFocusGhost(intent.ScreenPosition))
-                    return;
-
-                // Check if click was near a pulsating tool target → focus camera on it.
-                // This works regardless of tool equip state, so users can navigate to targets.
-                if (_cameraRig != null && _legacyBridge != null &&
-                    _legacyBridge.TryGetNearestToolTargetWorldPos(intent.ScreenPosition, out Vector3 targetWorldPos))
-                {
-                    _cameraRig.FocusOn(targetWorldPos);
-                    return; // don't deselect — user clicked to navigate
-                }
-
-                // Deselect.
-                if (SelectedPart != null)
-                {
-                    SelectedPart = null;
-                    TransitionTo(InteractionState.Idle);
-
-                    if (_legacyBridge != null)
-                        _legacyBridge.DeselectAll();
-                    else
-                        _actionBridge?.OnDeselected();
-                }
+                HandleEmptyClickFallback(intent.ScreenPosition);
             }
         }
 
         private void HandleBeginDrag(InteractionIntent intent)
         {
-            // Pipe connection port spheres: screen-proximity check runs before drag logic
-            if (_legacyBridge != null && _legacyBridge.TryPipeConnection(intent.ScreenPosition))
+            // Pipe connection port spheres: screen-proximity check runs before drag logic.
+            if (TryHandlePipeConnection(intent.ScreenPosition))
                 return;
 
             if (IsToolModeLockedForParts())
@@ -715,7 +685,7 @@ namespace OSE.Interaction.V2
                 if (_legacyBridge != null)
                     _legacyBridge.SelectPart(intent.HitTarget);
                 else
-                    _actionBridge?.OnPartSelected(intent.HitTarget);
+                    _actionBridge?.OnExternallyResolvedPartSelected(intent.HitTarget);
 
                 OseLog.VerboseInfo($"[Orchestrator] Drag blocked for locked part '{intent.HitTarget.name}'.");
                 return;
@@ -787,6 +757,9 @@ namespace OSE.Interaction.V2
 
         private void HandleInspect(InteractionIntent intent)
         {
+            if (TryHandlePipeConnection(intent.ScreenPosition))
+                return;
+
             if (IsToolModeLockedForParts())
             {
                 RouteToolAction(intent.ScreenPosition);
@@ -801,7 +774,7 @@ namespace OSE.Interaction.V2
             if (_legacyBridge != null)
                 _legacyBridge.InspectPart(intent.HitTarget);
             else
-                _actionBridge?.OnPartInspected(intent.HitTarget);
+                _actionBridge?.OnExternallyResolvedPartInspected(intent.HitTarget);
         }
 
         private void HandleFocus()
@@ -843,6 +816,49 @@ namespace OSE.Interaction.V2
                 _actionBridge?.OnDeselected();
         }
 
+        private void HandleEmptyClickFallback(Vector2 screenPos)
+        {
+            // If a part is selected, try click-to-place first (explicit placement intent
+            // takes priority over camera navigation).
+            if (SelectedPart != null && _legacyBridge != null &&
+                _legacyBridge.TryClickToPlace(SelectedPart, screenPos))
+                return;
+
+            // Check if click was on a ghost part → focus camera on it.
+            if (TryFocusGhost(screenPos))
+                return;
+
+            // Check if click was near a pulsating tool target → focus camera on it.
+            // This works regardless of tool equip state, so users can navigate to targets.
+            if (_cameraRig != null && _legacyBridge != null &&
+                _legacyBridge.TryGetNearestToolTargetWorldPos(screenPos, out Vector3 targetWorldPos))
+            {
+                _cameraRig.FocusOn(targetWorldPos);
+                return; // don't deselect — user clicked to navigate
+            }
+
+            if (SelectedPart == null)
+                return;
+
+            SelectedPart = null;
+            TransitionTo(InteractionState.Idle);
+
+            if (_legacyBridge != null)
+                _legacyBridge.DeselectFromExternalControl();
+            else
+                _actionBridge?.OnExternallyResolvedDeselected();
+        }
+
+        private bool TryHandlePipeConnection(Vector2 screenPos)
+        {
+            // Pipe connection port spheres use screen-proximity targeting rather than
+            // part-hit resolution, so V2 keeps this check ahead of part/tool routing.
+            if (_legacyBridge == null)
+                return false;
+
+            return _legacyBridge.TryPipeConnection(screenPos);
+        }
+
         // ── Helpers ──
 
         private void TransitionTo(InteractionState newState)
@@ -882,12 +898,20 @@ namespace OSE.Interaction.V2
                 return;
             }
 
-            OseLog.Info($"[V2] RouteToolAction → bridge at ({screenPos.x:F0},{screenPos.y:F0})");
-            if (_legacyBridge.TryToolAction(screenPos))
+            OseLog.Info($"[V2] RouteToolAction resolve at ({screenPos.x:F0},{screenPos.y:F0})");
+            if (_legacyBridge.TryResolveToolActionTarget(screenPos, out string targetId, out Vector3 targetWorldPos))
             {
-                // Focus camera on the executed target so the user can see the result.
-                if (_cameraRig != null && _legacyBridge.TryGetLastToolActionWorldPos(out Vector3 actionWorldPos))
-                    _cameraRig.FocusOn(actionWorldPos);
+                if (_legacyBridge.TryToolAction(targetId))
+                {
+                    if (_cameraRig != null)
+                        _cameraRig.FocusOn(targetWorldPos);
+                    return;
+                }
+
+                // Execution was rejected (wrong tool, missing tool, etc.). Keep the
+                // fallback ordering in V2 by focusing the already-resolved target.
+                if (_cameraRig != null)
+                    _cameraRig.FocusOn(targetWorldPos);
                 return;
             }
 

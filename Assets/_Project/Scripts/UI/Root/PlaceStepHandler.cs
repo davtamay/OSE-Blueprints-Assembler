@@ -29,6 +29,7 @@ namespace OSE.UI.Root
         private readonly List<GameObject> _spawnedGhosts; // shared reference from bridge
         private readonly Func<bool> _isSequentialStep;
         private readonly Func<bool> _advanceSequentialTarget;
+        private readonly Action<GameObject> _onPlacementFailed;
 
         // â"€â"€ Owned state â"€â"€
         private GameObject _hoveredGhost;
@@ -83,7 +84,8 @@ namespace OSE.UI.Root
             Action resetDragState,
             List<GameObject> spawnedGhosts,
             Func<bool> isSequentialStep,
-            Func<bool> advanceSequentialTarget)
+            Func<bool> advanceSequentialTarget,
+            Action<GameObject> onPlacementFailed = null)
         {
             _spawner = spawner;
             _getSetup = getSetup;
@@ -94,6 +96,7 @@ namespace OSE.UI.Root
             _spawnedGhosts = spawnedGhosts;
             _isSequentialStep = isSequentialStep;
             _advanceSequentialTarget = advanceSequentialTarget;
+            _onPlacementFailed = onPlacementFailed;
         }
 
         // ====================================================================
@@ -185,6 +188,7 @@ namespace OSE.UI.Root
 
                 FlashInvalid(partGo, partId);
                 partController.SelectPart(partId);
+                _onPlacementFailed?.Invoke(partGo);
                 StartGhostSelectionPulse(partId);
                 session.AssemblyController?.StepController?.FailAttempt();
                 return;
@@ -198,6 +202,7 @@ namespace OSE.UI.Root
             {
                 FlashInvalid(partGo, partId);
                 partController.SelectPart(partId);
+                _onPlacementFailed?.Invoke(partGo);
                 StartGhostSelectionPulse(partId);
                 session.AssemblyController?.StepController?.FailAttempt();
                 return;

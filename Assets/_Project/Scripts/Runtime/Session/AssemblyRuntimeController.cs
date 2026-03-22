@@ -65,6 +65,45 @@ namespace OSE.Runtime
             StepController.ActivateStep(firstStep, getElapsed());
         }
 
+        public void RestoreAssemblyState(string assemblyId, int stepIndex, Func<float> getElapsed)
+        {
+            if (_package == null)
+            {
+                OseLog.Error("[AssemblyRuntimeController] Cannot restore assembly — not initialized.");
+                return;
+            }
+
+            _currentAssemblyId = assemblyId;
+            _sessionElapsedRef = getElapsed();
+
+            StepDefinition[] assemblySteps = ResolveAssemblySteps(assemblyId);
+            if (assemblySteps.Length == 0)
+            {
+                OseLog.Warn($"[AssemblyRuntimeController] Assembly '{assemblyId}' has no steps. Completing immediately.");
+                CompleteAssembly();
+                return;
+            }
+
+            ProgressionController.Initialize(assemblySteps);
+
+            OseLog.Info($"[AssemblyRuntimeController] Restoring assembly '{assemblyId}' at step index {stepIndex} of {assemblySteps.Length}.");
+            RuntimeEventBus.Publish(new AssemblyStarted(assemblyId));
+
+            int clampedIndex = System.Math.Max(0, System.Math.Min(stepIndex, assemblySteps.Length));
+            if (clampedIndex > 0)
+                ProgressionController.SkipToIndex(clampedIndex);
+
+            StepDefinition step = ProgressionController.GetCurrentStep();
+            if (step == null)
+            {
+                CompleteAssembly();
+                return;
+            }
+
+            _preflightValidator.Validate(_package, step);
+            StepController.ActivateStep(step, getElapsed());
+        }
+
         public void Dispose()
         {
             RuntimeEventBus.Unsubscribe<StepStateChanged>(HandleStepStateChanged);

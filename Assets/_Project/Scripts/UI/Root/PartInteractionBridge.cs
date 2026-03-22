@@ -30,19 +30,11 @@ namespace OSE.UI.Root
         private static readonly Color GrabbedPartColor = new Color(1.0f, 0.65f, 0.1f, 1.0f);
         private static readonly Color HoveredPartColor = new Color(0.60f, 0.82f, 1.0f, 1.0f);
         private static readonly Color CompletedPartColor = new Color(0.3f, 0.9f, 0.4f, 1.0f);
-        private static readonly Color InvalidFlashColor = new Color(1.0f, 0.2f, 0.2f, 1.0f);
         private static readonly Color GhostReadyColor = new Color(0.3f, 1.0f, 0.5f, 0.4f);
         private static readonly Color HintHighlightColorA = new Color(0.95f, 0.85f, 0.2f, 0.4f);
         private static readonly Color HintHighlightColorB = new Color(1.0f, 0.95f, 0.35f, 0.7f);
-        private static readonly Color GhostSelectedPulseA = new Color(0.35f, 0.85f, 1.0f, 0.35f);
-        private static readonly Color GhostSelectedPulseB = new Color(0.55f, 1.0f, 0.7f, 0.7f);
-        private static readonly Color RequiredPartEmissionA = new Color(0.15f, 0.08f, 0.0f, 1.0f);
-        private static readonly Color RequiredPartEmissionB = new Color(0.45f, 0.25f, 0.02f, 1.0f);
 
         private const float DragThresholdPixels = 5f;
-        private const float SnapLerpSpeed = 12f;
-        private const float InvalidFlashDuration = 0.3f;
-        private const float SnapZoneRadius = 0.8f; // generous radius in Unity units
         private const float ScrollDepthSpeed = 0.5f; // units per scroll tick
         private const float PinchDepthSpeed = 0.02f; // units per pixel of pinch delta
         private const float DepthAdjustSpeed = 0.01f; // units per pixel in shift depth mode
@@ -51,10 +43,6 @@ namespace OSE.UI.Root
         private const float DragFloorEpsilon = 0.001f;
         private const float HintHighlightDuration = 6f;
         private const float HintHighlightPulseSpeed = 4f;
-        private const float ScreenProximityDesktop = 120f;
-        private const float ScreenProximityMobile = 180f;
-        private const float GhostSelectedPulseSpeed = 3.0f;     // Hz for ghost "click here" pulse
-        private const float RequiredPartPulseSpeed = 0.8f;     // Hz for "grab this part" pulse
         // Toggled automatically by V2 InteractionOrchestrator at runtime via reflection.
         // When true, this bridge skips pointer input polling (V2 handles input instead).
         [HideInInspector] public bool ExternalControlEnabled;
@@ -71,6 +59,8 @@ namespace OSE.UI.Root
         private ToolCursorManager _cursorManager;
         private ToolCursorManager CursorManager => _cursorManager ??= new ToolCursorManager(transform);
         private UseStepHandler _useHandler;
+        private ConnectStepHandler _connectHandler;
+        private PlaceStepHandler _placeHandler;
         private StepExecutionRouter _router;
         [SerializeField] private InputActionRouter _actionRouter;
         [SerializeField] private SelectionService _selectionService;
@@ -92,8 +82,6 @@ namespace OSE.UI.Root
         private float _lastPointerY;
         private bool _isDepthAdjustMode;
         private Vector2 _depthAdjustScreenAnchor;
-        private GameObject _hoveredGhost;
-        private bool _ghostHighlighted;
         private GameObject _hintGhost;
         private GameObject _externalHoveredPartForUi;
         private float _hintHighlightUntil;
@@ -101,8 +89,6 @@ namespace OSE.UI.Root
         private readonly Dictionary<string, PartPlacementState> _partStates = new Dictionary<string, PartPlacementState>(StringComparer.OrdinalIgnoreCase);
         private GameObject _hoveredPart;
         private bool _startupSyncPending;
-        private string _ghostPulsePartId; // part id whose matching ghosts are pulsing
-        private string[] _requiredPartIdsForStep; // parts the user needs to grab for the current placement step
         private Vector3 _lastToolActionWorldPos;
 
         // Step-based part visibility â€” only reveal parts when their step activates
@@ -116,28 +102,6 @@ namespace OSE.UI.Root
         private int _sequentialTargetIndex;
         private bool _isSequentialStep;
 
-        // Pipe-connection interaction — two-click port tethering
-        private readonly List<GameObject> _spawnedPortSpheres = new List<GameObject>();
-        private bool _pipePortAConfirmed;
-
-        // Snap animation (list-based for multi-target steps)
-        private struct SnapEntry
-        {
-            public GameObject Part;
-            public Vector3 TargetPos;
-            public Quaternion TargetRot;
-            public Vector3 TargetScale;
-        }
-        private readonly List<SnapEntry> _activeSnaps = new List<SnapEntry>();
-
-        // Invalid flash (list-based for multi-target steps)
-        private struct FlashEntry
-        {
-            public GameObject Part;
-            public Color OriginalColor;
-            public float Timer;
-        }
-        private readonly List<FlashEntry> _activeFlashes = new List<FlashEntry>();
 
         // â”€â”€ Lifecycle â”€â”€
 
@@ -148,6 +112,21 @@ namespace OSE.UI.Root
             _useHandler ??= new UseStepHandler(_spawner, () => _setup, () => CursorManager, _spawnedGhosts, GetCurrentSequentialTargetId);
             _router ??= new StepExecutionRouter();
             _router.Register(StepFamily.Use, _useHandler);
+            _router.Register(StepFamily.Confirm, new ConfirmStepHandler());
+            _connectHandler ??= new ConnectStepHandler(_spawner, () => _setup, () => CursorManager, FindSpawnedPart);
+            _router.Register(StepFamily.Connect, _connectHandler);
+            _placeHandler ??= new PlaceStepHandler(
+                _spawner,
+                () => _setup,
+                FindSpawnedPart,
+                partId => _partStates.TryGetValue(partId, out var s) ? s : PartPlacementState.NotIntroduced,
+                RestorePartVisual,
+                ResetDragState,
+                _spawnedGhosts,
+                () => _isSequentialStep,
+                () => AdvanceSequentialTarget(),
+                partGo => _selectionService?.NotifySelected(partGo));
+            _router.Register(StepFamily.Place, _placeHandler);
             RuntimeEventBus.Subscribe<StepStateChanged>(HandleStepStateChanged);
             RuntimeEventBus.Subscribe<PartStateChanged>(HandlePartStateChanged);
             RuntimeEventBus.Subscribe<HintRequested>(HandleHintRequested);
@@ -194,11 +173,9 @@ namespace OSE.UI.Root
             ClearPartHoverVisual();
             _partStates.Clear();
             _revealedPartIds.Clear();
-            ClearRequiredPartEmission();
-            _requiredPartIdsForStep = null;
             ClearToolGhostIndicator();
             ClearToolActionTargets();
-            _useHandler?.Cleanup();
+            _router?.CleanupAll();
             _startupSyncPending = false;
         }
 
@@ -212,8 +189,7 @@ namespace OSE.UI.Root
                 return;
 
             HandlePointerInput();
-            UpdateSnapAnimation();
-            UpdateInvalidFlash();
+            // Snap/flash/ghost-pulse/required-part-pulse handled by PlaceStepHandler.Update via router
             UpdateXRGhostProximity();
             if (!ExternalControlEnabled)
             {
@@ -221,10 +197,12 @@ namespace OSE.UI.Root
                 UpdatePointerDragSelectionVisual();
             }
             UpdateHintHighlight();
-            UpdateGhostSelectionPulse();
-            UpdateRequiredPartPulse();
+            // Stop ghost pulse when dragging starts — proximity highlight takes over
+            if (_draggedPart != null)
+                _placeHandler?.StopGhostSelectionPulse();
             UpdateToolGhostIndicatorPosition();
-            _useHandler?.Tick();
+            if (TryBuildHandlerContext(out var updateCtx))
+                _router.Update(in updateCtx, Time.deltaTime);
         }
 
         private void TrySyncStartupState()
@@ -255,7 +233,8 @@ namespace OSE.UI.Root
                     if (!string.IsNullOrWhiteSpace(activeStepId))
                     {
                         SpawnGhostsForStep(activeStepId);
-                        RefreshRequiredPartIds(activeStepId);
+                        if (TryBuildHandlerContext(out var syncCtx))
+                            _router.OnStepActivated(in syncCtx);
                     }
                 }
             }
@@ -365,6 +344,13 @@ namespace OSE.UI.Root
             if (IsRepositioning()) return;
             OseLog.VerboseInfo("[PartInteraction] HandleConfirmOrToolPrimaryAction invoked.");
 
+            // Let registered handlers consume the action first (e.g. ConfirmStepHandler).
+            if (TryBuildHandlerContext(out var actionCtx))
+            {
+                if (_router.TryHandlePointerAction(in actionCtx))
+                    return;
+            }
+
             if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
                 return;
 
@@ -393,17 +379,10 @@ namespace OSE.UI.Root
                 }
             }
 
-            // Non-tool-action steps: try tool action first (for measurement/equip steps),
-            // then fall back to confirmation completion.
+            // Non-tool-action steps: try tool action first (for measurement/equip steps).
+            // Confirm steps are handled by the router dispatch above (ConfirmStepHandler).
             if (TryExecuteToolPrimaryActionFromPointer(session, stepController))
                 return;
-
-            bool allowConfirmationComplete = step.IsConfirmation;
-
-            if (!allowConfirmationComplete)
-                return;
-
-            stepController.CompleteStep(session.GetElapsedSeconds());
         }
 
         private void HandleToggleToolMenuAction()
@@ -473,7 +452,7 @@ namespace OSE.UI.Root
                 return false;
 
             // Pipe connection steps: handle even when a tool is held.
-            if (TryHandlePipeConnectionPointerDown(screenPos))
+            if (TryBuildHandlerContext(out var pipeCtx) && _router.TryHandlePointerDown(in pipeCtx, screenPos))
                 return true;
 
             if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
@@ -537,43 +516,7 @@ namespace OSE.UI.Root
 
         /// <summary>
         /// Called by V2 orchestrator via LegacyBridgeAdapter for any tap (regardless of
-        /// selection or tool state). Handles pipe connection port sphere clicks.
-        /// Returns true if a port sphere was hit and the interaction was consumed.
-        /// </summary>
-        public bool TryResolveExternalPipeConnectionTarget(Vector2 screenPos, out string targetId)
-        {
-            targetId = null;
-
-            if (!Application.isPlaying)
-                return false;
-
-            GameObject hitGo = FindNearestPortSphereByScreenProximity(screenPos);
-            if (hitGo == null)
-                return false;
-
-            targetId = hitGo.name;
-            return !string.IsNullOrWhiteSpace(targetId);
-        }
-
-        /// <summary>
-        /// Called by V2 orchestrator via LegacyBridgeAdapter with an explicitly resolved
-        /// pipe connection target id.
-        /// </summary>
-        public bool TryExecuteExternalPipeConnection(string targetId)
-        {
-            if (!Application.isPlaying)
-                return false;
-
-            GameObject hitGo = FindPortSphereByName(targetId);
-            if (hitGo == null)
-                return false;
-
-            return TryHandleResolvedPipeConnection(hitGo);
-        }
-
-        /// <summary>
-        /// Called by V2 orchestrator via LegacyBridgeAdapter for any tap (regardless of
-        /// selection or tool state). Handles pipe connection port sphere clicks.
+        /// selection or tool state). Delegates to ConnectStepHandler via the router.
         /// Returns true if a port sphere was hit and the interaction was consumed.
         /// </summary>
         public bool TryExternalPipeConnection(Vector2 screenPos)
@@ -581,10 +524,10 @@ namespace OSE.UI.Root
             if (!Application.isPlaying)
                 return false;
 
-            if (!TryResolveExternalPipeConnectionTarget(screenPos, out string targetId))
+            if (!TryBuildHandlerContext(out var ctx))
                 return false;
 
-            return TryExecuteExternalPipeConnection(targetId);
+            return _connectHandler != null && _connectHandler.TryHandlePointerDown(in ctx, screenPos);
         }
 
         /// <summary>
@@ -1009,8 +952,12 @@ namespace OSE.UI.Root
             if (TryHandleToolActionPointerDown(screenPos))
                 return;
 
-            if (TryHandlePipeConnectionPointerDown(screenPos))
-                return;
+            // Let registered handlers consume the pointer-down first (e.g. ConnectStepHandler, PlaceStepHandler).
+            if (TryBuildHandlerContext(out var pointerCtx))
+            {
+                if (_router.TryHandlePointerDown(in pointerCtx, screenPos))
+                    return;
+            }
 
             if (TryHandleClickToPlace(screenPos))
                 return;
@@ -1225,72 +1172,7 @@ namespace OSE.UI.Root
 
         private void AttemptPlacementForPart(GameObject partGo, string partId)
         {
-            if (partGo == null || string.IsNullOrEmpty(partId))
-                return;
-
-            ClearGhostHighlight();
-
-            if (!ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
-                return;
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
-                return;
-
-            GhostPlacementInfo nearestInfo = FindNearestGhostForPart(partId, partGo.transform.position, out float nearestDist);
-            bool inSnapZone = nearestInfo != null && nearestDist <= SnapZoneRadius;
-
-            if (!inSnapZone)
-            {
-                string targetId = nearestInfo != null ? nearestInfo.TargetId : "unknown";
-                var invalid = PlacementValidationResult.Invalid(
-                    ValidationFailureReason.PositionOutOfTolerance,
-                    positionError: nearestDist,
-                    rotationError: 0f);
-
-                partController.AttemptPlacement(partId, targetId, invalid);
-
-                OseLog.Info($"[PartInteraction] Dropped '{partId}' outside snap zone ? stays at drop position.");
-
-                FlashInvalid(partGo, partId);
-                // Keep the part selected after a failed drop; deselection should only
-                // happen via explicit user action (click-away/cancel).
-                partController.SelectPart(partId);
-                _selectionService?.NotifySelected(partGo);
-                StartGhostSelectionPulse(partId);
-                session.AssemblyController?.StepController?.FailAttempt();
-                return;
-            }
-
-            string matchedTargetId = nearestInfo.TargetId;
-            PlacementValidationResult result = PlacementValidator.ValidateExact();
-            partController.AttemptPlacement(partId, matchedTargetId, result);
-
-            if (!result.IsValid)
-            {
-                FlashInvalid(partGo, partId);
-                // Keep the part selected after a failed drop; deselection should only
-                // happen via explicit user action (click-away/cancel).
-                partController.SelectPart(partId);
-                _selectionService?.NotifySelected(partGo);
-                StartGhostSelectionPulse(partId);
-                session.AssemblyController?.StepController?.FailAttempt();
-                return;
-            }
-
-            OseLog.Info($"[PartInteraction] Dropped '{partId}' in snap zone ? snapping to target.");
-
-            BeginSnapToTarget(partGo, partId, matchedTargetId, nearestInfo.transform);
-            RemoveGhostForPart(partId);
-
-            // In sequential mode, advance to the next target before checking overall completion.
-            if (_isSequentialStep)
-            {
-                if (AdvanceSequentialTarget())
-                    session.AssemblyController?.StepController?.CompleteStep(session.GetElapsedSeconds());
-            }
-            else if (partController.AreActiveStepRequiredPartsPlaced())
-            {
-                session.AssemblyController?.StepController?.CompleteStep(session.GetElapsedSeconds());
-            }
+            _placeHandler?.AttemptPlacement(partGo, partId);
         }
 
         // â”€â”€ Click-to-place â”€â”€
@@ -1307,7 +1189,7 @@ namespace OSE.UI.Root
 
         private bool TryHandleClickToPlace(GameObject selected, Vector2 screenPos)
         {
-            if (_spawnedGhosts.Count == 0)
+            if (_spawnedGhosts.Count == 0 || _placeHandler == null)
                 return false;
 
             // Need a selected part that isn't being dragged.
@@ -1315,9 +1197,6 @@ namespace OSE.UI.Root
                 return false;
 
             // Skip click-to-place on the same frame the part was selected.
-            // The Input System Select callback can fire before HandlePointerDown
-            // in the same frame, which would cause the very first click on a part
-            // to be consumed as a placement attempt instead of a selection.
             if (Time.frameCount == _selectionFrame)
                 return false;
 
@@ -1328,107 +1207,11 @@ namespace OSE.UI.Root
             if (IsPartMovementLocked(partId))
                 return false;
 
-            // Layer 1: Direct raycast on ghost trigger collider.
-            GhostPlacementInfo ghostInfo = RaycastGhostAtScreen(screenPos);
-
-            // Layer 2: Screen-space proximity fallback.
-            if (ghostInfo == null)
-                ghostInfo = FindNearestGhostByScreenProximity(screenPos, partId);
-
-            if (ghostInfo == null || !ghostInfo.MatchesPart(partId))
-                return false;
-
-            ExecuteClickToPlace(partId, selected, ghostInfo);
-            return true;
+            return _placeHandler.TryClickToPlace(partId, selected, screenPos);
         }
 
-        private GhostPlacementInfo RaycastGhostAtScreen(Vector2 screenPos)
-        {
-            Camera cam = Camera.main;
-            if (cam == null) return null;
-
-            // Ghost colliders are triggers, so we must explicitly include them.
-            Ray ray = cam.ScreenPointToRay(screenPos);
-            if (!Physics.Raycast(ray, out RaycastHit hit, 100f, ~0, QueryTriggerInteraction.Collide))
-                return null;
-
-            return FindGhostInfoFromHit(hit.transform);
-        }
-
-        private static GhostPlacementInfo FindGhostInfoFromHit(Transform hitTransform)
-        {
-            while (hitTransform != null)
-            {
-                GhostPlacementInfo info = hitTransform.GetComponent<GhostPlacementInfo>();
-                if (info != null)
-                    return info;
-                hitTransform = hitTransform.parent;
-            }
-            return null;
-        }
-
-        private GhostPlacementInfo FindNearestGhostByScreenProximity(Vector2 screenPos, string partId)
-        {
-            Camera cam = Camera.main;
-            if (cam == null) return null;
-
-            float threshold = Application.isMobilePlatform ? ScreenProximityMobile : ScreenProximityDesktop;
-            float closestDist = threshold;
-            GhostPlacementInfo best = null;
-
-            for (int i = 0; i < _spawnedGhosts.Count; i++)
-            {
-                GameObject ghost = _spawnedGhosts[i];
-                if (ghost == null) continue;
-
-                GhostPlacementInfo info = ghost.GetComponent<GhostPlacementInfo>();
-                if (info == null || !info.MatchesPart(partId)) continue;
-
-                Vector3 sp = cam.WorldToScreenPoint(ghost.transform.position);
-                if (sp.z <= 0f) continue;
-
-                float dist = Vector2.Distance(screenPos, new Vector2(sp.x, sp.y));
-                if (dist < closestDist)
-                {
-                    closestDist = dist;
-                    best = info;
-                }
-            }
-            return best;
-        }
-
-        private void ExecuteClickToPlace(string partId, GameObject partGo, GhostPlacementInfo ghostInfo)
-        {
-            if (!ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
-                return;
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
-                return;
-
-            string targetId = ghostInfo.TargetId;
-            PlacementValidationResult result = PlacementValidator.ValidateExact();
-            partController.AttemptPlacement(partId, targetId, result);
-
-            if (!result.IsValid)
-            {
-                FlashInvalid(partGo, partId);
-                return;
-            }
-
-            OseLog.Info($"[PartInteraction] Click-to-place '{partId}' at ghost target '{targetId}'.");
-
-            BeginSnapToTarget(partGo, partId, targetId, ghostInfo.transform);
-            RemoveGhostForPart(partId);
-
-            if (_isSequentialStep)
-            {
-                if (AdvanceSequentialTarget())
-                    session.AssemblyController?.StepController?.CompleteStep(session.GetElapsedSeconds());
-            }
-            else if (partController.AreActiveStepRequiredPartsPlaced())
-            {
-                session.AssemblyController?.StepController?.CompleteStep(session.GetElapsedSeconds());
-            }
-        }
+        // Ghost raycast, screen proximity, and click-to-place execution
+        // are now owned by PlaceStepHandler.
 
         // â”€â”€ Ghost proximity detection â”€â”€
 
@@ -1437,123 +1220,17 @@ namespace OSE.UI.Root
             if (_draggedPart == null || _spawnedGhosts.Count == 0)
                 return;
 
-            GhostPlacementInfo nearestInfo = FindNearestGhostForPart(_draggedPartId, _draggedPart.transform.position, out float nearestDist);
-            GameObject nearest = (nearestInfo != null && nearestDist <= SnapZoneRadius) ? nearestInfo.gameObject : null;
-
-            if (nearest != null && nearest != _hoveredGhost)
-            {
-                ClearGhostHighlight();
-                _hoveredGhost = nearest;
-                _ghostHighlighted = true;
-                MaterialHelper.Apply(nearest, "Ghost Ready Material", GhostReadyColor);
-
-                // Auto-snap: trigger placement immediately when entering the snap zone
-                // instead of waiting for the user to release the pointer.
-                // Instantly move the part to the ghost position so there's no visible
-                // "fly from drag position" animation â€” the user sees it lock in place.
-                if (nearestInfo != null && _isDragging)
-                {
-                    OseLog.Info($"[PartInteraction] Auto-snap: '{_draggedPartId}' entered snap zone of '{nearestInfo.TargetId}'.");
-                    GameObject partGo = _draggedPart;
-                    string partId = _draggedPartId;
-
-                    // Teleport part to ghost pose before starting snap/placement.
-                    partGo.transform.localPosition = nearestInfo.transform.localPosition;
-                    partGo.transform.localRotation = nearestInfo.transform.localRotation;
-
-                    // Resolve through ghost pose first so snap keeps the same
-                    // dimensions users see on the ghost/source part.
-                    if (TryResolveSnapPose(_draggedPartId, nearestInfo.TargetId, out _, out _, out Vector3 snapScale))
-                        partGo.transform.localScale = snapScale;
-                    else
-                        partGo.transform.localScale = nearestInfo.transform.localScale;
-
-                    ResetDragState();
-                    AttemptPlacementForPart(partGo, partId);
-                }
-            }
-            else if (nearest == null && _ghostHighlighted)
-            {
-                ClearGhostHighlight();
-            }
+            _placeHandler?.UpdateDragProximity(_draggedPart, _draggedPartId, _isDragging);
         }
-        private void ClearGhostHighlight()
-        {
-            if (_ghostHighlighted && _hoveredGhost != null)
-            {
-                MaterialHelper.ApplyGhost(_hoveredGhost);
-            }
-            _hoveredGhost = null;
-            _ghostHighlighted = false;
-        }
+        private void ClearGhostHighlight() => _placeHandler?.ClearGhostHighlight();
 
-        // â”€â”€ Ghost "click here" pulse when a part is selected â”€â”€
+        private void StartGhostSelectionPulse(string partId) => _placeHandler?.StartGhostSelectionPulse(partId);
 
-        private void StartGhostSelectionPulse(string partId)
-        {
-            // Clean up previous ghost pulse so the old ghost reverts to its
-            // default material before we start pulsing a different one.
-            StopGhostSelectionPulse();
-            _ghostPulsePartId = partId;
-        }
-
-        private void StopGhostSelectionPulse()
-        {
-            if (_ghostPulsePartId == null)
-                return;
-
-            // Restore default ghost material on all matching ghosts.
-            for (int i = 0; i < _spawnedGhosts.Count; i++)
-            {
-                GameObject ghost = _spawnedGhosts[i];
-                if (ghost == null) continue;
-
-                GhostPlacementInfo info = ghost.GetComponent<GhostPlacementInfo>();
-                if (info != null && info.MatchesPart(_ghostPulsePartId))
-                    MaterialHelper.ApplyGhost(ghost);
-            }
-            _ghostPulsePartId = null;
-        }
-
-        private void UpdateGhostSelectionPulse()
-        {
-            if (_ghostPulsePartId == null || _spawnedGhosts.Count == 0)
-                return;
-
-            // Stop pulsing once dragging starts â€” the proximity highlight takes over.
-            if (_draggedPart != null)
-            {
-                StopGhostSelectionPulse();
-                return;
-            }
-
-            Color pulseColor = ColorPulseHelper.Lerp(GhostSelectedPulseA, GhostSelectedPulseB, GhostSelectedPulseSpeed);
-
-            for (int i = 0; i < _spawnedGhosts.Count; i++)
-            {
-                GameObject ghost = _spawnedGhosts[i];
-                if (ghost == null) continue;
-
-                GhostPlacementInfo info = ghost.GetComponent<GhostPlacementInfo>();
-                if (info == null || !info.MatchesPart(_ghostPulsePartId))
-                    continue;
-
-                MaterialHelper.SetMaterialColor(ghost, pulseColor);
-            }
-        }
+        private void StopGhostSelectionPulse() => _placeHandler?.StopGhostSelectionPulse();
 
         // â”€â”€ Required-part pulse (highlights parts the user needs to grab) â”€â”€
 
-        private void ClearRequiredPartEmission()
-        {
-            if (_requiredPartIdsForStep == null) return;
-            for (int i = 0; i < _requiredPartIdsForStep.Length; i++)
-            {
-                GameObject partGo = FindSpawnedPart(_requiredPartIdsForStep[i]);
-                if (partGo != null)
-                    MaterialHelper.SetEmission(partGo, Color.black);
-            }
-        }
+        private void ClearRequiredPartEmission() => _placeHandler?.ClearRequiredPartEmission();
 
         /// <summary>
         /// Shows and positions all parts belonging to the current step's subassembly.
@@ -1662,69 +1339,8 @@ namespace OSE.UI.Root
             OseLog.Info($"[PartInteraction] Revealed {toReveal.Count} part(s) for subassembly '{subassemblyId}'.");
         }
 
-        private void RefreshRequiredPartIds(string stepId)
-        {
-            ClearRequiredPartEmission();
-            _requiredPartIdsForStep = null;
-
-            var package = _spawner?.CurrentPackage;
-            if (package == null || !package.TryGetStep(stepId, out var step))
-                return;
-
-            // Only highlight for placement steps â€” tool_action steps don't need part grabbing.
-            // Also include steps with no completionType (defaults to placement).
-            if (!step.IsPlacement)
-                return;
-
-            string[] partIds = step.requiredPartIds;
-            if (partIds == null || partIds.Length == 0)
-                return;
-
-            // Filter out parts that are already placed
-            var pending = new System.Collections.Generic.List<string>();
-            for (int i = 0; i < partIds.Length; i++)
-            {
-                if (string.IsNullOrWhiteSpace(partIds[i])) continue;
-                PartPlacementState state = GetPartState(partIds[i]);
-                if (state != PartPlacementState.PlacedVirtually && state != PartPlacementState.Completed)
-                    pending.Add(partIds[i]);
-            }
-
-            _requiredPartIdsForStep = pending.Count > 0 ? pending.ToArray() : null;
-
-            if (_requiredPartIdsForStep != null)
-                OseLog.Info($"[PartInteraction] Required parts for step '{stepId}': {string.Join(", ", _requiredPartIdsForStep)}");
-        }
-
-        private void UpdateRequiredPartPulse()
-        {
-            if (_requiredPartIdsForStep == null || _requiredPartIdsForStep.Length == 0)
-                return;
-
-            Color emissionColor = ColorPulseHelper.Lerp(RequiredPartEmissionA, RequiredPartEmissionB, RequiredPartPulseSpeed * Mathf.PI * 2f);
-
-            for (int i = 0; i < _requiredPartIdsForStep.Length; i++)
-            {
-                string partId = _requiredPartIdsForStep[i];
-                GameObject partGo = FindSpawnedPart(partId);
-                if (partGo == null) continue;
-
-                // Suppress glow while interacting â€” let affordance system handle visual
-                PartPlacementState state = GetPartState(partId);
-                if (state == PartPlacementState.Selected || state == PartPlacementState.Grabbed
-                    || state == PartPlacementState.Inspected)
-                {
-                    MaterialHelper.SetEmission(partGo, Color.black);
-                    continue;
-                }
-
-                // Skip if already placed
-                if (state == PartPlacementState.PlacedVirtually || state == PartPlacementState.Completed)
-                    continue;
-
-                MaterialHelper.SetEmission(partGo, emissionColor);
-            }
-        }
+        // RefreshRequiredPartIds and UpdateRequiredPartPulse are now owned by PlaceStepHandler
+        // (called via router lifecycle: OnStepActivated/Update).
 
         private void UpdateHintHighlight()
         {
@@ -1737,7 +1353,7 @@ namespace OSE.UI.Root
                 return;
             }
 
-            if (_ghostHighlighted && _hoveredGhost == _hintGhost)
+            if (_placeHandler != null && _placeHandler.IsGhostHighlighted && _placeHandler.HoveredGhost == _hintGhost)
                 return;
 
             MaterialHelper.SetMaterialColor(_hintGhost, ColorPulseHelper.Lerp(HintHighlightColorA, HintHighlightColorB, HintHighlightPulseSpeed));
@@ -1747,7 +1363,7 @@ namespace OSE.UI.Root
         {
             if (_hintGhost != null)
             {
-                if (_ghostHighlighted && _hoveredGhost == _hintGhost)
+                if (_placeHandler != null && _placeHandler.IsGhostHighlighted && _placeHandler.HoveredGhost == _hintGhost)
                 {
                     MaterialHelper.Apply(_hintGhost, "Ghost Ready Material", GhostReadyColor);
                 }
@@ -1768,36 +1384,14 @@ namespace OSE.UI.Root
         public bool TryGetGhostWorldPosForPart(string partId, out Vector3 worldPos)
         {
             worldPos = Vector3.zero;
-            GhostPlacementInfo ghost = FindNearestGhostForPart(partId, Vector3.zero, out _);
-            if (ghost == null) return false;
-            worldPos = ghost.transform.position;
-            return true;
+            return _placeHandler != null && _placeHandler.TryGetGhostWorldPosForPart(partId, out worldPos);
         }
 
         private GhostPlacementInfo FindNearestGhostForPart(string partId, Vector3 worldPos, out float nearestDist)
         {
             nearestDist = float.PositiveInfinity;
-            if (string.IsNullOrEmpty(partId))
-                return null;
-
-            GhostPlacementInfo nearest = null;
-
-            foreach (var ghost in _spawnedGhosts)
-            {
-                if (ghost == null) continue;
-                GhostPlacementInfo info = ghost.GetComponent<GhostPlacementInfo>();
-                if (info == null || !info.MatchesPart(partId))
-                    continue;
-
-                float dist = Vector3.Distance(worldPos, ghost.transform.position);
-                if (dist < nearestDist)
-                {
-                    nearestDist = dist;
-                    nearest = info;
-                }
-            }
-
-            return nearest;
+            if (_placeHandler == null) return null;
+            return _placeHandler.FindNearestGhostForPart(partId, worldPos, out nearestDist);
         }
 
         private static HintDefinition ResolveHintForStep(MachinePackageDefinition package, StepDefinition step, int totalHintsForStep)
@@ -1849,94 +1443,8 @@ namespace OSE.UI.Root
 
             return null;
         }
-        // â”€â”€ Snap animation (list-based for multi-target) â”€â”€
-
-        private void UpdateSnapAnimation()
-        {
-            if (_activeSnaps.Count == 0)
-                return;
-
-            float t = SnapLerpSpeed * Time.deltaTime;
-
-            for (int i = _activeSnaps.Count - 1; i >= 0; i--)
-            {
-                var snap = _activeSnaps[i];
-                if (snap.Part == null)
-                {
-                    _activeSnaps.RemoveAt(i);
-                    continue;
-                }
-
-                snap.Part.transform.localPosition = Vector3.Lerp(snap.Part.transform.localPosition, snap.TargetPos, t);
-                snap.Part.transform.localRotation = Quaternion.Slerp(snap.Part.transform.localRotation, snap.TargetRot, t);
-                snap.Part.transform.localScale = Vector3.Lerp(snap.Part.transform.localScale, snap.TargetScale, t);
-
-                if (Vector3.Distance(snap.Part.transform.localPosition, snap.TargetPos) < 0.001f)
-                {
-                    snap.Part.transform.SetLocalPositionAndRotation(snap.TargetPos, snap.TargetRot);
-                    snap.Part.transform.localScale = snap.TargetScale;
-                    _activeSnaps.RemoveAt(i);
-                }
-            }
-        }
-
-        // â”€â”€ Invalid placement flash (list-based for multi-target) â”€â”€
-
-        private void FlashInvalid(GameObject partGo, string partId)
-        {
-            // Remove any existing flash for this part
-            for (int i = _activeFlashes.Count - 1; i >= 0; i--)
-            {
-                if (_activeFlashes[i].Part == partGo)
-                    _activeFlashes.RemoveAt(i);
-            }
-
-            PartPreviewPlacement pp = _spawner.FindPartPlacement(partId);
-            Color originalColor = pp != null
-                ? new Color(pp.color.r, pp.color.g, pp.color.b, pp.color.a)
-                : new Color(0.94f, 0.55f, 0.18f, 1f);
-
-            if (MaterialHelper.IsImportedModel(partGo))
-                MaterialHelper.ApplyTint(partGo, InvalidFlashColor);
-            else
-                MaterialHelper.Apply(partGo, "Preview Part Material", InvalidFlashColor);
-
-            _activeFlashes.Add(new FlashEntry
-            {
-                Part = partGo,
-                OriginalColor = originalColor,
-                Timer = InvalidFlashDuration
-            });
-        }
-
-        private void UpdateInvalidFlash()
-        {
-            if (_activeFlashes.Count == 0)
-                return;
-
-            float dt = Time.deltaTime;
-
-            for (int i = _activeFlashes.Count - 1; i >= 0; i--)
-            {
-                var flash = _activeFlashes[i];
-                if (flash.Part == null)
-                {
-                    _activeFlashes.RemoveAt(i);
-                    continue;
-                }
-
-                flash.Timer -= dt;
-                if (flash.Timer <= 0f)
-                {
-                    RestorePartVisual(flash.Part);
-                    _activeFlashes.RemoveAt(i);
-                }
-                else
-                {
-                    _activeFlashes[i] = flash; // write back modified timer
-                }
-            }
-        }
+        // Snap animation, flash invalid, and their update loops are now
+        // owned by PlaceStepHandler (run via router.Update).
 
         // â”€â”€ Runtime event handlers â”€â”€
 
@@ -1978,7 +1486,6 @@ namespace OSE.UI.Root
             // Clear current visual state
             ClearGhosts();
             ClearRequiredPartEmission();
-            _requiredPartIdsForStep = null;
             _revealedPartIds.Clear();
 
             // Reposition completed parts at their play positions
@@ -2035,20 +1542,15 @@ namespace OSE.UI.Root
             }
             else if (evt.Current == StepState.Completed)
             {
-                if (TryBuildHandlerContext(out var completedCtx))
+                if (TryBuildHandlerContextForStep(evt.StepId, out var completedCtx))
                     _router.OnStepCompleted(in completedCtx);
 
-                TryRenderPipeSpline(evt.StepId);
                 MoveStepPartsToPlayPosition(evt.StepId);
                 ClearGhosts();
-                ClearPortSpheres();
-                ClearRequiredPartEmission();
-                _requiredPartIdsForStep = null;
+                // Handler clears required-part emission via OnStepCompleted
             }
 
-            // Refresh required-part pulse for placement steps
-            if (evt.Current == StepState.Active && !isFailRelated)
-                RefreshRequiredPartIds(evt.StepId);
+            // Handler refreshes required-part IDs via OnStepActivated
 
             RefreshToolGhostIndicator();
             RefreshToolActionTargets();
@@ -2066,6 +1568,25 @@ namespace OSE.UI.Root
                 return false;
             var step = stepCtrl.CurrentStepDefinition;
             context = new StepHandlerContext(step, stepCtrl, step.id, session.GetElapsedSeconds());
+            return true;
+        }
+
+        /// <summary>
+        /// Builds a handler context for a specific step ID (e.g. a just-completed step
+        /// that may no longer be the active step on the controller).
+        /// </summary>
+        private bool TryBuildHandlerContextForStep(string stepId, out StepHandlerContext context)
+        {
+            context = default;
+            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+                return false;
+            var stepCtrl = session.AssemblyController?.StepController;
+            if (stepCtrl == null)
+                return false;
+            var package = _spawner?.CurrentPackage;
+            if (package == null || !package.TryGetStep(stepId, out var step))
+                return false;
+            context = new StepHandlerContext(step, stepCtrl, stepId, session.GetElapsedSeconds());
             return true;
         }
 
@@ -2097,48 +1618,13 @@ namespace OSE.UI.Root
             }
 
             // Remove placed parts from the required-part pulse list
-            if ((evt.Current == PartPlacementState.PlacedVirtually || evt.Current == PartPlacementState.Completed)
-                && _requiredPartIdsForStep != null)
+            if (evt.Current == PartPlacementState.PlacedVirtually || evt.Current == PartPlacementState.Completed)
             {
                 RemoveFromRequiredPartIds(evt.PartId);
             }
         }
 
-        private void RemoveFromRequiredPartIds(string partId)
-        {
-            if (_requiredPartIdsForStep == null) return;
-
-            int idx = -1;
-            for (int i = 0; i < _requiredPartIdsForStep.Length; i++)
-            {
-                if (string.Equals(_requiredPartIdsForStep[i], partId, StringComparison.OrdinalIgnoreCase))
-                {
-                    idx = i;
-                    break;
-                }
-            }
-
-            if (idx < 0) return;
-
-            // Clear emission on the removed part
-            GameObject partGo = FindSpawnedPart(partId);
-            if (partGo != null)
-                MaterialHelper.SetEmission(partGo, Color.black);
-
-            if (_requiredPartIdsForStep.Length == 1)
-            {
-                _requiredPartIdsForStep = null;
-                return;
-            }
-
-            string[] updated = new string[_requiredPartIdsForStep.Length - 1];
-            int j = 0;
-            for (int i = 0; i < _requiredPartIdsForStep.Length; i++)
-            {
-                if (i != idx) updated[j++] = _requiredPartIdsForStep[i];
-            }
-            _requiredPartIdsForStep = updated;
-        }
+        private void RemoveFromRequiredPartIds(string partId) => _placeHandler?.RemoveFromRequiredPartIds(partId);
 
         private void HandleHintRequested(HintRequested evt)
         {
@@ -2184,21 +1670,17 @@ namespace OSE.UI.Root
         private void SpawnGhostsForStep(string stepId)
         {
             ClearGhosts();
-            ClearPortSpheres();
             var package = _spawner.CurrentPackage;
             if (package == null || !package.TryGetStep(stepId, out var step))
+                return;
+
+            // Pipe connection steps are handled entirely by ConnectStepHandler via the router.
+            if (step.IsPipeConnection)
                 return;
 
             string[] targetIds = step.targetIds;
             if (targetIds == null || targetIds.Length == 0)
                 return;
-
-            // Pipe connection: spawn clickable port spheres instead of placement ghosts.
-            if (step.IsPipeConnection)
-            {
-                SpawnPortSpheresForStep(package, step);
-                return;
-            }
 
             _isSequentialStep = step.IsSequential;
             _sequentialTargetIndex = 0;
@@ -2462,7 +1944,7 @@ namespace OSE.UI.Root
                 return false;
 
             // Don't block pipe_connection steps — port sphere clicks need to pass through.
-            if (_spawnedPortSpheres.Count > 0)
+            if (_connectHandler != null && _connectHandler.HasActivePortSpheres)
                 return false;
 
             // Block pointer-down from reaching part selection/drag when tool mode is active.
@@ -2497,80 +1979,18 @@ namespace OSE.UI.Root
             return _useHandler != null && _useHandler.TryGetNearestToolTargetWorldPos(screenPos, out worldPos);
         }
 
-        private bool TryGetGhostTargetPose(
-            string targetId,
-            out Vector3 position,
-            out Quaternion rotation,
-            out Vector3 scale)
-        {
-            position = Vector3.zero;
-            rotation = Quaternion.identity;
-            scale = Vector3.one;
+        // TryGetGhostTargetPose is now owned by PlaceStepHandler.
 
-            if (string.IsNullOrWhiteSpace(targetId) || _spawnedGhosts.Count == 0)
-                return false;
-
-            Transform previewRoot = _setup != null ? _setup.PreviewRoot : null;
-
-            for (int i = _spawnedGhosts.Count - 1; i >= 0; i--)
-            {
-                GameObject ghost = _spawnedGhosts[i];
-                if (ghost == null)
-                    continue;
-
-                GhostPlacementInfo info = ghost.GetComponent<GhostPlacementInfo>();
-                if (info == null || !string.Equals(info.TargetId, targetId, StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                Transform tx = ghost.transform;
-                if (previewRoot != null)
-                {
-                    position = previewRoot.InverseTransformPoint(tx.position);
-                    rotation = Quaternion.Inverse(previewRoot.rotation) * tx.rotation;
-                }
-                else
-                {
-                    position = tx.position;
-                    rotation = tx.rotation;
-                }
-
-                scale = tx.localScale;
-                return true;
-            }
-
-            return false;
-        }
-        /// <summary>
-        /// Removes the ghost associated with a specific part (used when a part is placed
-        /// in a multi-target step so remaining ghosts stay visible).
-        /// </summary>
         private void RemoveGhostForPart(string partId)
         {
-            if (string.IsNullOrEmpty(partId))
-                return;
-
-            for (int i = _spawnedGhosts.Count - 1; i >= 0; i--)
+            // Clear hint highlight if the hint ghost is being removed
+            if (_hintGhost != null && !string.IsNullOrEmpty(partId))
             {
-                var ghost = _spawnedGhosts[i];
-                if (ghost == null)
-                {
-                    _spawnedGhosts.RemoveAt(i);
-                    continue;
-                }
-
-                GhostPlacementInfo info = ghost.GetComponent<GhostPlacementInfo>();
-                if (info != null && info.MatchesPart(partId))
-                {
-                    if (_hoveredGhost == ghost)
-                        ClearGhostHighlight();
-                    if (_hintGhost == ghost)
-                        ClearHintHighlight();
-
-                    ghost.transform.SetParent(null);
-                    Destroy(ghost);
-                    _spawnedGhosts.RemoveAt(i);
-                }
+                GhostPlacementInfo hInfo = _hintGhost.GetComponent<GhostPlacementInfo>();
+                if (hInfo != null && hInfo.MatchesPart(partId))
+                    ClearHintHighlight();
             }
+            _placeHandler?.RemoveGhostForPart(partId);
         }
 
         // â”€â”€ Step completion: move parts to assembled position â”€â”€
@@ -3085,72 +2505,14 @@ namespace OSE.UI.Root
             return true;
         }
 
-        private void BeginSnapToTarget(GameObject partGo, string partId, string targetId, Transform fallback)
-        {
-            if (partGo == null)
-                return;
-
-            // Remove any existing snap for this part (e.g. re-grab before previous snap finished)
-            for (int i = _activeSnaps.Count - 1; i >= 0; i--)
-            {
-                if (_activeSnaps[i].Part == partGo)
-                    _activeSnaps.RemoveAt(i);
-            }
-
-            if (TryResolveSnapPose(partId, targetId, out Vector3 pos, out Quaternion rot, out Vector3 scale))
-            {
-                _activeSnaps.Add(new SnapEntry { Part = partGo, TargetPos = pos, TargetRot = rot, TargetScale = scale });
-                return;
-            }
-
-            if (fallback != null)
-            {
-                _activeSnaps.Add(new SnapEntry
-                {
-                    Part = partGo,
-                    TargetPos = fallback.localPosition,
-                    TargetRot = fallback.localRotation,
-                    TargetScale = fallback.localScale
-                });
-            }
-        }
+        // BeginSnapToTarget is now owned by PlaceStepHandler.
 
         private bool TryResolveSnapPose(string partId, string targetId, out Vector3 pos, out Quaternion rot, out Vector3 scale)
         {
-            // Prefer live ghost transform so ghost and placed part dimensions match.
-            if (TryGetGhostTargetPose(targetId, out pos, out rot, out scale))
-                return true;
-
-            TargetPreviewPlacement tp = _spawner.FindTargetPlacement(targetId);
-            PartPreviewPlacement pp = _spawner.FindPartPlacement(partId);
-            if (tp != null)
-            {
-                pos = new Vector3(tp.position.x, tp.position.y, tp.position.z);
-                rot = !tp.rotation.IsIdentity
-                    ? new Quaternion(tp.rotation.x, tp.rotation.y, tp.rotation.z, tp.rotation.w)
-                    : Quaternion.identity;
-            }
-            else if (pp != null)
-            {
-                pos = new Vector3(pp.playPosition.x, pp.playPosition.y, pp.playPosition.z);
-                rot = !pp.playRotation.IsIdentity
-                    ? new Quaternion(pp.playRotation.x, pp.playRotation.y, pp.playRotation.z, pp.playRotation.w)
-                    : Quaternion.identity;
-            }
-            else
-            {
-                pos = Vector3.zero;
-                rot = Quaternion.identity;
-            }
-
-            if (pp != null)
-                scale = new Vector3(pp.playScale.x, pp.playScale.y, pp.playScale.z);
-            else if (tp != null)
-                scale = new Vector3(tp.scale.x, tp.scale.y, tp.scale.z);
-            else
-                scale = Vector3.one;
-
-            return tp != null || pp != null;
+            pos = Vector3.zero;
+            rot = Quaternion.identity;
+            scale = Vector3.one;
+            return _placeHandler != null && _placeHandler.TryResolveSnapPose(partId, targetId, out pos, out rot, out scale);
         }
 
         private Vector3 ClampDragPosition(Camera cam, Vector3 worldPosition, GameObject partGo)
@@ -3319,291 +2681,5 @@ namespace OSE.UI.Root
                    controller.IsRepositioning;
         }
 
-        // ── Pipe-connection interaction ──
-
-        private void SpawnPortSpheresForStep(MachinePackageDefinition package, StepDefinition step)
-        {
-            ClearGhosts();
-            ClearPortSpheres();
-            if (_setup == null) return;
-            Transform previewRoot = _setup.PreviewRoot;
-            if (previewRoot == null) return;
-
-            string[] targetIds = step.targetIds;
-            if (targetIds == null) return;
-
-            foreach (string targetId in targetIds)
-            {
-                TargetPreviewPlacement tp = _spawner.FindTargetPlacement(targetId);
-                if (tp == null)
-                {
-                    OseLog.Warn($"[PartInteraction] Pipe: no target placement for '{targetId}'.");
-                    continue;
-                }
-
-                Vector3 portAPos = new Vector3(tp.portA.x, tp.portA.y, tp.portA.z);
-                Vector3 portBPos = new Vector3(tp.portB.x, tp.portB.y, tp.portB.z);
-
-                if (portAPos == Vector3.zero && portBPos == Vector3.zero)
-                {
-                    OseLog.Warn($"[PartInteraction] Pipe: target '{targetId}' has no portA/portB authored. Using fallback offset.");
-                    Vector3 c = new Vector3(tp.position.x, tp.position.y, tp.position.z);
-                    portAPos = c + new Vector3(-0.12f, 0.06f, 0f);
-                    portBPos = c + new Vector3( 0.12f, 0.06f, 0f);
-                }
-
-                SpawnPortSphere(portAPos, isPortA: true, previewRoot);
-                SpawnPortSphere(portBPos, isPortA: false, previewRoot);
-
-                // Ghost cable preview — shows the connection path while the user taps the ports.
-                // Same semi-transparent ghost material as placement targets.
-                string partName = (step.requiredPartIds?.Length > 0) ? step.requiredPartIds[0] : targetId;
-                var ghostPath = new SplinePathDefinition
-                {
-                    radius    = 0.018f,
-                    segments  = 8,
-                    metallic  = 0f,
-                    smoothness = 0.25f,
-                    knots = new SceneFloat3[]
-                    {
-                        new SceneFloat3 { x = portAPos.x, y = portAPos.y, z = portAPos.z },
-                        new SceneFloat3 { x = (portAPos.x + portBPos.x) * 0.5f,
-                                          y = Mathf.Min(portAPos.y, portBPos.y) - 0.04f,
-                                          z = (portAPos.z + portBPos.z) * 0.5f },
-                        new SceneFloat3 { x = portBPos.x, y = portBPos.y, z = portBPos.z },
-                    }
-                };
-                GameObject cableGhost = SplinePartFactory.CreateGhost(partName, ghostPath, previewRoot);
-                if (cableGhost != null)
-                {
-                    MaterialHelper.ApplyGhost(cableGhost);
-                    _spawnedGhosts.Add(cableGhost);
-                }
-            }
-
-            OseLog.Info($"[PartInteraction] Pipe step '{step.id}': spawned {_spawnedPortSpheres.Count} port sphere(s).");
-
-            // Spawn a cable ghost on the cursor so the user can see what they're connecting,
-            // mirroring the tool ghost pattern during tool-action steps.
-            SpawnPipeCursorGhost(package, step);
-        }
-
-        private void SpawnPortSphere(Vector3 localPos, bool isPortA, Transform parent)
-        {
-            var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            go.name = isPortA ? "PortSphere_A" : "PortSphere_B";
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = localPos;
-            go.transform.localScale = Vector3.one * 0.12f; // big enough to see easily
-
-            // Trigger — doesn't block part raycasts; pipe taps use screen-proximity only.
-            var col = go.GetComponent<SphereCollider>();
-            if (col != null) col.isTrigger = true;
-
-            var mr = go.GetComponent<MeshRenderer>();
-            if (mr != null)
-            {
-                // portA = RED, portB = BLUE — distinct so you can verify both are visible
-                Color c = isPortA
-                    ? new Color(1.00f, 0.18f, 0.18f, 1f)  // red
-                    : new Color(0.18f, 0.50f, 1.00f, 1f); // blue
-
-                // Custom shader with ZTest Always hardcoded in the pass — not a material property.
-                // This guarantees the sphere renders on top of all geometry regardless of depth.
-                var shader = Shader.Find("OSE/PortSphereOnTop")
-                          ?? Shader.Find("Universal Render Pipeline/Unlit")
-                          ?? Shader.Find("Universal Render Pipeline/Lit");
-
-                var mat = shader != null ? new Material(shader) : new Material(mr.sharedMaterial);
-                mat.name = go.name + "_Mat";
-
-                if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", c);
-                if (mat.HasProperty("_Color"))     mat.SetColor("_Color",     c);
-
-                mr.sharedMaterial = mat;
-            }
-
-            _spawnedPortSpheres.Add(go);
-        }
-
-        private bool TryHandlePipeConnectionPointerDown(Vector2 screenPos)
-        {
-            if (!TryResolveExternalPipeConnectionTarget(screenPos, out string targetId))
-                return false;
-
-            return TryExecuteExternalPipeConnection(targetId);
-        }
-
-        private bool TryHandleResolvedPipeConnection(GameObject hitGo)
-        {
-            if (hitGo == null || _spawnedPortSpheres.Count == 0)
-                return false;
-
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
-                return false;
-
-            StepController stepController = session.AssemblyController?.StepController;
-            if (stepController == null || !stepController.HasActiveStep)
-                return false;
-
-            StepDefinition step = stepController.CurrentStepDefinition;
-            if (step == null || !step.IsPipeConnection)
-                return false;
-
-            if (!_pipePortAConfirmed)
-            {
-                // First confirmed port — accept either sphere.
-                _pipePortAConfirmed = true;
-                SetPortSphereConfirmed(hitGo);
-                OseLog.Info($"[PartInteraction] Pipe: first port confirmed ('{hitGo.name}'). Click the other sphere to complete.");
-                return true;
-            }
-
-            // Accept any unconfirmed sphere as the second click.
-            if (!IsPortSphereConfirmed(hitGo))
-            {
-                SetPortSphereConfirmed(hitGo);
-                OseLog.Info("[PartInteraction] Pipe: second port confirmed. Completing step.");
-                stepController.CompleteStep(session.GetElapsedSeconds());
-                return true;
-            }
-
-            return true; // consumed
-        }
-
-        private GameObject FindPortSphereByName(string targetId)
-        {
-            if (string.IsNullOrWhiteSpace(targetId) || _spawnedPortSpheres.Count == 0)
-                return null;
-
-            for (int i = 0; i < _spawnedPortSpheres.Count; i++)
-            {
-                GameObject sphere = _spawnedPortSpheres[i];
-                if (sphere == null)
-                    continue;
-
-                if (string.Equals(sphere.name, targetId, StringComparison.Ordinal))
-                    return sphere;
-            }
-
-            return null;
-        }
-
-        private GameObject FindNearestPortSphereByScreenProximity(Vector2 screenPos)
-        {
-            Camera cam = Camera.main;
-            if (cam == null) return null;
-
-            float threshold = Application.isMobilePlatform ? ScreenProximityMobile : ScreenProximityDesktop;
-            float closestDist = threshold;
-            GameObject closest = null;
-
-            for (int i = 0; i < _spawnedPortSpheres.Count; i++)
-            {
-                GameObject sphere = _spawnedPortSpheres[i];
-                if (sphere == null) continue;
-
-                Vector3 sp = cam.WorldToScreenPoint(sphere.transform.position);
-                if (sp.z <= 0f) continue;
-
-                float dist = Vector2.Distance(screenPos, new Vector2(sp.x, sp.y));
-                if (dist < closestDist)
-                {
-                    closestDist = dist;
-                    closest = sphere;
-                }
-            }
-            return closest;
-        }
-
-        private static bool IsPortSphereConfirmed(GameObject sphere)
-        {
-            var mr = sphere?.GetComponent<MeshRenderer>();
-            if (mr?.sharedMaterial == null) return false;
-            // Green base color = confirmed.
-            Color c = mr.sharedMaterial.GetColor("_BaseColor");
-            return c.g > 0.9f && c.r < 0.5f;
-        }
-
-        private static void SetPortSphereConfirmed(GameObject sphere)
-        {
-            var mr = sphere.GetComponent<MeshRenderer>();
-            if (mr == null) return;
-            var mat = mr.material;
-            if (mat == null) return;
-            Color green = new Color(0.25f, 1.00f, 0.35f, 1f);
-            mat.SetColor("_BaseColor", green);
-            mat.SetColor("_EmissionColor", green * 0.6f);
-        }
-
-        private void TryRenderPipeSpline(string stepId)
-        {
-            var package = _spawner?.CurrentPackage;
-            if (package == null || _setup == null) return;
-            if (!package.TryGetStep(stepId, out var step)) return;
-            if (!step.IsPipeConnection) return;
-
-            string[] targetIds = step.targetIds;
-            if (targetIds == null || targetIds.Length == 0) return;
-
-            Transform previewRoot = _setup.PreviewRoot;
-            if (previewRoot == null) return;
-
-            foreach (string targetId in targetIds)
-            {
-                TargetPreviewPlacement tp = _spawner.FindTargetPlacement(targetId);
-                if (tp == null) continue;
-
-                Vector3 portAPos = new Vector3(tp.portA.x, tp.portA.y, tp.portA.z);
-                Vector3 portBPos = new Vector3(tp.portB.x, tp.portB.y, tp.portB.z);
-                if (portAPos == Vector3.zero && portBPos == Vector3.zero) continue;
-
-                // Build 3-knot spline: portA → slight sag midpoint → portB
-                float midX = (portAPos.x + portBPos.x) * 0.5f;
-                float midY = Mathf.Min(portAPos.y, portBPos.y) - 0.04f;
-                float midZ = (portAPos.z + portBPos.z) * 0.5f;
-
-                var path = new SplinePathDefinition
-                {
-                    radius    = 0.018f,
-                    segments  = 8,
-                    metallic  = 0f,
-                    smoothness = 0.25f,
-                    knots = new SceneFloat3[]
-                    {
-                        new SceneFloat3 { x = portAPos.x, y = portAPos.y, z = portAPos.z },
-                        new SceneFloat3 { x = midX,       y = midY,       z = midZ       },
-                        new SceneFloat3 { x = portBPos.x, y = portBPos.y, z = portBPos.z },
-                    }
-                };
-
-                string partName = (step.requiredPartIds?.Length > 0) ? step.requiredPartIds[0] : targetId;
-                Color hoseColor = new Color(0.15f, 0.15f, 0.15f, 1f); // rubber hose black
-
-                GameObject splineGo = SplinePartFactory.Create(partName, path, hoseColor, previewRoot);
-                if (splineGo != null)
-                {
-                    MaterialHelper.MarkAsImported(splineGo);
-                    OseLog.Info($"[PartInteraction] Rendered pipe spline for '{partName}'.");
-                }
-            }
-        }
-
-        private void ClearPortSpheres()
-        {
-            foreach (var s in _spawnedPortSpheres)
-            {
-                if (s == null) continue;
-                Destroy(s);
-            }
-            _spawnedPortSpheres.Clear();
-            _pipePortAConfirmed = false;
-
-            // Also destroy the cursor ghost that follows the pointer during this step.
-            CursorManager.ClearPipeCursorGhost();
-        }
-
-        private void SpawnPipeCursorGhost(MachinePackageDefinition package, StepDefinition step)
-            => _ = CursorManager.SpawnPipeCursorGhostAsync(package, step, FindSpawnedPart, _spawner);
     }
 }

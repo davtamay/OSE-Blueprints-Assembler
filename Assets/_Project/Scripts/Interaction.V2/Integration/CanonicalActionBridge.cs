@@ -31,12 +31,24 @@ namespace OSE.Interaction.V2.Integration
                 _router.InjectAction(CanonicalAction.Select);
         }
 
+        public void OnExternallyResolvedPartSelected(GameObject part)
+        {
+            if (_selectionService != null)
+                _selectionService.NotifySelected(part);
+        }
+
         public void OnPartInspected(GameObject part)
         {
             if (_selectionService != null)
                 _selectionService.NotifyInspected(part);
             if (_router != null)
                 _router.InjectAction(CanonicalAction.Inspect);
+        }
+
+        public void OnExternallyResolvedPartInspected(GameObject part)
+        {
+            if (_selectionService != null)
+                _selectionService.NotifyInspected(part);
         }
 
         public void OnPartGrabbed(GameObject part)
@@ -57,6 +69,12 @@ namespace OSE.Interaction.V2.Integration
                 _selectionService.Deselect();
             if (_router != null)
                 _router.InjectAction(CanonicalAction.Cancel);
+        }
+
+        public void OnExternallyResolvedDeselected()
+        {
+            if (_selectionService != null)
+                _selectionService.Deselect();
         }
 
         public void OnHintRequested()

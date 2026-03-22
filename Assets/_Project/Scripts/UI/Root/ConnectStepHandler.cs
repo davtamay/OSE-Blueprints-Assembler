@@ -21,9 +21,13 @@ namespace OSE.UI.Root
         private readonly Func<string, GameObject> _findSpawnedPart;
 
         private readonly List<GameObject> _spawnedPortSpheres = new();
+        public bool HasActivePortSpheres => _spawnedPortSpheres.Count > 0;
         private readonly List<GameObject> _cableGhosts = new();
         private readonly List<GameObject> _renderedPipeSplines = new();
         private bool _pipePortAConfirmed;
+        private AnchorToAnchorInteraction _anchorInteraction;
+        private Vector3 _portAWorldPos;
+        private Vector3 _portBWorldPos;
 
         private const float ScreenProximityDesktop = 120f;
         private const float ScreenProximityMobile  = 180f;
@@ -44,6 +48,7 @@ namespace OSE.UI.Root
         {
             ClearPortSpheres();
             ClearCableGhosts();
+            CleanupAnchorInteraction();
 
             var package = _spawner?.CurrentPackage;
             if (package == null) return;
@@ -60,7 +65,7 @@ namespace OSE.UI.Root
 
         public void Update(in StepHandlerContext context, float deltaTime)
         {
-            // Connect steps have no per-frame animation work.
+            _anchorInteraction?.Tick();
         }
 
         public bool TryHandlePointerDown(in StepHandlerContext context, Vector2 screenPos)
@@ -80,7 +85,24 @@ namespace OSE.UI.Root
             {
                 _pipePortAConfirmed = true;
                 SetPortSphereConfirmed(hitGo);
-                OseLog.Info($"[ConnectStepHandler] First port confirmed ('{hitGo.name}'). Click the other sphere to complete.");
+
+                // Start anchor-to-anchor interaction with a live cable visual.
+                bool isPortA = hitGo.name.Contains("_A");
+                Vector3 anchorA = isPortA ? _portAWorldPos : _portBWorldPos;
+                Vector3 anchorB = isPortA ? _portBWorldPos : _portAWorldPos;
+                Color cableColor = new Color(0.2f, 0.2f, 0.2f, 1f);
+
+                _anchorInteraction = new AnchorToAnchorInteraction(new AnchorToAnchorInteraction.Config
+                {
+                    AnchorA = anchorA,
+                    AnchorB = anchorB,
+                    NearBScreenThreshold = Application.isMobilePlatform ? ScreenProximityMobile : ScreenProximityDesktop,
+                    LiveVisualFactory = (a, b) => CableLineVisual.Spawn(a, b, cableColor),
+                    ResultVisualFactory = (a, b) => CableLineVisual.Spawn(a, b, cableColor),
+                });
+                _anchorInteraction.StartFromAnchor();
+
+                OseLog.Info($"[ConnectStepHandler] First port confirmed ('{hitGo.name}'). Cable follows cursor — click the other port.");
                 return true;
             }
 
@@ -88,6 +110,11 @@ namespace OSE.UI.Root
             if (!IsPortSphereConfirmed(hitGo))
             {
                 SetPortSphereConfirmed(hitGo);
+
+                // Complete the anchor interaction (snaps cable to exact A→B).
+                if (_anchorInteraction != null && _anchorInteraction.IsActive)
+                    _anchorInteraction.TryCompleteAtAnchor(hitGo.transform.position, forceComplete: true);
+
                 OseLog.Info("[ConnectStepHandler] Second port confirmed. Completing step.");
                 context.StepController.CompleteStep(context.ElapsedSeconds);
                 return true;
@@ -101,6 +128,7 @@ namespace OSE.UI.Root
             TryRenderPipeSpline(context.StepId);
             ClearPortSpheres();
             ClearCableGhosts();
+            CleanupAnchorInteraction();
         }
 
         public void Cleanup()
@@ -108,6 +136,7 @@ namespace OSE.UI.Root
             ClearPortSpheres();
             ClearCableGhosts();
             ClearRenderedPipeSplines();
+            CleanupAnchorInteraction();
         }
 
         // ── Port-sphere spawning ──
@@ -141,6 +170,10 @@ namespace OSE.UI.Root
                     portAPos = c + new Vector3(-0.12f, 0.06f, 0f);
                     portBPos = c + new Vector3( 0.12f, 0.06f, 0f);
                 }
+
+                // Cache world positions for the anchor interaction.
+                _portAWorldPos = previewRoot.TransformPoint(portAPos);
+                _portBWorldPos = previewRoot.TransformPoint(portBPos);
 
                 SpawnPortSphere(portAPos, isPortA: true, previewRoot);
                 SpawnPortSphere(portBPos, isPortA: false, previewRoot);
@@ -351,6 +384,15 @@ namespace OSE.UI.Root
                 if (p != null) UnityEngine.Object.Destroy(p);
             }
             _renderedPipeSplines.Clear();
+        }
+
+        private void CleanupAnchorInteraction()
+        {
+            if (_anchorInteraction != null)
+            {
+                _anchorInteraction.Cleanup();
+                _anchorInteraction = null;
+            }
         }
 
         private void SpawnPipeCursorGhost(MachinePackageDefinition package, StepDefinition step)

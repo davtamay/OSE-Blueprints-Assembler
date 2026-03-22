@@ -175,6 +175,8 @@ namespace OSE.Runtime
             if (_sessionState == null)
                 return;
 
+            FlushPersistenceSnapshot();
+
             RuntimeEventBus.Unsubscribe<StepStateChanged>(HandleStepStateChanged);
             RuntimeEventBus.Unsubscribe<HintRequested>(HandleHintRequested);
             RuntimeEventBus.Unsubscribe<ToolActionFailed>(HandleToolActionFailed);
@@ -206,6 +208,20 @@ namespace OSE.Runtime
             _sessionState = null;
 
             OseLog.Info($"[MachineSessionController] Session for '{machineId}' ended.");
+        }
+
+        public void FlushPersistenceSnapshot()
+        {
+            if (_sessionState == null)
+                return;
+
+            if (_sessionState.Lifecycle == SessionLifecycle.Completed ||
+                _sessionState.Lifecycle == SessionLifecycle.Completing)
+            {
+                return;
+            }
+
+            AutoSave();
         }
 
         /// <summary>
@@ -264,10 +280,12 @@ namespace OSE.Runtime
                 _sessionState.CurrentStepId = evt.StepId;
                 _sessionState.CurrentStepStartSeconds = evt.AtSeconds;
                 _sessionState.CurrentStepElapsedSeconds = 0f;
+                AutoSave();
             }
             else if (evt.Current == StepState.FailedAttempt)
             {
                 _sessionState.MistakeCount++;
+                AutoSave();
             }
             else if (evt.Current == StepState.Completed)
             {
@@ -294,6 +312,7 @@ namespace OSE.Runtime
                 return;
 
             _sessionState.HintsUsed++;
+            AutoSave();
         }
 
         private void HandleToolActionFailed(ToolActionFailed evt)
@@ -302,6 +321,7 @@ namespace OSE.Runtime
                 return;
 
             _sessionState.MistakeCount++;
+            AutoSave();
         }
 
         private void HandleAssemblyCompleted(string assemblyId)
@@ -324,9 +344,7 @@ namespace OSE.Runtime
             if (_sessionState == null) return;
 
             if (ServiceRegistry.TryGet<IPersistenceService>(out var persistence))
-            {
                 persistence.SaveSession(_sessionState);
-            }
         }
 
         /// <summary>

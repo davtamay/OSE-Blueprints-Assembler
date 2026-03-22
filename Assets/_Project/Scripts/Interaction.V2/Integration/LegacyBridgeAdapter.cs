@@ -25,6 +25,8 @@ namespace OSE.Interaction.V2.Integration
         private FieldInfo _externalControlField;
         private MethodInfo _setExternalHoveredPartMethod;
         private MethodInfo _tryExternalClickToPlaceMethod;
+        private MethodInfo _tryResolveExternalToolActionTargetMethod;
+        private MethodInfo _tryExecuteExternalToolActionMethod;
         private MethodInfo _tryExternalToolActionMethod;
         private MethodInfo _tryExternalPipeConnectionMethod;
         private MethodInfo _getNearestToolTargetWorldPosMethod;
@@ -50,6 +52,10 @@ namespace OSE.Interaction.V2.Integration
             _setExternalHoveredPartMethod = _legacyBridge.GetType().GetMethod("SetExternalHoveredPart",
                 BindingFlags.Public | BindingFlags.Instance);
             _tryExternalClickToPlaceMethod = _legacyBridge.GetType().GetMethod("TryExternalClickToPlace",
+                BindingFlags.Public | BindingFlags.Instance);
+            _tryResolveExternalToolActionTargetMethod = _legacyBridge.GetType().GetMethod("TryResolveExternalToolActionTarget",
+                BindingFlags.Public | BindingFlags.Instance);
+            _tryExecuteExternalToolActionMethod = _legacyBridge.GetType().GetMethod("TryExecuteExternalToolAction",
                 BindingFlags.Public | BindingFlags.Instance);
             _tryExternalToolActionMethod = _legacyBridge.GetType().GetMethod("TryExternalToolAction",
                 BindingFlags.Public | BindingFlags.Instance);
@@ -89,6 +95,8 @@ namespace OSE.Interaction.V2.Integration
             _externalControlField = null;
             _setExternalHoveredPartMethod = null;
             _tryExternalClickToPlaceMethod = null;
+            _tryResolveExternalToolActionTargetMethod = null;
+            _tryExecuteExternalToolActionMethod = null;
             _tryExternalToolActionMethod = null;
             _tryExternalPipeConnectionMethod = null;
             _getNearestToolTargetWorldPosMethod = null;
@@ -99,22 +107,23 @@ namespace OSE.Interaction.V2.Integration
 
         // ── Delegation Methods ──
 
-        public void SelectPart(GameObject part) => _actionBridge.OnPartSelected(part);
-        public void InspectPart(GameObject part) => _actionBridge.OnPartInspected(part);
+        public void SelectPart(GameObject part) => _actionBridge.OnExternallyResolvedPartSelected(part);
+        public void InspectPart(GameObject part) => _actionBridge.OnExternallyResolvedPartInspected(part);
         public void GrabPart(GameObject part) => _actionBridge.OnPartGrabbed(part);
         public void ReleasePart() => _actionBridge.OnPartReleased();
         public void DeselectAll() => _actionBridge.OnDeselected();
+        public void DeselectFromExternalControl() => _actionBridge.OnExternallyResolvedDeselected();
 
         /// <summary>
-        /// Attempts click-to-place via the legacy bridge. Returns true if a selected
-        /// part was snapped to a matching ghost target at the given screen position.
+        /// Attempts click-to-place via the legacy bridge for the already-selected part.
+        /// Returns true if the part was snapped to a matching ghost target at the given screen position.
         /// </summary>
-        public bool TryClickToPlace(Vector2 screenPos)
+        public bool TryClickToPlace(GameObject selectedPart, Vector2 screenPos)
         {
             if (_legacyBridge == null || _tryExternalClickToPlaceMethod == null)
                 return false;
 
-            object result = _tryExternalClickToPlaceMethod.Invoke(_legacyBridge, new object[] { screenPos });
+            object result = _tryExternalClickToPlaceMethod.Invoke(_legacyBridge, new object[] { selectedPart, screenPos });
             return result is true;
         }
 
@@ -136,6 +145,48 @@ namespace OSE.Interaction.V2.Integration
         }
 
         /// <summary>
+        /// Resolves the executable tool target at the given screen position using the
+        /// legacy bridge's current ready-target and direct-hit rules.
+        /// </summary>
+        public bool TryResolveToolActionTarget(Vector2 screenPos, out string targetId, out Vector3 worldPos)
+        {
+            targetId = null;
+            worldPos = Vector3.zero;
+
+            if (_legacyBridge == null || _tryResolveExternalToolActionTargetMethod == null)
+            {
+                OseLog.Warn($"[LegacyBridge] TryResolveToolActionTarget: bridge={_legacyBridge != null}, methodFound={_tryResolveExternalToolActionTargetMethod != null}");
+                return false;
+            }
+
+            object[] args = { screenPos, null, Vector3.zero };
+            object result = _tryResolveExternalToolActionTargetMethod.Invoke(_legacyBridge, args);
+            if (result is true)
+            {
+                targetId = args[1] as string;
+                worldPos = (Vector3)args[2];
+                return !string.IsNullOrWhiteSpace(targetId);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Executes the tool primary action against an explicitly resolved target id.
+        /// </summary>
+        public bool TryToolAction(string targetId)
+        {
+            if (_legacyBridge == null || _tryExecuteExternalToolActionMethod == null)
+            {
+                OseLog.Warn($"[LegacyBridge] TryToolAction(target): bridge={_legacyBridge != null}, methodFound={_tryExecuteExternalToolActionMethod != null}");
+                return false;
+            }
+
+            object result = _tryExecuteExternalToolActionMethod.Invoke(_legacyBridge, new object[] { targetId });
+            return result is true;
+        }
+
+        /// <summary>
         /// Attempts to handle a pipe connection port sphere click at the given screen position.
         /// Call this for any tap — it returns true only when a pipe step is active and a port
         /// sphere was close enough to the tap to be consumed.
@@ -149,6 +200,10 @@ namespace OSE.Interaction.V2.Integration
             return result is true;
         }
 
+        /// <summary>
+        /// Resolves the pipe connection target at the given screen position using the
+        /// legacy bridge's current screen-proximity rules.
+        /// </summary>
         /// <summary>
         /// Gets the world position of the last successfully executed tool action target.
         /// Returns false if unavailable (bridge not connected or no action executed yet).
