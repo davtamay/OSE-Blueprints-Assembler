@@ -19,6 +19,7 @@ The model supports:
 - reusable components
 - scalable machine libraries
 - deterministic assembly validation
+- explicit finished-subassembly stacking when a completed unit must later move as one object
 
 ---
 
@@ -305,6 +306,32 @@ During runtime:
 - assembly steps drive the training session
 - validation confirms correct actions
 - UI presents contextual information
+
+---
+
+# Stacking And Finished Subassemblies
+
+Some real procedures require a learner to move a previously completed subassembly as one
+finished unit.
+
+Examples:
+
+- stand a welded frame side upright
+- place a completed panel into a later machine frame
+- move a finished module into its integration position
+
+The canonical model for this is documented in `STACKING_ARCHITECTURE.md`.
+
+The short version is:
+
+- parts keep their original identities
+- the runtime uses a placement proxy for the finished subassembly during the stack step
+- completed units may move to parked presentation slots after fabrication so one active work bay stays readable
+- the source fabrication pose and the final integrated pose are authored separately when needed
+- the final visible machine may bake to canonical integrated member poses after commit
+
+Use stacking architecture when the procedure is genuinely about moving a completed unit,
+not when the learner is still placing loose parts one by one.
 
 ---
 

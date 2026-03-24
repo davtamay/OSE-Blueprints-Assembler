@@ -134,6 +134,9 @@ Documents:
 - **DATA_SCHEMA.md**  
   Canonical machine package format.
 
+- **STACKING_ARCHITECTURE.md**  
+  Canonical model for moving a previously completed subassembly as one rigid unit while preserving part identity.
+
 - **PART_AUTHORING_PIPELINE.md**  
   Workflow for turning real-world machines into digital training content.
 

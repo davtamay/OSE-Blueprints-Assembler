@@ -49,6 +49,12 @@ namespace OSE.UI.Root
         public PackagePreviewConfig CurrentPreviewConfig => _currentPreviewConfig;
 
         /// <summary>
+        /// Fires after all parts (including async GLB models) have been spawned
+        /// and positioned. Subscribers can safely look up spawned parts by id.
+        /// </summary>
+        public event System.Action PartsReady;
+
+        /// <summary>
         /// Controls where GLB assets are fetched from at runtime.
         /// Defaults to <see cref="StreamingAssetsSource"/> (reads from the build's StreamingAssets folder).
         /// Swap for a <see cref="RemoteAssetSource"/> to load from S3, a CDN, or any HTTP server.
@@ -99,6 +105,83 @@ namespace OSE.UI.Root
             if (_currentPreviewConfig?.targetPlacements == null) return null;
             foreach (var t in _currentPreviewConfig.targetPlacements)
                 if (t.targetId == targetId) return t;
+            return null;
+        }
+
+        /// <summary>
+        /// Finds the <see cref="SubassemblyPreviewPlacement"/> for a given subassembly id.
+        /// </summary>
+        public SubassemblyPreviewPlacement FindSubassemblyPlacement(string subassemblyId)
+        {
+            if (_currentPreviewConfig?.subassemblyPlacements == null) return null;
+            foreach (var placement in _currentPreviewConfig.subassemblyPlacements)
+            {
+                if (placement != null &&
+                    string.Equals(placement.subassemblyId, subassemblyId, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return placement;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Finds the constrained-fit payload for a subassembly placement target.
+        /// </summary>
+        public ConstrainedSubassemblyFitPreviewPlacement FindConstrainedSubassemblyFitPlacement(string subassemblyId, string targetId)
+        {
+            if (_currentPreviewConfig?.constrainedSubassemblyFitPlacements == null)
+                return null;
+
+            foreach (var placement in _currentPreviewConfig.constrainedSubassemblyFitPlacements)
+            {
+                if (placement != null &&
+                    string.Equals(placement.subassemblyId, subassemblyId, System.StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(placement.targetId, targetId, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return placement;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Finds the optional parking frame for a completed fabricated subassembly.
+        /// </summary>
+        public SubassemblyPreviewPlacement FindCompletedSubassemblyParkingPlacement(string subassemblyId)
+        {
+            if (_currentPreviewConfig?.completedSubassemblyParkingPlacements == null) return null;
+            foreach (var placement in _currentPreviewConfig.completedSubassemblyParkingPlacements)
+            {
+                if (placement != null &&
+                    string.Equals(placement.subassemblyId, subassemblyId, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return placement;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Finds the canonical integrated placement authored for a completed subassembly
+        /// when it is committed to a specific assembly target.
+        /// </summary>
+        public IntegratedSubassemblyPreviewPlacement FindIntegratedSubassemblyPlacement(string subassemblyId, string targetId)
+        {
+            if (_currentPreviewConfig?.integratedSubassemblyPlacements == null)
+                return null;
+
+            foreach (var placement in _currentPreviewConfig.integratedSubassemblyPlacements)
+            {
+                if (placement != null &&
+                    string.Equals(placement.subassemblyId, subassemblyId, System.StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(placement.targetId, targetId, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return placement;
+                }
+            }
+
             return null;
         }
 
@@ -238,6 +321,7 @@ namespace OSE.UI.Root
             SpawnPackageParts();
             PositionParts();
             PositionTargetMarker();
+            PartsReady?.Invoke();
 #else
             _ = SpawnPackagePartsAsync();
 #endif
@@ -249,6 +333,7 @@ namespace OSE.UI.Root
             await SpawnGlbPartsAsync();   // then fills in GLB models asynchronously
             PositionParts();
             PositionTargetMarker();
+            PartsReady?.Invoke();
         }
 
         /// <summary>
@@ -560,7 +645,7 @@ namespace OSE.UI.Root
                     if (!MaterialHelper.IsImportedModel(partGo))
                         MaterialHelper.Apply(partGo, "Preview Part Material", col);
 
-                    TryApplyAffordanceState(partGo, AffordanceStateShortcuts.idle);
+                    ClearRendererPropertyBlocks(partGo);
 
                     memberCursor += memberWidths[m] + LayoutPadding;
                 }
@@ -616,7 +701,7 @@ namespace OSE.UI.Root
                 if (!MaterialHelper.IsImportedModel(partGo))
                     MaterialHelper.Apply(partGo, "Preview Part Material", col);
 
-                TryApplyAffordanceState(partGo, AffordanceStateShortcuts.idle);
+                ClearRendererPropertyBlocks(partGo);
             }
         }
 
@@ -690,12 +775,47 @@ namespace OSE.UI.Root
                 grabInteractable = target.AddComponent<XRGrabInteractable>();
             }
 
-            // Skip affordance color system for imported models — their original materials
-            // should not be overridden by MaterialPropertyBlock. State colors are handled
-            // by ApplyTint/ClearTint in PartInteractionBridge instead.
-            if (!MaterialHelper.IsImportedModel(target))
-                EnsurePartColorAffordance(target, grabInteractable);
-            TryApplyAffordanceState(target, AffordanceStateShortcuts.idle);
+            DisablePartColorAffordance(target);
+            ClearRendererPropertyBlocks(target);
+        }
+
+        private static void DisablePartColorAffordance(GameObject target)
+        {
+            if (target == null)
+                return;
+
+            var stateProvider = target.GetComponent<XRInteractableAffordanceStateProvider>();
+            if (stateProvider != null)
+            {
+                if (Application.isPlaying)
+                    Object.Destroy(stateProvider);
+                else
+                    Object.DestroyImmediate(stateProvider);
+            }
+
+            var receivers = target.GetComponentsInChildren<ColorMaterialPropertyAffordanceReceiver>(includeInactive: true);
+            for (int i = 0; i < receivers.Length; i++)
+            {
+                if (receivers[i] == null)
+                    continue;
+
+                if (Application.isPlaying)
+                    Object.Destroy(receivers[i]);
+                else
+                    Object.DestroyImmediate(receivers[i]);
+            }
+
+            var blockHelpers = target.GetComponentsInChildren<MaterialPropertyBlockHelper>(includeInactive: true);
+            for (int i = 0; i < blockHelpers.Length; i++)
+            {
+                if (blockHelpers[i] == null)
+                    continue;
+
+                if (Application.isPlaying)
+                    Object.Destroy(blockHelpers[i]);
+                else
+                    Object.DestroyImmediate(blockHelpers[i]);
+            }
         }
 
         private static void EnsurePartColorAffordance(GameObject target, XRGrabInteractable grabInteractable)
@@ -826,6 +946,20 @@ namespace OSE.UI.Root
 
             stateProvider.UpdateAffordanceState(new AffordanceStateData(stateIndex, transitionAmount));
             return true;
+        }
+
+        private static void ClearRendererPropertyBlocks(GameObject target)
+        {
+            if (target == null)
+                return;
+
+            var renderers = target.GetComponentsInChildren<Renderer>(includeInactive: true);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Renderer renderer = renderers[i];
+                if (renderer != null)
+                    renderer.SetPropertyBlock(null);
+            }
         }
 
         /// <summary>

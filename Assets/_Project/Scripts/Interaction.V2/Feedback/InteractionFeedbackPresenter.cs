@@ -1,6 +1,5 @@
 using UnityEngine;
 using OSE.UI.Root;
-using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.State;
 
 namespace OSE.Interaction.V2
 {
@@ -97,45 +96,28 @@ namespace OSE.Interaction.V2
         public void ApplyHover(GameObject part)
         {
             if (part == null) return;
-            TryApplyAffordanceState(part, AffordanceStateShortcuts.hovered);
             if (MaterialHelper.IsImportedModel(part))
                 MaterialHelper.ApplyTint(part, HoverColor);
             else
-                MaterialHelper.SetMaterialColor(part, HoverColor);
+                MaterialHelper.Apply(part, "Preview Part Material", HoverColor);
         }
 
         public void ApplySelectedHover(GameObject part)
         {
             if (part == null) return;
-            TryApplyAffordanceState(part, AffordanceStateShortcuts.hoveredPriority);
             if (MaterialHelper.IsImportedModel(part))
                 MaterialHelper.ApplyTint(part, SelectedHoverColor);
             else
-                MaterialHelper.SetMaterialColor(part, SelectedHoverColor);
+                MaterialHelper.Apply(part, "Preview Part Material", SelectedHoverColor);
         }
 
         public void ClearHover(GameObject part)
         {
             if (part == null) return;
-            if (TryApplyAffordanceState(part, AffordanceStateShortcuts.idle))
-                return;
             if (MaterialHelper.IsImportedModel(part))
                 MaterialHelper.ClearTint(part);
             else
-                MaterialHelper.SetMaterialColor(part, Color.white);
-        }
-
-        private static bool TryApplyAffordanceState(GameObject part, byte stateIndex, float transitionAmount = 1f)
-        {
-            if (part == null)
-                return false;
-
-            var stateProvider = part.GetComponent<XRInteractableAffordanceStateProvider>();
-            if (stateProvider == null)
-                return false;
-
-            stateProvider.UpdateAffordanceState(new AffordanceStateData(stateIndex, transitionAmount));
-            return true;
+                MaterialHelper.RestoreOriginals(part);
         }
     }
 
@@ -149,35 +131,19 @@ namespace OSE.Interaction.V2
         public void ApplySelection(GameObject part)
         {
             if (part == null) return;
-            TryApplyAffordanceState(part, AffordanceStateShortcuts.selected);
             if (MaterialHelper.IsImportedModel(part))
                 MaterialHelper.ApplyTint(part, SelectedColor);
             else
-                MaterialHelper.SetMaterialColor(part, SelectedColor);
+                MaterialHelper.Apply(part, "Preview Part Material", SelectedColor);
         }
 
         public void ClearSelection(GameObject part)
         {
             if (part == null) return;
-            if (TryApplyAffordanceState(part, AffordanceStateShortcuts.idle))
-                return;
             if (MaterialHelper.IsImportedModel(part))
                 MaterialHelper.ClearTint(part);
             else
-                MaterialHelper.SetMaterialColor(part, Color.white);
-        }
-
-        private static bool TryApplyAffordanceState(GameObject part, byte stateIndex, float transitionAmount = 1f)
-        {
-            if (part == null)
-                return false;
-
-            var stateProvider = part.GetComponent<XRInteractableAffordanceStateProvider>();
-            if (stateProvider == null)
-                return false;
-
-            stateProvider.UpdateAffordanceState(new AffordanceStateData(stateIndex, transitionAmount));
-            return true;
+                MaterialHelper.RestoreOriginals(part);
         }
     }
 }

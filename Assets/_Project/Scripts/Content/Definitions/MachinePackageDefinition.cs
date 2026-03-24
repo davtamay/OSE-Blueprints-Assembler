@@ -83,6 +83,72 @@ namespace OSE.Content
         public bool TryGetTarget(string targetId, out TargetDefinition target) =>
             TryFindById(GetTargets(), targetId, item => item.id, out target);
 
+        public bool TryGetSubassemblyPreviewPlacement(string subassemblyId, out SubassemblyPreviewPlacement placement)
+        {
+            SubassemblyPreviewPlacement[] placements = previewConfig?.subassemblyPlacements ?? Array.Empty<SubassemblyPreviewPlacement>();
+            return TryFindById(placements, subassemblyId, item => item.subassemblyId, out placement);
+        }
+
+        public bool TryGetCompletedSubassemblyParkingPlacement(string subassemblyId, out SubassemblyPreviewPlacement placement)
+        {
+            SubassemblyPreviewPlacement[] placements = previewConfig?.completedSubassemblyParkingPlacements ?? Array.Empty<SubassemblyPreviewPlacement>();
+            return TryFindById(placements, subassemblyId, item => item.subassemblyId, out placement);
+        }
+
+        public bool TryGetConstrainedSubassemblyFitPreviewPlacement(
+            string subassemblyId,
+            string targetId,
+            out ConstrainedSubassemblyFitPreviewPlacement placement)
+        {
+            ConstrainedSubassemblyFitPreviewPlacement[] placements = previewConfig?.constrainedSubassemblyFitPlacements ?? Array.Empty<ConstrainedSubassemblyFitPreviewPlacement>();
+            if (!string.IsNullOrWhiteSpace(subassemblyId) && !string.IsNullOrWhiteSpace(targetId))
+            {
+                for (int i = 0; i < placements.Length; i++)
+                {
+                    ConstrainedSubassemblyFitPreviewPlacement candidate = placements[i];
+                    if (candidate == null)
+                        continue;
+
+                    if (string.Equals(candidate.subassemblyId, subassemblyId, StringComparison.OrdinalIgnoreCase) &&
+                        string.Equals(candidate.targetId, targetId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        placement = candidate;
+                        return true;
+                    }
+                }
+            }
+
+            placement = null;
+            return false;
+        }
+
+        public bool TryGetIntegratedSubassemblyPreviewPlacement(
+            string subassemblyId,
+            string targetId,
+            out IntegratedSubassemblyPreviewPlacement placement)
+        {
+            IntegratedSubassemblyPreviewPlacement[] placements = previewConfig?.integratedSubassemblyPlacements ?? Array.Empty<IntegratedSubassemblyPreviewPlacement>();
+            if (!string.IsNullOrWhiteSpace(subassemblyId) && !string.IsNullOrWhiteSpace(targetId))
+            {
+                for (int i = 0; i < placements.Length; i++)
+                {
+                    IntegratedSubassemblyPreviewPlacement candidate = placements[i];
+                    if (candidate == null)
+                        continue;
+
+                    if (string.Equals(candidate.subassemblyId, subassemblyId, StringComparison.OrdinalIgnoreCase) &&
+                        string.Equals(candidate.targetId, targetId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        placement = candidate;
+                        return true;
+                    }
+                }
+            }
+
+            placement = null;
+            return false;
+        }
+
         private static int CompareStepOrder(StepDefinition left, StepDefinition right)
         {
             int leftSequence = left != null ? left.sequenceIndex : int.MaxValue;

@@ -116,7 +116,7 @@ namespace OSE.Runtime
         private string _activeStepId;
         private string _activeToolId;
         private string[] _requiredToolIds = Array.Empty<string>();
-        private ToolActionRuntimeState _primaryToolAction;
+        private ToolActionRuntimeState[] _toolActions = Array.Empty<ToolActionRuntimeState>();
 
         public event Action StateChanged;
 
@@ -131,7 +131,7 @@ namespace OSE.Runtime
             _activeStepId = null;
             _activeToolId = null;
             _requiredToolIds = Array.Empty<string>();
-            _primaryToolAction = default;
+            _toolActions = Array.Empty<ToolActionRuntimeState>();
 
             OseLog.Info($"[ToolRuntime] Loaded {_availableTools.Length} tool(s) for package '{_package?.packageId ?? "unknown"}'.");
 
@@ -147,7 +147,7 @@ namespace OSE.Runtime
             _activeStepId = null;
             _activeToolId = null;
             _requiredToolIds = Array.Empty<string>();
-            _primaryToolAction = default;
+            _toolActions = Array.Empty<ToolActionRuntimeState>();
             RaiseStateChanged();
         }
 
@@ -261,121 +261,162 @@ namespace OSE.Runtime
         {
             if (_package == null)
             {
-                OseLog.Warn("[ToolRuntime] TryExecutePrimaryAction: NotHandled — no package loaded.");
+                OseLog.Warn("[ToolRuntime] TryExecutePrimaryAction: NotHandled ? no package loaded.");
                 return ToolActionExecutionResult.NotHandled();
             }
 
+            TryHealStepStateFromSession();
+
             // Self-heal: if step state was lost (missed Active event, or Completed cleared it),
             // re-sync with the session's current active step before giving up.
-            if (string.IsNullOrWhiteSpace(_activeStepId) || !_primaryToolAction.IsConfigured)
+            if (string.IsNullOrWhiteSpace(_activeStepId) || !HasAnyConfiguredToolActions())
             {
-                bool healed = false;
-                if (ServiceRegistry.TryGet<MachineSessionController>(out var healSession))
-                {
-                    StepController healStepCtrl = healSession?.AssemblyController?.StepController;
-                    if (healStepCtrl != null && healStepCtrl.HasActiveStep)
-                    {
-                        string healStepId = healStepCtrl.CurrentStepState.StepId;
-                        if (!string.IsNullOrWhiteSpace(healStepId))
-                        {
-                            OseLog.Warn($"[ToolRuntime] TryExecutePrimaryAction: step state stale (stepId='{_activeStepId}', configured={_primaryToolAction.IsConfigured}). Syncing with '{healStepId}'.");
-                            _activeStepId = healStepId;
-                            _requiredToolIds = ResolveRequiredToolIds(healStepId);
-                            _primaryToolAction = ResolvePrimaryToolAction(healStepId);
-                            healed = _primaryToolAction.IsConfigured;
-                        }
-                    }
-                }
+                bool healed = TryHealStepStateFromSession();
 
-                if (string.IsNullOrWhiteSpace(_activeStepId) || !_primaryToolAction.IsConfigured)
+                if (string.IsNullOrWhiteSpace(_activeStepId) || !HasAnyConfiguredToolActions())
                 {
-                    OseLog.Warn($"[ToolRuntime] TryExecutePrimaryAction: NotHandled — activeStepId='{_activeStepId}', configured={_primaryToolAction.IsConfigured}, healed={healed}.");
+                    OseLog.Warn($"[ToolRuntime] TryExecutePrimaryAction: NotHandled ? activeStepId='{_activeStepId}', configured={HasAnyConfiguredToolActions()}, healed={healed}.");
                     return ToolActionExecutionResult.NotHandled();
                 }
             }
 
-            if (_primaryToolAction.IsCompleted)
+            int actionIndex = ResolveExecutableActionIndex(interactedTargetId);
+            if (actionIndex < 0)
             {
                 return ToolActionExecutionResult.Failed(
-                    ToolActionFailureReason.AlreadyCompleted,
-                    "Tool action already completed for this step.",
-                    _primaryToolAction.CurrentCount,
-                    _primaryToolAction.RequiredCount);
+                    ToolActionFailureReason.WrongTarget,
+                    "Use the active tool on the highlighted target.",
+                    0,
+                    0);
             }
+
+            ToolActionRuntimeState action = _toolActions[actionIndex];
 
             if (string.IsNullOrWhiteSpace(_activeToolId))
             {
                 return FailAction(
+                    action,
                     ToolActionFailureReason.NoActiveToolEquipped,
-                    $"Equip {ResolveToolDisplayName(_primaryToolAction.ToolId)} before continuing.");
+                    $"Equip {ResolveToolDisplayName(action.ToolId)} before continuing.");
             }
 
-            if (!string.Equals(_activeToolId, _primaryToolAction.ToolId, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(_activeToolId, action.ToolId, StringComparison.OrdinalIgnoreCase))
             {
                 return FailAction(
+                    action,
                     ToolActionFailureReason.WrongToolEquipped,
-                    $"Active tool is {ResolveToolDisplayName(_activeToolId)}. Required: {ResolveToolDisplayName(_primaryToolAction.ToolId)}.");
+                    $"Active tool is {ResolveToolDisplayName(_activeToolId)}. Required: {ResolveToolDisplayName(action.ToolId)}.");
             }
 
-            if (!string.IsNullOrWhiteSpace(_primaryToolAction.TargetId))
+            if (!string.IsNullOrWhiteSpace(action.TargetId))
             {
                 if (string.IsNullOrWhiteSpace(interactedTargetId) ||
-                    !string.Equals(interactedTargetId.Trim(), _primaryToolAction.TargetId, StringComparison.OrdinalIgnoreCase))
+                    !string.Equals(interactedTargetId.Trim(), action.TargetId, StringComparison.OrdinalIgnoreCase))
                 {
                     return FailAction(
+                        action,
                         ToolActionFailureReason.WrongTarget,
-                        $"Use {ResolveToolDisplayName(_primaryToolAction.ToolId)} on the highlighted target.");
+                        $"Use {ResolveToolDisplayName(action.ToolId)} on the highlighted target.");
                 }
             }
 
-            _primaryToolAction.CurrentCount++;
-            string progressMessage = BuildProgressMessage(_primaryToolAction);
+            action.CurrentCount++;
+            _toolActions[actionIndex] = action;
+
+            string progressMessage = BuildProgressMessage(action);
 
             RuntimeEventBus.Publish(new ToolActionProgressed(
                 _activeStepId,
-                _primaryToolAction.ToolId,
-                _primaryToolAction.ActionType,
-                _primaryToolAction.CurrentCount,
-                _primaryToolAction.RequiredCount,
+                action.ToolId,
+                action.ActionType,
+                action.CurrentCount,
+                action.RequiredCount,
                 progressMessage));
 
-            if (_primaryToolAction.CurrentCount >= _primaryToolAction.RequiredCount)
+            if (action.CurrentCount >= action.RequiredCount)
             {
-                string completionMessage = BuildCompletionMessage(_primaryToolAction);
+                string completionMessage = BuildCompletionMessage(action);
                 RuntimeEventBus.Publish(new ToolActionCompleted(
                     _activeStepId,
-                    _primaryToolAction.ToolId,
-                    _primaryToolAction.ActionType,
-                    _primaryToolAction.RequiredCount,
+                    action.ToolId,
+                    action.ActionType,
+                    action.RequiredCount,
                     completionMessage));
 
-                OseLog.Info($"[ToolRuntime] Step '{_activeStepId}' tool action complete: {_primaryToolAction.ActionType} {ResolveToolDisplayName(_primaryToolAction.ToolId)}.");
+                bool allCompleted = AreAllToolActionsCompleted();
+                OseLog.Info($"[ToolRuntime] Step '{_activeStepId}' tool action complete: {action.ActionType} {ResolveToolDisplayName(action.ToolId)}. allCompleted={allCompleted}.");
                 RaiseStateChanged();
-                return ToolActionExecutionResult.Complete(completionMessage, _primaryToolAction.RequiredCount);
+                return allCompleted
+                    ? ToolActionExecutionResult.Complete(completionMessage, action.RequiredCount)
+                    : ToolActionExecutionResult.Continue(completionMessage, action.RequiredCount, action.RequiredCount);
             }
 
             RaiseStateChanged();
-            return ToolActionExecutionResult.Continue(progressMessage, _primaryToolAction.CurrentCount, _primaryToolAction.RequiredCount);
+            return ToolActionExecutionResult.Continue(progressMessage, action.CurrentCount, action.RequiredCount);
         }
 
         public bool TryGetPrimaryActionSnapshot(out ToolActionSnapshot snapshot)
         {
-            if (!_primaryToolAction.IsConfigured)
+            int actionIndex = GetFirstIncompleteActionIndex();
+            if (actionIndex < 0)
             {
                 snapshot = default;
                 return false;
             }
 
+            ToolActionRuntimeState action = _toolActions[actionIndex];
+
             snapshot = new ToolActionSnapshot(
-                _primaryToolAction.IsConfigured,
-                _primaryToolAction.IsCompleted,
-                _primaryToolAction.ToolId,
-                _primaryToolAction.ActionType,
-                _primaryToolAction.TargetId,
-                _primaryToolAction.CurrentCount,
-                _primaryToolAction.RequiredCount,
-                _primaryToolAction.SuccessMessage,
-                _primaryToolAction.FailureMessage);
+                action.IsConfigured,
+                action.IsCompleted,
+                action.ToolId,
+                action.ActionType,
+                action.TargetId,
+                action.CurrentCount,
+                action.RequiredCount,
+                action.SuccessMessage,
+                action.FailureMessage);
+
+            return true;
+        }
+
+        public bool TryGetActionSnapshots(out ToolActionSnapshot[] snapshots)
+        {
+            if (_toolActions == null || _toolActions.Length == 0)
+            {
+                snapshots = Array.Empty<ToolActionSnapshot>();
+                return false;
+            }
+
+            snapshots = new ToolActionSnapshot[_toolActions.Length];
+            int count = 0;
+
+            for (int i = 0; i < _toolActions.Length; i++)
+            {
+                ToolActionRuntimeState action = _toolActions[i];
+                if (!action.IsConfigured)
+                    continue;
+
+                snapshots[count++] = new ToolActionSnapshot(
+                    action.IsConfigured,
+                    action.IsCompleted,
+                    action.ToolId,
+                    action.ActionType,
+                    action.TargetId,
+                    action.CurrentCount,
+                    action.RequiredCount,
+                    action.SuccessMessage,
+                    action.FailureMessage);
+            }
+
+            if (count == 0)
+            {
+                snapshots = Array.Empty<ToolActionSnapshot>();
+                return false;
+            }
+
+            if (count != snapshots.Length)
+                Array.Resize(ref snapshots, count);
 
             return true;
         }
@@ -389,19 +430,15 @@ namespace OSE.Runtime
             {
                 _activeStepId = evt.StepId;
                 _requiredToolIds = ResolveRequiredToolIds(evt.StepId);
-                _primaryToolAction = ResolvePrimaryToolAction(evt.StepId);
+                _toolActions = ResolveToolActions(evt.StepId);
 
-                if (_primaryToolAction.IsConfigured)
+                int configuredActionCount = GetConfiguredActionCount();
+                if (configuredActionCount > 0)
                 {
-                    OseLog.Info($"[ToolRuntime] Step '{evt.StepId}' activated with tool action: " +
-                        $"tool='{_primaryToolAction.ToolId}', action='{_primaryToolAction.ActionType}', " +
-                        $"target='{_primaryToolAction.TargetId}', required={_primaryToolAction.RequiredCount}.");
-                }
-                else if (_package != null && _package.TryGetStep(evt.StepId, out var stepDef)
-                         && stepDef.requiredToolActions != null && stepDef.requiredToolActions.Length > 0)
-                {
-                    OseLog.Warn($"[ToolRuntime] Step '{evt.StepId}' has {stepDef.requiredToolActions.Length} " +
-                        $"required tool action(s) in JSON but ResolvePrimaryToolAction returned unconfigured.");
+                    ToolActionRuntimeState primaryAction = _toolActions[GetFirstConfiguredActionIndex()];
+                    OseLog.Info($"[ToolRuntime] Step '{evt.StepId}' activated with {configuredActionCount} tool action(s). " +
+                        $"primaryTool='{primaryAction.ToolId}', action='{primaryAction.ActionType}', " +
+                        $"target='{primaryAction.TargetId}', required={primaryAction.RequiredCount}.");
                 }
 
                 if (!string.IsNullOrWhiteSpace(_activeToolId)
@@ -415,24 +452,26 @@ namespace OSE.Runtime
             }
             else if (evt.Current == StepState.Completed || evt.Current == StepState.Suspended)
             {
-                _primaryToolAction = default;
+                _activeStepId = null;
+                _requiredToolIds = Array.Empty<string>();
+                _toolActions = Array.Empty<ToolActionRuntimeState>();
+                RaiseStateChanged();
             }
         }
 
         private void TryAutoCompleteTargetlessPrimaryActionIfReady()
         {
-            if (_package == null || !_primaryToolAction.IsConfigured || _primaryToolAction.IsCompleted)
+            int actionIndex = GetSingleExecutableTargetlessActionIndex();
+            if (_package == null || actionIndex < 0)
                 return;
 
             // Suppress auto-completion during explicit step navigation.
             if (ServiceRegistry.TryGet<MachineSessionController>(out var session) && session.IsNavigating)
                 return;
 
-            if (!string.IsNullOrWhiteSpace(_primaryToolAction.TargetId))
-                return;
-
+            ToolActionRuntimeState action = _toolActions[actionIndex];
             if (string.IsNullOrWhiteSpace(_activeToolId) ||
-                !string.Equals(_activeToolId, _primaryToolAction.ToolId, StringComparison.OrdinalIgnoreCase))
+                !string.Equals(_activeToolId, action.ToolId, StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
@@ -493,24 +532,21 @@ namespace OSE.Runtime
             return result;
         }
 
-        private ToolActionRuntimeState ResolvePrimaryToolAction(string stepId)
+        private ToolActionRuntimeState[] ResolveToolActions(string stepId)
         {
             if (_package == null || string.IsNullOrWhiteSpace(stepId))
-                return default;
+                return Array.Empty<ToolActionRuntimeState>();
 
             StepDefinition step = ResolveStepDefinitionForToolAction(stepId);
             if (step == null || step.requiredToolActions == null
                 || step.requiredToolActions.Length == 0)
             {
-                return default;
+                return Array.Empty<ToolActionRuntimeState>();
             }
 
             string normalizedStepId = string.IsNullOrWhiteSpace(step.id) ? stepId.Trim() : step.id.Trim();
-            string fallbackToolId = null;
-            string fallbackTargetId = null;
-            int fallbackRequiredCount = 1;
-            string fallbackSuccessMessage = null;
-            string fallbackFailureMessage = null;
+            ToolActionRuntimeState[] buffer = new ToolActionRuntimeState[step.requiredToolActions.Length];
+            int count = 0;
 
             for (int i = 0; i < step.requiredToolActions.Length; i++)
             {
@@ -527,17 +563,6 @@ namespace OSE.Runtime
                     continue;
                 }
 
-                if (string.IsNullOrWhiteSpace(fallbackToolId))
-                    fallbackToolId = definition.toolId.Trim();
-                if (string.IsNullOrWhiteSpace(fallbackTargetId) && !string.IsNullOrWhiteSpace(definition.targetId))
-                    fallbackTargetId = definition.targetId.Trim();
-                if (definition.requiredCount > 0)
-                    fallbackRequiredCount = definition.requiredCount;
-                if (string.IsNullOrWhiteSpace(fallbackSuccessMessage) && !string.IsNullOrWhiteSpace(definition.successMessage))
-                    fallbackSuccessMessage = definition.successMessage;
-                if (string.IsNullOrWhiteSpace(fallbackFailureMessage) && !string.IsNullOrWhiteSpace(definition.failureMessage))
-                    fallbackFailureMessage = definition.failureMessage;
-
                 ToolActionType actionType = ParseActionType(definition.actionType);
                 if (actionType == ToolActionType.None)
                 {
@@ -547,7 +572,7 @@ namespace OSE.Runtime
 
                 int requiredCount = definition.requiredCount < 1 ? 1 : definition.requiredCount;
 
-                return new ToolActionRuntimeState
+                buffer[count++] = new ToolActionRuntimeState
                 {
                     ToolId = definition.toolId.Trim(),
                     ActionType = actionType,
@@ -559,47 +584,16 @@ namespace OSE.Runtime
                 };
             }
 
-            if (string.IsNullOrWhiteSpace(fallbackToolId) && step.relevantToolIds != null)
+            if (count == 0)
             {
-                for (int i = 0; i < step.relevantToolIds.Length; i++)
-                {
-                    if (!string.IsNullOrWhiteSpace(step.relevantToolIds[i]))
-                    {
-                        fallbackToolId = step.relevantToolIds[i].Trim();
-                        break;
-                    }
-                }
+                OseLog.Warn($"[ToolRuntime] Step '{normalizedStepId}' has required tool actions but none were usable.");
+                return Array.Empty<ToolActionRuntimeState>();
             }
 
-            if (string.IsNullOrWhiteSpace(fallbackTargetId) && step.targetIds != null)
-            {
-                for (int i = 0; i < step.targetIds.Length; i++)
-                {
-                    if (!string.IsNullOrWhiteSpace(step.targetIds[i]))
-                    {
-                        fallbackTargetId = step.targetIds[i].Trim();
-                        break;
-                    }
-                }
-            }
+            if (count != buffer.Length)
+                Array.Resize(ref buffer, count);
 
-            if (!string.IsNullOrWhiteSpace(fallbackToolId))
-            {
-                OseLog.Warn($"[ToolRuntime] Step '{normalizedStepId}' requiredToolActions were invalid; applying fallback 'measure' action for tool '{fallbackToolId}'.");
-                return new ToolActionRuntimeState
-                {
-                    ToolId = fallbackToolId,
-                    ActionType = ToolActionType.Measure,
-                    TargetId = fallbackTargetId,
-                    RequiredCount = System.Math.Max(1, fallbackRequiredCount),
-                    CurrentCount = 0,
-                    SuccessMessage = fallbackSuccessMessage,
-                    FailureMessage = fallbackFailureMessage
-                };
-            }
-
-            OseLog.Warn($"[ToolRuntime] Step '{normalizedStepId}' has required tool actions but none were usable.");
-            return default;
+            return buffer;
         }
 
         private StepDefinition ResolveStepDefinitionForToolAction(string stepId)
@@ -621,25 +615,137 @@ namespace OSE.Runtime
                 : null;
         }
 
-        private ToolActionExecutionResult FailAction(ToolActionFailureReason reason, string fallbackMessage)
+        private ToolActionExecutionResult FailAction(ToolActionRuntimeState action, ToolActionFailureReason reason, string fallbackMessage)
         {
-            string message = string.IsNullOrWhiteSpace(_primaryToolAction.FailureMessage)
+            string message = string.IsNullOrWhiteSpace(action.FailureMessage)
                 ? fallbackMessage
-                : _primaryToolAction.FailureMessage.Trim();
+                : action.FailureMessage.Trim();
 
             RuntimeEventBus.Publish(new ToolActionFailed(
                 _activeStepId,
-                _primaryToolAction.ToolId,
+                action.ToolId,
                 _activeToolId,
-                _primaryToolAction.ActionType,
+                action.ActionType,
                 reason,
                 message));
 
             return ToolActionExecutionResult.Failed(
                 reason,
                 message,
-                _primaryToolAction.CurrentCount,
-                _primaryToolAction.RequiredCount);
+                action.CurrentCount,
+                action.RequiredCount);
+        }
+
+        private bool HasAnyConfiguredToolActions() => GetConfiguredActionCount() > 0;
+
+        private int GetConfiguredActionCount()
+        {
+            if (_toolActions == null || _toolActions.Length == 0)
+                return 0;
+
+            int count = 0;
+            for (int i = 0; i < _toolActions.Length; i++)
+            {
+                if (_toolActions[i].IsConfigured)
+                    count++;
+            }
+
+            return count;
+        }
+
+        private int GetFirstConfiguredActionIndex()
+        {
+            if (_toolActions == null)
+                return -1;
+
+            for (int i = 0; i < _toolActions.Length; i++)
+            {
+                if (_toolActions[i].IsConfigured)
+                    return i;
+            }
+
+            return -1;
+        }
+
+        private int GetFirstIncompleteActionIndex()
+        {
+            if (_toolActions == null)
+                return -1;
+
+            for (int i = 0; i < _toolActions.Length; i++)
+            {
+                if (_toolActions[i].IsConfigured && !_toolActions[i].IsCompleted)
+                    return i;
+            }
+
+            return -1;
+        }
+
+        private bool AreAllToolActionsCompleted()
+        {
+            if (_toolActions == null || _toolActions.Length == 0)
+                return false;
+
+            bool hasConfigured = false;
+            for (int i = 0; i < _toolActions.Length; i++)
+            {
+                if (!_toolActions[i].IsConfigured)
+                    continue;
+
+                hasConfigured = true;
+                if (!_toolActions[i].IsCompleted)
+                    return false;
+            }
+
+            return hasConfigured;
+        }
+
+        private int ResolveExecutableActionIndex(string interactedTargetId)
+        {
+            if (_toolActions == null || _toolActions.Length == 0)
+                return -1;
+
+            string normalizedTargetId = string.IsNullOrWhiteSpace(interactedTargetId)
+                ? null
+                : interactedTargetId.Trim();
+
+            if (!string.IsNullOrWhiteSpace(normalizedTargetId))
+            {
+                for (int i = 0; i < _toolActions.Length; i++)
+                {
+                    ToolActionRuntimeState action = _toolActions[i];
+                    if (!action.IsConfigured || action.IsCompleted || string.IsNullOrWhiteSpace(action.TargetId))
+                        continue;
+
+                    if (string.Equals(action.TargetId, normalizedTargetId, StringComparison.OrdinalIgnoreCase))
+                        return i;
+                }
+
+                return -1;
+            }
+
+            int incompleteIndex = -1;
+            for (int i = 0; i < _toolActions.Length; i++)
+            {
+                ToolActionRuntimeState action = _toolActions[i];
+                if (!action.IsConfigured || action.IsCompleted)
+                    continue;
+
+                if (!string.IsNullOrWhiteSpace(action.TargetId))
+                    continue;
+
+                if (incompleteIndex >= 0)
+                    return -1;
+
+                incompleteIndex = i;
+            }
+
+            return incompleteIndex;
+        }
+
+        private int GetSingleExecutableTargetlessActionIndex()
+        {
+            return ResolveExecutableActionIndex(null);
         }
 
         private string BuildProgressMessage(ToolActionRuntimeState action)
@@ -669,6 +775,7 @@ namespace OSE.Runtime
                 "tighten" => ToolActionType.Tighten,
                 "strike" => ToolActionType.Strike,
                 "weld_pass" => ToolActionType.WeldPass,
+                "grind_pass" => ToolActionType.GrindPass,
                 _ => ToolActionType.None
             };
         }
@@ -692,6 +799,7 @@ namespace OSE.Runtime
                 ToolActionType.Tighten => "Tightening pass",
                 ToolActionType.Strike => "Strike",
                 ToolActionType.WeldPass => "Weld pass",
+                ToolActionType.GrindPass => "Grinding pass",
                 _ => "Action"
             };
         }
@@ -704,6 +812,7 @@ namespace OSE.Runtime
                 ToolActionType.Tighten => "Tightening",
                 ToolActionType.Strike => "Impact",
                 ToolActionType.WeldPass => "Weld pass",
+                ToolActionType.GrindPass => "Grinding pass",
                 _ => "Tool action"
             };
         }
@@ -711,6 +820,35 @@ namespace OSE.Runtime
         private void RaiseStateChanged()
         {
             StateChanged?.Invoke();
+        }
+
+        private bool TryHealStepStateFromSession()
+        {
+            if (!ServiceRegistry.TryGet<MachineSessionController>(out var healSession))
+                return false;
+
+            StepController healStepCtrl = healSession?.AssemblyController?.StepController;
+            if (healStepCtrl == null || !healStepCtrl.HasActiveStep)
+                return false;
+
+            string healStepId = healStepCtrl.CurrentStepState.StepId;
+            if (string.IsNullOrWhiteSpace(healStepId))
+                return false;
+
+            bool stepChanged = !string.Equals(_activeStepId, healStepId, StringComparison.OrdinalIgnoreCase);
+            bool shouldHeal = stepChanged
+                || string.IsNullOrWhiteSpace(_activeStepId)
+                || !HasAnyConfiguredToolActions()
+                || AreAllToolActionsCompleted();
+
+            if (!shouldHeal)
+                return false;
+
+            OseLog.Warn($"[ToolRuntime] Syncing tool step state from '{_activeStepId}' to '{healStepId}' (configured={HasAnyConfiguredToolActions()}, completed={AreAllToolActionsCompleted()}).");
+            _activeStepId = healStepId;
+            _requiredToolIds = ResolveRequiredToolIds(healStepId);
+            _toolActions = ResolveToolActions(healStepId);
+            return HasAnyConfiguredToolActions();
         }
 
         private ToolDefinition[] ResolveAvailableTools(MachinePackageDefinition package)

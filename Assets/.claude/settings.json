@@ -5,6 +5,9 @@
       "Bash(node -e \":*)",
       "Bash(grep -c '\"\"x\"\": -1,' \"Assets/_Project/Data/Packages/d3d_v18_10/machine.json\")",
       "Bash(grep -c '\"\"x\"\": 1,' \"Assets/_Project/Data/Packages/d3d_v18_10/machine.json\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\ose-xr-foundation\\docs"
     ]
   }
 }

@@ -12,7 +12,7 @@ namespace OSE.Content.Validation
         private static readonly HashSet<string> ToolCategoryValues = CreateSet("hand_tool", "power_tool", "measurement", "safety", "specialty");
         private static readonly HashSet<string> CompletionTypeValues = CreateSet("placement", "tool_action", "confirmation", "pipe_connection");
         private static readonly HashSet<string> FamilyValues = CreateSet("Place", "Use", "Connect", "Confirm");
-        private static readonly HashSet<string> PlaceProfileValues = CreateSet("Clamp");
+        private static readonly HashSet<string> PlaceProfileValues = CreateSet("Clamp", "AxisFit");
         private static readonly HashSet<string> UseProfileValues = CreateSet("Torque", "Weld", "Cut", "Measure");
         private static readonly HashSet<string> ConnectProfileValues = CreateSet("Cable");
         private static readonly HashSet<string> ViewModeValues = CreateSet("SourceAndTarget", "PairEndpoints", "WorkZone", "PathView", "Overview", "Inspect");
@@ -20,7 +20,7 @@ namespace OSE.Content.Validation
         private static readonly HashSet<string> ValidationTypeValues = CreateSet("placement", "orientation", "part_identity", "dependency", "multi_part", "confirmation");
         private static readonly HashSet<string> HintTypeValues = CreateSet("text", "highlight", "ghost", "directional", "explanatory", "tool_reminder");
         private static readonly HashSet<string> HintPriorityValues = CreateSet("low", "medium", "high");
-        private static readonly HashSet<string> ToolActionTypeValues = CreateSet("measure", "tighten", "strike", "weld_pass");
+        private static readonly HashSet<string> ToolActionTypeValues = CreateSet("measure", "tighten", "strike", "weld_pass", "grind_pass");
         private static readonly HashSet<string> EffectTypeValues = CreateSet("placement_feedback", "success_feedback", "error_feedback", "welding", "sparks", "heat_glow", "fire", "dust", "milestone");
         private static readonly HashSet<string> EffectTriggerValues = CreateSet("on_step_enter", "on_valid_candidate", "on_success", "on_failure", "on_completion");
         private static readonly HashSet<string> SourceTypeValues = CreateSet("blueprint", "photo", "diagram", "author_note", "reference_doc");
@@ -63,12 +63,12 @@ namespace OSE.Content.Validation
             ValidateSubassemblies(package.GetSubassemblies(), assemblyIds, partIds, stepIds, issues);
             ValidateParts(package.GetParts(), toolIds, issues);
             ValidateTools(package.GetTools(), issues);
-            ValidateSteps(package.GetSteps(), assemblyIds, subassemblyIds, partIds, toolIds, targetIds, validationRuleIds, hintIds, effectIds, issues);
+            ValidateSteps(package.GetSteps(), assemblyIds, subassemblyIds, partIds, toolIds, targetIds, package.GetTargets(), validationRuleIds, hintIds, effectIds, issues);
             ValidateValidationRules(package.GetValidationRules(), partIds, stepIds, targetIds, hintIds, issues);
             ValidateHints(package.GetHints(), partIds, toolIds, targetIds, issues);
             ValidateEffects(package.GetEffects(), issues);
-            ValidateTargets(package.GetTargets(), partIds, issues);
-            ValidatePreviewConfigCoverage(package, partIds, targetIds, issues);
+            ValidateTargets(package.GetTargets(), partIds, subassemblyIds, issues);
+            ValidatePreviewConfigCoverage(package, partIds, targetIds, subassemblyIds, issues);
 
             return new MachinePackageValidationResult(issues.ToArray());
         }
@@ -235,11 +235,23 @@ namespace OSE.Content.Validation
             HashSet<string> partIds,
             HashSet<string> toolIds,
             HashSet<string> targetIds,
+            TargetDefinition[] targets,
             HashSet<string> validationRuleIds,
             HashSet<string> hintIds,
             HashSet<string> effectIds,
             List<MachinePackageValidationIssue> issues)
         {
+            Dictionary<string, TargetDefinition> targetLookup = new Dictionary<string, TargetDefinition>(StringComparer.OrdinalIgnoreCase);
+            if (targets != null)
+            {
+                for (int i = 0; i < targets.Length; i++)
+                {
+                    TargetDefinition target = targets[i];
+                    if (target != null && !string.IsNullOrWhiteSpace(target.id))
+                        targetLookup[target.id] = target;
+                }
+            }
+
             Dictionary<string, HashSet<int>> sequenceUsageByAssembly = new Dictionary<string, HashSet<int>>(StringComparer.OrdinalIgnoreCase);
 
             for (int i = 0; i < steps.Length; i++)
@@ -263,6 +275,7 @@ namespace OSE.Content.Validation
                 ValidateOptionalEnum(step.viewMode, ViewModeValues, $"{path}.viewMode", issues);
                 ValidateOptionalEnum(step.targetOrder, TargetOrderValues, $"{path}.targetOrder", issues);
                 ValidateOptionalReferences(step.requiredPartIds, partIds, $"{path}.requiredPartIds", issues);
+                ValidateOptionalReference(step.requiredSubassemblyId, subassemblyIds, $"{path}.requiredSubassemblyId", issues);
                 ValidateOptionalReferences(step.optionalPartIds, partIds, $"{path}.optionalPartIds", issues);
                 ValidateOptionalReferences(step.relevantToolIds, toolIds, $"{path}.relevantToolIds", issues);
                 ValidateOptionalReferences(step.targetIds, targetIds, $"{path}.targetIds", issues);
@@ -298,6 +311,41 @@ namespace OSE.Content.Validation
 
                 // Cross-reference: tool action targets should be in step's targetIds
                 ValidateToolActionCrossReferences(step, $"{path}", issues);
+
+                if (!string.IsNullOrWhiteSpace(step.requiredSubassemblyId) &&
+                    HasAnyValues(step.requiredPartIds))
+                {
+                    issues.Add(Error(path, "A step may define either requiredPartIds or requiredSubassemblyId, not both."));
+                }
+
+                if (!string.IsNullOrWhiteSpace(step.requiredSubassemblyId))
+                {
+                    if (step.ResolvedFamily != StepFamily.Place)
+                    {
+                        issues.Add(Error($"{path}.requiredSubassemblyId",
+                            "Subassembly placement is only supported on Place-family steps."));
+                    }
+
+                    if (step.targetIds == null || step.targetIds.Length != 1)
+                    {
+                        issues.Add(Error($"{path}.targetIds",
+                            "A subassembly placement step must reference exactly one target in v1."));
+                    }
+                    else if (targetLookup.TryGetValue(step.targetIds[0], out TargetDefinition target))
+                    {
+                        if (!string.Equals(target.associatedSubassemblyId, step.requiredSubassemblyId, StringComparison.OrdinalIgnoreCase))
+                        {
+                            issues.Add(Error($"{path}.targetIds[0]",
+                                $"Target '{target.id}' must reference associatedSubassemblyId '{step.requiredSubassemblyId}'.")); 
+                        }
+                    }
+                }
+
+                if (step.IsAxisFitPlacement && string.IsNullOrWhiteSpace(step.requiredSubassemblyId))
+                {
+                    issues.Add(Error($"{path}.profile",
+                        "AxisFit is only supported on Place-family subassembly placement steps."));
+                }
             }
         }
 
@@ -521,6 +569,7 @@ namespace OSE.Content.Validation
         private static void ValidateTargets(
             TargetDefinition[] targets,
             HashSet<string> partIds,
+            HashSet<string> subassemblyIds,
             List<MachinePackageValidationIssue> issues)
         {
             for (int i = 0; i < targets.Length; i++)
@@ -536,6 +585,13 @@ namespace OSE.Content.Validation
 
                 ValidateRequiredText(target.anchorRef, $"{path}.anchorRef", issues);
                 ValidateOptionalReference(target.associatedPartId, partIds, $"{path}.associatedPartId", issues);
+                ValidateOptionalReference(target.associatedSubassemblyId, subassemblyIds, $"{path}.associatedSubassemblyId", issues);
+
+                if (!string.IsNullOrWhiteSpace(target.associatedPartId) &&
+                    !string.IsNullOrWhiteSpace(target.associatedSubassemblyId))
+                {
+                    issues.Add(Error(path, "A target may define either associatedPartId or associatedSubassemblyId, not both."));
+                }
             }
         }
 
@@ -543,6 +599,7 @@ namespace OSE.Content.Validation
             MachinePackageDefinition package,
             HashSet<string> partIds,
             HashSet<string> targetIds,
+            HashSet<string> subassemblyIds,
             List<MachinePackageValidationIssue> issues)
         {
             PackagePreviewConfig previewConfig = package.previewConfig;
@@ -585,6 +642,201 @@ namespace OSE.Content.Validation
                     issues.Add(Warning("previewConfig.targetPlacements", $"Target '{tId}' has no placement entry. Ghost will use fallback positioning."));
             }
 
+            HashSet<string> coveredSubassemblies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (previewConfig.subassemblyPlacements != null)
+            {
+                for (int i = 0; i < previewConfig.subassemblyPlacements.Length; i++)
+                {
+                    SubassemblyPreviewPlacement placement = previewConfig.subassemblyPlacements[i];
+                    if (placement == null || string.IsNullOrWhiteSpace(placement.subassemblyId))
+                        continue;
+
+                    coveredSubassemblies.Add(placement.subassemblyId);
+                    if (!subassemblyIds.Contains(placement.subassemblyId))
+                    {
+                        issues.Add(Error($"previewConfig.subassemblyPlacements[{i}].subassemblyId",
+                            $"Reference '{placement.subassemblyId}' does not resolve."));
+                    }
+                }
+            }
+
+            if (previewConfig.completedSubassemblyParkingPlacements != null)
+            {
+                for (int i = 0; i < previewConfig.completedSubassemblyParkingPlacements.Length; i++)
+                {
+                    SubassemblyPreviewPlacement placement = previewConfig.completedSubassemblyParkingPlacements[i];
+                    if (placement == null || string.IsNullOrWhiteSpace(placement.subassemblyId))
+                        continue;
+
+                    if (!subassemblyIds.Contains(placement.subassemblyId))
+                    {
+                        issues.Add(Error($"previewConfig.completedSubassemblyParkingPlacements[{i}].subassemblyId",
+                            $"Reference '{placement.subassemblyId}' does not resolve."));
+                    }
+                }
+            }
+
+            if (previewConfig.integratedSubassemblyPlacements != null)
+            {
+                for (int i = 0; i < previewConfig.integratedSubassemblyPlacements.Length; i++)
+                {
+                    IntegratedSubassemblyPreviewPlacement placement = previewConfig.integratedSubassemblyPlacements[i];
+                    string path = $"previewConfig.integratedSubassemblyPlacements[{i}]";
+                    if (placement == null)
+                    {
+                        issues.Add(Error(path, "Integrated subassembly placement entry is null."));
+                        continue;
+                    }
+
+                    ValidateRequiredText(placement.subassemblyId, $"{path}.subassemblyId", issues);
+                    ValidateRequiredText(placement.targetId, $"{path}.targetId", issues);
+
+                    if (!string.IsNullOrWhiteSpace(placement.subassemblyId) && !subassemblyIds.Contains(placement.subassemblyId))
+                    {
+                        issues.Add(Error($"{path}.subassemblyId",
+                            $"Reference '{placement.subassemblyId}' does not resolve."));
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(placement.targetId) && !targetIds.Contains(placement.targetId))
+                    {
+                        issues.Add(Error($"{path}.targetId",
+                            $"Reference '{placement.targetId}' does not resolve."));
+                    }
+
+                    if (placement.memberPlacements == null || placement.memberPlacements.Length == 0)
+                    {
+                        issues.Add(Warning($"{path}.memberPlacements",
+                            "Integrated subassembly placement has no member placements."));
+                        continue;
+                    }
+
+                    HashSet<string> subassemblyPartIds = null;
+                    if (!string.IsNullOrWhiteSpace(placement.subassemblyId) &&
+                        package.TryGetSubassembly(placement.subassemblyId, out SubassemblyDefinition subassembly) &&
+                        subassembly != null)
+                    {
+                        subassemblyPartIds = new HashSet<string>(subassembly.partIds ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+                    }
+
+                    for (int j = 0; j < placement.memberPlacements.Length; j++)
+                    {
+                        IntegratedMemberPreviewPlacement member = placement.memberPlacements[j];
+                        string memberPath = $"{path}.memberPlacements[{j}]";
+                        if (member == null)
+                        {
+                            issues.Add(Error(memberPath, "Integrated member placement entry is null."));
+                            continue;
+                        }
+
+                        ValidateRequiredText(member.partId, $"{memberPath}.partId", issues);
+                        if (!string.IsNullOrWhiteSpace(member.partId) && !partIds.Contains(member.partId))
+                        {
+                            issues.Add(Error($"{memberPath}.partId",
+                                $"Reference '{member.partId}' does not resolve."));
+                        }
+                        else if (subassemblyPartIds != null &&
+                                 !string.IsNullOrWhiteSpace(member.partId) &&
+                                 !subassemblyPartIds.Contains(member.partId))
+                        {
+                            issues.Add(Error($"{memberPath}.partId",
+                                $"Part '{member.partId}' is not a member of subassembly '{placement.subassemblyId}'."));
+                        }
+                    }
+                }
+            }
+
+            if (previewConfig.constrainedSubassemblyFitPlacements != null)
+            {
+                for (int i = 0; i < previewConfig.constrainedSubassemblyFitPlacements.Length; i++)
+                {
+                    ConstrainedSubassemblyFitPreviewPlacement placement = previewConfig.constrainedSubassemblyFitPlacements[i];
+                    string path = $"previewConfig.constrainedSubassemblyFitPlacements[{i}]";
+                    if (placement == null)
+                    {
+                        issues.Add(Error(path, "Constrained subassembly fit entry is null."));
+                        continue;
+                    }
+
+                    ValidateRequiredText(placement.subassemblyId, $"{path}.subassemblyId", issues);
+                    ValidateRequiredText(placement.targetId, $"{path}.targetId", issues);
+
+                    if (!string.IsNullOrWhiteSpace(placement.subassemblyId) && !subassemblyIds.Contains(placement.subassemblyId))
+                    {
+                        issues.Add(Error($"{path}.subassemblyId",
+                            $"Reference '{placement.subassemblyId}' does not resolve."));
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(placement.targetId) && !targetIds.Contains(placement.targetId))
+                    {
+                        issues.Add(Error($"{path}.targetId",
+                            $"Reference '{placement.targetId}' does not resolve."));
+                    }
+
+                    if (placement.drivenPartIds == null || placement.drivenPartIds.Length == 0)
+                    {
+                        issues.Add(Warning($"{path}.drivenPartIds",
+                            "Constrained subassembly fit has no drivenPartIds. The fit will behave like a rigid placement."));
+                    }
+
+                    HashSet<string> subassemblyPartIds = null;
+                    if (!string.IsNullOrWhiteSpace(placement.subassemblyId) &&
+                        package.TryGetSubassembly(placement.subassemblyId, out SubassemblyDefinition subassembly) &&
+                        subassembly != null)
+                    {
+                        subassemblyPartIds = new HashSet<string>(subassembly.partIds ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+                    }
+
+                    string[] drivenPartIds = placement.drivenPartIds ?? Array.Empty<string>();
+                    for (int j = 0; j < drivenPartIds.Length; j++)
+                    {
+                        string drivenPartId = drivenPartIds[j];
+                        string drivenPath = $"{path}.drivenPartIds[{j}]";
+                        ValidateRequiredText(drivenPartId, drivenPath, issues);
+
+                        if (!string.IsNullOrWhiteSpace(drivenPartId) && !partIds.Contains(drivenPartId))
+                        {
+                            issues.Add(Error(drivenPath, $"Reference '{drivenPartId}' does not resolve."));
+                        }
+                        else if (subassemblyPartIds != null &&
+                                 !string.IsNullOrWhiteSpace(drivenPartId) &&
+                                 !subassemblyPartIds.Contains(drivenPartId))
+                        {
+                            issues.Add(Error(drivenPath,
+                                $"Part '{drivenPartId}' is not a member of subassembly '{placement.subassemblyId}'."));
+                        }
+                    }
+                }
+            }
+
+            StepDefinition[] steps = package.GetSteps();
+            for (int i = 0; i < steps.Length; i++)
+            {
+                StepDefinition step = steps[i];
+                if (step == null || string.IsNullOrWhiteSpace(step.requiredSubassemblyId))
+                    continue;
+
+                if (!coveredSubassemblies.Contains(step.requiredSubassemblyId))
+                {
+                    issues.Add(Warning("previewConfig.subassemblyPlacements",
+                        $"Subassembly '{step.requiredSubassemblyId}' is used by a placement step but has no authored subassembly placement frame."));
+                }
+
+                if (step.IsAxisFitPlacement)
+                {
+                    string targetId = step.targetIds != null && step.targetIds.Length == 1
+                        ? step.targetIds[0]
+                        : null;
+
+                    if (string.IsNullOrWhiteSpace(targetId) ||
+                        package.previewConfig?.constrainedSubassemblyFitPlacements == null ||
+                        !package.TryGetConstrainedSubassemblyFitPreviewPlacement(step.requiredSubassemblyId, targetId, out _))
+                    {
+                        issues.Add(Warning("previewConfig.constrainedSubassemblyFitPlacements",
+                            $"AxisFit step '{step.id}' has no matching constrained fit preview payload for subassembly '{step.requiredSubassemblyId}' and target '{targetId ?? "<missing>"}'."));
+                    }
+                }
+            }
+
             // Cross-check: targetPlacement positions must match the associated part's
             // playPosition. A mismatch means the ghost preview and the actual placed
             // position will disagree — confusing for the user.
@@ -615,8 +867,13 @@ namespace OSE.Content.Validation
             var targetPartLookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (var t in targets)
             {
-                if (t != null && !string.IsNullOrEmpty(t.id) && !string.IsNullOrEmpty(t.associatedPartId))
+                if (t != null &&
+                    !string.IsNullOrEmpty(t.id) &&
+                    !string.IsNullOrEmpty(t.associatedPartId) &&
+                    string.IsNullOrEmpty(t.associatedSubassemblyId))
+                {
                     targetPartLookup[t.id] = t.associatedPartId;
+                }
             }
 
             foreach (var tp in previewConfig.targetPlacements)
@@ -791,6 +1048,20 @@ namespace OSE.Content.Validation
                     issues.Add(Error(itemPath, $"Reference '{id}' does not resolve."));
                 }
             }
+        }
+
+        private static bool HasAnyValues(string[] values)
+        {
+            if (values == null || values.Length == 0)
+                return false;
+
+            for (int i = 0; i < values.Length; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(values[i]))
+                    return true;
+            }
+
+            return false;
         }
 
         private static HashSet<string> CreateSet(params string[] values) =>

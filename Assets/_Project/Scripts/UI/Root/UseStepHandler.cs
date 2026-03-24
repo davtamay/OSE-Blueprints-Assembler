@@ -40,6 +40,7 @@ namespace OSE.UI.Root
         private readonly Func<ToolCursorManager> _getCursorManager;
         private readonly List<GameObject> _spawnedGhosts;
         private readonly Func<string> _getSequentialTargetId;
+        private readonly Func<bool> _advanceSequentialTarget;
 
         // ── Profile constants ──
         private const string ProfileTorque = "Torque";
@@ -69,19 +70,53 @@ namespace OSE.UI.Root
             Func<PreviewSceneSetup> getSetup,
             Func<ToolCursorManager> getCursorManager,
             List<GameObject> spawnedGhosts,
-            Func<string> getSequentialTargetId)
+            Func<string> getSequentialTargetId,
+            Func<bool> advanceSequentialTarget)
         {
             _spawner              = spawner;
             _getSetup             = getSetup;
             _getCursorManager     = getCursorManager;
             _spawnedGhosts        = spawnedGhosts;
             _getSequentialTargetId = getSequentialTargetId;
+            _advanceSequentialTarget = advanceSequentialTarget;
         }
 
         // ── Public accessors for bridge delegation ──
 
         /// <summary>Number of currently-spawned tool-action target markers.</summary>
         public int SpawnedTargetCount => _spawnedToolActionTargets.Count;
+
+        /// <summary>
+        /// Returns combined world bounds for the currently spawned tool-action markers.
+        /// Used by camera framing so Use steps include the live target markers in view.
+        /// </summary>
+        public bool TryGetSpawnedTargetBounds(out Bounds bounds)
+        {
+            bounds = default;
+            bool hasBounds = false;
+
+            for (int i = 0; i < _spawnedToolActionTargets.Count; i++)
+            {
+                GameObject marker = _spawnedToolActionTargets[i];
+                if (marker == null || !marker.activeInHierarchy)
+                    continue;
+
+                if (!TryGetWorldBounds(marker, out Bounds markerBounds))
+                    continue;
+
+                if (!hasBounds)
+                {
+                    bounds = markerBounds;
+                    hasBounds = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(markerBounds);
+                }
+            }
+
+            return hasBounds;
+        }
 
         /// <summary>
         /// Ticks tool-target visuals and retry logic while Use is active.
@@ -94,6 +129,41 @@ namespace OSE.UI.Root
 
             if (_retryPending)
                 RefreshToolActionTargets();
+        }
+
+        private static bool TryGetWorldBounds(GameObject target, out Bounds bounds)
+        {
+            bounds = default;
+            if (target == null)
+                return false;
+
+            Renderer[] renderers = target.GetComponentsInChildren<Renderer>(true);
+            if (renderers != null && renderers.Length > 0)
+            {
+                bounds = renderers[0].bounds;
+                for (int i = 1; i < renderers.Length; i++)
+                {
+                    if (renderers[i] != null)
+                        bounds.Encapsulate(renderers[i].bounds);
+                }
+
+                return true;
+            }
+
+            Collider[] colliders = target.GetComponentsInChildren<Collider>(true);
+            if (colliders != null && colliders.Length > 0)
+            {
+                bounds = colliders[0].bounds;
+                for (int i = 1; i < colliders.Length; i++)
+                {
+                    if (colliders[i] != null)
+                        bounds.Encapsulate(colliders[i].bounds);
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
         // ====================================================================
@@ -181,52 +251,124 @@ namespace OSE.UI.Root
 
             // Sync profile from current step so color/behavior is correct
             // regardless of whether OnStepActivated was called.
-            _activeProfile = earlyStepCtrl.CurrentStepDefinition?.profile;
+            StepDefinition currentStep = earlyStepCtrl.CurrentStepDefinition;
+            _activeProfile = currentStep?.profile;
 
-            string requiredToolId = null;
-            string targetId = null;
-            MachineSessionController session = null;
+            if (currentStep?.requiredToolActions == null || currentStep.requiredToolActions.Length == 0)
+                return;
 
-            if (TryGetPrimaryToolActionSnapshot(out ToolRuntimeController.ToolActionSnapshot actionSnapshot, out session))
+            MachineSessionController session = earlySession;
+            bool spawnedAny = false;
+
+            bool runtimeMatchesStep =
+                session?.ToolController != null &&
+                string.Equals(session.ToolController.ActiveStepId, currentStep.id, StringComparison.OrdinalIgnoreCase);
+
+            if (runtimeMatchesStep &&
+                TryGetActionSnapshots(out ToolRuntimeController.ToolActionSnapshot[] actionSnapshots, out session))
             {
-                if (actionSnapshot.IsCompleted)
-                    return;
+                string sequentialTargetId = ResolveSequentialTargetId(currentStep, actionSnapshots);
 
-                requiredToolId = actionSnapshot.ToolId;
-                targetId = actionSnapshot.TargetId;
+                for (int i = 0; i < actionSnapshots.Length; i++)
+                {
+                    ToolRuntimeController.ToolActionSnapshot action = actionSnapshots[i];
+                    if (!action.IsConfigured || action.IsCompleted || string.IsNullOrWhiteSpace(action.TargetId))
+                        continue;
+
+                    if (!StepDefinesToolAction(currentStep, action.ToolId, action.TargetId))
+                        continue;
+
+                    if (!string.IsNullOrWhiteSpace(sequentialTargetId) &&
+                        !string.Equals(action.TargetId, sequentialTargetId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    if (TrySpawnToolActionTargetMarker(session.Package, setup, action.ToolId, action.TargetId))
+                        spawnedAny = true;
+                }
             }
             else
             {
-                if (!TryResolveFallbackStepToolActionTarget(out session, out requiredToolId, out targetId))
+                if (!TrySpawnFallbackStepToolActionTargets(currentStep, session?.Package, setup))
                 {
                     if (ActiveStepHasRequiredToolActions())
-                    {
                         _retryPending = true;
-                        return;
-                    }
-                    TryWarnMissingPrimaryToolActionSnapshot();
+                    else
+                        TryWarnMissingPrimaryToolActionSnapshot();
                     return;
                 }
 
-                StepController stepController = session?.AssemblyController?.StepController;
-                OseLog.Warn($"[UseStepHandler] Falling back to step-defined tool target for step '{stepController?.CurrentStepDefinition?.id}'.");
+                spawnedAny = _spawnedToolActionTargets.Count > 0;
+                if (spawnedAny)
+                    OseLog.Warn($"[UseStepHandler] Falling back to step-defined tool targets for step '{currentStep?.id}'.");
             }
 
-            if (string.IsNullOrWhiteSpace(targetId))
-                return;
+            if (!spawnedAny && ActiveStepHasRequiredToolActions())
+                _retryPending = true;
+        }
 
-            // In sequential mode, only show tool targets for the current active target.
-            string seqTarget = _getSequentialTargetId();
-            if (seqTarget != null && !string.Equals(targetId, seqTarget, StringComparison.OrdinalIgnoreCase))
-                return;
+        /// <summary>Destroys all spawned tool action target markers.</summary>
+        public void ClearToolActionTargets()
+        {
+            _hoveredToolActionTarget = null;
+            _readyToolActionTarget = null;
 
-            if (!TryResolveToolActionTargetPose(session.Package, targetId, out Vector3 markerPos, out Quaternion markerRot, out Vector3 markerScale))
+            for (int i = _spawnedToolActionTargets.Count - 1; i >= 0; i--)
+            {
+                GameObject marker = _spawnedToolActionTargets[i];
+                if (marker != null)
+                    UnityEngine.Object.Destroy(marker);
+            }
+
+            _spawnedToolActionTargets.Clear();
+        }
+
+        private bool TrySpawnFallbackStepToolActionTargets(
+            StepDefinition step,
+            MachinePackageDefinition package,
+            PreviewSceneSetup setup)
+        {
+            if (step?.requiredToolActions == null || package == null || setup == null)
+                return false;
+
+            bool spawnedAny = false;
+            string sequentialTargetId = ResolveSequentialTargetId(step);
+
+            for (int i = 0; i < step.requiredToolActions.Length; i++)
+            {
+                ToolActionDefinition action = step.requiredToolActions[i];
+                if (action == null || string.IsNullOrWhiteSpace(action.toolId) || string.IsNullOrWhiteSpace(action.targetId))
+                    continue;
+
+                if (!string.IsNullOrWhiteSpace(sequentialTargetId) &&
+                    !string.Equals(action.targetId, sequentialTargetId, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (TrySpawnToolActionTargetMarker(package, setup, action.toolId.Trim(), action.targetId.Trim()))
+                    spawnedAny = true;
+            }
+
+            return spawnedAny;
+        }
+
+        private bool TrySpawnToolActionTargetMarker(
+            MachinePackageDefinition package,
+            PreviewSceneSetup setup,
+            string requiredToolId,
+            string targetId)
+        {
+            if (package == null || setup == null || string.IsNullOrWhiteSpace(requiredToolId) || string.IsNullOrWhiteSpace(targetId))
+                return false;
+
+            if (!TryResolveToolActionTargetPose(package, targetId, out Vector3 markerPos, out Quaternion markerRot, out Vector3 markerScale))
             {
                 OseLog.Warn($"[UseStepHandler] Could not resolve tool target pose for '{targetId}'.");
-                return;
+                return false;
             }
 
-            // Prefer anchoring the marker to the currently spawned ghost when available.
             if (TryGetGhostTargetPose(targetId, out Vector3 ghostPos, out Quaternion ghostRot, out Vector3 ghostScale))
             {
                 markerPos = ghostPos;
@@ -246,7 +388,7 @@ namespace OSE.UI.Root
             marker.transform.position += Vector3.up * markerLift;
 
             PackagePartSpawner.EnsureColliders(marker);
-            var toolCol = marker.GetComponent<SphereCollider>();
+            SphereCollider toolCol = marker.GetComponent<SphereCollider>();
             if (toolCol != null)
                 toolCol.radius = ToolTargetColliderRadius;
             MaterialHelper.ApplyToolTargetMarker(marker, ToolTargetIdleColor);
@@ -263,22 +405,7 @@ namespace OSE.UI.Root
 
             OseLog.VerboseInfo(
                 $"[UseStepHandler] Spawned tool target marker '{marker.name}' for target '{info.TargetId}' at local {info.BaseLocalPosition} / world {marker.transform.position}.");
-        }
-
-        /// <summary>Destroys all spawned tool action target markers.</summary>
-        public void ClearToolActionTargets()
-        {
-            _hoveredToolActionTarget = null;
-            _readyToolActionTarget = null;
-
-            for (int i = _spawnedToolActionTargets.Count - 1; i >= 0; i--)
-            {
-                GameObject marker = _spawnedToolActionTargets[i];
-                if (marker != null)
-                    UnityEngine.Object.Destroy(marker);
-            }
-
-            _spawnedToolActionTargets.Clear();
+            return true;
         }
 
         private void SpawnClickEffectForTarget(string targetId)
@@ -559,6 +686,14 @@ namespace OSE.UI.Root
                 return true;
             }
 
+            bool actionCompletedButStepContinues =
+                !shouldCompleteStep &&
+                toolResult.CurrentCount > 0 &&
+                toolResult.CurrentCount >= toolResult.RequiredCount;
+
+            if (actionCompletedButStepContinues && _advanceSequentialTarget != null)
+                _advanceSequentialTarget();
+
             RefreshToolActionTargets();
             return true;
         }
@@ -593,6 +728,9 @@ namespace OSE.UI.Root
             bool allowStepCompletion = true)
         {
             string interactedTargetId = null;
+            StepDefinition currentStep = stepController != null && stepController.HasActiveStep
+                ? stepController.CurrentStepDefinition
+                : null;
 
             if (TryGetPointerPosition(out Vector2 pointerPos) &&
                 TryResolveToolActionTargetForExecution(pointerPos, out ToolActionTargetInfo resolvedTarget))
@@ -612,6 +750,8 @@ namespace OSE.UI.Root
                 OseLog.VerboseInfo($"[UseStepHandler] Tool action: no ready tool target resolved. Spawned targets={_spawnedToolActionTargets.Count}.");
                 return false;
             }
+
+            interactedTargetId = NormalizeSequentialExecutionTargetId(currentStep, interactedTargetId);
 
             if (!TryExecuteToolPrimaryAction(interactedTargetId, out bool shouldCompleteStep, out bool handled))
             {
@@ -636,17 +776,8 @@ namespace OSE.UI.Root
         {
             targetInfo = null;
 
-            Camera cam = Camera.main;
-            if (cam == null)
-                return false;
-
-            Ray ray = cam.ScreenPointToRay(screenPos);
-            if (Physics.Raycast(ray, out RaycastHit hit, 100f, ~0, QueryTriggerInteraction.Ignore))
-            {
-                targetInfo = FindToolActionTargetFromHit(hit.transform);
-                if (targetInfo != null)
-                    return true;
-            }
+            if (TryGetToolActionTargetByRaycast(screenPos, out targetInfo))
+                return true;
 
             return TryGetNearestToolTargetByScreenProximity(screenPos, out targetInfo);
         }
@@ -657,12 +788,15 @@ namespace OSE.UI.Root
         /// </summary>
         public bool TryResolveToolActionTargetForExecution(Vector2 screenPos, out ToolActionTargetInfo targetInfo)
         {
+            if (TryGetToolActionTargetByRaycast(screenPos, out targetInfo))
+                return true;
+
             if (TryGetReadyToolActionTarget(out targetInfo))
                 return true;
 
             ToolCursorManager cursorManager = _getCursorManager();
             if (cursorManager?.ToolGhost == null || !cursorManager.ToolGhost.activeSelf)
-                return TryGetToolActionTargetByDirectHit(screenPos, out targetInfo);
+                return TryGetNearestToolTargetByScreenProximity(screenPos, out targetInfo);
 
             // Tool ghost is active but not overlapping a target — fall back to
             // raycast + screen-proximity so clicks near the target still register
@@ -855,7 +989,7 @@ namespace OSE.UI.Root
             return targetInfo != null;
         }
 
-        private bool TryGetToolActionTargetByDirectHit(Vector2 screenPos, out ToolActionTargetInfo targetInfo)
+        private bool TryGetToolActionTargetByRaycast(Vector2 screenPos, out ToolActionTargetInfo targetInfo)
         {
             targetInfo = null;
 
@@ -864,11 +998,21 @@ namespace OSE.UI.Root
                 return false;
 
             Ray ray = cam.ScreenPointToRay(screenPos);
-            if (!Physics.Raycast(ray, out RaycastHit hit, 100f, ~0, QueryTriggerInteraction.Ignore))
+            RaycastHit[] hits = Physics.RaycastAll(ray, 100f, ~0, QueryTriggerInteraction.Ignore);
+            if (hits == null || hits.Length == 0)
                 return false;
 
-            targetInfo = FindToolActionTargetFromHit(hit.transform);
-            return targetInfo != null;
+            Array.Sort(hits, static (left, right) => left.distance.CompareTo(right.distance));
+
+            for (int i = 0; i < hits.Length; i++)
+            {
+                targetInfo = FindToolActionTargetFromHit(hits[i].transform);
+                if (targetInfo != null)
+                    return true;
+            }
+
+            targetInfo = null;
+            return false;
         }
 
         private bool TryGetReadyToolActionTarget(out ToolActionTargetInfo targetInfo)
@@ -915,6 +1059,96 @@ namespace OSE.UI.Root
             }
 
             return targetInfo != null;
+        }
+
+        private string ResolveSequentialTargetId(
+            StepDefinition currentStep,
+            ToolRuntimeController.ToolActionSnapshot[] actionSnapshots = null)
+        {
+            if (currentStep == null || !currentStep.IsSequential)
+                return null;
+
+            string sequentialTargetId = _getSequentialTargetId();
+            if (!string.IsNullOrWhiteSpace(sequentialTargetId))
+                return sequentialTargetId;
+
+            if (actionSnapshots != null)
+            {
+                for (int i = 0; i < actionSnapshots.Length; i++)
+                {
+                    ToolRuntimeController.ToolActionSnapshot action = actionSnapshots[i];
+                    if (!action.IsConfigured || action.IsCompleted || string.IsNullOrWhiteSpace(action.TargetId))
+                        continue;
+
+                    if (!StepDefinesToolAction(currentStep, action.ToolId, action.TargetId))
+                        continue;
+
+                    return action.TargetId.Trim();
+                }
+            }
+
+            ToolActionDefinition[] requiredActions = currentStep.requiredToolActions;
+            if (requiredActions == null)
+                return null;
+
+            for (int i = 0; i < requiredActions.Length; i++)
+            {
+                ToolActionDefinition action = requiredActions[i];
+                if (action == null || string.IsNullOrWhiteSpace(action.targetId))
+                    continue;
+
+                return action.targetId.Trim();
+            }
+
+            return null;
+        }
+
+        private static bool StepDefinesToolAction(StepDefinition step, string toolId, string targetId)
+        {
+            if (step?.requiredToolActions == null ||
+                string.IsNullOrWhiteSpace(toolId) ||
+                string.IsNullOrWhiteSpace(targetId))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < step.requiredToolActions.Length; i++)
+            {
+                ToolActionDefinition action = step.requiredToolActions[i];
+                if (action == null)
+                    continue;
+
+                if (!string.Equals(action.toolId?.Trim(), toolId.Trim(), StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (!string.Equals(action.targetId?.Trim(), targetId.Trim(), StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        private string NormalizeSequentialExecutionTargetId(StepDefinition currentStep, string interactedTargetId)
+        {
+            if (string.IsNullOrWhiteSpace(interactedTargetId) || currentStep == null || !currentStep.IsSequential)
+                return interactedTargetId;
+
+            string sequentialTargetId = null;
+            if (TryGetActionSnapshots(out ToolRuntimeController.ToolActionSnapshot[] actionSnapshots, out _))
+                sequentialTargetId = ResolveSequentialTargetId(currentStep, actionSnapshots);
+
+            if (string.IsNullOrWhiteSpace(sequentialTargetId))
+                sequentialTargetId = ResolveSequentialTargetId(currentStep);
+
+            if (string.IsNullOrWhiteSpace(sequentialTargetId) ||
+                string.Equals(interactedTargetId, sequentialTargetId, StringComparison.OrdinalIgnoreCase))
+            {
+                return interactedTargetId;
+            }
+
+            return sequentialTargetId;
         }
 
         private static bool TryGetToolGhostScreenRect(Camera cam, GameObject toolGhost, out Rect screenRect)
@@ -991,11 +1225,11 @@ namespace OSE.UI.Root
         //  Private tool action snapshot resolution
         // ====================================================================
 
-        private static bool TryGetPrimaryToolActionSnapshot(
-            out ToolRuntimeController.ToolActionSnapshot snapshot,
+        private static bool TryGetActionSnapshots(
+            out ToolRuntimeController.ToolActionSnapshot[] snapshots,
             out MachineSessionController session)
         {
-            snapshot = default;
+            snapshots = Array.Empty<ToolRuntimeController.ToolActionSnapshot>();
             session = null;
 
             if (!ServiceRegistry.TryGet(out session) ||
@@ -1006,7 +1240,7 @@ namespace OSE.UI.Root
                 return false;
             }
 
-            return session.ToolController.TryGetPrimaryActionSnapshot(out snapshot);
+            return session.ToolController.TryGetActionSnapshots(out snapshots);
         }
 
         private static void TryWarnMissingPrimaryToolActionSnapshot()
@@ -1022,7 +1256,7 @@ namespace OSE.UI.Root
             if (step?.requiredToolActions == null || step.requiredToolActions.Length == 0)
                 return;
 
-            OseLog.Warn($"[UseStepHandler] Active step '{step.id}' has required tool actions, but no primary tool action snapshot was available.");
+            OseLog.Warn($"[UseStepHandler] Active step '{step.id}' has required tool actions, but no tool action snapshots were available.");
         }
 
         private static bool ActiveStepHasRequiredToolActions()
@@ -1036,71 +1270,6 @@ namespace OSE.UI.Root
 
             StepDefinition step = stepController.CurrentStepDefinition;
             return step?.requiredToolActions != null && step.requiredToolActions.Length > 0;
-        }
-
-        private static bool TryResolveFallbackStepToolActionTarget(
-            out MachineSessionController session,
-            out string requiredToolId,
-            out string targetId)
-        {
-            session = null;
-            requiredToolId = null;
-            targetId = null;
-
-            if (!ServiceRegistry.TryGet(out session) ||
-                session == null ||
-                session.Package == null)
-            {
-                return false;
-            }
-
-            StepController stepController = session.AssemblyController?.StepController;
-            if (stepController == null || !stepController.HasActiveStep)
-                return false;
-
-            StepDefinition step = stepController.CurrentStepDefinition;
-            if (step?.requiredToolActions == null || step.requiredToolActions.Length == 0)
-                return false;
-
-            for (int i = 0; i < step.requiredToolActions.Length; i++)
-            {
-                ToolActionDefinition action = step.requiredToolActions[i];
-                if (action == null) continue;
-
-                if (string.IsNullOrWhiteSpace(requiredToolId) && !string.IsNullOrWhiteSpace(action.toolId))
-                    requiredToolId = action.toolId.Trim();
-                if (string.IsNullOrWhiteSpace(targetId) && !string.IsNullOrWhiteSpace(action.targetId))
-                    targetId = action.targetId.Trim();
-            }
-
-            if (string.IsNullOrWhiteSpace(requiredToolId) && step.relevantToolIds != null)
-            {
-                for (int i = 0; i < step.relevantToolIds.Length; i++)
-                {
-                    if (!string.IsNullOrWhiteSpace(step.relevantToolIds[i]))
-                    {
-                        requiredToolId = step.relevantToolIds[i].Trim();
-                        break;
-                    }
-                }
-            }
-
-            if (string.IsNullOrWhiteSpace(targetId) && step.targetIds != null)
-            {
-                for (int i = 0; i < step.targetIds.Length; i++)
-                {
-                    if (!string.IsNullOrWhiteSpace(step.targetIds[i]))
-                    {
-                        targetId = step.targetIds[i].Trim();
-                        break;
-                    }
-                }
-            }
-
-            if (string.IsNullOrWhiteSpace(requiredToolId) && session.ToolController != null)
-                requiredToolId = session.ToolController.ActiveToolId;
-
-            return !string.IsNullOrWhiteSpace(targetId);
         }
 
         // ====================================================================

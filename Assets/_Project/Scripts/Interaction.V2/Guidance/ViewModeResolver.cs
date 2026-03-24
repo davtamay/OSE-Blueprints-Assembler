@@ -28,6 +28,10 @@ namespace OSE.Interaction.V2
             {
                 switch (family)
                 {
+                    case StepFamily.Place:
+                        if (profile.Equals("AxisFit", StringComparison.OrdinalIgnoreCase))
+                            return ViewMode.WorkZone;
+                        break;
                     case StepFamily.Use:
                         if (profile.Equals("Measure", StringComparison.OrdinalIgnoreCase))
                             return ViewMode.PairEndpoints;

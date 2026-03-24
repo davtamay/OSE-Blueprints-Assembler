@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using OSE.App;
 using OSE.Content;
 using OSE.Core;
 
@@ -228,29 +229,33 @@ namespace OSE.Runtime
         /// Does NOT publish PartStateChanged events — the caller publishes StepNavigated
         /// for the visual layer to reposition parts in bulk.
         /// </summary>
-        public void RecomputePartsForNavigation(int targetIndex, StepDefinition[] allSteps)
+        public void RecomputePartsForNavigation(StepDefinition[] completedSteps, StepDefinition targetStep)
         {
-            if (_package == null || allSteps == null) return;
+            if (_package == null) return;
 
             _partStates.Clear();
             _selectedPartId = null;
             _selectedPartPreviousState = PartPlacementState.Available;
             _activeStepId = null;
 
-            for (int i = 0; i < targetIndex && i < allSteps.Length; i++)
+            if (completedSteps != null)
             {
-                string[] partIds = allSteps[i].requiredPartIds;
-                if (partIds == null) continue;
-                for (int p = 0; p < partIds.Length; p++)
+                for (int i = 0; i < completedSteps.Length; i++)
                 {
-                    if (!string.IsNullOrEmpty(partIds[p]))
-                        _partStates[partIds[p]] = PartPlacementState.Completed;
+                    string[] partIds = completedSteps[i]?.requiredPartIds;
+                    if (partIds == null) continue;
+                    for (int p = 0; p < partIds.Length; p++)
+                    {
+                        if (!string.IsNullOrEmpty(partIds[p]))
+                            _partStates[partIds[p]] = PartPlacementState.Completed;
+                    }
                 }
             }
 
-            if (targetIndex >= 0 && targetIndex < allSteps.Length)
+            if (targetStep != null)
             {
-                string[] partIds = allSteps[targetIndex].requiredPartIds;
+                _activeStepId = targetStep.id;
+                string[] partIds = targetStep.requiredPartIds;
                 if (partIds != null)
                 {
                     for (int p = 0; p < partIds.Length; p++)
@@ -261,7 +266,7 @@ namespace OSE.Runtime
                 }
             }
 
-            OseLog.Info($"[PartRuntime] Recomputed part states for navigation to step {targetIndex}.");
+            OseLog.Info($"[PartRuntime] Recomputed part states for navigation to '{_activeStepId ?? "<none>"}' with {(_partStates?.Count ?? 0)} tracked part(s).");
         }
 
         /// <summary>
@@ -326,6 +331,13 @@ namespace OSE.Runtime
 
             if (!_package.TryGetStep(_activeStepId, out var step))
                 return false;
+
+            if (!string.IsNullOrWhiteSpace(step.requiredSubassemblyId))
+            {
+                return ServiceRegistry.TryGet<ISubassemblyPlacementService>(out var subassemblyController) &&
+                       subassemblyController != null &&
+                       subassemblyController.IsActiveStepPlacementSatisfied(_activeStepId);
+            }
 
             string[] required = step.requiredPartIds;
             if (required == null || required.Length == 0)

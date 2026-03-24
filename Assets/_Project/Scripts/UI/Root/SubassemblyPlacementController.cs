@@ -1,0 +1,990 @@
+using System;
+using System.Collections.Generic;
+using OSE.Content;
+using OSE.Core;
+using OSE.Runtime;
+using UnityEngine;
+
+namespace OSE.UI.Root
+{
+    /// <summary>
+    /// Builds transform-owner proxies for finished subassemblies without reparenting the
+    /// actual part GameObjects. Member part poses are recomputed from the proxy transform
+    /// and cached authored local offsets.
+    /// </summary>
+    public sealed class SubassemblyPlacementController : IDisposable, OSE.Runtime.ISubassemblyPlacementService
+    {
+        private readonly PackagePartSpawner _spawner;
+        private readonly Func<PreviewSceneSetup> _getSetup;
+        private readonly Func<string, GameObject> _findSpawnedPart;
+        private readonly Func<string, PartPlacementState> _getPartState;
+        private readonly Dictionary<string, ProxyRecord> _records = new Dictionary<string, ProxyRecord>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, string> _memberToSubassembly = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        private string _activeSubassemblyId;
+
+        private sealed class ProxyRecord
+        {
+            public string SubassemblyId;
+            public GameObject Root;
+            public string[] MemberPartIds;
+            public Vector3[] MemberLocalPositions;
+            public Quaternion[] MemberLocalRotations;
+            public Vector3[] MemberLocalScales;
+            public string CurrentTargetId;
+            public FitRecord ActiveFit;
+            public float CurrentFitTravel;
+        }
+
+        private sealed class FitRecord
+        {
+            public string TargetId;
+            public Vector3 AxisLocal;
+            public float MinTravel;
+            public float MaxTravel;
+            public float CompletionTravel;
+            public float SnapTolerance;
+            public HashSet<string> DrivenPartIds;
+        }
+
+        public SubassemblyPlacementController(
+            PackagePartSpawner spawner,
+            Func<PreviewSceneSetup> getSetup,
+            Func<string, GameObject> findSpawnedPart,
+            Func<string, PartPlacementState> getPartState)
+        {
+            _spawner = spawner;
+            _getSetup = getSetup;
+            _findSpawnedPart = findSpawnedPart;
+            _getPartState = getPartState;
+        }
+
+        public string ActiveSubassemblyId => _activeSubassemblyId;
+
+        public void Dispose()
+        {
+            ClearAll();
+        }
+
+        public void ClearAll()
+        {
+            foreach (KeyValuePair<string, ProxyRecord> pair in _records)
+            {
+                if (pair.Value?.Root != null)
+                    UnityEngine.Object.Destroy(pair.Value.Root);
+            }
+
+            _records.Clear();
+            _memberToSubassembly.Clear();
+            _activeSubassemblyId = null;
+        }
+
+        public void ResetReplayState()
+        {
+            foreach (KeyValuePair<string, ProxyRecord> pair in _records)
+            {
+                ProxyRecord record = pair.Value;
+                if (record?.Root == null)
+                    continue;
+
+                ClearFitState(record);
+                record.CurrentTargetId = null;
+                record.Root.SetActive(false);
+            }
+
+            _activeSubassemblyId = null;
+        }
+
+        public void RefreshForStep(string stepId)
+        {
+            ResetActiveProxyOnly();
+
+            MachinePackageDefinition package = _spawner?.CurrentPackage;
+            if (package == null || !package.TryGetStep(stepId, out StepDefinition step) || step == null)
+                return;
+
+            if (!step.IsPlacement || string.IsNullOrWhiteSpace(step.requiredSubassemblyId))
+                return;
+
+            if (!IsSubassemblyReady(step.requiredSubassemblyId))
+            {
+                OseLog.Warn($"[SubassemblyPlacement] Step '{stepId}' requires subassembly '{step.requiredSubassemblyId}', but not all member parts are completed.");
+                return;
+            }
+
+            if (!EnsureProxyRecord(step.requiredSubassemblyId, out ProxyRecord record))
+                return;
+
+            ClearFitState(record);
+            if (step.IsAxisFitPlacement &&
+                step.targetIds != null &&
+                step.targetIds.Length == 1 &&
+                TryActivateConstrainedFit(record, step.targetIds[0]))
+            {
+                ApplyProxyTransform(record);
+                record.Root.SetActive(true);
+                _activeSubassemblyId = record.SubassemblyId;
+                return;
+            }
+
+            if (!MoveProxyToParkingPlacement(record))
+                MoveProxyToAuthoredFrame(record);
+            ApplyProxyTransform(record);
+            record.Root.SetActive(true);
+            _activeSubassemblyId = record.SubassemblyId;
+        }
+
+        public void ApplyCompletedSubassemblyParking(string activeStepId, StepDefinition[] completedSteps)
+        {
+            MachinePackageDefinition package = _spawner?.CurrentPackage;
+            if (package == null || completedSteps == null || completedSteps.Length == 0)
+                return;
+
+            string activeFabricationSubassemblyId = null;
+            if (!string.IsNullOrWhiteSpace(activeStepId) &&
+                package.TryGetStep(activeStepId, out StepDefinition activeStep) &&
+                activeStep != null)
+            {
+                activeFabricationSubassemblyId = activeStep.subassemblyId;
+            }
+
+            HashSet<string> completedStepIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            HashSet<string> stackedSubassemblyIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            for (int i = 0; i < completedSteps.Length; i++)
+            {
+                StepDefinition step = completedSteps[i];
+                if (step == null)
+                    continue;
+
+                if (!string.IsNullOrWhiteSpace(step.id))
+                    completedStepIds.Add(step.id);
+
+                if (!string.IsNullOrWhiteSpace(step.requiredSubassemblyId))
+                    stackedSubassemblyIds.Add(step.requiredSubassemblyId);
+            }
+
+            foreach (SubassemblyDefinition subassembly in package.GetSubassemblies())
+            {
+                if (subassembly == null || string.IsNullOrWhiteSpace(subassembly.id))
+                    continue;
+
+                if (string.Equals(subassembly.id, activeFabricationSubassemblyId, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (stackedSubassemblyIds.Contains(subassembly.id))
+                    continue;
+
+                if (!IsSubassemblyReady(subassembly.id))
+                    continue;
+
+                if (!AreAllSubassemblyStepsCompleted(subassembly, completedStepIds))
+                    continue;
+
+                if (!EnsureProxyRecord(subassembly.id, out ProxyRecord record))
+                    continue;
+
+                if (!MoveProxyToParkingPlacement(record))
+                    continue;
+
+                ApplyProxyTransform(record);
+                record.Root.SetActive(false);
+            }
+        }
+
+        public void HandleStepCompleted(string stepId)
+        {
+            MachinePackageDefinition package = _spawner?.CurrentPackage;
+            if (package == null || !package.TryGetStep(stepId, out StepDefinition step) || step == null)
+                return;
+
+            if (string.IsNullOrWhiteSpace(step.requiredSubassemblyId))
+                return;
+
+            if (_records.TryGetValue(step.requiredSubassemblyId, out ProxyRecord record) && record?.Root != null)
+            {
+                ClearFitState(record);
+                record.Root.SetActive(false);
+            }
+
+            if (string.Equals(_activeSubassemblyId, step.requiredSubassemblyId, StringComparison.OrdinalIgnoreCase))
+                _activeSubassemblyId = null;
+        }
+
+        public void RestoreCompletedPlacements(StepDefinition[] completedSteps)
+        {
+            if (completedSteps == null || completedSteps.Length == 0)
+                return;
+
+            for (int i = 0; i < completedSteps.Length; i++)
+            {
+                StepDefinition step = completedSteps[i];
+                if (step == null || string.IsNullOrWhiteSpace(step.requiredSubassemblyId))
+                    continue;
+
+                if (!EnsureProxyRecord(step.requiredSubassemblyId, out ProxyRecord record))
+                    continue;
+
+                string targetId = step.targetIds != null && step.targetIds.Length > 0
+                    ? step.targetIds[0]
+                    : null;
+
+                ClearFitState(record);
+                if (TryApplyIntegratedPlacement(record, targetId))
+                    continue;
+
+                if (TryRestoreConstrainedFitPlacement(record, targetId))
+                    continue;
+
+                if (!TryGetTargetLocalPose(targetId, out Vector3 targetPos, out Quaternion targetRot, out Vector3 targetScale))
+                    continue;
+
+                record.Root.transform.SetLocalPositionAndRotation(targetPos, targetRot);
+                record.Root.transform.localScale = targetScale;
+                record.CurrentTargetId = targetId;
+                ApplyProxyTransform(record);
+            }
+        }
+
+        public bool IsSubassemblyReady(string subassemblyId)
+        {
+            if (string.IsNullOrWhiteSpace(subassemblyId))
+                return false;
+
+            MachinePackageDefinition package = _spawner?.CurrentPackage;
+            if (package == null || !package.TryGetSubassembly(subassemblyId, out SubassemblyDefinition subassembly) || subassembly == null)
+                return false;
+
+            string[] memberIds = subassembly.partIds ?? Array.Empty<string>();
+            if (memberIds.Length == 0)
+                return false;
+
+            for (int i = 0; i < memberIds.Length; i++)
+            {
+                if (string.IsNullOrWhiteSpace(memberIds[i]))
+                    continue;
+
+                PartPlacementState state = _getPartState(memberIds[i]);
+                if (state != PartPlacementState.Completed && state != PartPlacementState.PlacedVirtually)
+                    return false;
+            }
+
+            return true;
+        }
+
+        public bool IsProxy(GameObject target)
+        {
+            return target != null && target.GetComponent<SubassemblyPlacementProxy>() != null;
+        }
+
+        public bool TryGetProxy(string subassemblyId, out GameObject proxyRoot)
+        {
+            proxyRoot = null;
+            if (string.IsNullOrWhiteSpace(subassemblyId))
+                return false;
+
+            if (!_records.TryGetValue(subassemblyId, out ProxyRecord record) || record?.Root == null)
+                return false;
+
+            proxyRoot = record.Root;
+            return true;
+        }
+
+        public bool TryGetSubassemblyId(GameObject target, out string subassemblyId)
+        {
+            subassemblyId = null;
+            if (target == null)
+                return false;
+
+            SubassemblyPlacementProxy proxy = target.GetComponent<SubassemblyPlacementProxy>();
+            if (proxy != null && !string.IsNullOrWhiteSpace(proxy.SubassemblyId))
+            {
+                subassemblyId = proxy.SubassemblyId;
+                return true;
+            }
+
+            return _memberToSubassembly.TryGetValue(target.name, out subassemblyId);
+        }
+
+        public GameObject ResolveSelectableFromHit(Transform hitTransform)
+        {
+            if (hitTransform == null)
+                return null;
+
+            if (string.IsNullOrWhiteSpace(_activeSubassemblyId))
+                return null;
+
+            if (!_records.TryGetValue(_activeSubassemblyId, out ProxyRecord record) || record?.Root == null || !record.Root.activeInHierarchy)
+                return null;
+
+            Transform current = hitTransform;
+            while (current != null)
+            {
+                SubassemblyPlacementProxy proxy = current.GetComponent<SubassemblyPlacementProxy>();
+                if (proxy != null && string.Equals(proxy.SubassemblyId, _activeSubassemblyId, StringComparison.OrdinalIgnoreCase))
+                    return record.Root;
+                current = current.parent;
+            }
+
+            GameObject partGo = FindMemberPartFromHit(record, hitTransform);
+            return partGo != null ? record.Root : null;
+        }
+
+        public bool TryGetDisplayInfo(GameObject target, out string displayName, out string description)
+        {
+            displayName = null;
+            description = null;
+
+            if (!TryGetSubassemblyId(target, out string subassemblyId))
+                return false;
+
+            MachinePackageDefinition package = _spawner?.CurrentPackage;
+            if (package == null || !package.TryGetSubassembly(subassemblyId, out SubassemblyDefinition subassembly) || subassembly == null)
+                return false;
+
+            displayName = subassembly.GetDisplayName();
+            description = subassembly.description ?? string.Empty;
+            return true;
+        }
+
+        public IEnumerable<GameObject> EnumerateMemberParts(GameObject target)
+        {
+            if (!TryGetSubassemblyId(target, out string subassemblyId))
+                yield break;
+
+            if (!_records.TryGetValue(subassemblyId, out ProxyRecord record) || record?.MemberPartIds == null)
+                yield break;
+
+            for (int i = 0; i < record.MemberPartIds.Length; i++)
+            {
+                GameObject partGo = _findSpawnedPart(record.MemberPartIds[i]);
+                if (partGo != null)
+                    yield return partGo;
+            }
+        }
+
+        public bool TryResolveTargetPose(string targetId, out Vector3 position, out Quaternion rotation, out Vector3 scale)
+        {
+            return TryGetTargetLocalPose(targetId, out position, out rotation, out scale);
+        }
+
+        public bool TryGetActiveFitGuide(string subassemblyId, out Vector3 currentWorldPos, out Vector3 finalWorldPos, out Vector3 upWorld)
+        {
+            currentWorldPos = Vector3.zero;
+            finalWorldPos = Vector3.zero;
+            upWorld = Vector3.up;
+
+            if (string.IsNullOrWhiteSpace(subassemblyId) ||
+                !_records.TryGetValue(subassemblyId, out ProxyRecord record) ||
+                record?.Root == null ||
+                record.ActiveFit == null ||
+                record.ActiveFit.DrivenPartIds == null ||
+                record.ActiveFit.DrivenPartIds.Count == 0)
+            {
+                return false;
+            }
+
+            int currentCount = 0;
+            int finalCount = 0;
+            Vector3 currentAccum = Vector3.zero;
+            Vector3 finalAccum = Vector3.zero;
+
+            Transform root = record.Root.transform;
+            Vector3 rootPos = root.localPosition;
+            Quaternion rootRot = root.localRotation;
+            Vector3 rootScale = SanitizeScale(root.localScale, Vector3.one);
+
+            for (int i = 0; i < record.MemberPartIds.Length; i++)
+            {
+                string partId = record.MemberPartIds[i];
+                if (!record.ActiveFit.DrivenPartIds.Contains(partId))
+                    continue;
+
+                GameObject partGo = _findSpawnedPart(partId);
+                if (partGo != null && TryGetWorldBounds(partGo, out Bounds currentBounds))
+                {
+                    currentAccum += currentBounds.center;
+                    upWorld = partGo.transform.up;
+                    currentCount++;
+                }
+
+                Vector3 finalLocalPosition = record.MemberLocalPositions[i] +
+                    (record.ActiveFit.AxisLocal * (record.ActiveFit.CompletionTravel - record.ActiveFit.MinTravel));
+                Vector3 finalPreviewLocal = TransformPoint(rootPos, rootRot, rootScale, finalLocalPosition);
+                Vector3 finalWorld = root.parent != null
+                    ? root.parent.TransformPoint(finalPreviewLocal)
+                    : finalPreviewLocal;
+                finalAccum += finalWorld;
+                finalCount++;
+            }
+
+            if (currentCount == 0 || finalCount == 0)
+                return false;
+
+            currentWorldPos = currentAccum / currentCount;
+            finalWorldPos = finalAccum / finalCount;
+            return true;
+        }
+
+        public bool TryApplyPlacementPreview(GameObject target, string targetId, float nearestDist, float previewRadius)
+        {
+            if (!TryGetSubassemblyId(target, out string subassemblyId))
+                return false;
+
+            if (!_records.TryGetValue(subassemblyId, out ProxyRecord record) ||
+                record?.Root == null ||
+                record.ActiveFit == null ||
+                !string.Equals(record.ActiveFit.TargetId, targetId, StringComparison.OrdinalIgnoreCase) ||
+                !TryGetTargetLocalPose(targetId, out Vector3 targetPos, out Quaternion targetRot, out Vector3 targetScale))
+            {
+                return false;
+            }
+
+            Vector3 draggedLocalPos = target.transform.localPosition;
+            Quaternion draggedLocalRot = target.transform.localRotation;
+            Vector3 draggedLocalScale = SanitizeScale(target.transform.localScale, targetScale);
+
+            Vector3 previewAxis = targetRot * record.ActiveFit.AxisLocal;
+            if (previewAxis.sqrMagnitude < 0.000001f)
+                previewAxis = Vector3.right;
+            previewAxis.Normalize();
+
+            float projectedTravel = record.ActiveFit.MinTravel + Vector3.Dot(draggedLocalPos - targetPos, previewAxis);
+            projectedTravel = Mathf.Clamp(projectedTravel, record.ActiveFit.MinTravel, record.ActiveFit.MaxTravel);
+
+            float closeness = 1f - Mathf.Clamp01(nearestDist / Mathf.Max(previewRadius, 0.001f));
+            float travelBlend = Mathf.Lerp(0.08f, 0.3f, closeness);
+            float rotationBlend = Mathf.Lerp(0.08f, 0.3f, closeness);
+            float scaleBlend = Mathf.Lerp(0.04f, 0.14f, closeness);
+
+            record.Root.transform.localPosition = targetPos;
+            record.Root.transform.localRotation = Quaternion.Slerp(draggedLocalRot, targetRot, rotationBlend);
+            record.Root.transform.localScale = Vector3.Lerp(draggedLocalScale, targetScale, scaleBlend);
+            record.CurrentFitTravel = Mathf.Lerp(record.CurrentFitTravel, projectedTravel, travelBlend);
+            ApplyProxyTransform(record);
+            return true;
+        }
+
+        public bool IsPlacementCommitReady(GameObject target, string targetId)
+        {
+            if (!TryGetSubassemblyId(target, out string subassemblyId))
+                return false;
+
+            if (!_records.TryGetValue(subassemblyId, out ProxyRecord record) || record == null)
+                return false;
+
+            if (record.ActiveFit == null || !string.Equals(record.ActiveFit.TargetId, targetId, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return Mathf.Abs(record.CurrentFitTravel - record.ActiveFit.CompletionTravel) <= record.ActiveFit.SnapTolerance;
+        }
+
+        public bool TryApplyPlacement(string subassemblyId, string targetId)
+        {
+            if (!EnsureProxyRecord(subassemblyId, out ProxyRecord record))
+                return false;
+
+            if (TryApplyIntegratedPlacement(record, targetId))
+                return true;
+
+            if (TryCommitConstrainedFitPlacement(record, targetId))
+                return true;
+
+            if (!TryGetTargetLocalPose(targetId, out Vector3 targetPos, out Quaternion targetRot, out Vector3 targetScale))
+                return false;
+
+            record.Root.transform.SetLocalPositionAndRotation(targetPos, targetRot);
+            record.Root.transform.localScale = targetScale;
+            record.CurrentTargetId = targetId;
+            ApplyProxyTransform(record);
+            return true;
+        }
+
+        public void ApplyProxyTransform(GameObject target)
+        {
+            if (!TryGetSubassemblyId(target, out string subassemblyId))
+                return;
+
+            if (_records.TryGetValue(subassemblyId, out ProxyRecord record))
+                ApplyProxyTransform(record);
+        }
+
+        public bool IsActiveStepPlacementSatisfied(string stepId)
+        {
+            MachinePackageDefinition package = _spawner?.CurrentPackage;
+            if (package == null || !package.TryGetStep(stepId, out StepDefinition step) || step == null)
+                return false;
+
+            if (string.IsNullOrWhiteSpace(step.requiredSubassemblyId))
+                return false;
+
+            if (!_records.TryGetValue(step.requiredSubassemblyId, out ProxyRecord record))
+                return false;
+
+            string targetId = step.targetIds != null && step.targetIds.Length == 1
+                ? step.targetIds[0]
+                : null;
+
+            return !string.IsNullOrWhiteSpace(targetId) &&
+                   string.Equals(record.CurrentTargetId, targetId, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void ResetActiveProxyOnly()
+        {
+            if (string.IsNullOrWhiteSpace(_activeSubassemblyId))
+                return;
+
+            if (_records.TryGetValue(_activeSubassemblyId, out ProxyRecord record) && record?.Root != null)
+                record.Root.SetActive(false);
+
+            _activeSubassemblyId = null;
+        }
+
+        private bool EnsureProxyRecord(string subassemblyId, out ProxyRecord record)
+        {
+            if (_records.TryGetValue(subassemblyId, out record) && record?.Root != null)
+                return true;
+
+            record = BuildProxyRecord(subassemblyId);
+            if (record == null)
+                return false;
+
+            _records[subassemblyId] = record;
+            return true;
+        }
+
+        private ProxyRecord BuildProxyRecord(string subassemblyId)
+        {
+            MachinePackageDefinition package = _spawner?.CurrentPackage;
+            PreviewSceneSetup setup = _getSetup?.Invoke();
+            Transform previewRoot = setup != null ? setup.PreviewRoot : null;
+            if (package == null || previewRoot == null)
+                return null;
+
+            if (!package.TryGetSubassembly(subassemblyId, out SubassemblyDefinition subassembly) || subassembly == null)
+                return null;
+
+            SubassemblyPreviewPlacement frame = _spawner.FindSubassemblyPlacement(subassemblyId);
+            if (frame == null)
+            {
+                OseLog.Warn($"[SubassemblyPlacement] Missing previewConfig.subassemblyPlacements entry for '{subassemblyId}'.");
+                return null;
+            }
+
+            string[] memberIds = subassembly.partIds ?? Array.Empty<string>();
+            if (memberIds.Length == 0)
+                return null;
+
+            GameObject proxyRoot = new GameObject($"SubassemblyProxy_{subassemblyId}");
+            proxyRoot.transform.SetParent(previewRoot, false);
+            proxyRoot.transform.SetLocalPositionAndRotation(ToVector3(frame.position), ToQuaternion(frame.rotation));
+            proxyRoot.transform.localScale = SanitizeScale(ToVector3(frame.scale), Vector3.one);
+
+            SubassemblyPlacementProxy proxy = proxyRoot.AddComponent<SubassemblyPlacementProxy>();
+            proxy.SubassemblyId = subassemblyId;
+
+            Vector3[] localPositions = new Vector3[memberIds.Length];
+            Quaternion[] localRotations = new Quaternion[memberIds.Length];
+            Vector3[] localScales = new Vector3[memberIds.Length];
+
+            for (int i = 0; i < memberIds.Length; i++)
+            {
+                string partId = memberIds[i];
+                if (string.IsNullOrWhiteSpace(partId))
+                    continue;
+
+                PartPreviewPlacement partPlacement = _spawner.FindPartPlacement(partId);
+                if (partPlacement == null)
+                {
+                    OseLog.Warn($"[SubassemblyPlacement] Missing part placement for subassembly member '{partId}'.");
+                    UnityEngine.Object.Destroy(proxyRoot);
+                    return null;
+                }
+
+                Vector3 playPos = new Vector3(partPlacement.playPosition.x, partPlacement.playPosition.y, partPlacement.playPosition.z);
+                Quaternion playRot = !partPlacement.playRotation.IsIdentity
+                    ? new Quaternion(partPlacement.playRotation.x, partPlacement.playRotation.y, partPlacement.playRotation.z, partPlacement.playRotation.w)
+                    : Quaternion.identity;
+                Vector3 playScale = SanitizeScale(new Vector3(partPlacement.playScale.x, partPlacement.playScale.y, partPlacement.playScale.z), Vector3.one);
+
+                localPositions[i] = InverseTransformPoint(proxyRoot.transform.localPosition, proxyRoot.transform.localRotation, proxyRoot.transform.localScale, playPos);
+                localRotations[i] = Quaternion.Inverse(proxyRoot.transform.localRotation) * playRot;
+                localScales[i] = DivideScale(playScale, proxyRoot.transform.localScale);
+                _memberToSubassembly[partId] = subassemblyId;
+            }
+
+            ProxyRecord record = new ProxyRecord
+            {
+                SubassemblyId = subassemblyId,
+                Root = proxyRoot,
+                MemberPartIds = memberIds,
+                MemberLocalPositions = localPositions,
+                MemberLocalRotations = localRotations,
+                MemberLocalScales = localScales
+            };
+
+            UpdateProxyCollider(record);
+            proxyRoot.SetActive(false);
+            return record;
+        }
+
+        private void MoveProxyToAuthoredFrame(ProxyRecord record)
+        {
+            if (record?.Root == null)
+                return;
+
+            SubassemblyPreviewPlacement frame = _spawner.FindSubassemblyPlacement(record.SubassemblyId);
+            if (frame == null)
+                return;
+
+            record.Root.transform.SetLocalPositionAndRotation(ToVector3(frame.position), ToQuaternion(frame.rotation));
+            record.Root.transform.localScale = SanitizeScale(ToVector3(frame.scale), Vector3.one);
+            record.CurrentTargetId = null;
+        }
+
+        private bool MoveProxyToParkingPlacement(ProxyRecord record)
+        {
+            if (record?.Root == null)
+                return false;
+
+            SubassemblyPreviewPlacement parking = _spawner.FindCompletedSubassemblyParkingPlacement(record.SubassemblyId);
+            if (parking == null)
+                return false;
+
+            record.Root.transform.SetLocalPositionAndRotation(ToVector3(parking.position), ToQuaternion(parking.rotation));
+            record.Root.transform.localScale = SanitizeScale(ToVector3(parking.scale), Vector3.one);
+            record.CurrentTargetId = null;
+            return true;
+        }
+
+        private void ApplyProxyTransform(ProxyRecord record)
+        {
+            if (record?.Root == null || record.MemberPartIds == null)
+                return;
+
+            Transform root = record.Root.transform;
+            Vector3 rootPos = root.localPosition;
+            Quaternion rootRot = root.localRotation;
+            Vector3 rootScale = SanitizeScale(root.localScale, Vector3.one);
+
+            for (int i = 0; i < record.MemberPartIds.Length; i++)
+            {
+                string partId = record.MemberPartIds[i];
+                GameObject partGo = _findSpawnedPart(partId);
+                if (partGo == null)
+                    continue;
+
+                Vector3 memberLocalPosition = record.MemberLocalPositions[i];
+                if (record.ActiveFit != null &&
+                    record.ActiveFit.DrivenPartIds != null &&
+                    record.ActiveFit.DrivenPartIds.Contains(partId))
+                {
+                    float fitOffset = record.CurrentFitTravel - record.ActiveFit.MinTravel;
+                    memberLocalPosition += record.ActiveFit.AxisLocal * fitOffset;
+                }
+
+                Vector3 localPos = TransformPoint(rootPos, rootRot, rootScale, memberLocalPosition);
+                Quaternion localRot = rootRot * record.MemberLocalRotations[i];
+                Vector3 localScale = MultiplyScale(rootScale, record.MemberLocalScales[i]);
+
+                partGo.transform.SetLocalPositionAndRotation(localPos, localRot);
+                partGo.transform.localScale = localScale;
+                partGo.SetActive(true);
+            }
+
+            UpdateProxyCollider(record);
+        }
+
+        private bool TryApplyIntegratedPlacement(ProxyRecord record, string targetId)
+        {
+            if (record?.Root == null || string.IsNullOrWhiteSpace(targetId))
+                return false;
+
+            IntegratedSubassemblyPreviewPlacement integrated = _spawner.FindIntegratedSubassemblyPlacement(record.SubassemblyId, targetId);
+            if (integrated == null || integrated.memberPlacements == null || integrated.memberPlacements.Length == 0)
+                return false;
+
+            for (int i = 0; i < integrated.memberPlacements.Length; i++)
+            {
+                IntegratedMemberPreviewPlacement memberPlacement = integrated.memberPlacements[i];
+                if (memberPlacement == null || string.IsNullOrWhiteSpace(memberPlacement.partId))
+                    continue;
+
+                GameObject partGo = _findSpawnedPart(memberPlacement.partId);
+                if (partGo == null)
+                    continue;
+
+                Vector3 position = ToVector3(memberPlacement.position);
+                Quaternion rotation = ToQuaternion(memberPlacement.rotation);
+                Vector3 scale = SanitizeScale(ToVector3(memberPlacement.scale), Vector3.one);
+
+                partGo.transform.SetLocalPositionAndRotation(position, rotation);
+                partGo.transform.localScale = scale;
+                partGo.SetActive(true);
+            }
+
+            record.CurrentTargetId = targetId;
+            record.Root.SetActive(false);
+            if (string.Equals(_activeSubassemblyId, record.SubassemblyId, StringComparison.OrdinalIgnoreCase))
+                _activeSubassemblyId = null;
+
+            return true;
+        }
+
+        private bool TryRestoreConstrainedFitPlacement(ProxyRecord record, string targetId)
+        {
+            if (record?.Root == null || !TryActivateConstrainedFit(record, targetId))
+                return false;
+
+            record.CurrentFitTravel = Mathf.Clamp(record.ActiveFit.CompletionTravel, record.ActiveFit.MinTravel, record.ActiveFit.MaxTravel);
+            record.CurrentTargetId = targetId;
+            ApplyProxyTransform(record);
+            record.Root.SetActive(false);
+            if (string.Equals(_activeSubassemblyId, record.SubassemblyId, StringComparison.OrdinalIgnoreCase))
+                _activeSubassemblyId = null;
+            return true;
+        }
+
+        private bool TryCommitConstrainedFitPlacement(ProxyRecord record, string targetId)
+        {
+            if (record?.Root == null || !TryActivateConstrainedFit(record, targetId))
+                return false;
+
+            if (!TryGetTargetLocalPose(targetId, out Vector3 targetPos, out Quaternion targetRot, out Vector3 targetScale))
+                return false;
+
+            record.Root.transform.SetLocalPositionAndRotation(targetPos, targetRot);
+            record.Root.transform.localScale = targetScale;
+            record.CurrentFitTravel = Mathf.Clamp(record.ActiveFit.CompletionTravel, record.ActiveFit.MinTravel, record.ActiveFit.MaxTravel);
+            record.CurrentTargetId = targetId;
+            ApplyProxyTransform(record);
+            return true;
+        }
+
+        private bool TryActivateConstrainedFit(ProxyRecord record, string targetId)
+        {
+            if (record?.Root == null || string.IsNullOrWhiteSpace(targetId))
+                return false;
+
+            ConstrainedSubassemblyFitPreviewPlacement placement = _spawner.FindConstrainedSubassemblyFitPlacement(record.SubassemblyId, targetId);
+            if (placement == null)
+                return false;
+
+            if (!TryGetTargetLocalPose(targetId, out Vector3 targetPos, out Quaternion targetRot, out Vector3 targetScale))
+                return false;
+
+            Vector3 axisLocal = ToVector3(placement.fitAxisLocal);
+            if (axisLocal.sqrMagnitude < 0.000001f)
+                axisLocal = Vector3.right;
+            axisLocal.Normalize();
+
+            float minTravel = Mathf.Min(placement.minTravel, placement.maxTravel);
+            float maxTravel = Mathf.Max(placement.minTravel, placement.maxTravel);
+            float completionTravel = Mathf.Clamp(placement.completionTravel, minTravel, maxTravel);
+
+            record.ActiveFit = new FitRecord
+            {
+                TargetId = targetId,
+                AxisLocal = axisLocal,
+                MinTravel = minTravel,
+                MaxTravel = maxTravel,
+                CompletionTravel = completionTravel,
+                SnapTolerance = Mathf.Max(placement.snapTolerance, 0.001f),
+                DrivenPartIds = new HashSet<string>(placement.drivenPartIds ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase)
+            };
+
+            record.Root.transform.SetLocalPositionAndRotation(targetPos, targetRot);
+            record.Root.transform.localScale = targetScale;
+            record.CurrentFitTravel = minTravel;
+            record.CurrentTargetId = null;
+            return true;
+        }
+
+        private static void ClearFitState(ProxyRecord record)
+        {
+            if (record == null)
+                return;
+
+            record.ActiveFit = null;
+            record.CurrentFitTravel = 0f;
+        }
+
+        private void UpdateProxyCollider(ProxyRecord record)
+        {
+            if (record?.Root == null)
+                return;
+
+            Bounds? combined = null;
+            for (int i = 0; i < record.MemberPartIds.Length; i++)
+            {
+                GameObject partGo = _findSpawnedPart(record.MemberPartIds[i]);
+                if (!TryGetWorldBounds(partGo, out Bounds bounds))
+                    continue;
+
+                combined = combined.HasValue
+                    ? Encapsulate(combined.Value, bounds)
+                    : bounds;
+            }
+
+            if (!combined.HasValue)
+                return;
+
+            BoxCollider collider = record.Root.GetComponent<BoxCollider>();
+            if (collider == null)
+                collider = record.Root.AddComponent<BoxCollider>();
+
+            Bounds worldBounds = combined.Value;
+            collider.center = record.Root.transform.InverseTransformPoint(worldBounds.center);
+            Vector3 localSize = AbsVector(record.Root.transform.InverseTransformVector(worldBounds.size));
+            localSize = SanitizeScale(localSize, Vector3.one * 0.01f);
+
+            // Finished panels are thin and often upright during cube-joining.
+            // Expand the proxy collider so the user can grab/select the whole panel
+            // without having to hit one of the narrow bars exactly.
+            collider.size = new Vector3(
+                Mathf.Max(localSize.x, 0.18f),
+                Mathf.Max(localSize.y, 0.18f),
+                Mathf.Max(localSize.z, 0.18f));
+        }
+
+        private static bool AreAllSubassemblyStepsCompleted(SubassemblyDefinition subassembly, HashSet<string> completedStepIds)
+        {
+            if (subassembly?.stepIds == null || subassembly.stepIds.Length == 0)
+                return false;
+
+            for (int i = 0; i < subassembly.stepIds.Length; i++)
+            {
+                string stepId = subassembly.stepIds[i];
+                if (string.IsNullOrWhiteSpace(stepId))
+                    continue;
+
+                if (!completedStepIds.Contains(stepId))
+                    return false;
+            }
+
+            return true;
+        }
+
+        private bool TryGetTargetLocalPose(string targetId, out Vector3 position, out Quaternion rotation, out Vector3 scale)
+        {
+            position = Vector3.zero;
+            rotation = Quaternion.identity;
+            scale = Vector3.one;
+
+            if (string.IsNullOrWhiteSpace(targetId))
+                return false;
+
+            TargetPreviewPlacement targetPlacement = _spawner.FindTargetPlacement(targetId);
+            if (targetPlacement == null)
+                return false;
+
+            position = new Vector3(targetPlacement.position.x, targetPlacement.position.y, targetPlacement.position.z);
+            rotation = !targetPlacement.rotation.IsIdentity
+                ? new Quaternion(targetPlacement.rotation.x, targetPlacement.rotation.y, targetPlacement.rotation.z, targetPlacement.rotation.w)
+                : Quaternion.identity;
+            scale = SanitizeScale(new Vector3(targetPlacement.scale.x, targetPlacement.scale.y, targetPlacement.scale.z), Vector3.one);
+            return true;
+        }
+
+        private GameObject FindMemberPartFromHit(ProxyRecord record, Transform hitTransform)
+        {
+            Transform previewRoot = _getSetup?.Invoke()?.PreviewRoot;
+            while (hitTransform != null && hitTransform != previewRoot)
+            {
+                for (int i = 0; i < record.MemberPartIds.Length; i++)
+                {
+                    GameObject partGo = _findSpawnedPart(record.MemberPartIds[i]);
+                    if (partGo != null &&
+                        (partGo.transform == hitTransform || hitTransform.IsChildOf(partGo.transform)))
+                        return partGo;
+                }
+
+                hitTransform = hitTransform.parent;
+            }
+
+            return null;
+        }
+
+        private static Vector3 TransformPoint(Vector3 origin, Quaternion rotation, Vector3 scale, Vector3 localPoint)
+        {
+            return origin + rotation * MultiplyScale(scale, localPoint);
+        }
+
+        private static Vector3 InverseTransformPoint(Vector3 origin, Quaternion rotation, Vector3 scale, Vector3 point)
+        {
+            Vector3 translated = Quaternion.Inverse(rotation) * (point - origin);
+            return DivideScale(translated, scale);
+        }
+
+        private static Vector3 MultiplyScale(Vector3 left, Vector3 right)
+        {
+            return new Vector3(left.x * right.x, left.y * right.y, left.z * right.z);
+        }
+
+        private static Vector3 DivideScale(Vector3 value, Vector3 divisor)
+        {
+            Vector3 safe = SanitizeScale(divisor, Vector3.one);
+            return new Vector3(value.x / safe.x, value.y / safe.y, value.z / safe.z);
+        }
+
+        private static Vector3 SanitizeScale(Vector3 value, Vector3 fallback)
+        {
+            return new Vector3(
+                Mathf.Approximately(value.x, 0f) ? fallback.x : value.x,
+                Mathf.Approximately(value.y, 0f) ? fallback.y : value.y,
+                Mathf.Approximately(value.z, 0f) ? fallback.z : value.z);
+        }
+
+        private static Vector3 ToVector3(SceneFloat3 value) => new Vector3(value.x, value.y, value.z);
+
+        private static Quaternion ToQuaternion(SceneQuaternion value)
+        {
+            return !value.IsIdentity
+                ? new Quaternion(value.x, value.y, value.z, value.w)
+                : Quaternion.identity;
+        }
+
+        private static bool TryGetWorldBounds(GameObject target, out Bounds bounds)
+        {
+            bounds = default;
+            if (target == null)
+                return false;
+
+            Renderer[] renderers = target.GetComponentsInChildren<Renderer>(true);
+            if (renderers != null && renderers.Length > 0)
+            {
+                bounds = renderers[0].bounds;
+                for (int i = 1; i < renderers.Length; i++)
+                    bounds.Encapsulate(renderers[i].bounds);
+                return true;
+            }
+
+            Collider[] colliders = target.GetComponentsInChildren<Collider>(true);
+            if (colliders != null && colliders.Length > 0)
+            {
+                bounds = colliders[0].bounds;
+                for (int i = 1; i < colliders.Length; i++)
+                    bounds.Encapsulate(colliders[i].bounds);
+                return true;
+            }
+
+            return false;
+        }
+
+        private static Bounds Encapsulate(Bounds left, Bounds right)
+        {
+            left.Encapsulate(right);
+            return left;
+        }
+
+        private static Vector3 AbsVector(Vector3 value)
+        {
+            return new Vector3(Mathf.Abs(value.x), Mathf.Abs(value.y), Mathf.Abs(value.z));
+        }
+    }
+
+    internal sealed class SubassemblyPlacementProxy : MonoBehaviour
+    {
+        public string SubassemblyId;
+    }
+}

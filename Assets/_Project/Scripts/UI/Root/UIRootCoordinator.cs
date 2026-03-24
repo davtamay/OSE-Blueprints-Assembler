@@ -473,6 +473,9 @@ namespace OSE.UI.Root
                     state.ChallengeActive);
             }
 
+            EnsureToolRuntimeSubscription();
+            HandleToolRuntimeStateChanged();
+
             return true;
         }
 
@@ -485,6 +488,7 @@ namespace OSE.UI.Root
             // mechanism fires even if ShowStepShell hasn't been called yet for this step.
             EnsureToolRuntimeSubscription();
             TryRestoreRuntimePanelsAfterIntroDismiss();
+            HandleToolRuntimeStateChanged();
         }
 
         private void HandleRuntimeStepNavigated(StepNavigated evt)
@@ -492,7 +496,9 @@ namespace OSE.UI.Root
             if (!Application.isPlaying || _introVisible)
                 return;
 
+            EnsureToolRuntimeSubscription();
             TryRestoreRuntimePanelsAfterIntroDismiss();
+            HandleToolRuntimeStateChanged();
         }
 
         private void HandleRuntimeSessionCompleted(SessionCompleted evt)
@@ -742,6 +748,11 @@ namespace OSE.UI.Root
                 return;
             }
 
+            // Finished-panel stacking now uses in-world guided docking and ghost interaction
+            // as the primary affordance. Keep the step shell focused on instruction/progress.
+            bool showContextActionButton = false;
+            string contextActionLabel = null;
+            bool contextActionEnabled = false;
             float? progressOverride = _progressComplete ? 1f : ResolveIntraStepProgress();
             StepPanelViewModel viewModel = _stepPresenter.Create(
                 _currentStepNumber,
@@ -752,9 +763,54 @@ namespace OSE.UI.Root
                 _showHintButton,
                 _confirmGate,
                 _confirmUnlocked,
+                showContextActionButton,
+                contextActionLabel,
+                contextActionEnabled,
                 progressOverride);
 
             _stepPanelController.Show(viewModel);
+        }
+
+        private bool TryBuildGuidedStackActionState(out string actionLabel, out bool actionEnabled)
+        {
+            actionLabel = null;
+            actionEnabled = false;
+
+            if (!Application.isPlaying)
+                return false;
+
+            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+                return false;
+
+            StepController stepController = session.AssemblyController?.StepController;
+            StepDefinition step = stepController?.CurrentStepDefinition;
+            if (stepController == null ||
+                !stepController.HasActiveStep ||
+                step == null ||
+                !step.IsPlacement ||
+                !step.RequiresSubassemblyPlacement ||
+                step.targetIds == null ||
+                step.targetIds.Length != 1)
+            {
+                return false;
+            }
+
+            string subassemblyLabel = step.requiredSubassemblyId;
+            if (session.Package != null &&
+                session.Package.TryGetSubassembly(step.requiredSubassemblyId, out SubassemblyDefinition subassembly) &&
+                subassembly != null)
+            {
+                subassemblyLabel = subassembly.GetDisplayName();
+            }
+
+            actionLabel = $"Place {subassemblyLabel}";
+
+            actionEnabled =
+                ServiceRegistry.TryGet<ISubassemblyPlacementService>(out var subassemblyController) &&
+                subassemblyController != null &&
+                subassemblyController.IsSubassemblyReady(step.requiredSubassemblyId);
+
+            return true;
         }
 
         /// <summary>
@@ -1990,7 +2046,7 @@ namespace OSE.UI.Root
             }
 
             // Load texture from file
-            byte[] data = await System.Threading.Tasks.Task.Run(() => System.IO.File.ReadAllBytes(path));
+            byte[] data = System.IO.File.ReadAllBytes(path);
             if (data == null || data.Length == 0) return;
 
             var tex = new Texture2D(2, 2);

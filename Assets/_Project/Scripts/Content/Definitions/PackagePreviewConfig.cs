@@ -32,6 +32,34 @@ namespace OSE.Content
         /// The harness matches entries by targetId to position and color each target marker.
         /// </summary>
         public TargetPreviewPlacement[] targetPlacements;
+
+        /// <summary>
+        /// Authored fabrication-space reference frames for completed subassemblies that
+        /// later become learner-placeable units during stacking/integration steps.
+        /// </summary>
+        public SubassemblyPreviewPlacement[] subassemblyPlacements;
+
+        /// <summary>
+        /// Optional constrained-fit payloads for completed subassemblies that need one
+        /// or more member parts to slide along a single axis while the subassembly root
+        /// remains anchored to a target pose.
+        /// </summary>
+        public ConstrainedSubassemblyFitPreviewPlacement[] constrainedSubassemblyFitPlacements;
+
+        /// <summary>
+        /// Optional parking frames for finished subassemblies that should persist in the
+        /// scene after fabrication, but should no longer occupy the active fabrication bay.
+        /// Used to keep one near-camera working area while preserving visible progress.
+        /// </summary>
+        public SubassemblyPreviewPlacement[] completedSubassemblyParkingPlacements;
+
+        /// <summary>
+        /// Optional canonical integrated member poses for completed subassemblies after
+        /// they are placed into a later assembly target. This allows stacking to teach
+        /// panel movement while the final visible machine uses explicit non-overlapping
+        /// member poses.
+        /// </summary>
+        public IntegratedSubassemblyPreviewPlacement[] integratedSubassemblyPlacements;
     }
 
     /// <summary>
@@ -99,6 +127,62 @@ namespace OSE.Content
         public SceneFloat3 portA;
         /// <summary>World-space port B position for pipe_connection steps (e.g. other end of a hose).</summary>
         public SceneFloat3 portB;
+    }
+
+    /// <summary>
+    /// Authored reference frame for a completed subassembly in its fabrication pose.
+    /// Member-part local offsets are derived from this frame and the parts' play transforms.
+    /// </summary>
+    [Serializable]
+    public sealed class SubassemblyPreviewPlacement
+    {
+        public string subassemblyId;
+        public SceneFloat3 position;
+        public SceneQuaternion rotation;
+        public SceneFloat3 scale;
+    }
+
+    /// <summary>
+    /// Constrained-fit preview payload for a finished subassembly that must remain
+    /// anchored to a target pose while a driven member subset slides along a single
+    /// authored local axis.
+    /// </summary>
+    [Serializable]
+    public sealed class ConstrainedSubassemblyFitPreviewPlacement
+    {
+        public string subassemblyId;
+        public string targetId;
+        public SceneFloat3 fitAxisLocal;
+        public float minTravel;
+        public float maxTravel;
+        public float completionTravel;
+        public float snapTolerance;
+        public string[] drivenPartIds;
+    }
+
+    /// <summary>
+    /// Canonical post-placement member poses for a subassembly when committed to a
+    /// specific target. Positions, rotations, and scales are authored in PreviewRoot
+    /// local space.
+    /// </summary>
+    [Serializable]
+    public sealed class IntegratedSubassemblyPreviewPlacement
+    {
+        public string subassemblyId;
+        public string targetId;
+        public IntegratedMemberPreviewPlacement[] memberPlacements;
+    }
+
+    /// <summary>
+    /// Canonical integrated pose for a single member part of a completed subassembly.
+    /// </summary>
+    [Serializable]
+    public sealed class IntegratedMemberPreviewPlacement
+    {
+        public string partId;
+        public SceneFloat3 position;
+        public SceneQuaternion rotation;
+        public SceneFloat3 scale;
     }
 
     /// <summary>

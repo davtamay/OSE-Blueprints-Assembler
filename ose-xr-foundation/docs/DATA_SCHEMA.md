@@ -170,6 +170,9 @@ This is the top-level package container.
 - `assetManifest` : AssetManifestDefinition (optional)  
   Asset reference metadata.
 
+- `previewConfig` : PackagePreviewConfigDefinition (optional)  
+  Authored preview and presentation metadata, including finished-subassembly stacking frames.
+
 ### Example
 
 ```json
@@ -422,6 +425,7 @@ Represents one coherent learner action.
 - `instructionText` : string
 - `whyItMattersText` : string (optional)
 - `requiredPartIds` : array<string>
+- `requiredSubassemblyId` : string (optional)
 - `optionalPartIds` : array<string> (optional)
 - `relevantToolIds` : array<string> (optional)
 - `targetIds` : array<string> (optional)
@@ -466,6 +470,31 @@ The following fields are implemented in `StepDefinition.cs` with full validator 
   This is NOT an authored camera angle (yaw/pitch/distance) -- it is a semantic intent that the runtime resolves into camera parameters using the step's spatial data.
 
 Note: **Interaction pattern** (e.g. PlaceOnZone, SelectPair, TargetHit) is NOT an authored schema field. It is resolved at runtime from the combination of `family`, `profile`, and step data shape. See `INTERACTION_PATTERN_MATRIX.md` for the pattern catalog and resolution rules.
+
+Important:
+
+- constrained fitting of a finished unit should remain inside the existing `Place`
+  family
+- do not add a new `Adjust` family for operations such as fitting a completed X-axis
+  between already-mounted Y axes
+- that behavior should resolve from `Place` + an appropriate profile plus step data
+  shape
+
+##### Finished Subassembly Placement
+
+- `requiredSubassemblyId` : string (optional)
+
+  Use this when the learner must move a previously completed subassembly as one rigid
+  unit.
+
+  Rules:
+
+  - mutually exclusive with `requiredPartIds` in the current contract
+  - used on normal `Place` steps; do not create a separate stack family
+  - must resolve to an authored subassembly
+  - should pair with a target that references the same subassembly through `associatedSubassemblyId`
+
+  See `STACKING_ARCHITECTURE.md` for the runtime model and authoring rules.
 
 ##### Capability Payloads (Phase 3 — wired)
 
@@ -676,6 +705,7 @@ Represents a logical assembly target.
 
 - `description` : string (optional)
 - `associatedPartId` : string (optional)
+- `associatedSubassemblyId` : string (optional)
 - `tags` : array<string> (optional)
 
 ### Example
@@ -687,6 +717,50 @@ Represents a logical assembly target.
   "associatedPartId": "corner_bracket_a"
 }
 ```
+
+---
+
+## 14.2 PackagePreviewConfigDefinition
+
+Represents authored preview and presentation metadata used by the runtime.
+
+### Fields
+
+- `defaultAssemblyScaleMultiplier` : number (optional)
+- `subassemblyPlacements` : array<SubassemblyPreviewPlacement> (optional)  
+  Authored fabrication reference frames for completed subassemblies that may later move as one rigid unit.
+- `completedSubassemblyParkingPlacements` : array<SubassemblyPreviewPlacement> (optional)  
+  Presentation-space parking poses for completed subassemblies that should persist after fabrication but before later stacking.
+- `integratedSubassemblyPlacements` : array<IntegratedSubassemblyPreviewPlacement> (optional)  
+  Canonical final member poses used after a stacking step is committed.
+
+### SubassemblyPreviewPlacement
+
+- `subassemblyId` : string
+- `position` : Vector3Like
+- `rotation` : QuaternionLike
+- `scale` : Vector3Like (optional, default `1,1,1`)
+
+### IntegratedSubassemblyPreviewPlacement
+
+- `subassemblyId` : string
+- `targetId` : string
+- `memberPlacements` : array<IntegratedMemberPreviewPlacement>
+
+### IntegratedMemberPreviewPlacement
+
+- `partId` : string
+- `position` : Vector3Like
+- `rotation` : QuaternionLike
+- `scale` : Vector3Like (optional, default `1,1,1`)
+
+### Notes
+
+- `subassemblyPlacements` defines the fabrication reference frame of the finished unit.
+- `completedSubassemblyParkingPlacements` defines where a finished unit should persist after fabrication when one shared work bay is used.
+- `integratedSubassemblyPlacements` defines the canonical committed display after the finished unit has been placed.
+- Use `integratedSubassemblyPlacements` when leaving the fabrication panel shell in place would create overlap, z-fighting, or misleading final geometry.
+- See `STACKING_ARCHITECTURE.md` for the full rationale and runtime behavior.
 
 ---
 

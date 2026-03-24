@@ -151,9 +151,14 @@ namespace OSE.Interaction.V2
         {
             if (!_initialized) return;
             _targetState.PivotPosition = bounds.center;
-            // Distance so the bounding sphere fits in view (rough heuristic)
+            // Framing should produce a readable assembly view, not preserve
+            // whatever incidental yaw/pitch happened to be captured earlier.
+            var framingView = ViewpointLibrary.Isometric;
+            _targetState.Yaw = framingView.Yaw;
+            _targetState.Pitch = framingView.Pitch;
+            // Distance so the bounding sphere fits in view with comfortable margin
             float radius = bounds.extents.magnitude;
-            _targetState.Distance = radius * 2.5f;
+            _targetState.Distance = Mathf.Max(radius * 3.5f, framingView.Distance);
         }
 
         /// <summary>Reset to the state captured at initialization.</summary>

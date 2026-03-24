@@ -95,16 +95,21 @@ available OSE source material is strongest there: 1/8 inch x 1 inch flat stock c
 
 | Package ID | Scope | Parts | Steps | Tools | Status |
 |------------|-------|-------|-------|-------|--------|
-| `d3d_v18_10` | **Full six-side frame layup package** | 24 | 30 | 1 | **Authored in data (exact side geometry, shared flat-bar GLB generated, broader frame/joining content still pending)** |
+| `d3d_v18_10` | **Frame fabrication, cube joining, and axes stage 01** | 30 | 52 | 6 | **Authored in data (exact side geometry, square-check, hold-down, sequential panel tack-weld, rigid-panel stacking, cube alignment check, opposite-corner hold-down, cube corner tack sequence, first seam-weld pass, grinder cleanup on key upper joints, post-cleanup square check, frame acceptance, Y-axis pair mounting, constrained X-axis fit, belt tension, and first axis QC)** |
 
 ### Current Package Coverage (`d3d_v18_10`)
 
-- Covers all six frame sides as separate layup subassemblies.
+- Covers all six frame sides as separate fabrication subassemblies.
 - Uses source-backed stock dimensions: 13 inch x 1 inch x 1/8 inch mild-steel flat bar.
 - Encodes the real 14 inch square side geometry and 1 inch corner overlap for every panel.
-- Includes square-check steps with the framing square for each side before final joining.
+- Cube stacking now bakes to canonical integrated member poses so the final visible cube avoids overlapping coplanar panel-shell geometry.
+- Includes square-check steps with the framing square before heat is introduced.
+- Includes authored hold-down and corner tack-weld steps for each panel.
+- Includes explicit learner placement of the finished panels into the open cube layout.
+- Includes a first cube-join phase: stacked-cube square-check, opposite-corner hold-down, lower/upper corner tack-weld sequences, lower/upper seam-weld sequences, one grinder cleanup pass on key upper joints, one post-cleanup square check, and a short frame-acceptance handoff.
+- Includes `Axes Stage 01`: Y-left mount, Y-right mount, staged X-axis prep, constrained X-axis span fitting, motor-holder lock-up, belt tension, belt-peg reinsertion, and first travel/tightness QC.
 - Uses separate teaching work zones for the six panels. This is a documented instructional staging choice, not a change to the real panel geometry.
-- Does not yet cover final cube joining, clamping sequence, weld order, rails, gantry, motion system, electronics, or extrusion hardware.
+- Still does not cover full weld-process detail, exact axis meshes and explicit external mount hardware, later rails, gantry, full motion system, electronics, or extrusion hardware.
 
 ### OSE References
 

@@ -10,6 +10,7 @@ namespace OSE.Content
         public string anchorRef;
         public string description;
         public string associatedPartId;
+        public string associatedSubassemblyId;
         public string[] tags;
     }
 }

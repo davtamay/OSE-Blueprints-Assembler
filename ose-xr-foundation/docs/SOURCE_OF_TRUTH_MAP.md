@@ -35,6 +35,7 @@ This file should be used together with:
 - `docs/RUNTIME_EVENT_MODEL.md`
 - `docs/IMPLEMENTATION_CHECKLIST.md`
 - `docs/STEP_VIEW_FRAMING.md`
+- `docs/PERSISTENCE_MODEL.md`
 - `TASK_EXECUTION_PROTOCOL.md`
 - `TEST_STRATEGY.md`
 - `PERFORMANCE_ARCHITECTURE.md`
@@ -306,13 +307,19 @@ This section defines which subsystem owns which categories of runtime truth.
 - migration/version handling for saved state
 - resume-safe session reconstruction
 
+### Persistence Guarantee
+
+Step-boundary restore only. The runtime reconstructs the scene from authored content + step progress. No per-part spatial data or mid-step state is persisted. See `PERSISTENCE_MODEL.md` for the full contract.
+
 ### Must Not Be Owned By
 
 - scattered `PlayerPrefs` assumptions
 - random UI state snapshots
+- per-part world transforms or scene-graph serialization
 
 ### Primary Docs
 
+- `docs/PERSISTENCE_MODEL.md`
 - `docs/ASSEMBLY_RUNTIME.md`
 - `TEST_STRATEGY.md`
 
@@ -690,7 +697,23 @@ This section defines which document is authoritative for each domain.
 
 ---
 
-## 3.15 First Slice Content Choice
+## 3.15 Persistence Architecture
+
+### Authoritative Doc
+
+- `docs/PERSISTENCE_MODEL.md`
+
+### Governs
+
+- persistence guarantee (step-boundary restore)
+- what state is persisted vs derived
+- restore sequence contract
+- rules for extending persisted state
+- relationship between persistence and scene reconstruction
+
+---
+
+## 3.16 First Slice Content Choice
 
 ### Authoritative Docs
 
@@ -705,7 +728,7 @@ This section defines which document is authoritative for each domain.
 
 ---
 
-## 3.16 Interaction Patterns
+## 3.17 Interaction Patterns
 
 ### Authoritative Doc
 
@@ -721,7 +744,7 @@ This section defines which document is authoritative for each domain.
 
 ---
 
-## 3.17 Step View Framing
+## 3.18 Step View Framing
 
 ### Authoritative Doc
 
@@ -843,6 +866,7 @@ Likely code areas:
 
 Inspect:
 
+- `docs/PERSISTENCE_MODEL.md`
 - `docs/ASSEMBLY_RUNTIME.md`
 - `TEST_STRATEGY.md`
 - `TASK_EXECUTION_PROTOCOL.md`

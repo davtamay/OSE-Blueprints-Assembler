@@ -12,5 +12,16 @@ namespace OSE.Content
         public string[] partIds;
         public string[] stepIds;
         public string milestoneMessage;
+
+        public string GetDisplayName()
+        {
+            if (!string.IsNullOrWhiteSpace(name))
+                return name.Trim();
+
+            if (!string.IsNullOrWhiteSpace(id))
+                return id.Trim();
+
+            return "Unnamed Subassembly";
+        }
     }
 }

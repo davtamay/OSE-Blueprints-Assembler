@@ -67,6 +67,7 @@ namespace OSE.Runtime.Preview
         // Persistence / restore
         private int _savedCompletedSteps;
         private int _savedTotalSteps;
+        private string _savedMachineVersion;
 
         // Edit-mode preview state
         private readonly MachinePackageLoader _loader = new MachinePackageLoader();
@@ -267,7 +268,7 @@ namespace OSE.Runtime.Preview
         /// Use this after changing the Package Id field in play mode.
         /// </summary>
         [ContextMenu("Restart Session (Switch Package)")]
-        public async void RestartSession()
+        public async void RestartSession(bool clearSavedProgress = false)
         {
             if (!Application.isPlaying) return;
 
@@ -287,6 +288,12 @@ namespace OSE.Runtime.Preview
                 _session.EndSession();
                 _session = null;
             }
+
+            // Clear saved progress AFTER EndSession (which flushes persistence)
+            // so the flush doesn't re-save what we just cleared.
+            if (clearSavedProgress && ServiceRegistry.TryGet<IPersistenceService>(out var persistence))
+                persistence.ClearSession(_packageId);
+
             _sessionStarted = false;
             _introActive = false;
             _introDismissed = false;
@@ -294,6 +301,7 @@ namespace OSE.Runtime.Preview
             IsIntroActive = false;
             _savedCompletedSteps = 0;
             _savedTotalSteps = 0;
+            _savedMachineVersion = null;
 
             OseLog.Info($"[SessionDriver] Restarting session with package '{_packageId}'.");
             await StartSessionAsync();
@@ -328,9 +336,31 @@ namespace OSE.Runtime.Preview
                 ui.ResetMachineIntroState();
             }
 
-            OseLog.Info($"[SessionDriver] Starting session for '{_packageId}' in {_sessionMode} mode.");
+            // Detect saved progress BEFORE starting the session so the restore
+            // step count can be passed in. This ensures the session controller
+            // skips directly to the saved step boundary instead of activating
+            // step 1 first and patching up afterward.
+            _savedCompletedSteps = 0;
+            _savedTotalSteps = 0;
+            if (ServiceRegistry.TryGet<IPersistenceService>(out var persistence)
+                && persistence.HasSavedSession(_packageId))
+            {
+                var saved = persistence.LoadSession(_packageId);
+                if (saved != null && saved.CompletedStepCount > 0)
+                {
+                    // Version guard: discard saved progress if the package changed
+                    string savedVersion = saved.MachineVersion ?? string.Empty;
+                    // We cannot check package version yet (not loaded), so store
+                    // the saved version and validate after load below.
+                    _savedCompletedSteps = saved.CompletedStepCount;
+                    _savedMachineVersion = savedVersion;
+                }
+            }
 
-            bool success = await _session.StartSessionAsync(_packageId, _sessionMode);
+            OseLog.Info($"[SessionDriver] Starting session for '{_packageId}' in {_sessionMode} mode" +
+                (_savedCompletedSteps > 0 ? $" (restoring {_savedCompletedSteps} steps)" : "") + ".");
+
+            bool success = await _session.StartSessionAsync(_packageId, _sessionMode, _savedCompletedSteps);
 
             // Subscribe to runtime events now that startup step events have already fired.
             RuntimeEventBus.Subscribe<StepStateChanged>(HandleStepStateChanged);
@@ -350,17 +380,21 @@ namespace OSE.Runtime.Preview
                 _introDismissed = false;
                 _pendingStepUiPush = false;
 
-                // Check for saved progress
-                _savedCompletedSteps = 0;
-                _savedTotalSteps = 0;
-                if (ServiceRegistry.TryGet<IPersistenceService>(out var persistence)
-                    && persistence.HasSavedSession(_packageId))
+                // Resolve total steps now that the package is loaded
+                _savedTotalSteps = _session.Package?.GetOrderedSteps().Length ?? 0;
+
+                // Version guard: if the package version changed, the restore step
+                // count we passed was based on stale data. The session controller
+                // already started at the (possibly wrong) restore point, but since
+                // content may have shifted we warn. Future: clear and restart fresh.
+                if (_savedCompletedSteps > 0)
                 {
-                    var saved = persistence.LoadSession(_packageId);
-                    if (saved != null && saved.CompletedStepCount > 0)
+                    string currentVersion = _session.Package?.packageVersion ?? string.Empty;
+                    if (!string.IsNullOrEmpty(_savedMachineVersion)
+                        && _savedMachineVersion != currentVersion)
                     {
-                        _savedCompletedSteps = saved.CompletedStepCount;
-                        _savedTotalSteps = _session.Package?.GetOrderedSteps().Length ?? 0;
+                        OseLog.Warn($"[SessionDriver] Package version changed (saved='{_savedMachineVersion}', " +
+                            $"current='{currentVersion}'). Saved progress may be invalid.");
                     }
                 }
 
@@ -536,15 +570,10 @@ namespace OSE.Runtime.Preview
             IsIntroActive = false;
             _savedCompletedSteps = 0;
             _savedTotalSteps = 0;
-
-            // Clear saved progress using the actual package ID
-            if (ServiceRegistry.TryGet<IPersistenceService>(out var persistence))
-            {
-                persistence.ClearSession(_packageId);
-            }
+            _savedMachineVersion = null;
 
             OseLog.Info("[SessionDriver] Progress reset. Restarting session.");
-            RestartSession();
+            RestartSession(clearSavedProgress: true);
         }
 
         private void HandleIntroDismissed(MachineIntroDismissed evt)
@@ -554,13 +583,9 @@ namespace OSE.Runtime.Preview
             _pendingStepUiPush = true;
             IsIntroActive = false;
 
-            // Restore saved progress if available
-            if (_savedCompletedSteps > 0 && _session != null)
-            {
-                OseLog.Info($"[SessionDriver] Restoring {_savedCompletedSteps} completed steps.");
-                _session.RestoreToStep(_savedCompletedSteps);
-                _savedCompletedSteps = 0;
-            }
+            // Restore already happened during StartSessionAsync — the session
+            // controller skipped directly to the saved step boundary before any
+            // step was activated. No deferred RestoreToStep needed here.
 
             OseLog.Info("[SessionDriver] Machine intro dismissed. Pushing step UI.");
             if (PushStepToUI())

@@ -145,7 +145,8 @@ namespace OSE.Runtime
             return string.Equals(actionType, "measure", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(actionType, "tighten", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(actionType, "strike", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(actionType, "weld_pass", StringComparison.OrdinalIgnoreCase);
+                || string.Equals(actionType, "weld_pass", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(actionType, "grind_pass", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool ArrayContains(string[] array, string value)

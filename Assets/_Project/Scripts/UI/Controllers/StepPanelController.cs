@@ -1,4 +1,5 @@
 using OSE.App;
+using OSE.Content;
 using OSE.Core;
 using OSE.Runtime;
 using OSE.UI.Presenters;
@@ -19,6 +20,7 @@ namespace OSE.UI.Controllers
         protected override void CacheView(VisualElement root)
         {
             _view = (StepPanelView)root;
+            _view.ContextActionButton.clicked += HandleContextActionClicked;
             _view.ConfirmButton.clicked += HandleConfirmClicked;
             _view.HintButton.clicked += HandleHintClicked;
             _view.BackButton.clicked += HandleBackClicked;
@@ -30,6 +32,9 @@ namespace OSE.UI.Controllers
             _view.StepLabel.text = viewModel.StepLabel;
             _view.TitleLabel.text = viewModel.Title;
             _view.InstructionLabel.text = viewModel.Instruction;
+            _view.SetContextActionButtonVisible(viewModel.ShowContextActionButton);
+            _view.SetContextActionLabel(viewModel.ContextActionLabel);
+            _view.SetContextActionEnabled(viewModel.ContextActionEnabled);
             _view.SetConfirmButtonVisible(viewModel.ShowConfirmButton);
             _view.SetConfirmEnabled(viewModel.ConfirmUnlocked);
             _view.SetHintButtonVisible(viewModel.ShowHintButton);
@@ -52,12 +57,48 @@ namespace OSE.UI.Controllers
         {
             if (_view != null)
             {
+                _view.ContextActionButton.clicked -= HandleContextActionClicked;
                 _view.ConfirmButton.clicked -= HandleConfirmClicked;
                 _view.HintButton.clicked -= HandleHintClicked;
                 _view.BackButton.clicked -= HandleBackClicked;
                 _view.ForwardButton.clicked -= HandleForwardClicked;
             }
             _view = null;
+        }
+
+        private void HandleContextActionClicked()
+        {
+            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+                return;
+
+            StepController stepController = session.AssemblyController?.StepController;
+            StepDefinition step = stepController?.CurrentStepDefinition;
+            if (stepController == null ||
+                !stepController.HasActiveStep ||
+                step == null ||
+                !step.IsPlacement ||
+                !step.RequiresSubassemblyPlacement ||
+                step.targetIds == null ||
+                step.targetIds.Length != 1)
+            {
+                return;
+            }
+
+            if (!ServiceRegistry.TryGet<ISubassemblyPlacementService>(out var subassemblyController) ||
+                subassemblyController == null ||
+                !subassemblyController.IsSubassemblyReady(step.requiredSubassemblyId))
+            {
+                return;
+            }
+
+            string targetId = step.targetIds[0];
+            if (!subassemblyController.TryApplyPlacement(step.requiredSubassemblyId, targetId))
+            {
+                OseLog.Warn($"[StepPanel] Guided stack placement failed for subassembly '{step.requiredSubassemblyId}' on target '{targetId}'.");
+                return;
+            }
+
+            stepController.CompleteStep(session.GetElapsedSeconds());
         }
 
         private void HandleConfirmClicked()
@@ -118,6 +159,7 @@ namespace OSE.UI.Controllers
             public Label StepLabel { get; }
             public Label TitleLabel { get; }
             public Label InstructionLabel { get; }
+            public Button ContextActionButton { get; }
             public Button ConfirmButton { get; }
             public Button HintButton { get; }
             public Button BackButton { get; }
@@ -126,6 +168,10 @@ namespace OSE.UI.Controllers
             private readonly VisualElement _progressTrack;
             private readonly VisualElement _progressFill;
 
+            private static readonly Color ContextEnabledBg = new Color(0.46f, 0.34f, 0.12f, 0.96f);
+            private static readonly Color ContextDisabledBg = new Color(0.28f, 0.24f, 0.18f, 0.7f);
+            private static readonly Color ContextEnabledText = new Color(1f, 0.94f, 0.82f, 1f);
+            private static readonly Color ContextDisabledText = new Color(0.72f, 0.68f, 0.62f, 0.78f);
             private static readonly Color ConfirmEnabledBg = new Color(0.2f, 0.7f, 0.4f, 1f);
             private static readonly Color ConfirmDisabledBg = new Color(0.25f, 0.3f, 0.35f, 0.7f);
             private static readonly Color ConfirmDisabledText = new Color(0.6f, 0.65f, 0.7f, 0.7f);
@@ -213,6 +259,19 @@ namespace OSE.UI.Controllers
                 HintButton.style.display = DisplayStyle.None;
                 Add(HintButton);
 
+                ContextActionButton = new Button();
+                ContextActionButton.text = "Place Assembly";
+                ContextActionButton.style.height = 44f;
+                ContextActionButton.style.marginTop = 10f;
+                ContextActionButton.style.fontSize = 15f;
+                ContextActionButton.style.unityFontStyleAndWeight = FontStyle.Bold;
+                ContextActionButton.style.borderTopLeftRadius = 6f;
+                ContextActionButton.style.borderTopRightRadius = 6f;
+                ContextActionButton.style.borderBottomLeftRadius = 6f;
+                ContextActionButton.style.borderBottomRightRadius = 6f;
+                ContextActionButton.style.display = DisplayStyle.None;
+                Add(ContextActionButton);
+
                 // Confirm button (touch-friendly: 44px min height)
                 ConfirmButton = new Button();
                 ConfirmButton.text = "Continue";
@@ -228,6 +287,25 @@ namespace OSE.UI.Controllers
                 ConfirmButton.style.borderBottomRightRadius = 6f;
                 ConfirmButton.style.display = DisplayStyle.None;
                 Add(ConfirmButton);
+            }
+
+            public void SetContextActionButtonVisible(bool visible)
+            {
+                ContextActionButton.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            public void SetContextActionLabel(string label)
+            {
+                ContextActionButton.text = string.IsNullOrWhiteSpace(label)
+                    ? "Place Assembly"
+                    : label.Trim();
+            }
+
+            public void SetContextActionEnabled(bool enabled)
+            {
+                ContextActionButton.SetEnabled(enabled);
+                ContextActionButton.style.backgroundColor = enabled ? ContextEnabledBg : ContextDisabledBg;
+                ContextActionButton.style.color = enabled ? ContextEnabledText : ContextDisabledText;
             }
 
             public void SetConfirmButtonVisible(bool visible)

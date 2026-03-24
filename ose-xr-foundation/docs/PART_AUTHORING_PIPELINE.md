@@ -39,6 +39,10 @@ The canonical physical-fidelity requirements for dimensions, placement, orientat
 appearance, and AI asset prompting live in `docs/CONTENT_MODEL.md` under
 `Physical Fidelity Standard`.
 
+If a procedure requires moving a previously completed unit as one rigid object, follow
+`docs/STACKING_ARCHITECTURE.md` instead of inventing fake composite parts or ad hoc
+scene hierarchies.
+
 ---
 
 # 1. Core Principle
@@ -132,6 +136,25 @@ Before authoring starts, answer:
 - Does this slice support aha moments?
 
 If those are unclear, the scope is still too vague.
+
+## 4.3 Finished Unit Scope Check
+
+Before authoring later integration steps, answer this directly:
+
+- Does the learner ever move a previously completed subassembly as one rigid unit?
+
+If yes:
+
+- author the fabrication slice first
+- then author the stacking/integration slice using `requiredSubassemblyId`
+- define a subassembly reference frame in `previewConfig.subassemblyPlacements`
+- define `integratedSubassemblyPlacements` when the final display should not remain a literal panel shell
+
+Do not solve this by:
+
+- inventing a fake replacement part
+- reusing one loose part as the representative handle for the whole unit
+- hiding transform logic in scene-specific code
 
 ---
 

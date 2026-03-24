@@ -31,6 +31,7 @@ namespace OSE.Interaction.V2.Integration
         private MethodInfo _tryExternalPipeConnectionMethod;
         private MethodInfo _getNearestToolTargetWorldPosMethod;
         private MethodInfo _tryGetGhostWorldPosForPartMethod;
+        private MethodInfo _normalizeExternalSelectableTargetMethod;
         private PropertyInfo _lastToolActionWorldPosProperty;
         private GameObject _lastHoveredPart;
 
@@ -64,6 +65,8 @@ namespace OSE.Interaction.V2.Integration
             _getNearestToolTargetWorldPosMethod = _legacyBridge.GetType().GetMethod("TryGetNearestToolTargetWorldPos",
                 BindingFlags.Public | BindingFlags.Instance);
             _tryGetGhostWorldPosForPartMethod = _legacyBridge.GetType().GetMethod("TryGetGhostWorldPosForPart",
+                BindingFlags.Public | BindingFlags.Instance);
+            _normalizeExternalSelectableTargetMethod = _legacyBridge.GetType().GetMethod("NormalizeExternalSelectableTarget",
                 BindingFlags.Public | BindingFlags.Instance);
             _lastToolActionWorldPosProperty = _legacyBridge.GetType().GetProperty("LastToolActionWorldPos",
                 BindingFlags.Public | BindingFlags.Instance);
@@ -101,6 +104,7 @@ namespace OSE.Interaction.V2.Integration
             _tryExternalPipeConnectionMethod = null;
             _getNearestToolTargetWorldPosMethod = null;
             _tryGetGhostWorldPosForPartMethod = null;
+            _normalizeExternalSelectableTargetMethod = null;
             _lastToolActionWorldPosProperty = null;
             _lastHoveredPart = null;
         }
@@ -113,6 +117,15 @@ namespace OSE.Interaction.V2.Integration
         public void ReleasePart() => _actionBridge.OnPartReleased();
         public void DeselectAll() => _actionBridge.OnDeselected();
         public void DeselectFromExternalControl() => _actionBridge.OnExternallyResolvedDeselected();
+
+        public GameObject NormalizeSelectableTarget(GameObject target)
+        {
+            if (_legacyBridge == null || _normalizeExternalSelectableTargetMethod == null || target == null)
+                return target;
+
+            object result = _normalizeExternalSelectableTargetMethod.Invoke(_legacyBridge, new object[] { target });
+            return result as GameObject ?? target;
+        }
 
         /// <summary>
         /// Attempts click-to-place via the legacy bridge for the already-selected part.

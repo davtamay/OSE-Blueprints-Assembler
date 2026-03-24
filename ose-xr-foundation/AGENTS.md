@@ -330,6 +330,13 @@ Agents should prefer:
 - separation of authoring and runtime concerns
 - clean interfaces between systems
 
+When authoring or extending machine packages, treat completed-unit stacking as a
+first-class architecture concern. If a later step moves a finished panel or module as
+one rigid unit, follow `docs/STACKING_ARCHITECTURE.md` instead of inventing fake
+composite parts, scene-specific transform hacks, or part-identity shortcuts. If the
+machine uses one shared fabrication bay, author explicit parking poses for finished
+subassemblies rather than scattering equivalent work zones across the floor.
+
 ---
 
 ## Agent Responsibilities

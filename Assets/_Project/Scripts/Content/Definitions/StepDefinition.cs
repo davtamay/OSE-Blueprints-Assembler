@@ -14,6 +14,7 @@ namespace OSE.Content
         public string instructionText;
         public string whyItMattersText;
         public string[] requiredPartIds;
+        public string requiredSubassemblyId;
         public string[] optionalPartIds;
         public string[] relevantToolIds;
         public string[] targetIds;
@@ -117,6 +118,14 @@ namespace OSE.Content
         public bool IsSequential =>
             string.Equals(targetOrder, "sequential", System.StringComparison.OrdinalIgnoreCase);
 
+        /// <summary>True when this place step expects a completed subassembly proxy instead of loose parts.</summary>
+        public bool RequiresSubassemblyPlacement =>
+            !string.IsNullOrWhiteSpace(requiredSubassemblyId);
+
+        /// <summary>True when this place step uses the constrained adjustable-fit profile.</summary>
+        public bool IsAxisFitPlacement =>
+            IsPlacement && string.Equals(profile, "AxisFit", StringComparison.OrdinalIgnoreCase);
+
         /// <summary>True when the resolved family is Place.</summary>
         public bool IsPlacement => ResolvedFamily == StepFamily.Place;
 
@@ -186,6 +195,18 @@ namespace OSE.Content
             string instruction = string.IsNullOrWhiteSpace(instructionText)
                 ? "Instruction text is missing from this step definition."
                 : instructionText.Trim();
+
+            if (RequiresSubassemblyPlacement)
+            {
+                instruction += Environment.NewLine + Environment.NewLine +
+                    "Move the completed panel as one finished unit. Drag it toward the highlighted target and it will rotate into place as it docks.";
+            }
+
+            if (IsAxisFitPlacement)
+            {
+                instruction += Environment.NewLine + Environment.NewLine +
+                    "Adjust the completed axis as one unit while the anchored side stays fixed. Drag along the fit direction until the gap closes and the axis seats fully.";
+            }
 
             if (string.IsNullOrWhiteSpace(whyItMattersText))
             {

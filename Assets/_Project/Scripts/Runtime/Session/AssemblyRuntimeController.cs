@@ -63,6 +63,7 @@ namespace OSE.Runtime
             StepDefinition firstStep = ProgressionController.GetCurrentStep();
             _preflightValidator.Validate(_package, firstStep);
             StepController.ActivateStep(firstStep, getElapsed());
+            PublishStepActivated(firstStep);
         }
 
         public void RestoreAssemblyState(string assemblyId, int stepIndex, Func<float> getElapsed)
@@ -102,6 +103,7 @@ namespace OSE.Runtime
 
             _preflightValidator.Validate(_package, step);
             StepController.ActivateStep(step, getElapsed());
+            PublishStepActivated(step);
         }
 
         public void Dispose()
@@ -133,6 +135,7 @@ namespace OSE.Runtime
             {
                 _preflightValidator.Validate(_package, step);
                 StepController.ActivateStep(step, getElapsed());
+                PublishStepActivated(step);
                 OseLog.Info($"[AssemblyRuntimeController] Navigated to step {targetIndex + 1}/{ProgressionController.TotalSteps}: '{step.id}'");
             }
         }
@@ -157,11 +160,21 @@ namespace OSE.Runtime
             {
                 _preflightValidator.Validate(_package, nextStep);
                 StepController.ActivateStep(nextStep, evt.AtSeconds);
+                PublishStepActivated(nextStep);
             }
             else
             {
                 CompleteAssembly();
             }
+        }
+
+        private void PublishStepActivated(StepDefinition step)
+        {
+            RuntimeEventBus.Publish(new StepActivated(
+                step.id,
+                _currentAssemblyId,
+                ProgressionController.CurrentStepIndex,
+                ProgressionController.TotalSteps));
         }
 
         private void CompleteAssembly()

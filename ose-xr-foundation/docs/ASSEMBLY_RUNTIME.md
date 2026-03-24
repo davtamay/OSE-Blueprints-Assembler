@@ -1033,21 +1033,26 @@ The runtime should dynamically honor performance tiers for:
 
 # 16. Persistence Model
 
-The runtime should persist meaningful progress.
+The canonical persistence architecture is defined in `PERSISTENCE_MODEL.md`.
+
+The core guarantee is **step-boundary restore**: the runtime persists logical progression state (machine id, mode, completed step count, challenge metrics) and reconstructs the scene from authored content + step progress on restore. No per-part spatial data or mid-step state is persisted.
 
 Persist at least:
 
 - machine id
+- machine version
 - mode
 - current assembly
+- current subassembly
 - current step
-- placed part states
-- physical substitution states
+- completed step count
 - challenge metrics if relevant
 - hint usage
-- settings
+- elapsed time
 
 Persistence must survive safe restart and later support cross-session review.
+
+See `PERSISTENCE_MODEL.md` for the full contract, restore sequence, and future extension rules.
 
 ---
 

@@ -56,7 +56,6 @@ namespace OSE.Interaction
 
         public void NotifySelected(GameObject target)
         {
-            if (CurrentSelection == target) return;
             CurrentSelection = target;
             OseLog.VerboseInfo($"[Selection] Selected: {target?.name}");
             OnSelected?.Invoke(target);

@@ -429,6 +429,11 @@ namespace OSE.Interaction.V2
             if (!_bootstrapped || _feedbackPresenter == null)
                 return;
 
+            // When the legacy bridge is connected, it owns runtime part visuals.
+            // Running V2 feedback on top of that causes color contention.
+            if (_legacyBridge != null && _legacyBridge.IsConnected)
+                return;
+
             var feedbackData = new InteractionFeedbackData
             {
                 HoveredPart = HoveredPart,
@@ -523,7 +528,7 @@ namespace OSE.Interaction.V2
             {
                 GameObject validPart = ValidatePartHit(hits[i].collider != null ? hits[i].collider.gameObject : null);
                 if (validPart != null)
-                    return validPart;
+                    return NormalizeSelectableTarget(validPart);
             }
 
             return null;
@@ -588,11 +593,11 @@ namespace OSE.Interaction.V2
                     // Hit was not a part — treat as empty-space interaction
                     intent = new InteractionIntent(intent.IntentKind, intent.ScreenPosition, hitTarget: null);
                 }
-                else if (validPart != intent.HitTarget)
+                else
                 {
-                    // Hit a child of a part — use the parent part GO
+                    GameObject normalizedPart = NormalizeSelectableTarget(validPart);
                     intent = new InteractionIntent(intent.IntentKind, intent.ScreenPosition,
-                        screenDelta: intent.ScreenDelta, hitTarget: validPart);
+                        screenDelta: intent.ScreenDelta, hitTarget: normalizedPart);
                 }
             }
 
@@ -663,7 +668,7 @@ namespace OSE.Interaction.V2
                 // Scroll over the selected part → depth-adjust it (forward/backward)
                 if (SelectedPart != null && intent.HitTarget != null)
                 {
-                    GameObject validHit = ValidatePartHit(intent.HitTarget);
+                    GameObject validHit = NormalizeSelectableTarget(ValidatePartHit(intent.HitTarget));
                     if (validHit != null &&
                         validHit == SelectedPart &&
                         _camera != null &&
@@ -723,27 +728,33 @@ namespace OSE.Interaction.V2
                 return;
             }
 
-            if (intent.HitTarget != null)
+            GameObject selectedTarget = NormalizeSelectableTarget(intent.HitTarget);
+            if (selectedTarget != null)
             {
                 // Clicked on a part → select it
-                SelectedPart = intent.HitTarget;
+                SelectedPart = selectedTarget;
                 TransitionTo(InteractionState.PartSelected);
 
                 if (_legacyBridge != null)
-                    _legacyBridge.SelectPart(intent.HitTarget);
+                    _legacyBridge.SelectPart(selectedTarget);
                 else
-                    _actionBridge?.OnExternallyResolvedPartSelected(intent.HitTarget);
+                    _actionBridge?.OnExternallyResolvedPartSelected(selectedTarget);
 
-                // Smart pivot: shift camera to orbit around placement target (or part if no ghost)
+                // Smart pivot: shift camera to orbit around the midpoint between
+                // the selected part and its target ghost. Using the midpoint keeps
+                // both source part and destination visible during orbit.
                 if (_settings.EnableSmartPivot && _cameraRig != null)
                 {
-                    Vector3 pivotPos = intent.HitTarget.transform.position;
+                    Vector3 partPos = selectedTarget.transform.position;
                     if (_settings.EnablePivotToTarget && _legacyBridge != null &&
-                        _legacyBridge.TryGetGhostWorldPosForPart(intent.HitTarget.name, out Vector3 ghostPos))
+                        _legacyBridge.TryGetGhostWorldPosForPart(selectedTarget.name, out Vector3 ghostPos))
                     {
-                        pivotPos = ghostPos;
+                        _cameraRig.SetPivot(Vector3.Lerp(partPos, ghostPos, 0.5f));
                     }
-                    _cameraRig.SetPivot(pivotPos);
+                    else
+                    {
+                        _cameraRig.SetPivot(partPos);
+                    }
                 }
             }
             else
@@ -764,39 +775,40 @@ namespace OSE.Interaction.V2
                 return;
             }
 
-            if (intent.HitTarget == null) return;
-            if (IsPartLockedForMovement(intent.HitTarget))
+            GameObject dragTarget = NormalizeSelectableTarget(intent.HitTarget);
+            if (dragTarget == null) return;
+            if (IsPartLockedForMovement(dragTarget))
             {
                 // Keep selection, but block movement for already-placed parts.
-                SelectedPart = intent.HitTarget;
+                SelectedPart = dragTarget;
                 TransitionTo(InteractionState.PartSelected);
 
                 if (_legacyBridge != null)
-                    _legacyBridge.SelectPart(intent.HitTarget);
+                    _legacyBridge.SelectPart(dragTarget);
                 else
-                    _actionBridge?.OnExternallyResolvedPartSelected(intent.HitTarget);
+                    _actionBridge?.OnExternallyResolvedPartSelected(dragTarget);
 
-                OseLog.VerboseInfo($"[Orchestrator] Drag blocked for locked part '{intent.HitTarget.name}'.");
+                OseLog.VerboseInfo($"[Orchestrator] Drag blocked for locked part '{dragTarget.name}'.");
                 return;
             }
 
-            DraggedPart = intent.HitTarget;
-            SelectedPart = intent.HitTarget;
+            DraggedPart = dragTarget;
+            SelectedPart = dragTarget;
             TransitionTo(InteractionState.DraggingPart);
 
             if (_legacyBridge != null)
             {
                 // Ensure selection is set first, then grab
-                _legacyBridge.SelectPart(intent.HitTarget);
-                _legacyBridge.GrabPart(intent.HitTarget);
+                _legacyBridge.SelectPart(dragTarget);
+                _legacyBridge.GrabPart(dragTarget);
             }
             else
             {
-                _actionBridge?.OnPartSelected(intent.HitTarget);
-                _actionBridge?.OnPartGrabbed(intent.HitTarget);
+                _actionBridge?.OnPartSelected(dragTarget);
+                _actionBridge?.OnPartGrabbed(dragTarget);
             }
 
-            OseLog.VerboseInfo($"[Orchestrator] Begin drag: {intent.HitTarget.name}");
+            OseLog.VerboseInfo($"[Orchestrator] Begin drag: {dragTarget.name}");
         }
 
         private void HandleContinueDrag(InteractionIntent intent)
@@ -855,15 +867,16 @@ namespace OSE.Interaction.V2
                 return;
             }
 
-            if (intent.HitTarget == null) return;
+            GameObject inspectedTarget = NormalizeSelectableTarget(intent.HitTarget);
+            if (inspectedTarget == null) return;
 
-            SelectedPart = intent.HitTarget;
+            SelectedPart = inspectedTarget;
             TransitionTo(InteractionState.InspectMode);
 
             if (_legacyBridge != null)
-                _legacyBridge.InspectPart(intent.HitTarget);
+                _legacyBridge.InspectPart(inspectedTarget);
             else
-                _actionBridge?.OnExternallyResolvedPartInspected(intent.HitTarget);
+                _actionBridge?.OnExternallyResolvedPartInspected(inspectedTarget);
         }
 
         private void HandleFocus()
@@ -911,10 +924,19 @@ namespace OSE.Interaction.V2
             // takes priority over camera navigation).
             if (SelectedPart != null && _legacyBridge != null &&
                 _legacyBridge.TryClickToPlace(SelectedPart, screenPos))
+            {
+                SelectedPart = null;
+                HoveredPart = null;
+                DraggedPart = null;
+                TransitionTo(InteractionState.Idle);
+                _legacyBridge.DeselectFromExternalControl();
                 return;
+            }
 
             // Check if click was on a ghost part → focus camera on it.
-            if (TryFocusGhost(screenPos))
+            // Skip when a part is selected — the user is trying to place, not navigate,
+            // and re-centering on the ghost would lose sight of the source parts.
+            if (SelectedPart == null && TryFocusGhost(screenPos))
                 return;
 
             // Check if click was near a pulsating tool target → focus camera on it.
@@ -971,6 +993,17 @@ namespace OSE.Interaction.V2
                 return false;
 
             return partController.IsPartLockedForMovement(part.name);
+        }
+
+        private GameObject NormalizeSelectableTarget(GameObject target)
+        {
+            if (target == null)
+                return null;
+
+            if (_legacyBridge == null)
+                return target;
+
+            return _legacyBridge.NormalizeSelectableTarget(target);
         }
 
         /// <summary>

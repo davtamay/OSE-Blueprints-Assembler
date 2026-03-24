@@ -6,7 +6,8 @@ namespace OSE.UI.Presenters
     {
         public StepPanelViewModel(string stepLabel, string title, string instruction,
             bool showConfirmButton, float progressRatio, bool showHintButton,
-            ConfirmGate confirmGate, bool confirmUnlocked)
+            ConfirmGate confirmGate, bool confirmUnlocked,
+            bool showContextActionButton, string contextActionLabel, bool contextActionEnabled)
         {
             StepLabel = stepLabel;
             Title = title;
@@ -16,6 +17,9 @@ namespace OSE.UI.Presenters
             ShowHintButton = showHintButton;
             ConfirmGate = confirmGate;
             ConfirmUnlocked = confirmUnlocked;
+            ShowContextActionButton = showContextActionButton;
+            ContextActionLabel = contextActionLabel;
+            ContextActionEnabled = contextActionEnabled;
         }
 
         public string StepLabel { get; }
@@ -26,6 +30,9 @@ namespace OSE.UI.Presenters
         public bool ShowHintButton { get; }
         public ConfirmGate ConfirmGate { get; }
         public bool ConfirmUnlocked { get; }
+        public bool ShowContextActionButton { get; }
+        public string ContextActionLabel { get; }
+        public bool ContextActionEnabled { get; }
     }
 
     public sealed class StepPanelPresenter
@@ -39,6 +46,9 @@ namespace OSE.UI.Presenters
             bool showHintButton = false,
             ConfirmGate confirmGate = ConfirmGate.None,
             bool confirmUnlocked = true,
+            bool showContextActionButton = false,
+            string contextActionLabel = null,
+            bool contextActionEnabled = false,
             float? progressOverride = null)
         {
             string stepLabel = currentStepNumber > 0 && totalSteps > 0
@@ -68,7 +78,8 @@ namespace OSE.UI.Presenters
             if (progressRatio > 1f) progressRatio = 1f;
 
             return new StepPanelViewModel(stepLabel, displayTitle, displayInstruction,
-                showConfirmButton, progressRatio, showHintButton, confirmGate, confirmUnlocked);
+                showConfirmButton, progressRatio, showHintButton, confirmGate, confirmUnlocked,
+                showContextActionButton, contextActionLabel, contextActionEnabled);
         }
     }
 }

@@ -32,16 +32,16 @@ namespace OSE.Interaction.V2
             switch (mode)
             {
                 case ViewMode.SourceAndTarget:
-                    return ComputeSourceAndTarget(step, findTarget);
+                    return ComputeSourceAndTarget(step, package, findTarget);
 
                 case ViewMode.PairEndpoints:
-                    return ComputePairEndpoints(step, findTarget);
+                    return ComputePairEndpoints(step, package, findTarget);
 
                 case ViewMode.WorkZone:
-                    return ComputeWorkZone(step, findTarget);
+                    return ComputeWorkZone(step, package, findTarget);
 
                 case ViewMode.PathView:
-                    return ComputeWorkZone(step, findTarget); // same spatial logic, slightly more pull-back
+                    return ComputeWorkZone(step, package, findTarget, pathView: true);
 
                 case ViewMode.Overview:
                     return new FramingResult
@@ -53,7 +53,7 @@ namespace OSE.Interaction.V2
                     };
 
                 case ViewMode.Inspect:
-                    return ComputeWorkZone(step, findTarget, closeUp: true);
+                    return ComputeWorkZone(step, package, findTarget, closeUp: true);
 
                 default:
                     return new FramingResult
@@ -68,35 +68,18 @@ namespace OSE.Interaction.V2
 
         private static FramingResult ComputeSourceAndTarget(
             StepDefinition step,
+            MachinePackageDefinition package,
             System.Func<string, TargetPreviewPlacement> findTarget)
         {
-            // Collect target positions from the step's targetIds
-            Bounds bounds = new Bounds();
-            bool hasPoint = false;
-
-            if (step.targetIds != null)
-            {
-                foreach (string tid in step.targetIds)
-                {
-                    TargetPreviewPlacement tp = findTarget?.Invoke(tid);
-                    if (tp == null) continue;
-
-                    Vector3 pos = new Vector3(tp.position.x, tp.position.y, tp.position.z);
-                    if (!hasPoint) { bounds = new Bounds(pos, Vector3.zero); hasPoint = true; }
-                    else bounds.Encapsulate(pos);
-                }
-            }
-
-            if (!hasPoint)
+            if (!TryBuildRelevantBounds(step, package, findTarget, includePorts: false, includeSourceStarts: true, out Bounds bounds))
                 return FallbackResult();
 
-            // Pad the bounds to ensure comfortable framing
-            bounds.Expand(0.15f);
+            bounds.Expand(0.25f);
 
             return new FramingResult
             {
                 Pivot = bounds.center,
-                Distance = Mathf.Max(bounds.extents.magnitude * 2.5f, 0.5f),
+                Distance = Mathf.Max(bounds.extents.magnitude * 3.5f, 1.0f),
                 UseBounds = true,
                 Bounds = bounds
             };
@@ -104,47 +87,10 @@ namespace OSE.Interaction.V2
 
         private static FramingResult ComputePairEndpoints(
             StepDefinition step,
+            MachinePackageDefinition package,
             System.Func<string, TargetPreviewPlacement> findTarget)
         {
-            // For Connect steps, use portA/portB positions; for Measure, use target positions
-            Bounds bounds = new Bounds();
-            bool hasPoint = false;
-
-            if (step.targetIds != null)
-            {
-                foreach (string tid in step.targetIds)
-                {
-                    TargetPreviewPlacement tp = findTarget?.Invoke(tid);
-                    if (tp == null) continue;
-
-                    // Try port positions first (Connect steps)
-                    Vector3 portA = new Vector3(tp.portA.x, tp.portA.y, tp.portA.z);
-                    Vector3 portB = new Vector3(tp.portB.x, tp.portB.y, tp.portB.z);
-
-                    if (portA != Vector3.zero || portB != Vector3.zero)
-                    {
-                        if (portA != Vector3.zero)
-                        {
-                            if (!hasPoint) { bounds = new Bounds(portA, Vector3.zero); hasPoint = true; }
-                            else bounds.Encapsulate(portA);
-                        }
-                        if (portB != Vector3.zero)
-                        {
-                            if (!hasPoint) { bounds = new Bounds(portB, Vector3.zero); hasPoint = true; }
-                            else bounds.Encapsulate(portB);
-                        }
-                    }
-                    else
-                    {
-                        // Fall back to target position
-                        Vector3 pos = new Vector3(tp.position.x, tp.position.y, tp.position.z);
-                        if (!hasPoint) { bounds = new Bounds(pos, Vector3.zero); hasPoint = true; }
-                        else bounds.Encapsulate(pos);
-                    }
-                }
-            }
-
-            if (!hasPoint)
+            if (!TryBuildRelevantBounds(step, package, findTarget, includePorts: true, includeSourceStarts: false, out Bounds bounds))
                 return FallbackResult();
 
             bounds.Expand(0.1f);
@@ -160,52 +106,173 @@ namespace OSE.Interaction.V2
 
         private static FramingResult ComputeWorkZone(
             StepDefinition step,
+            MachinePackageDefinition package,
             System.Func<string, TargetPreviewPlacement> findTarget,
-            bool closeUp = false)
+            bool closeUp = false,
+            bool pathView = false)
         {
-            // Centroid of all target positions
-            Vector3 sum = Vector3.zero;
-            int count = 0;
+            if (!TryBuildRelevantBounds(step, package, findTarget, includePorts: false, includeSourceStarts: false, out Bounds bounds))
+                return FallbackResult();
+
+            bounds.Expand(closeUp ? 0.08f : 0.12f);
+            float distanceMultiplier = closeUp ? 2.0f : (pathView ? 3.0f : 2.6f);
+            float distance = Mathf.Max(bounds.extents.magnitude * distanceMultiplier, closeUp ? 0.6f : 0.9f);
+
+            return new FramingResult
+            {
+                Pivot = bounds.center,
+                Distance = distance,
+                UseBounds = true,
+                Bounds = bounds
+            };
+        }
+
+        private static bool TryBuildRelevantBounds(
+            StepDefinition step,
+            MachinePackageDefinition package,
+            System.Func<string, TargetPreviewPlacement> findTarget,
+            bool includePorts,
+            bool includeSourceStarts,
+            out Bounds bounds)
+        {
+            bounds = default;
+            Bounds accumulatedBounds = default;
+            bool hasPoint = false;
+
+            void AddPoint(Vector3 point)
+            {
+                if (!hasPoint)
+                {
+                    accumulatedBounds = new Bounds(point, Vector3.zero);
+                    hasPoint = true;
+                }
+                else
+                {
+                    accumulatedBounds.Encapsulate(point);
+                }
+            }
 
             if (step.targetIds != null)
             {
                 foreach (string tid in step.targetIds)
                 {
                     TargetPreviewPlacement tp = findTarget?.Invoke(tid);
-                    if (tp == null) continue;
+                    if (tp == null)
+                        continue;
 
-                    sum += new Vector3(tp.position.x, tp.position.y, tp.position.z);
-                    count++;
+                    Vector3 portA = new Vector3(tp.portA.x, tp.portA.y, tp.portA.z);
+                    Vector3 portB = new Vector3(tp.portB.x, tp.portB.y, tp.portB.z);
+                    bool usedPorts = false;
+
+                    if (includePorts && (portA != Vector3.zero || portB != Vector3.zero))
+                    {
+                        if (portA != Vector3.zero)
+                            AddPoint(portA);
+                        if (portB != Vector3.zero)
+                            AddPoint(portB);
+                        usedPorts = true;
+                    }
+
+                    if (!usedPorts)
+                    {
+                        AddPoint(new Vector3(tp.position.x, tp.position.y, tp.position.z));
+                    }
                 }
             }
 
-            // Also check requiredToolActions for target positions
             if (step.requiredToolActions != null)
             {
-                foreach (var action in step.requiredToolActions)
+                foreach (ToolActionDefinition action in step.requiredToolActions)
                 {
-                    if (action == null || string.IsNullOrEmpty(action.targetId)) continue;
-                    TargetPreviewPlacement tp = findTarget?.Invoke(action.targetId);
-                    if (tp == null) continue;
+                    if (action == null || string.IsNullOrWhiteSpace(action.targetId))
+                        continue;
 
-                    sum += new Vector3(tp.position.x, tp.position.y, tp.position.z);
-                    count++;
+                    TargetPreviewPlacement tp = findTarget?.Invoke(action.targetId);
+                    if (tp == null)
+                        continue;
+
+                    AddPoint(new Vector3(tp.position.x, tp.position.y, tp.position.z));
                 }
             }
 
-            if (count == 0)
-                return FallbackResult();
-
-            Vector3 centroid = sum / count;
-            float distance = closeUp ? 0.6f : 1.0f;
-
-            return new FramingResult
+            if (package?.previewConfig?.partPlacements != null)
             {
-                Pivot = centroid,
-                Distance = distance,
-                UseBounds = false,
-                Bounds = default
-            };
+                if (!string.IsNullOrWhiteSpace(step.subassemblyId) &&
+                    package.TryGetSubassembly(step.subassemblyId, out SubassemblyDefinition subassembly) &&
+                    subassembly?.partIds != null)
+                {
+                    foreach (string partId in subassembly.partIds)
+                    {
+                        if (string.IsNullOrWhiteSpace(partId))
+                            continue;
+
+                        if (TryGetPartPlacement(package, partId, out PartPreviewPlacement placement))
+                            AddPoint(new Vector3(placement.playPosition.x, placement.playPosition.y, placement.playPosition.z));
+                    }
+                }
+                else if (step.requiredPartIds != null)
+                {
+                    foreach (string partId in step.requiredPartIds)
+                    {
+                        if (string.IsNullOrWhiteSpace(partId))
+                            continue;
+
+                        if (TryGetPartPlacement(package, partId, out PartPreviewPlacement placement))
+                            AddPoint(new Vector3(placement.playPosition.x, placement.playPosition.y, placement.playPosition.z));
+                    }
+                }
+
+                if (includeSourceStarts && step.requiredPartIds != null)
+                {
+                    foreach (string partId in step.requiredPartIds)
+                    {
+                        if (string.IsNullOrWhiteSpace(partId))
+                            continue;
+
+                        if (TryGetPartPlacement(package, partId, out PartPreviewPlacement placement))
+                            AddPoint(new Vector3(placement.startPosition.x, placement.startPosition.y, placement.startPosition.z));
+                    }
+                }
+            }
+
+            if (!hasPoint &&
+                !string.IsNullOrWhiteSpace(step.requiredSubassemblyId) &&
+                package != null &&
+                package.TryGetSubassemblyPreviewPlacement(step.requiredSubassemblyId, out SubassemblyPreviewPlacement subassemblyPlacement))
+            {
+                AddPoint(new Vector3(subassemblyPlacement.position.x, subassemblyPlacement.position.y, subassemblyPlacement.position.z));
+            }
+
+            if (hasPoint)
+                bounds = accumulatedBounds;
+
+            return hasPoint;
+        }
+
+        private static bool TryGetPartPlacement(
+            MachinePackageDefinition package,
+            string partId,
+            out PartPreviewPlacement placement)
+        {
+            PartPreviewPlacement[] partPlacements = package?.previewConfig?.partPlacements;
+            if (partPlacements != null)
+            {
+                for (int i = 0; i < partPlacements.Length; i++)
+                {
+                    PartPreviewPlacement candidate = partPlacements[i];
+                    if (candidate == null || string.IsNullOrWhiteSpace(candidate.partId))
+                        continue;
+
+                    if (string.Equals(candidate.partId, partId, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        placement = candidate;
+                        return true;
+                    }
+                }
+            }
+
+            placement = null;
+            return false;
         }
 
         private static FramingResult FallbackResult()

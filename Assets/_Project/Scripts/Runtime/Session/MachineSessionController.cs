@@ -51,16 +51,40 @@ namespace OSE.Runtime
         /// </summary>
         public int LastNavigationFrame { get; private set; } = -1;
 
-        public bool CanStepBack => _assemblyController?.ProgressionController?.HasPreviousStep ?? false;
-        public bool CanStepForward => _assemblyController?.ProgressionController?.CanNavigateForward ?? false;
+        public bool CanStepBack
+        {
+            get
+            {
+                return TryGetCurrentGlobalStepIndex(out int currentGlobalIndex) &&
+                       currentGlobalIndex > 0;
+            }
+        }
+
+        public bool CanStepForward
+        {
+            get
+            {
+                if (!TryGetCurrentGlobalStepIndex(out int currentGlobalIndex))
+                    return false;
+
+                StepDefinition[] orderedSteps = _package?.GetOrderedSteps() ?? Array.Empty<StepDefinition>();
+                if (orderedSteps.Length == 0)
+                    return false;
+
+                return currentGlobalIndex < orderedSteps.Length - 1;
+            }
+        }
 
         /// <summary>
         /// Loads a machine package and starts a new session.
+        /// If <paramref name="restoreStepCount"/> is greater than zero the session
+        /// fast-forwards to that step boundary instead of starting at step 1.
         /// Returns true if the session started successfully.
         /// </summary>
         public async Task<bool> StartSessionAsync(
             string packageId,
             SessionMode mode,
+            int restoreStepCount = 0,
             CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(packageId))
@@ -131,8 +155,12 @@ namespace OSE.Runtime
             // Notify listeners before any step events fire
             PackageReady?.Invoke(_package);
 
-            // Begin the first assembly
-            BeginCurrentAssembly();
+            // Begin the first assembly — restore path skips directly to the
+            // saved step boundary so step 1 is never spuriously activated.
+            if (restoreStepCount > 0)
+                BeginCurrentAssemblyRestored(restoreStepCount);
+            else
+                BeginCurrentAssembly();
 
             return true;
         }
@@ -155,6 +183,10 @@ namespace OSE.Runtime
 
             if (_assemblyController?.StepController?.HasActiveStep == true)
                 _assemblyController.StepController.SuspendStep();
+
+            // Flush metrics (hints, mistakes, timing) that accumulated since
+            // the last step completion so they survive a crash or force-quit.
+            AutoSave();
 
             SetLifecycle(SessionLifecycle.Paused);
         }
@@ -269,6 +301,113 @@ namespace OSE.Runtime
             }
         }
 
+        /// <summary>
+        /// Starts the first assembly at a restored step boundary.
+        /// Uses RestoreAssemblyState so the progression cursor skips forward
+        /// before any step is activated, then bulk-completes parts and publishes
+        /// SessionRestored for the visual layer.
+        /// </summary>
+        private void BeginCurrentAssemblyRestored(int completedStepCount)
+        {
+            if (_currentAssemblyIndex >= _assemblyOrder.Length)
+            {
+                CompleteSession();
+                return;
+            }
+
+            if (!TryResolveRestoreCursor(completedStepCount, out string assemblyId, out int localCompletedStepCount, out StepDefinition[] completedGlobalSteps))
+            {
+                assemblyId = _assemblyOrder[_currentAssemblyIndex];
+                localCompletedStepCount = completedStepCount;
+                completedGlobalSteps = Array.Empty<StepDefinition>();
+            }
+            _sessionState.CurrentAssemblyId = assemblyId;
+            _sessionState.IsRestored = true;
+            _sessionState.CompletedStepCount = completedStepCount;
+
+            SetLifecycle(SessionLifecycle.StepActive);
+
+            OseLog.Info($"[MachineSessionController] Restoring session - completedGlobal={completedStepCount}, assembly='{assemblyId}', completedLocal={localCompletedStepCount}.");
+
+            // RestoreAssemblyState skips the cursor then activates the target step
+            _assemblyController.RestoreAssemblyState(assemblyId, localCompletedStepCount, () => _sessionState.ElapsedSeconds);
+
+            // Bulk-complete parts for all globally completed steps
+            if (_partController != null && completedGlobalSteps.Length > 0)
+                _partController.BulkCompletePartsForSteps(completedGlobalSteps);
+
+            // Notify visual layer so it can position completed parts
+            RuntimeEventBus.Publish(new SessionRestored(completedStepCount));
+
+            // Update session state with the active step id
+            if (_assemblyController.StepController.HasActiveStep)
+            {
+                _sessionState.CurrentStepId = _assemblyController.StepController.CurrentStepState.StepId;
+            }
+        }
+
+        private bool TryResolveRestoreCursor(
+            int completedStepCount,
+            out string assemblyId,
+            out int localCompletedStepCount,
+            out StepDefinition[] completedGlobalSteps)
+        {
+            assemblyId = null;
+            localCompletedStepCount = 0;
+            completedGlobalSteps = Array.Empty<StepDefinition>();
+
+            StepDefinition[] orderedSteps = _package?.GetOrderedSteps() ?? Array.Empty<StepDefinition>();
+            if (orderedSteps.Length == 0 || _assemblyOrder == null || _assemblyOrder.Length == 0)
+                return false;
+
+            int clampedCompleted = Math.Max(0, Math.Min(completedStepCount, orderedSteps.Length));
+            if (clampedCompleted > 0)
+            {
+                completedGlobalSteps = new StepDefinition[clampedCompleted];
+                Array.Copy(orderedSteps, completedGlobalSteps, clampedCompleted);
+            }
+
+            StepDefinition activeGlobalStep = clampedCompleted < orderedSteps.Length
+                ? orderedSteps[clampedCompleted]
+                : orderedSteps[orderedSteps.Length - 1];
+
+            string resolvedAssemblyId = !string.IsNullOrWhiteSpace(activeGlobalStep?.assemblyId)
+                ? activeGlobalStep.assemblyId
+                : _assemblyOrder[Math.Min(_currentAssemblyIndex, _assemblyOrder.Length - 1)];
+
+            int resolvedAssemblyIndex = Array.FindIndex(
+                _assemblyOrder,
+                id => string.Equals(id, resolvedAssemblyId, StringComparison.OrdinalIgnoreCase));
+
+            _currentAssemblyIndex = resolvedAssemblyIndex >= 0 ? resolvedAssemblyIndex : 0;
+            assemblyId = resolvedAssemblyId;
+            localCompletedStepCount = CountCompletedStepsForAssembly(orderedSteps, assemblyId, clampedCompleted);
+            return true;
+        }
+
+        private static int CountCompletedStepsForAssembly(
+            StepDefinition[] orderedSteps,
+            string assemblyId,
+            int completedGlobalCount)
+        {
+            if (orderedSteps == null || completedGlobalCount <= 0 || string.IsNullOrWhiteSpace(assemblyId))
+                return 0;
+
+            int count = 0;
+            int limit = Math.Min(completedGlobalCount, orderedSteps.Length);
+            for (int i = 0; i < limit; i++)
+            {
+                if (orderedSteps[i] != null &&
+                    string.Equals(orderedSteps[i].assemblyId, assemblyId, StringComparison.OrdinalIgnoreCase))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+
         private void HandleStepStateChanged(StepStateChanged evt)
         {
             if (_sessionState == null)
@@ -280,12 +419,13 @@ namespace OSE.Runtime
                 _sessionState.CurrentStepId = evt.StepId;
                 _sessionState.CurrentStepStartSeconds = evt.AtSeconds;
                 _sessionState.CurrentStepElapsedSeconds = 0f;
-                AutoSave();
+                // No AutoSave here — step activation is frequent and transient.
+                // The state will be saved when the step completes or the session pauses.
             }
             else if (evt.Current == StepState.FailedAttempt)
             {
                 _sessionState.MistakeCount++;
-                AutoSave();
+                // Metrics update only — persisted on next step completion or flush.
             }
             else if (evt.Current == StepState.Completed)
             {
@@ -312,7 +452,7 @@ namespace OSE.Runtime
                 return;
 
             _sessionState.HintsUsed++;
-            AutoSave();
+            // Metrics update only — persisted on next step completion or flush.
         }
 
         private void HandleToolActionFailed(ToolActionFailed evt)
@@ -321,7 +461,7 @@ namespace OSE.Runtime
                 return;
 
             _sessionState.MistakeCount++;
-            AutoSave();
+            // Metrics update only — persisted on next step completion or flush.
         }
 
         private void HandleAssemblyCompleted(string assemblyId)
@@ -411,76 +551,116 @@ namespace OSE.Runtime
                 return false;
             }
 
-            var progression = _assemblyController.ProgressionController;
-            OseLog.Info($"[Nav] StepBack: currentIndex={progression.CurrentStepIndex}, HasPreviousStep={progression.HasPreviousStep}, IsNavigating={IsNavigating}");
-
-            if (!progression.HasPreviousStep)
+            if (!TryGetCurrentGlobalStepIndex(out int currentGlobalIndex))
             {
-                OseLog.Warn($"[Nav] StepBack BLOCKED: HasPreviousStep=false (currentIndex={progression.CurrentStepIndex}).");
+                OseLog.Warn("[Nav] StepBack BLOCKED: unable to resolve current global step index.");
                 return false;
             }
 
-            bool result = NavigateToStepInternal(progression.CurrentStepIndex - 1);
-            OseLog.Info($"[Nav] StepBack result={result}, new currentIndex={progression.CurrentStepIndex}");
+            OseLog.Info($"[Nav] StepBack: currentGlobalIndex={currentGlobalIndex}, CanStepBack={currentGlobalIndex > 0}, IsNavigating={IsNavigating}");
+
+            if (currentGlobalIndex <= 0)
+            {
+                OseLog.Warn($"[Nav] StepBack BLOCKED: already at first global step (currentGlobalIndex={currentGlobalIndex}).");
+                return false;
+            }
+
+            bool result = NavigateToGlobalStepInternal(currentGlobalIndex - 1);
+            OseLog.Info($"[Nav] StepBack result={result}, new currentGlobalIndex={(TryGetCurrentGlobalStepIndex(out int afterIndex) ? afterIndex : -1)}");
             return result;
         }
 
         /// <summary>
-        /// Navigates one step forward within already-completed steps.
-        /// Parts from the current step are marked Completed; the next step activates.
+        /// Navigates one step forward within the package-wide ordered step list.
+        /// This is review/navigation behavior, not durable progression advancement.
         /// </summary>
         public bool StepForward()
         {
             if (_assemblyController == null || _partController == null)
                 return false;
 
-            var progression = _assemblyController.ProgressionController;
-            OseLog.Info($"[Nav] StepForward: currentIndex={progression.CurrentStepIndex}, CanNavigateForward={progression.CanNavigateForward}");
-
-            if (!progression.CanNavigateForward)
+            if (!TryGetCurrentGlobalStepIndex(out int currentGlobalIndex))
                 return false;
 
-            return NavigateToStepInternal(progression.CurrentStepIndex + 1);
+            StepDefinition[] orderedSteps = _package?.GetOrderedSteps() ?? Array.Empty<StepDefinition>();
+            if (orderedSteps.Length == 0)
+                return false;
+
+            int maxNavigableIndex = orderedSteps.Length - 1;
+            OseLog.Info($"[Nav] StepForward: currentGlobalIndex={currentGlobalIndex}, maxNavigableIndex={maxNavigableIndex}");
+
+            if (currentGlobalIndex >= maxNavigableIndex)
+                return false;
+
+            return NavigateToGlobalStepInternal(currentGlobalIndex + 1);
         }
 
-        private bool NavigateToStepInternal(int targetIndex)
+        private bool NavigateToGlobalStepInternal(int targetGlobalIndex)
         {
-            var progression = _assemblyController.ProgressionController;
-            int previousIndex = progression.CurrentStepIndex;
+            StepDefinition[] orderedSteps = _package?.GetOrderedSteps() ?? Array.Empty<StepDefinition>();
+            if (orderedSteps.Length == 0)
+                return false;
 
-            OseLog.Info($"[Nav] NavigateToStepInternal: from index {previousIndex} to {targetIndex}, totalSteps={progression.TotalSteps}");
+            if (!TryGetCurrentGlobalStepIndex(out int previousGlobalIndex))
+                previousGlobalIndex = 0;
+
+            int clampedTargetGlobalIndex = Math.Max(0, Math.Min(targetGlobalIndex, orderedSteps.Length - 1));
+            StepDefinition targetStep = orderedSteps[clampedTargetGlobalIndex];
+            if (targetStep == null)
+                return false;
+
+            string targetAssemblyId = !string.IsNullOrWhiteSpace(targetStep.assemblyId)
+                ? targetStep.assemblyId
+                : _sessionState?.CurrentAssemblyId;
+            if (string.IsNullOrWhiteSpace(targetAssemblyId))
+                return false;
+
+            int targetAssemblyIndex = Array.FindIndex(
+                _assemblyOrder ?? Array.Empty<string>(),
+                id => string.Equals(id, targetAssemblyId, StringComparison.OrdinalIgnoreCase));
+            if (targetAssemblyIndex < 0)
+                targetAssemblyIndex = _currentAssemblyIndex;
+
+            int localTargetIndex = CountCompletedStepsForAssembly(orderedSteps, targetAssemblyId, clampedTargetGlobalIndex);
+
+            StepDefinition[] completedGlobalSteps = Array.Empty<StepDefinition>();
+            if (clampedTargetGlobalIndex > 0)
+            {
+                completedGlobalSteps = new StepDefinition[clampedTargetGlobalIndex];
+                Array.Copy(orderedSteps, completedGlobalSteps, clampedTargetGlobalIndex);
+            }
+
+            OseLog.Info($"[Nav] NavigateToGlobalStepInternal: from global {previousGlobalIndex} to {clampedTargetGlobalIndex}, assembly='{targetAssemblyId}', localTargetIndex={localTargetIndex}, totalGlobalSteps={orderedSteps.Length}");
 
             IsNavigating = true;
             try
             {
-                // 1. Recompute part states for the target step
-                StepDefinition[] allSteps = progression.GetStepsUpTo(progression.TotalSteps);
-                _partController.RecomputePartsForNavigation(targetIndex, allSteps);
+                _partController.RecomputePartsForNavigation(completedGlobalSteps, targetStep);
 
-                // 2. Publish navigation event so visual layer can reposition parts
-                RuntimeEventBus.Publish(new StepNavigated(previousIndex, targetIndex, progression.TotalSteps));
+                RuntimeEventBus.Publish(new StepNavigated(previousGlobalIndex, clampedTargetGlobalIndex, orderedSteps.Length));
 
-                // 3. Navigate the assembly controller (resets step, moves cursor, activates target)
-                _assemblyController.NavigateToStep(targetIndex, () => _sessionState.ElapsedSeconds);
+                _currentAssemblyIndex = targetAssemblyIndex;
+                _sessionState.CurrentAssemblyId = targetAssemblyId;
 
-                // Verify cursor actually moved
-                int actualIndex = progression.CurrentStepIndex;
-                if (actualIndex != targetIndex)
-                    OseLog.Warn($"[Nav] CURSOR MISMATCH: expected {targetIndex} but got {actualIndex} after NavigateToStep!");
-
-                // 4. Update session state
-                if (_assemblyController.StepController.HasActiveStep)
+                if (string.Equals(_assemblyController.CurrentAssemblyId, targetAssemblyId, StringComparison.OrdinalIgnoreCase))
                 {
-                    _sessionState.CurrentStepId = _assemblyController.StepController.CurrentStepState.StepId;
+                    _assemblyController.NavigateToStep(localTargetIndex, () => _sessionState.ElapsedSeconds);
+                }
+                else
+                {
+                    _assemblyController.RestoreAssemblyState(targetAssemblyId, localTargetIndex, () => _sessionState.ElapsedSeconds);
                 }
 
-                OseLog.Info($"[Nav] Navigated from step {previousIndex + 1} to step {targetIndex + 1}. " +
-                    $"HasPreviousStep={progression.HasPreviousStep}, CanNavigateForward={progression.CanNavigateForward}");
+                if (_assemblyController.StepController.HasActiveStep)
+                    _sessionState.CurrentStepId = _assemblyController.StepController.CurrentStepState.StepId;
+
+                OseLog.Info($"[Nav] Navigated from global step {previousGlobalIndex + 1} to global step {clampedTargetGlobalIndex + 1}. " +
+                    $"CanStepBack={CanStepBack}, CanStepForward={CanStepForward}");
                 return true;
             }
             catch (System.Exception ex)
             {
-                OseLog.Warn($"[Nav] EXCEPTION during navigation to step {targetIndex + 1}: {ex.Message}\n{ex.StackTrace}");
+                OseLog.Warn($"[Nav] EXCEPTION during navigation to global step {clampedTargetGlobalIndex + 1}: {ex.Message}\n{ex.StackTrace}");
                 return false;
             }
             finally
@@ -488,6 +668,32 @@ namespace OSE.Runtime
                 IsNavigating = false;
                 LastNavigationFrame = UnityEngine.Time.frameCount;
             }
+        }
+
+        private bool TryGetCurrentGlobalStepIndex(out int currentGlobalIndex)
+        {
+            currentGlobalIndex = -1;
+
+            StepDefinition[] orderedSteps = _package?.GetOrderedSteps() ?? Array.Empty<StepDefinition>();
+            string activeStepId =
+                _assemblyController?.StepController?.HasActiveStep == true
+                    ? _assemblyController.StepController.CurrentStepState.StepId
+                    : _sessionState?.CurrentStepId;
+
+            if (orderedSteps.Length == 0 || string.IsNullOrWhiteSpace(activeStepId))
+                return false;
+
+            for (int i = 0; i < orderedSteps.Length; i++)
+            {
+                if (orderedSteps[i] != null &&
+                    string.Equals(orderedSteps[i].id, activeStepId, StringComparison.OrdinalIgnoreCase))
+                {
+                    currentGlobalIndex = i;
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void CompleteSession()
@@ -508,6 +714,37 @@ namespace OSE.Runtime
             RuntimeEventBus.Publish(new SessionCompleted(machineId, totalSeconds));
 
             SetLifecycle(SessionLifecycle.Completed);
+        }
+
+        private void ResolveGlobalNavigationBoundary(
+            int targetIndex,
+            ProgressionController progression,
+            out StepDefinition[] completedGlobalSteps,
+            out StepDefinition targetStep)
+        {
+            completedGlobalSteps = Array.Empty<StepDefinition>();
+            targetStep = progression != null ? progression.GetStepAtIndex(targetIndex) : null;
+
+            StepDefinition[] orderedSteps = _package?.GetOrderedSteps() ?? Array.Empty<StepDefinition>();
+            if (orderedSteps.Length == 0 || targetStep == null)
+                return;
+
+            int targetGlobalIndex = -1;
+            for (int i = 0; i < orderedSteps.Length; i++)
+            {
+                if (orderedSteps[i] != null &&
+                    string.Equals(orderedSteps[i].id, targetStep.id, StringComparison.OrdinalIgnoreCase))
+                {
+                    targetGlobalIndex = i;
+                    break;
+                }
+            }
+
+            if (targetGlobalIndex <= 0)
+                return;
+
+            completedGlobalSteps = new StepDefinition[targetGlobalIndex];
+            Array.Copy(orderedSteps, completedGlobalSteps, targetGlobalIndex);
         }
 
         private void SetLifecycle(SessionLifecycle next)

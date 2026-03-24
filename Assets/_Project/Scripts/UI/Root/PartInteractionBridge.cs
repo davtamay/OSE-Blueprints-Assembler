@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using OSE.App;
 using OSE.Content;
 using OSE.Core;
@@ -9,6 +10,8 @@ using OSE.Runtime;
 using OSE.Runtime.Preview;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.Receiver.Rendering;
+using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.Rendering;
 using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.State;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
@@ -29,12 +32,13 @@ namespace OSE.UI.Root
         private static readonly Color SelectedPartColor = new Color(1.0f, 0.85f, 0.2f, 1.0f);
         private static readonly Color GrabbedPartColor = new Color(1.0f, 0.65f, 0.1f, 1.0f);
         private static readonly Color HoveredPartColor = new Color(0.60f, 0.82f, 1.0f, 1.0f);
-        private static readonly Color CompletedPartColor = new Color(0.3f, 0.9f, 0.4f, 1.0f);
-        private static readonly Color DimmedPartColor = new Color(0.5f, 0.5f, 0.5f, 0.4f);
+        private static readonly Color DimmedPartColor = new Color(0.58f, 0.58f, 0.58f, 1.0f);
         private static readonly Color ActiveStepEmission = new Color(0.15f, 0.35f, 0.6f);
         private static readonly Color GhostReadyColor = new Color(0.3f, 1.0f, 0.5f, 0.4f);
         private static readonly Color HintHighlightColorA = new Color(0.95f, 0.85f, 0.2f, 0.4f);
         private static readonly Color HintHighlightColorB = new Color(1.0f, 0.95f, 0.35f, 0.7f);
+        private static readonly Color HoveredSubassemblyEmission = new Color(0.05f, 0.16f, 0.28f);
+        private static readonly Color SelectedSubassemblyEmission = new Color(0.35f, 0.22f, 0.02f);
 
         private const float DragThresholdPixels = 5f;
         private const float ScrollDepthSpeed = 0.5f; // units per scroll tick
@@ -63,6 +67,7 @@ namespace OSE.UI.Root
         private UseStepHandler _useHandler;
         private ConnectStepHandler _connectHandler;
         private PlaceStepHandler _placeHandler;
+        private SubassemblyPlacementController _subassemblyPlacementController;
         private StepExecutionRouter _router;
         [SerializeField] private InputActionRouter _actionRouter;
         [SerializeField] private SelectionService _selectionService;
@@ -85,9 +90,11 @@ namespace OSE.UI.Root
         private bool _isDepthAdjustMode;
         private Vector2 _depthAdjustScreenAnchor;
         private GameObject _hintGhost;
+        private GameObject _hintSourceProxy;
         private GameObject _externalHoveredPartForUi;
         private float _hintHighlightUntil;
         private HintWorldCanvas _hintWorldCanvas;
+        private DockArcVisual _dockArcVisual;
         private readonly Dictionary<string, PartPlacementState> _partStates = new Dictionary<string, PartPlacementState>(StringComparer.OrdinalIgnoreCase);
         private GameObject _hoveredPart;
         private bool _startupSyncPending;
@@ -113,12 +120,24 @@ namespace OSE.UI.Root
         {
             _spawner = GetComponent<PackagePartSpawner>();
             _setup = GetComponent<PreviewSceneSetup>();
-            _useHandler ??= new UseStepHandler(_spawner, () => _setup, () => CursorManager, _spawnedGhosts, GetCurrentSequentialTargetId);
+            _useHandler ??= new UseStepHandler(
+                _spawner,
+                () => _setup,
+                () => CursorManager,
+                _spawnedGhosts,
+                GetCurrentSequentialTargetId,
+                () => AdvanceSequentialTarget());
             _router ??= new StepExecutionRouter();
             _router.Register(StepFamily.Use, _useHandler);
             _router.Register(StepFamily.Confirm, new ConfirmStepHandler());
             _connectHandler ??= new ConnectStepHandler(_spawner, () => _setup, () => CursorManager, FindSpawnedPart);
             _router.Register(StepFamily.Connect, _connectHandler);
+            _subassemblyPlacementController ??= new SubassemblyPlacementController(
+                _spawner,
+                () => _setup,
+                FindSpawnedPart,
+                GetPartState);
+            ServiceRegistry.Register<ISubassemblyPlacementService>(_subassemblyPlacementController);
             _placeHandler ??= new PlaceStepHandler(
                 _spawner,
                 () => _setup,
@@ -129,7 +148,8 @@ namespace OSE.UI.Root
                 _spawnedGhosts,
                 () => _isSequentialStep,
                 () => AdvanceSequentialTarget(),
-                partGo => _selectionService?.NotifySelected(partGo));
+                partGo => _selectionService?.NotifySelected(partGo),
+                HandlePlacementSucceeded);
             _router.Register(StepFamily.Place, _placeHandler);
             RuntimeEventBus.Subscribe<StepStateChanged>(HandleStepStateChanged);
             RuntimeEventBus.Subscribe<PartStateChanged>(HandlePartStateChanged);
@@ -137,6 +157,9 @@ namespace OSE.UI.Root
             RuntimeEventBus.Subscribe<ActiveToolChanged>(HandleActiveToolChanged);
             RuntimeEventBus.Subscribe<SessionRestored>(HandleSessionRestored);
             RuntimeEventBus.Subscribe<StepNavigated>(HandleStepNavigated);
+
+            if (_spawner != null)
+                _spawner.PartsReady += HandlePartsReady;
 
             EnsureInputWiring();
 
@@ -164,6 +187,9 @@ namespace OSE.UI.Root
             RuntimeEventBus.Unsubscribe<SessionRestored>(HandleSessionRestored);
             RuntimeEventBus.Unsubscribe<StepNavigated>(HandleStepNavigated);
 
+            if (_spawner != null)
+                _spawner.PartsReady -= HandlePartsReady;
+
             if (_actionRouter != null)
                 _actionRouter.OnAction -= HandleCanonicalAction;
 
@@ -175,6 +201,7 @@ namespace OSE.UI.Root
             }
 
             ClearPartHoverVisual();
+            ClearDockArcVisual();
             _partStates.Clear();
             _revealedPartIds.Clear();
             _activeStepPartIds.Clear();
@@ -182,6 +209,9 @@ namespace OSE.UI.Root
             ClearToolGhostIndicator();
             ClearToolActionTargets();
             _router?.CleanupAll();
+            _subassemblyPlacementController?.Dispose();
+            _subassemblyPlacementController = null;
+            ServiceRegistry.Unregister<ISubassemblyPlacementService>();
             _startupSyncPending = false;
         }
 
@@ -192,7 +222,10 @@ namespace OSE.UI.Root
 
             // Block all interaction while the intro overlay is displayed
             if (SessionDriver.IsIntroActive)
+            {
+                ClearDockArcVisual();
                 return;
+            }
 
             HandlePointerInput();
             // Snap/flash/ghost-pulse/required-part-pulse handled by PlaceStepHandler.Update via router
@@ -202,6 +235,8 @@ namespace OSE.UI.Root
                 UpdatePartHoverVisual();
                 UpdatePointerDragSelectionVisual();
             }
+            UpdateSelectedSubassemblyVisual();
+            UpdateDockArcVisual();
             UpdateHintHighlight();
             // Stop ghost pulse when dragging starts — proximity highlight takes over
             if (_draggedPart != null)
@@ -238,19 +273,13 @@ namespace OSE.UI.Root
                     string activeStepId = stepController.CurrentStepState.StepId;
                     if (!string.IsNullOrWhiteSpace(activeStepId))
                     {
-                        HideNonIntroducedParts();
-                        RevealStepParts(activeStepId);
-                        ApplyStepPartHighlighting(activeStepId);
-
-                        SpawnGhostsForStep(activeStepId);
-                        if (TryBuildHandlerContext(out var syncCtx))
-                            _router.OnStepActivated(in syncCtx);
+                        StepDefinition[] completedSteps = GetCompletedSteps(
+                            session,
+                            session.SessionState != null ? session.SessionState.CompletedStepCount : 0);
+                        RebuildVisualStateForActiveStep(completedSteps, activeStepId, resetToDefaultView: true);
                     }
                 }
             }
-
-            RefreshToolGhostIndicator();
-            RefreshToolActionTargets();
             _startupSyncPending = false;
         }
 
@@ -302,9 +331,10 @@ namespace OSE.UI.Root
             GameObject selected = _selectionService.CurrentSelection;
             if (selected == null)
                 return;
+            selected = NormalizeSelectablePlacementTarget(selected);
 
             bool canGrab = true;
-            if (ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
+            if (IsSpawnedPart(selected) && ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
                 canGrab = partController.GrabPart(selected.name);
 
             if (!canGrab)
@@ -331,8 +361,9 @@ namespace OSE.UI.Root
 
             if (selected == null)
                 return;
+            selected = NormalizeSelectablePlacementTarget(selected);
 
-            AttemptPlacementForPart(selected, selected.name);
+            AttemptPlacementForSelection(selected);
 
             if (!_pointerDown)
                 ResetDragState();
@@ -546,6 +577,14 @@ namespace OSE.UI.Root
             return _connectHandler != null && _connectHandler.TryHandlePointerDown(in ctx, screenPos);
         }
 
+        public GameObject NormalizeExternalSelectableTarget(GameObject target)
+        {
+            if (!Application.isPlaying)
+                return target;
+
+            return NormalizeSelectablePlacementTarget(target);
+        }
+
         /// <summary>
         /// Called by V2 orchestrator via LegacyBridgeAdapter while external control is enabled.
         /// Shows hovered-part info while hovering; when hover clears, restores selected-part
@@ -556,8 +595,11 @@ namespace OSE.UI.Root
             if (!Application.isPlaying || !ExternalControlEnabled)
                 return;
 
+            hoveredPart = NormalizeSelectablePlacementTarget(hoveredPart);
+
             if (IsToolModeLockedForParts())
             {
+                ClearPartHoverVisual();
                 _externalHoveredPartForUi = null;
                 if (ServiceRegistry.TryGet<IPresentationAdapter>(out var toolModeUi) && toolModeUi is UIRootCoordinator toolModeHoverUi)
                     toolModeHoverUi.ClearHoverPartInfo();
@@ -565,11 +607,24 @@ namespace OSE.UI.Root
             }
 
             bool hoverChanged = hoveredPart != _externalHoveredPartForUi;
+            if (hoverChanged)
+            {
+                ClearPartHoverVisual();
+                if (hoveredPart != null && CanApplyHoverVisual(hoveredPart, hoveredPart.name))
+                {
+                    _hoveredPart = hoveredPart;
+                    ApplyHoveredPartVisual(_hoveredPart);
+                }
+            }
+
             _externalHoveredPartForUi = hoveredPart;
 
             if (_externalHoveredPartForUi != null)
             {
-                PushPartInfoToUI(_externalHoveredPartForUi.name, isHoverInfo: true);
+                if (IsSubassemblyProxy(_externalHoveredPartForUi))
+                    PushSubassemblyInfoToUI(_externalHoveredPartForUi, isHoverInfo: true);
+                else
+                    PushPartInfoToUI(_externalHoveredPartForUi.name, isHoverInfo: true);
                 return;
             }
 
@@ -582,7 +637,11 @@ namespace OSE.UI.Root
             GameObject selected = _selectionService != null ? _selectionService.CurrentSelection : null;
             if (selected != null)
             {
-                PushPartInfoToUI(selected.name);
+                selected = NormalizeSelectablePlacementTarget(selected);
+                if (IsSubassemblyProxy(selected))
+                    PushSubassemblyInfoToUI(selected);
+                else
+                    PushPartInfoToUI(selected.name);
             }
             else if (ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
             {
@@ -666,6 +725,7 @@ namespace OSE.UI.Root
 
         private void HandleSelectionServiceSelection(GameObject target, bool isInspect)
         {
+            target = NormalizeSelectablePlacementTarget(target);
             if (_suppressSelectionEvents || target == null)
                 return;
 
@@ -675,15 +735,30 @@ namespace OSE.UI.Root
                 return;
             }
 
-            if (!IsSpawnedPart(target))
+            if (!IsSelectablePlacementObject(target))
                 return;
 
-            if (!ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
-                return;
+            bool accepted;
+            string selectionId = ResolveSelectionId(target);
+            if (IsSubassemblyProxy(target))
+            {
+                accepted = !string.IsNullOrWhiteSpace(selectionId);
+                if (accepted)
+                {
+                    PushSubassemblyInfoToUI(target, isHoverInfo: false);
+                    ClearPartHoverVisual();
+                    ApplySelectedPartVisual(target);
+                }
+            }
+            else
+            {
+                if (!ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
+                    return;
 
-            bool accepted = isInspect
-                ? partController.InspectPart(target.name)
-                : partController.SelectPart(target.name);
+                accepted = isInspect
+                    ? partController.InspectPart(target.name)
+                    : partController.SelectPart(target.name);
+            }
 
             if (!accepted)
             {
@@ -691,16 +766,17 @@ namespace OSE.UI.Root
                 return;
             }
 
-            OseLog.Info($"[PartInteraction] Selected part '{target.name}'");
+            OseLog.Info($"[PartInteraction] Selected item '{selectionId ?? target.name}'");
             _selectionFrame = Time.frameCount;
-            StartGhostSelectionPulse(target.name);
-            TryAutoCompleteSelectionStep(target.name);
+            StartGhostSelectionPulse(selectionId ?? target.name);
+            if (!IsSubassemblyProxy(target))
+                TryAutoCompleteSelectionStep(target.name);
 
             if (_pointerDown && _pendingSelectPart == target)
             {
-                if (IsPartMovementLocked(target.name))
+                if (IsPartMovementLocked(selectionId))
                 {
-                    OseLog.VerboseInfo($"[PartInteraction] Drag tracking blocked for locked part '{target.name}'.");
+                    OseLog.VerboseInfo($"[PartInteraction] Drag tracking blocked for locked item '{selectionId}'.");
                     _pendingSelectPart = null;
                     return;
                 }
@@ -798,11 +874,18 @@ namespace OSE.UI.Root
 
         private void HandleSelectionServiceDeselected(GameObject target)
         {
+            target = NormalizeSelectablePlacementTarget(target);
             if (_suppressSelectionEvents)
                 return;
 
-            if (ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
+            if (IsSubassemblyProxy(target))
+            {
+                RestorePartVisual(target);
+            }
+            else if (ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
+            {
                 partController.DeselectPart();
+            }
 
             if (ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
                 ui.HidePartInfoPanel();
@@ -816,9 +899,35 @@ namespace OSE.UI.Root
             if (_selectionService == null)
                 return;
 
+            GameObject current = NormalizeSelectablePlacementTarget(_selectionService.CurrentSelection);
+            if (IsSubassemblyProxy(current))
+            {
+                RestorePartVisual(current);
+                if (_hoveredPart == current)
+                    _hoveredPart = null;
+            }
+
             _suppressSelectionEvents = true;
             _selectionService.Deselect();
             _suppressSelectionEvents = false;
+        }
+
+        private void HandlePlacementSucceeded(GameObject target)
+        {
+            target = NormalizeSelectablePlacementTarget(target);
+            if (!IsSubassemblyProxy(target))
+                return;
+
+            ClearPartHoverVisual();
+            _externalHoveredPartForUi = null;
+            StopGhostSelectionPulse();
+            ResetDragState();
+
+            if (ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
+                partController.DeselectPart();
+
+            RestorePartVisual(target);
+            DeselectFromSelectionService();
         }
 
         private void EnsureInputWiring()
@@ -892,7 +1001,7 @@ namespace OSE.UI.Root
             if (cam == null)
                 return null;
 
-            return RaycastSpawnedPart(cam.ScreenPointToRay(screenPos));
+            return RaycastSelectableObject(cam.ScreenPointToRay(screenPos));
         }
 
         // â”€â”€ Pointer input (mouse + touch) â”€â”€
@@ -976,13 +1085,17 @@ namespace OSE.UI.Root
             Camera cam = Camera.main;
             if (cam == null) return;
 
-            GameObject matchedPart = RaycastSpawnedPart(cam.ScreenPointToRay(screenPos));
+            GameObject matchedPart = RaycastSelectableObject(cam.ScreenPointToRay(screenPos));
             if (matchedPart == null)
                 return;
 
-            if (IsPartMovementLocked(matchedPart.name))
+            string matchedSelectionId = ResolveSelectionId(matchedPart);
+            if (string.IsNullOrWhiteSpace(matchedSelectionId))
+                return;
+
+            if (IsPartMovementLocked(matchedSelectionId))
             {
-                OseLog.VerboseInfo($"[PartInteraction] Drag blocked for locked part '{matchedPart.name}'. Selection is still allowed.");
+                OseLog.VerboseInfo($"[PartInteraction] Drag blocked for locked item '{matchedSelectionId}'. Selection is still allowed.");
 
                 _pendingSelectPart = matchedPart;
 
@@ -995,7 +1108,7 @@ namespace OSE.UI.Root
                     _selectionService.NotifySelected(matchedPart);
                     _pendingSelectPart = null;
                 }
-                else if (ServiceRegistry.TryGet<PartRuntimeController>(out var lockedPartController))
+                else if (!IsSubassemblyProxy(matchedPart) && ServiceRegistry.TryGet<PartRuntimeController>(out var lockedPartController))
                 {
                     lockedPartController.SelectPart(matchedPart.name);
                     _pendingSelectPart = null;
@@ -1028,13 +1141,26 @@ namespace OSE.UI.Root
             }
             else
             {
-                if (ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
+                if (IsSubassemblyProxy(matchedPart))
+                {
+                    if (_selectionService != null)
+                    {
+                        _selectionService.NotifySelected(matchedPart);
+                    }
+                    else
+                    {
+                        OseLog.Info($"[PartInteraction] Selected subassembly '{matchedSelectionId}'");
+                        if (!IsPartMovementLocked(matchedSelectionId))
+                            BeginDragTracking(matchedPart);
+                    }
+                }
+                else if (ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
                 {
                     bool selected = partController.SelectPart(matchedPart.name);
                     if (selected)
                     {
                         OseLog.Info($"[PartInteraction] Selected part '{matchedPart.name}'");
-                        if (!IsPartMovementLocked(matchedPart.name))
+                        if (!IsPartMovementLocked(matchedSelectionId))
                             BeginDragTracking(matchedPart);
                     }
                 }
@@ -1057,7 +1183,7 @@ namespace OSE.UI.Root
                 // Start dragging
                 _isDragging = true;
                 bool canGrab = true;
-                if (ServiceRegistry.TryGet<PartRuntimeController>(out var pc))
+                if (!IsSubassemblyProxy(_draggedPart) && ServiceRegistry.TryGet<PartRuntimeController>(out var pc))
                     canGrab = pc.GrabPart(_draggedPartId);
 
                 if (!canGrab)
@@ -1140,6 +1266,7 @@ namespace OSE.UI.Root
             Ray ray = cam.ScreenPointToRay(rayScreenPos);
             Vector3 dragTargetWorld = ray.GetPoint(_dragRayDistance);
             _draggedPart.transform.position = ClampDragPosition(cam, dragTargetWorld, _draggedPart);
+            _subassemblyPlacementController?.ApplyProxyTransform(_draggedPart);
 
             // Check proximity to ghosts and highlight when in snap zone
             UpdateGhostProximity();
@@ -1174,12 +1301,19 @@ namespace OSE.UI.Root
             if (_draggedPart == null || string.IsNullOrEmpty(_draggedPartId))
                 return;
 
-            AttemptPlacementForPart(_draggedPart, _draggedPartId);
+            AttemptPlacementForSelection(_draggedPart);
         }
 
-        private void AttemptPlacementForPart(GameObject partGo, string partId)
+        private void AttemptPlacementForSelection(GameObject targetGo)
         {
-            _placeHandler?.AttemptPlacement(partGo, partId);
+            if (targetGo == null)
+                return;
+
+            string selectionId = ResolveSelectionId(targetGo);
+            if (string.IsNullOrWhiteSpace(selectionId))
+                return;
+
+            _placeHandler?.AttemptPlacement(targetGo, selectionId);
         }
 
         // â”€â”€ Click-to-place â”€â”€
@@ -1202,19 +1336,20 @@ namespace OSE.UI.Root
             // Need a selected part that isn't being dragged.
             if (selected == null || _draggedPart != null)
                 return false;
+            selected = NormalizeSelectablePlacementTarget(selected);
 
             // Skip click-to-place on the same frame the part was selected.
             if (Time.frameCount == _selectionFrame)
                 return false;
 
-            string partId = selected.name;
-            if (!IsSpawnedPart(selected))
+            string selectionId = ResolveSelectionId(selected);
+            if (!IsSelectablePlacementObject(selected) || string.IsNullOrWhiteSpace(selectionId))
                 return false;
 
-            if (IsPartMovementLocked(partId))
+            if (IsPartMovementLocked(selectionId))
                 return false;
 
-            return _placeHandler.TryClickToPlace(partId, selected, screenPos);
+            return _placeHandler.TryClickToPlace(selectionId, selected, screenPos);
         }
 
         // Ghost raycast, screen proximity, and click-to-place execution
@@ -1323,6 +1458,13 @@ namespace OSE.UI.Root
             var toReveal = new List<string>();
             foreach (string partId in subassemblyPartIds)
             {
+                if (_partStates.TryGetValue(partId, out var state) &&
+                    state is PartPlacementState.Completed or PartPlacementState.PlacedVirtually)
+                {
+                    _revealedPartIds.Add(partId);
+                    continue;
+                }
+
                 if (!_revealedPartIds.Contains(partId))
                     toReveal.Add(partId);
             }
@@ -1380,16 +1522,9 @@ namespace OSE.UI.Root
                     unplacedParts.Add((partId, partGo, width));
                 }
 
-                // Preserve original GLB textures; only apply solid color to primitives/placeholders
-                Color partColor = pp != null
-                    ? new Color(pp.color.r, pp.color.g, pp.color.b, pp.color.a)
-                    : new Color(0.94f, 0.55f, 0.18f, 1f);
-
-                if (!MaterialHelper.IsImportedModel(partGo))
-                    MaterialHelper.Apply(partGo, "Preview Part Material", partColor);
-                else
-                    MaterialHelper.ClearTint(partGo);
-
+                _partStates[partId] = PartPlacementState.Available;
+                SyncPartGrabInteractivity(partGo, partId);
+                ApplyPartVisualForState(partGo, partId, PartPlacementState.Available);
                 _revealedPartIds.Add(partId);
             }
 
@@ -1425,9 +1560,21 @@ namespace OSE.UI.Root
             if (package == null || !package.TryGetStep(stepId, out var step))
                 return;
 
-            // Build set of current step's required parts
+            // Build set of the current step's active parts.
+            // For finished-subassembly placement steps, the whole required subassembly
+            // is the active object, not an empty requiredPartIds list.
             _activeStepPartIds.Clear();
-            if (step.requiredPartIds != null)
+            if (step.RequiresSubassemblyPlacement &&
+                package.TryGetSubassembly(step.requiredSubassemblyId, out var requiredSubassembly) &&
+                requiredSubassembly?.partIds != null)
+            {
+                for (int i = 0; i < requiredSubassembly.partIds.Length; i++)
+                {
+                    if (!string.IsNullOrEmpty(requiredSubassembly.partIds[i]))
+                        _activeStepPartIds.Add(requiredSubassembly.partIds[i]);
+                }
+            }
+            else if (step.requiredPartIds != null)
             {
                 for (int i = 0; i < step.requiredPartIds.Length; i++)
                 {
@@ -1456,6 +1603,7 @@ namespace OSE.UI.Root
                 else
                 {
                     // Revealed but not needed right now: dim it
+                    ClearRendererPropertyBlocks(partGo);
                     if (MaterialHelper.IsImportedModel(partGo))
                         MaterialHelper.ApplyTint(partGo, DimmedPartColor);
                     else
@@ -1470,7 +1618,7 @@ namespace OSE.UI.Root
 
         private void UpdateHintHighlight()
         {
-            if (_hintGhost == null || _hintHighlightUntil <= 0f)
+            if ((_hintGhost == null && _hintSourceProxy == null) || _hintHighlightUntil <= 0f)
                 return;
 
             if (Time.time >= _hintHighlightUntil)
@@ -1479,10 +1627,16 @@ namespace OSE.UI.Root
                 return;
             }
 
-            if (_placeHandler != null && _placeHandler.IsGhostHighlighted && _placeHandler.HoveredGhost == _hintGhost)
-                return;
+            Color pulseColor = ColorPulseHelper.Lerp(HintHighlightColorA, HintHighlightColorB, HintHighlightPulseSpeed);
 
-            MaterialHelper.SetMaterialColor(_hintGhost, ColorPulseHelper.Lerp(HintHighlightColorA, HintHighlightColorB, HintHighlightPulseSpeed));
+            if (_hintGhost != null)
+            {
+                if (!(_placeHandler != null && _placeHandler.IsGhostHighlighted && _placeHandler.HoveredGhost == _hintGhost))
+                    MaterialHelper.SetMaterialColor(_hintGhost, pulseColor);
+            }
+
+            if (_hintSourceProxy != null)
+                ForEachProxyMember(_hintSourceProxy, member => ApplyHintSourceVisual(member, pulseColor));
         }
 
         private void ClearHintHighlight()
@@ -1499,7 +1653,11 @@ namespace OSE.UI.Root
                 }
             }
 
+            if (_hintSourceProxy != null)
+                RestorePartVisual(_hintSourceProxy);
+
             _hintGhost = null;
+            _hintSourceProxy = null;
             _hintHighlightUntil = 0f;
         }
 
@@ -1517,7 +1675,7 @@ namespace OSE.UI.Root
         {
             nearestDist = float.PositiveInfinity;
             if (_placeHandler == null) return null;
-            return _placeHandler.FindNearestGhostForPart(partId, worldPos, out nearestDist);
+            return _placeHandler.FindNearestGhostForSelection(partId, worldPos, out nearestDist);
         }
 
         private static HintDefinition ResolveHintForStep(MachinePackageDefinition package, StepDefinition step, int totalHintsForStep)
@@ -1581,15 +1739,35 @@ namespace OSE.UI.Root
             if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
                 return;
 
-            var progression = session.AssemblyController?.ProgressionController;
-            if (progression == null) return;
-
-            StepDefinition[] completedSteps = progression.GetStepsUpTo(evt.CompletedStepCount);
-            if (completedSteps.Length == 0) return;
-
-            RestoreCompletedStepParts(completedSteps);
+            StepDefinition[] completedSteps = GetCompletedSteps(session, evt.CompletedStepCount);
+            string activeStepId = GetActiveStepId(session);
+            RebuildVisualStateForActiveStep(completedSteps, activeStepId, resetToDefaultView: true);
 
             OseLog.Info($"[PartInteraction] Restored visual state for {completedSteps.Length} completed steps.");
+        }
+
+        /// <summary>
+        /// Called when PackagePartSpawner finishes spawning all parts (including
+        /// async GLB models). If the session was restored, re-applies completed-part
+        /// positioning because the async spawn + PositionParts may have overwritten
+        /// restore positions with start/arc positions.
+        /// </summary>
+        private void HandlePartsReady()
+        {
+            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+                return;
+
+            if (session.SessionState == null || !session.SessionState.IsRestored)
+                return;
+
+            int completedCount = session.SessionState.CompletedStepCount;
+            if (completedCount <= 0) return;
+
+            StepDefinition[] completedSteps = GetCompletedSteps(session, completedCount);
+            string activeStepId = GetActiveStepId(session);
+            RebuildVisualStateForActiveStep(completedSteps, activeStepId, resetToDefaultView: true);
+
+            OseLog.Info($"[PartInteraction] Re-applied restore positioning after async part spawn ({completedSteps.Length} steps).");
         }
 
         /// <summary>
@@ -1605,28 +1783,35 @@ namespace OSE.UI.Root
 
             var package = _spawner?.CurrentPackage;
             if (package == null) return;
-
-            var progression = session.AssemblyController?.ProgressionController;
-            if (progression == null) return;
+            StepDefinition[] orderedSteps = package.GetOrderedSteps();
+            int targetGlobalIndex = Mathf.Clamp(evt.TargetStepIndex, 0, Mathf.Max(orderedSteps.Length - 1, 0));
 
             // Clear current visual state
+            _router?.CleanupAll();
             ClearGhosts();
+            ClearToolActionTargets();
             ClearRequiredPartEmission();
             _connectHandler?.ClearTransientVisuals();
             _revealedPartIds.Clear();
+            _subassemblyPlacementController?.ResetReplayState();
 
-            // Reposition completed parts at their play positions
-            StepDefinition[] completedSteps = progression.GetStepsUpTo(evt.TargetStepIndex);
+            StepDefinition[] completedSteps = Array.Empty<StepDefinition>();
+            if (targetGlobalIndex > 0 && orderedSteps.Length > 0)
+            {
+                completedSteps = new StepDefinition[targetGlobalIndex];
+                Array.Copy(orderedSteps, completedSteps, targetGlobalIndex);
+            }
+
             if (completedSteps.Length > 0)
+            {
                 RestoreCompletedStepParts(completedSteps);
+                _subassemblyPlacementController?.RestoreCompletedPlacements(completedSteps);
+            }
 
-            // Revert parts from the target step onward back to start positions
-            // so they visually "rewind" when navigating backward.
-            StepDefinition[] allSteps = progression.GetStepsUpTo(evt.TotalSteps);
-            if (evt.TargetStepIndex < allSteps.Length)
-                RevertFutureStepParts(allSteps, evt.TargetStepIndex);
+            if (targetGlobalIndex < orderedSteps.Length)
+                RevertFutureStepParts(orderedSteps, targetGlobalIndex);
 
-            OseLog.Info($"[PartInteraction] Navigated from step {evt.PreviousStepIndex + 1} to {evt.TargetStepIndex + 1}: repositioned parts.");
+            OseLog.Info($"[PartInteraction] Navigated from global step {evt.PreviousStepIndex + 1} to {evt.TargetStepIndex + 1}: repositioned parts.");
         }
 
         private void HandleStepStateChanged(StepStateChanged evt)
@@ -1642,6 +1827,9 @@ namespace OSE.UI.Root
 
             if (!isFailRelated)
             {
+                ClearHintHighlight();
+                ClearToolActionTargets();
+
                 // Reset sequential tracking only on genuine new-step transitions.
                 _isSequentialStep = false;
                 _sequentialTargetIndex = 0;
@@ -1669,12 +1857,13 @@ namespace OSE.UI.Root
                     HideNonIntroducedParts();
                     RevealStepParts(evt.StepId);
                     ApplyStepPartHighlighting(evt.StepId);
+                    _subassemblyPlacementController?.RefreshForStep(evt.StepId);
 
                     SpawnGhostsForStep(evt.StepId);
-                    OseLog.VerboseInfo($"[PartInteraction] Step ‘{evt.StepId}’ active: spawned {_spawnedGhosts.Count} ghost(s).");
-
                     if (TryBuildHandlerContext(out var activatedCtx))
                         _router.OnStepActivated(in activatedCtx);
+                    FocusCameraOnStepArea(evt.StepId);
+                    OseLog.VerboseInfo($"[PartInteraction] Step ‘{evt.StepId}’ active: spawned {_spawnedGhosts.Count} ghost(s).");
                 }
             }
             else if (evt.Current == StepState.Completed)
@@ -1682,7 +1871,25 @@ namespace OSE.UI.Root
                 if (TryBuildHandlerContextForStep(evt.StepId, out var completedCtx))
                     _router.OnStepCompleted(in completedCtx);
 
+                var package = _spawner?.CurrentPackage;
+                if (package != null &&
+                    package.TryGetStep(evt.StepId, out var completedStep) &&
+                    completedStep != null &&
+                    completedStep.RequiresSubassemblyPlacement &&
+                    _subassemblyPlacementController != null &&
+                    !string.IsNullOrWhiteSpace(completedStep.requiredSubassemblyId) &&
+                    _subassemblyPlacementController.TryGetProxy(completedStep.requiredSubassemblyId, out GameObject completedProxy))
+                {
+                    RestorePartVisual(completedProxy);
+                }
+
+                DeselectFromSelectionService();
+                ClearPartHoverVisual();
+                if (ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
+                    partController.DeselectPart();
+
                 MoveStepPartsToPlayPosition(evt.StepId);
+                _subassemblyPlacementController?.HandleStepCompleted(evt.StepId);
                 ClearGhosts();
                 // Handler clears required-part emission via OnStepCompleted
             }
@@ -1693,6 +1900,261 @@ namespace OSE.UI.Root
             RefreshToolActionTargets();
             if (IsToolModeLockedForParts())
                 ClearPartHoverVisual();
+        }
+
+        private static string GetActiveStepId(MachineSessionController session)
+        {
+            StepController stepController = session?.AssemblyController?.StepController;
+            if (stepController != null && stepController.HasActiveStep)
+            {
+                string stepId = stepController.CurrentStepState.StepId;
+                if (!string.IsNullOrWhiteSpace(stepId))
+                    return stepId;
+            }
+
+            return session?.SessionState?.CurrentStepId;
+        }
+
+        private StepDefinition[] GetCompletedSteps(MachineSessionController session, int completedCount)
+        {
+            if (session == null || completedCount <= 0)
+                return Array.Empty<StepDefinition>();
+
+            MachinePackageDefinition package = _spawner?.CurrentPackage ?? session.Package;
+            StepDefinition[] orderedSteps = package?.GetOrderedSteps();
+            if (orderedSteps == null || orderedSteps.Length == 0)
+                return Array.Empty<StepDefinition>();
+
+            int clamped = Math.Min(completedCount, orderedSteps.Length);
+            if (clamped <= 0)
+                return Array.Empty<StepDefinition>();
+
+            StepDefinition[] result = new StepDefinition[clamped];
+            Array.Copy(orderedSteps, result, clamped);
+            return result;
+        }
+
+        private void RebuildVisualStateForActiveStep(StepDefinition[] completedSteps, string activeStepId, bool resetToDefaultView)
+        {
+            if (string.IsNullOrWhiteSpace(activeStepId))
+                return;
+
+            _router?.CleanupAll();
+            ClearGhosts();
+            ClearToolActionTargets();
+            ClearRequiredPartEmission();
+            _connectHandler?.ClearTransientVisuals();
+            _revealedPartIds.Clear();
+            _activeStepPartIds.Clear();
+            ClearPartHoverVisual();
+            _subassemblyPlacementController?.ResetReplayState();
+
+            if (completedSteps != null && completedSteps.Length > 0)
+            {
+                RestoreCompletedStepParts(completedSteps);
+                _subassemblyPlacementController?.RestoreCompletedPlacements(completedSteps);
+            }
+
+            HideNonIntroducedParts();
+            RevealStepParts(activeStepId);
+            ApplyStepPartHighlighting(activeStepId);
+            _subassemblyPlacementController?.RefreshForStep(activeStepId);
+
+            SpawnGhostsForStep(activeStepId);
+            if (TryBuildHandlerContext(out var rebuildCtx))
+                _router.OnStepActivated(in rebuildCtx);
+
+            FocusCameraOnStepArea(activeStepId, resetToDefaultView);
+            RefreshToolGhostIndicator();
+            RefreshToolActionTargets();
+        }
+
+        private void FocusCameraOnStepArea(string stepId, bool resetToDefaultView = false)
+        {
+            if (string.IsNullOrWhiteSpace(stepId) || !TryResolveStepFocusBounds(stepId, out Bounds focusBounds))
+                return;
+
+            focusBounds.Expand(new Vector3(0.18f, 0.12f, 0.18f));
+
+            if (resetToDefaultView)
+                TryInvokeCameraMethod("ResetToDefault", Array.Empty<object>());
+
+            if (TryInvokeCameraMethod("FrameBounds", new object[] { focusBounds }, typeof(Bounds)))
+                return;
+
+            TryInvokeCameraMethod("FocusOn", new object[] { focusBounds.center, -1f }, typeof(Vector3), typeof(float));
+            TryInvokeCameraMethod("FocusOn", new object[] { focusBounds.center }, typeof(Vector3));
+        }
+
+        private bool TryResolveStepFocusBounds(string stepId, out Bounds bounds)
+        {
+            bounds = default;
+
+            MachinePackageDefinition package = _spawner?.CurrentPackage;
+            if (package == null || !package.TryGetStep(stepId, out StepDefinition step) || step == null)
+                return false;
+
+            Bounds accumulatedBounds = default;
+            bool hasBounds = false;
+
+            void Encapsulate(Bounds candidate)
+            {
+                if (!hasBounds)
+                {
+                    accumulatedBounds = candidate;
+                    hasBounds = true;
+                    return;
+                }
+
+                accumulatedBounds.Encapsulate(candidate);
+            }
+
+            for (int i = 0; i < _spawnedGhosts.Count; i++)
+            {
+                GameObject ghost = _spawnedGhosts[i];
+                if (ghost == null)
+                    continue;
+
+                if (TryGetRenderableBounds(ghost, out Bounds ghostBounds))
+                    Encapsulate(ghostBounds);
+                else
+                    Encapsulate(new Bounds(ghost.transform.position, Vector3.one * 0.08f));
+            }
+
+            HashSet<string> focusPartIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            CollectStepFocusPartIds(package, step, focusPartIds);
+
+            foreach (string partId in focusPartIds)
+            {
+                GameObject partGo = FindSpawnedPart(partId);
+                if (partGo == null || !partGo.activeInHierarchy)
+                    continue;
+
+                if (TryGetRenderableBounds(partGo, out Bounds partBounds))
+                    Encapsulate(partBounds);
+                else
+                    Encapsulate(new Bounds(partGo.transform.position, Vector3.one * 0.08f));
+            }
+
+            if (step.RequiresSubassemblyPlacement &&
+                _subassemblyPlacementController != null &&
+                _subassemblyPlacementController.TryGetProxy(step.requiredSubassemblyId, out GameObject proxy) &&
+                proxy != null)
+            {
+                if (TryGetRenderableBounds(proxy, out Bounds proxyBounds))
+                    Encapsulate(proxyBounds);
+                else
+                    Encapsulate(new Bounds(proxy.transform.position, Vector3.one * 0.18f));
+            }
+
+            if (_useHandler != null && _useHandler.TryGetSpawnedTargetBounds(out Bounds toolTargetBounds))
+            {
+                Encapsulate(toolTargetBounds);
+            }
+
+            if (!hasBounds && step.targetIds != null && step.targetIds.Length > 0)
+            {
+                Transform previewRoot = _setup != null ? _setup.PreviewRoot : null;
+                for (int i = 0; i < step.targetIds.Length; i++)
+                {
+                    TargetPreviewPlacement targetPlacement = _spawner.FindTargetPlacement(step.targetIds[i]);
+                    if (targetPlacement == null)
+                        continue;
+
+                    Vector3 localPos = new Vector3(targetPlacement.position.x, targetPlacement.position.y, targetPlacement.position.z);
+                    Vector3 worldPos = previewRoot != null ? previewRoot.TransformPoint(localPos) : localPos;
+                    Encapsulate(new Bounds(worldPos, Vector3.one * 0.08f));
+                }
+            }
+
+            if (hasBounds)
+                bounds = accumulatedBounds;
+
+            return hasBounds;
+        }
+
+        private static void CollectStepFocusPartIds(MachinePackageDefinition package, StepDefinition step, HashSet<string> results)
+        {
+            if (package == null || step == null || results == null)
+                return;
+
+            if (!string.IsNullOrWhiteSpace(step.subassemblyId))
+            {
+                StepDefinition[] allSteps = package.GetOrderedSteps();
+                for (int i = 0; i < allSteps.Length; i++)
+                {
+                    StepDefinition candidate = allSteps[i];
+                    if (candidate == null ||
+                        !string.Equals(candidate.subassemblyId, step.subassemblyId, StringComparison.OrdinalIgnoreCase) ||
+                        candidate.requiredPartIds == null)
+                    {
+                        continue;
+                    }
+
+                    for (int p = 0; p < candidate.requiredPartIds.Length; p++)
+                    {
+                        string partId = candidate.requiredPartIds[p];
+                        if (!string.IsNullOrWhiteSpace(partId))
+                            results.Add(partId);
+                    }
+                }
+
+                return;
+            }
+
+            if (step.requiredPartIds == null)
+                return;
+
+            for (int i = 0; i < step.requiredPartIds.Length; i++)
+            {
+                string partId = step.requiredPartIds[i];
+                if (!string.IsNullOrWhiteSpace(partId))
+                    results.Add(partId);
+            }
+        }
+
+        private static bool TryInvokeCameraMethod(string methodName, object[] args, params Type[] signature)
+        {
+            Camera cam = Camera.main;
+            if (cam == null)
+                return false;
+
+            Transform current = cam.transform;
+            while (current != null)
+            {
+                Component[] components = current.GetComponents<Component>();
+                for (int i = 0; i < components.Length; i++)
+                {
+                    Component component = components[i];
+                    if (component == null)
+                        continue;
+
+                    MethodInfo method = component.GetType().GetMethod(
+                        methodName,
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                        binder: null,
+                        types: signature,
+                        modifiers: null);
+
+                    if (method == null)
+                        continue;
+
+                    try
+                    {
+                        method.Invoke(component, args);
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        string message = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                        OseLog.Warn($"[PartInteraction] Camera method '{methodName}' failed on '{component.GetType().Name}': {message}");
+                    }
+                }
+
+                current = current.parent;
+            }
+
+            return false;
         }
 
         private bool TryBuildHandlerContext(out StepHandlerContext context)
@@ -1744,6 +2206,7 @@ namespace OSE.UI.Root
             if (partGo == null) return;
 
             _partStates[evt.PartId] = evt.Current;
+            SyncPartGrabInteractivity(partGo, evt.PartId);
             ApplyPartVisualForState(partGo, evt.PartId, evt.Current);
 
             if (_hoveredPart == partGo && CanApplyHoverVisual(partGo, evt.PartId))
@@ -1773,21 +2236,43 @@ namespace OSE.UI.Root
                 return;
 
             HintDefinition hint = ResolveHintForStep(package, step, evt.TotalHintsForStep);
-            if (hint == null)
+            if (hint == null && !step.RequiresSubassemblyPlacement)
                 return;
 
             if (ServiceRegistry.TryGet<IPresentationAdapter>(out var ui) && !ui.IsHintDisplayAllowed)
                 return;
 
-            if (ui != null)
-                ui.ShowHintContent(hint.title, hint.message, hint.type);
-
+            string hintTitle = hint?.title;
+            string hintMessage = hint?.message;
             Transform targetTransform = ResolveHintTargetTransform(hint);
+            GameObject sourceProxy = null;
+            GameObject targetGhost = targetTransform != null ? targetTransform.gameObject : null;
+
+            if (TryBuildSubassemblyHintPresentation(
+                    step,
+                    hint,
+                    out string stackTitle,
+                    out string stackMessage,
+                    out Transform stackAnchor,
+                    out sourceProxy,
+                    out GameObject stackGhost))
+            {
+                hintTitle = stackTitle;
+                hintMessage = stackMessage;
+                targetTransform = stackAnchor;
+                targetGhost = stackGhost;
+            }
+
+            if (ui != null)
+                ui.ShowHintContent(hintTitle, hintMessage, hint?.type);
+
             if (targetTransform != null)
             {
-                _hintGhost = targetTransform.gameObject;
+                _hintGhost = targetGhost;
+                _hintSourceProxy = sourceProxy;
                 _hintHighlightUntil = Time.time + HintHighlightDuration;
-                MaterialHelper.ApplyGhost(_hintGhost);
+                if (_hintGhost != null)
+                    MaterialHelper.ApplyGhost(_hintGhost);
 
                 if (_hintWorldCanvas == null)
                     _hintWorldCanvas = FindFirstObjectByType<HintWorldCanvas>();
@@ -1798,7 +2283,7 @@ namespace OSE.UI.Root
                     _hintWorldCanvas = go.AddComponent<HintWorldCanvas>();
                 }
 
-                _hintWorldCanvas.ShowHint(hint.type, hint.title, hint.message, targetTransform);
+                _hintWorldCanvas.ShowHint(hint?.type, hintTitle, hintMessage, targetTransform);
             }
         }
 
@@ -1886,6 +2371,12 @@ namespace OSE.UI.Root
         {
             if (string.IsNullOrEmpty(targetId)) { OseLog.Warn("[PartInteraction] SpawnGhostForTarget: targetId is null/empty."); return; }
             if (!package.TryGetTarget(targetId, out var target)) { OseLog.Warn($"[PartInteraction] SpawnGhostForTarget: target '{targetId}' not found in package."); return; }
+
+            if (!string.IsNullOrWhiteSpace(target.associatedSubassemblyId))
+            {
+                SpawnGhostForSubassemblyTarget(package, targetId, target);
+                return;
+            }
 
             string associatedPartId = target.associatedPartId;
             if (string.IsNullOrEmpty(associatedPartId)) { OseLog.Warn($"[PartInteraction] SpawnGhostForTarget: target '{targetId}' has no associatedPartId."); return; }
@@ -2036,6 +2527,258 @@ namespace OSE.UI.Root
             OseLog.Info($"[PartInteraction] Ghost spawned for '{associatedPartId}' at target '{targetId}' pos={ghostPos} scale={ghostScale}. Total ghosts: {_spawnedGhosts.Count}");
         }
 
+        private void SpawnGhostForSubassemblyTarget(MachinePackageDefinition package, string targetId, TargetDefinition target)
+        {
+            string subassemblyId = target.associatedSubassemblyId;
+            if (string.IsNullOrWhiteSpace(subassemblyId))
+                return;
+
+            if (_subassemblyPlacementController == null || !_subassemblyPlacementController.IsSubassemblyReady(subassemblyId))
+            {
+                OseLog.Warn($"[PartInteraction] SpawnGhostForTarget: subassembly '{subassemblyId}' is not ready for placement.");
+                return;
+            }
+
+            if (!package.TryGetSubassembly(subassemblyId, out SubassemblyDefinition subassembly) || subassembly == null)
+            {
+                OseLog.Warn($"[PartInteraction] SpawnGhostForTarget: subassembly '{subassemblyId}' not found in package.");
+                return;
+            }
+
+            SubassemblyPreviewPlacement frame = _spawner.FindSubassemblyPlacement(subassemblyId);
+            if (frame == null)
+            {
+                OseLog.Warn($"[PartInteraction] SpawnGhostForTarget: subassembly '{subassemblyId}' has no authored preview frame.");
+                return;
+            }
+
+            Transform previewRoot = _setup != null ? _setup.PreviewRoot : null;
+            GameObject ghostRoot = new GameObject($"Ghost_{subassemblyId}");
+            if (previewRoot != null)
+                ghostRoot.transform.SetParent(previewRoot, false);
+
+            if (_subassemblyPlacementController.TryResolveTargetPose(targetId, out Vector3 ghostPos, out Quaternion ghostRot, out Vector3 ghostScale))
+            {
+                ghostRoot.transform.SetLocalPositionAndRotation(ghostPos, ghostRot);
+                ghostRoot.transform.localScale = ghostScale;
+            }
+            else
+            {
+                ghostRoot.transform.SetLocalPositionAndRotation(
+                    GhostToVector3(frame.position),
+                    GhostToQuaternion(frame.rotation));
+                ghostRoot.transform.localScale = GhostSanitizeScale(GhostToVector3(frame.scale), Vector3.one);
+            }
+
+            Vector3 framePos = GhostToVector3(frame.position);
+            Quaternion frameRot = GhostToQuaternion(frame.rotation);
+            Vector3 frameScale = GhostSanitizeScale(GhostToVector3(frame.scale), Vector3.one);
+            IntegratedSubassemblyPreviewPlacement integratedPlacement = _spawner.FindIntegratedSubassemblyPlacement(subassemblyId, targetId);
+            ConstrainedSubassemblyFitPreviewPlacement fitPlacement = _spawner.FindConstrainedSubassemblyFitPlacement(subassemblyId, targetId);
+            Vector3 fitAxisLocal = fitPlacement != null ? GhostToVector3(fitPlacement.fitAxisLocal) : Vector3.zero;
+            if (fitAxisLocal.sqrMagnitude > 0.000001f)
+                fitAxisLocal.Normalize();
+            float fitTravel = fitPlacement != null
+                ? Mathf.Clamp(
+                    fitPlacement.completionTravel,
+                    Mathf.Min(fitPlacement.minTravel, fitPlacement.maxTravel),
+                    Mathf.Max(fitPlacement.minTravel, fitPlacement.maxTravel))
+                : 0f;
+            bool isAxisFitGhost = fitPlacement?.drivenPartIds != null && fitPlacement.drivenPartIds.Length > 0;
+            HashSet<string> fitDrivenPartIds = isAxisFitGhost
+                ? new HashSet<string>(fitPlacement.drivenPartIds, StringComparer.OrdinalIgnoreCase)
+                : null;
+            var fitGhostChildren = isAxisFitGhost ? new List<Transform>() : null;
+
+            string[] memberIds = subassembly.partIds ?? Array.Empty<string>();
+            for (int i = 0; i < memberIds.Length; i++)
+            {
+                string memberId = memberIds[i];
+                if (string.IsNullOrWhiteSpace(memberId) || !package.TryGetPart(memberId, out PartDefinition part))
+                    continue;
+                if (isAxisFitGhost && !fitDrivenPartIds.Contains(memberId))
+                    continue;
+
+                PartPreviewPlacement placement = _spawner.FindPartPlacement(memberId);
+                if (placement == null)
+                    continue;
+
+                GameObject childGhost = _spawner.TryLoadPackageAsset(part.assetRef);
+                if (childGhost == null)
+                    childGhost = GameObject.CreatePrimitive(PrimitiveType.Cube);
+
+                childGhost.transform.SetParent(ghostRoot.transform, false);
+
+                Vector3 memberLocalPos;
+                Quaternion memberLocalRot;
+                Vector3 memberLocalScale;
+
+                if (TryGetIntegratedGhostMemberPlacement(integratedPlacement, memberId, out Vector3 integratedPos, out Quaternion integratedRot, out Vector3 integratedScale))
+                {
+                    memberLocalPos = GhostInverseTransformPoint(
+                        ghostRoot.transform.localPosition,
+                        ghostRoot.transform.localRotation,
+                        GhostSanitizeScale(ghostRoot.transform.localScale, Vector3.one),
+                        integratedPos);
+                    memberLocalRot = Quaternion.Inverse(ghostRoot.transform.localRotation) * integratedRot;
+                    memberLocalScale = GhostDivideScale(integratedScale, GhostSanitizeScale(ghostRoot.transform.localScale, Vector3.one));
+                }
+                else
+                {
+                    Vector3 memberPlayPos = new Vector3(placement.playPosition.x, placement.playPosition.y, placement.playPosition.z);
+                    Quaternion memberPlayRot = !placement.playRotation.IsIdentity
+                        ? new Quaternion(placement.playRotation.x, placement.playRotation.y, placement.playRotation.z, placement.playRotation.w)
+                        : Quaternion.identity;
+                    Vector3 memberPlayScale = GhostSanitizeScale(new Vector3(placement.playScale.x, placement.playScale.y, placement.playScale.z), Vector3.one);
+
+                    memberLocalPos = GhostInverseTransformPoint(framePos, frameRot, frameScale, memberPlayPos);
+                    memberLocalRot = Quaternion.Inverse(frameRot) * memberPlayRot;
+                    memberLocalScale = GhostDivideScale(memberPlayScale, frameScale);
+                }
+
+                if (fitPlacement?.drivenPartIds != null &&
+                    Array.IndexOf(fitPlacement.drivenPartIds, memberId) >= 0)
+                {
+                    memberLocalPos += fitAxisLocal * (fitTravel - fitPlacement.minTravel);
+                }
+
+                childGhost.transform.SetLocalPositionAndRotation(memberLocalPos, memberLocalRot);
+                childGhost.transform.localScale = memberLocalScale;
+                if (fitGhostChildren != null)
+                    fitGhostChildren.Add(childGhost.transform);
+
+                foreach (Collider collider in childGhost.GetComponentsInChildren<Collider>(true))
+                    Destroy(collider);
+            }
+
+            if (isAxisFitGhost && fitGhostChildren != null && fitGhostChildren.Count > 0)
+            {
+                Vector3 anchorLocal = Vector3.zero;
+                for (int i = 0; i < fitGhostChildren.Count; i++)
+                    anchorLocal += fitGhostChildren[i].localPosition;
+                anchorLocal /= fitGhostChildren.Count;
+
+                ghostRoot.transform.localPosition = GhostTransformPoint(
+                    ghostRoot.transform.localPosition,
+                    ghostRoot.transform.localRotation,
+                    GhostSanitizeScale(ghostRoot.transform.localScale, Vector3.one),
+                    anchorLocal);
+
+                for (int i = 0; i < fitGhostChildren.Count; i++)
+                    fitGhostChildren[i].localPosition -= anchorLocal;
+            }
+
+            GhostPlacementInfo info = ghostRoot.AddComponent<GhostPlacementInfo>();
+            info.TargetId = targetId;
+            info.SubassemblyId = subassemblyId;
+
+            ApplyGhostClickCollider(ghostRoot, minAxisSize: isAxisFitGhost ? 0.09f : 0.18f, paddingWorld: isAxisFitGhost ? 0.03f : 0.08f);
+            MaterialHelper.ApplyGhost(ghostRoot);
+            _spawnedGhosts.Add(ghostRoot);
+            OseLog.Info($"[PartInteraction] Composite ghost spawned for subassembly '{subassemblyId}' at target '{targetId}'. Total ghosts: {_spawnedGhosts.Count}");
+        }
+
+        private static bool TryGetIntegratedGhostMemberPlacement(
+            IntegratedSubassemblyPreviewPlacement integratedPlacement,
+            string partId,
+            out Vector3 position,
+            out Quaternion rotation,
+            out Vector3 scale)
+        {
+            position = Vector3.zero;
+            rotation = Quaternion.identity;
+            scale = Vector3.one;
+
+            if (integratedPlacement?.memberPlacements == null || string.IsNullOrWhiteSpace(partId))
+                return false;
+
+            for (int i = 0; i < integratedPlacement.memberPlacements.Length; i++)
+            {
+                IntegratedMemberPreviewPlacement member = integratedPlacement.memberPlacements[i];
+                if (member == null || !string.Equals(member.partId, partId, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                position = GhostToVector3(member.position);
+                rotation = GhostToQuaternion(member.rotation);
+                scale = GhostSanitizeScale(GhostToVector3(member.scale), Vector3.one);
+                return true;
+            }
+
+            return false;
+        }
+
+        private static void ApplyGhostClickCollider(GameObject ghost, float minAxisSize = 0.06f, float paddingWorld = 0f)
+        {
+            if (ghost == null)
+                return;
+
+            Renderer[] ghostRenderers = ghost.GetComponentsInChildren<Renderer>(true);
+            BoxCollider clickCollider = ghost.GetComponent<BoxCollider>();
+            if (clickCollider == null)
+                clickCollider = ghost.AddComponent<BoxCollider>();
+
+            clickCollider.isTrigger = true;
+            if (ghostRenderers.Length <= 0)
+                return;
+
+            Bounds combined = ghostRenderers[0].bounds;
+            for (int ri = 1; ri < ghostRenderers.Length; ri++)
+                combined.Encapsulate(ghostRenderers[ri].bounds);
+
+            if (paddingWorld > 0f)
+                combined.Expand(paddingWorld);
+
+            Vector3 lossyScale = ghost.transform.lossyScale;
+            clickCollider.center = ghost.transform.InverseTransformPoint(combined.center);
+            Vector3 localSize = new Vector3(
+                lossyScale.x != 0f ? combined.size.x / lossyScale.x : 1f,
+                lossyScale.y != 0f ? combined.size.y / lossyScale.y : 1f,
+                lossyScale.z != 0f ? combined.size.z / lossyScale.z : 1f);
+            clickCollider.size = new Vector3(
+                Mathf.Max(localSize.x, minAxisSize),
+                Mathf.Max(localSize.y, minAxisSize),
+                Mathf.Max(localSize.z, minAxisSize));
+        }
+
+        private static Vector3 GhostToVector3(SceneFloat3 value) => new Vector3(value.x, value.y, value.z);
+
+        private static Quaternion GhostToQuaternion(SceneQuaternion value)
+        {
+            return !value.IsIdentity
+                ? new Quaternion(value.x, value.y, value.z, value.w)
+                : Quaternion.identity;
+        }
+
+        private static Vector3 GhostSanitizeScale(Vector3 value, Vector3 fallback)
+        {
+            return new Vector3(
+                Mathf.Approximately(value.x, 0f) ? fallback.x : value.x,
+                Mathf.Approximately(value.y, 0f) ? fallback.y : value.y,
+                Mathf.Approximately(value.z, 0f) ? fallback.z : value.z);
+        }
+
+        private static Vector3 GhostDivideScale(Vector3 value, Vector3 divisor)
+        {
+            Vector3 safe = GhostSanitizeScale(divisor, Vector3.one);
+            return new Vector3(value.x / safe.x, value.y / safe.y, value.z / safe.z);
+        }
+
+        private static Vector3 GhostMultiplyScale(Vector3 left, Vector3 right)
+        {
+            return new Vector3(left.x * right.x, left.y * right.y, left.z * right.z);
+        }
+
+        private static Vector3 GhostTransformPoint(Vector3 origin, Quaternion rotation, Vector3 scale, Vector3 localPoint)
+        {
+            return origin + rotation * GhostMultiplyScale(scale, localPoint);
+        }
+
+        private static Vector3 GhostInverseTransformPoint(Vector3 origin, Quaternion rotation, Vector3 scale, Vector3 point)
+        {
+            Vector3 translated = Quaternion.Inverse(rotation) * (point - origin);
+            return GhostDivideScale(translated, scale);
+        }
+
         private void ClearGhosts()
         {
             foreach (var ghost in _spawnedGhosts)
@@ -2180,14 +2923,15 @@ namespace OSE.UI.Root
                     GameObject partGo = FindSpawnedPart(partId);
                     if (partGo != null)
                     {
-                        if (MaterialHelper.IsImportedModel(partGo))
-                            MaterialHelper.RestoreOriginals(partGo);
-                        else
-                            MaterialHelper.Apply(partGo, "Preview Part Material", CompletedPartColor);
-                        MaterialHelper.SetEmission(partGo, Color.black);
+                        // Ensure the part is visible — HideNonIntroducedParts may
+                        // have hidden it before the restore path ran.
+                        partGo.SetActive(true);
                     }
 
                     _partStates[partId] = PartPlacementState.Completed;
+                    SyncPartGrabInteractivity(partGo, partId);
+                    ApplyPartVisualForState(partGo, partId, PartPlacementState.Completed);
+                    _revealedPartIds.Add(partId);
                 }
             }
         }
@@ -2379,7 +3123,7 @@ namespace OSE.UI.Root
 
             _isDragging = false;
             _draggedPart = partGo;
-            _draggedPartId = partGo.name;
+            _draggedPartId = ResolveSelectionId(partGo);
             _dragScreenStart = _pointerDownScreenPos;
             _dragCamera = _pointerDownCamera != null ? _pointerDownCamera : Camera.main;
             _dragRayDistance = ResolveInitialDragRayDistance(_dragCamera, _dragScreenStart, partGo.transform.position);
@@ -2412,7 +3156,7 @@ namespace OSE.UI.Root
 
             _isDragging = true;
             _draggedPart = partGo;
-            _draggedPartId = partGo.name;
+            _draggedPartId = ResolveSelectionId(partGo);
             _dragCamera = Camera.main;
             if (_dragCamera != null && TryGetPointerPosition(out Vector2 pointerPos))
                 _dragRayDistance = ResolveInitialDragRayDistance(_dragCamera, pointerPos, partGo.transform.position);
@@ -2476,6 +3220,18 @@ namespace OSE.UI.Root
             ApplyHoveredPartVisual(_hoveredPart);
         }
 
+        private void UpdateSelectedSubassemblyVisual()
+        {
+            if (!Application.isPlaying || _selectionService == null)
+                return;
+
+            GameObject selected = NormalizeSelectablePlacementTarget(_selectionService.CurrentSelection);
+            if (!IsSubassemblyProxy(selected))
+                return;
+
+            ApplySelectedPartVisual(selected);
+        }
+
         private void UpdatePointerDragSelectionVisual()
         {
             // Keep dragged mouse/touch part highlighted until release.
@@ -2496,10 +3252,65 @@ namespace OSE.UI.Root
 
                 XRGrabInteractable grabInteractable = partGo.GetComponent<XRGrabInteractable>();
                 if (grabInteractable != null && grabInteractable.isHovered)
-                    return partGo;
+                    return NormalizeSelectablePlacementTarget(partGo);
             }
 
             return null;
+        }
+
+        private bool TryBuildSubassemblyHintPresentation(
+            StepDefinition step,
+            HintDefinition authoredHint,
+            out string title,
+            out string message,
+            out Transform worldAnchor,
+            out GameObject sourceProxy,
+            out GameObject targetGhost)
+        {
+            title = null;
+            message = null;
+            worldAnchor = null;
+            sourceProxy = null;
+            targetGhost = null;
+
+            if (step == null || !step.RequiresSubassemblyPlacement || _subassemblyPlacementController == null)
+                return false;
+
+            string subassemblyId = step.requiredSubassemblyId;
+            if (string.IsNullOrWhiteSpace(subassemblyId) ||
+                !_subassemblyPlacementController.TryGetProxy(subassemblyId, out sourceProxy))
+            {
+                return false;
+            }
+
+            string targetId = !string.IsNullOrWhiteSpace(authoredHint?.targetId)
+                ? authoredHint.targetId
+                : (step.targetIds != null && step.targetIds.Length > 0 ? step.targetIds[0] : null);
+
+            if (!string.IsNullOrWhiteSpace(targetId))
+            {
+                foreach (GameObject ghost in _spawnedGhosts)
+                {
+                    if (ghost == null)
+                        continue;
+
+                    GhostPlacementInfo info = ghost.GetComponent<GhostPlacementInfo>();
+                    if (info != null && string.Equals(info.TargetId, targetId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        targetGhost = ghost;
+                        break;
+                    }
+                }
+            }
+
+            if (!_subassemblyPlacementController.TryGetDisplayInfo(sourceProxy, out string displayName, out _))
+                displayName = subassemblyId;
+
+            title = $"Move {displayName}";
+            message = $"Move the completed {displayName} as one finished panel. Drag the whole frame side toward the highlighted target and it will rotate into place as it docks.";
+
+            worldAnchor = sourceProxy.transform;
+            return true;
         }
 
         private GameObject GetHoveredPartFromMouse()
@@ -2512,7 +3323,7 @@ namespace OSE.UI.Root
             if (cam == null)
                 return null;
 
-            return RaycastSpawnedPart(cam.ScreenPointToRay(mouse.position.ReadValue()));
+            return RaycastSelectableObject(cam.ScreenPointToRay(mouse.position.ReadValue()));
         }
 
         private bool CanApplyHoverVisual(GameObject partGo, string partId)
@@ -2523,8 +3334,13 @@ namespace OSE.UI.Root
             if (_selectionService != null && _selectionService.CurrentSelection == partGo)
                 return false;
 
+            if (IsSubassemblyProxy(partGo))
+                return true;
+
             PartPlacementState state = GetPartState(partId);
-            return state == PartPlacementState.Available;
+            return state == PartPlacementState.Available ||
+                   state == PartPlacementState.Completed ||
+                   state == PartPlacementState.PlacedVirtually;
         }
 
         private void ClearPartHoverVisual()
@@ -2543,6 +3359,12 @@ namespace OSE.UI.Root
         {
             if (partGo == null)
                 return;
+
+            if (IsSubassemblyProxy(partGo))
+            {
+                ForEachProxyMember(partGo, member => ApplyPartVisualForState(member, member.name, GetPartState(member.name)));
+                return;
+            }
 
             string partId = partGo.name;
             ApplyPartVisualForState(partGo, partId, GetPartState(partId));
@@ -2563,6 +3385,23 @@ namespace OSE.UI.Root
             if (partGo == null)
                 return;
 
+            if (IsSubassemblyProxy(partGo))
+            {
+                switch (state)
+                {
+                    case PartPlacementState.Selected:
+                    case PartPlacementState.Inspected:
+                    case PartPlacementState.Grabbed:
+                        ForEachProxyMember(partGo, ApplySelectedPartVisual);
+                        break;
+                    default:
+                        ForEachProxyMember(partGo, member => ApplyPartVisualForState(member, member.name, GetPartState(member.name)));
+                        break;
+                }
+
+                return;
+            }
+
             switch (state)
             {
                 case PartPlacementState.Selected:
@@ -2576,23 +3415,56 @@ namespace OSE.UI.Root
 
                 case PartPlacementState.PlacedVirtually:
                 case PartPlacementState.Completed:
-                    if (MaterialHelper.IsImportedModel(partGo))
-                        MaterialHelper.RestoreOriginals(partGo);
-                    else
-                        MaterialHelper.Apply(partGo, "Preview Part Material", CompletedPartColor);
+                    MaterialHelper.SetEmission(partGo, Color.black);
+                    ClearRendererPropertyBlocks(partGo);
+                    DisablePartColorAffordance(partGo);
+                    ApplyAvailablePartVisual(partGo, partId);
                     break;
 
                 case PartPlacementState.Available:
                 default:
+                    DisablePartColorAffordance(partGo);
                     ApplyAvailablePartVisual(partGo, partId);
                     break;
             }
         }
 
+        private void SyncPartGrabInteractivity(GameObject partGo, string partId)
+        {
+            if (partGo == null || string.IsNullOrWhiteSpace(partId) || IsSubassemblyProxy(partGo))
+                return;
+
+            XRGrabInteractable grabInteractable = partGo.GetComponent<XRGrabInteractable>();
+            if (grabInteractable == null)
+                return;
+
+            bool shouldEnableGrab = !IsPartMovementLocked(partId);
+            if (grabInteractable.enabled == shouldEnableGrab)
+                return;
+
+            grabInteractable.enabled = shouldEnableGrab;
+
+            Rigidbody rb = partGo.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = true;
+                rb.useGravity = false;
+            }
+
+            if (!shouldEnableGrab && _draggedPart == partGo)
+                ResetDragState();
+        }
+
         private void ApplyAvailablePartVisual(GameObject partGo, string partId)
         {
-            if (TryApplyAffordanceState(partGo, AffordanceStateShortcuts.idle))
+            if (IsSubassemblyProxy(partGo))
+            {
+                ForEachProxyMember(partGo, member => ApplyPartVisualForState(member, member.name, GetPartState(member.name)));
                 return;
+            }
+
+            MaterialHelper.SetEmission(partGo, Color.black);
+            ClearRendererPropertyBlocks(partGo);
 
             // Restore original textured materials if available
             if (MaterialHelper.RestoreOriginals(partGo))
@@ -2607,26 +3479,287 @@ namespace OSE.UI.Root
             MaterialHelper.Apply(partGo, "Preview Part Material", baseColor);
         }
 
+        private static void ClearRendererPropertyBlocks(GameObject target)
+        {
+            if (target == null)
+                return;
+
+            Renderer[] renderers = target.GetComponentsInChildren<Renderer>(includeInactive: true);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Renderer renderer = renderers[i];
+                if (renderer != null)
+                    renderer.SetPropertyBlock(null);
+            }
+        }
+
+        private static void DisablePartColorAffordance(GameObject target)
+        {
+            if (target == null)
+                return;
+
+            var stateProvider = target.GetComponent<XRInteractableAffordanceStateProvider>();
+            if (stateProvider != null)
+            {
+                if (Application.isPlaying)
+                    Destroy(stateProvider);
+                else
+                    DestroyImmediate(stateProvider);
+            }
+
+            var receivers = target.GetComponentsInChildren<ColorMaterialPropertyAffordanceReceiver>(includeInactive: true);
+            for (int i = 0; i < receivers.Length; i++)
+            {
+                if (receivers[i] == null)
+                    continue;
+
+                if (Application.isPlaying)
+                    Destroy(receivers[i]);
+                else
+                    DestroyImmediate(receivers[i]);
+            }
+
+            var blockHelpers = target.GetComponentsInChildren<MaterialPropertyBlockHelper>(includeInactive: true);
+            for (int i = 0; i < blockHelpers.Length; i++)
+            {
+                if (blockHelpers[i] == null)
+                    continue;
+
+                if (Application.isPlaying)
+                    Destroy(blockHelpers[i]);
+                else
+                    DestroyImmediate(blockHelpers[i]);
+            }
+        }
+
         private void ApplyHoveredPartVisual(GameObject partGo)
         {
-            if (!TryApplyAffordanceState(partGo, AffordanceStateShortcuts.hovered))
+            if (IsSubassemblyProxy(partGo))
             {
-                if (MaterialHelper.IsImportedModel(partGo))
-                    MaterialHelper.ApplyTint(partGo, HoveredPartColor);
-                else
-                    MaterialHelper.Apply(partGo, "Preview Part Material", HoveredPartColor);
+                ForEachProxyMember(partGo, member =>
+                {
+                    ApplyHoveredPartVisual(member);
+                    MaterialHelper.SetEmission(member, HoveredSubassemblyEmission);
+                });
+                return;
             }
+
+            if (MaterialHelper.IsImportedModel(partGo))
+                MaterialHelper.ApplyTint(partGo, HoveredPartColor);
+            else
+                MaterialHelper.Apply(partGo, "Preview Part Material", HoveredPartColor);
         }
 
         private void ApplySelectedPartVisual(GameObject partGo)
         {
-            if (!TryApplyAffordanceState(partGo, AffordanceStateShortcuts.selected))
+            if (IsSubassemblyProxy(partGo))
             {
-                if (MaterialHelper.IsImportedModel(partGo))
-                    MaterialHelper.ApplyTint(partGo, SelectedPartColor);
-                else
-                    MaterialHelper.Apply(partGo, "Preview Part Material", SelectedPartColor);
+                ForEachProxyMember(partGo, member =>
+                {
+                    ApplySelectedPartVisual(member);
+                    MaterialHelper.SetEmission(member, SelectedSubassemblyEmission);
+                });
+                return;
             }
+
+            if (MaterialHelper.IsImportedModel(partGo))
+                MaterialHelper.ApplyTint(partGo, SelectedPartColor);
+            else
+                MaterialHelper.Apply(partGo, "Preview Part Material", SelectedPartColor);
+        }
+
+        private void ApplyHintSourceVisual(GameObject partGo, Color color)
+        {
+            if (partGo == null)
+                return;
+
+            if (MaterialHelper.IsImportedModel(partGo))
+                MaterialHelper.ApplyTint(partGo, color);
+            else
+                MaterialHelper.Apply(partGo, "Preview Part Material", color);
+        }
+
+        private void UpdateDockArcVisual()
+        {
+            if (!TryResolveActiveDockArc(
+                out GameObject sourceProxy,
+                out Vector3 guideStartWorldPos,
+                out Vector3 guideEndWorldPos,
+                out Vector3 sourceUp,
+                out Vector3 targetUp,
+                out bool useLinearGuide))
+            {
+                ClearDockArcVisual();
+                return;
+            }
+
+            if (_dockArcVisual == null)
+                _dockArcVisual = DockArcVisual.Spawn();
+
+            GameObject selected = NormalizeSelectablePlacementTarget(_selectionService != null ? _selectionService.CurrentSelection : null);
+            GameObject hovered = ExternalControlEnabled ? _externalHoveredPartForUi : _hoveredPart;
+            hovered = NormalizeSelectablePlacementTarget(hovered);
+
+            float emphasis = useLinearGuide ? 0.7f : 0.35f;
+            if (_draggedPart == sourceProxy || selected == sourceProxy)
+                emphasis = 1f;
+            else if (hovered == sourceProxy)
+                emphasis = 0.7f;
+
+            if (useLinearGuide)
+            {
+                _dockArcVisual.SetLinearGuide(guideStartWorldPos, guideEndWorldPos, sourceUp, targetUp, emphasis);
+                return;
+            }
+
+            _dockArcVisual.SetArc(guideStartWorldPos, guideEndWorldPos, sourceUp, targetUp, emphasis);
+        }
+
+        private void ClearDockArcVisual()
+        {
+            if (_dockArcVisual == null)
+                return;
+
+            _dockArcVisual.Cleanup();
+            _dockArcVisual = null;
+        }
+
+        private bool TryResolveActiveDockArc(
+            out GameObject sourceProxy,
+            out Vector3 guideStartWorldPos,
+            out Vector3 guideEndWorldPos,
+            out Vector3 sourceUp,
+            out Vector3 targetUp,
+            out bool useLinearGuide)
+        {
+            sourceProxy = null;
+            guideStartWorldPos = Vector3.zero;
+            guideEndWorldPos = Vector3.zero;
+            sourceUp = Vector3.up;
+            targetUp = Vector3.up;
+            useLinearGuide = false;
+
+            if (!Application.isPlaying ||
+                !ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            {
+                return false;
+            }
+
+            StepController stepController = session.AssemblyController?.StepController;
+            StepDefinition step = stepController?.HasActiveStep == true ? stepController.CurrentStepDefinition : null;
+            if (step == null ||
+                !step.RequiresSubassemblyPlacement ||
+                string.IsNullOrWhiteSpace(step.requiredSubassemblyId) ||
+                step.targetIds == null ||
+                step.targetIds.Length != 1 ||
+                _subassemblyPlacementController == null ||
+                !_subassemblyPlacementController.TryGetProxy(step.requiredSubassemblyId, out sourceProxy))
+            {
+                return false;
+            }
+
+            if (step.IsAxisFitPlacement &&
+                _subassemblyPlacementController.TryGetActiveFitGuide(step.requiredSubassemblyId, out Vector3 fitCurrentWorld, out Vector3 fitFinalWorld, out Vector3 fitUp))
+            {
+                guideStartWorldPos = fitCurrentWorld;
+                guideEndWorldPos = fitFinalWorld;
+                sourceUp = fitUp;
+                targetUp = fitUp;
+                useLinearGuide = true;
+                return true;
+            }
+
+            guideStartWorldPos = ResolveVisualAnchor(sourceProxy);
+            sourceUp = sourceProxy.transform.up;
+
+            GameObject targetGhost = FindGhostForTarget(step.targetIds[0]);
+            if (targetGhost != null)
+            {
+                guideEndWorldPos = ResolveVisualAnchor(targetGhost);
+                targetUp = targetGhost.transform.up;
+                return true;
+            }
+
+            if (!_subassemblyPlacementController.TryResolveTargetPose(step.targetIds[0], out Vector3 targetLocalPos, out Quaternion targetRot, out _))
+                return false;
+
+            Transform previewRoot = _setup != null ? _setup.PreviewRoot : null;
+            guideEndWorldPos = previewRoot != null ? previewRoot.TransformPoint(targetLocalPos) : targetLocalPos;
+            targetUp = (previewRoot != null ? previewRoot.rotation : Quaternion.identity) * targetRot * Vector3.up;
+            return true;
+        }
+
+        private GameObject FindGhostForTarget(string targetId)
+        {
+            if (string.IsNullOrWhiteSpace(targetId))
+                return null;
+
+            for (int i = 0; i < _spawnedGhosts.Count; i++)
+            {
+                GameObject ghost = _spawnedGhosts[i];
+                if (ghost == null)
+                    continue;
+
+                GhostPlacementInfo info = ghost.GetComponent<GhostPlacementInfo>();
+                if (info != null && string.Equals(info.TargetId, targetId, StringComparison.OrdinalIgnoreCase))
+                    return ghost;
+            }
+
+            return null;
+        }
+
+        private static Vector3 ResolveVisualAnchor(GameObject target)
+        {
+            if (target == null)
+                return Vector3.zero;
+
+            if (TryGetRenderableBounds(target, out Bounds bounds))
+                return bounds.center;
+
+            return target.transform.position;
+        }
+
+        private static bool TryGetRenderableBounds(GameObject target, out Bounds bounds)
+        {
+            bounds = default;
+            if (target == null)
+                return false;
+
+            Renderer[] renderers = target.GetComponentsInChildren<Renderer>(includeInactive: false);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Renderer renderer = renderers[i];
+                if (renderer == null)
+                    continue;
+
+                bounds = renderer.bounds;
+                for (int j = i + 1; j < renderers.Length; j++)
+                {
+                    if (renderers[j] != null)
+                        bounds.Encapsulate(renderers[j].bounds);
+                }
+
+                return true;
+            }
+
+            Collider[] colliders = target.GetComponentsInChildren<Collider>(includeInactive: false);
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                Collider collider = colliders[i];
+                if (collider == null)
+                    continue;
+
+                bounds = collider.bounds;
+                for (int j = i + 1; j < colliders.Length; j++)
+                {
+                    if (colliders[j] != null)
+                        bounds.Encapsulate(colliders[j].bounds);
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
         private static bool TryApplyAffordanceState(GameObject partGo, byte stateIndex, float transitionAmount = 1f)
@@ -2751,10 +3884,91 @@ namespace OSE.UI.Root
             return false;
         }
 
+        private bool IsSubassemblyProxy(GameObject target) =>
+            _subassemblyPlacementController != null &&
+            _subassemblyPlacementController.IsProxy(target);
+
+        private bool IsSelectablePlacementObject(GameObject target) =>
+            IsSpawnedPart(target) || IsSubassemblyProxy(target);
+
+        private string ResolveSelectionId(GameObject target)
+        {
+            if (target == null)
+                return null;
+
+            if (_subassemblyPlacementController != null &&
+                _subassemblyPlacementController.TryGetSubassemblyId(target, out string subassemblyId) &&
+                IsSubassemblyProxy(target))
+            {
+                return subassemblyId;
+            }
+
+            return IsSpawnedPart(target) ? target.name : null;
+        }
+
+        private GameObject NormalizeSelectablePlacementTarget(GameObject target)
+        {
+            if (target == null || _subassemblyPlacementController == null)
+                return target;
+
+            GameObject proxyTarget = _subassemblyPlacementController.ResolveSelectableFromHit(target.transform);
+            return proxyTarget != null ? proxyTarget : target;
+        }
+
+        private void ForEachProxyMember(GameObject proxy, Action<GameObject> visitor)
+        {
+            if (proxy == null || visitor == null || _subassemblyPlacementController == null)
+                return;
+
+            foreach (GameObject member in _subassemblyPlacementController.EnumerateMemberParts(proxy))
+            {
+                if (member != null)
+                    visitor(member);
+            }
+        }
+
+        private void PushSubassemblyInfoToUI(GameObject target, bool isHoverInfo = false)
+        {
+            if (_subassemblyPlacementController == null ||
+                !_subassemblyPlacementController.TryGetDisplayInfo(target, out string displayName, out string description) ||
+                !ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
+            {
+                return;
+            }
+
+            const string material = "Completed panel";
+            const string searchTerms = "finished subassembly panel cube joining";
+
+            if (isHoverInfo && ui is UIRootCoordinator hoverAwareUi)
+            {
+                hoverAwareUi.ShowHoverPartInfoShell(
+                    displayName,
+                    description ?? string.Empty,
+                    material,
+                    string.Empty,
+                    searchTerms);
+            }
+            else
+            {
+                ui.ShowPartInfoShell(
+                    displayName,
+                    description ?? string.Empty,
+                    material,
+                    string.Empty,
+                    searchTerms);
+            }
+        }
+
         private bool IsPartMovementLocked(string partId)
         {
             if (string.IsNullOrWhiteSpace(partId))
                 return false;
+
+            if (_subassemblyPlacementController != null &&
+                string.Equals(_subassemblyPlacementController.ActiveSubassemblyId, partId, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
 
             if (ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
                 return partController.IsPartLockedForMovement(partId);
@@ -2783,7 +3997,8 @@ namespace OSE.UI.Root
                 var parts = _spawner.SpawnedParts;
                 for (int i = 0; i < parts.Count; i++)
                 {
-                    if (parts[i] != null && parts[i].transform == hitTransform)
+                    if (parts[i] != null &&
+                        (parts[i].transform == hitTransform || hitTransform.IsChildOf(parts[i].transform)))
                         return parts[i];
                 }
                 hitTransform = hitTransform.parent;
@@ -2803,6 +4018,10 @@ namespace OSE.UI.Root
 
             for (int i = 0; i < hits.Length; i++)
             {
+                GameObject matchedProxy = _subassemblyPlacementController?.ResolveSelectableFromHit(hits[i].transform);
+                if (matchedProxy != null)
+                    return matchedProxy;
+
                 GameObject matchedPart = FindPartFromHit(hits[i].transform);
                 if (matchedPart != null)
                     return matchedPart;
@@ -2810,6 +4029,8 @@ namespace OSE.UI.Root
 
             return null;
         }
+
+        private GameObject RaycastSelectableObject(Ray ray) => RaycastSpawnedPart(ray);
 
         internal sealed class ToolActionTargetInfo : MonoBehaviour
         {
@@ -2823,11 +4044,23 @@ namespace OSE.UI.Root
         {
             public string TargetId;
             public string PartId;
+            public string SubassemblyId;
 
             public bool MatchesPart(string partId)
             {
                 return !string.IsNullOrEmpty(partId) &&
                     string.Equals(PartId, partId, StringComparison.OrdinalIgnoreCase);
+            }
+
+            public bool MatchesSubassembly(string subassemblyId)
+            {
+                return !string.IsNullOrEmpty(subassemblyId) &&
+                    string.Equals(SubassemblyId, subassemblyId, StringComparison.OrdinalIgnoreCase);
+            }
+
+            public bool MatchesSelectionId(string selectionId)
+            {
+                return MatchesPart(selectionId) || MatchesSubassembly(selectionId);
             }
         }
 

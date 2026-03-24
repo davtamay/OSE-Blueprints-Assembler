@@ -75,7 +75,8 @@ namespace OSE.Core
         Measure,
         Tighten,
         Strike,
-        WeldPass
+        WeldPass,
+        GrindPass
     }
 
     public enum ToolActionFailureReason
