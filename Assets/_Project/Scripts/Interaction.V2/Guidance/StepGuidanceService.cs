@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using OSE.Content;
 using OSE.Core;
+using OSE.Interaction;
 using UnityEngine;
 
 namespace OSE.Interaction.V2
@@ -150,6 +151,49 @@ namespace OSE.Interaction.V2
                 return Array.Empty<string>();
 
             return new[] { "Front", "Side", "Top", "Iso", "Detail" };
+        }
+
+        // ── Tool Action Framing ──
+
+        /// <summary>
+        /// Tightens the camera to a close-up of the tool action target.
+        /// Profile determines how close: weld/cut get very tight, torque moderate.
+        /// Called when a tool action preview begins.
+        /// </summary>
+        public void FrameToolAction(Vector3 targetWorldPos, string profile)
+        {
+            if (_cameraRig == null) return;
+
+            float distance = GetToolActionFramingDistance(profile);
+            _cameraRig.FocusOn(targetWorldPos, distance);
+        }
+
+        /// <summary>
+        /// Returns the camera to the step home framing after a tool action preview ends.
+        /// The smooth interpolation in the camera rig makes this a gentle ease-back.
+        /// </summary>
+        public void ReturnFromToolAction()
+        {
+            if (_cameraRig == null || !_hasHome) return;
+            ApplyHome();
+        }
+
+        private static float GetToolActionFramingDistance(string profile)
+        {
+            if (string.IsNullOrEmpty(profile))
+                return 0.6f;
+
+            if (profile.Equals(ToolActionProfiles.Weld, System.StringComparison.OrdinalIgnoreCase)
+                || profile.Equals(ToolActionProfiles.Cut, System.StringComparison.OrdinalIgnoreCase))
+                return 0.35f; // very close — see the joint detail
+
+            if (profile.Equals(ToolActionProfiles.Torque, System.StringComparison.OrdinalIgnoreCase))
+                return 0.45f; // close enough to see the bolt rotation
+
+            if (profile.Equals(ToolActionProfiles.Strike, System.StringComparison.OrdinalIgnoreCase))
+                return 0.5f;
+
+            return 0.6f; // default
         }
 
         // ── Recovery Affordances ──

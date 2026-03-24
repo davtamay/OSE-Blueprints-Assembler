@@ -4263,9 +4263,13 @@ namespace OSE.UI.Root
             // The cursor ghost is transparent (55%) — restore full opacity for the placed tool
             MaterialHelper.RestoreOpaque(clone);
 
+            // Apply confirmation glow so the user sees the tool "lock in"
+            MaterialHelper.SetEmission(clone, new Color(0.1f, 0.7f, 0.25f, 1f) * 1.5f);
+
             var info = clone.AddComponent<PersistentToolInstance>();
             info.ToolId = toolId;
             info.TargetId = targetId;
+            info.ConfirmationGlowRemaining = 1.5f;
 
             _persistentTools.Add(info);
             OseLog.Info($"[PersistentTool] Spawned '{clone.name}' at {worldPos}. Total persistent: {_persistentTools.Count}");
@@ -4299,11 +4303,15 @@ namespace OSE.UI.Root
                 Destroy(col);
 
             MaterialHelper.RestoreOpaque(ghost);
+
+            // Apply a brief confirmation glow so the user sees the tool "lock in"
+            MaterialHelper.SetEmission(ghost, new Color(0.1f, 0.7f, 0.25f, 1f) * 1.5f);
             ghost.SetActive(true);
 
             var info = ghost.AddComponent<PersistentToolInstance>();
             info.ToolId = toolId;
             info.TargetId = targetId;
+            info.ConfirmationGlowRemaining = 1.5f;
 
             _persistentTools.Add(info);
             OseLog.Info($"[PersistentTool] Converted ghost → persistent '{ghost.name}' at {worldPos}. Total: {_persistentTools.Count}");
@@ -4382,6 +4390,32 @@ namespace OSE.UI.Root
         {
             public string ToolId;
             public string TargetId;
+
+            /// <summary>
+            /// When > 0, the confirmation glow fades out over this duration.
+            /// Set by ConvertGhostToPersistent to give a clear "locked in" signal.
+            /// </summary>
+            public float ConfirmationGlowRemaining;
+
+            private static readonly Color ConfirmGlow = new Color(0.1f, 0.7f, 0.25f, 1f) * 1.5f;
+
+            private void Update()
+            {
+                if (ConfirmationGlowRemaining <= 0f) return;
+
+                ConfirmationGlowRemaining -= Time.deltaTime;
+                if (ConfirmationGlowRemaining <= 0f)
+                {
+                    ConfirmationGlowRemaining = 0f;
+                    MaterialHelper.SetEmission(gameObject, Color.black);
+                    enabled = false;
+                }
+                else
+                {
+                    float t = ConfirmationGlowRemaining / 1.5f;
+                    MaterialHelper.SetEmission(gameObject, ConfirmGlow * t);
+                }
+            }
         }
 
     }

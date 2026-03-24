@@ -1235,9 +1235,8 @@ namespace OSE.Interaction.V2
             // Suspend cursor position updates so the ghost isn't yanked back each frame
             _toolGhost?.SetToolGhostPositionSuspended(true);
 
-            // Camera follows the tool action point
-            if (_cameraRig != null)
-                _cameraRig.FocusOn(targetWorldPos);
+            // Profile-aware camera: tighten to close-up of the action point
+            _guidanceService?.FrameToolAction(targetWorldPos, profile ?? "");
 
             _previewController.Enter(
                 targetId,
@@ -1255,15 +1254,17 @@ namespace OSE.Interaction.V2
                     if (_partBridge != null && _partBridge.TryToolAction(completedTargetId))
                     {
                         OseLog.Info($"[V2] Post-preview TryToolAction SUCCESS for '{completedTargetId}'.");
-                        if (_cameraRig != null)
-                            _cameraRig.FocusOn(targetWorldPos);
                     }
+                    // Ease back to step home framing after the action
+                    _guidanceService?.ReturnFromToolAction();
                     TransitionTo(InteractionState.Idle);
                 },
                 onCancel: () =>
                 {
                     _toolGhost?.SetToolGhostPositionSuspended(false);
                     OseLog.Info("[V2] Tool action preview cancelled — returning to idle.");
+                    // Return to step home on cancel too
+                    _guidanceService?.ReturnFromToolAction();
                     TransitionTo(InteractionState.Idle);
                 },
                 onActionDone: (doneTargetId, actionPos, actionRot) =>

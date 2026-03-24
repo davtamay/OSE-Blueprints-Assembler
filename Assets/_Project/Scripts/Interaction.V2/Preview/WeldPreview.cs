@@ -28,6 +28,7 @@ namespace OSE.Interaction.V2
         private Vector3 _weldStart;
         private Vector3 _weldEnd;
         private Vector3 _approachDir; // from surface toward tool (used for tip offset)
+        private float _standoff; // fixed standoff distance from surface, captured once
 
         private const float GuidedDragScale = 0.004f;
         private const float AutoAssistDelay = 3f;
@@ -47,9 +48,13 @@ namespace OSE.Interaction.V2
             _weldBeadObj = null;
             _weldLine = null;
 
-            // Direction from surface toward tool (for tip offset during travel)
+            // Direction from surface toward tool (for tip offset during travel).
+            // Use only the horizontal + depth component so the bead stays flat on the surface.
             Vector3 toolPos = context.ToolGhost != null ? context.ToolGhost.transform.position : context.TargetWorldPos;
             _approachDir = (toolPos - context.TargetWorldPos).normalized;
+
+            // Capture standoff once so it doesn't drift during animation
+            _standoff = Vector3.Distance(toolPos, context.TargetWorldPos);
 
             // Weld direction: always horizontal, perpendicular to camera view.
             // This reliably produces a flat bead on the surface regardless of camera angle.
@@ -136,9 +141,8 @@ namespace OSE.Interaction.V2
                 // Current point on the weld seam (on the surface)
                 Vector3 currentWeldPoint = Vector3.Lerp(_weldStart, _weldEnd, travelProgress);
 
-                // Keep tool at the same standoff distance the controller placed it
-                float standoff = Vector3.Distance(_ctx.ToolGhost.transform.position, _ctx.TargetWorldPos);
-                Vector3 targetToolPos = currentWeldPoint + _approachDir * standoff;
+                // Keep tool at the fixed standoff distance captured at Begin()
+                Vector3 targetToolPos = currentWeldPoint + _approachDir * _standoff;
 
                 // Smooth lerp to avoid jumps (first frame blends from approach landing)
                 _ctx.ToolGhost.transform.position = Vector3.Lerp(
@@ -174,9 +178,10 @@ namespace OSE.Interaction.V2
             _weldLine.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             _weldLine.receiveShadows = false;
 
-            // Orient the line renderer so its local Z = approach direction (away from surface)
-            // This makes TransformZ alignment lie flat on the surface
-            _weldBeadObj.transform.rotation = Quaternion.LookRotation(_approachDir, _weldDir);
+            // Orient the line renderer so its local Z = surface normal (up).
+            // Using world up instead of _approachDir ensures the bead ribbon lies
+            // flat on the workpiece regardless of camera angle.
+            _weldBeadObj.transform.rotation = Quaternion.LookRotation(Vector3.up, _weldDir);
 
             // Fresh weld bead: bright silver-white with metallic sheen
             var shader = Shader.Find("Universal Render Pipeline/Lit")

@@ -137,6 +137,7 @@ namespace OSE.UI.Root
         {
             UpdateToolActionTargetVisuals();
             UpdateToolCursorProximity();
+            _getCursorManager()?.UpdateReadyPulse();
             _anchorInteraction?.Tick();
 
             if (_retryPending)

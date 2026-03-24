@@ -23,7 +23,8 @@ namespace OSE.UI.Root
         public const float CursorVerticalOffset    = 0.15f;
         public const float ScreenProximityReadyPx  = 150f;   // screen pixels — cursor changes colour
 
-        private static readonly Color ReadyColor = new Color(0.3f, 1.0f, 0.5f, 0.65f);
+        private static readonly Color ReadyColor = new Color(0.15f, 1.0f, 0.4f, 0.85f);
+        private static readonly Color ReadyEmission = new Color(0.1f, 0.8f, 0.3f, 1f);
 
         // ── State ──────────────────────────────────────────────────────────────────
         private readonly Transform _fallbackParent;
@@ -31,6 +32,7 @@ namespace OSE.UI.Root
         private Quaternion _toolGhostUpCorrection = Quaternion.identity;
         private Material[][] _toolGhostOriginalMaterials;
         private int _refreshGeneration;
+        private Vector3 _baseLocalScale;
         private GameObject _pipeCursorGhost;
         private bool _cursorInReadyState;
         private bool _positionUpdateSuspended;
@@ -153,6 +155,7 @@ namespace OSE.UI.Root
                 UnityEngine.Object.Destroy(col);
 
             _toolGhostOriginalMaterials = MaterialHelper.MakeTransparent(_toolGhostIndicator, 0.55f);
+            _baseLocalScale = _toolGhostIndicator.transform.localScale;
 
             // Start hidden — the first real UpdatePosition call from the bridge's
             // Update loop will place it at the actual cursor and show it.
@@ -255,20 +258,40 @@ namespace OSE.UI.Root
             _pipeCursorGhost = null;
         }
 
-        /// <summary>Sets the cursor to ready state (green) and applies the ready colour to the ghost.</summary>
+        /// <summary>Sets the cursor to ready state (bright green glow) and applies it to the ghost.</summary>
         public void SetReadyState(bool ready)
         {
             if (ready == _cursorInReadyState) return;
             if (ready)
             {
                 if (_toolGhostIndicator != null && _toolGhostIndicator.activeSelf)
+                {
                     MaterialHelper.ApplyToolCursor(_toolGhostIndicator, ReadyColor);
+                    MaterialHelper.SetEmission(_toolGhostIndicator, ReadyEmission * 2f);
+                }
                 _cursorInReadyState = true;
             }
             else
             {
                 RestoreColor();
             }
+        }
+
+        /// <summary>
+        /// Call every frame from the bridge's Update loop to animate the ready-state pulse.
+        /// When ready, the tool ghost gently pulses in scale and emission intensity
+        /// so the user clearly sees "this tool is ready to act — click now."
+        /// </summary>
+        public void UpdateReadyPulse()
+        {
+            if (!_cursorInReadyState || _toolGhostIndicator == null) return;
+
+            float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 5f);
+            float scale = 1f + 0.08f * pulse;
+            _toolGhostIndicator.transform.localScale = _baseLocalScale * scale;
+
+            Color emission = ReadyEmission * Mathf.Lerp(1.2f, 2.5f, pulse);
+            MaterialHelper.SetEmission(_toolGhostIndicator, emission);
         }
 
         /// <summary>Restores the original semi-transparent tool materials, exiting ready state.</summary>
@@ -283,6 +306,12 @@ namespace OSE.UI.Root
                 for (int i = 0; i < renderers.Length; i++)
                     renderers[i].sharedMaterials = _toolGhostOriginalMaterials[i];
             }
+
+            // Reset scale back to base after ready pulse
+            if (_baseLocalScale.sqrMagnitude > 0f)
+                _toolGhostIndicator.transform.localScale = _baseLocalScale;
+
+            MaterialHelper.SetEmission(_toolGhostIndicator, Color.black);
         }
 
         // ── Private helpers ────────────────────────────────────────────────────────
