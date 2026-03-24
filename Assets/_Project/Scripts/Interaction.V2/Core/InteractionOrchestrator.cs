@@ -797,6 +797,20 @@ namespace OSE.Interaction.V2
                 return;
             }
 
+            // When a part is already selected, try click-to-place BEFORE re-selecting.
+            // The raycast often hits a part behind the transparent ghost, so without this
+            // the user would keep re-selecting parts instead of placing onto the ghost.
+            if (SelectedPart != null && _partBridge != null &&
+                _partBridge.TryClickToPlace(SelectedPart, intent.ScreenPosition))
+            {
+                SelectedPart = null;
+                HoveredPart = null;
+                DraggedPart = null;
+                TransitionTo(InteractionState.Idle);
+                _actionBridge?.OnExternallyResolvedDeselected();
+                return;
+            }
+
             GameObject selectedTarget = NormalizeSelectableTarget(intent.HitTarget);
             if (selectedTarget != null)
             {
