@@ -1,0 +1,17 @@
+{
+  "input_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder\\exported\\stl\\Sensholder.stl",
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder\\exported\\glb_candidates\\Sensholder.glb",
+  "units": "m",
+  "object_count": 1,
+  "bound_box": {
+    "xmin_m": -0.007186854258179665,
+    "xmax_m": 0.2069721817970276,
+    "ymin_m": -0.03118586167693138,
+    "ymax_m": 0.21901753544807434,
+    "zmin_m": -0.09620781242847443,
+    "zmax_m": 0.11201193928718567,
+    "xlen_m": 0.21415903605520725,
+    "ylen_m": 0.2502033971250057,
+    "zlen_m": 0.2082197517156601
+  }
+}

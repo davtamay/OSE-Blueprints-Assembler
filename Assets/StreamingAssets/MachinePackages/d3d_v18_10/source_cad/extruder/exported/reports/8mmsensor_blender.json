@@ -1,0 +1,26 @@
+{
+  "input_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder\\exported\\stl\\8mmsensor.stl",
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder\\exported\\glb_candidates\\8mmsensor.glb",
+  "units": "m",
+  "object_count": 1,
+  "material_name": "D3D Sensor Dark",
+  "base_color": [
+    0.12,
+    0.12,
+    0.14,
+    1.0
+  ],
+  "metallic": 0.0,
+  "roughness": 0.45,
+  "bound_box": {
+    "xmin_m": -0.06620984524488449,
+    "xmax_m": -0.04308907315135002,
+    "ymin_m": -0.08137619495391846,
+    "ymax_m": -0.0033010647166520357,
+    "zmin_m": 0.073050856590271,
+    "zmax_m": 0.1014460101723671,
+    "xlen_m": 0.02312077209353447,
+    "ylen_m": 0.07807513023726642,
+    "zlen_m": 0.0283951535820961
+  }
+}

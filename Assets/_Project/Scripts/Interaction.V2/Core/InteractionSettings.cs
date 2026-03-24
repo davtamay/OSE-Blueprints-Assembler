@@ -70,6 +70,18 @@ namespace OSE.Interaction.V2
         [Range(0.2f, 1f)] public float LongPressDuration = 0.4f;
         [Range(0.1f, 0.5f)] public float DoubleTapWindow = 0.3f;
 
+        // ── Tool Action Preview ──
+
+        [Header("Tool Action Preview")]
+        [Tooltip("When enabled, Use-family steps play a tool action preview animation on first target tap (I Do / We Do / You Do learning model).")]
+        public bool EnableToolActionPreview = true;
+
+        [Tooltip("Scale factor for preview animation durations. 0.5 = fast, 1.0 = normal, 2.0 = slow.")]
+        [Range(0.5f, 2f)] public float PreviewDurationScale = 1f;
+
+        [Tooltip("Seconds of idle before auto-assist kicks in during guided ('We Do') mode.")]
+        [Range(1f, 5f)] public float GuidedAutoAssistDelay = 3f;
+
         // ── Feedback ──
 
         [Header("Feedback — Tuning")]

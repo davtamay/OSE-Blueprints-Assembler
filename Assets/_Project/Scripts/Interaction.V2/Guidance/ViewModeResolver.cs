@@ -29,14 +29,14 @@ namespace OSE.Interaction.V2
                 switch (family)
                 {
                     case StepFamily.Place:
-                        if (profile.Equals("AxisFit", StringComparison.OrdinalIgnoreCase))
+                        if (profile.Equals(ToolActionProfiles.AxisFit, StringComparison.OrdinalIgnoreCase))
                             return ViewMode.WorkZone;
                         break;
                     case StepFamily.Use:
-                        if (profile.Equals("Measure", StringComparison.OrdinalIgnoreCase))
+                        if (profile.Equals(ToolActionProfiles.Measure, StringComparison.OrdinalIgnoreCase))
                             return ViewMode.PairEndpoints;
-                        if (profile.Equals("Weld", StringComparison.OrdinalIgnoreCase) ||
-                            profile.Equals("Cut", StringComparison.OrdinalIgnoreCase))
+                        if (profile.Equals(ToolActionProfiles.Weld, StringComparison.OrdinalIgnoreCase) ||
+                            profile.Equals(ToolActionProfiles.Cut, StringComparison.OrdinalIgnoreCase))
                             return ViewMode.PathView;
                         break;
                 }
@@ -63,6 +63,7 @@ namespace OSE.Interaction.V2
                 case "PathView":        mode = ViewMode.PathView;        return true;
                 case "Overview":        mode = ViewMode.Overview;        return true;
                 case "Inspect":         mode = ViewMode.Inspect;         return true;
+                case "ToolFocus":       mode = ViewMode.ToolFocus;       return true;
                 default:                mode = ViewMode.SourceAndTarget;  return false;
             }
         }

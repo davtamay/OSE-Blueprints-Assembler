@@ -4,7 +4,13 @@
       "Read(//c/Users/davta/Repos/OSE Blueprints Assembler/**)",
       "Bash(node -e \":*)",
       "Bash(grep -c '\"\"x\"\": -1,' \"Assets/_Project/Data/Packages/d3d_v18_10/machine.json\")",
-      "Bash(grep -c '\"\"x\"\": 1,' \"Assets/_Project/Data/Packages/d3d_v18_10/machine.json\")"
+      "Bash(grep -c '\"\"x\"\": 1,' \"Assets/_Project/Data/Packages/d3d_v18_10/machine.json\")",
+      "Bash(find 'c:\\\\Users\\\\davta\\\\Repos\\\\OSE Blueprints Assembler\\\\Assets\\\\_Project' -name *.json -o -name *.asset)",
+      "Bash(find 'c:\\\\Users\\\\davta\\\\Repos\\\\OSE Blueprints Assembler\\\\Assets\\\\_Project\\\\Scripts' -name *.cs -exec grep -l \"visual\\\\|effect\\\\|particle\\\\|animation\\\\|preview\\\\|feedback\" {})",
+      "Bash(2)",
+      "Bash(find 'c:\\\\Users\\\\davta\\\\Repos\\\\OSE Blueprints Assembler\\\\Assets' -name *InteractionSettings* -type f)",
+      "Bash(find 'c:\\\\Users\\\\davta\\\\Repos\\\\OSE Blueprints Assembler\\\\Assets' -name *ViewMode* -type f)",
+      "Bash(xargs grep:*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\ose-xr-foundation\\docs"

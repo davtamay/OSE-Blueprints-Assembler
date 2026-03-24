@@ -17,6 +17,8 @@ namespace OSE.Interaction.V2
         /// <summary>Wide shot of the full assembly.</summary>
         Overview = 4,
         /// <summary>Close-up detail view for verification.</summary>
-        Inspect = 5
+        Inspect = 5,
+        /// <summary>Tight focus on a single tool target during gesture engagement.</summary>
+        ToolFocus = 6
     }
 }

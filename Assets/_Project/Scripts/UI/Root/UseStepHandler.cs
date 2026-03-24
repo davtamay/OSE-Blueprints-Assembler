@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using OSE.App;
 using OSE.Content;
 using OSE.Core;
+using OSE.Interaction;
 using OSE.Runtime;
 using UnityEngine;
 using ToolActionTargetInfo = OSE.UI.Root.PartInteractionBridge.ToolActionTargetInfo;
@@ -42,9 +43,7 @@ namespace OSE.UI.Root
         private readonly Func<string> _getSequentialTargetId;
         private readonly Func<bool> _advanceSequentialTarget;
 
-        // ── Profile constants ──
-        private const string ProfileTorque = "Torque";
-        private const string ProfileMeasure = "Measure";
+        // Profile constants from ToolActionProfiles
 
         // ── Feedback defaults ──
         private static readonly Color DefaultCompletionColor = new Color(0.2f, 1.0f, 0.4f, 0.9f);
@@ -59,6 +58,9 @@ namespace OSE.UI.Root
         private Color _completionEffectColor = DefaultCompletionColor;
         private string _completionParticleId;
         private float _completionPulseScale = DefaultPulseScale;
+
+        // ── Preview tracking ("I Do / We Do / You Do") ──
+        private int _completedTargetCountForStep;
 
         // ── Measure state ──
         private StepMeasurementPayload _measurePayload;
@@ -85,6 +87,16 @@ namespace OSE.UI.Root
 
         /// <summary>Number of currently-spawned tool-action target markers.</summary>
         public int SpawnedTargetCount => _spawnedToolActionTargets.Count;
+
+        /// <summary>
+        /// Number of tool targets completed so far in this step.
+        /// Used by the preview system to resolve the learning phase:
+        /// 0 → Observe ("I Do"), 1 → Guided ("We Do"), 2+ → Solo ("You Do").
+        /// </summary>
+        public int CompletedTargetCountForStep => _completedTargetCountForStep;
+
+        /// <summary>Increments the completed target count. Called by the orchestrator after a preview completes.</summary>
+        public void IncrementCompletedTargetCount() => _completedTargetCountForStep++;
 
         /// <summary>
         /// Returns combined world bounds for the currently spawned tool-action markers.
@@ -172,6 +184,7 @@ namespace OSE.UI.Root
 
         public void OnStepActivated(in StepHandlerContext context)
         {
+            _completedTargetCountForStep = 0;
             _activeProfile = context.Step.profile;
 
             var fb = context.Step.feedback;
@@ -223,6 +236,7 @@ namespace OSE.UI.Root
             _activeProfile = null;
             _measurePayload = null;
             _measureAnchorAWorldPos = null;
+            _completedTargetCountForStep = 0;
         }
 
         // ====================================================================
@@ -384,6 +398,10 @@ namespace OSE.UI.Root
             marker.name = $"ToolTarget_{requiredToolId}_{targetId}";
             marker.transform.SetLocalPositionAndRotation(markerPos, markerRot);
             marker.transform.localScale = ResolveToolTargetMarkerScale(markerScale);
+
+            // Record surface position before lifting the sphere for clickability
+            Vector3 surfaceWorldPos = marker.transform.position;
+
             float markerLift = Mathf.Max(markerScale.y * 0.75f, marker.transform.localScale.y * 0.6f);
             marker.transform.position += Vector3.up * markerLift;
 
@@ -400,6 +418,18 @@ namespace OSE.UI.Root
             info.RequiredToolId = requiredToolId;
             info.BaseScale = marker.transform.localScale;
             info.BaseLocalPosition = marker.transform.localPosition;
+            info.SurfaceWorldPos = surfaceWorldPos;
+
+            // Populate weld line data from TargetDefinition (if present)
+            if (package.TryGetTarget(targetId, out TargetDefinition targetDef))
+            {
+                Vector3 axis = targetDef.GetWeldAxisVector();
+                if (axis.sqrMagnitude > 0.001f && previewRoot != null)
+                    info.WeldAxis = previewRoot.TransformDirection(axis);
+                else
+                    info.WeldAxis = axis;
+                info.WeldLength = targetDef.weldLength;
+            }
 
             _spawnedToolActionTargets.Add(marker);
 
@@ -413,8 +443,8 @@ namespace OSE.UI.Root
             if (string.IsNullOrEmpty(_activeProfile))
                 return;
 
-            bool isTorque = string.Equals(_activeProfile, ProfileTorque, StringComparison.OrdinalIgnoreCase);
-            bool isMeasure = string.Equals(_activeProfile, ProfileMeasure, StringComparison.OrdinalIgnoreCase);
+            bool isTorque = string.Equals(_activeProfile, ToolActionProfiles.Torque, StringComparison.OrdinalIgnoreCase);
+            bool isMeasure = string.Equals(_activeProfile, ToolActionProfiles.Measure, StringComparison.OrdinalIgnoreCase);
             if (!isTorque && !isMeasure)
                 return;
 
@@ -446,7 +476,7 @@ namespace OSE.UI.Root
 
         private bool IsMeasureProfile()
         {
-            return string.Equals(_activeProfile, ProfileMeasure, StringComparison.OrdinalIgnoreCase);
+            return string.Equals(_activeProfile, ToolActionProfiles.Measure, StringComparison.OrdinalIgnoreCase);
         }
 
         // ====================================================================
@@ -1364,7 +1394,7 @@ namespace OSE.UI.Root
         private static Vector3 ResolveToolTargetMarkerScale(Vector3 sourceScale)
         {
             float dominant = Mathf.Max(sourceScale.x, Mathf.Max(sourceScale.y, sourceScale.z));
-            float uniform = Mathf.Clamp(dominant * 0.85f, 0.30f, 0.75f);
+            float uniform = Mathf.Clamp(dominant * 0.55f, 0.15f, 0.40f);
             return Vector3.one * uniform;
         }
 

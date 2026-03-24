@@ -15,6 +15,8 @@ namespace OSE.Interaction.V2
             public float Distance;
             public bool UseBounds;
             public Bounds Bounds;
+            /// <summary>True when no spatial data was found and this is a generic fallback.</summary>
+            public bool IsFallback;
         }
 
         /// <summary>
@@ -53,6 +55,9 @@ namespace OSE.Interaction.V2
                     };
 
                 case ViewMode.Inspect:
+                    return ComputeWorkZone(step, package, findTarget, closeUp: true);
+
+                case ViewMode.ToolFocus:
                     return ComputeWorkZone(step, package, findTarget, closeUp: true);
 
                 default:
@@ -282,7 +287,8 @@ namespace OSE.Interaction.V2
                 Pivot = Vector3.zero,
                 Distance = 1.5f,
                 UseBounds = false,
-                Bounds = default
+                Bounds = default,
+                IsFallback = true
             };
         }
     }

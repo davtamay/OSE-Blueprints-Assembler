@@ -16,5 +16,11 @@ namespace OSE.Content
         /// Hint availability mode: "always" (default/null), "limited", "none".
         /// </summary>
         public string hintAvailability;
+
+        /// <summary>
+        /// Gesture engagement mode for tool-use steps.
+        /// "easy" / null = click-to-complete (default), "standard" = relaxed gesture, "realistic" = strict gesture.
+        /// </summary>
+        public string gestureMode;
     }
 }

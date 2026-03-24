@@ -195,55 +195,121 @@ See also:
 
 - `AXES_SOURCE_EXTRACTION.md` for the exact evidence and implementation boundary for this slice
 
+## Extruder Stages 01-02
+
+The package now extends beyond `Axes Stage 01` into the first two authored extruder slices:
+
+- `Extruder Stage 01`
+  - stage the Titan Aero core in the extruder work zone
+  - place the nozzle assembly onto the staged core
+  - place the first print-cooling blower attachment
+  - secure the blower attachment
+  - place the sensor holder
+  - secure the sensor holder
+  - place the 8 mm sensor
+  - check nozzle / fan / sensor clearance before later carriage integration
+- `Extruder Stage 02`
+  - stage the simplified carriage
+  - place the stock Titan Aero mount bracket
+  - secure the bracket
+  - place the mount top plate
+  - secure the top plate
+  - mount the completed nozzle module onto the carriage-side stack
+  - check carriage-side body / nozzle / sensor clearance and service access
+
+Source-backed facts used directly for this slice:
+
+- `d3d_v18_10` stays on the `Titan Aero` path rather than the `Prusa i3 MK2` option
+- the strongest published next extruder sequence is:
+  - build nozzle
+  - build fan attachment
+  - add sensor holder
+- the extruder part-library sources explicitly name:
+  - Titan Aero with motor
+  - nozzle-side assembly
+  - 5015 blower
+  - sensor holder
+  - 8 mm sensor
+- the later extruder part-library and v19 sources explicitly name the carriage-side mount stack:
+  - stock Titan Aero mount bracket
+  - Titan Aero mount top plate
+  - simplified carriage
+- the `3D Printer Genealogy` page records the mount-space problem statement that justifies
+  carrying the procedure forward into the carriage-side mount stack before full printer-wide
+  extruder integration
+
+Important authored simplifications:
+
+- the Titan Aero body, nozzle assembly, carriage bracket, top plate, and simplified carriage
+  are still schematic placeholders rather than exact `v18.10` meshes
+- Wave 1 approved CAD promotions are now active only for:
+  - the 8 mm sensor
+  - the 5015 blower
+- the current authored scope now stops after the carriage-side mount stack, before final
+  carriage-to-X-axis / printer-wide extruder integration
+- the exact `v18.10` holder / spacer / final mounted-orientation variant is still deferred
+- the small driver tools currently reuse the existing small-driver placeholder asset
+
+See also:
+
+- `EXTRUDER_SOURCE_EXTRACTION.md` for the exact evidence and implementation boundary for this slice
+- `EXTRUDER_MOUNT_SOURCE_EXTRACTION.md` for the exact evidence and implementation boundary for the carriage-side mount-stack slice
+
 ## Next Source Extraction
 
-The next source-backed slice after `Axes Stage 01` should not jump directly into generic
-"motion hardware." It should start from the next real rail / gantry mounting stage documented
-in the D3D manual set.
+The next source-backed slice after `Extruder Stage 02` should not jump straight into
+bed, controls, or electronics. The current strongest honest continuation is the final
+carriage-to-X-axis / printer-wide extruder integration, but only after the exact
+`v18.10` holder, spacer, and mounted-orientation boundary is locked more precisely.
 
 Current extraction result:
 
-- the `3D Printer Manual` is the main source index and explicitly breaks the build into modules
-  including `Frame`, `Axes`, and `FinalAssembly`
-- the `Axes` module is the strongest next source candidate for rail / gantry authoring
-- the `FinalAssembly` module is the next supporting source because it shows how axis modules seat
-  onto the finished frame
-- the older `D3D Printer Design` page confirms higher-level design intent but not enough exact
-  mounting geometry for package authoring on its own
+- `d3d_v18_10` should stay on the `Titan Aero` path
+- the nozzle / fan / sensor module is now authored in data
+- the carriage-side mount stack is now authored in data
+- the exact final printer-wide extruder mount variant for `v18.10` is still not locked strongly
+  enough to author honestly yet
+
+Recommended next authoring boundary:
+
+- the final carriage-to-X-axis / printer-wide extruder mounting slice only
+- do **not** jump straight to full final assembly, heated bed, controls, or wiring
 
 Useful source links for the next pass:
 
 - D3D manual index: https://wiki.opensourceecology.org/wiki/3D_Printer_Manual
-- Axes source deck: https://docs.google.com/presentation/d/1TTD37XprJd4XY3mH5VT_HldC_gVEJgwmnfkqqsi3-NM/edit
-- Final assembly source deck: https://docs.google.com/presentation/d/1LRL6PQtWm0LT6j6YNjLNjDAdbKkd3TmO8_aOBdfskhI/edit
-- Design rationale page: https://wiki.opensourceecology.org/wiki/D3D_Printer_Design
+- D3D BOM / v18.10 BOM: https://wiki.opensourceecology.org/wiki/Folgertech_Prusa_i3_Upgrade_Cost_to_D3D
+- Genealogy / v18.10 issue notes: https://wiki.opensourceecology.org/wiki/3D_Printer_Genealogy
+- Extruder part library: https://wiki.opensourceecology.org/wiki/3D_Printer_Extruder
+- v19.04 extruder build sequence: https://wiki.opensourceecology.org/wiki/D3D_v19.04
 
-What the design-rationale source already gives us:
+What is now strong enough to author next:
 
-- the printer uses an `XY-fixed build platform`
-- the printer is based on `modular linear actuators`
-- the `Z motor` is placed near the top so the frame can scale in height
-- `leadscrew`-type threaded shafts were the first documented motion choice
-- `linear bearings with flanges` are explicitly called out under linear guides
+- the `Titan Aero` variant choice for `d3d_v18_10`
+- the completed carriage-side nozzle-module stack as a subassembly target
+- a later final extruder-mount procedure once the holder / spacer / mounted-orientation
+  variant is locked
 
-What still must be extracted before authoring the next real package slice:
+What still must be locked before the later final extruder-mount slice:
 
-- exact rail / actuator part list for the chosen D3D revision
-- exact mounting order of the first axis or actuator module
-- exact frame attachment points and orientations
-- exact fasteners / brackets / bearings used in that slice
-- exact tools needed for that slice
-
-Recommended next authoring boundary:
-
-- first rail or first linear-actuator mounting slice only
-- not full gantry, bed, electronics, or extruder in one jump
+- exact `v18.10` carriage-side holder geometry
+- exact use of the `extruder spacer`
+- whether later `overslung` / `underslung` evidence is compatible enough to reuse
+- exact carriage-to-X-axis mounted relationship
 
 See also:
 
-- `AXES_SOURCE_EXTRACTION.md` for the concrete first-axes authored-slice brief and the
-  extracted evidence pointing to `X-axis fitting and mounting between completed Y axes`
-  as the next defensible package target.
+- `AXES_SOURCE_EXTRACTION.md` for the implemented first-axes boundary
+- `EXTRUDER_SOURCE_EXTRACTION.md` for the implemented first-extruder authored-slice brief
+- `EXTRUDER_MOUNT_SOURCE_EXTRACTION.md` for the implemented carriage-side extruder mount boundary
+- `EXTRUDER_CAD_IMPORT_PLAN.md` for the exact OSE file acquisition order and placeholder-replacement plan
+- `source_cad/extruder/notes/WAVE1_PROVENANCE.md` for the completed Wave 1 raw CAD acquisition record
+- `source_cad/extruder/notes/WAVE1_CONVERSION_STATUS.md` for the completed Wave 1 candidate conversion record
+
+Wave 1 approved promotions already in active package use:
+
+- `assets/parts/d3d_8mm_sensor_approved.glb`
+- `assets/parts/d3d_extruder_blower_approved.glb`
 
 ## Canonical Integrated Cube Representation
 

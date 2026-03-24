@@ -1,0 +1,36 @@
+{
+  "input_fcstd": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder\\raw\\Fanduct.fcstd",
+  "output_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder\\exported\\stl\\Fanduct.stl",
+  "source_mode": "archive_brep",
+  "units": "mm",
+  "object_count": 1,
+  "mesh_facets": 676,
+  "mesh_points": 340,
+  "combined_bound_box": {
+    "xmin_mm": -6.09978702441544,
+    "xmax_mm": 19.2031296846648,
+    "ymin_mm": -8.8,
+    "ymax_mm": 8.80000000000001,
+    "zmin_mm": -0.103390273169407,
+    "zmax_mm": 25.0949639003778,
+    "xlen_mm": 25.30291670908024,
+    "ylen_mm": 17.60000000000001,
+    "zlen_mm": 25.198354173547205
+  },
+  "objects": [
+    {
+      "name": "PartShape2.brp",
+      "bound_box": {
+        "xmin_mm": -8.167699842585382,
+        "xmax_mm": 19.22021037108279,
+        "ymin_mm": -8.799999999999999,
+        "ymax_mm": 8.800000000000006,
+        "zmin_mm": -0.11190882526466647,
+        "zmax_mm": 27.163520020314753,
+        "xlen_mm": 27.38791021366817,
+        "ylen_mm": 17.600000000000005,
+        "zlen_mm": 27.27542884557942
+      }
+    }
+  ]
+}

@@ -30,12 +30,24 @@ namespace OSE.UI.Root
         private GameObject _toolGhostIndicator;
         private Quaternion _toolGhostUpCorrection = Quaternion.identity;
         private Material[][] _toolGhostOriginalMaterials;
+        private int _refreshGeneration;
         private GameObject _pipeCursorGhost;
         private bool _cursorInReadyState;
+        private bool _positionUpdateSuspended;
 
         // ── Public interface ───────────────────────────────────────────────────────
         public GameObject ToolGhost       => _toolGhostIndicator;
         public bool CursorInReadyState    => _cursorInReadyState;
+
+        /// <summary>
+        /// When true, UpdatePosition() skips repositioning the tool ghost.
+        /// Used by the preview system while the ghost is detached from the camera.
+        /// </summary>
+        public bool PositionUpdateSuspended
+        {
+            get => _positionUpdateSuspended;
+            set => _positionUpdateSuspended = value;
+        }
 
         public ToolCursorManager(Transform fallbackParent)
         {
@@ -55,7 +67,28 @@ namespace OSE.UI.Root
             _toolGhostIndicator = null;
             _toolGhostUpCorrection = Quaternion.identity;
             _cursorInReadyState = false;
+            _positionUpdateSuspended = false;
             _toolGhostOriginalMaterials = null;
+        }
+
+        /// <summary>
+        /// Releases the tool ghost without destroying it, so the caller can
+        /// repurpose it (e.g. convert it into a persistent tool).
+        /// Returns the detached GameObject, or null if there was no ghost.
+        /// After this call, <see cref="ToolGhost"/> is null and a new
+        /// <see cref="RefreshAsync"/> call will create a fresh cursor ghost.
+        /// </summary>
+        public GameObject DetachGhost()
+        {
+            GameObject ghost = _toolGhostIndicator;
+            if (ghost == null) return null;
+
+            _toolGhostIndicator = null;
+            _toolGhostUpCorrection = Quaternion.identity;
+            _cursorInReadyState = false;
+            _positionUpdateSuspended = false;
+            _toolGhostOriginalMaterials = null;
+            return ghost;
         }
 
         /// <summary>Loads the active tool model, parents it to the camera and configures it as the cursor ghost.</summary>
@@ -71,10 +104,20 @@ namespace OSE.UI.Root
             if (!TryGetActiveToolDefinition(out string activeToolId, out ToolDefinition tool))
                 return;
 
+            int myGeneration = ++_refreshGeneration;
+
             GameObject ghostTool = null;
             if (!string.IsNullOrWhiteSpace(tool.assetRef))
             {
                 ghostTool = await spawner.LoadPackageAssetAsync(tool.assetRef, ct: ct);
+            }
+
+            // Another RefreshAsync call started while we were awaiting — discard our result
+            if (myGeneration != _refreshGeneration)
+            {
+                if (ghostTool != null)
+                    UnityEngine.Object.Destroy(ghostTool);
+                return;
             }
 
             if (ghostTool == null)
@@ -111,8 +154,11 @@ namespace OSE.UI.Root
 
             _toolGhostOriginalMaterials = MaterialHelper.MakeTransparent(_toolGhostIndicator, 0.55f);
 
-            // Position immediately to avoid a one-frame spawn at origin.
-            UpdatePosition(false, new Vector2(Screen.width * 0.5f, Screen.height * 0.5f));
+            // Start hidden — the first real UpdatePosition call from the bridge's
+            // Update loop will place it at the actual cursor and show it.
+            // This prevents a one-frame flash at screen center that looks like
+            // the tool is pre-placed on the workpiece.
+            _toolGhostIndicator.SetActive(false);
         }
 
         /// <summary>
@@ -139,7 +185,7 @@ namespace OSE.UI.Root
             float localY = (vp.y - 0.5f) * 2f * halfH + CursorVerticalOffset;
             var localPos = new Vector3(localX, localY, CursorRayDistance);
 
-            if (_toolGhostIndicator != null)
+            if (_toolGhostIndicator != null && !_positionUpdateSuspended)
             {
                 if (!_toolGhostIndicator.activeSelf) _toolGhostIndicator.SetActive(true);
                 _toolGhostIndicator.transform.localPosition = localPos;

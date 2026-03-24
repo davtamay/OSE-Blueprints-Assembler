@@ -1,0 +1,50 @@
+{
+  "input_fcstd": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder\\raw\\5015blower.fcstd",
+  "output_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder\\exported\\stl\\5015blower.stl",
+  "source_mode": "archive_brep",
+  "units": "mm",
+  "object_count": 2,
+  "mesh_facets": 700,
+  "mesh_points": 350,
+  "combined_bound_box": {
+    "xmin_mm": -10.894078,
+    "xmax_mm": 21.220518,
+    "ymin_mm": -54.844823,
+    "ymax_mm": 29.734118,
+    "zmin_mm": -64.888214,
+    "zmax_mm": 15.400000000000013,
+    "xlen_mm": 32.114596,
+    "ylen_mm": 84.578941,
+    "zlen_mm": 80.28821400000001
+  },
+  "objects": [
+    {
+      "name": "PartShape.brp",
+      "bound_box": {
+        "xmin_mm": 4.51391368727635e-16,
+        "xmax_mm": 15.400000000000022,
+        "ymin_mm": -22.705082000000015,
+        "ymax_mm": 29.734117999999988,
+        "zmin_mm": -64.888214,
+        "zmax_mm": -13.385426999999982,
+        "xlen_mm": 15.400000000000022,
+        "ylen_mm": 52.4392,
+        "zlen_mm": 51.502787000000026
+      }
+    },
+    {
+      "name": "PartShape1.brp",
+      "bound_box": {
+        "xmin_mm": -10.894078,
+        "xmax_mm": 21.220518,
+        "ymin_mm": -54.84482299999999,
+        "ymax_mm": -22.73022699999999,
+        "zmin_mm": 10.39999999999999,
+        "zmax_mm": 15.400000000000013,
+        "xlen_mm": 32.114596,
+        "ylen_mm": 32.114596000000006,
+        "zlen_mm": 5.000000000000023
+      }
+    }
+  ]
+}

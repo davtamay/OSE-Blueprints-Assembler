@@ -213,6 +213,48 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
+        /// Reverses <see cref="MakeTransparent"/> — sets all materials back to opaque rendering.
+        /// Used when cloning a transparent cursor ghost for a persistent scene placement.
+        /// </summary>
+        public static void RestoreOpaque(GameObject target)
+        {
+            var renderers = target.GetComponentsInChildren<Renderer>(includeInactive: true);
+            if (renderers == null || renderers.Length == 0) return;
+
+            foreach (var renderer in renderers)
+            {
+                var mats = renderer.materials; // instance copies
+                foreach (var mat in mats)
+                {
+                    if (mat == null) continue;
+
+                    mat.SetFloat("_Surface", 0f); // Opaque
+                    mat.SetOverrideTag("RenderType", "Opaque");
+                    mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                    mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
+                    mat.SetInt("_ZWrite", 1);
+                    mat.renderQueue = -1; // default
+                    mat.DisableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                    mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+
+                    if (mat.HasProperty("_BaseColor"))
+                    {
+                        Color c = mat.GetColor("_BaseColor");
+                        c.a = 1f;
+                        mat.SetColor("_BaseColor", c);
+                    }
+                    if (mat.HasProperty("_Color"))
+                    {
+                        Color c = mat.GetColor("_Color");
+                        c.a = 1f;
+                        mat.SetColor("_Color", c);
+                    }
+                }
+                renderer.materials = mats;
+            }
+        }
+
+        /// <summary>
         /// Applies a transparent "tool in hand" material style that is visually
         /// distinct from placement ghosts.
         /// </summary>
@@ -260,27 +302,38 @@ namespace OSE.UI.Root
             Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
             if (shader == null) return;
 
+            // Semi-transparent so the tool action behind/inside is visible
             Color visibleColor = markerColor;
-            visibleColor.a = 1f;
+            visibleColor.a = 0.18f;
 
             foreach (var renderer in renderers)
             {
                 Material markerMat = new Material(shader) { name = "Tool Target Marker Material" };
 
+                // Configure for transparency
                 if (markerMat.HasProperty("_Surface"))
-                    markerMat.SetFloat("_Surface", 0f); // Opaque
+                    markerMat.SetFloat("_Surface", 1f); // Transparent
                 if (markerMat.HasProperty("_Blend"))
-                    markerMat.SetFloat("_Blend", 0f);
-                markerMat.SetOverrideTag("RenderType", "Opaque");
-                markerMat.SetInt("_ZWrite", 1);
-                markerMat.renderQueue = -1;
+                    markerMat.SetFloat("_Blend", 0f); // Alpha
+                markerMat.SetOverrideTag("RenderType", "Transparent");
+                markerMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                markerMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                markerMat.SetInt("_ZWrite", 0);
+                markerMat.renderQueue = 3000;
+                markerMat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                markerMat.EnableKeyword("_ALPHAPREMULTIPLY_ON");
 
                 if (markerMat.HasProperty("_BaseColor"))
                     markerMat.SetColor("_BaseColor", visibleColor);
                 if (markerMat.HasProperty("_Color"))
                     markerMat.SetColor("_Color", visibleColor);
+
+                // Stronger emission so the rim glows even though base is transparent
+                Color emissionColor = markerColor;
+                emissionColor.a = 1f;
                 if (markerMat.HasProperty("_EmissionColor"))
-                    markerMat.SetColor("_EmissionColor", visibleColor * 0.9f);
+                    markerMat.SetColor("_EmissionColor", emissionColor * 1.2f);
+                markerMat.EnableKeyword("_EMISSION");
 
                 renderer.sharedMaterial = markerMat;
             }

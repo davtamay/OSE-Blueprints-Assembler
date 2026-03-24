@@ -8,6 +8,7 @@ using OSE.Input;
 using OSE.Interaction;
 using OSE.Interaction.V2.Integration;
 using OSE.Runtime;
+using OSE.UI.Root;
 using UnityEngine;
 
 namespace OSE.Interaction.V2
@@ -53,11 +54,15 @@ namespace OSE.Interaction.V2
 
         private IIntentProvider _intentProvider;
         private AssemblyCameraRig _cameraRig;
-        private LegacyBridgeAdapter _legacyBridge;
         private CanonicalActionBridge _actionBridge;
+        private IPartActionBridge _partBridge;
+        private IToolGhostProvider _toolGhost;
+        private PersistentToolController _persistentToolController;
         private PlacementAssistService _placementAssist;
         private InteractionFeedbackPresenter _feedbackPresenter;
         private StepGuidanceService _guidanceService;
+        private ToolFocusController _toolFocusController;
+        private ToolActionPreviewController _previewController;
 
         // ── Internal state ──
 
@@ -151,21 +156,22 @@ namespace OSE.Interaction.V2
             // ── 5. Canonical Action Bridge ──
             _actionBridge = new CanonicalActionBridge(router, selectionService);
 
-            // ── 6. Legacy Bridge ──
-            _legacyBridge = new LegacyBridgeAdapter(_actionBridge);
-
-            var allMonos = FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None);
-            foreach (var mono in allMonos)
+            // ── 6. Part Interaction Bridge (typed interfaces) ──
+            var bridge = FindFirstObjectByType<PartInteractionBridge>();
+            if (bridge != null)
             {
-                if (mono.GetType().Name == "PartInteractionBridge")
-                {
-                    _legacyBridge.Connect(mono);
-                    break;
-                }
+                _partBridge = bridge;
+                _toolGhost = bridge;
+                _persistentToolController = new PersistentToolController(bridge, bridge);
+                _partBridge.ExternalControlEnabled = true;
+                OseLog.Info("[InteractionOrchestrator] Connected to PartInteractionBridge via typed interfaces.");
+            }
+            else
+            {
+                OseLog.Warn("[InteractionOrchestrator] PartInteractionBridge not found.");
             }
 
-            if (!_legacyBridge.IsConnected)
-                OseLog.Warn("[InteractionOrchestrator] PartInteractionBridge not found. Legacy bridge not connected.");
+            var allMonos = FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None);
 
             // ── 7. Placement Assist ──
             _placementAssist = new PlacementAssistService(_settings);
@@ -194,6 +200,14 @@ namespace OSE.Interaction.V2
 
             // ── 10. Step Guidance Service ──
             _guidanceService = new StepGuidanceService(_settings, _cameraRig);
+            if (_partBridge != null)
+                _guidanceService.SetPartBridge(_partBridge);
+
+            // ── 11. Tool Focus (gesture engagement — legacy) ──
+            _toolFocusController = new ToolFocusController();
+
+            // ── 12. Tool Action Preview ("I Do / We Do / You Do") ──
+            _previewController = new ToolActionPreviewController();
 
             // Cache reflection handles for lazy package context injection
             if (_spawnerRef != null)
@@ -215,10 +229,14 @@ namespace OSE.Interaction.V2
             RuntimeEventBus.Subscribe<PartStateChanged>(HandlePartStateChanged);
             RuntimeEventBus.Subscribe<StepStateChanged>(HandleStepStateChanged);
             RuntimeEventBus.Subscribe<StepActivated>(HandleStepActivated);
+            RuntimeEventBus.Subscribe<SessionRestored>(HandleSessionRestored);
             RuntimeEventBus.Subscribe<RepositionModeChanged>(HandleRepositionModeChanged);
 
             _bootstrapped = true;
-            OseLog.Info($"[InteractionOrchestrator] V2 READY. Mode={mode} Camera={_camera.name} LegacyBridge={_legacyBridge.IsConnected}");
+            OseLog.Info($"[InteractionOrchestrator] V2 READY. Mode={mode} Camera={_camera.name} Bridge={_partBridge != null}");
+
+            // If a step is already active (e.g. hot reload), frame it now
+            TryFrameCurrentStep();
         }
 
         /// <summary>
@@ -261,8 +279,10 @@ namespace OSE.Interaction.V2
             RuntimeEventBus.Unsubscribe<PartStateChanged>(HandlePartStateChanged);
             RuntimeEventBus.Unsubscribe<StepStateChanged>(HandleStepStateChanged);
             RuntimeEventBus.Unsubscribe<StepActivated>(HandleStepActivated);
+            RuntimeEventBus.Unsubscribe<SessionRestored>(HandleSessionRestored);
             RuntimeEventBus.Unsubscribe<RepositionModeChanged>(HandleRepositionModeChanged);
-            _legacyBridge?.Disconnect();
+            if (_partBridge != null)
+                _partBridge.ExternalControlEnabled = false;
         }
 
         private void HandleStepStateChanged(StepStateChanged evt)
@@ -278,15 +298,47 @@ namespace OSE.Interaction.V2
             TransitionTo(InteractionState.Idle);
         }
 
+        private void HandleSessionRestored(SessionRestored evt)
+        {
+            if (!_bootstrapped) return;
+            // After restore, the next StepActivated will trigger framing.
+            // But if it already fired, frame the current step now.
+            TryFrameCurrentStep();
+        }
+
+        private void TryFrameCurrentStep()
+        {
+            if (_guidanceService == null || _partBridge == null) return;
+
+            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+                return;
+
+            var stepCtrl = session?.AssemblyController?.StepController;
+            if (stepCtrl == null || !stepCtrl.HasActiveStep) return;
+
+            string stepId = stepCtrl.CurrentStepState.StepId;
+            if (string.IsNullOrWhiteSpace(stepId)) return;
+
+            OseLog.Info($"[V2] TryFrameCurrentStep '{stepId}'");
+            _guidanceService.FrameStep(stepId);
+        }
+
         private void HandleStepActivated(StepActivated evt)
         {
-            if (!_bootstrapped || _guidanceService == null) return;
+            OseLog.Info($"[V2] HandleStepActivated '{evt.StepId}' bootstrapped={_bootstrapped}");
+            if (!_bootstrapped) return;
 
-            // Lazily provide package context on first activation
-            if (!_guidanceContextProvided)
-                TryProvideGuidanceContext();
+            // Remove persistent tools (clamps) if the new step no longer needs them
+            CleanUpPersistentToolsForStep(evt.StepId);
 
-            _guidanceService.OnStepActivated(evt);
+            if (_guidanceService != null)
+            {
+                // Lazily provide package context on first activation
+                if (!_guidanceContextProvided)
+                    TryProvideGuidanceContext();
+
+                _guidanceService.OnStepActivated(evt);
+            }
         }
 
         private void TryProvideGuidanceContext()
@@ -330,20 +382,14 @@ namespace OSE.Interaction.V2
                 // Release any in-progress drag and deselect
                 if (CurrentState == InteractionState.DraggingPart && DraggedPart != null)
                 {
-                    if (_legacyBridge != null)
-                        _legacyBridge.ReleasePart();
-                    else
-                        _actionBridge?.OnPartReleased();
+                    _actionBridge?.OnPartReleased();
                     DraggedPart = null;
                 }
 
                 if (SelectedPart != null)
                 {
                     SelectedPart = null;
-                    if (_legacyBridge != null)
-                        _legacyBridge.DeselectAll();
-                    else
-                        _actionBridge?.OnDeselected();
+                    _actionBridge?.OnDeselected();
                 }
 
                 HoveredPart = null;
@@ -386,13 +432,36 @@ namespace OSE.Interaction.V2
 
             if (IsToolModeLockedForParts() && CurrentState == InteractionState.DraggingPart)
             {
-                if (_legacyBridge != null)
-                    _legacyBridge.ReleasePart();
-                else
-                    _actionBridge?.OnPartReleased();
+                _actionBridge?.OnPartReleased();
 
                 DraggedPart = null;
                 TransitionTo(SelectedPart != null ? InteractionState.PartSelected : InteractionState.Idle);
+            }
+
+            // ── ToolFocus: tick preview or gesture, suppress normal input ──
+            if (CurrentState == InteractionState.ToolFocus)
+            {
+                // Tool Action Preview (new system)
+                if (_previewController != null && _previewController.IsActive)
+                {
+                    var previewIntent = _intentProvider.Poll();
+                    if (!previewIntent.IsNone && previewIntent.IntentKind == InteractionIntent.Kind.Cancel)
+                        _previewController.Cancel();
+                    else
+                        _previewController.Tick(Time.deltaTime, previewIntent.ScreenDelta);
+                    return;
+                }
+
+                // Legacy gesture engagement (fallback)
+                if (_toolFocusController != null && _toolFocusController.IsActive)
+                {
+                    var focusIntent = _intentProvider.Poll();
+                    if (!focusIntent.IsNone && focusIntent.IntentKind == InteractionIntent.Kind.Cancel)
+                        _toolFocusController.Cancel();
+                    else
+                        _toolFocusController.Tick(Time.deltaTime);
+                    return;
+                }
             }
 
             var intent = _intentProvider.Poll();
@@ -421,7 +490,7 @@ namespace OSE.Interaction.V2
 
             // Forward hover target to the legacy bridge so part-info UI can
             // show hovered part details even when V2 owns input.
-            _legacyBridge?.SetHoveredPart(HoveredPart);
+            _partBridge?.SetHoveredPart(HoveredPart);
         }
 
         private void LateUpdate()
@@ -429,9 +498,9 @@ namespace OSE.Interaction.V2
             if (!_bootstrapped || _feedbackPresenter == null)
                 return;
 
-            // When the legacy bridge is connected, it owns runtime part visuals.
+            // When the part bridge is connected, it owns runtime part visuals.
             // Running V2 feedback on top of that causes color contention.
-            if (_legacyBridge != null && _legacyBridge.IsConnected)
+            if (_partBridge != null)
                 return;
 
             var feedbackData = new InteractionFeedbackData
@@ -735,10 +804,7 @@ namespace OSE.Interaction.V2
                 SelectedPart = selectedTarget;
                 TransitionTo(InteractionState.PartSelected);
 
-                if (_legacyBridge != null)
-                    _legacyBridge.SelectPart(selectedTarget);
-                else
-                    _actionBridge?.OnExternallyResolvedPartSelected(selectedTarget);
+                _actionBridge?.OnExternallyResolvedPartSelected(selectedTarget);
 
                 // Smart pivot: shift camera to orbit around the midpoint between
                 // the selected part and its target ghost. Using the midpoint keeps
@@ -746,8 +812,8 @@ namespace OSE.Interaction.V2
                 if (_settings.EnableSmartPivot && _cameraRig != null)
                 {
                     Vector3 partPos = selectedTarget.transform.position;
-                    if (_settings.EnablePivotToTarget && _legacyBridge != null &&
-                        _legacyBridge.TryGetGhostWorldPosForPart(selectedTarget.name, out Vector3 ghostPos))
+                    if (_settings.EnablePivotToTarget && _partBridge != null &&
+                        _partBridge.TryGetGhostWorldPosForPart(selectedTarget.name, out Vector3 ghostPos))
                     {
                         _cameraRig.SetPivot(Vector3.Lerp(partPos, ghostPos, 0.5f));
                     }
@@ -783,10 +849,7 @@ namespace OSE.Interaction.V2
                 SelectedPart = dragTarget;
                 TransitionTo(InteractionState.PartSelected);
 
-                if (_legacyBridge != null)
-                    _legacyBridge.SelectPart(dragTarget);
-                else
-                    _actionBridge?.OnExternallyResolvedPartSelected(dragTarget);
+                _actionBridge?.OnExternallyResolvedPartSelected(dragTarget);
 
                 OseLog.VerboseInfo($"[Orchestrator] Drag blocked for locked part '{dragTarget.name}'.");
                 return;
@@ -796,17 +859,8 @@ namespace OSE.Interaction.V2
             SelectedPart = dragTarget;
             TransitionTo(InteractionState.DraggingPart);
 
-            if (_legacyBridge != null)
-            {
-                // Ensure selection is set first, then grab
-                _legacyBridge.SelectPart(dragTarget);
-                _legacyBridge.GrabPart(dragTarget);
-            }
-            else
-            {
-                _actionBridge?.OnPartSelected(dragTarget);
-                _actionBridge?.OnPartGrabbed(dragTarget);
-            }
+            _actionBridge?.OnExternallyResolvedPartSelected(dragTarget);
+            _actionBridge?.OnPartGrabbed(dragTarget);
 
             OseLog.VerboseInfo($"[Orchestrator] Begin drag: {dragTarget.name}");
         }
@@ -847,10 +901,7 @@ namespace OSE.Interaction.V2
             // Notify the canonical action pipeline that the part was released.
             // PartInteractionBridge (still running snap/validation) will handle
             // the placement validation through its HandleCanonicalAction(Place).
-            if (_legacyBridge != null)
-                _legacyBridge.ReleasePart();
-            else
-                _actionBridge?.OnPartReleased();
+            _actionBridge?.OnPartReleased();
 
             DraggedPart = null;
             TransitionTo(SelectedPart != null ? InteractionState.PartSelected : InteractionState.Idle);
@@ -873,10 +924,7 @@ namespace OSE.Interaction.V2
             SelectedPart = inspectedTarget;
             TransitionTo(InteractionState.InspectMode);
 
-            if (_legacyBridge != null)
-                _legacyBridge.InspectPart(inspectedTarget);
-            else
-                _actionBridge?.OnExternallyResolvedPartInspected(inspectedTarget);
+            _actionBridge?.OnExternallyResolvedPartInspected(inspectedTarget);
         }
 
         private void HandleFocus()
@@ -891,14 +939,25 @@ namespace OSE.Interaction.V2
 
         private void HandleCancel()
         {
+            if (CurrentState == InteractionState.ToolFocus)
+            {
+                if (_previewController != null && _previewController.IsActive)
+                {
+                    _previewController.Cancel();
+                    return;
+                }
+                if (_toolFocusController != null && _toolFocusController.IsActive)
+                {
+                    _toolFocusController.Cancel();
+                    return;
+                }
+            }
+
             if (CurrentState == InteractionState.DraggingPart)
             {
                 // Cancel mid-drag: drop part where it is
                 DraggedPart = null;
-                if (_legacyBridge != null)
-                    _legacyBridge.ReleasePart();
-                else
-                    _actionBridge?.OnPartReleased();
+                _actionBridge?.OnPartReleased();
             }
 
             if (CurrentState == InteractionState.InspectMode)
@@ -912,24 +971,21 @@ namespace OSE.Interaction.V2
             HoveredPart = null;
             TransitionTo(InteractionState.Idle);
 
-            if (_legacyBridge != null)
-                _legacyBridge.DeselectAll();
-            else
-                _actionBridge?.OnDeselected();
+            _actionBridge?.OnDeselected();
         }
 
         private void HandleEmptyClickFallback(Vector2 screenPos)
         {
             // If a part is selected, try click-to-place first (explicit placement intent
             // takes priority over camera navigation).
-            if (SelectedPart != null && _legacyBridge != null &&
-                _legacyBridge.TryClickToPlace(SelectedPart, screenPos))
+            if (SelectedPart != null && _partBridge != null &&
+                _partBridge.TryClickToPlace(SelectedPart, screenPos))
             {
                 SelectedPart = null;
                 HoveredPart = null;
                 DraggedPart = null;
                 TransitionTo(InteractionState.Idle);
-                _legacyBridge.DeselectFromExternalControl();
+                _actionBridge?.OnExternallyResolvedDeselected();
                 return;
             }
 
@@ -941,8 +997,8 @@ namespace OSE.Interaction.V2
 
             // Check if click was near a pulsating tool target → focus camera on it.
             // This works regardless of tool equip state, so users can navigate to targets.
-            if (_cameraRig != null && _legacyBridge != null &&
-                _legacyBridge.TryGetNearestToolTargetWorldPos(screenPos, out Vector3 targetWorldPos))
+            if (_cameraRig != null && _partBridge != null &&
+                _partBridge.TryGetNearestToolTargetWorldPos(screenPos, out Vector3 targetWorldPos))
             {
                 _cameraRig.FocusOn(targetWorldPos);
                 return; // don't deselect — user clicked to navigate
@@ -954,20 +1010,17 @@ namespace OSE.Interaction.V2
             SelectedPart = null;
             TransitionTo(InteractionState.Idle);
 
-            if (_legacyBridge != null)
-                _legacyBridge.DeselectFromExternalControl();
-            else
-                _actionBridge?.OnExternallyResolvedDeselected();
+            _actionBridge?.OnExternallyResolvedDeselected();
         }
 
         private bool TryHandlePipeConnection(Vector2 screenPos)
         {
             // Pipe connection port spheres use screen-proximity targeting rather than
             // part-hit resolution, so V2 keeps this check ahead of part/tool routing.
-            if (_legacyBridge == null)
+            if (_partBridge == null)
                 return false;
 
-            return _legacyBridge.TryPipeConnection(screenPos);
+            return _partBridge.TryPipeConnection(screenPos);
         }
 
         // ── Helpers ──
@@ -1000,10 +1053,10 @@ namespace OSE.Interaction.V2
             if (target == null)
                 return null;
 
-            if (_legacyBridge == null)
+            if (_partBridge == null)
                 return target;
 
-            return _legacyBridge.NormalizeSelectableTarget(target);
+            return _partBridge.NormalizeSelectableTarget(target);
         }
 
         /// <summary>
@@ -1013,20 +1066,36 @@ namespace OSE.Interaction.V2
         /// </summary>
         private void RouteToolAction(Vector2 screenPos)
         {
-            if (_legacyBridge == null)
+            if (_partBridge == null)
             {
-                OseLog.Warn("[V2] RouteToolAction: no legacy bridge — canonical fallback only.");
+                OseLog.Warn("[V2] RouteToolAction: no part bridge — canonical fallback only.");
                 _actionBridge?.OnToolPrimaryAction();
                 return;
             }
 
             OseLog.Info($"[V2] RouteToolAction resolve at ({screenPos.x:F0},{screenPos.y:F0})");
-            if (_legacyBridge.TryResolveToolActionTarget(screenPos, out string targetId, out Vector3 targetWorldPos))
+            if (_partBridge.TryResolveToolActionTarget(screenPos, out string targetId, out Vector3 targetWorldPos, out Vector3 surfaceWorldPos, out Vector3 weldAxis, out float weldLength))
             {
-                OseLog.Info($"[V2] RouteToolAction: resolved target='{targetId}' at {targetWorldPos}. Executing...");
-                if (_legacyBridge.TryToolAction(targetId))
+                OseLog.Info($"[V2] RouteToolAction: resolved target='{targetId}' at {targetWorldPos}, surface={surfaceWorldPos}. Executing...");
+
+                // ── Tool Action Preview: "I Do / We Do / You Do" ──
+                if (_settings.EnableToolActionPreview && _previewController != null)
+                {
+                    PreviewMode? previewMode = ResolvePreviewMode();
+                    OseLog.Info($"[V2] Preview check: mode={previewMode}, target='{targetId}', pos={targetWorldPos}");
+                    // Use surfaceWorldPos for the preview so the tool targets the actual joint, not the lifted sphere
+                    if (previewMode.HasValue && TryEnterToolActionPreview(targetId, surfaceWorldPos, previewMode.Value, weldAxis, weldLength))
+                        return;
+                }
+                else
+                {
+                    OseLog.Info($"[V2] Preview skipped: EnableToolActionPreview={_settings.EnableToolActionPreview}, controller={_previewController != null}");
+                }
+
+                if (_partBridge.TryToolAction(targetId))
                 {
                     OseLog.Info($"[V2] RouteToolAction: TryToolAction SUCCESS for '{targetId}'.");
+                    TrySpawnPersistentToolOnComplete(targetId, surfaceWorldPos);
                     if (_cameraRig != null)
                         _cameraRig.FocusOn(targetWorldPos);
                     return;
@@ -1043,8 +1112,8 @@ namespace OSE.Interaction.V2
 
             // Tool action failed (wrong tool, no tool equipped, etc.) — still focus
             // camera on the nearest target sphere so the user can navigate to it.
-            if (_cameraRig != null &&
-                _legacyBridge.TryGetNearestToolTargetWorldPos(screenPos, out Vector3 nearestTargetPos))
+            if (_cameraRig != null && _partBridge != null &&
+                _partBridge.TryGetNearestToolTargetWorldPos(screenPos, out Vector3 nearestTargetPos))
             {
                 _cameraRig.FocusOn(nearestTargetPos);
                 return;
@@ -1053,6 +1122,182 @@ namespace OSE.Interaction.V2
             OseLog.Info("[V2] RouteToolAction: bridge returned false — canonical fallback.");
             _actionBridge?.OnToolPrimaryAction();
         }
+
+        /// <summary>
+        /// Attempts to enter ToolFocus for the resolved target. Returns true if
+        /// gesture engagement was activated (caller should skip immediate execution).
+        /// Returns false if the step doesn't use gesture engagement (easy/absent mode).
+        /// </summary>
+        private bool TryEnterToolFocus(string targetId, Vector3 targetWorldPos, Vector2 screenPos)
+        {
+            // Get the current step definition
+            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+                return false;
+
+            StepController stepCtrl = session?.AssemblyController?.StepController;
+            if (stepCtrl == null || !stepCtrl.HasActiveStep)
+                return false;
+
+            StepDefinition step = stepCtrl.CurrentStepDefinition;
+            if (step == null || !GestureConfigResolver.IsGestureEngaged(step))
+                return false;
+
+            // Enter ToolFocus
+            TransitionTo(InteractionState.ToolFocus);
+
+            _toolFocusController.Enter(
+                step,
+                targetId,
+                targetWorldPos,
+                screenPos,
+                ResolvedMode,
+                onComplete: completedTargetId =>
+                {
+                    // Gesture completed — execute the actual tool action
+                    OseLog.Info($"[V2] ToolFocus completed for '{completedTargetId}' — executing tool action.");
+                    if (_partBridge != null && _partBridge.TryToolAction(completedTargetId))
+                    {
+                        OseLog.Info($"[V2] Post-gesture TryToolAction SUCCESS for '{completedTargetId}'.");
+                        if (_cameraRig != null)
+                            _cameraRig.FocusOn(targetWorldPos);
+                    }
+                    TransitionTo(InteractionState.Idle);
+                },
+                onCancel: () =>
+                {
+                    OseLog.Info("[V2] ToolFocus cancelled — returning to idle.");
+                    TransitionTo(InteractionState.Idle);
+                });
+
+            // If the gesture type was Tap, the controller fires onComplete synchronously
+            // and we're already back in Idle — that's fine.
+            return true;
+        }
+
+        /// <summary>
+        /// Resolves the preview mode based on completed target count for the current step.
+        /// Returns null if the step should skip preview (solo / "You Do" phase).
+        /// </summary>
+        private PreviewMode? ResolvePreviewMode()
+        {
+            if (_toolGhost == null)
+                return null;
+
+            // Must be a Use-family step
+            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            {
+                OseLog.Info("[V2] ResolvePreviewMode: no MachineSessionController");
+                return null;
+            }
+            StepController stepCtrl = session?.AssemblyController?.StepController;
+            if (stepCtrl == null || !stepCtrl.HasActiveStep)
+            {
+                OseLog.Info($"[V2] ResolvePreviewMode: stepCtrl={stepCtrl != null}, hasActive={stepCtrl?.HasActiveStep}");
+                return null;
+            }
+            StepDefinition step = stepCtrl.CurrentStepDefinition;
+            if (step == null || step.ResolvedFamily != Content.StepFamily.Use)
+            {
+                OseLog.Info($"[V2] ResolvePreviewMode: step={step?.id}, family={step?.ResolvedFamily} (need Use)");
+                return null;
+            }
+
+            int completedCount = _toolGhost.GetCompletedToolTargetCount();
+            OseLog.Info($"[V2] ResolvePreviewMode: step='{step.id}', family={step.ResolvedFamily}, completedCount={completedCount}");
+
+            // "I Do, We Do, You Do"
+            if (completedCount == 0)
+                return PreviewMode.Observe;
+            if (completedCount == 1)
+                return PreviewMode.Guided;
+
+            // 2+ → Solo (click-to-complete)
+            return null;
+        }
+
+        /// <summary>
+        /// Enters the Tool Action Preview for the resolved target.
+        /// Returns true if preview was activated (caller should skip immediate execution).
+        /// </summary>
+        private bool TryEnterToolActionPreview(string targetId, Vector3 targetWorldPos, PreviewMode mode, Vector3 weldAxis = default, float weldLength = 0f)
+        {
+            GameObject toolGhost = _toolGhost?.GetToolGhost();
+            string profile = _toolGhost?.GetActiveToolProfile();
+            OseLog.Info($"[V2] TryEnterToolActionPreview: ghost={toolGhost?.name ?? "NULL"}, profile='{profile}', mode={mode}");
+            if (toolGhost == null)
+            {
+                OseLog.Info("[V2] TryEnterToolActionPreview: no tool ghost — falling back to click-to-complete.");
+                return false;
+            }
+
+            TransitionTo(InteractionState.ToolFocus);
+
+            // Suspend cursor position updates so the ghost isn't yanked back each frame
+            _toolGhost?.SetToolGhostPositionSuspended(true);
+
+            // Camera follows the tool action point
+            if (_cameraRig != null)
+                _cameraRig.FocusOn(targetWorldPos);
+
+            _previewController.Enter(
+                targetId,
+                targetWorldPos,
+                toolGhost,
+                profile ?? "",
+                mode,
+                ResolvedMode,
+                onComplete: completedTargetId =>
+                {
+                    _toolGhost?.SetToolGhostPositionSuspended(false);
+                    OseLog.Info($"[V2] Tool action preview completed for '{completedTargetId}' — executing tool action.");
+                    _toolGhost?.IncrementCompletedToolTargetCount();
+
+                    if (_partBridge != null && _partBridge.TryToolAction(completedTargetId))
+                    {
+                        OseLog.Info($"[V2] Post-preview TryToolAction SUCCESS for '{completedTargetId}'.");
+                        if (_cameraRig != null)
+                            _cameraRig.FocusOn(targetWorldPos);
+                    }
+                    TransitionTo(InteractionState.Idle);
+                },
+                onCancel: () =>
+                {
+                    _toolGhost?.SetToolGhostPositionSuspended(false);
+                    OseLog.Info("[V2] Tool action preview cancelled — returning to idle.");
+                    TransitionTo(InteractionState.Idle);
+                },
+                onActionDone: (doneTargetId, actionPos, actionRot) =>
+                {
+                    // For persistent tools (clamps), convert the cursor ghost in-place
+                    // so it stays at the target — no clone, no return animation.
+                    if (TryConvertGhostToPersistentAtAction(doneTargetId, actionPos, actionRot))
+                    {
+                        _previewController.SkipReturn();
+                    }
+                },
+                weldAxis: weldAxis,
+                weldLength: weldLength);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Called at the end of the action phase (before return animation).
+        /// For persistent tools (clamps), converts the cursor ghost in-place so it
+        /// stays at the target — no clone, no return animation. The bridge spawns
+        /// a fresh cursor ghost for subsequent targets.
+        /// Returns true if the ghost was converted (caller should skip return).
+        /// </summary>
+        // ── Persistent tool delegation ──
+
+        private bool TryConvertGhostToPersistentAtAction(string targetId, Vector3 actionPos, Quaternion actionRot)
+            => _persistentToolController?.TryConvertGhostAtAction(targetId, actionPos, actionRot) ?? false;
+
+        private void TrySpawnPersistentToolOnComplete(string targetId, Vector3 worldPos)
+            => _persistentToolController?.TryConvertGhostOnComplete(targetId, worldPos);
+
+        private void CleanUpPersistentToolsForStep(string stepId)
+            => _persistentToolController?.CleanUpForStep(stepId);
 
         private static bool IsToolModeLockedForParts()
         {
@@ -1116,9 +1361,9 @@ namespace OSE.Interaction.V2
             _settings.UseV2Interaction = !_settings.UseV2Interaction;
             OseLog.Info($"[V2 Debug] UseV2Interaction = {_settings.UseV2Interaction}");
 
-            // When toggling off, ensure legacy bridge releases control
-            if (!_settings.UseV2Interaction)
-                _legacyBridge?.Disconnect();
+            // When toggling off, ensure bridge releases control
+            if (!_settings.UseV2Interaction && _partBridge != null)
+                _partBridge.ExternalControlEnabled = false;
         }
     }
 }

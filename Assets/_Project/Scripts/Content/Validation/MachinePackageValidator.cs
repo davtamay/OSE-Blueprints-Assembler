@@ -854,6 +854,21 @@ namespace OSE.Content.Validation
             if (previewConfig.targetPlacements == null || previewConfig.partPlacements == null)
                 return;
 
+            var placementTargetIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            StepDefinition[] steps = package.GetSteps();
+            foreach (StepDefinition step in steps)
+            {
+                if (step == null || !string.Equals(step.completionType, "placement", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                string[] stepTargetIds = step.targetIds ?? Array.Empty<string>();
+                for (int i = 0; i < stepTargetIds.Length; i++)
+                {
+                    if (!string.IsNullOrWhiteSpace(stepTargetIds[i]))
+                        placementTargetIds.Add(stepTargetIds[i]);
+                }
+            }
+
             // Build partId -> placement lookup
             var partLookup = new Dictionary<string, PartPreviewPlacement>(StringComparer.OrdinalIgnoreCase);
             foreach (var pp in previewConfig.partPlacements)
@@ -879,6 +894,8 @@ namespace OSE.Content.Validation
             foreach (var tp in previewConfig.targetPlacements)
             {
                 if (tp == null || string.IsNullOrEmpty(tp.targetId))
+                    continue;
+                if (!placementTargetIds.Contains(tp.targetId))
                     continue;
                 if (!targetPartLookup.TryGetValue(tp.targetId, out string partId))
                     continue;

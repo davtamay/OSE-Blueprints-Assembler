@@ -27,7 +27,7 @@ namespace OSE.UI.Root
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(PackagePartSpawner))]
-    public sealed class PartInteractionBridge : MonoBehaviour
+    public sealed class PartInteractionBridge : MonoBehaviour, IPartActionBridge, IToolGhostProvider, IPersistentToolManager
     {
         private static readonly Color SelectedPartColor = new Color(1.0f, 0.85f, 0.2f, 1.0f);
         private static readonly Color GrabbedPartColor = new Color(1.0f, 0.65f, 0.1f, 1.0f);
@@ -49,13 +49,13 @@ namespace OSE.UI.Root
         private const float DragFloorEpsilon = 0.001f;
         private const float HintHighlightDuration = 6f;
         private const float HintHighlightPulseSpeed = 4f;
-        // Toggled automatically by V2 InteractionOrchestrator at runtime via reflection.
+        // Toggled automatically by V2 InteractionOrchestrator at runtime via IPartActionBridge.
         // When true, this bridge skips pointer input polling (V2 handles input instead).
         [HideInInspector] public bool ExternalControlEnabled;
 
         /// <summary>
         /// World position of the last successfully executed tool action target.
-        /// Updated by TryExternalToolAction; read by V2 orchestrator via reflection to focus camera.
+        /// Updated by TryExternalToolAction; read by V2 orchestrator via IPartActionBridge to focus camera.
         /// </summary>
         public Vector3 LastToolActionWorldPos => _lastToolActionWorldPos;
 
@@ -69,6 +69,8 @@ namespace OSE.UI.Root
         private PlaceStepHandler _placeHandler;
         private SubassemblyPlacementController _subassemblyPlacementController;
         private StepExecutionRouter _router;
+        private string _lastCameraFramedStepId;
+        private float _lastCameraFramedTime;
         [SerializeField] private InputActionRouter _actionRouter;
         [SerializeField] private SelectionService _selectionService;
         private bool _suppressSelectionEvents;
@@ -76,6 +78,9 @@ namespace OSE.UI.Root
         private int _selectionFrame; // frame when last selection happened
         private Vector2 _pointerDownScreenPos;
         private Camera _pointerDownCamera;
+
+        // ── Persistent tools (clamps, fixtures) that remain in scene across steps ──
+        private readonly List<PersistentToolInstance> _persistentTools = new();
 
         // Drag state
         private GameObject _draggedPart;
@@ -440,7 +445,7 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
-        /// Called by V2 orchestrator via LegacyBridgeAdapter. Attempts placement for the
+        /// Called by V2 orchestrator via IPartActionBridge. Attempts placement for the
         /// already-selected part at the given screen position without re-deriving click intent.
         /// </summary>
         public bool TryExternalClickToPlace(GameObject selectedPart, Vector2 screenPos)
@@ -452,13 +457,16 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
-        /// Called by V2 orchestrator via LegacyBridgeAdapter when tool mode is locked.
+        /// Called by V2 orchestrator via IPartActionBridge when tool mode is locked.
         /// Resolves the executable tool target for the current click without executing it.
         /// </summary>
-        public bool TryResolveExternalToolActionTarget(Vector2 screenPos, out string interactedTargetId, out Vector3 targetWorldPos)
+        public bool TryResolveExternalToolActionTarget(Vector2 screenPos, out string interactedTargetId, out Vector3 targetWorldPos, out Vector3 surfaceWorldPos, out Vector3 weldAxis, out float weldLength)
         {
             interactedTargetId = null;
             targetWorldPos = Vector3.zero;
+            surfaceWorldPos = Vector3.zero;
+            weldAxis = Vector3.zero;
+            weldLength = 0f;
 
             if (!Application.isPlaying)
                 return false;
@@ -469,11 +477,14 @@ namespace OSE.UI.Root
 
             interactedTargetId = resolvedTarget.TargetId;
             targetWorldPos = resolvedTarget.transform.position;
+            surfaceWorldPos = resolvedTarget.SurfaceWorldPos;
+            weldAxis = resolvedTarget.WeldAxis;
+            weldLength = resolvedTarget.WeldLength;
             return !string.IsNullOrWhiteSpace(interactedTargetId);
         }
 
         /// <summary>
-        /// Called by V2 orchestrator via LegacyBridgeAdapter when tool mode is locked.
+        /// Called by V2 orchestrator via IPartActionBridge when tool mode is locked.
         /// Executes the tool primary action for an explicitly resolved target id.
         /// </summary>
         public bool TryExecuteExternalToolAction(string interactedTargetId)
@@ -485,7 +496,7 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
-        /// Called by V2 orchestrator via LegacyBridgeAdapter when tool mode is locked.
+        /// Called by V2 orchestrator via IPartActionBridge when tool mode is locked.
         /// Directly executes the tool primary action using a direct hit on a spawned
         /// tool target sphere, bypassing the canonical action router to avoid wiring failures.
         /// </summary>
@@ -510,7 +521,7 @@ namespace OSE.UI.Root
 
             int spawnedTargetCount = _useHandler?.SpawnedTargetCount ?? 0;
             OseLog.Info($"[PartInteraction] TryExternalToolAction at ({screenPos.x:F0},{screenPos.y:F0}). Spawned={spawnedTargetCount}. Tool='{session.ToolController?.ActiveToolId ?? "none"}'.");
-            if (!TryResolveExternalToolActionTarget(screenPos, out string interactedTargetId, out Vector3 targetWorldPos))
+            if (!TryResolveExternalToolActionTarget(screenPos, out string interactedTargetId, out Vector3 targetWorldPos, out _, out _, out _))
             {
                 OseLog.Info($"[PartInteraction] TryExternalToolAction: no ready tool target resolved at ({screenPos.x:F0},{screenPos.y:F0}). Spawned={spawnedTargetCount}.");
                 return false;
@@ -562,7 +573,7 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
-        /// Called by V2 orchestrator via LegacyBridgeAdapter for any tap (regardless of
+        /// Called by V2 orchestrator via IPartActionBridge for any tap (regardless of
         /// selection or tool state). Delegates to ConnectStepHandler via the router.
         /// Returns true if a port sphere was hit and the interaction was consumed.
         /// </summary>
@@ -586,7 +597,7 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
-        /// Called by V2 orchestrator via LegacyBridgeAdapter while external control is enabled.
+        /// Called by V2 orchestrator via IPartActionBridge while external control is enabled.
         /// Shows hovered-part info while hovering; when hover clears, restores selected-part
         /// info if any, otherwise hides the panel.
         /// </summary>
@@ -647,6 +658,79 @@ namespace OSE.UI.Root
             {
                 ui.HidePartInfoPanel();
             }
+        }
+
+        // ── IPartActionBridge explicit implementations ──
+        // Maps interface names to the existing "External"-prefixed methods.
+
+        bool IPartActionBridge.ExternalControlEnabled
+        {
+            get => ExternalControlEnabled;
+            set => ExternalControlEnabled = value;
+        }
+
+        GameObject IPartActionBridge.NormalizeSelectableTarget(GameObject target)
+            => NormalizeExternalSelectableTarget(target);
+
+        bool IPartActionBridge.TryClickToPlace(GameObject selectedPart, Vector2 screenPos)
+            => TryExternalClickToPlace(selectedPart, screenPos);
+
+        bool IPartActionBridge.TryToolAction(Vector2 screenPos)
+            => TryExternalToolAction(screenPos);
+
+        bool IPartActionBridge.TryToolAction(string targetId)
+            => TryExecuteExternalToolAction(targetId);
+
+        bool IPartActionBridge.TryResolveToolActionTarget(
+            Vector2 screenPos, out string targetId, out Vector3 worldPos,
+            out Vector3 surfaceWorldPos, out Vector3 weldAxis, out float weldLength)
+            => TryResolveExternalToolActionTarget(screenPos, out targetId, out worldPos,
+                out surfaceWorldPos, out weldAxis, out weldLength);
+
+        bool IPartActionBridge.TryPipeConnection(Vector2 screenPos)
+            => TryExternalPipeConnection(screenPos);
+
+        void IPartActionBridge.SetHoveredPart(GameObject part)
+            => SetExternalHoveredPart(part);
+
+        bool IPartActionBridge.TryGetStepFocusBounds(string stepId, out Bounds bounds)
+        {
+            bounds = default;
+            if (!TryResolveStepFocusBounds(stepId, out bounds))
+                return false;
+            bounds.Expand(new Vector3(0.18f, 0.12f, 0.18f));
+            return true;
+        }
+
+        // ── Tool Action Preview bridge methods ──
+
+        /// <summary>Returns the tool cursor ghost GameObject, or null if none is active.</summary>
+        public GameObject GetToolGhost() => CursorManager.ToolGhost;
+
+        /// <summary>Number of tool targets completed in the current step (for I Do / We Do / You Do resolution).</summary>
+        public int GetCompletedToolTargetCount() => _useHandler?.CompletedTargetCountForStep ?? 0;
+
+        /// <summary>Increments the completed target count after a preview completes.</summary>
+        public void IncrementCompletedToolTargetCount() => _useHandler?.IncrementCompletedTargetCount();
+
+        /// <summary>Suspends/resumes cursor position updates during tool action preview.</summary>
+        public void SetToolGhostPositionSuspended(bool suspended) => CursorManager.PositionUpdateSuspended = suspended;
+
+        /// <summary>Returns the active profile for the current Use step, or null.</summary>
+        public string GetActiveToolProfile()
+        {
+            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+                return null;
+            var stepCtrl = session?.AssemblyController?.StepController;
+            return stepCtrl != null && stepCtrl.HasActiveStep ? stepCtrl.CurrentStepDefinition?.profile : null;
+        }
+
+        /// <summary>Returns the currently equipped tool ID, or null.</summary>
+        public string GetActiveToolId()
+        {
+            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+                return null;
+            return session?.ToolController?.ActiveToolId;
         }
 
         private bool TryFocusCameraOnToolTarget(Vector2 screenPos)
@@ -1971,17 +2055,42 @@ namespace OSE.UI.Root
 
         private void FocusCameraOnStepArea(string stepId, bool resetToDefaultView = false)
         {
-            if (string.IsNullOrWhiteSpace(stepId) || !TryResolveStepFocusBounds(stepId, out Bounds focusBounds))
+            // When V2 owns interaction, camera framing is handled by StepGuidanceService.
+            if (ExternalControlEnabled)
                 return;
 
+            // Debounce: skip if the same step was already framed within 0.5s.
+            // Multiple startup paths (StepStateChanged, SessionRestored, TrySyncStartupState)
+            // all trigger framing for the same step, causing visible re-animation.
+            float now = Time.unscaledTime;
+            if (string.Equals(_lastCameraFramedStepId, stepId, StringComparison.Ordinal)
+                && now - _lastCameraFramedTime < 0.5f)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(stepId) || !TryResolveStepFocusBounds(stepId, out Bounds focusBounds))
+            {
+                OseLog.Info($"[FocusCamera] Step '{stepId}' — no bounds resolved, skipping.");
+                return;
+            }
+
+            _lastCameraFramedStepId = stepId;
+            _lastCameraFramedTime = now;
+
             focusBounds.Expand(new Vector3(0.18f, 0.12f, 0.18f));
+            OseLog.Info($"[FocusCamera] Step '{stepId}' — bounds center={focusBounds.center}, size={focusBounds.size}");
 
             if (resetToDefaultView)
                 TryInvokeCameraMethod("ResetToDefault", Array.Empty<object>());
 
             if (TryInvokeCameraMethod("FrameBounds", new object[] { focusBounds }, typeof(Bounds)))
+            {
+                OseLog.Info($"[FocusCamera] Step '{stepId}' — FrameBounds applied.");
                 return;
+            }
 
+            OseLog.Info($"[FocusCamera] Step '{stepId}' — FrameBounds failed, falling back to FocusOn.");
             TryInvokeCameraMethod("FocusOn", new object[] { focusBounds.center, -1f }, typeof(Vector3), typeof(float));
             TryInvokeCameraMethod("FocusOn", new object[] { focusBounds.center }, typeof(Vector3));
         }
@@ -1996,6 +2105,7 @@ namespace OSE.UI.Root
 
             Bounds accumulatedBounds = default;
             bool hasBounds = false;
+            int ghostCount = 0, partCount = 0, toolTargetCount = 0, fallbackTargetCount = 0;
 
             void Encapsulate(Bounds candidate)
             {
@@ -2015,6 +2125,7 @@ namespace OSE.UI.Root
                 if (ghost == null)
                     continue;
 
+                ghostCount++;
                 if (TryGetRenderableBounds(ghost, out Bounds ghostBounds))
                     Encapsulate(ghostBounds);
                 else
@@ -2030,6 +2141,7 @@ namespace OSE.UI.Root
                 if (partGo == null || !partGo.activeInHierarchy)
                     continue;
 
+                partCount++;
                 if (TryGetRenderableBounds(partGo, out Bounds partBounds))
                     Encapsulate(partBounds);
                 else
@@ -2049,10 +2161,14 @@ namespace OSE.UI.Root
 
             if (_useHandler != null && _useHandler.TryGetSpawnedTargetBounds(out Bounds toolTargetBounds))
             {
+                toolTargetCount++;
                 Encapsulate(toolTargetBounds);
             }
 
-            if (!hasBounds && step.targetIds != null && step.targetIds.Length > 0)
+            // Always include target positions from previewConfig — not just as a fallback.
+            // For Use steps, tool action targets may not be spawned yet and this may be
+            // the only spatial data available.
+            if (step.targetIds != null && step.targetIds.Length > 0)
             {
                 Transform previewRoot = _setup != null ? _setup.PreviewRoot : null;
                 for (int i = 0; i < step.targetIds.Length; i++)
@@ -2061,11 +2177,48 @@ namespace OSE.UI.Root
                     if (targetPlacement == null)
                         continue;
 
+                    fallbackTargetCount++;
                     Vector3 localPos = new Vector3(targetPlacement.position.x, targetPlacement.position.y, targetPlacement.position.z);
                     Vector3 worldPos = previewRoot != null ? previewRoot.TransformPoint(localPos) : localPos;
                     Encapsulate(new Bounds(worldPos, Vector3.one * 0.08f));
                 }
             }
+
+            // Also include requiredToolActions target positions (these are often on
+            // different targets than targetIds, e.g. individual weld/bolt points).
+            if (step.requiredToolActions != null)
+            {
+                Transform previewRoot = _setup != null ? _setup.PreviewRoot : null;
+                for (int i = 0; i < step.requiredToolActions.Length; i++)
+                {
+                    ToolActionDefinition action = step.requiredToolActions[i];
+                    if (action == null || string.IsNullOrWhiteSpace(action.targetId))
+                        continue;
+
+                    TargetPreviewPlacement targetPlacement = _spawner.FindTargetPlacement(action.targetId);
+                    if (targetPlacement == null)
+                        continue;
+
+                    fallbackTargetCount++;
+                    Vector3 localPos = new Vector3(targetPlacement.position.x, targetPlacement.position.y, targetPlacement.position.z);
+                    Vector3 worldPos = previewRoot != null ? previewRoot.TransformPoint(localPos) : localPos;
+                    Encapsulate(new Bounds(worldPos, Vector3.one * 0.08f));
+                }
+            }
+
+            // Enforce a minimum bounds size so the camera gives a "third person"
+            // overview with enough surrounding context visible.
+            if (hasBounds)
+            {
+                const float minSize = 1.0f; // minimum full-size in any axis
+                Vector3 size = accumulatedBounds.size;
+                size.x = Mathf.Max(size.x, minSize);
+                size.y = Mathf.Max(size.y, minSize);
+                size.z = Mathf.Max(size.z, minSize);
+                accumulatedBounds.size = size;
+            }
+
+            OseLog.Info($"[FocusBounds] Step '{stepId}' — ghosts={ghostCount}, parts={partCount}/{focusPartIds.Count}, toolTargets={toolTargetCount}, fallbackTargets={fallbackTargetCount}, hasBounds={hasBounds}");
 
             if (hasBounds)
                 bounds = accumulatedBounds;
@@ -2860,7 +3013,7 @@ namespace OSE.UI.Root
 
         /// <summary>
         /// Returns the world position of the nearest tool action target within screen proximity.
-        /// Called by V2 orchestrator (via LegacyBridgeAdapter reflection) to focus the camera
+        /// Called by V2 orchestrator (via IPartActionBridge) to focus the camera
         /// on a pulsating sphere even when no tool is equipped.
         /// </summary>
         public bool TryGetNearestToolTargetWorldPos(Vector2 screenPos, out Vector3 worldPos)
@@ -4038,6 +4191,12 @@ namespace OSE.UI.Root
             public string RequiredToolId;
             public Vector3 BaseScale;
             public Vector3 BaseLocalPosition;
+            /// <summary>World position of the actual action point on the surface (before sphere lift).</summary>
+            public Vector3 SurfaceWorldPos;
+            /// <summary>Direction of the weld line in world space (normalized). Zero = point target.</summary>
+            public Vector3 WeldAxis;
+            /// <summary>Length of the weld line in scene units.</summary>
+            public float WeldLength;
         }
 
         internal sealed class GhostPlacementInfo : MonoBehaviour
@@ -4069,6 +4228,160 @@ namespace OSE.UI.Root
             return ServiceRegistry.TryGet<AssemblyRepositionController>(out var controller) &&
                    controller != null &&
                    controller.IsRepositioning;
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        // Persistent Tools — clamps/fixtures that stay in the scene across steps
+        // ════════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Places a persistent copy of the current tool ghost at the given target position.
+        /// The clone stays in the scene across step transitions until explicitly removed.
+        /// Used for clamps, fixtures, and other tools that remain on the workpiece.
+        /// </summary>
+        public GameObject SpawnPersistentTool(string toolId, string targetId, Vector3 worldPos, Quaternion rotation)
+        {
+            GameObject ghost = CursorManager.ToolGhost;
+            if (ghost == null)
+            {
+                OseLog.Warn($"[PersistentTool] Cannot spawn — no tool ghost for '{toolId}'.");
+                return null;
+            }
+
+            GameObject clone = Instantiate(ghost);
+            clone.name = $"PersistentTool_{toolId}_{targetId}";
+            clone.transform.SetPositionAndRotation(worldPos, rotation);
+
+            Transform previewRoot = _setup != null ? _setup.PreviewRoot : null;
+            if (previewRoot != null)
+                clone.transform.SetParent(previewRoot, worldPositionStays: true);
+
+            // Remove any colliders so it doesn't interfere with interaction
+            foreach (var col in clone.GetComponentsInChildren<Collider>())
+                Destroy(col);
+
+            // The cursor ghost is transparent (55%) — restore full opacity for the placed tool
+            MaterialHelper.RestoreOpaque(clone);
+
+            var info = clone.AddComponent<PersistentToolInstance>();
+            info.ToolId = toolId;
+            info.TargetId = targetId;
+
+            _persistentTools.Add(info);
+            OseLog.Info($"[PersistentTool] Spawned '{clone.name}' at {worldPos}. Total persistent: {_persistentTools.Count}");
+            return clone;
+        }
+
+        /// <summary>
+        /// Converts the current cursor ghost into a persistent tool at the given pose.
+        /// The ghost is detached from the cursor manager (not cloned), made opaque,
+        /// and registered as persistent. A new cursor ghost is then spawned for subsequent targets.
+        /// Returns the converted GameObject, or null if there was no ghost.
+        /// </summary>
+        public GameObject ConvertGhostToPersistent(string toolId, string targetId, Vector3 worldPos, Quaternion rotation)
+        {
+            GameObject ghost = CursorManager.DetachGhost();
+            if (ghost == null)
+            {
+                OseLog.Warn($"[PersistentTool] ConvertGhost — no ghost to detach for '{toolId}'.");
+                return null;
+            }
+
+            ghost.name = $"PersistentTool_{toolId}_{targetId}";
+            ghost.transform.SetParent(null, worldPositionStays: true);
+            ghost.transform.SetPositionAndRotation(worldPos, rotation);
+
+            Transform previewRoot = _setup != null ? _setup.PreviewRoot : null;
+            if (previewRoot != null)
+                ghost.transform.SetParent(previewRoot, worldPositionStays: true);
+
+            foreach (var col in ghost.GetComponentsInChildren<Collider>())
+                Destroy(col);
+
+            MaterialHelper.RestoreOpaque(ghost);
+            ghost.SetActive(true);
+
+            var info = ghost.AddComponent<PersistentToolInstance>();
+            info.ToolId = toolId;
+            info.TargetId = targetId;
+
+            _persistentTools.Add(info);
+            OseLog.Info($"[PersistentTool] Converted ghost → persistent '{ghost.name}' at {worldPos}. Total: {_persistentTools.Count}");
+
+            // Spawn a fresh cursor ghost for subsequent targets
+            RefreshToolGhostIndicator();
+
+            return ghost;
+        }
+
+        /// <summary>
+        /// Removes a persistent tool placed at the given target.
+        /// Returns true if a matching tool was found and destroyed.
+        /// </summary>
+        public bool RemovePersistentTool(string targetId)
+        {
+            for (int i = _persistentTools.Count - 1; i >= 0; i--)
+            {
+                var inst = _persistentTools[i];
+                if (inst == null) { _persistentTools.RemoveAt(i); continue; }
+                if (string.Equals(inst.TargetId, targetId, StringComparison.OrdinalIgnoreCase))
+                {
+                    OseLog.Info($"[PersistentTool] Removing '{inst.gameObject.name}' from target '{targetId}'.");
+                    _persistentTools.RemoveAt(i);
+                    Destroy(inst.gameObject);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Removes all persistent tools with the given tool id.
+        /// </summary>
+        public int RemoveAllPersistentTools(string toolId = null)
+        {
+            int removed = 0;
+            for (int i = _persistentTools.Count - 1; i >= 0; i--)
+            {
+                var inst = _persistentTools[i];
+                if (inst == null) { _persistentTools.RemoveAt(i); continue; }
+                if (toolId == null || string.Equals(inst.ToolId, toolId, StringComparison.OrdinalIgnoreCase))
+                {
+                    Destroy(inst.gameObject);
+                    _persistentTools.RemoveAt(i);
+                    removed++;
+                }
+            }
+            if (removed > 0)
+                OseLog.Info($"[PersistentTool] Removed {removed} persistent tool(s) (filter='{toolId ?? "all"}').");
+            return removed;
+        }
+
+        /// <summary>Returns how many persistent tools of the given type are currently placed.</summary>
+        public int GetPersistentToolCount(string toolId = null)
+        {
+            if (toolId == null) return _persistentTools.Count;
+            int count = 0;
+            for (int i = 0; i < _persistentTools.Count; i++)
+                if (_persistentTools[i] != null && string.Equals(_persistentTools[i].ToolId, toolId, StringComparison.OrdinalIgnoreCase))
+                    count++;
+            return count;
+        }
+
+        /// <summary>Checks if a persistent tool is placed at the given target.</summary>
+        public bool HasPersistentToolAt(string targetId)
+        {
+            for (int i = 0; i < _persistentTools.Count; i++)
+                if (_persistentTools[i] != null && string.Equals(_persistentTools[i].TargetId, targetId, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            return false;
+        }
+
+        /// <summary>Marker component for persistent tool instances in the scene.</summary>
+        internal sealed class PersistentToolInstance : MonoBehaviour
+        {
+            public string ToolId;
+            public string TargetId;
         }
 
     }

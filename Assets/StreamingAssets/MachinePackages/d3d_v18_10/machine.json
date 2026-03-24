@@ -4,10 +4,10 @@
     "machine": {
         "id": "d3d_v18_10",
         "name": "D3D v18.10",
-        "displayName": "D3D v18.10 - Frame, Cube Joining, and Axes Stage 01",
-        "description": "D3D frame fabrication, cube joining, and first axes stage. After the welded frame is accepted, the package mounts the first Y-axis pair to the frame, fits the first X-axis module between them, tensions the belt, and checks the resulting motion span.",
+        "displayName": "D3D v18.10 - Frame, Cube Joining, Axes Stage 01, and Extruder Stage 01",
+        "description": "D3D frame fabrication, cube joining, first axes stage, and first extruder module stage. After the welded frame is accepted and the first Y/X axis relationships are established, the package stages a Titan Aero core, attaches the nozzle, builds the fan and sensor-side hardware, and checks the resulting nozzle module before later carriage integration.",
         "difficulty": "beginner",
-        "estimatedBuildTimeMinutes": 145,
+        "estimatedBuildTimeMinutes": 170,
         "learningObjectives": [
             "Recognize the stock dimensions used to fabricate the D3D frame sides",
             "Place all 24 flat bars in their real 14 inch square side geometry",
@@ -18,17 +18,20 @@
             "Check, hold, tack, seam-weld, clean up, and recheck the stacked cube before motion hardware is added",
             "Mount the first Y-left and Y-right axis units to the accepted frame",
             "Fit the first X-axis module tightly between the completed Y-axis pair",
-            "Lock, tension, and check the first X-axis module without visible gap or binding"
+            "Lock, tension, and check the first X-axis module without visible gap or binding",
+            "Build the first Titan Aero nozzle, fan, and sensor module before later carriage integration"
         ],
         "recommendedMode": "guided",
         "entryAssemblyIds": [
             "assembly_d3d_frame",
-            "assembly_d3d_axes_stage_01"
+            "assembly_d3d_axes_stage_01",
+            "assembly_d3d_extruder_stage_01"
         ],
         "prerequisiteNotes": [
             "The six panel work zones are a tighter raised teaching layout so small real-size stock remains readable and selectable while preserving exact panel geometry.",
             "This package now covers frame fabrication, cube joining, and a first axes stage.",
-            "Axes Stage 01 uses source-backed procedure order and mounting relationships, but the axis module shapes remain schematic placeholders until exact v18.10 axis dimensions are extracted."
+            "Axes Stage 01 uses source-backed procedure order and mounting relationships, but the axis module shapes remain schematic placeholders until exact v18.10 axis dimensions are extracted.",
+            "Extruder Stage 01 locks the Titan Aero path and stops at the nozzle / fan / sensor module before the unresolved v18.10 carriage-mount variant is authored."
         ],
         "sourceReferences": [
             {
@@ -79,6 +82,27 @@
                 "title": "D3D Final Assembly Source Deck",
                 "referencePath": "https://docs.google.com/presentation/d/1LRL6PQtWm0LT6j6YNjLNjDAdbKkd3TmO8_aOBdfskhI/edit",
                 "notes": "Confirms the X-axis mounts between the completed Y axes and that the side axes mount directly to the frame."
+            },
+            {
+                "id": "source_d3d_bom",
+                "type": "reference_doc",
+                "title": "D3D v18.10 Bill of Materials",
+                "referencePath": "https://wiki.opensourceecology.org/wiki/Folgertech_Prusa_i3_Upgrade_Cost_to_D3D",
+                "notes": "Locks the Titan Aero vs Prusa i3 MK2 extruder options for the v18.10 path."
+            },
+            {
+                "id": "source_d3d_extruder",
+                "type": "reference_doc",
+                "title": "OSE 3D Printer Extruder",
+                "referencePath": "https://wiki.opensourceecology.org/wiki/3D_Printer_Extruder",
+                "notes": "Provides the Titan Aero module part stack including the nozzle assembly, blower, sensor holder, and 8 mm sensor."
+            },
+            {
+                "id": "source_d3d_v19_04",
+                "type": "reference_doc",
+                "title": "D3D v19.04",
+                "referencePath": "https://wiki.opensourceecology.org/wiki/D3D_v19.04",
+                "notes": "Provides the published extruder build sequence: build nozzle, build fan attachment, and add sensor holder."
             }
         ],
         "packageVersion": null
@@ -171,6 +195,31 @@
                 "assembly_d3d_frame"
             ],
             "learningFocus": "Direct frame mounting of the first Y-axis pair, the source-backed X-axis fitting order, constrained span adjustment, belt tensioning, and the first motion-stage checks."
+        },
+        {
+            "id": "assembly_d3d_extruder_stage_01",
+            "name": "D3D Extruder Stage 01",
+            "description": "Stages the Titan Aero core, attaches the nozzle assembly, builds the first fan and sensor-side attachments, inserts the 8 mm sensor, and verifies clearance before later carriage integration.",
+            "machineId": "d3d_v18_10",
+            "subassemblyIds": [
+                "subassembly_titan_aero_core",
+                "subassembly_extruder_sensor_and_fan_attachment",
+                "subassembly_extruder_nozzle_module"
+            ],
+            "stepIds": [
+                "step_stage_titan_aero_core",
+                "step_attach_extruder_nozzle_assembly",
+                "step_place_extruder_blower_attachment",
+                "step_secure_extruder_blower_attachment",
+                "step_place_extruder_sensor_holder",
+                "step_secure_extruder_sensor_holder",
+                "step_place_extruder_8mm_sensor",
+                "step_check_extruder_nozzle_module_clearance"
+            ],
+            "dependencyAssemblyIds": [
+                "assembly_d3d_axes_stage_01"
+            ],
+            "learningFocus": "Titan Aero module decomposition, nozzle-side extruder sequencing, first fan and sensor-side attachments, and a conservative service-clearance check before the unresolved carriage-mount variant is introduced."
         }
     ],
     "subassemblies": [
@@ -403,6 +452,64 @@
                 "step_check_x_axis_tightness_and_travel"
             ],
             "milestoneMessage": "X-axis fitted, tensioned, and checked."
+        },
+        {
+            "id": "subassembly_titan_aero_core",
+            "name": "Titan Aero Core",
+            "assemblyId": "assembly_d3d_extruder_stage_01",
+            "description": "Stages the Titan Aero core and adds the nozzle assembly as the base of the first extruder module slice.",
+            "partIds": [
+                "d3d_titan_aero_core",
+                "d3d_extruder_nozzle_assembly"
+            ],
+            "stepIds": [
+                "step_stage_titan_aero_core",
+                "step_attach_extruder_nozzle_assembly"
+            ],
+            "milestoneMessage": "Titan Aero core and nozzle assembly staged."
+        },
+        {
+            "id": "subassembly_extruder_sensor_and_fan_attachment",
+            "name": "Extruder Sensor and Fan Attachment",
+            "assemblyId": "assembly_d3d_extruder_stage_01",
+            "description": "Adds the first print-cooling blower, sensor holder, and 8 mm sensor around the staged Titan Aero core.",
+            "partIds": [
+                "d3d_extruder_5015_blower",
+                "d3d_extruder_sensor_holder",
+                "d3d_extruder_8mm_sensor"
+            ],
+            "stepIds": [
+                "step_place_extruder_blower_attachment",
+                "step_secure_extruder_blower_attachment",
+                "step_place_extruder_sensor_holder",
+                "step_secure_extruder_sensor_holder",
+                "step_place_extruder_8mm_sensor"
+            ],
+            "milestoneMessage": "First fan and sensor-side hardware added to the nozzle module."
+        },
+        {
+            "id": "subassembly_extruder_nozzle_module",
+            "name": "Extruder Nozzle Module",
+            "assemblyId": "assembly_d3d_extruder_stage_01",
+            "description": "Owns the first Titan Aero nozzle, blower, sensor-holder, and 8 mm sensor sequence before later carriage integration.",
+            "partIds": [
+                "d3d_titan_aero_core",
+                "d3d_extruder_nozzle_assembly",
+                "d3d_extruder_5015_blower",
+                "d3d_extruder_sensor_holder",
+                "d3d_extruder_8mm_sensor"
+            ],
+            "stepIds": [
+                "step_stage_titan_aero_core",
+                "step_attach_extruder_nozzle_assembly",
+                "step_place_extruder_blower_attachment",
+                "step_secure_extruder_blower_attachment",
+                "step_place_extruder_sensor_holder",
+                "step_secure_extruder_sensor_holder",
+                "step_place_extruder_8mm_sensor",
+                "step_check_extruder_nozzle_module_clearance"
+            ],
+            "milestoneMessage": "Titan Aero nozzle module built and checked for first-pass clearance."
         }
     ],
     "partTemplates": [
@@ -470,6 +577,51 @@
             "function": "Belt peg reinserted after tension is set.",
             "quantity": 1,
             "assetRef": "assets/parts/d3d_axis_belt_peg_placeholder.glb"
+        },
+        {
+            "id": "template_d3d_titan_aero_core",
+            "name": "Titan Aero Core",
+            "category": "custom",
+            "material": "Extruder core placeholder",
+            "function": "Represents the staged Titan Aero body and motor assembly before carriage mounting.",
+            "quantity": 1,
+            "assetRef": "assets/parts/d3d_titan_aero_core_placeholder.glb"
+        },
+        {
+            "id": "template_d3d_extruder_nozzle_assembly",
+            "name": "Extruder Nozzle Assembly",
+            "category": "custom",
+            "material": "Nozzle assembly placeholder",
+            "function": "Represents the nozzle-side assembly attached to the Titan Aero core.",
+            "quantity": 1,
+            "assetRef": "assets/parts/d3d_extruder_nozzle_assembly_placeholder.glb"
+        },
+        {
+            "id": "template_d3d_extruder_blower",
+            "name": "Extruder 5015 Blower",
+            "category": "custom",
+            "material": "Fan attachment placeholder",
+            "function": "Represents the print-cooling blower added during the first extruder slice.",
+            "quantity": 1,
+            "assetRef": "assets/parts/d3d_extruder_blower_approved.glb"
+        },
+        {
+            "id": "template_d3d_sensor_holder",
+            "name": "Extruder Sensor Holder",
+            "category": "custom",
+            "material": "Sensor holder placeholder",
+            "function": "Represents the printed holder that positions the 8 mm sensor near the nozzle-side module.",
+            "quantity": 1,
+            "assetRef": "assets/parts/d3d_extruder_sensor_holder_placeholder.glb"
+        },
+        {
+            "id": "template_d3d_8mm_sensor",
+            "name": "8 mm Sensor",
+            "category": "custom",
+            "material": "Sensor placeholder",
+            "function": "Represents the 8 mm sensor inserted into the holder during the first extruder slice.",
+            "quantity": 1,
+            "assetRef": "assets/parts/d3d_8mm_sensor_approved.glb"
         }
     ],
     "parts": [
@@ -700,6 +852,36 @@
             "name": "X-Axis Belt Peg",
             "function": "Belt peg reinserted after the belt is tensioned.",
             "templateId": "template_d3d_axis_belt_peg"
+        },
+        {
+            "id": "d3d_titan_aero_core",
+            "name": "Titan Aero Core",
+            "function": "Staged Titan Aero body and motor assembly used as the base of the first extruder module slice.",
+            "templateId": "template_d3d_titan_aero_core"
+        },
+        {
+            "id": "d3d_extruder_nozzle_assembly",
+            "name": "Extruder Nozzle Assembly",
+            "function": "Nozzle-side assembly added to the staged Titan Aero core.",
+            "templateId": "template_d3d_extruder_nozzle_assembly"
+        },
+        {
+            "id": "d3d_extruder_5015_blower",
+            "name": "Extruder 5015 Blower",
+            "function": "Print-cooling blower added on the fan side of the first Titan Aero module.",
+            "templateId": "template_d3d_extruder_blower"
+        },
+        {
+            "id": "d3d_extruder_sensor_holder",
+            "name": "Extruder Sensor Holder",
+            "function": "Holder that positions the 8 mm sensor relative to the nozzle module.",
+            "templateId": "template_d3d_sensor_holder"
+        },
+        {
+            "id": "d3d_extruder_8mm_sensor",
+            "name": "Extruder 8 mm Sensor",
+            "function": "8 mm sensor inserted into the holder during the first extruder slice.",
+            "templateId": "template_d3d_8mm_sensor"
         }
     ],
     "tools": [
@@ -779,6 +961,20 @@
             "category": "hand_tool",
             "purpose": "Pulls the X-axis belt to final tension.",
             "assetRef": "assets/tools/tool_pliers.glb"
+        },
+        {
+            "id": "tool_hex_driver_metric_small",
+            "name": "Small Metric Hex Driver",
+            "category": "hand_tool",
+            "purpose": "Secures the small holder-side fasteners during the first Titan Aero module build.",
+            "assetRef": "assets/tools/tool_allen_key_metric.glb"
+        },
+        {
+            "id": "tool_screwdriver_small",
+            "name": "Small Screwdriver",
+            "category": "hand_tool",
+            "purpose": "Secures the blower attachment during the first Titan Aero module build.",
+            "assetRef": "assets/tools/tool_allen_key_metric.glb"
         }
     ],
     "steps": [
@@ -3496,7 +3692,7 @@
             "assemblyId": "assembly_d3d_axes_stage_01",
             "subassemblyId": "subassembly_x_axis_fitting",
             "sequenceIndex": 48,
-            "instructionText": "Adjust the X-axis until the motor-holder side seats tightly to the Y-left side while the anchored idler side remains fixed on Y-right.",
+            "instructionText": "Drag the yellow motor-holder side left along the fit guide until it reaches the green final-fit marker and seats against the Y-left side.",
             "completionType": "placement",
             "family": "Place",
             "profile": "AxisFit",
@@ -3636,6 +3832,172 @@
                 "target_x_axis_qc_left_travel",
                 "target_x_axis_qc_right_travel",
                 "target_x_axis_qc_y_left_endstop"
+            ]
+        },
+        {
+            "id": "step_stage_titan_aero_core",
+            "name": "Stage the Titan Aero core",
+            "assemblyId": "assembly_d3d_extruder_stage_01",
+            "subassemblyId": "subassembly_titan_aero_core",
+            "sequenceIndex": 53,
+            "instructionText": "Place the Titan Aero core into the extruder work zone so the nozzle, fan, and sensor-side parts can be added in sequence.",
+            "completionType": "placement",
+            "family": "Place",
+            "requiredPartIds": [
+                "d3d_titan_aero_core"
+            ],
+            "targetIds": [
+                "target_titan_aero_core_stage"
+            ]
+        },
+        {
+            "id": "step_attach_extruder_nozzle_assembly",
+            "name": "Attach the nozzle assembly",
+            "assemblyId": "assembly_d3d_extruder_stage_01",
+            "subassemblyId": "subassembly_titan_aero_core",
+            "sequenceIndex": 54,
+            "instructionText": "Place the nozzle assembly onto the staged Titan Aero core before any cooling or sensor-side hardware is added.",
+            "completionType": "placement",
+            "family": "Place",
+            "requiredPartIds": [
+                "d3d_extruder_nozzle_assembly"
+            ],
+            "targetIds": [
+                "target_extruder_nozzle_attach"
+            ]
+        },
+        {
+            "id": "step_place_extruder_blower_attachment",
+            "name": "Place the print-cooling blower",
+            "assemblyId": "assembly_d3d_extruder_stage_01",
+            "subassemblyId": "subassembly_extruder_sensor_and_fan_attachment",
+            "sequenceIndex": 55,
+            "instructionText": "Place the 5015 blower on the fan side of the nozzle module before securing its mount points.",
+            "completionType": "placement",
+            "family": "Place",
+            "requiredPartIds": [
+                "d3d_extruder_5015_blower"
+            ],
+            "targetIds": [
+                "target_extruder_blower_attach"
+            ]
+        },
+        {
+            "id": "step_secure_extruder_blower_attachment",
+            "name": "Secure the blower attachment",
+            "assemblyId": "assembly_d3d_extruder_stage_01",
+            "subassemblyId": "subassembly_extruder_sensor_and_fan_attachment",
+            "sequenceIndex": 56,
+            "instructionText": "Tighten the blower-side fasteners only after the blower body is seated on the nozzle module.",
+            "completionType": "tool_action",
+            "family": "Use",
+            "profile": "Torque",
+            "relevantToolIds": [
+                "tool_screwdriver_small"
+            ],
+            "targetIds": [
+                "target_extruder_blower_mount_a",
+                "target_extruder_blower_mount_b"
+            ],
+            "targetOrder": "sequential",
+            "requiredToolActions": [
+                {
+                    "id": "action_extruder_blower_mount_a",
+                    "toolId": "tool_screwdriver_small",
+                    "actionType": "tighten",
+                    "targetId": "target_extruder_blower_mount_a",
+                    "requiredCount": 1
+                },
+                {
+                    "id": "action_extruder_blower_mount_b",
+                    "toolId": "tool_screwdriver_small",
+                    "actionType": "tighten",
+                    "targetId": "target_extruder_blower_mount_b",
+                    "requiredCount": 1
+                }
+            ]
+        },
+        {
+            "id": "step_place_extruder_sensor_holder",
+            "name": "Place the sensor holder",
+            "assemblyId": "assembly_d3d_extruder_stage_01",
+            "subassemblyId": "subassembly_extruder_sensor_and_fan_attachment",
+            "sequenceIndex": 57,
+            "instructionText": "Place the sensor holder on the nozzle module after the blower side is established.",
+            "completionType": "placement",
+            "family": "Place",
+            "requiredPartIds": [
+                "d3d_extruder_sensor_holder"
+            ],
+            "targetIds": [
+                "target_extruder_sensor_holder_attach"
+            ]
+        },
+        {
+            "id": "step_secure_extruder_sensor_holder",
+            "name": "Secure the sensor holder",
+            "assemblyId": "assembly_d3d_extruder_stage_01",
+            "subassemblyId": "subassembly_extruder_sensor_and_fan_attachment",
+            "sequenceIndex": 58,
+            "instructionText": "Tighten the small holder-side fasteners so the sensor holder is fixed before the sensor is inserted.",
+            "completionType": "tool_action",
+            "family": "Use",
+            "profile": "Torque",
+            "relevantToolIds": [
+                "tool_hex_driver_metric_small"
+            ],
+            "targetIds": [
+                "target_extruder_sensor_holder_fastener_a",
+                "target_extruder_sensor_holder_fastener_b"
+            ],
+            "targetOrder": "sequential",
+            "requiredToolActions": [
+                {
+                    "id": "action_extruder_sensor_holder_fastener_a",
+                    "toolId": "tool_hex_driver_metric_small",
+                    "actionType": "tighten",
+                    "targetId": "target_extruder_sensor_holder_fastener_a",
+                    "requiredCount": 1
+                },
+                {
+                    "id": "action_extruder_sensor_holder_fastener_b",
+                    "toolId": "tool_hex_driver_metric_small",
+                    "actionType": "tighten",
+                    "targetId": "target_extruder_sensor_holder_fastener_b",
+                    "requiredCount": 1
+                }
+            ]
+        },
+        {
+            "id": "step_place_extruder_8mm_sensor",
+            "name": "Place the 8 mm sensor",
+            "assemblyId": "assembly_d3d_extruder_stage_01",
+            "subassemblyId": "subassembly_extruder_sensor_and_fan_attachment",
+            "sequenceIndex": 59,
+            "instructionText": "Place the 8 mm sensor into the holder after the holder is secured.",
+            "completionType": "placement",
+            "family": "Place",
+            "requiredPartIds": [
+                "d3d_extruder_8mm_sensor"
+            ],
+            "targetIds": [
+                "target_extruder_sensor_insert"
+            ]
+        },
+        {
+            "id": "step_check_extruder_nozzle_module_clearance",
+            "name": "Check nozzle-module clearance",
+            "assemblyId": "assembly_d3d_extruder_stage_01",
+            "subassemblyId": "subassembly_extruder_nozzle_module",
+            "sequenceIndex": 60,
+            "instructionText": "Inspect the completed nozzle module and confirm the nozzle, blower side, and sensor side all keep clear service space for later carriage integration.",
+            "completionType": "confirmation",
+            "family": "Confirm",
+            "viewMode": "Inspect",
+            "targetIds": [
+                "target_extruder_clearance_nozzle",
+                "target_extruder_clearance_fan",
+                "target_extruder_clearance_sensor"
             ]
         }
     ],
@@ -4988,7 +5350,13 @@
                 "bottom",
                 "weld",
                 "upper_left"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_bottom_weld_lower_right",
@@ -5001,7 +5369,13 @@
                 "bottom",
                 "weld",
                 "lower_right"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_bottom_weld_upper_right",
@@ -5014,7 +5388,13 @@
                 "bottom",
                 "weld",
                 "upper_right"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_bottom_weld_lower_left",
@@ -5027,7 +5407,13 @@
                 "bottom",
                 "weld",
                 "lower_left"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_top_clamp_panel",
@@ -5052,7 +5438,13 @@
                 "top",
                 "weld",
                 "upper_left"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_top_weld_lower_right",
@@ -5065,7 +5457,13 @@
                 "top",
                 "weld",
                 "lower_right"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_top_weld_upper_right",
@@ -5078,7 +5476,13 @@
                 "top",
                 "weld",
                 "upper_right"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_top_weld_lower_left",
@@ -5091,7 +5495,13 @@
                 "top",
                 "weld",
                 "lower_left"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_left_clamp_panel",
@@ -5116,7 +5526,13 @@
                 "left",
                 "weld",
                 "upper_left"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_left_weld_lower_right",
@@ -5129,7 +5545,13 @@
                 "left",
                 "weld",
                 "lower_right"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_left_weld_upper_right",
@@ -5142,7 +5564,13 @@
                 "left",
                 "weld",
                 "upper_right"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_left_weld_lower_left",
@@ -5155,7 +5583,13 @@
                 "left",
                 "weld",
                 "lower_left"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_right_clamp_panel",
@@ -5180,7 +5614,13 @@
                 "right",
                 "weld",
                 "upper_left"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_right_weld_lower_right",
@@ -5193,7 +5633,13 @@
                 "right",
                 "weld",
                 "lower_right"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_right_weld_upper_right",
@@ -5206,7 +5652,13 @@
                 "right",
                 "weld",
                 "upper_right"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_right_weld_lower_left",
@@ -5219,7 +5671,13 @@
                 "right",
                 "weld",
                 "lower_left"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_front_clamp_panel",
@@ -5244,7 +5702,13 @@
                 "front",
                 "weld",
                 "upper_left"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_front_weld_lower_right",
@@ -5257,7 +5721,13 @@
                 "front",
                 "weld",
                 "lower_right"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_front_weld_upper_right",
@@ -5270,7 +5740,13 @@
                 "front",
                 "weld",
                 "upper_right"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_front_weld_lower_left",
@@ -5283,7 +5759,13 @@
                 "front",
                 "weld",
                 "lower_left"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_rear_clamp_panel",
@@ -5308,7 +5790,13 @@
                 "rear",
                 "weld",
                 "upper_left"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_rear_weld_lower_right",
@@ -5321,7 +5809,13 @@
                 "rear",
                 "weld",
                 "lower_right"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_rear_weld_upper_right",
@@ -5334,7 +5828,13 @@
                 "rear",
                 "weld",
                 "upper_right"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_rear_weld_lower_left",
@@ -5347,7 +5847,13 @@
                 "rear",
                 "weld",
                 "lower_left"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_cube_bottom_side",
@@ -5497,7 +6003,13 @@
                 "weld",
                 "lower",
                 "front_left"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_cube_weld_lower_rear_right",
@@ -5511,7 +6023,13 @@
                 "weld",
                 "lower",
                 "rear_right"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_cube_weld_lower_front_right",
@@ -5525,7 +6043,13 @@
                 "weld",
                 "lower",
                 "front_right"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_cube_weld_lower_rear_left",
@@ -5539,7 +6063,13 @@
                 "weld",
                 "lower",
                 "rear_left"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_cube_weld_upper_front_left",
@@ -5553,7 +6083,13 @@
                 "weld",
                 "upper",
                 "front_left"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_cube_weld_upper_rear_right",
@@ -5567,7 +6103,13 @@
                 "weld",
                 "upper",
                 "rear_right"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_cube_weld_upper_front_right",
@@ -5581,7 +6123,13 @@
                 "weld",
                 "upper",
                 "front_right"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_cube_weld_upper_rear_left",
@@ -5595,7 +6143,13 @@
                 "weld",
                 "upper",
                 "rear_left"
-            ]
+            ],
+            "weldAxis": {
+                "x": 0,
+                "y": 1,
+                "z": 0
+            },
+            "weldLength": 0.025
         },
         {
             "id": "target_cube_seam_lower_front_left",
@@ -5908,6 +6462,75 @@
             "id": "target_x_axis_qc_y_left_endstop",
             "name": "X-Axis QC Y-Left Endstop",
             "anchorRef": "anchors/d3d/axes/x_axis/qc_y_left_endstop"
+        },
+        {
+            "id": "target_titan_aero_core_stage",
+            "name": "Titan Aero Core Stage",
+            "anchorRef": "anchors/d3d/extruder/core/stage",
+            "associatedPartId": "d3d_titan_aero_core"
+        },
+        {
+            "id": "target_extruder_nozzle_attach",
+            "name": "Extruder Nozzle Attach",
+            "anchorRef": "anchors/d3d/extruder/nozzle/attach",
+            "associatedPartId": "d3d_extruder_nozzle_assembly"
+        },
+        {
+            "id": "target_extruder_blower_attach",
+            "name": "Extruder Blower Attach",
+            "anchorRef": "anchors/d3d/extruder/blower/attach",
+            "associatedPartId": "d3d_extruder_5015_blower"
+        },
+        {
+            "id": "target_extruder_blower_mount_a",
+            "name": "Extruder Blower Mount A",
+            "anchorRef": "anchors/d3d/extruder/blower/mount_a",
+            "associatedPartId": "d3d_extruder_5015_blower"
+        },
+        {
+            "id": "target_extruder_blower_mount_b",
+            "name": "Extruder Blower Mount B",
+            "anchorRef": "anchors/d3d/extruder/blower/mount_b",
+            "associatedPartId": "d3d_extruder_5015_blower"
+        },
+        {
+            "id": "target_extruder_sensor_holder_attach",
+            "name": "Extruder Sensor Holder Attach",
+            "anchorRef": "anchors/d3d/extruder/sensor_holder/attach",
+            "associatedPartId": "d3d_extruder_sensor_holder"
+        },
+        {
+            "id": "target_extruder_sensor_holder_fastener_a",
+            "name": "Extruder Sensor Holder Fastener A",
+            "anchorRef": "anchors/d3d/extruder/sensor_holder/fastener_a",
+            "associatedPartId": "d3d_extruder_sensor_holder"
+        },
+        {
+            "id": "target_extruder_sensor_holder_fastener_b",
+            "name": "Extruder Sensor Holder Fastener B",
+            "anchorRef": "anchors/d3d/extruder/sensor_holder/fastener_b",
+            "associatedPartId": "d3d_extruder_sensor_holder"
+        },
+        {
+            "id": "target_extruder_sensor_insert",
+            "name": "Extruder Sensor Insert",
+            "anchorRef": "anchors/d3d/extruder/sensor/insert",
+            "associatedPartId": "d3d_extruder_8mm_sensor"
+        },
+        {
+            "id": "target_extruder_clearance_nozzle",
+            "name": "Extruder Nozzle Clearance Check",
+            "anchorRef": "anchors/d3d/extruder/qc/nozzle"
+        },
+        {
+            "id": "target_extruder_clearance_fan",
+            "name": "Extruder Fan Clearance Check",
+            "anchorRef": "anchors/d3d/extruder/qc/fan"
+        },
+        {
+            "id": "target_extruder_clearance_sensor",
+            "name": "Extruder Sensor Clearance Check",
+            "anchorRef": "anchors/d3d/extruder/qc/sensor"
         }
     ],
     "challengeConfig": {
@@ -5921,6 +6544,10 @@
     "assetManifest": {
         "modelRefs": [
             "assets/parts/d3d_frame_flat_bar_approved.glb",
+
+            "assets/parts/d3d_extruder_blower_approved.glb",
+
+            "assets/parts/d3d_8mm_sensor_approved.glb",
             "assets/tools/tool_framing_square.glb",
             "assets/tools/tool_locking_clamp.glb",
             "assets/tools/tool_mig_torch.glb",
@@ -7024,7 +7651,7 @@
                     "a": 1.0
                 },
                 "playPosition": {
-                    "x": 0.145,
+                    "x": 0.105,
                     "y": 0.804,
                     "z": 0.0
                 },
@@ -7106,7 +7733,7 @@
                     "a": 1.0
                 },
                 "playPosition": {
-                    "x": -0.105,
+                    "x": -0.08,
                     "y": 0.804,
                     "z": 0.0
                 },
@@ -7161,6 +7788,211 @@
                     "x": 0.012,
                     "y": 0.012,
                     "z": 0.03
+                }
+            },
+            {
+                "partId": "d3d_titan_aero_core",
+                "startPosition": {
+                    "x": -0.24,
+                    "y": 0.82,
+                    "z": -0.6
+                },
+                "startRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "startScale": {
+                    "x": 0.08,
+                    "y": 0.11,
+                    "z": 0.065
+                },
+                "color": {
+                    "r": 0.58,
+                    "g": 0.58,
+                    "b": 0.62,
+                    "a": 1.0
+                },
+                "playPosition": {
+                    "x": 0.0,
+                    "y": 0.82,
+                    "z": -0.42
+                },
+                "playRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "playScale": {
+                    "x": 0.08,
+                    "y": 0.11,
+                    "z": 0.065
+                }
+            },
+            {
+                "partId": "d3d_extruder_nozzle_assembly",
+                "startPosition": {
+                    "x": -0.11,
+                    "y": 0.76,
+                    "z": -0.61
+                },
+                "startRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "startScale": {
+                    "x": 0.028,
+                    "y": 0.05,
+                    "z": 0.028
+                },
+                "color": {
+                    "r": 0.72,
+                    "g": 0.48,
+                    "b": 0.26,
+                    "a": 1.0
+                },
+                "playPosition": {
+                    "x": 0.0,
+                    "y": 0.755,
+                    "z": -0.42
+                },
+                "playRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "playScale": {
+                    "x": 0.028,
+                    "y": 0.05,
+                    "z": 0.028
+                }
+            },
+            {
+                "partId": "d3d_extruder_5015_blower",
+                "startPosition": {
+                    "x": 0.18,
+                    "y": 0.85,
+                    "z": -0.62
+                },
+                "startRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "startScale": {
+                    "x": 0.06,
+                    "y": 0.055,
+                    "z": 0.06
+                },
+                "color": {
+                    "r": 0.35,
+                    "g": 0.55,
+                    "b": 0.86,
+                    "a": 1.0
+                },
+                "playPosition": {
+                    "x": 0.082,
+                    "y": 0.848,
+                    "z": -0.442
+                },
+                "playRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "playScale": {
+                    "x": 0.06,
+                    "y": 0.055,
+                    "z": 0.06
+                }
+            },
+            {
+                "partId": "d3d_extruder_sensor_holder",
+                "startPosition": {
+                    "x": -0.18,
+                    "y": 0.86,
+                    "z": -0.59
+                },
+                "startRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "startScale": {
+                    "x": 0.04,
+                    "y": 0.03,
+                    "z": 0.025
+                },
+                "color": {
+                    "r": 0.46,
+                    "g": 0.46,
+                    "b": 0.5,
+                    "a": 1.0
+                },
+                "playPosition": {
+                    "x": -0.075,
+                    "y": 0.855,
+                    "z": -0.41
+                },
+                "playRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "playScale": {
+                    "x": 0.04,
+                    "y": 0.03,
+                    "z": 0.025
+                }
+            },
+            {
+                "partId": "d3d_extruder_8mm_sensor",
+                "startPosition": {
+                    "x": 0.05,
+                    "y": 0.91,
+                    "z": -0.6
+                },
+                "startRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "startScale": {
+                    "x": 0.012,
+                    "y": 0.04,
+                    "z": 0.012
+                },
+                "color": {
+                    "r": 0.92,
+                    "g": 0.62,
+                    "b": 0.22,
+                    "a": 1.0
+                },
+                "playPosition": {
+                    "x": -0.075,
+                    "y": 0.905,
+                    "z": -0.41
+                },
+                "playRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "playScale": {
+                    "x": 0.012,
+                    "y": 0.04,
+                    "z": 0.012
                 }
             }
         ],
@@ -9493,7 +10325,7 @@
             {
                 "targetId": "target_x_axis_idler_screw_1",
                 "position": {
-                    "x": 0.265,
+                    "x": 0.225,
                     "y": 0.725,
                     "z": -0.305
                 },
@@ -9518,7 +10350,7 @@
             {
                 "targetId": "target_x_axis_idler_screw_2",
                 "position": {
-                    "x": 0.28,
+                    "x": 0.24,
                     "y": 0.725,
                     "z": -0.32
                 },
@@ -9543,7 +10375,7 @@
             {
                 "targetId": "target_x_axis_idler_screw_3",
                 "position": {
-                    "x": 0.295,
+                    "x": 0.255,
                     "y": 0.725,
                     "z": -0.305
                 },
@@ -9568,7 +10400,7 @@
             {
                 "targetId": "target_x_axis_idler_anchor_prefit",
                 "position": {
-                    "x": 0.145,
+                    "x": 0.105,
                     "y": 0.804,
                     "z": 0.0
                 },
@@ -9618,7 +10450,7 @@
             {
                 "targetId": "target_x_axis_motor_holder_prefit",
                 "position": {
-                    "x": -0.105,
+                    "x": -0.08,
                     "y": 0.804,
                     "z": 0.0
                 },
@@ -10007,6 +10839,306 @@
                     "x": 0.035,
                     "y": 0.035,
                     "z": 0.035
+                },
+                "color": {
+                    "r": 0.35,
+                    "g": 0.85,
+                    "b": 1.0,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_titan_aero_core_stage",
+                "position": {
+                    "x": 0.0,
+                    "y": 0.82,
+                    "z": -0.42
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 0.08,
+                    "y": 0.11,
+                    "z": 0.065
+                },
+                "color": {
+                    "r": 0.2,
+                    "g": 0.84,
+                    "b": 0.58,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_nozzle_attach",
+                "position": {
+                    "x": 0.0,
+                    "y": 0.755,
+                    "z": -0.42
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 0.034,
+                    "y": 0.034,
+                    "z": 0.034
+                },
+                "color": {
+                    "r": 0.2,
+                    "g": 0.84,
+                    "b": 0.58,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_blower_attach",
+                "position": {
+                    "x": 0.082,
+                    "y": 0.848,
+                    "z": -0.442
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 0.05,
+                    "y": 0.05,
+                    "z": 0.05
+                },
+                "color": {
+                    "r": 0.2,
+                    "g": 0.84,
+                    "b": 0.58,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_blower_mount_a",
+                "position": {
+                    "x": 0.102,
+                    "y": 0.848,
+                    "z": -0.432
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 0.028,
+                    "y": 0.028,
+                    "z": 0.028
+                },
+                "color": {
+                    "r": 0.95,
+                    "g": 0.7,
+                    "b": 0.22,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_blower_mount_b",
+                "position": {
+                    "x": 0.062,
+                    "y": 0.848,
+                    "z": -0.452
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 0.028,
+                    "y": 0.028,
+                    "z": 0.028
+                },
+                "color": {
+                    "r": 0.95,
+                    "g": 0.7,
+                    "b": 0.22,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_sensor_holder_attach",
+                "position": {
+                    "x": -0.075,
+                    "y": 0.855,
+                    "z": -0.41
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 0.042,
+                    "y": 0.042,
+                    "z": 0.042
+                },
+                "color": {
+                    "r": 0.2,
+                    "g": 0.84,
+                    "b": 0.58,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_sensor_holder_fastener_a",
+                "position": {
+                    "x": -0.06,
+                    "y": 0.858,
+                    "z": -0.41
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 0.028,
+                    "y": 0.028,
+                    "z": 0.028
+                },
+                "color": {
+                    "r": 0.95,
+                    "g": 0.7,
+                    "b": 0.22,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_sensor_holder_fastener_b",
+                "position": {
+                    "x": -0.09,
+                    "y": 0.858,
+                    "z": -0.41
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 0.028,
+                    "y": 0.028,
+                    "z": 0.028
+                },
+                "color": {
+                    "r": 0.95,
+                    "g": 0.7,
+                    "b": 0.22,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_sensor_insert",
+                "position": {
+                    "x": -0.075,
+                    "y": 0.905,
+                    "z": -0.41
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 0.03,
+                    "y": 0.03,
+                    "z": 0.03
+                },
+                "color": {
+                    "r": 0.2,
+                    "g": 0.84,
+                    "b": 0.58,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_clearance_nozzle",
+                "position": {
+                    "x": 0.0,
+                    "y": 0.75,
+                    "z": -0.42
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 0.03,
+                    "y": 0.03,
+                    "z": 0.03
+                },
+                "color": {
+                    "r": 0.35,
+                    "g": 0.85,
+                    "b": 1.0,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_clearance_fan",
+                "position": {
+                    "x": 0.105,
+                    "y": 0.848,
+                    "z": -0.447
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 0.03,
+                    "y": 0.03,
+                    "z": 0.03
+                },
+                "color": {
+                    "r": 0.35,
+                    "g": 0.85,
+                    "b": 1.0,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_clearance_sensor",
+                "position": {
+                    "x": -0.075,
+                    "y": 0.905,
+                    "z": -0.387
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 0.03,
+                    "y": 0.03,
+                    "z": 0.03
                 },
                 "color": {
                     "r": 0.35,
@@ -10656,8 +11788,8 @@
                 },
                 "minTravel": 0.0,
                 "maxTravel": 0.04,
-                "completionTravel": 0.04,
-                "snapTolerance": 0.006,
+                "completionTravel": 0.0248,
+                "snapTolerance": 0.003,
                 "drivenPartIds": [
                     "d3d_x_axis_motor_holder_unit"
                 ]
@@ -10665,3 +11797,4 @@
         ]
     }
 }
+

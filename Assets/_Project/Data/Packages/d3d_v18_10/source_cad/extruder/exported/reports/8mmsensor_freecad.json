@@ -1,0 +1,36 @@
+{
+  "input_fcstd": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder\\raw\\8mmsensor.fcstd",
+  "output_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder\\exported\\stl\\8mmsensor.stl",
+  "source_mode": "archive_brep",
+  "units": "mm",
+  "object_count": 1,
+  "mesh_facets": 23648,
+  "mesh_points": 11832,
+  "combined_bound_box": {
+    "xmin_mm": -66.20983839238875,
+    "xmax_mm": -43.08906774904236,
+    "ymin_mm": -81.37618969921542,
+    "ymax_mm": -3.3010644923062387,
+    "zmin_mm": 73.0508534853552,
+    "zmax_mm": 101.44600779526391,
+    "xlen_mm": 23.12077064334639,
+    "ylen_mm": 78.07512520690918,
+    "zlen_mm": 28.395154309908705
+  },
+  "objects": [
+    {
+      "name": "PartShape.brp",
+      "bound_box": {
+        "xmin_mm": -69.50843716400358,
+        "xmax_mm": -43.06242749797587,
+        "ymin_mm": -81.37618969921499,
+        "ymax_mm": -2.20382083933859,
+        "zmin_mm": 71.93661827186975,
+        "zmax_mm": 105.0773945099554,
+        "xlen_mm": 26.446009666027713,
+        "ylen_mm": 79.1723688598764,
+        "zlen_mm": 33.14077623808565
+      }
+    }
+  ]
+}

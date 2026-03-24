@@ -516,8 +516,11 @@ plan for `d3d_v18_10`.
 ## Next Authoring Boundary
 
 With `Axes Stage 01` now in data, the next agent pass should not keep expanding this
-slice sideways. The honest next boundary is:
+slice sideways. The next concrete boundary is now documented in
+`EXTRUDER_SOURCE_EXTRACTION.md`.
 
-1. verify the authored Y/X placeholder geometry against stronger v18.10 axis sources
-2. extract the next exact `Axes` or `FinalAssembly` sub-slice
+That means the honest next sequence is:
+
+1. keep the implemented `Axes Stage 01` boundary intact
+2. use `EXTRUDER_SOURCE_EXTRACTION.md` to lock the first Titan Aero module slice
 3. only then extend `machine.json` beyond Step 52

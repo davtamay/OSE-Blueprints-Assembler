@@ -1,0 +1,26 @@
+{
+  "input_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder\\exported\\stl\\5015blower.stl",
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder\\exported\\glb_candidates\\5015blower.glb",
+  "units": "m",
+  "object_count": 1,
+  "material_name": "D3D Blower Black",
+  "base_color": [
+    0.08,
+    0.08,
+    0.08,
+    1.0
+  ],
+  "metallic": 0.0,
+  "roughness": 0.62,
+  "bound_box": {
+    "xmin_m": -0.010894078761339188,
+    "xmax_m": 0.02122051827609539,
+    "ymin_m": -0.054844822734594345,
+    "ymax_m": 0.029734119772911072,
+    "zmin_m": -0.06488821655511856,
+    "zmax_m": 0.015399999916553497,
+    "xlen_m": 0.03211459703743458,
+    "ylen_m": 0.08457894250750542,
+    "zlen_m": 0.08028821647167206
+  }
+}

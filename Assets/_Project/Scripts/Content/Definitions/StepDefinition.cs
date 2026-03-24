@@ -43,7 +43,7 @@ namespace OSE.Content
 
         /// <summary>
         /// Semantic view mode override for camera framing.
-        /// <para>Accepted values: "SourceAndTarget", "PairEndpoints", "WorkZone", "PathView", "Overview", "Inspect".</para>
+        /// <para>Accepted values: "SourceAndTarget", "PairEndpoints", "WorkZone", "PathView", "Overview", "Inspect", "ToolFocus".</para>
         /// <para>Optional. When null/empty, resolved from family + profile via <see cref="ViewModeResolver"/>.</para>
         /// </summary>
         public string viewMode;
@@ -52,6 +52,13 @@ namespace OSE.Content
         public string[] hintIds;
         public string[] effectTriggerIds;
         public ToolActionDefinition[] requiredToolActions;
+
+        /// <summary>
+        /// Tool IDs whose persistent scene instances (clamps, fixtures) should be
+        /// removed when this step activates. Content-driven removal point.
+        /// </summary>
+        public string[] removePersistentToolIds;
+
         public bool allowSkip;
         public StepChallengeFlagsDefinition challengeFlags;
         public string[] eventTags;
@@ -75,6 +82,9 @@ namespace OSE.Content
 
         /// <summary>Optional measurement payload for anchor-to-anchor measurement steps (Use.Measure profile).</summary>
         public StepMeasurementPayload measurement;
+
+        /// <summary>Optional gesture payload for tool-use engagement (Use family). Controls gesture type, thresholds, and guides.</summary>
+        public StepGesturePayload gesture;
 
         // --- Resolved accessors (payload-first, flat-fallback) ---
 

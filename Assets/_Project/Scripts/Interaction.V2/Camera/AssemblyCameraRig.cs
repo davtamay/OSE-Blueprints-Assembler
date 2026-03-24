@@ -146,19 +146,30 @@ namespace OSE.Interaction.V2
                 _targetState.Distance = distance;
         }
 
-        /// <summary>Frame an axis-aligned bounding box.</summary>
+        /// <summary>Frame an axis-aligned bounding box so all contents are visible.</summary>
         public void FrameBounds(Bounds bounds)
         {
             if (!_initialized) return;
             _targetState.PivotPosition = bounds.center;
-            // Framing should produce a readable assembly view, not preserve
-            // whatever incidental yaw/pitch happened to be captured earlier.
-            var framingView = ViewpointLibrary.Isometric;
-            _targetState.Yaw = framingView.Yaw;
-            _targetState.Pitch = framingView.Pitch;
-            // Distance so the bounding sphere fits in view with comfortable margin
+
+            // Compute distance from camera FOV so the bounding sphere fits on screen
+            // with a comfortable margin. Uses the vertical half-angle of the camera.
             float radius = bounds.extents.magnitude;
-            _targetState.Distance = Mathf.Max(radius * 3.5f, framingView.Distance);
+            Camera cam = GetComponent<Camera>();
+            float fov = cam != null ? cam.fieldOfView : 60f;
+            float halfAngleRad = fov * 0.5f * Mathf.Deg2Rad;
+            // Distance = radius / sin(halfAngle) ensures the sphere fits vertically.
+            // Multiply by padding factor so targets aren't right at the screen edge.
+            const float padding = 1.35f;
+            float fovDistance = (radius / Mathf.Sin(halfAngleRad)) * padding;
+            _targetState.Distance = Mathf.Max(fovDistance, 1.5f);
+
+            // Ensure an elevated "third person" viewing angle so the user sees the
+            // assembly from above rather than a flat first-person perspective.
+            // Only nudge when the camera is nearly horizontal (±10°), so we don't
+            // fight the user after they've manually orbited to a preferred angle.
+            if (Mathf.Abs(_targetState.Pitch) < 15f)
+                _targetState.Pitch = 35f;
         }
 
         /// <summary>Reset to the state captured at initialization.</summary>

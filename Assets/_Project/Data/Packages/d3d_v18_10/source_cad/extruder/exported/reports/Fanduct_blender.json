@@ -1,0 +1,17 @@
+{
+  "input_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder\\exported\\stl\\Fanduct.stl",
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder\\exported\\glb_candidates\\Fanduct.glb",
+  "units": "m",
+  "object_count": 1,
+  "bound_box": {
+    "xmin_m": -0.006099787540733814,
+    "xmax_m": 0.019203130155801773,
+    "ymin_m": -0.008800000883638859,
+    "ymax_m": 0.008800000883638859,
+    "zmin_m": -0.00010339028085581958,
+    "zmax_m": 0.02509496361017227,
+    "xlen_m": 0.025302917696535587,
+    "ylen_m": 0.017600001767277718,
+    "zlen_m": 0.02519835389102809
+  }
+}

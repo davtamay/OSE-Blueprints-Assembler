@@ -1,0 +1,49 @@
+using UnityEngine;
+
+namespace OSE.Interaction
+{
+    /// <summary>
+    /// Typed contract for placement, tool actions, spatial queries, and hover.
+    /// Implemented by PartInteractionBridge (OSE.UI), consumed by
+    /// InteractionOrchestrator (OSE.Interaction.V2).
+    ///
+    /// Part selection/grab/release are handled by CanonicalActionBridge,
+    /// which feeds events into InputActionRouter and SelectionService.
+    /// </summary>
+    public interface IPartActionBridge
+    {
+        bool ExternalControlEnabled { get; set; }
+
+        // ── Target Normalization ──
+
+        GameObject NormalizeSelectableTarget(GameObject target);
+
+        // ── Placement ──
+
+        bool TryClickToPlace(GameObject selectedPart, Vector2 screenPos);
+
+        // ── Tool Actions ──
+
+        bool TryToolAction(Vector2 screenPos);
+        bool TryToolAction(string targetId);
+        bool TryResolveToolActionTarget(
+            Vector2 screenPos,
+            out string targetId,
+            out Vector3 worldPos,
+            out Vector3 surfaceWorldPos,
+            out Vector3 weldAxis,
+            out float weldLength);
+        bool TryPipeConnection(Vector2 screenPos);
+
+        // ── Spatial Queries ──
+
+        Vector3 LastToolActionWorldPos { get; }
+        bool TryGetNearestToolTargetWorldPos(Vector2 screenPos, out Vector3 worldPos);
+        bool TryGetGhostWorldPosForPart(string partId, out Vector3 worldPos);
+        bool TryGetStepFocusBounds(string stepId, out Bounds bounds);
+
+        // ── Hover ──
+
+        void SetHoveredPart(GameObject part);
+    }
+}

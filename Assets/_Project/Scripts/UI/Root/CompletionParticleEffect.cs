@@ -9,7 +9,7 @@ namespace OSE.UI.Root
     /// Content authors reference presets by ID in the feedback payload
     /// (e.g. "torque_sparks", "weld_glow").
     /// </summary>
-    internal static class CompletionParticleEffect
+    public static class CompletionParticleEffect
     {
         private delegate void ConfigureParticle(ParticleSystem ps, Vector3 scale);
 

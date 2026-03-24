@@ -1423,6 +1423,9 @@
       "sequenceIndex": 8,
       "instructionText": "Now that the base is confirmed square, run full weld beads on all four corners. Weld both sides of each joint for maximum strength. Let each weld cool before moving to the next to minimize warping.",
       "whyItMattersText": "Full welds provide the structural strength to support the engine, pump, and hydraulic modules. Tack welds alone would fail under vibration.",
+      "removePersistentToolIds": [
+        "tool_clamp"
+      ],
       "relevantToolIds": [
         "tool_welder"
       ],
@@ -1542,6 +1545,9 @@
       "sequenceIndex": 11,
       "instructionText": "Tack-weld each post to the base first, check plumb with the framing square, then run full welds around each post base. Weld on opposite sides alternately to reduce heat distortion.",
       "whyItMattersText": "The vertical post welds carry the weight of the engine and all top-mounted modules. They must be solid and plumb.",
+      "removePersistentToolIds": [
+        "tool_clamp"
+      ],
       "relevantToolIds": [
         "tool_welder",
         "tool_framing_square"
@@ -1626,6 +1632,9 @@
       "sequenceIndex": 13,
       "instructionText": "Tack-weld the top ring corners first, verify squareness and plumb one last time, then full-weld all top joints. The cube frame is almost complete.",
       "whyItMattersText": "These final welds close the cube structure, making it rigid in all three dimensions.",
+      "removePersistentToolIds": [
+        "tool_clamp"
+      ],
       "relevantToolIds": [
         "tool_welder"
       ],
@@ -1761,6 +1770,9 @@
       "sequenceIndex": 17,
       "instructionText": "Tack-weld the plate at each corner first, verify it's still centered, then run full fillet welds along all four edges where the plate meets the top tubes.",
       "whyItMattersText": "Full perimeter welds provide maximum strength. The plate must support engine vibration, so tacks alone would crack.",
+      "removePersistentToolIds": [
+        "tool_clamp"
+      ],
       "relevantToolIds": [
         "tool_welder"
       ],

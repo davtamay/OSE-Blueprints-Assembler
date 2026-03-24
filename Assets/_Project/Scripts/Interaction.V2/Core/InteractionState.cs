@@ -16,6 +16,7 @@ namespace OSE.Interaction.V2
         CameraZoom,
         InspectMode,
         UIInteraction,
-        RepositioningAssembly
+        RepositioningAssembly,
+        ToolFocus
     }
 }
