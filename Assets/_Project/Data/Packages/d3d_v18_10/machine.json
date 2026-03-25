@@ -646,40 +646,58 @@
             "assetRef": "assets/parts/d3d_axis_block_placeholder.glb"
         },
         {
+            "id": "template_d3d_x_axis_idler_unit",
+            "name": "D3D X-Axis Idler Unit",
+            "category": "custom",
+            "material": "Printed idler-side axis block",
+            "function": "CAD-derived short idler-side block used to anchor the X-axis on Y-right.",
+            "quantity": 1,
+            "assetRef": "assets/parts/d3d_x_axis_idler_unit_approved.glb"
+        },
+        {
+            "id": "template_d3d_x_axis_motor_holder_unit",
+            "name": "D3D X-Axis Motor Holder Unit",
+            "category": "custom",
+            "material": "Printed motor-side axis block",
+            "function": "CAD-derived motor-side block used to set X-axis span and retain the drive-side hardware.",
+            "quantity": 1,
+            "assetRef": "assets/parts/d3d_x_axis_motor_holder_unit_approved.glb"
+        },
+        {
             "id": "template_d3d_axis_rod_pair",
             "name": "D3D Axis Rod Pair",
             "category": "shaft",
-            "material": "Guide rod placeholder",
-            "function": "Paired rods that define the X-axis span during fit.",
+            "material": "Steel guide rods",
+            "function": "CAD-derived paired rods that define the X-axis span during fit.",
             "quantity": 1,
-            "assetRef": "assets/parts/d3d_axis_rod_pair_placeholder.glb"
+            "assetRef": "assets/parts/d3d_x_axis_rod_pair_approved.glb"
         },
         {
             "id": "template_d3d_axis_belt_peg",
             "name": "D3D Axis Belt Peg",
             "category": "fastener",
-            "material": "Printed belt-peg placeholder",
-            "function": "Belt peg reinserted after tension is set.",
+            "material": "Printed belt peg",
+            "function": "CAD-derived belt peg reinserted after tension is set.",
             "quantity": 1,
-            "assetRef": "assets/parts/d3d_axis_belt_peg_placeholder.glb"
+            "assetRef": "assets/parts/d3d_x_axis_belt_peg_approved.glb"
         },
         {
             "id": "template_d3d_titan_aero_core",
             "name": "Titan Aero Core",
             "category": "custom",
-            "material": "Extruder core placeholder",
+            "material": "Extruder core CAD-derived",
             "function": "Represents the staged Titan Aero body and motor assembly before carriage mounting.",
             "quantity": 1,
-            "assetRef": "assets/parts/d3d_titan_aero_core_placeholder.glb"
+            "assetRef": "assets/parts/d3d_titan_aero_core_approved.glb"
         },
         {
             "id": "template_d3d_extruder_nozzle_assembly",
             "name": "Extruder Nozzle Assembly",
             "category": "custom",
-            "material": "Nozzle assembly placeholder",
+            "material": "Nozzle assembly CAD-derived",
             "function": "Represents the nozzle-side assembly attached to the Titan Aero core.",
             "quantity": 1,
-            "assetRef": "assets/parts/d3d_extruder_nozzle_assembly_placeholder.glb"
+            "assetRef": "assets/parts/d3d_extruder_nozzle_assembly_approved.glb"
         },
         {
             "id": "template_d3d_extruder_blower",
@@ -694,10 +712,10 @@
             "id": "template_d3d_sensor_holder",
             "name": "Extruder Sensor Holder",
             "category": "custom",
-            "material": "Sensor holder placeholder",
+            "material": "Sensor holder CAD-derived",
             "function": "Represents the printed holder that positions the 8 mm sensor near the nozzle-side module.",
             "quantity": 1,
-            "assetRef": "assets/parts/d3d_extruder_sensor_holder_placeholder.glb"
+            "assetRef": "assets/parts/d3d_extruder_sensor_holder_approved.glb"
         },
         {
             "id": "template_d3d_8mm_sensor",
@@ -712,19 +730,19 @@
             "id": "template_d3d_extruder_mount_bracket",
             "name": "Titan Aero Mount Bracket",
             "category": "custom",
-            "material": "Carriage-mount bracket placeholder",
+            "material": "Carriage-mount bracket CAD-derived",
             "function": "Represents the printed carriage-side Titan Aero mount bracket used in the second extruder slice.",
             "quantity": 1,
-            "assetRef": "assets/parts/d3d_extruder_mount_bracket_placeholder.glb"
+            "assetRef": "assets/parts/d3d_extruder_mount_bracket_approved.glb"
         },
         {
             "id": "template_d3d_extruder_mount_top_plate",
             "name": "Titan Aero Mount Top Plate",
             "category": "custom",
-            "material": "Top-plate placeholder",
+            "material": "Top-plate CAD-derived",
             "function": "Represents the top plate that captures the bracket stack on the simplified carriage.",
             "quantity": 1,
-            "assetRef": "assets/parts/d3d_extruder_mount_top_plate_placeholder.glb"
+            "assetRef": "assets/parts/d3d_extruder_mount_top_plate_approved.glb"
         },
         {
             "id": "template_d3d_extruder_simplified_carriage",
@@ -945,7 +963,7 @@
             "id": "d3d_x_axis_idler_unit",
             "name": "X-Axis Idler Side",
             "function": "Anchored X-axis idler side.",
-            "templateId": "template_d3d_axis_block"
+            "templateId": "template_d3d_x_axis_idler_unit"
         },
         {
             "id": "d3d_x_axis_rod_pair",
@@ -957,7 +975,7 @@
             "id": "d3d_x_axis_motor_holder_unit",
             "name": "X-Axis Motor Holder Side",
             "function": "Adjustable X-axis motor-holder side.",
-            "templateId": "template_d3d_axis_block"
+            "templateId": "template_d3d_x_axis_motor_holder_unit"
         },
         {
             "id": "fastener_x_axis_belt_peg",
@@ -1034,6 +1052,7 @@
             "id": "tool_locking_clamp",
             "name": "Locking Clamp",
             "category": "hand_tool",
+            "persistent": true,
             "purpose": "Pins a verified frame side flat so the overlapped bars cannot shift while tack welds are added.",
             "usageNotes": "Clamp near the panel center after the square check passes, then keep the bars flat while you tack opposite corners.",
             "safetyNotes": "Keep fingers clear of the jaws and release clamping force slowly.",
@@ -1042,7 +1061,14 @@
                 "vise grip welding clamp",
                 "panel welding clamp"
             ],
-            "assetRef": "assets/tools/tool_locking_clamp.glb"
+            "assetRef": "assets/tools/tool_locking_clamp.glb",
+            "toolPose": {
+                "gripPoint": { "x": 0.95799, "y": 1.82134, "z": -0.05899 },
+                "gripRotation": { "x": 7.86335, "y": 189.3289, "z": 74.25144 },
+                "tipPoint": { "x": 0.10157, "y": 0.77763, "z": 0 },
+                "handedness": "right",
+                "poseHint": "power_grip"
+            }
         },
         {
             "id": "tool_mig_torch",
@@ -1062,6 +1088,14 @@
                 "x": 180.0,
                 "y": 90.0,
                 "z": 0.0
+            },
+            "toolPose": {
+                "gripPoint": { "x": -0.12092, "y": 0.95753, "z": -0.23578 },
+                "gripRotation": { "x": 354.3998, "y": 269.9324, "z": 96.40625 },
+                "tipPoint": { "x": -0.65968, "y": 0.02, "z": 0.01352 },
+                "cursorOffset": { "x": 0, "y": 1, "z": 0 },
+                "handedness": "right",
+                "poseHint": "power_grip"
             }
         },
         {
@@ -1373,6 +1407,7 @@
                 "d3d_frame_top_bottom_bar",
                 "d3d_frame_top_left_bar"
             ],
+            "removePersistentToolIds": ["tool_locking_clamp"],
             "relevantToolIds": [],
             "targetIds": [
                 "target_top_top_bar",
@@ -1624,6 +1659,7 @@
                 "d3d_frame_left_bottom_bar",
                 "d3d_frame_left_left_bar"
             ],
+            "removePersistentToolIds": ["tool_locking_clamp"],
             "relevantToolIds": [],
             "targetIds": [
                 "target_left_top_bar",
@@ -1875,6 +1911,7 @@
                 "d3d_frame_right_bottom_bar",
                 "d3d_frame_right_left_bar"
             ],
+            "removePersistentToolIds": ["tool_locking_clamp"],
             "relevantToolIds": [],
             "targetIds": [
                 "target_right_top_bar",
@@ -2126,6 +2163,7 @@
                 "d3d_frame_front_bottom_bar",
                 "d3d_frame_front_left_bar"
             ],
+            "removePersistentToolIds": ["tool_locking_clamp"],
             "relevantToolIds": [],
             "targetIds": [
                 "target_front_top_bar",
@@ -2377,6 +2415,7 @@
                 "d3d_frame_rear_bottom_bar",
                 "d3d_frame_rear_left_bar"
             ],
+            "removePersistentToolIds": ["tool_locking_clamp"],
             "relevantToolIds": [],
             "targetIds": [
                 "target_rear_top_bar",
@@ -2625,6 +2664,7 @@
             "requiredPartIds": [],
             "requiredSubassemblyId": "subassembly_bottom_frame_side",
             "optionalPartIds": [],
+            "removePersistentToolIds": ["tool_locking_clamp"],
             "relevantToolIds": [],
             "targetIds": [
                 "target_cube_bottom_side"
@@ -6886,9 +6926,19 @@
         "modelRefs": [
             "assets/parts/d3d_frame_flat_bar_approved.glb",
 
+            "assets/parts/d3d_titan_aero_core_approved.glb",
+
+            "assets/parts/d3d_extruder_nozzle_assembly_approved.glb",
+
             "assets/parts/d3d_extruder_blower_approved.glb",
 
+            "assets/parts/d3d_extruder_sensor_holder_approved.glb",
+
             "assets/parts/d3d_8mm_sensor_approved.glb",
+
+            "assets/parts/d3d_extruder_mount_bracket_approved.glb",
+
+            "assets/parts/d3d_extruder_mount_top_plate_approved.glb",
             "assets/tools/tool_framing_square.glb",
             "assets/tools/tool_locking_clamp.glb",
             "assets/tools/tool_mig_torch.glb",
@@ -7981,9 +8031,9 @@
                     "w": 1.0
                 },
                 "startScale": {
-                    "x": 0.05,
-                    "y": 0.058,
-                    "z": 0.05
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.74,
@@ -8003,9 +8053,9 @@
                     "w": 1.0
                 },
                 "playScale": {
-                    "x": 0.05,
-                    "y": 0.058,
-                    "z": 0.05
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 }
             },
             {
@@ -8022,9 +8072,9 @@
                     "w": 1.0
                 },
                 "startScale": {
-                    "x": 0.29,
-                    "y": 0.012,
-                    "z": 0.018
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.74,
@@ -8044,9 +8094,9 @@
                     "w": 1.0
                 },
                 "playScale": {
-                    "x": 0.29,
-                    "y": 0.012,
-                    "z": 0.018
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 }
             },
             {
@@ -8063,9 +8113,9 @@
                     "w": 1.0
                 },
                 "startScale": {
-                    "x": 0.05,
-                    "y": 0.058,
-                    "z": 0.05
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.74,
@@ -8085,9 +8135,9 @@
                     "w": 1.0
                 },
                 "playScale": {
-                    "x": 0.05,
-                    "y": 0.058,
-                    "z": 0.05
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 }
             },
             {
@@ -8099,14 +8149,14 @@
                 },
                 "startRotation": {
                     "x": 0.0,
-                    "y": 0.0,
+                    "y": 0.7071068,
                     "z": 0.0,
-                    "w": 1.0
+                    "w": 0.7071068
                 },
                 "startScale": {
-                    "x": 0.012,
-                    "y": 0.012,
-                    "z": 0.03
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.95,
@@ -8121,14 +8171,14 @@
                 },
                 "playRotation": {
                     "x": 0.0,
-                    "y": 0.0,
+                    "y": 0.7071068,
                     "z": 0.0,
-                    "w": 1.0
+                    "w": 0.7071068
                 },
                 "playScale": {
-                    "x": 0.012,
-                    "y": 0.012,
-                    "z": 0.03
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 }
             },
             {
@@ -8145,9 +8195,9 @@
                     "w": 1.0
                 },
                 "startScale": {
-                    "x": 0.08,
-                    "y": 0.11,
-                    "z": 0.065
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.58,
@@ -8167,9 +8217,9 @@
                     "w": 1.0
                 },
                 "playScale": {
-                    "x": 0.08,
-                    "y": 0.11,
-                    "z": 0.065
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 }
             },
             {
@@ -8186,9 +8236,9 @@
                     "w": 1.0
                 },
                 "startScale": {
-                    "x": 0.028,
-                    "y": 0.05,
-                    "z": 0.028
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.72,
@@ -8208,9 +8258,9 @@
                     "w": 1.0
                 },
                 "playScale": {
-                    "x": 0.028,
-                    "y": 0.05,
-                    "z": 0.028
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 }
             },
             {
@@ -8227,9 +8277,9 @@
                     "w": 1.0
                 },
                 "startScale": {
-                    "x": 0.06,
-                    "y": 0.055,
-                    "z": 0.06
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.35,
@@ -8249,9 +8299,9 @@
                     "w": 1.0
                 },
                 "playScale": {
-                    "x": 0.06,
-                    "y": 0.055,
-                    "z": 0.06
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 }
             },
             {
@@ -8268,9 +8318,9 @@
                     "w": 1.0
                 },
                 "startScale": {
-                    "x": 0.04,
-                    "y": 0.03,
-                    "z": 0.025
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.46,
@@ -8290,9 +8340,9 @@
                     "w": 1.0
                 },
                 "playScale": {
-                    "x": 0.04,
-                    "y": 0.03,
-                    "z": 0.025
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 }
             },
             {
@@ -8309,9 +8359,9 @@
                     "w": 1.0
                 },
                 "startScale": {
-                    "x": 0.012,
-                    "y": 0.04,
-                    "z": 0.012
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.92,
@@ -8331,9 +8381,9 @@
                     "w": 1.0
                 },
                 "playScale": {
-                    "x": 0.012,
-                    "y": 0.04,
-                    "z": 0.012
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 }
             },
             {
@@ -8350,9 +8400,9 @@
                     "w": 1.0
                 },
                 "startScale": {
-                    "x": 0.072,
-                    "y": 0.078,
-                    "z": 0.01
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.42,
@@ -8372,9 +8422,9 @@
                     "w": 1.0
                 },
                 "playScale": {
-                    "x": 0.072,
-                    "y": 0.078,
-                    "z": 0.01
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 }
             },
             {
@@ -8391,9 +8441,9 @@
                     "w": 1.0
                 },
                 "startScale": {
-                    "x": 0.074,
-                    "y": 0.012,
-                    "z": 0.055
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.5,
@@ -8413,9 +8463,9 @@
                     "w": 1.0
                 },
                 "playScale": {
-                    "x": 0.074,
-                    "y": 0.012,
-                    "z": 0.055
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 }
             },
             {
@@ -10875,9 +10925,9 @@
                     "w": 1.0
                 },
                 "scale": {
-                    "x": 0.05,
-                    "y": 0.058,
-                    "z": 0.05
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.2,
@@ -10900,9 +10950,9 @@
                     "w": 1.0
                 },
                 "scale": {
-                    "x": 0.29,
-                    "y": 0.012,
-                    "z": 0.018
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.2,
@@ -10925,9 +10975,9 @@
                     "w": 1.0
                 },
                 "scale": {
-                    "x": 0.05,
-                    "y": 0.058,
-                    "z": 0.05
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.2,
@@ -11220,14 +11270,14 @@
                 },
                 "rotation": {
                     "x": 0.0,
-                    "y": 0.0,
+                    "y": 0.7071068,
                     "z": 0.0,
-                    "w": 1.0
+                    "w": 0.7071068
                 },
                 "scale": {
-                    "x": 0.012,
-                    "y": 0.012,
-                    "z": 0.03
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.2,
@@ -11325,9 +11375,9 @@
                     "w": 1.0
                 },
                 "scale": {
-                    "x": 0.08,
-                    "y": 0.11,
-                    "z": 0.065
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.2,
@@ -11350,9 +11400,9 @@
                     "w": 1.0
                 },
                 "scale": {
-                    "x": 0.034,
-                    "y": 0.034,
-                    "z": 0.034
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.2,
@@ -11375,9 +11425,9 @@
                     "w": 1.0
                 },
                 "scale": {
-                    "x": 0.05,
-                    "y": 0.05,
-                    "z": 0.05
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.2,
@@ -11450,9 +11500,9 @@
                     "w": 1.0
                 },
                 "scale": {
-                    "x": 0.042,
-                    "y": 0.042,
-                    "z": 0.042
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.2,
@@ -11525,9 +11575,9 @@
                     "w": 1.0
                 },
                 "scale": {
-                    "x": 0.03,
-                    "y": 0.03,
-                    "z": 0.03
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.2,
@@ -11650,9 +11700,9 @@
                     "w": 1.0
                 },
                 "scale": {
-                    "x": 0.072,
-                    "y": 0.078,
-                    "z": 0.01
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.2,
@@ -11725,9 +11775,9 @@
                     "w": 1.0
                 },
                 "scale": {
-                    "x": 0.074,
-                    "y": 0.012,
-                    "z": 0.055
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.2,
