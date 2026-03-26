@@ -15,7 +15,7 @@ It answers:
 
 ## Implementation Status
 
-`Axes Stage 01` is now authored into `machine.json` as steps `41` through `52`.
+`Axes Stage 01` is now authored into `machine.json` as steps `41` through `53`.
 
 What was implemented directly from this brief:
 
@@ -29,12 +29,21 @@ What was implemented directly from this brief:
 
 What remains intentionally simplified in the authored first pass:
 
-- axis-module geometry is still schematic placeholder geometry, not source-backed
-  v18.10 meshes
-- the external `M6x30` mounting hardware is still represented implicitly through
-  placement and tool-target interactions instead of fully explicit loose fasteners
+- the first hardening batch now covers:
+  - the Y-left mounted unit as a composite CAD-derived runtime mesh
+  - the Y-right mounted unit as a composite CAD-derived runtime mesh
+  - the X-axis motor-holder block
+  - the X-axis idler block
+  - the X-axis rod pair
+  - the belt peg
+  - the external `M6x30` axis-mount bolts as explicit simplified hardware
 - a dedicated low-torque drill interaction was deferred in favor of the metric
   Allen key so the first pass stays inside already-proven tool behavior
+
+See also:
+
+- `source_cad/axes_stage01/notes/AXES_STAGE01_PROVENANCE.md`
+- `source_cad/axes_stage01/notes/AXES_STAGE01_GEOMETRY_HARDENING_STATUS.md`
 
 ## Sources Consulted
 
@@ -269,16 +278,18 @@ At slice completion:
 
 ### Explicit loose parts to author
 
-The first authored pass keeps only this one loose part explicit:
+The authored pass now keeps these loose parts explicit:
 
 - `fastener_x_axis_belt_peg`
+- `[2] fastener_x_axis_idler_mount_m6x30_*`
+- `[2] fastener_x_axis_motor_mount_m6x30_*`
 
 Reason:
 
-- it materially changes state during the fitting sequence
-- it fits the existing `Place` interaction cleanly
-- the four external `M6x30` mount bolts are currently represented implicitly through
-  the mount / tighten sequence rather than as separate loose fasteners
+- the belt peg materially changes state during the fitting sequence
+- the four external `M6x30` bolts are called out directly in the source-backed fitting order
+- explicit loose bolts make the Y-right anchor and Y-left loose-start phases clearer without
+  exploding the slice into full internal fastener handling
 
 ### Preassembled fasteners to keep as tool-only targets
 

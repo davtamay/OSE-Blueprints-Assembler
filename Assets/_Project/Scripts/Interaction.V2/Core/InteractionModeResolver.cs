@@ -3,7 +3,7 @@ using OSE.Core;
 using UnityEngine;
 using UnityEngine.XR;
 
-namespace OSE.Interaction.V2
+namespace OSE.Interaction
 {
     /// <summary>
     /// Single source of truth for which interaction mode the app should use.

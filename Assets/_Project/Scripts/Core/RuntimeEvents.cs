@@ -318,7 +318,7 @@ namespace OSE.Core
 
     /// <summary>
     /// Published when the user navigates to a different step via back/forward controls.
-    /// The visual layer uses this to reposition parts and clear/re-spawn ghosts.
+    /// The visual layer uses this to reposition parts and clear/re-spawn previews.
     /// Fires BEFORE StepStateChanged(Active) for the target step.
     /// </summary>
     public readonly struct StepNavigated

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace OSE.Interaction.V2
+namespace OSE.Interaction
 {
     /// <summary>
     /// Snapshot of interaction state for the current frame,
@@ -19,9 +19,9 @@ namespace OSE.Interaction.V2
         public bool IsInCorridor;
         public bool IsValidPlacement;
 
-        // Ghost path guidance
-        public Vector3? GhostPathStart;
-        public Vector3? GhostPathEnd;
+        // Preview path guidance
+        public Vector3? PreviewPathStart;
+        public Vector3? PreviewPathEnd;
 
         // Step info
         public bool StepActive;

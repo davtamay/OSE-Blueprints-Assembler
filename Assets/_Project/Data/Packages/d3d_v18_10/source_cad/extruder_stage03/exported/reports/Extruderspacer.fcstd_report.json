@@ -1,0 +1,50 @@
+{
+  "input_fcstd": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder_stage03\\raw\\Extruderspacer.fcstd",
+  "output_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder_stage03\\exported\\stl\\Extruderspacer.stl",
+  "source_mode": "archive_brep",
+  "units": "mm",
+  "object_count": 2,
+  "mesh_facets": 1416,
+  "mesh_points": 688,
+  "combined_bound_box": {
+    "xmin_mm": -30.9478945,
+    "xmax_mm": 30.890642,
+    "ymin_mm": -37.334354,
+    "ymax_mm": 2.55304825,
+    "zmin_mm": 0.0,
+    "zmax_mm": 18.0,
+    "xlen_mm": 61.838536500000004,
+    "ylen_mm": 39.887402249999994,
+    "zlen_mm": 18.0
+  },
+  "objects": [
+    {
+      "name": "PartShape1.brp",
+      "bound_box": {
+        "xmin_mm": -30.9478945,
+        "xmax_mm": 30.890642000000007,
+        "ymin_mm": -37.33435399999999,
+        "ymax_mm": 2.5530482499999994,
+        "zmin_mm": 0.0,
+        "zmax_mm": 6.0,
+        "xlen_mm": 61.838536500000004,
+        "ylen_mm": 39.88740224999999,
+        "zlen_mm": 6.0
+      }
+    },
+    {
+      "name": "PartShape2.brp",
+      "bound_box": {
+        "xmin_mm": -30.9478945,
+        "xmax_mm": 30.890642000000007,
+        "ymin_mm": -37.33435399999999,
+        "ymax_mm": 2.5530482499999994,
+        "zmin_mm": 12.0,
+        "zmax_mm": 18.0,
+        "xlen_mm": 61.838536500000004,
+        "ylen_mm": 39.88740224999999,
+        "zlen_mm": 6.0
+      }
+    }
+  ]
+}

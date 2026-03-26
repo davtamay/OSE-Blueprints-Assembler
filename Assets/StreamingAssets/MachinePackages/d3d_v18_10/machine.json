@@ -4,10 +4,10 @@
     "machine": {
         "id": "d3d_v18_10",
         "name": "D3D v18.10",
-        "displayName": "D3D v18.10 - Frame, Cube Joining, Axes Stage 01, and Extruder Stage 01",
-        "description": "D3D frame fabrication, cube joining, first axes stage, and first extruder module stage. After the welded frame is accepted and the first Y/X axis relationships are established, the package stages a Titan Aero core, attaches the nozzle, builds the fan and sensor-side hardware, and checks the resulting nozzle module before later carriage integration.",
+        "displayName": "D3D v18.10 - Frame, Cube Joining, Axes Stage 01, and Extruder Stages 01-02",
+        "description": "D3D frame fabrication, cube joining, first axes stage, and the first two extruder stages. After the welded frame is accepted and the first Y/X axis relationships are established, the package stages a Titan Aero core, builds the nozzle, fan, and sensor-side hardware, then assembles the carriage-side bracket and top-plate stack before later printer-wide extruder integration.",
         "difficulty": "beginner",
-        "estimatedBuildTimeMinutes": 170,
+        "estimatedBuildTimeMinutes": 190,
         "learningObjectives": [
             "Recognize the stock dimensions used to fabricate the D3D frame sides",
             "Place all 24 flat bars in their real 14 inch square side geometry",
@@ -19,19 +19,22 @@
             "Mount the first Y-left and Y-right axis units to the accepted frame",
             "Fit the first X-axis module tightly between the completed Y-axis pair",
             "Lock, tension, and check the first X-axis module without visible gap or binding",
-            "Build the first Titan Aero nozzle, fan, and sensor module before later carriage integration"
+            "Build the first Titan Aero nozzle, fan, and sensor module before later carriage integration",
+            "Assemble the carriage-side Titan Aero bracket, top plate, and simplified carriage stack before final printer-wide extruder mounting is introduced"
         ],
         "recommendedMode": "guided",
         "entryAssemblyIds": [
             "assembly_d3d_frame",
             "assembly_d3d_axes_stage_01",
-            "assembly_d3d_extruder_stage_01"
+            "assembly_d3d_extruder_stage_01",
+            "assembly_d3d_extruder_stage_02"
         ],
         "prerequisiteNotes": [
             "The six panel work zones are a tighter raised teaching layout so small real-size stock remains readable and selectable while preserving exact panel geometry.",
             "This package now covers frame fabrication, cube joining, and a first axes stage.",
             "Axes Stage 01 uses source-backed procedure order and mounting relationships, but the axis module shapes remain schematic placeholders until exact v18.10 axis dimensions are extracted.",
-            "Extruder Stage 01 locks the Titan Aero path and stops at the nozzle / fan / sensor module before the unresolved v18.10 carriage-mount variant is authored."
+            "Extruder Stage 01 locks the Titan Aero path and stops at the nozzle / fan / sensor module before the unresolved v18.10 carriage-mount variant is authored.",
+            "Extruder Stage 02 assembles the carriage-side bracket, top plate, and simplified carriage stack only. Final printer-wide mounted orientation, spacer usage, and wiring remain deferred."
         ],
         "sourceReferences": [
             {
@@ -103,6 +106,20 @@
                 "title": "D3D v19.04",
                 "referencePath": "https://wiki.opensourceecology.org/wiki/D3D_v19.04",
                 "notes": "Provides the published extruder build sequence: build nozzle, build fan attachment, and add sensor holder."
+            },
+            {
+                "id": "source_d3d_v19_02",
+                "type": "reference_doc",
+                "title": "D3D v19.02",
+                "referencePath": "https://wiki.opensourceecology.org/wiki/D3D_v19.02",
+                "notes": "Provides carriage-side extruder mount files including the bracket, top plate, and simplified carriage references."
+            },
+            {
+                "id": "source_d3d_v19_06",
+                "type": "reference_doc",
+                "title": "D3D v19.06",
+                "referencePath": "https://wiki.opensourceecology.org/wiki/D3D_v19.06",
+                "notes": "Confirms the later carriage-side Titan Aero mount-stack file set without forcing the final overslung or underslung integration choice onto v18.10."
             }
         ],
         "packageVersion": null
@@ -184,6 +201,7 @@
                 "step_verify_y_axis_pair_alignment",
                 "step_tighten_x_axis_idler_screws",
                 "step_anchor_x_axis_idler_to_y_right",
+                "step_snug_x_axis_idler_mount_bolts",
                 "step_loosen_start_x_axis_motor_holder_bolts",
                 "step_fit_x_axis_span_between_y_axes",
                 "step_lock_x_axis_motor_holder_screws",
@@ -220,6 +238,29 @@
                 "assembly_d3d_axes_stage_01"
             ],
             "learningFocus": "Titan Aero module decomposition, nozzle-side extruder sequencing, first fan and sensor-side attachments, and a conservative service-clearance check before the unresolved carriage-mount variant is introduced."
+        },
+        {
+            "id": "assembly_d3d_extruder_stage_02",
+            "name": "D3D Extruder Stage 02",
+            "description": "Stages the simplified carriage, assembles the first carriage-side Titan Aero bracket and top-plate stack, mounts the completed nozzle module onto that carriage-side stack, and checks service clearance before later printer-wide integration.",
+            "machineId": "d3d_v18_10",
+            "subassemblyIds": [
+                "subassembly_extruder_carriage_mount_stack",
+                "subassembly_extruder_carriage_unit"
+            ],
+            "stepIds": [
+                "step_stage_extruder_simplified_carriage",
+                "step_place_titan_aero_mount_bracket",
+                "step_secure_titan_aero_mount_bracket",
+                "step_place_titan_aero_mount_top_plate",
+                "step_secure_titan_aero_mount_top_plate",
+                "step_mount_extruder_module_to_carriage_stack",
+                "step_check_extruder_carriage_mount_clearance"
+            ],
+            "dependencyAssemblyIds": [
+                "assembly_d3d_extruder_stage_01"
+            ],
+            "learningFocus": "Carriage-side extruder mount-stack assembly, bracket and top-plate fastening order, rigid nozzle-module mounting, and service-clearance checks before later printer-wide extruder integration."
         }
     ],
     "subassemblies": [
@@ -428,6 +469,7 @@
             ],
             "stepIds": [
                 "step_anchor_x_axis_idler_to_y_right",
+                "step_snug_x_axis_idler_mount_bolts",
                 "step_fit_x_axis_span_between_y_axes"
             ],
             "milestoneMessage": "X-axis module fitted between Y-left and Y-right."
@@ -445,6 +487,7 @@
             "stepIds": [
                 "step_tighten_x_axis_idler_screws",
                 "step_anchor_x_axis_idler_to_y_right",
+                "step_snug_x_axis_idler_mount_bolts",
                 "step_loosen_start_x_axis_motor_holder_bolts",
                 "step_fit_x_axis_span_between_y_axes",
                 "step_lock_x_axis_motor_holder_screws",
@@ -510,6 +553,51 @@
                 "step_check_extruder_nozzle_module_clearance"
             ],
             "milestoneMessage": "Titan Aero nozzle module built and checked for first-pass clearance."
+        },
+        {
+            "id": "subassembly_extruder_carriage_mount_stack",
+            "name": "Extruder Carriage Mount Stack",
+            "assemblyId": "assembly_d3d_extruder_stage_02",
+            "description": "Stages the simplified carriage and assembles the first carriage-side Titan Aero bracket and top-plate stack before the nozzle module is mounted.",
+            "partIds": [
+                "d3d_extruder_simplified_carriage",
+                "d3d_extruder_mount_bracket",
+                "d3d_extruder_mount_top_plate"
+            ],
+            "stepIds": [
+                "step_stage_extruder_simplified_carriage",
+                "step_place_titan_aero_mount_bracket",
+                "step_secure_titan_aero_mount_bracket",
+                "step_place_titan_aero_mount_top_plate",
+                "step_secure_titan_aero_mount_top_plate"
+            ],
+            "milestoneMessage": "Simplified carriage, bracket, and top plate assembled into the first carriage-side Titan Aero mount stack."
+        },
+        {
+            "id": "subassembly_extruder_carriage_unit",
+            "name": "Extruder Carriage Unit",
+            "assemblyId": "assembly_d3d_extruder_stage_02",
+            "description": "Combines the completed Titan Aero nozzle module with the carriage-side bracket and top-plate stack to create the first carriage-side extruder unit.",
+            "partIds": [
+                "d3d_extruder_simplified_carriage",
+                "d3d_extruder_mount_bracket",
+                "d3d_extruder_mount_top_plate",
+                "d3d_titan_aero_core",
+                "d3d_extruder_nozzle_assembly",
+                "d3d_extruder_5015_blower",
+                "d3d_extruder_sensor_holder",
+                "d3d_extruder_8mm_sensor"
+            ],
+            "stepIds": [
+                "step_stage_extruder_simplified_carriage",
+                "step_place_titan_aero_mount_bracket",
+                "step_secure_titan_aero_mount_bracket",
+                "step_place_titan_aero_mount_top_plate",
+                "step_secure_titan_aero_mount_top_plate",
+                "step_mount_extruder_module_to_carriage_stack",
+                "step_check_extruder_carriage_mount_clearance"
+            ],
+            "milestoneMessage": "Titan Aero nozzle module mounted to the carriage-side bracket stack and checked for first-pass service clearance."
         }
     ],
     "partTemplates": [
@@ -543,13 +631,22 @@
             ]
         },
         {
-            "id": "template_d3d_axis_side_unit",
-            "name": "D3D Axis Side Unit",
+            "id": "template_d3d_y_left_axis_unit",
+            "name": "D3D Y-Left Axis Unit",
             "category": "custom",
-            "material": "Axis module placeholder",
-            "function": "Mounted side-axis unit for the first D3D axes stage.",
+            "material": "Composite universal-axis left side unit",
+            "function": "Composite CAD-derived Y-left unit built from the universal-axis motor-side block, carriage, rods, and left endstop holder.",
             "quantity": 1,
-            "assetRef": "assets/parts/d3d_axis_side_unit_placeholder.glb"
+            "assetRef": "assets/parts/d3d_y_left_axis_unit_approved.glb"
+        },
+        {
+            "id": "template_d3d_y_right_axis_unit",
+            "name": "D3D Y-Right Axis Unit",
+            "category": "custom",
+            "material": "Composite universal-axis right side unit",
+            "function": "Composite CAD-derived Y-right unit built from the universal-axis idler-side block, carriage, and rods.",
+            "quantity": 1,
+            "assetRef": "assets/parts/d3d_y_right_axis_unit_approved.glb"
         },
         {
             "id": "template_d3d_axis_block",
@@ -561,40 +658,67 @@
             "assetRef": "assets/parts/d3d_axis_block_placeholder.glb"
         },
         {
+            "id": "template_d3d_x_axis_idler_unit",
+            "name": "D3D X-Axis Idler Unit",
+            "category": "custom",
+            "material": "Printed idler-side axis block",
+            "function": "CAD-derived short idler-side block used to anchor the X-axis on Y-right.",
+            "quantity": 1,
+            "assetRef": "assets/parts/d3d_x_axis_idler_unit_approved.glb"
+        },
+        {
+            "id": "template_d3d_x_axis_motor_holder_unit",
+            "name": "D3D X-Axis Motor Holder Unit",
+            "category": "custom",
+            "material": "Printed motor-side axis block",
+            "function": "CAD-derived motor-side block used to set X-axis span and retain the drive-side hardware.",
+            "quantity": 1,
+            "assetRef": "assets/parts/d3d_x_axis_motor_holder_unit_approved.glb"
+        },
+        {
             "id": "template_d3d_axis_rod_pair",
             "name": "D3D Axis Rod Pair",
             "category": "shaft",
-            "material": "Guide rod placeholder",
-            "function": "Paired rods that define the X-axis span during fit.",
+            "material": "Steel guide rods",
+            "function": "CAD-derived paired rods that define the X-axis span during fit.",
             "quantity": 1,
-            "assetRef": "assets/parts/d3d_axis_rod_pair_placeholder.glb"
+            "assetRef": "assets/parts/d3d_x_axis_rod_pair_approved.glb"
         },
         {
             "id": "template_d3d_axis_belt_peg",
             "name": "D3D Axis Belt Peg",
             "category": "fastener",
-            "material": "Printed belt-peg placeholder",
-            "function": "Belt peg reinserted after tension is set.",
+            "material": "Printed belt peg",
+            "function": "CAD-derived belt peg reinserted after tension is set.",
             "quantity": 1,
-            "assetRef": "assets/parts/d3d_axis_belt_peg_placeholder.glb"
+            "assetRef": "assets/parts/d3d_x_axis_belt_peg_approved.glb"
+        },
+        {
+            "id": "template_d3d_axis_mount_m6x30_bolt",
+            "name": "Axis Mount M6x30 Bolt",
+            "category": "custom",
+            "material": "Dimension-authored generic M6x30 cap bolt",
+            "function": "Represents the external M6x30 bolts used to mount the X-axis between the Y carriages.",
+            "quantity": 1,
+            "assetRef": "assets/parts/d3d_axis_mount_m6x30_bolt_approved.glb"
         },
         {
             "id": "template_d3d_titan_aero_core",
             "name": "Titan Aero Core",
             "category": "custom",
-            "material": "Extruder core placeholder",
+            "material": "Extruder core CAD-derived",
             "function": "Represents the staged Titan Aero body and motor assembly before carriage mounting.",
             "quantity": 1,
-            "assetRef": "assets/parts/d3d_titan_aero_core_placeholder.glb"
+            "assetRef": "assets/parts/d3d_titan_aero_core_approved.glb"
         },
         {
             "id": "template_d3d_extruder_nozzle_assembly",
             "name": "Extruder Nozzle Assembly",
             "category": "custom",
-            "material": "Nozzle assembly placeholder",
+            "material": "Nozzle assembly CAD-derived",
             "function": "Represents the nozzle-side assembly attached to the Titan Aero core.",
             "quantity": 1,
-            "assetRef": "assets/parts/d3d_extruder_nozzle_assembly_placeholder.glb"
+            "assetRef": "assets/parts/d3d_extruder_nozzle_assembly_approved.glb"
         },
         {
             "id": "template_d3d_extruder_blower",
@@ -609,10 +733,10 @@
             "id": "template_d3d_sensor_holder",
             "name": "Extruder Sensor Holder",
             "category": "custom",
-            "material": "Sensor holder placeholder",
+            "material": "Sensor holder CAD-derived",
             "function": "Represents the printed holder that positions the 8 mm sensor near the nozzle-side module.",
             "quantity": 1,
-            "assetRef": "assets/parts/d3d_extruder_sensor_holder_placeholder.glb"
+            "assetRef": "assets/parts/d3d_extruder_sensor_holder_approved.glb"
         },
         {
             "id": "template_d3d_8mm_sensor",
@@ -622,6 +746,33 @@
             "function": "Represents the 8 mm sensor inserted into the holder during the first extruder slice.",
             "quantity": 1,
             "assetRef": "assets/parts/d3d_8mm_sensor_approved.glb"
+        },
+        {
+            "id": "template_d3d_extruder_mount_bracket",
+            "name": "Titan Aero Mount Bracket",
+            "category": "custom",
+            "material": "Carriage-mount bracket CAD-derived",
+            "function": "Represents the printed carriage-side Titan Aero mount bracket used in the second extruder slice.",
+            "quantity": 1,
+            "assetRef": "assets/parts/d3d_extruder_mount_bracket_approved.glb"
+        },
+        {
+            "id": "template_d3d_extruder_mount_top_plate",
+            "name": "Titan Aero Mount Top Plate",
+            "category": "custom",
+            "material": "Top-plate CAD-derived",
+            "function": "Represents the top plate that captures the bracket stack on the simplified carriage.",
+            "quantity": 1,
+            "assetRef": "assets/parts/d3d_extruder_mount_top_plate_approved.glb"
+        },
+        {
+            "id": "template_d3d_extruder_simplified_carriage",
+            "name": "Simplified Carriage",
+            "category": "custom",
+            "material": "Simplified carriage placeholder",
+            "function": "Represents the carriage-side printed body that receives the Titan Aero bracket stack before later X-axis integration.",
+            "quantity": 1,
+            "assetRef": "assets/parts/d3d_extruder_simplified_carriage_placeholder.glb"
         }
     ],
     "parts": [
@@ -821,19 +972,19 @@
             "id": "d3d_y_left_axis_unit",
             "name": "Y-Left Axis Unit",
             "function": "Left-side mounted axis for the first X-axis fitting stage.",
-            "templateId": "template_d3d_axis_side_unit"
+            "templateId": "template_d3d_y_left_axis_unit"
         },
         {
             "id": "d3d_y_right_axis_unit",
             "name": "Y-Right Axis Unit",
             "function": "Right-side mounted axis that anchors the X-axis idler side first.",
-            "templateId": "template_d3d_axis_side_unit"
+            "templateId": "template_d3d_y_right_axis_unit"
         },
         {
             "id": "d3d_x_axis_idler_unit",
             "name": "X-Axis Idler Side",
             "function": "Anchored X-axis idler side.",
-            "templateId": "template_d3d_axis_block"
+            "templateId": "template_d3d_x_axis_idler_unit"
         },
         {
             "id": "d3d_x_axis_rod_pair",
@@ -845,13 +996,37 @@
             "id": "d3d_x_axis_motor_holder_unit",
             "name": "X-Axis Motor Holder Side",
             "function": "Adjustable X-axis motor-holder side.",
-            "templateId": "template_d3d_axis_block"
+            "templateId": "template_d3d_x_axis_motor_holder_unit"
         },
         {
             "id": "fastener_x_axis_belt_peg",
             "name": "X-Axis Belt Peg",
             "function": "Belt peg reinserted after the belt is tensioned.",
             "templateId": "template_d3d_axis_belt_peg"
+        },
+        {
+            "id": "fastener_x_axis_idler_mount_m6x30_a",
+            "name": "X-Axis Idler Mount M6x30 A",
+            "function": "First external M6x30 bolt that anchors the X-axis idler side to the Y-right carriage.",
+            "templateId": "template_d3d_axis_mount_m6x30_bolt"
+        },
+        {
+            "id": "fastener_x_axis_idler_mount_m6x30_b",
+            "name": "X-Axis Idler Mount M6x30 B",
+            "function": "Second external M6x30 bolt that anchors the X-axis idler side to the Y-right carriage.",
+            "templateId": "template_d3d_axis_mount_m6x30_bolt"
+        },
+        {
+            "id": "fastener_x_axis_motor_mount_m6x30_a",
+            "name": "X-Axis Motor Mount M6x30 A",
+            "function": "First external M6x30 bolt that loosely starts the X-axis motor-holder side on the Y-left carriage.",
+            "templateId": "template_d3d_axis_mount_m6x30_bolt"
+        },
+        {
+            "id": "fastener_x_axis_motor_mount_m6x30_b",
+            "name": "X-Axis Motor Mount M6x30 B",
+            "function": "Second external M6x30 bolt that loosely starts the X-axis motor-holder side on the Y-left carriage.",
+            "templateId": "template_d3d_axis_mount_m6x30_bolt"
         },
         {
             "id": "d3d_titan_aero_core",
@@ -882,6 +1057,24 @@
             "name": "Extruder 8 mm Sensor",
             "function": "8 mm sensor inserted into the holder during the first extruder slice.",
             "templateId": "template_d3d_8mm_sensor"
+        },
+        {
+            "id": "d3d_extruder_mount_bracket",
+            "name": "Titan Aero Mount Bracket",
+            "function": "Printed carriage-side bracket that receives the Titan Aero module before later printer-wide mounting.",
+            "templateId": "template_d3d_extruder_mount_bracket"
+        },
+        {
+            "id": "d3d_extruder_mount_top_plate",
+            "name": "Titan Aero Mount Top Plate",
+            "function": "Top plate that captures the bracket and module stack against the simplified carriage.",
+            "templateId": "template_d3d_extruder_mount_top_plate"
+        },
+        {
+            "id": "d3d_extruder_simplified_carriage",
+            "name": "Simplified Carriage",
+            "function": "Carriage-side printed body used to build the first Titan Aero mount stack before later printer-wide integration.",
+            "templateId": "template_d3d_extruder_simplified_carriage"
         }
     ],
     "tools": [
@@ -904,6 +1097,7 @@
             "id": "tool_locking_clamp",
             "name": "Locking Clamp",
             "category": "hand_tool",
+            "persistent": true,
             "purpose": "Pins a verified frame side flat so the overlapped bars cannot shift while tack welds are added.",
             "usageNotes": "Clamp near the panel center after the square check passes, then keep the bars flat while you tack opposite corners.",
             "safetyNotes": "Keep fingers clear of the jaws and release clamping force slowly.",
@@ -912,7 +1106,26 @@
                 "vise grip welding clamp",
                 "panel welding clamp"
             ],
-            "assetRef": "assets/tools/tool_locking_clamp.glb"
+            "assetRef": "assets/tools/tool_locking_clamp.glb",
+            "toolPose": {
+                "gripPoint": {
+                    "x": 0.95799,
+                    "y": 1.82134,
+                    "z": -0.05899
+                },
+                "gripRotation": {
+                    "x": 7.86335,
+                    "y": 189.3289,
+                    "z": 74.25144
+                },
+                "tipPoint": {
+                    "x": 0.10157,
+                    "y": 0.77763,
+                    "z": 0
+                },
+                "handedness": "right",
+                "poseHint": "power_grip"
+            }
         },
         {
             "id": "tool_mig_torch",
@@ -932,6 +1145,14 @@
                 "x": 180.0,
                 "y": 90.0,
                 "z": 0.0
+            },
+            "toolPose": {
+                "gripPoint": { "x": -0.13756, "y": 0.98308, "z": -0.43091 },
+                "gripRotation": { "x": 25.76652, "y": 263.8049, "z": 177.7357 },
+                "tipPoint": { "x": -0.65968, "y": 0.02, "z": 0.01352 },
+                "cursorOffset": { "x": 0.01664, "y": 0.90876, "z": 0.00144 },
+                "handedness": "right",
+                "poseHint": "power_grip"
             }
         },
         {
@@ -950,10 +1171,34 @@
         },
         {
             "id": "tool_allen_key_metric",
-            "name": "Metric Allen Key",
+            "name": "5 mm Metric Allen Key",
             "category": "hand_tool",
             "purpose": "Starts and tightens the X-axis fitting fasteners.",
-            "assetRef": "assets/tools/tool_allen_key_metric.glb"
+            "assetRef": "assets/tools/tool_allen_key_metric.glb",
+            "toolPose": {
+                "gripPoint": {
+                    "x": 0.0,
+                    "y": -0.0595,
+                    "z": 0.0
+                },
+                "tipPoint": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.033
+                },
+                "tipAxis": {
+                    "x": 0.0,
+                    "y": 0.8745037,
+                    "z": 0.48501885
+                },
+                "actionAxis": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 1.0
+                },
+                "handedness": "either",
+                "poseHint": "precision"
+            }
         },
         {
             "id": "tool_pliers",
@@ -964,17 +1209,41 @@
         },
         {
             "id": "tool_hex_driver_metric_small",
-            "name": "Small Metric Hex Driver",
+            "name": "2.5 mm Metric Hex Key",
             "category": "hand_tool",
             "purpose": "Secures the small holder-side fasteners during the first Titan Aero module build.",
-            "assetRef": "assets/tools/tool_allen_key_metric.glb"
+            "assetRef": "assets/tools/tool_hex_driver_metric_small.glb",
+            "toolPose": {
+                "gripPoint": {
+                    "x": 0.0,
+                    "y": -0.0637,
+                    "z": 0.0
+                },
+                "tipPoint": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.021
+                },
+                "tipAxis": {
+                    "x": 0.0,
+                    "y": 0.94972178,
+                    "z": 0.31309509
+                },
+                "actionAxis": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 1.0
+                },
+                "handedness": "either",
+                "poseHint": "precision"
+            }
         },
         {
             "id": "tool_screwdriver_small",
             "name": "Small Screwdriver",
             "category": "hand_tool",
             "purpose": "Secures the blower attachment during the first Titan Aero module build.",
-            "assetRef": "assets/tools/tool_allen_key_metric.glb"
+            "assetRef": "assets/tools/tool_screwdriver_small.glb"
         }
     ],
     "steps": [
@@ -1243,6 +1512,9 @@
                 "d3d_frame_top_bottom_bar",
                 "d3d_frame_top_left_bar"
             ],
+            "removePersistentToolIds": [
+                "tool_locking_clamp"
+            ],
             "relevantToolIds": [],
             "targetIds": [
                 "target_top_top_bar",
@@ -1493,6 +1765,9 @@
                 "d3d_frame_left_right_bar",
                 "d3d_frame_left_bottom_bar",
                 "d3d_frame_left_left_bar"
+            ],
+            "removePersistentToolIds": [
+                "tool_locking_clamp"
             ],
             "relevantToolIds": [],
             "targetIds": [
@@ -1745,6 +2020,9 @@
                 "d3d_frame_right_bottom_bar",
                 "d3d_frame_right_left_bar"
             ],
+            "removePersistentToolIds": [
+                "tool_locking_clamp"
+            ],
             "relevantToolIds": [],
             "targetIds": [
                 "target_right_top_bar",
@@ -1995,6 +2273,9 @@
                 "d3d_frame_front_right_bar",
                 "d3d_frame_front_bottom_bar",
                 "d3d_frame_front_left_bar"
+            ],
+            "removePersistentToolIds": [
+                "tool_locking_clamp"
             ],
             "relevantToolIds": [],
             "targetIds": [
@@ -2247,6 +2528,9 @@
                 "d3d_frame_rear_bottom_bar",
                 "d3d_frame_rear_left_bar"
             ],
+            "removePersistentToolIds": [
+                "tool_locking_clamp"
+            ],
             "relevantToolIds": [],
             "targetIds": [
                 "target_rear_top_bar",
@@ -2495,6 +2779,9 @@
             "requiredPartIds": [],
             "requiredSubassemblyId": "subassembly_bottom_frame_side",
             "optionalPartIds": [],
+            "removePersistentToolIds": [
+                "tool_locking_clamp"
+            ],
             "relevantToolIds": [],
             "targetIds": [
                 "target_cube_bottom_side"
@@ -3637,18 +3924,57 @@
             "assemblyId": "assembly_d3d_axes_stage_01",
             "subassemblyId": "subassembly_x_axis_fitting",
             "sequenceIndex": 46,
-            "instructionText": "Place the X-axis idler side, rod pair, and motor-holder side into their pre-fit positions so the idler side anchors on Y-right first.",
+            "instructionText": "Place the X-axis idler side, rod pair, motor-holder side, and the two Y-right M6x30 bolts into their pre-fit positions so the idler side anchors on Y-right first.",
             "completionType": "placement",
             "family": "Place",
             "requiredPartIds": [
                 "d3d_x_axis_idler_unit",
                 "d3d_x_axis_rod_pair",
-                "d3d_x_axis_motor_holder_unit"
+                "d3d_x_axis_motor_holder_unit",
+                "fastener_x_axis_idler_mount_m6x30_a",
+                "fastener_x_axis_idler_mount_m6x30_b"
             ],
             "targetIds": [
                 "target_x_axis_idler_anchor_prefit",
                 "target_x_axis_rod_pair_prefit",
-                "target_x_axis_motor_holder_prefit"
+                "target_x_axis_motor_holder_prefit",
+                "target_x_axis_idler_mount_y_right_bolt_place_a",
+                "target_x_axis_idler_mount_y_right_bolt_place_b"
+            ]
+        },
+        {
+            "id": "step_snug_x_axis_idler_mount_bolts",
+            "name": "Snug the Y-right M6x30 anchor bolts",
+            "assemblyId": "assembly_d3d_axes_stage_01",
+            "subassemblyId": "subassembly_x_axis_fitting",
+            "sequenceIndex": 47,
+            "instructionText": "Use the metric Allen key to snug the two Y-right M6x30 bolts so the idler side stays anchored while the motor-holder side still remains adjustable.",
+            "completionType": "tool_action",
+            "family": "Use",
+            "profile": "Torque",
+            "relevantToolIds": [
+                "tool_allen_key_metric"
+            ],
+            "targetIds": [
+                "target_x_axis_idler_mount_y_right_a",
+                "target_x_axis_idler_mount_y_right_b"
+            ],
+            "targetOrder": "sequential",
+            "requiredToolActions": [
+                {
+                    "id": "action_x_axis_idler_mount_y_right_a",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
+                    "targetId": "target_x_axis_idler_mount_y_right_a",
+                    "requiredCount": 1
+                },
+                {
+                    "id": "action_x_axis_idler_mount_y_right_b",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
+                    "targetId": "target_x_axis_idler_mount_y_right_b",
+                    "requiredCount": 1
+                }
             ]
         },
         {
@@ -3656,8 +3982,41 @@
             "name": "Loosely start the X-axis motor-holder bolts on the Y-left carriage",
             "assemblyId": "assembly_d3d_axes_stage_01",
             "subassemblyId": "subassembly_x_axis_fitting",
-            "sequenceIndex": 47,
-            "instructionText": "Start the two motor-holder fasteners on the Y-left side only loosely so the X-axis span can still be adjusted.",
+            "sequenceIndex": 48,
+            "instructionText": "Place the two Y-left M6x30 motor-holder bolts by hand only loosely so the X-axis span can still be adjusted.",
+            "completionType": "placement",
+            "family": "Place",
+            "targetIds": [
+                "target_x_axis_motor_mount_y_left_bolt_place_a",
+                "target_x_axis_motor_mount_y_left_bolt_place_b"
+            ],
+            "requiredPartIds": [
+                "fastener_x_axis_motor_mount_m6x30_a",
+                "fastener_x_axis_motor_mount_m6x30_b"
+            ]
+        },
+        {
+            "id": "step_fit_x_axis_span_between_y_axes",
+            "name": "Lengthen the X-axis to fit tightly between the Y axes",
+            "assemblyId": "assembly_d3d_axes_stage_01",
+            "subassemblyId": "subassembly_x_axis_fitting",
+            "sequenceIndex": 49,
+            "instructionText": "Drag the yellow motor-holder side left along the fit guide until it reaches the green final-fit marker and seats against the Y-left side.",
+            "completionType": "placement",
+            "family": "Place",
+            "profile": "AxisFit",
+            "requiredSubassemblyId": "subassembly_x_axis",
+            "targetIds": [
+                "target_x_axis_span_fit"
+            ]
+        },
+        {
+            "id": "step_lock_x_axis_motor_holder_screws",
+            "name": "Lock the Y-left mount bolts and motor-holder screws",
+            "assemblyId": "assembly_d3d_axes_stage_01",
+            "subassemblyId": "subassembly_x_axis_fitting",
+            "sequenceIndex": 50,
+            "instructionText": "After the X-axis span is seated tightly, tighten the two Y-left M6x30 mount bolts first, then lock the motor-holder-side internal screws.",
             "completionType": "tool_action",
             "family": "Use",
             "profile": "Torque",
@@ -3666,7 +4025,14 @@
             ],
             "targetIds": [
                 "target_x_axis_motor_mount_y_left_a",
-                "target_x_axis_motor_mount_y_left_b"
+                "target_x_axis_motor_mount_y_left_b",
+                "target_x_axis_motor_holder_m6x18_1",
+                "target_x_axis_motor_holder_m6x18_2",
+                "target_x_axis_motor_holder_m6x18_3",
+                "target_x_axis_motor_holder_m3_1",
+                "target_x_axis_motor_holder_m3_2",
+                "target_x_axis_motor_holder_m3_3",
+                "target_x_axis_motor_holder_m3_4"
             ],
             "targetOrder": "sequential",
             "requiredToolActions": [
@@ -3683,48 +4049,7 @@
                     "actionType": "tighten",
                     "targetId": "target_x_axis_motor_mount_y_left_b",
                     "requiredCount": 1
-                }
-            ]
-        },
-        {
-            "id": "step_fit_x_axis_span_between_y_axes",
-            "name": "Lengthen the X-axis to fit tightly between the Y axes",
-            "assemblyId": "assembly_d3d_axes_stage_01",
-            "subassemblyId": "subassembly_x_axis_fitting",
-            "sequenceIndex": 48,
-            "instructionText": "Drag the yellow motor-holder side left along the fit guide until it reaches the green final-fit marker and seats against the Y-left side.",
-            "completionType": "placement",
-            "family": "Place",
-            "profile": "AxisFit",
-            "requiredSubassemblyId": "subassembly_x_axis",
-            "targetIds": [
-                "target_x_axis_span_fit"
-            ]
-        },
-        {
-            "id": "step_lock_x_axis_motor_holder_screws",
-            "name": "Lock the motor-holder screws",
-            "assemblyId": "assembly_d3d_axes_stage_01",
-            "subassemblyId": "subassembly_x_axis_fitting",
-            "sequenceIndex": 49,
-            "instructionText": "Lock the motor-holder side only after the X-axis span is seated tightly between the two Y axes.",
-            "completionType": "tool_action",
-            "family": "Use",
-            "profile": "Torque",
-            "relevantToolIds": [
-                "tool_allen_key_metric"
-            ],
-            "targetIds": [
-                "target_x_axis_motor_holder_m6x18_1",
-                "target_x_axis_motor_holder_m6x18_2",
-                "target_x_axis_motor_holder_m6x18_3",
-                "target_x_axis_motor_holder_m3_1",
-                "target_x_axis_motor_holder_m3_2",
-                "target_x_axis_motor_holder_m3_3",
-                "target_x_axis_motor_holder_m3_4"
-            ],
-            "targetOrder": "sequential",
-            "requiredToolActions": [
+                },
                 {
                     "id": "action_x_axis_motor_holder_m6x18_1",
                     "toolId": "tool_allen_key_metric",
@@ -3781,7 +4106,7 @@
             "name": "Tension the X-axis belt",
             "assemblyId": "assembly_d3d_axes_stage_01",
             "subassemblyId": "subassembly_x_axis_fitting",
-            "sequenceIndex": 50,
+            "sequenceIndex": 51,
             "instructionText": "Pull the X-axis belt to final hand tension only after the span and fasteners are locked.",
             "completionType": "tool_action",
             "family": "Use",
@@ -3807,7 +4132,7 @@
             "id": "step_reinsert_x_axis_belt_peg",
             "name": "Reinsert the belt peg",
             "assemblyId": "assembly_d3d_axes_stage_01",
-            "sequenceIndex": 51,
+            "sequenceIndex": 52,
             "instructionText": "Place the belt peg back into the retainer once the belt is tensioned.",
             "completionType": "placement",
             "family": "Place",
@@ -3823,7 +4148,7 @@
             "name": "Check X-axis tightness and travel",
             "assemblyId": "assembly_d3d_axes_stage_01",
             "subassemblyId": "subassembly_x_axis_fitting",
-            "sequenceIndex": 52,
+            "sequenceIndex": 53,
             "instructionText": "Inspect the fitted X-axis and confirm it can travel along the mounted Y axes without binding, without a visible gap at the left interface, and with the Y-left end-stop relationship preserved.",
             "completionType": "confirmation",
             "family": "Confirm",
@@ -3839,7 +4164,7 @@
             "name": "Stage the Titan Aero core",
             "assemblyId": "assembly_d3d_extruder_stage_01",
             "subassemblyId": "subassembly_titan_aero_core",
-            "sequenceIndex": 53,
+            "sequenceIndex": 54,
             "instructionText": "Place the Titan Aero core into the extruder work zone so the nozzle, fan, and sensor-side parts can be added in sequence.",
             "completionType": "placement",
             "family": "Place",
@@ -3855,7 +4180,7 @@
             "name": "Attach the nozzle assembly",
             "assemblyId": "assembly_d3d_extruder_stage_01",
             "subassemblyId": "subassembly_titan_aero_core",
-            "sequenceIndex": 54,
+            "sequenceIndex": 55,
             "instructionText": "Place the nozzle assembly onto the staged Titan Aero core before any cooling or sensor-side hardware is added.",
             "completionType": "placement",
             "family": "Place",
@@ -3871,7 +4196,7 @@
             "name": "Place the print-cooling blower",
             "assemblyId": "assembly_d3d_extruder_stage_01",
             "subassemblyId": "subassembly_extruder_sensor_and_fan_attachment",
-            "sequenceIndex": 55,
+            "sequenceIndex": 56,
             "instructionText": "Place the 5015 blower on the fan side of the nozzle module before securing its mount points.",
             "completionType": "placement",
             "family": "Place",
@@ -3887,7 +4212,7 @@
             "name": "Secure the blower attachment",
             "assemblyId": "assembly_d3d_extruder_stage_01",
             "subassemblyId": "subassembly_extruder_sensor_and_fan_attachment",
-            "sequenceIndex": 56,
+            "sequenceIndex": 57,
             "instructionText": "Tighten the blower-side fasteners only after the blower body is seated on the nozzle module.",
             "completionType": "tool_action",
             "family": "Use",
@@ -3922,7 +4247,7 @@
             "name": "Place the sensor holder",
             "assemblyId": "assembly_d3d_extruder_stage_01",
             "subassemblyId": "subassembly_extruder_sensor_and_fan_attachment",
-            "sequenceIndex": 57,
+            "sequenceIndex": 58,
             "instructionText": "Place the sensor holder on the nozzle module after the blower side is established.",
             "completionType": "placement",
             "family": "Place",
@@ -3938,7 +4263,7 @@
             "name": "Secure the sensor holder",
             "assemblyId": "assembly_d3d_extruder_stage_01",
             "subassemblyId": "subassembly_extruder_sensor_and_fan_attachment",
-            "sequenceIndex": 58,
+            "sequenceIndex": 59,
             "instructionText": "Tighten the small holder-side fasteners so the sensor holder is fixed before the sensor is inserted.",
             "completionType": "tool_action",
             "family": "Use",
@@ -3973,7 +4298,7 @@
             "name": "Place the 8 mm sensor",
             "assemblyId": "assembly_d3d_extruder_stage_01",
             "subassemblyId": "subassembly_extruder_sensor_and_fan_attachment",
-            "sequenceIndex": 59,
+            "sequenceIndex": 60,
             "instructionText": "Place the 8 mm sensor into the holder after the holder is secured.",
             "completionType": "placement",
             "family": "Place",
@@ -3989,7 +4314,7 @@
             "name": "Check nozzle-module clearance",
             "assemblyId": "assembly_d3d_extruder_stage_01",
             "subassemblyId": "subassembly_extruder_nozzle_module",
-            "sequenceIndex": 60,
+            "sequenceIndex": 61,
             "instructionText": "Inspect the completed nozzle module and confirm the nozzle, blower side, and sensor side all keep clear service space for later carriage integration.",
             "completionType": "confirmation",
             "family": "Confirm",
@@ -3998,6 +4323,154 @@
                 "target_extruder_clearance_nozzle",
                 "target_extruder_clearance_fan",
                 "target_extruder_clearance_sensor"
+            ]
+        },
+        {
+            "id": "step_stage_extruder_simplified_carriage",
+            "name": "Stage the simplified carriage",
+            "assemblyId": "assembly_d3d_extruder_stage_02",
+            "subassemblyId": "subassembly_extruder_carriage_mount_stack",
+            "sequenceIndex": 62,
+            "instructionText": "Place the simplified carriage into the carriage-mount work zone before the printed bracket and top plate are added.",
+            "completionType": "placement",
+            "family": "Place",
+            "requiredPartIds": [
+                "d3d_extruder_simplified_carriage"
+            ],
+            "targetIds": [
+                "target_extruder_simplified_carriage_stage"
+            ]
+        },
+        {
+            "id": "step_place_titan_aero_mount_bracket",
+            "name": "Place the Titan Aero mount bracket",
+            "assemblyId": "assembly_d3d_extruder_stage_02",
+            "subassemblyId": "subassembly_extruder_carriage_mount_stack",
+            "sequenceIndex": 63,
+            "instructionText": "Place the stock Titan Aero mount bracket onto the staged simplified carriage before any fasteners are tightened.",
+            "completionType": "placement",
+            "family": "Place",
+            "requiredPartIds": [
+                "d3d_extruder_mount_bracket"
+            ],
+            "targetIds": [
+                "target_extruder_mount_bracket_attach"
+            ]
+        },
+        {
+            "id": "step_secure_titan_aero_mount_bracket",
+            "name": "Secure the mount bracket",
+            "assemblyId": "assembly_d3d_extruder_stage_02",
+            "subassemblyId": "subassembly_extruder_carriage_mount_stack",
+            "sequenceIndex": 64,
+            "instructionText": "Use the metric Allen key to tighten the two bracket fasteners only after the bracket sits flat on the simplified carriage.",
+            "completionType": "tool_action",
+            "family": "Use",
+            "profile": "Torque",
+            "relevantToolIds": [
+                "tool_allen_key_metric"
+            ],
+            "targetIds": [
+                "target_extruder_mount_bracket_fastener_a",
+                "target_extruder_mount_bracket_fastener_b"
+            ],
+            "targetOrder": "sequential",
+            "requiredToolActions": [
+                {
+                    "id": "action_extruder_mount_bracket_fastener_a",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
+                    "targetId": "target_extruder_mount_bracket_fastener_a",
+                    "requiredCount": 1
+                },
+                {
+                    "id": "action_extruder_mount_bracket_fastener_b",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
+                    "targetId": "target_extruder_mount_bracket_fastener_b",
+                    "requiredCount": 1
+                }
+            ]
+        },
+        {
+            "id": "step_place_titan_aero_mount_top_plate",
+            "name": "Place the Titan Aero mount top plate",
+            "assemblyId": "assembly_d3d_extruder_stage_02",
+            "subassemblyId": "subassembly_extruder_carriage_mount_stack",
+            "sequenceIndex": 65,
+            "instructionText": "Place the top plate over the bracket stack so the carriage-side mount can be locked before the completed nozzle module is added.",
+            "completionType": "placement",
+            "family": "Place",
+            "requiredPartIds": [
+                "d3d_extruder_mount_top_plate"
+            ],
+            "targetIds": [
+                "target_extruder_mount_top_plate_attach"
+            ]
+        },
+        {
+            "id": "step_secure_titan_aero_mount_top_plate",
+            "name": "Secure the mount top plate",
+            "assemblyId": "assembly_d3d_extruder_stage_02",
+            "subassemblyId": "subassembly_extruder_carriage_mount_stack",
+            "sequenceIndex": 66,
+            "instructionText": "Use the small hex driver to tighten the top-plate fasteners so the bracket stack is locked before the completed nozzle module is mounted.",
+            "completionType": "tool_action",
+            "family": "Use",
+            "profile": "Torque",
+            "relevantToolIds": [
+                "tool_hex_driver_metric_small"
+            ],
+            "targetIds": [
+                "target_extruder_mount_top_plate_fastener_a",
+                "target_extruder_mount_top_plate_fastener_b"
+            ],
+            "targetOrder": "sequential",
+            "requiredToolActions": [
+                {
+                    "id": "action_extruder_mount_top_plate_fastener_a",
+                    "toolId": "tool_hex_driver_metric_small",
+                    "actionType": "tighten",
+                    "targetId": "target_extruder_mount_top_plate_fastener_a",
+                    "requiredCount": 1
+                },
+                {
+                    "id": "action_extruder_mount_top_plate_fastener_b",
+                    "toolId": "tool_hex_driver_metric_small",
+                    "actionType": "tighten",
+                    "targetId": "target_extruder_mount_top_plate_fastener_b",
+                    "requiredCount": 1
+                }
+            ]
+        },
+        {
+            "id": "step_mount_extruder_module_to_carriage_stack",
+            "name": "Mount the completed nozzle module to the carriage stack",
+            "assemblyId": "assembly_d3d_extruder_stage_02",
+            "subassemblyId": "subassembly_extruder_carriage_unit",
+            "sequenceIndex": 67,
+            "instructionText": "Move the completed Titan Aero nozzle module onto the prepared carriage-side bracket stack. Keep the module square to the mount and let the rigid subassembly target guide the final seated pose.",
+            "completionType": "placement",
+            "family": "Place",
+            "requiredSubassemblyId": "subassembly_extruder_nozzle_module",
+            "targetIds": [
+                "target_extruder_module_to_carriage_mount"
+            ]
+        },
+        {
+            "id": "step_check_extruder_carriage_mount_clearance",
+            "name": "Check carriage-mount clearance and access",
+            "assemblyId": "assembly_d3d_extruder_stage_02",
+            "subassemblyId": "subassembly_extruder_carriage_unit",
+            "sequenceIndex": 68,
+            "instructionText": "Inspect the completed carriage-side Titan Aero mount and confirm the body, nozzle, and sensor side all keep basic service access before later printer-wide integration is authored.",
+            "completionType": "confirmation",
+            "family": "Confirm",
+            "viewMode": "Inspect",
+            "targetIds": [
+                "target_extruder_mount_clearance_body",
+                "target_extruder_mount_clearance_nozzle",
+                "target_extruder_mount_clearance_sensor"
             ]
         }
     ],
@@ -6377,16 +6850,52 @@
             "associatedPartId": "d3d_x_axis_motor_holder_unit"
         },
         {
+            "id": "target_x_axis_idler_mount_y_right_bolt_place_a",
+            "name": "X-Axis Idler Mount Y-Right Bolt Place A",
+            "anchorRef": "anchors/d3d/axes/x_axis/idler_mount_y_right_bolt_place_a",
+            "associatedPartId": "fastener_x_axis_idler_mount_m6x30_a"
+        },
+        {
+            "id": "target_x_axis_idler_mount_y_right_bolt_place_b",
+            "name": "X-Axis Idler Mount Y-Right Bolt Place B",
+            "anchorRef": "anchors/d3d/axes/x_axis/idler_mount_y_right_bolt_place_b",
+            "associatedPartId": "fastener_x_axis_idler_mount_m6x30_b"
+        },
+        {
+            "id": "target_x_axis_idler_mount_y_right_a",
+            "name": "X-Axis Idler Mount Y-Right A",
+            "anchorRef": "anchors/d3d/axes/x_axis/idler_mount_y_right_a",
+            "associatedPartId": "fastener_x_axis_idler_mount_m6x30_a"
+        },
+        {
+            "id": "target_x_axis_idler_mount_y_right_b",
+            "name": "X-Axis Idler Mount Y-Right B",
+            "anchorRef": "anchors/d3d/axes/x_axis/idler_mount_y_right_b",
+            "associatedPartId": "fastener_x_axis_idler_mount_m6x30_b"
+        },
+        {
+            "id": "target_x_axis_motor_mount_y_left_bolt_place_a",
+            "name": "X-Axis Motor Mount Y-Left Bolt Place A",
+            "anchorRef": "anchors/d3d/axes/x_axis/motor_mount_y_left_bolt_place_a",
+            "associatedPartId": "fastener_x_axis_motor_mount_m6x30_a"
+        },
+        {
+            "id": "target_x_axis_motor_mount_y_left_bolt_place_b",
+            "name": "X-Axis Motor Mount Y-Left Bolt Place B",
+            "anchorRef": "anchors/d3d/axes/x_axis/motor_mount_y_left_bolt_place_b",
+            "associatedPartId": "fastener_x_axis_motor_mount_m6x30_b"
+        },
+        {
             "id": "target_x_axis_motor_mount_y_left_a",
             "name": "X-Axis Motor Mount Y-Left A",
             "anchorRef": "anchors/d3d/axes/x_axis/motor_mount_y_left_a",
-            "associatedPartId": "d3d_x_axis_motor_holder_unit"
+            "associatedPartId": "fastener_x_axis_motor_mount_m6x30_a"
         },
         {
             "id": "target_x_axis_motor_mount_y_left_b",
             "name": "X-Axis Motor Mount Y-Left B",
             "anchorRef": "anchors/d3d/axes/x_axis/motor_mount_y_left_b",
-            "associatedPartId": "d3d_x_axis_motor_holder_unit"
+            "associatedPartId": "fastener_x_axis_motor_mount_m6x30_b"
         },
         {
             "id": "target_x_axis_span_fit",
@@ -6531,6 +7040,69 @@
             "id": "target_extruder_clearance_sensor",
             "name": "Extruder Sensor Clearance Check",
             "anchorRef": "anchors/d3d/extruder/qc/sensor"
+        },
+        {
+            "id": "target_extruder_simplified_carriage_stage",
+            "name": "Extruder Simplified Carriage Stage",
+            "anchorRef": "anchors/d3d/extruder/carriage/stage",
+            "associatedPartId": "d3d_extruder_simplified_carriage"
+        },
+        {
+            "id": "target_extruder_mount_bracket_attach",
+            "name": "Extruder Mount Bracket Attach",
+            "anchorRef": "anchors/d3d/extruder/carriage/bracket/attach",
+            "associatedPartId": "d3d_extruder_mount_bracket"
+        },
+        {
+            "id": "target_extruder_mount_bracket_fastener_a",
+            "name": "Extruder Mount Bracket Fastener A",
+            "anchorRef": "anchors/d3d/extruder/carriage/bracket/fastener_a",
+            "associatedPartId": "d3d_extruder_mount_bracket"
+        },
+        {
+            "id": "target_extruder_mount_bracket_fastener_b",
+            "name": "Extruder Mount Bracket Fastener B",
+            "anchorRef": "anchors/d3d/extruder/carriage/bracket/fastener_b",
+            "associatedPartId": "d3d_extruder_mount_bracket"
+        },
+        {
+            "id": "target_extruder_mount_top_plate_attach",
+            "name": "Extruder Mount Top Plate Attach",
+            "anchorRef": "anchors/d3d/extruder/carriage/top_plate/attach",
+            "associatedPartId": "d3d_extruder_mount_top_plate"
+        },
+        {
+            "id": "target_extruder_mount_top_plate_fastener_a",
+            "name": "Extruder Mount Top Plate Fastener A",
+            "anchorRef": "anchors/d3d/extruder/carriage/top_plate/fastener_a",
+            "associatedPartId": "d3d_extruder_mount_top_plate"
+        },
+        {
+            "id": "target_extruder_mount_top_plate_fastener_b",
+            "name": "Extruder Mount Top Plate Fastener B",
+            "anchorRef": "anchors/d3d/extruder/carriage/top_plate/fastener_b",
+            "associatedPartId": "d3d_extruder_mount_top_plate"
+        },
+        {
+            "id": "target_extruder_module_to_carriage_mount",
+            "name": "Extruder Module To Carriage Mount",
+            "anchorRef": "anchors/d3d/extruder/carriage/module/mount",
+            "associatedSubassemblyId": "subassembly_extruder_nozzle_module"
+        },
+        {
+            "id": "target_extruder_mount_clearance_body",
+            "name": "Extruder Mount Clearance Body",
+            "anchorRef": "anchors/d3d/extruder/carriage/qc/body"
+        },
+        {
+            "id": "target_extruder_mount_clearance_nozzle",
+            "name": "Extruder Mount Clearance Nozzle",
+            "anchorRef": "anchors/d3d/extruder/carriage/qc/nozzle"
+        },
+        {
+            "id": "target_extruder_mount_clearance_sensor",
+            "name": "Extruder Mount Clearance Sensor",
+            "anchorRef": "anchors/d3d/extruder/carriage/qc/sensor"
         }
     ],
     "challengeConfig": {
@@ -6544,15 +7116,23 @@
     "assetManifest": {
         "modelRefs": [
             "assets/parts/d3d_frame_flat_bar_approved.glb",
-
+            "assets/parts/d3d_titan_aero_core_approved.glb",
+            "assets/parts/d3d_extruder_nozzle_assembly_approved.glb",
             "assets/parts/d3d_extruder_blower_approved.glb",
-
+            "assets/parts/d3d_extruder_sensor_holder_approved.glb",
             "assets/parts/d3d_8mm_sensor_approved.glb",
+            "assets/parts/d3d_extruder_mount_bracket_approved.glb",
+            "assets/parts/d3d_extruder_mount_top_plate_approved.glb",
             "assets/tools/tool_framing_square.glb",
             "assets/tools/tool_locking_clamp.glb",
             "assets/tools/tool_mig_torch.glb",
             "assets/tools/tool_allen_key_metric.glb",
-            "assets/tools/tool_pliers.glb"
+            "assets/tools/tool_hex_driver_metric_small.glb",
+            "assets/tools/tool_pliers.glb",
+            "assets/tools/tool_screwdriver_small.glb",
+            "assets/parts/d3d_axis_mount_m6x30_bolt_approved.glb",
+            "assets/parts/d3d_y_left_axis_unit_approved.glb",
+            "assets/parts/d3d_y_right_axis_unit_approved.glb"
         ],
         "effectRefs": [],
         "uiRefs": []
@@ -7558,9 +8138,9 @@
                     "w": 1.0
                 },
                 "startScale": {
-                    "x": 0.03,
-                    "y": 0.24,
-                    "z": 0.05
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.6,
@@ -7580,9 +8160,9 @@
                     "w": 1.0
                 },
                 "playScale": {
-                    "x": 0.03,
-                    "y": 0.24,
-                    "z": 0.05
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 }
             },
             {
@@ -7599,9 +8179,9 @@
                     "w": 1.0
                 },
                 "startScale": {
-                    "x": 0.03,
-                    "y": 0.24,
-                    "z": 0.05
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.6,
@@ -7621,9 +8201,9 @@
                     "w": 1.0
                 },
                 "playScale": {
-                    "x": 0.03,
-                    "y": 0.24,
-                    "z": 0.05
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 }
             },
             {
@@ -7640,9 +8220,9 @@
                     "w": 1.0
                 },
                 "startScale": {
-                    "x": 0.05,
-                    "y": 0.058,
-                    "z": 0.05
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.74,
@@ -7662,9 +8242,9 @@
                     "w": 1.0
                 },
                 "playScale": {
-                    "x": 0.05,
-                    "y": 0.058,
-                    "z": 0.05
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 }
             },
             {
@@ -7681,9 +8261,9 @@
                     "w": 1.0
                 },
                 "startScale": {
-                    "x": 0.29,
-                    "y": 0.012,
-                    "z": 0.018
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.74,
@@ -7703,9 +8283,9 @@
                     "w": 1.0
                 },
                 "playScale": {
-                    "x": 0.29,
-                    "y": 0.012,
-                    "z": 0.018
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 }
             },
             {
@@ -7722,9 +8302,9 @@
                     "w": 1.0
                 },
                 "startScale": {
-                    "x": 0.05,
-                    "y": 0.058,
-                    "z": 0.05
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.74,
@@ -7744,9 +8324,9 @@
                     "w": 1.0
                 },
                 "playScale": {
-                    "x": 0.05,
-                    "y": 0.058,
-                    "z": 0.05
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 }
             },
             {
@@ -7758,14 +8338,14 @@
                 },
                 "startRotation": {
                     "x": 0.0,
-                    "y": 0.0,
+                    "y": 0.7071068,
                     "z": 0.0,
-                    "w": 1.0
+                    "w": 0.7071068
                 },
                 "startScale": {
-                    "x": 0.012,
-                    "y": 0.012,
-                    "z": 0.03
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.95,
@@ -7780,14 +8360,178 @@
                 },
                 "playRotation": {
                     "x": 0.0,
+                    "y": 0.7071068,
+                    "z": 0.0,
+                    "w": 0.7071068
+                },
+                "playScale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                }
+            },
+            {
+                "partId": "fastener_x_axis_idler_mount_m6x30_a",
+                "startPosition": {
+                    "x": 0.26,
+                    "y": 0.77,
+                    "z": -0.22
+                },
+                "startRotation": {
+                    "x": 0.0,
+                    "y": 1.0,
+                    "z": 0.0,
+                    "w": 0.0
+                },
+                "startScale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "color": {
+                    "r": 0.72,
+                    "g": 0.74,
+                    "b": 0.78,
+                    "a": 1.0
+                },
+                "playPosition": {
+                    "x": 0.163,
+                    "y": 0.834,
+                    "z": 0.018
+                },
+                "playRotation": {
+                    "x": 0.0,
+                    "y": 1.0,
+                    "z": 0.0,
+                    "w": 0.0
+                },
+                "playScale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                }
+            },
+            {
+                "partId": "fastener_x_axis_idler_mount_m6x30_b",
+                "startPosition": {
+                    "x": 0.26,
+                    "y": 0.74,
+                    "z": -0.19
+                },
+                "startRotation": {
+                    "x": 0.0,
+                    "y": 1.0,
+                    "z": 0.0,
+                    "w": 0.0
+                },
+                "startScale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "color": {
+                    "r": 0.72,
+                    "g": 0.74,
+                    "b": 0.78,
+                    "a": 1.0
+                },
+                "playPosition": {
+                    "x": 0.163,
+                    "y": 0.774,
+                    "z": -0.018
+                },
+                "playRotation": {
+                    "x": 0.0,
+                    "y": 1.0,
+                    "z": 0.0,
+                    "w": 0.0
+                },
+                "playScale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                }
+            },
+            {
+                "partId": "fastener_x_axis_motor_mount_m6x30_a",
+                "startPosition": {
+                    "x": -0.26,
+                    "y": 0.77,
+                    "z": -0.22
+                },
+                "startRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "startScale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "color": {
+                    "r": 0.72,
+                    "g": 0.74,
+                    "b": 0.78,
+                    "a": 1.0
+                },
+                "playPosition": {
+                    "x": -0.163,
+                    "y": 0.834,
+                    "z": 0.018
+                },
+                "playRotation": {
+                    "x": 0.0,
                     "y": 0.0,
                     "z": 0.0,
                     "w": 1.0
                 },
                 "playScale": {
-                    "x": 0.012,
-                    "y": 0.012,
-                    "z": 0.03
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                }
+            },
+            {
+                "partId": "fastener_x_axis_motor_mount_m6x30_b",
+                "startPosition": {
+                    "x": -0.26,
+                    "y": 0.74,
+                    "z": -0.19
+                },
+                "startRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "startScale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "color": {
+                    "r": 0.72,
+                    "g": 0.74,
+                    "b": 0.78,
+                    "a": 1.0
+                },
+                "playPosition": {
+                    "x": -0.163,
+                    "y": 0.774,
+                    "z": -0.018
+                },
+                "playRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "playScale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 }
             },
             {
@@ -7804,9 +8548,9 @@
                     "w": 1.0
                 },
                 "startScale": {
-                    "x": 0.08,
-                    "y": 0.11,
-                    "z": 0.065
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.58,
@@ -7826,9 +8570,9 @@
                     "w": 1.0
                 },
                 "playScale": {
-                    "x": 0.08,
-                    "y": 0.11,
-                    "z": 0.065
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 }
             },
             {
@@ -7845,9 +8589,9 @@
                     "w": 1.0
                 },
                 "startScale": {
-                    "x": 0.028,
-                    "y": 0.05,
-                    "z": 0.028
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.72,
@@ -7867,9 +8611,9 @@
                     "w": 1.0
                 },
                 "playScale": {
-                    "x": 0.028,
-                    "y": 0.05,
-                    "z": 0.028
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 }
             },
             {
@@ -7886,9 +8630,9 @@
                     "w": 1.0
                 },
                 "startScale": {
-                    "x": 0.06,
-                    "y": 0.055,
-                    "z": 0.06
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.35,
@@ -7908,9 +8652,9 @@
                     "w": 1.0
                 },
                 "playScale": {
-                    "x": 0.06,
-                    "y": 0.055,
-                    "z": 0.06
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 }
             },
             {
@@ -7927,9 +8671,9 @@
                     "w": 1.0
                 },
                 "startScale": {
-                    "x": 0.04,
-                    "y": 0.03,
-                    "z": 0.025
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.46,
@@ -7949,9 +8693,9 @@
                     "w": 1.0
                 },
                 "playScale": {
-                    "x": 0.04,
-                    "y": 0.03,
-                    "z": 0.025
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 }
             },
             {
@@ -7968,9 +8712,9 @@
                     "w": 1.0
                 },
                 "startScale": {
-                    "x": 0.012,
-                    "y": 0.04,
-                    "z": 0.012
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.92,
@@ -7990,9 +8734,132 @@
                     "w": 1.0
                 },
                 "playScale": {
-                    "x": 0.012,
-                    "y": 0.04,
-                    "z": 0.012
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                }
+            },
+            {
+                "partId": "d3d_extruder_mount_bracket",
+                "startPosition": {
+                    "x": -0.08,
+                    "y": 0.845,
+                    "z": -0.19
+                },
+                "startRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "startScale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "color": {
+                    "r": 0.42,
+                    "g": 0.45,
+                    "b": 0.5,
+                    "a": 1.0
+                },
+                "playPosition": {
+                    "x": 0.28,
+                    "y": 0.842,
+                    "z": -0.205
+                },
+                "playRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "playScale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                }
+            },
+            {
+                "partId": "d3d_extruder_mount_top_plate",
+                "startPosition": {
+                    "x": 0.05,
+                    "y": 0.895,
+                    "z": -0.17
+                },
+                "startRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "startScale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "color": {
+                    "r": 0.5,
+                    "g": 0.54,
+                    "b": 0.6,
+                    "a": 1.0
+                },
+                "playPosition": {
+                    "x": 0.28,
+                    "y": 0.895,
+                    "z": -0.185
+                },
+                "playRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "playScale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                }
+            },
+            {
+                "partId": "d3d_extruder_simplified_carriage",
+                "startPosition": {
+                    "x": -0.25,
+                    "y": 0.84,
+                    "z": -0.18
+                },
+                "startRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "startScale": {
+                    "x": 0.11,
+                    "y": 0.095,
+                    "z": 0.014
+                },
+                "color": {
+                    "r": 0.34,
+                    "g": 0.4,
+                    "b": 0.48,
+                    "a": 1.0
+                },
+                "playPosition": {
+                    "x": 0.28,
+                    "y": 0.84,
+                    "z": -0.18
+                },
+                "playRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "playScale": {
+                    "x": 0.11,
+                    "y": 0.095,
+                    "z": 0.014
                 }
             }
         ],
@@ -10261,9 +11128,9 @@
                     "w": 1.0
                 },
                 "scale": {
-                    "x": 0.03,
-                    "y": 0.24,
-                    "z": 0.05
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.2,
@@ -10311,9 +11178,9 @@
                     "w": 1.0
                 },
                 "scale": {
-                    "x": 0.03,
-                    "y": 0.24,
-                    "z": 0.05
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.2,
@@ -10411,9 +11278,9 @@
                     "w": 1.0
                 },
                 "scale": {
-                    "x": 0.05,
-                    "y": 0.058,
-                    "z": 0.05
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.2,
@@ -10436,9 +11303,9 @@
                     "w": 1.0
                 },
                 "scale": {
-                    "x": 0.29,
-                    "y": 0.012,
-                    "z": 0.018
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.2,
@@ -10461,9 +11328,9 @@
                     "w": 1.0
                 },
                 "scale": {
-                    "x": 0.05,
-                    "y": 0.058,
-                    "z": 0.05
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.2,
@@ -10473,9 +11340,159 @@
                 }
             },
             {
+                "targetId": "target_x_axis_idler_mount_y_right_bolt_place_a",
+                "position": {
+                    "x": 0.154,
+                    "y": 0.834,
+                    "z": 0.018
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 1.0,
+                    "z": 0.0,
+                    "w": 0.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "color": {
+                    "r": 0.2,
+                    "g": 0.84,
+                    "b": 0.58,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_x_axis_idler_mount_y_right_bolt_place_b",
+                "position": {
+                    "x": 0.154,
+                    "y": 0.774,
+                    "z": -0.018
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 1.0,
+                    "z": 0.0,
+                    "w": 0.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "color": {
+                    "r": 0.2,
+                    "g": 0.84,
+                    "b": 0.58,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_x_axis_motor_mount_y_left_bolt_place_a",
+                "position": {
+                    "x": -0.154,
+                    "y": 0.834,
+                    "z": 0.018
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "color": {
+                    "r": 0.2,
+                    "g": 0.84,
+                    "b": 0.58,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_x_axis_motor_mount_y_left_bolt_place_b",
+                "position": {
+                    "x": -0.154,
+                    "y": 0.774,
+                    "z": -0.018
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "color": {
+                    "r": 0.2,
+                    "g": 0.84,
+                    "b": 0.58,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_x_axis_idler_mount_y_right_a",
+                "position": {
+                    "x": 0.154,
+                    "y": 0.834,
+                    "z": 0.018
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 1.0,
+                    "z": 0.0,
+                    "w": 0.0
+                },
+                "scale": {
+                    "x": 0.035,
+                    "y": 0.035,
+                    "z": 0.035
+                },
+                "color": {
+                    "r": 0.95,
+                    "g": 0.7,
+                    "b": 0.22,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_x_axis_idler_mount_y_right_b",
+                "position": {
+                    "x": 0.154,
+                    "y": 0.774,
+                    "z": -0.018
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 1.0,
+                    "z": 0.0,
+                    "w": 0.0
+                },
+                "scale": {
+                    "x": 0.035,
+                    "y": 0.035,
+                    "z": 0.035
+                },
+                "color": {
+                    "r": 0.95,
+                    "g": 0.7,
+                    "b": 0.22,
+                    "a": 1.0
+                }
+            },
+            {
                 "targetId": "target_x_axis_motor_mount_y_left_a",
                 "position": {
-                    "x": -0.145,
+                    "x": -0.154,
                     "y": 0.834,
                     "z": 0.018
                 },
@@ -10500,7 +11517,7 @@
             {
                 "targetId": "target_x_axis_motor_mount_y_left_b",
                 "position": {
-                    "x": -0.145,
+                    "x": -0.154,
                     "y": 0.774,
                     "z": -0.018
                 },
@@ -10756,14 +11773,14 @@
                 },
                 "rotation": {
                     "x": 0.0,
-                    "y": 0.0,
+                    "y": 0.7071068,
                     "z": 0.0,
-                    "w": 1.0
+                    "w": 0.7071068
                 },
                 "scale": {
-                    "x": 0.012,
-                    "y": 0.012,
-                    "z": 0.03
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.2,
@@ -10861,9 +11878,9 @@
                     "w": 1.0
                 },
                 "scale": {
-                    "x": 0.08,
-                    "y": 0.11,
-                    "z": 0.065
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.2,
@@ -10886,9 +11903,9 @@
                     "w": 1.0
                 },
                 "scale": {
-                    "x": 0.034,
-                    "y": 0.034,
-                    "z": 0.034
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.2,
@@ -10911,9 +11928,9 @@
                     "w": 1.0
                 },
                 "scale": {
-                    "x": 0.05,
-                    "y": 0.05,
-                    "z": 0.05
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.2,
@@ -10986,9 +12003,9 @@
                     "w": 1.0
                 },
                 "scale": {
-                    "x": 0.042,
-                    "y": 0.042,
-                    "z": 0.042
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.2,
@@ -11061,9 +12078,9 @@
                     "w": 1.0
                 },
                 "scale": {
-                    "x": 0.03,
-                    "y": 0.03,
-                    "z": 0.03
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 },
                 "color": {
                     "r": 0.2,
@@ -11128,6 +12145,281 @@
                     "x": -0.075,
                     "y": 0.905,
                     "z": -0.387
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 0.03,
+                    "y": 0.03,
+                    "z": 0.03
+                },
+                "color": {
+                    "r": 0.35,
+                    "g": 0.85,
+                    "b": 1.0,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_simplified_carriage_stage",
+                "position": {
+                    "x": 0.28,
+                    "y": 0.84,
+                    "z": -0.18
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 0.11,
+                    "y": 0.095,
+                    "z": 0.014
+                },
+                "color": {
+                    "r": 0.2,
+                    "g": 0.84,
+                    "b": 0.58,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_mount_bracket_attach",
+                "position": {
+                    "x": 0.28,
+                    "y": 0.842,
+                    "z": -0.205
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "color": {
+                    "r": 0.2,
+                    "g": 0.84,
+                    "b": 0.58,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_mount_bracket_fastener_a",
+                "position": {
+                    "x": 0.255,
+                    "y": 0.858,
+                    "z": -0.196
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 0.028,
+                    "y": 0.028,
+                    "z": 0.028
+                },
+                "color": {
+                    "r": 0.95,
+                    "g": 0.7,
+                    "b": 0.22,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_mount_bracket_fastener_b",
+                "position": {
+                    "x": 0.305,
+                    "y": 0.826,
+                    "z": -0.196
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 0.028,
+                    "y": 0.028,
+                    "z": 0.028
+                },
+                "color": {
+                    "r": 0.95,
+                    "g": 0.7,
+                    "b": 0.22,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_mount_top_plate_attach",
+                "position": {
+                    "x": 0.28,
+                    "y": 0.895,
+                    "z": -0.185
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "color": {
+                    "r": 0.2,
+                    "g": 0.84,
+                    "b": 0.58,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_mount_top_plate_fastener_a",
+                "position": {
+                    "x": 0.255,
+                    "y": 0.895,
+                    "z": -0.186
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 0.028,
+                    "y": 0.028,
+                    "z": 0.028
+                },
+                "color": {
+                    "r": 0.95,
+                    "g": 0.7,
+                    "b": 0.22,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_mount_top_plate_fastener_b",
+                "position": {
+                    "x": 0.305,
+                    "y": 0.895,
+                    "z": -0.186
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 0.028,
+                    "y": 0.028,
+                    "z": 0.028
+                },
+                "color": {
+                    "r": 0.95,
+                    "g": 0.7,
+                    "b": 0.22,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_module_to_carriage_mount",
+                "position": {
+                    "x": 0.28,
+                    "y": 0.82,
+                    "z": -0.195
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "color": {
+                    "r": 0.2,
+                    "g": 0.84,
+                    "b": 0.58,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_mount_clearance_body",
+                "position": {
+                    "x": 0.28,
+                    "y": 0.84,
+                    "z": -0.18
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 0.03,
+                    "y": 0.03,
+                    "z": 0.03
+                },
+                "color": {
+                    "r": 0.35,
+                    "g": 0.85,
+                    "b": 1.0,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_mount_clearance_nozzle",
+                "position": {
+                    "x": 0.28,
+                    "y": 0.75,
+                    "z": -0.195
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 0.03,
+                    "y": 0.03,
+                    "z": 0.03
+                },
+                "color": {
+                    "r": 0.35,
+                    "g": 0.85,
+                    "b": 1.0,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_mount_clearance_sensor",
+                "position": {
+                    "x": 0.205,
+                    "y": 0.905,
+                    "z": -0.185
                 },
                 "rotation": {
                     "x": 0.0,
@@ -11269,6 +12561,25 @@
                     "x": 0.145,
                     "y": 0.804,
                     "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                }
+            },
+            {
+                "subassemblyId": "subassembly_extruder_nozzle_module",
+                "position": {
+                    "x": 0.0,
+                    "y": 0.82,
+                    "z": -0.42
                 },
                 "rotation": {
                     "x": 0.0,
@@ -11797,4 +13108,3 @@
         ]
     }
 }
-

@@ -1,0 +1,26 @@
+{
+  "input_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder_stage03\\exported\\stl\\Axis_half_carriage.stl",
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder_stage03\\exported\\glb_candidates\\Axis_half_carriage.glb",
+  "units": "m",
+  "object_count": 1,
+  "material_name": "D3D Half Carriage Grey",
+  "base_color": [
+    0.55,
+    0.55,
+    0.58,
+    1.0
+  ],
+  "metallic": 0.0,
+  "roughness": 0.55,
+  "bound_box": {
+    "xmin_m": -0.01861744374036789,
+    "xmax_m": 0.027500001713633537,
+    "ymin_m": -0.03664880990982056,
+    "ymax_m": 0.03694446012377739,
+    "zmin_m": 0.003404035232961178,
+    "zmax_m": 0.02704845741391182,
+    "xlen_m": 0.04611744545400143,
+    "ylen_m": 0.07359327003359795,
+    "zlen_m": 0.02364442218095064
+  }
+}

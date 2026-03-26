@@ -1,0 +1,23 @@
+{
+    "name": "OSE.Interaction",
+    "rootNamespace": "OSE.Interaction",
+    "references": [
+        "OSE.App",
+        "OSE.Content",
+        "OSE.Core",
+        "OSE.Input",
+        "OSE.Runtime",
+        "Unity.InputSystem",
+        "Unity.XR.Hands",
+        "Unity.XR.Interaction.Toolkit"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

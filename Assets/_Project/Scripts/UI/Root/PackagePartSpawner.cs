@@ -25,12 +25,12 @@ namespace OSE.UI.Root
     /// Exposes the spawned part list so sibling components (PartInteractionBridge) can
     /// interact with them.
     ///
-    /// This component knows nothing about runtime events, click interaction, or ghosts.
+    /// This component knows nothing about runtime events, click interaction, or previews.
     /// </summary>
     [ExecuteAlways]
     [DisallowMultipleComponent]
     [RequireComponent(typeof(PreviewSceneSetup))]
-    public sealed class PackagePartSpawner : MonoBehaviour
+    public sealed class PackagePartSpawner : MonoBehaviour, Interaction.ISpawnerQueryService
     {
         private const string SamplePartName = "Sample Beam";
         private static readonly Color HoveredAffordanceColor = new Color(0.60f, 0.82f, 1.0f, 1.0f);
@@ -47,6 +47,7 @@ namespace OSE.UI.Root
         public IReadOnlyList<GameObject> SpawnedParts => _spawnedParts;
         public MachinePackageDefinition CurrentPackage => _currentPackage;
         public PackagePreviewConfig CurrentPreviewConfig => _currentPreviewConfig;
+        public Transform PreviewRoot => _setup != null ? _setup.PreviewRoot : null;
 
         /// <summary>
         /// Fires after all parts (including async GLB models) have been spawned
@@ -69,6 +70,7 @@ namespace OSE.UI.Root
 #if !UNITY_EDITOR
             AssetSource ??= new StreamingAssetsSource();
 #endif
+            ServiceRegistry.Register<Interaction.ISpawnerQueryService>(this);
             SessionDriver.PackageChanged += HandlePackageChanged;
 
             // Catch up if this component enabled after the latest package event.
@@ -81,6 +83,7 @@ namespace OSE.UI.Root
         private void OnDisable()
         {
             SessionDriver.PackageChanged -= HandlePackageChanged;
+            ServiceRegistry.Unregister<Interaction.ISpawnerQueryService>();
         }
 
         // ── Public API ──
@@ -378,7 +381,7 @@ namespace OSE.UI.Root
                 loaded.name = partDef.id;
                 MaterialHelper.MarkAsImported(loaded);
                 if (Application.isPlaying)
-                    TryEnableXRGrabInteractable(loaded);
+                    TryEnableXRGrabInteractable(loaded, partDef.grabConfig);
 
                 // Destroy placeholder, insert real model at same list index
                 SafeDestroy(existing);
@@ -420,7 +423,7 @@ namespace OSE.UI.Root
                             EnsureColliders(existing.gameObject);
                     }
                     if (enableRuntimeGrab)
-                        TryEnableXRGrabInteractable(existing.gameObject);
+                        TryEnableXRGrabInteractable(existing.gameObject, part.grabConfig);
                     _spawnedParts.Add(existing.gameObject);
                     continue;
                 }
@@ -445,7 +448,7 @@ namespace OSE.UI.Root
                     go = GetOrCreatePrimitive(part.id, PrimitiveType.Cube);
                 go.name = part.id;
                 if (enableRuntimeGrab)
-                    TryEnableXRGrabInteractable(go);
+                    TryEnableXRGrabInteractable(go, part.grabConfig);
                 _spawnedParts.Add(go);
             }
 
@@ -757,7 +760,7 @@ namespace OSE.UI.Root
             return prim;
         }
 
-        private static void TryEnableXRGrabInteractable(GameObject target)
+        private static void TryEnableXRGrabInteractable(GameObject target, PartGrabConfig grabConfig = null)
         {
             if (target == null)
                 return;
@@ -773,6 +776,21 @@ namespace OSE.UI.Root
                 rb.useGravity = false;
 
                 grabInteractable = target.AddComponent<XRGrabInteractable>();
+            }
+
+            // Apply authored grip point as XRI attachTransform offset
+            if (grabConfig != null && grabConfig.HasGripPoint)
+            {
+                var attachName = "GripAttach";
+                var existing = target.transform.Find(attachName);
+                Transform attach = existing != null ? existing : new GameObject(attachName).transform;
+                attach.SetParent(target.transform, false);
+                attach.localPosition = grabConfig.GetGripPoint();
+                if (grabConfig.HasGripRotation)
+                    attach.localRotation = grabConfig.GetGripRotation();
+
+                grabInteractable.useDynamicAttach = false;
+                grabInteractable.attachTransform = attach;
             }
 
             DisablePartColorAffordance(target);
@@ -1050,7 +1068,7 @@ namespace OSE.UI.Root
         private static Vector3 ResolvePresentationStartPosition(PartPreviewPlacement placement)
         {
             // Return the authored start position directly. Because loose parts
-            // and ghosts are both children of PreviewRoot, uniform scaling is
+            // and previews are both children of PreviewRoot, uniform scaling is
             // purely presentational — the local-space layout is identical at
             // every scale factor, so no compensation is needed or wanted.
             return new Vector3(

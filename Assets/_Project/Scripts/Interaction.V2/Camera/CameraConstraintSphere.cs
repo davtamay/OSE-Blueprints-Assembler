@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace OSE.Interaction.V2
+namespace OSE.Interaction
 {
     /// <summary>
     /// Clamps a CameraState to valid orbital bounds (distance, pitch).

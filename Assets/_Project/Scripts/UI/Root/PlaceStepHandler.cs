@@ -5,37 +5,37 @@ using OSE.Content;
 using OSE.Core;
 using OSE.Runtime;
 using UnityEngine;
-using GhostPlacementInfo = OSE.UI.Root.PartInteractionBridge.GhostPlacementInfo;
+using PlacementPreviewInfo = OSE.UI.Root.PartInteractionBridge.PlacementPreviewInfo;
 
 namespace OSE.UI.Root
 {
     /// <summary>
     /// Handles <see cref="StepFamily.Place"/> steps.
-    /// Owns ghost interaction (proximity highlight, click-to-place matching,
-    /// drag-to-place execution), snap/flash animation, ghost selection pulse,
-    /// and required-part emission pulse.  The ghost lifecycle (spawn/destroy)
+    /// Owns preview interaction (proximity highlight, click-to-place matching,
+    /// drag-to-place execution), snap/flash animation, preview selection pulse,
+    /// and required-part emission pulse.  The preview lifecycle (spawn/destroy)
     /// remains on <see cref="PartInteractionBridge"/>; this handler operates
-    /// on the shared ghost list by reference.
+    /// on the shared preview list by reference.
     /// </summary>
     internal sealed class PlaceStepHandler : IStepFamilyHandler
     {
-        // â"€â"€ Constructor dependencies â"€â"€
+        // ── Constructor dependencies ──
         private readonly PackagePartSpawner _spawner;
         private readonly Func<PreviewSceneSetup> _getSetup;
         private readonly Func<string, GameObject> _findSpawnedPart;
         private readonly Func<string, PartPlacementState> _getPartState;
         private readonly Action<GameObject> _restorePartVisual;
         private readonly Action _resetDragState;
-        private readonly List<GameObject> _spawnedGhosts; // shared reference from bridge
+        private readonly List<GameObject> _spawnedPreviews; // shared reference from bridge
         private readonly Func<bool> _isSequentialStep;
         private readonly Func<bool> _advanceSequentialTarget;
         private readonly Action<GameObject> _onPlacementFailed;
         private readonly Action<GameObject> _onPlacementSucceeded;
 
-        // â"€â"€ Owned state â"€â"€
-        private GameObject _hoveredGhost;
-        private bool _ghostHighlighted;
-        private string _ghostPulsePartId;
+        // ── Owned state ──
+        private GameObject _hoveredPreview;
+        private bool _previewHighlighted;
+        private string _previewPulsePartId;
         private string[] _requiredPartIdsForStep;
 
         // Snap animation (list-based for multi-target steps)
@@ -57,7 +57,7 @@ namespace OSE.UI.Root
         }
         private readonly List<FlashEntry> _activeFlashes = new();
 
-        // â"€â"€ Constants â"€â"€
+        // ── Constants ──
         private const float SnapZoneRadius = 0.8f;
         private const float SubassemblySnapZoneRadius = 1.35f;
         private const float SubassemblyDockPreviewRadius = 1.9f;
@@ -67,18 +67,18 @@ namespace OSE.UI.Root
         private const float ScreenProximityMobile = 180f;
         private const float SubassemblyScreenProximityDesktop = 220f;
         private const float SubassemblyScreenProximityMobile = 300f;
-        private const float GhostSelectedPulseSpeed = 3.0f;
+        private const float PreviewSelectedPulseSpeed = 3.0f;
         private const float RequiredPartPulseSpeed = 0.8f;
 
-        // â"€â"€ Colors â"€â"€
+        // ── Colors ──
         private static readonly Color InvalidFlashColor = new Color(1.0f, 0.2f, 0.2f, 1.0f);
-        private static readonly Color GhostReadyColor = new Color(0.3f, 1.0f, 0.5f, 0.4f);
-        private static readonly Color GhostSelectedPulseA = new Color(0.35f, 0.85f, 1.0f, 0.35f);
-        private static readonly Color GhostSelectedPulseB = new Color(0.55f, 1.0f, 0.7f, 0.7f);
+        private static readonly Color PreviewReadyColor = new Color(0.3f, 1.0f, 0.5f, 0.4f);
+        private static readonly Color PreviewSelectedPulseA = new Color(0.35f, 0.85f, 1.0f, 0.35f);
+        private static readonly Color PreviewSelectedPulseB = new Color(0.55f, 1.0f, 0.7f, 0.7f);
         private static readonly Color RequiredPartEmissionA = new Color(0.15f, 0.08f, 0.0f, 1.0f);
         private static readonly Color RequiredPartEmissionB = new Color(0.45f, 0.25f, 0.02f, 1.0f);
 
-        // â"€â"€ Constructor â"€â"€
+        // ── Constructor ──
 
         public PlaceStepHandler(
             PackagePartSpawner spawner,
@@ -87,7 +87,7 @@ namespace OSE.UI.Root
             Func<string, PartPlacementState> getPartState,
             Action<GameObject> restorePartVisual,
             Action resetDragState,
-            List<GameObject> spawnedGhosts,
+            List<GameObject> spawnedPreviews,
             Func<bool> isSequentialStep,
             Func<bool> advanceSequentialTarget,
             Action<GameObject> onPlacementFailed = null,
@@ -99,7 +99,7 @@ namespace OSE.UI.Root
             _getPartState = getPartState;
             _restorePartVisual = restorePartVisual;
             _resetDragState = resetDragState;
-            _spawnedGhosts = spawnedGhosts;
+            _spawnedPreviews = spawnedPreviews;
             _isSequentialStep = isSequentialStep;
             _advanceSequentialTarget = advanceSequentialTarget;
             _onPlacementFailed = onPlacementFailed;
@@ -123,7 +123,7 @@ namespace OSE.UI.Root
         {
             UpdateSnapAnimation(deltaTime);
             UpdateInvalidFlash(deltaTime);
-            UpdateGhostSelectionPulse();
+            UpdatePreviewSelectionPulse();
             UpdateRequiredPartPulse();
         }
 
@@ -135,7 +135,7 @@ namespace OSE.UI.Root
 
         public void Cleanup()
         {
-            ClearGhostHighlight();
+            ClearPreviewHighlight();
             ClearRequiredPartEmission();
             _requiredPartIdsForStep = null;
         }
@@ -145,21 +145,21 @@ namespace OSE.UI.Root
         // ====================================================================
 
         /// <summary>
-        /// Attempts click-to-place: matches the pointer position against ghost
+        /// Attempts click-to-place: matches the pointer position against preview
         /// targets for the given part and snaps/places if a match is found.
         /// Returns true if placement was consumed.
         /// </summary>
         public bool TryClickToPlace(string selectionId, GameObject partGo, Vector2 screenPos)
         {
-            if (_spawnedGhosts.Count == 0) return false;
+            if (_spawnedPreviews.Count == 0) return false;
 
-            GhostPlacementInfo ghostInfo = RaycastGhostAtScreen(screenPos, selectionId);
-            if (ghostInfo == null)
-                ghostInfo = FindNearestGhostByScreenProximity(screenPos, selectionId);
-            if (ghostInfo == null)
+            PlacementPreviewInfo previewInfo = RaycastPreviewAtScreen(screenPos, selectionId);
+            if (previewInfo == null)
+                previewInfo = FindNearestPreviewByScreenProximity(screenPos, selectionId);
+            if (previewInfo == null)
                 return false;
 
-            ExecuteClickToPlace(selectionId, partGo, ghostInfo);
+            ExecuteClickToPlace(selectionId, partGo, previewInfo);
             return true;
         }
 
@@ -172,7 +172,7 @@ namespace OSE.UI.Root
             if (partGo == null || string.IsNullOrEmpty(selectionId))
                 return;
 
-            ClearGhostHighlight();
+            ClearPreviewHighlight();
 
             if (!ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
                 return;
@@ -181,7 +181,7 @@ namespace OSE.UI.Root
 
             bool isSubassemblySelection = TryGetSubassemblySelection(partGo, out var subassemblyController, out string subassemblyId);
 
-            GhostPlacementInfo nearestInfo = FindNearestGhostForSelection(selectionId, partGo.transform.position, out float nearestDist);
+            PlacementPreviewInfo nearestInfo = FindNearestPreviewForSelection(selectionId, partGo.transform.position, out float nearestDist);
             float snapZoneRadius = isSubassemblySelection ? SubassemblySnapZoneRadius : SnapZoneRadius;
             bool inSnapZone = nearestInfo != null && nearestDist <= snapZoneRadius;
 
@@ -202,7 +202,7 @@ namespace OSE.UI.Root
 
                 FlashInvalidSelection(partGo, selectionId);
                 _onPlacementFailed?.Invoke(partGo);
-                StartGhostSelectionPulse(selectionId);
+                StartPreviewSelectionPulse(selectionId);
                 session.AssemblyController?.StepController?.FailAttempt();
                 return;
             }
@@ -218,7 +218,7 @@ namespace OSE.UI.Root
                 if (!isSubassemblySelection)
                     partController.SelectPart(selectionId);
                 _onPlacementFailed?.Invoke(partGo);
-                StartGhostSelectionPulse(selectionId);
+                StartPreviewSelectionPulse(selectionId);
                 session.AssemblyController?.StepController?.FailAttempt();
                 return;
             }
@@ -231,7 +231,7 @@ namespace OSE.UI.Root
                 {
                     FlashInvalidSelection(partGo, selectionId);
                     _onPlacementFailed?.Invoke(partGo);
-                    StartGhostSelectionPulse(selectionId);
+                    StartPreviewSelectionPulse(selectionId);
                     session.AssemblyController?.StepController?.FailAttempt();
                     return;
                 }
@@ -240,7 +240,7 @@ namespace OSE.UI.Root
                 {
                     FlashInvalidSelection(partGo, selectionId);
                     _onPlacementFailed?.Invoke(partGo);
-                    StartGhostSelectionPulse(selectionId);
+                    StartPreviewSelectionPulse(selectionId);
                     session.AssemblyController?.StepController?.FailAttempt();
                     return;
                 }
@@ -250,22 +250,22 @@ namespace OSE.UI.Root
                 BeginSnapToTarget(partGo, selectionId, matchedTargetId, nearestInfo.transform);
             }
 
-            RemoveGhostForSelection(selectionId);
+            RemovePreviewForSelection(selectionId);
             _onPlacementSucceeded?.Invoke(partGo);
             CheckStepCompletion(partController, session);
         }
 
         /// <summary>
-        /// Called every drag frame to highlight the nearest matching ghost and
+        /// Called every drag frame to highlight the nearest matching preview and
         /// trigger auto-snap when the part enters the snap zone.
         /// </summary>
         public void UpdateDragProximity(GameObject partGo, string selectionId, bool isDragging)
         {
-            if (partGo == null || _spawnedGhosts.Count == 0)
+            if (partGo == null || _spawnedPreviews.Count == 0)
                 return;
 
             bool isSubassemblySelection = TryGetSubassemblySelection(partGo, out var subassemblyController, out _);
-            GhostPlacementInfo nearestInfo = FindNearestGhostForSelection(selectionId, partGo.transform.position, out float nearestDist);
+            PlacementPreviewInfo nearestInfo = FindNearestPreviewForSelection(selectionId, partGo.transform.position, out float nearestDist);
             float snapZoneRadius = isSubassemblySelection ? SubassemblySnapZoneRadius : SnapZoneRadius;
             float previewRadius = isSubassemblySelection ? SubassemblyDockPreviewRadius : snapZoneRadius;
             GameObject nearest = (nearestInfo != null && nearestDist <= previewRadius) ? nearestInfo.gameObject : null;
@@ -281,34 +281,34 @@ namespace OSE.UI.Root
                 }
             }
 
-            if (nearest != null && nearest != _hoveredGhost)
+            if (nearest != null && nearest != _hoveredPreview)
             {
-                ClearGhostHighlight();
-                _hoveredGhost = nearest;
-                _ghostHighlighted = true;
-                MaterialHelper.Apply(nearest, "Ghost Ready Material", GhostReadyColor);
+                ClearPreviewHighlight();
+                _hoveredPreview = nearest;
+                _previewHighlighted = true;
+                MaterialHelper.Apply(nearest, "Preview Ready Material", PreviewReadyColor);
             }
-            else if (nearest == null && _ghostHighlighted)
+            else if (nearest == null && _previewHighlighted)
             {
-                ClearGhostHighlight();
+                ClearPreviewHighlight();
             }
 
             if (nearestInfo != null && nearest != null && isDragging)
                 TryAutoSnapCurrentTarget(partGo, selectionId, nearestInfo, isSubassemblySelection, subassemblyController);
         }
 
-        public void ClearGhostHighlight()
+        public void ClearPreviewHighlight()
         {
-            if (_ghostHighlighted && _hoveredGhost != null)
-                MaterialHelper.ApplyGhost(_hoveredGhost);
-            _hoveredGhost = null;
-            _ghostHighlighted = false;
+            if (_previewHighlighted && _hoveredPreview != null)
+                MaterialHelper.ApplyPreviewMaterial(_hoveredPreview);
+            _hoveredPreview = null;
+            _previewHighlighted = false;
         }
 
         private void TryAutoSnapCurrentTarget(
             GameObject partGo,
             string selectionId,
-            GhostPlacementInfo nearestInfo,
+            PlacementPreviewInfo nearestInfo,
             bool isSubassemblySelection,
             ISubassemblyPlacementService subassemblyController)
         {
@@ -346,25 +346,25 @@ namespace OSE.UI.Root
             AttemptPlacement(partGo, selectionId);
         }
 
-        public void StartGhostSelectionPulse(string partId)
+        public void StartPreviewSelectionPulse(string partId)
         {
-            StopGhostSelectionPulse();
-            _ghostPulsePartId = partId;
+            StopPreviewSelectionPulse();
+            _previewPulsePartId = partId;
         }
 
-        public void StopGhostSelectionPulse()
+        public void StopPreviewSelectionPulse()
         {
-            if (_ghostPulsePartId == null) return;
+            if (_previewPulsePartId == null) return;
 
-            for (int i = 0; i < _spawnedGhosts.Count; i++)
+            for (int i = 0; i < _spawnedPreviews.Count; i++)
             {
-                GameObject ghost = _spawnedGhosts[i];
-                if (ghost == null) continue;
-                GhostPlacementInfo info = ghost.GetComponent<GhostPlacementInfo>();
-                if (info != null && info.MatchesSelectionId(_ghostPulsePartId))
-                    MaterialHelper.ApplyGhost(ghost);
+                GameObject preview = _spawnedPreviews[i];
+                if (preview == null) continue;
+                PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
+                if (info != null && info.MatchesSelectionId(_previewPulsePartId))
+                    MaterialHelper.ApplyPreviewMaterial(preview);
             }
-            _ghostPulsePartId = null;
+            _previewPulsePartId = null;
         }
 
         public void RemoveFromRequiredPartIds(string partId)
@@ -413,31 +413,31 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
-        /// Returns the world position of the nearest ghost target matching the given part ID.
+        /// Returns the world position of the nearest preview target matching the given part ID.
         /// Used by the V2 orchestrator to pivot the camera toward the placement target.
         /// </summary>
-        public bool TryGetGhostWorldPosForPart(string partId, out Vector3 worldPos)
+        public bool TryGetPreviewWorldPosForPart(string partId, out Vector3 worldPos)
         {
             worldPos = Vector3.zero;
-            GhostPlacementInfo ghost = FindNearestGhostForSelection(partId, Vector3.zero, out _);
-            if (ghost == null) return false;
-            worldPos = ghost.transform.position;
+            PlacementPreviewInfo preview = FindNearestPreviewForSelection(partId, Vector3.zero, out _);
+            if (preview == null) return false;
+            worldPos = preview.transform.position;
             return true;
         }
 
-        public GhostPlacementInfo FindNearestGhostForSelection(string selectionId, Vector3 worldPos, out float nearestDist)
+        public PlacementPreviewInfo FindNearestPreviewForSelection(string selectionId, Vector3 worldPos, out float nearestDist)
         {
             nearestDist = float.PositiveInfinity;
             if (string.IsNullOrEmpty(selectionId)) return null;
 
-            GhostPlacementInfo nearest = null;
-            foreach (var ghost in _spawnedGhosts)
+            PlacementPreviewInfo nearest = null;
+            foreach (var preview in _spawnedPreviews)
             {
-                if (ghost == null) continue;
-                GhostPlacementInfo info = ghost.GetComponent<GhostPlacementInfo>();
+                if (preview == null) continue;
+                PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
                 if (info == null || !info.MatchesSelectionId(selectionId)) continue;
 
-                float dist = Vector3.Distance(worldPos, ghost.transform.position);
+                float dist = Vector3.Distance(worldPos, preview.transform.position);
                 if (dist < nearestDist)
                 {
                     nearestDist = dist;
@@ -447,29 +447,29 @@ namespace OSE.UI.Root
             return nearest;
         }
 
-        public void RemoveGhostForPart(string partId)
+        public void RemovePreviewForPart(string partId)
         {
-            RemoveGhostForSelection(partId);
+            RemovePreviewForSelection(partId);
         }
 
-        public void RemoveGhostForSelection(string selectionId)
+        public void RemovePreviewForSelection(string selectionId)
         {
             if (string.IsNullOrEmpty(selectionId)) return;
 
-            for (int i = _spawnedGhosts.Count - 1; i >= 0; i--)
+            for (int i = _spawnedPreviews.Count - 1; i >= 0; i--)
             {
-                var ghost = _spawnedGhosts[i];
-                if (ghost == null)
+                var preview = _spawnedPreviews[i];
+                if (preview == null)
                 {
-                    _spawnedGhosts.RemoveAt(i);
+                    _spawnedPreviews.RemoveAt(i);
                     continue;
                 }
 
-                GhostPlacementInfo info = ghost.GetComponent<GhostPlacementInfo>();
+                PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
                 if (info != null && info.MatchesSelectionId(selectionId))
                 {
-                    UnityEngine.Object.Destroy(ghost);
-                    _spawnedGhosts.RemoveAt(i);
+                    UnityEngine.Object.Destroy(preview);
+                    _spawnedPreviews.RemoveAt(i);
                 }
             }
         }
@@ -513,7 +513,7 @@ namespace OSE.UI.Root
 
         public bool TryResolveSnapPose(string partId, string targetId, out Vector3 pos, out Quaternion rot, out Vector3 scale)
         {
-            if (TryGetGhostTargetPose(targetId, out pos, out rot, out scale))
+            if (TryGetPreviewTargetPose(targetId, out pos, out rot, out scale))
                 return true;
 
             TargetPreviewPlacement tp = _spawner.FindTargetPlacement(targetId);
@@ -549,15 +549,15 @@ namespace OSE.UI.Root
             return tp != null || pp != null;
         }
 
-        /// <summary>Whether the hint highlight is currently targeting one of this handler's ghosts.</summary>
-        public bool IsGhostHighlighted => _ghostHighlighted;
-        public GameObject HoveredGhost => _hoveredGhost;
+        /// <summary>Whether the hint highlight is currently targeting one of this handler's previews.</summary>
+        public bool IsPreviewHighlighted => _previewHighlighted;
+        public GameObject HoveredPreview => _hoveredPreview;
 
         // ====================================================================
         //  Private helpers
         // ====================================================================
 
-        private void ExecuteClickToPlace(string selectionId, GameObject partGo, GhostPlacementInfo ghostInfo)
+        private void ExecuteClickToPlace(string selectionId, GameObject partGo, PlacementPreviewInfo previewInfo)
         {
             if (!ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
                 return;
@@ -566,7 +566,7 @@ namespace OSE.UI.Root
 
             bool isSubassemblySelection = TryGetSubassemblySelection(partGo, out var subassemblyController, out string subassemblyId);
 
-            string targetId = ghostInfo.TargetId;
+            string targetId = previewInfo.TargetId;
             PlacementValidationResult result = PlacementValidator.ValidateExact();
             if (!isSubassemblySelection)
                 partController.AttemptPlacement(selectionId, targetId, result);
@@ -577,7 +577,7 @@ namespace OSE.UI.Root
                 return;
             }
 
-            OseLog.Info($"[PlaceHandler] Click-to-place '{selectionId}' at ghost target '{targetId}'.");
+            OseLog.Info($"[PlaceHandler] Click-to-place '{selectionId}' at preview target '{targetId}'.");
 
             if (isSubassemblySelection)
             {
@@ -595,16 +595,21 @@ namespace OSE.UI.Root
             }
             else
             {
-                BeginSnapToTarget(partGo, selectionId, targetId, ghostInfo.transform);
+                BeginSnapToTarget(partGo, selectionId, targetId, previewInfo.transform);
             }
 
-            RemoveGhostForSelection(selectionId);
+            RemovePreviewForSelection(selectionId);
             _onPlacementSucceeded?.Invoke(partGo);
             CheckStepCompletion(partController, session);
         }
 
         private void CheckStepCompletion(PartRuntimeController partController, MachineSessionController session)
         {
+            // Don't complete the step if there are pending tool actions (e.g. clamp).
+            // Mixed placement+tool steps must wait for both parts AND tool actions.
+            if (HasPendingToolActions(session))
+                return;
+
             string currentStepId = session.AssemblyController?.StepController?.CurrentStepDefinition?.id;
             if (ServiceRegistry.TryGet<ISubassemblyPlacementService>(out var subassemblyController) &&
                 subassemblyController != null &&
@@ -635,7 +640,16 @@ namespace OSE.UI.Root
             }
         }
 
-        private GhostPlacementInfo RaycastGhostAtScreen(Vector2 screenPos, string selectionId)
+        private static bool HasPendingToolActions(MachineSessionController session)
+        {
+            if (session?.ToolController == null)
+                return false;
+            if (!session.ToolController.TryGetPrimaryActionSnapshot(out var snapshot))
+                return false;
+            return snapshot.IsConfigured && !snapshot.IsCompleted;
+        }
+
+        private PlacementPreviewInfo RaycastPreviewAtScreen(Vector2 screenPos, string selectionId)
         {
             Camera cam = Camera.main;
             if (cam == null) return null;
@@ -645,12 +659,12 @@ namespace OSE.UI.Root
             if (hits == null || hits.Length == 0)
                 return null;
 
-            GhostPlacementInfo best = null;
+            PlacementPreviewInfo best = null;
             float bestDistance = float.PositiveInfinity;
 
             for (int i = 0; i < hits.Length; i++)
             {
-                GhostPlacementInfo info = FindGhostInfoFromHit(hits[i].transform);
+                PlacementPreviewInfo info = FindPreviewInfoFromHit(hits[i].transform);
                 if (info == null)
                     continue;
 
@@ -667,18 +681,18 @@ namespace OSE.UI.Root
             return best;
         }
 
-        private static GhostPlacementInfo FindGhostInfoFromHit(Transform hitTransform)
+        private static PlacementPreviewInfo FindPreviewInfoFromHit(Transform hitTransform)
         {
             while (hitTransform != null)
             {
-                GhostPlacementInfo info = hitTransform.GetComponent<GhostPlacementInfo>();
+                PlacementPreviewInfo info = hitTransform.GetComponent<PlacementPreviewInfo>();
                 if (info != null) return info;
                 hitTransform = hitTransform.parent;
             }
             return null;
         }
 
-        private GhostPlacementInfo FindNearestGhostByScreenProximity(Vector2 screenPos, string selectionId)
+        private PlacementPreviewInfo FindNearestPreviewByScreenProximity(Vector2 screenPos, string selectionId)
         {
             Camera cam = Camera.main;
             if (cam == null) return null;
@@ -688,16 +702,16 @@ namespace OSE.UI.Root
                 ? (isSubassemblySelection ? SubassemblyScreenProximityMobile : ScreenProximityMobile)
                 : (isSubassemblySelection ? SubassemblyScreenProximityDesktop : ScreenProximityDesktop);
             float closestDist = threshold;
-            GhostPlacementInfo best = null;
+            PlacementPreviewInfo best = null;
 
-            for (int i = 0; i < _spawnedGhosts.Count; i++)
+            for (int i = 0; i < _spawnedPreviews.Count; i++)
             {
-                GameObject ghost = _spawnedGhosts[i];
-                if (ghost == null) continue;
-                GhostPlacementInfo info = ghost.GetComponent<GhostPlacementInfo>();
+                GameObject preview = _spawnedPreviews[i];
+                if (preview == null) continue;
+                PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
                 if (info == null || !info.MatchesSelectionId(selectionId)) continue;
 
-                Vector3 sp = cam.WorldToScreenPoint(ghost.transform.position);
+                Vector3 sp = cam.WorldToScreenPoint(preview.transform.position);
                 if (sp.z <= 0f) continue;
 
                 float dist = Vector2.Distance(screenPos, new Vector2(sp.x, sp.y));
@@ -710,31 +724,31 @@ namespace OSE.UI.Root
             return best;
         }
 
-        private bool TryGetGhostTargetPose(string targetId, out Vector3 position, out Quaternion rotation, out Vector3 scale)
+        private bool TryGetPreviewTargetPose(string targetId, out Vector3 position, out Quaternion rotation, out Vector3 scale)
         {
             position = Vector3.zero;
             rotation = Quaternion.identity;
             scale = Vector3.one;
 
-            if (string.IsNullOrWhiteSpace(targetId) || _spawnedGhosts.Count == 0)
+            if (string.IsNullOrWhiteSpace(targetId) || _spawnedPreviews.Count == 0)
                 return false;
 
             PreviewSceneSetup setup = _getSetup();
             Transform previewRoot = setup != null ? setup.PreviewRoot : null;
 
-            for (int i = _spawnedGhosts.Count - 1; i >= 0; i--)
+            for (int i = _spawnedPreviews.Count - 1; i >= 0; i--)
             {
-                GameObject ghost = _spawnedGhosts[i];
-                if (ghost == null) continue;
+                GameObject preview = _spawnedPreviews[i];
+                if (preview == null) continue;
 
-                GhostPlacementInfo info = ghost.GetComponent<GhostPlacementInfo>();
+                PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
                 if (info == null || !string.Equals(info.TargetId, targetId, StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                Transform tx = ghost.transform;
+                Transform tx = preview.transform;
                 if (previewRoot != null && tx.parent == previewRoot)
                 {
-                    // Ghosts are authored and spawned directly in PreviewRoot local space.
+                    // Previews are authored and spawned directly in PreviewRoot local space.
                     // Re-deriving that pose from scaled world transforms creates drift as
                     // the assembly scale changes, so prefer the stored local transform.
                     position = tx.localPosition;
@@ -777,13 +791,13 @@ namespace OSE.UI.Root
             if (string.IsNullOrWhiteSpace(selectionId))
                 return false;
 
-            for (int i = 0; i < _spawnedGhosts.Count; i++)
+            for (int i = 0; i < _spawnedPreviews.Count; i++)
             {
-                GameObject ghost = _spawnedGhosts[i];
-                if (ghost == null)
+                GameObject preview = _spawnedPreviews[i];
+                if (preview == null)
                     continue;
 
-                GhostPlacementInfo info = ghost.GetComponent<GhostPlacementInfo>();
+                PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
                 if (info != null && info.MatchesSubassembly(selectionId))
                     return true;
             }
@@ -904,20 +918,20 @@ namespace OSE.UI.Root
             }
         }
 
-        private void UpdateGhostSelectionPulse()
+        private void UpdatePreviewSelectionPulse()
         {
-            if (_ghostPulsePartId == null || _spawnedGhosts.Count == 0)
+            if (_previewPulsePartId == null || _spawnedPreviews.Count == 0)
                 return;
 
-            Color pulseColor = ColorPulseHelper.Lerp(GhostSelectedPulseA, GhostSelectedPulseB, GhostSelectedPulseSpeed);
+            Color pulseColor = ColorPulseHelper.Lerp(PreviewSelectedPulseA, PreviewSelectedPulseB, PreviewSelectedPulseSpeed);
 
-            for (int i = 0; i < _spawnedGhosts.Count; i++)
+            for (int i = 0; i < _spawnedPreviews.Count; i++)
             {
-                GameObject ghost = _spawnedGhosts[i];
-                if (ghost == null) continue;
-                GhostPlacementInfo info = ghost.GetComponent<GhostPlacementInfo>();
-                if (info == null || !info.MatchesSelectionId(_ghostPulsePartId)) continue;
-                MaterialHelper.SetMaterialColor(ghost, pulseColor);
+                GameObject preview = _spawnedPreviews[i];
+                if (preview == null) continue;
+                PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
+                if (info == null || !info.MatchesSelectionId(_previewPulsePartId)) continue;
+                MaterialHelper.SetMaterialColor(preview, pulseColor);
             }
         }
 

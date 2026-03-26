@@ -1,0 +1,55 @@
+{
+  "input_fcstd": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder\\raw\\Sensholder.fcstd",
+  "output_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder\\exported\\stl\\Sensholder_selected.stl",
+  "units": "mm",
+  "selected_labels": [
+    "Sensor Holder Final",
+    "Sensor Holder Gusset"
+  ],
+  "object_count": 2,
+  "mesh_facets": 1034,
+  "mesh_points": 507,
+  "combined_bound_box": {
+    "xmin_mm": 97.94651038306819,
+    "xmax_mm": 183.692382383068,
+    "ymin_mm": -31.1858595531817,
+    "ymax_mm": 35.829436907505,
+    "zmin_mm": -63.25219855188345,
+    "zmax_mm": 2.847801448116712,
+    "xlen_mm": 85.74587199999982,
+    "ylen_mm": 67.0152964606867,
+    "zlen_mm": 66.10000000000016
+  },
+  "objects": [
+    {
+      "name": "Pocket009",
+      "label": "Sensor Holder Final",
+      "bound_box": {
+        "xmin_mm": 97.94651038306819,
+        "xmax_mm": 183.692382383068,
+        "ymin_mm": -31.1858595531817,
+        "ymax_mm": 35.829436907505,
+        "zmin_mm": -63.25219855188345,
+        "zmax_mm": 2.847801448116712,
+        "xlen_mm": 85.74587199999982,
+        "ylen_mm": 67.0152964606867,
+        "zlen_mm": 66.10000000000016
+      }
+    },
+    {
+      "name": "Pad015",
+      "label": "Sensor Holder Gusset",
+      "bound_box": {
+        "xmin_mm": 109.896994114,
+        "xmax_mm": 112.896994114,
+        "ymin_mm": -7.186854004239996,
+        "ymax_mm": -1.5630390042399964,
+        "zmin_mm": -29.742160752564,
+        "zmax_mm": 1.748650247436,
+        "xlen_mm": 3.0,
+        "ylen_mm": 5.623815,
+        "zlen_mm": 31.490811
+      }
+    }
+  ]
+}

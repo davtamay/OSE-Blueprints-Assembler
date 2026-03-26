@@ -1,7 +1,7 @@
 using UnityEngine;
-using OSE.UI.Root;
+using OSE.Core;
 
-namespace OSE.Interaction.V2
+namespace OSE.Interaction
 {
     /// <summary>
     /// Coordinates all visual feedback for the V2 interaction system.

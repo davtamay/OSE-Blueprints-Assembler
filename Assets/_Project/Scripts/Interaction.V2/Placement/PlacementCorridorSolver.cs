@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace OSE.Interaction.V2
+namespace OSE.Interaction
 {
     /// <summary>
     /// Validates that the part is approaching the target from a sensible direction.

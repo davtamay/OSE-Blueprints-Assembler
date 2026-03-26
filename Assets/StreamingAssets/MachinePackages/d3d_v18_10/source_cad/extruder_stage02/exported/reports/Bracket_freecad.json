@@ -1,0 +1,36 @@
+{
+  "input_fcstd": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder_stage02\\raw_extra\\Bracket.fcstd",
+  "output_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder_stage02\\exported\\stl\\Bracket.stl",
+  "source_mode": "archive_brep",
+  "units": "mm",
+  "object_count": 1,
+  "mesh_facets": 1450,
+  "mesh_points": 705,
+  "combined_bound_box": {
+    "xmin_mm": -31.284248411593,
+    "xmax_mm": 30.715751588407,
+    "ymin_mm": -13.089742674603702,
+    "ymax_mm": 30.91025732539652,
+    "zmin_mm": 12.178627530077101,
+    "zmax_mm": 52.17862753007721,
+    "xlen_mm": 62.0,
+    "ylen_mm": 44.00000000000022,
+    "zlen_mm": 40.00000000000011
+  },
+  "objects": [
+    {
+      "name": "PartShape.brp",
+      "bound_box": {
+        "xmin_mm": -31.284248411592984,
+        "xmax_mm": 30.715751588407315,
+        "ymin_mm": -13.08974267460372,
+        "ymax_mm": 30.910257325396522,
+        "zmin_mm": 12.178625578907848,
+        "zmax_mm": 54.19430259316191,
+        "xlen_mm": 62.0000000000003,
+        "ylen_mm": 44.00000000000024,
+        "zlen_mm": 42.01567701425406
+      }
+    }
+  ]
+}

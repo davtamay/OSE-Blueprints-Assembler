@@ -1,0 +1,10 @@
+{
+  "input": "Assets/_Project/Data/Packages/d3d_v18_10/source_cad/axes_stage01/exported/glb_candidates/d3d_y_left_axis_unit_candidate.glb",
+  "output": "Assets/_Project/Data/Packages/d3d_v18_10/assets/parts/d3d_y_left_axis_unit_approved.glb",
+  "flags": [
+    "-noq",
+    "-cc"
+  ],
+  "input_bytes": 476204,
+  "output_bytes": 147964
+}

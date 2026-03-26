@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace OSE.Interaction.V2
+namespace OSE.Interaction
 {
     /// <summary>
     /// Describes the camera's orbital position around a pivot point.

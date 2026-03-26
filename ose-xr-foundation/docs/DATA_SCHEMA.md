@@ -430,13 +430,13 @@ Represents one coherent learner action.
 - `relevantToolIds` : array<string> (optional)
 - `targetIds` : array<string> (optional)
 - `completionType` : enum (required — legacy, see deprecation note below)
-  - `placement` — user drags parts onto ghost targets
+  - `placement` — user drags parts onto preview targets
   - `tool_action` — user performs tool actions (e.g. tighten bolts)
   - `pipe_connection` — user selects two endpoints to form a connection
   - `confirmation` — user presses a Continue/Confirm button
 
 - `targetOrder` : enum (optional, default `"parallel"`)
-  - `parallel` — all ghosts and tool targets visible simultaneously
+  - `parallel` — all previews and tool targets visible simultaneously
   - `sequential` — one target at a time, in `targetIds` array order
 
 - `validationRuleIds` : array<string> (optional)
@@ -453,7 +453,7 @@ The following fields are implemented in `StepDefinition.cs` with full validator 
 ##### Family and Profile (Phase 14a — wired)
 
 - `family` : enum (optional)
-  - `Place` — spatial placement onto ghost targets
+  - `Place` — spatial placement onto preview targets
   - `Use` — tool activation on targets
   - `Connect` — two-endpoint connection
   - `Confirm` — non-spatial acknowledgement/verification
@@ -611,7 +611,7 @@ Represents an optional guidance element.
   Suggested values:
   - `text`
   - `highlight`
-  - `ghost`
+  - `preview`
   - `directional`
   - `explanatory`
   - `tool_reminder`

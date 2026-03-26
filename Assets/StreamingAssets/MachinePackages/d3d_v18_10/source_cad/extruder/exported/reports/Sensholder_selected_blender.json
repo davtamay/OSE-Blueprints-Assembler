@@ -1,0 +1,27 @@
+{
+  "input_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder\\exported\\stl\\Sensholder_selected.stl",
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder\\exported\\glb_candidates\\Sensholder_selected.glb",
+  "units": "m",
+  "object_count": 1,
+  "material_name": "D3D Sensor Holder",
+  "base_color": [
+    0.46,
+    0.46,
+    0.5,
+    1.0
+  ],
+  "metallic": 0.0,
+  "roughness": 0.56,
+  "center_mode": "center",
+  "bound_box": {
+    "xmin_m": -0.042872942984104156,
+    "xmax_m": 0.04287293553352356,
+    "ymin_m": -0.03350765258073807,
+    "ymax_m": 0.03350765258073807,
+    "zmin_m": -0.03305000066757202,
+    "zmax_m": 0.03305000066757202,
+    "xlen_m": 0.08574587851762772,
+    "ylen_m": 0.06701530516147614,
+    "zlen_m": 0.06610000133514404
+  }
+}

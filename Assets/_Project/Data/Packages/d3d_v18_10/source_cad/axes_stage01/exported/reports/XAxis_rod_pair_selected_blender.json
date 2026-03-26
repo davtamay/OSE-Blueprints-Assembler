@@ -1,0 +1,25 @@
+{
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\axes_stage01\\exported\\glb_candidates\\XAxis_rod_pair_selected.glb",
+  "units": "m",
+  "length_m": 0.2032,
+  "diameter_m": 0.009823826,
+  "center_spacing_m": 0.055834429,
+  "material_name": "D3D X-Axis Rod Pair Steel",
+  "base_color": [
+    0.74,
+    0.77,
+    0.82,
+    1.0
+  ],
+  "bound_box": {
+    "xmin_m": -0.10159999877214432,
+    "xmax_m": 0.10159999877214432,
+    "ymin_m": -0.0049119130708277225,
+    "ymax_m": 0.0049119130708277225,
+    "zmin_m": -0.004911917727440596,
+    "zmax_m": 0.06074634566903114,
+    "xlen_m": 0.20319999754428864,
+    "ylen_m": 0.009823826141655445,
+    "zlen_m": 0.06565826339647174
+  }
+}

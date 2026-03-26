@@ -1,0 +1,27 @@
+{
+  "input_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder_stage02\\exported\\stl\\Nozzleassembly_selected.stl",
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder_stage02\\exported\\glb_candidates\\Nozzleassembly_selected.glb",
+  "units": "m",
+  "object_count": 1,
+  "material_name": "D3D Nozzle Assembly",
+  "base_color": [
+    0.62,
+    0.62,
+    0.66,
+    1.0
+  ],
+  "metallic": 0.0,
+  "roughness": 0.52,
+  "center_mode": "center",
+  "bound_box": {
+    "xmin_m": -0.0363110676407814,
+    "xmax_m": 0.0363110676407814,
+    "ymin_m": -0.02095801569521427,
+    "ymax_m": 0.020958013832569122,
+    "zmin_m": -0.039993904531002045,
+    "zmax_m": 0.039993904531002045,
+    "xlen_m": 0.0726221352815628,
+    "ylen_m": 0.041916029527783394,
+    "zlen_m": 0.07998780906200409
+  }
+}

@@ -1,7 +1,7 @@
-using OSE.UI.Root;
+using OSE.Core;
 using UnityEngine;
 
-namespace OSE.Interaction.V2
+namespace OSE.Interaction
 {
     /// <summary>
     /// Weld preview: torch travels along the weld seam depositing a bead behind it.
@@ -9,14 +9,14 @@ namespace OSE.Interaction.V2
     /// Observe mode: auto-play over Duration seconds.
     /// Guided mode: progress driven by user drag.
     /// </summary>
-    public sealed class WeldPreview : IToolActionPreview
+    public sealed class WeldPreview : ToolActionPreviewBase
     {
-        public float Duration => 1.5f;
+        public override float Duration => 1.5f;
 
-        private PreviewContext _ctx;
-        private float _elapsed;
-        private float _guidedProgress;
-        private float _autoAssistTimer;
+        protected override float GuidedDragScale => 0.004f;
+        protected override float AutoAssistDelay => 3f;
+        protected override float AutoAssistRate => 0.4f;
+
         private Quaternion _actionRot;
         private GameObject _weldBeadObj;
         private LineRenderer _weldLine;
@@ -27,84 +27,42 @@ namespace OSE.Interaction.V2
         private float _weldLen;
         private Vector3 _weldStart;
         private Vector3 _weldEnd;
-        private Vector3 _approachDir; // from surface toward tool (used for tip offset)
-        private float _standoff; // fixed standoff distance from surface, captured once
-
-        private const float GuidedDragScale = 0.004f;
-        private const float AutoAssistDelay = 3f;
-        private const float AutoAssistRate = 0.4f;
+        private Vector3 _approachDir;
+        private float _standoff;
 
         private const float DefaultWeldLength = 0.03f;
         private const float BeadWidth = 0.004f;
 
-        public void Begin(PreviewContext context)
+        public override void Begin(PreviewContext context)
         {
-            _ctx = context;
-            _actionRot = context.ToolGhost != null ? context.ToolGhost.transform.rotation : Quaternion.identity;
-            _elapsed = 0f;
-            _guidedProgress = 0f;
-            _autoAssistTimer = 0f;
+            base.Begin(context);
+            _actionRot = context.ToolPreview != null ? context.ToolPreview.transform.rotation : Quaternion.identity;
             _arcSpawned = false;
             _weldBeadObj = null;
             _weldLine = null;
 
-            // Direction from surface toward tool (for tip offset during travel).
-            // Use only the horizontal + depth component so the bead stays flat on the surface.
-            Vector3 toolPos = context.ToolGhost != null ? context.ToolGhost.transform.position : context.TargetWorldPos;
+            Vector3 toolPos = context.ToolPreview != null ? context.ToolPreview.transform.position : context.TargetWorldPos;
             _approachDir = (toolPos - context.TargetWorldPos).normalized;
-
-            // Capture standoff once so it doesn't drift during animation
             _standoff = Vector3.Distance(toolPos, context.TargetWorldPos);
 
-            // Weld direction: always horizontal, perpendicular to camera view.
-            // This reliably produces a flat bead on the surface regardless of camera angle.
             _weldLen = context.WeldLength > 0f ? context.WeldLength : DefaultWeldLength;
-            _weldDir = ComputeHorizontalWeldDir();
+            _weldDir = context.WeldAxis.sqrMagnitude > 0.001f
+                ? context.WeldAxis.normalized
+                : ComputeHorizontalWeldDir();
             float halfLen = _weldLen * 0.5f;
             _weldStart = context.TargetWorldPos - _weldDir * halfLen;
             _weldEnd = context.TargetWorldPos + _weldDir * halfLen;
         }
 
-        public float TickObserve(float deltaTime)
+        public override Vector2 GetExpectedDragDirection(PreviewContext context)
         {
-            _elapsed += deltaTime;
-            float t = Mathf.Clamp01(_elapsed / Duration);
-            ApplyEffects(t);
-            return t;
+            return context.ProjectDirectionToScreen(_weldDir, Vector2.right);
         }
 
-        public float TickGuided(float deltaTime, Vector2 dragDelta)
+        public override void End(bool completed)
         {
-            Vector2 expected = GetExpectedDragDirection(_ctx);
-            float dot = Vector2.Dot(dragDelta, expected);
-
-            if (dot > 0f)
-            {
-                _guidedProgress += dot * GuidedDragScale;
-                _autoAssistTimer = 0f;
-            }
-            else
-            {
-                _autoAssistTimer += deltaTime;
-            }
-
-            if (_autoAssistTimer >= AutoAssistDelay)
-                _guidedProgress += AutoAssistRate * deltaTime;
-
-            _guidedProgress = Mathf.Clamp01(_guidedProgress);
-            ApplyEffects(_guidedProgress);
-            return _guidedProgress;
-        }
-
-        public Vector2 GetExpectedDragDirection(PreviewContext context)
-        {
-            return Vector2.down;
-        }
-
-        public void End(bool completed)
-        {
-            if (_ctx.ToolGhost != null)
-                MaterialHelper.SetEmission(_ctx.ToolGhost, Color.black);
+            if (_ctx.ToolPreview != null)
+                MaterialHelper.SetEmission(_ctx.ToolPreview, Color.black);
 
             if (_weldBeadObj != null && !completed)
             {
@@ -118,44 +76,38 @@ namespace OSE.Interaction.V2
             }
         }
 
-        private void ApplyEffects(float progress)
+        protected override void ApplyEffects(float progress)
         {
             // At 10%: arc glow + sparks
             if (!_arcSpawned && progress >= 0.1f)
             {
                 _arcSpawned = true;
 
-                if (_ctx.ToolGhost != null)
-                    MaterialHelper.SetEmission(_ctx.ToolGhost, new Color(0.9f, 0.95f, 1f, 1f) * 1.5f);
+                if (_ctx.ToolPreview != null)
+                    MaterialHelper.SetEmission(_ctx.ToolPreview, new Color(0.9f, 0.95f, 1f, 1f) * 1.5f);
 
                 CompletionParticleEffect.TrySpawn("weld_glow",
                     _ctx.TargetWorldPos, Vector3.one * 0.06f);
             }
 
-            // Travel progress: 0..1 across the weld seam
             float travelProgress = Mathf.InverseLerp(0.15f, 0.9f, progress);
 
-            // ── Tool movement: smooth travel from approach landing → along weld seam ──
-            if (_ctx.ToolGhost != null && progress > 0.05f && progress < 0.95f)
+            // Tool movement: smooth travel along weld seam
+            if (_ctx.ToolPreview != null && progress > 0.05f && progress < 0.95f)
             {
-                // Current point on the weld seam (on the surface)
                 Vector3 currentWeldPoint = Vector3.Lerp(_weldStart, _weldEnd, travelProgress);
-
-                // Keep tool at the fixed standoff distance captured at Begin()
                 Vector3 targetToolPos = currentWeldPoint + _approachDir * _standoff;
 
-                // Smooth lerp to avoid jumps (first frame blends from approach landing)
-                _ctx.ToolGhost.transform.position = Vector3.Lerp(
-                    _ctx.ToolGhost.transform.position,
+                _ctx.ToolPreview.transform.position = Vector3.Lerp(
+                    _ctx.ToolPreview.transform.position,
                     targetToolPos,
                     Time.deltaTime * 6f);
 
-                // Slight hand wobble
                 float wobble = Mathf.Sin(progress * 40f) * 0.12f;
-                _ctx.ToolGhost.transform.rotation = _actionRot * Quaternion.Euler(wobble, 0f, wobble * 0.5f);
+                _ctx.ToolPreview.transform.rotation = _actionRot * Quaternion.Euler(wobble, 0f, wobble * 0.5f);
             }
 
-            // ── Weld bead line: deposited on the surface behind the torch ──
+            // Weld bead line
             if (_weldBeadObj == null && progress >= 0.2f)
                 SpawnWeldLine();
 
@@ -178,12 +130,8 @@ namespace OSE.Interaction.V2
             _weldLine.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             _weldLine.receiveShadows = false;
 
-            // Orient the line renderer so its local Z = surface normal (up).
-            // Using world up instead of _approachDir ensures the bead ribbon lies
-            // flat on the workpiece regardless of camera angle.
             _weldBeadObj.transform.rotation = Quaternion.LookRotation(Vector3.up, _weldDir);
 
-            // Fresh weld bead: bright silver-white with metallic sheen
             var shader = Shader.Find("Universal Render Pipeline/Lit")
                 ?? Shader.Find("Standard")
                 ?? Shader.Find("Sprites/Default");
@@ -206,22 +154,16 @@ namespace OSE.Interaction.V2
 
         private void UpdateWeldLine(float travelProgress)
         {
-            // Bead grows from weld start toward current torch position
             Vector3 currentEnd = Vector3.Lerp(_weldStart, _weldEnd, travelProgress);
             _weldLine.SetPosition(0, _weldStart);
             _weldLine.SetPosition(1, currentEnd);
         }
 
-        /// <summary>
-        /// Computes a horizontal weld direction perpendicular to the camera view.
-        /// This always produces a flat, visible bead regardless of camera angle.
-        /// </summary>
         private static Vector3 ComputeHorizontalWeldDir()
         {
             Camera cam = Camera.main;
             if (cam != null)
             {
-                // Camera's right vector projected to the horizontal plane
                 Vector3 camRight = cam.transform.right;
                 Vector3 horizontal = new Vector3(camRight.x, 0f, camRight.z);
                 if (horizontal.sqrMagnitude > 0.001f)

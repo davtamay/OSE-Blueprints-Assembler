@@ -9,8 +9,8 @@ namespace OSE.UI.Root
 {
     /// <summary>
     /// Handles <see cref="StepFamily.Connect"/> (pipe_connection) steps.
-    /// Spawns clickable port spheres at portA/portB positions and a cable-ghost
-    /// preview.  A two-click confirmation (one sphere, then the other) completes
+    /// Spawns clickable port spheres at portA/portB positions and a cable preview.
+    /// A two-click confirmation (one sphere, then the other) completes
     /// the step and renders the final pipe spline.
     /// </summary>
     internal sealed class ConnectStepHandler : IStepFamilyHandler
@@ -22,7 +22,7 @@ namespace OSE.UI.Root
 
         private readonly List<GameObject> _spawnedPortSpheres = new();
         public bool HasActivePortSpheres => _spawnedPortSpheres.Count > 0;
-        private readonly List<GameObject> _cableGhosts = new();
+        private readonly List<GameObject> _cablePreviews = new();
         private readonly List<GameObject> _renderedPipeSplines = new();
         private bool _pipePortAConfirmed;
         private AnchorToAnchorInteraction _anchorInteraction;
@@ -47,7 +47,7 @@ namespace OSE.UI.Root
         public void OnStepActivated(in StepHandlerContext context)
         {
             ClearPortSpheres();
-            ClearCableGhosts();
+            ClearCablePreviews();
             CleanupAnchorInteraction();
 
             var package = _spawner?.CurrentPackage;
@@ -127,14 +127,14 @@ namespace OSE.UI.Root
         {
             TryRenderPipeSpline(context.StepId);
             ClearPortSpheres();
-            ClearCableGhosts();
+            ClearCablePreviews();
             CleanupAnchorInteraction();
         }
 
         public void ClearTransientVisuals()
         {
             ClearPortSpheres();
-            ClearCableGhosts();
+            ClearCablePreviews();
             CleanupAnchorInteraction();
         }
 
@@ -183,9 +183,9 @@ namespace OSE.UI.Root
                 SpawnPortSphere(portAPos, isPortA: true, previewRoot);
                 SpawnPortSphere(portBPos, isPortA: false, previewRoot);
 
-                // Ghost cable preview — shows the connection path while the user taps the ports.
+                // Cable preview — shows the connection path while the user taps the ports.
                 string partName = (step.requiredPartIds?.Length > 0) ? step.requiredPartIds[0] : targetId;
-                var ghostPath = new SplinePathDefinition
+                var previewPath = new SplinePathDefinition
                 {
                     radius     = 0.018f,
                     segments   = 8,
@@ -200,18 +200,18 @@ namespace OSE.UI.Root
                         new SceneFloat3 { x = portBPos.x, y = portBPos.y, z = portBPos.z },
                     }
                 };
-                GameObject cableGhost = SplinePartFactory.CreateGhost(partName, ghostPath, previewRoot);
-                if (cableGhost != null)
+                GameObject cablePreview = SplinePartFactory.CreatePreview(partName, previewPath, previewRoot);
+                if (cablePreview != null)
                 {
-                    MaterialHelper.ApplyGhost(cableGhost);
-                    _cableGhosts.Add(cableGhost);
+                    MaterialHelper.ApplyPreviewMaterial(cablePreview);
+                    _cablePreviews.Add(cablePreview);
                 }
             }
 
             OseLog.Info($"[ConnectStepHandler] Pipe step '{step.id}': spawned {_spawnedPortSpheres.Count} port sphere(s).");
 
-            // Spawn a cable ghost on the cursor.
-            SpawnPipeCursorGhost(package, step);
+            // Spawn a cable preview on the cursor.
+            SpawnPipeCursorPreview(package, step);
         }
 
         private void SpawnPortSphere(Vector3 localPos, bool isPortA, Transform parent)
@@ -370,16 +370,16 @@ namespace OSE.UI.Root
             _pipePortAConfirmed = false;
 
             var cursorManager = _getCursorManager();
-            cursorManager?.ClearPipeCursorGhost();
+            cursorManager?.ClearPipeCursorPreview();
         }
 
-        private void ClearCableGhosts()
+        private void ClearCablePreviews()
         {
-            foreach (var g in _cableGhosts)
+            foreach (var g in _cablePreviews)
             {
                 if (g != null) UnityEngine.Object.Destroy(g);
             }
-            _cableGhosts.Clear();
+            _cablePreviews.Clear();
         }
 
         private void ClearRenderedPipeSplines()
@@ -400,11 +400,11 @@ namespace OSE.UI.Root
             }
         }
 
-        private void SpawnPipeCursorGhost(MachinePackageDefinition package, StepDefinition step)
+        private void SpawnPipeCursorPreview(MachinePackageDefinition package, StepDefinition step)
         {
             var cursorManager = _getCursorManager();
             if (cursorManager != null)
-                _ = cursorManager.SpawnPipeCursorGhostAsync(package, step, _findSpawnedPart, _spawner);
+                _ = cursorManager.SpawnPipeCursorPreviewAsync(package, step, _findSpawnedPart, _spawner);
         }
     }
 }

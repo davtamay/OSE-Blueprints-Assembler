@@ -1,49 +1,42 @@
-using OSE.UI.Root;
+using OSE.Core;
 using UnityEngine;
 
-namespace OSE.Interaction.V2
+namespace OSE.Interaction
 {
     /// <summary>
     /// Fallback preview for profiles without a specific implementation.
-    /// Brief glow on the tool ghost, then auto-completes.
+    /// Brief glow on the tool preview, then auto-completes.
     /// </summary>
-    public sealed class DefaultPreview : IToolActionPreview
+    public sealed class DefaultPreview : ToolActionPreviewBase
     {
-        public float Duration => 0.6f;
+        public override float Duration => 0.6f;
 
-        private PreviewContext _ctx;
-        private float _elapsed;
-        private float _guidedProgress;
-        private float _autoAssistTimer;
+        protected override float AutoAssistDelay => 2f;
+        protected override float AutoAssistRate => 1f;
+        protected override float GuidedDragScale => 0.003f;
 
-        private const float AutoAssistDelay = 2f;
-        private const float AutoAssistRate = 1f;
-
-        public void Begin(PreviewContext context)
+        public override void Begin(PreviewContext context)
         {
-            _ctx = context;
-            _elapsed = 0f;
-            _guidedProgress = 0f;
-            _autoAssistTimer = 0f;
+            base.Begin(context);
 
-            // Brief emission pulse on the ghost
-            if (context.ToolGhost != null)
-                MaterialHelper.SetEmission(context.ToolGhost, new Color(0.3f, 1f, 0.6f, 1f));
+            // Brief emission pulse on the preview
+            if (context.ToolPreview != null)
+                MaterialHelper.SetEmission(context.ToolPreview, new Color(0.3f, 1f, 0.6f, 1f));
         }
 
-        public float TickObserve(float deltaTime)
+        public override float TickObserve(float deltaTime)
         {
             _elapsed += deltaTime;
             return Mathf.Clamp01(_elapsed / Duration);
         }
 
-        public float TickGuided(float deltaTime, Vector2 dragDelta)
+        /// <summary>Any drag in any direction counts — no directional constraint.</summary>
+        public override float TickGuided(float deltaTime, Vector2 dragDelta, Vector2 screenPos)
         {
-            // Any drag in any direction counts
             float magnitude = dragDelta.magnitude;
             if (magnitude > 0.5f)
             {
-                _guidedProgress += magnitude * 0.003f;
+                _guidedProgress += magnitude * GuidedDragScale;
                 _autoAssistTimer = 0f;
             }
             else
@@ -58,16 +51,17 @@ namespace OSE.Interaction.V2
             return _guidedProgress;
         }
 
-        public Vector2 GetExpectedDragDirection(PreviewContext context)
+        public override Vector2 GetExpectedDragDirection(PreviewContext context)
         {
-            return Vector2.up; // generic upward
+            return context.ProjectDirectionToScreen(
+                context.WeldAxis.sqrMagnitude > 0.001f ? context.WeldAxis : Vector3.up,
+                Vector2.up);
         }
 
-        public void End(bool completed)
+        public override void End(bool completed)
         {
-            // Clear emission
-            if (_ctx.ToolGhost != null)
-                MaterialHelper.SetEmission(_ctx.ToolGhost, Color.black);
+            if (_ctx.ToolPreview != null)
+                MaterialHelper.SetEmission(_ctx.ToolPreview, Color.black);
         }
     }
 }

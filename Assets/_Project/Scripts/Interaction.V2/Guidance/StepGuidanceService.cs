@@ -2,10 +2,9 @@ using System;
 using System.Collections.Generic;
 using OSE.Content;
 using OSE.Core;
-using OSE.Interaction;
 using UnityEngine;
 
-namespace OSE.Interaction.V2
+namespace OSE.Interaction
 {
     /// <summary>
     /// Provides step-aware camera guidance. When a step activates,
@@ -80,7 +79,7 @@ namespace OSE.Interaction.V2
                 _homeStack.Push(_currentHome);
 
             // Frame the camera using bounds from the part bridge.
-            // The bridge resolves bounds from actual scene renderers (ghosts,
+            // The bridge resolves bounds from actual scene renderers (previews,
             // spawned parts, tool targets) which are the most accurate source.
             FrameStep(evt.StepId);
 
@@ -88,6 +87,33 @@ namespace OSE.Interaction.V2
             _hasHome = true;
 
             OseLog.Info($"[StepGuidance] Step '{evt.StepId}' — framed + captured home, dist={_currentHome.Distance:F2}");
+        }
+
+        /// <summary>
+        /// Records the step activation (updates active step ID, pushes home stack)
+        /// but does NOT frame the camera. Use this when the intro overlay is visible
+        /// and framing should be deferred until dismissal.
+        /// </summary>
+        public void OnStepActivatedNoFrame(StepActivated evt)
+        {
+            _activeStepId = evt.StepId;
+
+            if (_cameraRig == null)
+                return;
+
+            if (_hasHome)
+                _homeStack.Push(_currentHome);
+        }
+
+        /// <summary>
+        /// Captures the current camera target state as the step home framing.
+        /// Call after a deferred FrameStep to set up recovery affordances.
+        /// </summary>
+        public void CaptureHome()
+        {
+            if (_cameraRig == null) return;
+            _currentHome = _cameraRig.TargetState;
+            _hasHome = true;
         }
 
         /// <summary>
@@ -164,7 +190,7 @@ namespace OSE.Interaction.V2
         {
             if (_cameraRig == null) return;
 
-            float distance = GetToolActionFramingDistance(profile);
+            float distance = ToolProfileRegistry.Get(profile).FramingDistance;
             _cameraRig.FocusOn(targetWorldPos, distance);
         }
 
@@ -176,24 +202,6 @@ namespace OSE.Interaction.V2
         {
             if (_cameraRig == null || !_hasHome) return;
             ApplyHome();
-        }
-
-        private static float GetToolActionFramingDistance(string profile)
-        {
-            if (string.IsNullOrEmpty(profile))
-                return 0.6f;
-
-            if (profile.Equals(ToolActionProfiles.Weld, System.StringComparison.OrdinalIgnoreCase)
-                || profile.Equals(ToolActionProfiles.Cut, System.StringComparison.OrdinalIgnoreCase))
-                return 0.35f; // very close — see the joint detail
-
-            if (profile.Equals(ToolActionProfiles.Torque, System.StringComparison.OrdinalIgnoreCase))
-                return 0.45f; // close enough to see the bolt rotation
-
-            if (profile.Equals(ToolActionProfiles.Strike, System.StringComparison.OrdinalIgnoreCase))
-                return 0.5f;
-
-            return 0.6f; // default
         }
 
         // ── Recovery Affordances ──

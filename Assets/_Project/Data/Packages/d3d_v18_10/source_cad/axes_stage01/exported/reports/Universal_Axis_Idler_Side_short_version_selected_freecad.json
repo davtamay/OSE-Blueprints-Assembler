@@ -1,0 +1,39 @@
+{
+  "input_fcstd": "C:\\Users\\CodexSandboxOffline\\.codex\\.sandbox\\cwd\\410005dd13d4052\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\axes_stage01\\raw\\Universal_Axis_Idler_Side_short_version.fcstd",
+  "output_stl": "C:\\Users\\CodexSandboxOffline\\.codex\\.sandbox\\cwd\\410005dd13d4052\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\axes_stage01\\exported\\stl\\Universal_Axis_Idler_Side_short_version_selected.stl",
+  "units": "mm",
+  "selected_labels": [
+    "Pocket020"
+  ],
+  "object_count": 1,
+  "mesh_facets": 1120,
+  "mesh_points": 556,
+  "combined_bound_box": {
+    "xmin_mm": -11.0,
+    "xmax_mm": 15.0,
+    "ymin_mm": -33.0,
+    "ymax_mm": 33.0,
+    "zmin_mm": -9.500000000000004,
+    "zmax_mm": 2.500000000000002,
+    "xlen_mm": 26.0,
+    "ylen_mm": 66.0,
+    "zlen_mm": 12.000000000000005
+  },
+  "objects": [
+    {
+      "name": "Pocket020",
+      "label": "Magnet Holes",
+      "bound_box": {
+        "xmin_mm": -11.0,
+        "xmax_mm": 15.0,
+        "ymin_mm": -33.0,
+        "ymax_mm": 33.0,
+        "zmin_mm": -9.500000000000004,
+        "zmax_mm": 2.500000000000002,
+        "xlen_mm": 26.0,
+        "ylen_mm": 66.0,
+        "zlen_mm": 12.000000000000005
+      }
+    }
+  ]
+}

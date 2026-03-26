@@ -119,7 +119,7 @@ namespace OSE.Content
         /// <summary>
         /// Controls whether targets within this step are processed all at once or one at a time.
         /// <list type="bullet">
-        ///   <item>"parallel" (default / null) — all ghosts and tool targets visible simultaneously; complete in any order.</item>
+        ///   <item>"parallel" (default / null) — all previews and tool targets visible simultaneously; complete in any order.</item>
         ///   <item>"sequential" — one target at a time, in <see cref="targetIds"/> array order.</item>
         /// </list>
         /// </summary>

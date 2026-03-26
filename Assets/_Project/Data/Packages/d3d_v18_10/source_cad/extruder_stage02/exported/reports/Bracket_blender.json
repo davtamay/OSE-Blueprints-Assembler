@@ -1,0 +1,26 @@
+{
+  "input_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder_stage02\\exported\\stl\\Bracket.stl",
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder_stage02\\exported\\glb_candidates\\Bracket.glb",
+  "units": "m",
+  "object_count": 1,
+  "material_name": "D3D Bracket Grey",
+  "base_color": [
+    0.45,
+    0.47,
+    0.5,
+    1.0
+  ],
+  "metallic": 0.0,
+  "roughness": 0.6,
+  "bound_box": {
+    "xmin_m": -0.03128425031900406,
+    "xmax_m": 0.03071575239300728,
+    "ymin_m": -0.013089743442833424,
+    "ymax_m": 0.03091025911271572,
+    "zmin_m": 0.012178628705441952,
+    "zmax_m": 0.052178628742694855,
+    "xlen_m": 0.06200000271201134,
+    "ylen_m": 0.044000002555549145,
+    "zlen_m": 0.0400000000372529
+  }
+}

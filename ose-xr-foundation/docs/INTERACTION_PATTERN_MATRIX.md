@@ -65,7 +65,7 @@ Each pattern is a reusable interaction contract that can be implemented once per
 The user moves an object to a target zone and releases it.
 
 - **Learner action:** Drag or click-to-place
-- **Runtime contract:** Ghost targets spawned; user grabs/selects a part, moves it toward a target, releases; validation checks position/rotation tolerance; on success the part snaps to the target
+- **Runtime contract:** Preview targets spawned; user grabs/selects a part, moves it toward a target, releases; validation checks position/rotation tolerance; on success the part snaps to the target
 - **Current runtime class:** `PlaceStepHandler`
 - **Used by:** Place.*(default)*, Place.Clamp
 
@@ -119,7 +119,7 @@ The user follows a path with a tool.
 The user presses a Continue or Confirm button.
 
 - **Learner action:** Button press
-- **Runtime contract:** No ghost targets, no tool equip, no spatial interaction; the user reads instructional content and presses Continue/Confirm; the confirmation action itself completes the step
+- **Runtime contract:** No preview targets, no tool equip, no spatial interaction; the user reads instructional content and presses Continue/Confirm; the confirmation action itself completes the step
 - **Current runtime class:** `ConfirmStepHandler`
 - **Used by:** Confirm.*(default)*
 

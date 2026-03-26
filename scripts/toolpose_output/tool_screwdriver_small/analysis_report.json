@@ -1,0 +1,48 @@
+{
+  "toolId": "tool_screwdriver_small",
+  "toolName": "Small Phillips Screwdriver",
+  "glbPath": "scripts/toolpose_output/tool_screwdriver_small_generated.glb",
+  "geometry": {
+    "shapeClass": "shaft",
+    "anisotropy": 38.84597623459545,
+    "bounds": {
+      "min": [
+        -0.9569399952888489,
+        -0.1873220056295395,
+        -0.18730899691581726
+      ],
+      "max": [
+        0.955024003982544,
+        0.1849370002746582,
+        0.1829259991645813
+      ]
+    },
+    "centroid": [
+      -0.006403178920923831,
+      -0.0016261104611540887,
+      0.00016409048839326903
+    ]
+  },
+  "toolPose": {
+    "gripPoint": {
+      "x": 0.66651,
+      "y": -0.06976,
+      "z": 0.03276
+    },
+    "tipPoint": {
+      "x": -0.95694,
+      "y": 0.07849,
+      "z": -0.06204
+    },
+    "tipAxis": {
+      "x": -0.99418,
+      "y": 0.09079,
+      "z": -0.05805
+    },
+    "actionAxis": {
+      "x": -0.00183,
+      "y": 0.19361,
+      "z": 0.98108
+    }
+  }
+}

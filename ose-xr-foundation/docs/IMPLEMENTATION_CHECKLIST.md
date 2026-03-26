@@ -410,7 +410,7 @@ Let the user see, inspect, and manipulate parts safely.
 - [ ] Implement inspection flow.
 - [ ] Implement manipulation flow for the first supported platform.
 - [ ] Implement placement targets.
-- [ ] Implement ghost or preview representation.
+- [ ] Implement placement preview representation.
 - [ ] Implement part info display:
   - name
   - function
@@ -810,7 +810,7 @@ Extract all pipe-connection (Connect family) interaction logic from `PartInterac
 - [x] Add `TryBuildActiveStepContext()` helper to bridge.
 - [x] Replace all 4 pointer-down pipe checks with `StepRouter.TryHandlePointerDown()`.
 - [x] Replace `_spawnedPortSpheres.Count > 0` guard with `step.IsPipeConnection`.
-- [x] Simplify `SpawnGhostsForStep` IsPipeConnection branch to just `return`.
+- [x] Simplify `SpawnPreviewsForStep` IsPipeConnection branch to just `return`.
 - [x] Remove `TryRenderPipeSpline` and `ClearPortSpheres` from completion handler.
 - [x] Remove pipe fields and 9 pipe methods from bridge.
 - [x] Verify zero compilation errors.
@@ -834,7 +834,7 @@ Extract all pipe-connection (Connect family) interaction logic from `PartInterac
 
 ## Goal
 
-Extract all Place-family ghost interaction logic (proximity detection, snap/flash animation, ghost selection pulse, required-part emission pulse) from `PartInteractionBridge` into a dedicated `PlaceStepHandler`.
+Extract all Place-family preview interaction logic (proximity detection, snap/flash animation, preview selection pulse, required-part emission pulse) from `PartInteractionBridge` into a dedicated `PlaceStepHandler`.
 
 ## Checklist
 
@@ -847,12 +847,12 @@ Extract all Place-family ghost interaction logic (proximity detection, snap/flas
 - [x] Delegate 6+ bridge call sites to handler methods.
 - [x] Rewrite `TryHandleClickToPlace` to keep guards, delegate matching to handler.
 - [x] Update event handlers (`HandleStepStateChanged`, `HandlePartStateChanged`, `HandleStepNavigated`, `OnDisable`) to use handler.
-- [x] Update `UpdateXRGhostProximity`, `ResetDragState`, `RemoveGhostForPart` to delegate to handler.
+- [x] Update `UpdateXRPreviewProximity`, `ResetDragState`, `RemovePreviewForPart` to delegate to handler.
 - [x] Delegate `BeginSnapToTarget` to handler (bridge's snap list removed).
-- [x] Update hint code to use `_placeHandler.IsGhostHighlighted` / `HoveredGhost`.
+- [x] Update hint code to use `_placeHandler.IsPreviewHighlighted` / `HoveredPreview`.
 - [x] Remove ~16 methods, ~8 fields/structs, 5 constants, 5 colors from bridge.
 - [x] Verify zero compilation errors.
-- [ ] Verify placement steps still work in Play mode (ghost proximity, click-to-place, snap animation, required-part pulse).
+- [ ] Verify placement steps still work in Play mode (preview proximity, click-to-place, snap animation, required-part pulse).
 - [ ] Verify XR grab auto-snap works.
 - [x] Update `APP_CURRENT_PROGRESS_FOR_AGENT.md`.
 

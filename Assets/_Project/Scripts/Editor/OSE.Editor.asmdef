@@ -6,8 +6,11 @@
         "glTFast.Export",
         "OSE.Core",
         "OSE.Content",
+        "OSE.Interaction",
         "OSE.Runtime",
-        "OSE.Authoring"
+        "OSE.Authoring",
+        "Unity.XR.Hands",
+        "Unity.XR.Interaction.Toolkit"
     ],
     "includePlatforms": [
         "Editor"

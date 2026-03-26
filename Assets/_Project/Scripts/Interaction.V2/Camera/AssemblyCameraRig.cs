@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace OSE.Interaction.V2
+namespace OSE.Interaction
 {
     /// <summary>
     /// Orbital camera rig for assembly scenes. Place on the main camera or a parent transform.

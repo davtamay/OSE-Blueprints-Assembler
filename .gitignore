@@ -1,3 +1,6 @@
+# Grab Pose Editor backups
+.pose_backups/
+
 # Unity generated folders
 [Ll]ibrary/
 [Tt]emp/

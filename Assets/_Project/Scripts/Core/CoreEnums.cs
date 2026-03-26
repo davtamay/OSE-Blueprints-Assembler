@@ -118,7 +118,7 @@ namespace OSE.Core
         Torch,
         Dust,
         StructuralReveal,
-        GhostGuidance,
+        PreviewGuidance,
         ErrorHighlight,
         ChallengeSuccess
     }

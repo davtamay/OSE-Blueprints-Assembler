@@ -1,0 +1,134 @@
+{
+  "input_fcstd": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder_stage02\\raw_extra\\Nozzleassembly.fcstd",
+  "output_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder_stage02\\exported\\stl\\Nozzleassembly.stl",
+  "source_mode": "archive_brep",
+  "units": "mm",
+  "object_count": 8,
+  "mesh_facets": 6002,
+  "mesh_points": 1392,
+  "combined_bound_box": {
+    "xmin_mm": -53.347351565371,
+    "xmax_mm": 53.0493640004103,
+    "ymin_mm": 19.03648787897,
+    "ymax_mm": 78.09623,
+    "zmin_mm": -11.144512,
+    "zmax_mm": 103.601023349011,
+    "xlen_mm": 106.3967155657813,
+    "ylen_mm": 59.059742121030006,
+    "zlen_mm": 114.745535349011
+  },
+  "objects": [
+    {
+      "name": "PartShape.brp",
+      "bound_box": {
+        "xmin_mm": -53.347351565371,
+        "xmax_mm": -27.468226434629003,
+        "ymin_mm": 28.1486529999997,
+        "ymax_mm": 49.1036529999997,
+        "zmin_mm": -0.41691256537099974,
+        "zmax_mm": 25.462212565371004,
+        "xlen_mm": 25.879125130741997,
+        "ylen_mm": 20.955000000000002,
+        "zlen_mm": 25.879125130742004
+      }
+    },
+    {
+      "name": "PartShape1.brp",
+      "bound_box": {
+        "xmin_mm": -53.034884467131,
+        "xmax_mm": 19.57277209824006,
+        "ymin_mm": 19.03648787897,
+        "ymax_mm": 49.17994387896971,
+        "zmin_mm": 77.72189821826899,
+        "zmax_mm": 103.601023349011,
+        "xlen_mm": 72.60765656537106,
+        "ylen_mm": 30.14345599999971,
+        "zlen_mm": 25.87912513074201
+      }
+    },
+    {
+      "name": "PartShape2.brp",
+      "bound_box": {
+        "xmin_mm": -53.03488446713063,
+        "xmax_mm": 19.57277209824006,
+        "ymin_mm": 19.03648787897,
+        "ymax_mm": 51.92423012288495,
+        "zmin_mm": 77.72189821826936,
+        "zmax_mm": 108.30094420327151,
+        "xlen_mm": 72.60765656537069,
+        "ylen_mm": 32.88774224391495,
+        "zlen_mm": 30.579045985002153
+      }
+    },
+    {
+      "name": "PartShape3.brp",
+      "bound_box": {
+        "xmin_mm": -53.026863,
+        "xmax_mm": -52.645863,
+        "ymin_mm": 38.066165999999996,
+        "ymax_mm": 48.313637,
+        "zmin_mm": -1.9298500000000018,
+        "zmax_mm": 23.272764000000002,
+        "xlen_mm": 0.3810000000000002,
+        "ylen_mm": 10.247471000000004,
+        "zlen_mm": 25.202614000000004
+      }
+    },
+    {
+      "name": "PartShape4.brp",
+      "bound_box": {
+        "xmin_mm": -53.026863,
+        "xmax_mm": -25.434378,
+        "ymin_mm": 37.943523,
+        "ymax_mm": 60.952515,
+        "zmin_mm": 53.848,
+        "zmax_mm": 79.152764,
+        "xlen_mm": 27.592485,
+        "ylen_mm": 23.008992,
+        "zlen_mm": 25.304764000000006
+      }
+    },
+    {
+      "name": "PartShape5.brp",
+      "bound_box": {
+        "xmin_mm": 50.50936400041027,
+        "xmax_mm": 53.04936400041033,
+        "ymin_mm": 23.613214000000006,
+        "ymax_mm": 78.09623000000002,
+        "zmin_mm": -11.14451200000002,
+        "zmax_mm": 0.02841200000000283,
+        "xlen_mm": 2.540000000000056,
+        "ylen_mm": 54.48301600000001,
+        "zlen_mm": 11.172924000000023
+      }
+    },
+    {
+      "name": "PartShape6.brp",
+      "bound_box": {
+        "xmin_mm": -53.04936400041033,
+        "xmax_mm": -32.359967761886494,
+        "ymin_mm": 20.605487999999987,
+        "ymax_mm": 38.10000000000009,
+        "zmin_mm": 23.61321400000001,
+        "zmax_mm": 79.89610863597346,
+        "xlen_mm": 20.689396238523834,
+        "ylen_mm": 17.4945120000001,
+        "zlen_mm": 56.28289463597345
+      }
+    },
+    {
+      "name": "PartShape7.brp",
+      "bound_box": {
+        "xmin_mm": -53.04936400041033,
+        "xmax_mm": 19.57277209824006,
+        "ymin_mm": 19.03648787897,
+        "ymax_mm": 60.952515,
+        "zmin_mm": 23.61321400000001,
+        "zmax_mm": 108.30094420327151,
+        "xlen_mm": 72.62213609865039,
+        "ylen_mm": 41.91602712103,
+        "zlen_mm": 84.6877302032715
+      }
+    }
+  ]
+}

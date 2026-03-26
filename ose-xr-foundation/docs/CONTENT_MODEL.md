@@ -143,7 +143,7 @@ for learning:
 - what it looks like
 - what is known exactly vs inferred
 
-If the runtime uses simplified collision, exaggerated ghosting, or proxy geometry,
+If the runtime uses simplified collision, exaggerated previewing, or proxy geometry,
 the authored source data must still reflect the real machine as closely as the source
 material allows.
 

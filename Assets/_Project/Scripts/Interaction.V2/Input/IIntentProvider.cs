@@ -1,4 +1,4 @@
-namespace OSE.Interaction.V2
+namespace OSE.Interaction
 {
     /// <summary>
     /// Translates raw platform input into semantic InteractionIntents.

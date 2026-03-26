@@ -1,0 +1,50 @@
+{
+  "input_fcstd": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder_stage03\\raw\\Axis_half_carriage.fcstd",
+  "output_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder_stage03\\exported\\stl\\Axis_half_carriage.stl",
+  "source_mode": "archive_brep",
+  "units": "mm",
+  "object_count": 2,
+  "mesh_facets": 668,
+  "mesh_points": 326,
+  "combined_bound_box": {
+    "xmin_mm": -18.617444,
+    "xmax_mm": 27.5,
+    "ymin_mm": -36.648808,
+    "ymax_mm": 36.944458,
+    "zmin_mm": 3.404035,
+    "zmax_mm": 27.04845600000001,
+    "xlen_mm": 46.117444,
+    "ylen_mm": 73.593266,
+    "zlen_mm": 23.64442100000001
+  },
+  "objects": [
+    {
+      "name": "PartShape.brp",
+      "bound_box": {
+        "xmin_mm": -7.07181690984272e-15,
+        "xmax_mm": 27.500000000000004,
+        "ymin_mm": -36.648808,
+        "ymax_mm": 36.944458000000004,
+        "zmin_mm": 3.4040349999999924,
+        "zmax_mm": 27.048456000000016,
+        "xlen_mm": 27.50000000000001,
+        "ylen_mm": 73.593266,
+        "zlen_mm": 23.644421000000023
+      }
+    },
+    {
+      "name": "PartShape1.brp",
+      "bound_box": {
+        "xmin_mm": -18.617443999999995,
+        "xmax_mm": 18.06648851653207,
+        "ymin_mm": -2.951544000000003,
+        "ymax_mm": 27.048456000000005,
+        "zmin_mm": 11.139093483467931,
+        "zmax_mm": 17.69452251653206,
+        "xlen_mm": 36.68393251653207,
+        "ylen_mm": 30.000000000000007,
+        "zlen_mm": 6.555429033064129
+      }
+    }
+  ]
+}

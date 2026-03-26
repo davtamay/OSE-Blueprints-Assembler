@@ -1,17 +1,15 @@
-using System;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Reflection;
 using OSE.App;
 using OSE.Content;
 using OSE.Core;
 using OSE.Input;
-using OSE.Interaction;
-using OSE.Interaction.V2.Integration;
+using OSE.Interaction.Integration;
 using OSE.Runtime;
-using OSE.UI.Root;
 using UnityEngine;
 
-namespace OSE.Interaction.V2
+namespace OSE.Interaction
 {
     /// <summary>
     /// Top-level interaction coordinator. Owns the interaction state machine,
@@ -56,29 +54,26 @@ namespace OSE.Interaction.V2
         private AssemblyCameraRig _cameraRig;
         private CanonicalActionBridge _actionBridge;
         private IPartActionBridge _partBridge;
-        private IToolGhostProvider _toolGhost;
+        private IToolPreviewProvider _toolPreview;
         private PersistentToolController _persistentToolController;
         private PlacementAssistService _placementAssist;
         private InteractionFeedbackPresenter _feedbackPresenter;
         private StepGuidanceService _guidanceService;
-        private ToolFocusController _toolFocusController;
         private ToolActionPreviewController _previewController;
+        private TargetSphereAnimator _targetSphereAnimator;
 
         // ── Internal state ──
 
         private bool _cameraIntentActiveLastFrame;
         private int _intentLogCountdown = 20; // Log first N non-None intents for diagnostics
         private bool _bootstrapped;
+        private string _savedInstruction;
 
-        // Part validation (resolved via reflection to avoid circular asmdef dependency)
-        private object _spawnerRef;
-        private PropertyInfo _spawnedPartsProperty;
-
-        // Guidance service package context (resolved lazily via reflection on spawner)
+        // Part validation + guidance context (typed interface replaces reflection)
+        private ISpawnerQueryService _spawnerQuery;
         private bool _guidanceContextProvided;
-        private PropertyInfo _currentPackageProperty;
-        private MethodInfo _findTargetPlacementMethod;
-        private PropertyInfo _previewRootProperty; // on PreviewSceneSetup
+        private int _deferredFrameRequestId;
+        private string _pendingIntroFrameStepId; // deferred framing until intro dismissed
 
         // ── Lifecycle ──
 
@@ -157,21 +152,23 @@ namespace OSE.Interaction.V2
             _actionBridge = new CanonicalActionBridge(router, selectionService);
 
             // ── 6. Part Interaction Bridge (typed interfaces) ──
-            var bridge = FindFirstObjectByType<PartInteractionBridge>();
-            if (bridge != null)
+            // Discover by interface — avoids a concrete dependency on PartInteractionBridge (OSE.UI).
+            foreach (var mono in FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None))
             {
-                _partBridge = bridge;
-                _toolGhost = bridge;
-                _persistentToolController = new PersistentToolController(bridge, bridge);
-                _partBridge.ExternalControlEnabled = true;
-                OseLog.Info("[InteractionOrchestrator] Connected to PartInteractionBridge via typed interfaces.");
+                if (mono is IPartActionBridge partBridge)
+                {
+                    _partBridge = partBridge;
+                    _toolPreview = mono as IToolPreviewProvider;
+                    var persistentMgr = mono as IPersistentToolManager;
+                    if (_toolPreview != null && persistentMgr != null)
+                        _persistentToolController = new PersistentToolController(persistentMgr, _toolPreview);
+                    _partBridge.ExternalControlEnabled = true;
+                    OseLog.Info($"[InteractionOrchestrator] Connected to {mono.GetType().Name} via typed interfaces.");
+                    break;
+                }
             }
-            else
-            {
-                OseLog.Warn("[InteractionOrchestrator] PartInteractionBridge not found.");
-            }
-
-            var allMonos = FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None);
+            if (_partBridge == null)
+                OseLog.Warn("[InteractionOrchestrator] No IPartActionBridge found.");
 
             // ── 7. Placement Assist ──
             _placementAssist = new PlacementAssistService(_settings);
@@ -184,19 +181,11 @@ namespace OSE.Interaction.V2
                 _feedbackPresenter.Initialize(_settings);
             }
 
-            // ── 9. Find PackagePartSpawner for hit validation ──
-            foreach (var mono in allMonos)
-            {
-                if (mono.GetType().Name == "PackagePartSpawner")
-                {
-                    _spawnerRef = mono;
-                    _spawnedPartsProperty = mono.GetType().GetProperty("SpawnedParts");
-                    break;
-                }
-            }
-
-            if (_spawnerRef == null)
-                OseLog.Warn("[InteractionOrchestrator] PackagePartSpawner not found. Part hit validation disabled.");
+            // ── 9. Spawner query service (typed interface — no reflection) ──
+            if (ServiceRegistry.TryGet<ISpawnerQueryService>(out var spawnerQuery))
+                _spawnerQuery = spawnerQuery;
+            else
+                OseLog.Warn("[InteractionOrchestrator] ISpawnerQueryService not found. Part hit validation disabled.");
 
             // ── 10. Step Guidance Service ──
             _guidanceService = new StepGuidanceService(_settings, _cameraRig);
@@ -204,33 +193,17 @@ namespace OSE.Interaction.V2
                 _guidanceService.SetPartBridge(_partBridge);
 
             // ── 11. Tool Focus (gesture engagement — legacy) ──
-            _toolFocusController = new ToolFocusController();
 
             // ── 12. Tool Action Preview ("I Do / We Do / You Do") ──
             _previewController = new ToolActionPreviewController();
-
-            // Cache reflection handles for lazy package context injection
-            if (_spawnerRef != null)
-            {
-                var spawnerType = _spawnerRef.GetType();
-                _currentPackageProperty = spawnerType.GetProperty("CurrentPackage");
-                _findTargetPlacementMethod = spawnerType.GetMethod("FindTargetPlacement");
-
-                // PreviewSceneSetup is on the same GameObject (or discoverable via field)
-                var setupField = spawnerType.GetField("_setup", BindingFlags.NonPublic | BindingFlags.Instance);
-                if (setupField != null)
-                {
-                    object setup = setupField.GetValue(_spawnerRef);
-                    if (setup != null)
-                        _previewRootProperty = setup.GetType().GetProperty("PreviewRoot");
-                }
-            }
+            _targetSphereAnimator = new TargetSphereAnimator();
 
             RuntimeEventBus.Subscribe<PartStateChanged>(HandlePartStateChanged);
             RuntimeEventBus.Subscribe<StepStateChanged>(HandleStepStateChanged);
             RuntimeEventBus.Subscribe<StepActivated>(HandleStepActivated);
             RuntimeEventBus.Subscribe<SessionRestored>(HandleSessionRestored);
             RuntimeEventBus.Subscribe<RepositionModeChanged>(HandleRepositionModeChanged);
+            RuntimeEventBus.Subscribe<MachineIntroDismissed>(HandleIntroDismissedFraming);
 
             _bootstrapped = true;
             OseLog.Info($"[InteractionOrchestrator] V2 READY. Mode={mode} Camera={_camera.name} Bridge={_partBridge != null}");
@@ -246,7 +219,10 @@ namespace OSE.Interaction.V2
         /// </summary>
         private static void DisableXRCameraDrivers(Camera cam)
         {
-            // Disable TrackedPoseDriver on the camera itself
+            // Disable TrackedPoseDriver on the camera itself.
+            // String-based check: TrackedPoseDriver lives in Unity.InputSystem.XR which
+            // is available but the type may be absent on non-XR builds. Keeping the
+            // string check avoids a hard compile-time dependency.
             foreach (var comp in cam.GetComponents<MonoBehaviour>())
             {
                 string typeName = comp.GetType().Name;
@@ -257,7 +233,8 @@ namespace OSE.Interaction.V2
                 }
             }
 
-            // Disable XROrigin/XRRig component in parent hierarchy (it repositions child transforms)
+            // Disable XROrigin/XRRig in parent hierarchy (repositions child transforms).
+            // XROrigin is in Unity.XR.CoreUtils — not directly referenced by this asmdef.
             Transform check = cam.transform.parent;
             while (check != null)
             {
@@ -281,6 +258,7 @@ namespace OSE.Interaction.V2
             RuntimeEventBus.Unsubscribe<StepActivated>(HandleStepActivated);
             RuntimeEventBus.Unsubscribe<SessionRestored>(HandleSessionRestored);
             RuntimeEventBus.Unsubscribe<RepositionModeChanged>(HandleRepositionModeChanged);
+            RuntimeEventBus.Unsubscribe<MachineIntroDismissed>(HandleIntroDismissedFraming);
             if (_partBridge != null)
                 _partBridge.ExternalControlEnabled = false;
         }
@@ -319,6 +297,13 @@ namespace OSE.Interaction.V2
             string stepId = stepCtrl.CurrentStepState.StepId;
             if (string.IsNullOrWhiteSpace(stepId)) return;
 
+            if (OSE.Runtime.Preview.SessionDriver.IsIntroActive)
+            {
+                _pendingIntroFrameStepId = stepId;
+                OseLog.Info($"[V2] TryFrameCurrentStep '{stepId}' — intro active, deferring.");
+                return;
+            }
+
             OseLog.Info($"[V2] TryFrameCurrentStep '{stepId}'");
             _guidanceService.FrameStep(stepId);
         }
@@ -327,6 +312,9 @@ namespace OSE.Interaction.V2
         {
             OseLog.Info($"[V2] HandleStepActivated '{evt.StepId}' bootstrapped={_bootstrapped}");
             if (!_bootstrapped) return;
+
+            // Stop any previous target sphere pulsing
+            _targetSphereAnimator?.Stop();
 
             // Remove persistent tools (clamps) if the new step no longer needs them
             CleanUpPersistentToolsForStep(evt.StepId);
@@ -337,36 +325,103 @@ namespace OSE.Interaction.V2
                 if (!_guidanceContextProvided)
                     TryProvideGuidanceContext();
 
-                _guidanceService.OnStepActivated(evt);
+                // Defer camera framing until the intro overlay is dismissed so the
+                // user doesn't see multiple camera jumps behind the intro screen.
+                if (OSE.Runtime.Preview.SessionDriver.IsIntroActive)
+                {
+                    _pendingIntroFrameStepId = evt.StepId;
+                    _guidanceService.OnStepActivatedNoFrame(evt);
+                    OseLog.Info($"[V2] Intro active — deferring camera frame for step '{evt.StepId}'.");
+                }
+                else
+                {
+                    _guidanceService.OnStepActivated(evt);
+                    ScheduleDeferredStepFrame(evt.StepId);
+                }
+            }
+
+            // Start target sphere pulsing for Use steps (deferred so targets are spawned first)
+            StartCoroutine(DeferredStartTargetPulsing());
+        }
+
+        private void HandleIntroDismissedFraming(MachineIntroDismissed evt)
+        {
+            if (!_bootstrapped || _guidanceService == null)
+                return;
+
+            string stepId = _pendingIntroFrameStepId;
+            _pendingIntroFrameStepId = null;
+
+            if (string.IsNullOrWhiteSpace(stepId))
+                return;
+
+            OseLog.Info($"[V2] Intro dismissed — framing step '{stepId}'.");
+            _guidanceService.FrameStep(stepId);
+            _guidanceService.CaptureHome();
+        }
+
+        private void ScheduleDeferredStepFrame(string stepId)
+        {
+            if (string.IsNullOrWhiteSpace(stepId) || _guidanceService == null)
+                return;
+
+            _deferredFrameRequestId++;
+            StartCoroutine(DeferredFrameStep(stepId, _deferredFrameRequestId));
+        }
+
+        private IEnumerator DeferredFrameStep(string stepId, int requestId)
+        {
+            yield return null;
+
+            if (!_bootstrapped || _guidanceService == null || requestId != _deferredFrameRequestId)
+                yield break;
+
+            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+                yield break;
+
+            string activeStepId = session?.AssemblyController?.StepController?.CurrentStepState.StepId;
+            if (string.IsNullOrWhiteSpace(activeStepId))
+                activeStepId = session?.SessionState?.CurrentStepId;
+
+            if (!string.Equals(activeStepId, stepId, StringComparison.Ordinal))
+                yield break;
+
+            OseLog.Info($"[V2] Deferred reframe for step '{stepId}' after transition visuals settled.");
+            _guidanceService.FrameStep(stepId);
+        }
+
+        private IEnumerator DeferredStartTargetPulsing()
+        {
+            // Wait one frame so the UseStepHandler has spawned tool-action target markers
+            yield return null;
+
+            if (!_bootstrapped || _targetSphereAnimator == null || _partBridge == null)
+                yield break;
+
+            // Only pulse for Use steps
+            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+                yield break;
+            var step = session?.AssemblyController?.StepController?.CurrentStepDefinition;
+            if (step == null || step.ResolvedFamily != Content.StepFamily.Use)
+                yield break;
+
+            var positions = _partBridge.GetActiveToolTargetPositions();
+            if (positions.Length > 0)
+            {
+                _targetSphereAnimator.StartAtPositions(positions);
+                OseLog.Info($"[V2] Target sphere pulsing started for {positions.Length} target(s).");
             }
         }
 
         private void TryProvideGuidanceContext()
         {
-            if (_spawnerRef == null || _currentPackageProperty == null || _findTargetPlacementMethod == null)
-                return;
+            if (_spawnerQuery == null) return;
 
-            var package = _currentPackageProperty.GetValue(_spawnerRef) as MachinePackageDefinition;
+            var package = _spawnerQuery.CurrentPackage;
             if (package == null) return;
 
-            // Build Func<string, TargetPreviewPlacement> via reflection
-            object spawner = _spawnerRef;
-            MethodInfo findMethod = _findTargetPlacementMethod;
-            Func<string, TargetPreviewPlacement> findTarget = targetId =>
-                findMethod.Invoke(spawner, new object[] { targetId }) as TargetPreviewPlacement;
-
-            // Resolve PreviewRoot
-            Transform previewRoot = null;
-            if (_previewRootProperty != null)
-            {
-                var setupField = _spawnerRef.GetType().GetField("_setup", BindingFlags.NonPublic | BindingFlags.Instance);
-                if (setupField != null)
-                {
-                    object setup = setupField.GetValue(_spawnerRef);
-                    if (setup != null)
-                        previewRoot = _previewRootProperty.GetValue(setup) as Transform;
-                }
-            }
+            Func<string, TargetPreviewPlacement> findTarget = _spawnerQuery.FindTargetPlacement;
+            Transform previewRoot = _spawnerQuery.PreviewRoot;
 
             _guidanceService.SetPackageContext(package, findTarget, previewRoot);
             _guidanceContextProvided = true;
@@ -448,21 +503,14 @@ namespace OSE.Interaction.V2
                     if (!previewIntent.IsNone && previewIntent.IntentKind == InteractionIntent.Kind.Cancel)
                         _previewController.Cancel();
                     else
-                        _previewController.Tick(Time.deltaTime, previewIntent.ScreenDelta);
+                        _previewController.Tick(Time.deltaTime, previewIntent.ScreenDelta, previewIntent.ScreenPosition);
                     return;
                 }
 
-                // Legacy gesture engagement (fallback)
-                if (_toolFocusController != null && _toolFocusController.IsActive)
-                {
-                    var focusIntent = _intentProvider.Poll();
-                    if (!focusIntent.IsNone && focusIntent.IntentKind == InteractionIntent.Kind.Cancel)
-                        _toolFocusController.Cancel();
-                    else
-                        _toolFocusController.Tick(Time.deltaTime);
-                    return;
-                }
             }
+
+            // Pulse target sphere emission (runs every frame, no-ops when inactive)
+            _targetSphereAnimator?.Tick();
 
             var intent = _intentProvider.Poll();
 
@@ -563,9 +611,9 @@ namespace OSE.Interaction.V2
         private GameObject ValidatePartHit(GameObject hit)
         {
             if (hit == null) return null;
-            if (_spawnedPartsProperty == null) return hit; // No spawner — can't validate, pass through
+            if (_spawnerQuery == null) return hit; // No spawner — can't validate, pass through
 
-            var parts = _spawnedPartsProperty.GetValue(_spawnerRef) as IReadOnlyList<GameObject>;
+            var parts = _spawnerQuery.SpawnedParts;
             if (parts == null) return null;
 
             Transform t = hit.transform;
@@ -604,11 +652,11 @@ namespace OSE.Interaction.V2
         }
 
         /// <summary>
-        /// Raycast for ghost trigger colliders at a screen position and focus camera if hit.
-        /// Uses RaycastAll because ghost colliders are triggers that may sit behind solid
+        /// Raycast for preview trigger colliders at a screen position and focus camera if hit.
+        /// Uses RaycastAll because preview colliders are triggers that may sit behind solid
         /// environment colliders — a single Raycast would stop at the floor.
         /// </summary>
-        private bool TryFocusGhost(Vector2 screenPos)
+        private bool TryFocusPreview(Vector2 screenPos)
         {
             if (_cameraRig == null || _camera == null) return false;
 
@@ -619,16 +667,16 @@ namespace OSE.Interaction.V2
             {
                 if (!hits[i].collider.isTrigger) continue;
 
-                // Walk up hierarchy to find any MonoBehaviour whose type name contains "GhostPlacement"
+                // Walk up hierarchy to find any MonoBehaviour implementing IPlacementPreviewMarker
                 Transform t = hits[i].collider.transform;
                 while (t != null)
                 {
                     foreach (var comp in t.GetComponents<MonoBehaviour>())
                     {
-                        if (comp != null && comp.GetType().Name == "GhostPlacementInfo")
+                        if (comp is IPlacementPreviewMarker)
                         {
                             _cameraRig.FocusOn(t.position);
-                            OseLog.Info($"[Orchestrator] Ghost focused at {t.position}");
+                            OseLog.Info($"[Orchestrator] Preview focused at {t.position}");
                             return true;
                         }
                     }
@@ -798,8 +846,8 @@ namespace OSE.Interaction.V2
             }
 
             // When a part is already selected, try click-to-place BEFORE re-selecting.
-            // The raycast often hits a part behind the transparent ghost, so without this
-            // the user would keep re-selecting parts instead of placing onto the ghost.
+            // The raycast often hits a part behind the transparent preview, so without this
+            // the user would keep re-selecting parts instead of placing onto the preview.
             if (SelectedPart != null && _partBridge != null &&
                 _partBridge.TryClickToPlace(SelectedPart, intent.ScreenPosition))
             {
@@ -821,15 +869,15 @@ namespace OSE.Interaction.V2
                 _actionBridge?.OnExternallyResolvedPartSelected(selectedTarget);
 
                 // Smart pivot: shift camera to orbit around the midpoint between
-                // the selected part and its target ghost. Using the midpoint keeps
+                // the selected part and its target preview. Using the midpoint keeps
                 // both source part and destination visible during orbit.
                 if (_settings.EnableSmartPivot && _cameraRig != null)
                 {
                     Vector3 partPos = selectedTarget.transform.position;
                     if (_settings.EnablePivotToTarget && _partBridge != null &&
-                        _partBridge.TryGetGhostWorldPosForPart(selectedTarget.name, out Vector3 ghostPos))
+                        _partBridge.TryGetPreviewWorldPosForPart(selectedTarget.name, out Vector3 previewPos))
                     {
-                        _cameraRig.SetPivot(Vector3.Lerp(partPos, ghostPos, 0.5f));
+                        _cameraRig.SetPivot(Vector3.Lerp(partPos, previewPos, 0.5f));
                     }
                     else
                     {
@@ -960,11 +1008,6 @@ namespace OSE.Interaction.V2
                     _previewController.Cancel();
                     return;
                 }
-                if (_toolFocusController != null && _toolFocusController.IsActive)
-                {
-                    _toolFocusController.Cancel();
-                    return;
-                }
             }
 
             if (CurrentState == InteractionState.DraggingPart)
@@ -1003,10 +1046,10 @@ namespace OSE.Interaction.V2
                 return;
             }
 
-            // Check if click was on a ghost part → focus camera on it.
+            // Check if click was on a preview part → focus camera on it.
             // Skip when a part is selected — the user is trying to place, not navigate,
-            // and re-centering on the ghost would lose sight of the source parts.
-            if (SelectedPart == null && TryFocusGhost(screenPos))
+            // and re-centering on the preview would lose sight of the source parts.
+            if (SelectedPart == null && TryFocusPreview(screenPos))
                 return;
 
             // Check if click was near a pulsating tool target → focus camera on it.
@@ -1088,17 +1131,16 @@ namespace OSE.Interaction.V2
             }
 
             OseLog.Info($"[V2] RouteToolAction resolve at ({screenPos.x:F0},{screenPos.y:F0})");
-            if (_partBridge.TryResolveToolActionTarget(screenPos, out string targetId, out Vector3 targetWorldPos, out Vector3 surfaceWorldPos, out Vector3 weldAxis, out float weldLength))
+            if (_partBridge.TryResolveToolActionTarget(screenPos, out ToolActionContext ctx))
             {
-                OseLog.Info($"[V2] RouteToolAction: resolved target='{targetId}' at {targetWorldPos}, surface={surfaceWorldPos}. Executing...");
+                OseLog.Info($"[V2] RouteToolAction: resolved target='{ctx.TargetId}' at {ctx.TargetWorldPos}, surface={ctx.SurfaceWorldPos}. Executing...");
 
-                // ── Tool Action Preview: "I Do / We Do / You Do" ──
+                // ── Tool Action Preview: always show animation for Use steps ──
                 if (_settings.EnableToolActionPreview && _previewController != null)
                 {
-                    PreviewMode? previewMode = ResolvePreviewMode();
-                    OseLog.Info($"[V2] Preview check: mode={previewMode}, target='{targetId}', pos={targetWorldPos}");
-                    // Use surfaceWorldPos for the preview so the tool targets the actual joint, not the lifted sphere
-                    if (previewMode.HasValue && TryEnterToolActionPreview(targetId, surfaceWorldPos, previewMode.Value, weldAxis, weldLength))
+                    var previewConfig = ResolvePreviewMode();
+                    OseLog.Info($"[V2] Preview check: config={previewConfig}, target='{ctx.TargetId}', pos={ctx.TargetWorldPos}");
+                    if (previewConfig.HasValue && TryEnterToolActionPreview(ctx, previewConfig.Value.mode, previewConfig.Value.speed))
                         return;
                 }
                 else
@@ -1106,20 +1148,31 @@ namespace OSE.Interaction.V2
                     OseLog.Info($"[V2] Preview skipped: EnableToolActionPreview={_settings.EnableToolActionPreview}, controller={_previewController != null}");
                 }
 
-                if (_partBridge.TryToolAction(targetId))
+                // Spawn persistent tool BEFORE completing the action, because
+                // TryToolAction may complete the step synchronously — advancing
+                // to the next step, unequipping the tool, and destroying the preview
+                // before we get a chance to convert it.
+                TrySpawnPersistentToolOnComplete(
+                    ctx.TargetId,
+                    ctx.SurfaceWorldPos,
+                    ctx.HasToolActionRotation ? ctx.ToolActionRotation : (Quaternion?)null);
+
+                if (_partBridge.TryToolAction(ctx.TargetId))
                 {
-                    OseLog.Info($"[V2] RouteToolAction: TryToolAction SUCCESS for '{targetId}'.");
-                    TrySpawnPersistentToolOnComplete(targetId, surfaceWorldPos);
+                    OseLog.Info($"[V2] RouteToolAction: TryToolAction SUCCESS for '{ctx.TargetId}'.");
                     if (_cameraRig != null)
-                        _cameraRig.FocusOn(targetWorldPos);
+                        _cameraRig.FocusOn(ctx.TargetWorldPos);
                     return;
                 }
 
-                OseLog.Warn($"[V2] RouteToolAction: TryToolAction FAILED for '{targetId}' — execution rejected.");
+                // Action failed — remove the persistent tool we speculatively created
+                _persistentToolController?.RemoveAt(ctx.TargetId);
+
+                OseLog.Warn($"[V2] RouteToolAction: TryToolAction FAILED for '{ctx.TargetId}' — execution rejected.");
                 // Execution was rejected (wrong tool, missing tool, etc.). Keep the
                 // fallback ordering in V2 by focusing the already-resolved target.
                 if (_cameraRig != null)
-                    _cameraRig.FocusOn(targetWorldPos);
+                    _cameraRig.FocusOn(ctx.TargetWorldPos);
                 return;
             }
             OseLog.Info("[V2] RouteToolAction: TryResolveToolActionTarget returned false.");
@@ -1138,63 +1191,13 @@ namespace OSE.Interaction.V2
         }
 
         /// <summary>
-        /// Attempts to enter ToolFocus for the resolved target. Returns true if
-        /// gesture engagement was activated (caller should skip immediate execution).
-        /// Returns false if the step doesn't use gesture engagement (easy/absent mode).
+        /// Resolves the preview mode and speed for the current target.
+        /// Returns null only when the step/profile should skip preview entirely.
+        /// Speed escalates with completed target count so repeated actions feel snappy, not tedious.
         /// </summary>
-        private bool TryEnterToolFocus(string targetId, Vector3 targetWorldPos, Vector2 screenPos)
+        private (PreviewMode mode, float speed)? ResolvePreviewMode()
         {
-            // Get the current step definition
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
-                return false;
-
-            StepController stepCtrl = session?.AssemblyController?.StepController;
-            if (stepCtrl == null || !stepCtrl.HasActiveStep)
-                return false;
-
-            StepDefinition step = stepCtrl.CurrentStepDefinition;
-            if (step == null || !GestureConfigResolver.IsGestureEngaged(step))
-                return false;
-
-            // Enter ToolFocus
-            TransitionTo(InteractionState.ToolFocus);
-
-            _toolFocusController.Enter(
-                step,
-                targetId,
-                targetWorldPos,
-                screenPos,
-                ResolvedMode,
-                onComplete: completedTargetId =>
-                {
-                    // Gesture completed — execute the actual tool action
-                    OseLog.Info($"[V2] ToolFocus completed for '{completedTargetId}' — executing tool action.");
-                    if (_partBridge != null && _partBridge.TryToolAction(completedTargetId))
-                    {
-                        OseLog.Info($"[V2] Post-gesture TryToolAction SUCCESS for '{completedTargetId}'.");
-                        if (_cameraRig != null)
-                            _cameraRig.FocusOn(targetWorldPos);
-                    }
-                    TransitionTo(InteractionState.Idle);
-                },
-                onCancel: () =>
-                {
-                    OseLog.Info("[V2] ToolFocus cancelled — returning to idle.");
-                    TransitionTo(InteractionState.Idle);
-                });
-
-            // If the gesture type was Tap, the controller fires onComplete synchronously
-            // and we're already back in Idle — that's fine.
-            return true;
-        }
-
-        /// <summary>
-        /// Resolves the preview mode based on completed target count for the current step.
-        /// Returns null if the step should skip preview (solo / "You Do" phase).
-        /// </summary>
-        private PreviewMode? ResolvePreviewMode()
-        {
-            if (_toolGhost == null)
+            if (_toolPreview == null)
                 return null;
 
             // Must be a Use-family step
@@ -1216,100 +1219,161 @@ namespace OSE.Interaction.V2
                 return null;
             }
 
-            int completedCount = _toolGhost.GetCompletedToolTargetCount();
+            // Some profiles manage their own interaction flow (e.g. tape measure uses
+            // AnchorToAnchorInteraction) — the profile descriptor opts out of preview.
+            string activeProfile = _toolPreview?.GetActiveToolProfile();
+            var profileDesc = ToolProfileRegistry.Get(activeProfile);
+            if (profileDesc.SkipPreview)
+                return null;
+
+            int completedCount = _toolPreview.GetCompletedToolTargetCount();
             OseLog.Info($"[V2] ResolvePreviewMode: step='{step.id}', family={step.ResolvedFamily}, completedCount={completedCount}");
 
-            // "I Do, We Do, You Do"
+            // "I Do, We Do, then reinforcement at increasing speed"
+            // ObserveOnly profiles (e.g. framing square) always auto-play — no guided phase.
             if (completedCount == 0)
-                return PreviewMode.Observe;
-            if (completedCount == 1)
-                return PreviewMode.Guided;
+                return (PreviewMode.Observe, 1f);
+            if (completedCount == 1 && !profileDesc.ObserveOnly)
+                return (PreviewMode.Guided, 1f);
 
-            // 2+ → Solo (click-to-complete)
-            return null;
+            // 2+ → auto-play at escalating speed so the visual reinforcement stays
+            // but doesn't become tedious. Speed ramps from 1.35x up to the profile cap.
+            float speed = Mathf.Min(1f + (completedCount - 1) * 0.35f, profileDesc.PreviewSpeedCap);
+            return (PreviewMode.Observe, speed);
         }
 
         /// <summary>
         /// Enters the Tool Action Preview for the resolved target.
         /// Returns true if preview was activated (caller should skip immediate execution).
         /// </summary>
-        private bool TryEnterToolActionPreview(string targetId, Vector3 targetWorldPos, PreviewMode mode, Vector3 weldAxis = default, float weldLength = 0f)
+        private bool TryEnterToolActionPreview(ToolActionContext ctx, PreviewMode mode, float speed = 1f)
         {
-            GameObject toolGhost = _toolGhost?.GetToolGhost();
-            string profile = _toolGhost?.GetActiveToolProfile();
-            OseLog.Info($"[V2] TryEnterToolActionPreview: ghost={toolGhost?.name ?? "NULL"}, profile='{profile}', mode={mode}");
-            if (toolGhost == null)
+            GameObject toolPreview = _toolPreview?.GetToolPreview();
+            string profile = _toolPreview?.GetActiveToolProfile();
+            OseLog.Info($"[V2] TryEnterToolActionPreview: preview={toolPreview?.name ?? "NULL"}, profile='{profile}', mode={mode}");
+            if (toolPreview == null)
             {
-                OseLog.Info("[V2] TryEnterToolActionPreview: no tool ghost — falling back to click-to-complete.");
+                OseLog.Info("[V2] TryEnterToolActionPreview: no tool preview — falling back to click-to-complete.");
                 return false;
             }
 
             TransitionTo(InteractionState.ToolFocus);
 
-            // Suspend cursor position updates so the ghost isn't yanked back each frame
-            _toolGhost?.SetToolGhostPositionSuspended(true);
+            // Suspend cursor position updates so the preview isn't yanked back each frame
+            _toolPreview?.SetToolPreviewPositionSuspended(true);
 
             // Profile-aware camera: tighten to close-up of the action point
-            _guidanceService?.FrameToolAction(targetWorldPos, profile ?? "");
+            _guidanceService?.FrameToolAction(ctx.SurfaceWorldPos, profile ?? "");
+
+            // Stop target sphere pulsing during preview
+            _targetSphereAnimator?.Stop();
+
+            // Update instruction text for the preview mode
+            UpdateInstructionForPreview(mode, _toolPreview?.GetActiveToolId());
 
             _previewController.Enter(
-                targetId,
-                targetWorldPos,
-                toolGhost,
+                ctx,
+                toolPreview,
                 profile ?? "",
                 mode,
                 ResolvedMode,
+                speed,
                 onComplete: completedTargetId =>
                 {
-                    _toolGhost?.SetToolGhostPositionSuspended(false);
+                    _toolPreview?.SetToolPreviewPositionSuspended(false);
                     OseLog.Info($"[V2] Tool action preview completed for '{completedTargetId}' — executing tool action.");
-                    _toolGhost?.IncrementCompletedToolTargetCount();
+                    _toolPreview?.IncrementCompletedToolTargetCount();
+
+                    // Spawn persistent tool BEFORE TryToolAction — it may complete
+                    // the step synchronously, unequipping the tool and destroying the preview.
+                    TrySpawnPersistentToolOnComplete(
+                        completedTargetId,
+                        ctx.SurfaceWorldPos,
+                        ctx.HasToolActionRotation ? ctx.ToolActionRotation : (Quaternion?)null);
 
                     if (_partBridge != null && _partBridge.TryToolAction(completedTargetId))
                     {
                         OseLog.Info($"[V2] Post-preview TryToolAction SUCCESS for '{completedTargetId}'.");
                     }
+                    else
+                    {
+                        _persistentToolController?.RemoveAt(completedTargetId);
+                    }
                     // Ease back to step home framing after the action
                     _guidanceService?.ReturnFromToolAction();
+                    RestoreInstructionAfterPreview();
                     TransitionTo(InteractionState.Idle);
                 },
                 onCancel: () =>
                 {
-                    _toolGhost?.SetToolGhostPositionSuspended(false);
+                    _toolPreview?.SetToolPreviewPositionSuspended(false);
                     OseLog.Info("[V2] Tool action preview cancelled — returning to idle.");
                     // Return to step home on cancel too
                     _guidanceService?.ReturnFromToolAction();
+                    RestoreInstructionAfterPreview();
                     TransitionTo(InteractionState.Idle);
                 },
                 onActionDone: (doneTargetId, actionPos, actionRot) =>
                 {
-                    // For persistent tools (clamps), convert the cursor ghost in-place
+                    // For persistent tools (clamps), convert the cursor preview in-place
                     // so it stays at the target — no clone, no return animation.
-                    if (TryConvertGhostToPersistentAtAction(doneTargetId, actionPos, actionRot))
+                    if (TryConvertPreviewToPersistentAtAction(doneTargetId, ctx.SurfaceWorldPos, actionRot))
                     {
                         _previewController.SkipReturn();
                     }
-                },
-                weldAxis: weldAxis,
-                weldLength: weldLength);
+                });
 
             return true;
         }
 
+        private void UpdateInstructionForPreview(PreviewMode mode, string toolId)
+        {
+            if (!ServiceRegistry.TryGet<IPresentationAdapter>(out var ui)) return;
+
+            // Save the step's original instruction for restoration after preview
+            if (_savedInstruction == null)
+            {
+                if (ServiceRegistry.TryGet<MachineSessionController>(out var sess))
+                {
+                    var step = sess?.AssemblyController?.StepController?.CurrentStepDefinition;
+                    _savedInstruction = step?.instructionText ?? "";
+                }
+            }
+
+            string toolName = string.IsNullOrEmpty(toolId) ? "tool" : toolId.Replace("_", " ");
+            string instruction = mode switch
+            {
+                PreviewMode.Observe => $"Watch how the {toolName} is used",
+                PreviewMode.Guided  => "Your turn \u2014 drag in the direction shown",
+                _ => null
+            };
+
+            if (instruction != null)
+                ui.ShowInstruction(instruction);
+        }
+
+        private void RestoreInstructionAfterPreview()
+        {
+            if (_savedInstruction == null) return;
+            if (ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
+                ui.ShowInstruction(_savedInstruction);
+            _savedInstruction = null;
+        }
+
         /// <summary>
         /// Called at the end of the action phase (before return animation).
-        /// For persistent tools (clamps), converts the cursor ghost in-place so it
+        /// For persistent tools (clamps), converts the cursor preview in-place so it
         /// stays at the target — no clone, no return animation. The bridge spawns
-        /// a fresh cursor ghost for subsequent targets.
-        /// Returns true if the ghost was converted (caller should skip return).
+        /// a fresh cursor preview for subsequent targets.
+        /// Returns true if the preview was converted (caller should skip return).
         /// </summary>
         // ── Persistent tool delegation ──
 
-        private bool TryConvertGhostToPersistentAtAction(string targetId, Vector3 actionPos, Quaternion actionRot)
-            => _persistentToolController?.TryConvertGhostAtAction(targetId, actionPos, actionRot) ?? false;
+        private bool TryConvertPreviewToPersistentAtAction(string targetId, Vector3 actionPos, Quaternion actionRot)
+            => _persistentToolController?.TryConvertPreviewAtAction(targetId, actionPos, actionRot) ?? false;
 
-        private void TrySpawnPersistentToolOnComplete(string targetId, Vector3 worldPos)
-            => _persistentToolController?.TryConvertGhostOnComplete(targetId, worldPos);
+        private void TrySpawnPersistentToolOnComplete(string targetId, Vector3 worldPos, Quaternion? rotationOverride = null)
+            => _persistentToolController?.TryConvertPreviewOnComplete(targetId, worldPos, rotationOverride);
 
         private void CleanUpPersistentToolsForStep(string stepId)
             => _persistentToolController?.CleanUpForStep(stepId);

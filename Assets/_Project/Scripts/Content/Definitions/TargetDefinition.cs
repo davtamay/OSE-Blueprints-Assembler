@@ -26,10 +26,24 @@ namespace OSE.Content
         /// </summary>
         public float weldLength;
 
+        /// <summary>
+        /// Euler-angle override for how the tool should orient during the action phase
+        /// at this target (e.g. lay flat for framing square). When set and
+        /// <see cref="useToolActionRotation"/> is true, the preview system uses this
+        /// instead of computing orientation from camera direction.
+        /// </summary>
+        public bool useToolActionRotation;
+        public SceneFloat3 toolActionRotation;
+
         public Vector3 GetWeldAxisVector()
         {
             var v = new Vector3(weldAxis.x, weldAxis.y, weldAxis.z);
             return v.sqrMagnitude > 0.001f ? v.normalized : Vector3.zero;
+        }
+
+        public Quaternion GetToolActionRotation()
+        {
+            return Quaternion.Euler(toolActionRotation.x, toolActionRotation.y, toolActionRotation.z);
         }
     }
 }

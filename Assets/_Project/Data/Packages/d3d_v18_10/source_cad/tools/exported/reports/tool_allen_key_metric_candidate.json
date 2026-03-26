@@ -1,0 +1,47 @@
+{
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\tools\\exported\\glb_candidates\\tool_allen_key_metric_candidate.glb",
+  "units": "m",
+  "tool_type": "metric_l_key",
+  "across_flats_m": 0.005,
+  "short_arm_m": 0.033,
+  "long_arm_m": 0.085,
+  "bend_radius_m": 0.007,
+  "material_name": "Metric Allen Key Steel",
+  "roughness": 0.42,
+  "pivot": "bend_corner",
+  "recommended_tool_pose": {
+    "gripPoint": {
+      "x": 0.0,
+      "y": -0.0595,
+      "z": 0.0
+    },
+    "tipPoint": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.033
+    },
+    "tipAxis": {
+      "x": 0.0,
+      "y": 0.874503693560081,
+      "z": 0.48501885525180966
+    },
+    "actionAxis": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 1.0
+    },
+    "handedness": "either",
+    "poseHint": "precision"
+  },
+  "bound_box": {
+    "xmin_m": -0.0025000006426125765,
+    "xmax_m": 0.0025000006426125765,
+    "ymin_m": -0.08500000089406967,
+    "ymax_m": 0.0028867514338344336,
+    "zmin_m": -0.0028867514338344336,
+    "zmax_m": 0.032999999821186066,
+    "xlen_m": 0.005000001285225153,
+    "ylen_m": 0.0878867523279041,
+    "zlen_m": 0.0358867512550205
+  }
+}

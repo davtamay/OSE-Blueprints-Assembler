@@ -1,0 +1,25 @@
+{
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\axes_stage01\\exported\\glb_candidates\\d3d_y_right_axis_unit_candidate.glb",
+  "variant": "right",
+  "units": "m",
+  "source_side_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\axes_stage01\\raw\\Universal8mmaxis\\axis_8mm STL + FCSTD\\idlerSide_8mm_rods.stl",
+  "source_carriage_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\axes_stage01\\raw\\Universal8mmaxis\\axis_8mm STL + FCSTD\\carriage_8mm_rods.stl",
+  "source_endstop_stl": null,
+  "total_height_m": 0.24,
+  "rod_length_m": 0.228,
+  "rod_diameter_m": 0.008,
+  "rod_center_spacing_m": 0.055834429,
+  "top_bottom_block_center_y_m": 0.08700000017881393,
+  "bound_box": {
+    "xmin_m": -0.006000001449137926,
+    "xmax_m": 0.006000001449137926,
+    "ymin_m": -0.11999999731779099,
+    "ymax_m": 0.11999999731779099,
+    "zmin_m": -0.03191721811890602,
+    "zmax_m": 0.03191721811890602,
+    "xlen_m": 0.012000002898275852,
+    "ylen_m": 0.23999999463558197,
+    "zlen_m": 0.06383443623781204
+  },
+  "endstop": null
+}

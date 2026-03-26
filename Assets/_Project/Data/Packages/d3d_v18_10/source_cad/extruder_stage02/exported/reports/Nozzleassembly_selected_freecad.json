@@ -1,0 +1,39 @@
+{
+  "input_fcstd": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder_stage02\\raw_extra\\Nozzleassembly.fcstd",
+  "output_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder_stage02\\exported\\stl\\Nozzleassembly_selected.stl",
+  "units": "mm",
+  "selected_labels": [
+    "Compound"
+  ],
+  "object_count": 1,
+  "mesh_facets": 2779,
+  "mesh_points": 1168,
+  "combined_bound_box": {
+    "xmin_mm": -53.0493640004103,
+    "xmax_mm": 19.57277209824,
+    "ymin_mm": 19.03648787897,
+    "ymax_mm": 60.952515,
+    "zmin_mm": 23.613214,
+    "zmax_mm": 103.601023349011,
+    "xlen_mm": 72.6221360986503,
+    "ylen_mm": 41.91602712103,
+    "zlen_mm": 79.987809349011
+  },
+  "objects": [
+    {
+      "name": "Compound",
+      "label": "Compound",
+      "bound_box": {
+        "xmin_mm": -53.0493640004103,
+        "xmax_mm": 19.57277209824,
+        "ymin_mm": 19.03648787897,
+        "ymax_mm": 60.952515,
+        "zmin_mm": 23.613214,
+        "zmax_mm": 103.601023349011,
+        "xlen_mm": 72.6221360986503,
+        "ylen_mm": 41.91602712103,
+        "zlen_mm": 79.987809349011
+      }
+    }
+  ]
+}

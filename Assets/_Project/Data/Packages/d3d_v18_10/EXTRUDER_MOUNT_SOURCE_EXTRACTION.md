@@ -16,6 +16,12 @@ It answers:
 
 This slice is now authored in `machine.json` as `Extruder Stage 02`.
 
+Current hardening status:
+
+- the Stage 02 mount bracket now uses a CAD-derived approved runtime mesh
+- the Stage 02 top plate now uses a CAD-derived approved runtime mesh
+- the nozzle-side module itself is still only partially CAD-hardened
+
 It is the implemented authored boundary after:
 
 - `Axes Stage 01`

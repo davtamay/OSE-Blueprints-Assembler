@@ -1,0 +1,39 @@
+{
+  "input_fcstd": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder_stage03\\raw\\Oseextruder1902_with_2nd_bracket.fcstd",
+  "output_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\axes_stage01\\exported\\stl\\XAxis_rod_pair_selected.stl",
+  "units": "mm",
+  "selected_labels": [
+    "Rods"
+  ],
+  "object_count": 1,
+  "mesh_facets": 92,
+  "mesh_points": 48,
+  "combined_bound_box": {
+    "xmin_mm": -101.6,
+    "xmax_mm": 101.6,
+    "ymin_mm": 38.574606,
+    "ymax_mm": 48.398432,
+    "zmin_mm": -18.513625000000005,
+    "zmax_mm": -8.689798999999992,
+    "xlen_mm": 203.2,
+    "ylen_mm": 9.823825999999997,
+    "zlen_mm": 9.823826000000013
+  },
+  "objects": [
+    {
+      "name": "Pad",
+      "label": "Rods",
+      "bound_box": {
+        "xmin_mm": -101.6,
+        "xmax_mm": 101.6,
+        "ymin_mm": 38.574606,
+        "ymax_mm": 48.398432,
+        "zmin_mm": -18.513625000000005,
+        "zmax_mm": -8.689798999999992,
+        "xlen_mm": 203.2,
+        "ylen_mm": 9.823825999999997,
+        "zlen_mm": 9.823826000000013
+      }
+    }
+  ]
+}

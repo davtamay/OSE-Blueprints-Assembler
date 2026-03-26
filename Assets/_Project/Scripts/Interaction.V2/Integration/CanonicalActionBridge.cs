@@ -1,9 +1,8 @@
 using OSE.Core;
 using OSE.Input;
-using OSE.Interaction;
 using UnityEngine;
 
-namespace OSE.Interaction.V2.Integration
+namespace OSE.Interaction.Integration
 {
     /// <summary>
     /// Bridges V2 interaction events into the existing canonical action pipeline.

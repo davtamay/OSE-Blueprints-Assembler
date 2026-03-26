@@ -1,0 +1,50 @@
+{
+  "input_fcstd": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\axes_stage01\\raw\\Universal_axis_motor_side.fcstd",
+  "output_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\axes_stage01\\exported\\stl\\Universal_axis_motor_side.stl",
+  "source_mode": "archive_brep",
+  "units": "mm",
+  "object_count": 2,
+  "mesh_facets": 2654,
+  "mesh_points": 1313,
+  "combined_bound_box": {
+    "xmin_mm": -33.250963,
+    "xmax_mm": 27.5,
+    "ymin_mm": -33.0,
+    "ymax_mm": 33.0,
+    "zmin_mm": 0.0,
+    "zmax_mm": 12.0,
+    "xlen_mm": 60.750963,
+    "ylen_mm": 66.0,
+    "zlen_mm": 12.0
+  },
+  "objects": [
+    {
+      "name": "PartShape.brp",
+      "bound_box": {
+        "xmin_mm": -32.000000000000185,
+        "xmax_mm": 27.5,
+        "ymin_mm": -33.0,
+        "ymax_mm": 33.0,
+        "zmin_mm": -1.286498124835963e-15,
+        "zmax_mm": 12.0,
+        "xlen_mm": 59.500000000000185,
+        "ylen_mm": 66.0,
+        "zlen_mm": 12.000000000000002
+      }
+    },
+    {
+      "name": "PartShape1.brp",
+      "bound_box": {
+        "xmin_mm": -33.250963000000034,
+        "xmax_mm": -4.125689999999949,
+        "ymin_mm": -10.12749800000001,
+        "ymax_mm": 10.104515000000008,
+        "zmin_mm": 0.0,
+        "zmax_mm": 4.0,
+        "xlen_mm": 29.125273000000085,
+        "ylen_mm": 20.232013000000016,
+        "zlen_mm": 4.0
+      }
+    }
+  ]
+}

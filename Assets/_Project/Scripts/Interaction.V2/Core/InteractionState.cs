@@ -1,4 +1,4 @@
-namespace OSE.Interaction.V2
+namespace OSE.Interaction
 {
     /// <summary>
     /// Top-level interaction state managed by the InteractionOrchestrator.

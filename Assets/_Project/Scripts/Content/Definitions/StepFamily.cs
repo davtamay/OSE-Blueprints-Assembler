@@ -6,7 +6,7 @@ namespace OSE.Content
     /// </summary>
     public enum StepFamily
     {
-        /// <summary>Spatial placement onto ghost targets.</summary>
+        /// <summary>Spatial placement onto preview targets.</summary>
         Place = 0,
         /// <summary>Tool activation on targets (torque, weld, cut, measure).</summary>
         Use = 1,

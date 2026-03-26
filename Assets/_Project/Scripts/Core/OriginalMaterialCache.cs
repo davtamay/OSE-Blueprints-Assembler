@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace OSE.UI.Root
+namespace OSE.Core
 {
     /// <summary>
     /// Caches original materials from glTFast-imported models so they can be
-    /// restored after interaction effects (hover, select, ghost, etc.) override them.
+    /// restored after interaction effects (hover, select, preview, etc.) override them.
     /// Also manages outline child objects for non-destructive highlight effects.
     /// Attach via <see cref="MaterialHelper.SaveOriginals"/>.
     /// </summary>

@@ -1,4 +1,4 @@
-namespace OSE.Interaction.V2
+namespace OSE.Interaction
 {
     /// <summary>
     /// The active interaction mode. Determines which input provider, camera system,

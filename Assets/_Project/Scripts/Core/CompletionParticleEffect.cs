@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace OSE.UI.Root
+namespace OSE.Core
 {
     /// <summary>
     /// Spawns a self-destructing ParticleSystem at a world position based on a named preset.

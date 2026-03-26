@@ -1,7 +1,7 @@
 using OSE.Content;
 using UnityEngine;
 
-namespace OSE.Interaction.V2
+namespace OSE.Interaction
 {
     /// <summary>
     /// Computes camera framing parameters (pivot + bounds) from a step's

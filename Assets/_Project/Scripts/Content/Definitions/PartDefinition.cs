@@ -51,6 +51,16 @@ namespace OSE.Content
         /// </summary>
         public string templateId;
 
+        /// <summary>
+        /// XR grab metadata: where the hand grabs this part and how it's oriented when held.
+        /// Auto-detected or authored via the Pose Editor. When present, drives
+        /// <c>XRGrabInteractable.attachTransform</c> offset.
+        /// </summary>
+        public PartGrabConfig grabConfig;
+
+        /// <summary>True when <see cref="grabConfig"/> carries any authored spatial data.</summary>
+        public bool HasGrabConfig => grabConfig != null && grabConfig.HasGripPoint;
+
         public string GetDisplayName()
         {
             if (!string.IsNullOrWhiteSpace(displayName))

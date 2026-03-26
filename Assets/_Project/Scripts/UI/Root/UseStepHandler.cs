@@ -39,7 +39,7 @@ namespace OSE.UI.Root
         private readonly PackagePartSpawner _spawner;
         private readonly Func<PreviewSceneSetup> _getSetup;
         private readonly Func<ToolCursorManager> _getCursorManager;
-        private readonly List<GameObject> _spawnedGhosts;
+        private readonly List<GameObject> _spawnedPreviews;
         private readonly Func<string> _getSequentialTargetId;
         private readonly Func<bool> _advanceSequentialTarget;
 
@@ -71,14 +71,14 @@ namespace OSE.UI.Root
             PackagePartSpawner spawner,
             Func<PreviewSceneSetup> getSetup,
             Func<ToolCursorManager> getCursorManager,
-            List<GameObject> spawnedGhosts,
+            List<GameObject> spawnedPreviews,
             Func<string> getSequentialTargetId,
             Func<bool> advanceSequentialTarget)
         {
             _spawner              = spawner;
             _getSetup             = getSetup;
             _getCursorManager     = getCursorManager;
-            _spawnedGhosts        = spawnedGhosts;
+            _spawnedPreviews        = spawnedPreviews;
             _getSequentialTargetId = getSequentialTargetId;
             _advanceSequentialTarget = advanceSequentialTarget;
         }
@@ -94,6 +94,24 @@ namespace OSE.UI.Root
         /// 0 → Observe ("I Do"), 1 → Guided ("We Do"), 2+ → Solo ("You Do").
         /// </summary>
         public int CompletedTargetCountForStep => _completedTargetCountForStep;
+
+        /// <summary>
+        /// Returns world positions of all currently-spawned tool-action target markers.
+        /// Used by TargetSphereAnimator to pulse emission on targets before user taps.
+        /// </summary>
+        public Vector3[] GetActiveToolTargetPositions()
+        {
+            if (_spawnedToolActionTargets.Count == 0)
+                return System.Array.Empty<Vector3>();
+
+            var positions = new Vector3[_spawnedToolActionTargets.Count];
+            for (int i = 0; i < _spawnedToolActionTargets.Count; i++)
+            {
+                var t = _spawnedToolActionTargets[i];
+                positions[i] = t != null ? t.transform.position : Vector3.zero;
+            }
+            return positions;
+        }
 
         /// <summary>Increments the completed target count. Called by the orchestrator after a preview completes.</summary>
         public void IncrementCompletedTargetCount() => _completedTargetCountForStep++;
@@ -384,11 +402,11 @@ namespace OSE.UI.Root
                 return false;
             }
 
-            if (TryGetGhostTargetPose(targetId, out Vector3 ghostPos, out Quaternion ghostRot, out Vector3 ghostScale))
+            if (TryGetPreviewTargetPose(targetId, out Vector3 previewPos, out Quaternion previewRot, out Vector3 previewScale))
             {
-                markerPos = ghostPos;
-                markerRot = ghostRot;
-                markerScale = ghostScale;
+                markerPos = previewPos;
+                markerRot = previewRot;
+                markerScale = previewScale;
             }
 
             Transform previewRoot = setup.PreviewRoot;
@@ -420,8 +438,9 @@ namespace OSE.UI.Root
             info.BaseScale = marker.transform.localScale;
             info.BaseLocalPosition = marker.transform.localPosition;
             info.SurfaceWorldPos = surfaceWorldPos;
+            info.TargetWorldRotation = marker.transform.rotation;
 
-            // Populate weld line data from TargetDefinition (if present)
+            // Populate weld line and tool action rotation data from TargetDefinition
             if (package.TryGetTarget(targetId, out TargetDefinition targetDef))
             {
                 Vector3 axis = targetDef.GetWeldAxisVector();
@@ -430,6 +449,12 @@ namespace OSE.UI.Root
                 else
                     info.WeldAxis = axis;
                 info.WeldLength = targetDef.weldLength;
+
+                if (targetDef.useToolActionRotation)
+                {
+                    info.HasToolActionRotation = true;
+                    info.ToolActionRotation = targetDef.GetToolActionRotation();
+                }
             }
 
             _spawnedToolActionTargets.Add(marker);
@@ -444,10 +469,10 @@ namespace OSE.UI.Root
             if (string.IsNullOrEmpty(_activeProfile))
                 return;
 
-            bool isTorque = string.Equals(_activeProfile, ToolActionProfiles.Torque, StringComparison.OrdinalIgnoreCase);
-            bool isMeasure = string.Equals(_activeProfile, ToolActionProfiles.Measure, StringComparison.OrdinalIgnoreCase);
-            if (!isTorque && !isMeasure)
+            if (!ToolProfileRegistry.Get(_activeProfile).SpawnClickEffect)
                 return;
+
+            bool isMeasure = string.Equals(_activeProfile, ToolActionProfiles.Measure, StringComparison.OrdinalIgnoreCase);
 
             for (int i = 0; i < _spawnedToolActionTargets.Count; i++)
             {
@@ -499,7 +524,7 @@ namespace OSE.UI.Root
                 return;
             }
 
-            if (TryGetGhostTargetPose(_measurePayload.endAnchorTargetId, out Vector3 gp, out Quaternion gr, out Vector3 gs))
+            if (TryGetPreviewTargetPose(_measurePayload.endAnchorTargetId, out Vector3 gp, out Quaternion gr, out Vector3 gs))
             {
                 pos = gp;
                 rot = gr;
@@ -707,7 +732,7 @@ namespace OSE.UI.Root
 
             SpawnClickEffectForTarget(interactedTargetId);
 
-            // Measure profile: suppress step completion after first anchor, enter drag mode
+            // Measure profile: suppress step completion after first anchor, enter phase 2 (tap end anchor)
             if (IsMeasureProfile() && shouldCompleteStep && _measurePayload != null)
             {
                 shouldCompleteStep = false;
@@ -767,7 +792,7 @@ namespace OSE.UI.Root
                 TryResolveToolActionTargetForExecution(pointerPos, out ToolActionTargetInfo resolvedTarget))
                 interactedTargetId = resolvedTarget.TargetId;
 
-            // Measure phase 2 fallback: the normal resolution requires tool ghost
+            // Measure phase 2 fallback: the normal resolution requires tool preview
             // bounds overlap which is too strict for the end anchor. Fall back to
             // raycast + screen proximity so a simple tap/click works.
             if (interactedTargetId == null && _anchorInteraction != null && _anchorInteraction.IsActive)
@@ -815,7 +840,7 @@ namespace OSE.UI.Root
 
         /// <summary>
         /// Resolves the target that can actually execute a Use step.
-        /// Prefers the current ready target driven by tool-ghost bounds.
+        /// Prefers the current ready target driven by tool-preview bounds.
         /// </summary>
         public bool TryResolveToolActionTargetForExecution(Vector2 screenPos, out ToolActionTargetInfo targetInfo)
         {
@@ -826,12 +851,12 @@ namespace OSE.UI.Root
                 return true;
 
             ToolCursorManager cursorManager = _getCursorManager();
-            if (cursorManager?.ToolGhost == null || !cursorManager.ToolGhost.activeSelf)
+            if (cursorManager?.ToolPreview == null || !cursorManager.ToolPreview.activeSelf)
                 return TryGetNearestToolTargetByScreenProximity(screenPos, out targetInfo);
 
-            // Tool ghost is active but not overlapping a target — fall back to
+            // Tool preview is active but not overlapping a target — fall back to
             // raycast + screen-proximity so clicks near the target still register
-            // even when the ghost bounding rect misses due to offset/orientation.
+            // even when the preview bounding rect misses due to offset/orientation.
             return TryGetToolActionTargetAtScreen(screenPos, out targetInfo);
         }
 
@@ -1052,11 +1077,11 @@ namespace OSE.UI.Root
 
             ToolCursorManager cursorManager = _getCursorManager();
             Camera cam = Camera.main;
-            GameObject toolGhost = cursorManager?.ToolGhost;
-            if (cam == null || toolGhost == null || !toolGhost.activeSelf)
+            GameObject toolPreview = cursorManager?.ToolPreview;
+            if (cam == null || toolPreview == null || !toolPreview.activeSelf)
                 return false;
 
-            if (!TryGetToolGhostScreenRect(cam, toolGhost, out Rect toolRect))
+            if (!TryGetToolPreviewScreenRect(cam, toolPreview, out Rect toolRect))
                 return false;
 
             Rect paddedRect = ExpandRect(toolRect, ToolBoundsReadyPaddingPx);
@@ -1182,11 +1207,11 @@ namespace OSE.UI.Root
             return sequentialTargetId;
         }
 
-        private static bool TryGetToolGhostScreenRect(Camera cam, GameObject toolGhost, out Rect screenRect)
+        private static bool TryGetToolPreviewScreenRect(Camera cam, GameObject toolPreview, out Rect screenRect)
         {
             screenRect = default;
 
-            Renderer[] renderers = toolGhost.GetComponentsInChildren<Renderer>(true);
+            Renderer[] renderers = toolPreview.GetComponentsInChildren<Renderer>(true);
             if (renderers == null || renderers.Length == 0)
                 return false;
 
@@ -1348,7 +1373,7 @@ namespace OSE.UI.Root
             return false;
         }
 
-        internal bool TryGetGhostTargetPose(
+        internal bool TryGetPreviewTargetPose(
             string targetId,
             out Vector3 position,
             out Quaternion rotation,
@@ -1358,22 +1383,22 @@ namespace OSE.UI.Root
             rotation = Quaternion.identity;
             scale = Vector3.one;
 
-            if (string.IsNullOrWhiteSpace(targetId) || _spawnedGhosts.Count == 0)
+            if (string.IsNullOrWhiteSpace(targetId) || _spawnedPreviews.Count == 0)
                 return false;
 
             PreviewSceneSetup setup = _getSetup();
             Transform previewRoot = setup != null ? setup.PreviewRoot : null;
 
-            for (int i = _spawnedGhosts.Count - 1; i >= 0; i--)
+            for (int i = _spawnedPreviews.Count - 1; i >= 0; i--)
             {
-                GameObject ghost = _spawnedGhosts[i];
-                if (ghost == null) continue;
+                GameObject preview = _spawnedPreviews[i];
+                if (preview == null) continue;
 
-                var info = ghost.GetComponent<PartInteractionBridge.GhostPlacementInfo>();
+                var info = preview.GetComponent<PartInteractionBridge.PlacementPreviewInfo>();
                 if (info == null || !string.Equals(info.TargetId, targetId, StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                Transform tx = ghost.transform;
+                Transform tx = preview.transform;
                 if (previewRoot != null)
                 {
                     position = previewRoot.InverseTransformPoint(tx.position);

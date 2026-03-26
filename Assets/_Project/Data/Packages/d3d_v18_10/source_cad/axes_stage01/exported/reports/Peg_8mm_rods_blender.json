@@ -1,0 +1,27 @@
+{
+  "input_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\axes_stage01\\exported\\stl\\Peg_8mm_rods.stl",
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\axes_stage01\\exported\\glb_candidates\\Peg_8mm_rods.glb",
+  "units": "m",
+  "object_count": 1,
+  "material_name": "D3D Belt Peg Orange",
+  "base_color": [
+    0.95,
+    0.7,
+    0.22,
+    1.0
+  ],
+  "metallic": 0.0,
+  "roughness": 0.55,
+  "center_mode": "center",
+  "bound_box": {
+    "xmin_m": -0.012000000104308128,
+    "xmax_m": 0.012000001035630703,
+    "ymin_m": -0.005735000595450401,
+    "ymax_m": 0.005735000595450401,
+    "zmin_m": -0.005000000353902578,
+    "zmax_m": 0.005000000353902578,
+    "xlen_m": 0.02400000113993883,
+    "ylen_m": 0.011470001190900803,
+    "zlen_m": 0.010000000707805157
+  }
+}

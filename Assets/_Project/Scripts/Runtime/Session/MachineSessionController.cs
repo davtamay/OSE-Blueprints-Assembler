@@ -492,7 +492,7 @@ namespace OSE.Runtime
         /// directly to the saved step, marking all skipped parts as Completed,
         /// and activating the next step normally.
         ///
-        /// This avoids replaying the full event cascade (ghost spawn/clear, tool
+        /// This avoids replaying the full event cascade (preview spawn/clear, tool
         /// action setup/teardown, visual updates) for every skipped step.
         /// </summary>
         public bool RestoreToStep(int completedStepCount)

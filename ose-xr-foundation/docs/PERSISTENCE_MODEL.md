@@ -48,8 +48,8 @@ Given:
 ...the runtime can reconstruct the correct scene state:
 
 - **Completed parts**: all parts from steps before the restore point are marked Completed and positioned at their authored target poses
-- **Current step setup**: the active step resolves its parts, tools, targets, ghosts, and interaction context from authored data
-- **Visual state**: ghost targets, tool targets, highlights, and UI all derive from the active step definition
+- **Current step setup**: the active step resolves its parts, tools, targets, previews, and interaction context from authored data
+- **Visual state**: preview targets, tool targets, highlights, and UI all derive from the active step definition
 
 No per-part spatial data needs to be persisted because every part's final position is defined by its authored target. The runtime does not need to remember *where* a part ended up — it knows where it *should* be from the package data.
 
@@ -94,7 +94,7 @@ The following are intentionally excluded from persistence because they are eithe
 - Per-part world positions or rotations
 - Per-part placement state (derived from step progress on restore)
 - Physical substitution confirmations (future: see section 6)
-- Ghost target visibility state
+- Preview target visibility state
 - Tool cursor state
 - Selection / interaction focus
 - Camera position

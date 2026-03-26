@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using OSE.Content;
+using OSE.Interaction;
 using UnityEditor;
 using UnityEngine;
 
@@ -54,6 +55,8 @@ namespace OSE.Editor
         private GameObject _model;
         private Bounds _bounds;
         private bool _loaded;
+        /// <summary>Local-space bounding box center used as custom pivot for handles.</summary>
+        private Vector3 _modelCenterLocal;
 
         // Embedded preview
         private PreviewRenderUtility _pu;
@@ -68,10 +71,15 @@ namespace OSE.Editor
 
         // Scale
         private float _scale = 1f;
+        private float _scaleOverride;
         private bool _runtimeScale;
 
-        // Editable pose (model-local coordinates)
-        private Vector3 _grip, _gripRot, _tip, _cursorOffset;
+        // Editable pose — tool-on-hand model
+        // Primary: user moves/rotates the tool; grip values are derived.
+        private Vector3 _toolPos;                       // tool offset from HandRefPos (world)
+        private Vector3 _toolRotEuler;                  // tool euler rotation (world)
+        private Vector3 _tip, _tipAxis;                   // tip point + explicit aiming direction
+        private Vector3 _cursorLocal, _cursorRot;          // model-local points (follow tool)
         private string _handedness = "right", _pose = "power_grip";
         private bool _dirty;
         private bool _showLabels = true;
@@ -79,8 +87,9 @@ namespace OSE.Editor
         // Undo/redo for pose edits (in-editor, before writing to disk)
         private struct PoseSnapshot
         {
-            public Vector3 grip, gripRot, tip, cursorOffset;
+            public Vector3 toolPos, toolRotEuler, tip, tipAxis, cursorLocal, cursorRot;
             public string handedness, pose;
+            public float scaleOverride;
         }
         private const int MaxUndoHistory = 50;
         private readonly List<PoseSnapshot> _undoStack = new();
@@ -103,12 +112,21 @@ namespace OSE.Editor
         private static readonly Color ColGrid   = new(0.35f, 0.35f, 0.35f, 0.4f);
         private static readonly Color ColCursor = new(1f, 0.85f, 0.1f, 0.9f);
 
+        /// <summary>Fixed hand world position — raised above the ground plane.</summary>
+        private static readonly Vector3 HandRefPos = new(0f, 1f, 0f);
+        /// <summary>Identity — used for grip rotation derivation math only.</summary>
+        private static readonly Quaternion HandFixedRot = Quaternion.identity;
+        /// <summary>Visual rotation so the hand mesh displays in a natural side-grip pose.</summary>
+        private static readonly Quaternion HandVisualRot = Quaternion.Euler(0f, 0f, -90f);
+
         // ── Pose Undo / Redo ────────────────────────────────────────────────────
 
         private PoseSnapshot CaptureSnapshot() => new()
         {
-            grip = _grip, gripRot = _gripRot, tip = _tip,
-            cursorOffset = _cursorOffset, handedness = _handedness, pose = _pose
+            toolPos = _toolPos, toolRotEuler = _toolRotEuler, tip = _tip, tipAxis = _tipAxis,
+            cursorLocal = _cursorLocal, cursorRot = _cursorRot,
+            handedness = _handedness, pose = _pose,
+            scaleOverride = _scaleOverride
         };
 
         private void PushUndo()
@@ -138,10 +156,12 @@ namespace OSE.Editor
 
         private void ApplySnapshot(PoseSnapshot s)
         {
-            _grip = s.grip; _gripRot = s.gripRot; _tip = s.tip;
-            _cursorOffset = s.cursorOffset; _handedness = s.handedness; _pose = s.pose;
+            _toolPos = s.toolPos; _toolRotEuler = s.toolRotEuler; _tip = s.tip; _tipAxis = s.tipAxis;
+            _cursorLocal = s.cursorLocal; _cursorRot = s.cursorRot;
+            _handedness = s.handedness; _pose = s.pose;
+            _scaleOverride = s.scaleOverride;
             _dirty = true;
-            UpdateHandXform(); UpdateFingerCurl();
+            ApplyToolTransform();
             Repaint();
             if (!IsEmbedded) SceneView.RepaintAll();
         }
@@ -240,12 +260,12 @@ namespace OSE.Editor
                     "Drag the blue/red handles to move grip/tip points.",
                     MessageType.Info);
 
-            // Inspector panel
             _scroll = EditorGUILayout.BeginScrollView(_scroll);
             EditorGUILayout.Space(4);
+
             DrawScaleUI();
             DrawBoundsInfo();
-            EditorGUILayout.Space(6);
+            EditorGUILayout.Space(4);
             DrawPoseFields();
             EditorGUILayout.Space(4);
             DrawHandUI();
@@ -400,60 +420,61 @@ namespace OSE.Editor
             if (IsEmbedded || _model == null || !_loaded) return;
 
             Transform root = _model.transform;
-            float baseSize = HandleUtility.GetHandleSize(root.position) * 0.06f;
+            Vector3 handW = HandRefPos;
+            float baseSize = HandleUtility.GetHandleSize(handW) * 0.06f;
 
-            // Grip handle (blue, draggable position + rotation)
-            Vector3 gripW = root.TransformPoint(_grip);
-            Quaternion gripRotW = root.rotation * Quaternion.Euler(_gripRot);
+            // ── Hand marker (blue sphere — fixed, never moves) ──
             Handles.color = ColGrip;
-            Handles.SphereHandleCap(0, gripW, Quaternion.identity, baseSize * 2.5f, EventType.Repaint);
-
-            // Position handle
-            EditorGUI.BeginChangeCheck();
-            Vector3 newGrip = Handles.PositionHandle(gripW, gripRotW);
-            if (EditorGUI.EndChangeCheck())
-            {
-                BeginEdit();
-                _grip = root.InverseTransformPoint(newGrip);
-                _dirty = true; UpdateHandXform(); Repaint();
-            }
-            else EndEdit();
-
-            // Rotation handle (smaller disc rings around grip)
-            EditorGUI.BeginChangeCheck();
-            Quaternion newRotW = Handles.RotationHandle(gripRotW, gripW);
-            if (EditorGUI.EndChangeCheck())
-            {
-                BeginEdit();
-                Quaternion local = Quaternion.Inverse(root.rotation) * newRotW;
-                _gripRot = local.eulerAngles;
-                _dirty = true; UpdateHandXform(); Repaint();
-            }
-            else EndEdit();
-
-            // Draw small coordinate frame showing grip orientation
-            float axLen = baseSize * 6f;
-            Handles.color = new Color(1f, 0.3f, 0.3f, 0.8f);
-            Handles.DrawLine(gripW, gripW + gripRotW * Vector3.right * axLen);
-            Handles.color = new Color(0.3f, 1f, 0.3f, 0.8f);
-            Handles.DrawLine(gripW, gripW + gripRotW * Vector3.up * axLen);
-            Handles.color = new Color(0.3f, 0.3f, 1f, 0.8f);
-            Handles.DrawLine(gripW, gripW + gripRotW * Vector3.forward * axLen);
-
+            Handles.SphereHandleCap(0, handW, Quaternion.identity, baseSize * 2.5f, EventType.Repaint);
             if (_showLabels)
             {
                 var s = new GUIStyle(EditorStyles.boldLabel) { normal = { textColor = ColGrip } };
-                Handles.Label(gripW + Vector3.up * baseSize * 3f, "GRIP", s);
+                Handles.Label(handW + Vector3.up * baseSize * 3f, "HAND", s);
             }
+
+            // ── Tool handles at bounding-box center pivot ──
+            Vector3 pivotW = root.TransformPoint(_modelCenterLocal);
+
+            // Position handle
+            EditorGUI.BeginChangeCheck();
+            Vector3 newPivot = Handles.PositionHandle(pivotW, root.rotation);
+            if (EditorGUI.EndChangeCheck())
+            {
+                BeginEdit();
+                _toolPos += newPivot - pivotW; // delta move
+                ApplyToolTransform();
+                _dirty = true; Repaint();
+            }
+            else EndEdit();
+
+            // Rotation handle — rotates around center pivot
+            // Tip + cursor stay in model-local space (rotate with tool).
+            // cursorRot syncs to toolRotEuler so desktop preview matches.
+            EditorGUI.BeginChangeCheck();
+            Quaternion newToolRot = Handles.RotationHandle(root.rotation, pivotW);
+            if (EditorGUI.EndChangeCheck())
+            {
+                BeginEdit();
+                // Rotate tool around the center pivot, not the mesh origin
+                Quaternion oldRot = Quaternion.Euler(_toolRotEuler);
+                Quaternion delta = newToolRot * Quaternion.Inverse(oldRot);
+                Vector3 oldPos = HandRefPos + _toolPos;
+                Vector3 rotatedPos = delta * (oldPos - pivotW) + pivotW;
+                _toolPos = rotatedPos - HandRefPos;
+                _toolRotEuler = newToolRot.eulerAngles;
+                ApplyToolTransform();
+                _dirty = true; Repaint();
+            }
+            else EndEdit();
 
             if (IsTool)
             {
-                // Tip handle (red, draggable)
+                // ── Tip handle (red, draggable on tool) ──
                 Vector3 tipW = root.TransformPoint(_tip);
                 Handles.color = ColTip;
                 Handles.SphereHandleCap(0, tipW, Quaternion.identity, baseSize * 2.5f, EventType.Repaint);
                 EditorGUI.BeginChangeCheck();
-                Vector3 newTip = Handles.PositionHandle(tipW, Quaternion.identity);
+                Vector3 newTip = Handles.PositionHandle(tipW, root.rotation);
                 if (EditorGUI.EndChangeCheck())
                 {
                     BeginEdit();
@@ -469,14 +490,14 @@ namespace OSE.Editor
 
                 // Grip-to-tip dashed line + direction arrow
                 Handles.color = ColLine;
-                Handles.DrawDottedLine(gripW, tipW, 4f);
-                Vector3 dir = (tipW - gripW);
+                Handles.DrawDottedLine(handW, tipW, 4f);
+                Vector3 dir = (tipW - handW);
                 if (dir.sqrMagnitude > 0.0001f)
                 {
                     float len = baseSize * 10f;
-                    Vector3 end = gripW + dir.normalized * len;
+                    Vector3 end = handW + dir.normalized * len;
                     Handles.color = ColTipA;
-                    Handles.DrawAAPolyLine(3f, gripW, end);
+                    Handles.DrawAAPolyLine(3f, handW, end);
                     Handles.ConeHandleCap(0, end, Quaternion.LookRotation(dir.normalized),
                         baseSize * 1.2f, EventType.Repaint);
                     if (_showLabels)
@@ -485,31 +506,43 @@ namespace OSE.Editor
                         Handles.Label(end + Vector3.up * baseSize, "tip dir", s);
                     }
                 }
-            }
 
-            // Cursor offset handle (yellow, draggable from grip)
-            if (IsTool)
-            {
-                Vector3 cursorW = root.TransformPoint(_grip + _cursorOffset);
+                // ── Cursor offset handle (yellow, model-local like tip) ──
+                Vector3 cursorW = root.TransformPoint(_cursorLocal);
                 Handles.color = ColCursor;
                 Handles.SphereHandleCap(0, cursorW, Quaternion.identity, baseSize * 2f, EventType.Repaint);
                 EditorGUI.BeginChangeCheck();
-                Vector3 newCursor = Handles.PositionHandle(cursorW, Quaternion.identity);
+                Vector3 newCursor = Handles.PositionHandle(cursorW, root.rotation);
                 if (EditorGUI.EndChangeCheck())
                 {
                     BeginEdit();
-                    _cursorOffset = root.InverseTransformPoint(newCursor) - _grip;
+                    _cursorLocal = root.InverseTransformPoint(newCursor);
                     _dirty = true; Repaint();
                 }
                 else EndEdit();
 
-                // Dashed line from grip to cursor offset
+                // Dashed line from hand to cursor point
                 Handles.color = ColCursor * 0.7f;
-                Handles.DrawDottedLine(gripW, cursorW, 3f);
+                Handles.DrawDottedLine(handW, cursorW, 3f);
                 if (_showLabels)
                 {
                     var s = new GUIStyle(EditorStyles.boldLabel) { normal = { textColor = ColCursor } };
-                    Handles.Label(cursorW + Vector3.up * baseSize * 3f, "CURSOR", s);
+                    Handles.Label(cursorW + Vector3.up * baseSize * 3f, "CURSOR POINT", s);
+                }
+
+                // ── Runtime cursor position (where the mouse actually lands) ──
+                // Uses the full tiered preview rotation (same as ToolCursorManager at runtime).
+                Quaternion previewRot = _tool != null
+                    ? ToolPoseResolver.ResolvePreviewRotation(_tool, _model)
+                    : Quaternion.Euler(_cursorRot);
+                Vector3 runtimeCursorW = root.position + previewRot * (_cursorLocal * _scale);
+                Handles.color = new Color(1f, 0.5f, 0f, 0.9f); // orange
+                Handles.SphereHandleCap(0, runtimeCursorW, Quaternion.identity, baseSize * 2f, EventType.Repaint);
+                Handles.DrawDottedLine(cursorW, runtimeCursorW, 2f);
+                if (_showLabels)
+                {
+                    var s = new GUIStyle(EditorStyles.boldLabel) { normal = { textColor = new Color(1f, 0.5f, 0f) } };
+                    Handles.Label(runtimeCursorW + Vector3.up * baseSize * 3f, "RUNTIME CURSOR", s);
                 }
             }
         }
@@ -522,8 +555,10 @@ namespace OSE.Editor
             Transform root = _model.transform;
             float sz = Mathf.Max(0.006f, _dist * 0.018f);
 
-            Vector3 gw = root.TransformPoint(_grip);
-            Quaternion gripRotW = root.rotation * Quaternion.Euler(_gripRot);
+            Vector3 grip = DeriveGripPoint();
+            Vector3 gripRot = DeriveGripRotation();
+            Vector3 gw = root.TransformPoint(grip);
+            Quaternion gripRotW = root.rotation * Quaternion.Euler(gripRot);
             Handles.color = ColGrip;
             Handles.SphereHandleCap(0, gw, Quaternion.identity, sz, EventType.Repaint);
 
@@ -536,7 +571,7 @@ namespace OSE.Editor
             Handles.color = new Color(0.3f, 0.3f, 1f, 0.7f);
             Handles.DrawLine(gw, gw + gripRotW * Vector3.forward * axLen);
 
-            if (_showLabels) EmbLabel(gw, "GRIP", ColGrip);
+            if (_showLabels) EmbLabel(gw, "HAND", ColGrip);
 
             if (!IsTool) return;
 
@@ -559,13 +594,24 @@ namespace OSE.Editor
                 if (_showLabels) EmbLabel(end, "tip dir", ColTipA);
             }
 
-            // Cursor offset marker (yellow sphere + dashed line from grip)
-            Vector3 cw = root.TransformPoint(_grip + _cursorOffset);
+            // Cursor point marker (yellow sphere + dashed line from hand)
+            Vector3 cw = root.TransformPoint(_cursorLocal);
             Handles.color = ColCursor;
             Handles.SphereHandleCap(0, cw, Quaternion.identity, sz, EventType.Repaint);
             Handles.color = ColCursor * 0.7f;
             Handles.DrawDottedLine(gw, cw, 2f);
-            if (_showLabels) EmbLabel(cw, "CURSOR", ColCursor);
+            if (_showLabels) EmbLabel(cw, "CURSOR POINT", ColCursor);
+
+            // Runtime cursor position (orange) — where mouse actually lands
+            Quaternion previewRot = IsTool && _tool != null
+                ? ToolPoseResolver.ResolvePreviewRotation(_tool, _model)
+                : Quaternion.Euler(_cursorRot);
+            Vector3 rcw = root.position + previewRot * (_cursorLocal * _scale);
+            Color colRuntime = new(1f, 0.5f, 0f, 0.9f);
+            Handles.color = colRuntime;
+            Handles.SphereHandleCap(0, rcw, Quaternion.identity, sz, EventType.Repaint);
+            Handles.DrawDottedLine(cw, rcw, 2f);
+            if (_showLabels) EmbLabel(rcw, "RUNTIME CURSOR", colRuntime);
         }
 
 
@@ -585,18 +631,33 @@ namespace OSE.Editor
             _runtimeScale = EditorGUILayout.Toggle("Runtime Cursor Scale", _runtimeScale);
             if (_runtimeScale)
             {
-                float so = IsTool && _tool != null ? _tool.scaleOverride : 0f;
-                float eff = so > 0f ? RuntimeCursorScale * so : RuntimeCursorScale;
+                float eff = _scaleOverride > 0f ? RuntimeCursorScale * _scaleOverride : RuntimeCursorScale;
                 EditorGUILayout.LabelField($"({eff:F3})", GUILayout.Width(70));
             }
             EditorGUILayout.EndHorizontal();
-            if (_runtimeScale != prevRts) { UpdateEffectiveScale(); ResetCam(); Repaint(); }
+            if (_runtimeScale != prevRts) { UpdateEffectiveScale(); RecomputeToolPosForScale(); ApplyToolTransform(); ResetCam(); Repaint(); }
 
             if (!_runtimeScale)
             {
                 EditorGUI.BeginChangeCheck();
                 _scale = EditorGUILayout.Slider("Scale", _scale, 0.01f, 5f);
-                if (EditorGUI.EndChangeCheck()) { UpdateModelScale(); Repaint(); }
+                if (EditorGUI.EndChangeCheck()) { RecomputeToolPosForScale(); ApplyToolTransform(); Repaint(); }
+            }
+
+            if (IsTool)
+            {
+                EditorGUI.BeginChangeCheck();
+                float prev = _scaleOverride;
+                _scaleOverride = EditorGUILayout.Slider(
+                    new GUIContent("Scale Override", "Runtime multiplier on CursorUniformScale (0.16). 0 = use default."),
+                    _scaleOverride, 0f, 5f);
+                if (EditorGUI.EndChangeCheck() && !Mathf.Approximately(prev, _scaleOverride))
+                {
+                    _dirty = true;
+                    if (_runtimeScale) { UpdateEffectiveScale(); RecomputeToolPosForScale(); ApplyToolTransform(); Repaint(); }
+                }
+                float rtScale = _scaleOverride > 0f ? RuntimeCursorScale * _scaleOverride : RuntimeCursorScale;
+                EditorGUILayout.LabelField($"  → runtime scale: {rtScale:F4}");
             }
         }
 
@@ -604,9 +665,24 @@ namespace OSE.Editor
         {
             if (_runtimeScale)
             {
-                float so = IsTool && _tool != null ? _tool.scaleOverride : 0f;
+                float so = IsTool ? _scaleOverride : 0f;
                 _scale = so > 0f ? RuntimeCursorScale * so : RuntimeCursorScale;
             }
+        }
+
+        /// <summary>
+        /// Recomputes _toolPos so the grip point stays at the hand after a scale change.
+        /// Must be called BEFORE ApplyToolTransform so DeriveGripPoint reads
+        /// the old transform (grip in model-local space is scale-independent).
+        /// </summary>
+        private void RecomputeToolPosForScale()
+        {
+            if (_model == null) return;
+            // Grip in model-local space is independent of scale —
+            // InverseTransformPoint divides out scale, so read it from current transform.
+            Vector3 gripPt = DeriveGripPoint();
+            Quaternion toolRot = Quaternion.Euler(_toolRotEuler);
+            _toolPos = -(toolRot * (gripPt * _scale));
         }
 
         private void DrawBoundsInfo()
@@ -624,73 +700,110 @@ namespace OSE.Editor
 
         private void UpdateModelScale()
         {
-            if (_model != null)
-                _model.transform.localScale = Vector3.one * _scale;
+            ApplyToolTransform();
         }
 
-        // ── Spatial Metadata ─────────────────────────────────────────────────────
+        /// <summary>
+        /// Applies the tool's position/rotation from editor state.
+        /// Hand is always fixed at HandRefPos.
+        /// </summary>
+        private void ApplyToolTransform()
+        {
+            if (_model == null) return;
+            Quaternion rot = Quaternion.Euler(_toolRotEuler);
+            _model.transform.rotation = rot;
+            _model.transform.localScale = Vector3.one * _scale;
+            _model.transform.position = HandRefPos + _toolPos;
+            UpdateHandXform();
+            UpdateFingerCurl();
+        }
+
+        /// <summary>
+        /// Computes gripPoint and gripRotation from the current tool transform
+        /// relative to the fixed hand. These are the values written to machine.json.
+        /// </summary>
+        private Vector3 DeriveGripPoint()
+        {
+            if (_model == null) return Vector3.zero;
+            return _model.transform.InverseTransformPoint(HandRefPos);
+        }
+
+        private Vector3 DeriveGripRotation()
+        {
+            Quaternion toolRot = Quaternion.Euler(_toolRotEuler);
+            // gripRotation = hand rotation expressed in tool-local space
+            return (Quaternion.Inverse(toolRot) * HandFixedRot).eulerAngles;
+        }
+
+        // ── Pose Fields ──────────────────────────────────────────────────────────
 
         private void DrawPoseFields()
         {
-            EditorGUILayout.LabelField("Spatial Metadata", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Pose", EditorStyles.boldLabel);
 
-            // Undo / Redo buttons
+            // Undo / Redo
             EditorGUILayout.BeginHorizontal();
             EditorGUI.BeginDisabledGroup(_undoStack.Count == 0);
-            if (GUILayout.Button("◄ Undo", GUILayout.Width(70))) UndoPose();
+            if (GUILayout.Button("◄ Undo", EditorStyles.miniButtonLeft, GUILayout.Width(60))) UndoPose();
             EditorGUI.EndDisabledGroup();
             EditorGUI.BeginDisabledGroup(_redoStack.Count == 0);
-            if (GUILayout.Button("Redo ►", GUILayout.Width(70))) RedoPose();
+            if (GUILayout.Button("Redo ►", EditorStyles.miniButtonRight, GUILayout.Width(60))) RedoPose();
             EditorGUI.EndDisabledGroup();
             GUILayout.FlexibleSpace();
-            GUILayout.Label($"({_undoStack.Count} undo / {_redoStack.Count} redo)", EditorStyles.miniLabel);
+            _showLabels = GUILayout.Toggle(_showLabels, "Labels", EditorStyles.miniButton, GUILayout.Width(50));
             EditorGUILayout.EndHorizontal();
 
             EditorGUI.BeginChangeCheck();
 
-            _grip    = EditorGUILayout.Vector3Field("Grip Point (blue) — cursor/touch anchor", _grip);
-            _gripRot = EditorGUILayout.Vector3Field("Grip Rotation (XR hand, model-local)", _gripRot);
-
+            _toolPos = EditorGUILayout.Vector3Field("Tool Position", _toolPos);
+            _toolRotEuler = EditorGUILayout.Vector3Field("Tool Rotation", _toolRotEuler);
             if (IsTool)
             {
+                _tip = EditorGUILayout.Vector3Field("Tip Point", _tip);
                 EditorGUILayout.Space(2);
-                _tip = EditorGUILayout.Vector3Field("Tip Point (red)", _tip);
+                EditorGUILayout.LabelField("Desktop / Mobile Cursor", EditorStyles.miniLabel);
+                _cursorLocal = EditorGUILayout.Vector3Field("Cursor Point", _cursorLocal);
+                _cursorRot = EditorGUILayout.Vector3Field("Cursor Rotation", _cursorRot);
             }
 
-            EditorGUILayout.Space(2);
-            _cursorOffset = EditorGUILayout.Vector3Field("Cursor Offset (from grip)", _cursorOffset);
-            EditorGUILayout.HelpBox(
-                "Grip Point = XR hand grab position AND cursor base anchor.\n" +
-                "Cursor Offset = additional shift for desktop/mobile cursor (0,0,0 = cursor at grip).\n" +
-                "Grip Rotation = XR hand orientation only.\n" +
-                "Cursor rotation uses orientationEuler or auto-detect.",
-                MessageType.Info);
+            if (EditorGUI.EndChangeCheck())
+            {
+                PushUndo();
+                _dirty = true;
+                ApplyToolTransform();
+                Repaint();
+                if (!IsEmbedded) SceneView.RepaintAll();
+            }
+
+            // Show derived grip values (read-only)
+            EditorGUI.BeginDisabledGroup(true);
+            EditorGUILayout.Vector3Field("Grip Point (derived)", DeriveGripPoint());
+            EditorGUILayout.Vector3Field("Grip Rotation (derived)", DeriveGripRotation());
+            EditorGUI.EndDisabledGroup();
 
             EditorGUILayout.Space(2);
+            if (GUILayout.Button("Auto-Detect (PCA from mesh)", GUILayout.Height(20)))
+            {
+                PushUndo();
+                AutoDetect();
+                _dirty = true; Repaint();
+            }
+        }
+
+        // ── Hand UI ─────────────────────────────────────────────────────────────
+
+        private void DrawHandUI()
+        {
+            EditorGUILayout.LabelField("XR Hand", EditorStyles.boldLabel);
+
             int hi = System.Array.IndexOf(Hands, _handedness);
             hi = EditorGUILayout.Popup("Handedness", Mathf.Max(0, hi), Hands);
-            _handedness = Hands[hi];
+            if (hi >= 0 && hi < Hands.Length) _handedness = Hands[hi];
 
             int pi = System.Array.IndexOf(Poses, _pose);
             int newPi = EditorGUILayout.Popup("Pose Hint", Mathf.Max(0, pi), Poses);
             if (newPi != pi) { _pose = Poses[newPi]; UpdateFingerCurl(); }
 
-            _showLabels = EditorGUILayout.Toggle("Show Labels", _showLabels);
-
-            if (EditorGUI.EndChangeCheck())
-            {
-                PushUndo();
-                _dirty = true; UpdateHandXform();
-                Repaint();
-                if (!IsEmbedded) SceneView.RepaintAll();
-            }
-        }
-
-        // ── Hand Preview ─────────────────────────────────────────────────────────
-
-        private void DrawHandUI()
-        {
-            EditorGUILayout.LabelField("Hand Preview", EditorStyles.boldLabel);
             EditorGUI.BeginChangeCheck();
             _showHand = EditorGUILayout.Toggle("Show Hand at Grip", _showHand);
             if (EditorGUI.EndChangeCheck())
@@ -699,8 +812,7 @@ namespace OSE.Editor
                 Repaint();
             }
             if (_showHand && _scale < 0.5f)
-                EditorGUILayout.HelpBox("Hand may appear oversized at small preview scale. " +
-                    "Increase scale to see realistic hand-tool proportion.", MessageType.Info);
+                EditorGUILayout.HelpBox("Hand may appear oversized at small preview scale.", MessageType.Info);
         }
 
         private void SpawnHand()
@@ -741,27 +853,9 @@ namespace OSE.Editor
 
         private void UpdateHandXform()
         {
-            if (_hand == null || _model == null) return;
-            Transform root = _model.transform;
-            _hand.transform.position = root.TransformPoint(_grip);
-
-            if (_gripRot.sqrMagnitude > 0.001f)
-            {
-                // Grip rotation is authored — it controls hand orientation directly.
-                // This matches runtime: XRGrabInteractable.attachTransform.rotation = gripRotation.
-                _hand.transform.rotation = root.rotation * Quaternion.Euler(_gripRot);
-            }
-            else
-            {
-                // Fallback: derive hand orientation from grip→tip shaft direction.
-                Vector3 tipDir = (_tip - _grip);
-                Vector3 shaft = IsTool && tipDir.sqrMagnitude > 0.001f
-                    ? root.TransformDirection(tipDir.normalized)
-                    : root.TransformDirection(Vector3.forward);
-                Vector3 palm = Vector3.Cross(shaft, Vector3.up).normalized;
-                if (palm.sqrMagnitude < 0.01f) palm = Vector3.Cross(shaft, Vector3.right).normalized;
-                _hand.transform.rotation = Quaternion.LookRotation(-shaft, palm);
-            }
+            if (_hand == null) return;
+            _hand.transform.position = HandRefPos;
+            _hand.transform.rotation = HandVisualRot;
             _hand.transform.localScale = Vector3.one;
         }
 
@@ -828,13 +922,6 @@ namespace OSE.Editor
 
         private void DrawActions()
         {
-            if (GUILayout.Button("Auto-Detect (PCA from mesh)"))
-            {
-                PushUndo();
-                AutoDetect();
-                _dirty = true; Repaint();
-            }
-
             EditorGUILayout.BeginHorizontal();
             if (IsEmbedded && GUILayout.Button("Reset Camera")) ResetCam();
             if (!IsEmbedded && GUILayout.Button("Frame in SceneView")) FrameInScene();
@@ -884,7 +971,7 @@ namespace OSE.Editor
             else if (!IsTool && _part != null)
                 tier = _part.HasGrabConfig ? "Authored (grabConfig)" : "None (default)";
             else return;
-            string extra = IsTool ? $"  |  Grip-Tip: {(_tip - _grip).magnitude:F3}m" : "";
+            string extra = IsTool ? $"  |  Grip-Tip: {(_tip - DeriveGripPoint()).magnitude:F3}m" : "";
             EditorGUILayout.HelpBox($"Resolution: {tier}{extra}", MessageType.Info);
         }
 
@@ -892,7 +979,8 @@ namespace OSE.Editor
         {
             _orbX = 20f; _orbY = -30f;
             _dist = Mathf.Max(_bounds.size.magnitude * 1.5f * _scale, 0.1f);
-            _pivot = _bounds.center * _scale;
+            // Pivot at the hand (origin) — tool is positioned around it
+            _pivot = _model != null ? _model.transform.TransformPoint(_bounds.center) : Vector3.zero;
             Repaint();
         }
 
@@ -921,6 +1009,7 @@ namespace OSE.Editor
             foreach (var c in _model.GetComponentsInChildren<Collider>(true)) DestroyImmediate(c);
 
             _bounds = CalcBounds(_model);
+            _modelCenterLocal = _bounds.center; // world ≈ local at instantiation (origin, identity)
             _loaded = true;
 
             if (IsEmbedded)
@@ -931,7 +1020,7 @@ namespace OSE.Editor
             // SceneView mode: model is just a scene object with HideAndDontSave
 
             UpdateEffectiveScale();
-            UpdateModelScale();
+            ApplyToolTransform();
             ResetCam();
             if (_showHand) SpawnHand();
         }
@@ -958,24 +1047,45 @@ namespace OSE.Editor
             _tool = t; _part = null;
             _undoStack.Clear(); _redoStack.Clear();
 
-            // Set pose fields BEFORE loading the model, so SpawnHand sees correct values
+            // Convert authored grip data → tool position (tool at identity rotation,
+            // positioned so gripPoint meets the hand at HandRefPos).
+            Vector3 gripPt = Vector3.zero;
             if (t.toolPose != null)
             {
-                _grip         = t.toolPose.GetGripPoint();
-                _gripRot      = new Vector3(t.toolPose.gripRotation.x, t.toolPose.gripRotation.y, t.toolPose.gripRotation.z);
+                gripPt        = t.toolPose.GetGripPoint();
                 _tip          = t.toolPose.GetTipPoint();
-                _cursorOffset = t.toolPose.GetCursorOffset();
+                // Capture stable tip direction: prefer explicit tipAxis, else compute from grip→tip
+                _tipAxis      = t.toolPose.HasTipAxis
+                    ? t.toolPose.GetTipAxis()
+                    : (t.toolPose.GetTipPoint() - gripPt).normalized;
+                _cursorLocal  = gripPt + t.toolPose.GetCursorOffset();
+                _cursorRot    = new Vector3(t.toolPose.cursorRotation.x, t.toolPose.cursorRotation.y, t.toolPose.cursorRotation.z);
                 _handedness   = t.toolPose.handedness ?? "right";
                 _pose         = t.toolPose.poseHint ?? "power_grip";
             }
             else
             {
                 ResetFields();
-                // Pre-populate gripRotation from legacy orientationEuler so the
-                // cursor orientation is preserved when authoring a new toolPose.
                 if (t.HasOrientationOverride)
-                    _gripRot = t.orientationEuler;
+                    _cursorRot = t.orientationEuler;
             }
+
+            // Reverse-derive tool transform from authored grip data.
+            // gripRotation = (Inverse(toolRot) * HandFixedRot).eulerAngles
+            // Since HandFixedRot = identity: toolRot = Inverse(Euler(gripRotation))
+            Vector3 gripRotEuler = Vector3.zero;
+            if (t.toolPose != null && t.toolPose.HasGripRotation)
+                gripRotEuler = new Vector3(t.toolPose.gripRotation.x, t.toolPose.gripRotation.y, t.toolPose.gripRotation.z);
+
+            Quaternion toolRot = Quaternion.Inverse(Quaternion.Euler(gripRotEuler));
+            _toolRotEuler = toolRot.eulerAngles;
+
+            _scaleOverride = t.scaleOverride;
+
+            // Finalize scale before computing _toolPos (LoadModel also calls
+            // UpdateEffectiveScale, but _toolPos depends on the final value).
+            UpdateEffectiveScale();
+            _toolPos = -(toolRot * (gripPt * _scale));
 
             LoadModel(t.assetRef, t.id);
             _dirty = false;
@@ -986,18 +1096,24 @@ namespace OSE.Editor
             _part = p; _tool = null;
             _undoStack.Clear(); _redoStack.Clear();
 
-            // Set pose fields BEFORE loading the model
+            Vector3 gripPt = Vector3.zero;
+            Vector3 gripRotEuler = Vector3.zero;
             if (p.grabConfig != null)
             {
-                _grip    = p.grabConfig.GetGripPoint();
-                _gripRot = p.grabConfig.HasGripRotation
-                    ? new Vector3(p.grabConfig.gripRotation.x, p.grabConfig.gripRotation.y, p.grabConfig.gripRotation.z)
-                    : Vector3.zero;
+                gripPt      = p.grabConfig.GetGripPoint();
+                if (p.grabConfig.HasGripRotation)
+                    gripRotEuler = new Vector3(p.grabConfig.gripRotation.x, p.grabConfig.gripRotation.y, p.grabConfig.gripRotation.z);
                 _handedness = p.grabConfig.handedness ?? "either";
                 _pose       = p.grabConfig.poseHint ?? "power_grip";
             }
-            else { _grip = _gripRot = _cursorOffset = Vector3.zero; _handedness = "either"; _pose = "power_grip"; }
+            else { ResetFields(); _handedness = "either"; }
             _tip = Vector3.zero;
+
+            Quaternion toolRot = Quaternion.Inverse(Quaternion.Euler(gripRotEuler));
+            _toolRotEuler = toolRot.eulerAngles;
+
+            UpdateEffectiveScale();
+            _toolPos = -(toolRot * (gripPt * _scale));
 
             LoadModel(p.assetRef, p.id);
             _dirty = false;
@@ -1011,8 +1127,9 @@ namespace OSE.Editor
 
         private void ResetFields()
         {
-            _grip = _gripRot = _tip = _cursorOffset = Vector3.zero;
+            _toolPos = _toolRotEuler = _tip = _tipAxis = _cursorLocal = _cursorRot = Vector3.zero;
             _handedness = "right"; _pose = "power_grip";
+            _scaleOverride = 0f;
         }
 
         // ── Auto-detect (PCA) ────────────────────────────────────────────────────
@@ -1069,14 +1186,18 @@ namespace OSE.Editor
             }
             gripPt = Vector3.Lerp(gripPt, cent, 0.3f);
 
-            _grip = gripPt; _gripRot = Vector3.zero;
             _handedness = IsTool ? "right" : "either";
             _pose = "power_grip";
 
             if (IsTool)
                 _tip = tipPt;
 
-            Debug.Log($"[GrabPoseEditor] PCA: grip={_grip}" + (IsTool ? $" tip={_tip}" : ""));
+            // Position tool so the detected gripPt meets the hand at HandRefPos
+            _toolRotEuler = Vector3.zero;
+            _toolPos = -(gripPt * _scale);
+
+            Debug.Log($"[GrabPoseEditor] PCA: grip={gripPt}" + (IsTool ? $" tip={_tip}" : ""));
+            ApplyToolTransform();
             UpdateHandXform();
             UpdateFingerCurl();
             if (!IsEmbedded) SceneView.RepaintAll();
@@ -1133,6 +1254,13 @@ namespace OSE.Editor
                 return;
             }
 
+            // Write scaleOverride for tools (sibling to toolPose on the tool object)
+            if (IsTool)
+            {
+                string soValue = _scaleOverride.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                TryInjectBlock(ref json, itemId, "scaleOverride", soValue);
+            }
+
             // Validate the result parses before saving
             try { JsonUtility.FromJson<MachinePackageDefinition>(json); }
             catch (System.Exception ex)
@@ -1179,18 +1307,30 @@ namespace OSE.Editor
             sb.Append("{\n");
             string ind = "                "; // match typical machine.json indentation
 
-            sb.Append($"{ind}\"gripPoint\": {{ \"x\": {R(_grip.x).ToString(inv)}, \"y\": {R(_grip.y).ToString(inv)}, \"z\": {R(_grip.z).ToString(inv)} }}");
+            Vector3 gp = DeriveGripPoint();
+            Vector3 gr = DeriveGripRotation();
+            sb.Append($"{ind}\"gripPoint\": {{ \"x\": {R(gp.x).ToString(inv)}, \"y\": {R(gp.y).ToString(inv)}, \"z\": {R(gp.z).ToString(inv)} }}");
 
-            // Always write gripRotation — the cursor ghost is camera-parented and needs
+            // Always write gripRotation — the cursor preview is camera-parented and needs
             // an explicit rotation. Zero = identity = mesh raw orientation relative to camera.
-            sb.Append($",\n{ind}\"gripRotation\": {{ \"x\": {R(_gripRot.x).ToString(inv)}, \"y\": {R(_gripRot.y).ToString(inv)}, \"z\": {R(_gripRot.z).ToString(inv)} }}");
+            sb.Append($",\n{ind}\"gripRotation\": {{ \"x\": {R(gr.x).ToString(inv)}, \"y\": {R(gr.y).ToString(inv)}, \"z\": {R(gr.z).ToString(inv)} }}");
 
             if (IsTool)
+            {
                 sb.Append($",\n{ind}\"tipPoint\": {{ \"x\": {R(_tip.x).ToString(inv)}, \"y\": {R(_tip.y).ToString(inv)}, \"z\": {R(_tip.z).ToString(inv)} }}");
+                // Explicit tip direction — stable across grip changes from tool rotation
+                if (_tipAxis.sqrMagnitude > 0.001f)
+                    sb.Append($",\n{ind}\"tipAxis\": {{ \"x\": {R(_tipAxis.x).ToString(inv)}, \"y\": {R(_tipAxis.y).ToString(inv)}, \"z\": {R(_tipAxis.z).ToString(inv)} }}");
+            }
 
-            // Only write cursorOffset when non-zero (most tools leave it at 0,0,0)
-            if (_cursorOffset.sqrMagnitude > 0.0001f)
-                sb.Append($",\n{ind}\"cursorOffset\": {{ \"x\": {R(_cursorOffset.x).ToString(inv)}, \"y\": {R(_cursorOffset.y).ToString(inv)}, \"z\": {R(_cursorOffset.z).ToString(inv)} }}");
+            // cursorOffset in JSON = cursorLocal - gripPoint (relative to grip)
+            Vector3 co = _cursorLocal - gp;
+            if (co.sqrMagnitude > 0.0001f)
+                sb.Append($",\n{ind}\"cursorOffset\": {{ \"x\": {R(co.x).ToString(inv)}, \"y\": {R(co.y).ToString(inv)}, \"z\": {R(co.z).ToString(inv)} }}");
+
+            // Only write cursorRotation when non-zero
+            if (_cursorRot.sqrMagnitude > 0.0001f)
+                sb.Append($",\n{ind}\"cursorRotation\": {{ \"x\": {R(_cursorRot.x).ToString(inv)}, \"y\": {R(_cursorRot.y).ToString(inv)}, \"z\": {R(_cursorRot.z).ToString(inv)} }}");
 
             sb.Append($",\n{ind}\"handedness\": \"{_handedness}\"");
             sb.Append($",\n{ind}\"poseHint\": \"{_pose}\"");

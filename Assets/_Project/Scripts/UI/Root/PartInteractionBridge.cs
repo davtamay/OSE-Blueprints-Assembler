@@ -21,20 +21,20 @@ namespace OSE.UI.Root
     /// Play-mode bridge that connects runtime events to scene objects.
     /// Handles pointer-based interaction (mouse and touch): click-to-select,
     /// drag-to-place with tolerance-based validation and snap-to-target,
-    /// ghost part spawning, visual feedback, and step-completion repositioning.
+    /// preview part spawning, visual feedback, and step-completion repositioning.
     ///
     /// Requires <see cref="PackagePartSpawner"/> on the same GameObject.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(PackagePartSpawner))]
-    public sealed class PartInteractionBridge : MonoBehaviour, IPartActionBridge, IToolGhostProvider, IPersistentToolManager
+    public sealed class PartInteractionBridge : MonoBehaviour, IPartActionBridge, IToolPreviewProvider, IPersistentToolManager
     {
         private static readonly Color SelectedPartColor = new Color(1.0f, 0.85f, 0.2f, 1.0f);
         private static readonly Color GrabbedPartColor = new Color(1.0f, 0.65f, 0.1f, 1.0f);
         private static readonly Color HoveredPartColor = new Color(0.60f, 0.82f, 1.0f, 1.0f);
         private static readonly Color DimmedPartColor = new Color(0.58f, 0.58f, 0.58f, 1.0f);
         private static readonly Color ActiveStepEmission = new Color(0.15f, 0.35f, 0.6f);
-        private static readonly Color GhostReadyColor = new Color(0.3f, 1.0f, 0.5f, 0.4f);
+        private static readonly Color PreviewReadyColor = new Color(0.3f, 1.0f, 0.5f, 0.4f);
         private static readonly Color HintHighlightColorA = new Color(0.95f, 0.85f, 0.2f, 0.4f);
         private static readonly Color HintHighlightColorB = new Color(1.0f, 0.95f, 0.35f, 0.7f);
         private static readonly Color HoveredSubassemblyEmission = new Color(0.05f, 0.16f, 0.28f);
@@ -61,7 +61,7 @@ namespace OSE.UI.Root
 
         private PackagePartSpawner _spawner;
         private PreviewSceneSetup _setup;
-        private readonly List<GameObject> _spawnedGhosts = new List<GameObject>();
+        private readonly List<GameObject> _spawnedPreviews = new List<GameObject>();
         private ToolCursorManager _cursorManager;
         private ToolCursorManager CursorManager => _cursorManager ??= new ToolCursorManager(transform);
         private UseStepHandler _useHandler;
@@ -80,7 +80,7 @@ namespace OSE.UI.Root
         private Camera _pointerDownCamera;
 
         // ── Persistent tools (clamps, fixtures) that remain in scene across steps ──
-        private readonly List<PersistentToolInstance> _persistentTools = new();
+        private PersistentToolManagerBridge _persistentToolMgr;
 
         // Drag state
         private GameObject _draggedPart;
@@ -94,7 +94,7 @@ namespace OSE.UI.Root
         private float _lastPointerY;
         private bool _isDepthAdjustMode;
         private Vector2 _depthAdjustScreenAnchor;
-        private GameObject _hintGhost;
+        private GameObject _hintPreview;
         private GameObject _hintSourceProxy;
         private GameObject _externalHoveredPartForUi;
         private float _hintHighlightUntil;
@@ -105,7 +105,7 @@ namespace OSE.UI.Root
         private bool _startupSyncPending;
         private Vector3 _lastToolActionWorldPos;
 
-        // Step-based part visibility â€” only reveal parts when their step activates
+        // Step-based part visibility — only reveal parts when their step activates
         private readonly HashSet<string> _revealedPartIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _activeStepPartIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private bool _partsHiddenOnSpawn;
@@ -113,23 +113,28 @@ namespace OSE.UI.Root
         private const float PartGridStartZ = -2.8f;        // Z of the first row (closest to camera)
         private const float PartLayoutY = 0.55f;            // height above floor
 
-        // Sequential target ordering â€” tracks which targetId index is active
+        // Sequential target ordering — tracks which targetId index is active
         // when the step uses targetOrder == "sequential".
         private int _sequentialTargetIndex;
         private bool _isSequentialStep;
 
 
-        // â”€â”€ Lifecycle â”€â”€
+        // ── Lifecycle ──
 
         private void OnEnable()
         {
             _spawner = GetComponent<PackagePartSpawner>();
             _setup = GetComponent<PreviewSceneSetup>();
+            _persistentToolMgr ??= new PersistentToolManagerBridge(
+                () => CursorManager.ToolPreview,
+                () => CursorManager.DetachPreview(),
+                () => _setup != null ? _setup.PreviewRoot : null,
+                RefreshToolPreviewIndicator);
             _useHandler ??= new UseStepHandler(
                 _spawner,
                 () => _setup,
                 () => CursorManager,
-                _spawnedGhosts,
+                _spawnedPreviews,
                 GetCurrentSequentialTargetId,
                 () => AdvanceSequentialTarget());
             _router ??= new StepExecutionRouter();
@@ -150,7 +155,7 @@ namespace OSE.UI.Root
                 partId => _partStates.TryGetValue(partId, out var s) ? s : PartPlacementState.NotIntroduced,
                 RestorePartVisual,
                 ResetDragState,
-                _spawnedGhosts,
+                _spawnedPreviews,
                 () => _isSequentialStep,
                 () => AdvanceSequentialTarget(),
                 partGo => _selectionService?.NotifySelected(partGo),
@@ -211,7 +216,7 @@ namespace OSE.UI.Root
             _revealedPartIds.Clear();
             _activeStepPartIds.Clear();
             _partsHiddenOnSpawn = false;
-            ClearToolGhostIndicator();
+            ClearToolPreviewIndicator();
             ClearToolActionTargets();
             _router?.CleanupAll();
             _subassemblyPlacementController?.Dispose();
@@ -233,8 +238,8 @@ namespace OSE.UI.Root
             }
 
             HandlePointerInput();
-            // Snap/flash/ghost-pulse/required-part-pulse handled by PlaceStepHandler.Update via router
-            UpdateXRGhostProximity();
+            // Snap/flash/preview-pulse/required-part-pulse handled by PlaceStepHandler.Update via router
+            UpdateXRPreviewProximity();
             if (!ExternalControlEnabled)
             {
                 UpdatePartHoverVisual();
@@ -243,10 +248,10 @@ namespace OSE.UI.Root
             UpdateSelectedSubassemblyVisual();
             UpdateDockArcVisual();
             UpdateHintHighlight();
-            // Stop ghost pulse when dragging starts — proximity highlight takes over
+            // Stop preview pulse when dragging starts — proximity highlight takes over
             if (_draggedPart != null)
-                _placeHandler?.StopGhostSelectionPulse();
-            UpdateToolGhostIndicatorPosition();
+                _placeHandler?.StopPreviewSelectionPulse();
+            UpdateToolPreviewIndicatorPosition();
             if (TryBuildHandlerContext(out var updateCtx))
                 _router.Update(in updateCtx, Time.deltaTime);
         }
@@ -288,7 +293,7 @@ namespace OSE.UI.Root
             _startupSyncPending = false;
         }
 
-        // Ã¢â€â‚¬Ã¢â€â‚¬ Canonical actions Ã¢â€â‚¬Ã¢â€â‚¬
+        // Ã¢”€Ã¢”€ Canonical actions Ã¢”€Ã¢”€
 
         private void HandleCanonicalAction(CanonicalAction action)
         {
@@ -460,13 +465,9 @@ namespace OSE.UI.Root
         /// Called by V2 orchestrator via IPartActionBridge when tool mode is locked.
         /// Resolves the executable tool target for the current click without executing it.
         /// </summary>
-        public bool TryResolveExternalToolActionTarget(Vector2 screenPos, out string interactedTargetId, out Vector3 targetWorldPos, out Vector3 surfaceWorldPos, out Vector3 weldAxis, out float weldLength)
+        public bool TryResolveExternalToolActionTarget(Vector2 screenPos, out ToolActionContext context)
         {
-            interactedTargetId = null;
-            targetWorldPos = Vector3.zero;
-            surfaceWorldPos = Vector3.zero;
-            weldAxis = Vector3.zero;
-            weldLength = 0f;
+            context = default;
 
             if (!Application.isPlaying)
                 return false;
@@ -475,12 +476,29 @@ namespace OSE.UI.Root
             if (!TryGetToolActionTargetForExecution(screenPos, out resolvedTarget) || resolvedTarget == null)
                 return false;
 
-            interactedTargetId = resolvedTarget.TargetId;
-            targetWorldPos = resolvedTarget.transform.position;
-            surfaceWorldPos = resolvedTarget.SurfaceWorldPos;
-            weldAxis = resolvedTarget.WeldAxis;
-            weldLength = resolvedTarget.WeldLength;
-            return !string.IsNullOrWhiteSpace(interactedTargetId);
+            // Resolve the active tool's spatial pose metadata (if authored).
+            Content.ToolPoseConfig toolPose = null;
+            var activeToolId = GetActiveToolId();
+            if (!string.IsNullOrEmpty(activeToolId))
+            {
+                var package = _spawner?.CurrentPackage;
+                if (package != null && package.TryGetTool(activeToolId, out var toolDef))
+                    toolPose = toolDef.toolPose;
+            }
+
+            context = new ToolActionContext
+            {
+                TargetId = resolvedTarget.TargetId,
+                TargetWorldPos = resolvedTarget.transform.position,
+                SurfaceWorldPos = resolvedTarget.SurfaceWorldPos,
+                TargetWorldRotation = resolvedTarget.TargetWorldRotation,
+                WeldAxis = resolvedTarget.WeldAxis,
+                WeldLength = resolvedTarget.WeldLength,
+                HasToolActionRotation = resolvedTarget.HasToolActionRotation,
+                ToolActionRotation = resolvedTarget.ToolActionRotation,
+                ToolPose = toolPose,
+            };
+            return !string.IsNullOrWhiteSpace(context.TargetId);
         }
 
         /// <summary>
@@ -521,16 +539,16 @@ namespace OSE.UI.Root
 
             int spawnedTargetCount = _useHandler?.SpawnedTargetCount ?? 0;
             OseLog.Info($"[PartInteraction] TryExternalToolAction at ({screenPos.x:F0},{screenPos.y:F0}). Spawned={spawnedTargetCount}. Tool='{session.ToolController?.ActiveToolId ?? "none"}'.");
-            if (!TryResolveExternalToolActionTarget(screenPos, out string interactedTargetId, out Vector3 targetWorldPos, out _, out _, out _))
+            if (!TryResolveExternalToolActionTarget(screenPos, out ToolActionContext ctx))
             {
                 OseLog.Info($"[PartInteraction] TryExternalToolAction: no ready tool target resolved at ({screenPos.x:F0},{screenPos.y:F0}). Spawned={spawnedTargetCount}.");
                 return false;
             }
 
             // Capture world position before executing (the target may be destroyed/refreshed after).
-            _lastToolActionWorldPos = targetWorldPos;
+            _lastToolActionWorldPos = ctx.TargetWorldPos;
 
-            return TryHandleExternalToolAction(interactedTargetId);
+            return TryHandleExternalToolAction(ctx.TargetId);
         }
 
         private bool TryHandleExternalToolAction(string interactedTargetId)
@@ -681,11 +699,8 @@ namespace OSE.UI.Root
         bool IPartActionBridge.TryToolAction(string targetId)
             => TryExecuteExternalToolAction(targetId);
 
-        bool IPartActionBridge.TryResolveToolActionTarget(
-            Vector2 screenPos, out string targetId, out Vector3 worldPos,
-            out Vector3 surfaceWorldPos, out Vector3 weldAxis, out float weldLength)
-            => TryResolveExternalToolActionTarget(screenPos, out targetId, out worldPos,
-                out surfaceWorldPos, out weldAxis, out weldLength);
+        bool IPartActionBridge.TryResolveToolActionTarget(Vector2 screenPos, out ToolActionContext context)
+            => TryResolveExternalToolActionTarget(screenPos, out context);
 
         bool IPartActionBridge.TryPipeConnection(Vector2 screenPos)
             => TryExternalPipeConnection(screenPos);
@@ -704,8 +719,8 @@ namespace OSE.UI.Root
 
         // ── Tool Action Preview bridge methods ──
 
-        /// <summary>Returns the tool cursor ghost GameObject, or null if none is active.</summary>
-        public GameObject GetToolGhost() => CursorManager.ToolGhost;
+        /// <summary>Returns the tool cursor preview GameObject, or null if none is active.</summary>
+        public GameObject GetToolPreview() => CursorManager.ToolPreview;
 
         /// <summary>Number of tool targets completed in the current step (for I Do / We Do / You Do resolution).</summary>
         public int GetCompletedToolTargetCount() => _useHandler?.CompletedTargetCountForStep ?? 0;
@@ -714,7 +729,7 @@ namespace OSE.UI.Root
         public void IncrementCompletedToolTargetCount() => _useHandler?.IncrementCompletedTargetCount();
 
         /// <summary>Suspends/resumes cursor position updates during tool action preview.</summary>
-        public void SetToolGhostPositionSuspended(bool suspended) => CursorManager.PositionUpdateSuspended = suspended;
+        public void SetToolPreviewPositionSuspended(bool suspended) => CursorManager.PositionUpdateSuspended = suspended;
 
         /// <summary>Returns the active profile for the current Use step, or null.</summary>
         public string GetActiveToolProfile()
@@ -852,7 +867,7 @@ namespace OSE.UI.Root
 
             OseLog.Info($"[PartInteraction] Selected item '{selectionId ?? target.name}'");
             _selectionFrame = Time.frameCount;
-            StartGhostSelectionPulse(selectionId ?? target.name);
+            StartPreviewSelectionPulse(selectionId ?? target.name);
             if (!IsSubassemblyProxy(target))
                 TryAutoCompleteSelectionStep(target.name);
 
@@ -974,7 +989,7 @@ namespace OSE.UI.Root
             if (ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
                 ui.HidePartInfoPanel();
 
-            StopGhostSelectionPulse();
+            StopPreviewSelectionPulse();
             ResetDragState();
         }
 
@@ -1004,7 +1019,7 @@ namespace OSE.UI.Root
 
             ClearPartHoverVisual();
             _externalHoveredPartForUi = null;
-            StopGhostSelectionPulse();
+            StopPreviewSelectionPulse();
             ResetDragState();
 
             if (ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
@@ -1088,7 +1103,7 @@ namespace OSE.UI.Root
             return RaycastSelectableObject(cam.ScreenPointToRay(screenPos));
         }
 
-        // â”€â”€ Pointer input (mouse + touch) â”€â”€
+        // ── Pointer input (mouse + touch) ──
 
         private void HandlePointerInput()
         {
@@ -1150,7 +1165,7 @@ namespace OSE.UI.Root
         {
             if (IsRepositioning()) return;
 
-            // Click on a pulsating tool target sphere â†’ focus camera on it
+            // Click on a pulsating tool target sphere → focus camera on it
             TryFocusCameraOnToolTarget(screenPos);
 
             if (TryHandleToolActionPointerDown(screenPos))
@@ -1323,7 +1338,7 @@ namespace OSE.UI.Root
                     _dragRayDistance -= ScrollDepthSpeed * Time.deltaTime * 3f;
             }
 
-            // Touch pinch â†’ push/pull along camera forward (mobile)
+            // Touch pinch → push/pull along camera forward (mobile)
             var touch = Touchscreen.current;
             if (touch != null && touch.touches.Count >= 2)
             {
@@ -1352,8 +1367,8 @@ namespace OSE.UI.Root
             _draggedPart.transform.position = ClampDragPosition(cam, dragTargetWorld, _draggedPart);
             _subassemblyPlacementController?.ApplyProxyTransform(_draggedPart);
 
-            // Check proximity to ghosts and highlight when in snap zone
-            UpdateGhostProximity();
+            // Check proximity to previews and highlight when in snap zone
+            UpdatePreviewProximity();
         }
 
         private void HandlePointerUp(Vector2 screenPos)
@@ -1400,11 +1415,11 @@ namespace OSE.UI.Root
             _placeHandler?.AttemptPlacement(targetGo, selectionId);
         }
 
-        // â”€â”€ Click-to-place â”€â”€
+        // ── Click-to-place ──
 
         /// <summary>
         /// Attempts click-to-place: if a part is selected and the pointer hits (or is near)
-        /// a matching ghost target, snap the part there without requiring drag.
+        /// a matching preview target, snap the part there without requiring drag.
         /// </summary>
         private bool TryHandleClickToPlace(Vector2 screenPos)
         {
@@ -1414,7 +1429,7 @@ namespace OSE.UI.Root
 
         private bool TryHandleClickToPlace(GameObject selected, Vector2 screenPos)
         {
-            if (_spawnedGhosts.Count == 0 || _placeHandler == null)
+            if (_spawnedPreviews.Count == 0 || _placeHandler == null)
                 return false;
 
             // Need a selected part that isn't being dragged.
@@ -1436,32 +1451,32 @@ namespace OSE.UI.Root
             return _placeHandler.TryClickToPlace(selectionId, selected, screenPos);
         }
 
-        // Ghost raycast, screen proximity, and click-to-place execution
+        // Preview raycast, screen proximity, and click-to-place execution
         // are now owned by PlaceStepHandler.
 
-        // â”€â”€ Ghost proximity detection â”€â”€
+        // ── Preview proximity detection ──
 
-        private void UpdateGhostProximity()
+        private void UpdatePreviewProximity()
         {
-            if (_draggedPart == null || _spawnedGhosts.Count == 0)
+            if (_draggedPart == null || _spawnedPreviews.Count == 0)
                 return;
 
             _placeHandler?.UpdateDragProximity(_draggedPart, _draggedPartId, _isDragging);
         }
-        private void ClearGhostHighlight() => _placeHandler?.ClearGhostHighlight();
+        private void ClearPreviewHighlight() => _placeHandler?.ClearPreviewHighlight();
 
-        private void StartGhostSelectionPulse(string partId) => _placeHandler?.StartGhostSelectionPulse(partId);
+        private void StartPreviewSelectionPulse(string partId) => _placeHandler?.StartPreviewSelectionPulse(partId);
 
-        private void StopGhostSelectionPulse() => _placeHandler?.StopGhostSelectionPulse();
+        private void StopPreviewSelectionPulse() => _placeHandler?.StopPreviewSelectionPulse();
 
-        // â”€â”€ Required-part pulse (highlights parts the user needs to grab) â”€â”€
+        // ── Required-part pulse (highlights parts the user needs to grab) ──
 
         private void ClearRequiredPartEmission() => _placeHandler?.ClearRequiredPartEmission();
 
         /// <summary>
         /// Shows and positions all parts belonging to the current step's subassembly.
         /// When the first step of a subassembly activates, all parts for that entire
-        /// subassembly appear at once â€” matching how a real workbench is organized.
+        /// subassembly appear at once — matching how a real workbench is organized.
         /// Parts are arranged in an arc on the near side of the floor,
         /// keeping the center clear for the machine being assembled.
         /// </summary>
@@ -1523,7 +1538,7 @@ namespace OSE.UI.Root
             }
             else
             {
-                // No subassembly â€” fall back to just this step's parts
+                // No subassembly — fall back to just this step's parts
                 string[] rp = step.requiredPartIds;
                 if (rp != null)
                 {
@@ -1702,7 +1717,7 @@ namespace OSE.UI.Root
 
         private void UpdateHintHighlight()
         {
-            if ((_hintGhost == null && _hintSourceProxy == null) || _hintHighlightUntil <= 0f)
+            if ((_hintPreview == null && _hintSourceProxy == null) || _hintHighlightUntil <= 0f)
                 return;
 
             if (Time.time >= _hintHighlightUntil)
@@ -1713,10 +1728,10 @@ namespace OSE.UI.Root
 
             Color pulseColor = ColorPulseHelper.Lerp(HintHighlightColorA, HintHighlightColorB, HintHighlightPulseSpeed);
 
-            if (_hintGhost != null)
+            if (_hintPreview != null)
             {
-                if (!(_placeHandler != null && _placeHandler.IsGhostHighlighted && _placeHandler.HoveredGhost == _hintGhost))
-                    MaterialHelper.SetMaterialColor(_hintGhost, pulseColor);
+                if (!(_placeHandler != null && _placeHandler.IsPreviewHighlighted && _placeHandler.HoveredPreview == _hintPreview))
+                    MaterialHelper.SetMaterialColor(_hintPreview, pulseColor);
             }
 
             if (_hintSourceProxy != null)
@@ -1725,41 +1740,41 @@ namespace OSE.UI.Root
 
         private void ClearHintHighlight()
         {
-            if (_hintGhost != null)
+            if (_hintPreview != null)
             {
-                if (_placeHandler != null && _placeHandler.IsGhostHighlighted && _placeHandler.HoveredGhost == _hintGhost)
+                if (_placeHandler != null && _placeHandler.IsPreviewHighlighted && _placeHandler.HoveredPreview == _hintPreview)
                 {
-                    MaterialHelper.Apply(_hintGhost, "Ghost Ready Material", GhostReadyColor);
+                    MaterialHelper.Apply(_hintPreview, "Preview Ready Material", PreviewReadyColor);
                 }
                 else
                 {
-                    MaterialHelper.ApplyGhost(_hintGhost);
+                    MaterialHelper.ApplyPreviewMaterial(_hintPreview);
                 }
             }
 
             if (_hintSourceProxy != null)
                 RestorePartVisual(_hintSourceProxy);
 
-            _hintGhost = null;
+            _hintPreview = null;
             _hintSourceProxy = null;
             _hintHighlightUntil = 0f;
         }
 
         /// <summary>
-        /// Returns the world position of the nearest ghost target matching the given part ID.
+        /// Returns the world position of the nearest preview target matching the given part ID.
         /// Used by the V2 orchestrator to pivot the camera toward the placement target.
         /// </summary>
-        public bool TryGetGhostWorldPosForPart(string partId, out Vector3 worldPos)
+        public bool TryGetPreviewWorldPosForPart(string partId, out Vector3 worldPos)
         {
             worldPos = Vector3.zero;
-            return _placeHandler != null && _placeHandler.TryGetGhostWorldPosForPart(partId, out worldPos);
+            return _placeHandler != null && _placeHandler.TryGetPreviewWorldPosForPart(partId, out worldPos);
         }
 
-        private GhostPlacementInfo FindNearestGhostForPart(string partId, Vector3 worldPos, out float nearestDist)
+        private PlacementPreviewInfo FindNearestPreviewForPart(string partId, Vector3 worldPos, out float nearestDist)
         {
             nearestDist = float.PositiveInfinity;
             if (_placeHandler == null) return null;
-            return _placeHandler.FindNearestGhostForSelection(partId, worldPos, out nearestDist);
+            return _placeHandler.FindNearestPreviewForSelection(partId, worldPos, out nearestDist);
         }
 
         private static HintDefinition ResolveHintForStep(MachinePackageDefinition package, StepDefinition step, int totalHintsForStep)
@@ -1789,23 +1804,23 @@ namespace OSE.UI.Root
 
             if (!string.IsNullOrWhiteSpace(hint.targetId))
             {
-                foreach (var ghost in _spawnedGhosts)
+                foreach (var preview in _spawnedPreviews)
                 {
-                    if (ghost == null) continue;
-                    GhostPlacementInfo info = ghost.GetComponent<GhostPlacementInfo>();
+                    if (preview == null) continue;
+                    PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
                     if (info != null && string.Equals(info.TargetId, hint.targetId, StringComparison.OrdinalIgnoreCase))
-                        return ghost.transform;
+                        return preview.transform;
                 }
             }
 
             if (!string.IsNullOrWhiteSpace(hint.partId))
             {
-                foreach (var ghost in _spawnedGhosts)
+                foreach (var preview in _spawnedPreviews)
                 {
-                    if (ghost == null) continue;
-                    GhostPlacementInfo info = ghost.GetComponent<GhostPlacementInfo>();
+                    if (preview == null) continue;
+                    PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
                     if (info != null && info.MatchesPart(hint.partId))
-                        return ghost.transform;
+                        return preview.transform;
                 }
             }
 
@@ -1814,7 +1829,7 @@ namespace OSE.UI.Root
         // Snap animation, flash invalid, and their update loops are now
         // owned by PlaceStepHandler (run via router.Update).
 
-        // â”€â”€ Runtime event handlers â”€â”€
+        // ── Runtime event handlers ──
 
         private void HandleSessionRestored(SessionRestored evt)
         {
@@ -1858,7 +1873,7 @@ namespace OSE.UI.Root
         /// Handles step navigation (back/forward). Repositions all parts based on
         /// their recomputed states: completed parts move to play positions,
         /// available parts return to their arc layout positions, and future parts
-        /// are hidden. The subsequent StepStateChanged(Active) spawns new ghosts.
+        /// are hidden. The subsequent StepStateChanged(Active) spawns new previews.
         /// </summary>
         private void HandleStepNavigated(StepNavigated evt)
         {
@@ -1872,7 +1887,7 @@ namespace OSE.UI.Root
 
             // Clear current visual state
             _router?.CleanupAll();
-            ClearGhosts();
+            ClearPreviews();
             ClearToolActionTargets();
             ClearRequiredPartEmission();
             _connectHandler?.ClearTransientVisuals();
@@ -1903,8 +1918,8 @@ namespace OSE.UI.Root
             // On any step transition, force-clear drag state so nothing gets stuck.
             ResetDragState();
 
-            // FailedAttempt is a transient state within the same step (Active â†’ FailedAttempt â†’ Active).
-            // Preserve ghosts and sequential progress for both the transition INTO FailedAttempt
+            // FailedAttempt is a transient state within the same step (Active → FailedAttempt → Active).
+            // Preserve previews and sequential progress for both the transition INTO FailedAttempt
             // and the auto-return back to Active.
             bool isFailRelated = evt.Current == StepState.FailedAttempt
                               || (evt.Current == StepState.Active && evt.Previous == StepState.FailedAttempt);
@@ -1927,14 +1942,14 @@ namespace OSE.UI.Root
             {
                 if (isFailRelated)
                 {
-                    // Ghost and sequential state are still valid â€” skip re-spawn.
-                    OseLog.VerboseInfo($"[PartInteraction] Step '{evt.StepId}' re-activated after failed attempt â€” keeping {_spawnedGhosts.Count} ghost(s).");
+                    // Preview and sequential state are still valid — skip re-spawn.
+                    OseLog.VerboseInfo($"[PartInteraction] Step '{evt.StepId}' re-activated after failed attempt — keeping {_spawnedPreviews.Count} preview(s).");
                 }
                 else
                 {
                     // Clear any stale SelectionService selection so the dedup guard in
                     // NotifySelected doesn’t block re-selection of the same part on the
-                    // new step (e.g. beam selected on step 2 â†’ must be selectable again on step 3).
+                    // new step (e.g. beam selected on step 2 → must be selectable again on step 3).
                     DeselectFromSelectionService();
 
                     // Hybrid presentation: hide all parts on first step, then reveal per-subassembly
@@ -1943,11 +1958,11 @@ namespace OSE.UI.Root
                     ApplyStepPartHighlighting(evt.StepId);
                     _subassemblyPlacementController?.RefreshForStep(evt.StepId);
 
-                    SpawnGhostsForStep(evt.StepId);
+                    SpawnPreviewsForStep(evt.StepId);
                     if (TryBuildHandlerContext(out var activatedCtx))
                         _router.OnStepActivated(in activatedCtx);
                     FocusCameraOnStepArea(evt.StepId);
-                    OseLog.VerboseInfo($"[PartInteraction] Step ‘{evt.StepId}’ active: spawned {_spawnedGhosts.Count} ghost(s).");
+                    OseLog.VerboseInfo($"[PartInteraction] Step ‘{evt.StepId}’ active: spawned {_spawnedPreviews.Count} preview(s).");
                 }
             }
             else if (evt.Current == StepState.Completed)
@@ -1974,13 +1989,13 @@ namespace OSE.UI.Root
 
                 MoveStepPartsToPlayPosition(evt.StepId);
                 _subassemblyPlacementController?.HandleStepCompleted(evt.StepId);
-                ClearGhosts();
+                ClearPreviews();
                 // Handler clears required-part emission via OnStepCompleted
             }
 
             // Handler refreshes required-part IDs via OnStepActivated
 
-            RefreshToolGhostIndicator();
+            RefreshToolPreviewIndicator();
             RefreshToolActionTargets();
             if (IsToolModeLockedForParts())
                 ClearPartHoverVisual();
@@ -2024,7 +2039,7 @@ namespace OSE.UI.Root
                 return;
 
             _router?.CleanupAll();
-            ClearGhosts();
+            ClearPreviews();
             ClearToolActionTargets();
             ClearRequiredPartEmission();
             _connectHandler?.ClearTransientVisuals();
@@ -2044,12 +2059,12 @@ namespace OSE.UI.Root
             ApplyStepPartHighlighting(activeStepId);
             _subassemblyPlacementController?.RefreshForStep(activeStepId);
 
-            SpawnGhostsForStep(activeStepId);
+            SpawnPreviewsForStep(activeStepId);
             if (TryBuildHandlerContext(out var rebuildCtx))
                 _router.OnStepActivated(in rebuildCtx);
 
             FocusCameraOnStepArea(activeStepId, resetToDefaultView);
-            RefreshToolGhostIndicator();
+            RefreshToolPreviewIndicator();
             RefreshToolActionTargets();
         }
 
@@ -2105,7 +2120,7 @@ namespace OSE.UI.Root
 
             Bounds accumulatedBounds = default;
             bool hasBounds = false;
-            int ghostCount = 0, partCount = 0, toolTargetCount = 0, fallbackTargetCount = 0;
+            int previewCount = 0, partCount = 0, toolTargetCount = 0, fallbackTargetCount = 0;
 
             void Encapsulate(Bounds candidate)
             {
@@ -2119,17 +2134,17 @@ namespace OSE.UI.Root
                 accumulatedBounds.Encapsulate(candidate);
             }
 
-            for (int i = 0; i < _spawnedGhosts.Count; i++)
+            for (int i = 0; i < _spawnedPreviews.Count; i++)
             {
-                GameObject ghost = _spawnedGhosts[i];
-                if (ghost == null)
+                GameObject preview = _spawnedPreviews[i];
+                if (preview == null)
                     continue;
 
-                ghostCount++;
-                if (TryGetRenderableBounds(ghost, out Bounds ghostBounds))
-                    Encapsulate(ghostBounds);
+                previewCount++;
+                if (TryGetRenderableBounds(preview, out Bounds previewBounds))
+                    Encapsulate(previewBounds);
                 else
-                    Encapsulate(new Bounds(ghost.transform.position, Vector3.one * 0.08f));
+                    Encapsulate(new Bounds(preview.transform.position, Vector3.one * 0.08f));
             }
 
             HashSet<string> focusPartIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -2218,7 +2233,7 @@ namespace OSE.UI.Root
                 accumulatedBounds.size = size;
             }
 
-            OseLog.Info($"[FocusBounds] Step '{stepId}' — ghosts={ghostCount}, parts={partCount}/{focusPartIds.Count}, toolTargets={toolTargetCount}, fallbackTargets={fallbackTargetCount}, hasBounds={hasBounds}");
+            OseLog.Info($"[FocusBounds] Step '{stepId}' — previews={previewCount}, parts={partCount}/{focusPartIds.Count}, toolTargets={toolTargetCount}, fallbackTargets={fallbackTargetCount}, hasBounds={hasBounds}");
 
             if (hasBounds)
                 bounds = accumulatedBounds;
@@ -2347,7 +2362,7 @@ namespace OSE.UI.Root
             if (!string.IsNullOrWhiteSpace(evt.CurrentToolId))
                 ResetDragState();
 
-            RefreshToolGhostIndicator();
+            RefreshToolPreviewIndicator();
             RefreshToolActionTargets();
             if (IsToolModeLockedForParts())
                 ClearPartHoverVisual();
@@ -2399,7 +2414,7 @@ namespace OSE.UI.Root
             string hintMessage = hint?.message;
             Transform targetTransform = ResolveHintTargetTransform(hint);
             GameObject sourceProxy = null;
-            GameObject targetGhost = targetTransform != null ? targetTransform.gameObject : null;
+            GameObject targetPreview = targetTransform != null ? targetTransform.gameObject : null;
 
             if (TryBuildSubassemblyHintPresentation(
                     step,
@@ -2408,12 +2423,12 @@ namespace OSE.UI.Root
                     out string stackMessage,
                     out Transform stackAnchor,
                     out sourceProxy,
-                    out GameObject stackGhost))
+                    out GameObject stackPreview))
             {
                 hintTitle = stackTitle;
                 hintMessage = stackMessage;
                 targetTransform = stackAnchor;
-                targetGhost = stackGhost;
+                targetPreview = stackPreview;
             }
 
             if (ui != null)
@@ -2421,11 +2436,11 @@ namespace OSE.UI.Root
 
             if (targetTransform != null)
             {
-                _hintGhost = targetGhost;
+                _hintPreview = targetPreview;
                 _hintSourceProxy = sourceProxy;
                 _hintHighlightUntil = Time.time + HintHighlightDuration;
-                if (_hintGhost != null)
-                    MaterialHelper.ApplyGhost(_hintGhost);
+                if (_hintPreview != null)
+                    MaterialHelper.ApplyPreviewMaterial(_hintPreview);
 
                 if (_hintWorldCanvas == null)
                     _hintWorldCanvas = FindFirstObjectByType<HintWorldCanvas>();
@@ -2440,11 +2455,11 @@ namespace OSE.UI.Root
             }
         }
 
-        // â”€â”€ Ghost parts â”€â”€
+        // ── Preview parts ──
 
-        private void SpawnGhostsForStep(string stepId)
+        private void SpawnPreviewsForStep(string stepId)
         {
-            ClearGhosts();
+            ClearPreviews();
             var package = _spawner.CurrentPackage;
             if (package == null || !package.TryGetStep(stepId, out var step))
                 return;
@@ -2462,20 +2477,20 @@ namespace OSE.UI.Root
 
             if (_isSequentialStep)
             {
-                // Sequential: spawn only the first target's ghost.
-                SpawnGhostForTarget(package, targetIds[0]);
+                // Sequential: spawn only the first target's preview.
+                SpawnPreviewForTarget(package, targetIds[0]);
             }
             else
             {
-                // Parallel (default): spawn all ghosts at once.
+                // Parallel (default): spawn all previews at once.
                 foreach (string targetId in targetIds)
-                    SpawnGhostForTarget(package, targetId);
+                    SpawnPreviewForTarget(package, targetId);
             }
         }
 
         /// <summary>
-        /// Called after a part is placed on a ghost in sequential mode.
-        /// Advances to the next target and spawns its ghost/tool-target,
+        /// Called after a part is placed on a preview in sequential mode.
+        /// Advances to the next target and spawns its preview/tool-target,
         /// or returns true if all targets are done.
         /// </summary>
         private bool AdvanceSequentialTarget()
@@ -2497,7 +2512,7 @@ namespace OSE.UI.Root
             if (_sequentialTargetIndex >= step.targetIds.Length)
                 return true; // all targets done
 
-            SpawnGhostForTarget(package, step.targetIds[_sequentialTargetIndex]);
+            SpawnPreviewForTarget(package, step.targetIds[_sequentialTargetIndex]);
             RefreshToolActionTargets();
             return false;
         }
@@ -2520,32 +2535,32 @@ namespace OSE.UI.Root
             return step.targetIds[_sequentialTargetIndex];
         }
 
-        private void SpawnGhostForTarget(MachinePackageDefinition package, string targetId)
+        private void SpawnPreviewForTarget(MachinePackageDefinition package, string targetId)
         {
-            if (string.IsNullOrEmpty(targetId)) { OseLog.Warn("[PartInteraction] SpawnGhostForTarget: targetId is null/empty."); return; }
-            if (!package.TryGetTarget(targetId, out var target)) { OseLog.Warn($"[PartInteraction] SpawnGhostForTarget: target '{targetId}' not found in package."); return; }
+            if (string.IsNullOrEmpty(targetId)) { OseLog.Warn("[PartInteraction] SpawnPreviewForTarget: targetId is null/empty."); return; }
+            if (!package.TryGetTarget(targetId, out var target)) { OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: target '{targetId}' not found in package."); return; }
 
             if (!string.IsNullOrWhiteSpace(target.associatedSubassemblyId))
             {
-                SpawnGhostForSubassemblyTarget(package, targetId, target);
+                SpawnPreviewForSubassemblyTarget(package, targetId, target);
                 return;
             }
 
             string associatedPartId = target.associatedPartId;
-            if (string.IsNullOrEmpty(associatedPartId)) { OseLog.Warn($"[PartInteraction] SpawnGhostForTarget: target '{targetId}' has no associatedPartId."); return; }
-            if (!package.TryGetPart(associatedPartId, out var part)) { OseLog.Warn($"[PartInteraction] SpawnGhostForTarget: part '{associatedPartId}' not found in package."); return; }
+            if (string.IsNullOrEmpty(associatedPartId)) { OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: target '{targetId}' has no associatedPartId."); return; }
+            if (!package.TryGetPart(associatedPartId, out var part)) { OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: part '{associatedPartId}' not found in package."); return; }
 
-            // Skip ghost for parts already placed or completed from a prior step.
+            // Skip preview for parts already placed or completed from a prior step.
             if (ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
             {
                 var partState = partController.GetPartState(associatedPartId);
                 if (partState == PartPlacementState.Completed ||
                     partState == PartPlacementState.PlacedVirtually)
                 {
-                    OseLog.VerboseInfo($"[PartInteraction] SpawnGhostForTarget: skipping ghost for '{associatedPartId}' â€” already {partState}.");
+                    OseLog.VerboseInfo($"[PartInteraction] SpawnPreviewForTarget: skipping preview for '{associatedPartId}' — already {partState}.");
                     return;
                 }
-                OseLog.VerboseInfo($"[PartInteraction] SpawnGhostForTarget: part '{associatedPartId}' state={partState}, proceeding with ghost.");
+                OseLog.VerboseInfo($"[PartInteraction] SpawnPreviewForTarget: part '{associatedPartId}' state={partState}, proceeding with preview.");
             }
 
             Transform previewRoot = _setup != null ? _setup.PreviewRoot : null;
@@ -2553,134 +2568,134 @@ namespace OSE.UI.Root
             TargetPreviewPlacement tp = _spawner.FindTargetPlacement(targetId);
             PartPreviewPlacement pp = _spawner.FindPartPlacement(associatedPartId);
 
-            // --- Spline parts: create a procedural ghost tube instead of loading a GLB ---
+            // --- Spline parts: create a procedural preview tube instead of loading a GLB ---
             if (SplinePartFactory.HasSplineData(pp))
             {
-                GameObject splineGhost = SplinePartFactory.CreateGhost(associatedPartId, pp.splinePath, previewRoot);
-                if (splineGhost == null)
+                GameObject splinePreview = SplinePartFactory.CreatePreview(associatedPartId, pp.splinePath, previewRoot);
+                if (splinePreview == null)
                 {
-                    OseLog.Warn($"[PartInteraction] SpawnGhostForTarget: failed to create spline ghost for '{associatedPartId}'.");
+                    OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: failed to create spline preview for '{associatedPartId}'.");
                     return;
                 }
 
-                GhostPlacementInfo splineInfo = splineGhost.AddComponent<GhostPlacementInfo>();
+                PlacementPreviewInfo splineInfo = splinePreview.AddComponent<PlacementPreviewInfo>();
                 splineInfo.TargetId = targetId;
                 splineInfo.PartId = associatedPartId;
 
-                // Spline ghost sits at play position (0,0,0) / scale (1,1,1) — knots define the routing
-                splineGhost.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
-                splineGhost.transform.localScale = Vector3.one;
+                // Spline preview sits at play position (0,0,0) / scale (1,1,1) — knots define the routing
+                splinePreview.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+                splinePreview.transform.localScale = Vector3.one;
 
                 // Convert existing colliders to triggers for click-to-place
-                foreach (var col in splineGhost.GetComponentsInChildren<Collider>(true))
+                foreach (var col in splinePreview.GetComponentsInChildren<Collider>(true))
                     col.isTrigger = true;
 
-                MaterialHelper.ApplyGhost(splineGhost);
-                _spawnedGhosts.Add(splineGhost);
-                OseLog.Info($"[PartInteraction] Spline ghost spawned for '{associatedPartId}' at target '{targetId}'. Total ghosts: {_spawnedGhosts.Count}");
+                MaterialHelper.ApplyPreviewMaterial(splinePreview);
+                _spawnedPreviews.Add(splinePreview);
+                OseLog.Info($"[PartInteraction] Spline preview spawned for '{associatedPartId}' at target '{targetId}'. Total previews: {_spawnedPreviews.Count}");
                 return;
             }
 
-            // --- Standard GLB-based ghost ---
-            string ghostRef = part.assetRef;
-            if (string.IsNullOrEmpty(ghostRef)) { OseLog.Warn($"[PartInteraction] SpawnGhostForTarget: part '{associatedPartId}' has no assetRef."); return; }
+            // --- Standard GLB-based preview ---
+            string previewRef = part.assetRef;
+            if (string.IsNullOrEmpty(previewRef)) { OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: part '{associatedPartId}' has no assetRef."); return; }
 
-            Vector3 ghostPos;
-            Quaternion ghostRot;
-            Vector3 ghostScale;
+            Vector3 previewPos;
+            Quaternion previewRot;
+            Vector3 previewScale;
 
             // playPosition is the single source of truth for where a part ends up
-            // when placed. Ghost must appear at the same location so there is no
-            // discrepancy between the ghost preview and the actual placement.
+            // when placed. Preview must appear at the same location so there is no
+            // discrepancy between the preview and the actual placement.
             // TargetPreviewPlacement is only used as fallback for targets without
             // an associated part placement (tool-action targets, checkpoints, etc.).
             if (pp != null)
             {
-                ghostPos = new Vector3(pp.playPosition.x, pp.playPosition.y, pp.playPosition.z);
-                ghostRot = !pp.playRotation.IsIdentity
+                previewPos = new Vector3(pp.playPosition.x, pp.playPosition.y, pp.playPosition.z);
+                previewRot = !pp.playRotation.IsIdentity
                     ? new Quaternion(pp.playRotation.x, pp.playRotation.y, pp.playRotation.z, pp.playRotation.w)
                     : Quaternion.identity;
             }
             else if (tp != null)
             {
-                ghostPos = new Vector3(tp.position.x, tp.position.y, tp.position.z);
-                ghostRot = !tp.rotation.IsIdentity
+                previewPos = new Vector3(tp.position.x, tp.position.y, tp.position.z);
+                previewRot = !tp.rotation.IsIdentity
                     ? new Quaternion(tp.rotation.x, tp.rotation.y, tp.rotation.z, tp.rotation.w)
                     : Quaternion.identity;
             }
             else
             {
-                ghostPos = Vector3.zero;
-                ghostRot = Quaternion.identity;
+                previewPos = Vector3.zero;
+                previewRot = Quaternion.identity;
             }
 
-            // Ghost should mirror the live source part dimensions exactly.
+            // Preview should mirror the live source part dimensions exactly.
             GameObject sourcePart = FindSpawnedPart(associatedPartId);
             if (sourcePart != null)
             {
-                ghostScale = sourcePart.transform.localScale;
+                previewScale = sourcePart.transform.localScale;
             }
             else if (pp != null)
             {
                 Vector3 authoredStartScale = new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z);
                 Vector3 authoredPlayScale = new Vector3(pp.playScale.x, pp.playScale.y, pp.playScale.z);
-                ghostScale = authoredStartScale.sqrMagnitude > 0f
+                previewScale = authoredStartScale.sqrMagnitude > 0f
                     ? authoredStartScale
                     : (authoredPlayScale.sqrMagnitude > 0f ? authoredPlayScale : Vector3.one);
             }
             else if (tp != null)
             {
-                ghostScale = new Vector3(tp.scale.x, tp.scale.y, tp.scale.z);
+                previewScale = new Vector3(tp.scale.x, tp.scale.y, tp.scale.z);
             }
             else
             {
-                ghostScale = Vector3.one * 0.5f;
+                previewScale = Vector3.one * 0.5f;
             }
 
-            GameObject ghost = _spawner.TryLoadPackageAsset(ghostRef);
-            if (ghost == null)
+            GameObject preview = _spawner.TryLoadPackageAsset(previewRef);
+            if (preview == null)
             {
-                ghost = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                preview = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 if (previewRoot != null)
-                    ghost.transform.SetParent(previewRoot, false);
+                    preview.transform.SetParent(previewRoot, false);
             }
 
-            ghost.name = $"Ghost_{associatedPartId}";
-            GhostPlacementInfo info = ghost.GetComponent<GhostPlacementInfo>();
+            preview.name = $"Preview_{associatedPartId}";
+            PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
             if (info == null)
-                info = ghost.AddComponent<GhostPlacementInfo>();
+                info = preview.AddComponent<PlacementPreviewInfo>();
             info.TargetId = targetId;
             info.PartId = associatedPartId;
-            ghost.transform.SetLocalPositionAndRotation(ghostPos, ghostRot);
-            ghost.transform.localScale = ghostScale;
+            preview.transform.SetLocalPositionAndRotation(previewPos, previewRot);
+            preview.transform.localScale = previewScale;
 
-            foreach (var col in ghost.GetComponentsInChildren<Collider>(true))
+            foreach (var col in preview.GetComponentsInChildren<Collider>(true))
                 Destroy(col);
 
             // Fit a BoxCollider to the combined renderer bounds so the trigger
             // is accurate to the mesh shape rather than an oversized sphere.
-            var ghostRenderers = ghost.GetComponentsInChildren<Renderer>(true);
-            var clickCollider = ghost.AddComponent<BoxCollider>();
+            var previewRenderers = preview.GetComponentsInChildren<Renderer>(true);
+            var clickCollider = preview.AddComponent<BoxCollider>();
             clickCollider.isTrigger = true;
-            if (ghostRenderers.Length > 0)
+            if (previewRenderers.Length > 0)
             {
-                Bounds combined = ghostRenderers[0].bounds;
-                for (int ri = 1; ri < ghostRenderers.Length; ri++)
-                    combined.Encapsulate(ghostRenderers[ri].bounds);
-                Vector3 lossyScale = ghost.transform.lossyScale;
-                clickCollider.center = ghost.transform.InverseTransformPoint(combined.center);
+                Bounds combined = previewRenderers[0].bounds;
+                for (int ri = 1; ri < previewRenderers.Length; ri++)
+                    combined.Encapsulate(previewRenderers[ri].bounds);
+                Vector3 lossyScale = preview.transform.lossyScale;
+                clickCollider.center = preview.transform.InverseTransformPoint(combined.center);
                 clickCollider.size = new Vector3(
                     lossyScale.x != 0f ? combined.size.x / lossyScale.x : 1f,
                     lossyScale.y != 0f ? combined.size.y / lossyScale.y : 1f,
                     lossyScale.z != 0f ? combined.size.z / lossyScale.z : 1f);
             }
 
-            MaterialHelper.ApplyGhost(ghost);
-            _spawnedGhosts.Add(ghost);
-            OseLog.Info($"[PartInteraction] Ghost spawned for '{associatedPartId}' at target '{targetId}' pos={ghostPos} scale={ghostScale}. Total ghosts: {_spawnedGhosts.Count}");
+            MaterialHelper.ApplyPreviewMaterial(preview);
+            _spawnedPreviews.Add(preview);
+            OseLog.Info($"[PartInteraction] Preview spawned for '{associatedPartId}' at target '{targetId}' pos={previewPos} scale={previewScale}. Total previews: {_spawnedPreviews.Count}");
         }
 
-        private void SpawnGhostForSubassemblyTarget(MachinePackageDefinition package, string targetId, TargetDefinition target)
+        private void SpawnPreviewForSubassemblyTarget(MachinePackageDefinition package, string targetId, TargetDefinition target)
         {
             string subassemblyId = target.associatedSubassemblyId;
             if (string.IsNullOrWhiteSpace(subassemblyId))
@@ -2688,47 +2703,47 @@ namespace OSE.UI.Root
 
             if (_subassemblyPlacementController == null || !_subassemblyPlacementController.IsSubassemblyReady(subassemblyId))
             {
-                OseLog.Warn($"[PartInteraction] SpawnGhostForTarget: subassembly '{subassemblyId}' is not ready for placement.");
+                OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: subassembly '{subassemblyId}' is not ready for placement.");
                 return;
             }
 
             if (!package.TryGetSubassembly(subassemblyId, out SubassemblyDefinition subassembly) || subassembly == null)
             {
-                OseLog.Warn($"[PartInteraction] SpawnGhostForTarget: subassembly '{subassemblyId}' not found in package.");
+                OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: subassembly '{subassemblyId}' not found in package.");
                 return;
             }
 
             SubassemblyPreviewPlacement frame = _spawner.FindSubassemblyPlacement(subassemblyId);
             if (frame == null)
             {
-                OseLog.Warn($"[PartInteraction] SpawnGhostForTarget: subassembly '{subassemblyId}' has no authored preview frame.");
+                OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: subassembly '{subassemblyId}' has no authored preview frame.");
                 return;
             }
 
             Transform previewRoot = _setup != null ? _setup.PreviewRoot : null;
-            GameObject ghostRoot = new GameObject($"Ghost_{subassemblyId}");
+            GameObject subPreviewRoot = new GameObject($"Preview_{subassemblyId}");
             if (previewRoot != null)
-                ghostRoot.transform.SetParent(previewRoot, false);
+                subPreviewRoot.transform.SetParent(previewRoot, false);
 
-            if (_subassemblyPlacementController.TryResolveTargetPose(targetId, out Vector3 ghostPos, out Quaternion ghostRot, out Vector3 ghostScale))
+            if (_subassemblyPlacementController.TryResolveTargetPose(targetId, out Vector3 previewPos, out Quaternion previewRot, out Vector3 previewScale))
             {
-                ghostRoot.transform.SetLocalPositionAndRotation(ghostPos, ghostRot);
-                ghostRoot.transform.localScale = ghostScale;
+                subPreviewRoot.transform.SetLocalPositionAndRotation(previewPos, previewRot);
+                subPreviewRoot.transform.localScale = previewScale;
             }
             else
             {
-                ghostRoot.transform.SetLocalPositionAndRotation(
-                    GhostToVector3(frame.position),
-                    GhostToQuaternion(frame.rotation));
-                ghostRoot.transform.localScale = GhostSanitizeScale(GhostToVector3(frame.scale), Vector3.one);
+                subPreviewRoot.transform.SetLocalPositionAndRotation(
+                    PreviewToVector3(frame.position),
+                    PreviewToQuaternion(frame.rotation));
+                subPreviewRoot.transform.localScale = PreviewSanitizeScale(PreviewToVector3(frame.scale), Vector3.one);
             }
 
-            Vector3 framePos = GhostToVector3(frame.position);
-            Quaternion frameRot = GhostToQuaternion(frame.rotation);
-            Vector3 frameScale = GhostSanitizeScale(GhostToVector3(frame.scale), Vector3.one);
+            Vector3 framePos = PreviewToVector3(frame.position);
+            Quaternion frameRot = PreviewToQuaternion(frame.rotation);
+            Vector3 frameScale = PreviewSanitizeScale(PreviewToVector3(frame.scale), Vector3.one);
             IntegratedSubassemblyPreviewPlacement integratedPlacement = _spawner.FindIntegratedSubassemblyPlacement(subassemblyId, targetId);
             ConstrainedSubassemblyFitPreviewPlacement fitPlacement = _spawner.FindConstrainedSubassemblyFitPlacement(subassemblyId, targetId);
-            Vector3 fitAxisLocal = fitPlacement != null ? GhostToVector3(fitPlacement.fitAxisLocal) : Vector3.zero;
+            Vector3 fitAxisLocal = fitPlacement != null ? PreviewToVector3(fitPlacement.fitAxisLocal) : Vector3.zero;
             if (fitAxisLocal.sqrMagnitude > 0.000001f)
                 fitAxisLocal.Normalize();
             float fitTravel = fitPlacement != null
@@ -2737,11 +2752,11 @@ namespace OSE.UI.Root
                     Mathf.Min(fitPlacement.minTravel, fitPlacement.maxTravel),
                     Mathf.Max(fitPlacement.minTravel, fitPlacement.maxTravel))
                 : 0f;
-            bool isAxisFitGhost = fitPlacement?.drivenPartIds != null && fitPlacement.drivenPartIds.Length > 0;
-            HashSet<string> fitDrivenPartIds = isAxisFitGhost
+            bool isAxisFitPreview = fitPlacement?.drivenPartIds != null && fitPlacement.drivenPartIds.Length > 0;
+            HashSet<string> fitDrivenPartIds = isAxisFitPreview
                 ? new HashSet<string>(fitPlacement.drivenPartIds, StringComparer.OrdinalIgnoreCase)
                 : null;
-            var fitGhostChildren = isAxisFitGhost ? new List<Transform>() : null;
+            var fitPreviewChildren = isAxisFitPreview ? new List<Transform>() : null;
 
             string[] memberIds = subassembly.partIds ?? Array.Empty<string>();
             for (int i = 0; i < memberIds.Length; i++)
@@ -2749,32 +2764,32 @@ namespace OSE.UI.Root
                 string memberId = memberIds[i];
                 if (string.IsNullOrWhiteSpace(memberId) || !package.TryGetPart(memberId, out PartDefinition part))
                     continue;
-                if (isAxisFitGhost && !fitDrivenPartIds.Contains(memberId))
+                if (isAxisFitPreview && !fitDrivenPartIds.Contains(memberId))
                     continue;
 
                 PartPreviewPlacement placement = _spawner.FindPartPlacement(memberId);
                 if (placement == null)
                     continue;
 
-                GameObject childGhost = _spawner.TryLoadPackageAsset(part.assetRef);
-                if (childGhost == null)
-                    childGhost = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                GameObject childPreview = _spawner.TryLoadPackageAsset(part.assetRef);
+                if (childPreview == null)
+                    childPreview = GameObject.CreatePrimitive(PrimitiveType.Cube);
 
-                childGhost.transform.SetParent(ghostRoot.transform, false);
+                childPreview.transform.SetParent(subPreviewRoot.transform, false);
 
                 Vector3 memberLocalPos;
                 Quaternion memberLocalRot;
                 Vector3 memberLocalScale;
 
-                if (TryGetIntegratedGhostMemberPlacement(integratedPlacement, memberId, out Vector3 integratedPos, out Quaternion integratedRot, out Vector3 integratedScale))
+                if (TryGetIntegratedPreviewMemberPlacement(integratedPlacement, memberId, out Vector3 integratedPos, out Quaternion integratedRot, out Vector3 integratedScale))
                 {
-                    memberLocalPos = GhostInverseTransformPoint(
-                        ghostRoot.transform.localPosition,
-                        ghostRoot.transform.localRotation,
-                        GhostSanitizeScale(ghostRoot.transform.localScale, Vector3.one),
+                    memberLocalPos = PreviewInverseTransformPoint(
+                        subPreviewRoot.transform.localPosition,
+                        subPreviewRoot.transform.localRotation,
+                        PreviewSanitizeScale(subPreviewRoot.transform.localScale, Vector3.one),
                         integratedPos);
-                    memberLocalRot = Quaternion.Inverse(ghostRoot.transform.localRotation) * integratedRot;
-                    memberLocalScale = GhostDivideScale(integratedScale, GhostSanitizeScale(ghostRoot.transform.localScale, Vector3.one));
+                    memberLocalRot = Quaternion.Inverse(subPreviewRoot.transform.localRotation) * integratedRot;
+                    memberLocalScale = PreviewDivideScale(integratedScale, PreviewSanitizeScale(subPreviewRoot.transform.localScale, Vector3.one));
                 }
                 else
                 {
@@ -2782,11 +2797,11 @@ namespace OSE.UI.Root
                     Quaternion memberPlayRot = !placement.playRotation.IsIdentity
                         ? new Quaternion(placement.playRotation.x, placement.playRotation.y, placement.playRotation.z, placement.playRotation.w)
                         : Quaternion.identity;
-                    Vector3 memberPlayScale = GhostSanitizeScale(new Vector3(placement.playScale.x, placement.playScale.y, placement.playScale.z), Vector3.one);
+                    Vector3 memberPlayScale = PreviewSanitizeScale(new Vector3(placement.playScale.x, placement.playScale.y, placement.playScale.z), Vector3.one);
 
-                    memberLocalPos = GhostInverseTransformPoint(framePos, frameRot, frameScale, memberPlayPos);
+                    memberLocalPos = PreviewInverseTransformPoint(framePos, frameRot, frameScale, memberPlayPos);
                     memberLocalRot = Quaternion.Inverse(frameRot) * memberPlayRot;
-                    memberLocalScale = GhostDivideScale(memberPlayScale, frameScale);
+                    memberLocalScale = PreviewDivideScale(memberPlayScale, frameScale);
                 }
 
                 if (fitPlacement?.drivenPartIds != null &&
@@ -2795,43 +2810,43 @@ namespace OSE.UI.Root
                     memberLocalPos += fitAxisLocal * (fitTravel - fitPlacement.minTravel);
                 }
 
-                childGhost.transform.SetLocalPositionAndRotation(memberLocalPos, memberLocalRot);
-                childGhost.transform.localScale = memberLocalScale;
-                if (fitGhostChildren != null)
-                    fitGhostChildren.Add(childGhost.transform);
+                childPreview.transform.SetLocalPositionAndRotation(memberLocalPos, memberLocalRot);
+                childPreview.transform.localScale = memberLocalScale;
+                if (fitPreviewChildren != null)
+                    fitPreviewChildren.Add(childPreview.transform);
 
-                foreach (Collider collider in childGhost.GetComponentsInChildren<Collider>(true))
+                foreach (Collider collider in childPreview.GetComponentsInChildren<Collider>(true))
                     Destroy(collider);
             }
 
-            if (isAxisFitGhost && fitGhostChildren != null && fitGhostChildren.Count > 0)
+            if (isAxisFitPreview && fitPreviewChildren != null && fitPreviewChildren.Count > 0)
             {
                 Vector3 anchorLocal = Vector3.zero;
-                for (int i = 0; i < fitGhostChildren.Count; i++)
-                    anchorLocal += fitGhostChildren[i].localPosition;
-                anchorLocal /= fitGhostChildren.Count;
+                for (int i = 0; i < fitPreviewChildren.Count; i++)
+                    anchorLocal += fitPreviewChildren[i].localPosition;
+                anchorLocal /= fitPreviewChildren.Count;
 
-                ghostRoot.transform.localPosition = GhostTransformPoint(
-                    ghostRoot.transform.localPosition,
-                    ghostRoot.transform.localRotation,
-                    GhostSanitizeScale(ghostRoot.transform.localScale, Vector3.one),
+                subPreviewRoot.transform.localPosition = PreviewTransformPoint(
+                    subPreviewRoot.transform.localPosition,
+                    subPreviewRoot.transform.localRotation,
+                    PreviewSanitizeScale(subPreviewRoot.transform.localScale, Vector3.one),
                     anchorLocal);
 
-                for (int i = 0; i < fitGhostChildren.Count; i++)
-                    fitGhostChildren[i].localPosition -= anchorLocal;
+                for (int i = 0; i < fitPreviewChildren.Count; i++)
+                    fitPreviewChildren[i].localPosition -= anchorLocal;
             }
 
-            GhostPlacementInfo info = ghostRoot.AddComponent<GhostPlacementInfo>();
+            PlacementPreviewInfo info = subPreviewRoot.AddComponent<PlacementPreviewInfo>();
             info.TargetId = targetId;
             info.SubassemblyId = subassemblyId;
 
-            ApplyGhostClickCollider(ghostRoot, minAxisSize: isAxisFitGhost ? 0.09f : 0.18f, paddingWorld: isAxisFitGhost ? 0.03f : 0.08f);
-            MaterialHelper.ApplyGhost(ghostRoot);
-            _spawnedGhosts.Add(ghostRoot);
-            OseLog.Info($"[PartInteraction] Composite ghost spawned for subassembly '{subassemblyId}' at target '{targetId}'. Total ghosts: {_spawnedGhosts.Count}");
+            ApplyPreviewMaterialClickCollider(subPreviewRoot, minAxisSize: isAxisFitPreview ? 0.09f : 0.18f, paddingWorld: isAxisFitPreview ? 0.03f : 0.08f);
+            MaterialHelper.ApplyPreviewMaterial(subPreviewRoot);
+            _spawnedPreviews.Add(subPreviewRoot);
+            OseLog.Info($"[PartInteraction] Composite preview spawned for subassembly '{subassemblyId}' at target '{targetId}'. Total previews: {_spawnedPreviews.Count}");
         }
 
-        private static bool TryGetIntegratedGhostMemberPlacement(
+        private static bool TryGetIntegratedPreviewMemberPlacement(
             IntegratedSubassemblyPreviewPlacement integratedPlacement,
             string partId,
             out Vector3 position,
@@ -2851,38 +2866,38 @@ namespace OSE.UI.Root
                 if (member == null || !string.Equals(member.partId, partId, StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                position = GhostToVector3(member.position);
-                rotation = GhostToQuaternion(member.rotation);
-                scale = GhostSanitizeScale(GhostToVector3(member.scale), Vector3.one);
+                position = PreviewToVector3(member.position);
+                rotation = PreviewToQuaternion(member.rotation);
+                scale = PreviewSanitizeScale(PreviewToVector3(member.scale), Vector3.one);
                 return true;
             }
 
             return false;
         }
 
-        private static void ApplyGhostClickCollider(GameObject ghost, float minAxisSize = 0.06f, float paddingWorld = 0f)
+        private static void ApplyPreviewMaterialClickCollider(GameObject preview, float minAxisSize = 0.06f, float paddingWorld = 0f)
         {
-            if (ghost == null)
+            if (preview == null)
                 return;
 
-            Renderer[] ghostRenderers = ghost.GetComponentsInChildren<Renderer>(true);
-            BoxCollider clickCollider = ghost.GetComponent<BoxCollider>();
+            Renderer[] previewRenderers = preview.GetComponentsInChildren<Renderer>(true);
+            BoxCollider clickCollider = preview.GetComponent<BoxCollider>();
             if (clickCollider == null)
-                clickCollider = ghost.AddComponent<BoxCollider>();
+                clickCollider = preview.AddComponent<BoxCollider>();
 
             clickCollider.isTrigger = true;
-            if (ghostRenderers.Length <= 0)
+            if (previewRenderers.Length <= 0)
                 return;
 
-            Bounds combined = ghostRenderers[0].bounds;
-            for (int ri = 1; ri < ghostRenderers.Length; ri++)
-                combined.Encapsulate(ghostRenderers[ri].bounds);
+            Bounds combined = previewRenderers[0].bounds;
+            for (int ri = 1; ri < previewRenderers.Length; ri++)
+                combined.Encapsulate(previewRenderers[ri].bounds);
 
             if (paddingWorld > 0f)
                 combined.Expand(paddingWorld);
 
-            Vector3 lossyScale = ghost.transform.lossyScale;
-            clickCollider.center = ghost.transform.InverseTransformPoint(combined.center);
+            Vector3 lossyScale = preview.transform.lossyScale;
+            clickCollider.center = preview.transform.InverseTransformPoint(combined.center);
             Vector3 localSize = new Vector3(
                 lossyScale.x != 0f ? combined.size.x / lossyScale.x : 1f,
                 lossyScale.y != 0f ? combined.size.y / lossyScale.y : 1f,
@@ -2893,16 +2908,16 @@ namespace OSE.UI.Root
                 Mathf.Max(localSize.z, minAxisSize));
         }
 
-        private static Vector3 GhostToVector3(SceneFloat3 value) => new Vector3(value.x, value.y, value.z);
+        private static Vector3 PreviewToVector3(SceneFloat3 value) => new Vector3(value.x, value.y, value.z);
 
-        private static Quaternion GhostToQuaternion(SceneQuaternion value)
+        private static Quaternion PreviewToQuaternion(SceneQuaternion value)
         {
             return !value.IsIdentity
                 ? new Quaternion(value.x, value.y, value.z, value.w)
                 : Quaternion.identity;
         }
 
-        private static Vector3 GhostSanitizeScale(Vector3 value, Vector3 fallback)
+        private static Vector3 PreviewSanitizeScale(Vector3 value, Vector3 fallback)
         {
             return new Vector3(
                 Mathf.Approximately(value.x, 0f) ? fallback.x : value.x,
@@ -2910,42 +2925,60 @@ namespace OSE.UI.Root
                 Mathf.Approximately(value.z, 0f) ? fallback.z : value.z);
         }
 
-        private static Vector3 GhostDivideScale(Vector3 value, Vector3 divisor)
+        private static Vector3 PreviewDivideScale(Vector3 value, Vector3 divisor)
         {
-            Vector3 safe = GhostSanitizeScale(divisor, Vector3.one);
+            Vector3 safe = PreviewSanitizeScale(divisor, Vector3.one);
             return new Vector3(value.x / safe.x, value.y / safe.y, value.z / safe.z);
         }
 
-        private static Vector3 GhostMultiplyScale(Vector3 left, Vector3 right)
+        private static Vector3 PreviewMultiplyScale(Vector3 left, Vector3 right)
         {
             return new Vector3(left.x * right.x, left.y * right.y, left.z * right.z);
         }
 
-        private static Vector3 GhostTransformPoint(Vector3 origin, Quaternion rotation, Vector3 scale, Vector3 localPoint)
+        private static Vector3 PreviewTransformPoint(Vector3 origin, Quaternion rotation, Vector3 scale, Vector3 localPoint)
         {
-            return origin + rotation * GhostMultiplyScale(scale, localPoint);
+            return origin + rotation * PreviewMultiplyScale(scale, localPoint);
         }
 
-        private static Vector3 GhostInverseTransformPoint(Vector3 origin, Quaternion rotation, Vector3 scale, Vector3 point)
+        private static Vector3 PreviewInverseTransformPoint(Vector3 origin, Quaternion rotation, Vector3 scale, Vector3 point)
         {
             Vector3 translated = Quaternion.Inverse(rotation) * (point - origin);
-            return GhostDivideScale(translated, scale);
+            return PreviewDivideScale(translated, scale);
         }
 
-        private void ClearGhosts()
+        private void ClearPreviews()
         {
-            foreach (var ghost in _spawnedGhosts)
+            foreach (var preview in _spawnedPreviews)
             {
-                if (ghost == null) continue;
-                Destroy(ghost);
+                if (preview == null) continue;
+                Destroy(preview);
             }
-            _spawnedGhosts.Clear();
+            _spawnedPreviews.Clear();
         }
 
-        private void RefreshToolGhostIndicator()
-            => _ = CursorManager.RefreshAsync(_spawner, _setup, _hintGhost == CursorManager.ToolGhost, ClearHintHighlight);
+        private void RefreshToolPreviewIndicator()
+            => _ = RefreshToolPreviewIndicatorAsync();
 
-        private void UpdateToolGhostIndicatorPosition()
+        private async System.Threading.Tasks.Task RefreshToolPreviewIndicatorAsync()
+        {
+            await CursorManager.RefreshAsync(_spawner, _setup, _hintPreview == CursorManager.ToolPreview, ClearHintHighlight);
+
+            // In XR mode, make the tool preview grabbable with toolPose-driven attach point
+            if (CursorManager.ToolPreview != null && UnityEngine.XR.XRSettings.isDeviceActive)
+            {
+                bool isControllerMode = !IsHandTrackingActive();
+                CursorManager.ConfigureXRGrab(isControllerMode);
+            }
+        }
+
+        private static bool IsHandTrackingActive()
+        {
+            var switcher = FindFirstObjectByType<OSE.Interaction.XRRigModeSwitcher>();
+            return switcher != null && switcher.UsingHands;
+        }
+
+        private void UpdateToolPreviewIndicatorPosition()
         {
             if (!TryGetPointerPosition(out Vector2 screenPos))
                 screenPos = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
@@ -2954,8 +2987,8 @@ namespace OSE.UI.Root
 
 
 
-        private void ClearToolGhostIndicator()
-            => CursorManager.Clear(_hintGhost == CursorManager.ToolGhost, ClearHintHighlight);
+        private void ClearToolPreviewIndicator()
+            => CursorManager.Clear(_hintPreview == CursorManager.ToolPreview, ClearHintHighlight);
 
         private bool IsToolModeLockedForParts()
         {
@@ -3022,21 +3055,26 @@ namespace OSE.UI.Root
             return _useHandler != null && _useHandler.TryGetNearestToolTargetWorldPos(screenPos, out worldPos);
         }
 
-        // TryGetGhostTargetPose is now owned by PlaceStepHandler.
-
-        private void RemoveGhostForPart(string partId)
+        public Vector3[] GetActiveToolTargetPositions()
         {
-            // Clear hint highlight if the hint ghost is being removed
-            if (_hintGhost != null && !string.IsNullOrEmpty(partId))
+            return _useHandler?.GetActiveToolTargetPositions() ?? System.Array.Empty<Vector3>();
+        }
+
+        // TryGetPreviewTargetPose is now owned by PlaceStepHandler.
+
+        private void RemovePreviewForPart(string partId)
+        {
+            // Clear hint highlight if the hint preview is being removed
+            if (_hintPreview != null && !string.IsNullOrEmpty(partId))
             {
-                GhostPlacementInfo hInfo = _hintGhost.GetComponent<GhostPlacementInfo>();
+                PlacementPreviewInfo hInfo = _hintPreview.GetComponent<PlacementPreviewInfo>();
                 if (hInfo != null && hInfo.MatchesPart(partId))
                     ClearHintHighlight();
             }
-            _placeHandler?.RemoveGhostForPart(partId);
+            _placeHandler?.RemovePreviewForPart(partId);
         }
 
-        // â”€â”€ Step completion: move parts to assembled position â”€â”€
+        // ── Step completion: move parts to assembled position ──
 
         private void MoveStepPartsToPlayPosition(string stepId)
         {
@@ -3141,7 +3179,7 @@ namespace OSE.UI.Root
             }
         }
 
-        // â”€â”€ Context menu: place selected part at target (debug shortcut) â”€â”€
+        // ── Context menu: place selected part at target (debug shortcut) ──
 
         [ContextMenu("Place Selected Part at Target")]
         private void PlaceSelectedPartAtTarget()
@@ -3204,7 +3242,7 @@ namespace OSE.UI.Root
                 }
             }
 
-            RemoveGhostForPart(selectedId);
+            RemovePreviewForPart(selectedId);
 
             if (_isSequentialStep)
             {
@@ -3217,7 +3255,7 @@ namespace OSE.UI.Root
             }
         }
 
-        // â”€â”€ UI push â”€â”€
+        // ── UI push ──
 
         private void PushPartInfoToUI(string partId, bool isHoverInfo = false)
         {
@@ -3267,7 +3305,7 @@ namespace OSE.UI.Root
             }
         }
 
-        // â”€â”€ Helpers â”€â”€
+        // ── Helpers ──
 
         private void BeginDragTracking(GameObject partGo)
         {
@@ -3299,7 +3337,7 @@ namespace OSE.UI.Root
             _depthAdjustScreenAnchor = Vector2.zero;
             _pendingSelectPart = null;
             _pointerDownCamera = null;
-            ClearGhostHighlight();
+            ClearPreviewHighlight();
         }
 
         private void BeginXRGrabTracking(GameObject partGo)
@@ -3336,13 +3374,13 @@ namespace OSE.UI.Root
             return Mathf.Max(MinDragRayDistance, Vector3.Distance(ray.origin, worldPos));
         }
 
-        private void UpdateXRGhostProximity()
+        private void UpdateXRPreviewProximity()
         {
             if (_pointerDown)
                 return;
 
             if (_isDragging && _draggedPart != null)
-                UpdateGhostProximity();
+                UpdatePreviewProximity();
         }
 
         private void UpdatePartHoverVisual()
@@ -3418,13 +3456,13 @@ namespace OSE.UI.Root
             out string message,
             out Transform worldAnchor,
             out GameObject sourceProxy,
-            out GameObject targetGhost)
+            out GameObject targetPreview)
         {
             title = null;
             message = null;
             worldAnchor = null;
             sourceProxy = null;
-            targetGhost = null;
+            targetPreview = null;
 
             if (step == null || !step.RequiresSubassemblyPlacement || _subassemblyPlacementController == null)
                 return false;
@@ -3442,15 +3480,15 @@ namespace OSE.UI.Root
 
             if (!string.IsNullOrWhiteSpace(targetId))
             {
-                foreach (GameObject ghost in _spawnedGhosts)
+                foreach (GameObject preview in _spawnedPreviews)
                 {
-                    if (ghost == null)
+                    if (preview == null)
                         continue;
 
-                    GhostPlacementInfo info = ghost.GetComponent<GhostPlacementInfo>();
+                    PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
                     if (info != null && string.Equals(info.TargetId, targetId, StringComparison.OrdinalIgnoreCase))
                     {
-                        targetGhost = ghost;
+                        targetPreview = preview;
                         break;
                     }
                 }
@@ -3825,11 +3863,11 @@ namespace OSE.UI.Root
             guideStartWorldPos = ResolveVisualAnchor(sourceProxy);
             sourceUp = sourceProxy.transform.up;
 
-            GameObject targetGhost = FindGhostForTarget(step.targetIds[0]);
-            if (targetGhost != null)
+            GameObject targetPreview = FindPreviewForTarget(step.targetIds[0]);
+            if (targetPreview != null)
             {
-                guideEndWorldPos = ResolveVisualAnchor(targetGhost);
-                targetUp = targetGhost.transform.up;
+                guideEndWorldPos = ResolveVisualAnchor(targetPreview);
+                targetUp = targetPreview.transform.up;
                 return true;
             }
 
@@ -3842,20 +3880,20 @@ namespace OSE.UI.Root
             return true;
         }
 
-        private GameObject FindGhostForTarget(string targetId)
+        private GameObject FindPreviewForTarget(string targetId)
         {
             if (string.IsNullOrWhiteSpace(targetId))
                 return null;
 
-            for (int i = 0; i < _spawnedGhosts.Count; i++)
+            for (int i = 0; i < _spawnedPreviews.Count; i++)
             {
-                GameObject ghost = _spawnedGhosts[i];
-                if (ghost == null)
+                GameObject preview = _spawnedPreviews[i];
+                if (preview == null)
                     continue;
 
-                GhostPlacementInfo info = ghost.GetComponent<GhostPlacementInfo>();
+                PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
                 if (info != null && string.Equals(info.TargetId, targetId, StringComparison.OrdinalIgnoreCase))
-                    return ghost;
+                    return preview;
             }
 
             return null;
@@ -4193,13 +4231,19 @@ namespace OSE.UI.Root
             public Vector3 BaseLocalPosition;
             /// <summary>World position of the actual action point on the surface (before sphere lift).</summary>
             public Vector3 SurfaceWorldPos;
+            /// <summary>World rotation of the authored target marker before it is lifted for clickability.</summary>
+            public Quaternion TargetWorldRotation;
             /// <summary>Direction of the weld line in world space (normalized). Zero = point target.</summary>
             public Vector3 WeldAxis;
             /// <summary>Length of the weld line in scene units.</summary>
             public float WeldLength;
+            /// <summary>When true, use <see cref="ToolActionRotation"/> instead of computing orientation from camera.</summary>
+            public bool HasToolActionRotation;
+            /// <summary>Authored tool orientation at this target (world-space Euler angles).</summary>
+            public Quaternion ToolActionRotation;
         }
 
-        internal sealed class GhostPlacementInfo : MonoBehaviour
+        internal sealed class PlacementPreviewInfo : MonoBehaviour, IPlacementPreviewMarker
         {
             public string TargetId;
             public string PartId;
@@ -4231,192 +4275,29 @@ namespace OSE.UI.Root
         }
 
         // ════════════════════════════════════════════════════════════════════
-        // Persistent Tools — clamps/fixtures that stay in the scene across steps
+        // Persistent Tools — delegated to PersistentToolManagerBridge
         // ════════════════════════════════════════════════════════════════════
 
-        /// <summary>
-        /// Places a persistent copy of the current tool ghost at the given target position.
-        /// The clone stays in the scene across step transitions until explicitly removed.
-        /// Used for clamps, fixtures, and other tools that remain on the workpiece.
-        /// </summary>
         public GameObject SpawnPersistentTool(string toolId, string targetId, Vector3 worldPos, Quaternion rotation)
-        {
-            GameObject ghost = CursorManager.ToolGhost;
-            if (ghost == null)
-            {
-                OseLog.Warn($"[PersistentTool] Cannot spawn — no tool ghost for '{toolId}'.");
-                return null;
-            }
+            => _persistentToolMgr.SpawnPersistentTool(toolId, targetId, worldPos, rotation);
 
-            GameObject clone = Instantiate(ghost);
-            clone.name = $"PersistentTool_{toolId}_{targetId}";
-            clone.transform.SetPositionAndRotation(worldPos, rotation);
+        public GameObject ConvertPreviewToPersistent(string toolId, string targetId, Vector3 worldPos, Quaternion rotation)
+            => _persistentToolMgr.ConvertPreviewToPersistent(toolId, targetId, worldPos, rotation);
 
-            Transform previewRoot = _setup != null ? _setup.PreviewRoot : null;
-            if (previewRoot != null)
-                clone.transform.SetParent(previewRoot, worldPositionStays: true);
-
-            // Remove any colliders so it doesn't interfere with interaction
-            foreach (var col in clone.GetComponentsInChildren<Collider>())
-                Destroy(col);
-
-            // The cursor ghost is transparent (55%) — restore full opacity for the placed tool
-            MaterialHelper.RestoreOpaque(clone);
-
-            // Apply confirmation glow so the user sees the tool "lock in"
-            MaterialHelper.SetEmission(clone, new Color(0.1f, 0.7f, 0.25f, 1f) * 1.5f);
-
-            var info = clone.AddComponent<PersistentToolInstance>();
-            info.ToolId = toolId;
-            info.TargetId = targetId;
-            info.ConfirmationGlowRemaining = 1.5f;
-
-            _persistentTools.Add(info);
-            OseLog.Info($"[PersistentTool] Spawned '{clone.name}' at {worldPos}. Total persistent: {_persistentTools.Count}");
-            return clone;
-        }
-
-        /// <summary>
-        /// Converts the current cursor ghost into a persistent tool at the given pose.
-        /// The ghost is detached from the cursor manager (not cloned), made opaque,
-        /// and registered as persistent. A new cursor ghost is then spawned for subsequent targets.
-        /// Returns the converted GameObject, or null if there was no ghost.
-        /// </summary>
-        public GameObject ConvertGhostToPersistent(string toolId, string targetId, Vector3 worldPos, Quaternion rotation)
-        {
-            GameObject ghost = CursorManager.DetachGhost();
-            if (ghost == null)
-            {
-                OseLog.Warn($"[PersistentTool] ConvertGhost — no ghost to detach for '{toolId}'.");
-                return null;
-            }
-
-            ghost.name = $"PersistentTool_{toolId}_{targetId}";
-            ghost.transform.SetParent(null, worldPositionStays: true);
-            ghost.transform.SetPositionAndRotation(worldPos, rotation);
-
-            Transform previewRoot = _setup != null ? _setup.PreviewRoot : null;
-            if (previewRoot != null)
-                ghost.transform.SetParent(previewRoot, worldPositionStays: true);
-
-            foreach (var col in ghost.GetComponentsInChildren<Collider>())
-                Destroy(col);
-
-            MaterialHelper.RestoreOpaque(ghost);
-
-            // Apply a brief confirmation glow so the user sees the tool "lock in"
-            MaterialHelper.SetEmission(ghost, new Color(0.1f, 0.7f, 0.25f, 1f) * 1.5f);
-            ghost.SetActive(true);
-
-            var info = ghost.AddComponent<PersistentToolInstance>();
-            info.ToolId = toolId;
-            info.TargetId = targetId;
-            info.ConfirmationGlowRemaining = 1.5f;
-
-            _persistentTools.Add(info);
-            OseLog.Info($"[PersistentTool] Converted ghost → persistent '{ghost.name}' at {worldPos}. Total: {_persistentTools.Count}");
-
-            // Spawn a fresh cursor ghost for subsequent targets
-            RefreshToolGhostIndicator();
-
-            return ghost;
-        }
-
-        /// <summary>
-        /// Removes a persistent tool placed at the given target.
-        /// Returns true if a matching tool was found and destroyed.
-        /// </summary>
         public bool RemovePersistentTool(string targetId)
-        {
-            for (int i = _persistentTools.Count - 1; i >= 0; i--)
-            {
-                var inst = _persistentTools[i];
-                if (inst == null) { _persistentTools.RemoveAt(i); continue; }
-                if (string.Equals(inst.TargetId, targetId, StringComparison.OrdinalIgnoreCase))
-                {
-                    OseLog.Info($"[PersistentTool] Removing '{inst.gameObject.name}' from target '{targetId}'.");
-                    _persistentTools.RemoveAt(i);
-                    Destroy(inst.gameObject);
-                    return true;
-                }
-            }
-            return false;
-        }
+            => _persistentToolMgr.RemovePersistentTool(targetId);
 
-        /// <summary>
-        /// Removes all persistent tools with the given tool id.
-        /// </summary>
         public int RemoveAllPersistentTools(string toolId = null)
-        {
-            int removed = 0;
-            for (int i = _persistentTools.Count - 1; i >= 0; i--)
-            {
-                var inst = _persistentTools[i];
-                if (inst == null) { _persistentTools.RemoveAt(i); continue; }
-                if (toolId == null || string.Equals(inst.ToolId, toolId, StringComparison.OrdinalIgnoreCase))
-                {
-                    Destroy(inst.gameObject);
-                    _persistentTools.RemoveAt(i);
-                    removed++;
-                }
-            }
-            if (removed > 0)
-                OseLog.Info($"[PersistentTool] Removed {removed} persistent tool(s) (filter='{toolId ?? "all"}').");
-            return removed;
-        }
+            => _persistentToolMgr.RemoveAllPersistentTools(toolId);
 
-        /// <summary>Returns how many persistent tools of the given type are currently placed.</summary>
-        public int GetPersistentToolCount(string toolId = null)
-        {
-            if (toolId == null) return _persistentTools.Count;
-            int count = 0;
-            for (int i = 0; i < _persistentTools.Count; i++)
-                if (_persistentTools[i] != null && string.Equals(_persistentTools[i].ToolId, toolId, StringComparison.OrdinalIgnoreCase))
-                    count++;
-            return count;
-        }
-
-        /// <summary>Checks if a persistent tool is placed at the given target.</summary>
         public bool HasPersistentToolAt(string targetId)
-        {
-            for (int i = 0; i < _persistentTools.Count; i++)
-                if (_persistentTools[i] != null && string.Equals(_persistentTools[i].TargetId, targetId, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            return false;
-        }
+            => _persistentToolMgr.HasPersistentToolAt(targetId);
 
-        /// <summary>Marker component for persistent tool instances in the scene.</summary>
-        internal sealed class PersistentToolInstance : MonoBehaviour
-        {
-            public string ToolId;
-            public string TargetId;
+        public int GetPersistentToolCount(string toolId = null)
+            => _persistentToolMgr.GetPersistentToolCount(toolId);
 
-            /// <summary>
-            /// When > 0, the confirmation glow fades out over this duration.
-            /// Set by ConvertGhostToPersistent to give a clear "locked in" signal.
-            /// </summary>
-            public float ConfirmationGlowRemaining;
-
-            private static readonly Color ConfirmGlow = new Color(0.1f, 0.7f, 0.25f, 1f) * 1.5f;
-
-            private void Update()
-            {
-                if (ConfirmationGlowRemaining <= 0f) return;
-
-                ConfirmationGlowRemaining -= Time.deltaTime;
-                if (ConfirmationGlowRemaining <= 0f)
-                {
-                    ConfirmationGlowRemaining = 0f;
-                    MaterialHelper.SetEmission(gameObject, Color.black);
-                    enabled = false;
-                }
-                else
-                {
-                    float t = ConfirmationGlowRemaining / 1.5f;
-                    MaterialHelper.SetEmission(gameObject, ConfirmGlow * t);
-                }
-            }
-        }
+        public string[] GetPlacedPersistentToolIds()
+            => _persistentToolMgr.GetPlacedPersistentToolIds();
 
     }
 }

@@ -1,0 +1,55 @@
+{
+  "input_fcstd": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder_stage03\\raw\\Oseextruder1902_with_2nd_bracket.fcstd",
+  "output_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder_stage03\\exported\\stl\\TitanCore_selected.stl",
+  "units": "mm",
+  "selected_labels": [
+    "Stepper Motor",
+    "Titan Aero Volcano"
+  ],
+  "object_count": 2,
+  "mesh_facets": 20043,
+  "mesh_points": 9980,
+  "combined_bound_box": {
+    "xmin_mm": -32.524677766655074,
+    "xmax_mm": 26.475188491365,
+    "ymin_mm": -24.432951556289005,
+    "ymax_mm": 62.9063431663921,
+    "zmin_mm": 8.278053589,
+    "zmax_mm": 85.0258064512,
+    "xlen_mm": 58.99986625802008,
+    "ylen_mm": 87.3392947226811,
+    "zlen_mm": 76.7477528622
+  },
+  "objects": [
+    {
+      "name": "Compound003",
+      "label": "Stepper Motor",
+      "bound_box": {
+        "xmin_mm": -20.699105340877026,
+        "xmax_mm": 20.573416659123012,
+        "ymin_mm": -13.148776367760973,
+        "ymax_mm": 28.72848163223904,
+        "zmin_mm": 8.278053589,
+        "zmax_mm": 73.556053589,
+        "xlen_mm": 41.27252200000004,
+        "ylen_mm": 41.87725800000001,
+        "zlen_mm": 65.278
+      }
+    },
+    {
+      "name": "Group",
+      "label": "Titan Aero Volcano",
+      "bound_box": {
+        "xmin_mm": -32.524677766655074,
+        "xmax_mm": 26.475188491365,
+        "ymin_mm": -24.432951556289005,
+        "ymax_mm": 62.9063431663921,
+        "zmin_mm": 52.02579512990273,
+        "zmax_mm": 85.0258064512,
+        "xlen_mm": 58.99986625802008,
+        "ylen_mm": 87.3392947226811,
+        "zlen_mm": 33.000011321297265
+      }
+    }
+  ]
+}

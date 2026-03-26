@@ -5,10 +5,10 @@ namespace OSE.Runtime.Session
     /// <summary>
     /// Extension point for tool-specific animations and visual behaviors.
     /// Implement this interface on a MonoBehaviour and attach it to the tool
-    /// ghost prefab (or instantiate dynamically) to add custom animations
+    /// preview prefab (or instantiate dynamically) to add custom animations
     /// like ratchet motion, tape extending, dial readouts, etc.
     ///
-    /// The system discovers animators via GetComponent on the tool ghost
+    /// The system discovers animators via GetComponent on the tool preview
     /// and calls lifecycle methods automatically. Multiple animators can
     /// coexist on the same tool for composable effects.
     ///
@@ -18,10 +18,10 @@ namespace OSE.Runtime.Session
     public interface IToolAnimator
     {
         /// <summary>
-        /// Called once when the tool ghost is spawned and ready.
+        /// Called once when the tool preview is spawned and ready.
         /// Use for initialization (cache references, set initial pose).
         /// </summary>
-        void OnToolEquipped(GameObject toolGhost);
+        void OnToolEquipped(GameObject toolPreview);
 
         /// <summary>
         /// Called when the tool enters "ready" state (near a valid target).
@@ -47,7 +47,7 @@ namespace OSE.Runtime.Session
         void OnActionExecuted(Vector3 targetWorldPos, float actionProgress, bool isComplete);
 
         /// <summary>
-        /// Called when the tool is unequipped or the ghost is destroyed.
+        /// Called when the tool is unequipped or the preview is destroyed.
         /// Use for cleanup (stop coroutines, release pooled objects).
         /// </summary>
         void OnToolUnequipped();

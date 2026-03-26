@@ -57,7 +57,7 @@ This rule must hold on every platform. Ambiguity between "did I mean to orbit?" 
    └────────┼─────────────┘
             ▼
 ┌───────────────────────────┐
-│  6. Feedback Presenter    │  ← Visual-only: highlights, ghosts, paths
+│  6. Feedback Presenter    │  ← Visual-only: highlights, previews, paths
 └───────────────────────────┘
 ```
 
@@ -106,7 +106,7 @@ Assets/_Project/Scripts/
 │   │   ├── PlacementAssistService.cs        ← Coordinator for placement features
 │   │   ├── MagneticSnapSolver.cs            ← Proximity-based magnetic pull
 │   │   ├── PlacementCorridorSolver.cs       ← Direction-aware approach validation
-│   │   ├── GhostPathRenderer.cs             ← Visual path from part to target
+│   │   ├── PreviewPathRenderer.cs            ← Visual path from part to target
 │   │   └── AlignmentPreview.cs              ← Live alignment feedback data
 │   │
 │   ├── Guidance/
@@ -119,7 +119,7 @@ Assets/_Project/Scripts/
 │   │   ├── InteractionFeedbackPresenter.cs  ← MonoBehaviour coordinator
 │   │   ├── HoverFeedback.cs                 ← Hover highlight logic
 │   │   ├── SelectionFeedback.cs             ← Selection outline/color
-│   │   ├── DragPreviewFeedback.cs           ← Drag ghost/trail
+│   │   ├── DragPreviewFeedback.cs           ← Drag preview/trail
 │   │   ├── PlacementFeedback.cs             ← Valid/invalid placement visuals
 │   │   └── CorridorFeedback.cs              ← Corridor/path rendering
 │   │
@@ -351,14 +351,14 @@ public sealed class CameraConstraintSphere
 // CameraPivotResolver.cs — plain C# class
 public sealed class CameraPivotResolver
 {
-    public enum PivotSource { AssemblyCenter, SelectedPart, GhostTarget, StepTarget, Custom }
+    public enum PivotSource { AssemblyCenter, SelectedPart, PreviewTarget, StepTarget, Custom }
 
     public Vector3 ResolvePivot(PivotSource source, InteractionOrchestrator orchestrator)
     {
         return source switch
         {
             PivotSource.SelectedPart => orchestrator.SelectedPart?.transform.position ?? FallbackCenter(),
-            PivotSource.GhostTarget => ResolveGhostTarget(),
+            PivotSource.PreviewTarget => ResolvePreviewTarget(),
             PivotSource.StepTarget => ResolveStepTarget(),
             PivotSource.AssemblyCenter => ComputeAssemblyCenter(),
             _ => FallbackCenter()
@@ -566,8 +566,8 @@ public struct InteractionFeedbackData
     public float MagneticStrength;        // 0–1
     public bool IsInCorridor;
     public bool IsValidPlacement;
-    public Vector3? GhostPathStart;
-    public Vector3? GhostPathEnd;
+    public Vector3? PreviewPathStart;
+    public Vector3? PreviewPathEnd;
 }
 ```
 
@@ -597,7 +597,7 @@ Each sub-feedback class (`HoverFeedback`, `SelectionFeedback`, etc.) is a plain 
 | `PlacementAssistService` | Plain C# | Coordinate placement features | MagneticSnapSolver, CorridorSolver, Settings | Orchestrator |
 | `MagneticSnapSolver` | Plain C# | Proximity-based pull toward target | Nothing | PlacementAssistService |
 | `PlacementCorridorSolver` | Plain C# | Direction-aware approach validation | Nothing | PlacementAssistService |
-| `GhostPathRenderer` | MonoBehaviour | Visual path from part to target | LineRenderer | FeedbackPresenter |
+| `PreviewPathRenderer` | MonoBehaviour | Visual path from part to target | LineRenderer | FeedbackPresenter |
 | `StepGuidanceService` | Plain C# | Step-aware camera/view requests | AssemblyCameraRig, RuntimeEventBus, Settings | Orchestrator, UI |
 | `ViewpointLibrary` | Static C# | Standard view definitions | Nothing | StepGuidanceService |
 | `ExplodedPreviewController` | MonoBehaviour | Temporary exploded view | Part transforms | StepGuidanceService |
@@ -822,7 +822,7 @@ The pivot is not fixed at world origin. It updates based on context:
 | Default | Assembly bounds center | No selection, no active step |
 | Step active | Step target position | Step becomes active (if EnableAutoFraming) |
 | Part selected | Part world position | User selects a part |
-| Ghost target | Ghost target position | User starts dragging toward ghost |
+| Preview target | Preview target position | User starts dragging toward preview |
 | Focus command | Explicitly specified | User presses F or double-taps |
 
 Pivot changes are **animated** (smooth transition) to avoid jarring camera jumps. The `CameraSmoothing` utility handles this:
@@ -871,7 +871,7 @@ Camera computation runs in `LateUpdate` (after all transforms are finalized). Th
 ### Existing System (Preserved)
 
 The current `PartInteractionBridge` already handles:
-- Ghost part spawning at target positions
+- Preview part spawning at target positions
 - Snap zone detection (`SnapZoneRadius = 0.8f`)
 - Snap animation (lerp to target)
 - Invalid placement flash
@@ -913,11 +913,11 @@ Some parts should only be placed from a specific direction (e.g., a bolt goes in
 - If outside the corridor → placement is invalid even if position is correct.
 - Visual feedback shows the corridor as a translucent cone.
 
-#### Ghost Path Guidance (`EnableGhostPathGuidance`)
+#### Preview Path Guidance (`EnablePreviewPathGuidance`)
 
-Shows a visual path (curved line or arrow) from the selected part to its ghost target. This helps users understand where the part needs to go, especially when the target is off-screen or behind other parts.
+Shows a visual path (curved line or arrow) from the selected part to its preview target. This helps users understand where the part needs to go, especially when the target is off-screen or behind other parts.
 
-Implementation: `GhostPathRenderer` uses a `LineRenderer` with a bezier curve between part position and target position. The midpoint is elevated to create an arc. The path fades as the part gets closer.
+Implementation: `PreviewPathRenderer` uses a `LineRenderer` with a bezier curve between part position and target position. The midpoint is elevated to create an arc. The path fades as the part gets closer.
 
 #### Alignment Preview (`AlignmentPreview`)
 
@@ -1008,12 +1008,12 @@ Orchestrator.CurrentState + InteractionFeedbackData
 | Hover | Subtle cyan tint on part | PartHovered state |
 | Selection | Yellow highlight + outline | PartSelected state |
 | Drag preview | Part follows cursor, slightly transparent | DraggingPart state |
-| Magnetic field | Ghost target glows brighter as part approaches | MagneticStrength > 0 |
-| Valid placement | Green glow on ghost target | IsValidPlacement && within tolerance |
+| Magnetic field | Preview target glows brighter as part approaches | MagneticStrength > 0 |
+| Valid placement | Green glow on preview target | IsValidPlacement && within tolerance |
 | Invalid placement | Red flash on part (0.3s) | Placement attempted, invalid |
 | Snap animation | Part lerps to target | Valid placement committed |
 | Corridor | Translucent cone from target | EnablePlacementCorridors && dragging |
-| Ghost path | Curved line from part to target | EnableGhostPathGuidance && part selected |
+| Preview path | Curved line from part to target | EnablePreviewPathGuidance && part selected |
 | Step complete | Green flash + toast | Step completed |
 
 ### Integration with Existing Visuals
@@ -1046,14 +1046,14 @@ Every integration point follows the same pattern:
 
 #### 13.1 PartInteractionBridge (1690 lines — the big one)
 
-**Current role**: Handles all pointer input, drag, snap, validation, visual feedback, ghost management.
+**Current role**: Handles all pointer input, drag, snap, validation, visual feedback, preview management.
 
 **Strategy**: Do NOT rewrite. Instead:
 
 1. Create `LegacyBridgeAdapter` that holds a reference to the existing `PartInteractionBridge`.
 2. The `InteractionOrchestrator` checks `_settings.UseV2Interaction`:
    - If **false**: orchestrator is passive. `PartInteractionBridge` runs exactly as today.
-   - If **true**: orchestrator handles state machine and routing. It calls `PartInteractionBridge` methods for specific operations (ghost spawning, snap animation, color application) but bypasses its `Update()` input polling.
+   - If **true**: orchestrator handles state machine and routing. It calls `PartInteractionBridge` methods for specific operations (preview spawning, snap animation, color application) but bypasses its `Update()` input polling.
 3. `PartInteractionBridge` gets a single new public bool: `ExternalControlEnabled`. When true, its `Update()` input polling is skipped, but all its public/context-menu methods still work.
 
 ```csharp
@@ -1188,7 +1188,7 @@ public sealed class InteractionSettings : ScriptableObject
     [Header("Placement")]
     public bool EnableMagneticPlacement = true;
     public bool EnablePlacementCorridors = false;
-    public bool EnableGhostPathGuidance = false;
+    public bool EnablePreviewPathGuidance = false;
     public float MagneticRadiusMultiplier = 2.0f;
     public float CorridorHalfAngle = 45f;
 
@@ -1400,17 +1400,17 @@ InteractionFeedbackPresenter.UpdateFeedback(state, data)
 1. Implement `StepGuidanceService.cs`, `ViewpointLibrary.cs`.
 2. Implement `InteractionFeedbackPresenter.cs` and sub-feedback classes.
 3. Implement `ExplodedPreviewController.cs` (optional).
-4. Implement `GhostPathRenderer.cs` (optional).
+4. Implement `PreviewPathRenderer.cs` (optional).
 5. Enable toggles one at a time.
 
-**Validation**: On step activate, camera auto-frames target. Suggested view buttons appear. Ghost path shows when enabled.
+**Validation**: On step activate, camera auto-frames target. Suggested view buttons appear. Preview path shows when enabled.
 
 ### Phase M7: Cleanup (After Validation)
 
 **Goal**: Once V2 is validated and stable, simplify.
 
 **Steps**:
-1. Move remaining logic out of `PartInteractionBridge` into V2 systems (ghost spawning, snap animation).
+1. Move remaining logic out of `PartInteractionBridge` into V2 systems (preview spawning, snap animation).
 2. Reduce `PartInteractionBridge` to a thin adapter or remove it.
 3. Remove `LegacyBridgeAdapter`.
 4. Set `UseV2Interaction = true` as default.
@@ -1480,7 +1480,7 @@ EnableMagneticPlacement   = false    // Desktop users have precision
 EnablePlacementCorridors  = false    // Advanced, enable later
 EnableStepViewGuidance    = true
 EnableExplodedStepPreview = false    // Experimental
-EnableGhostPathGuidance   = false    // Experimental
+EnablePreviewPathGuidance   = false    // Experimental
 ```
 
 ### Mobile Default
@@ -1499,7 +1499,7 @@ EnableMagneticPlacement   = true     // Mobile needs precision assist
 EnablePlacementCorridors  = false
 EnableStepViewGuidance    = true
 EnableExplodedStepPreview = false
-EnableGhostPathGuidance   = true     // Helps find off-screen targets
+EnablePreviewPathGuidance   = true     // Helps find off-screen targets
 ```
 
 ### Debug / Development
@@ -1591,7 +1591,7 @@ EnableMagneticPlacement          Placement Assist     false              true
 EnablePlacementCorridors         Placement Assist     false              false
 EnableStepViewGuidance           Step Guidance        true               true
 EnableExplodedStepPreview        Step Guidance        false              false
-EnableGhostPathGuidance          Placement Assist     false              true
+EnablePreviewPathGuidance          Placement Assist     false              true
 ```
 
 ## Appendix B: File Count Summary

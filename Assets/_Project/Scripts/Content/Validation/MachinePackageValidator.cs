@@ -373,7 +373,7 @@ namespace OSE.Content.Validation
                 if (!string.IsNullOrWhiteSpace(action.targetId) && !stepTargetIds.Contains(action.targetId))
                 {
                     issues.Add(Warning($"{path}.requiredToolActions[{i}].targetId",
-                        $"Tool action target '{action.targetId}' is not listed in step's targetIds. Ghost/marker may not spawn."));
+                        $"Tool action target '{action.targetId}' is not listed in step's targetIds. Preview/marker may not spawn."));
                 }
 
                 if (!string.IsNullOrWhiteSpace(action.toolId) && !stepToolIds.Contains(action.toolId))
@@ -639,7 +639,7 @@ namespace OSE.Content.Validation
             foreach (string tId in targetIds)
             {
                 if (!coveredTargets.Contains(tId))
-                    issues.Add(Warning("previewConfig.targetPlacements", $"Target '{tId}' has no placement entry. Ghost will use fallback positioning."));
+                    issues.Add(Warning("previewConfig.targetPlacements", $"Target '{tId}' has no placement entry. Preview will use fallback positioning."));
             }
 
             HashSet<string> coveredSubassemblies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -838,14 +838,14 @@ namespace OSE.Content.Validation
             }
 
             // Cross-check: targetPlacement positions must match the associated part's
-            // playPosition. A mismatch means the ghost preview and the actual placed
+            // playPosition. A mismatch means the placement preview and the actual placed
             // position will disagree — confusing for the user.
-            ValidateGhostPlayPositionConsistency(package, previewConfig, coveredParts, issues);
+            ValidatePreviewPlayPositionConsistency(package, previewConfig, coveredParts, issues);
         }
 
         private const float PositionTolerance = 0.001f;
 
-        private static void ValidateGhostPlayPositionConsistency(
+        private static void ValidatePreviewPlayPositionConsistency(
             MachinePackageDefinition package,
             PackagePreviewConfig previewConfig,
             HashSet<string> coveredPartIds,
@@ -912,10 +912,10 @@ namespace OSE.Content.Validation
                     float dist = (float)Math.Sqrt(distSq);
                     issues.Add(Warning(
                         $"previewConfig.targetPlacements[{tp.targetId}]",
-                        $"Ghost position ({tp.position.x:F3}, {tp.position.y:F3}, {tp.position.z:F3}) differs from " +
+                        $"Preview position ({tp.position.x:F3}, {tp.position.y:F3}, {tp.position.z:F3}) differs from " +
                         $"part '{partId}' playPosition ({pp.playPosition.x:F3}, {pp.playPosition.y:F3}, {pp.playPosition.z:F3}) " +
-                        $"by {dist:F4}m. Ghost will appear at the wrong location. " +
-                        $"Update targetPlacement to match playPosition or the ghost code will override it."));
+                        $"by {dist:F4}m. Preview will appear at the wrong location. " +
+                        $"Update targetPlacement to match playPosition or the preview code will override it."));
                 }
             }
         }

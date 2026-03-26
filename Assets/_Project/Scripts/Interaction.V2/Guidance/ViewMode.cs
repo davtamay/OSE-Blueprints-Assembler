@@ -1,4 +1,4 @@
-namespace OSE.Interaction.V2
+namespace OSE.Interaction
 {
     /// <summary>
     /// Semantic classification of how the camera should frame a step's spatial context.
@@ -6,7 +6,7 @@ namespace OSE.Interaction.V2
     /// </summary>
     public enum ViewMode
     {
-        /// <summary>Frame the source part and its ghost/target zone together.</summary>
+        /// <summary>Frame the source part and its preview/target zone together.</summary>
         SourceAndTarget = 0,
         /// <summary>Frame both endpoints of a connection or measurement.</summary>
         PairEndpoints = 1,

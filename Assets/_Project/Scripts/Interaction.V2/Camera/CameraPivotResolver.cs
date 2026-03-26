@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace OSE.Interaction.V2
+namespace OSE.Interaction
 {
     /// <summary>
     /// Resolves the camera pivot position based on the current interaction context.
@@ -13,7 +13,7 @@ namespace OSE.Interaction.V2
         {
             AssemblyCenter,
             SelectedPart,
-            GhostTarget,
+            PreviewTarget,
             StepTarget,
             Custom
         }

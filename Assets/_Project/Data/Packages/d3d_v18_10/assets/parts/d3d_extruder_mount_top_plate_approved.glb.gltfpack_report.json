@@ -1,0 +1,9 @@
+﻿{
+    "file":  "d3d_extruder_mount_top_plate_approved.glb",
+    "source":  "source_cad/extruder_stage02/exported/glb_candidates/Brackettop.glb",
+    "gltfpackArgs":  [
+                         "-noq",
+                         "-cc"
+                     ],
+    "packedSizeBytes":  143312
+}

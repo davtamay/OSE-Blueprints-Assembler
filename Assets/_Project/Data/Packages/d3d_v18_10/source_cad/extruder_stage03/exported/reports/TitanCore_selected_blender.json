@@ -1,0 +1,27 @@
+{
+  "input_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder_stage03\\exported\\stl\\TitanCore_selected.stl",
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder_stage03\\exported\\glb_candidates\\TitanCore_selected.glb",
+  "units": "m",
+  "object_count": 1,
+  "material_name": "D3D Titan Core",
+  "base_color": [
+    0.58,
+    0.58,
+    0.62,
+    1.0
+  ],
+  "metallic": 0.0,
+  "roughness": 0.5,
+  "center_mode": "center",
+  "bound_box": {
+    "xmin_m": -0.02949993498623371,
+    "xmax_m": 0.02949993498623371,
+    "ymin_m": -0.043669648468494415,
+    "ymax_m": 0.043669648468494415,
+    "zmin_m": -0.038373883813619614,
+    "zmax_m": 0.038373880088329315,
+    "xlen_m": 0.05899986997246742,
+    "ylen_m": 0.08733929693698883,
+    "zlen_m": 0.07674776390194893
+  }
+}

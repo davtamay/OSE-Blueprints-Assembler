@@ -4,13 +4,14 @@ using System.Threading.Tasks;
 using OSE.App;
 using OSE.Content;
 using OSE.Core;
+using OSE.Interaction;
 using OSE.Runtime;
 using UnityEngine;
 
 namespace OSE.UI.Root
 {
     /// <summary>
-    /// Manages the tool-cursor ghost and pipe-cursor ghost that follow the pointer
+    /// Manages the tool-cursor preview and pipe-cursor preview that follow the pointer
     /// on screen during tool-mode and pipe-connection steps respectively.
     /// Extracted from PartInteractionBridge to keep cursor concerns in one place.
     /// </summary>
@@ -19,7 +20,7 @@ namespace OSE.UI.Root
         // ── Constants ──────────────────────────────────────────────────────────────
         public const float CursorUniformScale      = 0.16f;
         public const float CursorRayDistance       = 0.75f;
-        public const float PipeCursorRayDistance   = 0.35f;  // closer than tool ghost
+        public const float PipeCursorRayDistance   = 0.35f;  // closer than tool preview
         public const float CursorVerticalOffset    = 0.15f;
         public const float ScreenProximityReadyPx  = 150f;   // screen pixels — cursor changes colour
 
@@ -28,22 +29,23 @@ namespace OSE.UI.Root
 
         // ── State ──────────────────────────────────────────────────────────────────
         private readonly Transform _fallbackParent;
-        private GameObject _toolGhostIndicator;
-        private Quaternion _toolGhostUpCorrection = Quaternion.identity;
-        private Material[][] _toolGhostOriginalMaterials;
+        private GameObject _toolPreviewIndicator;
+        private Quaternion _toolPreviewUpCorrection = Quaternion.identity;
+        private Vector3 _gripOffset = Vector3.zero;
+        private Material[][] _toolPreviewOriginalMaterials;
         private int _refreshGeneration;
         private Vector3 _baseLocalScale;
-        private GameObject _pipeCursorGhost;
+        private GameObject _pipeCursorPreview;
         private bool _cursorInReadyState;
         private bool _positionUpdateSuspended;
 
         // ── Public interface ───────────────────────────────────────────────────────
-        public GameObject ToolGhost       => _toolGhostIndicator;
+        public GameObject ToolPreview     => _toolPreviewIndicator;
         public bool CursorInReadyState    => _cursorInReadyState;
 
         /// <summary>
-        /// When true, UpdatePosition() skips repositioning the tool ghost.
-        /// Used by the preview system while the ghost is detached from the camera.
+        /// When true, UpdatePosition() skips repositioning the tool preview.
+        /// Used by the preview system while the preview is detached from the camera.
         /// </summary>
         public bool PositionUpdateSuspended
         {
@@ -56,49 +58,49 @@ namespace OSE.UI.Root
             _fallbackParent = fallbackParent;
         }
 
-        /// <summary>Destroys the tool ghost, honouring the hint-ghost coupling.</summary>
-        public void Clear(bool toolGhostIsHintGhost, Action clearHintCallback)
+        /// <summary>Destroys the tool preview, honouring the hint-preview coupling.</summary>
+        public void Clear(bool toolPreviewIsHintPreview, Action clearHintCallback)
         {
-            if (_toolGhostIndicator == null)
+            if (_toolPreviewIndicator == null)
                 return;
 
-            if (toolGhostIsHintGhost)
+            if (toolPreviewIsHintPreview)
                 clearHintCallback?.Invoke();
 
-            UnityEngine.Object.Destroy(_toolGhostIndicator);
-            _toolGhostIndicator = null;
-            _toolGhostUpCorrection = Quaternion.identity;
+            UnityEngine.Object.Destroy(_toolPreviewIndicator);
+            _toolPreviewIndicator = null;
+            _toolPreviewUpCorrection = Quaternion.identity;
             _cursorInReadyState = false;
             _positionUpdateSuspended = false;
-            _toolGhostOriginalMaterials = null;
+            _toolPreviewOriginalMaterials = null;
         }
 
         /// <summary>
-        /// Releases the tool ghost without destroying it, so the caller can
+        /// Releases the tool preview without destroying it, so the caller can
         /// repurpose it (e.g. convert it into a persistent tool).
-        /// Returns the detached GameObject, or null if there was no ghost.
-        /// After this call, <see cref="ToolGhost"/> is null and a new
-        /// <see cref="RefreshAsync"/> call will create a fresh cursor ghost.
+        /// Returns the detached GameObject, or null if there was no preview.
+        /// After this call, <see cref="ToolPreview"/> is null and a new
+        /// <see cref="RefreshAsync"/> call will create a fresh cursor preview.
         /// </summary>
-        public GameObject DetachGhost()
+        public GameObject DetachPreview()
         {
-            GameObject ghost = _toolGhostIndicator;
-            if (ghost == null) return null;
+            GameObject preview = _toolPreviewIndicator;
+            if (preview == null) return null;
 
-            _toolGhostIndicator = null;
-            _toolGhostUpCorrection = Quaternion.identity;
+            _toolPreviewIndicator = null;
+            _toolPreviewUpCorrection = Quaternion.identity;
             _cursorInReadyState = false;
             _positionUpdateSuspended = false;
-            _toolGhostOriginalMaterials = null;
-            return ghost;
+            _toolPreviewOriginalMaterials = null;
+            return preview;
         }
 
-        /// <summary>Loads the active tool model, parents it to the camera and configures it as the cursor ghost.</summary>
+        /// <summary>Loads the active tool model, parents it to the camera and configures it as the cursor preview.</summary>
         public async Task RefreshAsync(PackagePartSpawner spawner, PreviewSceneSetup setup,
-                            bool toolGhostIsHintGhost, Action clearHintCallback,
+                            bool toolPreviewIsHintPreview, Action clearHintCallback,
                             CancellationToken ct = default)
         {
-            Clear(toolGhostIsHintGhost, clearHintCallback);
+            Clear(toolPreviewIsHintPreview, clearHintCallback);
 
             if (!Application.isPlaying || spawner == null || setup == null)
                 return;
@@ -108,72 +110,66 @@ namespace OSE.UI.Root
 
             int myGeneration = ++_refreshGeneration;
 
-            GameObject ghostTool = null;
+            GameObject previewTool = null;
             if (!string.IsNullOrWhiteSpace(tool.assetRef))
             {
-                ghostTool = await spawner.LoadPackageAssetAsync(tool.assetRef, ct: ct);
+                previewTool = await spawner.LoadPackageAssetAsync(tool.assetRef, ct: ct);
             }
 
             // Another RefreshAsync call started while we were awaiting — discard our result
             if (myGeneration != _refreshGeneration)
             {
-                if (ghostTool != null)
-                    UnityEngine.Object.Destroy(ghostTool);
+                if (previewTool != null)
+                    UnityEngine.Object.Destroy(previewTool);
                 return;
             }
 
-            if (ghostTool == null)
-                ghostTool = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            if (previewTool == null)
+                previewTool = GameObject.CreatePrimitive(PrimitiveType.Capsule);
 
-            _toolGhostIndicator = ghostTool;
-            _toolGhostIndicator.name = $"CursorTool_{activeToolId}";
+            _toolPreviewIndicator = previewTool;
+            _toolPreviewIndicator.name = $"CursorTool_{activeToolId}";
 
             Camera mainCam = Camera.main;
-            _toolGhostIndicator.transform.SetParent(
+            _toolPreviewIndicator.transform.SetParent(
                 mainCam != null ? mainCam.transform : _fallbackParent, false);
 
             float toolScale = (tool.scaleOverride > 0f)
                 ? CursorUniformScale * tool.scaleOverride
                 : CursorUniformScale;
-            _toolGhostIndicator.transform.localScale = Vector3.one * toolScale;
+            _toolPreviewIndicator.transform.localScale = Vector3.one * toolScale;
 
-            bool hasOverride = tool.HasOrientationOverride;
-            OseLog.Info($"[ToolGhost] tool={activeToolId} useOrientationOverride={tool.useOrientationOverride} orientationEuler={tool.orientationEuler} hasOverride={hasOverride}");
-            if (hasOverride)
-            {
-                _toolGhostUpCorrection = Quaternion.Euler(tool.orientationEuler);
-                OseLog.Info($"[ToolGhost] Using orientationEuler override: {tool.orientationEuler} -> quat={_toolGhostUpCorrection}");
-            }
-            else
-            {
-                _toolGhostUpCorrection = ComputeUprightCorrection(_toolGhostIndicator)
-                    * Quaternion.Euler(0f, 180f, 180f);
-                OseLog.Info($"[ToolGhost] Using ComputeUprightCorrection fallback -> quat={_toolGhostUpCorrection}");
-            }
+            _toolPreviewUpCorrection = ToolPoseResolver.ResolvePreviewRotation(tool, _toolPreviewIndicator);
+            _gripOffset = ToolPoseResolver.ResolveCursorOffset(tool);
+            OseLog.Info($"[ToolPreview] tool={activeToolId} hasToolPose={tool.HasToolPose} hasOrientationOverride={tool.HasOrientationOverride} -> quat={_toolPreviewUpCorrection} gripOffset={_gripOffset}");
 
-            foreach (Collider col in _toolGhostIndicator.GetComponentsInChildren<Collider>(true))
+            foreach (Collider col in _toolPreviewIndicator.GetComponentsInChildren<Collider>(true))
                 UnityEngine.Object.Destroy(col);
 
-            _toolGhostOriginalMaterials = MaterialHelper.MakeTransparent(_toolGhostIndicator, 0.55f);
-            _baseLocalScale = _toolGhostIndicator.transform.localScale;
+            // Cache the original imported materials so they can be restored
+            // when the preview is converted into a persistent (placed) tool.
+            MaterialHelper.SaveOriginals(_toolPreviewIndicator);
+
+            _toolPreviewOriginalMaterials = MaterialHelper.MakeTransparent(_toolPreviewIndicator, 0.55f);
+            _baseLocalScale = _toolPreviewIndicator.transform.localScale;
 
             // Start hidden — the first real UpdatePosition call from the bridge's
             // Update loop will place it at the actual cursor and show it.
             // This prevents a one-frame flash at screen center that looks like
             // the tool is pre-placed on the workpiece.
-            _toolGhostIndicator.SetActive(false);
+            _toolPreviewIndicator.SetActive(false);
         }
 
         /// <summary>
-        /// Moves both cursor ghosts to track the given screen position.
+        /// Moves both cursor previews to track the given screen position.
         /// Call every frame from PartInteractionBridge.Update().
         /// </summary>
         public void UpdatePosition(bool isDragging, Vector2 screenPos)
         {
             if (isDragging)
             {
-                if (_toolGhostIndicator != null) _toolGhostIndicator.SetActive(false);
-                if (_pipeCursorGhost    != null) _pipeCursorGhost.SetActive(false);
+                if (_toolPreviewIndicator != null) _toolPreviewIndicator.SetActive(false);
+                if (_pipeCursorPreview    != null) _pipeCursorPreview.SetActive(false);
                 return;
             }
 
@@ -185,17 +181,27 @@ namespace OSE.UI.Root
             float halfH = CursorRayDistance * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
             float halfW = halfH * cam.aspect;
             float localX = (vp.x - 0.5f) * 2f * halfW;
-            float localY = (vp.y - 0.5f) * 2f * halfH + CursorVerticalOffset;
-            var localPos = new Vector3(localX, localY, CursorRayDistance);
 
-            if (_toolGhostIndicator != null && !_positionUpdateSuspended)
+            if (_toolPreviewIndicator != null && !_positionUpdateSuspended)
             {
-                if (!_toolGhostIndicator.activeSelf) _toolGhostIndicator.SetActive(true);
-                _toolGhostIndicator.transform.localPosition = localPos;
-                _toolGhostIndicator.transform.localRotation = _toolGhostUpCorrection;
+                if (!_toolPreviewIndicator.activeSelf) _toolPreviewIndicator.SetActive(true);
+
+                // When a grip offset is authored, place grip exactly at the pointer.
+                // When no grip offset, float the preview above the pointer so the
+                // workpiece stays visible under the tool.
+                bool hasGrip = _gripOffset.sqrMagnitude > 0.001f;
+                float yOffset = hasGrip ? 0f : CursorVerticalOffset;
+                float localY = (vp.y - 0.5f) * 2f * halfH + yOffset;
+                var localPos = new Vector3(localX, localY, CursorRayDistance);
+
+                // Shift the preview so the grip point (+ cursorOffset) sits at the pointer.
+                float s = _toolPreviewIndicator.transform.localScale.x;
+                Vector3 adjustedPos = localPos - _toolPreviewUpCorrection * (_gripOffset * s);
+                _toolPreviewIndicator.transform.localPosition = adjustedPos;
+                _toolPreviewIndicator.transform.localRotation = _toolPreviewUpCorrection;
             }
 
-            if (_pipeCursorGhost != null)
+            if (_pipeCursorPreview != null)
             {
                 float pipeHalfH = PipeCursorRayDistance * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
                 float pipeHalfW = pipeHalfH * cam.aspect;
@@ -203,71 +209,71 @@ namespace OSE.UI.Root
                     (vp.x - 0.5f) * 2f * pipeHalfW,
                     (vp.y - 0.5f) * 2f * pipeHalfH,
                     PipeCursorRayDistance);
-                if (!_pipeCursorGhost.activeSelf) _pipeCursorGhost.SetActive(true);
-                _pipeCursorGhost.transform.localPosition = pipeLocalPos;
-                _pipeCursorGhost.transform.localRotation = Quaternion.identity;
+                if (!_pipeCursorPreview.activeSelf) _pipeCursorPreview.SetActive(true);
+                _pipeCursorPreview.transform.localPosition = pipeLocalPos;
+                _pipeCursorPreview.transform.localRotation = Quaternion.identity;
             }
         }
 
         /// <summary>Spawns a semi-transparent clone of the pipe part that tracks the cursor.</summary>
-        public async Task SpawnPipeCursorGhostAsync(MachinePackageDefinition package, StepDefinition step,
+        public async Task SpawnPipeCursorPreviewAsync(MachinePackageDefinition package, StepDefinition step,
                                          Func<string, GameObject> findSpawnedPart, PackagePartSpawner spawner,
                                          CancellationToken ct = default)
         {
-            ClearPipeCursorGhost();
+            ClearPipeCursorPreview();
 
             string[] reqParts = step.requiredPartIds;
             if (reqParts == null || reqParts.Length == 0) return;
             string partId = reqParts[0];
 
-            GameObject ghost = null;
+            GameObject preview = null;
             GameObject spawnedSource = findSpawnedPart?.Invoke(partId);
             if (spawnedSource != null)
             {
-                ghost = UnityEngine.Object.Instantiate(spawnedSource);
+                preview = UnityEngine.Object.Instantiate(spawnedSource);
             }
             else if (package.TryGetPart(partId, out PartDefinition partDef)
                      && !string.IsNullOrWhiteSpace(partDef.assetRef))
             {
-                ghost = await spawner.LoadPackageAssetAsync(partDef.assetRef, ct: ct);
+                preview = await spawner.LoadPackageAssetAsync(partDef.assetRef, ct: ct);
             }
 
-            if (ghost == null)
-                ghost = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            if (preview == null)
+                preview = GameObject.CreatePrimitive(PrimitiveType.Capsule);
 
-            _pipeCursorGhost = ghost;
-            _pipeCursorGhost.name = $"CursorCable_{partId}";
+            _pipeCursorPreview = preview;
+            _pipeCursorPreview.name = $"CursorCable_{partId}";
 
             Camera mainCam = Camera.main;
-            _pipeCursorGhost.transform.SetParent(
+            _pipeCursorPreview.transform.SetParent(
                 mainCam != null ? mainCam.transform : _fallbackParent, false);
 
-            _pipeCursorGhost.transform.localScale = Vector3.one * CursorUniformScale;
+            _pipeCursorPreview.transform.localScale = Vector3.one * CursorUniformScale;
 
-            foreach (Collider col in _pipeCursorGhost.GetComponentsInChildren<Collider>(true))
+            foreach (Collider col in _pipeCursorPreview.GetComponentsInChildren<Collider>(true))
                 UnityEngine.Object.Destroy(col);
 
-            MaterialHelper.MakeTransparent(_pipeCursorGhost, 0.55f);
+            MaterialHelper.MakeTransparent(_pipeCursorPreview, 0.55f);
         }
 
-        /// <summary>Destroys the pipe-cursor ghost if one is active.</summary>
-        public void ClearPipeCursorGhost()
+        /// <summary>Destroys the pipe-cursor preview if one is active.</summary>
+        public void ClearPipeCursorPreview()
         {
-            if (_pipeCursorGhost == null) return;
-            UnityEngine.Object.Destroy(_pipeCursorGhost);
-            _pipeCursorGhost = null;
+            if (_pipeCursorPreview == null) return;
+            UnityEngine.Object.Destroy(_pipeCursorPreview);
+            _pipeCursorPreview = null;
         }
 
-        /// <summary>Sets the cursor to ready state (bright green glow) and applies it to the ghost.</summary>
+        /// <summary>Sets the cursor to ready state (bright green glow) and applies it to the preview.</summary>
         public void SetReadyState(bool ready)
         {
             if (ready == _cursorInReadyState) return;
             if (ready)
             {
-                if (_toolGhostIndicator != null && _toolGhostIndicator.activeSelf)
+                if (_toolPreviewIndicator != null && _toolPreviewIndicator.activeSelf)
                 {
-                    MaterialHelper.ApplyToolCursor(_toolGhostIndicator, ReadyColor);
-                    MaterialHelper.SetEmission(_toolGhostIndicator, ReadyEmission * 2f);
+                    MaterialHelper.ApplyToolCursor(_toolPreviewIndicator, ReadyColor);
+                    MaterialHelper.SetEmission(_toolPreviewIndicator, ReadyEmission * 2f);
                 }
                 _cursorInReadyState = true;
             }
@@ -279,39 +285,74 @@ namespace OSE.UI.Root
 
         /// <summary>
         /// Call every frame from the bridge's Update loop to animate the ready-state pulse.
-        /// When ready, the tool ghost gently pulses in scale and emission intensity
+        /// When ready, the tool preview gently pulses in scale and emission intensity
         /// so the user clearly sees "this tool is ready to act — click now."
         /// </summary>
         public void UpdateReadyPulse()
         {
-            if (!_cursorInReadyState || _toolGhostIndicator == null) return;
+            if (!_cursorInReadyState || _toolPreviewIndicator == null) return;
 
             float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 5f);
             float scale = 1f + 0.08f * pulse;
-            _toolGhostIndicator.transform.localScale = _baseLocalScale * scale;
+            _toolPreviewIndicator.transform.localScale = _baseLocalScale * scale;
 
             Color emission = ReadyEmission * Mathf.Lerp(1.2f, 2.5f, pulse);
-            MaterialHelper.SetEmission(_toolGhostIndicator, emission);
+            MaterialHelper.SetEmission(_toolPreviewIndicator, emission);
         }
 
         /// <summary>Restores the original semi-transparent tool materials, exiting ready state.</summary>
         public void RestoreColor()
         {
             _cursorInReadyState = false;
-            if (_toolGhostIndicator == null) return;
+            if (_toolPreviewIndicator == null) return;
 
-            var renderers = _toolGhostIndicator.GetComponentsInChildren<Renderer>(true);
-            if (_toolGhostOriginalMaterials != null && _toolGhostOriginalMaterials.Length == renderers.Length)
+            var renderers = _toolPreviewIndicator.GetComponentsInChildren<Renderer>(true);
+            if (_toolPreviewOriginalMaterials != null && _toolPreviewOriginalMaterials.Length == renderers.Length)
             {
                 for (int i = 0; i < renderers.Length; i++)
-                    renderers[i].sharedMaterials = _toolGhostOriginalMaterials[i];
+                    renderers[i].sharedMaterials = _toolPreviewOriginalMaterials[i];
             }
 
             // Reset scale back to base after ready pulse
             if (_baseLocalScale.sqrMagnitude > 0f)
-                _toolGhostIndicator.transform.localScale = _baseLocalScale;
+                _toolPreviewIndicator.transform.localScale = _baseLocalScale;
 
-            MaterialHelper.SetEmission(_toolGhostIndicator, Color.black);
+            MaterialHelper.SetEmission(_toolPreviewIndicator, Color.black);
+        }
+
+        /// <summary>
+        /// Configures the tool preview for XR grab interaction using toolPose data.
+        /// Call after <see cref="RefreshAsync"/> when in XR mode.
+        /// In controller mode, the tool renders semi-transparent so the controller
+        /// model remains visible through it.
+        /// </summary>
+        public void ConfigureXRGrab(bool isControllerMode)
+        {
+            if (_toolPreviewIndicator == null) return;
+
+            if (!TryGetActiveToolDefinition(out _, out ToolDefinition tool))
+                return;
+
+            // Unparent from camera — XR grab will control position
+            _toolPreviewIndicator.transform.SetParent(null, true);
+            _positionUpdateSuspended = true;
+
+            var handler = _toolPreviewIndicator.GetComponent<XRToolGrabHandler>();
+            if (handler == null)
+                handler = _toolPreviewIndicator.AddComponent<XRToolGrabHandler>();
+
+            handler.Setup(tool.toolPose, isControllerMode);
+        }
+
+        /// <summary>
+        /// Switches the XR tool visual mode (controller = faded, hand = opaque).
+        /// No-op if the preview has no <see cref="XRToolGrabHandler"/>.
+        /// </summary>
+        public void SetXRControllerMode(bool isController)
+        {
+            if (_toolPreviewIndicator == null) return;
+            var handler = _toolPreviewIndicator.GetComponent<XRToolGrabHandler>();
+            handler?.SetControllerMode(isController);
         }
 
         // ── Private helpers ────────────────────────────────────────────────────────
@@ -335,91 +376,10 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
-        /// Computes a local rotation that aligns the model's principal axis with local Y (up).
-        /// Uses actual mesh vertices to find the two farthest-apart points, which defines
-        /// the shaft direction even for diagonally-oriented models from image-to-3D.
-        /// For puck/disc-shaped models (where the two longest bbox extents are similar),
-        /// falls back to aligning the thinnest axis to camera-forward so the wide face is visible.
+        /// Delegates to <see cref="ToolPoseResolver.ComputeUprightCorrection"/>.
+        /// Kept for backward compatibility with any external callers.
         /// </summary>
         public static Quaternion ComputeUprightCorrection(GameObject root)
-        {
-            var filters = root.GetComponentsInChildren<MeshFilter>(true);
-            if (filters.Length == 0) return Quaternion.identity;
-
-            var allPoints = new System.Collections.Generic.List<Vector3>();
-            foreach (var mf in filters)
-            {
-                if (mf.sharedMesh == null) continue;
-                var verts = mf.sharedMesh.vertices;
-                var localToRoot = root.transform.InverseTransformPoint(mf.transform.position);
-                var rot = Quaternion.Inverse(root.transform.rotation) * mf.transform.rotation;
-                var scale = mf.transform.lossyScale;
-                var rootScale = root.transform.lossyScale;
-                for (int i = 0; i < verts.Length; i++)
-                {
-                    Vector3 v = rot * Vector3.Scale(verts[i],
-                        new Vector3(scale.x / rootScale.x, scale.y / rootScale.y, scale.z / rootScale.z))
-                        + localToRoot;
-                    allPoints.Add(v);
-                }
-            }
-
-            if (allPoints.Count < 2) return Quaternion.identity;
-
-            Vector3 bmin = allPoints[0], bmax = allPoints[0];
-            for (int i = 1; i < allPoints.Count; i++)
-            {
-                bmin = Vector3.Min(bmin, allPoints[i]);
-                bmax = Vector3.Max(bmax, allPoints[i]);
-            }
-            Vector3 extents = bmax - bmin;
-
-            float[] sorted = { extents.x, extents.y, extents.z };
-            System.Array.Sort(sorted);
-            float mid    = sorted[1];
-            float longest = sorted[2];
-
-            // Puck/disc detection: if the two longest extents are nearly equal (ratio < 1.2),
-            // the model has no clear shaft. Align the thinnest axis to forward (Z)
-            // so the wide face is visible to the user.
-            const float PuckThreshold = 1.2f;
-            if (longest > 0.001f && mid > 0.001f && longest / mid < PuckThreshold)
-            {
-                Vector3 thinAxis;
-                if (extents.x <= extents.y && extents.x <= extents.z)
-                    thinAxis = Vector3.right;
-                else if (extents.y <= extents.x && extents.y <= extents.z)
-                    thinAxis = Vector3.up;
-                else
-                    thinAxis = Vector3.forward;
-
-                return Quaternion.FromToRotation(thinAxis, Vector3.forward);
-            }
-
-            // Standard shaft-detection: find approximate shaft axis via farthest vertex pair
-            int step = Mathf.Max(1, allPoints.Count / 200);
-            Vector3 bestA = Vector3.zero, bestB = Vector3.zero;
-            float bestDistSq = 0f;
-            for (int i = 0; i < allPoints.Count; i += step)
-            {
-                for (int j = i + step; j < allPoints.Count; j += step)
-                {
-                    float dSq = (allPoints[i] - allPoints[j]).sqrMagnitude;
-                    if (dSq > bestDistSq)
-                    {
-                        bestDistSq = dSq;
-                        bestA = allPoints[i];
-                        bestB = allPoints[j];
-                    }
-                }
-            }
-
-            Vector3 shaftDir = (bestB - bestA).normalized;
-            if (shaftDir.sqrMagnitude < 0.001f) return Quaternion.identity;
-
-            if (shaftDir.y < 0f) shaftDir = -shaftDir;
-
-            return Quaternion.FromToRotation(shaftDir, Vector3.up);
-        }
+            => ToolPoseResolver.ComputeUprightCorrection(root);
     }
 }

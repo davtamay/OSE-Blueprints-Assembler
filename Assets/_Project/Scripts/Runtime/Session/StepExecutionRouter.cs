@@ -72,7 +72,7 @@ namespace OSE.Runtime
 
         /// <summary>
         /// Calls <see cref="IStepFamilyHandler.Cleanup"/> on every registered handler
-        /// so that all families release visual artifacts (port spheres, cable ghosts,
+        /// so that all families release visual artifacts (port spheres, cable previews,
         /// rendered pipes, emission pulses, etc.).
         /// </summary>
         public void CleanupAll()

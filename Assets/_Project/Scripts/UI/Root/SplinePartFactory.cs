@@ -98,18 +98,18 @@ namespace OSE.UI.Root
 
 #if UNITY_SPLINES
         /// <summary>
-        /// Creates a ghost (transparent) version of a spline tube for placement preview.
-        /// Uses the same knot geometry but with a transparent ghost material.
+        /// Creates a preview (transparent) version of a spline tube for placement preview.
+        /// Uses the same knot geometry but with a transparent preview material.
         /// </summary>
-        public static GameObject CreateGhost(
+        public static GameObject CreatePreview(
             string partId,
             SplinePathDefinition data,
             Transform parent)
         {
-            // Create in a neutral gray-blue ghost color — MaterialHelper.ApplyGhost will override
+            // Create in a neutral gray-blue preview color — MaterialHelper.ApplyPreviewMaterial will override
             var go = Create(partId, data, Color.white, parent);
             if (go != null)
-                go.name = $"Ghost_{partId}";
+                go.name = $"Preview_{partId}";
             return go;
         }
 #endif

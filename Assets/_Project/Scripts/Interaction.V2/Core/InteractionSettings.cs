@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace OSE.Interaction.V2
+namespace OSE.Interaction
 {
     /// <summary>
     /// Central toggle configuration for all V2 interaction features.
@@ -22,7 +22,7 @@ namespace OSE.Interaction.V2
         public bool EnableAutoFraming = true;
         public bool EnableVisibilitySolver = false;
         public bool EnableSmartPivot = true;
-        [Tooltip("When enabled, selecting a part pivots the camera to its ghost target (where it goes) instead of the part itself.")]
+        [Tooltip("When enabled, selecting a part pivots the camera to its placement preview target (where it goes) instead of the part itself.")]
         public bool EnablePivotToTarget = true;
         public bool EnableSuggestedViews = true;
         public bool EnableOrbitGizmo = false;
@@ -51,7 +51,7 @@ namespace OSE.Interaction.V2
         [Header("Placement — Features")]
         public bool EnableMagneticPlacement = true;
         public bool EnablePlacementCorridors = false;
-        public bool EnableGhostPathGuidance = false;
+        public bool EnablePreviewPathGuidance = false;
 
         [Header("Placement — Tuning")]
         [Range(1f, 4f)] public float MagneticRadiusMultiplier = 2f;

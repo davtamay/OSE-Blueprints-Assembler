@@ -1027,8 +1027,16 @@
         "x": 180,
         "y": 90,
         "z": 0
-      }
-    },
+      },
+      "toolPose": {
+                "gripPoint": { "x": -0.35851, "y": 1.02947, "z": 0.34301 },
+                "gripRotation": { "x": 1.72943, "y": 273.7502, "z": 178.1391 },
+                "tipPoint": { "x": -0.64916, "y": 0.01544, "z": 0.02178 },
+                "cursorOffset": { "x": 0.35851, "y": -1.02947, "z": -0.34301 },
+                "handedness": "right",
+                "poseHint": "power_grip"
+            }
+  },
     {
       "id": "tool_framing_square",
       "name": "Framing Square",
@@ -1036,7 +1044,13 @@
       "purpose": "Verifies corners are at exactly 90 degrees.",
       "usageNotes": "Place the square against both tubes at a corner. Both edges should make full contact with no gaps.",
       "assetRef": "assets/tools/tool_framing_square.glb",
-      "scaleOverride": 0.55
+      "scaleOverride": 0.55,
+      "useOrientationOverride": true,
+      "orientationEuler": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
     },
     {
       "id": "tool_clamp",
@@ -1045,7 +1059,8 @@
       "purpose": "Holds tubes in alignment during tack-welding.",
       "usageNotes": "Clamp tubes flush before tacking. Remove clamps only after tack welds have cooled.",
       "assetRef": "assets/tools/tool_clamp.glb",
-      "scaleOverride": 0.55
+      "scaleOverride": 0.55,
+      "persistent": true
     },
     {
       "id": "tool_torque_wrench",

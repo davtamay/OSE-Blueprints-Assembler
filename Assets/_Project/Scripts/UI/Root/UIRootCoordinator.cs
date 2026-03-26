@@ -748,7 +748,7 @@ namespace OSE.UI.Root
                 return;
             }
 
-            // Finished-panel stacking now uses in-world guided docking and ghost interaction
+            // Finished-panel stacking now uses in-world guided docking and preview interaction
             // as the primary affordance. Keep the step shell focused on instruction/progress.
             bool showContextActionButton = false;
             string contextActionLabel = null;

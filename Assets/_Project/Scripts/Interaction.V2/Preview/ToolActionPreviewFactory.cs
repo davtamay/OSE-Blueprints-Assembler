@@ -1,34 +1,24 @@
-using System;
-
-namespace OSE.Interaction.V2
+namespace OSE.Interaction
 {
     /// <summary>
     /// Maps Use-family profile strings to <see cref="IToolActionPreview"/> implementations.
-    /// Cascade: explicit previewType → profile default → DefaultPreview.
+    /// Reads <see cref="PreviewStyle"/> from <see cref="ToolProfileRegistry"/> —
+    /// adding a new profile with a preview is a one-line registry entry.
     /// </summary>
     public static class ToolActionPreviewFactory
     {
         public static IToolActionPreview Create(string profile)
         {
-            if (string.IsNullOrEmpty(profile))
-                return new DefaultPreview();
+            var style = ToolProfileRegistry.Get(profile).PreviewStyle;
 
-            // Case-insensitive match against canonical profile constants
-            if (profile.Equals(ToolActionProfiles.Torque, StringComparison.OrdinalIgnoreCase))
-                return new TorquePreview();
-
-            if (profile.Equals(ToolActionProfiles.Clamp, StringComparison.OrdinalIgnoreCase))
-                return new DefaultPreview();
-
-            if (profile.Equals(ToolActionProfiles.Weld, StringComparison.OrdinalIgnoreCase)
-                || profile.Equals("solder", StringComparison.OrdinalIgnoreCase))
-                return new WeldPreview();
-
-            if (profile.Equals(ToolActionProfiles.Cut, StringComparison.OrdinalIgnoreCase)
-                || profile.Equals("grind", StringComparison.OrdinalIgnoreCase))
-                return new CutPreview();
-
-            return new DefaultPreview();
+            return style switch
+            {
+                PreviewStyle.Torque => new TorquePreview(),
+                PreviewStyle.Weld => new WeldPreview(),
+                PreviewStyle.Cut => new CutPreview(),
+                PreviewStyle.SquareCheck => new SquareCheckPreview(),
+                _ => new DefaultPreview(),
+            };
         }
     }
 }

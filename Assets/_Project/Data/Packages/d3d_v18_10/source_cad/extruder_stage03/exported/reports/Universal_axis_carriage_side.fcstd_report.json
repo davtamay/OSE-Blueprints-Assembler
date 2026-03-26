@@ -1,0 +1,36 @@
+{
+  "input_fcstd": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder_stage03\\raw\\Universal_axis_carriage_side.fcstd",
+  "output_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\extruder_stage03\\exported\\stl\\Universal_axis_carriage_side.stl",
+  "source_mode": "archive_brep",
+  "units": "mm",
+  "object_count": 1,
+  "mesh_facets": 4964,
+  "mesh_points": 2476,
+  "combined_bound_box": {
+    "xmin_mm": -26.0,
+    "xmax_mm": 26.0,
+    "ymin_mm": -37.0,
+    "ymax_mm": 37.0,
+    "zmin_mm": -1.54321000422897e-14,
+    "zmax_mm": 12.0,
+    "xlen_mm": 52.0,
+    "ylen_mm": 74.0,
+    "zlen_mm": 12.000000000000016
+  },
+  "objects": [
+    {
+      "name": "PartShape.brp",
+      "bound_box": {
+        "xmin_mm": -26.000000000000014,
+        "xmax_mm": 26.000000000000007,
+        "ymin_mm": -37.0,
+        "ymax_mm": 37.0,
+        "zmin_mm": -4.43676361633711e-14,
+        "zmax_mm": 12.0,
+        "xlen_mm": 52.00000000000002,
+        "ylen_mm": 74.0,
+        "zlen_mm": 12.000000000000044
+      }
+    }
+  ]
+}

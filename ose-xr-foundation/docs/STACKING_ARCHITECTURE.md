@@ -41,7 +41,7 @@ existing systems reason about parts directly:
 - selection and highlighting
 - replay and navigation restore
 - placement validation
-- hinting and ghosting
+- hinting and previewing
 
 Reparenting actual part GameObjects under ad hoc scene hierarchies would create broad
 breakage and hidden coupling.
@@ -68,7 +68,7 @@ It is used for:
 - selecting the completed unit
 - showing the source panel or module
 - guided docking toward the target
-- composite source/target ghosting
+- composite source/target previewing
 
 The learner should perceive this as "move the finished panel," not "move one part."
 

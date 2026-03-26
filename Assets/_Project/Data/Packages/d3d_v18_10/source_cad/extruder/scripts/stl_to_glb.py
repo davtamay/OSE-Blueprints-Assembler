@@ -17,6 +17,7 @@ def parse_args(argv):
         "--base-color": os.environ.get("BLENDER_BASE_COLOR"),
         "--metallic": os.environ.get("BLENDER_METALLIC"),
         "--roughness": os.environ.get("BLENDER_ROUGHNESS"),
+        "--center-mode": os.environ.get("BLENDER_CENTER_MODE"),
     }
     index = 0
     while index < len(argv):
@@ -90,6 +91,36 @@ def world_bounds(objects):
     }
 
 
+def recenter_objects(objects, mode):
+    if not mode:
+        return
+    bounds = world_bounds(objects)
+    if bounds is None:
+        return
+    if mode == "center":
+        offset = Vector(
+            (
+                -0.5 * (bounds["xmin_m"] + bounds["xmax_m"]),
+                -0.5 * (bounds["ymin_m"] + bounds["ymax_m"]),
+                -0.5 * (bounds["zmin_m"] + bounds["zmax_m"]),
+            )
+        )
+    elif mode == "base_center":
+        offset = Vector(
+            (
+                -0.5 * (bounds["xmin_m"] + bounds["xmax_m"]),
+                -0.5 * (bounds["ymin_m"] + bounds["ymax_m"]),
+                -bounds["zmin_m"],
+            )
+        )
+    else:
+        raise ValueError("BLENDER_CENTER_MODE must be 'center' or 'base_center'.")
+    for obj in objects:
+        if obj.type != "MESH":
+            continue
+        obj.location += offset
+
+
 def build_default_material(name, base_color, metallic, roughness):
     material = bpy.data.materials.new(name=name)
     material.use_nodes = True
@@ -125,6 +156,7 @@ def main():
     base_color = parse_color(arguments["--base-color"])
     metallic = parse_float(arguments["--metallic"], 0.0)
     roughness = parse_float(arguments["--roughness"], 0.55)
+    center_mode = arguments["--center-mode"]
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     if report_path:
@@ -143,6 +175,9 @@ def main():
         obj.scale = (0.001, 0.001, 0.001)
     bpy.context.view_layer.objects.active = imported_objects[0]
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+
+    recenter_objects(imported_objects, center_mode)
+    bpy.ops.object.transform_apply(location=True, rotation=False, scale=False)
 
     ensure_materials(imported_objects, material_name, base_color, metallic, roughness)
 
@@ -163,6 +198,7 @@ def main():
         "base_color": list(base_color),
         "metallic": metallic,
         "roughness": roughness,
+        "center_mode": center_mode,
         "bound_box": bounds,
     }
     if report_path:

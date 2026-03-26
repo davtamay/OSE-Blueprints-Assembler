@@ -1,0 +1,31 @@
+{
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\axes_stage01\\exported\\glb_candidates\\d3d_y_left_axis_unit_candidate.glb",
+  "variant": "left",
+  "units": "m",
+  "source_side_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\axes_stage01\\raw\\Universal8mmaxis\\axis_8mm STL + FCSTD\\motorSide_8mm_rods.stl",
+  "source_carriage_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\axes_stage01\\raw\\Universal8mmaxis\\axis_8mm STL + FCSTD\\carriage_8mm_rods.stl",
+  "source_endstop_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\axes_stage01\\raw\\Universal8mmaxis\\axis_8mm STL + FCSTD\\endstop_holder.stl",
+  "total_height_m": 0.24,
+  "rod_length_m": 0.228,
+  "rod_diameter_m": 0.008,
+  "rod_center_spacing_m": 0.055834429,
+  "top_bottom_block_center_y_m": 0.08700000017881393,
+  "bound_box": {
+    "xmin_m": -0.013500001281499863,
+    "xmax_m": 0.006000001449137926,
+    "ymin_m": -0.11999999731779099,
+    "ymax_m": 0.11999999731779099,
+    "zmin_m": -0.0495000034570694,
+    "zmax_m": 0.03191721811890602,
+    "xlen_m": 0.01950000273063779,
+    "ylen_m": 0.23999999463558197,
+    "zlen_m": 0.08141722157597542
+  },
+  "endstop": {
+    "position_m": [
+      -0.008999999612569809,
+      0.04500000178813934,
+      -0.026000000536441803
+    ]
+  }
+}

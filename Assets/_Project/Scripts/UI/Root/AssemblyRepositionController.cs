@@ -320,7 +320,7 @@ namespace OSE.UI.Root
             if (col != null) col.enabled = false;
 
             // Amber translucent material
-            MaterialHelper.ApplyGhost(_handleDisc, new Color(1f, 0.75f, 0.2f, 0.35f));
+            MaterialHelper.ApplyPreviewMaterial(_handleDisc, new Color(1f, 0.75f, 0.2f, 0.35f));
         }
 
         // ── Reference Resolution ──

@@ -482,7 +482,7 @@ Examples:
 - hover feedback
 - selection feedback
 - inspection highlight
-- placement ghost
+- placement preview
 - valid/invalid placement indication
 - success confirmation
 - blocked action feedback

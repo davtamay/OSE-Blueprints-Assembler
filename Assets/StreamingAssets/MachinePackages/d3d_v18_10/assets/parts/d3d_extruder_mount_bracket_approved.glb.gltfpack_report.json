@@ -1,0 +1,9 @@
+﻿{
+    "file":  "d3d_extruder_mount_bracket_approved.glb",
+    "source":  "source_cad/extruder_stage02/exported/glb_candidates/Bracket.glb",
+    "gltfpackArgs":  [
+                         "-noq",
+                         "-cc"
+                     ],
+    "packedSizeBytes":  24980
+}

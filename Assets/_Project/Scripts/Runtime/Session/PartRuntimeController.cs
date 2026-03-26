@@ -141,7 +141,7 @@ namespace OSE.Runtime
                 return !IsPartLockedForMovement(partId);
 
             // Lock parts once they are placed/completed so users cannot drag
-            // them away from validated ghost/target positions.
+            // them away from validated preview/target positions.
             if (IsPartLockedForMovement(partId))
                 return false;
 

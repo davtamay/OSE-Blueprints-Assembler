@@ -136,7 +136,7 @@ This is the **highest-value deliverable** because no camera control exists today
 - `PlacementCorridorSolver` validates approach direction within configurable cone angle
 - Supports custom approach direction override per target
 
-### Task M5.3 — GhostPathRenderer
+### Task M5.3 — PreviewPathRenderer
 - NOT YET IMPLEMENTED — needs LineRenderer + bezier curve from part to target
 - Low priority, visual-only
 
@@ -241,7 +241,7 @@ All core systems have implementations:
 6. With `UseV2Interaction = false` (default): everything works exactly as before
 
 **Lower priority enhancements (visual polish):**
-- M5.3 — GhostPathRenderer (LineRenderer bezier path from part to target)
+- M5.3 — PreviewPathRenderer (LineRenderer bezier path from part to target)
 - M5.4 — AlignmentPreview (real-time position/rotation error display)
 - M6.2 — Suggested view UI buttons (Front/Side/Top/Iso/Detail in step panel)
 - M6.3 — ExplodedPreviewController (temporary exploded view on step activate)
@@ -260,7 +260,7 @@ With `UseV2Interaction = true`:
 - **Left-drag on part** → drags to target (routed through V2 → grab/place canonical actions)
 - **Left-click empty** → deselects
 - **Escape** → cancel/deselect
-- **Ghost spawning, snap animation, step completion** → unchanged (PartInteractionBridge still handles these via Update sub-methods)
+- **Preview spawning, snap animation, step completion** → unchanged (PartInteractionBridge still handles these via Update sub-methods)
 
 With `UseV2Interaction = false`:
 - Everything works exactly as before. Zero behavior change.

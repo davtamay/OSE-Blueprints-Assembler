@@ -17,6 +17,7 @@ MonoBehaviour:
   EnableAutoFraming: 1
   EnableVisibilitySolver: 0
   EnableSmartPivot: 1
+  EnablePivotToTarget: 1
   EnableSuggestedViews: 1
   EnableOrbitGizmo: 0
   EnableVisionProInteractionModel: 0
@@ -34,14 +35,17 @@ MonoBehaviour:
   MaxPitch: 85
   EnableMagneticPlacement: 1
   EnablePlacementCorridors: 0
-  EnableGhostPathGuidance: 0
+  EnableGhostPathGuidance: 1
   MagneticRadiusMultiplier: 2
   CorridorHalfAngle: 45
   EnableStepViewGuidance: 1
-  EnableExplodedStepPreview: 0
+  EnableExplodedStepPreview: 1
   DragThresholdPixels: 5
   LongPressDuration: 0.4
   DoubleTapWindow: 0.3
+  EnableToolActionPreview: 1
+  PreviewDurationScale: 1
+  GuidedAutoAssistDelay: 3
   SnapLerpSpeed: 12
   InvalidFlashDuration: 0.3
   PartLayerMask:

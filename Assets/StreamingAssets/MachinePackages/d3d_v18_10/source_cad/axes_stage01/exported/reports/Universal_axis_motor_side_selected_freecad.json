@@ -1,0 +1,39 @@
+{
+  "input_fcstd": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\axes_stage01\\raw\\Universal_axis_motor_side.fcstd",
+  "output_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\axes_stage01\\exported\\stl\\Universal_axis_motor_side_selected.stl",
+  "units": "mm",
+  "selected_labels": [
+    "Pocket009"
+  ],
+  "object_count": 1,
+  "mesh_facets": 2642,
+  "mesh_points": 1305,
+  "combined_bound_box": {
+    "xmin_mm": -32.0000000000001,
+    "xmax_mm": 27.5,
+    "ymin_mm": -33.0,
+    "ymax_mm": 33.0,
+    "zmin_mm": 0.0,
+    "zmax_mm": 12.0,
+    "xlen_mm": 59.5000000000001,
+    "ylen_mm": 66.0,
+    "zlen_mm": 12.0
+  },
+  "objects": [
+    {
+      "name": "Pocket009",
+      "label": "Pocket009",
+      "bound_box": {
+        "xmin_mm": -32.0000000000001,
+        "xmax_mm": 27.5,
+        "ymin_mm": -33.0,
+        "ymax_mm": 33.0,
+        "zmin_mm": 0.0,
+        "zmax_mm": 12.0,
+        "xlen_mm": 59.5000000000001,
+        "ylen_mm": 66.0,
+        "zlen_mm": 12.0
+      }
+    }
+  ]
+}

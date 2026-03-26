@@ -141,7 +141,7 @@ Resolution rules:
 
 Family determines the top-level dispatch. Each family resolves to an **interaction pattern** — a reusable learner-facing physical interaction contract (see `INTERACTION_PATTERN_MATRIX.md`):
 
-- **Place** → PlaceOnZone pattern: spawn ghost targets, enable drag-to-snap, validate position/rotation tolerance
+- **Place** → PlaceOnZone pattern: spawn preview targets, enable drag-to-snap, validate position/rotation tolerance
 - **Use** → TargetHit, OrderedTargets, or SelectPair pattern (depends on profile and step data): equip tool, enable tool-on-target activation, validate target coverage
 - **Connect** → SelectPair pattern: spawn port markers, enable two-click endpoint selection, validate pairing. Reuses `AnchorToAnchorInteraction` — the same pattern class used by Use.Measure
 - **Confirm** → SingleConfirm pattern: show Continue button, validate on user acknowledgement
@@ -157,8 +157,8 @@ As of Phase 15d, extracted family handlers share the `IStepFamilyHandler` interf
 Extracted handlers:
 
 - **`ConfirmStepHandler`** (Phase 15a, `OSE.Runtime`): Completes the step on pointer action. No pointer-down, update, or cleanup logic.
-- **`ConnectStepHandler`** (Phase 15b, `OSE.UI.Root`): Spawns port spheres and cable ghost on activation. Two-click confirmation via pointer-down. Renders final pipe spline and clears visuals on completion. Lives in `OSE.UI.Root` due to dependency on UI-layer types (`PackagePartSpawner`, `SplinePartFactory`, etc.).
-- **`PlaceStepHandler`** (Phase 15c, `OSE.UI.Root`): Owns ghost proximity detection, click-to-place matching, snap/flash animation, ghost selection pulse, and required-part emission pulse. Receives shared `_spawnedGhosts` list by reference. 9 constructor dependencies including `Func<>` callbacks for sequential step management.
+- **`ConnectStepHandler`** (Phase 15b, `OSE.UI.Root`): Spawns port spheres and cable preview on activation. Two-click confirmation via pointer-down. Renders final pipe spline and clears visuals on completion. Lives in `OSE.UI.Root` due to dependency on UI-layer types (`PackagePartSpawner`, `SplinePartFactory`, etc.).
+- **`PlaceStepHandler`** (Phase 15c, `OSE.UI.Root`): Owns preview proximity detection, click-to-place matching, snap/flash animation, preview selection pulse, and required-part emission pulse. Receives shared `_spawnedPreviews` list by reference. 9 constructor dependencies including `Func<>` callbacks for sequential step management.
 - **`UseStepHandler`** (Phase 15d, `OSE.UI.Root`): Owns tool-action target spawning/cleanup, target pulse/fade visuals, tool-ready evaluation, camera focus on tool targets, and tool-step execution/step completion. The bridge now delegates its tool-target and tool-primary-action entry points to this handler.
 
 Profile refines behavior within a family (e.g. `Use.Torque` shows a torque gauge, `Use.Weld` triggers welding effects). Unknown profiles fall back to the family default.
@@ -656,7 +656,7 @@ Effects may be used for:
 - dust
 - cutting/grinding suggestions
 - structural reveal transitions
-- ghost guidance
+- preview guidance
 - error correction highlights
 
 ---
@@ -786,7 +786,7 @@ Support levels such as:
 Each level can tune:
 
 - hint frequency
-- ghost placement visibility
+- placement preview visibility
 - auto-snap
 - validation strictness
 - recap prompts

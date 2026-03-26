@@ -18,47 +18,47 @@ namespace OSE.Interaction
     public sealed class PersistentToolController
     {
         private readonly IPersistentToolManager _manager;
-        private readonly IToolGhostProvider _ghostProvider;
+        private readonly IToolPreviewProvider _previewProvider;
 
-        public PersistentToolController(IPersistentToolManager manager, IToolGhostProvider ghostProvider)
+        public PersistentToolController(IPersistentToolManager manager, IToolPreviewProvider previewProvider)
         {
             _manager = manager;
-            _ghostProvider = ghostProvider;
+            _previewProvider = previewProvider;
         }
 
         /// <summary>
         /// Called at the end of a preview action phase (before return animation).
-        /// Converts the cursor ghost in-place so it stays at the target.
-        /// Returns true if the ghost was converted (caller should skip return animation).
+        /// Converts the cursor preview in-place so it stays at the target.
+        /// Returns true if the preview was converted (caller should skip return animation).
         /// </summary>
-        public bool TryConvertGhostAtAction(string targetId, Vector3 actionPos, Quaternion actionRot)
+        public bool TryConvertPreviewAtAction(string targetId, Vector3 actionPos, Quaternion actionRot)
         {
-            string toolId = _ghostProvider.GetActiveToolId();
+            string toolId = _previewProvider.GetActiveToolId();
             if (string.IsNullOrEmpty(toolId)) return false;
 
             if (!IsToolPersistent(toolId)) return false;
             if (_manager.HasPersistentToolAt(targetId)) return false;
 
-            var result = _manager.ConvertGhostToPersistent(toolId, targetId, actionPos, actionRot);
+            var result = _manager.ConvertPreviewToPersistent(toolId, targetId, actionPos, actionRot);
             return result != null;
         }
 
         /// <summary>
-        /// Non-preview path: converts the cursor ghost into a persistent tool
+        /// Non-preview path: converts the cursor preview into a persistent tool
         /// for click-to-complete actions.
         /// </summary>
-        public void TryConvertGhostOnComplete(string targetId, Vector3 worldPos, Quaternion? rotationOverride = null)
+        public void TryConvertPreviewOnComplete(string targetId, Vector3 worldPos, Quaternion? rotationOverride = null)
         {
-            string toolId = _ghostProvider.GetActiveToolId();
+            string toolId = _previewProvider.GetActiveToolId();
             if (string.IsNullOrEmpty(toolId)) return;
 
             if (!IsToolPersistent(toolId)) return;
             if (_manager.HasPersistentToolAt(targetId)) return;
 
-            GameObject ghost = _ghostProvider.GetToolGhost();
-            Quaternion rotation = rotationOverride ?? (ghost != null ? ghost.transform.rotation : Quaternion.identity);
+            GameObject preview = _previewProvider.GetToolPreview();
+            Quaternion rotation = rotationOverride ?? (preview != null ? preview.transform.rotation : Quaternion.identity);
 
-            _manager.ConvertGhostToPersistent(toolId, targetId, worldPos, rotation);
+            _manager.ConvertPreviewToPersistent(toolId, targetId, worldPos, rotation);
         }
 
         /// <summary>

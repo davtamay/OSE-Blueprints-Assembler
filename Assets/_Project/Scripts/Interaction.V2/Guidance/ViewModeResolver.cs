@@ -1,12 +1,11 @@
-using System;
 using OSE.Content;
 
-namespace OSE.Interaction.V2
+namespace OSE.Interaction
 {
     /// <summary>
     /// Resolves the <see cref="ViewMode"/> for a step using the resolution order:
     /// 1. Explicit viewMode field on the step
-    /// 2. Profile override (e.g. Use.Measure → PairEndpoints)
+    /// 2. Profile override from <see cref="ToolProfileRegistry"/>
     /// 3. Family default
     /// </summary>
     public static class ViewModeResolver
@@ -23,22 +22,17 @@ namespace OSE.Interaction.V2
             StepFamily family = step.ResolvedFamily;
             string profile = step.profile;
 
-            // 2. Profile overrides
+            // 2. Profile overrides from registry
             if (!string.IsNullOrEmpty(profile))
             {
+                var desc = ToolProfileRegistry.Get(profile);
+
                 switch (family)
                 {
-                    case StepFamily.Place:
-                        if (profile.Equals(ToolActionProfiles.AxisFit, StringComparison.OrdinalIgnoreCase))
-                            return ViewMode.WorkZone;
-                        break;
-                    case StepFamily.Use:
-                        if (profile.Equals(ToolActionProfiles.Measure, StringComparison.OrdinalIgnoreCase))
-                            return ViewMode.PairEndpoints;
-                        if (profile.Equals(ToolActionProfiles.Weld, StringComparison.OrdinalIgnoreCase) ||
-                            profile.Equals(ToolActionProfiles.Cut, StringComparison.OrdinalIgnoreCase))
-                            return ViewMode.PathView;
-                        break;
+                    case StepFamily.Place when desc.PlaceViewModeOverride.HasValue:
+                        return desc.PlaceViewModeOverride.Value;
+                    case StepFamily.Use when desc.UseViewModeOverride.HasValue:
+                        return desc.UseViewModeOverride.Value;
                 }
             }
 

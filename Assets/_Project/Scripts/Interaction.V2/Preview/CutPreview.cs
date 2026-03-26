@@ -1,7 +1,7 @@
-using OSE.UI.Root;
+using OSE.Core;
 using UnityEngine;
 
-namespace OSE.Interaction.V2
+namespace OSE.Interaction
 {
     /// <summary>
     /// Cut/Grind preview: tool approaches target, sparks stream out,
@@ -9,77 +9,36 @@ namespace OSE.Interaction.V2
     /// Observe mode: auto-play over Duration seconds.
     /// Guided mode: progress driven by user drag along cut direction.
     /// </summary>
-    public sealed class CutPreview : IToolActionPreview
+    public sealed class CutPreview : ToolActionPreviewBase
     {
-        public float Duration => 1.2f;
+        public override float Duration => 1.2f;
 
-        private PreviewContext _ctx;
-        private float _elapsed;
-        private float _guidedProgress;
-        private float _autoAssistTimer;
+        protected override float GuidedDragScale => 0.005f;
+        protected override float AutoAssistDelay => 3f;
+        protected override float AutoAssistRate => 0.5f;
+
         private bool _sparksSpawned;
         private bool _sparksBurst2;
         private GameObject _cutLine;
 
-        private const float GuidedDragScale = 0.005f;
-        private const float AutoAssistDelay = 3f;
-        private const float AutoAssistRate = 0.5f;
-
-        public void Begin(PreviewContext context)
+        public override void Begin(PreviewContext context)
         {
-            _ctx = context;
-            _elapsed = 0f;
-            _guidedProgress = 0f;
-            _autoAssistTimer = 0f;
+            base.Begin(context);
             _sparksSpawned = false;
             _sparksBurst2 = false;
             _cutLine = null;
         }
 
-        public float TickObserve(float deltaTime)
+        public override Vector2 GetExpectedDragDirection(PreviewContext context)
         {
-            _elapsed += deltaTime;
-            float t = Mathf.Clamp01(_elapsed / Duration);
-            ApplyEffects(t);
-            return t;
+            return context.ProjectDirectionToScreen(context.WeldAxis, Vector2.right);
         }
 
-        public float TickGuided(float deltaTime, Vector2 dragDelta)
+        public override void End(bool completed)
         {
-            Vector2 expected = GetExpectedDragDirection(_ctx);
-            float dot = Vector2.Dot(dragDelta, expected);
+            if (_ctx.ToolPreview != null)
+                MaterialHelper.SetEmission(_ctx.ToolPreview, Color.black);
 
-            if (dot > 0f)
-            {
-                _guidedProgress += dot * GuidedDragScale;
-                _autoAssistTimer = 0f;
-            }
-            else
-            {
-                _autoAssistTimer += deltaTime;
-            }
-
-            if (_autoAssistTimer >= AutoAssistDelay)
-                _guidedProgress += AutoAssistRate * deltaTime;
-
-            _guidedProgress = Mathf.Clamp01(_guidedProgress);
-            ApplyEffects(_guidedProgress);
-            return _guidedProgress;
-        }
-
-        public Vector2 GetExpectedDragDirection(PreviewContext context)
-        {
-            // Cut = drag horizontally across
-            return Vector2.right;
-        }
-
-        public void End(bool completed)
-        {
-            // Clear tool emission
-            if (_ctx.ToolGhost != null)
-                MaterialHelper.SetEmission(_ctx.ToolGhost, Color.black);
-
-            // Cut line persists briefly then self-destructs
             if (_cutLine != null)
             {
                 if (completed)
@@ -89,11 +48,11 @@ namespace OSE.Interaction.V2
             }
         }
 
-        private void ApplyEffects(float progress)
+        protected override void ApplyEffects(float progress)
         {
             // At 15%: tool emission glow (orange-hot)
-            if (progress >= 0.15f && _ctx.ToolGhost != null)
-                MaterialHelper.SetEmission(_ctx.ToolGhost, new Color(1f, 0.5f, 0.1f, 1f));
+            if (progress >= 0.15f && _ctx.ToolPreview != null)
+                MaterialHelper.SetEmission(_ctx.ToolPreview, new Color(1f, 0.5f, 0.1f, 1f));
 
             // Sparks at 20%
             if (!_sparksSpawned && progress >= 0.2f)
@@ -118,7 +77,6 @@ namespace OSE.Interaction.V2
             if (_cutLine != null)
             {
                 float lineProgress = Mathf.InverseLerp(0.25f, 0.9f, progress);
-                // Extend line by scaling X
                 _cutLine.transform.localScale = new Vector3(
                     Mathf.Lerp(0.001f, 0.06f, lineProgress),
                     0.002f,
@@ -126,10 +84,10 @@ namespace OSE.Interaction.V2
             }
 
             // Tool vibration during cutting
-            if (_ctx.ToolGhost != null && progress > 0.15f && progress < 0.9f)
+            if (_ctx.ToolPreview != null && progress > 0.15f && progress < 0.9f)
             {
                 float vibrate = Mathf.Sin(progress * 80f) * 0.15f;
-                _ctx.ToolGhost.transform.position += new Vector3(vibrate * 0.001f, 0f, 0f);
+                _ctx.ToolPreview.transform.position += new Vector3(vibrate * 0.001f, 0f, 0f);
             }
         }
 

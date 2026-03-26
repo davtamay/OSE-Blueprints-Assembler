@@ -114,7 +114,7 @@ All tool GLB models must follow this axis convention:
 
 ### Why This Convention
 
-The runtime uses `Quaternion.LookRotation(camera.forward, camera.up)` to orient the tool ghost. This aligns the tool's local +Z with the camera's forward direction — like holding a gun. The business end points into the scene, the handle stays near the user.
+The runtime uses `Quaternion.LookRotation(camera.forward, camera.up)` to orient the tool preview. This aligns the tool's local +Z with the camera's forward direction — like holding a gun. The business end points into the scene, the handle stays near the user.
 
 ### Generation Prompt Tip
 
@@ -222,6 +222,63 @@ This reads the GLB's native bounding box, looks up the target dimensions in `Par
 
 **Uniform scaling** preserves the model's proportions. If the model looks wrong after normalization, the problem is in the model's proportions — fix at generation time, not scaling time.
 
+### 6.4A CAD-Derived Tool Hardening Via FreeCAD + Blender CLI
+
+When a tool or fixture has a real CAD source (`.FCStd`, STEP, or an OSE part-library file), prefer a CAD-first pipeline over text-to-3D or image-to-3D. This is the correct path for fit-critical or dimension-sensitive tool geometry.
+
+Recommended CLI workflow:
+
+1. **Export only the exact CAD bodies you want from FreeCAD**
+   - Keep raw CAD in a package-local `source_cad/` folder.
+   - Export specific labeled objects, not the whole document, when the CAD file mixes the target body with assembly context.
+
+```powershell
+& "C:\Program Files\FreeCAD 1.0\bin\python.exe" export_fcstd_selection_to_stl.py `
+  --input  "source_cad/tools/raw/Clamp.fcstd" `
+  --output "source_cad/tools/exported/stl/Clamp_selected.stl" `
+  --report "source_cad/tools/exported/reports/Clamp_selected_freecad.json" `
+  --labels "Clamp Body,Clamp Screw"
+```
+
+2. **Normalize scale, pivot, and base material in Blender CLI**
+   - Convert mm CAD mesh output to meter-scale GLB.
+   - Recenter the mesh to a sane runtime pivot:
+     - `center` for symmetric handheld tools
+     - `base_center` when the contact point should sit on the world plane
+   - Assign a simple Principled material so the GLB is not exported untextured.
+
+```powershell
+& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" -b -P stl_to_glb.py -- `
+  --input "source_cad/tools/exported/stl/Clamp_selected.stl" `
+  --output "source_cad/tools/exported/glb_candidates/Clamp_selected.glb" `
+  --report "source_cad/tools/exported/reports/Clamp_selected_blender.json" `
+  --material-name "OSE Clamp Dark" `
+  --base-color "0.20,0.20,0.22,1.0" `
+  --roughness 0.55 `
+  --center-mode base_center
+```
+
+3. **Pack the approved runtime mesh**
+
+```powershell
+.\tools\gltfpack.exe `
+  -i Assets/_Project/Data/Packages/<pkg>/assets/tools/tool_clamp.glb `
+  -o Assets/_Project/Data/Packages/<pkg>/assets/tools/tool_clamp_packed.glb `
+  -noq -cc
+```
+
+4. **Switch the package `assetRef` only after approval**
+   - Keep raw CAD, exported STL, Blender reports, and approved runtime GLBs separate.
+   - The package should reference only the approved GLB in `assets/tools/`.
+
+Practical rules:
+
+- **FreeCAD is the authority** for selecting exact bodies from `.FCStd`.
+- **Blender is the normalizer** for pivot, material assignment, and final GLB export.
+- **Do not** use Blender edits to invent missing dimensions for fit-critical tools.
+- **Do not** export an entire CAD document blindly if it contains assembly context you do not want.
+- Record provenance and bounds reports for every approved runtime mesh.
+
 ### 6.5 Verify Proportions
 
 ```bash
@@ -245,10 +302,10 @@ Before marking a tool asset as complete:
 - [ ] `verify_proportions.py` returns PASS or WARN
 - [ ] Orientation: business end along +Z, handle along -Z, Y-up
 - [ ] Scale normalized via OSE menu (uniform scale in `machine.json`)
-- [ ] Tool equips in-game and ghost renders with correct size
-- [ ] Ghost visual: semi-transparent with original textures, renders on top of scene (ZTest Always)
-- [ ] Ghost turns green (ready state color) when near valid target; restores original textures when moving away
-- [ ] Tool texture/materials visible through ghost transparency
+- [ ] Tool equips in-game and preview renders with correct size
+- [ ] Preview visual: semi-transparent with original textures, renders on top of scene (ZTest Always)
+- [ ] Preview turns green (ready state color) when near valid target; restores original textures when moving away
+- [ ] Tool texture/materials visible through preview transparency
 - [ ] No Z-fighting, no inverted normals, no missing faces
 
 ---
@@ -439,7 +496,7 @@ Tool animations are **model-level behaviors** that animate the tool itself (dist
 ```csharp
 public interface IToolAnimator
 {
-    void OnToolEquipped(GameObject toolGhost);
+    void OnToolEquipped(GameObject toolPreview);
     void OnReadyStateEnter(Vector3 targetWorldPos);
     void OnReadyStateExit();
     void OnActionExecuted(Vector3 targetWorldPos, float actionProgress, bool isComplete);
@@ -466,7 +523,7 @@ Implement on a MonoBehaviour attached to the tool GLB prefab or instantiated alo
 ```
 1. Tool approaches target
    → IToolAnimator.OnReadyStateEnter() — tool-level animation (disc spins up)
-   → Ghost turns green (existing visual feedback)
+   → Preview turns green (existing visual feedback)
    
 2. User taps/clicks
    → IToolAnimator.OnActionExecuted() — tool animation plays (ratchet clicks)
@@ -481,7 +538,7 @@ Implement on a MonoBehaviour attached to the tool GLB prefab or instantiated alo
 
 #### Implementation Notes for Later
 
-- Wire lifecycle calls in `PartInteractionBridge`: query `_toolGhostIndicator.GetComponents<IToolAnimator>()` at spawn, call methods at ready-state transitions and action execution
+- Wire lifecycle calls in `PartInteractionBridge`: query `_toolPreviewIndicator.GetComponents<IToolAnimator>()` at spawn, call methods at ready-state transitions and action execution
 - For tape measure: use a `LineRenderer` in `OnReadyStateEnter` from tool tip to `targetWorldPos`; works on mobile/PC/XR
 - For ratchet tools: simple `Transform.Rotate` coroutine on the head sub-object
 - For grinder: `ParticleSystem.Play/Stop` on the disc sub-object
@@ -495,7 +552,7 @@ Implement on a MonoBehaviour attached to the tool GLB prefab or instantiated alo
 | Tool appears as capsule | `assetRef` missing or GLB not found | Check path in machine.json, verify GLB exists |
 | Tool is giant/tiny | Missing catalog entry or normalizer not run | Add to `PartDimensionCatalog.cs`, run OSE → Normalize |
 | Tool is sideways | GLB orientation wrong (+Z not forward) | Re-generate with orientation prompt, don't add rotation hacks |
-| Tool has no texture through ghost | MaterialHelper strips all materials | Expected — ghost shows base color + emission. Original textures show when tool is used on target |
+| Tool has no texture through preview | MaterialHelper strips all materials | Expected — preview shows base color + emission. Original textures show when tool is used on target |
 | Proportions look wrong | AI didn't respect dimension prompt | Re-generate with more explicit proportions, try image-to-3D |
 | `verify_proportions.py` says FAIL | Model aspect ratio >40% off catalog | Re-generate. Include "approximately X inches wide, Y inches tall, Z inches deep" in prompt |
 
@@ -596,7 +653,7 @@ Menu: **OSE → Normalize Package Model Scales**
 1. Enter Play mode
 2. Navigate to a step that requires the torque wrench
 3. Equip the tool from the tool dock
-4. Confirm: correct size, orientation (business end forward), ghost effect with textures
+4. Confirm: correct size, orientation (business end forward), preview effect with textures
 5. Confirm: green ready state when near tool targets
 
 ---
@@ -626,8 +683,8 @@ Menu: **OSE → Normalize Package Model Scales**
 | `Assets/_Project/Data/Packages/<pkg>/assets/effects/` | Particle prefabs, decal textures |
 | `Assets/_Project/Scripts/Editor/PartDimensionCatalog.cs` | Real-world dimensions for all tools |
 | `Assets/_Project/Scripts/Editor/PackageModelNormalizer.cs` | Uniform scale computation |
-| `Assets/_Project/Scripts/UI/Root/PartInteractionBridge.cs` | Tool ghost rendering, orientation correction, interaction |
-| `Assets/_Project/Scripts/UI/Root/MaterialHelper.cs` | Ghost transparency, ready-state color, overlay rendering |
+| `Assets/_Project/Scripts/UI/Root/PartInteractionBridge.cs` | Tool preview rendering, orientation correction, interaction |
+| `Assets/_Project/Scripts/UI/Root/MaterialHelper.cs` | Preview transparency, ready-state color, overlay rendering |
 | `Assets/_Project/Scripts/Runtime/Session/ToolRuntimeController.cs` | Tool equip/action logic |
 | `verify_proportions.py` | CLI proportion validation |
 | `.github/skills/rodin3d-skills/` | Rodin 3D generation scripts |

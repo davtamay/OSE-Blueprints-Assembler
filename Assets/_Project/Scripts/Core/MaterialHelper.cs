@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace OSE.UI.Root
+namespace OSE.Core
 {
     /// <summary>
     /// Shared static utilities for creating and applying preview materials.
@@ -8,13 +8,13 @@ namespace OSE.UI.Root
     /// </summary>
     public static class MaterialHelper
     {
-        private static readonly Color GhostColor = new Color(0.4f, 0.8f, 1.0f, 0.3f);
+        private static readonly Color PreviewColor = new Color(0.4f, 0.8f, 1.0f, 0.3f);
 
         // ── Original-material preservation ──────────────────────────────
 
         /// <summary>
         /// Caches the current materials on all renderers so they can be restored later.
-        /// Call this once before any Apply/ApplyGhost that might replace materials.
+        /// Call this once before any Apply/ApplyPreviewMaterial that might replace materials.
         /// </summary>
         public static void SaveOriginals(GameObject target)
         {
@@ -118,17 +118,17 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
-        /// Applies a transparent ghost material to all renderers on the target.
+        /// Applies a transparent preview material to all renderers on the target.
         /// </summary>
-        public static void ApplyGhost(GameObject target)
+        public static void ApplyPreviewMaterial(GameObject target)
         {
-            ApplyGhost(target, GhostColor);
+            ApplyPreviewMaterial(target, PreviewColor);
         }
 
         /// <summary>
-        /// Applies a transparent ghost material with a custom tint to all renderers on the target.
+        /// Applies a transparent preview material with a custom tint to all renderers on the target.
         /// </summary>
-        public static void ApplyGhost(GameObject target, Color ghostColor)
+        public static void ApplyPreviewMaterial(GameObject target, Color previewColor)
         {
             var renderers = target.GetComponentsInChildren<Renderer>(includeInactive: true);
             if (renderers == null || renderers.Length == 0) return;
@@ -138,22 +138,22 @@ namespace OSE.UI.Root
 
             foreach (var renderer in renderers)
             {
-                Material ghostMat = new Material(shader) { name = "Ghost Material" };
+                Material previewMat = new Material(shader) { name = "Preview Material" };
 
-                ghostMat.SetFloat("_Surface", 1f); // Transparent
-                ghostMat.SetFloat("_Blend", 0f);   // Alpha blend
-                ghostMat.SetOverrideTag("RenderType", "Transparent");
-                ghostMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                ghostMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                ghostMat.SetInt("_ZWrite", 0);
-                ghostMat.renderQueue = 3000;
+                previewMat.SetFloat("_Surface", 1f); // Transparent
+                previewMat.SetFloat("_Blend", 0f);   // Alpha blend
+                previewMat.SetOverrideTag("RenderType", "Transparent");
+                previewMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                previewMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                previewMat.SetInt("_ZWrite", 0);
+                previewMat.renderQueue = 3000;
 
-                if (ghostMat.HasProperty("_BaseColor"))
-                    ghostMat.SetColor("_BaseColor", ghostColor);
-                if (ghostMat.HasProperty("_Color"))
-                    ghostMat.SetColor("_Color", ghostColor);
+                if (previewMat.HasProperty("_BaseColor"))
+                    previewMat.SetColor("_BaseColor", previewColor);
+                if (previewMat.HasProperty("_Color"))
+                    previewMat.SetColor("_Color", previewColor);
 
-                renderer.sharedMaterial = ghostMat;
+                renderer.sharedMaterial = previewMat;
             }
         }
 
@@ -214,7 +214,7 @@ namespace OSE.UI.Root
 
         /// <summary>
         /// Reverses <see cref="MakeTransparent"/> — sets all materials back to opaque rendering.
-        /// Used when cloning a transparent cursor ghost for a persistent scene placement.
+        /// Used when cloning a transparent cursor preview for a persistent scene placement.
         /// </summary>
         public static void RestoreOpaque(GameObject target)
         {
@@ -256,7 +256,7 @@ namespace OSE.UI.Root
 
         /// <summary>
         /// Applies a transparent "tool in hand" material style that is visually
-        /// distinct from placement ghosts.
+        /// distinct from placement previews.
         /// </summary>
         public static void ApplyToolCursor(GameObject target, Color toolColor)
         {

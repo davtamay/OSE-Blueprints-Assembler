@@ -1,0 +1,9 @@
+{
+    "file":  "d3d_x_axis_idler_unit_approved.glb",
+    "source":  "source_cad/axes_stage01/exported/glb_candidates/Universal_Axis_Idler_Side_short_version_selected.glb",
+    "gltfpackArgs":  [
+                         "-noq",
+                         "-cc"
+                     ],
+    "packedSizeBytes":  20344
+}

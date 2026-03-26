@@ -1,0 +1,41 @@
+{
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\assets\\parts\\d3d_axis_mount_m6x30_bolt_approved.glb",
+  "units": "m",
+  "shaft_length_m": 0.03,
+  "shaft_diameter_m": 0.006,
+  "head_length_m": 0.006,
+  "head_diameter_m": 0.01,
+  "socket_size_m": 0.005,
+  "socket_depth_m": 0.003,
+  "material_name": "Axis Mount Socket Head Steel",
+  "base_color": [
+    0.72,
+    0.74,
+    0.78,
+    1.0
+  ],
+  "pivot": "head_center",
+  "head_style": "socket_head_cap_screw",
+  "standard_reference": "ISO 4762 / DIN 912",
+  "recommended_socket_center_local_m": {
+    "x": -0.0015,
+    "y": 0.0,
+    "z": 0.0
+  },
+  "recommended_insertion_axis_local": {
+    "x": -1.0,
+    "y": 0.0,
+    "z": 0.0
+  },
+  "bound_box": {
+    "xmin_m": -0.0030000002589076757,
+    "xmax_m": 0.032999999821186066,
+    "ymin_m": -0.004960793070495129,
+    "ymax_m": 0.004960793070495129,
+    "zmin_m": -0.0049607944674789906,
+    "zmax_m": 0.004960793070495129,
+    "xlen_m": 0.03600000008009374,
+    "ylen_m": 0.009921586140990257,
+    "zlen_m": 0.00992158753797412
+  }
+}

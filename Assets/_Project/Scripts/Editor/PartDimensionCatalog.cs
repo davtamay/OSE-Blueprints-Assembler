@@ -63,6 +63,8 @@ namespace OSE.Editor
             { "tool_torque_wrench",   new Vector3(0.45f,  0.05f, 0.05f) },
             { "tool_socket_set",      new Vector3(0.30f,  0.08f, 0.15f) },
             { "tool_line_wrench",     new Vector3(0.20f,  0.03f, 0.02f) },
+            { "tool_allen_key_metric", new Vector3(0.005f, 0.08789f, 0.03589f) },
+            { "tool_hex_driver_metric_small", new Vector3(0.0025f, 0.09244f, 0.02244f) },
             { "tool_wire_crimper",    new Vector3(0.22f,  0.06f, 0.02f) },
             { "tool_multimeter",      new Vector3(0.08f,  0.15f, 0.04f) },
 
@@ -94,6 +96,20 @@ namespace OSE.Editor
             { "d3d_frame_rear_right_bar",    new Vector3(0.3302f, 0.0254f, 0.003175f) },
             { "d3d_frame_rear_bottom_bar",   new Vector3(0.3302f, 0.0254f, 0.003175f) },
             { "d3d_frame_rear_left_bar",     new Vector3(0.3302f, 0.0254f, 0.003175f) },
+
+            // --- D3D v18.10 axes hardening batch 01 ---
+            // Source: OSE Universal Axis CAD exports captured in
+            // source_cad/axes_stage01/exported/reports/*.json
+            { "d3d_y_left_axis_unit",         new Vector3(0.0195f, 0.2400f, 0.08142f) },
+            { "d3d_y_right_axis_unit",        new Vector3(0.0120f, 0.2400f, 0.06383f) },
+            { "d3d_x_axis_motor_holder_unit", new Vector3(0.0595f, 0.0660f, 0.0120f) },
+            { "d3d_x_axis_idler_unit",        new Vector3(0.0260f, 0.0660f, 0.0120f) },
+            { "d3d_x_axis_rod_pair",          new Vector3(0.2032f, 0.009823826f, 0.065658255f) },
+            { "fastener_x_axis_belt_peg",     new Vector3(0.0240f, 0.01147f, 0.0100f) },
+            { "fastener_x_axis_idler_mount_m6x30_a", new Vector3(0.0360f, 0.0100f, 0.0100f) },
+            { "fastener_x_axis_idler_mount_m6x30_b", new Vector3(0.0360f, 0.0100f, 0.0100f) },
+            { "fastener_x_axis_motor_mount_m6x30_a", new Vector3(0.0360f, 0.0100f, 0.0100f) },
+            { "fastener_x_axis_motor_mount_m6x30_b", new Vector3(0.0360f, 0.0100f, 0.0100f) },
         };
 
         /// <summary>

@@ -95,7 +95,7 @@ available OSE source material is strongest there: 1/8 inch x 1 inch flat stock c
 
 | Package ID | Scope | Parts | Steps | Tools | Status |
 |------------|-------|-------|-------|-------|--------|
-| `d3d_v18_10` | **Frame fabrication, cube joining, axes stage 01, and extruder stages 01-02** | 38 | 67 | 8 | **Authored in data (exact side geometry, square-check, hold-down, sequential panel tack-weld, rigid-panel stacking, cube alignment check, opposite-corner hold-down, cube corner tack sequence, first seam-weld pass, grinder cleanup on key upper joints, post-cleanup square check, frame acceptance, Y-axis pair mounting, constrained X-axis fit, belt tension, first axis QC, a first Titan Aero nozzle / fan / sensor module slice, and the first carriage-side Titan Aero mount-stack slice)** |
+| `d3d_v18_10` | **Frame fabrication, cube joining, axes stage 01, and extruder stages 01-03** | 42 | 68 | 8 | **Authored in data (exact side geometry, square-check, hold-down, sequential panel tack-weld, rigid-panel stacking, diagonal-based cube alignment check, opposite-corner hold-down, cube corner tack sequence, first seam-weld pass, grinder cleanup on key upper joints, post-cleanup square check, frame acceptance, Y-axis pair mounting, explicit `M6x30` X-axis mount hardware, constrained X-axis fit, belt tension, first axis QC, a first Titan Aero nozzle / fan / sensor module slice, a carriage-side Titan Aero mount-stack slice, and the first printer-side X-axis extruder-mount / half-carriage closure slice)** |
 
 ### Current Package Coverage (`d3d_v18_10`)
 
@@ -106,12 +106,13 @@ available OSE source material is strongest there: 1/8 inch x 1 inch flat stock c
 - Includes square-check steps with the framing square before heat is introduced.
 - Includes authored hold-down and corner tack-weld steps for each panel.
 - Includes explicit learner placement of the finished panels into the open cube layout.
-- Includes a first cube-join phase: stacked-cube square-check, opposite-corner hold-down, lower/upper corner tack-weld sequences, lower/upper seam-weld sequences, one grinder cleanup pass on key upper joints, one post-cleanup square check, and a short frame-acceptance handoff.
-- Includes `Axes Stage 01`: Y-left mount, Y-right mount, staged X-axis prep, constrained X-axis span fitting, motor-holder lock-up, belt tension, belt-peg reinsertion, and first travel/tightness QC.
+- Includes a first cube-join phase: two stacked-cube diagonal-measure steps, opposite-corner hold-down, lower/upper corner tack-weld sequences, lower/upper seam-weld sequences, one grinder cleanup pass on key upper joints, one post-cleanup square check, and a short frame-acceptance handoff.
+- Includes `Axes Stage 01`: Y-left mount, Y-right mount, explicit `M6x30` idler/motor-holder mount hardware, staged X-axis prep, constrained X-axis span fitting, motor-holder lock-up, belt tension, belt-peg reinsertion, and first travel/tightness QC.
 - Includes `Extruder Stage 01`: Titan Aero core staging, nozzle assembly placement, blower placement and secure, sensor-holder placement and secure, 8 mm sensor placement, and first nozzle-module clearance QC.
 - Includes `Extruder Stage 02`: simplified carriage staging, Titan Aero mount bracket placement and secure, top-plate placement and secure, rigid nozzle-module mounting onto the carriage-side stack, and first carriage-side clearance/service-access QC.
+- Includes `Extruder Stage 03`: completed carriage-unit placement onto the X-axis, half-carriage placement, conservative clamp-side closure, and first printer-side travel / nozzle-clearance QC.
 - Uses separate teaching work zones for the six panels. This is a documented instructional staging choice, not a change to the real panel geometry.
-- Still does not cover full weld-process detail, exact axis meshes and explicit external mount hardware, the later final carriage-to-X-axis extruder-mount variant, later rails, gantry, full motion system, electronics, or wiring.
+- Still does not cover full weld-process detail, exact axis meshes and explicit external mount hardware, heated-bed authoring, later rails, gantry, full motion system, control electronics, or wiring.
 
 ### OSE References
 

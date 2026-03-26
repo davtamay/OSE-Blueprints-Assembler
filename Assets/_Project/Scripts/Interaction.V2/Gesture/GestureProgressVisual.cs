@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace OSE.Interaction.V2
+namespace OSE.Interaction
 {
     /// <summary>
     /// Procedural progress ring rendered around the tool target during ToolFocus.
@@ -71,12 +71,27 @@ namespace OSE.Interaction.V2
             lr.useWorldSpace = false;
             lr.loop = false;
             lr.widthMultiplier = 0.006f;
-            lr.material = new Material(Shader.Find("Sprites/Default"));
+            lr.material = CreateOverlayMaterial(color);
             lr.startColor = color;
             lr.endColor = color;
             lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             lr.receiveShadows = false;
+            lr.sortingOrder = 10;
             lr.positionCount = 0;
+        }
+
+        private static Material CreateOverlayMaterial(Color color)
+        {
+            // Hidden/Internal-Colored supports _ZTest and _ZWrite properties,
+            // unlike Sprites/Default which ignores them.
+            var mat = new Material(Shader.Find("Hidden/Internal-Colored"));
+            mat.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.Always);
+            mat.SetInt("_ZWrite", 0);
+            mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            mat.renderQueue = 4000;
+            mat.SetColor("_Color", color);
+            return mat;
         }
 
         private static void SetRingPoints(LineRenderer lr, float fillAmount)
