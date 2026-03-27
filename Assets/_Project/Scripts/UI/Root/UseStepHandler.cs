@@ -762,7 +762,7 @@ namespace OSE.UI.Root
 
         /// <summary>
         /// Executes the tool action using the current pointer position.
-        /// Called from bridge's canonical action path and external V2 orchestrator.
+        /// Called from bridge's canonical action path and external orchestrator.
         /// </summary>
         public bool TryExecuteToolPrimaryActionFromPointer(
             MachineSessionController session,

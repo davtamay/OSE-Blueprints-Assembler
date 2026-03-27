@@ -374,7 +374,7 @@ namespace OSE.UI.Root
 
         /// <summary>
         /// Returns the world position of the nearest preview target matching the given part ID.
-        /// Used by the V2 orchestrator to pivot the camera toward the placement target.
+        /// Used by the orchestrator to pivot the camera toward the placement target.
         /// </summary>
         public bool TryGetPreviewWorldPosForPart(string partId, out Vector3 worldPos)
         {

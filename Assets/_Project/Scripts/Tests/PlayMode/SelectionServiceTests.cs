@@ -1,6 +1,7 @@
 using System.Collections;
 using NUnit.Framework;
 using OSE.App;
+using OSE.Core;
 using OSE.Interaction;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -26,6 +27,7 @@ namespace OSE.Tests.PlayMode
         {
             if (_serviceGo != null)
                 Object.DestroyImmediate(_serviceGo);
+            RuntimeEventBus.Clear();
             ServiceRegistry.Clear();
         }
 
@@ -52,12 +54,12 @@ namespace OSE.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator NotifySelected_Fires_OnSelected_Event()
+        public IEnumerator NotifySelected_Publishes_PartSelected_Event()
         {
             yield return null;
 
             GameObject received = null;
-            _service.OnSelected += go => received = go;
+            RuntimeEventBus.Subscribe<PartSelected>(evt => received = evt.Target);
 
             var target = new GameObject("Target");
             _service.NotifySelected(target);
@@ -98,7 +100,7 @@ namespace OSE.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator Deselect_Fires_OnDeselected_With_Previous()
+        public IEnumerator Deselect_Publishes_PartDeselected_With_Previous()
         {
             yield return null;
 
@@ -106,7 +108,7 @@ namespace OSE.Tests.PlayMode
             _service.NotifySelected(target);
 
             GameObject deselectedGo = null;
-            _service.OnDeselected += go => deselectedGo = go;
+            RuntimeEventBus.Subscribe<PartDeselected>(evt => deselectedGo = evt.Target);
 
             _service.Deselect();
 
@@ -121,7 +123,7 @@ namespace OSE.Tests.PlayMode
             yield return null;
 
             bool eventFired = false;
-            _service.OnDeselected += _ => eventFired = true;
+            RuntimeEventBus.Subscribe<PartDeselected>(_ => eventFired = true);
 
             _service.Deselect();
 

@@ -50,7 +50,7 @@ namespace OSE.Interaction
 
         private void LateUpdate()
         {
-            if (!_initialized || _settings == null || !_settings.UseV2Interaction)
+            if (!_initialized || _settings == null || !_settings.Enabled)
                 return;
 
             // Smooth interpolation

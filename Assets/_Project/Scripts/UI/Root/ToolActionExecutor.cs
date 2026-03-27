@@ -82,7 +82,7 @@ namespace OSE.UI.Root
 
         /// <summary>
         /// Resolves the executable tool target for the current click without executing it.
-        /// Called by V2 orchestrator via IPartActionBridge.
+        /// Called by orchestrator via IPartActionBridge.
         /// </summary>
         public bool TryResolveToolActionTarget(Vector2 screenPos, out ToolActionContext context)
         {
@@ -121,7 +121,7 @@ namespace OSE.UI.Root
 
         /// <summary>
         /// Executes the tool primary action for an explicitly resolved target id.
-        /// Called by V2 orchestrator via IPartActionBridge.
+        /// Called by orchestrator via IPartActionBridge.
         /// </summary>
         public bool TryExecuteToolAction(string interactedTargetId)
         {
@@ -134,7 +134,7 @@ namespace OSE.UI.Root
         /// <summary>
         /// Directly executes the tool primary action using a direct hit on a spawned
         /// tool target sphere, bypassing the canonical action router.
-        /// Called by V2 orchestrator via IPartActionBridge.
+        /// Called by orchestrator via IPartActionBridge.
         /// </summary>
         public bool TryExecuteToolActionAtScreen(Vector2 screenPos)
         {

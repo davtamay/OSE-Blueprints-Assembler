@@ -12,13 +12,13 @@ namespace OSE.Interaction
         /// <summary>Auto-detect based on platform and device state. Use this in builds.</summary>
         Auto,
 
-        /// <summary>Mouse + keyboard. V2 camera rig active, TrackedPoseDriver disabled.</summary>
+        /// <summary>Mouse + keyboard. Camera rig active, TrackedPoseDriver disabled.</summary>
         Desktop,
 
-        /// <summary>Touch gestures. V2 camera rig active, TrackedPoseDriver disabled.</summary>
+        /// <summary>Touch gestures. Camera rig active, TrackedPoseDriver disabled.</summary>
         Mobile,
 
-        /// <summary>XR headset (real or simulated). TrackedPoseDriver active, V2 camera rig disabled.</summary>
+        /// <summary>XR headset (real or simulated). TrackedPoseDriver active, camera rig disabled.</summary>
         XR
     }
 }

@@ -18,6 +18,7 @@ namespace OSE.Tests.PlayMode
         public void SetUp()
         {
             ServiceRegistry.Clear();
+            RuntimeEventBus.Clear();
             _routerGo = new GameObject("InputActionRouter");
             _router = _routerGo.AddComponent<InputActionRouter>();
         }
@@ -27,6 +28,7 @@ namespace OSE.Tests.PlayMode
         {
             if (_routerGo != null)
                 Object.DestroyImmediate(_routerGo);
+            RuntimeEventBus.Clear();
             ServiceRegistry.Clear();
         }
 
@@ -77,7 +79,7 @@ namespace OSE.Tests.PlayMode
 
             CanonicalAction received = default;
             bool fired = false;
-            _router.OnAction += action => { received = action; fired = true; };
+            RuntimeEventBus.Subscribe<CanonicalActionDispatched>(evt => { received = evt.Action; fired = true; });
 
             _router.InjectAction(CanonicalAction.Select);
 
@@ -91,7 +93,7 @@ namespace OSE.Tests.PlayMode
             yield return null;
 
             bool fired = false;
-            _router.OnAction += _ => fired = true;
+            RuntimeEventBus.Subscribe<CanonicalActionDispatched>(_ => fired = true);
 
             _router.InjectAction(CanonicalAction.Select);
 
@@ -122,7 +124,7 @@ namespace OSE.Tests.PlayMode
             iRouter.SetContext(InputContext.SessionActive);
 
             CanonicalAction received = default;
-            iRouter.OnAction += action => received = action;
+            RuntimeEventBus.Subscribe<CanonicalActionDispatched>(evt => received = evt.Action);
 
             iRouter.InjectAction(CanonicalAction.Confirm);
 

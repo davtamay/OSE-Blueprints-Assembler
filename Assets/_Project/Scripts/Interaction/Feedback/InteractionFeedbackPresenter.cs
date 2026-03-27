@@ -5,7 +5,7 @@ using OSE.Core;
 namespace OSE.Interaction
 {
     /// <summary>
-    /// Coordinates all visual feedback for the V2 interaction system.
+    /// Coordinates all visual feedback for the interaction system.
     /// Receives InteractionFeedbackData from the orchestrator each frame
     /// and delegates to sub-feedback handlers.
     ///
@@ -49,7 +49,7 @@ namespace OSE.Interaction
         /// </summary>
         public void UpdateFeedback(InteractionState state, InteractionFeedbackData data)
         {
-            if (_settings != null && !_settings.UseV2Interaction) return;
+            if (_settings != null && !_settings.Enabled) return;
 
             bool allowHoverVisuals = state == InteractionState.Idle
                                   || state == InteractionState.PartHovered

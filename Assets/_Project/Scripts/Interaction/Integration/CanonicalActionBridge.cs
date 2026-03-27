@@ -5,8 +5,8 @@ using UnityEngine;
 namespace OSE.Interaction.Integration
 {
     /// <summary>
-    /// Bridges V2 interaction events into the existing canonical action pipeline.
-    /// When the V2 orchestrator selects/grabs/releases a part, this bridge
+    /// Bridges interaction events into the existing canonical action pipeline.
+    /// When the orchestrator selects/grabs/releases a part, this bridge
     /// calls InputActionRouter.InjectAction() and SelectionService.Notify*()
     /// so that all existing downstream systems (PartRuntimeController, UI panels,
     /// SessionDriver, etc.) continue to receive events without modification.

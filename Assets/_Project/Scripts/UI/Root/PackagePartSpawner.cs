@@ -50,12 +50,6 @@ namespace OSE.UI.Root
         public Transform PreviewRoot => _setup != null ? _setup.PreviewRoot : null;
 
         /// <summary>
-        /// Fires after all parts (including async GLB models) have been spawned
-        /// and positioned. Subscribers can safely look up spawned parts by id.
-        /// </summary>
-        public event System.Action PartsReady;
-
-        /// <summary>
         /// Controls where GLB assets are fetched from at runtime.
         /// Defaults to <see cref="StreamingAssetsSource"/> (reads from the build's StreamingAssets folder).
         /// Swap for a <see cref="RemoteAssetSource"/> to load from S3, a CDN, or any HTTP server.
@@ -324,7 +318,6 @@ namespace OSE.UI.Root
             SpawnPackageParts();
             PositionParts();
             PositionTargetMarker();
-            PartsReady?.Invoke();
             RuntimeEventBus.Publish(new SpawnerPartsReady());
 #else
             _ = SpawnPackagePartsAsync();
@@ -337,7 +330,6 @@ namespace OSE.UI.Root
             await SpawnGlbPartsAsync();   // then fills in GLB models asynchronously
             PositionParts();
             PositionTargetMarker();
-            PartsReady?.Invoke();
             RuntimeEventBus.Publish(new SpawnerPartsReady());
         }
 

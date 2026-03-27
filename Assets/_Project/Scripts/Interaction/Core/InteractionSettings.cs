@@ -1,9 +1,10 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace OSE.Interaction
 {
     /// <summary>
-    /// Central toggle configuration for all V2 interaction features.
+    /// Central toggle configuration for all interaction features.
     /// Create an asset via: Create → OSE → Interaction Settings.
     /// Systems check toggles at decision time (not startup) so runtime
     /// changes via the Inspector or debug window take effect immediately.
@@ -11,9 +12,10 @@ namespace OSE.Interaction
     [CreateAssetMenu(fileName = "InteractionSettings", menuName = "OSE/Interaction Settings")]
     public sealed class InteractionSettings : ScriptableObject
     {
-        [Header("V2 System Master Switch")]
+        [Header("System Master Switch")]
         [Tooltip("When false, the existing PartInteractionBridge handles all interaction unchanged.")]
-        public bool UseV2Interaction = false;
+        [FormerlySerializedAs("UseV2Interaction")]
+        public bool Enabled = false;
 
         // ── Camera ──
 

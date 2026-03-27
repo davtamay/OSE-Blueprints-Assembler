@@ -19,7 +19,7 @@ namespace OSE.Interaction
     /// Self-bootstrapping: discovers scene systems in Start() and wires everything.
     /// No separate bootstrap component needed — just add this to the scene.
     ///
-    /// When UseV2Interaction is false, this component is completely passive —
+    /// When Enabled is false, this component is completely passive —
     /// existing PartInteractionBridge continues to handle everything.
     ///
     /// One instance per scene, placed on a root-level GameObject.
@@ -34,9 +34,9 @@ namespace OSE.Interaction
 
         [Header("Platform")]
         [Tooltip("Auto = detect at runtime. Override to force a specific input mode in the editor.\n\n" +
-                 "Desktop: mouse + keyboard, V2 camera rig\n" +
-                 "Mobile: touch gestures, V2 camera rig\n" +
-                 "XR: headset/controllers, TrackedPoseDriver stays active, V2 dormant")]
+                 "Desktop: mouse + keyboard, camera rig\n" +
+                 "Mobile: touch gestures, camera rig\n" +
+                 "XR: headset/controllers, TrackedPoseDriver stays active, orchestrator dormant")]
         [SerializeField] private InteractionMode _modeOverride = InteractionMode.Auto;
 
         // ── Public State ──
@@ -87,19 +87,19 @@ namespace OSE.Interaction
         {
             if (_settings == null)
             {
-                OseLog.Info("[InteractionOrchestrator] No InteractionSettings assigned. V2 disabled.");
+                OseLog.Info("[InteractionOrchestrator] No InteractionSettings assigned. Disabled.");
                 return;
             }
 
-            if (!_settings.UseV2Interaction)
+            if (!_settings.Enabled)
             {
-                OseLog.Info("[InteractionOrchestrator] UseV2Interaction is false. V2 disabled.");
+                OseLog.Info("[InteractionOrchestrator] Interaction system disabled via settings.");
                 return;
             }
 
             if (_camera == null)
             {
-                OseLog.Warn("[InteractionOrchestrator] No main camera found. V2 disabled.");
+                OseLog.Warn("[InteractionOrchestrator] No main camera found. Disabled.");
                 return;
             }
 
@@ -111,8 +111,8 @@ namespace OSE.Interaction
             if (mode == InteractionMode.XR)
             {
                 // XR mode: TrackedPoseDriver + XROrigin handle everything.
-                // V2 stays dormant — PartInteractionBridge + XR input path are in charge.
-                OseLog.Info("[InteractionOrchestrator] XR mode — V2 dormant (TrackedPoseDriver + XR input active).");
+                // Orchestrator stays dormant — PartInteractionBridge + XR input path are in charge.
+                OseLog.Info("[InteractionOrchestrator] XR mode — dormant (TrackedPoseDriver + XR input active).");
                 return;
             }
 
@@ -122,9 +122,9 @@ namespace OSE.Interaction
         private void Bootstrap(InteractionMode mode)
         {
             using var _ = OseLog.Timed($"InteractionOrchestrator.Bootstrap({mode})");
-            OseLog.Info($"[InteractionOrchestrator] Bootstrapping V2 interaction (mode={mode})...");
+            OseLog.Info($"[InteractionOrchestrator] Bootstrapping interaction (mode={mode})...");
 
-            // ── 1. Disable XR camera drivers that would fight V2 ──
+            // ── 1. Disable XR camera drivers that would fight the orchestrator ──
             DisableXRCameraDrivers(_camera);
 
             // ── 2. Intent Provider (based on resolved mode, not compile-time platform) ──
@@ -207,7 +207,7 @@ namespace OSE.Interaction
             RuntimeEventBus.Subscribe<MachineIntroDismissed>(HandleIntroDismissedFraming);
 
             _bootstrapped = true;
-            OseLog.Info($"[InteractionOrchestrator] V2 READY. Mode={mode} Camera={_camera.name} Bridge={_partBridge != null}");
+            OseLog.Info($"[InteractionOrchestrator] READY. Mode={mode} Camera={_camera.name} Bridge={_partBridge != null}");
 
             // If a step is already active (e.g. hot reload), frame it now
             TryFrameCurrentStep();
@@ -301,17 +301,17 @@ namespace OSE.Interaction
             if (OSE.Runtime.Preview.SessionDriver.IsIntroActive)
             {
                 _pendingIntroFrameStepId = stepId;
-                OseLog.Info($"[V2] TryFrameCurrentStep '{stepId}' — intro active, deferring.");
+                OseLog.Info($"[Interaction] TryFrameCurrentStep '{stepId}' — intro active, deferring.");
                 return;
             }
 
-            OseLog.Info($"[V2] TryFrameCurrentStep '{stepId}'");
+            OseLog.Info($"[Interaction] TryFrameCurrentStep '{stepId}'");
             _guidanceService.FrameStep(stepId);
         }
 
         private void HandleStepActivated(StepActivated evt)
         {
-            OseLog.Info($"[V2] HandleStepActivated '{evt.StepId}' bootstrapped={_bootstrapped}");
+            OseLog.Info($"[Interaction] HandleStepActivated '{evt.StepId}' bootstrapped={_bootstrapped}");
             if (!_bootstrapped) return;
 
             // Stop any previous target sphere pulsing
@@ -332,7 +332,7 @@ namespace OSE.Interaction
                 {
                     _pendingIntroFrameStepId = evt.StepId;
                     _guidanceService.OnStepActivatedNoFrame(evt);
-                    OseLog.Info($"[V2] Intro active — deferring camera frame for step '{evt.StepId}'.");
+                    OseLog.Info($"[Interaction] Intro active — deferring camera frame for step '{evt.StepId}'.");
                 }
                 else
                 {
@@ -357,7 +357,7 @@ namespace OSE.Interaction
             if (string.IsNullOrWhiteSpace(stepId))
                 return;
 
-            OseLog.Info($"[V2] Intro dismissed — framing step '{stepId}'.");
+            OseLog.Info($"[Interaction] Intro dismissed — framing step '{stepId}'.");
             _guidanceService.FrameStep(stepId);
             _guidanceService.CaptureHome();
         }
@@ -388,7 +388,7 @@ namespace OSE.Interaction
             if (!string.Equals(activeStepId, stepId, StringComparison.Ordinal))
                 yield break;
 
-            OseLog.Info($"[V2] Deferred reframe for step '{stepId}' after transition visuals settled.");
+            OseLog.Info($"[Interaction] Deferred reframe for step '{stepId}' after transition visuals settled.");
             _guidanceService.FrameStep(stepId);
         }
 
@@ -411,7 +411,7 @@ namespace OSE.Interaction
             if (positions.Length > 0)
             {
                 _targetSphereAnimator.StartAtPositions(positions);
-                OseLog.Info($"[V2] Target sphere pulsing started for {positions.Length} target(s).");
+                OseLog.Info($"[Interaction] Target sphere pulsing started for {positions.Length} target(s).");
             }
         }
 
@@ -461,7 +461,7 @@ namespace OSE.Interaction
         private void HandlePartStateChanged(PartStateChanged evt)
         {
             // When a dragged part gets placed (e.g. auto-snap from proximity),
-            // immediately end the V2 drag so we stop repositioning it.
+            // immediately end the drag so we stop repositioning it.
             if (CurrentState != InteractionState.DraggingPart || DraggedPart == null)
                 return;
 
@@ -530,7 +530,7 @@ namespace OSE.Interaction
                 if (_intentLogCountdown > 0)
                 {
                     _intentLogCountdown--;
-                    OseLog.Info($"[V2 Intent] {intent.IntentKind} delta={intent.ScreenDelta} scroll={intent.ScrollDelta} hit={intent.HitTarget?.name ?? "null"}");
+                    OseLog.Info($"[Interaction Intent] {intent.IntentKind} delta={intent.ScreenDelta} scroll={intent.ScrollDelta} hit={intent.HitTarget?.name ?? "null"}");
                 }
                 ProcessIntent(intent);
             }
@@ -539,7 +539,7 @@ namespace OSE.Interaction
             UpdateHover();
 
             // Forward hover target to the legacy bridge so part-info UI can
-            // show hovered part details even when V2 owns input.
+            // show hovered part details even when the orchestrator owns input.
             _partBridge?.SetHoveredPart(HoveredPart);
         }
 
@@ -549,7 +549,7 @@ namespace OSE.Interaction
                 return;
 
             // When the part bridge is connected, it owns runtime part visuals.
-            // Running V2 feedback on top of that causes color contention.
+            // Running interaction feedback on top of that causes color contention.
             if (_partBridge != null)
                 return;
 
@@ -839,7 +839,7 @@ namespace OSE.Interaction
                 return;
 
             bool toolLocked = IsToolModeLockedForParts();
-            OseLog.VerboseInfo($"[V2] HandleSelect: toolLocked={toolLocked}, hitTarget={intent.HitTarget?.name ?? "null"}");
+            OseLog.VerboseInfo($"[Interaction] HandleSelect: toolLocked={toolLocked}, hitTarget={intent.HitTarget?.name ?? "null"}");
 
             if (toolLocked)
             {
@@ -1075,7 +1075,7 @@ namespace OSE.Interaction
         private bool TryHandlePipeConnection(Vector2 screenPos)
         {
             // Pipe connection port spheres use screen-proximity targeting rather than
-            // part-hit resolution, so V2 keeps this check ahead of part/tool routing.
+            // part-hit resolution, so keep this check ahead of part/tool routing.
             if (_partBridge == null)
                 return false;
 
@@ -1141,27 +1141,27 @@ namespace OSE.Interaction
         {
             if (_partBridge == null)
             {
-                OseLog.Warn("[V2] RouteToolAction: no part bridge — canonical fallback only.");
+                OseLog.Warn("[Interaction] RouteToolAction: no part bridge — canonical fallback only.");
                 _actionBridge?.OnToolPrimaryAction();
                 return;
             }
 
-            OseLog.Info($"[V2] RouteToolAction resolve at ({screenPos.x:F0},{screenPos.y:F0})");
+            OseLog.Info($"[Interaction] RouteToolAction resolve at ({screenPos.x:F0},{screenPos.y:F0})");
             if (_partBridge.TryResolveToolActionTarget(screenPos, out ToolActionContext ctx))
             {
-                OseLog.Info($"[V2] RouteToolAction: resolved target='{ctx.TargetId}' at {ctx.TargetWorldPos}, surface={ctx.SurfaceWorldPos}. Executing...");
+                OseLog.Info($"[Interaction] RouteToolAction: resolved target='{ctx.TargetId}' at {ctx.TargetWorldPos}, surface={ctx.SurfaceWorldPos}. Executing...");
 
                 // ── Tool Action Preview: always show animation for Use steps ──
                 if (_settings.EnableToolActionPreview && _previewController != null)
                 {
                     var previewConfig = ResolvePreviewMode();
-                    OseLog.Info($"[V2] Preview check: config={previewConfig}, target='{ctx.TargetId}', pos={ctx.TargetWorldPos}");
+                    OseLog.Info($"[Interaction] Preview check: config={previewConfig}, target='{ctx.TargetId}', pos={ctx.TargetWorldPos}");
                     if (previewConfig.HasValue && TryEnterToolActionPreview(ctx, previewConfig.Value.mode, previewConfig.Value.speed))
                         return;
                 }
                 else
                 {
-                    OseLog.Info($"[V2] Preview skipped: EnableToolActionPreview={_settings.EnableToolActionPreview}, controller={_previewController != null}");
+                    OseLog.Info($"[Interaction] Preview skipped: EnableToolActionPreview={_settings.EnableToolActionPreview}, controller={_previewController != null}");
                 }
 
                 // Spawn persistent tool BEFORE completing the action, because
@@ -1175,7 +1175,7 @@ namespace OSE.Interaction
 
                 if (_partBridge.TryToolAction(ctx.TargetId))
                 {
-                    OseLog.Info($"[V2] RouteToolAction: TryToolAction SUCCESS for '{ctx.TargetId}'.");
+                    OseLog.Info($"[Interaction] RouteToolAction: TryToolAction SUCCESS for '{ctx.TargetId}'.");
                     if (_cameraRig != null)
                         _cameraRig.FocusOn(ctx.TargetWorldPos);
                     return;
@@ -1184,14 +1184,14 @@ namespace OSE.Interaction
                 // Action failed — remove the persistent tool we speculatively created
                 _persistentToolController?.RemoveAt(ctx.TargetId);
 
-                OseLog.Warn($"[V2] RouteToolAction: TryToolAction FAILED for '{ctx.TargetId}' — execution rejected.");
+                OseLog.Warn($"[Interaction] RouteToolAction: TryToolAction FAILED for '{ctx.TargetId}' — execution rejected.");
                 // Execution was rejected (wrong tool, missing tool, etc.). Keep the
-                // fallback ordering in V2 by focusing the already-resolved target.
+                // fallback ordering by focusing the already-resolved target.
                 if (_cameraRig != null)
                     _cameraRig.FocusOn(ctx.TargetWorldPos);
                 return;
             }
-            OseLog.Info("[V2] RouteToolAction: TryResolveToolActionTarget returned false.");
+            OseLog.Info("[Interaction] RouteToolAction: TryResolveToolActionTarget returned false.");
 
             // Tool action failed (wrong tool, no tool equipped, etc.) — still focus
             // camera on the nearest target sphere so the user can navigate to it.
@@ -1202,7 +1202,7 @@ namespace OSE.Interaction
                 return;
             }
 
-            OseLog.Info("[V2] RouteToolAction: bridge returned false — canonical fallback.");
+            OseLog.Info("[Interaction] RouteToolAction: bridge returned false — canonical fallback.");
             _actionBridge?.OnToolPrimaryAction();
         }
 
@@ -1219,19 +1219,19 @@ namespace OSE.Interaction
             // Must be a Use-family step
             if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
             {
-                OseLog.Info("[V2] ResolvePreviewMode: no MachineSessionController");
+                OseLog.Info("[Interaction] ResolvePreviewMode: no MachineSessionController");
                 return null;
             }
             StepController stepCtrl = session?.AssemblyController?.StepController;
             if (stepCtrl == null || !stepCtrl.HasActiveStep)
             {
-                OseLog.Info($"[V2] ResolvePreviewMode: stepCtrl={stepCtrl != null}, hasActive={stepCtrl?.HasActiveStep}");
+                OseLog.Info($"[Interaction] ResolvePreviewMode: stepCtrl={stepCtrl != null}, hasActive={stepCtrl?.HasActiveStep}");
                 return null;
             }
             StepDefinition step = stepCtrl.CurrentStepDefinition;
             if (step == null || step.ResolvedFamily != Content.StepFamily.Use)
             {
-                OseLog.Info($"[V2] ResolvePreviewMode: step={step?.id}, family={step?.ResolvedFamily} (need Use)");
+                OseLog.Info($"[Interaction] ResolvePreviewMode: step={step?.id}, family={step?.ResolvedFamily} (need Use)");
                 return null;
             }
 
@@ -1243,7 +1243,7 @@ namespace OSE.Interaction
                 return null;
 
             int completedCount = _toolPreview.GetCompletedToolTargetCount();
-            OseLog.Info($"[V2] ResolvePreviewMode: step='{step.id}', family={step.ResolvedFamily}, completedCount={completedCount}");
+            OseLog.Info($"[Interaction] ResolvePreviewMode: step='{step.id}', family={step.ResolvedFamily}, completedCount={completedCount}");
 
             // "I Do, We Do, then reinforcement at increasing speed"
             // ObserveOnly profiles (e.g. framing square) always auto-play — no guided phase.
@@ -1266,10 +1266,10 @@ namespace OSE.Interaction
         {
             GameObject toolPreview = _toolPreview?.GetToolPreview();
             string profile = _toolPreview?.GetActiveToolProfile();
-            OseLog.Info($"[V2] TryEnterToolActionPreview: preview={toolPreview?.name ?? "NULL"}, profile='{profile}', mode={mode}");
+            OseLog.Info($"[Interaction] TryEnterToolActionPreview: preview={toolPreview?.name ?? "NULL"}, profile='{profile}', mode={mode}");
             if (toolPreview == null)
             {
-                OseLog.Info("[V2] TryEnterToolActionPreview: no tool preview — falling back to click-to-complete.");
+                OseLog.Info("[Interaction] TryEnterToolActionPreview: no tool preview — falling back to click-to-complete.");
                 return false;
             }
 
@@ -1297,7 +1297,7 @@ namespace OSE.Interaction
                 onComplete: completedTargetId =>
                 {
                     _toolPreview?.SetToolPreviewPositionSuspended(false);
-                    OseLog.Info($"[V2] Tool action preview completed for '{completedTargetId}' — executing tool action.");
+                    OseLog.Info($"[Interaction] Tool action preview completed for '{completedTargetId}' — executing tool action.");
                     _toolPreview?.IncrementCompletedToolTargetCount();
 
                     // Spawn persistent tool BEFORE TryToolAction — it may complete
@@ -1309,7 +1309,7 @@ namespace OSE.Interaction
 
                     if (_partBridge != null && _partBridge.TryToolAction(completedTargetId))
                     {
-                        OseLog.Info($"[V2] Post-preview TryToolAction SUCCESS for '{completedTargetId}'.");
+                        OseLog.Info($"[Interaction] Post-preview TryToolAction SUCCESS for '{completedTargetId}'.");
                     }
                     else
                     {
@@ -1323,7 +1323,7 @@ namespace OSE.Interaction
                 onCancel: () =>
                 {
                     _toolPreview?.SetToolPreviewPositionSuspended(false);
-                    OseLog.Info("[V2] Tool action preview cancelled — returning to idle.");
+                    OseLog.Info("[Interaction] Tool action preview cancelled — returning to idle.");
                     // Return to step home on cancel too
                     _guidanceService?.ReturnFromToolAction();
                     RestoreInstructionAfterPreview();
@@ -1431,33 +1431,33 @@ namespace OSE.Interaction
 
         // ── Debug Context Menus ──
 
-        [ContextMenu("V2 Debug/Log Current State")]
+        [ContextMenu("Debug/Log Current State")]
         private void DebugLogState()
         {
-            OseLog.Info($"[V2 Debug] Mode={ResolvedMode} State={CurrentState} " +
+            OseLog.Info($"[Interaction Debug] Mode={ResolvedMode} State={CurrentState} " +
                        $"Selected={SelectedPart?.name ?? "none"} Dragged={DraggedPart?.name ?? "none"} " +
                        $"Provider={_intentProvider?.GetType().Name ?? "none"}");
         }
 
-        [ContextMenu("V2 Debug/Reset to Idle")]
+        [ContextMenu("Debug/Reset to Idle")]
         private void DebugResetIdle()
         {
             SelectedPart = null;
             DraggedPart = null;
             HoveredPart = null;
             TransitionTo(InteractionState.Idle);
-            OseLog.Info("[V2 Debug] Forced reset to Idle.");
+            OseLog.Info("[Interaction Debug] Forced reset to Idle.");
         }
 
-        [ContextMenu("V2 Debug/Toggle UseV2Interaction")]
-        private void DebugToggleV2()
+        [ContextMenu("Debug/Toggle Interaction")]
+        private void DebugToggleInteraction()
         {
             if (_settings == null) return;
-            _settings.UseV2Interaction = !_settings.UseV2Interaction;
-            OseLog.Info($"[V2 Debug] UseV2Interaction = {_settings.UseV2Interaction}");
+            _settings.Enabled = !_settings.Enabled;
+            OseLog.Info($"[Interaction Debug] Enabled = {_settings.Enabled}");
 
             // When toggling off, ensure bridge releases control
-            if (!_settings.UseV2Interaction && _partBridge != null)
+            if (!_settings.Enabled && _partBridge != null)
                 _partBridge.ExternalControlEnabled = false;
         }
     }

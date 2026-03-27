@@ -27,7 +27,7 @@ namespace OSE.UI.Root
 
         public void FocusCameraOnStepArea(string stepId, bool resetToDefaultView = false)
         {
-            // When V2 owns interaction, camera framing is handled by StepGuidanceService.
+            // When orchestrator owns interaction, camera framing is handled by StepGuidanceService.
             if (_ctx.IsExternalControlEnabled)
                 return;
 

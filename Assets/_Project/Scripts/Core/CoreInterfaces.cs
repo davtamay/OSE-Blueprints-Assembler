@@ -31,7 +31,6 @@ namespace OSE.Core
 
     public interface IInputRouter
     {
-        event System.Action<CanonicalAction> OnAction;
         void SetContext(InputContext context);
         InputContext CurrentContext { get; }
         void InjectAction(CanonicalAction action);

@@ -1,4 +1,3 @@
-using System;
 using OSE.App;
 using OSE.Core;
 using UnityEngine;
@@ -8,8 +7,6 @@ namespace OSE.Input
 {
     public class InputActionRouter : MonoBehaviour, IInputRouter
     {
-        public event Action<CanonicalAction> OnAction;
-
         public InputContext CurrentContext { get; private set; } = InputContext.None;
 
         private PlayerInput _playerInput;
@@ -57,7 +54,6 @@ namespace OSE.Input
         {
             if (CurrentContext == InputContext.None) return;
             OseLog.VerboseInfo($"[Input] Action: {action} (context: {CurrentContext})");
-            OnAction?.Invoke(action);
             RuntimeEventBus.Publish(new CanonicalActionDispatched(action));
         }
 

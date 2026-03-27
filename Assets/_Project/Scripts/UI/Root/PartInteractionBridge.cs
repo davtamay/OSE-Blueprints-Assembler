@@ -46,13 +46,12 @@ namespace OSE.UI.Root
         private const float DragFloorEpsilon = InteractionVisualConstants.DragFloorEpsilon;
         private const float HintHighlightDuration = InteractionVisualConstants.HintHighlightDuration;
         private const float HintHighlightPulseSpeed = InteractionVisualConstants.HintHighlightPulseSpeed;
-        // Toggled automatically by V2 InteractionOrchestrator at runtime via IPartActionBridge.
-        // When true, this bridge skips pointer input polling (V2 handles input instead).
+        // Toggled by InteractionOrchestrator at runtime via IPartActionBridge.
         [HideInInspector] public bool ExternalControlEnabled;
 
         /// <summary>
         /// World position of the last successfully executed tool action target.
-        /// Updated by TryExternalToolAction; read by V2 orchestrator via IPartActionBridge to focus camera.
+        /// Updated by TryExternalToolAction; read by orchestrator via IPartActionBridge to focus camera.
         /// </summary>
         public Vector3 LastToolActionWorldPos => _toolAction?.LastToolActionWorldPos ?? Vector3.zero;
 
@@ -184,14 +183,10 @@ namespace OSE.UI.Root
                 return;
             }
 
-            HandlePointerInput();
             // Snap/flash/preview-pulse/required-part-pulse handled by PlaceStepHandler.Update via router
             UpdateXRPreviewProximity();
-            if (!ExternalControlEnabled)
-            {
-                _visualFeedback?.UpdatePartHoverVisual();
-                _visualFeedback?.UpdatePointerDragSelectionVisual();
-            }
+            _visualFeedback?.UpdatePartHoverVisual();
+            _visualFeedback?.UpdatePointerDragSelectionVisual();
             _visualFeedback?.UpdateSelectedSubassemblyVisual();
             UpdateDockArcVisual();
             _visualFeedback?.UpdateHintHighlight();
@@ -405,7 +400,7 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
-        /// Called by V2 orchestrator via IPartActionBridge. Attempts placement for the
+        /// Called by orchestrator via IPartActionBridge. Attempts placement for the
         /// already-selected part at the given screen position without re-deriving click intent.
         /// </summary>
         public bool TryExternalClickToPlace(GameObject selectedPart, Vector2 screenPos)
@@ -417,7 +412,7 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
-        /// Called by V2 orchestrator via IPartActionBridge when tool mode is locked.
+        /// Called by orchestrator via IPartActionBridge when tool mode is locked.
         /// Resolves the executable tool target for the current click without executing it.
         /// </summary>
         public bool TryResolveExternalToolActionTarget(Vector2 screenPos, out ToolActionContext context)
@@ -434,7 +429,7 @@ namespace OSE.UI.Root
             => _toolAction?.TryExecuteToolActionAtScreen(screenPos) ?? false;
 
         /// <summary>
-        /// Called by V2 orchestrator via IPartActionBridge for any tap (regardless of
+        /// Called by orchestrator via IPartActionBridge for any tap (regardless of
         /// selection or tool state). Delegates to ConnectStepHandler via the router.
         /// Returns true if a port sphere was hit and the interaction was consumed.
         /// </summary>
@@ -458,7 +453,7 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
-        /// Called by V2 orchestrator via IPartActionBridge while external control is enabled.
+        /// Called by orchestrator via IPartActionBridge while external control is enabled.
         /// Shows hovered-part info while hovering; when hover clears, restores selected-part
         /// info if any, otherwise hides the panel.
         /// </summary>
@@ -1023,206 +1018,6 @@ namespace OSE.UI.Root
             return RaycastSelectableObject(cam.ScreenPointToRay(screenPos));
         }
 
-        // ── Pointer input (mouse + touch) ──
-
-        private void HandlePointerInput()
-        {
-            if (ExternalControlEnabled) return;
-
-            if (TryGetPointerState(out Vector2 screenPos, out bool pressed, out bool released))
-            {
-                if (pressed)
-                    HandlePointerDown(screenPos);
-                else if (released)
-                    HandlePointerUp(screenPos);
-                else if (_drag.PointerDown)
-                    HandlePointerDrag(screenPos);
-
-                return;
-            }
-
-            // Failsafe: recover from missed release events (window focus loss, input edge-cases).
-            // Without this, _drag.PointerDown can stay latched and block future drag/select flow.
-            if (_drag.PointerDown)
-            {
-                if (!TryGetPointerPosition(out Vector2 fallbackPos))
-                    fallbackPos = _drag.PointerDownScreenPos;
-
-                HandlePointerUp(fallbackPos);
-            }
-        }
-
-        private static bool TryGetPointerState(out Vector2 screenPos, out bool pressed, out bool released)
-            => DragController.TryGetPointerState(out screenPos, out pressed, out released);
-
-
-        private void HandlePointerDown(Vector2 screenPos)
-        {
-            if (IsRepositioning()) return;
-
-            // Click on a pulsating tool target sphere → focus camera on it
-            TryFocusCameraOnToolTarget(screenPos);
-
-            if (TryHandleToolActionPointerDown(screenPos))
-                return;
-
-            // Let registered handlers consume the pointer-down first (e.g. ConnectStepHandler, PlaceStepHandler).
-            if (TryBuildHandlerContext(out var pointerCtx))
-            {
-                if (_router.TryHandlePointerDown(in pointerCtx, screenPos))
-                    return;
-            }
-
-            if (TryHandleClickToPlace(screenPos))
-                return;
-
-            Camera cam = Camera.main;
-            if (cam == null) return;
-
-            GameObject matchedPart = RaycastSelectableObject(cam.ScreenPointToRay(screenPos));
-            if (matchedPart == null)
-                return;
-
-            string matchedSelectionId = ResolveSelectionId(matchedPart);
-            if (string.IsNullOrWhiteSpace(matchedSelectionId))
-                return;
-
-            if (IsPartMovementLocked(matchedSelectionId))
-            {
-                OseLog.VerboseInfo($"[PartInteraction] Drag blocked for locked item '{matchedSelectionId}'. Selection is still allowed.");
-
-                _drag.PendingSelectPart = matchedPart;
-
-                if (_actionRouter != null && _selectionService != null)
-                {
-                    _actionRouter.InjectAction(CanonicalAction.Select);
-                }
-                else if (_selectionService != null)
-                {
-                    _selectionService.NotifySelected(matchedPart);
-                    _drag.PendingSelectPart = null;
-                }
-                else if (!IsSubassemblyProxy(matchedPart) && ServiceRegistry.TryGet<PartRuntimeController>(out var lockedPartController))
-                {
-                    lockedPartController.SelectPart(matchedPart.name);
-                    _drag.PendingSelectPart = null;
-                }
-
-                return;
-            }
-
-            _drag.SetPointerDown(screenPos, cam, matchedPart);
-
-            // If the same part is already selected, SelectionService.NotifySelected short-circuits
-            // and no OnSelected callback is fired. Start drag tracking immediately in that case.
-            if (_selectionService != null && _selectionService.CurrentSelection == matchedPart)
-            {
-                HandleSelectionServiceSelection(matchedPart, isInspect: false);
-                return;
-            }
-
-            // Route pointer selection through the canonical action pipeline first.
-            if (_actionRouter != null && _selectionService != null)
-            {
-                _actionRouter.InjectAction(CanonicalAction.Select);
-            }
-            else if (_selectionService != null)
-            {
-                _selectionService.NotifySelected(matchedPart);
-            }
-            else
-            {
-                if (IsSubassemblyProxy(matchedPart))
-                {
-                    if (_selectionService != null)
-                    {
-                        _selectionService.NotifySelected(matchedPart);
-                    }
-                    else
-                    {
-                        OseLog.Info($"[PartInteraction] Selected subassembly '{matchedSelectionId}'");
-                        if (!IsPartMovementLocked(matchedSelectionId))
-                            BeginDragTracking(matchedPart);
-                    }
-                }
-                else if (ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
-                {
-                    bool selected = partController.SelectPart(matchedPart.name);
-                    if (selected)
-                    {
-                        OseLog.Info($"[PartInteraction] Selected part '{matchedPart.name}'");
-                        if (!IsPartMovementLocked(matchedSelectionId))
-                            BeginDragTracking(matchedPart);
-                    }
-                }
-            }
-        }
-
-        private void HandlePointerDrag(Vector2 screenPos)
-        {
-            if (IsRepositioning()) return;
-            if (_drag.DraggedPart == null || _drag.DragCamera == null) return;
-
-            if (!_drag.IsDragging)
-            {
-                if (!_drag.ExceedsDragThreshold(screenPos))
-                    return;
-
-                // Start dragging
-                _drag.IsDragging = true;
-                bool canGrab = true;
-                if (!IsSubassemblyProxy(_drag.DraggedPart) && ServiceRegistry.TryGet<PartRuntimeController>(out var pc))
-                    canGrab = pc.GrabPart(_drag.DraggedPartId);
-
-                if (!canGrab)
-                {
-                    OseLog.VerboseInfo($"[PartInteraction] Drag blocked for locked part '{_drag.DraggedPartId}'.");
-                    ResetDragState();
-                    return;
-                }
-
-                OseLog.Info($"[PartInteraction] Dragging part '{_drag.DraggedPartId}'");
-            }
-
-            _drag.DraggedPart.transform.position = _drag.ComputeDragWorldPosition(screenPos);
-            _subassemblyPlacementController?.ApplyProxyTransform(_drag.DraggedPart);
-
-            // Check proximity to previews and highlight when in snap zone
-            UpdatePreviewProximity();
-        }
-
-        private void HandlePointerUp(Vector2 screenPos)
-        {
-            if (IsRepositioning()) return;
-            if (!_drag.PointerDown)
-                return;
-
-            _drag.ClearPointerDown();
-
-            if (!_drag.IsDragging || _drag.DraggedPart == null)
-            {
-                // Was just a click, not a drag ? selection handled by canonical action
-                _drag.PendingSelectPart = null;
-                ResetDragState();
-                return;
-            }
-
-            _drag.IsDragging = false;
-
-            // Attempt placement
-            AttemptDragPlacement();
-
-            ResetDragState();
-        }
-
-        private void AttemptDragPlacement()
-        {
-            if (_drag.DraggedPart == null || string.IsNullOrEmpty(_drag.DraggedPartId))
-                return;
-
-            AttemptPlacementForSelection(_drag.DraggedPart);
-        }
-
         private void AttemptPlacementForSelection(GameObject targetGo)
         {
             if (targetGo == null)
@@ -1325,7 +1120,7 @@ namespace OSE.UI.Root
 
         /// <summary>
         /// Returns the world position of the nearest preview target matching the given part ID.
-        /// Used by the V2 orchestrator to pivot the camera toward the placement target.
+        /// Used by the orchestrator to pivot the camera toward the placement target.
         /// </summary>
         public bool TryGetPreviewWorldPosForPart(string partId, out Vector3 worldPos)
         {

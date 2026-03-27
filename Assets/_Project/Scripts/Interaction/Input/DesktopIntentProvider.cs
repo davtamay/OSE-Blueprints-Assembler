@@ -56,7 +56,7 @@ namespace OSE.Interaction
 
             // Bind to <Pointer>/scroll — works with both physical mice and touchpads.
             // The UI's InputSystemUIInputModule uses the same binding path internally.
-            _scrollAction = new InputAction("V2Scroll", InputActionType.Value, "<Pointer>/scroll");
+            _scrollAction = new InputAction("Scroll", InputActionType.Value, "<Pointer>/scroll");
             _scrollAction.Enable();
         }
 
