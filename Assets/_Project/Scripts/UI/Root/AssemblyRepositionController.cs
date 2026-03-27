@@ -339,7 +339,7 @@ namespace OSE.UI.Root
 
             _previewRoot = sceneSetup.PreviewRoot;
             _floor = sceneSetup.Floor;
-            _camera = Camera.main;
+            _camera = CameraUtil.GetMain();
 
             if (_previewRoot == null)
             {

@@ -73,7 +73,7 @@ namespace OSE.UI.Root
             _draggedPart = partGo;
             _draggedPartId = selectionId;
             _dragScreenStart = _pointerDownScreenPos;
-            _dragCamera = _pointerDownCamera != null ? _pointerDownCamera : Camera.main;
+            _dragCamera = _pointerDownCamera != null ? _pointerDownCamera : CameraUtil.GetMain();
             _dragRayDistance = ResolveInitialDragRayDistance(_dragCamera, _dragScreenStart, partGo.transform.position);
             _lastPinchDistance = -1f;
             _lastPointerY = _pointerDownScreenPos.y;
@@ -89,7 +89,7 @@ namespace OSE.UI.Root
             _isDragging = true;
             _draggedPart = partGo;
             _draggedPartId = selectionId;
-            _dragCamera = Camera.main;
+            _dragCamera = CameraUtil.GetMain();
             if (_dragCamera != null && TryGetPointerPosition(out Vector2 pointerPos))
                 _dragRayDistance = ResolveInitialDragRayDistance(_dragCamera, pointerPos, partGo.transform.position);
             else if (_dragCamera != null)

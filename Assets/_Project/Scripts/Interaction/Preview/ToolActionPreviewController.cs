@@ -294,7 +294,7 @@ namespace OSE.Interaction
 
             Transform parent = _originalParent != null
                 ? _originalParent
-                : (Camera.main != null ? Camera.main.transform : null);
+                : (CameraUtil.GetMain() != null ? CameraUtil.GetMain().transform : null);
 
             if (parent == null)
             {
@@ -320,7 +320,7 @@ namespace OSE.Interaction
 
                 Transform parent = _originalParent != null
                     ? _originalParent
-                    : (Camera.main != null ? Camera.main.transform : null);
+                    : (CameraUtil.GetMain() != null ? CameraUtil.GetMain().transform : null);
 
                 if (parent != null)
                 {
@@ -395,7 +395,7 @@ namespace OSE.Interaction
         private void ComputeWorkingPose(Vector3 surfacePos, float toolHalfLength, string profile,
             ToolActionContext ctx, out Vector3 workingPos, out Quaternion actionRot)
         {
-            Camera cam = Camera.main;
+            Camera cam = CameraUtil.GetMain();
             Vector3 camToSurface = (surfacePos - (cam != null ? cam.transform.position : _startPos)).normalized;
             Vector3 approachDir = -camToSurface; // from surface toward camera
 

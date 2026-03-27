@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using OSE.Core;
 using UnityEngine;
 
 namespace OSE.UI.Root
@@ -48,7 +49,7 @@ namespace OSE.UI.Root
             Vector2 screenPos,
             float threshold)
         {
-            Camera cam = Camera.main;
+            Camera cam = CameraUtil.GetMain();
             if (cam == null) return null;
 
             float closestDist = threshold;

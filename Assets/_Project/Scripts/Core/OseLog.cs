@@ -18,6 +18,14 @@ namespace OSE.Core
         public static void Error(string message) =>
             Debug.LogError($"[OSE] {message}");
 
+        /// <summary>Logs an error with a stable <see cref="OseErrorCode"/> prefix for filtering.</summary>
+        public static void Error(OseErrorCode code, string message) =>
+            Debug.LogError($"[OSE][{(int)code:D4}] {message}");
+
+        /// <summary>Logs a warning with a stable <see cref="OseErrorCode"/> prefix for filtering.</summary>
+        public static void Warn(OseErrorCode code, string message) =>
+            Debug.LogWarning($"[OSE][{(int)code:D4}] {message}");
+
         public static void VerboseInfo(string message)
         {
             if (Verbose)

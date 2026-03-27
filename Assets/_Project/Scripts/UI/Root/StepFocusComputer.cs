@@ -238,7 +238,7 @@ namespace OSE.UI.Root
 
         private static bool TryInvokeCameraMethod(string methodName, object[] args, params Type[] signature)
         {
-            Camera cam = Camera.main;
+            Camera cam = CameraUtil.GetMain();
             if (cam == null)
                 return false;
 

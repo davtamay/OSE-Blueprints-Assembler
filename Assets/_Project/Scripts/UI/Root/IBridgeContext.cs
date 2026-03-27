@@ -29,6 +29,8 @@ namespace OSE.UI.Root
         bool IsSubassemblyProxy(GameObject target);
         bool ForEachProxyMember(GameObject proxy, Action<GameObject> action);
         GameObject NormalizeSelectablePlacementTarget(GameObject target);
+        bool IsSelectablePlacementObject(GameObject target);
+        string ResolveSelectionId(GameObject target);
         bool IsPartMovementLocked(string partId);
         bool IsToolModeLockedForParts();
         SubassemblyPlacementController SubassemblyController { get; }
@@ -64,6 +66,8 @@ namespace OSE.UI.Root
         PartVisualFeedbackManager VisualFeedback { get; }
         StepExecutionRouter Router { get; }
         ToolCursorManager CursorManager { get; }
+        ToolActionExecutor ToolAction { get; }
+        StepFocusComputer FocusComputer { get; }
         void ClearHintHighlight();
         void RestorePartVisual(GameObject part);
     }

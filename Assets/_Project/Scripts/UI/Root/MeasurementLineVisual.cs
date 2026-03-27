@@ -1,3 +1,4 @@
+using OSE.Core;
 using UnityEngine;
 
 namespace OSE.UI.Root
@@ -104,7 +105,7 @@ namespace OSE.UI.Root
         {
             if (_labelObject == null) return;
 
-            Camera cam = Camera.main;
+            Camera cam = CameraUtil.GetMain();
             if (cam == null) return;
 
             // Billboard: face the camera

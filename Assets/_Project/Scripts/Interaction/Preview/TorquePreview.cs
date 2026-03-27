@@ -48,7 +48,7 @@ namespace OSE.Interaction
             _angleInitialized = false;
             _accumulatedAngle = 0f;
 
-            Camera cam = Camera.main;
+            Camera cam = CameraUtil.GetMain();
             if (cam != null)
                 _targetScreenCenter = cam.WorldToScreenPoint(context.TargetWorldPos);
             else

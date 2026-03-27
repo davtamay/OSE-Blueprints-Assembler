@@ -161,7 +161,7 @@ namespace OSE.Interaction
 
         private static Vector3 ComputeHorizontalWeldDir()
         {
-            Camera cam = Camera.main;
+            Camera cam = CameraUtil.GetMain();
             if (cam != null)
             {
                 Vector3 camRight = cam.transform.right;

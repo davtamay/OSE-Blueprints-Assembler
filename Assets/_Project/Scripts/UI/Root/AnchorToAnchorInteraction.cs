@@ -1,4 +1,5 @@
 using System;
+using OSE.Core;
 using UnityEngine;
 
 namespace OSE.UI.Root
@@ -118,7 +119,7 @@ namespace OSE.UI.Root
             if (!_active || _liveVisual == null)
                 return;
 
-            Camera cam = Camera.main;
+            Camera cam = CameraUtil.GetMain();
             if (cam == null)
                 return;
 
@@ -173,7 +174,7 @@ namespace OSE.UI.Root
 
             if (!forceComplete)
             {
-                Camera cam = Camera.main;
+                Camera cam = CameraUtil.GetMain();
                 if (cam == null)
                     return false;
 

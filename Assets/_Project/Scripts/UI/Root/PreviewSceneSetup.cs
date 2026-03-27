@@ -162,7 +162,7 @@ namespace OSE.UI.Root
 
         private void ApplyCamera()
         {
-            Camera mainCamera = Camera.main;
+            Camera mainCamera = CameraUtil.GetMain();
             if (mainCamera == null) return;
             if (!Application.isPlaying) return;
             PreviewCameraSettings cam = ActiveProfile.Camera;

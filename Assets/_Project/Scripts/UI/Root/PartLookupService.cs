@@ -103,7 +103,7 @@ namespace OSE.UI.Root
 
         public GameObject RaycastPartAtScreen(Vector2 screenPos)
         {
-            Camera cam = Camera.main;
+            Camera cam = CameraUtil.GetMain();
             if (cam == null) return null;
             return RaycastSelectableObject(cam.ScreenPointToRay(screenPos));
         }

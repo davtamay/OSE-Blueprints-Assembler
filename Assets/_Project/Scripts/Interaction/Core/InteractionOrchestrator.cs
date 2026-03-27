@@ -80,7 +80,7 @@ namespace OSE.Interaction
         private void Awake()
         {
             if (_camera == null)
-                _camera = Camera.main;
+                _camera = CameraUtil.GetMain();
         }
 
         private void Start()

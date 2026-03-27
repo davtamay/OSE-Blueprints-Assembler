@@ -1,5 +1,6 @@
-using UnityEngine;
 using OSE.Content;
+using OSE.Core;
+using UnityEngine;
 
 namespace OSE.Interaction
 {
@@ -33,7 +34,7 @@ namespace OSE.Interaction
         /// </summary>
         public Vector2 ProjectDirectionToScreen(Vector3 worldDir, Vector2 fallback)
         {
-            Camera cam = Camera.main;
+            Camera cam = CameraUtil.GetMain();
             if (cam == null || worldDir.sqrMagnitude < 0.001f)
                 return fallback;
 

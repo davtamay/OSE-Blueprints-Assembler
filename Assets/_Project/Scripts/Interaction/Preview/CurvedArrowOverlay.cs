@@ -1,3 +1,4 @@
+using OSE.Core;
 using UnityEngine;
 
 namespace OSE.Interaction
@@ -104,7 +105,7 @@ namespace OSE.Interaction
         private void LateUpdate()
         {
             // Billboard
-            Camera cam = Camera.main;
+            Camera cam = CameraUtil.GetMain();
             if (cam != null)
                 transform.rotation = Quaternion.LookRotation(transform.position - cam.transform.position);
 

@@ -611,7 +611,7 @@ namespace OSE.UI.Root
 
         private PlacementPreviewInfo RaycastPreviewAtScreen(Vector2 screenPos, string selectionId)
         {
-            Camera cam = Camera.main;
+            Camera cam = CameraUtil.GetMain();
             if (cam == null) return null;
 
             Ray ray = cam.ScreenPointToRay(screenPos);
@@ -654,7 +654,7 @@ namespace OSE.UI.Root
 
         private PlacementPreviewInfo FindNearestPreviewByScreenProximity(Vector2 screenPos, string selectionId)
         {
-            Camera cam = Camera.main;
+            Camera cam = CameraUtil.GetMain();
             if (cam == null) return null;
 
             bool isSubassemblySelection = IsSubassemblySelectionId(selectionId);

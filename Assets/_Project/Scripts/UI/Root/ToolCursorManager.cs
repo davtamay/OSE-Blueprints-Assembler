@@ -130,7 +130,7 @@ namespace OSE.UI.Root
             _toolPreviewIndicator = previewTool;
             _toolPreviewIndicator.name = $"CursorTool_{activeToolId}";
 
-            Camera mainCam = Camera.main;
+            Camera mainCam = CameraUtil.GetMain();
             _toolPreviewIndicator.transform.SetParent(
                 mainCam != null ? mainCam.transform : _fallbackParent, false);
 
@@ -173,7 +173,7 @@ namespace OSE.UI.Root
                 return;
             }
 
-            Camera cam = Camera.main;
+            Camera cam = CameraUtil.GetMain();
             if (cam == null)
                 return;
 
@@ -244,7 +244,7 @@ namespace OSE.UI.Root
             _pipeCursorPreview = preview;
             _pipeCursorPreview.name = $"CursorCable_{partId}";
 
-            Camera mainCam = Camera.main;
+            Camera mainCam = CameraUtil.GetMain();
             _pipeCursorPreview.transform.SetParent(
                 mainCam != null ? mainCam.transform : _fallbackParent, false);
 

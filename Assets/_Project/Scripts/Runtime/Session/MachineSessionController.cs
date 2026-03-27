@@ -46,10 +46,10 @@ namespace OSE.Runtime
         public bool IsNavigating { get; private set; }
 
         /// <summary>
-        /// The frame number when the last navigation completed.
-        /// Used to prevent same-frame tool actions from re-completing a step.
+        /// Realtime seconds when the last navigation completed.
+        /// Used to prevent tool actions from re-completing a step immediately after navigation.
         /// </summary>
-        public int LastNavigationFrame { get; private set; } = -1;
+        public float LastNavigationTime { get; private set; } = -1f;
 
         public bool CanStepBack
         {
@@ -89,7 +89,7 @@ namespace OSE.Runtime
         {
             if (string.IsNullOrWhiteSpace(packageId))
             {
-                OseLog.Error("[MachineSessionController] Package id is required.");
+                OseLog.Error(OseErrorCode.SessionStartFailed, "[MachineSessionController] Package id is required.");
                 return false;
             }
 
@@ -110,7 +110,8 @@ namespace OSE.Runtime
             MachinePackageLoadResult result = await _loader.LoadFromStreamingAssetsAsync(packageId, cancellationToken);
             if (!result.IsSuccess)
             {
-                OseLog.Error($"[MachineSessionController] Failed to load package '{packageId}': {result.ErrorMessage}");
+                OseLog.Error(OseErrorCode.PackageLoadFailed,
+                    $"[MachineSessionController] Failed to load package '{packageId}': {result.ErrorMessage}");
                 SetLifecycle(SessionLifecycle.Error);
                 return false;
             }
@@ -123,7 +124,8 @@ namespace OSE.Runtime
             _assemblyOrder = ResolveAssemblyOrder();
             if (_assemblyOrder.Length == 0)
             {
-                OseLog.Error($"[MachineSessionController] Package '{packageId}' has no assemblies to run.");
+                OseLog.Error(OseErrorCode.PackageValidationFailed,
+                    $"[MachineSessionController] Package '{packageId}' has no assemblies to run.");
                 SetLifecycle(SessionLifecycle.Error);
                 return false;
             }
@@ -666,7 +668,7 @@ namespace OSE.Runtime
             finally
             {
                 IsNavigating = false;
-                LastNavigationFrame = UnityEngine.Time.frameCount;
+                LastNavigationTime = UnityEngine.Time.realtimeSinceStartup;
             }
         }
 

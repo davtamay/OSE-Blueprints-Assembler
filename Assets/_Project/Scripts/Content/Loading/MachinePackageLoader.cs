@@ -66,7 +66,8 @@ namespace OSE.Content.Loading
                 package.packageId = sanitizedPackageId;
                 if (validation.HasErrors)
                 {
-                    OseLog.Error($"[Content] Package '{sanitizedPackageId}' failed validation.\n{validation.FormatSummary()}");
+                    OseLog.Error(OseErrorCode.PackageValidationFailed,
+                        $"[Content] Package '{sanitizedPackageId}' failed validation.\n{validation.FormatSummary()}");
                     return new MachinePackageLoadResult(
                         sanitizedPackageId,
                         packagePath,
@@ -77,7 +78,8 @@ namespace OSE.Content.Loading
 
                 if (validation.HasWarnings)
                 {
-                    OseLog.Warn($"[Content] Package '{sanitizedPackageId}' loaded with warnings.\n{validation.FormatSummary()}");
+                    OseLog.Warn(OseErrorCode.PackageValidationFailed,
+                        $"[Content] Package '{sanitizedPackageId}' loaded with warnings.\n{validation.FormatSummary()}");
                 }
                 else
                 {
@@ -94,7 +96,7 @@ namespace OSE.Content.Loading
             catch (Exception exception) when (!(exception is OperationCanceledException))
             {
                 string errorMessage = $"Failed to load package '{sanitizedPackageId}': {exception.Message}";
-                OseLog.Error($"[Content] {errorMessage}");
+                OseLog.Error(OseErrorCode.PackageLoadFailed, $"[Content] {errorMessage}");
                 return Failure(sanitizedPackageId, packagePath, errorMessage);
             }
         }

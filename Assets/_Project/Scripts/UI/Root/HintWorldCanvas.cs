@@ -1,4 +1,5 @@
 using OSE.App;
+using OSE.Core;
 using OSE.UI.Utilities;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -149,7 +150,7 @@ namespace OSE.UI.Root
 
         private void UpdateTransform()
         {
-            Camera cam = Camera.main;
+            Camera cam = CameraUtil.GetMain();
             if (cam == null)
                 return;
 
