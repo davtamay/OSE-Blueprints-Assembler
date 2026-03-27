@@ -23,21 +23,7 @@ namespace OSE.UI.Root
     internal sealed class PartVisualFeedbackManager
     {
         // ── Shared references (not owned) ──
-        private readonly PackagePartSpawner _spawner;
-        private readonly Dictionary<string, PartPlacementState> _partStates;
-        private readonly Func<string, GameObject> _findSpawnedPart;
-        private readonly Func<GameObject, bool> _isSubassemblyProxy;
-        private readonly Func<GameObject, Action<GameObject>, bool> _forEachProxyMember;
-        private readonly Func<SelectionService> _getSelectionService;
-        private readonly Func<bool> _isDragging;
-        private readonly Func<bool> _isToolModeLockedForParts;
-        private readonly Func<GameObject> _getHoveredPartFromXri;
-        private readonly Func<GameObject> _getHoveredPartFromMouse;
-        private readonly Func<PlaceStepHandler> _getPlaceHandler;
-        private readonly Func<GameObject> _getDraggedPart;
-        private readonly Func<string, bool> _isPartMovementLocked;
-        private readonly Func<GameObject, GameObject> _normalizeSelectableTarget;
-        private readonly Action _resetDragState;
+        private readonly IBridgeContext _ctx;
 
         // ── Owned visual state ──
         private GameObject _hoveredPart;
@@ -59,45 +45,16 @@ namespace OSE.UI.Root
         private static Color HoveredSubassemblyEmission => InteractionVisualConstants.HoveredSubassemblyEmission;
         private static Color SelectedSubassemblyEmission => InteractionVisualConstants.SelectedSubassemblyEmission;
 
-        public PartVisualFeedbackManager(
-            PackagePartSpawner spawner,
-            Dictionary<string, PartPlacementState> partStates,
-            Func<string, GameObject> findSpawnedPart,
-            Func<GameObject, bool> isSubassemblyProxy,
-            Func<GameObject, Action<GameObject>, bool> forEachProxyMember,
-            Func<SelectionService> getSelectionService,
-            Func<bool> isDragging,
-            Func<bool> isToolModeLockedForParts,
-            Func<GameObject> getHoveredPartFromXri,
-            Func<GameObject> getHoveredPartFromMouse,
-            Func<PlaceStepHandler> getPlaceHandler,
-            Func<GameObject> getDraggedPart,
-            Func<string, bool> isPartMovementLocked,
-            Func<GameObject, GameObject> normalizeSelectableTarget,
-            Action resetDragState)
+        public PartVisualFeedbackManager(IBridgeContext context)
         {
-            _spawner = spawner;
-            _partStates = partStates;
-            _findSpawnedPart = findSpawnedPart;
-            _isSubassemblyProxy = isSubassemblyProxy;
-            _forEachProxyMember = forEachProxyMember;
-            _getSelectionService = getSelectionService;
-            _isDragging = isDragging;
-            _isToolModeLockedForParts = isToolModeLockedForParts;
-            _getHoveredPartFromXri = getHoveredPartFromXri;
-            _getHoveredPartFromMouse = getHoveredPartFromMouse;
-            _getPlaceHandler = getPlaceHandler;
-            _getDraggedPart = getDraggedPart;
-            _isPartMovementLocked = isPartMovementLocked;
-            _normalizeSelectableTarget = normalizeSelectableTarget;
-            _resetDragState = resetDragState;
+            _ctx = context;
         }
 
         // ════════════════════════════════════════════════════════════════════
         // Public accessors for owned state
         // ════════════════════════════════════════════════════════════════════
 
-        public GameObject HoveredPart => _hoveredPart;
+        public GameObject HoveredPart { get => _hoveredPart; set => _hoveredPart = value; }
         public HashSet<string> RevealedPartIds => _revealedPartIds;
         public HashSet<string> ActiveStepPartIds => _activeStepPartIds;
         public bool PartsHiddenOnSpawn => _partsHiddenOnSpawn;
@@ -126,15 +83,15 @@ namespace OSE.UI.Root
 
         public void UpdatePartHoverVisual()
         {
-            if (!Application.isPlaying || _spawner == null || _isDragging() || _isToolModeLockedForParts())
+            if (!Application.isPlaying || _ctx.Spawner == null || _ctx.IsDragging || _ctx.IsToolModeLockedForParts())
             {
                 ClearPartHoverVisual();
                 return;
             }
 
-            GameObject hoveredPart = _getHoveredPartFromXri();
+            GameObject hoveredPart = _ctx.GetHoveredPartFromXri();
             if (hoveredPart == null)
-                hoveredPart = _getHoveredPartFromMouse();
+                hoveredPart = _ctx.GetHoveredPartFromMouse();
 
             if (hoveredPart == _hoveredPart)
             {
@@ -169,11 +126,11 @@ namespace OSE.UI.Root
             if (partGo == null || string.IsNullOrEmpty(partId))
                 return false;
 
-            var selectionService = _getSelectionService();
+            var selectionService = _ctx.SelectionService;
             if (selectionService != null && selectionService.CurrentSelection == partGo)
                 return false;
 
-            if (_isSubassemblyProxy(partGo))
+            if (_ctx.IsSubassemblyProxy(partGo))
                 return true;
 
             PartPlacementState state = GetPartState(partId);
@@ -187,12 +144,12 @@ namespace OSE.UI.Root
             if (!Application.isPlaying)
                 return;
 
-            var selectionService = _getSelectionService();
+            var selectionService = _ctx.SelectionService;
             if (selectionService == null)
                 return;
 
-            GameObject selected = _normalizeSelectableTarget(selectionService.CurrentSelection);
-            if (!_isSubassemblyProxy(selected))
+            GameObject selected = _ctx.NormalizeSelectablePlacementTarget(selectionService.CurrentSelection);
+            if (!_ctx.IsSubassemblyProxy(selected))
                 return;
 
             ApplySelectedPartVisual(selected);
@@ -200,8 +157,8 @@ namespace OSE.UI.Root
 
         public void UpdatePointerDragSelectionVisual()
         {
-            var draggedPart = _getDraggedPart();
-            if (!_isDragging() || draggedPart == null)
+            var draggedPart = _ctx.Drag?.DraggedPart;
+            if (!_ctx.IsDragging || draggedPart == null)
                 return;
 
             ApplySelectedPartVisual(draggedPart);
@@ -213,9 +170,9 @@ namespace OSE.UI.Root
 
         public void ApplyHoveredPartVisual(GameObject partGo)
         {
-            if (_isSubassemblyProxy(partGo))
+            if (_ctx.IsSubassemblyProxy(partGo))
             {
-                _forEachProxyMember(partGo, member =>
+                _ctx.ForEachProxyMember(partGo, member =>
                 {
                     ApplyHoveredPartVisual(member);
                     MaterialHelper.SetEmission(member, HoveredSubassemblyEmission);
@@ -231,9 +188,9 @@ namespace OSE.UI.Root
 
         public void ApplySelectedPartVisual(GameObject partGo)
         {
-            if (_isSubassemblyProxy(partGo))
+            if (_ctx.IsSubassemblyProxy(partGo))
             {
-                _forEachProxyMember(partGo, member =>
+                _ctx.ForEachProxyMember(partGo, member =>
                 {
                     ApplySelectedPartVisual(member);
                     MaterialHelper.SetEmission(member, SelectedSubassemblyEmission);
@@ -252,9 +209,9 @@ namespace OSE.UI.Root
             if (partGo == null)
                 return;
 
-            if (_isSubassemblyProxy(partGo))
+            if (_ctx.IsSubassemblyProxy(partGo))
             {
-                _forEachProxyMember(partGo, member => ApplyPartVisualForState(member, member.name, GetPartState(member.name)));
+                _ctx.ForEachProxyMember(partGo, member => ApplyPartVisualForState(member, member.name, GetPartState(member.name)));
                 return;
             }
 
@@ -267,17 +224,17 @@ namespace OSE.UI.Root
             if (partGo == null)
                 return;
 
-            if (_isSubassemblyProxy(partGo))
+            if (_ctx.IsSubassemblyProxy(partGo))
             {
                 switch (state)
                 {
                     case PartPlacementState.Selected:
                     case PartPlacementState.Inspected:
                     case PartPlacementState.Grabbed:
-                        _forEachProxyMember(partGo, ApplySelectedPartVisual);
+                        _ctx.ForEachProxyMember(partGo, ApplySelectedPartVisual);
                         break;
                     default:
-                        _forEachProxyMember(partGo, member => ApplyPartVisualForState(member, member.name, GetPartState(member.name)));
+                        _ctx.ForEachProxyMember(partGo, member => ApplyPartVisualForState(member, member.name, GetPartState(member.name)));
                         break;
                 }
 
@@ -313,9 +270,9 @@ namespace OSE.UI.Root
 
         public void ApplyAvailablePartVisual(GameObject partGo, string partId)
         {
-            if (_isSubassemblyProxy(partGo))
+            if (_ctx.IsSubassemblyProxy(partGo))
             {
-                _forEachProxyMember(partGo, member => ApplyPartVisualForState(member, member.name, GetPartState(member.name)));
+                _ctx.ForEachProxyMember(partGo, member => ApplyPartVisualForState(member, member.name, GetPartState(member.name)));
                 return;
             }
 
@@ -327,7 +284,7 @@ namespace OSE.UI.Root
                 return;
 
             // Fallback for parts without original textures (primitives/placeholders)
-            PartPreviewPlacement placement = _spawner != null ? _spawner.FindPartPlacement(partId) : null;
+            PartPreviewPlacement placement = _ctx.Spawner != null ? _ctx.Spawner.FindPartPlacement(partId) : null;
             Color baseColor = placement != null
                 ? new Color(placement.color.r, placement.color.g, placement.color.b, placement.color.a)
                 : new Color(0.94f, 0.55f, 0.18f, 1f);
@@ -405,14 +362,14 @@ namespace OSE.UI.Root
 
         public void SyncPartGrabInteractivity(GameObject partGo, string partId)
         {
-            if (partGo == null || string.IsNullOrWhiteSpace(partId) || _isSubassemblyProxy(partGo))
+            if (partGo == null || string.IsNullOrWhiteSpace(partId) || _ctx.IsSubassemblyProxy(partGo))
                 return;
 
             XRGrabInteractable grabInteractable = partGo.GetComponent<XRGrabInteractable>();
             if (grabInteractable == null)
                 return;
 
-            bool shouldEnableGrab = !_isPartMovementLocked(partId);
+            bool shouldEnableGrab = !_ctx.IsPartMovementLocked(partId);
             if (grabInteractable.enabled == shouldEnableGrab)
                 return;
 
@@ -425,8 +382,8 @@ namespace OSE.UI.Root
                 rb.useGravity = false;
             }
 
-            if (!shouldEnableGrab && _getDraggedPart() == partGo)
-                _resetDragState();
+            if (!shouldEnableGrab && _ctx.Drag?.DraggedPart == partGo)
+                _ctx.ResetDragState();
         }
 
         // ════════════════════════════════════════════════════════════════════
@@ -447,7 +404,7 @@ namespace OSE.UI.Root
             Color pulseColor = ColorPulseHelper.Lerp(HintHighlightColorA, HintHighlightColorB,
                 InteractionVisualConstants.HintHighlightPulseSpeed);
 
-            var placeHandler = _getPlaceHandler();
+            var placeHandler = _ctx.PlaceHandler;
             if (_hintPreview != null)
             {
                 if (!(placeHandler != null && placeHandler.IsPreviewHighlighted && placeHandler.HoveredPreview == _hintPreview))
@@ -455,12 +412,12 @@ namespace OSE.UI.Root
             }
 
             if (_hintSourceProxy != null)
-                _forEachProxyMember(_hintSourceProxy, member => ApplyHintSourceVisual(member, pulseColor));
+                _ctx.ForEachProxyMember(_hintSourceProxy, member => ApplyHintSourceVisual(member, pulseColor));
         }
 
         public void ClearHintHighlight()
         {
-            var placeHandler = _getPlaceHandler();
+            var placeHandler = _ctx.PlaceHandler;
             if (_hintPreview != null)
             {
                 if (placeHandler != null && placeHandler.IsPreviewHighlighted && placeHandler.HoveredPreview == _hintPreview)
@@ -490,7 +447,7 @@ namespace OSE.UI.Root
             if (_partsHiddenOnSpawn) return;
             _partsHiddenOnSpawn = true;
 
-            var parts = _spawner?.SpawnedParts;
+            var parts = _ctx.Spawner?.SpawnedParts;
             if (parts == null) return;
 
             for (int i = 0; i < parts.Count; i++)
@@ -500,7 +457,7 @@ namespace OSE.UI.Root
                 string partId = parts[i].name;
 
                 // Keep completed/placed parts visible
-                if (_partStates.TryGetValue(partId, out var state) &&
+                if (_ctx.PartStates.TryGetValue(partId, out var state) &&
                     state is PartPlacementState.Completed or PartPlacementState.PlacedVirtually)
                     continue;
 
@@ -516,7 +473,7 @@ namespace OSE.UI.Root
 
         public void RevealStepParts(string stepId)
         {
-            var package = _spawner?.CurrentPackage;
+            var package = _ctx.Spawner?.CurrentPackage;
             if (package == null || !package.TryGetStep(stepId, out var step))
                 return;
 
@@ -562,7 +519,7 @@ namespace OSE.UI.Root
             var toReveal = new List<string>();
             foreach (string partId in subassemblyPartIds)
             {
-                if (_partStates.TryGetValue(partId, out var state) &&
+                if (_ctx.PartStates.TryGetValue(partId, out var state) &&
                     state is PartPlacementState.Completed or PartPlacementState.PlacedVirtually)
                 {
                     _revealedPartIds.Add(partId);
@@ -582,10 +539,10 @@ namespace OSE.UI.Root
             for (int i = 0; i < toReveal.Count; i++)
             {
                 string partId = toReveal[i];
-                GameObject partGo = _findSpawnedPart(partId);
+                GameObject partGo = _ctx.FindSpawnedPart(partId);
                 if (partGo == null) continue;
 
-                PartPreviewPlacement pp = _spawner.FindPartPlacement(partId);
+                PartPreviewPlacement pp = _ctx.Spawner.FindPartPlacement(partId);
                 Vector3 scale = pp != null
                     ? new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z)
                     : Vector3.one;
@@ -623,7 +580,7 @@ namespace OSE.UI.Root
                     unplacedParts.Add((partId, partGo, width));
                 }
 
-                _partStates[partId] = PartPlacementState.Available;
+                _ctx.PartStates[partId] = PartPlacementState.Available;
                 SyncPartGrabInteractivity(partGo, partId);
                 ApplyPartVisualForState(partGo, partId, PartPlacementState.Available);
                 _revealedPartIds.Add(partId);
@@ -652,7 +609,7 @@ namespace OSE.UI.Root
 
         public void ApplyStepPartHighlighting(string stepId)
         {
-            var package = _spawner?.CurrentPackage;
+            var package = _ctx.Spawner?.CurrentPackage;
             if (package == null || !package.TryGetStep(stepId, out var step))
                 return;
 
@@ -679,11 +636,11 @@ namespace OSE.UI.Root
             // Walk all revealed parts: highlight active, dim the rest
             foreach (string partId in _revealedPartIds)
             {
-                if (_partStates.TryGetValue(partId, out var state) &&
+                if (_ctx.PartStates.TryGetValue(partId, out var state) &&
                     state is PartPlacementState.Completed or PartPlacementState.PlacedVirtually)
                     continue;
 
-                GameObject partGo = _findSpawnedPart(partId);
+                GameObject partGo = _ctx.FindSpawnedPart(partId);
                 if (partGo == null) continue;
 
                 if (_activeStepPartIds.Contains(partId))
@@ -709,7 +666,7 @@ namespace OSE.UI.Root
 
         public void MoveStepPartsToPlayPosition(string stepId)
         {
-            var package = _spawner.CurrentPackage;
+            var package = _ctx.Spawner.CurrentPackage;
             if (package == null || !package.TryGetStep(stepId, out var step))
                 return;
 
@@ -722,7 +679,7 @@ namespace OSE.UI.Root
 
         public void RestoreCompletedStepParts(StepDefinition[] steps)
         {
-            var package = _spawner?.CurrentPackage;
+            var package = _ctx.Spawner?.CurrentPackage;
             if (package == null || steps == null) return;
 
             for (int s = 0; s < steps.Length; s++)
@@ -737,7 +694,7 @@ namespace OSE.UI.Root
 
                     MovePartToPlayPosition(partId);
 
-                    GameObject partGo = _findSpawnedPart(partId);
+                    GameObject partGo = _ctx.FindSpawnedPart(partId);
                     if (partGo != null)
                     {
                         // Ensure the part is visible — HideNonIntroducedParts may
@@ -745,7 +702,7 @@ namespace OSE.UI.Root
                         partGo.SetActive(true);
                     }
 
-                    _partStates[partId] = PartPlacementState.Completed;
+                    _ctx.PartStates[partId] = PartPlacementState.Completed;
                     SyncPartGrabInteractivity(partGo, partId);
                     ApplyPartVisualForState(partGo, partId, PartPlacementState.Completed);
                     _revealedPartIds.Add(partId);
@@ -757,10 +714,10 @@ namespace OSE.UI.Root
         {
             if (string.IsNullOrEmpty(partId)) return;
 
-            PartPreviewPlacement pp = _spawner.FindPartPlacement(partId);
+            PartPreviewPlacement pp = _ctx.Spawner.FindPartPlacement(partId);
             if (pp == null) return;
 
-            GameObject partGo = _findSpawnedPart(partId);
+            GameObject partGo = _ctx.FindSpawnedPart(partId);
             if (partGo == null) return;
 
             Vector3    pPos   = new Vector3(pp.playPosition.x, pp.playPosition.y, pp.playPosition.z);
@@ -775,7 +732,7 @@ namespace OSE.UI.Root
 
         public void RevertFutureStepParts(StepDefinition[] allSteps, int fromStepIndex)
         {
-            var package = _spawner?.CurrentPackage;
+            var package = _ctx.Spawner?.CurrentPackage;
             if (package == null || allSteps == null) return;
 
             for (int s = fromStepIndex; s < allSteps.Length; s++)
@@ -788,14 +745,14 @@ namespace OSE.UI.Root
                     string partId = partIds[p];
                     if (string.IsNullOrEmpty(partId)) continue;
 
-                    GameObject partGo = _findSpawnedPart(partId);
+                    GameObject partGo = _ctx.FindSpawnedPart(partId);
                     if (partGo == null) continue;
 
                     // Hide future parts instead of repositioning — they'll be revealed
                     // when their step activates via RevealStepParts.
                     partGo.SetActive(false);
                     _revealedPartIds.Remove(partId);
-                    _partStates[partId] = PartPlacementState.NotIntroduced;
+                    _ctx.PartStates[partId] = PartPlacementState.NotIntroduced;
                 }
             }
         }
@@ -822,7 +779,7 @@ namespace OSE.UI.Root
             if (string.IsNullOrEmpty(partId))
                 return PartPlacementState.Available;
 
-            return _partStates.TryGetValue(partId, out PartPlacementState state)
+            return _ctx.PartStates.TryGetValue(partId, out PartPlacementState state)
                 ? state
                 : PartPlacementState.Available;
         }

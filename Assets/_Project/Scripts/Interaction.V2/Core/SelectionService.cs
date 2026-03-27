@@ -67,6 +67,7 @@ namespace OSE.Interaction
             CurrentSelection = target;
             OseLog.VerboseInfo($"[Selection] Selected: {target?.name}");
             OnSelected?.Invoke(target);
+            RuntimeEventBus.Publish(new PartSelected(target));
         }
 
         public void NotifyInspected(GameObject target)
@@ -74,6 +75,7 @@ namespace OSE.Interaction
             CurrentInspection = target;
             OseLog.VerboseInfo($"[Selection] Inspected: {target?.name}");
             OnInspected?.Invoke(target);
+            RuntimeEventBus.Publish(new PartInspected(target));
         }
 
         public void Deselect()
@@ -84,6 +86,7 @@ namespace OSE.Interaction
             CurrentInspection = null;
             OseLog.VerboseInfo($"[Selection] Deselected: {previous?.name}");
             OnDeselected?.Invoke(previous);
+            RuntimeEventBus.Publish(new PartDeselected(previous));
         }
     }
 }

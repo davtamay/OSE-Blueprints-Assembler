@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace OSE.Core
 {
@@ -10,6 +11,17 @@ namespace OSE.Core
     {
         private static readonly Color PreviewColor = new Color(0.4f, 0.8f, 1.0f, 0.3f);
 
+        private const string OutlineChildName = "__ose_outline__";
+        private const int TransparentRenderQueue = 3000;
+        private const int OverlayRenderQueue = 4000;
+
+        // Cached shader — resolved on first use. Unity clears this on domain reload.
+        private static Shader _urpLitShader;
+
+        private static Shader UrpLitShader =>
+            _urpLitShader != null ? _urpLitShader
+                : (_urpLitShader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
+
         // ── Original-material preservation ──────────────────────────────
 
         /// <summary>
@@ -19,17 +31,9 @@ namespace OSE.Core
         public static void SaveOriginals(GameObject target)
         {
             if (target == null) return;
-            var cache = target.GetComponent<OriginalMaterialCache>();
-            if (cache == null)
-                cache = target.AddComponent<OriginalMaterialCache>();
-            cache.Save();
+            GetOrAddCache(target).Save();
         }
 
-        /// <summary>
-        /// Marks this GameObject as an imported model (from GLB/GLTF, not a primitive).
-        /// When marked, the system preserves original materials instead of replacing
-        /// them with solid colors.
-        /// </summary>
         /// <summary>
         /// Re-saves current materials even if already saved.
         /// </summary>
@@ -45,12 +49,15 @@ namespace OSE.Core
             cache.ForceSave();
         }
 
+        /// <summary>
+        /// Marks this GameObject as an imported model (from GLB/GLTF, not a primitive).
+        /// When marked, the system preserves original materials instead of replacing
+        /// them with solid colors.
+        /// </summary>
         public static void MarkAsImported(GameObject target)
         {
             if (target == null) return;
-            var cache = target.GetComponent<OriginalMaterialCache>();
-            if (cache == null)
-                cache = target.AddComponent<OriginalMaterialCache>();
+            var cache = GetOrAddCache(target);
             cache.MarkAsImported();
             cache.Save();
         }
@@ -125,35 +132,17 @@ namespace OSE.Core
         /// </summary>
         private static void ApplyColorToAllSlots(GameObject target, Color color, string materialName = "OSE_Tint")
         {
-            var renderers = target.GetComponentsInChildren<Renderer>(includeInactive: true);
-            if (renderers == null || renderers.Length == 0) return;
+            Material tintMat = CreateUrpMaterial(materialName);
+            if (tintMat == null) return;
 
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-            if (shader == null) return;
-
-            Material tintMat = new Material(shader) { name = materialName };
-            if (tintMat.HasProperty("_BaseColor"))
-                tintMat.SetColor("_BaseColor", color);
-            if (tintMat.HasProperty("_Color"))
-                tintMat.SetColor("_Color", color);
+            SetBaseColor(tintMat, color);
             if (tintMat.HasProperty("_EmissionColor"))
             {
                 tintMat.SetColor("_EmissionColor", color * 0.15f);
                 tintMat.EnableKeyword("_EMISSION");
             }
 
-            foreach (var renderer in renderers)
-            {
-                // Skip outline children — they have their own shader
-                if (renderer.gameObject.name == "__ose_outline__") continue;
-
-                int slotCount = renderer.sharedMaterials.Length;
-                if (slotCount <= 0) slotCount = 1;
-                Material[] mats = new Material[slotCount];
-                for (int i = 0; i < slotCount; i++)
-                    mats[i] = tintMat;
-                renderer.sharedMaterials = mats;
-            }
+            ApplyToAllSlots(target, tintMat, skipOutline: true);
         }
 
         /// <summary>
@@ -169,38 +158,13 @@ namespace OSE.Core
         /// </summary>
         public static void ApplyPreviewMaterial(GameObject target, Color previewColor)
         {
-            var renderers = target.GetComponentsInChildren<Renderer>(includeInactive: true);
-            if (renderers == null || renderers.Length == 0) return;
+            Material previewMat = CreateUrpMaterial("Preview Material");
+            if (previewMat == null) return;
 
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-            if (shader == null) return;
+            ConfigureTransparent(previewMat, TransparentRenderQueue);
+            SetBaseColor(previewMat, previewColor);
 
-            Material previewMat = new Material(shader) { name = "Preview Material" };
-
-            previewMat.SetFloat("_Surface", 1f); // Transparent
-            previewMat.SetFloat("_Blend", 0f);   // Alpha blend
-            previewMat.SetOverrideTag("RenderType", "Transparent");
-            previewMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            previewMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            previewMat.SetInt("_ZWrite", 0);
-            previewMat.renderQueue = 3000;
-
-            if (previewMat.HasProperty("_BaseColor"))
-                previewMat.SetColor("_BaseColor", previewColor);
-            if (previewMat.HasProperty("_Color"))
-                previewMat.SetColor("_Color", previewColor);
-
-            foreach (var renderer in renderers)
-            {
-                if (renderer.gameObject.name == "__ose_outline__") continue;
-
-                int slotCount = renderer.sharedMaterials.Length;
-                if (slotCount <= 0) slotCount = 1;
-                Material[] mats = new Material[slotCount];
-                for (int i = 0; i < slotCount; i++)
-                    mats[i] = previewMat;
-                renderer.sharedMaterials = mats;
-            }
+            ApplyToAllSlots(target, previewMat, skipOutline: true);
         }
 
         /// <summary>
@@ -223,33 +187,13 @@ namespace OSE.Core
                     if (originals[j] == null) { clones[j] = null; continue; }
                     var mat = new Material(originals[j]);
 
-                    // Switch to transparent rendering
-                    mat.SetFloat("_Surface", 1f);
-                    mat.SetFloat("_Blend", 0f);
-                    mat.SetOverrideTag("RenderType", "Transparent");
-                    mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                    mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                    mat.SetInt("_ZWrite", 1);
-                    mat.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.LessEqual);
-                    mat.renderQueue = 4000;
+                    ConfigureTransparent(mat, OverlayRenderQueue, zWrite: true);
+                    mat.SetInt("_ZTest", (int)CompareFunction.LessEqual);
                     if (originals[j].HasProperty("_Cull"))
                         mat.SetInt("_Cull", originals[j].GetInt("_Cull"));
                     mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
 
-                    // Apply alpha to base color
-                    if (mat.HasProperty("_BaseColor"))
-                    {
-                        Color c = mat.GetColor("_BaseColor");
-                        c.a = alpha;
-                        mat.SetColor("_BaseColor", c);
-                    }
-                    if (mat.HasProperty("_Color"))
-                    {
-                        Color c = mat.GetColor("_Color");
-                        c.a = alpha;
-                        mat.SetColor("_Color", c);
-                    }
-
+                    SetBaseColorAlpha(mat, alpha);
                     clones[j] = mat;
                 }
                 renderers[i].sharedMaterials = clones;
@@ -273,28 +217,8 @@ namespace OSE.Core
                 foreach (var mat in mats)
                 {
                     if (mat == null) continue;
-
-                    mat.SetFloat("_Surface", 0f); // Opaque
-                    mat.SetOverrideTag("RenderType", "Opaque");
-                    mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                    mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
-                    mat.SetInt("_ZWrite", 1);
-                    mat.renderQueue = -1; // default
-                    mat.DisableKeyword("_SURFACE_TYPE_TRANSPARENT");
-                    mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-
-                    if (mat.HasProperty("_BaseColor"))
-                    {
-                        Color c = mat.GetColor("_BaseColor");
-                        c.a = 1f;
-                        mat.SetColor("_BaseColor", c);
-                    }
-                    if (mat.HasProperty("_Color"))
-                    {
-                        Color c = mat.GetColor("_Color");
-                        c.a = 1f;
-                        mat.SetColor("_Color", c);
-                    }
+                    ConfigureOpaque(mat);
+                    SetBaseColorAlpha(mat, 1f);
                 }
                 renderer.materials = mats;
             }
@@ -309,26 +233,15 @@ namespace OSE.Core
             var renderers = target.GetComponentsInChildren<Renderer>(includeInactive: true);
             if (renderers == null || renderers.Length == 0) return;
 
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            var shader = UrpLitShader;
             if (shader == null) return;
 
             foreach (var renderer in renderers)
             {
                 Material toolMat = new Material(shader) { name = "Tool Cursor Material" };
-
-                toolMat.SetFloat("_Surface", 1f); // Transparent
-                toolMat.SetFloat("_Blend", 0f);   // Alpha blend
-                toolMat.SetOverrideTag("RenderType", "Transparent");
-                toolMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                toolMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                toolMat.SetInt("_ZWrite", 0);
-                toolMat.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.Always);
-                toolMat.renderQueue = 4000;
-
-                if (toolMat.HasProperty("_BaseColor"))
-                    toolMat.SetColor("_BaseColor", toolColor);
-                if (toolMat.HasProperty("_Color"))
-                    toolMat.SetColor("_Color", toolColor);
+                ConfigureTransparent(toolMat, OverlayRenderQueue);
+                toolMat.SetInt("_ZTest", (int)CompareFunction.Always);
+                SetBaseColor(toolMat, toolColor);
                 if (toolMat.HasProperty("_EmissionColor"))
                     toolMat.SetColor("_EmissionColor", toolColor * 0.35f);
 
@@ -345,38 +258,25 @@ namespace OSE.Core
             var renderers = target.GetComponentsInChildren<Renderer>(includeInactive: true);
             if (renderers == null || renderers.Length == 0) return;
 
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            var shader = UrpLitShader;
             if (shader == null) return;
 
             // Semi-transparent so the tool action behind/inside is visible
             Color visibleColor = markerColor;
             visibleColor.a = 0.18f;
 
+            // Stronger emission so the rim glows even though base is transparent
+            Color emissionColor = markerColor;
+            emissionColor.a = 1f;
+
             foreach (var renderer in renderers)
             {
                 Material markerMat = new Material(shader) { name = "Tool Target Marker Material" };
-
-                // Configure for transparency
-                if (markerMat.HasProperty("_Surface"))
-                    markerMat.SetFloat("_Surface", 1f); // Transparent
-                if (markerMat.HasProperty("_Blend"))
-                    markerMat.SetFloat("_Blend", 0f); // Alpha
-                markerMat.SetOverrideTag("RenderType", "Transparent");
-                markerMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                markerMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                markerMat.SetInt("_ZWrite", 0);
-                markerMat.renderQueue = 3000;
+                ConfigureTransparent(markerMat, TransparentRenderQueue);
                 markerMat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
                 markerMat.EnableKeyword("_ALPHAPREMULTIPLY_ON");
 
-                if (markerMat.HasProperty("_BaseColor"))
-                    markerMat.SetColor("_BaseColor", visibleColor);
-                if (markerMat.HasProperty("_Color"))
-                    markerMat.SetColor("_Color", visibleColor);
-
-                // Stronger emission so the rim glows even though base is transparent
-                Color emissionColor = markerColor;
-                emissionColor.a = 1f;
+                SetBaseColor(markerMat, visibleColor);
                 if (markerMat.HasProperty("_EmissionColor"))
                     markerMat.SetColor("_EmissionColor", emissionColor * 1.2f);
                 markerMat.EnableKeyword("_EMISSION");
@@ -396,7 +296,7 @@ namespace OSE.Core
 
             foreach (var renderer in renderers)
             {
-                if (renderer.gameObject.name == "__ose_outline__") continue;
+                if (renderer.gameObject.name == OutlineChildName) continue;
 
                 // Use .materials to get per-renderer instances for ALL material slots.
                 // renderer.material only returns slot 0, missing sub-meshes on multi-material models.
@@ -407,10 +307,7 @@ namespace OSE.Core
                     if (material == null) continue;
 
                     // URP/Lit
-                    if (material.HasProperty("_BaseColor"))
-                        material.SetColor("_BaseColor", color);
-                    if (material.HasProperty("_Color"))
-                        material.SetColor("_Color", color);
+                    SetBaseColor(material, color);
                     if (material.HasProperty("_EmissionColor"))
                         material.SetColor("_EmissionColor", color * 0.08f);
 
@@ -439,7 +336,7 @@ namespace OSE.Core
 
             foreach (var renderer in renderers)
             {
-                if (renderer.gameObject.name == "__ose_outline__") continue;
+                if (renderer.gameObject.name == OutlineChildName) continue;
 
                 // Use .materials (not .material) to update ALL material slots.
                 // .material only returns slot 0, missing sub-meshes on multi-material models.
@@ -470,6 +367,85 @@ namespace OSE.Core
                     }
                 }
                 renderer.materials = mats;
+            }
+        }
+
+        // ── Private helpers ──────────────────────────────────────────────
+
+        private static OriginalMaterialCache GetOrAddCache(GameObject target)
+        {
+            var cache = target.GetComponent<OriginalMaterialCache>();
+            return cache != null ? cache : target.AddComponent<OriginalMaterialCache>();
+        }
+
+        private static Material CreateUrpMaterial(string name)
+        {
+            var shader = UrpLitShader;
+            return shader != null ? new Material(shader) { name = name } : null;
+        }
+
+        private static void SetBaseColor(Material mat, Color color)
+        {
+            if (mat.HasProperty("_BaseColor"))
+                mat.SetColor("_BaseColor", color);
+            if (mat.HasProperty("_Color"))
+                mat.SetColor("_Color", color);
+        }
+
+        private static void SetBaseColorAlpha(Material mat, float alpha)
+        {
+            if (mat.HasProperty("_BaseColor"))
+            {
+                Color c = mat.GetColor("_BaseColor");
+                c.a = alpha;
+                mat.SetColor("_BaseColor", c);
+            }
+            if (mat.HasProperty("_Color"))
+            {
+                Color c = mat.GetColor("_Color");
+                c.a = alpha;
+                mat.SetColor("_Color", c);
+            }
+        }
+
+        private static void ConfigureTransparent(Material mat, int renderQueue, bool zWrite = false)
+        {
+            mat.SetFloat("_Surface", 1f);
+            mat.SetFloat("_Blend", 0f);
+            mat.SetOverrideTag("RenderType", "Transparent");
+            mat.SetInt("_SrcBlend", (int)BlendMode.SrcAlpha);
+            mat.SetInt("_DstBlend", (int)BlendMode.OneMinusSrcAlpha);
+            mat.SetInt("_ZWrite", zWrite ? 1 : 0);
+            mat.renderQueue = renderQueue;
+        }
+
+        private static void ConfigureOpaque(Material mat)
+        {
+            mat.SetFloat("_Surface", 0f);
+            mat.SetOverrideTag("RenderType", "Opaque");
+            mat.SetInt("_SrcBlend", (int)BlendMode.One);
+            mat.SetInt("_DstBlend", (int)BlendMode.Zero);
+            mat.SetInt("_ZWrite", 1);
+            mat.renderQueue = -1;
+            mat.DisableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+        }
+
+        private static void ApplyToAllSlots(GameObject target, Material mat, bool skipOutline)
+        {
+            var renderers = target.GetComponentsInChildren<Renderer>(includeInactive: true);
+            if (renderers == null || renderers.Length == 0) return;
+
+            foreach (var renderer in renderers)
+            {
+                if (skipOutline && renderer.gameObject.name == OutlineChildName) continue;
+
+                int slotCount = renderer.sharedMaterials.Length;
+                if (slotCount <= 0) slotCount = 1;
+                Material[] mats = new Material[slotCount];
+                for (int i = 0; i < slotCount; i++)
+                    mats[i] = mat;
+                renderer.sharedMaterials = mats;
             }
         }
     }

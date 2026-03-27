@@ -19,18 +19,8 @@ namespace OSE.UI.Root
     /// </summary>
     internal sealed class PlaceStepHandler : IStepFamilyHandler
     {
-        // ── Constructor dependencies ──
-        private readonly PackagePartSpawner _spawner;
-        private readonly Func<PreviewSceneSetup> _getSetup;
-        private readonly Func<string, GameObject> _findSpawnedPart;
-        private readonly Func<string, PartPlacementState> _getPartState;
-        private readonly Action<GameObject> _restorePartVisual;
-        private readonly Action _resetDragState;
-        private readonly List<GameObject> _spawnedPreviews; // shared reference from bridge
-        private readonly Func<bool> _isSequentialStep;
-        private readonly Func<bool> _advanceSequentialTarget;
-        private readonly Action<GameObject> _onPlacementFailed;
-        private readonly Action<GameObject> _onPlacementSucceeded;
+        // ── Constructor dependency ──
+        private readonly IBridgeContext _ctx;
 
         // ── Owned state ──
         private GameObject _hoveredPreview;
@@ -71,30 +61,9 @@ namespace OSE.UI.Root
 
         // ── Constructor ──
 
-        public PlaceStepHandler(
-            PackagePartSpawner spawner,
-            Func<PreviewSceneSetup> getSetup,
-            Func<string, GameObject> findSpawnedPart,
-            Func<string, PartPlacementState> getPartState,
-            Action<GameObject> restorePartVisual,
-            Action resetDragState,
-            List<GameObject> spawnedPreviews,
-            Func<bool> isSequentialStep,
-            Func<bool> advanceSequentialTarget,
-            Action<GameObject> onPlacementFailed = null,
-            Action<GameObject> onPlacementSucceeded = null)
+        public PlaceStepHandler(IBridgeContext context)
         {
-            _spawner = spawner;
-            _getSetup = getSetup;
-            _findSpawnedPart = findSpawnedPart;
-            _getPartState = getPartState;
-            _restorePartVisual = restorePartVisual;
-            _resetDragState = resetDragState;
-            _spawnedPreviews = spawnedPreviews;
-            _isSequentialStep = isSequentialStep;
-            _advanceSequentialTarget = advanceSequentialTarget;
-            _onPlacementFailed = onPlacementFailed;
-            _onPlacementSucceeded = onPlacementSucceeded;
+            _ctx = context;
         }
 
         // ====================================================================
@@ -142,7 +111,7 @@ namespace OSE.UI.Root
         /// </summary>
         public bool TryClickToPlace(string selectionId, GameObject partGo, Vector2 screenPos)
         {
-            if (_spawnedPreviews.Count == 0) return false;
+            if (_ctx.SpawnedPreviews.Count == 0) return false;
 
             PlacementPreviewInfo previewInfo = RaycastPreviewAtScreen(screenPos, selectionId);
             if (previewInfo == null)
@@ -192,7 +161,7 @@ namespace OSE.UI.Root
                 OseLog.Info($"[PlaceHandler] Dropped '{selectionId}' outside snap zone.");
 
                 FlashInvalidSelection(partGo, selectionId);
-                _onPlacementFailed?.Invoke(partGo);
+                _ctx.SelectionService?.NotifySelected(partGo);
                 StartPreviewSelectionPulse(selectionId);
                 session.AssemblyController?.StepController?.FailAttempt();
                 return;
@@ -208,7 +177,7 @@ namespace OSE.UI.Root
                 FlashInvalidSelection(partGo, selectionId);
                 if (!isSubassemblySelection)
                     partController.SelectPart(selectionId);
-                _onPlacementFailed?.Invoke(partGo);
+                _ctx.SelectionService?.NotifySelected(partGo);
                 StartPreviewSelectionPulse(selectionId);
                 session.AssemblyController?.StepController?.FailAttempt();
                 return;
@@ -221,7 +190,7 @@ namespace OSE.UI.Root
                 if (!subassemblyController.IsPlacementCommitReady(partGo, matchedTargetId))
                 {
                     FlashInvalidSelection(partGo, selectionId);
-                    _onPlacementFailed?.Invoke(partGo);
+                    _ctx.SelectionService?.NotifySelected(partGo);
                     StartPreviewSelectionPulse(selectionId);
                     session.AssemblyController?.StepController?.FailAttempt();
                     return;
@@ -230,7 +199,7 @@ namespace OSE.UI.Root
                 if (!subassemblyController.TryApplyPlacement(subassemblyId, matchedTargetId))
                 {
                     FlashInvalidSelection(partGo, selectionId);
-                    _onPlacementFailed?.Invoke(partGo);
+                    _ctx.SelectionService?.NotifySelected(partGo);
                     StartPreviewSelectionPulse(selectionId);
                     session.AssemblyController?.StepController?.FailAttempt();
                     return;
@@ -242,7 +211,7 @@ namespace OSE.UI.Root
             }
 
             RemovePreviewForSelection(selectionId);
-            _onPlacementSucceeded?.Invoke(partGo);
+            _ctx.HandlePlacementSucceeded(partGo);
             CheckStepCompletion(partController, session);
         }
 
@@ -252,7 +221,7 @@ namespace OSE.UI.Root
         /// </summary>
         public void UpdateDragProximity(GameObject partGo, string selectionId, bool isDragging)
         {
-            if (partGo == null || _spawnedPreviews.Count == 0)
+            if (partGo == null || _ctx.SpawnedPreviews.Count == 0)
                 return;
 
             bool isSubassemblySelection = TryGetSubassemblySelection(partGo, out var subassemblyController, out _);
@@ -333,7 +302,7 @@ namespace OSE.UI.Root
                     partGo.transform.localScale = nearestInfo.transform.localScale;
             }
 
-            _resetDragState();
+            _ctx.ResetDragState();
             AttemptPlacement(partGo, selectionId);
         }
 
@@ -347,9 +316,9 @@ namespace OSE.UI.Root
         {
             if (_previewPulsePartId == null) return;
 
-            for (int i = 0; i < _spawnedPreviews.Count; i++)
+            for (int i = 0; i < _ctx.SpawnedPreviews.Count; i++)
             {
-                GameObject preview = _spawnedPreviews[i];
+                GameObject preview = _ctx.SpawnedPreviews[i];
                 if (preview == null) continue;
                 PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
                 if (info != null && info.MatchesSelectionId(_previewPulsePartId))
@@ -373,7 +342,7 @@ namespace OSE.UI.Root
             }
             if (idx < 0) return;
 
-            GameObject partGo = _findSpawnedPart(partId);
+            GameObject partGo = _ctx.FindSpawnedPart(partId);
             if (partGo != null)
                 MaterialHelper.SetEmission(partGo, Color.black);
 
@@ -397,7 +366,7 @@ namespace OSE.UI.Root
             if (_requiredPartIdsForStep == null) return;
             for (int i = 0; i < _requiredPartIdsForStep.Length; i++)
             {
-                GameObject partGo = _findSpawnedPart(_requiredPartIdsForStep[i]);
+                GameObject partGo = _ctx.FindSpawnedPart(_requiredPartIdsForStep[i]);
                 if (partGo != null)
                     MaterialHelper.SetEmission(partGo, Color.black);
             }
@@ -422,7 +391,7 @@ namespace OSE.UI.Root
             if (string.IsNullOrEmpty(selectionId)) return null;
 
             PlacementPreviewInfo nearest = null;
-            foreach (var preview in _spawnedPreviews)
+            foreach (var preview in _ctx.SpawnedPreviews)
             {
                 if (preview == null) continue;
                 PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
@@ -447,12 +416,12 @@ namespace OSE.UI.Root
         {
             if (string.IsNullOrEmpty(selectionId)) return;
 
-            for (int i = _spawnedPreviews.Count - 1; i >= 0; i--)
+            for (int i = _ctx.SpawnedPreviews.Count - 1; i >= 0; i--)
             {
-                var preview = _spawnedPreviews[i];
+                var preview = _ctx.SpawnedPreviews[i];
                 if (preview == null)
                 {
-                    _spawnedPreviews.RemoveAt(i);
+                    _ctx.SpawnedPreviews.RemoveAt(i);
                     continue;
                 }
 
@@ -460,7 +429,7 @@ namespace OSE.UI.Root
                 if (info != null && info.MatchesSelectionId(selectionId))
                 {
                     UnityEngine.Object.Destroy(preview);
-                    _spawnedPreviews.RemoveAt(i);
+                    _ctx.SpawnedPreviews.RemoveAt(i);
                 }
             }
         }
@@ -507,8 +476,8 @@ namespace OSE.UI.Root
             if (TryGetPreviewTargetPose(targetId, out pos, out rot, out scale))
                 return true;
 
-            TargetPreviewPlacement tp = _spawner.FindTargetPlacement(targetId);
-            PartPreviewPlacement pp = _spawner.FindPartPlacement(partId);
+            TargetPreviewPlacement tp = _ctx.Spawner.FindTargetPlacement(targetId);
+            PartPreviewPlacement pp = _ctx.Spawner.FindPartPlacement(partId);
 
             if (tp != null)
             {
@@ -590,7 +559,7 @@ namespace OSE.UI.Root
             }
 
             RemovePreviewForSelection(selectionId);
-            _onPlacementSucceeded?.Invoke(partGo);
+            _ctx.HandlePlacementSucceeded(partGo);
             CheckStepCompletion(partController, session);
         }
 
@@ -607,9 +576,9 @@ namespace OSE.UI.Root
                 !string.IsNullOrWhiteSpace(currentStepId) &&
                 subassemblyController.IsActiveStepPlacementSatisfied(currentStepId))
             {
-                if (_isSequentialStep())
+                if ((_ctx.PreviewManager?.IsSequentialStep ?? false))
                 {
-                    if (_advanceSequentialTarget())
+                    if ((_ctx.PreviewManager?.AdvanceSequentialTarget() ?? true))
                         session.AssemblyController?.StepController?.CompleteStep(session.GetElapsedSeconds());
                 }
                 else
@@ -620,9 +589,9 @@ namespace OSE.UI.Root
                 return;
             }
 
-            if (_isSequentialStep())
+            if ((_ctx.PreviewManager?.IsSequentialStep ?? false))
             {
-                if (_advanceSequentialTarget())
+                if ((_ctx.PreviewManager?.AdvanceSequentialTarget() ?? true))
                     session.AssemblyController?.StepController?.CompleteStep(session.GetElapsedSeconds());
             }
             else if (partController.AreActiveStepRequiredPartsPlaced())
@@ -693,9 +662,9 @@ namespace OSE.UI.Root
             float closestDist = threshold;
             PlacementPreviewInfo best = null;
 
-            for (int i = 0; i < _spawnedPreviews.Count; i++)
+            for (int i = 0; i < _ctx.SpawnedPreviews.Count; i++)
             {
-                GameObject preview = _spawnedPreviews[i];
+                GameObject preview = _ctx.SpawnedPreviews[i];
                 if (preview == null) continue;
                 PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
                 if (info == null || !info.MatchesSelectionId(selectionId)) continue;
@@ -719,15 +688,15 @@ namespace OSE.UI.Root
             rotation = Quaternion.identity;
             scale = Vector3.one;
 
-            if (string.IsNullOrWhiteSpace(targetId) || _spawnedPreviews.Count == 0)
+            if (string.IsNullOrWhiteSpace(targetId) || _ctx.SpawnedPreviews.Count == 0)
                 return false;
 
-            PreviewSceneSetup setup = _getSetup();
+            PreviewSceneSetup setup = _ctx.Setup;
             Transform previewRoot = setup != null ? setup.PreviewRoot : null;
 
-            for (int i = _spawnedPreviews.Count - 1; i >= 0; i--)
+            for (int i = _ctx.SpawnedPreviews.Count - 1; i >= 0; i--)
             {
-                GameObject preview = _spawnedPreviews[i];
+                GameObject preview = _ctx.SpawnedPreviews[i];
                 if (preview == null) continue;
 
                 PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
@@ -780,9 +749,9 @@ namespace OSE.UI.Root
             if (string.IsNullOrWhiteSpace(selectionId))
                 return false;
 
-            for (int i = 0; i < _spawnedPreviews.Count; i++)
+            for (int i = 0; i < _ctx.SpawnedPreviews.Count; i++)
             {
-                GameObject preview = _spawnedPreviews[i];
+                GameObject preview = _ctx.SpawnedPreviews[i];
                 if (preview == null)
                     continue;
 
@@ -831,7 +800,7 @@ namespace OSE.UI.Root
                     _activeFlashes.RemoveAt(i);
             }
 
-            PartPreviewPlacement pp = _spawner.FindPartPlacement(partId);
+            PartPreviewPlacement pp = _ctx.Spawner.FindPartPlacement(partId);
             Color originalColor = pp != null
                 ? new Color(pp.color.r, pp.color.g, pp.color.b, pp.color.a)
                 : new Color(0.94f, 0.55f, 0.18f, 1f);
@@ -897,7 +866,7 @@ namespace OSE.UI.Root
                 flash.Timer -= deltaTime;
                 if (flash.Timer <= 0f)
                 {
-                    _restorePartVisual(flash.Part);
+                    _ctx.RestorePartVisual(flash.Part);
                     _activeFlashes.RemoveAt(i);
                 }
                 else
@@ -909,14 +878,14 @@ namespace OSE.UI.Root
 
         private void UpdatePreviewSelectionPulse()
         {
-            if (_previewPulsePartId == null || _spawnedPreviews.Count == 0)
+            if (_previewPulsePartId == null || _ctx.SpawnedPreviews.Count == 0)
                 return;
 
             Color pulseColor = ColorPulseHelper.Lerp(PreviewSelectedPulseA, PreviewSelectedPulseB, PreviewSelectedPulseSpeed);
 
-            for (int i = 0; i < _spawnedPreviews.Count; i++)
+            for (int i = 0; i < _ctx.SpawnedPreviews.Count; i++)
             {
-                GameObject preview = _spawnedPreviews[i];
+                GameObject preview = _ctx.SpawnedPreviews[i];
                 if (preview == null) continue;
                 PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
                 if (info == null || !info.MatchesSelectionId(_previewPulsePartId)) continue;
@@ -951,10 +920,10 @@ namespace OSE.UI.Root
             for (int i = 0; i < _requiredPartIdsForStep.Length; i++)
             {
                 string partId = _requiredPartIdsForStep[i];
-                GameObject partGo = _findSpawnedPart(partId);
+                GameObject partGo = _ctx.FindSpawnedPart(partId);
                 if (partGo == null) continue;
 
-                PartPlacementState state = _getPartState(partId);
+                PartPlacementState state = _ctx.GetPartState(partId);
                 if (state == PartPlacementState.Selected || state == PartPlacementState.Grabbed
                     || state == PartPlacementState.Inspected)
                 {
@@ -973,7 +942,7 @@ namespace OSE.UI.Root
         {
             _requiredPartIdsForStep = null;
 
-            var package = _spawner?.CurrentPackage;
+            var package = _ctx.Spawner?.CurrentPackage;
             if (package == null || !package.TryGetStep(stepId, out var step))
                 return;
 
@@ -988,7 +957,7 @@ namespace OSE.UI.Root
             for (int i = 0; i < partIds.Length; i++)
             {
                 if (string.IsNullOrWhiteSpace(partIds[i])) continue;
-                PartPlacementState state = _getPartState(partIds[i]);
+                PartPlacementState state = _ctx.GetPartState(partIds[i]);
                 if (state != PartPlacementState.PlacedVirtually && state != PartPlacementState.Completed)
                     pending.Add(partIds[i]);
             }

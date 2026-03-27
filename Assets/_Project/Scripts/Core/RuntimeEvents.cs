@@ -344,4 +344,53 @@ namespace OSE.Core
             IsActive = isActive;
         }
     }
+
+    // ── Input / Selection Events ──
+    // These bridge C# events from InputActionRouter, SelectionService, and
+    // PackagePartSpawner into RuntimeEventBus so subscribers can use a single
+    // event pattern throughout the codebase.
+
+    public readonly struct CanonicalActionDispatched
+    {
+        public readonly CanonicalAction Action;
+
+        public CanonicalActionDispatched(CanonicalAction action)
+        {
+            Action = action;
+        }
+    }
+
+    public readonly struct PartSelected
+    {
+        public readonly UnityEngine.GameObject Target;
+
+        public PartSelected(UnityEngine.GameObject target)
+        {
+            Target = target;
+        }
+    }
+
+    public readonly struct PartDeselected
+    {
+        public readonly UnityEngine.GameObject Target;
+
+        public PartDeselected(UnityEngine.GameObject target)
+        {
+            Target = target;
+        }
+    }
+
+    public readonly struct PartInspected
+    {
+        public readonly UnityEngine.GameObject Target;
+
+        public PartInspected(UnityEngine.GameObject target)
+        {
+            Target = target;
+        }
+    }
+
+    public readonly struct SpawnerPartsReady
+    {
+    }
 }

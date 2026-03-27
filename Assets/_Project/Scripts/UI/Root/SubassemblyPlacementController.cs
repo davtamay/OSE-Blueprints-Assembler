@@ -14,10 +14,7 @@ namespace OSE.UI.Root
     /// </summary>
     public sealed class SubassemblyPlacementController : IDisposable, OSE.Runtime.ISubassemblyPlacementService
     {
-        private readonly PackagePartSpawner _spawner;
-        private readonly Func<PreviewSceneSetup> _getSetup;
-        private readonly Func<string, GameObject> _findSpawnedPart;
-        private readonly Func<string, PartPlacementState> _getPartState;
+        private readonly IBridgeContext _ctx;
         private readonly Dictionary<string, ProxyRecord> _records = new Dictionary<string, ProxyRecord>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, string> _memberToSubassembly = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -47,16 +44,9 @@ namespace OSE.UI.Root
             public HashSet<string> DrivenPartIds;
         }
 
-        public SubassemblyPlacementController(
-            PackagePartSpawner spawner,
-            Func<PreviewSceneSetup> getSetup,
-            Func<string, GameObject> findSpawnedPart,
-            Func<string, PartPlacementState> getPartState)
+        internal SubassemblyPlacementController(IBridgeContext context)
         {
-            _spawner = spawner;
-            _getSetup = getSetup;
-            _findSpawnedPart = findSpawnedPart;
-            _getPartState = getPartState;
+            _ctx = context;
         }
 
         public string ActiveSubassemblyId => _activeSubassemblyId;
@@ -99,7 +89,7 @@ namespace OSE.UI.Root
         {
             ResetActiveProxyOnly();
 
-            MachinePackageDefinition package = _spawner?.CurrentPackage;
+            MachinePackageDefinition package = _ctx.Spawner?.CurrentPackage;
             if (package == null || !package.TryGetStep(stepId, out StepDefinition step) || step == null)
                 return;
 
@@ -136,7 +126,7 @@ namespace OSE.UI.Root
 
         public void ApplyCompletedSubassemblyParking(string activeStepId, StepDefinition[] completedSteps)
         {
-            MachinePackageDefinition package = _spawner?.CurrentPackage;
+            MachinePackageDefinition package = _ctx.Spawner?.CurrentPackage;
             if (package == null || completedSteps == null || completedSteps.Length == 0)
                 return;
 
@@ -200,7 +190,7 @@ namespace OSE.UI.Root
 
         public void HandleStepCompleted(string stepId)
         {
-            MachinePackageDefinition package = _spawner?.CurrentPackage;
+            MachinePackageDefinition package = _ctx.Spawner?.CurrentPackage;
             if (package == null || !package.TryGetStep(stepId, out StepDefinition step) || step == null)
                 return;
 
@@ -257,7 +247,7 @@ namespace OSE.UI.Root
             if (string.IsNullOrWhiteSpace(subassemblyId))
                 return false;
 
-            MachinePackageDefinition package = _spawner?.CurrentPackage;
+            MachinePackageDefinition package = _ctx.Spawner?.CurrentPackage;
             if (package == null || !package.TryGetSubassembly(subassemblyId, out SubassemblyDefinition subassembly) || subassembly == null)
                 return false;
 
@@ -270,9 +260,12 @@ namespace OSE.UI.Root
                 if (string.IsNullOrWhiteSpace(memberIds[i]))
                     continue;
 
-                PartPlacementState state = _getPartState(memberIds[i]);
+                PartPlacementState state = _ctx.GetPartState(memberIds[i]);
                 if (state != PartPlacementState.Completed && state != PartPlacementState.PlacedVirtually)
+                {
+                    OseLog.Warn($"[SubassemblyPlacement] IsSubassemblyReady('{subassemblyId}'): member '{memberIds[i]}' is {state}, not Completed/PlacedVirtually.");
                     return false;
+                }
             }
 
             return true;
@@ -344,7 +337,7 @@ namespace OSE.UI.Root
             if (!TryGetSubassemblyId(target, out string subassemblyId))
                 return false;
 
-            MachinePackageDefinition package = _spawner?.CurrentPackage;
+            MachinePackageDefinition package = _ctx.Spawner?.CurrentPackage;
             if (package == null || !package.TryGetSubassembly(subassemblyId, out SubassemblyDefinition subassembly) || subassembly == null)
                 return false;
 
@@ -363,7 +356,7 @@ namespace OSE.UI.Root
             {
                 for (int i = 0; i < record.MemberPartIds.Length; i++)
                 {
-                    GameObject partGo = _findSpawnedPart(record.MemberPartIds[i]);
+                    GameObject partGo = _ctx.FindSpawnedPart(record.MemberPartIds[i]);
                     if (partGo != null)
                         yield return partGo;
                 }
@@ -372,13 +365,13 @@ namespace OSE.UI.Root
 
             // Fallback for stacked subassemblies without a proxy record:
             // look up partIds from the subassembly definition directly.
-            MachinePackageDefinition package = _spawner?.CurrentPackage;
+            MachinePackageDefinition package = _ctx.Spawner?.CurrentPackage;
             if (package != null && package.TryGetSubassembly(subassemblyId, out SubassemblyDefinition subassembly) &&
                 subassembly?.partIds != null)
             {
                 for (int i = 0; i < subassembly.partIds.Length; i++)
                 {
-                    GameObject partGo = _findSpawnedPart(subassembly.partIds[i]);
+                    GameObject partGo = _ctx.FindSpawnedPart(subassembly.partIds[i]);
                     if (partGo != null)
                         yield return partGo;
                 }
@@ -422,7 +415,7 @@ namespace OSE.UI.Root
                 if (!record.ActiveFit.DrivenPartIds.Contains(partId))
                     continue;
 
-                GameObject partGo = _findSpawnedPart(partId);
+                GameObject partGo = _ctx.FindSpawnedPart(partId);
                 if (partGo != null && TryGetWorldBounds(partGo, out Bounds currentBounds))
                 {
                     currentAccum += currentBounds.center;
@@ -533,7 +526,7 @@ namespace OSE.UI.Root
 
         public bool IsActiveStepPlacementSatisfied(string stepId)
         {
-            MachinePackageDefinition package = _spawner?.CurrentPackage;
+            MachinePackageDefinition package = _ctx.Spawner?.CurrentPackage;
             if (package == null || !package.TryGetStep(stepId, out StepDefinition step) || step == null)
                 return false;
 
@@ -593,8 +586,8 @@ namespace OSE.UI.Root
 
         private ProxyRecord BuildProxyRecord(string subassemblyId)
         {
-            MachinePackageDefinition package = _spawner?.CurrentPackage;
-            PreviewSceneSetup setup = _getSetup?.Invoke();
+            MachinePackageDefinition package = _ctx.Spawner?.CurrentPackage;
+            PreviewSceneSetup setup = _ctx.Setup;
             Transform previewRoot = setup != null ? setup.PreviewRoot : null;
             if (package == null || previewRoot == null)
                 return null;
@@ -602,7 +595,7 @@ namespace OSE.UI.Root
             if (!package.TryGetSubassembly(subassemblyId, out SubassemblyDefinition subassembly) || subassembly == null)
                 return null;
 
-            SubassemblyPreviewPlacement frame = _spawner.FindSubassemblyPlacement(subassemblyId);
+            SubassemblyPreviewPlacement frame = _ctx.Spawner.FindSubassemblyPlacement(subassemblyId);
             if (frame == null)
             {
                 OseLog.Warn($"[SubassemblyPlacement] Missing previewConfig.subassemblyPlacements entry for '{subassemblyId}'.");
@@ -631,7 +624,7 @@ namespace OSE.UI.Root
                 if (string.IsNullOrWhiteSpace(partId))
                     continue;
 
-                PartPreviewPlacement partPlacement = _spawner.FindPartPlacement(partId);
+                PartPreviewPlacement partPlacement = _ctx.Spawner.FindPartPlacement(partId);
                 if (partPlacement == null)
                 {
                     OseLog.Warn($"[SubassemblyPlacement] Missing part placement for subassembly member '{partId}'.");
@@ -671,7 +664,7 @@ namespace OSE.UI.Root
             if (record?.Root == null)
                 return;
 
-            SubassemblyPreviewPlacement frame = _spawner.FindSubassemblyPlacement(record.SubassemblyId);
+            SubassemblyPreviewPlacement frame = _ctx.Spawner.FindSubassemblyPlacement(record.SubassemblyId);
             if (frame == null)
                 return;
 
@@ -685,7 +678,7 @@ namespace OSE.UI.Root
             if (record?.Root == null)
                 return false;
 
-            SubassemblyPreviewPlacement parking = _spawner.FindCompletedSubassemblyParkingPlacement(record.SubassemblyId);
+            SubassemblyPreviewPlacement parking = _ctx.Spawner.FindCompletedSubassemblyParkingPlacement(record.SubassemblyId);
             if (parking == null)
                 return false;
 
@@ -708,7 +701,7 @@ namespace OSE.UI.Root
             for (int i = 0; i < record.MemberPartIds.Length; i++)
             {
                 string partId = record.MemberPartIds[i];
-                GameObject partGo = _findSpawnedPart(partId);
+                GameObject partGo = _ctx.FindSpawnedPart(partId);
                 if (partGo == null)
                     continue;
 
@@ -738,7 +731,7 @@ namespace OSE.UI.Root
             if (record?.Root == null || string.IsNullOrWhiteSpace(targetId))
                 return false;
 
-            IntegratedSubassemblyPreviewPlacement integrated = _spawner.FindIntegratedSubassemblyPlacement(record.SubassemblyId, targetId);
+            IntegratedSubassemblyPreviewPlacement integrated = _ctx.Spawner.FindIntegratedSubassemblyPlacement(record.SubassemblyId, targetId);
             if (integrated == null || integrated.memberPlacements == null || integrated.memberPlacements.Length == 0)
                 return false;
 
@@ -748,7 +741,7 @@ namespace OSE.UI.Root
                 if (memberPlacement == null || string.IsNullOrWhiteSpace(memberPlacement.partId))
                     continue;
 
-                GameObject partGo = _findSpawnedPart(memberPlacement.partId);
+                GameObject partGo = _ctx.FindSpawnedPart(memberPlacement.partId);
                 if (partGo == null)
                     continue;
 
@@ -804,7 +797,7 @@ namespace OSE.UI.Root
             if (record?.Root == null || string.IsNullOrWhiteSpace(targetId))
                 return false;
 
-            ConstrainedSubassemblyFitPreviewPlacement placement = _spawner.FindConstrainedSubassemblyFitPlacement(record.SubassemblyId, targetId);
+            ConstrainedSubassemblyFitPreviewPlacement placement = _ctx.Spawner.FindConstrainedSubassemblyFitPlacement(record.SubassemblyId, targetId);
             if (placement == null)
                 return false;
 
@@ -855,7 +848,7 @@ namespace OSE.UI.Root
             Bounds? combined = null;
             for (int i = 0; i < record.MemberPartIds.Length; i++)
             {
-                GameObject partGo = _findSpawnedPart(record.MemberPartIds[i]);
+                GameObject partGo = _ctx.FindSpawnedPart(record.MemberPartIds[i]);
                 if (!TryGetWorldBounds(partGo, out Bounds bounds))
                     continue;
 
@@ -912,7 +905,7 @@ namespace OSE.UI.Root
             if (string.IsNullOrWhiteSpace(targetId))
                 return false;
 
-            TargetPreviewPlacement targetPlacement = _spawner.FindTargetPlacement(targetId);
+            TargetPreviewPlacement targetPlacement = _ctx.Spawner.FindTargetPlacement(targetId);
             if (targetPlacement == null)
                 return false;
 
@@ -926,12 +919,12 @@ namespace OSE.UI.Root
 
         private GameObject FindMemberPartFromHit(ProxyRecord record, Transform hitTransform)
         {
-            Transform previewRoot = _getSetup?.Invoke()?.PreviewRoot;
+            Transform previewRoot = _ctx.Setup?.PreviewRoot;
             while (hitTransform != null && hitTransform != previewRoot)
             {
                 for (int i = 0; i < record.MemberPartIds.Length; i++)
                 {
-                    GameObject partGo = _findSpawnedPart(record.MemberPartIds[i]);
+                    GameObject partGo = _ctx.FindSpawnedPart(record.MemberPartIds[i]);
                     if (partGo != null &&
                         (partGo.transform == hitTransform || hitTransform.IsChildOf(partGo.transform)))
                         return partGo;

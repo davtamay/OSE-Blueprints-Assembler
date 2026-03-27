@@ -34,12 +34,7 @@ namespace OSE.UI.Root
         private const float ToolTargetFadeEndDistance   = 0.8f;
 
         // ── Dependencies ──
-        private readonly PackagePartSpawner _spawner;
-        private readonly Func<PreviewSceneSetup> _getSetup;
-        private readonly Func<ToolCursorManager> _getCursorManager;
-        private readonly List<GameObject> _spawnedPreviews;
-        private readonly Func<string> _getSequentialTargetId;
-        private readonly Func<bool> _advanceSequentialTarget;
+        private readonly IBridgeContext _ctx;
 
         // Profile constants from ToolActionProfiles
 
@@ -66,20 +61,9 @@ namespace OSE.UI.Root
         private Vector3? _measureAnchorAWorldPos;
         private AnchorToAnchorInteraction _anchorInteraction;
 
-        public UseStepHandler(
-            PackagePartSpawner spawner,
-            Func<PreviewSceneSetup> getSetup,
-            Func<ToolCursorManager> getCursorManager,
-            List<GameObject> spawnedPreviews,
-            Func<string> getSequentialTargetId,
-            Func<bool> advanceSequentialTarget)
+        public UseStepHandler(IBridgeContext context)
         {
-            _spawner              = spawner;
-            _getSetup             = getSetup;
-            _getCursorManager     = getCursorManager;
-            _spawnedPreviews        = spawnedPreviews;
-            _getSequentialTargetId = getSequentialTargetId;
-            _advanceSequentialTarget = advanceSequentialTarget;
+            _ctx = context;
         }
 
         // ── Public accessors for bridge delegation ──
@@ -154,7 +138,7 @@ namespace OSE.UI.Root
         {
             UpdateToolActionTargetVisuals();
             UpdateToolCursorProximity();
-            _getCursorManager()?.UpdateReadyPulse();
+            _ctx.CursorManager?.UpdateReadyPulse();
             _anchorInteraction?.Tick();
 
             if (_retryPending)
@@ -272,8 +256,8 @@ namespace OSE.UI.Root
             ClearToolActionTargets();
             _retryPending = false;
 
-            PreviewSceneSetup setup = _getSetup();
-            if (_spawner == null || setup == null)
+            PreviewSceneSetup setup = _ctx.Setup;
+            if (_ctx.Spawner == null || setup == null)
                 return;
 
             if (!ServiceRegistry.TryGet<MachineSessionController>(out var earlySession))
@@ -640,7 +624,7 @@ namespace OSE.UI.Root
 
         private void SpawnMeasureEndMarker(Vector3 localPos, Quaternion localRot, Vector3 scale)
         {
-            PreviewSceneSetup setup = _getSetup();
+            PreviewSceneSetup setup = _ctx.Setup;
             Transform previewRoot = setup?.PreviewRoot;
 
             GameObject guide = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -670,7 +654,7 @@ namespace OSE.UI.Root
         private Vector3 ResolveMarkerWorldPos(Vector3 localPos, Vector3 scale)
         {
             float lift = Mathf.Max(scale.y * 0.75f, ResolveToolTargetMarkerScale(scale).y * 0.6f);
-            PreviewSceneSetup setup = _getSetup();
+            PreviewSceneSetup setup = _ctx.Setup;
             if (setup?.PreviewRoot != null)
                 return setup.PreviewRoot.TransformPoint(localPos) + Vector3.up * lift;
             return localPos + Vector3.up * lift;
@@ -749,8 +733,8 @@ namespace OSE.UI.Root
                 toolResult.CurrentCount > 0 &&
                 toolResult.CurrentCount >= toolResult.RequiredCount;
 
-            if (actionCompletedButStepContinues && _advanceSequentialTarget != null)
-                _advanceSequentialTarget();
+            if (actionCompletedButStepContinues)
+                _ctx.PreviewManager?.AdvanceSequentialTarget();
 
             RefreshToolActionTargets();
             return true;
@@ -852,7 +836,7 @@ namespace OSE.UI.Root
             if (TryGetReadyToolActionTarget(out targetInfo))
                 return true;
 
-            ToolCursorManager cursorManager = _getCursorManager();
+            ToolCursorManager cursorManager = _ctx.CursorManager;
             if (cursorManager?.ToolPreview == null || !cursorManager.ToolPreview.activeSelf)
                 return TryGetNearestToolTargetByScreenProximity(screenPos, out targetInfo);
 
@@ -982,7 +966,7 @@ namespace OSE.UI.Root
 
         private void UpdateToolCursorProximity()
         {
-            var cursorManager = _getCursorManager();
+            var cursorManager = _ctx.CursorManager;
             if (cursorManager == null)
                 return;
 
@@ -1077,7 +1061,7 @@ namespace OSE.UI.Root
         {
             targetInfo = null;
 
-            ToolCursorManager cursorManager = _getCursorManager();
+            ToolCursorManager cursorManager = _ctx.CursorManager;
             Camera cam = Camera.main;
             GameObject toolPreview = cursorManager?.ToolPreview;
             if (cam == null || toolPreview == null || !toolPreview.activeSelf)
@@ -1126,7 +1110,7 @@ namespace OSE.UI.Root
             if (currentStep == null || !currentStep.IsSequential)
                 return null;
 
-            string sequentialTargetId = _getSequentialTargetId();
+            string sequentialTargetId = _ctx.PreviewManager?.GetCurrentSequentialTargetId();
             if (!string.IsNullOrWhiteSpace(sequentialTargetId))
                 return sequentialTargetId;
 
@@ -1345,7 +1329,7 @@ namespace OSE.UI.Root
             rotation = Quaternion.identity;
             scale = Vector3.one * 0.25f;
 
-            TargetPreviewPlacement targetPlacement = _spawner.FindTargetPlacement(targetId);
+            TargetPreviewPlacement targetPlacement = _ctx.Spawner.FindTargetPlacement(targetId);
             if (targetPlacement != null)
             {
                 position = new Vector3(targetPlacement.position.x, targetPlacement.position.y, targetPlacement.position.z);
@@ -1360,7 +1344,7 @@ namespace OSE.UI.Root
                 package.TryGetTarget(targetId, out TargetDefinition targetDef) &&
                 !string.IsNullOrWhiteSpace(targetDef.associatedPartId))
             {
-                PartPreviewPlacement partPlacement = _spawner.FindPartPlacement(targetDef.associatedPartId);
+                PartPreviewPlacement partPlacement = _ctx.Spawner.FindPartPlacement(targetDef.associatedPartId);
                 if (partPlacement != null)
                 {
                     position = new Vector3(partPlacement.playPosition.x, partPlacement.playPosition.y, partPlacement.playPosition.z);
@@ -1385,15 +1369,15 @@ namespace OSE.UI.Root
             rotation = Quaternion.identity;
             scale = Vector3.one;
 
-            if (string.IsNullOrWhiteSpace(targetId) || _spawnedPreviews.Count == 0)
+            if (string.IsNullOrWhiteSpace(targetId) || _ctx.SpawnedPreviews.Count == 0)
                 return false;
 
-            PreviewSceneSetup setup = _getSetup();
+            PreviewSceneSetup setup = _ctx.Setup;
             Transform previewRoot = setup != null ? setup.PreviewRoot : null;
 
-            for (int i = _spawnedPreviews.Count - 1; i >= 0; i--)
+            for (int i = _ctx.SpawnedPreviews.Count - 1; i >= 0; i--)
             {
-                GameObject preview = _spawnedPreviews[i];
+                GameObject preview = _ctx.SpawnedPreviews[i];
                 if (preview == null) continue;
 
                 var info = preview.GetComponent<PlacementPreviewInfo>();

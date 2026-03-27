@@ -58,6 +58,7 @@ namespace OSE.Input
             if (CurrentContext == InputContext.None) return;
             OseLog.VerboseInfo($"[Input] Action: {action} (context: {CurrentContext})");
             OnAction?.Invoke(action);
+            RuntimeEventBus.Publish(new CanonicalActionDispatched(action));
         }
 
         /// <summary>

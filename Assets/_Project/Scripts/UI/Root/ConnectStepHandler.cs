@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using OSE.Content;
 using OSE.Core;
@@ -15,10 +14,7 @@ namespace OSE.UI.Root
     /// </summary>
     internal sealed class ConnectStepHandler : IStepFamilyHandler
     {
-        private readonly PackagePartSpawner _spawner;
-        private readonly Func<PreviewSceneSetup> _getSetup;
-        private readonly Func<ToolCursorManager> _getCursorManager;
-        private readonly Func<string, GameObject> _findSpawnedPart;
+        private readonly IBridgeContext _ctx;
 
         private readonly List<GameObject> _spawnedPortSpheres = new();
         public bool HasActivePortSpheres => _spawnedPortSpheres.Count > 0;
@@ -30,16 +26,9 @@ namespace OSE.UI.Root
         private Vector3 _portBWorldPos;
 
 
-        public ConnectStepHandler(
-            PackagePartSpawner spawner,
-            Func<PreviewSceneSetup> getSetup,
-            Func<ToolCursorManager> getCursorManager,
-            Func<string, GameObject> findSpawnedPart)
+        public ConnectStepHandler(IBridgeContext context)
         {
-            _spawner          = spawner;
-            _getSetup         = getSetup;
-            _getCursorManager = getCursorManager;
-            _findSpawnedPart  = findSpawnedPart;
+            _ctx = context;
         }
 
         public void OnStepActivated(in StepHandlerContext context)
@@ -48,7 +37,7 @@ namespace OSE.UI.Root
             ClearCablePreviews();
             CleanupAnchorInteraction();
 
-            var package = _spawner?.CurrentPackage;
+            var package = _ctx.Spawner?.CurrentPackage;
             if (package == null) return;
 
             SpawnPortSpheresForStep(package, context.Step);
@@ -146,7 +135,7 @@ namespace OSE.UI.Root
 
         private void SpawnPortSpheresForStep(MachinePackageDefinition package, StepDefinition step)
         {
-            PreviewSceneSetup setup = _getSetup();
+            PreviewSceneSetup setup = _ctx.Setup;
             if (setup == null) return;
             Transform previewRoot = setup.PreviewRoot;
             if (previewRoot == null) return;
@@ -156,7 +145,7 @@ namespace OSE.UI.Root
 
             foreach (string targetId in targetIds)
             {
-                TargetPreviewPlacement tp = _spawner.FindTargetPlacement(targetId);
+                TargetPreviewPlacement tp = _ctx.Spawner.FindTargetPlacement(targetId);
                 if (tp == null)
                 {
                     OseLog.Warn($"[ConnectStepHandler] No target placement for '{targetId}'.");
@@ -280,10 +269,10 @@ namespace OSE.UI.Root
 
         private void TryRenderPipeSpline(string stepId)
         {
-            var package = _spawner?.CurrentPackage;
+            var package = _ctx.Spawner?.CurrentPackage;
             if (package == null) return;
 
-            PreviewSceneSetup setup = _getSetup();
+            PreviewSceneSetup setup = _ctx.Setup;
             if (setup == null) return;
 
             if (!package.TryGetStep(stepId, out var step)) return;
@@ -297,7 +286,7 @@ namespace OSE.UI.Root
 
             foreach (string targetId in targetIds)
             {
-                TargetPreviewPlacement tp = _spawner.FindTargetPlacement(targetId);
+                TargetPreviewPlacement tp = _ctx.Spawner.FindTargetPlacement(targetId);
                 if (tp == null) continue;
 
                 Vector3 portAPos = new Vector3(tp.portA.x, tp.portA.y, tp.portA.z);
@@ -346,7 +335,7 @@ namespace OSE.UI.Root
             _spawnedPortSpheres.Clear();
             _pipePortAConfirmed = false;
 
-            var cursorManager = _getCursorManager();
+            var cursorManager = _ctx.CursorManager;
             cursorManager?.ClearPipeCursorPreview();
         }
 
@@ -379,9 +368,9 @@ namespace OSE.UI.Root
 
         private void SpawnPipeCursorPreview(MachinePackageDefinition package, StepDefinition step)
         {
-            var cursorManager = _getCursorManager();
+            var cursorManager = _ctx.CursorManager;
             if (cursorManager != null)
-                _ = cursorManager.SpawnPipeCursorPreviewAsync(package, step, _findSpawnedPart, _spawner);
+                _ = cursorManager.SpawnPipeCursorPreviewAsync(package, step, _ctx.FindSpawnedPart, _ctx.Spawner);
         }
     }
 }

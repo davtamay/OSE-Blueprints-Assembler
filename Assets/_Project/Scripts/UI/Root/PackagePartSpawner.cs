@@ -325,6 +325,7 @@ namespace OSE.UI.Root
             PositionParts();
             PositionTargetMarker();
             PartsReady?.Invoke();
+            RuntimeEventBus.Publish(new SpawnerPartsReady());
 #else
             _ = SpawnPackagePartsAsync();
 #endif
@@ -337,6 +338,7 @@ namespace OSE.UI.Root
             PositionParts();
             PositionTargetMarker();
             PartsReady?.Invoke();
+            RuntimeEventBus.Publish(new SpawnerPartsReady());
         }
 
         /// <summary>

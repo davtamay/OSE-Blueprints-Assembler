@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using OSE.App;
 using OSE.Content;
 using OSE.Core;
@@ -10,8 +9,6 @@ using OSE.Runtime;
 using OSE.Runtime.Preview;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.Receiver.Rendering;
-using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.Rendering;
 using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.State;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
@@ -27,7 +24,7 @@ namespace OSE.UI.Root
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(PackagePartSpawner))]
-    public sealed class PartInteractionBridge : MonoBehaviour, IPartActionBridge, IToolPreviewProvider, IPersistentToolManager
+    public sealed class PartInteractionBridge : MonoBehaviour, IPartActionBridge, IToolPreviewProvider, IPersistentToolManager, IBridgeContext
     {
         // Visual constants — see InteractionVisualConstants for values
         private static Color SelectedPartColor => InteractionVisualConstants.SelectedPartColor;
@@ -57,11 +54,13 @@ namespace OSE.UI.Root
         /// World position of the last successfully executed tool action target.
         /// Updated by TryExternalToolAction; read by V2 orchestrator via IPartActionBridge to focus camera.
         /// </summary>
-        public Vector3 LastToolActionWorldPos => _lastToolActionWorldPos;
+        public Vector3 LastToolActionWorldPos => _toolAction?.LastToolActionWorldPos ?? Vector3.zero;
 
         private PackagePartSpawner _spawner;
         private PreviewSceneSetup _setup;
         private readonly List<GameObject> _spawnedPreviews = new List<GameObject>();
+        private PreviewSpawnManager _previewManager;
+        private StepFocusComputer _focusComputer;
         private ToolCursorManager _cursorManager;
         private ToolCursorManager CursorManager => _cursorManager ??= new ToolCursorManager(transform);
         private UseStepHandler _useHandler;
@@ -69,57 +68,33 @@ namespace OSE.UI.Root
         private PlaceStepHandler _placeHandler;
         private SubassemblyPlacementController _subassemblyPlacementController;
         private StepExecutionRouter _router;
-        private string _lastCameraFramedStepId;
-        private float _lastCameraFramedTime;
         [SerializeField] private InputActionRouter _actionRouter;
         [SerializeField] private SelectionService _selectionService;
         private bool _suppressSelectionEvents;
-        private GameObject _pendingSelectPart;
-        private int _selectionFrame; // frame when last selection happened
-        private Vector2 _pointerDownScreenPos;
-        private Camera _pointerDownCamera;
 
         // ── Persistent tools (clamps, fixtures) that remain in scene across steps ──
         private PersistentToolManagerBridge _persistentToolMgr;
 
         // ── Visual feedback (hover, selection, hint highlight, revelation) ──
         private PartVisualFeedbackManager _visualFeedback;
+        private DragController _drag;
+        private HintManager _hintManager;
+        private int _selectionFrame; // frame when last selection happened
+        private GameObject _lastSelectedVisualTarget; // tracks selection visual for cleanup
 
-        // Drag state
-        private GameObject _draggedPart;
-        private string _draggedPartId;
-        private Vector2 _dragScreenStart;
-        private Camera _dragCamera;
-        private bool _isDragging;
-        private bool _pointerDown;
-        private float _dragRayDistance;
-        private float _lastPinchDistance;
-        private float _lastPointerY;
-        private bool _isDepthAdjustMode;
-        private Vector2 _depthAdjustScreenAnchor;
-        private GameObject _hintPreview;
-        private GameObject _hintSourceProxy;
         private GameObject _externalHoveredPartForUi;
-        private float _hintHighlightUntil;
-        private HintWorldCanvas _hintWorldCanvas;
         private DockArcVisual _dockArcVisual;
         private readonly Dictionary<string, PartPlacementState> _partStates = new Dictionary<string, PartPlacementState>(StringComparer.OrdinalIgnoreCase);
-        private GameObject _hoveredPart;
         private bool _startupSyncPending;
-        private Vector3 _lastToolActionWorldPos;
+        private ToolActionExecutor _toolAction;
 
-        // Step-based part visibility — only reveal parts when their step activates
-        private readonly HashSet<string> _revealedPartIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private readonly HashSet<string> _activeStepPartIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private bool _partsHiddenOnSpawn;
+        // Step-based part visibility state is owned by _visualFeedback.
         private const float PartGridSpacing = InteractionVisualConstants.PartGridSpacing;
         private const float PartGridStartZ = InteractionVisualConstants.PartGridStartZ;
         private const float PartLayoutY = InteractionVisualConstants.PartLayoutY;
 
         // Sequential target ordering — tracks which targetId index is active
         // when the step uses targetOrder == "sequential".
-        private int _sequentialTargetIndex;
-        private bool _isSequentialStep;
 
 
         // ── Lifecycle ──
@@ -133,76 +108,40 @@ namespace OSE.UI.Root
                 () => CursorManager.DetachPreview(),
                 () => _setup != null ? _setup.PreviewRoot : null,
                 RefreshToolPreviewIndicator);
-            _useHandler ??= new UseStepHandler(
-                _spawner,
-                () => _setup,
-                () => CursorManager,
-                _spawnedPreviews,
-                GetCurrentSequentialTargetId,
-                () => AdvanceSequentialTarget());
+            // All extracted classes share a single context reference back to
+            // this bridge, replacing the previous 40+ Func<>/Action lambdas.
+            IBridgeContext ctx = this;
+            _useHandler ??= new UseStepHandler(ctx);
             _router ??= new StepExecutionRouter();
             _router.Register(StepFamily.Use, _useHandler);
             _router.Register(StepFamily.Confirm, new ConfirmStepHandler());
-            _connectHandler ??= new ConnectStepHandler(_spawner, () => _setup, () => CursorManager, FindSpawnedPart);
+            _connectHandler ??= new ConnectStepHandler(ctx);
             _router.Register(StepFamily.Connect, _connectHandler);
-            _subassemblyPlacementController ??= new SubassemblyPlacementController(
-                _spawner,
-                () => _setup,
-                FindSpawnedPart,
-                GetPartState);
+            _subassemblyPlacementController ??= new SubassemblyPlacementController(ctx);
             ServiceRegistry.Register<ISubassemblyPlacementService>(_subassemblyPlacementController);
-            _visualFeedback ??= new PartVisualFeedbackManager(
-                _spawner,
-                _partStates,
-                FindSpawnedPart,
-                IsSubassemblyProxy,
-                (go, action) => { ForEachProxyMember(go, action); return true; },
-                () => _selectionService,
-                () => _isDragging,
-                IsToolModeLockedForParts,
-                GetHoveredPartFromXri,
-                GetHoveredPartFromMouse,
-                () => _placeHandler,
-                () => _draggedPart,
-                IsPartMovementLocked,
-                NormalizeSelectablePlacementTarget,
-                ResetDragState);
-            _placeHandler ??= new PlaceStepHandler(
-                _spawner,
-                () => _setup,
-                FindSpawnedPart,
-                partId => _partStates.TryGetValue(partId, out var s) ? s : PartPlacementState.NotIntroduced,
-                go => _visualFeedback.RestorePartVisual(go),
-                ResetDragState,
-                _spawnedPreviews,
-                () => _isSequentialStep,
-                () => AdvanceSequentialTarget(),
-                partGo => _selectionService?.NotifySelected(partGo),
-                HandlePlacementSucceeded);
+            _visualFeedback ??= new PartVisualFeedbackManager(ctx);
+            _drag ??= new DragController(() => _setup);
+            _hintManager ??= new HintManager(ctx);
+            _previewManager ??= new PreviewSpawnManager(ctx);
+            _focusComputer ??= new StepFocusComputer(ctx);
+            _placeHandler ??= new PlaceStepHandler(ctx);
             _router.Register(StepFamily.Place, _placeHandler);
+            _toolAction ??= new ToolActionExecutor(ctx);
+            // All event subscriptions go through RuntimeEventBus — one pattern,
+            // no null-checked references, symmetric subscribe/unsubscribe.
             RuntimeEventBus.Subscribe<StepStateChanged>(HandleStepStateChanged);
             RuntimeEventBus.Subscribe<PartStateChanged>(HandlePartStateChanged);
             RuntimeEventBus.Subscribe<HintRequested>(HandleHintRequested);
             RuntimeEventBus.Subscribe<ActiveToolChanged>(HandleActiveToolChanged);
             RuntimeEventBus.Subscribe<SessionRestored>(HandleSessionRestored);
             RuntimeEventBus.Subscribe<StepNavigated>(HandleStepNavigated);
-
-            if (_spawner != null)
-                _spawner.PartsReady += HandlePartsReady;
+            RuntimeEventBus.Subscribe<CanonicalActionDispatched>(HandleCanonicalActionDispatched);
+            RuntimeEventBus.Subscribe<PartSelected>(HandlePartSelected);
+            RuntimeEventBus.Subscribe<PartDeselected>(HandlePartDeselected);
+            RuntimeEventBus.Subscribe<PartInspected>(HandlePartInspected);
+            RuntimeEventBus.Subscribe<SpawnerPartsReady>(HandleSpawnerPartsReady);
 
             EnsureInputWiring();
-
-            if (_actionRouter != null)
-            {
-                _actionRouter.OnAction += HandleCanonicalAction;
-            }
-
-            if (_selectionService != null)
-            {
-                _selectionService.OnSelected += HandleSelectionServiceSelected;
-                _selectionService.OnDeselected += HandleSelectionServiceDeselected;
-                _selectionService.OnInspected += HandleSelectionServiceInspected;
-            }
 
             _startupSyncPending = true;
         }
@@ -215,19 +154,11 @@ namespace OSE.UI.Root
             RuntimeEventBus.Unsubscribe<ActiveToolChanged>(HandleActiveToolChanged);
             RuntimeEventBus.Unsubscribe<SessionRestored>(HandleSessionRestored);
             RuntimeEventBus.Unsubscribe<StepNavigated>(HandleStepNavigated);
-
-            if (_spawner != null)
-                _spawner.PartsReady -= HandlePartsReady;
-
-            if (_actionRouter != null)
-                _actionRouter.OnAction -= HandleCanonicalAction;
-
-            if (_selectionService != null)
-            {
-                _selectionService.OnSelected -= HandleSelectionServiceSelected;
-                _selectionService.OnDeselected -= HandleSelectionServiceDeselected;
-                _selectionService.OnInspected -= HandleSelectionServiceInspected;
-            }
+            RuntimeEventBus.Unsubscribe<CanonicalActionDispatched>(HandleCanonicalActionDispatched);
+            RuntimeEventBus.Unsubscribe<PartSelected>(HandlePartSelected);
+            RuntimeEventBus.Unsubscribe<PartDeselected>(HandlePartDeselected);
+            RuntimeEventBus.Unsubscribe<PartInspected>(HandlePartInspected);
+            RuntimeEventBus.Unsubscribe<SpawnerPartsReady>(HandleSpawnerPartsReady);
 
             _visualFeedback?.Clear();
             ClearDockArcVisual();
@@ -265,7 +196,7 @@ namespace OSE.UI.Root
             UpdateDockArcVisual();
             _visualFeedback?.UpdateHintHighlight();
             // Stop preview pulse when dragging starts — proximity highlight takes over
-            if (_draggedPart != null)
+            if (_drag.DraggedPart != null)
                 _placeHandler?.StopPreviewSelectionPulse();
             UpdateToolPreviewIndicatorPosition();
             if (TryBuildHandlerContext(out var updateCtx))
@@ -310,6 +241,14 @@ namespace OSE.UI.Root
         }
 
         // Ã¢”€Ã¢”€ Canonical actions Ã¢”€Ã¢”€
+
+        // ── RuntimeEventBus wrappers (delegate to existing handlers) ──
+
+        private void HandleCanonicalActionDispatched(CanonicalActionDispatched evt) => HandleCanonicalAction(evt.Action);
+        private void HandlePartSelected(PartSelected evt) => HandleSelectionServiceSelected(evt.Target);
+        private void HandlePartDeselected(PartDeselected evt) => HandleSelectionServiceDeselected(evt.Target);
+        private void HandlePartInspected(PartInspected evt) => HandleSelectionServiceInspected(evt.Target);
+        private void HandleSpawnerPartsReady(SpawnerPartsReady _) => HandlePartsReady();
 
         private void HandleCanonicalAction(CanonicalAction action)
         {
@@ -369,7 +308,7 @@ namespace OSE.UI.Root
                 return;
             }
 
-            if (!_pointerDown)
+            if (!_drag.PointerDown)
                 BeginXRGrabTracking(selected);
         }
 
@@ -378,10 +317,10 @@ namespace OSE.UI.Root
             if (IsToolModeLockedForParts())
                 return;
 
-            if (_isDragging && _pointerDown)
+            if (_drag.IsDragging && _drag.PointerDown)
                 return; // pointer-up path handles placement
 
-            GameObject selected = _draggedPart;
+            GameObject selected = _drag.DraggedPart;
             if (selected == null && _selectionService != null)
                 selected = _selectionService.CurrentSelection;
 
@@ -391,7 +330,7 @@ namespace OSE.UI.Root
 
             AttemptPlacementForSelection(selected);
 
-            if (!_pointerDown)
+            if (!_drag.PointerDown)
                 ResetDragState();
         }
 
@@ -434,14 +373,14 @@ namespace OSE.UI.Root
 
             if (stepHasToolActions)
             {
-                OseLog.Info($"[PartInteraction] V1 tool action path: step='{step.id}', allowCompletion={allowToolActionStepCompletion}, spawnedTargets={_useHandler?.SpawnedTargetCount ?? 0}.");
+                OseLog.Info($"[PartInteraction] V1 tool action path: step='{step.id}', allowCompletion={allowToolActionStepCompletion}, spawnedTargets={_toolAction?.SpawnedTargetCount ?? 0}.");
                 if (TryExecuteToolPrimaryActionFromPointer(session, stepController, allowToolActionStepCompletion))
                     return;
 
                 OseLog.Info($"[PartInteraction] V1 tool action path: TryExecuteToolPrimaryActionFromPointer returned false.");
                 if (step.IsToolAction)
                 {
-                    if ((_useHandler?.SpawnedTargetCount ?? 0) > 0)
+                    if ((_toolAction?.SpawnedTargetCount ?? 0) > 0)
                         FlashToolTargetOnFailure();
 
                     return;
@@ -483,128 +422,16 @@ namespace OSE.UI.Root
         /// </summary>
         public bool TryResolveExternalToolActionTarget(Vector2 screenPos, out ToolActionContext context)
         {
+            if (_toolAction != null) return _toolAction.TryResolveToolActionTarget(screenPos, out context);
             context = default;
-
-            if (!Application.isPlaying)
-                return false;
-
-            ToolActionTargetInfo resolvedTarget = null;
-            if (!TryGetToolActionTargetForExecution(screenPos, out resolvedTarget) || resolvedTarget == null)
-                return false;
-
-            // Resolve the active tool's spatial pose metadata (if authored).
-            Content.ToolPoseConfig toolPose = null;
-            var activeToolId = GetActiveToolId();
-            if (!string.IsNullOrEmpty(activeToolId))
-            {
-                var package = _spawner?.CurrentPackage;
-                if (package != null && package.TryGetTool(activeToolId, out var toolDef))
-                    toolPose = toolDef.toolPose;
-            }
-
-            context = new ToolActionContext
-            {
-                TargetId = resolvedTarget.TargetId,
-                TargetWorldPos = resolvedTarget.transform.position,
-                SurfaceWorldPos = resolvedTarget.SurfaceWorldPos,
-                TargetWorldRotation = resolvedTarget.TargetWorldRotation,
-                WeldAxis = resolvedTarget.WeldAxis,
-                WeldLength = resolvedTarget.WeldLength,
-                HasToolActionRotation = resolvedTarget.HasToolActionRotation,
-                ToolActionRotation = resolvedTarget.ToolActionRotation,
-                ToolPose = toolPose,
-            };
-            return !string.IsNullOrWhiteSpace(context.TargetId);
+            return false;
         }
 
-        /// <summary>
-        /// Called by V2 orchestrator via IPartActionBridge when tool mode is locked.
-        /// Executes the tool primary action for an explicitly resolved target id.
-        /// </summary>
         public bool TryExecuteExternalToolAction(string interactedTargetId)
-        {
-            if (!Application.isPlaying)
-                return false;
+            => _toolAction?.TryExecuteToolAction(interactedTargetId) ?? false;
 
-            return TryHandleExternalToolAction(interactedTargetId);
-        }
-
-        /// <summary>
-        /// Called by V2 orchestrator via IPartActionBridge when tool mode is locked.
-        /// Directly executes the tool primary action using a direct hit on a spawned
-        /// tool target sphere, bypassing the canonical action router to avoid wiring failures.
-        /// </summary>
         public bool TryExternalToolAction(Vector2 screenPos)
-        {
-            if (!Application.isPlaying)
-                return false;
-
-            // Pipe connection steps: handle even when a tool is held.
-            if (TryBuildHandlerContext(out var pipeCtx) && _router.TryHandlePointerDown(in pipeCtx, screenPos))
-                return true;
-
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
-                return false;
-
-            StepController stepController = session.AssemblyController?.StepController;
-            if (stepController == null || !stepController.HasActiveStep)
-                return false;
-
-            StepDefinition step = stepController.CurrentStepDefinition;
-            bool allowToolActionStepCompletion = step == null || !step.IsPlacement;
-
-            int spawnedTargetCount = _useHandler?.SpawnedTargetCount ?? 0;
-            OseLog.Info($"[PartInteraction] TryExternalToolAction at ({screenPos.x:F0},{screenPos.y:F0}). Spawned={spawnedTargetCount}. Tool='{session.ToolController?.ActiveToolId ?? "none"}'.");
-            if (!TryResolveExternalToolActionTarget(screenPos, out ToolActionContext ctx))
-            {
-                OseLog.Info($"[PartInteraction] TryExternalToolAction: no ready tool target resolved at ({screenPos.x:F0},{screenPos.y:F0}). Spawned={spawnedTargetCount}.");
-                return false;
-            }
-
-            // Capture world position before executing (the target may be destroyed/refreshed after).
-            _lastToolActionWorldPos = ctx.TargetWorldPos;
-
-            return TryHandleExternalToolAction(ctx.TargetId);
-        }
-
-        private bool TryHandleExternalToolAction(string interactedTargetId)
-        {
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
-                return false;
-
-            StepController stepController = session.AssemblyController?.StepController;
-            if (stepController == null || !stepController.HasActiveStep)
-                return false;
-
-            StepDefinition step = stepController.CurrentStepDefinition;
-            bool allowToolActionStepCompletion = step == null || !step.IsPlacement;
-
-            int spawnedTargetCount = _useHandler?.SpawnedTargetCount ?? 0;
-            if (string.IsNullOrWhiteSpace(interactedTargetId))
-            {
-                OseLog.Info($"[PartInteraction] TryExecuteExternalToolAction: no target id provided. Spawned={spawnedTargetCount}.");
-                return false;
-            }
-
-            if (!TryExecuteToolPrimaryAction(interactedTargetId, out bool shouldCompleteStep, out bool handled))
-            {
-                OseLog.Info($"[PartInteraction] TryExecuteExternalToolAction: action rejected for '{interactedTargetId}'.");
-                return false;
-            }
-
-            if (!handled)
-            {
-                OseLog.Info($"[PartInteraction] TryExecuteExternalToolAction: not handled for '{interactedTargetId}'.");
-                return false;
-            }
-
-            OseLog.Info($"[PartInteraction] TryExecuteExternalToolAction: success on '{interactedTargetId}'. shouldComplete={shouldCompleteStep}, allowCompletion={allowToolActionStepCompletion}.");
-            if (!allowToolActionStepCompletion)
-                return true;
-
-            OseLog.Info($"[PartInteraction] TryExecuteExternalToolAction: calling HandleToolPrimaryResult shouldComplete={shouldCompleteStep}.");
-            return HandleToolPrimaryResult(session, stepController, shouldCompleteStep);
-        }
+            => _toolAction?.TryExecuteToolActionAtScreen(screenPos) ?? false;
 
         /// <summary>
         /// Called by V2 orchestrator via IPartActionBridge for any tap (regardless of
@@ -657,8 +484,9 @@ namespace OSE.UI.Root
                 ClearPartHoverVisual();
                 if (hoveredPart != null && CanApplyHoverVisual(hoveredPart, hoveredPart.name))
                 {
-                    _hoveredPart = hoveredPart;
-                    ApplyHoveredPartVisual(_hoveredPart);
+                    if (_visualFeedback != null)
+                        _visualFeedback.HoveredPart = hoveredPart;
+                    ApplyHoveredPartVisual(hoveredPart);
                 }
             }
 
@@ -795,82 +623,78 @@ namespace OSE.UI.Root
         bool IPartActionBridge.TryGetStepFocusBounds(string stepId, out Bounds bounds)
         {
             bounds = default;
-            if (!TryResolveStepFocusBounds(stepId, out bounds))
+            if (_focusComputer == null || !_focusComputer.TryResolveStepFocusBounds(stepId, out bounds))
                 return false;
             bounds.Expand(new Vector3(0.18f, 0.12f, 0.18f));
             return true;
         }
 
+        // ── IBridgeContext explicit implementations ──
+
+        PackagePartSpawner IBridgeContext.Spawner => _spawner;
+        PreviewSceneSetup IBridgeContext.Setup => _setup;
+        SelectionService IBridgeContext.SelectionService => _selectionService;
+        DragController IBridgeContext.Drag => _drag;
+        PlaceStepHandler IBridgeContext.PlaceHandler => _placeHandler;
+        UseStepHandler IBridgeContext.UseHandler => _useHandler;
+        ConnectStepHandler IBridgeContext.ConnectHandler => _connectHandler;
+        PartVisualFeedbackManager IBridgeContext.VisualFeedback => _visualFeedback;
+        PreviewSpawnManager IBridgeContext.PreviewManager => _previewManager;
+        StepExecutionRouter IBridgeContext.Router => _router;
+        ToolCursorManager IBridgeContext.CursorManager => CursorManager;
+        SubassemblyPlacementController IBridgeContext.SubassemblyController => _subassemblyPlacementController;
+        List<GameObject> IBridgeContext.SpawnedPreviews => _spawnedPreviews;
+        Dictionary<string, PartPlacementState> IBridgeContext.PartStates => _partStates;
+        GameObject IBridgeContext.FindSpawnedPart(string partId) => FindSpawnedPart(partId);
+        bool IBridgeContext.IsSubassemblyProxy(GameObject target) => IsSubassemblyProxy(target);
+        bool IBridgeContext.ForEachProxyMember(GameObject proxy, Action<GameObject> action) { ForEachProxyMember(proxy, action); return true; }
+        GameObject IBridgeContext.NormalizeSelectablePlacementTarget(GameObject target) => NormalizeSelectablePlacementTarget(target);
+        bool IBridgeContext.IsPartMovementLocked(string partId) => IsPartMovementLocked(partId);
+        bool IBridgeContext.IsToolModeLockedForParts() => IsToolModeLockedForParts();
+        PartPlacementState IBridgeContext.GetPartState(string partId) => GetPartState(partId);
+        bool IBridgeContext.IsDragging => _drag != null && _drag.IsDragging;
+        bool IBridgeContext.IsExternalControlEnabled => ExternalControlEnabled;
+        GameObject IBridgeContext.GetHoveredPartFromXri() => GetHoveredPartFromXri();
+        GameObject IBridgeContext.GetHoveredPartFromMouse() => GetHoveredPartFromMouse();
+        void IBridgeContext.ResetDragState() => ResetDragState();
+        void IBridgeContext.ClearHintHighlight() => ClearHintHighlight();
+        void IBridgeContext.RestorePartVisual(GameObject part) => RestorePartVisual(part);
+        void IBridgeContext.RefreshToolActionTargets() => RefreshToolActionTargets();
+        void IBridgeContext.DestroyObject(UnityEngine.Object obj) => Destroy(obj);
+        void IBridgeContext.HandlePlacementSucceeded(GameObject target) => HandlePlacementSucceeded(target);
+
         // ── Tool Action Preview bridge methods ──
 
-        /// <summary>Returns the tool cursor preview GameObject, or null if none is active.</summary>
-        public GameObject GetToolPreview() => CursorManager.ToolPreview;
-
-        /// <summary>Number of tool targets completed in the current step (for I Do / We Do / You Do resolution).</summary>
-        public int GetCompletedToolTargetCount() => _useHandler?.CompletedTargetCountForStep ?? 0;
-
-        /// <summary>Increments the completed target count after a preview completes.</summary>
-        public void IncrementCompletedToolTargetCount() => _useHandler?.IncrementCompletedTargetCount();
-
-        /// <summary>Suspends/resumes cursor position updates during tool action preview.</summary>
-        public void SetToolPreviewPositionSuspended(bool suspended) => CursorManager.PositionUpdateSuspended = suspended;
-
-        /// <summary>Returns the active profile for the current Use step, or null.</summary>
-        public string GetActiveToolProfile()
-        {
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
-                return null;
-            var stepCtrl = session?.AssemblyController?.StepController;
-            return stepCtrl != null && stepCtrl.HasActiveStep ? stepCtrl.CurrentStepDefinition?.profile : null;
-        }
+        public GameObject GetToolPreview() => _toolAction?.GetToolPreview();
+        public int GetCompletedToolTargetCount() => _toolAction?.GetCompletedToolTargetCount() ?? 0;
+        public void IncrementCompletedToolTargetCount() => _toolAction?.IncrementCompletedToolTargetCount();
+        public void SetToolPreviewPositionSuspended(bool suspended) => _toolAction?.SetToolPreviewPositionSuspended(suspended);
+        public string GetActiveToolProfile() => _toolAction?.GetActiveToolProfile();
 
         /// <summary>Returns the currently equipped tool ID, or null.</summary>
         public string GetActiveToolId()
-        {
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
-                return null;
-            return session?.ToolController?.ActiveToolId;
-        }
+            => _toolAction?.GetActiveToolId();
 
         private bool TryFocusCameraOnToolTarget(Vector2 screenPos)
-            => _useHandler != null && _useHandler.TryFocusCameraOnToolTarget(screenPos);
+            => _toolAction?.TryFocusCameraOnToolTarget(screenPos) ?? false;
 
         private void FlashToolTargetOnFailure()
-            => _useHandler?.FlashToolTargetOnFailure();
+            => _toolAction?.FlashToolTargetOnFailure();
 
         private bool TryExecuteToolPrimaryActionFromPointer(
             MachineSessionController session,
             StepController stepController,
             bool allowStepCompletion = true)
-            => _useHandler != null && _useHandler.TryExecuteToolPrimaryActionFromPointer(session, stepController, allowStepCompletion);
-
-        private bool TryExecuteToolPrimaryAction(
-            string interactedTargetId,
-            out bool shouldCompleteStep,
-            out bool handled)
-        {
-            if (_useHandler != null)
-                return _useHandler.TryExecuteToolPrimaryAction(interactedTargetId, out shouldCompleteStep, out handled);
-
-            shouldCompleteStep = false;
-            handled = false;
-            return false;
-        }
-
-        private bool HandleToolPrimaryResult(
-            MachineSessionController session,
-            StepController stepController,
-            bool shouldCompleteStep)
-            => UseStepHandler.HandleToolPrimaryResult(session, stepController, shouldCompleteStep);
+            => _toolAction?.TryExecuteToolPrimaryActionFromPointer(session, stepController, allowStepCompletion) ?? false;
 
         private void RefreshToolActionTargets()
-            => _useHandler?.RefreshToolActionTargets();
+            => _toolAction?.RefreshToolActionTargets();
 
         private void TrySelectFromPointer(bool isInspect)
         {
             if (ExternalControlEnabled)
             {
-                _pendingSelectPart = null;
+                _drag.PendingSelectPart = null;
                 return;
             }
 
@@ -880,7 +704,7 @@ namespace OSE.UI.Root
             if (_selectionService == null)
                 return;
 
-            GameObject candidate = _pendingSelectPart;
+            GameObject candidate = _drag.PendingSelectPart;
             if (candidate == null)
             {
                 if (!TryGetPointerPosition(out Vector2 screenPos))
@@ -897,7 +721,7 @@ namespace OSE.UI.Root
             else
                 _selectionService.NotifySelected(candidate);
 
-            _pendingSelectPart = null;
+            _drag.PendingSelectPart = null;
         }
 
         private void HandleSelectionServiceSelected(GameObject target) =>
@@ -921,6 +745,13 @@ namespace OSE.UI.Root
             if (!IsSelectablePlacementObject(target))
                 return;
 
+            // Restore previous selection visual before applying the new one.
+            if (_lastSelectedVisualTarget != null && _lastSelectedVisualTarget != target)
+            {
+                RestorePartVisual(_lastSelectedVisualTarget);
+                _lastSelectedVisualTarget = null;
+            }
+
             bool accepted;
             string selectionId = ResolveSelectionId(target);
             bool isProxy = IsSubassemblyProxy(target);
@@ -935,6 +766,7 @@ namespace OSE.UI.Root
                     PushSubassemblyInfoToUI(target, isHoverInfo: false);
                     ClearPartHoverVisual();
                     ApplySelectedPartVisual(target);
+                    _lastSelectedVisualTarget = target;
                 }
             }
             else
@@ -964,16 +796,17 @@ namespace OSE.UI.Root
 
             OseLog.Info($"[PartInteraction] Selected item '{selectionId ?? target.name}'");
             _selectionFrame = Time.frameCount;
+            _lastSelectedVisualTarget = target;
             StartPreviewSelectionPulse(selectionId ?? target.name);
             if (!IsSubassemblyProxy(target))
                 TryAutoCompleteSelectionStep(target.name);
 
-            if (_pointerDown && _pendingSelectPart == target)
+            if (_drag.PointerDown && _drag.PendingSelectPart == target)
             {
                 if (IsPartMovementLocked(selectionId))
                 {
                     OseLog.VerboseInfo($"[PartInteraction] Drag tracking blocked for locked item '{selectionId}'.");
-                    _pendingSelectPart = null;
+                    _drag.PendingSelectPart = null;
                     return;
                 }
 
@@ -1099,8 +932,14 @@ namespace OSE.UI.Root
             if (IsSubassemblyProxy(current))
             {
                 RestorePartVisual(current);
-                if (_hoveredPart == current)
-                    _hoveredPart = null;
+                if (_visualFeedback?.HoveredPart == current)
+                    _visualFeedback?.ClearPartHoverVisual();
+            }
+
+            if (_lastSelectedVisualTarget != null)
+            {
+                RestorePartVisual(_lastSelectedVisualTarget);
+                _lastSelectedVisualTarget = null;
             }
 
             _suppressSelectionEvents = true;
@@ -1172,24 +1011,8 @@ namespace OSE.UI.Root
         }
 
         private static bool TryGetPointerPosition(out Vector2 screenPos)
-        {
-            var mouse = Mouse.current;
-            if (mouse != null)
-            {
-                screenPos = mouse.position.ReadValue();
-                return true;
-            }
+            => DragController.TryGetPointerPosition(out screenPos);
 
-            var touch = Touchscreen.current;
-            if (touch != null && touch.primaryTouch.press.isPressed)
-            {
-                screenPos = touch.primaryTouch.position.ReadValue();
-                return true;
-            }
-
-            screenPos = Vector2.zero;
-            return false;
-        }
 
         private GameObject RaycastPartAtScreen(Vector2 screenPos)
         {
@@ -1212,51 +1035,26 @@ namespace OSE.UI.Root
                     HandlePointerDown(screenPos);
                 else if (released)
                     HandlePointerUp(screenPos);
-                else if (_pointerDown)
+                else if (_drag.PointerDown)
                     HandlePointerDrag(screenPos);
 
                 return;
             }
 
             // Failsafe: recover from missed release events (window focus loss, input edge-cases).
-            // Without this, _pointerDown can stay latched and block future drag/select flow.
-            if (_pointerDown)
+            // Without this, _drag.PointerDown can stay latched and block future drag/select flow.
+            if (_drag.PointerDown)
             {
                 if (!TryGetPointerPosition(out Vector2 fallbackPos))
-                    fallbackPos = _pointerDownScreenPos;
+                    fallbackPos = _drag.PointerDownScreenPos;
 
                 HandlePointerUp(fallbackPos);
             }
         }
 
         private static bool TryGetPointerState(out Vector2 screenPos, out bool pressed, out bool released)
-        {
-            screenPos = Vector2.zero;
-            pressed = false;
-            released = false;
+            => DragController.TryGetPointerState(out screenPos, out pressed, out released);
 
-            var mouse = Mouse.current;
-            if (mouse != null)
-            {
-                screenPos = mouse.position.ReadValue();
-                pressed = mouse.leftButton.wasPressedThisFrame;
-                released = mouse.leftButton.wasReleasedThisFrame;
-                if (pressed || released || mouse.leftButton.isPressed)
-                    return true;
-            }
-
-            var touch = Touchscreen.current;
-            if (touch != null)
-            {
-                screenPos = touch.primaryTouch.position.ReadValue();
-                pressed = touch.primaryTouch.press.wasPressedThisFrame;
-                released = touch.primaryTouch.press.wasReleasedThisFrame;
-                if (pressed || released || touch.primaryTouch.press.isPressed)
-                    return true;
-            }
-
-            return false;
-        }
 
         private void HandlePointerDown(Vector2 screenPos)
         {
@@ -1293,7 +1091,7 @@ namespace OSE.UI.Root
             {
                 OseLog.VerboseInfo($"[PartInteraction] Drag blocked for locked item '{matchedSelectionId}'. Selection is still allowed.");
 
-                _pendingSelectPart = matchedPart;
+                _drag.PendingSelectPart = matchedPart;
 
                 if (_actionRouter != null && _selectionService != null)
                 {
@@ -1302,21 +1100,18 @@ namespace OSE.UI.Root
                 else if (_selectionService != null)
                 {
                     _selectionService.NotifySelected(matchedPart);
-                    _pendingSelectPart = null;
+                    _drag.PendingSelectPart = null;
                 }
                 else if (!IsSubassemblyProxy(matchedPart) && ServiceRegistry.TryGet<PartRuntimeController>(out var lockedPartController))
                 {
                     lockedPartController.SelectPart(matchedPart.name);
-                    _pendingSelectPart = null;
+                    _drag.PendingSelectPart = null;
                 }
 
                 return;
             }
 
-            _pointerDown = true;
-            _pointerDownScreenPos = screenPos;
-            _pointerDownCamera = cam;
-            _pendingSelectPart = matchedPart;
+            _drag.SetPointerDown(screenPos, cam, matchedPart);
 
             // If the same part is already selected, SelectionService.NotifySelected short-circuits
             // and no OnSelected callback is fired. Start drag tracking immediately in that case.
@@ -1366,103 +1161,31 @@ namespace OSE.UI.Root
         private void HandlePointerDrag(Vector2 screenPos)
         {
             if (IsRepositioning()) return;
-            if (_draggedPart == null || _dragCamera == null) return;
+            if (_drag.DraggedPart == null || _drag.DragCamera == null) return;
 
-            Camera cam = _dragCamera;
-
-            if (!_isDragging)
+            if (!_drag.IsDragging)
             {
-                float dist = Vector2.Distance(screenPos, _dragScreenStart);
-                if (dist < DragThresholdPixels)
+                if (!_drag.ExceedsDragThreshold(screenPos))
                     return;
 
                 // Start dragging
-                _isDragging = true;
+                _drag.IsDragging = true;
                 bool canGrab = true;
-                if (!IsSubassemblyProxy(_draggedPart) && ServiceRegistry.TryGet<PartRuntimeController>(out var pc))
-                    canGrab = pc.GrabPart(_draggedPartId);
+                if (!IsSubassemblyProxy(_drag.DraggedPart) && ServiceRegistry.TryGet<PartRuntimeController>(out var pc))
+                    canGrab = pc.GrabPart(_drag.DraggedPartId);
 
                 if (!canGrab)
                 {
-                    OseLog.VerboseInfo($"[PartInteraction] Drag blocked for locked part '{_draggedPartId}'.");
+                    OseLog.VerboseInfo($"[PartInteraction] Drag blocked for locked part '{_drag.DraggedPartId}'.");
                     ResetDragState();
                     return;
                 }
 
-                OseLog.Info($"[PartInteraction] Dragging part '{_draggedPartId}'");
+                OseLog.Info($"[PartInteraction] Dragging part '{_drag.DraggedPartId}'");
             }
 
-            var mouse = Mouse.current;
-            var kb = Keyboard.current;
-            bool depthMode = (kb != null && kb.shiftKey.isPressed)
-                || (mouse != null && (mouse.rightButton.isPressed || mouse.middleButton.isPressed));
-
-            // Depth-adjust mode:
-            // lock cursor ray anchor, and use vertical movement only for push/pull.
-            if (depthMode)
-            {
-                if (!_isDepthAdjustMode)
-                {
-                    _isDepthAdjustMode = true;
-                    _depthAdjustScreenAnchor = screenPos;
-                    _lastPointerY = screenPos.y;
-                }
-
-                float deltaY = screenPos.y - _lastPointerY;
-                _dragRayDistance += deltaY * DepthAdjustSpeed;
-            }
-            else
-            {
-                _isDepthAdjustMode = false;
-                _depthAdjustScreenAnchor = screenPos;
-            }
-            _lastPointerY = screenPos.y;
-
-            // Mouse scroll wheel
-            if (mouse != null)
-            {
-                float scroll = mouse.scroll.ReadValue().y;
-                if (Mathf.Abs(scroll) > 0.01f)
-                    _dragRayDistance += Mathf.Sign(scroll) * ScrollDepthSpeed;
-            }
-
-            // Q/E keys
-            if (kb != null)
-            {
-                if (kb.eKey.isPressed)
-                    _dragRayDistance += ScrollDepthSpeed * Time.deltaTime * 3f;
-                if (kb.qKey.isPressed)
-                    _dragRayDistance -= ScrollDepthSpeed * Time.deltaTime * 3f;
-            }
-
-            // Touch pinch → push/pull along camera forward (mobile)
-            var touch = Touchscreen.current;
-            if (touch != null && touch.touches.Count >= 2)
-            {
-                var t0 = touch.touches[0];
-                var t1 = touch.touches[1];
-                if (t0.press.isPressed && t1.press.isPressed)
-                {
-                    float pinchDist = Vector2.Distance(t0.position.ReadValue(), t1.position.ReadValue());
-                    if (_lastPinchDistance > 0f)
-                    {
-                        float delta = pinchDist - _lastPinchDistance;
-                        _dragRayDistance += delta * PinchDepthSpeed;
-                    }
-                    _lastPinchDistance = pinchDist;
-                }
-            }
-            else
-            {
-                _lastPinchDistance = -1f;
-            }
-
-            _dragRayDistance = Mathf.Max(MinDragRayDistance, _dragRayDistance);
-            Vector2 rayScreenPos = _isDepthAdjustMode ? _depthAdjustScreenAnchor : screenPos;
-            Ray ray = cam.ScreenPointToRay(rayScreenPos);
-            Vector3 dragTargetWorld = ray.GetPoint(_dragRayDistance);
-            _draggedPart.transform.position = ClampDragPosition(cam, dragTargetWorld, _draggedPart);
-            _subassemblyPlacementController?.ApplyProxyTransform(_draggedPart);
+            _drag.DraggedPart.transform.position = _drag.ComputeDragWorldPosition(screenPos);
+            _subassemblyPlacementController?.ApplyProxyTransform(_drag.DraggedPart);
 
             // Check proximity to previews and highlight when in snap zone
             UpdatePreviewProximity();
@@ -1471,20 +1194,20 @@ namespace OSE.UI.Root
         private void HandlePointerUp(Vector2 screenPos)
         {
             if (IsRepositioning()) return;
-            if (!_pointerDown)
+            if (!_drag.PointerDown)
                 return;
 
-            _pointerDown = false;
+            _drag.ClearPointerDown();
 
-            if (!_isDragging || _draggedPart == null)
+            if (!_drag.IsDragging || _drag.DraggedPart == null)
             {
                 // Was just a click, not a drag ? selection handled by canonical action
-                _pendingSelectPart = null;
+                _drag.PendingSelectPart = null;
                 ResetDragState();
                 return;
             }
 
-            _isDragging = false;
+            _drag.IsDragging = false;
 
             // Attempt placement
             AttemptDragPlacement();
@@ -1494,10 +1217,10 @@ namespace OSE.UI.Root
 
         private void AttemptDragPlacement()
         {
-            if (_draggedPart == null || string.IsNullOrEmpty(_draggedPartId))
+            if (_drag.DraggedPart == null || string.IsNullOrEmpty(_drag.DraggedPartId))
                 return;
 
-            AttemptPlacementForSelection(_draggedPart);
+            AttemptPlacementForSelection(_drag.DraggedPart);
         }
 
         private void AttemptPlacementForSelection(GameObject targetGo)
@@ -1526,12 +1249,13 @@ namespace OSE.UI.Root
 
         private bool TryHandleClickToPlace(GameObject selected, Vector2 screenPos)
         {
-            if (_spawnedPreviews.Count == 0 || _placeHandler == null)
+            int previewCount = _previewManager?.SpawnedPreviews.Count ?? 0;
+            if (previewCount == 0 || _placeHandler == null)
                 return false;
 
-            // Need a selected part that isn't being dragged.
-            if (selected == null || _draggedPart != null)
+            if (selected == null || _drag.DraggedPart != null)
                 return false;
+
             selected = NormalizeSelectablePlacementTarget(selected);
 
             // Skip click-to-place on the same frame the part was selected.
@@ -1555,10 +1279,10 @@ namespace OSE.UI.Root
 
         private void UpdatePreviewProximity()
         {
-            if (_draggedPart == null || _spawnedPreviews.Count == 0)
+            if (_drag.DraggedPart == null || (_previewManager?.SpawnedPreviews.Count ?? 0) == 0)
                 return;
 
-            _placeHandler?.UpdateDragProximity(_draggedPart, _draggedPartId, _isDragging);
+            _placeHandler?.UpdateDragProximity(_drag.DraggedPart, _drag.DraggedPartId, _drag.IsDragging);
         }
         private void ClearPreviewHighlight() => _placeHandler?.ClearPreviewHighlight();
 
@@ -1579,256 +1303,25 @@ namespace OSE.UI.Root
         /// </summary>
         private void HideNonIntroducedParts() => _visualFeedback?.HideNonIntroducedParts();
 
-        private void RevealStepParts(string stepId)
-        {
-            var package = _spawner?.CurrentPackage;
-            if (package == null || !package.TryGetStep(stepId, out var step))
-                return;
+        private void RevealStepParts(string stepId) => _visualFeedback?.RevealStepParts(stepId);
 
-            // Determine which subassembly we're in
-            string subassemblyId = step.subassemblyId;
-
-            // Collect all part ids for this subassembly (from all its steps)
-            var subassemblyPartIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            if (!string.IsNullOrWhiteSpace(subassemblyId))
-            {
-                StepDefinition[] allSteps = package.GetOrderedSteps();
-                for (int s = 0; s < allSteps.Length; s++)
-                {
-                    if (!string.Equals(allSteps[s].subassemblyId, subassemblyId, StringComparison.OrdinalIgnoreCase))
-                        continue;
-                    string[] rp = allSteps[s].requiredPartIds;
-                    if (rp == null) continue;
-                    for (int p = 0; p < rp.Length; p++)
-                    {
-                        if (!string.IsNullOrWhiteSpace(rp[p]))
-                            subassemblyPartIds.Add(rp[p]);
-                    }
-                }
-            }
-            else
-            {
-                // No subassembly — fall back to just this step's parts
-                string[] rp = step.requiredPartIds;
-                if (rp != null)
-                {
-                    for (int p = 0; p < rp.Length; p++)
-                    {
-                        if (!string.IsNullOrWhiteSpace(rp[p]))
-                            subassemblyPartIds.Add(rp[p]);
-                    }
-                }
-            }
-
-            if (subassemblyPartIds.Count == 0)
-                return;
-
-            // Filter to parts not yet revealed
-            var toReveal = new List<string>();
-            foreach (string partId in subassemblyPartIds)
-            {
-                if (_partStates.TryGetValue(partId, out var state) &&
-                    state is PartPlacementState.Completed or PartPlacementState.PlacedVirtually)
-                {
-                    _revealedPartIds.Add(partId);
-                    continue;
-                }
-
-                if (!_revealedPartIds.Contains(partId))
-                    toReveal.Add(partId);
-            }
-
-            if (toReveal.Count == 0)
-                return;
-
-            // Activate, position, and style each newly-revealed part.
-            // Use the authored startPosition/Rotation/Scale from previewConfig when
-            // available so parts stage near the assembly (matching edit-mode layout).
-            // Fall back to a computed row for parts without authored placements.
-            var unplacedParts = new List<(string partId, GameObject go, float width)>();
-
-            for (int i = 0; i < toReveal.Count; i++)
-            {
-                string partId = toReveal[i];
-                GameObject partGo = FindSpawnedPart(partId);
-                if (partGo == null) continue;
-
-                PartPreviewPlacement pp = _spawner.FindPartPlacement(partId);
-                Vector3 scale = pp != null
-                    ? new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z)
-                    : Vector3.one;
-
-                partGo.transform.localScale = scale;
-                partGo.SetActive(true);
-
-                bool hasAuthored = pp != null &&
-                    (!Mathf.Approximately(pp.startPosition.x, 0f) ||
-                     !Mathf.Approximately(pp.startPosition.y, 0f) ||
-                     !Mathf.Approximately(pp.startPosition.z, 0f));
-
-                if (hasAuthored)
-                {
-                    Vector3 pos = new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z);
-                    Quaternion rot = !pp.startRotation.IsIdentity
-                        ? new Quaternion(pp.startRotation.x, pp.startRotation.y, pp.startRotation.z, pp.startRotation.w)
-                        : Quaternion.identity;
-                    partGo.transform.SetLocalPositionAndRotation(pos, rot);
-                }
-                else
-                {
-                    partGo.transform.localRotation = Quaternion.identity;
-
-                    // Measure extents for fallback row layout
-                    float width = PartGridSpacing;
-                    var renderers = partGo.GetComponentsInChildren<Renderer>(true);
-                    if (renderers.Length > 0)
-                    {
-                        Bounds combined = renderers[0].bounds;
-                        for (int r = 1; r < renderers.Length; r++)
-                            combined.Encapsulate(renderers[r].bounds);
-                        width = Mathf.Max(combined.size.x, combined.size.z, PartGridSpacing);
-                    }
-                    unplacedParts.Add((partId, partGo, width));
-                }
-
-                _partStates[partId] = PartPlacementState.Available;
-                SyncPartGrabInteractivity(partGo, partId);
-                ApplyPartVisualForState(partGo, partId, PartPlacementState.Available);
-                _revealedPartIds.Add(partId);
-            }
-
-            // Fallback row layout for parts without authored start positions.
-            if (unplacedParts.Count > 0)
-            {
-                float padding = 0.15f;
-                float totalWidth = 0f;
-                for (int i = 0; i < unplacedParts.Count; i++)
-                    totalWidth += unplacedParts[i].width + (i > 0 ? padding : 0f);
-
-                float cursor = -totalWidth * 0.5f;
-                for (int i = 0; i < unplacedParts.Count; i++)
-                {
-                    var (_, partGo, width) = unplacedParts[i];
-                    float x = cursor + width * 0.5f;
-                    cursor += width + padding;
-                    partGo.transform.localPosition = new Vector3(x, PartLayoutY, PartGridStartZ);
-                }
-            }
-
-            OseLog.Info($"[PartInteraction] Revealed {toReveal.Count} part(s) for subassembly '{subassemblyId}'.");
-        }
 
         /// <summary>
         /// Highlights the active step's required parts with emission glow and dims
         /// previously-revealed parts that belong to the subassembly but aren't needed
         /// for the current step.
         /// </summary>
-        private void ApplyStepPartHighlighting(string stepId)
-        {
-            var package = _spawner?.CurrentPackage;
-            if (package == null || !package.TryGetStep(stepId, out var step))
-                return;
+        private void ApplyStepPartHighlighting(string stepId) => _visualFeedback?.ApplyStepPartHighlighting(stepId);
 
-            // Build set of the current step's active parts.
-            // For finished-subassembly placement steps, the whole required subassembly
-            // is the active object, not an empty requiredPartIds list.
-            _activeStepPartIds.Clear();
-            if (step.RequiresSubassemblyPlacement &&
-                package.TryGetSubassembly(step.requiredSubassemblyId, out var requiredSubassembly) &&
-                requiredSubassembly?.partIds != null)
-            {
-                for (int i = 0; i < requiredSubassembly.partIds.Length; i++)
-                {
-                    if (!string.IsNullOrEmpty(requiredSubassembly.partIds[i]))
-                        _activeStepPartIds.Add(requiredSubassembly.partIds[i]);
-                }
-            }
-            else if (step.requiredPartIds != null)
-            {
-                for (int i = 0; i < step.requiredPartIds.Length; i++)
-                {
-                    if (!string.IsNullOrEmpty(step.requiredPartIds[i]))
-                        _activeStepPartIds.Add(step.requiredPartIds[i]);
-                }
-            }
-
-            // Walk all revealed parts: highlight active, dim the rest
-            foreach (string partId in _revealedPartIds)
-            {
-                // Skip completed/placed parts — they already have their own visual
-                if (_partStates.TryGetValue(partId, out var state) &&
-                    state is PartPlacementState.Completed or PartPlacementState.PlacedVirtually)
-                    continue;
-
-                GameObject partGo = FindSpawnedPart(partId);
-                if (partGo == null) continue;
-
-                if (_activeStepPartIds.Contains(partId))
-                {
-                    // Active step part: restore normal visual + soft emission highlight
-                    ApplyAvailablePartVisual(partGo, partId);
-                    MaterialHelper.SetEmission(partGo, ActiveStepEmission);
-                }
-                else
-                {
-                    // Revealed but not needed right now: dim it
-                    ClearRendererPropertyBlocks(partGo);
-                    if (MaterialHelper.IsImportedModel(partGo))
-                        MaterialHelper.ApplyTint(partGo, DimmedPartColor);
-                    else
-                        MaterialHelper.Apply(partGo, "Preview Part Material", DimmedPartColor);
-                    MaterialHelper.SetEmission(partGo, Color.black);
-                }
-            }
-        }
 
         // RefreshRequiredPartIds and UpdateRequiredPartPulse are now owned by PlaceStepHandler
         // (called via router lifecycle: OnStepActivated/Update).
 
-        private void UpdateHintHighlight()
-        {
-            if ((_hintPreview == null && _hintSourceProxy == null) || _hintHighlightUntil <= 0f)
-                return;
+        private void UpdateHintHighlight() => _visualFeedback?.UpdateHintHighlight();
 
-            if (Time.time >= _hintHighlightUntil)
-            {
-                ClearHintHighlight();
-                return;
-            }
 
-            Color pulseColor = ColorPulseHelper.Lerp(HintHighlightColorA, HintHighlightColorB, HintHighlightPulseSpeed);
+        private void ClearHintHighlight() => _visualFeedback?.ClearHintHighlight();
 
-            if (_hintPreview != null)
-            {
-                if (!(_placeHandler != null && _placeHandler.IsPreviewHighlighted && _placeHandler.HoveredPreview == _hintPreview))
-                    MaterialHelper.SetMaterialColor(_hintPreview, pulseColor);
-            }
-
-            if (_hintSourceProxy != null)
-                ForEachProxyMember(_hintSourceProxy, member => ApplyHintSourceVisual(member, pulseColor));
-        }
-
-        private void ClearHintHighlight()
-        {
-            if (_hintPreview != null)
-            {
-                if (_placeHandler != null && _placeHandler.IsPreviewHighlighted && _placeHandler.HoveredPreview == _hintPreview)
-                {
-                    MaterialHelper.Apply(_hintPreview, "Preview Ready Material", PreviewReadyColor);
-                }
-                else
-                {
-                    MaterialHelper.ApplyPreviewMaterial(_hintPreview);
-                }
-            }
-
-            if (_hintSourceProxy != null)
-                RestorePartVisual(_hintSourceProxy);
-
-            _hintPreview = null;
-            _hintSourceProxy = null;
-            _hintHighlightUntil = 0f;
-        }
 
         /// <summary>
         /// Returns the world position of the nearest preview target matching the given part ID.
@@ -1847,55 +1340,7 @@ namespace OSE.UI.Root
             return _placeHandler.FindNearestPreviewForSelection(partId, worldPos, out nearestDist);
         }
 
-        private static HintDefinition ResolveHintForStep(MachinePackageDefinition package, StepDefinition step, int totalHintsForStep)
-        {
-            if (package == null || step == null)
-                return null;
 
-            string[] hintIds = step.hintIds;
-            if (hintIds == null || hintIds.Length == 0)
-                return null;
-
-            int index = Mathf.Clamp(totalHintsForStep - 1, 0, hintIds.Length - 1);
-            string hintId = hintIds[index];
-            if (string.IsNullOrWhiteSpace(hintId))
-                return null;
-
-            if (package.TryGetHint(hintId, out HintDefinition hint))
-                return hint;
-
-            return null;
-        }
-
-        private Transform ResolveHintTargetTransform(HintDefinition hint)
-        {
-            if (hint == null)
-                return null;
-
-            if (!string.IsNullOrWhiteSpace(hint.targetId))
-            {
-                foreach (var preview in _spawnedPreviews)
-                {
-                    if (preview == null) continue;
-                    PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
-                    if (info != null && string.Equals(info.TargetId, hint.targetId, StringComparison.OrdinalIgnoreCase))
-                        return preview.transform;
-                }
-            }
-
-            if (!string.IsNullOrWhiteSpace(hint.partId))
-            {
-                foreach (var preview in _spawnedPreviews)
-                {
-                    if (preview == null) continue;
-                    PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
-                    if (info != null && info.MatchesPart(hint.partId))
-                        return preview.transform;
-                }
-            }
-
-            return null;
-        }
         // Snap animation, flash invalid, and their update loops are now
         // owned by PlaceStepHandler (run via router.Update).
 
@@ -1957,11 +1402,11 @@ namespace OSE.UI.Root
 
             // Clear current visual state
             _router?.CleanupAll();
-            ClearPreviews();
+            _previewManager?.ClearPreviews();
             ClearToolActionTargets();
             ClearRequiredPartEmission();
             _connectHandler?.ClearTransientVisuals();
-            _revealedPartIds.Clear();
+            _visualFeedback?.RevealedPartIds.Clear();
             _subassemblyPlacementController?.ResetReplayState();
 
             StepDefinition[] completedSteps = Array.Empty<StepDefinition>();
@@ -2000,8 +1445,7 @@ namespace OSE.UI.Root
                 ClearToolActionTargets();
 
                 // Reset sequential tracking only on genuine new-step transitions.
-                _isSequentialStep = false;
-                _sequentialTargetIndex = 0;
+                _previewManager?.ResetSequentialState();
 
                 // Connect-step markers are transient step visuals and must not leak
                 // into unrelated steps or navigation states.
@@ -2013,7 +1457,7 @@ namespace OSE.UI.Root
                 if (isFailRelated)
                 {
                     // Preview and sequential state are still valid — skip re-spawn.
-                    OseLog.VerboseInfo($"[PartInteraction] Step '{evt.StepId}' re-activated after failed attempt — keeping {_spawnedPreviews.Count} preview(s).");
+                    OseLog.VerboseInfo($"[PartInteraction] Step '{evt.StepId}' re-activated after failed attempt — keeping {_previewManager?.SpawnedPreviews.Count ?? 0} preview(s).");
                 }
                 else
                 {
@@ -2028,11 +1472,11 @@ namespace OSE.UI.Root
                     ApplyStepPartHighlighting(evt.StepId);
                     _subassemblyPlacementController?.RefreshForStep(evt.StepId);
 
-                    SpawnPreviewsForStep(evt.StepId);
+                    _previewManager?.SpawnPreviewsForStep(evt.StepId);
                     if (TryBuildHandlerContext(out var activatedCtx))
                         _router.OnStepActivated(in activatedCtx);
-                    FocusCameraOnStepArea(evt.StepId);
-                    OseLog.VerboseInfo($"[PartInteraction] Step ‘{evt.StepId}’ active: spawned {_spawnedPreviews.Count} preview(s).");
+                    _focusComputer?.FocusCameraOnStepArea(evt.StepId);
+                    OseLog.VerboseInfo($"[PartInteraction] Step ‘{evt.StepId}’ active: spawned {_previewManager?.SpawnedPreviews.Count ?? 0} preview(s).");
                 }
             }
             else if (evt.Current == StepState.Completed)
@@ -2059,7 +1503,7 @@ namespace OSE.UI.Root
 
                 MoveStepPartsToPlayPosition(evt.StepId);
                 _subassemblyPlacementController?.HandleStepCompleted(evt.StepId);
-                ClearPreviews();
+                _previewManager?.ClearPreviews();
                 // Handler clears required-part emission via OnStepCompleted
             }
 
@@ -2109,12 +1553,12 @@ namespace OSE.UI.Root
                 return;
 
             _router?.CleanupAll();
-            ClearPreviews();
+            _previewManager?.ClearPreviews();
             ClearToolActionTargets();
             ClearRequiredPartEmission();
             _connectHandler?.ClearTransientVisuals();
-            _revealedPartIds.Clear();
-            _activeStepPartIds.Clear();
+            _visualFeedback?.RevealedPartIds.Clear();
+            _visualFeedback?.ActiveStepPartIds.Clear();
             ClearPartHoverVisual();
             _subassemblyPlacementController?.ResetReplayState();
 
@@ -2129,271 +1573,21 @@ namespace OSE.UI.Root
             ApplyStepPartHighlighting(activeStepId);
             _subassemblyPlacementController?.RefreshForStep(activeStepId);
 
-            SpawnPreviewsForStep(activeStepId);
+            _previewManager?.SpawnPreviewsForStep(activeStepId);
             if (TryBuildHandlerContext(out var rebuildCtx))
                 _router.OnStepActivated(in rebuildCtx);
 
-            FocusCameraOnStepArea(activeStepId, resetToDefaultView);
+            _focusComputer?.FocusCameraOnStepArea(activeStepId, resetToDefaultView);
             RefreshToolPreviewIndicator();
             RefreshToolActionTargets();
         }
 
         private void FocusCameraOnStepArea(string stepId, bool resetToDefaultView = false)
-        {
-            // When V2 owns interaction, camera framing is handled by StepGuidanceService.
-            if (ExternalControlEnabled)
-                return;
+            => _focusComputer?.FocusCameraOnStepArea(stepId, resetToDefaultView);
 
-            // Debounce: skip if the same step was already framed within 0.5s.
-            // Multiple startup paths (StepStateChanged, SessionRestored, TrySyncStartupState)
-            // all trigger framing for the same step, causing visible re-animation.
-            float now = Time.unscaledTime;
-            if (string.Equals(_lastCameraFramedStepId, stepId, StringComparison.Ordinal)
-                && now - _lastCameraFramedTime < 0.5f)
-            {
-                return;
-            }
 
-            if (string.IsNullOrWhiteSpace(stepId) || !TryResolveStepFocusBounds(stepId, out Bounds focusBounds))
-            {
-                OseLog.Info($"[FocusCamera] Step '{stepId}' — no bounds resolved, skipping.");
-                return;
-            }
 
-            _lastCameraFramedStepId = stepId;
-            _lastCameraFramedTime = now;
 
-            focusBounds.Expand(new Vector3(0.18f, 0.12f, 0.18f));
-            OseLog.Info($"[FocusCamera] Step '{stepId}' — bounds center={focusBounds.center}, size={focusBounds.size}");
-
-            if (resetToDefaultView)
-                TryInvokeCameraMethod("ResetToDefault", Array.Empty<object>());
-
-            if (TryInvokeCameraMethod("FrameBounds", new object[] { focusBounds }, typeof(Bounds)))
-            {
-                OseLog.Info($"[FocusCamera] Step '{stepId}' — FrameBounds applied.");
-                return;
-            }
-
-            OseLog.Info($"[FocusCamera] Step '{stepId}' — FrameBounds failed, falling back to FocusOn.");
-            TryInvokeCameraMethod("FocusOn", new object[] { focusBounds.center, -1f }, typeof(Vector3), typeof(float));
-            TryInvokeCameraMethod("FocusOn", new object[] { focusBounds.center }, typeof(Vector3));
-        }
-
-        private bool TryResolveStepFocusBounds(string stepId, out Bounds bounds)
-        {
-            bounds = default;
-
-            MachinePackageDefinition package = _spawner?.CurrentPackage;
-            if (package == null || !package.TryGetStep(stepId, out StepDefinition step) || step == null)
-                return false;
-
-            Bounds accumulatedBounds = default;
-            bool hasBounds = false;
-            int previewCount = 0, partCount = 0, toolTargetCount = 0, fallbackTargetCount = 0;
-
-            void Encapsulate(Bounds candidate)
-            {
-                if (!hasBounds)
-                {
-                    accumulatedBounds = candidate;
-                    hasBounds = true;
-                    return;
-                }
-
-                accumulatedBounds.Encapsulate(candidate);
-            }
-
-            for (int i = 0; i < _spawnedPreviews.Count; i++)
-            {
-                GameObject preview = _spawnedPreviews[i];
-                if (preview == null)
-                    continue;
-
-                previewCount++;
-                if (TryGetRenderableBounds(preview, out Bounds previewBounds))
-                    Encapsulate(previewBounds);
-                else
-                    Encapsulate(new Bounds(preview.transform.position, Vector3.one * 0.08f));
-            }
-
-            HashSet<string> focusPartIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            CollectStepFocusPartIds(package, step, focusPartIds);
-
-            foreach (string partId in focusPartIds)
-            {
-                GameObject partGo = FindSpawnedPart(partId);
-                if (partGo == null || !partGo.activeInHierarchy)
-                    continue;
-
-                partCount++;
-                if (TryGetRenderableBounds(partGo, out Bounds partBounds))
-                    Encapsulate(partBounds);
-                else
-                    Encapsulate(new Bounds(partGo.transform.position, Vector3.one * 0.08f));
-            }
-
-            if (step.RequiresSubassemblyPlacement &&
-                _subassemblyPlacementController != null &&
-                _subassemblyPlacementController.TryGetProxy(step.requiredSubassemblyId, out GameObject proxy) &&
-                proxy != null)
-            {
-                if (TryGetRenderableBounds(proxy, out Bounds proxyBounds))
-                    Encapsulate(proxyBounds);
-                else
-                    Encapsulate(new Bounds(proxy.transform.position, Vector3.one * 0.18f));
-            }
-
-            if (_useHandler != null && _useHandler.TryGetSpawnedTargetBounds(out Bounds toolTargetBounds))
-            {
-                toolTargetCount++;
-                Encapsulate(toolTargetBounds);
-            }
-
-            // Always include target positions from previewConfig — not just as a fallback.
-            // For Use steps, tool action targets may not be spawned yet and this may be
-            // the only spatial data available.
-            if (step.targetIds != null && step.targetIds.Length > 0)
-            {
-                Transform previewRoot = _setup != null ? _setup.PreviewRoot : null;
-                for (int i = 0; i < step.targetIds.Length; i++)
-                {
-                    TargetPreviewPlacement targetPlacement = _spawner.FindTargetPlacement(step.targetIds[i]);
-                    if (targetPlacement == null)
-                        continue;
-
-                    fallbackTargetCount++;
-                    Vector3 localPos = new Vector3(targetPlacement.position.x, targetPlacement.position.y, targetPlacement.position.z);
-                    Vector3 worldPos = previewRoot != null ? previewRoot.TransformPoint(localPos) : localPos;
-                    Encapsulate(new Bounds(worldPos, Vector3.one * 0.08f));
-                }
-            }
-
-            // Also include requiredToolActions target positions (these are often on
-            // different targets than targetIds, e.g. individual weld/bolt points).
-            if (step.requiredToolActions != null)
-            {
-                Transform previewRoot = _setup != null ? _setup.PreviewRoot : null;
-                for (int i = 0; i < step.requiredToolActions.Length; i++)
-                {
-                    ToolActionDefinition action = step.requiredToolActions[i];
-                    if (action == null || string.IsNullOrWhiteSpace(action.targetId))
-                        continue;
-
-                    TargetPreviewPlacement targetPlacement = _spawner.FindTargetPlacement(action.targetId);
-                    if (targetPlacement == null)
-                        continue;
-
-                    fallbackTargetCount++;
-                    Vector3 localPos = new Vector3(targetPlacement.position.x, targetPlacement.position.y, targetPlacement.position.z);
-                    Vector3 worldPos = previewRoot != null ? previewRoot.TransformPoint(localPos) : localPos;
-                    Encapsulate(new Bounds(worldPos, Vector3.one * 0.08f));
-                }
-            }
-
-            // Enforce a minimum bounds size so the camera gives a "third person"
-            // overview with enough surrounding context visible.
-            if (hasBounds)
-            {
-                const float minSize = 1.0f; // minimum full-size in any axis
-                Vector3 size = accumulatedBounds.size;
-                size.x = Mathf.Max(size.x, minSize);
-                size.y = Mathf.Max(size.y, minSize);
-                size.z = Mathf.Max(size.z, minSize);
-                accumulatedBounds.size = size;
-            }
-
-            OseLog.Info($"[FocusBounds] Step '{stepId}' — previews={previewCount}, parts={partCount}/{focusPartIds.Count}, toolTargets={toolTargetCount}, fallbackTargets={fallbackTargetCount}, hasBounds={hasBounds}");
-
-            if (hasBounds)
-                bounds = accumulatedBounds;
-
-            return hasBounds;
-        }
-
-        private static void CollectStepFocusPartIds(MachinePackageDefinition package, StepDefinition step, HashSet<string> results)
-        {
-            if (package == null || step == null || results == null)
-                return;
-
-            if (!string.IsNullOrWhiteSpace(step.subassemblyId))
-            {
-                StepDefinition[] allSteps = package.GetOrderedSteps();
-                for (int i = 0; i < allSteps.Length; i++)
-                {
-                    StepDefinition candidate = allSteps[i];
-                    if (candidate == null ||
-                        !string.Equals(candidate.subassemblyId, step.subassemblyId, StringComparison.OrdinalIgnoreCase) ||
-                        candidate.requiredPartIds == null)
-                    {
-                        continue;
-                    }
-
-                    for (int p = 0; p < candidate.requiredPartIds.Length; p++)
-                    {
-                        string partId = candidate.requiredPartIds[p];
-                        if (!string.IsNullOrWhiteSpace(partId))
-                            results.Add(partId);
-                    }
-                }
-
-                return;
-            }
-
-            if (step.requiredPartIds == null)
-                return;
-
-            for (int i = 0; i < step.requiredPartIds.Length; i++)
-            {
-                string partId = step.requiredPartIds[i];
-                if (!string.IsNullOrWhiteSpace(partId))
-                    results.Add(partId);
-            }
-        }
-
-        private static bool TryInvokeCameraMethod(string methodName, object[] args, params Type[] signature)
-        {
-            Camera cam = Camera.main;
-            if (cam == null)
-                return false;
-
-            Transform current = cam.transform;
-            while (current != null)
-            {
-                Component[] components = current.GetComponents<Component>();
-                for (int i = 0; i < components.Length; i++)
-                {
-                    Component component = components[i];
-                    if (component == null)
-                        continue;
-
-                    MethodInfo method = component.GetType().GetMethod(
-                        methodName,
-                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
-                        binder: null,
-                        types: signature,
-                        modifiers: null);
-
-                    if (method == null)
-                        continue;
-
-                    try
-                    {
-                        method.Invoke(component, args);
-                        return true;
-                    }
-                    catch (Exception ex)
-                    {
-                        string message = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
-                        OseLog.Warn($"[PartInteraction] Camera method '{methodName}' failed on '{component.GetType().Name}': {message}");
-                    }
-                }
-
-                current = current.parent;
-            }
-
-            return false;
-        }
 
         private bool TryBuildHandlerContext(out StepHandlerContext context)
         {
@@ -2447,7 +1641,7 @@ namespace OSE.UI.Root
             SyncPartGrabInteractivity(partGo, evt.PartId);
             ApplyPartVisualForState(partGo, evt.PartId, evt.Current);
 
-            if (_hoveredPart == partGo && CanApplyHoverVisual(partGo, evt.PartId))
+            if (_visualFeedback?.HoveredPart == partGo && CanApplyHoverVisual(partGo, evt.PartId))
                 ApplyHoveredPartVisual(partGo);
 
             if (evt.Current == PartPlacementState.Selected || evt.Current == PartPlacementState.Inspected)
@@ -2465,682 +1659,78 @@ namespace OSE.UI.Root
         private void RemoveFromRequiredPartIds(string partId) => _placeHandler?.RemoveFromRequiredPartIds(partId);
 
         private void HandleHintRequested(HintRequested evt)
-        {
-            var package = _spawner?.CurrentPackage;
-            if (package == null)
-                return;
+            => _hintManager?.HandleHintRequested(evt);
 
-            if (!package.TryGetStep(evt.StepId, out var step))
-                return;
-
-            HintDefinition hint = ResolveHintForStep(package, step, evt.TotalHintsForStep);
-            if (hint == null && !step.RequiresSubassemblyPlacement)
-                return;
-
-            if (ServiceRegistry.TryGet<IPresentationAdapter>(out var ui) && !ui.IsHintDisplayAllowed)
-                return;
-
-            string hintTitle = hint?.title;
-            string hintMessage = hint?.message;
-            Transform targetTransform = ResolveHintTargetTransform(hint);
-            GameObject sourceProxy = null;
-            GameObject targetPreview = targetTransform != null ? targetTransform.gameObject : null;
-
-            if (TryBuildSubassemblyHintPresentation(
-                    step,
-                    hint,
-                    out string stackTitle,
-                    out string stackMessage,
-                    out Transform stackAnchor,
-                    out sourceProxy,
-                    out GameObject stackPreview))
-            {
-                hintTitle = stackTitle;
-                hintMessage = stackMessage;
-                targetTransform = stackAnchor;
-                targetPreview = stackPreview;
-            }
-
-            if (ui != null)
-                ui.ShowHintContent(hintTitle, hintMessage, hint?.type);
-
-            if (targetTransform != null)
-            {
-                _hintPreview = targetPreview;
-                _hintSourceProxy = sourceProxy;
-                _hintHighlightUntil = Time.time + HintHighlightDuration;
-                if (_hintPreview != null)
-                    MaterialHelper.ApplyPreviewMaterial(_hintPreview);
-
-                if (_hintWorldCanvas == null)
-                    ServiceRegistry.TryGet<HintWorldCanvas>(out _hintWorldCanvas);
-
-                if (_hintWorldCanvas == null)
-                {
-                    var go = new GameObject("Hint World Canvas");
-                    _hintWorldCanvas = go.AddComponent<HintWorldCanvas>();
-                }
-
-                _hintWorldCanvas.ShowHint(hint?.type, hintTitle, hintMessage, targetTransform);
-            }
-        }
 
         // ── Preview parts ──
 
         private void SpawnPreviewsForStep(string stepId)
-        {
-            ClearPreviews();
-            var package = _spawner.CurrentPackage;
-            if (package == null || !package.TryGetStep(stepId, out var step))
-                return;
+            => _previewManager?.SpawnPreviewsForStep(stepId);
 
-            // Pipe connection steps are handled entirely by ConnectStepHandler via the router.
-            if (step.IsPipeConnection)
-                return;
 
-            string[] targetIds = step.targetIds;
-            if (targetIds == null || targetIds.Length == 0)
-                return;
-
-            _isSequentialStep = step.IsSequential;
-            _sequentialTargetIndex = 0;
-
-            if (_isSequentialStep)
-            {
-                // Sequential: spawn only the first target's preview.
-                SpawnPreviewForTarget(package, targetIds[0]);
-            }
-            else
-            {
-                // Parallel (default): spawn all previews at once.
-                foreach (string targetId in targetIds)
-                    SpawnPreviewForTarget(package, targetId);
-            }
-        }
-
-        /// <summary>
-        /// Called after a part is placed on a preview in sequential mode.
-        /// Advances to the next target and spawns its preview/tool-target,
-        /// or returns true if all targets are done.
-        /// </summary>
         private bool AdvanceSequentialTarget()
-        {
-            if (!_isSequentialStep) return false;
+            => _previewManager?.AdvanceSequentialTarget() ?? true;
 
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
-                return true;
 
-            var package = session.Package;
-            StepController stepController = session.AssemblyController?.StepController;
-            if (package == null || stepController == null || !stepController.HasActiveStep)
-                return true;
-
-            StepDefinition step = stepController.CurrentStepDefinition;
-            if (step?.targetIds == null) return true;
-
-            _sequentialTargetIndex++;
-            if (_sequentialTargetIndex >= step.targetIds.Length)
-                return true; // all targets done
-
-            SpawnPreviewForTarget(package, step.targetIds[_sequentialTargetIndex]);
-            RefreshToolActionTargets();
-            return false;
-        }
-
-        /// <summary>
-        /// Returns the target ID that is currently active in sequential mode,
-        /// or null if not in sequential mode or index is out of range.
-        /// </summary>
         private string GetCurrentSequentialTargetId()
-        {
-            if (!_isSequentialStep) return null;
+            => _previewManager?.GetCurrentSequentialTargetId();
 
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
-                return null;
 
-            StepDefinition step = session.AssemblyController?.StepController?.CurrentStepDefinition;
-            if (step?.targetIds == null || _sequentialTargetIndex >= step.targetIds.Length)
-                return null;
 
-            return step.targetIds[_sequentialTargetIndex];
-        }
 
-        private void SpawnPreviewForTarget(MachinePackageDefinition package, string targetId)
-        {
-            if (string.IsNullOrEmpty(targetId)) { OseLog.Warn("[PartInteraction] SpawnPreviewForTarget: targetId is null/empty."); return; }
-            if (!package.TryGetTarget(targetId, out var target)) { OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: target '{targetId}' not found in package."); return; }
 
-            if (!string.IsNullOrWhiteSpace(target.associatedSubassemblyId))
-            {
-                SpawnPreviewForSubassemblyTarget(package, targetId, target);
-                return;
-            }
 
-            string associatedPartId = target.associatedPartId;
-            if (string.IsNullOrEmpty(associatedPartId)) { OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: target '{targetId}' has no associatedPartId."); return; }
-            if (!package.TryGetPart(associatedPartId, out var part)) { OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: part '{associatedPartId}' not found in package."); return; }
 
-            // Skip preview for parts already placed or completed from a prior step.
-            if (ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
-            {
-                var partState = partController.GetPartState(associatedPartId);
-                if (partState == PartPlacementState.Completed ||
-                    partState == PartPlacementState.PlacedVirtually)
-                {
-                    OseLog.VerboseInfo($"[PartInteraction] SpawnPreviewForTarget: skipping preview for '{associatedPartId}' — already {partState}.");
-                    return;
-                }
-                OseLog.VerboseInfo($"[PartInteraction] SpawnPreviewForTarget: part '{associatedPartId}' state={partState}, proceeding with preview.");
-            }
 
-            Transform previewRoot = _setup != null ? _setup.PreviewRoot : null;
 
-            TargetPreviewPlacement tp = _spawner.FindTargetPlacement(targetId);
-            PartPreviewPlacement pp = _spawner.FindPartPlacement(associatedPartId);
 
-            // --- Spline parts: create a procedural preview tube instead of loading a GLB ---
-            if (SplinePartFactory.HasSplineData(pp))
-            {
-                GameObject splinePreview = SplinePartFactory.CreatePreview(associatedPartId, pp.splinePath, previewRoot);
-                if (splinePreview == null)
-                {
-                    OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: failed to create spline preview for '{associatedPartId}'.");
-                    return;
-                }
 
-                PlacementPreviewInfo splineInfo = splinePreview.AddComponent<PlacementPreviewInfo>();
-                splineInfo.TargetId = targetId;
-                splineInfo.PartId = associatedPartId;
 
-                // Spline preview sits at play position (0,0,0) / scale (1,1,1) — knots define the routing
-                splinePreview.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
-                splinePreview.transform.localScale = Vector3.one;
-
-                // Convert existing colliders to triggers for click-to-place
-                foreach (var col in splinePreview.GetComponentsInChildren<Collider>(true))
-                    col.isTrigger = true;
-
-                MaterialHelper.ApplyPreviewMaterial(splinePreview);
-                _spawnedPreviews.Add(splinePreview);
-                OseLog.Info($"[PartInteraction] Spline preview spawned for '{associatedPartId}' at target '{targetId}'. Total previews: {_spawnedPreviews.Count}");
-                return;
-            }
-
-            // --- Standard GLB-based preview ---
-            string previewRef = part.assetRef;
-            if (string.IsNullOrEmpty(previewRef)) { OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: part '{associatedPartId}' has no assetRef."); return; }
-
-            Vector3 previewPos;
-            Quaternion previewRot;
-            Vector3 previewScale;
-
-            // playPosition is the single source of truth for where a part ends up
-            // when placed. Preview must appear at the same location so there is no
-            // discrepancy between the preview and the actual placement.
-            // TargetPreviewPlacement is only used as fallback for targets without
-            // an associated part placement (tool-action targets, checkpoints, etc.).
-            if (pp != null)
-            {
-                previewPos = new Vector3(pp.playPosition.x, pp.playPosition.y, pp.playPosition.z);
-                previewRot = !pp.playRotation.IsIdentity
-                    ? new Quaternion(pp.playRotation.x, pp.playRotation.y, pp.playRotation.z, pp.playRotation.w)
-                    : Quaternion.identity;
-            }
-            else if (tp != null)
-            {
-                previewPos = new Vector3(tp.position.x, tp.position.y, tp.position.z);
-                previewRot = !tp.rotation.IsIdentity
-                    ? new Quaternion(tp.rotation.x, tp.rotation.y, tp.rotation.z, tp.rotation.w)
-                    : Quaternion.identity;
-            }
-            else
-            {
-                previewPos = Vector3.zero;
-                previewRot = Quaternion.identity;
-            }
-
-            // Preview should mirror the live source part dimensions exactly.
-            GameObject sourcePart = FindSpawnedPart(associatedPartId);
-            if (sourcePart != null)
-            {
-                previewScale = sourcePart.transform.localScale;
-            }
-            else if (pp != null)
-            {
-                Vector3 authoredStartScale = new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z);
-                Vector3 authoredPlayScale = new Vector3(pp.playScale.x, pp.playScale.y, pp.playScale.z);
-                previewScale = authoredStartScale.sqrMagnitude > 0f
-                    ? authoredStartScale
-                    : (authoredPlayScale.sqrMagnitude > 0f ? authoredPlayScale : Vector3.one);
-            }
-            else if (tp != null)
-            {
-                previewScale = new Vector3(tp.scale.x, tp.scale.y, tp.scale.z);
-            }
-            else
-            {
-                previewScale = Vector3.one * 0.5f;
-            }
-
-            GameObject preview = _spawner.TryLoadPackageAsset(previewRef);
-            if (preview == null)
-            {
-                preview = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                if (previewRoot != null)
-                    preview.transform.SetParent(previewRoot, false);
-            }
-
-            preview.name = $"Preview_{associatedPartId}";
-            PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
-            if (info == null)
-                info = preview.AddComponent<PlacementPreviewInfo>();
-            info.TargetId = targetId;
-            info.PartId = associatedPartId;
-            preview.transform.SetLocalPositionAndRotation(previewPos, previewRot);
-            preview.transform.localScale = previewScale;
-
-            foreach (var col in preview.GetComponentsInChildren<Collider>(true))
-                Destroy(col);
-
-            // Fit a BoxCollider to the combined renderer bounds so the trigger
-            // is accurate to the mesh shape rather than an oversized sphere.
-            var previewRenderers = preview.GetComponentsInChildren<Renderer>(true);
-            var clickCollider = preview.AddComponent<BoxCollider>();
-            clickCollider.isTrigger = true;
-            if (previewRenderers.Length > 0)
-            {
-                Bounds combined = previewRenderers[0].bounds;
-                for (int ri = 1; ri < previewRenderers.Length; ri++)
-                    combined.Encapsulate(previewRenderers[ri].bounds);
-                Vector3 lossyScale = preview.transform.lossyScale;
-                clickCollider.center = preview.transform.InverseTransformPoint(combined.center);
-                clickCollider.size = new Vector3(
-                    lossyScale.x != 0f ? combined.size.x / lossyScale.x : 1f,
-                    lossyScale.y != 0f ? combined.size.y / lossyScale.y : 1f,
-                    lossyScale.z != 0f ? combined.size.z / lossyScale.z : 1f);
-            }
-
-            MaterialHelper.ApplyPreviewMaterial(preview);
-            _spawnedPreviews.Add(preview);
-            OseLog.Info($"[PartInteraction] Preview spawned for '{associatedPartId}' at target '{targetId}' pos={previewPos} scale={previewScale}. Total previews: {_spawnedPreviews.Count}");
-        }
-
-        private void SpawnPreviewForSubassemblyTarget(MachinePackageDefinition package, string targetId, TargetDefinition target)
-        {
-            string subassemblyId = target.associatedSubassemblyId;
-            if (string.IsNullOrWhiteSpace(subassemblyId))
-                return;
-
-            if (_subassemblyPlacementController == null || !_subassemblyPlacementController.IsSubassemblyReady(subassemblyId))
-            {
-                OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: subassembly '{subassemblyId}' is not ready for placement.");
-                return;
-            }
-
-            if (!package.TryGetSubassembly(subassemblyId, out SubassemblyDefinition subassembly) || subassembly == null)
-            {
-                OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: subassembly '{subassemblyId}' not found in package.");
-                return;
-            }
-
-            SubassemblyPreviewPlacement frame = _spawner.FindSubassemblyPlacement(subassemblyId);
-            if (frame == null)
-            {
-                OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: subassembly '{subassemblyId}' has no authored preview frame.");
-                return;
-            }
-
-            Transform previewRoot = _setup != null ? _setup.PreviewRoot : null;
-            GameObject subPreviewRoot = new GameObject($"Preview_{subassemblyId}");
-            if (previewRoot != null)
-                subPreviewRoot.transform.SetParent(previewRoot, false);
-
-            if (_subassemblyPlacementController.TryResolveTargetPose(targetId, out Vector3 previewPos, out Quaternion previewRot, out Vector3 previewScale))
-            {
-                subPreviewRoot.transform.SetLocalPositionAndRotation(previewPos, previewRot);
-                subPreviewRoot.transform.localScale = previewScale;
-            }
-            else
-            {
-                subPreviewRoot.transform.SetLocalPositionAndRotation(
-                    PreviewToVector3(frame.position),
-                    PreviewToQuaternion(frame.rotation));
-                subPreviewRoot.transform.localScale = PreviewSanitizeScale(PreviewToVector3(frame.scale), Vector3.one);
-            }
-
-            Vector3 framePos = PreviewToVector3(frame.position);
-            Quaternion frameRot = PreviewToQuaternion(frame.rotation);
-            Vector3 frameScale = PreviewSanitizeScale(PreviewToVector3(frame.scale), Vector3.one);
-            IntegratedSubassemblyPreviewPlacement integratedPlacement = _spawner.FindIntegratedSubassemblyPlacement(subassemblyId, targetId);
-            ConstrainedSubassemblyFitPreviewPlacement fitPlacement = _spawner.FindConstrainedSubassemblyFitPlacement(subassemblyId, targetId);
-            Vector3 fitAxisLocal = fitPlacement != null ? PreviewToVector3(fitPlacement.fitAxisLocal) : Vector3.zero;
-            if (fitAxisLocal.sqrMagnitude > 0.000001f)
-                fitAxisLocal.Normalize();
-            float fitTravel = fitPlacement != null
-                ? Mathf.Clamp(
-                    fitPlacement.completionTravel,
-                    Mathf.Min(fitPlacement.minTravel, fitPlacement.maxTravel),
-                    Mathf.Max(fitPlacement.minTravel, fitPlacement.maxTravel))
-                : 0f;
-            bool isAxisFitPreview = fitPlacement?.drivenPartIds != null && fitPlacement.drivenPartIds.Length > 0;
-            HashSet<string> fitDrivenPartIds = isAxisFitPreview
-                ? new HashSet<string>(fitPlacement.drivenPartIds, StringComparer.OrdinalIgnoreCase)
-                : null;
-            var fitPreviewChildren = isAxisFitPreview ? new List<Transform>() : null;
-
-            string[] memberIds = subassembly.partIds ?? Array.Empty<string>();
-            for (int i = 0; i < memberIds.Length; i++)
-            {
-                string memberId = memberIds[i];
-                if (string.IsNullOrWhiteSpace(memberId) || !package.TryGetPart(memberId, out PartDefinition part))
-                    continue;
-                if (isAxisFitPreview && !fitDrivenPartIds.Contains(memberId))
-                    continue;
-
-                PartPreviewPlacement placement = _spawner.FindPartPlacement(memberId);
-                if (placement == null)
-                    continue;
-
-                GameObject childPreview = _spawner.TryLoadPackageAsset(part.assetRef);
-                if (childPreview == null)
-                {
-                    OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: skipping subassembly preview member '{memberId}' for target '{targetId}' because asset '{part.assetRef}' could not be loaded.");
-                    continue;
-                }
-
-                childPreview.transform.SetParent(subPreviewRoot.transform, false);
-
-                Vector3 memberLocalPos;
-                Quaternion memberLocalRot;
-                Vector3 memberLocalScale;
-
-                if (TryGetIntegratedPreviewMemberPlacement(integratedPlacement, memberId, out Vector3 integratedPos, out Quaternion integratedRot, out Vector3 integratedScale))
-                {
-                    memberLocalPos = PreviewInverseTransformPoint(
-                        subPreviewRoot.transform.localPosition,
-                        subPreviewRoot.transform.localRotation,
-                        PreviewSanitizeScale(subPreviewRoot.transform.localScale, Vector3.one),
-                        integratedPos);
-                    memberLocalRot = Quaternion.Inverse(subPreviewRoot.transform.localRotation) * integratedRot;
-                    memberLocalScale = PreviewDivideScale(integratedScale, PreviewSanitizeScale(subPreviewRoot.transform.localScale, Vector3.one));
-                }
-                else
-                {
-                    Vector3 memberPlayPos = new Vector3(placement.playPosition.x, placement.playPosition.y, placement.playPosition.z);
-                    Quaternion memberPlayRot = !placement.playRotation.IsIdentity
-                        ? new Quaternion(placement.playRotation.x, placement.playRotation.y, placement.playRotation.z, placement.playRotation.w)
-                        : Quaternion.identity;
-                    Vector3 memberPlayScale = PreviewSanitizeScale(new Vector3(placement.playScale.x, placement.playScale.y, placement.playScale.z), Vector3.one);
-
-                    memberLocalPos = PreviewInverseTransformPoint(framePos, frameRot, frameScale, memberPlayPos);
-                    memberLocalRot = Quaternion.Inverse(frameRot) * memberPlayRot;
-                    memberLocalScale = PreviewDivideScale(memberPlayScale, frameScale);
-                }
-
-                if (fitPlacement?.drivenPartIds != null &&
-                    Array.IndexOf(fitPlacement.drivenPartIds, memberId) >= 0)
-                {
-                    memberLocalPos += fitAxisLocal * (fitTravel - fitPlacement.minTravel);
-                }
-
-                childPreview.transform.SetLocalPositionAndRotation(memberLocalPos, memberLocalRot);
-                childPreview.transform.localScale = memberLocalScale;
-                if (fitPreviewChildren != null)
-                    fitPreviewChildren.Add(childPreview.transform);
-
-                foreach (Collider collider in childPreview.GetComponentsInChildren<Collider>(true))
-                    Destroy(collider);
-            }
-
-            if (isAxisFitPreview && fitPreviewChildren != null && fitPreviewChildren.Count > 0)
-            {
-                Vector3 anchorLocal = Vector3.zero;
-                for (int i = 0; i < fitPreviewChildren.Count; i++)
-                    anchorLocal += fitPreviewChildren[i].localPosition;
-                anchorLocal /= fitPreviewChildren.Count;
-
-                subPreviewRoot.transform.localPosition = PreviewTransformPoint(
-                    subPreviewRoot.transform.localPosition,
-                    subPreviewRoot.transform.localRotation,
-                    PreviewSanitizeScale(subPreviewRoot.transform.localScale, Vector3.one),
-                    anchorLocal);
-
-                for (int i = 0; i < fitPreviewChildren.Count; i++)
-                    fitPreviewChildren[i].localPosition -= anchorLocal;
-            }
-
-            PlacementPreviewInfo info = subPreviewRoot.AddComponent<PlacementPreviewInfo>();
-            info.TargetId = targetId;
-            info.SubassemblyId = subassemblyId;
-
-            ApplyPreviewMaterialClickCollider(subPreviewRoot, minAxisSize: isAxisFitPreview ? 0.09f : 0.18f, paddingWorld: isAxisFitPreview ? 0.03f : 0.08f);
-            MaterialHelper.ApplyPreviewMaterial(subPreviewRoot);
-            _spawnedPreviews.Add(subPreviewRoot);
-            OseLog.Info($"[PartInteraction] Composite preview spawned for subassembly '{subassemblyId}' at target '{targetId}'. Total previews: {_spawnedPreviews.Count}");
-        }
-
-        private static bool TryGetIntegratedPreviewMemberPlacement(
-            IntegratedSubassemblyPreviewPlacement integratedPlacement,
-            string partId,
-            out Vector3 position,
-            out Quaternion rotation,
-            out Vector3 scale)
-        {
-            position = Vector3.zero;
-            rotation = Quaternion.identity;
-            scale = Vector3.one;
-
-            if (integratedPlacement?.memberPlacements == null || string.IsNullOrWhiteSpace(partId))
-                return false;
-
-            for (int i = 0; i < integratedPlacement.memberPlacements.Length; i++)
-            {
-                IntegratedMemberPreviewPlacement member = integratedPlacement.memberPlacements[i];
-                if (member == null || !string.Equals(member.partId, partId, StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                position = PreviewToVector3(member.position);
-                rotation = PreviewToQuaternion(member.rotation);
-                scale = PreviewSanitizeScale(PreviewToVector3(member.scale), Vector3.one);
-                return true;
-            }
-
-            return false;
-        }
-
-        private static void ApplyPreviewMaterialClickCollider(GameObject preview, float minAxisSize = 0.06f, float paddingWorld = 0f)
-        {
-            if (preview == null)
-                return;
-
-            Renderer[] previewRenderers = preview.GetComponentsInChildren<Renderer>(true);
-            BoxCollider clickCollider = preview.GetComponent<BoxCollider>();
-            if (clickCollider == null)
-                clickCollider = preview.AddComponent<BoxCollider>();
-
-            clickCollider.isTrigger = true;
-            if (previewRenderers.Length <= 0)
-                return;
-
-            Bounds combined = previewRenderers[0].bounds;
-            for (int ri = 1; ri < previewRenderers.Length; ri++)
-                combined.Encapsulate(previewRenderers[ri].bounds);
-
-            if (paddingWorld > 0f)
-                combined.Expand(paddingWorld);
-
-            Vector3 lossyScale = preview.transform.lossyScale;
-            clickCollider.center = preview.transform.InverseTransformPoint(combined.center);
-            Vector3 localSize = new Vector3(
-                lossyScale.x != 0f ? combined.size.x / lossyScale.x : 1f,
-                lossyScale.y != 0f ? combined.size.y / lossyScale.y : 1f,
-                lossyScale.z != 0f ? combined.size.z / lossyScale.z : 1f);
-            clickCollider.size = new Vector3(
-                Mathf.Max(localSize.x, minAxisSize),
-                Mathf.Max(localSize.y, minAxisSize),
-                Mathf.Max(localSize.z, minAxisSize));
-        }
-
-        private static Vector3 PreviewToVector3(SceneFloat3 value) => new Vector3(value.x, value.y, value.z);
-
-        private static Quaternion PreviewToQuaternion(SceneQuaternion value)
-        {
-            return !value.IsIdentity
-                ? new Quaternion(value.x, value.y, value.z, value.w)
-                : Quaternion.identity;
-        }
-
-        private static Vector3 PreviewSanitizeScale(Vector3 value, Vector3 fallback)
-        {
-            return new Vector3(
-                Mathf.Approximately(value.x, 0f) ? fallback.x : value.x,
-                Mathf.Approximately(value.y, 0f) ? fallback.y : value.y,
-                Mathf.Approximately(value.z, 0f) ? fallback.z : value.z);
-        }
-
-        private static Vector3 PreviewDivideScale(Vector3 value, Vector3 divisor)
-        {
-            Vector3 safe = PreviewSanitizeScale(divisor, Vector3.one);
-            return new Vector3(value.x / safe.x, value.y / safe.y, value.z / safe.z);
-        }
-
-        private static Vector3 PreviewMultiplyScale(Vector3 left, Vector3 right)
-        {
-            return new Vector3(left.x * right.x, left.y * right.y, left.z * right.z);
-        }
-
-        private static Vector3 PreviewTransformPoint(Vector3 origin, Quaternion rotation, Vector3 scale, Vector3 localPoint)
-        {
-            return origin + rotation * PreviewMultiplyScale(scale, localPoint);
-        }
-
-        private static Vector3 PreviewInverseTransformPoint(Vector3 origin, Quaternion rotation, Vector3 scale, Vector3 point)
-        {
-            Vector3 translated = Quaternion.Inverse(rotation) * (point - origin);
-            return PreviewDivideScale(translated, scale);
-        }
 
         private void ClearPreviews()
-        {
-            foreach (var preview in _spawnedPreviews)
-            {
-                if (preview == null) continue;
-                Destroy(preview);
-            }
-            _spawnedPreviews.Clear();
-        }
+            => _previewManager?.ClearPreviews();
+
 
         private void RefreshToolPreviewIndicator()
-            => _ = RefreshToolPreviewIndicatorAsync();
-
-        private async System.Threading.Tasks.Task RefreshToolPreviewIndicatorAsync()
-        {
-            await CursorManager.RefreshAsync(_spawner, _setup, _hintPreview == CursorManager.ToolPreview, ClearHintHighlight);
-
-            // In XR mode, make the tool preview grabbable with toolPose-driven attach point
-            if (CursorManager.ToolPreview != null && UnityEngine.XR.XRSettings.isDeviceActive)
-            {
-                bool isControllerMode = !IsHandTrackingActive();
-                CursorManager.ConfigureXRGrab(isControllerMode);
-            }
-        }
-
-        private static bool IsHandTrackingActive()
-        {
-            ServiceRegistry.TryGet<OSE.Interaction.XRRigModeSwitcher>(out var switcher);
-            return switcher != null && switcher.UsingHands;
-        }
+            => _toolAction?.RefreshToolPreviewIndicator();
 
         private void UpdateToolPreviewIndicatorPosition()
         {
             if (!TryGetPointerPosition(out Vector2 screenPos))
                 screenPos = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
-            CursorManager.UpdatePosition(_isDragging, screenPos);
+            _toolAction?.UpdateToolPreviewIndicatorPosition(screenPos);
         }
-
-
 
         private void ClearToolPreviewIndicator()
-            => CursorManager.Clear(_hintPreview == CursorManager.ToolPreview, ClearHintHighlight);
+            => _toolAction?.ClearToolPreviewIndicator();
 
         private bool IsToolModeLockedForParts()
-        {
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
-                return false;
-
-            if (session?.ToolController == null)
-                return false;
-
-            if (!session.ToolController.TryGetPrimaryActionSnapshot(out ToolRuntimeController.ToolActionSnapshot snapshot))
-                return false;
-
-            if (!snapshot.IsConfigured || snapshot.IsCompleted)
-                return false;
-
-            // Mixed placement+tool steps: don't lock parts until all placements are done.
-            if (ServiceRegistry.TryGet<PartRuntimeController>(out var partController) &&
-                !partController.AreActiveStepRequiredPartsPlaced())
-            {
-                return false;
-            }
-
-            return true;
-        }
+            => _toolAction?.IsToolModeLockedForParts() ?? false;
 
         private bool TryHandleToolActionPointerDown(Vector2 screenPos)
-        {
-            if (!IsToolModeLockedForParts())
-                return false;
-
-            // Don't block pipe_connection steps — port sphere clicks need to pass through.
-            if (_connectHandler != null && _connectHandler.HasActivePortSpheres)
-                return false;
-
-            // Block pointer-down from reaching part selection/drag when tool mode is active.
-            // The actual tool action execution is handled exclusively by the canonical action
-            // path (HandleConfirmOrToolPrimaryAction) to prevent double-execution per click.
-            return true;
-        }
+            => _toolAction?.TryHandleToolActionPointerDown(screenPos) ?? false;
 
         private void ClearToolActionTargets()
-            => _useHandler?.ClearToolActionTargets();
+            => _toolAction?.ClearToolActionTargets();
 
-        private bool TryGetToolActionTargetAtScreen(Vector2 screenPos, out ToolActionTargetInfo targetInfo)
-        {
-            targetInfo = null;
-            return _useHandler != null && _useHandler.TryGetToolActionTargetAtScreen(screenPos, out targetInfo);
-        }
-
-        private bool TryGetToolActionTargetForExecution(Vector2 screenPos, out ToolActionTargetInfo targetInfo)
-        {
-            targetInfo = null;
-            return _useHandler != null && _useHandler.TryResolveToolActionTargetForExecution(screenPos, out targetInfo);
-        }
-
-        /// <summary>
-        /// Returns the world position of the nearest tool action target within screen proximity.
-        /// Called by V2 orchestrator (via IPartActionBridge) to focus the camera
-        /// on a pulsating sphere even when no tool is equipped.
-        /// </summary>
         public bool TryGetNearestToolTargetWorldPos(Vector2 screenPos, out Vector3 worldPos)
         {
+            if (_toolAction != null) return _toolAction.TryGetNearestToolTargetWorldPos(screenPos, out worldPos);
             worldPos = Vector3.zero;
-            return _useHandler != null && _useHandler.TryGetNearestToolTargetWorldPos(screenPos, out worldPos);
+            return false;
         }
 
         public Vector3[] GetActiveToolTargetPositions()
-        {
-            return _useHandler?.GetActiveToolTargetPositions() ?? System.Array.Empty<Vector3>();
-        }
+            => _toolAction?.GetActiveToolTargetPositions() ?? Array.Empty<Vector3>();
 
         // TryGetPreviewTargetPose is now owned by PlaceStepHandler.
 
         private void RemovePreviewForPart(string partId)
         {
             // Clear hint highlight if the hint preview is being removed
-            if (_hintPreview != null && !string.IsNullOrEmpty(partId))
+            if (_visualFeedback?.HintPreview != null && !string.IsNullOrEmpty(partId))
             {
-                PlacementPreviewInfo hInfo = _hintPreview.GetComponent<PlacementPreviewInfo>();
+                PlacementPreviewInfo hInfo = _visualFeedback.HintPreview.GetComponent<PlacementPreviewInfo>();
                 if (hInfo != null && hInfo.MatchesPart(partId))
                     ClearHintHighlight();
             }
@@ -3149,108 +1739,27 @@ namespace OSE.UI.Root
 
         // ── Step completion: move parts to assembled position ──
 
-        private void MoveStepPartsToPlayPosition(string stepId)
-        {
-            var package = _spawner.CurrentPackage;
-            if (package == null || !package.TryGetStep(stepId, out var step))
-                return;
+        private void MoveStepPartsToPlayPosition(string stepId) => _visualFeedback?.MoveStepPartsToPlayPosition(stepId);
 
-            string[] partIds = step.requiredPartIds;
-            if (partIds == null) return;
-
-            foreach (string partId in partIds)
-                MovePartToPlayPosition(partId);
-        }
 
         /// <summary>
         /// Moves parts from all given steps to their play positions and applies
         /// completed visuals. Used by session restore to position parts in bulk
         /// without replaying step events.
         /// </summary>
-        public void RestoreCompletedStepParts(StepDefinition[] steps)
-        {
-            var package = _spawner?.CurrentPackage;
-            if (package == null || steps == null) return;
+        public void RestoreCompletedStepParts(StepDefinition[] steps) => _visualFeedback?.RestoreCompletedStepParts(steps);
 
-            for (int s = 0; s < steps.Length; s++)
-            {
-                string[] partIds = steps[s].requiredPartIds;
-                if (partIds == null) continue;
 
-                for (int p = 0; p < partIds.Length; p++)
-                {
-                    string partId = partIds[p];
-                    if (string.IsNullOrEmpty(partId)) continue;
+        private void MovePartToPlayPosition(string partId) => _visualFeedback?.MovePartToPlayPosition(partId);
 
-                    MovePartToPlayPosition(partId);
-
-                    GameObject partGo = FindSpawnedPart(partId);
-                    if (partGo != null)
-                    {
-                        // Ensure the part is visible — HideNonIntroducedParts may
-                        // have hidden it before the restore path ran.
-                        partGo.SetActive(true);
-                    }
-
-                    _partStates[partId] = PartPlacementState.Completed;
-                    SyncPartGrabInteractivity(partGo, partId);
-                    ApplyPartVisualForState(partGo, partId, PartPlacementState.Completed);
-                    _revealedPartIds.Add(partId);
-                }
-            }
-        }
-
-        private void MovePartToPlayPosition(string partId)
-        {
-            if (string.IsNullOrEmpty(partId)) return;
-
-            PartPreviewPlacement pp = _spawner.FindPartPlacement(partId);
-            if (pp == null) return;
-
-            GameObject partGo = FindSpawnedPart(partId);
-            if (partGo == null) return;
-
-            Vector3    pPos   = new Vector3(pp.playPosition.x, pp.playPosition.y, pp.playPosition.z);
-            Vector3    pScale = new Vector3(pp.playScale.x, pp.playScale.y, pp.playScale.z);
-            Quaternion pRot   = !pp.playRotation.IsIdentity
-                ? new Quaternion(pp.playRotation.x, pp.playRotation.y, pp.playRotation.z, pp.playRotation.w)
-                : Quaternion.identity;
-
-            partGo.transform.SetLocalPositionAndRotation(pPos, pRot);
-            partGo.transform.localScale = pScale;
-        }
 
         /// <summary>
         /// Reverts parts from steps at or after <paramref name="fromStepIndex"/> back
         /// to their start positions with available visuals, undoing any play-position
         /// placement. Called during backward navigation so future parts visually rewind.
         /// </summary>
-        private void RevertFutureStepParts(StepDefinition[] allSteps, int fromStepIndex)
-        {
-            var package = _spawner?.CurrentPackage;
-            if (package == null || allSteps == null) return;
+        private void RevertFutureStepParts(StepDefinition[] allSteps, int fromStepIndex) => _visualFeedback?.RevertFutureStepParts(allSteps, fromStepIndex);
 
-            for (int s = fromStepIndex; s < allSteps.Length; s++)
-            {
-                string[] partIds = allSteps[s].requiredPartIds;
-                if (partIds == null) continue;
-
-                for (int p = 0; p < partIds.Length; p++)
-                {
-                    string partId = partIds[p];
-                    if (string.IsNullOrEmpty(partId)) continue;
-
-                    GameObject partGo = FindSpawnedPart(partId);
-                    if (partGo == null) continue;
-
-                    // Hide future parts instead of repositioning — they'll be revealed
-                    // when their step activates via RevealStepParts.
-                    partGo.SetActive(false);
-                    _revealedPartIds.Remove(partId);
-                    _partStates[partId] = PartPlacementState.NotIntroduced;
-                }
-            }
-        }
 
         // ── Context menu: place selected part at target (debug shortcut) ──
 
@@ -3317,7 +1826,7 @@ namespace OSE.UI.Root
 
             RemovePreviewForPart(selectedId);
 
-            if (_isSequentialStep)
+            if (_previewManager != null && _previewManager.IsSequentialStep)
             {
                 if (AdvanceSequentialTarget())
                     session.AssemblyController?.StepController?.CompleteStep(session.GetElapsedSeconds());
@@ -3381,129 +1890,39 @@ namespace OSE.UI.Root
         // ── Helpers ──
 
         private void BeginDragTracking(GameObject partGo)
-        {
-            if (partGo == null)
-                return;
+            => _drag?.BeginDragTracking(partGo, ResolveSelectionId(partGo));
 
-            _isDragging = false;
-            _draggedPart = partGo;
-            _draggedPartId = ResolveSelectionId(partGo);
-            _dragScreenStart = _pointerDownScreenPos;
-            _dragCamera = _pointerDownCamera != null ? _pointerDownCamera : Camera.main;
-            _dragRayDistance = ResolveInitialDragRayDistance(_dragCamera, _dragScreenStart, partGo.transform.position);
-            _lastPinchDistance = -1f;
-            _lastPointerY = _pointerDownScreenPos.y;
-            _isDepthAdjustMode = false;
-            _depthAdjustScreenAnchor = _pointerDownScreenPos;
-        }
 
         private void ResetDragState()
         {
-            _pointerDown = false;
-            _isDragging = false;
-            _draggedPart = null;
-            _draggedPartId = null;
-            _dragCamera = null;
-            _dragRayDistance = 0f;
-            _lastPinchDistance = -1f;
-            _isDepthAdjustMode = false;
-            _depthAdjustScreenAnchor = Vector2.zero;
-            _pendingSelectPart = null;
-            _pointerDownCamera = null;
+            _drag?.Reset();
             ClearPreviewHighlight();
         }
 
+
         private void BeginXRGrabTracking(GameObject partGo)
-        {
-            if (partGo == null)
-                return;
+            => _drag?.BeginXRGrabTracking(partGo, ResolveSelectionId(partGo));
 
-            _isDragging = true;
-            _draggedPart = partGo;
-            _draggedPartId = ResolveSelectionId(partGo);
-            _dragCamera = Camera.main;
-            if (_dragCamera != null && TryGetPointerPosition(out Vector2 pointerPos))
-                _dragRayDistance = ResolveInitialDragRayDistance(_dragCamera, pointerPos, partGo.transform.position);
-            else if (_dragCamera != null)
-                _dragRayDistance = Mathf.Max(MinDragRayDistance, Vector3.Distance(_dragCamera.transform.position, partGo.transform.position));
-            else
-                _dragRayDistance = MinDragRayDistance;
-            _lastPinchDistance = -1f;
-            _lastPointerY = 0f;
-            _isDepthAdjustMode = false;
-            _depthAdjustScreenAnchor = Vector2.zero;
-        }
 
-        private static float ResolveInitialDragRayDistance(Camera cam, Vector2 screenPos, Vector3 worldPos)
-        {
-            if (cam == null)
-                return MinDragRayDistance;
-
-            Ray ray = cam.ScreenPointToRay(screenPos);
-            float projectedDistance = Vector3.Dot(worldPos - ray.origin, ray.direction.normalized);
-            if (projectedDistance > MinDragRayDistance)
-                return projectedDistance;
-
-            return Mathf.Max(MinDragRayDistance, Vector3.Distance(ray.origin, worldPos));
-        }
 
         private void UpdateXRPreviewProximity()
         {
-            if (_pointerDown)
+            if (_drag.PointerDown)
                 return;
 
-            if (_isDragging && _draggedPart != null)
+            if (_drag.IsDragging && _drag.DraggedPart != null)
                 UpdatePreviewProximity();
         }
 
-        private void UpdatePartHoverVisual()
-        {
-            if (!Application.isPlaying || _spawner == null || _isDragging || IsToolModeLockedForParts())
-            {
-                ClearPartHoverVisual();
-                return;
-            }
 
-            GameObject hoveredPart = GetHoveredPartFromXri();
-            if (hoveredPart == null)
-                hoveredPart = GetHoveredPartFromMouse();
+        private void UpdatePartHoverVisual() => _visualFeedback?.UpdatePartHoverVisual();
 
-            if (hoveredPart == _hoveredPart)
-            {
-                if (_hoveredPart != null && CanApplyHoverVisual(_hoveredPart, _hoveredPart.name))
-                    ApplyHoveredPartVisual(_hoveredPart);
-                return;
-            }
 
-            ClearPartHoverVisual();
+        private void UpdateSelectedSubassemblyVisual() => _visualFeedback?.UpdateSelectedSubassemblyVisual();
 
-            if (hoveredPart == null || !CanApplyHoverVisual(hoveredPart, hoveredPart.name))
-                return;
 
-            _hoveredPart = hoveredPart;
-            ApplyHoveredPartVisual(_hoveredPart);
-        }
+        private void UpdatePointerDragSelectionVisual() => _visualFeedback?.UpdatePointerDragSelectionVisual();
 
-        private void UpdateSelectedSubassemblyVisual()
-        {
-            if (!Application.isPlaying || _selectionService == null)
-                return;
-
-            GameObject selected = NormalizeSelectablePlacementTarget(_selectionService.CurrentSelection);
-            if (!IsSubassemblyProxy(selected))
-                return;
-
-            ApplySelectedPartVisual(selected);
-        }
-
-        private void UpdatePointerDragSelectionVisual()
-        {
-            // Keep dragged mouse/touch part highlighted until release.
-            if (!_pointerDown || !_isDragging || _draggedPart == null)
-                return;
-
-            ApplySelectedPartVisual(_draggedPart);
-        }
 
         private GameObject GetHoveredPartFromXri()
         {
@@ -3522,60 +1941,6 @@ namespace OSE.UI.Root
             return null;
         }
 
-        private bool TryBuildSubassemblyHintPresentation(
-            StepDefinition step,
-            HintDefinition authoredHint,
-            out string title,
-            out string message,
-            out Transform worldAnchor,
-            out GameObject sourceProxy,
-            out GameObject targetPreview)
-        {
-            title = null;
-            message = null;
-            worldAnchor = null;
-            sourceProxy = null;
-            targetPreview = null;
-
-            if (step == null || !step.RequiresSubassemblyPlacement || _subassemblyPlacementController == null)
-                return false;
-
-            string subassemblyId = step.requiredSubassemblyId;
-            if (string.IsNullOrWhiteSpace(subassemblyId) ||
-                !_subassemblyPlacementController.TryGetProxy(subassemblyId, out sourceProxy))
-            {
-                return false;
-            }
-
-            string targetId = !string.IsNullOrWhiteSpace(authoredHint?.targetId)
-                ? authoredHint.targetId
-                : (step.targetIds != null && step.targetIds.Length > 0 ? step.targetIds[0] : null);
-
-            if (!string.IsNullOrWhiteSpace(targetId))
-            {
-                foreach (GameObject preview in _spawnedPreviews)
-                {
-                    if (preview == null)
-                        continue;
-
-                    PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
-                    if (info != null && string.Equals(info.TargetId, targetId, StringComparison.OrdinalIgnoreCase))
-                    {
-                        targetPreview = preview;
-                        break;
-                    }
-                }
-            }
-
-            if (!_subassemblyPlacementController.TryGetDisplayInfo(sourceProxy, out string displayName, out _))
-                displayName = subassemblyId;
-
-            title = $"Move {displayName}";
-            message = $"Move the completed {displayName} as one finished panel. Drag the whole frame side toward the highlighted target and it will rotate into place as it docks.";
-
-            worldAnchor = sourceProxy.transform;
-            return true;
-        }
 
         private GameObject GetHoveredPartFromMouse()
         {
@@ -3590,46 +1955,14 @@ namespace OSE.UI.Root
             return RaycastSelectableObject(cam.ScreenPointToRay(mouse.position.ReadValue()));
         }
 
-        private bool CanApplyHoverVisual(GameObject partGo, string partId)
-        {
-            if (partGo == null || string.IsNullOrEmpty(partId))
-                return false;
+        private bool CanApplyHoverVisual(GameObject partGo, string partId) => _visualFeedback != null && _visualFeedback.CanApplyHoverVisual(partGo, partId);
 
-            if (_selectionService != null && _selectionService.CurrentSelection == partGo)
-                return false;
 
-            if (IsSubassemblyProxy(partGo))
-                return true;
+        private void ClearPartHoverVisual() => _visualFeedback?.ClearPartHoverVisual();
 
-            PartPlacementState state = GetPartState(partId);
-            return state == PartPlacementState.Available ||
-                   state == PartPlacementState.Completed ||
-                   state == PartPlacementState.PlacedVirtually;
-        }
 
-        private void ClearPartHoverVisual()
-        {
-            if (_hoveredPart == null)
-                return;
+        private void RestorePartVisual(GameObject partGo) => _visualFeedback?.RestorePartVisual(partGo);
 
-            RestorePartVisual(_hoveredPart);
-            _hoveredPart = null;
-        }
-
-        private void RestorePartVisual(GameObject partGo)
-        {
-            if (partGo == null)
-                return;
-
-            if (IsSubassemblyProxy(partGo))
-            {
-                ForEachProxyMember(partGo, member => ApplyPartVisualForState(member, member.name, GetPartState(member.name)));
-                return;
-            }
-
-            string partId = partGo.name;
-            ApplyPartVisualForState(partGo, partId, GetPartState(partId));
-        }
 
         private PartPlacementState GetPartState(string partId)
         {
@@ -3641,193 +1974,26 @@ namespace OSE.UI.Root
                 : PartPlacementState.Available;
         }
 
-        private void ApplyPartVisualForState(GameObject partGo, string partId, PartPlacementState state)
-        {
-            if (partGo == null)
-                return;
+        private void ApplyPartVisualForState(GameObject partGo, string partId, PartPlacementState state) => _visualFeedback?.ApplyPartVisualForState(partGo, partId, state);
 
-            if (IsSubassemblyProxy(partGo))
-            {
-                switch (state)
-                {
-                    case PartPlacementState.Selected:
-                    case PartPlacementState.Inspected:
-                    case PartPlacementState.Grabbed:
-                        ForEachProxyMember(partGo, ApplySelectedPartVisual);
-                        break;
-                    default:
-                        ForEachProxyMember(partGo, member => ApplyPartVisualForState(member, member.name, GetPartState(member.name)));
-                        break;
-                }
 
-                return;
-            }
+        private void SyncPartGrabInteractivity(GameObject partGo, string partId) => _visualFeedback?.SyncPartGrabInteractivity(partGo, partId);
 
-            switch (state)
-            {
-                case PartPlacementState.Selected:
-                case PartPlacementState.Inspected:
-                    ApplySelectedPartVisual(partGo);
-                    break;
 
-                case PartPlacementState.Grabbed:
-                    ApplySelectedPartVisual(partGo);
-                    break;
+        private void ApplyAvailablePartVisual(GameObject partGo, string partId) => _visualFeedback?.ApplyAvailablePartVisual(partGo, partId);
 
-                case PartPlacementState.PlacedVirtually:
-                case PartPlacementState.Completed:
-                    MaterialHelper.SetEmission(partGo, Color.black);
-                    ClearRendererPropertyBlocks(partGo);
-                    DisablePartColorAffordance(partGo);
-                    ApplyAvailablePartVisual(partGo, partId);
-                    break;
 
-                case PartPlacementState.Available:
-                default:
-                    DisablePartColorAffordance(partGo);
-                    ApplyAvailablePartVisual(partGo, partId);
-                    break;
-            }
-        }
+        private static void ClearRendererPropertyBlocks(GameObject target) => PartVisualFeedbackManager.ClearRendererPropertyBlocks(target);
 
-        private void SyncPartGrabInteractivity(GameObject partGo, string partId)
-        {
-            if (partGo == null || string.IsNullOrWhiteSpace(partId) || IsSubassemblyProxy(partGo))
-                return;
 
-            XRGrabInteractable grabInteractable = partGo.GetComponent<XRGrabInteractable>();
-            if (grabInteractable == null)
-                return;
+        private static void DisablePartColorAffordance(GameObject target) => PartVisualFeedbackManager.DisablePartColorAffordance(target);
 
-            bool shouldEnableGrab = !IsPartMovementLocked(partId);
-            if (grabInteractable.enabled == shouldEnableGrab)
-                return;
 
-            grabInteractable.enabled = shouldEnableGrab;
+        private void ApplyHoveredPartVisual(GameObject partGo) => _visualFeedback?.ApplyHoveredPartVisual(partGo);
 
-            Rigidbody rb = partGo.GetComponent<Rigidbody>();
-            if (rb != null)
-            {
-                rb.isKinematic = true;
-                rb.useGravity = false;
-            }
 
-            if (!shouldEnableGrab && _draggedPart == partGo)
-                ResetDragState();
-        }
+        private void ApplySelectedPartVisual(GameObject partGo) => _visualFeedback?.ApplySelectedPartVisual(partGo);
 
-        private void ApplyAvailablePartVisual(GameObject partGo, string partId)
-        {
-            if (IsSubassemblyProxy(partGo))
-            {
-                ForEachProxyMember(partGo, member => ApplyPartVisualForState(member, member.name, GetPartState(member.name)));
-                return;
-            }
-
-            MaterialHelper.SetEmission(partGo, Color.black);
-            ClearRendererPropertyBlocks(partGo);
-
-            // Restore original textured materials if available
-            if (MaterialHelper.RestoreOriginals(partGo))
-                return;
-
-            // Fallback for parts without original textures (primitives/placeholders)
-            PartPreviewPlacement placement = _spawner != null ? _spawner.FindPartPlacement(partId) : null;
-            Color baseColor = placement != null
-                ? new Color(placement.color.r, placement.color.g, placement.color.b, placement.color.a)
-                : new Color(0.94f, 0.55f, 0.18f, 1f);
-
-            MaterialHelper.Apply(partGo, "Preview Part Material", baseColor);
-        }
-
-        private static void ClearRendererPropertyBlocks(GameObject target)
-        {
-            if (target == null)
-                return;
-
-            Renderer[] renderers = target.GetComponentsInChildren<Renderer>(includeInactive: true);
-            for (int i = 0; i < renderers.Length; i++)
-            {
-                Renderer renderer = renderers[i];
-                if (renderer != null)
-                    renderer.SetPropertyBlock(null);
-            }
-        }
-
-        private static void DisablePartColorAffordance(GameObject target)
-        {
-            if (target == null)
-                return;
-
-            var stateProvider = target.GetComponent<XRInteractableAffordanceStateProvider>();
-            if (stateProvider != null)
-            {
-                if (Application.isPlaying)
-                    Destroy(stateProvider);
-                else
-                    DestroyImmediate(stateProvider);
-            }
-
-            var receivers = target.GetComponentsInChildren<ColorMaterialPropertyAffordanceReceiver>(includeInactive: true);
-            for (int i = 0; i < receivers.Length; i++)
-            {
-                if (receivers[i] == null)
-                    continue;
-
-                if (Application.isPlaying)
-                    Destroy(receivers[i]);
-                else
-                    DestroyImmediate(receivers[i]);
-            }
-
-            var blockHelpers = target.GetComponentsInChildren<MaterialPropertyBlockHelper>(includeInactive: true);
-            for (int i = 0; i < blockHelpers.Length; i++)
-            {
-                if (blockHelpers[i] == null)
-                    continue;
-
-                if (Application.isPlaying)
-                    Destroy(blockHelpers[i]);
-                else
-                    DestroyImmediate(blockHelpers[i]);
-            }
-        }
-
-        private void ApplyHoveredPartVisual(GameObject partGo)
-        {
-            if (IsSubassemblyProxy(partGo))
-            {
-                ForEachProxyMember(partGo, member =>
-                {
-                    ApplyHoveredPartVisual(member);
-                    MaterialHelper.SetEmission(member, HoveredSubassemblyEmission);
-                });
-                return;
-            }
-
-            if (MaterialHelper.IsImportedModel(partGo))
-                MaterialHelper.ApplyTint(partGo, HoveredPartColor);
-            else
-                MaterialHelper.Apply(partGo, "Preview Part Material", HoveredPartColor);
-        }
-
-        private void ApplySelectedPartVisual(GameObject partGo)
-        {
-            if (IsSubassemblyProxy(partGo))
-            {
-                ForEachProxyMember(partGo, member =>
-                {
-                    ApplySelectedPartVisual(member);
-                    MaterialHelper.SetEmission(member, SelectedSubassemblyEmission);
-                });
-                return;
-            }
-
-            if (MaterialHelper.IsImportedModel(partGo))
-                MaterialHelper.ApplyTint(partGo, SelectedPartColor);
-            else
-                MaterialHelper.Apply(partGo, "Preview Part Material", SelectedPartColor);
-        }
 
         /// <summary>
         /// Highlights all members of a completed subassembly when one member is selected.
@@ -3850,16 +2016,8 @@ namespace OSE.UI.Root
             }
         }
 
-        private void ApplyHintSourceVisual(GameObject partGo, Color color)
-        {
-            if (partGo == null)
-                return;
+        private void ApplyHintSourceVisual(GameObject partGo, Color color) => _visualFeedback?.ApplyHintSourceVisual(partGo, color);
 
-            if (MaterialHelper.IsImportedModel(partGo))
-                MaterialHelper.ApplyTint(partGo, color);
-            else
-                MaterialHelper.Apply(partGo, "Preview Part Material", color);
-        }
 
         private void UpdateDockArcVisual()
         {
@@ -3879,11 +2037,11 @@ namespace OSE.UI.Root
                 _dockArcVisual = DockArcVisual.Spawn();
 
             GameObject selected = NormalizeSelectablePlacementTarget(_selectionService != null ? _selectionService.CurrentSelection : null);
-            GameObject hovered = ExternalControlEnabled ? _externalHoveredPartForUi : _hoveredPart;
+            GameObject hovered = ExternalControlEnabled ? _externalHoveredPartForUi : _visualFeedback?.HoveredPart;
             hovered = NormalizeSelectablePlacementTarget(hovered);
 
             float emphasis = useLinearGuide ? 0.7f : 0.35f;
-            if (_draggedPart == sourceProxy || selected == sourceProxy)
+            if (_drag.DraggedPart == sourceProxy || selected == sourceProxy)
                 emphasis = 1f;
             else if (hovered == sourceProxy)
                 emphasis = 0.7f;
@@ -3972,23 +2130,7 @@ namespace OSE.UI.Root
         }
 
         private GameObject FindPreviewForTarget(string targetId)
-        {
-            if (string.IsNullOrWhiteSpace(targetId))
-                return null;
-
-            for (int i = 0; i < _spawnedPreviews.Count; i++)
-            {
-                GameObject preview = _spawnedPreviews[i];
-                if (preview == null)
-                    continue;
-
-                PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
-                if (info != null && string.Equals(info.TargetId, targetId, StringComparison.OrdinalIgnoreCase))
-                    return preview;
-            }
-
-            return null;
-        }
+            => _previewManager?.FindPreviewForTarget(targetId);
 
         private static Vector3 ResolveVisualAnchor(GameObject target)
         {
@@ -4002,47 +2144,7 @@ namespace OSE.UI.Root
         }
 
         private static bool TryGetRenderableBounds(GameObject target, out Bounds bounds)
-        {
-            bounds = default;
-            if (target == null)
-                return false;
-
-            Renderer[] renderers = target.GetComponentsInChildren<Renderer>(includeInactive: false);
-            for (int i = 0; i < renderers.Length; i++)
-            {
-                Renderer renderer = renderers[i];
-                if (renderer == null)
-                    continue;
-
-                bounds = renderer.bounds;
-                for (int j = i + 1; j < renderers.Length; j++)
-                {
-                    if (renderers[j] != null)
-                        bounds.Encapsulate(renderers[j].bounds);
-                }
-
-                return true;
-            }
-
-            Collider[] colliders = target.GetComponentsInChildren<Collider>(includeInactive: false);
-            for (int i = 0; i < colliders.Length; i++)
-            {
-                Collider collider = colliders[i];
-                if (collider == null)
-                    continue;
-
-                bounds = collider.bounds;
-                for (int j = i + 1; j < colliders.Length; j++)
-                {
-                    if (colliders[j] != null)
-                        bounds.Encapsulate(colliders[j].bounds);
-                }
-
-                return true;
-            }
-
-            return false;
-        }
+            => PreviewSpawnManager.TryGetRenderableBounds(target, out bounds);
 
         private static bool TryApplyAffordanceState(GameObject partGo, byte stateIndex, float transitionAmount = 1f)
         {
@@ -4067,90 +2169,10 @@ namespace OSE.UI.Root
             return _placeHandler != null && _placeHandler.TryResolveSnapPose(partId, targetId, out pos, out rot, out scale);
         }
 
-        private Vector3 ClampDragPosition(Camera cam, Vector3 worldPosition, GameObject partGo)
-        {
-            Vector3 clamped = ClampToViewport(cam, worldPosition);
-            clamped = ClampToFloorBounds(clamped, partGo);
-            return clamped;
-        }
 
-        private static Vector3 ClampToViewport(Camera cam, Vector3 worldPosition)
-        {
-            if (cam == null)
-                return worldPosition;
 
-            Vector3 viewportPos = cam.WorldToViewportPoint(worldPosition);
-            if (viewportPos.z <= 0f)
-                return worldPosition;
 
-            viewportPos.x = Mathf.Clamp(viewportPos.x, DragViewportMargin, 1f - DragViewportMargin);
-            viewportPos.y = Mathf.Clamp(viewportPos.y, DragViewportMargin, 1f - DragViewportMargin);
-            return cam.ViewportToWorldPoint(viewportPos);
-        }
 
-        private Vector3 ClampToFloorBounds(Vector3 worldPosition, GameObject partGo)
-        {
-            if (_setup == null || _setup.Floor == null)
-                return worldPosition;
-
-            float partHalfHeight = TryGetVerticalHalfExtent(partGo, out float halfHeight)
-                ? halfHeight
-                : 0f;
-
-            if (TryGetWorldBounds(_setup.Floor, out Bounds floorBounds))
-            {
-                worldPosition.x = Mathf.Clamp(worldPosition.x, floorBounds.min.x, floorBounds.max.x);
-                worldPosition.z = Mathf.Clamp(worldPosition.z, floorBounds.min.z, floorBounds.max.z);
-                float minY = floorBounds.max.y + partHalfHeight + DragFloorEpsilon;
-                if (worldPosition.y < minY)
-                    worldPosition.y = minY;
-                return worldPosition;
-            }
-
-            float fallbackFloorY = _setup.Floor.transform.position.y;
-            float fallbackMinY = fallbackFloorY + partHalfHeight + DragFloorEpsilon;
-            if (worldPosition.y < fallbackMinY)
-                worldPosition.y = fallbackMinY;
-
-            return worldPosition;
-        }
-
-        private static bool TryGetVerticalHalfExtent(GameObject target, out float halfHeight)
-        {
-            halfHeight = 0f;
-            if (!TryGetWorldBounds(target, out Bounds bounds))
-                return false;
-
-            halfHeight = bounds.extents.y;
-            return true;
-        }
-
-        private static bool TryGetWorldBounds(GameObject target, out Bounds bounds)
-        {
-            bounds = default;
-            if (target == null)
-                return false;
-
-            var renderers = target.GetComponentsInChildren<Renderer>();
-            if (renderers != null && renderers.Length > 0)
-            {
-                bounds = renderers[0].bounds;
-                for (int i = 1; i < renderers.Length; i++)
-                    bounds.Encapsulate(renderers[i].bounds);
-                return true;
-            }
-
-            var colliders = target.GetComponentsInChildren<Collider>();
-            if (colliders != null && colliders.Length > 0)
-            {
-                bounds = colliders[0].bounds;
-                for (int i = 1; i < colliders.Length; i++)
-                    bounds.Encapsulate(colliders[i].bounds);
-                return true;
-            }
-
-            return false;
-        }
 
         private bool IsSpawnedPart(GameObject target)
         {
@@ -4261,6 +2283,21 @@ namespace OSE.UI.Root
 
                 if (isSubassemblyId)
                 {
+                    // If this subassembly is required for placement by the active step, allow movement.
+                    if (ServiceRegistry.TryGet<MachineSessionController>(out var session))
+                    {
+                        var stepCtrl = session.AssemblyController?.StepController;
+                        if (stepCtrl != null && stepCtrl.HasActiveStep)
+                        {
+                            var currentStep = stepCtrl.CurrentStepDefinition;
+                            if (currentStep != null && currentStep.RequiresSubassemblyPlacement &&
+                                string.Equals(currentStep.requiredSubassemblyId, partId, StringComparison.OrdinalIgnoreCase))
+                            {
+                                return false;
+                            }
+                        }
+                    }
+
                     bool anyMemberFound = false;
                     bool anyMemberLocked = false;
                     if (package != null && package.TryGetSubassembly(partId, out var subDef) && subDef?.partIds != null)
