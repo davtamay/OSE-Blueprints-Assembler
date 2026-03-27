@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using OSE.App;
 using OSE.Core;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -40,6 +41,12 @@ namespace OSE.Interaction
         private void Awake()
         {
             ResolveRigReferences();
+            ServiceRegistry.Register<XRRigModeSwitcher>(this);
+        }
+
+        private void OnDestroy()
+        {
+            ServiceRegistry.Unregister<XRRigModeSwitcher>();
         }
 
         private void OnEnable()

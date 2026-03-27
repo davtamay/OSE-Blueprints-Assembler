@@ -132,9 +132,36 @@ namespace OSE.Content
         public bool RequiresSubassemblyPlacement =>
             !string.IsNullOrWhiteSpace(requiredSubassemblyId);
 
+        /// <summary>
+        /// Resolves the step profile enum from the <see cref="profile"/> string.
+        /// Returns <see cref="StepProfile.None"/> when the string is null, empty, or unrecognized.
+        /// </summary>
+        public StepProfile ResolvedProfile
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(profile))
+                    return StepProfile.None;
+
+                switch (profile)
+                {
+                    case "Clamp":       return StepProfile.Clamp;
+                    case "AxisFit":     return StepProfile.AxisFit;
+                    case "Torque":      return StepProfile.Torque;
+                    case "Weld":        return StepProfile.Weld;
+                    case "Cut":         return StepProfile.Cut;
+                    case "Strike":      return StepProfile.Strike;
+                    case "Measure":     return StepProfile.Measure;
+                    case "SquareCheck": return StepProfile.SquareCheck;
+                    case "Cable":       return StepProfile.Cable;
+                    default:            return StepProfile.None;
+                }
+            }
+        }
+
         /// <summary>True when this place step uses the constrained adjustable-fit profile.</summary>
         public bool IsAxisFitPlacement =>
-            IsPlacement && string.Equals(profile, "AxisFit", StringComparison.OrdinalIgnoreCase);
+            IsPlacement && ResolvedProfile == StepProfile.AxisFit;
 
         /// <summary>True when the resolved family is Place.</summary>
         public bool IsPlacement => ResolvedFamily == StepFamily.Place;

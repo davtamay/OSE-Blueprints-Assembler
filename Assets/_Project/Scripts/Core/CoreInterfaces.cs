@@ -34,6 +34,7 @@ namespace OSE.Core
         event System.Action<CanonicalAction> OnAction;
         void SetContext(InputContext context);
         InputContext CurrentContext { get; }
+        void InjectAction(CanonicalAction action);
     }
 
     public interface IPresentationAdapter

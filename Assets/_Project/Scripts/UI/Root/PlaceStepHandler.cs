@@ -5,7 +5,7 @@ using OSE.Content;
 using OSE.Core;
 using OSE.Runtime;
 using UnityEngine;
-using PlacementPreviewInfo = OSE.UI.Root.PartInteractionBridge.PlacementPreviewInfo;
+// PlacementPreviewInfo is now a top-level type in this namespace.
 
 namespace OSE.UI.Root
 {
@@ -61,17 +61,8 @@ namespace OSE.UI.Root
         private const float SnapZoneRadius = 0.8f;
         private const float SubassemblySnapZoneRadius = 1.35f;
         private const float SubassemblyDockPreviewRadius = 1.9f;
-        private const float SnapLerpSpeed = 12f;
-        private const float InvalidFlashDuration = 0.3f;
-        private const float ScreenProximityDesktop = 120f;
-        private const float ScreenProximityMobile = 180f;
-        private const float SubassemblyScreenProximityDesktop = 220f;
-        private const float SubassemblyScreenProximityMobile = 300f;
         private const float PreviewSelectedPulseSpeed = 3.0f;
         private const float RequiredPartPulseSpeed = 0.8f;
-
-        // ── Colors ──
-        private static readonly Color InvalidFlashColor = new Color(1.0f, 0.2f, 0.2f, 1.0f);
         private static readonly Color PreviewReadyColor = new Color(0.3f, 1.0f, 0.5f, 0.4f);
         private static readonly Color PreviewSelectedPulseA = new Color(0.35f, 0.85f, 1.0f, 0.35f);
         private static readonly Color PreviewSelectedPulseB = new Color(0.55f, 1.0f, 0.7f, 0.7f);
@@ -698,9 +689,7 @@ namespace OSE.UI.Root
             if (cam == null) return null;
 
             bool isSubassemblySelection = IsSubassemblySelectionId(selectionId);
-            float threshold = Application.isMobilePlatform
-                ? (isSubassemblySelection ? SubassemblyScreenProximityMobile : ScreenProximityMobile)
-                : (isSubassemblySelection ? SubassemblyScreenProximityDesktop : ScreenProximityDesktop);
+            float threshold = StepHandlerConstants.Proximity.GetThreshold(isSubassemblySelection);
             float closestDist = threshold;
             PlacementPreviewInfo best = null;
 
@@ -848,15 +837,15 @@ namespace OSE.UI.Root
                 : new Color(0.94f, 0.55f, 0.18f, 1f);
 
             if (MaterialHelper.IsImportedModel(partGo))
-                MaterialHelper.ApplyTint(partGo, InvalidFlashColor);
+                MaterialHelper.ApplyTint(partGo, StepHandlerConstants.Colors.InvalidFlash);
             else
-                MaterialHelper.Apply(partGo, "Preview Part Material", InvalidFlashColor);
+                MaterialHelper.Apply(partGo, "Preview Part Material", StepHandlerConstants.Colors.InvalidFlash);
 
             _activeFlashes.Add(new FlashEntry
             {
                 Part = partGo,
                 OriginalColor = originalColor,
-                Timer = InvalidFlashDuration
+                Timer = StepHandlerConstants.Animation.InvalidFlashDuration
             });
         }
 
@@ -864,7 +853,7 @@ namespace OSE.UI.Root
         {
             if (_activeSnaps.Count == 0) return;
 
-            float t = SnapLerpSpeed * deltaTime;
+            float t = StepHandlerConstants.Animation.SnapLerpSpeed * deltaTime;
 
             for (int i = _activeSnaps.Count - 1; i >= 0; i--)
             {

@@ -30,6 +30,21 @@ namespace OSE.Core
         /// When marked, the system preserves original materials instead of replacing
         /// them with solid colors.
         /// </summary>
+        /// <summary>
+        /// Re-saves current materials even if already saved.
+        /// </summary>
+        public static void ForceSaveOriginals(GameObject target)
+        {
+            if (target == null) return;
+            var cache = target.GetComponent<OriginalMaterialCache>();
+            if (cache == null)
+            {
+                MarkAsImported(target);
+                return;
+            }
+            cache.ForceSave();
+        }
+
         public static void MarkAsImported(GameObject target)
         {
             if (target == null) return;
@@ -73,11 +88,16 @@ namespace OSE.Core
             var cache = target.GetComponent<OriginalMaterialCache>();
             if (cache != null)
                 cache.ShowOutline(tint);
+
+            // Replace ALL material slots on every renderer with a shared tint
+            // material.  Emission/keyword tricks don't cover all glTFast shader
+            // variants, so a full replacement is the only reliable approach.
+            // OriginalMaterialCache.Restore() puts the originals back.
+            ApplyColorToAllSlots(target, tint);
         }
 
         /// <summary>
         /// Hides the outline effect, returning the model to its idle visual state.
-        /// Does not touch original materials or emission set by other systems.
         /// </summary>
         public static void ClearTint(GameObject target)
         {
@@ -85,13 +105,25 @@ namespace OSE.Core
             var cache = target.GetComponent<OriginalMaterialCache>();
             if (cache != null)
                 cache.HideOutline();
+
+            // Restore originals to undo the full-slot replacement from ApplyTint.
+            RestoreOriginals(target);
         }
 
         /// <summary>
         /// Applies an opaque URP/Lit material with the given color to all renderers
-        /// on the target GameObject (including children).
+        /// on the target GameObject (including children), filling every material slot.
         /// </summary>
         public static void Apply(GameObject target, string materialName, Color color)
+        {
+            ApplyColorToAllSlots(target, color, materialName);
+        }
+
+        /// <summary>
+        /// Replaces every material slot on every renderer with a single shared
+        /// URP/Lit material in the given color. Skips outline children.
+        /// </summary>
+        private static void ApplyColorToAllSlots(GameObject target, Color color, string materialName = "OSE_Tint")
         {
             var renderers = target.GetComponentsInChildren<Renderer>(includeInactive: true);
             if (renderers == null || renderers.Length == 0) return;
@@ -99,21 +131,28 @@ namespace OSE.Core
             Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
             if (shader == null) return;
 
+            Material tintMat = new Material(shader) { name = materialName };
+            if (tintMat.HasProperty("_BaseColor"))
+                tintMat.SetColor("_BaseColor", color);
+            if (tintMat.HasProperty("_Color"))
+                tintMat.SetColor("_Color", color);
+            if (tintMat.HasProperty("_EmissionColor"))
+            {
+                tintMat.SetColor("_EmissionColor", color * 0.15f);
+                tintMat.EnableKeyword("_EMISSION");
+            }
+
             foreach (var renderer in renderers)
             {
-                Material material = renderer.sharedMaterial;
-                if (material == null || material.shader != shader || material.name != materialName)
-                {
-                    material = new Material(shader) { name = materialName };
-                    renderer.sharedMaterial = material;
-                }
+                // Skip outline children — they have their own shader
+                if (renderer.gameObject.name == "__ose_outline__") continue;
 
-                if (material.HasProperty("_BaseColor"))
-                    material.SetColor("_BaseColor", color);
-                if (material.HasProperty("_Color"))
-                    material.SetColor("_Color", color);
-                if (material.HasProperty("_EmissionColor"))
-                    material.SetColor("_EmissionColor", color * 0.08f);
+                int slotCount = renderer.sharedMaterials.Length;
+                if (slotCount <= 0) slotCount = 1;
+                Material[] mats = new Material[slotCount];
+                for (int i = 0; i < slotCount; i++)
+                    mats[i] = tintMat;
+                renderer.sharedMaterials = mats;
             }
         }
 
@@ -136,24 +175,31 @@ namespace OSE.Core
             Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
             if (shader == null) return;
 
+            Material previewMat = new Material(shader) { name = "Preview Material" };
+
+            previewMat.SetFloat("_Surface", 1f); // Transparent
+            previewMat.SetFloat("_Blend", 0f);   // Alpha blend
+            previewMat.SetOverrideTag("RenderType", "Transparent");
+            previewMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            previewMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            previewMat.SetInt("_ZWrite", 0);
+            previewMat.renderQueue = 3000;
+
+            if (previewMat.HasProperty("_BaseColor"))
+                previewMat.SetColor("_BaseColor", previewColor);
+            if (previewMat.HasProperty("_Color"))
+                previewMat.SetColor("_Color", previewColor);
+
             foreach (var renderer in renderers)
             {
-                Material previewMat = new Material(shader) { name = "Preview Material" };
+                if (renderer.gameObject.name == "__ose_outline__") continue;
 
-                previewMat.SetFloat("_Surface", 1f); // Transparent
-                previewMat.SetFloat("_Blend", 0f);   // Alpha blend
-                previewMat.SetOverrideTag("RenderType", "Transparent");
-                previewMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                previewMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                previewMat.SetInt("_ZWrite", 0);
-                previewMat.renderQueue = 3000;
-
-                if (previewMat.HasProperty("_BaseColor"))
-                    previewMat.SetColor("_BaseColor", previewColor);
-                if (previewMat.HasProperty("_Color"))
-                    previewMat.SetColor("_Color", previewColor);
-
-                renderer.sharedMaterial = previewMat;
+                int slotCount = renderer.sharedMaterials.Length;
+                if (slotCount <= 0) slotCount = 1;
+                Material[] mats = new Material[slotCount];
+                for (int i = 0; i < slotCount; i++)
+                    mats[i] = previewMat;
+                renderer.sharedMaterials = mats;
             }
         }
 
@@ -350,23 +396,31 @@ namespace OSE.Core
 
             foreach (var renderer in renderers)
             {
-                // Use .material to get a per-renderer instance (see SetEmission).
-                Material material = renderer.material;
-                if (material == null) continue;
+                if (renderer.gameObject.name == "__ose_outline__") continue;
 
-                // URP/Lit
-                if (material.HasProperty("_BaseColor"))
-                    material.SetColor("_BaseColor", color);
-                if (material.HasProperty("_Color"))
-                    material.SetColor("_Color", color);
-                if (material.HasProperty("_EmissionColor"))
-                    material.SetColor("_EmissionColor", color * 0.08f);
+                // Use .materials to get per-renderer instances for ALL material slots.
+                // renderer.material only returns slot 0, missing sub-meshes on multi-material models.
+                Material[] mats = renderer.materials;
+                for (int m = 0; m < mats.Length; m++)
+                {
+                    Material material = mats[m];
+                    if (material == null) continue;
 
-                // glTFast Shader Graph (glTF-pbrMetallicRoughness)
-                if (material.HasProperty("baseColorFactor"))
-                    material.SetColor("baseColorFactor", color);
-                if (material.HasProperty("emissiveFactor"))
-                    material.SetColor("emissiveFactor", color * 0.08f);
+                    // URP/Lit
+                    if (material.HasProperty("_BaseColor"))
+                        material.SetColor("_BaseColor", color);
+                    if (material.HasProperty("_Color"))
+                        material.SetColor("_Color", color);
+                    if (material.HasProperty("_EmissionColor"))
+                        material.SetColor("_EmissionColor", color * 0.08f);
+
+                    // glTFast Shader Graph (glTF-pbrMetallicRoughness)
+                    if (material.HasProperty("baseColorFactor"))
+                        material.SetColor("baseColorFactor", color);
+                    if (material.HasProperty("emissiveFactor"))
+                        material.SetColor("emissiveFactor", color * 0.08f);
+                }
+                renderer.materials = mats;
             }
         }
 
@@ -385,31 +439,37 @@ namespace OSE.Core
 
             foreach (var renderer in renderers)
             {
-                // Use .material (not .sharedMaterial) so each renderer gets its
-                // own instance.  This prevents emission changes from bleeding to
-                // every object that shares the same source material asset.
-                Material material = renderer.material;
-                if (material == null) continue;
+                if (renderer.gameObject.name == "__ose_outline__") continue;
 
-                // URP/Lit shader
-                if (material.HasProperty("_EmissionColor"))
+                // Use .materials (not .material) to update ALL material slots.
+                // .material only returns slot 0, missing sub-meshes on multi-material models.
+                Material[] mats = renderer.materials;
+                for (int m = 0; m < mats.Length; m++)
                 {
-                    material.SetColor("_EmissionColor", emissionColor);
-                    if (hasEmission)
-                        material.EnableKeyword("_EMISSION");
-                    else
-                        material.DisableKeyword("_EMISSION");
-                }
+                    Material material = mats[m];
+                    if (material == null) continue;
 
-                // glTFast Shader Graph (glTF-pbrMetallicRoughness)
-                if (material.HasProperty("emissiveFactor"))
-                {
-                    material.SetColor("emissiveFactor", emissionColor);
-                    if (hasEmission)
-                        material.EnableKeyword("_EMISSIVE");
-                    else
-                        material.DisableKeyword("_EMISSIVE");
+                    // URP/Lit shader
+                    if (material.HasProperty("_EmissionColor"))
+                    {
+                        material.SetColor("_EmissionColor", emissionColor);
+                        if (hasEmission)
+                            material.EnableKeyword("_EMISSION");
+                        else
+                            material.DisableKeyword("_EMISSION");
+                    }
+
+                    // glTFast Shader Graph (glTF-pbrMetallicRoughness)
+                    if (material.HasProperty("emissiveFactor"))
+                    {
+                        material.SetColor("emissiveFactor", emissionColor);
+                        if (hasEmission)
+                            material.EnableKeyword("_EMISSIVE");
+                        else
+                            material.DisableKeyword("_EMISSIVE");
+                    }
                 }
+                renderer.materials = mats;
             }
         }
     }

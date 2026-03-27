@@ -1,4 +1,5 @@
 using System;
+using OSE.App;
 using OSE.Core;
 using OSE.Input;
 using UnityEngine;
@@ -22,12 +23,19 @@ namespace OSE.Interaction
 
         private void Awake()
         {
-            if (_router == null)
-                _router = FindFirstObjectByType<InputActionRouter>();
+            ServiceRegistry.Register<SelectionService>(this);
+        }
+
+        private void OnDestroy()
+        {
+            ServiceRegistry.Unregister<SelectionService>();
         }
 
         private void OnEnable()
         {
+            if (_router == null)
+                ServiceRegistry.TryGet<InputActionRouter>(out _router);
+
             if (_router != null)
                 _router.OnAction += HandleAction;
         }

@@ -38,6 +38,15 @@ namespace OSE.Core
 
         public void MarkAsImported() => _isImportedModel = true;
 
+        /// <summary>
+        /// Re-saves current materials even if already saved.
+        /// </summary>
+        public void ForceSave()
+        {
+            _saved = false;
+            Save();
+        }
+
         public void Save()
         {
             if (_saved) return;

@@ -18,6 +18,14 @@ namespace OSE.Interaction
 
         GameObject NormalizeSelectableTarget(GameObject target);
 
+        // ── Movement Lock ──
+
+        /// <summary>
+        /// Returns true when a part (or subassembly proxy) should be immovable
+        /// because it has already been placed or completed.
+        /// </summary>
+        bool IsPartMovementLocked(GameObject target);
+
         // ── Placement ──
 
         bool TryClickToPlace(GameObject selectedPart, Vector2 screenPos);

@@ -408,14 +408,6 @@ namespace OSE.UI.Root
                 Transform existing = _setup.PreviewRoot.Find(part.id);
                 if (existing != null)
                 {
-                    // Mark imported models that were already in the scene (e.g. from a prior spawn)
-                    if (!MaterialHelper.IsImportedModel(existing.gameObject)
-                        && existing.GetComponentInChildren<MeshFilter>() != null
-                        && !IsPrimitive(existing.gameObject))
-                    {
-                        MaterialHelper.MarkAsImported(existing.gameObject);
-                    }
-
                     if (Application.isPlaying)
                     {
                         // Spline parts use SplineMeshColliderBinder for deferred MeshCollider — skip EnsureColliders
@@ -443,7 +435,9 @@ namespace OSE.UI.Root
 
                 GameObject go = TryLoadPackageAsset(part.assetRef);
                 if (go != null)
+                {
                     MaterialHelper.MarkAsImported(go);
+                }
                 else
                     go = GetOrCreatePrimitive(part.id, PrimitiveType.Cube);
                 go.name = part.id;
@@ -991,35 +985,48 @@ namespace OSE.UI.Root
             if (target.GetComponent<SplineMeshColliderBinder>() != null)
                 return;
 
-            bool hasAnyCollider = target.GetComponentInChildren<Collider>(true) != null;
-
-            if (!hasAnyCollider)
+            // Add MeshColliders to every mesh child that doesn't already have one.
+            // Don't skip when some children already have colliders — GLB imports
+            // may only include a collider on one child, leaving others unclickable.
+            bool addedAny = false;
+            var meshFilters = target.GetComponentsInChildren<MeshFilter>(true);
+            foreach (var mf in meshFilters)
             {
-                var meshFilters = target.GetComponentsInChildren<MeshFilter>(true);
-                if (meshFilters.Length > 0)
+                if (mf.sharedMesh != null && mf.GetComponent<Collider>() == null)
                 {
-                    foreach (var mf in meshFilters)
-                    {
-                        if (mf.sharedMesh != null && mf.GetComponent<Collider>() == null)
-                            mf.gameObject.AddComponent<MeshCollider>();
-                    }
+                    mf.gameObject.AddComponent<MeshCollider>();
+                    addedAny = true;
+                }
+            }
+
+            // Also handle SkinnedMeshRenderer children (rare in glTFast but possible)
+            var skinned = target.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+            foreach (var smr in skinned)
+            {
+                if (smr.sharedMesh != null && smr.GetComponent<Collider>() == null)
+                {
+                    var mc = smr.gameObject.AddComponent<MeshCollider>();
+                    mc.sharedMesh = smr.sharedMesh;
+                    addedAny = true;
+                }
+            }
+
+            if (!addedAny && target.GetComponentInChildren<Collider>(true) == null)
+            {
+                // No mesh filters and no colliders at all — add a fitted BoxCollider
+                var renderers = target.GetComponentsInChildren<Renderer>(true);
+                if (renderers.Length > 0)
+                {
+                    Bounds bounds = renderers[0].bounds;
+                    for (int i = 1; i < renderers.Length; i++)
+                        bounds.Encapsulate(renderers[i].bounds);
+                    var box = target.AddComponent<BoxCollider>();
+                    box.center = target.transform.InverseTransformPoint(bounds.center);
+                    box.size = target.transform.InverseTransformVector(bounds.size);
                 }
                 else
                 {
-                    var renderers = target.GetComponentsInChildren<Renderer>(true);
-                    if (renderers.Length > 0)
-                    {
-                        Bounds bounds = renderers[0].bounds;
-                        for (int i = 1; i < renderers.Length; i++)
-                            bounds.Encapsulate(renderers[i].bounds);
-                        var box = target.AddComponent<BoxCollider>();
-                        box.center = target.transform.InverseTransformPoint(bounds.center);
-                        box.size = target.transform.InverseTransformVector(bounds.size);
-                    }
-                    else
-                    {
-                        target.AddComponent<BoxCollider>();
-                    }
+                    target.AddComponent<BoxCollider>();
                 }
             }
 

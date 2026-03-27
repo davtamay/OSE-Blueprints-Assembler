@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using OSE.App;
 using OSE.Core;
 using OSE.Input;
 using UnityEngine;
@@ -51,7 +52,6 @@ namespace OSE.Interaction
                 _selectInteractor = GetComponent<XRBaseInteractor>() as IXRSelectInteractor;
 
             _gestureHandSide = ResolveHandSide(transform);
-            EnsureDependencies(logMissingRouter: true);
         }
 
         private void Update()
@@ -61,7 +61,7 @@ namespace OSE.Interaction
 
         private void OnEnable()
         {
-            EnsureDependencies(logMissingRouter: false);
+            EnsureDependencies(logMissingRouter: true);
 
             if (_selectInteractor is XRBaseInteractor baseInteractor)
             {
@@ -115,10 +115,10 @@ namespace OSE.Interaction
         private void EnsureDependencies(bool logMissingRouter)
         {
             if (_actionRouter == null)
-                _actionRouter = FindFirstObjectByType<InputActionRouter>();
+                ServiceRegistry.TryGet<InputActionRouter>(out _actionRouter);
 
             if (_selectionService == null)
-                _selectionService = FindFirstObjectByType<SelectionService>();
+                ServiceRegistry.TryGet<SelectionService>(out _selectionService);
 
             if (logMissingRouter && _actionRouter == null)
                 OseLog.Warn("[XRIInteractionAdapter] No InputActionRouter found in scene.");

@@ -4,8 +4,8 @@
     "machine": {
         "id": "d3d_v18_10",
         "name": "D3D v18.10",
-        "displayName": "D3D v18.10 - Frame, Cube Joining, Axes Stage 01, and Extruder Stages 01-02",
-        "description": "D3D frame fabrication, cube joining, first axes stage, and the first two extruder stages. After the welded frame is accepted and the first Y/X axis relationships are established, the package stages a Titan Aero core, builds the nozzle, fan, and sensor-side hardware, then assembles the carriage-side bracket and top-plate stack before later printer-wide extruder integration.",
+        "displayName": "D3D v18.10 - Frame, Cube Joining, Axes Stage 01, and Extruder Stages 01-03",
+        "description": "D3D frame fabrication, cube joining, first axes stage, and the first three extruder stages. After the welded frame is accepted and the first Y/X axis relationships are established, the package stages a Titan Aero core, builds the nozzle, fan, and sensor-side hardware, assembles the carriage-side bracket and top-plate stack, then mounts the completed carriage unit onto the X-axis carriage interface before later heated-bed and wiring work.",
         "difficulty": "beginner",
         "estimatedBuildTimeMinutes": 190,
         "learningObjectives": [
@@ -20,21 +20,24 @@
             "Fit the first X-axis module tightly between the completed Y-axis pair",
             "Lock, tension, and check the first X-axis module without visible gap or binding",
             "Build the first Titan Aero nozzle, fan, and sensor module before later carriage integration",
-            "Assemble the carriage-side Titan Aero bracket, top plate, and simplified carriage stack before final printer-wide extruder mounting is introduced"
+            "Assemble the carriage-side Titan Aero bracket, top plate, and simplified carriage stack before final printer-wide extruder mounting is introduced",
+            "Mount the completed extruder carriage unit onto the X-axis carriage interface and close the half-carriage clamp before later heated-bed and wiring modules are authored"
         ],
         "recommendedMode": "guided",
         "entryAssemblyIds": [
             "assembly_d3d_frame",
             "assembly_d3d_axes_stage_01",
             "assembly_d3d_extruder_stage_01",
-            "assembly_d3d_extruder_stage_02"
+            "assembly_d3d_extruder_stage_02",
+            "assembly_d3d_extruder_stage_03"
         ],
         "prerequisiteNotes": [
             "The six panel work zones are a tighter raised teaching layout so small real-size stock remains readable and selectable while preserving exact panel geometry.",
             "This package now covers frame fabrication, cube joining, and a first axes stage.",
             "Axes Stage 01 uses source-backed procedure order and mounting relationships, but the axis module shapes remain schematic placeholders until exact v18.10 axis dimensions are extracted.",
             "Extruder Stage 01 locks the Titan Aero path and stops at the nozzle / fan / sensor module before the unresolved v18.10 carriage-mount variant is authored.",
-            "Extruder Stage 02 assembles the carriage-side bracket, top plate, and simplified carriage stack only. Final printer-wide mounted orientation, spacer usage, and wiring remain deferred."
+            "Extruder Stage 02 assembles the carriage-side bracket, top plate, and simplified carriage stack only. Final printer-wide mounted orientation, spacer usage, and wiring remain deferred.",
+            "Extruder Stage 03 mounts the completed carriage unit onto the X-axis carriage interface and closes the half-carriage clamp. The spacer and finer closure-fastener story remain deferred."
         ],
         "sourceReferences": [
             {
@@ -261,6 +264,25 @@
                 "assembly_d3d_extruder_stage_01"
             ],
             "learningFocus": "Carriage-side extruder mount-stack assembly, bracket and top-plate fastening order, rigid nozzle-module mounting, and service-clearance checks before later printer-wide extruder integration."
+        },
+        {
+            "id": "assembly_d3d_extruder_stage_03",
+            "name": "D3D Extruder Stage 03",
+            "description": "Stages the X-axis carriage-side interface, mounts the completed extruder carriage unit onto it, closes the half-carriage clamp, and checks X-axis travel clearance before later heated-bed and wiring work.",
+            "machineId": "d3d_v18_10",
+            "subassemblyIds": [
+                "subassembly_extruder_x_axis_mount"
+            ],
+            "stepIds": [
+                "step_stage_x_axis_carriage_side",
+                "step_mount_extruder_carriage_unit_to_x_axis_interface",
+                "step_place_x_axis_half_carriage",
+                "step_check_extruder_x_axis_travel_clearance"
+            ],
+            "dependencyAssemblyIds": [
+                "assembly_d3d_extruder_stage_02"
+            ],
+            "learningFocus": "Printer-side extruder integration, carriage-side closure with the half carriage, and first-pass X-travel/nozzle-clearance verification."
         }
     ],
     "subassemblies": [
@@ -598,6 +620,23 @@
                 "step_check_extruder_carriage_mount_clearance"
             ],
             "milestoneMessage": "Titan Aero nozzle module mounted to the carriage-side bracket stack and checked for first-pass service clearance."
+        },
+        {
+            "id": "subassembly_extruder_x_axis_mount",
+            "name": "Extruder X-Axis Mount",
+            "assemblyId": "assembly_d3d_extruder_stage_03",
+            "description": "Stages the printer-side X-axis carriage interface and the half-carriage clamp used to close the extruder around the rod pair.",
+            "partIds": [
+                "d3d_x_axis_carriage_side",
+                "d3d_x_axis_half_carriage"
+            ],
+            "stepIds": [
+                "step_stage_x_axis_carriage_side",
+                "step_mount_extruder_carriage_unit_to_x_axis_interface",
+                "step_place_x_axis_half_carriage",
+                "step_check_extruder_x_axis_travel_clearance"
+            ],
+            "milestoneMessage": "The completed extruder carriage unit is mounted on the X-axis carriage side, closed with the half carriage, and checked for first-pass travel clearance."
         }
     ],
     "partTemplates": [
@@ -772,7 +811,25 @@
             "material": "Simplified carriage placeholder",
             "function": "Represents the carriage-side printed body that receives the Titan Aero bracket stack before later X-axis integration.",
             "quantity": 1,
-            "assetRef": "assets/parts/d3d_extruder_simplified_carriage_placeholder.glb"
+            "assetRef": "assets/parts/d3d_x_axis_carriage_side_approved.glb"
+        },
+        {
+            "id": "template_d3d_x_axis_carriage_side",
+            "name": "X-Axis Carriage Side",
+            "category": "custom",
+            "material": "Carriage-side CAD-derived",
+            "function": "Represents the printer-side X-axis carriage-side interface that receives the completed extruder carriage unit in Stage 03.",
+            "quantity": 1,
+            "assetRef": "assets/parts/d3d_x_axis_carriage_side_approved.glb"
+        },
+        {
+            "id": "template_d3d_x_axis_half_carriage",
+            "name": "X-Axis Half Carriage",
+            "category": "custom",
+            "material": "Half-carriage CAD-derived",
+            "function": "Represents the clamp-side half carriage that closes over the mounted extruder carriage unit in Stage 03.",
+            "quantity": 1,
+            "assetRef": "assets/parts/d3d_x_axis_half_carriage_approved.glb"
         }
     ],
     "parts": [
@@ -1075,6 +1132,20 @@
             "name": "Simplified Carriage",
             "function": "Carriage-side printed body used to build the first Titan Aero mount stack before later printer-wide integration.",
             "templateId": "template_d3d_extruder_simplified_carriage"
+        },
+        {
+            "id": "d3d_x_axis_carriage_side",
+            "name": "X-Axis Carriage Side",
+            "function": "Printer-side carriage interface that receives the completed extruder carriage unit on the X-axis.",
+            "defaultOrientationHint": "Stage the widened belt-hole carriage side upright so the rod-bearing face stays aligned to the X-axis rod pair.",
+            "templateId": "template_d3d_x_axis_carriage_side"
+        },
+        {
+            "id": "d3d_x_axis_half_carriage",
+            "name": "X-Axis Half Carriage",
+            "function": "Clamp-side carriage half that closes over the mounted extruder carriage unit to capture the rod-bearing path.",
+            "defaultOrientationHint": "Keep the half carriage aligned square to the mounted carriage side and bring it straight in as the clamp-side closure.",
+            "templateId": "template_d3d_x_axis_half_carriage"
         }
     ],
     "tools": [
@@ -1109,23 +1180,34 @@
             "assetRef": "assets/tools/tool_locking_clamp.glb",
             "toolPose": {
                 "gripPoint": {
-                    "x": 0.95799,
-                    "y": 1.82134,
-                    "z": -0.05899
+                    "x": 0.54453,
+                    "y": 1.97649,
+                    "z": -0.07144
                 },
                 "gripRotation": {
-                    "x": 7.86335,
-                    "y": 189.3289,
-                    "z": 74.25144
+                    "x": 7.07559,
+                    "y": 163.2964,
+                    "z": 90.53002
                 },
                 "tipPoint": {
                     "x": 0.10157,
                     "y": 0.77763,
                     "z": 0
                 },
+                "tipAxis": {
+                    "x": -0.63373,
+                    "y": -0.77232,
+                    "z": 0.04365
+                },
+                "cursorOffset": {
+                    "x": -1.16219,
+                    "y": -0.15638,
+                    "z": 0.01245
+                },
                 "handedness": "right",
                 "poseHint": "power_grip"
-            }
+            },
+            "scaleOverride": 0.8
         },
         {
             "id": "tool_mig_torch",
@@ -1147,11 +1229,31 @@
                 "z": 0.0
             },
             "toolPose": {
-                "gripPoint": { "x": -0.13152, "y": 1.04609, "z": -0.43091 },
-                "gripRotation": { "x": 13.48094, "y": 264.2644, "z": 179.0959 },
-                "tipPoint": { "x": -0.62865, "y": 0.02435, "z": 0.01352 },
-                "tipAxis": { "x": -0.43197, "y": -0.82353, "z": 0.36769 },
-                "cursorOffset": { "x": 0.0106, "y": 0.84575, "z": 0.00144 },
+                "gripPoint": {
+                    "x": -0.13152,
+                    "y": 1.04609,
+                    "z": -0.43091
+                },
+                "gripRotation": {
+                    "x": 13.48094,
+                    "y": 264.2644,
+                    "z": 179.0959
+                },
+                "tipPoint": {
+                    "x": -0.62865,
+                    "y": 0.02435,
+                    "z": 0.01352
+                },
+                "tipAxis": {
+                    "x": -0.43197,
+                    "y": -0.82353,
+                    "z": 0.36769
+                },
+                "cursorOffset": {
+                    "x": 0.0106,
+                    "y": 0.84575,
+                    "z": 0.00144
+                },
                 "handedness": "right",
                 "poseHint": "power_grip"
             }
@@ -1177,11 +1279,31 @@
             "purpose": "Starts and tightens the X-axis fitting fasteners.",
             "assetRef": "assets/tools/tool_allen_key_metric.glb",
             "toolPose": {
-                "gripPoint": { "x": 0.02453, "y": -0.03321, "z": 0.07203 },
-                "gripRotation": { "x": 294.8315, "y": 83.49214, "z": 286.4313 },
-                "tipPoint": { "x": -0.00068, "y": 0.03388, "z": -0.00059 },
-                "tipAxis": { "x": 0, "y": 0.8745, "z": 0.48502 },
-                "cursorOffset": { "x": -0.00402, "y": 0.03453, "z": 0.00687 },
+                "gripPoint": {
+                    "x": 0.02453,
+                    "y": -0.03321,
+                    "z": 0.07203
+                },
+                "gripRotation": {
+                    "x": 294.8315,
+                    "y": 83.49214,
+                    "z": 286.4313
+                },
+                "tipPoint": {
+                    "x": -0.00068,
+                    "y": 0.03388,
+                    "z": -0.00059
+                },
+                "tipAxis": {
+                    "x": 0,
+                    "y": 0.8745,
+                    "z": 0.48502
+                },
+                "cursorOffset": {
+                    "x": -0.00402,
+                    "y": 0.03453,
+                    "z": 0.00687
+                },
                 "handedness": "either",
                 "poseHint": "precision"
             },
@@ -4459,6 +4581,68 @@
                 "target_extruder_mount_clearance_nozzle",
                 "target_extruder_mount_clearance_sensor"
             ]
+        },
+        {
+            "id": "step_stage_x_axis_carriage_side",
+            "name": "Stage the X-axis carriage side",
+            "assemblyId": "assembly_d3d_extruder_stage_03",
+            "subassemblyId": "subassembly_extruder_x_axis_mount",
+            "sequenceIndex": 69,
+            "instructionText": "Place the X-axis carriage-side interface onto the rod-pair work area so the completed extruder carriage unit has a real printer-side receiving body.",
+            "completionType": "placement",
+            "family": "Place",
+            "requiredPartIds": [
+                "d3d_x_axis_carriage_side"
+            ],
+            "targetIds": [
+                "target_x_axis_carriage_side_stage"
+            ]
+        },
+        {
+            "id": "step_mount_extruder_carriage_unit_to_x_axis_interface",
+            "name": "Mount the completed extruder carriage unit onto the X-axis interface",
+            "assemblyId": "assembly_d3d_extruder_stage_03",
+            "subassemblyId": "subassembly_extruder_x_axis_mount",
+            "sequenceIndex": 70,
+            "instructionText": "Move the completed extruder carriage unit onto the X-axis carriage-side interface and let the rigid mount target guide the first seated printer-side position.",
+            "completionType": "placement",
+            "family": "Place",
+            "requiredSubassemblyId": "subassembly_extruder_carriage_unit",
+            "targetIds": [
+                "target_extruder_carriage_unit_to_x_axis_mount"
+            ]
+        },
+        {
+            "id": "step_place_x_axis_half_carriage",
+            "name": "Close the half carriage over the mounted extruder unit",
+            "assemblyId": "assembly_d3d_extruder_stage_03",
+            "subassemblyId": "subassembly_extruder_x_axis_mount",
+            "sequenceIndex": 71,
+            "instructionText": "Bring the half carriage in square to the mounted carriage side so the clamp-side body closes over the rod path and captures the mounted extruder unit.",
+            "completionType": "placement",
+            "family": "Place",
+            "requiredPartIds": [
+                "d3d_x_axis_half_carriage"
+            ],
+            "targetIds": [
+                "target_x_axis_half_carriage_attach"
+            ]
+        },
+        {
+            "id": "step_check_extruder_x_axis_travel_clearance",
+            "name": "Check extruder X-axis travel clearance",
+            "assemblyId": "assembly_d3d_extruder_stage_03",
+            "subassemblyId": "subassembly_extruder_x_axis_mount",
+            "sequenceIndex": 72,
+            "instructionText": "Inspect the mounted extruder carriage and confirm it can move along the X-axis without visible interference at the left and right travel limits and with nozzle-side clearance preserved.",
+            "completionType": "confirmation",
+            "family": "Confirm",
+            "viewMode": "Inspect",
+            "targetIds": [
+                "target_extruder_x_axis_travel_left",
+                "target_extruder_x_axis_travel_right",
+                "target_extruder_x_axis_nozzle_clearance"
+            ]
         }
     ],
     "validationRules": [
@@ -7090,6 +7274,39 @@
             "id": "target_extruder_mount_clearance_sensor",
             "name": "Extruder Mount Clearance Sensor",
             "anchorRef": "anchors/d3d/extruder/carriage/qc/sensor"
+        },
+        {
+            "id": "target_x_axis_carriage_side_stage",
+            "name": "X-Axis Carriage Side Stage",
+            "anchorRef": "anchors/d3d/extruder_stage03/x_axis/carriage_side/stage",
+            "associatedPartId": "d3d_x_axis_carriage_side"
+        },
+        {
+            "id": "target_extruder_carriage_unit_to_x_axis_mount",
+            "name": "Extruder Carriage Unit To X-Axis Mount",
+            "anchorRef": "anchors/d3d/extruder_stage03/x_axis/carriage_unit/mount",
+            "associatedSubassemblyId": "subassembly_extruder_carriage_unit"
+        },
+        {
+            "id": "target_x_axis_half_carriage_attach",
+            "name": "X-Axis Half Carriage Attach",
+            "anchorRef": "anchors/d3d/extruder_stage03/x_axis/half_carriage/attach",
+            "associatedPartId": "d3d_x_axis_half_carriage"
+        },
+        {
+            "id": "target_extruder_x_axis_travel_left",
+            "name": "Extruder X-Axis Travel Left",
+            "anchorRef": "anchors/d3d/extruder_stage03/x_axis/travel/left"
+        },
+        {
+            "id": "target_extruder_x_axis_travel_right",
+            "name": "Extruder X-Axis Travel Right",
+            "anchorRef": "anchors/d3d/extruder_stage03/x_axis/travel/right"
+        },
+        {
+            "id": "target_extruder_x_axis_nozzle_clearance",
+            "name": "Extruder X-Axis Nozzle Clearance",
+            "anchorRef": "anchors/d3d/extruder_stage03/x_axis/nozzle/clearance"
         }
     ],
     "challengeConfig": {
@@ -7119,7 +7336,9 @@
             "assets/tools/tool_screwdriver_small.glb",
             "assets/parts/d3d_axis_mount_m6x30_bolt_approved.glb",
             "assets/parts/d3d_y_left_axis_unit_approved.glb",
-            "assets/parts/d3d_y_right_axis_unit_approved.glb"
+            "assets/parts/d3d_y_right_axis_unit_approved.glb",
+            "assets/parts/d3d_x_axis_carriage_side_approved.glb",
+            "assets/parts/d3d_x_axis_half_carriage_approved.glb"
         ],
         "effectRefs": [],
         "uiRefs": []
@@ -8847,6 +9066,88 @@
                     "x": 0.11,
                     "y": 0.095,
                     "z": 0.014
+                }
+            },
+            {
+                "partId": "d3d_x_axis_carriage_side",
+                "startPosition": {
+                    "x": -0.32,
+                    "y": 0.82,
+                    "z": -0.08
+                },
+                "startRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "startScale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "color": {
+                    "r": 0.58,
+                    "g": 0.66,
+                    "b": 0.74,
+                    "a": 1.0
+                },
+                "playPosition": {
+                    "x": 0.0,
+                    "y": 0.804,
+                    "z": 0.0
+                },
+                "playRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "playScale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                }
+            },
+            {
+                "partId": "d3d_x_axis_half_carriage",
+                "startPosition": {
+                    "x": 0.34,
+                    "y": 0.82,
+                    "z": -0.08
+                },
+                "startRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "startScale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "color": {
+                    "r": 0.55,
+                    "g": 0.55,
+                    "b": 0.58,
+                    "a": 1.0
+                },
+                "playPosition": {
+                    "x": 0.0,
+                    "y": 0.804,
+                    "z": 0.022
+                },
+                "playRotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "playScale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
                 }
             }
         ],
@@ -12425,6 +12726,156 @@
                     "b": 1.0,
                     "a": 1.0
                 }
+            },
+            {
+                "targetId": "target_x_axis_carriage_side_stage",
+                "position": {
+                    "x": 0.0,
+                    "y": 0.804,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "color": {
+                    "r": 0.2,
+                    "g": 0.84,
+                    "b": 0.58,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_carriage_unit_to_x_axis_mount",
+                "position": {
+                    "x": 0.0,
+                    "y": 0.804,
+                    "z": 0.006
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "color": {
+                    "r": 0.2,
+                    "g": 0.84,
+                    "b": 0.58,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_x_axis_half_carriage_attach",
+                "position": {
+                    "x": 0.0,
+                    "y": 0.804,
+                    "z": 0.022
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "color": {
+                    "r": 0.2,
+                    "g": 0.84,
+                    "b": 0.58,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_x_axis_travel_left",
+                "position": {
+                    "x": -0.12,
+                    "y": 0.804,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "color": {
+                    "r": 0.24,
+                    "g": 0.74,
+                    "b": 0.96,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_x_axis_travel_right",
+                "position": {
+                    "x": 0.12,
+                    "y": 0.804,
+                    "z": 0.0
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "color": {
+                    "r": 0.24,
+                    "g": 0.74,
+                    "b": 0.96,
+                    "a": 1.0
+                }
+            },
+            {
+                "targetId": "target_extruder_x_axis_nozzle_clearance",
+                "position": {
+                    "x": 0.0,
+                    "y": 0.742,
+                    "z": -0.04
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                },
+                "color": {
+                    "r": 0.24,
+                    "g": 0.74,
+                    "b": 0.96,
+                    "a": 1.0
+                }
             }
         ],
         "subassemblyPlacements": [
@@ -12567,6 +13018,25 @@
                     "x": 0.0,
                     "y": 0.82,
                     "z": -0.42
+                },
+                "rotation": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 1.0
+                },
+                "scale": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0
+                }
+            },
+            {
+                "subassemblyId": "subassembly_extruder_carriage_unit",
+                "position": {
+                    "x": 0.28,
+                    "y": 0.84,
+                    "z": -0.18
                 },
                 "rotation": {
                     "x": 0.0,
@@ -13070,6 +13540,164 @@
                             "x": 0.3302,
                             "y": 0.003175,
                             "z": 0.0254
+                        }
+                    }
+                ]
+            },
+            {
+                "subassemblyId": "subassembly_extruder_carriage_unit",
+                "targetId": "target_extruder_carriage_unit_to_x_axis_mount",
+                "memberPlacements": [
+                    {
+                        "partId": "d3d_extruder_simplified_carriage",
+                        "position": {
+                            "x": 0.0,
+                            "y": 0.804,
+                            "z": 0.006
+                        },
+                        "rotation": {
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0,
+                            "w": 1.0
+                        },
+                        "scale": {
+                            "x": 1.0,
+                            "y": 1.0,
+                            "z": 1.0
+                        }
+                    },
+                    {
+                        "partId": "d3d_extruder_mount_bracket",
+                        "position": {
+                            "x": 0.0,
+                            "y": 0.806,
+                            "z": -0.006
+                        },
+                        "rotation": {
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0,
+                            "w": 1.0
+                        },
+                        "scale": {
+                            "x": 1.0,
+                            "y": 1.0,
+                            "z": 1.0
+                        }
+                    },
+                    {
+                        "partId": "d3d_extruder_mount_top_plate",
+                        "position": {
+                            "x": 0.0,
+                            "y": 0.826,
+                            "z": 0.01
+                        },
+                        "rotation": {
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0,
+                            "w": 1.0
+                        },
+                        "scale": {
+                            "x": 1.0,
+                            "y": 1.0,
+                            "z": 1.0
+                        }
+                    },
+                    {
+                        "partId": "d3d_titan_aero_core",
+                        "position": {
+                            "x": 0.0,
+                            "y": 0.792,
+                            "z": -0.035
+                        },
+                        "rotation": {
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0,
+                            "w": 1.0
+                        },
+                        "scale": {
+                            "x": 1.0,
+                            "y": 1.0,
+                            "z": 1.0
+                        }
+                    },
+                    {
+                        "partId": "d3d_extruder_nozzle_assembly",
+                        "position": {
+                            "x": 0.0,
+                            "y": 0.742,
+                            "z": -0.035
+                        },
+                        "rotation": {
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0,
+                            "w": 1.0
+                        },
+                        "scale": {
+                            "x": 1.0,
+                            "y": 1.0,
+                            "z": 1.0
+                        }
+                    },
+                    {
+                        "partId": "d3d_extruder_5015_blower",
+                        "position": {
+                            "x": 0.028,
+                            "y": 0.815,
+                            "z": -0.05
+                        },
+                        "rotation": {
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0,
+                            "w": 1.0
+                        },
+                        "scale": {
+                            "x": 1.0,
+                            "y": 1.0,
+                            "z": 1.0
+                        }
+                    },
+                    {
+                        "partId": "d3d_extruder_sensor_holder",
+                        "position": {
+                            "x": -0.027,
+                            "y": 0.815,
+                            "z": -0.03
+                        },
+                        "rotation": {
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0,
+                            "w": 1.0
+                        },
+                        "scale": {
+                            "x": 1.0,
+                            "y": 1.0,
+                            "z": 1.0
+                        }
+                    },
+                    {
+                        "partId": "d3d_extruder_8mm_sensor",
+                        "position": {
+                            "x": -0.027,
+                            "y": 0.84,
+                            "z": -0.03
+                        },
+                        "rotation": {
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0,
+                            "w": 1.0
+                        },
+                        "scale": {
+                            "x": 1.0,
+                            "y": 1.0,
+                            "z": 1.0
                         }
                     }
                 ]

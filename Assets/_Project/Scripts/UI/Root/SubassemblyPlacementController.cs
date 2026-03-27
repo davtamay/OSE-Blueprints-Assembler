@@ -173,7 +173,13 @@ namespace OSE.UI.Root
                     continue;
 
                 if (stackedSubassemblyIds.Contains(subassembly.id))
+                {
+                    // Stacked subassemblies don't need a visible proxy, but we still
+                    // need the member→subassembly mapping so clicking on their parts
+                    // shows subassembly info and lock checks work correctly.
+                    EnsureMemberMapping(subassembly);
                     continue;
+                }
 
                 if (!IsSubassemblyReady(subassembly.id))
                     continue;
@@ -352,14 +358,30 @@ namespace OSE.UI.Root
             if (!TryGetSubassemblyId(target, out string subassemblyId))
                 yield break;
 
-            if (!_records.TryGetValue(subassemblyId, out ProxyRecord record) || record?.MemberPartIds == null)
-                yield break;
-
-            for (int i = 0; i < record.MemberPartIds.Length; i++)
+            // Prefer proxy record if available (has cached member list).
+            if (_records.TryGetValue(subassemblyId, out ProxyRecord record) && record?.MemberPartIds != null)
             {
-                GameObject partGo = _findSpawnedPart(record.MemberPartIds[i]);
-                if (partGo != null)
-                    yield return partGo;
+                for (int i = 0; i < record.MemberPartIds.Length; i++)
+                {
+                    GameObject partGo = _findSpawnedPart(record.MemberPartIds[i]);
+                    if (partGo != null)
+                        yield return partGo;
+                }
+                yield break;
+            }
+
+            // Fallback for stacked subassemblies without a proxy record:
+            // look up partIds from the subassembly definition directly.
+            MachinePackageDefinition package = _spawner?.CurrentPackage;
+            if (package != null && package.TryGetSubassembly(subassemblyId, out SubassemblyDefinition subassembly) &&
+                subassembly?.partIds != null)
+            {
+                for (int i = 0; i < subassembly.partIds.Length; i++)
+                {
+                    GameObject partGo = _findSpawnedPart(subassembly.partIds[i]);
+                    if (partGo != null)
+                        yield return partGo;
+                }
             }
         }
 
@@ -538,6 +560,22 @@ namespace OSE.UI.Root
                 record.Root.SetActive(false);
 
             _activeSubassemblyId = null;
+        }
+
+        /// <summary>
+        /// Populates _memberToSubassembly for all parts in a subassembly without
+        /// creating a proxy GameObject. Used for stacked/completed subassemblies
+        /// that don't need a visible proxy but still need the mapping for info display.
+        /// </summary>
+        private void EnsureMemberMapping(SubassemblyDefinition subassembly)
+        {
+            if (subassembly?.partIds == null) return;
+            for (int i = 0; i < subassembly.partIds.Length; i++)
+            {
+                string partId = subassembly.partIds[i];
+                if (!string.IsNullOrWhiteSpace(partId))
+                    _memberToSubassembly[partId] = subassembly.id;
+            }
         }
 
         private bool EnsureProxyRecord(string subassemblyId, out ProxyRecord record)

@@ -33,22 +33,36 @@ namespace OSE.Content.Loading
 
             try
             {
-                string json = await ReadTextAsync(packagePath, cancellationToken);
+                string json;
+                using (OseLog.Timed($"ReadJson({sanitizedPackageId})"))
+                    json = await ReadTextAsync(packagePath, cancellationToken);
                 if (string.IsNullOrWhiteSpace(json))
                 {
                     return Failure(sanitizedPackageId, packagePath, "Package JSON was empty.");
                 }
 
-                MachinePackageDefinition package = JsonUtility.FromJson<MachinePackageDefinition>(json);
+                // Apply schema migrations before deserialization so structural
+                // changes from older formats are handled transparently.
+                MigrationResult migration;
+                using (OseLog.Timed($"SchemaMigrate({sanitizedPackageId})"))
+                    migration = PackageSchemaMigrator.Migrate(json);
+                json = migration.Json;
+
+                MachinePackageDefinition package;
+                using (OseLog.Timed($"Deserialize({sanitizedPackageId})"))
+                    package = JsonUtility.FromJson<MachinePackageDefinition>(json);
                 if (package == null || package.machine == null)
                 {
                     return Failure(sanitizedPackageId, packagePath, "Package JSON did not deserialize into a valid machine package.");
                 }
 
                 // Inflate compact JSON conventions (templates, inferred parent IDs, etc.)
-                MachinePackageNormalizer.Normalize(package);
+                using (OseLog.Timed($"Normalize({sanitizedPackageId})"))
+                    MachinePackageNormalizer.Normalize(package);
 
-                MachinePackageValidationResult validation = MachinePackageValidator.Validate(package);
+                MachinePackageValidationResult validation;
+                using (OseLog.Timed($"Validate({sanitizedPackageId})"))
+                    validation = MachinePackageValidator.Validate(package);
                 package.packageId = sanitizedPackageId;
                 if (validation.HasErrors)
                 {

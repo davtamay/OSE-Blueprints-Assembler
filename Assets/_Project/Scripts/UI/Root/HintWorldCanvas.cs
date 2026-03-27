@@ -1,3 +1,4 @@
+using OSE.App;
 using OSE.UI.Utilities;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -32,6 +33,22 @@ namespace OSE.UI.Root
             EnsureDocument();
             BuildUi();
             SetVisible(false);
+            ServiceRegistry.Register<HintWorldCanvas>(this);
+        }
+
+        private void OnDestroy()
+        {
+            ServiceRegistry.Unregister<HintWorldCanvas>();
+
+            if (_panelSettings != null)
+            {
+                if (Application.isPlaying)
+                    Destroy(_panelSettings);
+                else
+                    DestroyImmediate(_panelSettings);
+
+                _panelSettings = null;
+            }
         }
 
         private void Update()
@@ -46,19 +63,6 @@ namespace OSE.UI.Root
             }
 
             UpdateTransform();
-        }
-
-        private void OnDestroy()
-        {
-            if (_panelSettings == null)
-                return;
-
-            if (Application.isPlaying)
-                Destroy(_panelSettings);
-            else
-                DestroyImmediate(_panelSettings);
-
-            _panelSettings = null;
         }
 
         public void ShowHint(string hintType, string title, string message, Transform followTarget)

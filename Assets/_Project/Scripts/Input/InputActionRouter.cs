@@ -1,4 +1,5 @@
 using System;
+using OSE.App;
 using OSE.Core;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -18,6 +19,15 @@ namespace OSE.Input
             _playerInput = GetComponent<PlayerInput>();
             if (_playerInput != null)
                 _playerInput.notificationBehavior = PlayerNotifications.InvokeUnityEvents;
+
+            ServiceRegistry.Register<IInputRouter>(this);
+            ServiceRegistry.Register<InputActionRouter>(this);
+        }
+
+        private void OnDestroy()
+        {
+            ServiceRegistry.Unregister<IInputRouter>();
+            ServiceRegistry.Unregister<InputActionRouter>();
         }
 
         public void SetContext(InputContext context)

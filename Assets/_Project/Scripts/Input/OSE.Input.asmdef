@@ -3,6 +3,7 @@
     "rootNamespace": "OSE.Input",
     "references": [
         "OSE.Core",
+        "OSE.App",
         "Unity.InputSystem"
     ],
     "includePlatforms": [],

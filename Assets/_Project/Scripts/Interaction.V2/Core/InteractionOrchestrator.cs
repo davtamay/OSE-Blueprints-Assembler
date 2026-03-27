@@ -121,6 +121,7 @@ namespace OSE.Interaction
 
         private void Bootstrap(InteractionMode mode)
         {
+            using var _ = OseLog.Timed($"InteractionOrchestrator.Bootstrap({mode})");
             OseLog.Info($"[InteractionOrchestrator] Bootstrapping V2 interaction (mode={mode})...");
 
             // ── 1. Disable XR camera drivers that would fight V2 ──
@@ -141,9 +142,9 @@ namespace OSE.Interaction
 
             _cameraRig.InitializeFromCurrentTransform(_defaultPivot, _settings);
 
-            // ── 4. Find existing scene systems ──
-            var router = FindFirstObjectByType<InputActionRouter>();
-            var selectionService = FindFirstObjectByType<SelectionService>();
+            // ── 4. Resolve scene services via registry ──
+            ServiceRegistry.TryGet<InputActionRouter>(out var router);
+            ServiceRegistry.TryGet<SelectionService>(out var selectionService);
 
             if (router == null) OseLog.Warn("[InteractionOrchestrator] InputActionRouter not found.");
             if (selectionService == null) OseLog.Warn("[InteractionOrchestrator] SelectionService not found.");
@@ -174,7 +175,7 @@ namespace OSE.Interaction
             _placementAssist = new PlacementAssistService(_settings);
 
             // ── 8. Feedback Presenter ──
-            _feedbackPresenter = FindFirstObjectByType<InteractionFeedbackPresenter>();
+            ServiceRegistry.TryGet<InteractionFeedbackPresenter>(out _feedbackPresenter);
             if (_feedbackPresenter == null)
             {
                 _feedbackPresenter = gameObject.AddComponent<InteractionFeedbackPresenter>();
@@ -342,6 +343,7 @@ namespace OSE.Interaction
 
             // Start target sphere pulsing for Use steps (deferred so targets are spawned first)
             StartCoroutine(DeferredStartTargetPulsing());
+
         }
 
         private void HandleIntroDismissedFraming(MachineIntroDismissed evt)
@@ -1094,15 +1096,29 @@ namespace OSE.Interaction
                 or InteractionState.CameraPan
                 or InteractionState.CameraZoom;
 
-        private static bool IsPartLockedForMovement(GameObject part)
+        private bool IsPartLockedForMovement(GameObject part)
         {
             if (part == null)
                 return false;
 
-            if (!ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
-                return false;
+            // Prefer the bridge's comprehensive check — it handles subassembly
+            // proxies, member-part resolution, and the local state dictionary.
+            if (_partBridge != null)
+            {
+                bool locked = _partBridge.IsPartMovementLocked(part);
+                OseLog.Info($"[Orchestrator] IsPartLockedForMovement('{part.name}'): bridge={locked}");
+                if (locked) return true;
+            }
 
-            return partController.IsPartLockedForMovement(part.name);
+            // Fallback: direct PartRuntimeController lookup by GO name.
+            if (ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
+            {
+                bool locked = partController.IsPartLockedForMovement(part.name);
+                OseLog.Info($"[Orchestrator] IsPartLockedForMovement('{part.name}'): controller={locked}, state={partController.GetPartState(part.name)}");
+                if (locked) return true;
+            }
+
+            return false;
         }
 
         private GameObject NormalizeSelectableTarget(GameObject target)

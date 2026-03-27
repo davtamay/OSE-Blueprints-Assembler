@@ -29,26 +29,26 @@ namespace OSE.UI.Root
     [RequireComponent(typeof(PackagePartSpawner))]
     public sealed class PartInteractionBridge : MonoBehaviour, IPartActionBridge, IToolPreviewProvider, IPersistentToolManager
     {
-        private static readonly Color SelectedPartColor = new Color(1.0f, 0.85f, 0.2f, 1.0f);
-        private static readonly Color GrabbedPartColor = new Color(1.0f, 0.65f, 0.1f, 1.0f);
-        private static readonly Color HoveredPartColor = new Color(0.60f, 0.82f, 1.0f, 1.0f);
-        private static readonly Color DimmedPartColor = new Color(0.58f, 0.58f, 0.58f, 1.0f);
-        private static readonly Color ActiveStepEmission = new Color(0.15f, 0.35f, 0.6f);
-        private static readonly Color PreviewReadyColor = new Color(0.3f, 1.0f, 0.5f, 0.4f);
-        private static readonly Color HintHighlightColorA = new Color(0.95f, 0.85f, 0.2f, 0.4f);
-        private static readonly Color HintHighlightColorB = new Color(1.0f, 0.95f, 0.35f, 0.7f);
-        private static readonly Color HoveredSubassemblyEmission = new Color(0.05f, 0.16f, 0.28f);
-        private static readonly Color SelectedSubassemblyEmission = new Color(0.35f, 0.22f, 0.02f);
-
-        private const float DragThresholdPixels = 5f;
-        private const float ScrollDepthSpeed = 0.5f; // units per scroll tick
-        private const float PinchDepthSpeed = 0.02f; // units per pixel of pinch delta
-        private const float DepthAdjustSpeed = 0.01f; // units per pixel in shift depth mode
-        private const float MinDragRayDistance = 0.05f;
-        private const float DragViewportMargin = 0.03f;
-        private const float DragFloorEpsilon = 0.001f;
-        private const float HintHighlightDuration = 6f;
-        private const float HintHighlightPulseSpeed = 4f;
+        // Visual constants — see InteractionVisualConstants for values
+        private static Color SelectedPartColor => InteractionVisualConstants.SelectedPartColor;
+        private static Color GrabbedPartColor => InteractionVisualConstants.GrabbedPartColor;
+        private static Color HoveredPartColor => InteractionVisualConstants.HoveredPartColor;
+        private static Color DimmedPartColor => InteractionVisualConstants.DimmedPartColor;
+        private static Color ActiveStepEmission => InteractionVisualConstants.ActiveStepEmission;
+        private static Color PreviewReadyColor => InteractionVisualConstants.PreviewReadyColor;
+        private static Color HintHighlightColorA => InteractionVisualConstants.HintHighlightColorA;
+        private static Color HintHighlightColorB => InteractionVisualConstants.HintHighlightColorB;
+        private static Color HoveredSubassemblyEmission => InteractionVisualConstants.HoveredSubassemblyEmission;
+        private static Color SelectedSubassemblyEmission => InteractionVisualConstants.SelectedSubassemblyEmission;
+        private const float DragThresholdPixels = InteractionVisualConstants.DragThresholdPixels;
+        private const float ScrollDepthSpeed = InteractionVisualConstants.ScrollDepthSpeed;
+        private const float PinchDepthSpeed = InteractionVisualConstants.PinchDepthSpeed;
+        private const float DepthAdjustSpeed = InteractionVisualConstants.DepthAdjustSpeed;
+        private const float MinDragRayDistance = InteractionVisualConstants.MinDragRayDistance;
+        private const float DragViewportMargin = InteractionVisualConstants.DragViewportMargin;
+        private const float DragFloorEpsilon = InteractionVisualConstants.DragFloorEpsilon;
+        private const float HintHighlightDuration = InteractionVisualConstants.HintHighlightDuration;
+        private const float HintHighlightPulseSpeed = InteractionVisualConstants.HintHighlightPulseSpeed;
         // Toggled automatically by V2 InteractionOrchestrator at runtime via IPartActionBridge.
         // When true, this bridge skips pointer input polling (V2 handles input instead).
         [HideInInspector] public bool ExternalControlEnabled;
@@ -82,6 +82,9 @@ namespace OSE.UI.Root
         // ── Persistent tools (clamps, fixtures) that remain in scene across steps ──
         private PersistentToolManagerBridge _persistentToolMgr;
 
+        // ── Visual feedback (hover, selection, hint highlight, revelation) ──
+        private PartVisualFeedbackManager _visualFeedback;
+
         // Drag state
         private GameObject _draggedPart;
         private string _draggedPartId;
@@ -109,9 +112,9 @@ namespace OSE.UI.Root
         private readonly HashSet<string> _revealedPartIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _activeStepPartIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private bool _partsHiddenOnSpawn;
-        private const float PartGridSpacing = 0.6f;         // spacing between grid cells (X and Z)
-        private const float PartGridStartZ = -2.8f;        // Z of the first row (closest to camera)
-        private const float PartLayoutY = 0.55f;            // height above floor
+        private const float PartGridSpacing = InteractionVisualConstants.PartGridSpacing;
+        private const float PartGridStartZ = InteractionVisualConstants.PartGridStartZ;
+        private const float PartLayoutY = InteractionVisualConstants.PartLayoutY;
 
         // Sequential target ordering — tracks which targetId index is active
         // when the step uses targetOrder == "sequential".
@@ -148,12 +151,28 @@ namespace OSE.UI.Root
                 FindSpawnedPart,
                 GetPartState);
             ServiceRegistry.Register<ISubassemblyPlacementService>(_subassemblyPlacementController);
+            _visualFeedback ??= new PartVisualFeedbackManager(
+                _spawner,
+                _partStates,
+                FindSpawnedPart,
+                IsSubassemblyProxy,
+                (go, action) => { ForEachProxyMember(go, action); return true; },
+                () => _selectionService,
+                () => _isDragging,
+                IsToolModeLockedForParts,
+                GetHoveredPartFromXri,
+                GetHoveredPartFromMouse,
+                () => _placeHandler,
+                () => _draggedPart,
+                IsPartMovementLocked,
+                NormalizeSelectablePlacementTarget,
+                ResetDragState);
             _placeHandler ??= new PlaceStepHandler(
                 _spawner,
                 () => _setup,
                 FindSpawnedPart,
                 partId => _partStates.TryGetValue(partId, out var s) ? s : PartPlacementState.NotIntroduced,
-                RestorePartVisual,
+                go => _visualFeedback.RestorePartVisual(go),
                 ResetDragState,
                 _spawnedPreviews,
                 () => _isSequentialStep,
@@ -210,12 +229,9 @@ namespace OSE.UI.Root
                 _selectionService.OnInspected -= HandleSelectionServiceInspected;
             }
 
-            ClearPartHoverVisual();
+            _visualFeedback?.Clear();
             ClearDockArcVisual();
             _partStates.Clear();
-            _revealedPartIds.Clear();
-            _activeStepPartIds.Clear();
-            _partsHiddenOnSpawn = false;
             ClearToolPreviewIndicator();
             ClearToolActionTargets();
             _router?.CleanupAll();
@@ -242,12 +258,12 @@ namespace OSE.UI.Root
             UpdateXRPreviewProximity();
             if (!ExternalControlEnabled)
             {
-                UpdatePartHoverVisual();
-                UpdatePointerDragSelectionVisual();
+                _visualFeedback?.UpdatePartHoverVisual();
+                _visualFeedback?.UpdatePointerDragSelectionVisual();
             }
-            UpdateSelectedSubassemblyVisual();
+            _visualFeedback?.UpdateSelectedSubassemblyVisual();
             UpdateDockArcVisual();
-            UpdateHintHighlight();
+            _visualFeedback?.UpdateHintHighlight();
             // Stop preview pulse when dragging starts — proximity highlight takes over
             if (_draggedPart != null)
                 _placeHandler?.StopPreviewSelectionPulse();
@@ -651,9 +667,20 @@ namespace OSE.UI.Root
             if (_externalHoveredPartForUi != null)
             {
                 if (IsSubassemblyProxy(_externalHoveredPartForUi))
+                {
                     PushSubassemblyInfoToUI(_externalHoveredPartForUi, isHoverInfo: true);
+                }
+                else if (_subassemblyPlacementController != null &&
+                         _subassemblyPlacementController.TryGetSubassemblyId(_externalHoveredPartForUi, out _) &&
+                         _subassemblyPlacementController.TryGetDisplayInfo(_externalHoveredPartForUi, out _, out _))
+                {
+                    // Part belongs to a completed subassembly — show subassembly info
+                    PushSubassemblyInfoToUI(_externalHoveredPartForUi, isHoverInfo: true);
+                }
                 else
+                {
                     PushPartInfoToUI(_externalHoveredPartForUi.name, isHoverInfo: true);
+                }
                 return;
             }
 
@@ -689,6 +716,63 @@ namespace OSE.UI.Root
 
         GameObject IPartActionBridge.NormalizeSelectableTarget(GameObject target)
             => NormalizeExternalSelectableTarget(target);
+
+        bool IPartActionBridge.IsPartMovementLocked(GameObject target)
+        {
+            if (target == null) return false;
+            target = NormalizeSelectablePlacementTarget(target);
+            string selectionId = ResolveSelectionId(target);
+
+            if (string.IsNullOrWhiteSpace(selectionId))
+            {
+                // Target wasn't recognized as a spawned part or proxy — check by
+                // name directly against the local state dictionary as a fallback.
+                selectionId = target.name;
+            }
+
+            bool locked = IsPartMovementLocked(selectionId);
+
+            // Double-check the bridge's own state dictionary for completed parts
+            // that might not be tracked in PartRuntimeController (e.g., after session restore).
+            if (!locked)
+            {
+                PartPlacementState localState = GetPartState(selectionId);
+                if (localState == PartPlacementState.PlacedVirtually || localState == PartPlacementState.Completed)
+                {
+                    OseLog.VerboseInfo($"[PartInteraction] Bridge local state override: '{selectionId}' is {localState} — locking.");
+                    locked = true;
+                }
+            }
+
+            // Also check subassembly membership — if this part belongs to any
+            // subassembly whose other members are completed, lock it.
+            // Uses PartRuntimeController.IsPartLockedForMovement which handles the
+            // Selected-from-Completed case (previousState tracking).
+            if (!locked && _subassemblyPlacementController != null)
+            {
+                ServiceRegistry.TryGet<PartRuntimeController>(out var memberController);
+                if (_subassemblyPlacementController.TryGetSubassemblyId(target, out string subId) &&
+                    !string.IsNullOrWhiteSpace(subId))
+                {
+                    foreach (GameObject member in _subassemblyPlacementController.EnumerateMemberParts(target))
+                    {
+                        if (member == null) continue;
+                        bool memberLocked = memberController != null
+                            ? memberController.IsPartLockedForMovement(member.name)
+                            : IsPartStateLockedLocally(member.name);
+                        if (memberLocked)
+                        {
+                            OseLog.VerboseInfo($"[PartInteraction] Subassembly member '{member.name}' locked — locking '{selectionId}'.");
+                            locked = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            OseLog.Info($"[PartInteraction] IsPartMovementLocked(GO '{target.name}', id='{selectionId}'): {locked}, bridgeState={GetPartState(selectionId)}");
+            return locked;
+        }
 
         bool IPartActionBridge.TryClickToPlace(GameObject selectedPart, Vector2 screenPos)
             => TryExternalClickToPlace(selectedPart, screenPos);
@@ -839,7 +923,11 @@ namespace OSE.UI.Root
 
             bool accepted;
             string selectionId = ResolveSelectionId(target);
-            if (IsSubassemblyProxy(target))
+            bool isProxy = IsSubassemblyProxy(target);
+            bool isMemberOfSubassembly = !isProxy && _subassemblyPlacementController != null &&
+                _subassemblyPlacementController.TryGetSubassemblyId(target, out _);
+
+            if (isProxy)
             {
                 accepted = !string.IsNullOrWhiteSpace(selectionId);
                 if (accepted)
@@ -857,6 +945,15 @@ namespace OSE.UI.Root
                 accepted = isInspect
                     ? partController.InspectPart(target.name)
                     : partController.SelectPart(target.name);
+
+                // If this part belongs to a completed subassembly, show subassembly info
+                // in the panel but only highlight the clicked part (not all siblings).
+                if (accepted && isMemberOfSubassembly &&
+                    _subassemblyPlacementController.TryGetDisplayInfo(target, out _, out _))
+                {
+                    PushSubassemblyInfoToUI(target, isHoverInfo: false);
+                    ClearPartHoverVisual();
+                }
             }
 
             if (!accepted)
@@ -1034,14 +1131,14 @@ namespace OSE.UI.Root
             if (!Application.isPlaying)
             {
                 if (_actionRouter == null)
-                    _actionRouter = FindFirstObjectByType<InputActionRouter>();
+                    ServiceRegistry.TryGet<InputActionRouter>(out _actionRouter);
                 if (_selectionService == null)
-                    _selectionService = FindFirstObjectByType<SelectionService>();
+                    ServiceRegistry.TryGet<SelectionService>(out _selectionService);
                 return;
             }
 
             if (_actionRouter == null)
-                _actionRouter = FindFirstObjectByType<InputActionRouter>();
+                ServiceRegistry.TryGet<InputActionRouter>(out _actionRouter);
 
             if (_actionRouter == null)
             {
@@ -1054,7 +1151,7 @@ namespace OSE.UI.Root
             }
 
             if (_selectionService == null)
-                _selectionService = FindFirstObjectByType<SelectionService>();
+                ServiceRegistry.TryGet<SelectionService>(out _selectionService);
 
             if (_selectionService == null)
             {
@@ -1480,34 +1577,7 @@ namespace OSE.UI.Root
         /// Parts are arranged in an arc on the near side of the floor,
         /// keeping the center clear for the machine being assembled.
         /// </summary>
-        private void HideNonIntroducedParts()
-        {
-            if (_partsHiddenOnSpawn) return;
-            _partsHiddenOnSpawn = true;
-
-            var parts = _spawner?.SpawnedParts;
-            if (parts == null) return;
-
-            for (int i = 0; i < parts.Count; i++)
-            {
-                if (parts[i] == null) continue;
-
-                string partId = parts[i].name;
-
-                // Keep completed/placed parts visible
-                if (_partStates.TryGetValue(partId, out var state) &&
-                    state is PartPlacementState.Completed or PartPlacementState.PlacedVirtually)
-                    continue;
-
-                // Keep already-revealed parts visible
-                if (_revealedPartIds.Contains(partId))
-                    continue;
-
-                parts[i].SetActive(false);
-            }
-
-            OseLog.Info($"[PartInteraction] Hid non-introduced parts for hybrid presentation.");
-        }
+        private void HideNonIntroducedParts() => _visualFeedback?.HideNonIntroducedParts();
 
         private void RevealStepParts(string stepId)
         {
@@ -2443,7 +2513,7 @@ namespace OSE.UI.Root
                     MaterialHelper.ApplyPreviewMaterial(_hintPreview);
 
                 if (_hintWorldCanvas == null)
-                    _hintWorldCanvas = FindFirstObjectByType<HintWorldCanvas>();
+                    ServiceRegistry.TryGet<HintWorldCanvas>(out _hintWorldCanvas);
 
                 if (_hintWorldCanvas == null)
                 {
@@ -2773,7 +2843,10 @@ namespace OSE.UI.Root
 
                 GameObject childPreview = _spawner.TryLoadPackageAsset(part.assetRef);
                 if (childPreview == null)
-                    childPreview = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                {
+                    OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: skipping subassembly preview member '{memberId}' for target '{targetId}' because asset '{part.assetRef}' could not be loaded.");
+                    continue;
+                }
 
                 childPreview.transform.SetParent(subPreviewRoot.transform, false);
 
@@ -2974,7 +3047,7 @@ namespace OSE.UI.Root
 
         private static bool IsHandTrackingActive()
         {
-            var switcher = FindFirstObjectByType<OSE.Interaction.XRRigModeSwitcher>();
+            ServiceRegistry.TryGet<OSE.Interaction.XRRigModeSwitcher>(out var switcher);
             return switcher != null && switcher.UsingHands;
         }
 
@@ -3537,10 +3610,7 @@ namespace OSE.UI.Root
         private void ClearPartHoverVisual()
         {
             if (_hoveredPart == null)
-            {
-                _hoveredPart = null;
                 return;
-            }
 
             RestorePartVisual(_hoveredPart);
             _hoveredPart = null;
@@ -3757,6 +3827,27 @@ namespace OSE.UI.Root
                 MaterialHelper.ApplyTint(partGo, SelectedPartColor);
             else
                 MaterialHelper.Apply(partGo, "Preview Part Material", SelectedPartColor);
+        }
+
+        /// <summary>
+        /// Highlights all members of a completed subassembly when one member is selected.
+        /// </summary>
+        private void ApplySelectedSubassemblyMemberVisual(GameObject clickedMember, string subassemblyId)
+        {
+            ApplySelectedPartVisual(clickedMember);
+            MaterialHelper.SetEmission(clickedMember, SelectedSubassemblyEmission);
+
+            // Also highlight sibling members so the whole subassembly lights up.
+            // EnumerateMemberParts works with or without a proxy record.
+            if (_subassemblyPlacementController != null)
+            {
+                foreach (GameObject member in _subassemblyPlacementController.EnumerateMemberParts(clickedMember))
+                {
+                    if (member == null || member == clickedMember) continue;
+                    ApplySelectedPartVisual(member);
+                    MaterialHelper.SetEmission(member, SelectedSubassemblyEmission);
+                }
+            }
         }
 
         private void ApplyHintSourceVisual(GameObject partGo, Color color)
@@ -4155,15 +4246,49 @@ namespace OSE.UI.Root
             if (string.IsNullOrWhiteSpace(partId))
                 return false;
 
-            if (_subassemblyPlacementController != null &&
-                string.Equals(_subassemblyPlacementController.ActiveSubassemblyId, partId, StringComparison.OrdinalIgnoreCase))
+            ServiceRegistry.TryGet<PartRuntimeController>(out var partController);
+
+            // For subassembly IDs (including the active subassembly): check if ANY
+            // member part is locked. Previously the active subassembly was unconditionally
+            // exempted, which allowed dragging completed proxies.
+            if (_subassemblyPlacementController != null)
             {
-                return false;
+                var package = _spawner?.CurrentPackage;
+                GameObject partGo = FindSpawnedPart(partId);
+                bool isSubassemblyId = partGo == null && _subassemblyPlacementController.TryGetProxy(partId, out _);
+                if (!isSubassemblyId)
+                    isSubassemblyId = package != null && package.TryGetSubassembly(partId, out _);
+
+                if (isSubassemblyId)
+                {
+                    bool anyMemberFound = false;
+                    bool anyMemberLocked = false;
+                    if (package != null && package.TryGetSubassembly(partId, out var subDef) && subDef?.partIds != null)
+                    {
+                        foreach (string memberId in subDef.partIds)
+                        {
+                            if (string.IsNullOrWhiteSpace(memberId)) continue;
+                            anyMemberFound = true;
+                            bool memberLocked = partController != null
+                                ? partController.IsPartLockedForMovement(memberId)
+                                : IsPartStateLockedLocally(memberId);
+                            if (memberLocked) { anyMemberLocked = true; break; }
+                        }
+                    }
+                    if (anyMemberLocked) return true;
+                    // Active subassembly with no locked members → allow drag for placement.
+                    if (anyMemberFound) return false;
+                }
             }
 
-            if (ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
+            if (partController != null)
                 return partController.IsPartLockedForMovement(partId);
 
+            return IsPartStateLockedLocally(partId);
+        }
+
+        private bool IsPartStateLockedLocally(string partId)
+        {
             PartPlacementState localState = GetPartState(partId);
             return localState == PartPlacementState.PlacedVirtually ||
                 localState == PartPlacementState.Completed;
@@ -4223,49 +4348,7 @@ namespace OSE.UI.Root
 
         private GameObject RaycastSelectableObject(Ray ray) => RaycastSpawnedPart(ray);
 
-        internal sealed class ToolActionTargetInfo : MonoBehaviour
-        {
-            public string TargetId;
-            public string RequiredToolId;
-            public Vector3 BaseScale;
-            public Vector3 BaseLocalPosition;
-            /// <summary>World position of the actual action point on the surface (before sphere lift).</summary>
-            public Vector3 SurfaceWorldPos;
-            /// <summary>World rotation of the authored target marker before it is lifted for clickability.</summary>
-            public Quaternion TargetWorldRotation;
-            /// <summary>Direction of the weld line in world space (normalized). Zero = point target.</summary>
-            public Vector3 WeldAxis;
-            /// <summary>Length of the weld line in scene units.</summary>
-            public float WeldLength;
-            /// <summary>When true, use <see cref="ToolActionRotation"/> instead of computing orientation from camera.</summary>
-            public bool HasToolActionRotation;
-            /// <summary>Authored tool orientation at this target (world-space Euler angles).</summary>
-            public Quaternion ToolActionRotation;
-        }
-
-        internal sealed class PlacementPreviewInfo : MonoBehaviour, IPlacementPreviewMarker
-        {
-            public string TargetId;
-            public string PartId;
-            public string SubassemblyId;
-
-            public bool MatchesPart(string partId)
-            {
-                return !string.IsNullOrEmpty(partId) &&
-                    string.Equals(PartId, partId, StringComparison.OrdinalIgnoreCase);
-            }
-
-            public bool MatchesSubassembly(string subassemblyId)
-            {
-                return !string.IsNullOrEmpty(subassemblyId) &&
-                    string.Equals(SubassemblyId, subassemblyId, StringComparison.OrdinalIgnoreCase);
-            }
-
-            public bool MatchesSelectionId(string selectionId)
-            {
-                return MatchesPart(selectionId) || MatchesSubassembly(selectionId);
-            }
-        }
+        // ToolActionTargetInfo and PlacementPreviewInfo extracted to standalone files.
 
         private static bool IsRepositioning()
         {

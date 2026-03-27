@@ -95,7 +95,7 @@ available OSE source material is strongest there: 1/8 inch x 1 inch flat stock c
 
 | Package ID | Scope | Parts | Steps | Tools | Status |
 |------------|-------|-------|-------|-------|--------|
-| `d3d_v18_10` | **Frame fabrication, cube joining, axes stage 01, and extruder stages 01-03** | 42 | 68 | 8 | **Authored in data (exact side geometry, square-check, hold-down, sequential panel tack-weld, rigid-panel stacking, diagonal-based cube alignment check, opposite-corner hold-down, cube corner tack sequence, first seam-weld pass, grinder cleanup on key upper joints, post-cleanup square check, frame acceptance, Y-axis pair mounting, explicit `M6x30` X-axis mount hardware, constrained X-axis fit, belt tension, first axis QC, a first Titan Aero nozzle / fan / sensor module slice, a carriage-side Titan Aero mount-stack slice, and the first printer-side X-axis extruder-mount / half-carriage closure slice)** |
+| `d3d_v18_10` | **Frame fabrication, cube joining, axes stage 01, and extruder stages 01-03** | 44 | 72 | 8 | **Authored in data (exact side geometry, square-check, hold-down, sequential panel tack-weld, rigid-panel stacking, diagonal-based cube alignment check, opposite-corner hold-down, cube corner tack sequence, first seam-weld pass, grinder cleanup on key upper joints, post-cleanup square check, frame acceptance, Y-axis pair mounting, explicit `M6x30` X-axis mount hardware, constrained X-axis fit, belt tension, first axis QC, a first Titan Aero nozzle / fan / sensor module slice, a carriage-side Titan Aero mount-stack slice, and the first printer-side X-axis extruder-mount / half-carriage closure slice)** |
 
 ### Current Package Coverage (`d3d_v18_10`)
 

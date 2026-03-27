@@ -29,8 +29,6 @@ namespace OSE.UI.Root
         private Vector3 _portAWorldPos;
         private Vector3 _portBWorldPos;
 
-        private const float ScreenProximityDesktop = 120f;
-        private const float ScreenProximityMobile  = 180f;
 
         public ConnectStepHandler(
             PackagePartSpawner spawner,
@@ -96,7 +94,7 @@ namespace OSE.UI.Root
                 {
                     AnchorA = anchorA,
                     AnchorB = anchorB,
-                    NearBScreenThreshold = Application.isMobilePlatform ? ScreenProximityMobile : ScreenProximityDesktop,
+                    NearBScreenThreshold = Application.isMobilePlatform ? StepHandlerConstants.Proximity.MobilePixels : StepHandlerConstants.Proximity.DesktopPixels,
                     LiveVisualFactory = (a, b) => CableLineVisual.Spawn(a, b, cableColor),
                     ResultVisualFactory = (a, b) => CableLineVisual.Spawn(a, b, cableColor),
                 });
@@ -253,29 +251,8 @@ namespace OSE.UI.Root
 
         private GameObject FindNearestPortSphereByScreenProximity(Vector2 screenPos)
         {
-            Camera cam = Camera.main;
-            if (cam == null) return null;
-
-            float threshold = Application.isMobilePlatform ? ScreenProximityMobile : ScreenProximityDesktop;
-            float closestDist = threshold;
-            GameObject closest = null;
-
-            for (int i = 0; i < _spawnedPortSpheres.Count; i++)
-            {
-                GameObject sphere = _spawnedPortSpheres[i];
-                if (sphere == null) continue;
-
-                Vector3 sp = cam.WorldToScreenPoint(sphere.transform.position);
-                if (sp.z <= 0f) continue;
-
-                float dist = Vector2.Distance(screenPos, new Vector2(sp.x, sp.y));
-                if (dist < closestDist)
-                {
-                    closestDist = dist;
-                    closest = sphere;
-                }
-            }
-            return closest;
+            return StepHandlerConstants.FindNearestByScreenProximity(
+                _spawnedPortSpheres, screenPos, StepHandlerConstants.Proximity.GetThreshold());
         }
 
         // ── Port-sphere visual state ──

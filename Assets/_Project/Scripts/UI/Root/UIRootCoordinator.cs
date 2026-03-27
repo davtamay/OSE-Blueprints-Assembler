@@ -2083,9 +2083,7 @@ namespace OSE.UI.Root
             _toolInfoPanelController ??= new ToolInfoPanelController();
 
             if (_selectionService == null)
-            {
-                _selectionService = FindFirstObjectByType<SelectionService>();
-            }
+                ServiceRegistry.TryGet<SelectionService>(out _selectionService);
 
         }
 
@@ -2103,7 +2101,7 @@ namespace OSE.UI.Root
         private bool HasSelectionContext()
         {
             if (_selectionService == null)
-                _selectionService = FindFirstObjectByType<SelectionService>();
+                ServiceRegistry.TryGet<SelectionService>(out _selectionService);
 
             return _selectionService != null
                 && (_selectionService.CurrentSelection != null

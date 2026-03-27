@@ -1,4 +1,7 @@
+using System;
+using System.Diagnostics;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace OSE.Core
 {
@@ -33,6 +36,31 @@ namespace OSE.Core
                 VerboseInfo($"[Validation] {stepId} VALID");
             else
                 Info($"[Validation] {stepId} INVALID ({reason})");
+        }
+
+        /// <summary>
+        /// Creates a scoped timer that logs elapsed time on Dispose.
+        /// Usage: <c>using (OseLog.Timed("Loading package")) { ... }</c>
+        /// </summary>
+        public static TimedScope Timed(string operationName) => new TimedScope(operationName);
+
+        public readonly struct TimedScope : IDisposable
+        {
+            private readonly string _operation;
+            private readonly long _startTicks;
+
+            internal TimedScope(string operation)
+            {
+                _operation = operation;
+                _startTicks = Stopwatch.GetTimestamp();
+            }
+
+            public void Dispose()
+            {
+                long elapsed = Stopwatch.GetTimestamp() - _startTicks;
+                double ms = (double)elapsed / Stopwatch.Frequency * 1000.0;
+                Info($"[Timing] {_operation}: {ms:F1}ms");
+            }
         }
     }
 }

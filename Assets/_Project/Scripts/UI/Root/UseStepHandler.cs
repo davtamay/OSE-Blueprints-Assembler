@@ -6,7 +6,7 @@ using OSE.Core;
 using OSE.Interaction;
 using OSE.Runtime;
 using UnityEngine;
-using ToolActionTargetInfo = OSE.UI.Root.PartInteractionBridge.ToolActionTargetInfo;
+// ToolActionTargetInfo is now a top-level type in this namespace.
 
 namespace OSE.UI.Root
 {
@@ -30,8 +30,6 @@ namespace OSE.UI.Root
         private const float ToolTargetHeightPulse    = 0.05f;
         private const float ToolTargetColliderRadius  = 1.5f;
         private const float ToolBoundsReadyPaddingPx  = 18f;
-        private const float ScreenProximityDesktop    = 120f;
-        private const float ScreenProximityMobile     = 180f;
         private const float ToolTargetFadeStartDistance = 3.0f;
         private const float ToolTargetFadeEndDistance   = 0.8f;
 
@@ -55,6 +53,7 @@ namespace OSE.UI.Root
         private ToolActionTargetInfo _readyToolActionTarget;
         private bool _retryPending;
         private string _activeProfile;
+        private StepProfile _activeProfileEnum;
         private Color _completionEffectColor = DefaultCompletionColor;
         private string _completionParticleId;
         private float _completionPulseScale = DefaultPulseScale;
@@ -205,6 +204,7 @@ namespace OSE.UI.Root
         {
             _completedTargetCountForStep = 0;
             _activeProfile = context.Step.profile;
+            _activeProfileEnum = context.Step.ResolvedProfile;
 
             var fb = context.Step.feedback;
             _completionEffectColor = TryParseHexColor(fb?.completionEffectColor, DefaultCompletionColor);
@@ -253,6 +253,7 @@ namespace OSE.UI.Root
             ClearToolActionTargets();
             CleanupAnchorInteraction();
             _activeProfile = null;
+            _activeProfileEnum = StepProfile.None;
             _measurePayload = null;
             _measureAnchorAWorldPos = null;
             _completedTargetCountForStep = 0;
@@ -286,6 +287,7 @@ namespace OSE.UI.Root
             // regardless of whether OnStepActivated was called.
             StepDefinition currentStep = earlyStepCtrl.CurrentStepDefinition;
             _activeProfile = currentStep?.profile;
+            _activeProfileEnum = currentStep?.ResolvedProfile ?? StepProfile.None;
 
             if (currentStep?.requiredToolActions == null || currentStep.requiredToolActions.Length == 0)
                 return;
@@ -472,7 +474,7 @@ namespace OSE.UI.Root
             if (!ToolProfileRegistry.Get(_activeProfile).SpawnClickEffect)
                 return;
 
-            bool isMeasure = string.Equals(_activeProfile, ToolActionProfiles.Measure, StringComparison.OrdinalIgnoreCase);
+            bool isMeasure = _activeProfileEnum == StepProfile.Measure;
 
             for (int i = 0; i < _spawnedToolActionTargets.Count; i++)
             {
@@ -502,7 +504,7 @@ namespace OSE.UI.Root
 
         private bool IsMeasureProfile()
         {
-            return string.Equals(_activeProfile, ToolActionProfiles.Measure, StringComparison.OrdinalIgnoreCase);
+            return _activeProfileEnum == StepProfile.Measure;
         }
 
         // ====================================================================
@@ -538,7 +540,7 @@ namespace OSE.UI.Root
             Vector3 endWorldPos = ResolveMarkerWorldPos(pos, scale);
 
             // Create reusable anchor-to-anchor interaction
-            float screenThreshold = Application.isMobilePlatform ? ScreenProximityMobile : ScreenProximityDesktop;
+            float screenThreshold = StepHandlerConstants.Proximity.GetThreshold();
             Color liveColor = new Color(1f, 0.8f, 0.2f, 0.9f);
             Color resultColor = new Color(1f, 0.8f, 0.2f, 1f);
             var config = new AnchorToAnchorInteraction.Config
@@ -1022,7 +1024,7 @@ namespace OSE.UI.Root
             Camera cam = Camera.main;
             if (cam == null) return false;
 
-            float threshold = Application.isMobilePlatform ? ScreenProximityMobile : ScreenProximityDesktop;
+            float threshold = StepHandlerConstants.Proximity.GetThreshold();
             float closestDist = threshold;
 
             for (int i = 0; i < _spawnedToolActionTargets.Count; i++)
@@ -1394,7 +1396,7 @@ namespace OSE.UI.Root
                 GameObject preview = _spawnedPreviews[i];
                 if (preview == null) continue;
 
-                var info = preview.GetComponent<PartInteractionBridge.PlacementPreviewInfo>();
+                var info = preview.GetComponent<PlacementPreviewInfo>();
                 if (info == null || !string.Equals(info.TargetId, targetId, StringComparison.OrdinalIgnoreCase))
                     continue;
 

@@ -7,19 +7,19 @@ authoring brief for `d3d_v18_10`.
 
 ## Implementation Status
 
-`Extruder Stage 03` is now authored in `machine.json` as steps `68` through `71`.
+`Extruder Stage 03` is now authored in `machine.json` as steps `69` through `72`.
 
-What was implemented directly from this brief:
+What is now implemented directly from this brief:
 
+- `d3d_x_axis_carriage_side` placement
 - completed `subassembly_extruder_carriage_unit` mount onto the X-axis
 - `d3d_x_axis_half_carriage` placement
-- conservative half-carriage closure fastener step
 - left-travel / right-travel / nozzle-clearance QC
 
 What remains intentionally deferred:
 
 - `Extruderspacer.fcstd`
-- finer fastener closure story
+- finer closure-fastener story
 - later heated-bed, control-panel, and wiring modules
 
 This is the first printer-side extruder integration slice after:

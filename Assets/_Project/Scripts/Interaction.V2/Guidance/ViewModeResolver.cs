@@ -20,10 +20,10 @@ namespace OSE.Interaction
             }
 
             StepFamily family = step.ResolvedFamily;
-            string profile = step.profile;
+            StepProfile profile = step.ResolvedProfile;
 
             // 2. Profile overrides from registry
-            if (!string.IsNullOrEmpty(profile))
+            if (profile != StepProfile.None)
             {
                 var desc = ToolProfileRegistry.Get(profile);
 

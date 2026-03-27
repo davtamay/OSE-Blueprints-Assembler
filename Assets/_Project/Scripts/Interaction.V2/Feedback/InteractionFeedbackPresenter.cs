@@ -1,4 +1,5 @@
 using UnityEngine;
+using OSE.App;
 using OSE.Core;
 
 namespace OSE.Interaction
@@ -27,6 +28,12 @@ namespace OSE.Interaction
         {
             _hover = new HoverFeedback();
             _selection = new SelectionFeedback();
+            ServiceRegistry.Register<InteractionFeedbackPresenter>(this);
+        }
+
+        private void OnDestroy()
+        {
+            ServiceRegistry.Unregister<InteractionFeedbackPresenter>();
         }
 
         /// <summary>

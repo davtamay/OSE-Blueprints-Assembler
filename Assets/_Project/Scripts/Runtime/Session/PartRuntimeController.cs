@@ -80,8 +80,12 @@ namespace OSE.Runtime
             if (_selectedPartId != null && _selectedPartId != partId)
                 DeselectPart();
 
+            // Re-selecting the same part: keep the original previous state so we
+            // don't overwrite Completed with Selected and break the lock check.
+            if (!string.Equals(_selectedPartId, partId, StringComparison.OrdinalIgnoreCase))
+                _selectedPartPreviousState = currentState;
+
             _selectedPartId = partId;
-            _selectedPartPreviousState = currentState;
             TransitionPart(partId, PartPlacementState.Selected);
             return true;
         }

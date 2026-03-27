@@ -70,6 +70,11 @@ namespace OSE.Content.Validation
             ValidateTargets(package.GetTargets(), partIds, subassemblyIds, issues);
             ValidatePreviewConfigCoverage(package, partIds, targetIds, subassemblyIds, issues);
 
+            // Cross-reference: orphan detection
+            DetectOrphanParts(package, stepIds, issues);
+            DetectOrphanTargets(package, issues);
+            DetectOrphanSteps(package, assemblyIds, issues);
+
             return new MachinePackageValidationResult(issues.ToArray());
         }
 
@@ -1079,6 +1084,112 @@ namespace OSE.Content.Validation
             }
 
             return false;
+        }
+
+        // ── Orphan Detection ──
+
+        private static void DetectOrphanParts(
+            MachinePackageDefinition package,
+            HashSet<string> stepIds,
+            List<MachinePackageValidationIssue> issues)
+        {
+            PartDefinition[] parts = package.GetParts();
+            StepDefinition[] steps = package.GetSteps();
+            if (parts.Length == 0) return;
+
+            var referencedPartIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < steps.Length; i++)
+            {
+                string[] required = steps[i].requiredPartIds;
+                if (required != null)
+                    for (int j = 0; j < required.Length; j++)
+                        referencedPartIds.Add(required[j]);
+
+                string[] optional = steps[i].optionalPartIds;
+                if (optional != null)
+                    for (int j = 0; j < optional.Length; j++)
+                        referencedPartIds.Add(optional[j]);
+            }
+
+            // Also count parts referenced by targets
+            TargetDefinition[] targets = package.GetTargets();
+            for (int i = 0; i < targets.Length; i++)
+            {
+                if (!string.IsNullOrEmpty(targets[i].associatedPartId))
+                    referencedPartIds.Add(targets[i].associatedPartId);
+            }
+
+            for (int i = 0; i < parts.Length; i++)
+            {
+                if (!string.IsNullOrEmpty(parts[i].id) && !referencedPartIds.Contains(parts[i].id))
+                {
+                    issues.Add(Warning($"parts[{i}]",
+                        $"Part '{parts[i].id}' is defined but never referenced by any step or target."));
+                }
+            }
+        }
+
+        private static void DetectOrphanTargets(
+            MachinePackageDefinition package,
+            List<MachinePackageValidationIssue> issues)
+        {
+            TargetDefinition[] targets = package.GetTargets();
+            StepDefinition[] steps = package.GetSteps();
+            if (targets.Length == 0) return;
+
+            var referencedTargetIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < steps.Length; i++)
+            {
+                string[] tIds = steps[i].targetIds;
+                if (tIds != null)
+                    for (int j = 0; j < tIds.Length; j++)
+                        referencedTargetIds.Add(tIds[j]);
+            }
+
+            for (int i = 0; i < targets.Length; i++)
+            {
+                if (!string.IsNullOrEmpty(targets[i].id) && !referencedTargetIds.Contains(targets[i].id))
+                {
+                    issues.Add(Warning($"targets[{i}]",
+                        $"Target '{targets[i].id}' is defined but never referenced by any step."));
+                }
+            }
+        }
+
+        private static void DetectOrphanSteps(
+            MachinePackageDefinition package,
+            HashSet<string> assemblyIds,
+            List<MachinePackageValidationIssue> issues)
+        {
+            StepDefinition[] steps = package.GetSteps();
+            AssemblyDefinition[] assemblies = package.GetAssemblies();
+            SubassemblyDefinition[] subassemblies = package.GetSubassemblies();
+            if (steps.Length == 0) return;
+
+            var referencedStepIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < assemblies.Length; i++)
+            {
+                string[] sIds = assemblies[i].stepIds;
+                if (sIds != null)
+                    for (int j = 0; j < sIds.Length; j++)
+                        referencedStepIds.Add(sIds[j]);
+            }
+            for (int i = 0; i < subassemblies.Length; i++)
+            {
+                string[] sIds = subassemblies[i].stepIds;
+                if (sIds != null)
+                    for (int j = 0; j < sIds.Length; j++)
+                        referencedStepIds.Add(sIds[j]);
+            }
+
+            for (int i = 0; i < steps.Length; i++)
+            {
+                if (!string.IsNullOrEmpty(steps[i].id) && !referencedStepIds.Contains(steps[i].id))
+                {
+                    issues.Add(Warning($"steps[{i}]",
+                        $"Step '{steps[i].id}' is defined but not listed in any assembly or subassembly."));
+                }
+            }
         }
 
         private static HashSet<string> CreateSet(params string[] values) =>

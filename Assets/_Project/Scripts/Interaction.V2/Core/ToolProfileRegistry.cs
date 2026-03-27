@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using OSE.Content;
 
 namespace OSE.Interaction
 {
@@ -132,6 +133,32 @@ namespace OSE.Interaction
                 desc.PreviewSpeedCap = Default.PreviewSpeedCap;
 
             return desc;
+        }
+
+        /// <summary>
+        /// Returns the descriptor for a type-safe <see cref="StepProfile"/> enum value.
+        /// Maps to the canonical string key then delegates to the string-based lookup.
+        /// </summary>
+        public static ToolProfileDescriptor Get(StepProfile profile)
+        {
+            return Get(ProfileToString(profile));
+        }
+
+        private static string ProfileToString(StepProfile profile)
+        {
+            switch (profile)
+            {
+                case StepProfile.Clamp:       return ToolActionProfiles.Clamp;
+                case StepProfile.AxisFit:     return ToolActionProfiles.AxisFit;
+                case StepProfile.Torque:      return ToolActionProfiles.Torque;
+                case StepProfile.Weld:        return ToolActionProfiles.Weld;
+                case StepProfile.Cut:         return ToolActionProfiles.Cut;
+                case StepProfile.Strike:      return ToolActionProfiles.Strike;
+                case StepProfile.Measure:     return ToolActionProfiles.Measure;
+                case StepProfile.SquareCheck: return ToolActionProfiles.SquareCheck;
+                case StepProfile.Cable:       return ToolActionProfiles.Cable;
+                default:                      return null;
+            }
         }
 
         /// <summary>

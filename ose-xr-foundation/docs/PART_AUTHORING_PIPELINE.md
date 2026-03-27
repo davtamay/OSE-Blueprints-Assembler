@@ -32,6 +32,7 @@ This file should be used together with:
 - `docs/IMPLEMENTATION_CHECKLIST.md`
 - `docs/VERTICAL_SLICE_SPEC.md`
 - `docs/MACHINE_SELECTION_RESEARCH.md`
+- `docs/SLICE_ACCEPTANCE_CHECKLIST.md`
 - `UI_ARCHITECTURE.md`
 - `TASK_EXECUTION_PROTOCOL.md`
 
@@ -783,6 +784,10 @@ Before approving authored content, ask:
 - Does it create practical understanding and aha moments?
 
 If any of these are unclear, the content is not ready yet.
+
+For the concrete stop/expand gate on a real machine slice, use
+`docs/SLICE_ACCEPTANCE_CHECKLIST.md` instead of improvising a new acceptance standard
+for each package.
 
 ---
 

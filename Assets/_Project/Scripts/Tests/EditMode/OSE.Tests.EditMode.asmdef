@@ -2,6 +2,7 @@
     "name": "OSE.Tests.EditMode",
     "rootNamespace": "OSE.Tests.EditMode",
     "references": [
+        "OSE.App",
         "OSE.Core",
         "OSE.Content",
         "OSE.Runtime",
