@@ -151,7 +151,7 @@ namespace OSE.UI.Root
             if (target == null)
                 return false;
 
-            Renderer[] renderers = target.GetComponentsInChildren<Renderer>(true);
+            Renderer[] renderers = MaterialHelper.GetRenderers(target);
             if (renderers != null && renderers.Length > 0)
             {
                 bounds = renderers[0].bounds;
@@ -1197,7 +1197,7 @@ namespace OSE.UI.Root
         {
             screenRect = default;
 
-            Renderer[] renderers = toolPreview.GetComponentsInChildren<Renderer>(true);
+            Renderer[] renderers = MaterialHelper.GetRenderers(toolPreview);
             if (renderers == null || renderers.Length == 0)
                 return false;
 

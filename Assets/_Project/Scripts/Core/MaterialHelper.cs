@@ -22,6 +22,21 @@ namespace OSE.Core
             _urpLitShader != null ? _urpLitShader
                 : (_urpLitShader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
 
+        // ── Renderer caching ──────────────────────────────────────────────
+
+        /// <summary>
+        /// Returns the cached <see cref="Renderer"/> array for <paramref name="target"/>,
+        /// avoiding per-call <c>GetComponentsInChildren</c> allocations.
+        /// The cache auto-invalidates when the hierarchy changes.
+        /// </summary>
+        public static Renderer[] GetRenderers(GameObject target)
+        {
+            if (target == null) return System.Array.Empty<Renderer>();
+            var cache = target.GetComponent<RendererCache>();
+            if (cache == null) cache = target.AddComponent<RendererCache>();
+            return cache.Renderers;
+        }
+
         // ── Original-material preservation ──────────────────────────────
 
         /// <summary>
@@ -174,7 +189,7 @@ namespace OSE.Core
         /// </summary>
         public static Material[][] MakeTransparent(GameObject target, float alpha = 0.55f)
         {
-            var renderers = target.GetComponentsInChildren<Renderer>(includeInactive: true);
+            var renderers = GetRenderers(target);
             if (renderers == null || renderers.Length == 0) return System.Array.Empty<Material[]>();
 
             var result = new Material[renderers.Length][];
@@ -208,7 +223,7 @@ namespace OSE.Core
         /// </summary>
         public static void RestoreOpaque(GameObject target)
         {
-            var renderers = target.GetComponentsInChildren<Renderer>(includeInactive: true);
+            var renderers = GetRenderers(target);
             if (renderers == null || renderers.Length == 0) return;
 
             foreach (var renderer in renderers)
@@ -230,7 +245,7 @@ namespace OSE.Core
         /// </summary>
         public static void ApplyToolCursor(GameObject target, Color toolColor)
         {
-            var renderers = target.GetComponentsInChildren<Renderer>(includeInactive: true);
+            var renderers = GetRenderers(target);
             if (renderers == null || renderers.Length == 0) return;
 
             var shader = UrpLitShader;
@@ -255,7 +270,7 @@ namespace OSE.Core
         /// </summary>
         public static void ApplyToolTargetMarker(GameObject target, Color markerColor)
         {
-            var renderers = target.GetComponentsInChildren<Renderer>(includeInactive: true);
+            var renderers = GetRenderers(target);
             if (renderers == null || renderers.Length == 0) return;
 
             var shader = UrpLitShader;
@@ -291,7 +306,7 @@ namespace OSE.Core
         /// </summary>
         public static void SetMaterialColor(GameObject target, Color color)
         {
-            var renderers = target.GetComponentsInChildren<Renderer>(includeInactive: true);
+            var renderers = GetRenderers(target);
             if (renderers == null || renderers.Length == 0) return;
 
             foreach (var renderer in renderers)
@@ -329,7 +344,7 @@ namespace OSE.Core
         /// </summary>
         public static void SetEmission(GameObject target, Color emissionColor)
         {
-            var renderers = target.GetComponentsInChildren<Renderer>(includeInactive: true);
+            var renderers = GetRenderers(target);
             if (renderers == null || renderers.Length == 0) return;
 
             bool hasEmission = emissionColor.r > 0f || emissionColor.g > 0f || emissionColor.b > 0f;
@@ -433,7 +448,7 @@ namespace OSE.Core
 
         private static void ApplyToAllSlots(GameObject target, Material mat, bool skipOutline)
         {
-            var renderers = target.GetComponentsInChildren<Renderer>(includeInactive: true);
+            var renderers = GetRenderers(target);
             if (renderers == null || renderers.Length == 0) return;
 
             foreach (var renderer in renderers)

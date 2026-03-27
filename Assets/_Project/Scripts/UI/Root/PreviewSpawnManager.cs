@@ -288,7 +288,7 @@ namespace OSE.UI.Root
 
             // Fit a BoxCollider to the combined renderer bounds so the trigger
             // is accurate to the mesh shape rather than an oversized sphere.
-            var previewRenderers = preview.GetComponentsInChildren<Renderer>(true);
+            var previewRenderers = MaterialHelper.GetRenderers(preview);
             var clickCollider = preview.AddComponent<BoxCollider>();
             clickCollider.isTrigger = true;
             if (previewRenderers.Length > 0)
@@ -504,7 +504,7 @@ namespace OSE.UI.Root
             if (preview == null)
                 return;
 
-            Renderer[] previewRenderers = preview.GetComponentsInChildren<Renderer>(true);
+            Renderer[] previewRenderers = MaterialHelper.GetRenderers(preview);
             BoxCollider clickCollider = preview.GetComponent<BoxCollider>();
             if (clickCollider == null)
                 clickCollider = preview.AddComponent<BoxCollider>();
@@ -577,7 +577,7 @@ namespace OSE.UI.Root
             if (target == null)
                 return false;
 
-            Renderer[] renderers = target.GetComponentsInChildren<Renderer>(includeInactive: false);
+            Renderer[] renderers = MaterialHelper.GetRenderers(target);
             for (int i = 0; i < renderers.Length; i++)
             {
                 Renderer renderer = renderers[i];

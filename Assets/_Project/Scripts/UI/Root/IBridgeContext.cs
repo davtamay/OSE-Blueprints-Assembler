@@ -7,61 +7,79 @@ using UnityEngine;
 
 namespace OSE.UI.Root
 {
-    /// <summary>
-    /// Provides shared state and services to classes extracted from
-    /// <see cref="PartInteractionBridge"/>. Replaces the Func&lt;&gt; chains that
-    /// previously threaded individual properties through constructor lambdas.
-    ///
-    /// Implemented by <see cref="PartInteractionBridge"/> itself so extracted
-    /// classes can query sibling instances and bridge-owned state through a
-    /// single typed reference instead of 10+ opaque delegates.
-    /// </summary>
-    internal interface IBridgeContext
-    {
-        // ── Component references ──
+    // ── Focused sub-interfaces ─────────────────────────────────────────
+    // Each extracted class depends on the narrowest possible sub-interface
+    // rather than the full IBridgeContext. This enforces the Interface
+    // Segregation Principle and makes dependency audits trivial.
 
+    /// <summary>Core package/scene access — used by almost all consumers.</summary>
+    internal interface ISpawnerContext
+    {
         PackagePartSpawner Spawner { get; }
         PreviewSceneSetup Setup { get; }
-        SelectionService SelectionService { get; }
-
-        // ── Extracted class accessors (lazily initialised; may be null during startup) ──
-
-        DragController Drag { get; }
-        PlaceStepHandler PlaceHandler { get; }
-        UseStepHandler UseHandler { get; }
-        ConnectStepHandler ConnectHandler { get; }
-        PartVisualFeedbackManager VisualFeedback { get; }
-        PreviewSpawnManager PreviewManager { get; }
-        StepExecutionRouter Router { get; }
-        ToolCursorManager CursorManager { get; }
-        SubassemblyPlacementController SubassemblyController { get; }
-
-        // ── Shared collections ──
-
-        List<GameObject> SpawnedPreviews { get; }
-        Dictionary<string, PartPlacementState> PartStates { get; }
-
-        // ── Query methods ──
-
         GameObject FindSpawnedPart(string partId);
+        PartPlacementState GetPartState(string partId);
+        Dictionary<string, PartPlacementState> PartStates { get; }
+        void DestroyObject(UnityEngine.Object obj);
+    }
+
+    /// <summary>Part resolution, proxy queries, and movement lock checks.</summary>
+    internal interface IPartQueryContext
+    {
         bool IsSubassemblyProxy(GameObject target);
         bool ForEachProxyMember(GameObject proxy, Action<GameObject> action);
         GameObject NormalizeSelectablePlacementTarget(GameObject target);
         bool IsPartMovementLocked(string partId);
         bool IsToolModeLockedForParts();
-        PartPlacementState GetPartState(string partId);
+        SubassemblyPlacementController SubassemblyController { get; }
+    }
+
+    /// <summary>Selection, drag, and hover state.</summary>
+    internal interface IInteractionStateContext
+    {
+        SelectionService SelectionService { get; }
+        DragController Drag { get; }
         bool IsDragging { get; }
         bool IsExternalControlEnabled { get; }
         GameObject GetHoveredPartFromXri();
         GameObject GetHoveredPartFromMouse();
-
-        // ── Actions ──
-
         void ResetDragState();
-        void ClearHintHighlight();
-        void RestorePartVisual(GameObject part);
+    }
+
+    /// <summary>Preview lifecycle and spawned preview list.</summary>
+    internal interface IPreviewContext
+    {
+        List<GameObject> SpawnedPreviews { get; }
+        PreviewSpawnManager PreviewManager { get; }
         void RefreshToolActionTargets();
-        void DestroyObject(UnityEngine.Object obj);
         void HandlePlacementSucceeded(GameObject target);
     }
+
+    /// <summary>Cross-handler references for orchestration between siblings.</summary>
+    internal interface ISiblingAccessContext
+    {
+        PlaceStepHandler PlaceHandler { get; }
+        UseStepHandler UseHandler { get; }
+        ConnectStepHandler ConnectHandler { get; }
+        PartVisualFeedbackManager VisualFeedback { get; }
+        StepExecutionRouter Router { get; }
+        ToolCursorManager CursorManager { get; }
+        void ClearHintHighlight();
+        void RestorePartVisual(GameObject part);
+    }
+
+    // ── Composite interface ────────────────────────────────────────────
+
+    /// <summary>
+    /// Full context surface — implemented by <see cref="PartInteractionBridge"/>.
+    /// Consumers should depend on the narrowest sub-interface they need;
+    /// only the bridge itself and legacy callers should reference this directly.
+    /// </summary>
+    internal interface IBridgeContext :
+        ISpawnerContext,
+        IPartQueryContext,
+        IInteractionStateContext,
+        IPreviewContext,
+        ISiblingAccessContext
+    { }
 }

@@ -306,7 +306,7 @@ namespace OSE.UI.Root
             _cursorInReadyState = false;
             if (_toolPreviewIndicator == null) return;
 
-            var renderers = _toolPreviewIndicator.GetComponentsInChildren<Renderer>(true);
+            var renderers = MaterialHelper.GetRenderers(_toolPreviewIndicator);
             if (_toolPreviewOriginalMaterials != null && _toolPreviewOriginalMaterials.Length == renderers.Length)
             {
                 for (int i = 0; i < renderers.Length; i++)

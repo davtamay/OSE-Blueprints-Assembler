@@ -1,4 +1,5 @@
 using System;
+using OSE.Core;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -342,7 +343,7 @@ namespace OSE.UI.Root
             if (target == null)
                 return false;
 
-            var renderers = target.GetComponentsInChildren<Renderer>();
+            var renderers = MaterialHelper.GetRenderers(target);
             if (renderers != null && renderers.Length > 0)
             {
                 bounds = renderers[0].bounds;

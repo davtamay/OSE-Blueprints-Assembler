@@ -14,7 +14,7 @@ namespace OSE.UI.Root
     /// </summary>
     public sealed class SubassemblyPlacementController : IDisposable, OSE.Runtime.ISubassemblyPlacementService
     {
-        private readonly IBridgeContext _ctx;
+        private readonly ISpawnerContext _ctx;
         private readonly Dictionary<string, ProxyRecord> _records = new Dictionary<string, ProxyRecord>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, string> _memberToSubassembly = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -44,7 +44,7 @@ namespace OSE.UI.Root
             public HashSet<string> DrivenPartIds;
         }
 
-        internal SubassemblyPlacementController(IBridgeContext context)
+        internal SubassemblyPlacementController(ISpawnerContext context)
         {
             _ctx = context;
         }
@@ -981,7 +981,7 @@ namespace OSE.UI.Root
             if (target == null)
                 return false;
 
-            Renderer[] renderers = target.GetComponentsInChildren<Renderer>(true);
+            Renderer[] renderers = MaterialHelper.GetRenderers(target);
             if (renderers != null && renderers.Length > 0)
             {
                 bounds = renderers[0].bounds;

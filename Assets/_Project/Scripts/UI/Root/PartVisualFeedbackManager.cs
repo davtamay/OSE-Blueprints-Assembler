@@ -312,7 +312,7 @@ namespace OSE.UI.Root
             if (target == null)
                 return;
 
-            Renderer[] renderers = target.GetComponentsInChildren<Renderer>(includeInactive: true);
+            Renderer[] renderers = MaterialHelper.GetRenderers(target);
             for (int i = 0; i < renderers.Length; i++)
             {
                 Renderer renderer = renderers[i];
@@ -569,7 +569,7 @@ namespace OSE.UI.Root
 
                     // Measure extents for fallback row layout
                     float width = InteractionVisualConstants.PartGridSpacing;
-                    var renderers = partGo.GetComponentsInChildren<Renderer>(true);
+                    var renderers = MaterialHelper.GetRenderers(partGo);
                     if (renderers.Length > 0)
                     {
                         Bounds combined = renderers[0].bounds;

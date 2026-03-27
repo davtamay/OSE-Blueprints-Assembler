@@ -543,7 +543,7 @@ namespace OSE.Interaction
             }
 
             // Tier 2/3: AABB-based estimation (original logic)
-            var renderers = toolPreview.GetComponentsInChildren<Renderer>(true);
+            var renderers = MaterialHelper.GetRenderers(toolPreview);
             if (renderers.Length == 0) return 0.06f;
 
             Bounds combined = renderers[0].bounds;

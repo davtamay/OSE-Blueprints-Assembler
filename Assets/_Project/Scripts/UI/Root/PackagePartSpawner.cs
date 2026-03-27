@@ -844,7 +844,7 @@ namespace OSE.UI.Root
             stateProvider.activateClickAnimationMode = XRInteractableAffordanceStateProvider.ActivateClickAnimationMode.None;
 
             ColorAffordanceTheme theme = CreatePartColorAffordanceTheme();
-            var renderers = target.GetComponentsInChildren<Renderer>(includeInactive: true);
+            var renderers = MaterialHelper.GetRenderers(target);
             for (int i = 0; i < renderers.Length; i++)
             {
                 Renderer renderer = renderers[i];
@@ -959,7 +959,7 @@ namespace OSE.UI.Root
             if (target == null)
                 return;
 
-            var renderers = target.GetComponentsInChildren<Renderer>(includeInactive: true);
+            var renderers = MaterialHelper.GetRenderers(target);
             for (int i = 0; i < renderers.Length; i++)
             {
                 Renderer renderer = renderers[i];
@@ -1008,7 +1008,7 @@ namespace OSE.UI.Root
             if (!addedAny && target.GetComponentInChildren<Collider>(true) == null)
             {
                 // No mesh filters and no colliders at all — add a fitted BoxCollider
-                var renderers = target.GetComponentsInChildren<Renderer>(true);
+                var renderers = MaterialHelper.GetRenderers(target);
                 if (renderers.Length > 0)
                 {
                     Bounds bounds = renderers[0].bounds;
@@ -1035,7 +1035,7 @@ namespace OSE.UI.Root
             if (target.GetComponent<BoxCollider>() != null)
                 return;
 
-            var renderers = target.GetComponentsInChildren<Renderer>(true);
+            var renderers = MaterialHelper.GetRenderers(target);
             if (renderers.Length == 0)
                 return;
 

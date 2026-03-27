@@ -51,7 +51,7 @@ namespace OSE.Core
         {
             if (_saved) return;
 
-            var renderers = GetComponentsInChildren<Renderer>(true);
+            var renderers = MaterialHelper.GetRenderers(gameObject);
             _entries = new Entry[renderers.Length];
 
             for (int i = 0; i < renderers.Length; i++)
