@@ -628,6 +628,12 @@ namespace OSE.Interaction
                 }
                 t = t.parent;
             }
+
+            // Not a spawned part — check for other selectables (e.g. subassembly proxies,
+            // dock arc marker spheres that redirect via DockArcMarkerProxy).
+            if (_partBridge != null && _partBridge.IsSelectableTarget(hit))
+                return hit;
+
             return null;
         }
 

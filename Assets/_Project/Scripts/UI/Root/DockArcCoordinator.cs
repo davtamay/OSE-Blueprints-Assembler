@@ -55,10 +55,12 @@ namespace OSE.UI.Root
             if (useLinearGuide)
             {
                 _dockArcVisual.SetLinearGuide(guideStartWorldPos, guideEndWorldPos, sourceUp, targetUp, emphasis);
+                _dockArcVisual.SetMarkerLinks(sourceProxy, sourceProxy);
                 return;
             }
 
             _dockArcVisual.SetArc(guideStartWorldPos, guideEndWorldPos, sourceUp, targetUp, emphasis);
+            _dockArcVisual.SetMarkerLinks(sourceProxy, sourceProxy);
         }
 
         /// <summary>Destroys the dock arc visual if present.</summary>

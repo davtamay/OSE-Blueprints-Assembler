@@ -18,6 +18,13 @@ namespace OSE.Interaction
 
         GameObject NormalizeSelectableTarget(GameObject target);
 
+        /// <summary>
+        /// Returns true if <paramref name="target"/> is a selectable object — either a
+        /// spawned part or a subassembly proxy. Used by <see cref="InteractionOrchestrator"/>
+        /// to validate raycast hits that are not in the spawned-parts list (e.g. proxies).
+        /// </summary>
+        bool IsSelectableTarget(GameObject target);
+
         // ── Movement Lock ──
 
         /// <summary>

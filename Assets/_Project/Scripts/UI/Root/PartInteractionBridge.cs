@@ -451,6 +451,9 @@ namespace OSE.UI.Root
         GameObject IPartActionBridge.NormalizeSelectableTarget(GameObject target)
             => NormalizeExternalSelectableTarget(target);
 
+        bool IPartActionBridge.IsSelectableTarget(GameObject target)
+            => IsSelectablePlacementObject(NormalizeSelectablePlacementTarget(target));
+
         bool IPartActionBridge.IsPartMovementLocked(GameObject target)
         {
             if (target == null) return false;

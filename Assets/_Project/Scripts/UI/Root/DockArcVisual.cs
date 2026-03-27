@@ -204,14 +204,33 @@ namespace OSE.UI.Root
             return (u * u * start) + (2f * u * t * control) + (t * t * end);
         }
 
+        /// <summary>
+        /// Links both endpoint markers to the part they represent so that
+        /// <see cref="PartLookupService"/> can redirect raycast hits on the spheres
+        /// to the correct selectable object.
+        /// </summary>
+        public void SetMarkerLinks(GameObject sourcePart, GameObject targetPart)
+        {
+            SetMarkerLink(_sourceMarker, sourcePart);
+            SetMarkerLink(_targetMarker, targetPart);
+        }
+
+        private static void SetMarkerLink(GameObject marker, GameObject linkedPart)
+        {
+            if (marker == null) return;
+            var proxy = marker.GetComponent<DockArcMarkerProxy>();
+            if (proxy == null)
+                proxy = marker.AddComponent<DockArcMarkerProxy>();
+            proxy.LinkedPart = linkedPart;
+        }
+
         private static GameObject CreateMarker(string name)
         {
             GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             marker.name = name;
 
-            Collider collider = marker.GetComponent<Collider>();
-            if (collider != null)
-                Object.Destroy(collider);
+            // Keep the SphereCollider so raycast hits on the sphere dot are
+            // detected; DockArcMarkerProxy redirects the hit to the linked part.
 
             MeshRenderer renderer = marker.GetComponent<MeshRenderer>();
             Shader shader = Shader.Find("Sprites/Default");

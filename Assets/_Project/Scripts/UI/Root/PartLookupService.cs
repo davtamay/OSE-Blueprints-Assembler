@@ -117,6 +117,10 @@ namespace OSE.UI.Root
             var sub = _subassembly();
             for (int i = 0; i < hits.Length; i++)
             {
+                // Dock arc sphere endpoints redirect to their linked selectable part.
+                var markerProxy = hits[i].transform.GetComponent<DockArcMarkerProxy>();
+                if (markerProxy?.LinkedPart != null) return markerProxy.LinkedPart;
+
                 GameObject matchedProxy = sub?.ResolveSelectableFromHit(hits[i].transform);
                 if (matchedProxy != null) return matchedProxy;
                 GameObject matchedPart = FindPartFromHit(hits[i].transform);
