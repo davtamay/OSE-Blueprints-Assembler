@@ -2,6 +2,12 @@ using System;
 
 namespace OSE.Core
 {
+    /// <summary>
+    /// Serializable session snapshot. All fields are <c>public</c> because
+    /// <c>JsonUtility</c> only serializes public fields — this is intentional
+    /// and not an API surface leak. Mutate only through
+    /// <see cref="OSE.Runtime.MachineSessionController"/>.
+    /// </summary>
     [Serializable]
     public class MachineSessionState
     {

@@ -35,8 +35,13 @@ namespace OSE.Core
 
         public static void Publish<T>(T evt) where T : struct
         {
-            if (_listeners.TryGetValue(typeof(T), out var existing))
-                ((Action<T>)existing)?.Invoke(evt);
+            if (!_listeners.TryGetValue(typeof(T), out var existing))
+                return;
+
+            // Snapshot before invoke so a handler that calls Unsubscribe<T> during
+            // execution doesn't affect the current dispatch (Delegate is immutable).
+            var snapshot = (Action<T>)existing;
+            snapshot?.Invoke(evt);
         }
 
         public static void Clear() => _listeners.Clear();

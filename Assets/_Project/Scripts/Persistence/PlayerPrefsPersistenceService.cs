@@ -37,8 +37,30 @@ namespace OSE.Persistence
             if (string.IsNullOrWhiteSpace(json))
                 return null;
 
-            var state = JsonUtility.FromJson<MachineSessionState>(json);
-            OseLog.VerboseInfo($"[Persistence] Loaded session for '{machineId}' (step {state?.CompletedStepCount}).");
+            MachineSessionState state;
+            try
+            {
+                state = JsonUtility.FromJson<MachineSessionState>(json);
+            }
+            catch (System.Exception ex)
+            {
+                OseLog.Error(OseErrorCode.SessionRestoreFailed,
+                    $"[Persistence] Corrupt session data for '{machineId}' — clearing. ({ex.Message})");
+                PlayerPrefs.DeleteKey(key);
+                PlayerPrefs.Save();
+                return null;
+            }
+
+            if (state == null || string.IsNullOrWhiteSpace(state.MachineId))
+            {
+                OseLog.Warn(OseErrorCode.SessionRestoreFailed,
+                    $"[Persistence] Session data for '{machineId}' deserialized to null or missing ID — clearing.");
+                PlayerPrefs.DeleteKey(key);
+                PlayerPrefs.Save();
+                return null;
+            }
+
+            OseLog.VerboseInfo($"[Persistence] Loaded session for '{machineId}' (step {state.CompletedStepCount}).");
             return state;
         }
 

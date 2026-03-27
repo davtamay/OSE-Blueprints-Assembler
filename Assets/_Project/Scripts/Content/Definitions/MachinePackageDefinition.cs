@@ -28,6 +28,15 @@ namespace OSE.Content
         public AssetManifestDefinition assetManifest;
         public PackagePreviewConfig previewConfig;
 
+        // ── Lookup caches (non-serialized, built lazily after load) ─────────
+        [NonSerialized] private StepDefinition[] _orderedSteps;
+        [NonSerialized] private System.Collections.Generic.Dictionary<string, PartDefinition> _partsById;
+        [NonSerialized] private System.Collections.Generic.Dictionary<string, StepDefinition> _stepsById;
+        [NonSerialized] private System.Collections.Generic.Dictionary<string, ToolDefinition> _toolsById;
+        [NonSerialized] private System.Collections.Generic.Dictionary<string, TargetDefinition> _targetsById;
+        [NonSerialized] private System.Collections.Generic.Dictionary<string, HintDefinition> _hintsById;
+        [NonSerialized] private System.Collections.Generic.Dictionary<string, EffectDefinition> _effectsById;
+
         public AssemblyDefinition[] GetAssemblies() => assemblies ?? Array.Empty<AssemblyDefinition>();
 
         public SubassemblyDefinition[] GetSubassemblies() => subassemblies ?? Array.Empty<SubassemblyDefinition>();
@@ -48,9 +57,18 @@ namespace OSE.Content
 
         public StepDefinition[] GetOrderedSteps()
         {
-            StepDefinition[] orderedSteps = GetSteps();
-            Array.Sort(orderedSteps, CompareStepOrder);
-            return orderedSteps;
+            if (_orderedSteps != null)
+                return _orderedSteps;
+
+            StepDefinition[] source = GetSteps();
+            if (source.Length == 0)
+                return source;
+
+            var sorted = new StepDefinition[source.Length];
+            Array.Copy(source, sorted, source.Length);
+            Array.Sort(sorted, CompareStepOrder);
+            _orderedSteps = sorted;
+            return _orderedSteps;
         }
 
         public string GetDisplayMachineName() =>
@@ -63,25 +81,25 @@ namespace OSE.Content
             TryFindById(GetSubassemblies(), subassemblyId, item => item.id, out subassembly);
 
         public bool TryGetPart(string partId, out PartDefinition part) =>
-            TryFindById(GetParts(), partId, item => item.id, out part);
+            TryGetByIdFast(ref _partsById, GetParts(), p => p.id, partId, out part);
 
         public bool TryGetTool(string toolId, out ToolDefinition tool) =>
-            TryFindById(GetTools(), toolId, item => item.id, out tool);
+            TryGetByIdFast(ref _toolsById, GetTools(), t => t.id, toolId, out tool);
 
         public bool TryGetStep(string stepId, out StepDefinition step) =>
-            TryFindById(GetSteps(), stepId, item => item.id, out step);
+            TryGetByIdFast(ref _stepsById, GetSteps(), s => s.id, stepId, out step);
 
         public bool TryGetValidationRule(string validationRuleId, out ValidationRuleDefinition validationRule) =>
             TryFindById(GetValidationRules(), validationRuleId, item => item.id, out validationRule);
 
         public bool TryGetHint(string hintId, out HintDefinition hint) =>
-            TryFindById(GetHints(), hintId, item => item.id, out hint);
+            TryGetByIdFast(ref _hintsById, GetHints(), h => h.id, hintId, out hint);
 
         public bool TryGetEffect(string effectId, out EffectDefinition effect) =>
-            TryFindById(GetEffects(), effectId, item => item.id, out effect);
+            TryGetByIdFast(ref _effectsById, GetEffects(), e => e.id, effectId, out effect);
 
         public bool TryGetTarget(string targetId, out TargetDefinition target) =>
-            TryFindById(GetTargets(), targetId, item => item.id, out target);
+            TryGetByIdFast(ref _targetsById, GetTargets(), t => t.id, targetId, out target);
 
         public bool TryGetSubassemblyPreviewPlacement(string subassemblyId, out SubassemblyPreviewPlacement placement)
         {
@@ -147,6 +165,37 @@ namespace OSE.Content
 
             placement = null;
             return false;
+        }
+
+        private static bool TryGetByIdFast<T>(
+            ref System.Collections.Generic.Dictionary<string, T> cache,
+            T[] source,
+            Func<T, string> keySelector,
+            string id,
+            out T match)
+            where T : class
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                match = default;
+                return false;
+            }
+
+            if (cache == null)
+            {
+                cache = new System.Collections.Generic.Dictionary<string, T>(
+                    source.Length, StringComparer.OrdinalIgnoreCase);
+                for (int i = 0; i < source.Length; i++)
+                {
+                    T item = source[i];
+                    if (item == null) continue;
+                    string key = keySelector(item);
+                    if (!string.IsNullOrWhiteSpace(key))
+                        cache[key] = item;
+                }
+            }
+
+            return cache.TryGetValue(id, out match);
         }
 
         private static int CompareStepOrder(StepDefinition left, StepDefinition right)
