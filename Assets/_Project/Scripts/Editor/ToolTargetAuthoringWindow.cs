@@ -893,23 +893,40 @@ namespace OSE.Editor
                                 && _stepFilterIdx < _stepIds.Length
                                 && _stepIds[_stepFilterIdx] != null;
 
-            int currentSeq = int.MaxValue;
+            // Default: show everything (All Steps mode or step not found)
+            int currentSeq  = int.MaxValue;
             var partStepSeq = new Dictionary<string, int>(StringComparer.Ordinal);
 
             if (stepSelected && _pkg.steps != null)
             {
-                currentSeq = 0;
                 var sel = FindStep(_stepIds[_stepFilterIdx]);
+                // Keep int.MaxValue if step not found so nothing is wrongly hidden
                 if (sel != null) currentSeq = sel.sequenceIndex;
 
                 foreach (var step in _pkg.steps)
                 {
-                    if (step?.requiredPartIds == null) continue;
-                    foreach (string pid in step.requiredPartIds)
+                    // Map from requiredPartIds (individual placement steps)
+                    if (step?.requiredPartIds != null)
                     {
-                        if (string.IsNullOrEmpty(pid)) continue;
-                        if (!partStepSeq.ContainsKey(pid) || step.sequenceIndex < partStepSeq[pid])
-                            partStepSeq[pid] = step.sequenceIndex;
+                        foreach (string pid in step.requiredPartIds)
+                        {
+                            if (string.IsNullOrEmpty(pid)) continue;
+                            if (!partStepSeq.ContainsKey(pid) || step.sequenceIndex < partStepSeq[pid])
+                                partStepSeq[pid] = step.sequenceIndex;
+                        }
+                    }
+
+                    // Map from requiredSubassemblyId → subassembly member parts
+                    if (!string.IsNullOrEmpty(step?.requiredSubassemblyId)
+                        && _pkg.TryGetSubassembly(step.requiredSubassemblyId, out SubassemblyDefinition subDef)
+                        && subDef?.partIds != null)
+                    {
+                        foreach (string pid in subDef.partIds)
+                        {
+                            if (string.IsNullOrEmpty(pid)) continue;
+                            if (!partStepSeq.ContainsKey(pid) || step.sequenceIndex < partStepSeq[pid])
+                                partStepSeq[pid] = step.sequenceIndex;
+                        }
                     }
                 }
             }
