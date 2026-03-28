@@ -12,6 +12,23 @@ namespace OSE.Core
     [DisallowMultipleComponent]
     internal sealed class OriginalMaterialCache : MonoBehaviour
     {
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ClearStaticsOnDomainReload()
+        {
+            s_outlineMaterials?.Clear();
+        }
+
+#if UNITY_EDITOR
+        static OriginalMaterialCache()
+        {
+            UnityEditor.EditorApplication.playModeStateChanged += state =>
+            {
+                if (state == UnityEditor.PlayModeStateChange.EnteredEditMode)
+                    s_outlineMaterials?.Clear();
+            };
+        }
+#endif
+
         private struct Entry
         {
             public Renderer Renderer;

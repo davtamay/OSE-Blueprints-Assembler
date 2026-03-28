@@ -4,6 +4,7 @@
     "references": [
         "glTFast",
         "glTFast.Export",
+        "OSE.App",
         "OSE.Core",
         "OSE.Content",
         "OSE.Interaction",

@@ -48,7 +48,7 @@ namespace OSE.UI.Root
 
             if (_ctx.IsSubassemblyProxy(target))
                 _ctx.RestorePartVisual(target);
-            else if (ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
+            else if (ServiceRegistry.TryGet<IPartRuntimeController>(out var partController))
                 partController.DeselectPart();
 
             if (ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
@@ -69,7 +69,7 @@ namespace OSE.UI.Root
             _ctx.PlaceHandler?.StopPreviewSelectionPulse();
             _ctx.ResetDragState();
 
-            if (ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
+            if (ServiceRegistry.TryGet<IPartRuntimeController>(out var partController))
                 partController.DeselectPart();
 
             _ctx.RestorePartVisual(target);
@@ -275,7 +275,7 @@ namespace OSE.UI.Root
             }
             else
             {
-                if (!ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
+                if (!ServiceRegistry.TryGet<IPartRuntimeController>(out var partController))
                     return;
 
                 accepted = isInspect
@@ -321,7 +321,7 @@ namespace OSE.UI.Root
             if (string.IsNullOrWhiteSpace(selectedPartId))
                 return;
 
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return;
 
             StepController stepController = session.AssemblyController?.StepController;

@@ -362,7 +362,7 @@ namespace OSE.UI.Root
             toolId = null;
             tool = null;
 
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return false;
 
             if (session == null || session.Package == null || session.ToolController == null)

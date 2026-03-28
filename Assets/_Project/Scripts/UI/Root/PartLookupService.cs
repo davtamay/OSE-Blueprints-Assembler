@@ -155,7 +155,7 @@ namespace OSE.UI.Root
         {
             if (string.IsNullOrWhiteSpace(partId)) return false;
 
-            ServiceRegistry.TryGet<PartRuntimeController>(out var partController);
+            ServiceRegistry.TryGet<IPartRuntimeController>(out var partController);
             var sub = _subassembly();
 
             if (sub != null)
@@ -168,7 +168,7 @@ namespace OSE.UI.Root
 
                 if (isSubassemblyId)
                 {
-                    if (ServiceRegistry.TryGet<MachineSessionController>(out var session))
+                    if (ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                     {
                         var stepCtrl = session.AssemblyController?.StepController;
                         if (stepCtrl != null && stepCtrl.HasActiveStep)

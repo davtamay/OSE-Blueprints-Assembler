@@ -29,6 +29,18 @@ namespace OSE.Runtime.Preview
         public static MachinePackageDefinition CurrentPackage { get; private set; }
 
         /// <summary>
+        /// Fired in edit mode whenever the preview step sequence index changes.
+        /// Subscribers (e.g. ToolTargetAuthoringWindow) use this to stay in sync.
+        /// </summary>
+        public static event Action<int> EditModeStepChanged;
+
+        /// <summary>The package loaded for edit-mode preview (may be null while loading).</summary>
+        public MachinePackageDefinition EditModePackage => _editModePackage;
+
+        /// <summary>The current preview step sequence index (1-based, matches step.sequenceIndex).</summary>
+        public int PreviewStepSequenceIndex => _previewStepSequenceIndex;
+
+        /// <summary>
         /// True while the machine intro overlay is displayed.
         /// Checked by PartInteractionBridge to block 3D interaction during intro.
         /// </summary>
@@ -56,7 +68,7 @@ namespace OSE.Runtime.Preview
         [SerializeField] private int _mistakeCount;
         [SerializeField] private int _hintsUsed;
 
-        private MachineSessionController _session;
+        private IMachineSessionController _session;
         private bool _sessionStarted;
         private bool _introActive;
         private bool _introDismissed;
@@ -152,21 +164,63 @@ namespace OSE.Runtime.Preview
                 // Detect package ID change in play mode and restart session
                 if (_sessionStarted && _lastPlayModePackageId != _packageId)
                 {
-                    RestartSession();
+                    _ = RestartSession();
                     return;
                 }
 
                 if (_sessionStarted && _lastPlayModeSessionMode != _sessionMode)
                 {
                     OseLog.Info($"[SessionDriver] Session mode changed to {_sessionMode}. Restarting session.");
-                    RestartSession();
+                    _ = RestartSession();
                 }
             }
             else
             {
                 _editModePreviewApplied = false;
                 RequestEditModeRefresh();
+                EditModeStepChanged?.Invoke(_previewStepSequenceIndex);
             }
+        }
+
+        // --------------------------------------------------------------------
+        // Edit-Mode Step Control (called by editor tooling)
+        // --------------------------------------------------------------------
+
+        /// <summary>
+        /// Sets the preview step sequence index and immediately repositions spawned parts
+        /// to match the assembly state at that step. Fires <see cref="EditModeStepChanged"/>
+        /// so that other editor windows (e.g. ToolTargetAuthoringWindow) stay in sync.
+        /// No-op in play mode.
+        /// </summary>
+        public void SetEditModeStep(int sequenceIndex)
+        {
+            if (Application.isPlaying) return;
+
+            bool changed = _previewStepSequenceIndex != sequenceIndex;
+            if (changed)
+            {
+                _previewStepSequenceIndex = sequenceIndex;
+                _editModePreviewApplied   = false;
+#if UNITY_EDITOR
+                UnityEditor.EditorUtility.SetDirty(this);
+#endif
+                TryApplyEditModePreview();
+                EditModeStepChanged?.Invoke(_previewStepSequenceIndex);
+            }
+
+            // Always reposition parts — ApplyModifiedProperties() may have already
+            // set the serialized value before this call, making changed=false while
+            // parts still need to move.
+            ApplyStepAwarePartPositions();
+        }
+
+        private void ApplyStepAwarePartPositions()
+        {
+#if UNITY_EDITOR
+            if (Application.isPlaying) return;
+            if (ServiceRegistry.TryGet<IStepAwarePositioner>(out var positioner))
+                positioner.ApplyStepAwarePositions(_previewStepSequenceIndex, _editModePackage);
+#endif
         }
 
         private void OnDestroy()
@@ -219,7 +273,7 @@ namespace OSE.Runtime.Preview
         }
 
         [ContextMenu("Start Session")]
-        public async void StartSessionFromMenu()
+        public async Task StartSessionFromMenu()
         {
             await StartSessionAsync();
         }
@@ -268,7 +322,7 @@ namespace OSE.Runtime.Preview
         /// Use this after changing the Package Id field in play mode.
         /// </summary>
         [ContextMenu("Restart Session (Switch Package)")]
-        public async void RestartSession(bool clearSavedProgress = false)
+        public async Task RestartSession(bool clearSavedProgress = false)
         {
             if (!Application.isPlaying) return;
 
@@ -314,7 +368,7 @@ namespace OSE.Runtime.Preview
 
             _sessionStarted = true;
 
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out _session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out _session))
             {
                 // Transient — Bootstrap may not have registered the controller yet.
                 // Reset so UpdatePlayMode can retry next frame.
@@ -573,7 +627,7 @@ namespace OSE.Runtime.Preview
             _savedMachineVersion = null;
 
             OseLog.Info("[SessionDriver] Progress reset. Restarting session.");
-            RestartSession(clearSavedProgress: true);
+            _ = RestartSession(clearSavedProgress: true);
         }
 
         private void HandleIntroDismissed(MachineIntroDismissed evt)
@@ -731,6 +785,7 @@ namespace OSE.Runtime.Preview
                 step.sequenceIndex, orderedSteps.Length);
 
             _editModePreviewApplied = true;
+            ApplyStepAwarePartPositions();
         }
 
         private void HidePreviewIfPossible()

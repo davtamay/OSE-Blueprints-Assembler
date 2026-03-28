@@ -32,16 +32,12 @@ namespace OSE.Interaction
             public const string StrikeAction = "strike";
         }
 
-        // ── Tool persistence (fallback) ──
-        // Prefer ToolDefinition.persistent from machine.json (checked in PersistentToolController).
-        // This substring fallback exists for backward compatibility.
+        // ── Tool persistence ──
+        // Persistence is declared explicitly via ToolDefinition.persistent in machine.json.
+        // The substring fallback has been removed — use the data-driven flag instead.
+        // MachinePackageValidator warns when a Clamp/AxisFit step references a non-persistent tool.
 
-        public static bool IsToolPersistent(string toolId)
-        {
-            if (string.IsNullOrEmpty(toolId)) return false;
-            return toolId.IndexOf("clamp", System.StringComparison.OrdinalIgnoreCase) >= 0
-                || toolId.IndexOf("fixture", System.StringComparison.OrdinalIgnoreCase) >= 0
-                || toolId.IndexOf("vise", System.StringComparison.OrdinalIgnoreCase) >= 0;
-        }
+        [System.Obsolete("Set ToolDefinition.persistent = true in machine.json. This method always returns false.")]
+        public static bool IsToolPersistent(string toolId) => false;
     }
 }

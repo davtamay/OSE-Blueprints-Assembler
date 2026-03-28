@@ -91,12 +91,12 @@ namespace OSE.UI.Root
             useLinearGuide = false;
 
             if (!Application.isPlaying ||
-                !ServiceRegistry.TryGet<MachineSessionController>(out _))
+                !ServiceRegistry.TryGet<IMachineSessionController>(out _))
             {
                 return false;
             }
 
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return false;
 
             StepController stepController = session.AssemblyController?.StepController;

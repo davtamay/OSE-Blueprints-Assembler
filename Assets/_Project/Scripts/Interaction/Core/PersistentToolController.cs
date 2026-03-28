@@ -76,7 +76,7 @@ namespace OSE.Interaction
         /// </summary>
         public void CleanUpForStep(string stepId)
         {
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return;
 
             var stepCtrl = session?.AssemblyController?.StepController;
@@ -157,19 +157,24 @@ namespace OSE.Interaction
         }
 
         /// <summary>
-        /// Data-driven persistence check: reads ToolDefinition.persistent from the
-        /// loaded package first, falls back to ToolActionProfiles substring matching.
+        /// Data-driven persistence check: reads <see cref="ToolDefinition.persistent"/> from
+        /// the loaded package. Returns false and logs a warning when the tool cannot be found.
+        /// Set <c>persistent = true</c> in machine.json to make a tool track on the workpiece.
         /// </summary>
         private static bool IsToolPersistent(string toolId)
         {
-            if (ServiceRegistry.TryGet<MachineSessionController>(out var session)
+            if (ServiceRegistry.TryGet<IMachineSessionController>(out var session)
                 && session?.Package != null
                 && session.Package.TryGetTool(toolId, out var toolDef))
             {
                 return toolDef.persistent;
             }
 
-            return ToolActionProfiles.IsToolPersistent(toolId);
+            // Package or tool not found — cannot determine persistence from data.
+            // MachinePackageValidator warns at load time when this can happen at runtime.
+            OseLog.Warn($"[PersistentTool] Could not resolve ToolDefinition for '{toolId}'. " +
+                        $"Treating as non-persistent. Set persistent = true in machine.json.");
+            return false;
         }
 
         private static string FormatIds(string[] ids)

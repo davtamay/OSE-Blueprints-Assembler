@@ -9,7 +9,7 @@ namespace OSE.Runtime
     /// Tracks tool availability and active tool selection for the current session.
     /// Plain C# service registered in ServiceRegistry.
     /// </summary>
-    public sealed class ToolRuntimeController
+    public sealed class ToolRuntimeController : IToolRuntimeController
     {
         public readonly struct ToolActionSnapshot
         {
@@ -466,7 +466,7 @@ namespace OSE.Runtime
                 return;
 
             // Suppress auto-completion during explicit step navigation.
-            if (ServiceRegistry.TryGet<MachineSessionController>(out var session) && session.IsNavigating)
+            if (ServiceRegistry.TryGet<IMachineSessionController>(out var session) && session.IsNavigating)
                 return;
 
             ToolActionRuntimeState action = _toolActions[actionIndex];
@@ -600,7 +600,7 @@ namespace OSE.Runtime
         {
             string normalizedStepId = stepId.Trim();
 
-            if (ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (ServiceRegistry.TryGet<IMachineSessionController>(out var session))
             {
                 StepDefinition activeStep = session?.AssemblyController?.StepController?.CurrentStepDefinition;
                 if (activeStep != null &&
@@ -824,7 +824,7 @@ namespace OSE.Runtime
 
         private bool TryHealStepStateFromSession()
         {
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var healSession))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var healSession))
                 return false;
 
             StepController healStepCtrl = healSession?.AssemblyController?.StepController;

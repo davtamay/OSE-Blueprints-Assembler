@@ -74,7 +74,7 @@ namespace OSE.UI.Root
         {
             if (!_isSequentialStep) return false;
 
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return true;
 
             var package = session.Package;
@@ -102,7 +102,7 @@ namespace OSE.UI.Root
         {
             if (!_isSequentialStep) return null;
 
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return null;
 
             StepDefinition step = session.AssemblyController?.StepController?.CurrentStepDefinition;
@@ -165,7 +165,7 @@ namespace OSE.UI.Root
             if (!package.TryGetPart(associatedPartId, out var part)) { OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: part '{associatedPartId}' not found in package."); return; }
 
             // Skip preview for parts already placed or completed from a prior step.
-            if (ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
+            if (ServiceRegistry.TryGet<IPartRuntimeController>(out var partController))
             {
                 var partState = partController.GetPartState(associatedPartId);
                 if (partState == PartPlacementState.Completed ||

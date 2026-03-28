@@ -30,7 +30,7 @@ namespace OSE.UI.Root
     [ExecuteAlways]
     [DisallowMultipleComponent]
     [RequireComponent(typeof(PreviewSceneSetup))]
-    public sealed class PackagePartSpawner : MonoBehaviour, Interaction.ISpawnerQueryService
+    public sealed class PackagePartSpawner : MonoBehaviour, Interaction.ISpawnerQueryService, IStepAwarePositioner
     {
         private const string SamplePartName = "Sample Beam";
         private static readonly Color HoveredAffordanceColor = new Color(0.60f, 0.82f, 1.0f, 1.0f);
@@ -65,6 +65,7 @@ namespace OSE.UI.Root
             AssetSource ??= new StreamingAssetsSource();
 #endif
             ServiceRegistry.Register<Interaction.ISpawnerQueryService>(this);
+            ServiceRegistry.Register<IStepAwarePositioner>(this);
             SessionDriver.PackageChanged += HandlePackageChanged;
 
             // Catch up if this component enabled after the latest package event.
@@ -78,6 +79,7 @@ namespace OSE.UI.Root
         {
             SessionDriver.PackageChanged -= HandlePackageChanged;
             ServiceRegistry.Unregister<Interaction.ISpawnerQueryService>();
+            ServiceRegistry.Unregister<IStepAwarePositioner>();
         }
 
         // ── Public API ──
@@ -92,6 +94,100 @@ namespace OSE.UI.Root
             foreach (var p in _currentPreviewConfig.partPlacements)
                 if (p.partId == partId) return p;
             return null;
+        }
+
+        /// <summary>
+        /// Repositions existing spawned parts for step-aware preview in edit mode.
+        /// Parts from steps before <paramref name="targetSequenceIndex"/> are shown
+        /// at their playPosition; the current step's part at startPosition; future
+        /// parts are hidden. Pass 0 to show all parts at startPosition (All Steps mode).
+        /// </summary>
+        public void ApplyStepAwarePositions(int targetSequenceIndex, MachinePackageDefinition pkg)
+        {
+            if (_spawnedParts.Count == 0) return;
+
+            if (pkg == null || targetSequenceIndex <= 0)
+            {
+                // All Steps mode — restore all parts to startPosition and make visible
+                foreach (var partGo in _spawnedParts)
+                {
+                    if (partGo == null) continue;
+                    partGo.SetActive(true);
+                }
+                PositionPartsFallback();
+                return;
+            }
+
+            // Build partId → earliest sequenceIndex map from step definitions.
+            // Also track which parts belong to any subassembly — they are pre-assembled
+            // before their step and always use playPosition regardless of current step.
+            var partStepSeq      = new Dictionary<string, int>(System.StringComparer.Ordinal);
+            var subassemblyParts = new HashSet<string>(System.StringComparer.Ordinal);
+            var orderedSteps     = pkg.GetOrderedSteps();
+            foreach (var step in orderedSteps)
+            {
+                if (step == null) continue;
+                if (step.requiredPartIds != null)
+                {
+                    foreach (string pid in step.requiredPartIds)
+                    {
+                        if (string.IsNullOrEmpty(pid)) continue;
+                        if (!partStepSeq.ContainsKey(pid) || step.sequenceIndex < partStepSeq[pid])
+                            partStepSeq[pid] = step.sequenceIndex;
+                    }
+                }
+                if (!string.IsNullOrEmpty(step.requiredSubassemblyId) &&
+                    pkg.TryGetSubassembly(step.requiredSubassemblyId, out var subDef) &&
+                    subDef?.partIds != null)
+                {
+                    foreach (string pid in subDef.partIds)
+                    {
+                        if (string.IsNullOrEmpty(pid)) continue;
+                        if (!partStepSeq.ContainsKey(pid) || step.sequenceIndex < partStepSeq[pid])
+                            partStepSeq[pid] = step.sequenceIndex;
+                        subassemblyParts.Add(pid);
+                    }
+                }
+            }
+
+            foreach (var partGo in _spawnedParts)
+            {
+                if (partGo == null) continue;
+                PartPreviewPlacement pp = FindPartPlacement(partGo.name);
+                if (pp == null) continue;
+                if (SplinePartFactory.HasSplineData(pp)) continue;
+
+                bool assigned = partStepSeq.TryGetValue(partGo.name, out int partSeq);
+                if (!assigned || partSeq > targetSequenceIndex)
+                {
+                    partGo.SetActive(false);
+                }
+                else
+                {
+                    partGo.SetActive(true);
+                    // Subassembly members are pre-assembled before their step — no
+                    // meaningful individual startPosition, always use playPosition.
+                    bool usePlay = partSeq < targetSequenceIndex || subassemblyParts.Contains(partGo.name);
+                    Vector3 pos = usePlay
+                        ? new Vector3(pp.playPosition.x, pp.playPosition.y, pp.playPosition.z)
+                        : new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z);
+                    Quaternion rot = usePlay
+                        ? (!pp.playRotation.IsIdentity
+                            ? new Quaternion(pp.playRotation.x, pp.playRotation.y, pp.playRotation.z, pp.playRotation.w)
+                            : Quaternion.identity)
+                        : (!pp.startRotation.IsIdentity
+                            ? new Quaternion(pp.startRotation.x, pp.startRotation.y, pp.startRotation.z, pp.startRotation.w)
+                            : Quaternion.identity);
+                    Vector3 scl = usePlay
+                        ? new Vector3(pp.playScale.x, pp.playScale.y, pp.playScale.z)
+                        : new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z);
+                    // Fall back to playScale when startScale is zero
+                    if (!usePlay && scl.sqrMagnitude < 0.00001f)
+                        scl = new Vector3(pp.playScale.x, pp.playScale.y, pp.playScale.z);
+                    partGo.transform.SetLocalPositionAndRotation(pos, rot);
+                    partGo.transform.localScale = scl;
+                }
+            }
         }
 
         /// <summary>
@@ -1098,7 +1194,7 @@ namespace OSE.UI.Root
             if (!Application.isPlaying || string.IsNullOrWhiteSpace(partId))
                 return false;
 
-            if (!ServiceRegistry.TryGet<PartRuntimeController>(out var partController) ||
+            if (!ServiceRegistry.TryGet<IPartRuntimeController>(out var partController) ||
                 partController == null)
             {
                 return false;

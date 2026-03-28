@@ -218,7 +218,7 @@ namespace OSE.UI.Root
                 return true;
             }
 
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session) || session.ToolController == null)
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session) || session.ToolController == null)
             {
                 OseLog.VerboseInfo("[UseStepHandler] TryExecuteToolPrimaryAction: no session or tool controller.");
                 return false;
@@ -273,7 +273,7 @@ namespace OSE.UI.Root
 
         /// <summary>Completes the step if the tool action result says so.</summary>
         public static bool HandleToolPrimaryResult(
-            MachineSessionController session,
+            IMachineSessionController session,
             StepController stepController,
             bool shouldCompleteStep)
         {
@@ -293,7 +293,7 @@ namespace OSE.UI.Root
         /// Executes the tool action using the current pointer position.
         /// </summary>
         public bool TryExecuteToolPrimaryActionFromPointer(
-            MachineSessionController session,
+            IMachineSessionController session,
             StepController stepController,
             bool allowStepCompletion = true)
         {

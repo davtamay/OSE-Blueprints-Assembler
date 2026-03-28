@@ -331,7 +331,7 @@ namespace OSE.UI.Root
             if (!Application.isPlaying)
                 return false;
 
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return false;
 
             MachinePackageDefinition package = session.Package;
@@ -427,7 +427,7 @@ namespace OSE.UI.Root
             string timeStr = minutes > 0 ? $"{minutes}m {secs}s" : $"{secs}s";
 
             string machineName = "Assembly";
-            if (ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (ServiceRegistry.TryGet<IMachineSessionController>(out var session))
             {
                 machineName = session?.Package?.machine?.GetDisplayName() ?? machineName;
             }
@@ -689,7 +689,7 @@ namespace OSE.UI.Root
             if (!Application.isPlaying)
                 return false;
 
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return false;
 
             StepController stepController = session.AssemblyController?.StepController;

@@ -11,6 +11,12 @@ namespace OSE.Runtime
     /// </summary>
     public sealed class StepController
     {
+        // 50 ms covers ~3 frames at 60 fps — enough for UIToolkit to settle —
+        // while being imperceptibly short to the user.
+        // Prevents a back-click input processed on the same Update tick as navigation
+        // from re-completing the step (UIToolkit frame-ordering race).
+        private const float NavigationCooldownSeconds = 0.05f;
+
         private StepDefinition _currentStep;
         private RuntimeStepState _currentState;
 
@@ -43,7 +49,7 @@ namespace OSE.Runtime
         public void CompleteStep(float atSeconds)
         {
             // Failsafe: never complete a step during explicit navigation.
-            if (ServiceRegistry.TryGet<MachineSessionController>(out var navSession))
+            if (ServiceRegistry.TryGet<IMachineSessionController>(out var navSession))
             {
                 if (navSession.IsNavigating)
                 {
@@ -57,9 +63,6 @@ namespace OSE.Runtime
                 // Unity runs Update() (InteractionOrchestrator) BEFORE UpdatePanels()
                 // (UIToolkit), so a back-click input processed on the same Update tick
                 // as navigation would otherwise re-complete the step.
-                // 50 ms covers ~3 frames at 60 fps — enough for UIToolkit to settle —
-                // while being imperceptibly short to the user.
-                const float NavigationCooldownSeconds = 0.05f;
                 float timeSinceNav = UnityEngine.Time.realtimeSinceStartup - navSession.LastNavigationTime;
                 if (navSession.LastNavigationTime >= 0f && timeSinceNav < NavigationCooldownSeconds)
                 {

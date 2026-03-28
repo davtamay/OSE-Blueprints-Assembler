@@ -29,12 +29,14 @@ namespace OSE.Interaction
         /// <param name="targetPosition">Target snap position</param>
         /// <param name="targetRotation">Target snap rotation</param>
         /// <param name="snapTolerance">Base snap tolerance from validation rules</param>
+        /// <param name="deltaTime">Frame delta time (Time.deltaTime) for frame-rate independent snap</param>
         public PlacementAssistResult Evaluate(
             Vector3 partPosition,
             Quaternion partRotation,
             Vector3 targetPosition,
             Quaternion targetRotation,
-            float snapTolerance)
+            float snapTolerance,
+            float deltaTime)
         {
             var result = new PlacementAssistResult
             {
@@ -49,7 +51,7 @@ namespace OSE.Interaction
 
             if (_settings.EnableMagneticPlacement)
             {
-                result = _magneticSnap.Apply(result, targetPosition, targetRotation, snapTolerance);
+                result = _magneticSnap.Apply(result, targetPosition, targetRotation, snapTolerance, deltaTime);
             }
 
             if (_settings.EnablePlacementCorridors)

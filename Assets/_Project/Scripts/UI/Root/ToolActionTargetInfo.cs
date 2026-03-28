@@ -15,6 +15,8 @@ namespace OSE.UI.Root
         public Vector3 BaseLocalPosition;
         /// <summary>World position of the actual action point on the surface (before sphere lift).</summary>
         public Vector3 SurfaceWorldPos;
+        /// <summary>Vertical distance the sphere was lifted above the surface for click-ability.</summary>
+        public float MarkerLift;
         /// <summary>World rotation of the authored target marker before it is lifted for clickability.</summary>
         public Quaternion TargetWorldRotation;
         /// <summary>Direction of the weld line in world space (normalized). Zero = point target.</summary>

@@ -63,7 +63,8 @@ namespace OSE.Content.Validation
             ValidateSubassemblies(package.GetSubassemblies(), assemblyIds, partIds, stepIds, issues);
             ValidateParts(package.GetParts(), toolIds, issues);
             ValidateTools(package.GetTools(), issues);
-            ValidateSteps(package.GetSteps(), assemblyIds, subassemblyIds, partIds, toolIds, targetIds, package.GetTargets(), validationRuleIds, hintIds, effectIds, issues);
+            Dictionary<string, ToolDefinition> toolDefsById = BuildToolDefsLookup(package.GetTools());
+            ValidateSteps(package.GetSteps(), assemblyIds, subassemblyIds, partIds, toolIds, targetIds, package.GetTargets(), validationRuleIds, hintIds, effectIds, toolDefsById, issues);
             ValidateValidationRules(package.GetValidationRules(), partIds, stepIds, targetIds, hintIds, issues);
             ValidateHints(package.GetHints(), partIds, toolIds, targetIds, issues);
             ValidateEffects(package.GetEffects(), issues);
@@ -233,6 +234,16 @@ namespace OSE.Content.Validation
             }
         }
 
+        private static Dictionary<string, ToolDefinition> BuildToolDefsLookup(ToolDefinition[] tools)
+        {
+            var dict = new Dictionary<string, ToolDefinition>(StringComparer.OrdinalIgnoreCase);
+            if (tools == null) return dict;
+            foreach (var t in tools)
+                if (t != null && !string.IsNullOrWhiteSpace(t.id))
+                    dict[t.id] = t;
+            return dict;
+        }
+
         private static void ValidateSteps(
             StepDefinition[] steps,
             HashSet<string> assemblyIds,
@@ -244,6 +255,7 @@ namespace OSE.Content.Validation
             HashSet<string> validationRuleIds,
             HashSet<string> hintIds,
             HashSet<string> effectIds,
+            Dictionary<string, ToolDefinition> toolDefs,
             List<MachinePackageValidationIssue> issues)
         {
             Dictionary<string, TargetDefinition> targetLookup = new Dictionary<string, TargetDefinition>(StringComparer.OrdinalIgnoreCase);
@@ -350,6 +362,25 @@ namespace OSE.Content.Validation
                 {
                     issues.Add(Error($"{path}.profile",
                         "AxisFit is only supported on Place-family subassembly placement steps."));
+                }
+
+                // Clamp and AxisFit steps place a persistent tool on the workpiece — the tool
+                // must have persistent = true or PersistentToolController will not track it.
+                if (step.IsPlacement &&
+                    (step.ResolvedProfile == StepProfile.Clamp || step.ResolvedProfile == StepProfile.AxisFit) &&
+                    HasAnyValues(step.relevantToolIds))
+                {
+                    foreach (string tid in step.relevantToolIds)
+                    {
+                        if (!string.IsNullOrWhiteSpace(tid)
+                            && toolDefs.TryGetValue(tid, out ToolDefinition td)
+                            && !td.persistent)
+                        {
+                            issues.Add(Warning($"{path}.relevantToolIds",
+                                $"Tool '{tid}' is used in a {step.profile} step but ToolDefinition.persistent is false. " +
+                                $"Set persistent = true in machine.json so PersistentToolController tracks it."));
+                        }
+                    }
                 }
             }
         }

@@ -59,7 +59,7 @@ namespace OSE.UI.Root
             if (_ctx.Spawner == null || setup == null)
                 return;
 
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var earlySession))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var earlySession))
                 return;
 
             StepController earlyStepCtrl = earlySession?.AssemblyController?.StepController;
@@ -71,7 +71,7 @@ namespace OSE.UI.Root
             if (currentStep?.requiredToolActions == null || currentStep.requiredToolActions.Length == 0)
                 return;
 
-            MachineSessionController session = earlySession;
+            IMachineSessionController session = earlySession;
             bool spawnedAny = false;
 
             bool runtimeMatchesStep =
@@ -380,12 +380,12 @@ namespace OSE.UI.Root
 
         public static bool TryGetActionSnapshots(
             out ToolRuntimeController.ToolActionSnapshot[] snapshots,
-            out MachineSessionController session)
+            out IMachineSessionController session)
         {
             snapshots = Array.Empty<ToolRuntimeController.ToolActionSnapshot>();
             session = null;
 
-            if (!ServiceRegistry.TryGet(out session) ||
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out session) ||
                 session == null ||
                 session.Package == null ||
                 session.ToolController == null)
@@ -398,7 +398,7 @@ namespace OSE.UI.Root
 
         public static bool ActiveStepHasRequiredToolActions()
         {
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session) || session == null)
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session) || session == null)
                 return false;
 
             StepController stepController = session.AssemblyController?.StepController;
@@ -491,6 +491,7 @@ namespace OSE.UI.Root
             info.BaseScale = marker.transform.localScale;
             info.BaseLocalPosition = marker.transform.localPosition;
             info.SurfaceWorldPos = surfaceWorldPos;
+            info.MarkerLift = markerLift;
             info.TargetWorldRotation = marker.transform.rotation;
 
             if (package.TryGetTarget(targetId, out TargetDefinition targetDef))
@@ -518,7 +519,7 @@ namespace OSE.UI.Root
 
         private static void TryWarnMissingPrimaryToolActionSnapshot()
         {
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session) || session == null)
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session) || session == null)
                 return;
 
             StepController stepController = session.AssemblyController?.StepController;
@@ -556,6 +557,7 @@ namespace OSE.UI.Root
                 info.BaseScale = Vector3.one;
                 info.BaseLocalPosition = Vector3.zero;
                 info.SurfaceWorldPos = Vector3.zero;
+                info.MarkerLift = 0f;
                 info.TargetWorldRotation = Quaternion.identity;
                 info.WeldAxis = Vector3.zero;
                 info.WeldLength = 0f;

@@ -76,7 +76,7 @@ namespace OSE.Runtime
             }
 
             // Watchdog: detect if advance is called during navigation
-            if (ServiceRegistry.TryGet<MachineSessionController>(out var navSession) && navSession.IsNavigating)
+            if (ServiceRegistry.TryGet<IMachineSessionController>(out var navSession) && navSession.IsNavigating)
             {
                 OseLog.Warn($"[ProgressionController] CRITICAL: AdvanceToNextStep called during navigation! " +
                     $"currentIndex={_currentIndex}. Stack: {System.Environment.StackTrace}");

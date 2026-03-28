@@ -274,7 +274,7 @@ namespace OSE.UI.Root
             selected = NormalizeSelectablePlacementTarget(selected);
 
             bool canGrab = true;
-            if (IsSpawnedPart(selected) && ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
+            if (IsSpawnedPart(selected) && ServiceRegistry.TryGet<IPartRuntimeController>(out var partController))
                 canGrab = partController.GrabPart(selected.name);
 
             if (!canGrab)
@@ -314,7 +314,7 @@ namespace OSE.UI.Root
             if (ServiceRegistry.TryGet<IPresentationAdapter>(out var ui) && !ui.IsHintDisplayAllowed)
                 return;
 
-            if (ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (ServiceRegistry.TryGet<IMachineSessionController>(out var session))
             {
                 session.AssemblyController?.StepController?.RequestHint();
             }
@@ -332,7 +332,7 @@ namespace OSE.UI.Root
                     return;
             }
 
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return;
 
             StepController stepController = session.AssemblyController?.StepController;
@@ -487,7 +487,7 @@ namespace OSE.UI.Root
             // Selected-from-Completed case (previousState tracking).
             if (!locked && _subassemblyPlacementController != null)
             {
-                ServiceRegistry.TryGet<PartRuntimeController>(out var memberController);
+                ServiceRegistry.TryGet<IPartRuntimeController>(out var memberController);
                 if (_subassemblyPlacementController.TryGetSubassemblyId(target, out string subId) &&
                     !string.IsNullOrWhiteSpace(subId))
                 {
@@ -604,7 +604,7 @@ namespace OSE.UI.Root
             => _toolAction?.FlashToolTargetOnFailure();
 
         private bool TryExecuteToolPrimaryActionFromPointer(
-            MachineSessionController session,
+            IMachineSessionController session,
             StepController stepController,
             bool allowStepCompletion = true)
             => _toolAction?.TryExecuteToolPrimaryActionFromPointer(session, stepController, allowStepCompletion) ?? false;
@@ -925,9 +925,9 @@ namespace OSE.UI.Root
                 return;
             }
 
-            if (!ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
+            if (!ServiceRegistry.TryGet<IPartRuntimeController>(out var partController))
                 return;
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return;
 
             string selectedId = partController.SelectedPartId;

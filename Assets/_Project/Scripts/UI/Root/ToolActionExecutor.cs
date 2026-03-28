@@ -35,7 +35,7 @@ namespace OSE.UI.Root
         /// </summary>
         public bool IsToolModeLockedForParts()
         {
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return false;
 
             if (session?.ToolController == null)
@@ -48,7 +48,7 @@ namespace OSE.UI.Root
                 return false;
 
             // Mixed placement+tool steps: don't lock parts until all placements are done.
-            if (ServiceRegistry.TryGet<PartRuntimeController>(out var partController) &&
+            if (ServiceRegistry.TryGet<IPartRuntimeController>(out var partController) &&
                 !partController.AreActiveStepRequiredPartsPlaced())
             {
                 return false;
@@ -104,17 +104,31 @@ namespace OSE.UI.Root
                     toolPose = toolDef.toolPose;
             }
 
+            bool isPersistent = false;
+            if (!string.IsNullOrEmpty(activeToolId))
+            {
+                var package = _ctx.Spawner?.CurrentPackage;
+                if (package != null && package.TryGetTool(activeToolId, out var toolDefForPersist))
+                    isPersistent = toolDefForPersist.persistent;
+            }
+
             context = new ToolActionContext
             {
                 TargetId = resolvedTarget.TargetId,
                 TargetWorldPos = resolvedTarget.transform.position,
-                SurfaceWorldPos = resolvedTarget.SurfaceWorldPos,
+                // Compute surface pos dynamically from the sphere's current world transform
+                // rather than using the baked SurfaceWorldPos. The baked value is stale when
+                // the scene root (previewRoot) repositions itself after FrameToolAction runs
+                // just before Enter() is called — causing the tool to animate to the old
+                // (wrong) surface position while the sphere has already moved to the new one.
+                SurfaceWorldPos = resolvedTarget.transform.position - Vector3.up * resolvedTarget.MarkerLift,
                 TargetWorldRotation = resolvedTarget.TargetWorldRotation,
                 WeldAxis = resolvedTarget.WeldAxis,
                 WeldLength = resolvedTarget.WeldLength,
                 HasToolActionRotation = resolvedTarget.HasToolActionRotation,
                 ToolActionRotation = resolvedTarget.ToolActionRotation,
                 ToolPose = toolPose,
+                InstantPlacement = isPersistent,
             };
             return !string.IsNullOrWhiteSpace(context.TargetId);
         }
@@ -146,7 +160,7 @@ namespace OSE.UI.Root
             if (router != null && TryBuildHandlerContext(out var pipeCtx) && router.TryHandlePointerDown(in pipeCtx, screenPos))
                 return true;
 
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return false;
 
             StepController stepController = session.AssemblyController?.StepController;
@@ -173,7 +187,7 @@ namespace OSE.UI.Root
 
         private bool TryHandleToolAction(string interactedTargetId)
         {
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return false;
 
             StepController stepController = session.AssemblyController?.StepController;
@@ -226,10 +240,10 @@ namespace OSE.UI.Root
             return false;
         }
 
-        public bool HandleToolPrimaryResult(MachineSessionController session, StepController stepController, bool shouldCompleteStep)
+        public bool HandleToolPrimaryResult(IMachineSessionController session, StepController stepController, bool shouldCompleteStep)
             => UseStepHandler.HandleToolPrimaryResult(session, stepController, shouldCompleteStep);
 
-        public bool TryExecuteToolPrimaryActionFromPointer(MachineSessionController session, StepController stepController, bool allowStepCompletion = true)
+        public bool TryExecuteToolPrimaryActionFromPointer(IMachineSessionController session, StepController stepController, bool allowStepCompletion = true)
         {
             var useHandler = _ctx.UseHandler;
             return useHandler != null && useHandler.TryExecuteToolPrimaryActionFromPointer(session, stepController, allowStepCompletion);
@@ -328,14 +342,14 @@ namespace OSE.UI.Root
 
         public string GetActiveToolId()
         {
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return null;
             return session?.ToolController?.ActiveToolId;
         }
 
         public string GetActiveToolProfile()
         {
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return null;
             var stepCtrl = session?.AssemblyController?.StepController;
             return stepCtrl != null && stepCtrl.HasActiveStep ? stepCtrl.CurrentStepDefinition?.profile : null;
@@ -344,7 +358,7 @@ namespace OSE.UI.Root
         private static bool TryBuildHandlerContext(out StepHandlerContext context)
         {
             context = default;
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return false;
             var stepCtrl = session.AssemblyController?.StepController;
             if (stepCtrl == null || !stepCtrl.HasActiveStep)

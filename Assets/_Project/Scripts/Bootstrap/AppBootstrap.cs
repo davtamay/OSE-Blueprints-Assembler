@@ -24,17 +24,19 @@ namespace OSE.Bootstrap
         private void RegisterCoreServices()
         {
             var sessionController = new MachineSessionController();
-            ServiceRegistry.Register<MachineSessionController>(sessionController);
+            ServiceRegistry.Register<IMachineSessionController>(sessionController);
 
             var partController = new PartRuntimeController();
-            ServiceRegistry.Register<PartRuntimeController>(partController);
+            ServiceRegistry.Register<IPartRuntimeController>(partController);
 
             var toolController = new ToolRuntimeController();
-            ServiceRegistry.Register<ToolRuntimeController>(toolController);
+            ServiceRegistry.Register<IToolRuntimeController>(toolController);
 
             var placementValidator = new PlacementValidator();
             ServiceRegistry.Register<IPlacementValidator>(placementValidator);
 
+            // Primary build target is WebGL — PlayerPrefs maps to IndexedDB there (no 1 MB cap).
+            // FilePersistenceService exists for future standalone/native builds.
             var persistence = new PlayerPrefsPersistenceService();
             ServiceRegistry.Register<IPersistenceService>(persistence);
 

@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using OSE.Core;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -208,7 +209,7 @@ namespace OSE.UI.Controllers
             imageContainer.style.justifyContent = Justify.Center;
 
             if (!string.IsNullOrWhiteSpace(imageRef))
-                TryLoadIntroImage(imageContainer, imageRef);
+                _ = TryLoadIntroImage(imageContainer, imageRef);
             else
             {
                 var placeholder = new Label("[ Machine Preview ]");
@@ -461,7 +462,7 @@ namespace OSE.UI.Controllers
             return char.ToUpperInvariant(s[0]) + s.Substring(1).ToLowerInvariant();
         }
 
-        private static async void TryLoadIntroImage(VisualElement container, string imageRef)
+        private static async Task TryLoadIntroImage(VisualElement container, string imageRef)
         {
             string path = System.IO.Path.Combine(Application.streamingAssetsPath, imageRef);
             if (!System.IO.File.Exists(path))

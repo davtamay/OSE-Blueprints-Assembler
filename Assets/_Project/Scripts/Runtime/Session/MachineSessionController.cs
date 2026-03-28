@@ -13,16 +13,30 @@ namespace OSE.Runtime
     /// creates child controllers, and manages the session lifecycle.
     /// Registered in ServiceRegistry for external access.
     /// </summary>
-    public sealed class MachineSessionController
+    public sealed class MachineSessionController : IMachineSessionController, INavigationHost
     {
         private readonly MachinePackageLoader _loader = new MachinePackageLoader();
         private MachineSessionState _sessionState;
         private MachinePackageDefinition _package;
         private AssemblyRuntimeController _assemblyController;
-        private PartRuntimeController _partController;
-        private ToolRuntimeController _toolController;
+        private IPartRuntimeController _partController;
+        private IToolRuntimeController _toolController;
         private string[] _assemblyOrder;
         private int _currentAssemblyIndex;
+
+        private SessionNavigationController _navigation;
+
+        // INavigationHost explicit implementations (private — callers use IMachineSessionController)
+        MachinePackageDefinition INavigationHost.Package => _package;
+        AssemblyRuntimeController INavigationHost.AssemblyController => _assemblyController;
+        IPartRuntimeController INavigationHost.PartController => _partController;
+        MachineSessionState INavigationHost.SessionState => _sessionState;
+        string[] INavigationHost.AssemblyOrder => _assemblyOrder;
+        int INavigationHost.CurrentAssemblyIndex
+        {
+            get => _currentAssemblyIndex;
+            set => _currentAssemblyIndex = value;
+        }
 
         /// <summary>
         /// Fires after the package is loaded and controllers are initialized,
@@ -35,45 +49,19 @@ namespace OSE.Runtime
         public MachineSessionState SessionState => _sessionState;
         public MachinePackageDefinition Package => _package;
         public AssemblyRuntimeController AssemblyController => _assemblyController;
-        public PartRuntimeController PartController => _partController;
-        public ToolRuntimeController ToolController => _toolController;
+        public IPartRuntimeController PartController => _partController;
+        public IToolRuntimeController ToolController => _toolController;
 
-        // ── Step Navigation ──
+        // ── Step Navigation (delegated to SessionNavigationController) ──
 
-        /// <summary>True while an explicit back/forward navigation is in progress.
-        /// Auto-completion logic should check this and bail out to avoid
-        /// undoing the navigation via reentrant step completion.</summary>
-        public bool IsNavigating { get; private set; }
+        /// <summary>True while an explicit back/forward navigation is in progress.</summary>
+        public bool IsNavigating => _navigation?.IsNavigating ?? false;
 
-        /// <summary>
-        /// Realtime seconds when the last navigation completed.
-        /// Used to prevent tool actions from re-completing a step immediately after navigation.
-        /// </summary>
-        public float LastNavigationTime { get; private set; } = -1f;
+        /// <summary>Realtime seconds when the last navigation completed. -1 if never.</summary>
+        public float LastNavigationTime => _navigation?.LastNavigationTime ?? -1f;
 
-        public bool CanStepBack
-        {
-            get
-            {
-                return TryGetCurrentGlobalStepIndex(out int currentGlobalIndex) &&
-                       currentGlobalIndex > 0;
-            }
-        }
-
-        public bool CanStepForward
-        {
-            get
-            {
-                if (!TryGetCurrentGlobalStepIndex(out int currentGlobalIndex))
-                    return false;
-
-                StepDefinition[] orderedSteps = _package?.GetOrderedSteps() ?? Array.Empty<StepDefinition>();
-                if (orderedSteps.Length == 0)
-                    return false;
-
-                return currentGlobalIndex < orderedSteps.Length - 1;
-            }
-        }
+        public bool CanStepBack => _navigation?.CanStepBack ?? false;
+        public bool CanStepForward => _navigation?.CanStepForward ?? false;
 
         /// <summary>
         /// Loads a machine package and starts a new session.
@@ -136,12 +124,12 @@ namespace OSE.Runtime
             _assemblyController.OnAssemblyCompleted += HandleAssemblyCompleted;
 
             // Initialize part runtime controller if registered
-            if (ServiceRegistry.TryGet<PartRuntimeController>(out _partController))
+            if (ServiceRegistry.TryGet<IPartRuntimeController>(out _partController))
             {
                 _partController.Initialize(_package);
             }
 
-            if (ServiceRegistry.TryGet<ToolRuntimeController>(out _toolController))
+            if (ServiceRegistry.TryGet<IToolRuntimeController>(out _toolController))
             {
                 _toolController.Initialize(_package);
             }
@@ -152,6 +140,7 @@ namespace OSE.Runtime
             RuntimeEventBus.Subscribe<ToolActionFailed>(HandleToolActionFailed);
 
             _currentAssemblyIndex = 0;
+            _navigation = new SessionNavigationController(this);
             SetLifecycle(SessionLifecycle.SessionActive);
 
             // Notify listeners before any step events fire
@@ -383,32 +372,9 @@ namespace OSE.Runtime
 
             _currentAssemblyIndex = resolvedAssemblyIndex >= 0 ? resolvedAssemblyIndex : 0;
             assemblyId = resolvedAssemblyId;
-            localCompletedStepCount = CountCompletedStepsForAssembly(orderedSteps, assemblyId, clampedCompleted);
+            localCompletedStepCount = SessionNavigationController.CountCompletedStepsForAssembly(orderedSteps, assemblyId, clampedCompleted);
             return true;
         }
-
-        private static int CountCompletedStepsForAssembly(
-            StepDefinition[] orderedSteps,
-            string assemblyId,
-            int completedGlobalCount)
-        {
-            if (orderedSteps == null || completedGlobalCount <= 0 || string.IsNullOrWhiteSpace(assemblyId))
-                return 0;
-
-            int count = 0;
-            int limit = Math.Min(completedGlobalCount, orderedSteps.Length);
-            for (int i = 0; i < limit; i++)
-            {
-                if (orderedSteps[i] != null &&
-                    string.Equals(orderedSteps[i].assemblyId, assemblyId, StringComparison.OrdinalIgnoreCase))
-                {
-                    count++;
-                }
-            }
-
-            return count;
-        }
-
 
         private void HandleStepStateChanged(StepStateChanged evt)
         {
@@ -539,164 +505,19 @@ namespace OSE.Runtime
             return true;
         }
 
-        // ── Step Navigation ──
+        // ── Step Navigation (delegated to SessionNavigationController) ──
 
         /// <summary>
         /// Navigates one step backward. Parts from the current step revert to
         /// Available; parts from subsequent steps become NotIntroduced.
         /// </summary>
-        public bool StepBack()
-        {
-            if (_assemblyController == null || _partController == null)
-            {
-                OseLog.Warn("[MachineSessionController] StepBack: assemblyController or partController is null.");
-                return false;
-            }
-
-            if (!TryGetCurrentGlobalStepIndex(out int currentGlobalIndex))
-            {
-                OseLog.Warn("[Nav] StepBack BLOCKED: unable to resolve current global step index.");
-                return false;
-            }
-
-            OseLog.Info($"[Nav] StepBack: currentGlobalIndex={currentGlobalIndex}, CanStepBack={currentGlobalIndex > 0}, IsNavigating={IsNavigating}");
-
-            if (currentGlobalIndex <= 0)
-            {
-                OseLog.Warn($"[Nav] StepBack BLOCKED: already at first global step (currentGlobalIndex={currentGlobalIndex}).");
-                return false;
-            }
-
-            bool result = NavigateToGlobalStepInternal(currentGlobalIndex - 1);
-            OseLog.Info($"[Nav] StepBack result={result}, new currentGlobalIndex={(TryGetCurrentGlobalStepIndex(out int afterIndex) ? afterIndex : -1)}");
-            return result;
-        }
+        public bool StepBack() => _navigation?.StepBack() ?? false;
 
         /// <summary>
         /// Navigates one step forward within the package-wide ordered step list.
         /// This is review/navigation behavior, not durable progression advancement.
         /// </summary>
-        public bool StepForward()
-        {
-            if (_assemblyController == null || _partController == null)
-                return false;
-
-            if (!TryGetCurrentGlobalStepIndex(out int currentGlobalIndex))
-                return false;
-
-            StepDefinition[] orderedSteps = _package?.GetOrderedSteps() ?? Array.Empty<StepDefinition>();
-            if (orderedSteps.Length == 0)
-                return false;
-
-            int maxNavigableIndex = orderedSteps.Length - 1;
-            OseLog.Info($"[Nav] StepForward: currentGlobalIndex={currentGlobalIndex}, maxNavigableIndex={maxNavigableIndex}");
-
-            if (currentGlobalIndex >= maxNavigableIndex)
-                return false;
-
-            return NavigateToGlobalStepInternal(currentGlobalIndex + 1);
-        }
-
-        private bool NavigateToGlobalStepInternal(int targetGlobalIndex)
-        {
-            StepDefinition[] orderedSteps = _package?.GetOrderedSteps() ?? Array.Empty<StepDefinition>();
-            if (orderedSteps.Length == 0)
-                return false;
-
-            if (!TryGetCurrentGlobalStepIndex(out int previousGlobalIndex))
-                previousGlobalIndex = 0;
-
-            int clampedTargetGlobalIndex = Math.Max(0, Math.Min(targetGlobalIndex, orderedSteps.Length - 1));
-            StepDefinition targetStep = orderedSteps[clampedTargetGlobalIndex];
-            if (targetStep == null)
-                return false;
-
-            string targetAssemblyId = !string.IsNullOrWhiteSpace(targetStep.assemblyId)
-                ? targetStep.assemblyId
-                : _sessionState?.CurrentAssemblyId;
-            if (string.IsNullOrWhiteSpace(targetAssemblyId))
-                return false;
-
-            int targetAssemblyIndex = Array.FindIndex(
-                _assemblyOrder ?? Array.Empty<string>(),
-                id => string.Equals(id, targetAssemblyId, StringComparison.OrdinalIgnoreCase));
-            if (targetAssemblyIndex < 0)
-                targetAssemblyIndex = _currentAssemblyIndex;
-
-            int localTargetIndex = CountCompletedStepsForAssembly(orderedSteps, targetAssemblyId, clampedTargetGlobalIndex);
-
-            StepDefinition[] completedGlobalSteps = Array.Empty<StepDefinition>();
-            if (clampedTargetGlobalIndex > 0)
-            {
-                completedGlobalSteps = new StepDefinition[clampedTargetGlobalIndex];
-                Array.Copy(orderedSteps, completedGlobalSteps, clampedTargetGlobalIndex);
-            }
-
-            OseLog.Info($"[Nav] NavigateToGlobalStepInternal: from global {previousGlobalIndex} to {clampedTargetGlobalIndex}, assembly='{targetAssemblyId}', localTargetIndex={localTargetIndex}, totalGlobalSteps={orderedSteps.Length}");
-
-            IsNavigating = true;
-            try
-            {
-                _partController.RecomputePartsForNavigation(completedGlobalSteps, targetStep);
-
-                RuntimeEventBus.Publish(new StepNavigated(previousGlobalIndex, clampedTargetGlobalIndex, orderedSteps.Length));
-
-                _currentAssemblyIndex = targetAssemblyIndex;
-                _sessionState.CurrentAssemblyId = targetAssemblyId;
-
-                if (string.Equals(_assemblyController.CurrentAssemblyId, targetAssemblyId, StringComparison.OrdinalIgnoreCase))
-                {
-                    _assemblyController.NavigateToStep(localTargetIndex, () => _sessionState.ElapsedSeconds);
-                }
-                else
-                {
-                    _assemblyController.RestoreAssemblyState(targetAssemblyId, localTargetIndex, () => _sessionState.ElapsedSeconds);
-                }
-
-                if (_assemblyController.StepController.HasActiveStep)
-                    _sessionState.CurrentStepId = _assemblyController.StepController.CurrentStepState.StepId;
-
-                OseLog.Info($"[Nav] Navigated from global step {previousGlobalIndex + 1} to global step {clampedTargetGlobalIndex + 1}. " +
-                    $"CanStepBack={CanStepBack}, CanStepForward={CanStepForward}");
-                return true;
-            }
-            catch (System.Exception ex)
-            {
-                OseLog.Warn($"[Nav] EXCEPTION during navigation to global step {clampedTargetGlobalIndex + 1}: {ex.Message}\n{ex.StackTrace}");
-                return false;
-            }
-            finally
-            {
-                IsNavigating = false;
-                LastNavigationTime = UnityEngine.Time.realtimeSinceStartup;
-            }
-        }
-
-        private bool TryGetCurrentGlobalStepIndex(out int currentGlobalIndex)
-        {
-            currentGlobalIndex = -1;
-
-            StepDefinition[] orderedSteps = _package?.GetOrderedSteps() ?? Array.Empty<StepDefinition>();
-            string activeStepId =
-                _assemblyController?.StepController?.HasActiveStep == true
-                    ? _assemblyController.StepController.CurrentStepState.StepId
-                    : _sessionState?.CurrentStepId;
-
-            if (orderedSteps.Length == 0 || string.IsNullOrWhiteSpace(activeStepId))
-                return false;
-
-            for (int i = 0; i < orderedSteps.Length; i++)
-            {
-                if (orderedSteps[i] != null &&
-                    string.Equals(orderedSteps[i].id, activeStepId, StringComparison.OrdinalIgnoreCase))
-                {
-                    currentGlobalIndex = i;
-                    return true;
-                }
-            }
-
-            return false;
-        }
+        public bool StepForward() => _navigation?.StepForward() ?? false;
 
         private void CompleteSession()
         {
@@ -706,6 +527,15 @@ namespace OSE.Runtime
             SetLifecycle(SessionLifecycle.Completing);
 
             OseLog.Info($"[MachineSessionController] Session '{machineId}' completed in {totalSeconds:F1}s.");
+            OseLog.Info(
+                $"[SessionSummary] machine={machineId} " +
+                $"mode={_sessionState.Mode} " +
+                $"steps={_sessionState.CompletedStepCount} " +
+                $"elapsed={totalSeconds:F1}s " +
+                $"stepTime={_sessionState.TotalStepDurationSeconds:F1}s " +
+                $"mistakes={_sessionState.MistakeCount} " +
+                $"hints={_sessionState.HintsUsed} " +
+                $"challenge={_sessionState.ChallengeActive}");
 
             // Clear saved progress — the session is done
             if (ServiceRegistry.TryGet<IPersistenceService>(out var persistence))
@@ -716,37 +546,6 @@ namespace OSE.Runtime
             RuntimeEventBus.Publish(new SessionCompleted(machineId, totalSeconds));
 
             SetLifecycle(SessionLifecycle.Completed);
-        }
-
-        private void ResolveGlobalNavigationBoundary(
-            int targetIndex,
-            ProgressionController progression,
-            out StepDefinition[] completedGlobalSteps,
-            out StepDefinition targetStep)
-        {
-            completedGlobalSteps = Array.Empty<StepDefinition>();
-            targetStep = progression != null ? progression.GetStepAtIndex(targetIndex) : null;
-
-            StepDefinition[] orderedSteps = _package?.GetOrderedSteps() ?? Array.Empty<StepDefinition>();
-            if (orderedSteps.Length == 0 || targetStep == null)
-                return;
-
-            int targetGlobalIndex = -1;
-            for (int i = 0; i < orderedSteps.Length; i++)
-            {
-                if (orderedSteps[i] != null &&
-                    string.Equals(orderedSteps[i].id, targetStep.id, StringComparison.OrdinalIgnoreCase))
-                {
-                    targetGlobalIndex = i;
-                    break;
-                }
-            }
-
-            if (targetGlobalIndex <= 0)
-                return;
-
-            completedGlobalSteps = new StepDefinition[targetGlobalIndex];
-            Array.Copy(orderedSteps, completedGlobalSteps, targetGlobalIndex);
         }
 
         private void SetLifecycle(SessionLifecycle next)

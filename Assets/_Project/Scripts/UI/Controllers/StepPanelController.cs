@@ -41,7 +41,7 @@ namespace OSE.UI.Controllers
             _view.SetProgress(viewModel.ProgressRatio);
 
             // Update navigation button states
-            if (ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (ServiceRegistry.TryGet<IMachineSessionController>(out var session))
             {
                 _view.SetBackEnabled(session.CanStepBack);
                 _view.SetForwardEnabled(session.CanStepForward);
@@ -68,7 +68,7 @@ namespace OSE.UI.Controllers
 
         private void HandleContextActionClicked()
         {
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return;
 
             StepController stepController = session.AssemblyController?.StepController;
@@ -103,7 +103,7 @@ namespace OSE.UI.Controllers
 
         private void HandleConfirmClicked()
         {
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return;
 
             var stepController = session.AssemblyController?.StepController;
@@ -132,7 +132,7 @@ namespace OSE.UI.Controllers
 
         private void HandleHintClicked()
         {
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return;
 
             session.AssemblyController?.StepController?.RequestHint();
@@ -140,7 +140,7 @@ namespace OSE.UI.Controllers
 
         private void HandleBackClicked()
         {
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return;
 
             session.StepBack();
@@ -148,7 +148,7 @@ namespace OSE.UI.Controllers
 
         private void HandleForwardClicked()
         {
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return;
 
             session.StepForward();

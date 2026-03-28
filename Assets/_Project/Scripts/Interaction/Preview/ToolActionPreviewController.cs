@@ -39,6 +39,7 @@ namespace OSE.Interaction
         private float _weldLength;
         private Renderer _targetSphereRenderer;
         private bool _completed;
+        private bool _instantPlacement;
         private ToolActionVisualGuide _visualGuide;
 
         // Return animation state
@@ -82,6 +83,7 @@ namespace OSE.Interaction
             _onComplete = onComplete;
             _onActionDone = onActionDone;
             _onCancel = onCancel;
+            _instantPlacement = ctx.InstantPlacement;
 
             // Snapshot current preview state and detach from camera
             _originalParent = toolPreview.transform.parent;
@@ -98,16 +100,27 @@ namespace OSE.Interaction
 
             toolPreview.transform.SetParent(null, worldPositionStays: true);
 
-            // Recompute exact working position using Unity's TransformPoint so that
-            // the authored tipPoint lands exactly at the target surface.
-            // This accounts for any scale/hierarchy differences after unparenting.
-            if (ctx.ToolPose != null && ctx.ToolPose.HasTipPoint)
+            if (ctx.HasToolActionRotation && ctx.ToolPose != null && ctx.ToolPose.HasTipPoint)
             {
+                // When the author has locked in an exact rotation, derive the working
+                // position analytically: place the tool root so its tip lands exactly
+                // at the surface. The TransformPoint correction (below) breaks for
+                // authored rotations because the tip may point away from the approach
+                // direction, causing a large erroneous shift.
+                float s = toolPreview.transform.lossyScale.x;
+                _workingPos = ctx.SurfaceWorldPos - _actionRot * (ctx.ToolPose.GetTipPoint() * s);
+            }
+            else if (ctx.ToolPose != null && ctx.ToolPose.HasTipPoint)
+            {
+                // No authored rotation: approach from camera side and nudge the working
+                // position so the tip lands at the surface using TransformPoint.
                 toolPreview.transform.SetPositionAndRotation(_workingPos, _actionRot);
                 Vector3 currentTipWorld = toolPreview.transform.TransformPoint(ctx.ToolPose.GetTipPoint());
                 const float tipClearance = 0.002f;
                 Vector3 desiredTip = ctx.SurfaceWorldPos + _approachDir * tipClearance;
                 _workingPos += desiredTip - currentTipWorld;
+                // Restore so the approach animation starts from cursor.
+                toolPreview.transform.SetPositionAndRotation(_startPos, _startRot);
             }
 
             // Show the real tool materials during preview (not the transparent cursor tint)
@@ -201,11 +214,31 @@ namespace OSE.Interaction
 
             if (t >= 1f)
             {
-                _phase = Phase.Action;
-                _elapsed = 0f;
-
                 _toolPreview.transform.position = _workingPos;
                 _toolPreview.transform.rotation = _actionRot;
+
+                // Persistent tools (clamps, fixtures): snap into place at end of approach.
+                // No action animation plays yet — a screw-tighten animation can be plugged
+                // in later by removing this branch. The I Do / We Do / auto mode selection
+                // still drives how the approach is presented (Observe first, Guided second,
+                // auto after), so the full framework remains intact.
+                if (_instantPlacement)
+                {
+                    _completed = true;
+                    // Dispose preview object before SkipReturn() so End() is not called
+                    // on a preview that was never Begin()-ed.
+                    _preview = null;
+                    _visualGuide?.Exit();
+                    _visualGuide = null;
+                    RestoreTargetSphere();
+                    _onActionDone?.Invoke(_targetId, _surfacePos, _toolPreview.transform.rotation);
+                    if (_phase == Phase.Inactive) return; // SkipReturn() was called
+                    BeginReturn();
+                    return;
+                }
+
+                _phase = Phase.Action;
+                _elapsed = 0f;
 
                 var ctx = new PreviewContext
                 {
@@ -362,6 +395,7 @@ namespace OSE.Interaction
             _toolPreview = null;
             _profile = null;
             _toolPose = null;
+            _instantPlacement = false;
 
             if (completed)
             {
@@ -396,7 +430,14 @@ namespace OSE.Interaction
             ToolActionContext ctx, out Vector3 workingPos, out Quaternion actionRot)
         {
             Camera cam = CameraUtil.GetMain();
-            Vector3 camToSurface = (surfacePos - (cam != null ? cam.transform.position : _startPos)).normalized;
+            Vector3 camPos = cam != null ? cam.transform.position : _startPos;
+            // Guard: on the first frame after session resume, FrameToolAction runs
+            // asynchronously so the camera may still be below the work surface.
+            // An inverted viewpoint flips approachDir downward, placing workingPos
+            // below the surface. Use a synthetic point above instead.
+            if (camPos.y < surfacePos.y - 0.05f)
+                camPos = surfacePos + Vector3.up * 1.5f;
+            Vector3 camToSurface = (surfacePos - camPos).normalized;
             Vector3 approachDir = -camToSurface; // from surface toward camera
 
             var profileDesc = ToolProfileRegistry.Get(profile);
@@ -410,21 +451,41 @@ namespace OSE.Interaction
             {
                 ComputeSquareCheckPose(approachDir, out actionRot);
             }
-            // Authored rotation takes priority — content knows best how this tool sits at this target
+            // Authored rotation takes priority — content knows best how this tool sits at this target.
+            // Apply Inverse(gripRotation) so the tool GO sits in the same orientation as the
+            // editor preview (which also undoes gripRotation in ComputeToolLocalTransform).
+            // workingPos here is a placeholder only — Enter() always overrides it with the exact
+            // surfacePos - actionRot * tipPoint * scale formula when ToolPose is available.
+            // When ToolPose is null (package not yet loaded on first click) fall back to the
+            // camera-side approach so the pivot is never placed on the wrong side of the surface.
             else if (ctx.HasToolActionRotation)
             {
                 actionRot = ctx.ToolActionRotation;
+                if (ctx.ToolPose != null && ctx.ToolPose.HasGripRotation)
+                    actionRot = ctx.ToolActionRotation * Quaternion.Inverse(ctx.ToolPose.GetGripRotation());
+                workingPos = surfacePos + approachDir * toolHalfLength;
             }
-            // Torque: if the tool authors a distinct insertion axis, align that axis
-            // to the fastener shaft direction encoded by the target rotation.
-            else if (profileDesc.PreviewStyle == PreviewStyle.Torque
-                && ctx.ToolPose != null
-                && ctx.ToolPose.HasActionAxis)
+            // Torque/weld: align the action axis to the fastener shaft direction from the
+            // target rotation. Position is derived from TargetWorldRotation alone so it fires
+            // even when ToolPose hasn't loaded yet (first tool click after app start).
+            // ComputeTorquePose (which needs ToolPose) is only called for rotation when ready.
+            else if (profileDesc.PreviewStyle == PreviewStyle.Torque)
             {
                 Vector3 desiredAxis = ctx.TargetWorldRotation * Vector3.right;
-                float offset = toolHalfLength + workingDist;
-                workingPos = surfacePos - desiredAxis.normalized * offset;
-                actionRot = ComputeTorquePose(desiredAxis, ctx.TargetWorldRotation * Vector3.up, ctx.ToolPose);
+                workingPos = surfacePos - desiredAxis.normalized * toolHalfLength;
+                if (ctx.ToolPose != null && ctx.ToolPose.HasActionAxis)
+                {
+                    actionRot = ComputeTorquePose(desiredAxis, ctx.TargetWorldRotation * Vector3.up, ctx.ToolPose);
+                }
+                else
+                {
+                    // ToolPose not loaded yet — orient forward along the weld/shaft axis.
+                    Vector3 up = Vector3.ProjectOnPlane(ctx.TargetWorldRotation * Vector3.up, desiredAxis.normalized);
+                    if (up.sqrMagnitude < 0.001f)
+                        up = Vector3.ProjectOnPlane(Vector3.up, desiredAxis.normalized);
+                    actionRot = Quaternion.LookRotation(desiredAxis.normalized,
+                        up.sqrMagnitude > 0.001f ? up.normalized : Vector3.up);
+                }
             }
             else
             {

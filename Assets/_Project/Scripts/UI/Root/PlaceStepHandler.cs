@@ -134,9 +134,9 @@ namespace OSE.UI.Root
 
             ClearPreviewHighlight();
 
-            if (!ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
+            if (!ServiceRegistry.TryGet<IPartRuntimeController>(out var partController))
                 return;
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return;
 
             bool isSubassemblySelection = TryGetSubassemblySelection(partGo, out var subassemblyController, out string subassemblyId);
@@ -519,9 +519,9 @@ namespace OSE.UI.Root
 
         private void ExecuteClickToPlace(string selectionId, GameObject partGo, PlacementPreviewInfo previewInfo)
         {
-            if (!ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
+            if (!ServiceRegistry.TryGet<IPartRuntimeController>(out var partController))
                 return;
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return;
 
             bool isSubassemblySelection = TryGetSubassemblySelection(partGo, out var subassemblyController, out string subassemblyId);
@@ -563,7 +563,7 @@ namespace OSE.UI.Root
             CheckStepCompletion(partController, session);
         }
 
-        private void CheckStepCompletion(PartRuntimeController partController, MachineSessionController session)
+        private void CheckStepCompletion(IPartRuntimeController partController, IMachineSessionController session)
         {
             // Don't complete the step if there are pending tool actions (e.g. clamp).
             // Mixed placement+tool steps must wait for both parts AND tool actions.
@@ -600,7 +600,7 @@ namespace OSE.UI.Root
             }
         }
 
-        private static bool HasPendingToolActions(MachineSessionController session)
+        private static bool HasPendingToolActions(IMachineSessionController session)
         {
             if (session?.ToolController == null)
                 return false;

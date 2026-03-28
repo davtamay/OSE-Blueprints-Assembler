@@ -27,16 +27,12 @@ namespace OSE.Core
 
     public enum StepState
     {
-        Locked,
         Available,
         Active,
         Interacting,
-        Validating,
-        WaitingForEffect,
         WaitingForPhysicalConfirmation,
         Completed,
         Skipped,
-        Reviewed,
         FailedAttempt,
         Suspended
     }

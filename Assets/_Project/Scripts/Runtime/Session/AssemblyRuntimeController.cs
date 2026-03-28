@@ -147,7 +147,7 @@ namespace OSE.Runtime
 
             // During explicit navigation, suppress auto-advance so the user
             // stays on the step they navigated to.
-            if (ServiceRegistry.TryGet<MachineSessionController>(out var session) && session.IsNavigating)
+            if (ServiceRegistry.TryGet<IMachineSessionController>(out var session) && session.IsNavigating)
                 return;
 
             // Record the completed step

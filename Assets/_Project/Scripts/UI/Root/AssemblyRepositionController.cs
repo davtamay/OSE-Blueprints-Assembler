@@ -406,7 +406,7 @@ namespace OSE.UI.Root
 
         private static MachinePackageDefinition ResolveCurrentPackage()
         {
-            if (ServiceRegistry.TryGet<MachineSessionController>(out var session) &&
+            if (ServiceRegistry.TryGet<IMachineSessionController>(out var session) &&
                 session != null &&
                 session.Package != null)
             {

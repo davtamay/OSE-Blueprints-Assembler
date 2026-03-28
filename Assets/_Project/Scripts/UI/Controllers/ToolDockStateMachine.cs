@@ -19,7 +19,7 @@ namespace OSE.UI.Controllers
         private readonly Func<bool> _getConfirmUnlocked;
         private readonly Action<bool> _setConfirmUnlocked;
 
-        private ToolRuntimeController _toolRuntimeController;
+        private IToolRuntimeController _toolRuntimeController;
         private bool _isSubscribed;
         private string _activeToolId;
         private string _hoveredToolId;
@@ -39,7 +39,7 @@ namespace OSE.UI.Controllers
         public string ActiveToolId => _activeToolId;
         public string HoveredToolId => _hoveredToolId;
         public bool ToolDockExpanded => _toolDockExpanded;
-        public ToolRuntimeController RuntimeController => _toolRuntimeController;
+        public IToolRuntimeController RuntimeController => _toolRuntimeController;
         public string ToolName => _toolName;
         public string ToolCategory => _toolCategory;
         public string ToolPurpose => _toolPurpose;
@@ -73,7 +73,7 @@ namespace OSE.UI.Controllers
             if (_isSubscribed && _toolRuntimeController != null)
                 return;
 
-            if (!ServiceRegistry.TryGet<ToolRuntimeController>(out var toolRuntime))
+            if (!ServiceRegistry.TryGet<IToolRuntimeController>(out var toolRuntime))
                 return;
 
             _toolRuntimeController = toolRuntime;
@@ -274,7 +274,7 @@ namespace OSE.UI.Controllers
             if (_suppressAutoEquip || _toolRuntimeController == null)
                 return;
 
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return;
 
             StepController stepController = session.AssemblyController?.StepController;
@@ -344,7 +344,7 @@ namespace OSE.UI.Controllers
                 return;
 
             // Suppress auto-advance during explicit step navigation.
-            if (ServiceRegistry.TryGet<MachineSessionController>(out var navCheck) && navCheck.IsNavigating)
+            if (ServiceRegistry.TryGet<IMachineSessionController>(out var navCheck) && navCheck.IsNavigating)
                 return;
 
             if (!_toolRuntimeController.TryGetPrimaryActionSnapshot(out ToolRuntimeController.ToolActionSnapshot snapshot) ||
@@ -361,7 +361,7 @@ namespace OSE.UI.Controllers
                 return;
             }
 
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return;
 
             StepController stepController = session.AssemblyController?.StepController;
@@ -391,14 +391,14 @@ namespace OSE.UI.Controllers
                 return;
 
             // Suppress auto-advance during explicit step navigation.
-            if (ServiceRegistry.TryGet<MachineSessionController>(out var navSession) && navSession.IsNavigating)
+            if (ServiceRegistry.TryGet<IMachineSessionController>(out var navSession) && navSession.IsNavigating)
                 return;
 
             string activeToolId = _toolRuntimeController.ActiveToolId;
             if (string.IsNullOrWhiteSpace(activeToolId))
                 return;
 
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return;
 
             StepController stepController = session.AssemblyController?.StepController;

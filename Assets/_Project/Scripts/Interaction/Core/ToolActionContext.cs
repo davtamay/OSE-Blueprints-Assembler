@@ -23,6 +23,14 @@ namespace OSE.Interaction
         public bool HasToolActionRotation;
         public Quaternion ToolActionRotation;
 
+        // ── Placement behaviour ──
+        /// <summary>
+        /// When true the approach animation ends with instant placement — no action
+        /// phase plays. Used for persistent tools (clamps, fixtures) that should snap
+        /// into the authored position/rotation as soon as the tool arrives.
+        /// </summary>
+        public bool InstantPlacement;
+
         // ── Tool spatial metadata (grip, tip, action axis) ──
         public ToolPoseConfig ToolPose;
     }

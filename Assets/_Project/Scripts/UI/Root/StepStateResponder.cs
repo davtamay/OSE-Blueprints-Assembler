@@ -51,7 +51,7 @@ namespace OSE.UI.Root
             if (spawner.CurrentPackage == null)
                 return;
 
-            if (ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (ServiceRegistry.TryGet<IMachineSessionController>(out var session))
             {
                 var stepController = session.AssemblyController?.StepController;
                 if (stepController != null && stepController.HasActiveStep)
@@ -135,7 +135,7 @@ namespace OSE.UI.Root
 
                 _selection.DeselectFromSelectionService();
                 _ctx.VisualFeedback?.ClearPartHoverVisual();
-                if (ServiceRegistry.TryGet<PartRuntimeController>(out var partController))
+                if (ServiceRegistry.TryGet<IPartRuntimeController>(out var partController))
                     partController.DeselectPart();
 
                 _ctx.VisualFeedback?.MoveStepPartsToPlayPosition(evt.StepId);
@@ -151,7 +151,7 @@ namespace OSE.UI.Root
 
         public void HandleStepNavigated(StepNavigated evt)
         {
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out _))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out _))
                 return;
 
             var package = _ctx.Spawner?.CurrentPackage;
@@ -193,7 +193,7 @@ namespace OSE.UI.Root
         {
             if (evt.CompletedStepCount <= 0) return;
 
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return;
 
             StepDefinition[] completedSteps = GetCompletedSteps(session, evt.CompletedStepCount);
@@ -209,7 +209,7 @@ namespace OSE.UI.Root
         /// </summary>
         public void HandlePartsReady()
         {
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return;
 
             if (session.SessionState == null || !session.SessionState.IsRestored)
@@ -232,7 +232,7 @@ namespace OSE.UI.Root
         public bool TryBuildHandlerContext(out StepHandlerContext context)
         {
             context = default;
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return false;
             var stepCtrl = session.AssemblyController?.StepController;
             if (stepCtrl == null || !stepCtrl.HasActiveStep)
@@ -285,7 +285,7 @@ namespace OSE.UI.Root
         private bool TryBuildHandlerContextForStep(string stepId, out StepHandlerContext context)
         {
             context = default;
-            if (!ServiceRegistry.TryGet<MachineSessionController>(out var session))
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return false;
             var stepCtrl = session.AssemblyController?.StepController;
             if (stepCtrl == null)
@@ -297,7 +297,7 @@ namespace OSE.UI.Root
             return true;
         }
 
-        private StepDefinition[] GetCompletedSteps(MachineSessionController session, int completedCount)
+        private StepDefinition[] GetCompletedSteps(IMachineSessionController session, int completedCount)
         {
             if (session == null || completedCount <= 0)
                 return Array.Empty<StepDefinition>();
@@ -316,7 +316,7 @@ namespace OSE.UI.Root
             return result;
         }
 
-        private static string GetActiveStepId(MachineSessionController session)
+        private static string GetActiveStepId(IMachineSessionController session)
         {
             StepController stepController = session?.AssemblyController?.StepController;
             if (stepController != null && stepController.HasActiveStep)

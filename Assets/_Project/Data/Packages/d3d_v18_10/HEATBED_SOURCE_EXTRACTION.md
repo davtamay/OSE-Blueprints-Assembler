@@ -15,6 +15,14 @@ It answers:
 
 This slice is not yet authored in `machine.json`.
 
+Its concrete next-step brief now exists in:
+
+- `HEATBED_STAGE01_AUTHORING_BRIEF.md`
+
+The first CAD acquisition/inspection pass is now complete under:
+
+- `source_cad/heatbed_stage01/`
+
 It is the recommended next extraction boundary after:
 
 - `Axes Stage 01`
@@ -100,6 +108,14 @@ That is enough to say the heated-bed slice should eventually include a physical
 wire-retention or strain-relief part.
 It is not enough yet to author the full heater wiring sequence for `v18.10`.
 
+The first local CAD inspection narrows this further:
+
+- `Heatbed wirelock.fcstd` is now acquired locally
+- but its current geometry reads as separated/contextual bodies rather than one
+  clean installed part
+- so it should stay deferred from the first authored bed pass unless its installed
+  role is isolated more cleanly
+
 ## Chosen Next Slice
 
 The next honest module boundary should be:
@@ -110,7 +126,6 @@ That means, at minimum:
 
 - heatbed body
 - snap-buckle mounting parts
-- physical wire-lock part if treated only as strain relief
 - bed-envelope / nozzle-clearance QC
 
 This slice should stop before:
@@ -145,26 +160,24 @@ What is strong enough to lock now:
 
 - the next module should be heated bed, not control panel or wiring
 - a first heated-bed slice should be mechanical-first
-- the next acquisition set should center on:
+- the first authored pass can credibly center on:
   - `Heatbed body1904`
   - `Heatbed snapbuckle1904`
-  - `Heatbed wirelock`
   - `D3Dfinalassemblyv1902`
 
 What is not strong enough to lock yet:
 
 - that the later insulated heatbed body is an exact `v18.10` match
 - the exact `v18.10` mounting relationship between bed body and frame / Y-axis context
+- the installed role of `Heatbed wirelock`
 - the full electrical heater stack for the first authored bed slice
 
 ## Recommended Next Tasks
 
 Before touching `machine.json` again:
 
-1. acquire or inspect the heated-bed CAD set:
-   - `Heatbed body1904.fcstd`
-   - `Heatbed snapbuckle1904.fcstd`
-   - `Heatbed wirelock.fcstd`
-   - `D3Dfinalassemblyv1902.fcstd`
-2. verify whether the first authored bed slice can stay mechanical-only for `v18.10`
-3. only then write a conservative `Heated Bed Stage 01` brief
+1. use the acquired CAD set to lock the first mounted bed-body relationship
+2. decide whether the first authored pass should remain:
+   - `Heatbed body1904 + snapbuckle pair + clearance QC`
+   - or that set plus an explicit wirelock step
+3. use `HEATBED_STAGE01_AUTHORING_BRIEF.md` as the authoring boundary

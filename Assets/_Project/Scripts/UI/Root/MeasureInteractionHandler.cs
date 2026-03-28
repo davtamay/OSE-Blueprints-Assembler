@@ -218,7 +218,7 @@ namespace OSE.UI.Root
 
         private static MachinePackageDefinition GetPackage()
         {
-            if (App.ServiceRegistry.TryGet<OSE.Runtime.MachineSessionController>(out var session))
+            if (App.ServiceRegistry.TryGet<OSE.Runtime.IMachineSessionController>(out var session))
                 return session.Package;
             return null;
         }

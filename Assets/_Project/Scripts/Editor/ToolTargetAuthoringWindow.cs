@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using OSE.App;
 using OSE.Content;
+using OSE.Interaction;
+using OSE.Runtime.Preview;
 using UnityEditor;
 using UnityEngine;
 
@@ -55,9 +58,12 @@ namespace OSE.Editor
         private string     _pkgId;
         private MachinePackageDefinition _pkg;
 
-        private string[]   _stepOptions;   // "(All Steps)", then "[seq] name · tool · profile"
-        private string[]   _stepIds;       // null at index 0, then actual step ids
+        private string[]   _stepOptions;        // "(All Steps)", then "[seq] name · tool · profile"
+        private string[]   _stepIds;            // null at index 0, then actual step ids
+        private int[]      _stepSequenceIdxs;   // 0 at index 0, then step.sequenceIndex
         private int        _stepFilterIdx;
+        private bool       _suppressStepSync;   // prevent circular sync with SessionDriver
+        private int        _lastPolledDriverStep = -1; // last SessionDriver step seen during poll
 
         // Active-step context (null = All Steps)
         private string          _activeStepProfile;
@@ -65,6 +71,15 @@ namespace OSE.Editor
 
         // targetId → display name of the tool that acts on it (from requiredToolActions)
         private Dictionary<string, string> _targetToolMap;
+        // targetId → toolId (raw id, for looking up ToolDefinition.persistent)
+        private Dictionary<string, string> _targetToolIdMap;
+        // Target IDs referenced by at least one requiredToolAction (non-ghost targets)
+        private HashSet<string> _toolActionTargetIds;
+        // Dirty tracking for tool/step fields written outside the target placement flow
+        private readonly HashSet<string> _dirtyToolIds  = new HashSet<string>(StringComparer.Ordinal);
+        private readonly HashSet<string> _dirtyStepIds  = new HashSet<string>(StringComparer.Ordinal);
+        // When false (default), targets not linked to any tool action are hidden
+        private bool _showGhostTargets;
 
         // SceneView part-count summary updated by RespawnScene
         private int _previewAssembled;
@@ -73,6 +88,7 @@ namespace OSE.Editor
 
         private TargetEditState[] _targets;
         private int               _selectedIdx = -1;
+        private readonly HashSet<int> _multiSelected = new HashSet<int>();
 
         private Vector2 _listScroll;
         private Vector2 _detailScroll;
@@ -91,6 +107,11 @@ namespace OSE.Editor
         private GameObject _previewRoot;
         private readonly Dictionary<string, GameObject> _partMeshes = new();
 
+        // Tool preview — cyan-tinted ghost mesh parented under _previewRoot
+        private bool _showToolPreview = true;
+        private ToolDefinition _toolPreviewDef;   // ToolDefinition for the previewed tool
+        private GameObject _toolPreviewGO;         // instantiated tool mesh (HideAndDontSave)
+
         // ── Nested types ──────────────────────────────────────────────────────
 
         private struct TargetEditState
@@ -108,6 +129,10 @@ namespace OSE.Editor
             public Vector3    portB;
             public bool       isDirty;
             public bool       hasPlacement;
+            // Weld gizmo state (editor-only, not saved to JSON)
+            public bool    weldGizmoActive;
+            public Vector3 weldGizmoA;   // local start of the weld line
+            public Vector3 weldGizmoB;   // local end of the weld line
         }
 
         private struct TargetSnapshot
@@ -133,13 +158,37 @@ namespace OSE.Editor
         private void OnEnable()
         {
             RefreshPackageList();
+            // Auto-reload the last-used package after domain reload or window re-open.
+            // Without this, _pkg / _targetToolIdMap are null and toggles don't appear.
+            if (_pkg == null && _packageIds != null && _packageIds.Length > 0
+                && _pkgIdx >= 0 && _pkgIdx < _packageIds.Length)
+            {
+                LoadPkg(_packageIds[_pkgIdx]);
+            }
             SceneView.duringSceneGui += OnSceneGUI;
+            SessionDriver.EditModeStepChanged += OnSessionDriverStepChanged;
         }
 
         private void OnDisable()
         {
             SceneView.duringSceneGui -= OnSceneGUI;
+            SessionDriver.EditModeStepChanged -= OnSessionDriverStepChanged;
             Cleanup();
+        }
+
+        private void OnSessionDriverStepChanged(int sequenceIndex)
+        {
+            if (_suppressStepSync || _stepSequenceIdxs == null) return;
+            // Find the filter index that matches this sequence index
+            int newFilterIdx = -1;
+            for (int i = 1; i < _stepSequenceIdxs.Length; i++)
+            {
+                if (_stepSequenceIdxs[i] == sequenceIndex) { newFilterIdx = i; break; }
+            }
+            if (newFilterIdx < 0 || newFilterIdx == _stepFilterIdx) return;
+            _suppressStepSync = true;
+            ApplyStepFilter(newFilterIdx);
+            _suppressStepSync = false;
         }
 
         private void OnDestroy()
@@ -151,10 +200,12 @@ namespace OSE.Editor
         private void Cleanup()
         {
             KillPartMeshes();
+            ClearToolPreview();
             if (_previewRoot != null) DestroyImmediate(_previewRoot);
             _previewRoot = null;
             _targets = null;
             _selectedIdx = -1;
+            _multiSelected.Clear();
         }
 
         // ── Main GUI ──────────────────────────────────────────────────────────
@@ -173,10 +224,12 @@ namespace OSE.Editor
             EditorGUILayout.Space(4);
 
             _detailScroll = EditorGUILayout.BeginScrollView(_detailScroll);
-            if (_selectedIdx >= 0 && _targets != null && _selectedIdx < _targets.Length)
+            if (_multiSelected.Count > 1)
+                DrawBatchPanel();
+            else if (_selectedIdx >= 0 && _targets != null && _selectedIdx < _targets.Length)
                 DrawDetailPanel(ref _targets[_selectedIdx]);
             else
-                EditorGUILayout.HelpBox("Select a target above.", MessageType.Info);
+                EditorGUILayout.HelpBox("Select a target above.\nCtrl+click or Shift+click for multi-select.", MessageType.Info);
             EditorGUILayout.Space(8);
             DrawActions();
             EditorGUILayout.Space(4);
@@ -206,6 +259,27 @@ namespace OSE.Editor
         private void DrawStepFilter()
         {
             if (_stepOptions == null || _stepOptions.Length == 0) return;
+
+            // Poll SessionDriver each draw — catches changes from its inspector
+            // regardless of whether the static event fired.
+            if (!_suppressStepSync && _stepSequenceIdxs != null)
+            {
+                var driver = UnityEngine.Object.FindFirstObjectByType<SessionDriver>();
+                int driverSeq = driver != null ? driver.PreviewStepSequenceIndex : -1;
+                if (driverSeq != _lastPolledDriverStep)
+                {
+                    _lastPolledDriverStep = driverSeq;
+                    int matchIdx = -1;
+                    for (int i = 1; i < _stepSequenceIdxs.Length; i++)
+                        if (_stepSequenceIdxs[i] == driverSeq) { matchIdx = i; break; }
+                    if (matchIdx >= 0 && matchIdx != _stepFilterIdx)
+                    {
+                        _suppressStepSync = true;
+                        ApplyStepFilter(matchIdx);
+                        _suppressStepSync = false;
+                    }
+                }
+            }
 
             int stepCount = _stepOptions.Length - 1;
 
@@ -241,6 +315,17 @@ namespace OSE.Editor
 
             EditorGUILayout.EndHorizontal();
 
+            // ── Ghost target toggle ───────────────────────────────────────────
+            EditorGUI.BeginChangeCheck();
+            bool newShow = EditorGUILayout.ToggleLeft(
+                "Show part-snap targets (ghost)", _showGhostTargets, EditorStyles.miniLabel);
+            if (EditorGUI.EndChangeCheck() && newShow != _showGhostTargets)
+            {
+                _showGhostTargets = newShow;
+                BuildTargetList();
+                Repaint();
+            }
+
             // ── Step info card (hidden in All Steps mode) ─────────────────────
             if (_stepFilterIdx > 0 && _stepFilterIdx < _stepIds.Length)
             {
@@ -264,6 +349,57 @@ namespace OSE.Editor
                         EditorGUILayout.LabelField(
                             $"{_previewAssembled} assembled  ·  {_previewCurrent} at start pos  ·  {_previewHidden} hidden",
                             EditorStyles.miniLabel);
+
+                    // ── removePersistentToolIds editor ────────────────────────
+                    EditorGUILayout.Space(2);
+                    var removeIds = step.removePersistentToolIds ?? Array.Empty<string>();
+
+                    EditorGUILayout.LabelField("Removes persistent tools at start of step:", EditorStyles.miniLabel);
+
+                    string toRemove = null;
+                    foreach (string rid in removeIds)
+                    {
+                        EditorGUILayout.BeginHorizontal();
+                        string rname = FindToolName(rid);
+                        EditorGUILayout.LabelField($"  · {rname}", EditorStyles.miniLabel);
+                        if (GUILayout.Button("×", EditorStyles.miniButton, GUILayout.Width(18)))
+                            toRemove = rid;
+                        EditorGUILayout.EndHorizontal();
+                    }
+                    if (toRemove != null)
+                    {
+                        step.removePersistentToolIds = System.Array.FindAll(
+                            removeIds, r => r != toRemove);
+                        _dirtyStepIds.Add(step.id);
+                        Repaint();
+                    }
+
+                    // Add button — only shows persistent tools that are actually active
+                    // (placed by a prior step and not yet removed by an intermediate step).
+                    var activePersistent = GetActivePersistentToolIds(step);
+                    // Remove tools already listed in this step's removal array
+                    foreach (string rid in removeIds) activePersistent.Remove(rid);
+
+                    if (activePersistent.Count > 0 && GUILayout.Button("+ Add removal", EditorStyles.miniButton))
+                    {
+                        var menu = new GenericMenu();
+                        foreach (string toolId in activePersistent)
+                        {
+                            string capturedId   = toolId;
+                            string capturedName = FindToolName(toolId);
+                            menu.AddItem(new GUIContent(capturedName), false, () =>
+                            {
+                                var newList = new List<string>(
+                                    step.removePersistentToolIds ?? Array.Empty<string>());
+                                newList.Add(capturedId);
+                                step.removePersistentToolIds = newList.ToArray();
+                                _dirtyStepIds.Add(step.id);
+                                Repaint();
+                            });
+                        }
+                        menu.ShowAsContext();
+                    }
+
                     EditorGUILayout.EndVertical();
                 }
             }
@@ -273,12 +409,29 @@ namespace OSE.Editor
         {
             _stepFilterIdx    = newIdx;
             _selectedIdx      = -1;
+            _multiSelected.Clear();
             _clickToSnapActive = false;
             UpdateActiveStep();
             BuildTargetList();
             RespawnScene();
+            if (!_suppressStepSync)
+                SyncSessionDriverStep();
             SceneView.RepaintAll();
             Repaint();
+        }
+
+        private void SyncSessionDriverStep()
+        {
+            if (_pkg == null) return;
+            var driver = UnityEngine.Object.FindFirstObjectByType<SessionDriver>();
+            if (driver == null) return;
+            if (_stepFilterIdx <= 0 || _stepSequenceIdxs == null || _stepFilterIdx >= _stepSequenceIdxs.Length)
+                return;
+            int sequenceIndex = _stepSequenceIdxs[_stepFilterIdx];
+            _suppressStepSync     = true;
+            _lastPolledDriverStep = sequenceIndex; // prevent poll from re-triggering
+            driver.SetEditModeStep(sequenceIndex);
+            _suppressStepSync = false;
         }
 
         private void UpdateActiveStep()
@@ -308,15 +461,35 @@ namespace OSE.Editor
                 return;
             }
 
-            EditorGUILayout.LabelField($"Targets ({_targets.Length})", EditorStyles.boldLabel);
+            // Header: show multi-select count when more than one target is selected
+            string listHeader = _multiSelected.Count > 1
+                ? $"Targets ({_targets.Length})  —  {_multiSelected.Count} selected  (Ctrl+click / Shift+click)"
+                : $"Targets ({_targets.Length})  —  Ctrl+click or Shift+click to multi-select";
+            EditorGUILayout.LabelField(listHeader, EditorStyles.boldLabel);
             _listScroll = EditorGUILayout.BeginScrollView(_listScroll, GUILayout.Height(listHeight));
+
+            // Selection highlight colours
+            var selBg       = new Color(0.25f, 0.50f, 0.90f, 0.35f); // blue tint — primary
+            var multiBg     = new Color(0.25f, 0.50f, 0.90f, 0.18f); // lighter blue — secondary multi
 
             for (int i = 0; i < _targets.Length; i++)
             {
                 ref TargetEditState t = ref _targets[i];
                 Color col = t.isDirty ? ColDirty : t.hasPlacement ? ColAuthored : ColNoPlacement;
 
-                bool isSelected = i == _selectedIdx;
+                bool isPrimary   = i == _selectedIdx;
+                bool isInMulti   = _multiSelected.Count > 1 && _multiSelected.Contains(i);
+                bool isSelected  = isPrimary || isInMulti;
+
+                // Draw selection background behind the row
+                if (isSelected)
+                {
+                    Rect rowRect = EditorGUILayout.GetControlRect(GUILayout.Height(0));
+                    rowRect.height = EditorGUIUtility.singleLineHeight + 2f;
+                    rowRect.y     -= 1f;
+                    EditorGUI.DrawRect(rowRect, isPrimary ? selBg : multiBg);
+                }
+
                 var style = new GUIStyle(isSelected ? EditorStyles.boldLabel : EditorStyles.label)
                 {
                     normal  = { textColor = col },
@@ -328,16 +501,37 @@ namespace OSE.Editor
                                     ? $"  [{tn}]" : "";
                 string xformBadge = (t.portA.sqrMagnitude > 0.00001f || t.portB.sqrMagnitude > 0.00001f) ? "  ↔"
                                   : (t.weldAxis.sqrMagnitude > 0.001f) ? "  →" : "";
-                string label = $"  {t.def.id}{toolBadge}{xformBadge}{badge}";
+                string checkMark  = isInMulti ? "✓ " : "  ";
+                string label = $"{checkMark}{t.def.id}{toolBadge}{xformBadge}{badge}";
                 if (GUILayout.Button(label, style, GUILayout.ExpandWidth(true)))
                 {
-                    if (_selectedIdx != i)
+                    bool ctrl  = (Event.current.modifiers & (EventModifiers.Control | EventModifiers.Command)) != 0;
+                    bool shift = (Event.current.modifiers & EventModifiers.Shift) != 0;
+
+                    if (ctrl)
                     {
-                        _selectedIdx = i;
-                        _clickToSnapActive = false;
-                        _snapshotPending = false;
-                        SceneView.RepaintAll();
+                        if (_multiSelected.Contains(i)) _multiSelected.Remove(i);
+                        else _multiSelected.Add(i);
+                        if (!_multiSelected.Contains(_selectedIdx)) _selectedIdx = i;
+                        if (_multiSelected.Count == 1) _selectedIdx = _multiSelected.GetEnumerator().Current;
                     }
+                    else if (shift && _selectedIdx >= 0)
+                    {
+                        _multiSelected.Clear();
+                        int lo = Mathf.Min(_selectedIdx, i), hi = Mathf.Max(_selectedIdx, i);
+                        for (int j = lo; j <= hi; j++) _multiSelected.Add(j);
+                        _selectedIdx = i;
+                    }
+                    else
+                    {
+                        _multiSelected.Clear();
+                        _selectedIdx = i;
+                    }
+                    _clickToSnapActive = false;
+                    _snapshotPending   = false;
+                    if (_multiSelected.Count <= 1 && _selectedIdx >= 0 && _selectedIdx < _targets.Length)
+                        RefreshToolPreview(ref _targets[_selectedIdx]);
+                    SceneView.RepaintAll();
                 }
             }
 
@@ -355,6 +549,47 @@ namespace OSE.Editor
                 EditorGUILayout.LabelField($"Part: {t.def.associatedPartId}", EditorStyles.miniLabel);
             if (!string.IsNullOrEmpty(_activeStepProfile))
                 EditorGUILayout.LabelField($"Profile: {_activeStepProfile}", EditorStyles.miniLabel);
+
+            // Persistent-tool toggle — shown when this target has a mapped tool
+            if (_targetToolIdMap != null && _targetToolIdMap.TryGetValue(t.def.id, out string mappedToolId))
+            {
+                ToolDefinition toolDef = null;
+                if (_pkg?.tools != null)
+                    foreach (var td in _pkg.tools)
+                        if (td != null && td.id == mappedToolId) { toolDef = td; break; }
+
+                if (toolDef != null)
+                {
+                    EditorGUI.BeginChangeCheck();
+                    bool newPersist = EditorGUILayout.ToggleLeft(
+                        new GUIContent("Persistent tool (stays in scene after use)",
+                            "The tool instance (e.g. clamp) remains in the scene after the action completes.\n" +
+                            "Use 'Removes persistent tools' on a later step to clean it up."),
+                        toolDef.persistent, EditorStyles.miniLabel);
+                    if (EditorGUI.EndChangeCheck() && newPersist != toolDef.persistent)
+                    {
+                        toolDef.persistent = newPersist;
+                        _dirtyToolIds.Add(mappedToolId);
+                    }
+                }
+            }
+
+            // Tool preview toggle — only shown when a tool is mapped to this target
+            if (_targetToolIdMap != null && _targetToolIdMap.ContainsKey(t.def.id))
+            {
+                EditorGUI.BeginChangeCheck();
+                bool newShow = EditorGUILayout.ToggleLeft(
+                    new GUIContent("Show tool preview",
+                        "Renders the tool mesh as a wireframe at its end position in SceneView.\n" +
+                        "The preview moves with the position/rotation gizmo in real-time."),
+                    _showToolPreview, EditorStyles.miniLabel);
+                if (EditorGUI.EndChangeCheck() && newShow != _showToolPreview)
+                {
+                    _showToolPreview = newShow;
+                    RefreshToolPreview(ref t);
+                    SceneView.RepaintAll();
+                }
+            }
 
             // State badge
             string stateLbl = t.isDirty ? "Unsaved changes" : t.hasPlacement ? "Authored" : "No placement data";
@@ -396,20 +631,45 @@ namespace OSE.Editor
 
             if (ShowWeldGroup())
             {
+                // Weld gizmo toggle — places two draggable handles in SceneView
                 EditorGUI.BeginChangeCheck();
-                Vector3 newAxis = EditorGUILayout.Vector3Field("Weld Axis (direction)", t.weldAxis);
-                if (EditorGUI.EndChangeCheck())
+                bool newGizmo = EditorGUILayout.ToggleLeft(
+                    new GUIContent("Use scene gizmo (drag two handles)",
+                        "Places an orange (A) and yellow (B) handle in SceneView.\n" +
+                        "The direction A→B defines the weld axis; the distance defines the weld length."),
+                    t.weldGizmoActive);
+                if (EditorGUI.EndChangeCheck() && newGizmo != t.weldGizmoActive)
                 {
-                    BeginEdit();
-                    t.weldAxis = newAxis.sqrMagnitude > 0.001f ? newAxis.normalized : newAxis;
-                    t.isDirty  = true;
-                    EndEdit();
+                    t.weldGizmoActive = newGizmo;
+                    if (newGizmo) InitWeldGizmo(ref t);
                     SceneView.RepaintAll();
                 }
 
-                EditorGUI.BeginChangeCheck();
-                float newLen = EditorGUILayout.FloatField("Weld Length", t.weldLength);
-                if (EditorGUI.EndChangeCheck()) { BeginEdit(); t.weldLength = Mathf.Max(0f, newLen); t.isDirty = true; EndEdit(); }
+                if (t.weldGizmoActive)
+                {
+                    // Show live-computed values as read-only
+                    EditorGUI.BeginDisabledGroup(true);
+                    EditorGUILayout.Vector3Field("Weld Axis (A→B)", t.weldAxis);
+                    EditorGUILayout.FloatField("Weld Length (|A→B|)", t.weldLength);
+                    EditorGUI.EndDisabledGroup();
+                }
+                else
+                {
+                    EditorGUI.BeginChangeCheck();
+                    Vector3 newAxis = EditorGUILayout.Vector3Field("Weld Axis (direction)", t.weldAxis);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        BeginEdit();
+                        t.weldAxis = newAxis.sqrMagnitude > 0.001f ? newAxis.normalized : newAxis;
+                        t.isDirty  = true;
+                        EndEdit();
+                        SceneView.RepaintAll();
+                    }
+
+                    EditorGUI.BeginChangeCheck();
+                    float newLen = EditorGUILayout.FloatField("Weld Length", t.weldLength);
+                    if (EditorGUI.EndChangeCheck()) { BeginEdit(); t.weldLength = Mathf.Max(0f, newLen); t.isDirty = true; EndEdit(); }
+                }
             }
 
             if (ShowPortGroup())
@@ -423,18 +683,10 @@ namespace OSE.Editor
                 if (EditorGUI.EndChangeCheck()) { BeginEdit(); t.portB = newPortB; t.isDirty = true; EndEdit(); SceneView.RepaintAll(); }
             }
 
-            if (ShowRotationGroup())
-            {
-                EditorGUI.BeginChangeCheck();
-                bool newUTAR = EditorGUILayout.Toggle("Use Tool Action Rotation", t.useToolActionRotation);
-                if (EditorGUI.EndChangeCheck()) { BeginEdit(); t.useToolActionRotation = newUTAR; t.isDirty = true; EndEdit(); }
-
-                EditorGUI.BeginDisabledGroup(!t.useToolActionRotation);
-                EditorGUI.BeginChangeCheck();
-                Vector3 newTAR = EditorGUILayout.Vector3Field("Tool Action Rotation", t.toolActionRotationEuler);
-                if (EditorGUI.EndChangeCheck()) { BeginEdit(); t.toolActionRotationEuler = newTAR; t.isDirty = true; EndEdit(); }
-                EditorGUI.EndDisabledGroup();
-            }
+            // "Use Tool Action Rotation" / "Tool Action Rotation" are no longer exposed —
+            // WriteJson always derives them from the Rotation field above, so the gizmo
+            // rotation is the single source of truth for both visual placement and play-mode
+            // tool orientation.
 
             EditorGUILayout.Space(6);
 
@@ -451,6 +703,134 @@ namespace OSE.Editor
                 EditorGUILayout.HelpBox("Left-click a mesh surface in SceneView to snap.", MessageType.Info);
         }
 
+        private void DrawBatchPanel()
+        {
+            int count = _multiSelected.Count;
+            EditorGUILayout.LabelField($"Batch edit — {count} targets", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox(
+                "Values shown are from the primary (last-clicked) target.\n" +
+                "Any field you change is applied to ALL selected targets.",
+                MessageType.None);
+            EditorGUILayout.Space(4);
+
+            // Use primary selection as representative for current values
+            if (_selectedIdx < 0 || _selectedIdx >= _targets.Length) return;
+            ref TargetEditState rep = ref _targets[_selectedIdx];
+
+            // ── Rotation ──────────────────────────────────────────────────────
+            // Useful for setting all clamp/tool targets to the same approach orientation.
+            EditorGUILayout.LabelField("Rotation (absolute, all selected)", EditorStyles.boldLabel);
+            EditorGUI.BeginChangeCheck();
+            Vector3 batchEuler = EditorGUILayout.Vector3Field("Rotation (euler)", rep.rotation.eulerAngles);
+            if (EditorGUI.EndChangeCheck())
+            {
+                Quaternion batchRot = Quaternion.Euler(batchEuler);
+                foreach (int idx in _multiSelected)
+                { ref var t = ref _targets[idx]; t.rotation = batchRot; t.isDirty = true; }
+                SceneView.RepaintAll();
+            }
+            EditorGUILayout.Space(4);
+
+            // ── Scale ─────────────────────────────────────────────────────────
+            // Standardise target sphere radius across a group.
+            EditorGUILayout.LabelField("Scale (all selected)", EditorStyles.boldLabel);
+            EditorGUI.BeginChangeCheck();
+            Vector3 batchScale = EditorGUILayout.Vector3Field("Scale", rep.scale);
+            if (EditorGUI.EndChangeCheck())
+            {
+                foreach (int idx in _multiSelected)
+                { ref var t = ref _targets[idx]; t.scale = batchScale; t.isDirty = true; }
+            }
+            EditorGUILayout.Space(4);
+
+            // ── Weld ──────────────────────────────────────────────────────────
+            if (ShowWeldGroup())
+            {
+                EditorGUILayout.LabelField("Weld (all selected)", EditorStyles.boldLabel);
+
+                EditorGUI.BeginChangeCheck();
+                Vector3 newAxis = EditorGUILayout.Vector3Field("Weld Axis (direction)", rep.weldAxis);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Vector3 norm = newAxis.sqrMagnitude > 0.001f ? newAxis.normalized : newAxis;
+                    foreach (int idx in _multiSelected)
+                    { ref var t = ref _targets[idx]; t.weldAxis = norm; t.isDirty = true; }
+                    SceneView.RepaintAll();
+                }
+
+                EditorGUI.BeginChangeCheck();
+                float newLen = EditorGUILayout.FloatField("Weld Length", rep.weldLength);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    float clamped = Mathf.Max(0f, newLen);
+                    foreach (int idx in _multiSelected)
+                    { ref var t = ref _targets[idx]; t.weldLength = clamped; t.isDirty = true; }
+                }
+                EditorGUILayout.Space(4);
+            }
+
+            // ── Ports ─────────────────────────────────────────────────────────
+            if (ShowPortGroup())
+            {
+                EditorGUILayout.LabelField("Ports (all selected)", EditorStyles.boldLabel);
+
+                EditorGUI.BeginChangeCheck();
+                Vector3 newPortA = EditorGUILayout.Vector3Field("Port A (local)", rep.portA);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    foreach (int idx in _multiSelected)
+                    { ref var t = ref _targets[idx]; t.portA = newPortA; t.isDirty = true; }
+                    SceneView.RepaintAll();
+                }
+
+                EditorGUI.BeginChangeCheck();
+                Vector3 newPortB = EditorGUILayout.Vector3Field("Port B (local)", rep.portB);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    foreach (int idx in _multiSelected)
+                    { ref var t = ref _targets[idx]; t.portB = newPortB; t.isDirty = true; }
+                    SceneView.RepaintAll();
+                }
+                EditorGUILayout.Space(4);
+            }
+
+            // ── Persistent tool ───────────────────────────────────────────────
+            // Batch-sets the persistent flag on every tool definition mapped to the
+            // selected targets. Only shown when all selected targets share a mapped tool.
+            if (_targetToolIdMap != null && _pkg?.tools != null)
+            {
+                // Collect the set of tool IDs referenced by the selection
+                var batchToolIds = new HashSet<string>(StringComparer.Ordinal);
+                foreach (int idx in _multiSelected)
+                    if (_targetToolIdMap.TryGetValue(_targets[idx].def.id, out string tid))
+                        batchToolIds.Add(tid);
+
+                if (batchToolIds.Count > 0)
+                {
+                    // Representative value from primary target's tool
+                    bool repPersist = false;
+                    if (_targetToolIdMap.TryGetValue(rep.def.id, out string repToolId))
+                        foreach (var td in _pkg.tools)
+                            if (td != null && td.id == repToolId) { repPersist = td.persistent; break; }
+
+                    EditorGUILayout.LabelField("Tool (all mapped tools)", EditorStyles.boldLabel);
+                    EditorGUI.BeginChangeCheck();
+                    bool newPersist = EditorGUILayout.ToggleLeft(
+                        new GUIContent("Persistent tool (stays in scene after use)",
+                            "Sets persistent=true on every tool definition that is mapped to any of the selected targets."),
+                        repPersist, EditorStyles.miniLabel);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        foreach (string toolId in batchToolIds)
+                            foreach (var td in _pkg.tools)
+                                if (td != null && td.id == toolId)
+                                { td.persistent = newPersist; _dirtyToolIds.Add(toolId); }
+                    }
+                    EditorGUILayout.Space(4);
+                }
+            }
+        }
+
         // Returns true when profile calls for this field group, or when no step is selected.
         // Field group visibility — "All Steps" (null profile) shows everything.
         private bool ShowWeldGroup()    => string.IsNullOrEmpty(_activeStepProfile)
@@ -461,11 +841,6 @@ namespace OSE.Editor
         // Measure steps (framing square) only need position+rotation.
         private bool ShowPortGroup()    => string.IsNullOrEmpty(_activeStepProfile)
                                           || _activeStepProfile == "Cable";
-
-        private bool ShowRotationGroup()=> string.IsNullOrEmpty(_activeStepProfile)
-                                          || _activeStepProfile == "Torque"
-                                          || _activeStepProfile == "Clamp"
-                                          || _activeStepProfile == "Strike";
 
         // ── Actions ───────────────────────────────────────────────────────────
 
@@ -525,6 +900,7 @@ namespace OSE.Editor
                         _selectedIdx       = i;
                         _clickToSnapActive = false;
                         _snapshotPending   = false;
+                        RefreshToolPreview(ref _targets[i]);
                         Repaint();
                     }
                 }
@@ -572,6 +948,9 @@ namespace OSE.Editor
                 if (Event.current.type == EventType.MouseUp)
                     EndEdit();
 
+                // Tool preview — tracks the position/rotation gizmo in real-time
+                UpdateToolPreview(ref sel);
+
                 // portA / portB drag handles (Cable profile only)
                 if (_activeStepProfile == "Cable")
                 {
@@ -596,6 +975,56 @@ namespace OSE.Editor
                         sel.isDirty = true;
                         Repaint();
                     }
+
+                    if (Event.current.type == EventType.MouseUp) EndEdit();
+                }
+
+                // Weld gizmo handles — two draggable PositionHandles defining axis + length
+                if (sel.weldGizmoActive && ShowWeldGroup())
+                {
+                    Vector3 worldA = root.TransformPoint(sel.weldGizmoA);
+                    Vector3 worldB = root.TransformPoint(sel.weldGizmoB);
+
+                    // Handle A (orange — start)
+                    Handles.color = new Color(1f, 0.5f, 0f, 1f);
+                    EditorGUI.BeginChangeCheck();
+                    Vector3 newWorldA = Handles.PositionHandle(worldA, Quaternion.identity);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        BeginEdit();
+                        sel.weldGizmoA = root.InverseTransformPoint(newWorldA);
+                        RecomputeWeldFromGizmo(ref sel);
+                        sel.isDirty = true;
+                        Repaint();
+                    }
+
+                    // Handle B (yellow — tip / direction)
+                    Handles.color = new Color(1f, 0.9f, 0f, 1f);
+                    EditorGUI.BeginChangeCheck();
+                    Vector3 newWorldB = Handles.PositionHandle(worldB, Quaternion.identity);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        BeginEdit();
+                        sel.weldGizmoB = root.InverseTransformPoint(newWorldB);
+                        RecomputeWeldFromGizmo(ref sel);
+                        sel.isDirty = true;
+                        Repaint();
+                    }
+
+                    // Visual line A→B with arrow
+                    Handles.color = Color.white;
+                    Handles.DrawLine(worldA, worldB, 2f);
+                    if ((worldB - worldA).sqrMagnitude > 0.0001f)
+                    {
+                        float arrowSize = HandleUtility.GetHandleSize(worldA) * 0.3f;
+                        Handles.ArrowHandleCap(0, worldA,
+                            Quaternion.LookRotation((worldB - worldA).normalized),
+                            arrowSize, EventType.Repaint);
+                    }
+
+                    // Labels
+                    Handles.Label(worldA, "A", EditorStyles.boldLabel);
+                    Handles.Label(worldB, $"B  ({sel.weldLength:F3} m)", EditorStyles.boldLabel);
 
                     if (Event.current.type == EventType.MouseUp) EndEdit();
                 }
@@ -635,6 +1064,21 @@ namespace OSE.Editor
             c.a = alpha * 0.25f;
             Handles.color = c;
             Handles.DrawDottedLine(worldPos, partGo.transform.position, 3f);
+        }
+
+        private void InitWeldGizmo(ref TargetEditState t)
+        {
+            t.weldGizmoA = t.position;
+            float   len = t.weldLength > 0.0001f ? t.weldLength : 0.05f;
+            Vector3 dir = t.weldAxis.sqrMagnitude > 0.001f ? t.weldAxis.normalized : Vector3.forward;
+            t.weldGizmoB = t.position + dir * len;
+        }
+
+        private static void RecomputeWeldFromGizmo(ref TargetEditState t)
+        {
+            Vector3 delta = t.weldGizmoB - t.weldGizmoA;
+            t.weldLength  = delta.magnitude;
+            t.weldAxis    = delta.sqrMagnitude > 0.0001f ? delta.normalized : Vector3.forward;
         }
 
         private void DrawPortPoints(ref TargetEditState t, Transform root, float alpha = 1f)
@@ -715,6 +1159,18 @@ namespace OSE.Editor
             _stepFilterIdx = 0;
             BuildStepOptions();
             BuildTargetToolMap();
+
+            // Sync initial step from SessionDriver if present
+            var driver = UnityEngine.Object.FindFirstObjectByType<SessionDriver>();
+            if (driver != null && _stepSequenceIdxs != null)
+            {
+                int seq = driver.PreviewStepSequenceIndex;
+                for (int k = 1; k < _stepSequenceIdxs.Length; k++)
+                {
+                    if (_stepSequenceIdxs[k] == seq) { _stepFilterIdx = k; break; }
+                }
+            }
+
             UpdateActiveStep();
             BuildTargetList();
             RespawnScene();
@@ -722,23 +1178,21 @@ namespace OSE.Editor
 
         private void BuildStepOptions()
         {
-            var optList = new List<string> { "(All Steps)" };
-            var idList  = new List<string> { null };
+            var optList  = new List<string> { "(All Steps)" };
+            var idList   = new List<string> { null };
+            var seqList  = new List<int>    { 0 };
 
             if (_pkg?.steps != null)
             {
-                // Collect steps that have targets, sort by sequenceIndex
-                var withTargets = new List<StepDefinition>();
+                // Include ALL steps so session driver and authoring window always
+                // navigate the same step index. Steps without targets show empty list.
+                var allSteps = new List<StepDefinition>(_pkg.steps.Length);
                 foreach (var step in _pkg.steps)
-                {
-                    if (step?.targetIds == null || step.targetIds.Length == 0) continue;
-                    withTargets.Add(step);
-                }
-                withTargets.Sort((a, b) => a.sequenceIndex.CompareTo(b.sequenceIndex));
+                    if (step != null) allSteps.Add(step);
+                allSteps.Sort((a, b) => a.sequenceIndex.CompareTo(b.sequenceIndex));
 
-                foreach (var step in withTargets)
+                foreach (var step in allSteps)
                 {
-                    // Resolve first relevant tool name
                     string toolName = "(no tool)";
                     if (step.relevantToolIds != null && step.relevantToolIds.Length > 0 && _pkg.tools != null)
                     {
@@ -749,15 +1203,19 @@ namespace OSE.Editor
                         }
                     }
 
+                    int targetCount    = step.targetIds?.Length ?? 0;
                     string profilePart = string.IsNullOrEmpty(step.profile) ? "" : $"  ·  {step.profile}";
-                    string display     = $"[{step.sequenceIndex}] {step.name}  ·  {toolName}{profilePart}";
+                    string noTargets   = targetCount == 0 ? "  ·  (no targets)" : "";
+                    string display     = $"[{step.sequenceIndex}] {step.name}  ·  {toolName}{profilePart}{noTargets}";
                     optList.Add(display);
                     idList.Add(step.id);
+                    seqList.Add(step.sequenceIndex);
                 }
             }
 
-            _stepOptions = optList.ToArray();
-            _stepIds     = idList.ToArray();
+            _stepOptions      = optList.ToArray();
+            _stepIds          = idList.ToArray();
+            _stepSequenceIdxs = seqList.ToArray();
         }
 
         /// <summary>
@@ -767,7 +1225,9 @@ namespace OSE.Editor
         /// </summary>
         private void BuildTargetToolMap()
         {
-            _targetToolMap = new Dictionary<string, string>(StringComparer.Ordinal);
+            _targetToolMap    = new Dictionary<string, string>(StringComparer.Ordinal);
+            _targetToolIdMap  = new Dictionary<string, string>(StringComparer.Ordinal);
+            _toolActionTargetIds = new HashSet<string>(StringComparer.Ordinal);
             if (_pkg?.steps == null) return;
 
             foreach (var step in _pkg.steps)
@@ -776,6 +1236,7 @@ namespace OSE.Editor
                 foreach (var action in step.requiredToolActions)
                 {
                     if (string.IsNullOrEmpty(action?.targetId) || string.IsNullOrEmpty(action.toolId)) continue;
+                    _toolActionTargetIds.Add(action.targetId);
                     if (_targetToolMap.ContainsKey(action.targetId)) continue;
 
                     string toolName = action.toolId;   // fallback = raw id
@@ -783,7 +1244,8 @@ namespace OSE.Editor
                         foreach (var td in _pkg.tools)
                             if (td != null && td.id == action.toolId) { toolName = td.name; break; }
 
-                    _targetToolMap[action.targetId] = toolName;
+                    _targetToolMap[action.targetId]   = toolName;
+                    _targetToolIdMap[action.targetId] = action.toolId;
                 }
             }
         }
@@ -805,11 +1267,27 @@ namespace OSE.Editor
                 }
             }
 
+            // Build per-step tool-action target set for ghost filtering.
+            // A "ghost" target is in a step's targetIds but has no requiredToolAction in THAT step.
+            // (A target can be a tool-action target in step 5 but a ghost at step 1 — global set can't catch this.)
+            HashSet<string> stepToolActionIds = null;
+            if (!_showGhostTargets && _stepFilterIdx > 0 && _stepIds != null && _stepFilterIdx < _stepIds.Length)
+            {
+                var curStep = FindStep(_stepIds[_stepFilterIdx]);
+                stepToolActionIds = new HashSet<string>(StringComparer.Ordinal);
+                if (curStep?.requiredToolActions != null)
+                    foreach (var action in curStep.requiredToolActions)
+                        if (!string.IsNullOrEmpty(action?.targetId))
+                            stepToolActionIds.Add(action.targetId);
+            }
+
             var list = new List<TargetEditState>();
             foreach (var def in _pkg.targets)
             {
                 if (def == null) continue;
                 if (filterIds != null && !filterIds.Contains(def.id)) continue;
+                // Ghost targets: in a step's targetIds but not linked to any tool action in THIS step.
+                if (stepToolActionIds != null && !stepToolActionIds.Contains(def.id)) continue;
 
                 TargetPreviewPlacement placement = FindPlacement(def.id);
                 bool hasP = placement != null;
@@ -844,6 +1322,9 @@ namespace OSE.Editor
 
             _targets     = list.ToArray();
             _selectedIdx = _targets.Length > 0 ? 0 : -1;
+            _multiSelected.Clear();
+            if (_selectedIdx >= 0) RefreshToolPreview(ref _targets[_selectedIdx]);
+            else ClearToolPreview();
         }
 
         private TargetPreviewPlacement FindPlacement(string targetId)
@@ -872,6 +1353,54 @@ namespace OSE.Editor
             return null;
         }
 
+        private string FindToolName(string toolId)
+        {
+            if (_pkg?.tools != null)
+                foreach (var td in _pkg.tools)
+                    if (td != null && td.id == toolId) return td.name;
+            return toolId; // fallback to raw id
+        }
+
+        /// <summary>
+        /// Returns the set of persistent-tool IDs that are "live" immediately before
+        /// <paramref name="atStep"/> starts — i.e. placed by a prior step and not yet
+        /// explicitly removed by an intermediate step's removePersistentToolIds.
+        /// </summary>
+        private HashSet<string> GetActivePersistentToolIds(StepDefinition atStep)
+        {
+            var active = new HashSet<string>(StringComparer.Ordinal);
+            if (_pkg?.steps == null) return active;
+
+            // Walk steps in sequence order up to (but not including) atStep
+            foreach (var s in _pkg.steps)
+            {
+                if (s == null || s.sequenceIndex >= atStep.sequenceIndex) continue;
+
+                // Any tool action that uses a persistent tool adds it
+                if (s.requiredToolActions != null)
+                    foreach (var action in s.requiredToolActions)
+                    {
+                        if (string.IsNullOrEmpty(action?.toolId)) continue;
+                        if (IsToolPersistent(action.toolId)) active.Add(action.toolId);
+                    }
+
+                // Explicit removals from this intermediate step clean it up
+                if (s.removePersistentToolIds != null)
+                    foreach (var id in s.removePersistentToolIds)
+                        active.Remove(id);
+            }
+
+            return active;
+        }
+
+        private bool IsToolPersistent(string toolId)
+        {
+            if (_pkg?.tools != null)
+                foreach (var td in _pkg.tools)
+                    if (td != null && td.id == toolId) return td.persistent;
+            return false;
+        }
+
         // ── Scene spawning ────────────────────────────────────────────────────
 
         private void RespawnScene()
@@ -884,6 +1413,17 @@ namespace OSE.Editor
             {
                 hideFlags = HideFlags.HideAndDontSave
             };
+
+            // Match the scene's PreviewRoot transform so target positions align with
+            // the actual parts (e.g. when PreviewRoot is offset for XR testing).
+            if (ServiceRegistry.TryGet<ISpawnerQueryService>(out var spawner)
+                && spawner.PreviewRoot != null)
+            {
+                Transform sceneRoot = spawner.PreviewRoot;
+                _previewRoot.transform.SetPositionAndRotation(sceneRoot.position, sceneRoot.rotation);
+                _previewRoot.transform.localScale = sceneRoot.lossyScale;
+            }
+
             _previewAssembled = 0;
             _previewCurrent   = 0;
             _previewHidden    = 0;
@@ -896,6 +1436,9 @@ namespace OSE.Editor
             // Default: show everything (All Steps mode or step not found)
             int currentSeq  = int.MaxValue;
             var partStepSeq = new Dictionary<string, int>(StringComparer.Ordinal);
+            // Parts that belong to any subassembly always use playPosition — they are
+            // pre-assembled before their step and have no meaningful individual startPosition.
+            var subassemblyPartIds = new HashSet<string>(StringComparer.Ordinal);
 
             if (stepSelected && _pkg.steps != null)
             {
@@ -926,6 +1469,7 @@ namespace OSE.Editor
                             if (string.IsNullOrEmpty(pid)) continue;
                             if (!partStepSeq.ContainsKey(pid) || step.sequenceIndex < partStepSeq[pid])
                                 partStepSeq[pid] = step.sequenceIndex;
+                            subassemblyPartIds.Add(pid);
                         }
                     }
                 }
@@ -953,8 +1497,10 @@ namespace OSE.Editor
 
                     if (placedAt > currentSeq) { _previewHidden++; continue; }
 
-                    bool useStart = placedAt == currentSeq;
-                    if (useStart) _previewCurrent++; else _previewAssembled++;
+                    // Subassembly members are pre-assembled before their step so they
+                    // have no meaningful individual startPosition — always use playPosition.
+                    bool useStart = placedAt == currentSeq && !subassemblyPartIds.Contains(pp.partId);
+                    if (placedAt == currentSeq) _previewCurrent++; else _previewAssembled++;
                     Vector3    pos  = useStart ? PackageJsonUtils.ToVector3(pp.startPosition) : PackageJsonUtils.ToVector3(pp.playPosition);
                     Quaternion rot  = useStart ? PackageJsonUtils.ToUnityQuaternion(pp.startRotation) : PackageJsonUtils.ToUnityQuaternion(pp.playRotation);
                     Vector3    sclR = PackageJsonUtils.ToVector3(useStart ? pp.startScale : pp.playScale);
@@ -974,6 +1520,10 @@ namespace OSE.Editor
             }
 
             AddMeshColliders();
+
+            // Refresh tool preview now that _previewRoot exists
+            if (_selectedIdx >= 0 && _selectedIdx < _targets.Length)
+                RefreshToolPreview(ref _targets[_selectedIdx]);
         }
 
         private void SpawnPartMesh(string partId, string assetRef, Vector3 localPos, Quaternion localRot, Vector3 localScl)
@@ -1020,6 +1570,114 @@ namespace OSE.Editor
             foreach (var kv in _partMeshes)
                 if (kv.Value != null) DestroyImmediate(kv.Value);
             _partMeshes.Clear();
+        }
+
+        // ── Tool preview ──────────────────────────────────────────────────────
+
+        private void ClearToolPreview()
+        {
+            if (_toolPreviewGO != null) { DestroyImmediate(_toolPreviewGO); _toolPreviewGO = null; }
+            _toolPreviewDef = null;
+        }
+
+        private void RefreshToolPreview(ref TargetEditState t)
+        {
+            ClearToolPreview();
+            if (!_showToolPreview || _previewRoot == null) return;
+            if (string.IsNullOrEmpty(_pkgId)) return;
+
+            if (_targetToolIdMap == null || !_targetToolIdMap.TryGetValue(t.def.id, out string toolId)) return;
+
+            ToolDefinition toolDef = null;
+            if (_pkg?.tools != null)
+                foreach (var td in _pkg.tools)
+                    if (td != null && td.id == toolId) { toolDef = td; break; }
+
+            if (toolDef == null || string.IsNullOrEmpty(toolDef.assetRef)) return;
+
+            string path = $"Assets/_Project/Data/Packages/{_pkgId}/{toolDef.assetRef}";
+            var pfb = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (pfb == null)
+            {
+                Debug.LogWarning($"[ToolTargetAuthoring] Tool asset not found: {path}");
+                return;
+            }
+
+            // Spawn as a child of _previewRoot so it lives in the same coordinate space
+            _toolPreviewGO           = Instantiate(pfb, _previewRoot.transform);
+            _toolPreviewGO.name      = "[ToolTargetAuthoring] ToolPreview";
+            _toolPreviewGO.hideFlags = HideFlags.HideAndDontSave;
+
+            // Match the runtime cursor scale (ToolCursorManager.CursorUniformScale = 0.16).
+            // The previewRoot may have a non-unit lossyScale (e.g. if parts use a scaled root),
+            // so we divide by it to get the correct world-space size.
+            const float RuntimeCursorScale = 0.16f;
+            float toolCursorScale = (toolDef.scaleOverride > 0f)
+                ? RuntimeCursorScale * toolDef.scaleOverride
+                : RuntimeCursorScale;
+            float rootS = _previewRoot.transform.lossyScale.x;
+            float localToolScale = Mathf.Approximately(rootS, 0f) ? toolCursorScale : toolCursorScale / rootS;
+            _toolPreviewGO.transform.localScale = Vector3.one * localToolScale;
+
+            // Remove colliders — preview only, must not interfere with click-to-snap raycasts
+            foreach (var c in _toolPreviewGO.GetComponentsInChildren<Collider>(true))
+                DestroyImmediate(c);
+
+            // Cyan tint via MaterialPropertyBlock to distinguish from real parts
+            var block = new MaterialPropertyBlock();
+            block.SetColor("_BaseColor", new Color(0.35f, 0.85f, 1f, 1f));
+            block.SetColor("_Color",     new Color(0.35f, 0.85f, 1f, 1f)); // Standard fallback
+            foreach (var r in _toolPreviewGO.GetComponentsInChildren<Renderer>(true))
+                r.SetPropertyBlock(block);
+
+            _toolPreviewDef = toolDef;
+            SceneView.RepaintAll();
+        }
+
+        /// <summary>
+        /// Computes the tool's local position and rotation under _previewRoot so that
+        /// the tool's tipPoint sits at the target position and gripRotation is respected.
+        /// </summary>
+        private void ComputeToolLocalTransform(ref TargetEditState t,
+            out Vector3 localPos, out Quaternion localRot)
+        {
+            // t.rotation is the single source of truth (gizmo + Euler field).
+            // WriteJson derives toolActionRotation from it at save time.
+            Quaternion approachRot = t.rotation;
+
+            // Undo the grip rotation so the tool sits naturally in the target orientation
+            localRot = approachRot;
+            if (_toolPreviewDef?.toolPose?.HasGripRotation == true)
+                localRot = approachRot * Quaternion.Inverse(_toolPreviewDef.toolPose.GetGripRotation());
+
+            // Offset so tipPoint lands exactly on the target position.
+            // tipPoint is in the tool's local space; multiply by the GO's localScale
+            // so the offset is correct regardless of cursor scale.
+            localPos = t.position;
+            if (_toolPreviewDef?.toolPose?.HasTipPoint == true)
+            {
+                float s = _toolPreviewGO != null ? _toolPreviewGO.transform.localScale.x : 1f;
+                localPos = t.position - localRot * (_toolPreviewDef.toolPose.GetTipPoint() * s);
+            }
+        }
+
+        private void UpdateToolPreview(ref TargetEditState sel)
+        {
+            if (!_showToolPreview || _toolPreviewGO == null || _previewRoot == null) return;
+
+            ComputeToolLocalTransform(ref sel, out Vector3 localPos, out Quaternion localRot);
+            _toolPreviewGO.transform.localPosition = localPos;
+            _toolPreviewGO.transform.localRotation = localRot;
+
+            // Yellow dot at the tip contact point
+            if (_toolPreviewDef?.toolPose?.HasTipPoint == true)
+            {
+                Vector3 tipWorld = _toolPreviewGO.transform.TransformPoint(
+                    _toolPreviewDef.toolPose.GetTipPoint());
+                float tipSize = HandleUtility.GetHandleSize(tipWorld) * 0.06f;
+                Handles.color = new Color(1f, 0.85f, 0.1f, 1f);
+                Handles.SphereHandleCap(0, tipWorld, Quaternion.identity, tipSize, EventType.Repaint);
+            }
         }
 
         private void FrameInScene()
@@ -1102,6 +1760,7 @@ namespace OSE.Editor
 
         private bool AnyDirty()
         {
+            if (_dirtyToolIds.Count > 0 || _dirtyStepIds.Count > 0) return true;
             if (_targets == null) return false;
             foreach (var t in _targets) if (t.isDirty) return true;
             return false;
@@ -1166,13 +1825,43 @@ namespace OSE.Editor
                 if (t.weldLength > 0.0001f)
                     TryInjectBlock(ref json, t.def.id, "weldLength", R(t.weldLength).ToString(inv));
 
-                TryInjectBlock(ref json, t.def.id, "useToolActionRotation", t.useToolActionRotation ? "true" : "false");
-
-                string tarJson = $"{{ \"x\": {R(t.toolActionRotationEuler.x).ToString(inv)}, \"y\": {R(t.toolActionRotationEuler.y).ToString(inv)}, \"z\": {R(t.toolActionRotationEuler.z).ToString(inv)} }}";
+                // Placement rotation IS the tool action rotation — always enable it so play mode
+                // respects whatever the author sets via the gizmo or euler field.
+                Quaternion worldRot   = _previewRoot != null
+                    ? _previewRoot.transform.rotation * t.rotation
+                    : t.rotation;
+                Vector3 worldEuler    = worldRot.eulerAngles;
+                TryInjectBlock(ref json, t.def.id, "useToolActionRotation", "true");
+                string tarJson = $"{{ \"x\": {R(worldEuler.x).ToString(inv)}, \"y\": {R(worldEuler.y).ToString(inv)}, \"z\": {R(worldEuler.z).ToString(inv)} }}";
                 TryInjectBlock(ref json, t.def.id, "toolActionRotation", tarJson);
             }
 
-            // Step 5: Validate result
+            // Step 5a: Inject ToolDefinition.persistent for dirty tools
+            foreach (string toolId in _dirtyToolIds)
+            {
+                ToolDefinition toolDef = null;
+                if (_pkg?.tools != null)
+                    foreach (var td in _pkg.tools)
+                        if (td != null && td.id == toolId) { toolDef = td; break; }
+                if (toolDef != null)
+                    TryInjectBlock(ref json, toolId, "persistent", toolDef.persistent ? "true" : "false");
+            }
+            _dirtyToolIds.Clear();
+
+            // Step 5b: Inject StepDefinition.removePersistentToolIds for dirty steps
+            foreach (string stepId in _dirtyStepIds)
+            {
+                var step = FindStep(stepId);
+                if (step == null) continue;
+                string idsJson = step.removePersistentToolIds == null || step.removePersistentToolIds.Length == 0
+                    ? "[]"
+                    : "[ " + string.Join(", ", Array.ConvertAll(
+                        step.removePersistentToolIds, id => $"\"{id}\"")) + " ]";
+                TryInjectBlock(ref json, stepId, "removePersistentToolIds", idsJson);
+            }
+            _dirtyStepIds.Clear();
+
+            // Step 5c: Validate result
             try { JsonUtility.FromJson<MachinePackageDefinition>(json); }
             catch (Exception ex)
             {

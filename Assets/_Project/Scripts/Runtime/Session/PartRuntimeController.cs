@@ -12,7 +12,7 @@ namespace OSE.Runtime
     /// and provides methods for the interaction flow (select, grab, place).
     /// Plain C# — registered in ServiceRegistry, not a MonoBehaviour.
     /// </summary>
-    public sealed class PartRuntimeController
+    public sealed class PartRuntimeController : IPartRuntimeController
     {
         private MachinePackageDefinition _package;
         private readonly Dictionary<string, PartPlacementState> _partStates = new Dictionary<string, PartPlacementState>(StringComparer.OrdinalIgnoreCase);
