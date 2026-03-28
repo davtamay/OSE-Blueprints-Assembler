@@ -277,6 +277,8 @@ namespace OSE.Editor
             UpdateActiveStep();
             BuildTargetList();
             RespawnScene();
+            SceneView.RepaintAll();
+            Repaint();
         }
 
         private void UpdateActiveStep()
@@ -533,6 +535,7 @@ namespace OSE.Editor
 
                 DrawWeldAxisArrow(ref t, worldPos, alpha);
                 DrawPortPoints(ref t, root, alpha);
+                DrawPartConnector(ref t, worldPos, alpha);
             }
 
             // Handles for selected target
@@ -616,6 +619,22 @@ namespace OSE.Editor
                 Quaternion.LookRotation(worldAxis),
                 arrowLen * 0.14f,
                 EventType.Repaint);
+        }
+
+        /// <summary>
+        /// Draws a thin dashed line from the target sphere to the associated part's
+        /// origin, so authors can visually confirm the target is in the right coordinate
+        /// space relative to its part.
+        /// </summary>
+        private void DrawPartConnector(ref TargetEditState t, Vector3 worldPos, float alpha = 1f)
+        {
+            if (string.IsNullOrEmpty(t.def.associatedPartId)) return;
+            if (!_partMeshes.TryGetValue(t.def.associatedPartId, out var partGo) || partGo == null) return;
+
+            Color c = Handles.color;
+            c.a = alpha * 0.25f;
+            Handles.color = c;
+            Handles.DrawDottedLine(worldPos, partGo.transform.position, 3f);
         }
 
         private void DrawPortPoints(ref TargetEditState t, Transform root, float alpha = 1f)
@@ -795,12 +814,21 @@ namespace OSE.Editor
                 TargetPreviewPlacement placement = FindPlacement(def.id);
                 bool hasP = placement != null;
 
+                // For unplaced targets, default position to the associated part's playPosition
+                // so they appear ON the part in the SceneView rather than at world origin.
+                Vector3 defaultPos = Vector3.zero;
+                if (!hasP && !string.IsNullOrEmpty(def.associatedPartId))
+                {
+                    var pp = FindPartPlacement(def.associatedPartId);
+                    if (pp != null) defaultPos = PackageJsonUtils.ToVector3(pp.playPosition);
+                }
+
                 var state = new TargetEditState
                 {
                     def                     = def,
                     placement               = placement,
                     hasPlacement            = hasP,
-                    position                = hasP ? PackageJsonUtils.ToVector3(placement.position)         : Vector3.zero,
+                    position                = hasP ? PackageJsonUtils.ToVector3(placement.position)         : defaultPos,
                     rotation                = hasP ? PackageJsonUtils.ToUnityQuaternion(placement.rotation)  : Quaternion.identity,
                     scale                   = hasP ? PackageJsonUtils.ToVector3(placement.scale)             : Vector3.one * DefaultTargetScale,
                     portA                   = hasP ? PackageJsonUtils.ToVector3(placement.portA)             : Vector3.zero,
@@ -824,6 +852,15 @@ namespace OSE.Editor
             if (arr == null) return null;
             foreach (var p in arr)
                 if (p != null && p.targetId == targetId) return p;
+            return null;
+        }
+
+        private PartPreviewPlacement FindPartPlacement(string partId)
+        {
+            var arr = _pkg?.previewConfig?.partPlacements;
+            if (arr == null) return null;
+            foreach (var p in arr)
+                if (p != null && p.partId == partId) return p;
             return null;
         }
 
