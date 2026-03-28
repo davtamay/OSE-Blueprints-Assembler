@@ -25,7 +25,7 @@ namespace OSE.Editor
     /// playPosition, the current step's part is at startPosition, future parts
     /// are hidden.  Targets not belonging to the active step are dimmed.
     /// The detail panel shows only the fields relevant to the step's profile
-    /// (Weld/Cut → weldAxis+weldLength; Measure → portA+portB;
+    /// (Weld/Cut → weldAxis+weldLength; Cable → portA+portB drag handles;
     ///  Torque/Clamp/Strike → useToolActionRotation).
     ///
     /// Blender pipeline (zero extra work when correctly named):
@@ -62,6 +62,14 @@ namespace OSE.Editor
         // Active-step context (null = All Steps)
         private string          _activeStepProfile;
         private HashSet<string> _activeStepTargetIds;
+
+        // targetId → display name of the tool that acts on it (from requiredToolActions)
+        private Dictionary<string, string> _targetToolMap;
+
+        // SceneView part-count summary updated by RespawnScene
+        private int _previewAssembled;
+        private int _previewCurrent;
+        private int _previewHidden;
 
         private TargetEditState[] _targets;
         private int               _selectedIdx = -1;
@@ -199,32 +207,65 @@ namespace OSE.Editor
         {
             if (_stepOptions == null || _stepOptions.Length == 0) return;
 
-            int i = EditorGUILayout.Popup("Step Filter", _stepFilterIdx, _stepOptions);
-            if (i != _stepFilterIdx)
-                ApplyStepFilter(i);
+            int stepCount = _stepOptions.Length - 1;
 
-            // Prev / Next navigation row
-            if (_stepOptions.Length > 1)
+            // ── Navigation row: Prev · [Step N/M ▼] · Next ──────────────────
+            EditorGUILayout.BeginHorizontal();
+
+            EditorGUI.BeginDisabledGroup(_stepFilterIdx <= 1);
+            if (GUILayout.Button("◄", GUILayout.Width(28)))
+                ApplyStepFilter(_stepFilterIdx - 1);
+            EditorGUI.EndDisabledGroup();
+
+            // Compact GenericMenu button — opens the full step list as a context menu
+            string navLabel = _stepFilterIdx == 0
+                ? $"All Steps  ({stepCount})"
+                : $"Step {_stepFilterIdx} / {stepCount}";
+
+            if (GUILayout.Button(navLabel, EditorStyles.popup))
             {
-                EditorGUILayout.BeginHorizontal();
+                var menu = new GenericMenu();
+                for (int j = 0; j < _stepOptions.Length; j++)
+                {
+                    int captured = j;
+                    menu.AddItem(new GUIContent(_stepOptions[j]), _stepFilterIdx == j,
+                        () => ApplyStepFilter(captured));
+                }
+                menu.ShowAsContext();
+            }
 
-                EditorGUI.BeginDisabledGroup(_stepFilterIdx <= 1);
-                if (GUILayout.Button("◄ Prev", GUILayout.Width(70)))
-                    ApplyStepFilter(_stepFilterIdx - 1);
-                EditorGUI.EndDisabledGroup();
+            EditorGUI.BeginDisabledGroup(_stepFilterIdx == 0 || _stepFilterIdx >= _stepOptions.Length - 1);
+            if (GUILayout.Button("►", GUILayout.Width(28)))
+                ApplyStepFilter(_stepFilterIdx + 1);
+            EditorGUI.EndDisabledGroup();
 
-                int stepCount = _stepOptions.Length - 1;
-                string navLabel = _stepFilterIdx == 0
-                    ? $"All  ({stepCount} steps with targets)"
-                    : $"Step {_stepFilterIdx} of {stepCount}";
-                EditorGUILayout.LabelField(navLabel, EditorStyles.miniLabel, GUILayout.ExpandWidth(true));
+            EditorGUILayout.EndHorizontal();
 
-                EditorGUI.BeginDisabledGroup(_stepFilterIdx == 0 || _stepFilterIdx >= _stepOptions.Length - 1);
-                if (GUILayout.Button("Next ►", GUILayout.Width(70)))
-                    ApplyStepFilter(_stepFilterIdx + 1);
-                EditorGUI.EndDisabledGroup();
+            // ── Step info card (hidden in All Steps mode) ─────────────────────
+            if (_stepFilterIdx > 0 && _stepFilterIdx < _stepIds.Length)
+            {
+                var step = FindStep(_stepIds[_stepFilterIdx]);
+                if (step != null)
+                {
+                    string toolName = "(no tool)";
+                    if (step.relevantToolIds != null && step.relevantToolIds.Length > 0 && _pkg?.tools != null)
+                        foreach (var td in _pkg.tools)
+                            if (td != null && td.id == step.relevantToolIds[0]) { toolName = td.name; break; }
 
-                EditorGUILayout.EndHorizontal();
+                    string profileStr = string.IsNullOrEmpty(step.profile) ? "" : $"  ·  {step.profile}";
+                    int    tCount     = step.targetIds?.Length ?? 0;
+
+                    EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                    EditorGUILayout.LabelField($"[{step.sequenceIndex}] {step.name}", EditorStyles.boldLabel);
+                    EditorGUILayout.LabelField(
+                        $"Tool: {toolName}{profileStr}  ·  {tCount} target{(tCount == 1 ? "" : "s")}",
+                        EditorStyles.miniLabel);
+                    if (_previewAssembled + _previewCurrent + _previewHidden > 0)
+                        EditorGUILayout.LabelField(
+                            $"{_previewAssembled} assembled  ·  {_previewCurrent} at start pos  ·  {_previewHidden} hidden",
+                            EditorStyles.miniLabel);
+                    EditorGUILayout.EndVertical();
+                }
             }
         }
 
@@ -280,8 +321,12 @@ namespace OSE.Editor
                     focused = { textColor = col }
                 };
 
-                string badge = t.isDirty ? " ●" : t.hasPlacement ? "" : " ○";
-                string label = $"  {t.def.id}{badge}";
+                string badge      = t.isDirty ? " ●" : t.hasPlacement ? "" : " ○";
+                string toolBadge  = (_targetToolMap != null && _targetToolMap.TryGetValue(t.def.id, out string tn))
+                                    ? $"  [{tn}]" : "";
+                string xformBadge = (t.portA.sqrMagnitude > 0.00001f || t.portB.sqrMagnitude > 0.00001f) ? "  ↔"
+                                  : (t.weldAxis.sqrMagnitude > 0.001f) ? "  →" : "";
+                string label = $"  {t.def.id}{toolBadge}{xformBadge}{badge}";
                 if (GUILayout.Button(label, style, GUILayout.ExpandWidth(true)))
                 {
                     if (_selectedIdx != i)
@@ -365,7 +410,7 @@ namespace OSE.Editor
                 if (EditorGUI.EndChangeCheck()) { BeginEdit(); t.weldLength = Mathf.Max(0f, newLen); t.isDirty = true; EndEdit(); }
             }
 
-            if (ShowMeasureGroup())
+            if (ShowPortGroup())
             {
                 EditorGUI.BeginChangeCheck();
                 Vector3 newPortA = EditorGUILayout.Vector3Field("Port A (local)", t.portA);
@@ -405,12 +450,15 @@ namespace OSE.Editor
         }
 
         // Returns true when profile calls for this field group, or when no step is selected.
+        // Field group visibility — "All Steps" (null profile) shows everything.
         private bool ShowWeldGroup()    => string.IsNullOrEmpty(_activeStepProfile)
                                           || _activeStepProfile == "Weld"
                                           || _activeStepProfile == "Cut";
 
-        private bool ShowMeasureGroup() => string.IsNullOrEmpty(_activeStepProfile)
-                                          || _activeStepProfile == "Measure";
+        // portA/portB are hose/cable endpoints (pipe_connection / Cable profile).
+        // Measure steps (framing square) only need position+rotation.
+        private bool ShowPortGroup()    => string.IsNullOrEmpty(_activeStepProfile)
+                                          || _activeStepProfile == "Cable";
 
         private bool ShowRotationGroup()=> string.IsNullOrEmpty(_activeStepProfile)
                                           || _activeStepProfile == "Torque"
@@ -520,6 +568,34 @@ namespace OSE.Editor
 
                 if (Event.current.type == EventType.MouseUp)
                     EndEdit();
+
+                // portA / portB drag handles (Cable profile only)
+                if (_activeStepProfile == "Cable")
+                {
+                    Handles.color = ColPortPoint;
+
+                    EditorGUI.BeginChangeCheck();
+                    Vector3 newPortA = Handles.PositionHandle(root.TransformPoint(sel.portA), Quaternion.identity);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        BeginEdit();
+                        sel.portA   = root.InverseTransformPoint(newPortA);
+                        sel.isDirty = true;
+                        Repaint();
+                    }
+
+                    EditorGUI.BeginChangeCheck();
+                    Vector3 newPortB = Handles.PositionHandle(root.TransformPoint(sel.portB), Quaternion.identity);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        BeginEdit();
+                        sel.portB   = root.InverseTransformPoint(newPortB);
+                        sel.isDirty = true;
+                        Repaint();
+                    }
+
+                    if (Event.current.type == EventType.MouseUp) EndEdit();
+                }
             }
 
             HandleClickToSnap();
@@ -544,7 +620,8 @@ namespace OSE.Editor
 
         private void DrawPortPoints(ref TargetEditState t, Transform root, float alpha = 1f)
         {
-            if (_activeStepProfile != "Measure") return;
+            // Show port spheres for Cable (pipe_connection) profile, or in All Steps mode
+            if (!string.IsNullOrEmpty(_activeStepProfile) && _activeStepProfile != "Cable") return;
             if (t.portA.sqrMagnitude < 0.00001f && t.portB.sqrMagnitude < 0.00001f) return;
 
             Color c = ColPortPoint; c.a *= alpha;
@@ -618,6 +695,7 @@ namespace OSE.Editor
 
             _stepFilterIdx = 0;
             BuildStepOptions();
+            BuildTargetToolMap();
             UpdateActiveStep();
             BuildTargetList();
             RespawnScene();
@@ -661,6 +739,34 @@ namespace OSE.Editor
 
             _stepOptions = optList.ToArray();
             _stepIds     = idList.ToArray();
+        }
+
+        /// <summary>
+        /// Builds a reverse map: targetId → display tool name, sourced from
+        /// step.requiredToolActions[].toolId → ToolDefinition.name.
+        /// First match wins (one tool per target is the common case).
+        /// </summary>
+        private void BuildTargetToolMap()
+        {
+            _targetToolMap = new Dictionary<string, string>(StringComparer.Ordinal);
+            if (_pkg?.steps == null) return;
+
+            foreach (var step in _pkg.steps)
+            {
+                if (step?.requiredToolActions == null) continue;
+                foreach (var action in step.requiredToolActions)
+                {
+                    if (string.IsNullOrEmpty(action?.targetId) || string.IsNullOrEmpty(action.toolId)) continue;
+                    if (_targetToolMap.ContainsKey(action.targetId)) continue;
+
+                    string toolName = action.toolId;   // fallback = raw id
+                    if (_pkg.tools != null)
+                        foreach (var td in _pkg.tools)
+                            if (td != null && td.id == action.toolId) { toolName = td.name; break; }
+
+                    _targetToolMap[action.targetId] = toolName;
+                }
+            }
         }
 
         private void BuildTargetList()
@@ -741,6 +847,9 @@ namespace OSE.Editor
             {
                 hideFlags = HideFlags.HideAndDontSave
             };
+            _previewAssembled = 0;
+            _previewCurrent   = 0;
+            _previewHidden    = 0;
 
             // Build part → sequenceIndex map for step-aware placement
             bool stepSelected = _stepFilterIdx > 0 && _stepIds != null
@@ -780,6 +889,7 @@ namespace OSE.Editor
                     if (!inStepMap)
                     {
                         // Part not assigned to any step — always show at playPosition
+                        _previewAssembled++;
                         SpawnPartMesh(pp.partId, partDef.assetRef,
                             PackageJsonUtils.ToVector3(pp.playPosition),
                             PackageJsonUtils.ToUnityQuaternion(pp.playRotation),
@@ -787,9 +897,10 @@ namespace OSE.Editor
                         continue;
                     }
 
-                    if (placedAt > currentSeq) continue;   // not yet assembled — hide
+                    if (placedAt > currentSeq) { _previewHidden++; continue; }
 
                     bool useStart = placedAt == currentSeq;
+                    if (useStart) _previewCurrent++; else _previewAssembled++;
                     Vector3    pos  = useStart ? PackageJsonUtils.ToVector3(pp.startPosition) : PackageJsonUtils.ToVector3(pp.playPosition);
                     Quaternion rot  = useStart ? PackageJsonUtils.ToUnityQuaternion(pp.startRotation) : PackageJsonUtils.ToUnityQuaternion(pp.playRotation);
                     Vector3    sclR = PackageJsonUtils.ToVector3(useStart ? pp.startScale : pp.playScale);
@@ -800,6 +911,7 @@ namespace OSE.Editor
                 else
                 {
                     // All Steps mode — show everything at play position
+                    _previewAssembled++;
                     SpawnPartMesh(pp.partId, partDef.assetRef,
                         PackageJsonUtils.ToVector3(pp.playPosition),
                         PackageJsonUtils.ToUnityQuaternion(pp.playRotation),
