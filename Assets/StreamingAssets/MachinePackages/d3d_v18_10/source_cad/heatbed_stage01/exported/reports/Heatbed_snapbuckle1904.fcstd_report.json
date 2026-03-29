@@ -1,0 +1,50 @@
+{
+  "input_fcstd": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\heatbed_stage01\\raw\\Heatbed_snapbuckle1904.fcstd",
+  "output_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\heatbed_stage01\\exported\\stl\\Heatbed_snapbuckle1904.stl",
+  "source_mode": "archive_brep",
+  "units": "mm",
+  "object_count": 2,
+  "mesh_facets": 376,
+  "mesh_points": 96,
+  "combined_bound_box": {
+    "xmin_mm": -4.87782273112553,
+    "xmax_mm": 7.16498953053726,
+    "ymin_mm": -38.8821659744724,
+    "ymax_mm": -4.98307551581035,
+    "zmin_mm": 0.0,
+    "zmax_mm": 10.0,
+    "xlen_mm": 12.042812261662789,
+    "ylen_mm": 33.89909045866205,
+    "zlen_mm": 10.0
+  },
+  "objects": [
+    {
+      "name": "PartShape1.brp",
+      "bound_box": {
+        "xmin_mm": -4.877822731125528,
+        "xmax_mm": 7.164989530537255,
+        "ymin_mm": -38.882165974472436,
+        "ymax_mm": -4.983075515810352,
+        "zmin_mm": 0.0,
+        "zmax_mm": 10.0,
+        "xlen_mm": 12.042812261662784,
+        "ylen_mm": 33.89909045866209,
+        "zlen_mm": 10.0
+      }
+    },
+    {
+      "name": "PartShape2.brp",
+      "bound_box": {
+        "xmin_mm": -4.877822731125528,
+        "xmax_mm": 7.164989530537255,
+        "ymin_mm": -38.882165974472436,
+        "ymax_mm": -4.983075515810352,
+        "zmin_mm": 0.0,
+        "zmax_mm": 10.0,
+        "xlen_mm": 12.042812261662784,
+        "ylen_mm": 33.89909045866209,
+        "zlen_mm": 10.0
+      }
+    }
+  ]
+}

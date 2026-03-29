@@ -1,0 +1,27 @@
+{
+  "input_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\heatbed_stage01\\exported\\stl\\D3Dfinalassemblyv1902.stl",
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\heatbed_stage01\\exported\\glb_candidates\\D3Dfinalassemblyv1902.glb",
+  "units": "m",
+  "object_count": 1,
+  "material_name": "D3D Final Assembly",
+  "base_color": [
+    0.55,
+    0.57,
+    0.6,
+    1.0
+  ],
+  "metallic": 0.05,
+  "roughness": 0.7,
+  "center_mode": "base_center",
+  "bound_box": {
+    "xmin_m": -0.2271263152360916,
+    "xmax_m": 0.22712630033493042,
+    "ymin_m": -0.24043600261211395,
+    "ymax_m": 0.24043598771095276,
+    "zmin_m": 0.0,
+    "zmax_m": 0.4532562792301178,
+    "xlen_m": 0.45425261557102203,
+    "ylen_m": 0.4808719903230667,
+    "zlen_m": 0.4532562792301178
+  }
+}

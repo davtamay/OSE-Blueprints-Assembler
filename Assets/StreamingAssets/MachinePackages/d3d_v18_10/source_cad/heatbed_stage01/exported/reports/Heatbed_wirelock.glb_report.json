@@ -1,0 +1,27 @@
+{
+  "input_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\heatbed_stage01\\exported\\stl\\Heatbed_wirelock.stl",
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\heatbed_stage01\\exported\\glb_candidates\\Heatbed_wirelock.glb",
+  "units": "m",
+  "object_count": 1,
+  "material_name": "D3D Wirelock Black",
+  "base_color": [
+    0.18,
+    0.18,
+    0.19,
+    1.0
+  ],
+  "metallic": 0.0,
+  "roughness": 0.68,
+  "center_mode": "base_center",
+  "bound_box": {
+    "xmin_m": -0.07135795056819916,
+    "xmax_m": 0.07135795056819916,
+    "ymin_m": -0.04272637516260147,
+    "ymax_m": 0.04272637516260147,
+    "zmin_m": 0.0,
+    "zmax_m": 0.01741652935743332,
+    "xlen_m": 0.14271590113639832,
+    "ylen_m": 0.08545275032520294,
+    "zlen_m": 0.01741652935743332
+  }
+}

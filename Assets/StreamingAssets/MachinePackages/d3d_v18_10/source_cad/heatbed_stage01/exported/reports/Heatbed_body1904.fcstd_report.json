@@ -1,0 +1,78 @@
+{
+  "input_fcstd": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\heatbed_stage01\\raw\\Heatbed_body1904.fcstd",
+  "output_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\heatbed_stage01\\exported\\stl\\Heatbed_body1904.stl",
+  "source_mode": "archive_brep",
+  "units": "mm",
+  "object_count": 4,
+  "mesh_facets": 12804,
+  "mesh_points": 3004,
+  "combined_bound_box": {
+    "xmin_mm": 52.313762576258,
+    "xmax_mm": 255.513762576258,
+    "ymin_mm": 45.065689636793,
+    "ymax_mm": 86.406778151338,
+    "zmin_mm": 0.0,
+    "zmax_mm": 203.2,
+    "xlen_mm": 203.2,
+    "ylen_mm": 41.341088514545,
+    "zlen_mm": 203.2
+  },
+  "objects": [
+    {
+      "name": "PartShape.brp",
+      "bound_box": {
+        "xmin_mm": 52.313762576258,
+        "xmax_mm": 255.51376257625802,
+        "ymin_mm": 45.065689636792996,
+        "ymax_mm": 86.40677815133806,
+        "zmin_mm": 0.0,
+        "zmax_mm": 203.2,
+        "xlen_mm": 203.20000000000002,
+        "ylen_mm": 41.34108851454506,
+        "zlen_mm": 203.2
+      }
+    },
+    {
+      "name": "PartShape1.brp",
+      "bound_box": {
+        "xmin_mm": 66.08907871247463,
+        "xmax_mm": 242.24443071247464,
+        "ymin_mm": 45.065689636793,
+        "ymax_mm": 50.065689636793046,
+        "zmin_mm": 15.456137287525399,
+        "zmax_mm": 187.3632292875254,
+        "xlen_mm": 176.155352,
+        "ylen_mm": 5.000000000000043,
+        "zlen_mm": 171.907092
+      }
+    },
+    {
+      "name": "PartShape3.brp",
+      "bound_box": {
+        "xmin_mm": 83.62982962000618,
+        "xmax_mm": 229.1785736200062,
+        "ymin_mm": 48.240688,
+        "ymax_mm": 57.240688000000034,
+        "zmin_mm": 57.66363112019677,
+        "zmax_mm": 140.175107120197,
+        "xlen_mm": 145.54874400000003,
+        "ylen_mm": 9.000000000000036,
+        "zlen_mm": 82.51147600000023
+      }
+    },
+    {
+      "name": "PartShape4.brp",
+      "bound_box": {
+        "xmin_mm": 52.313762576258,
+        "xmax_mm": 255.51376257625802,
+        "ymin_mm": 45.065689636792996,
+        "ymax_mm": 86.40677815133806,
+        "zmin_mm": 0.0,
+        "zmax_mm": 203.2,
+        "xlen_mm": 203.20000000000002,
+        "ylen_mm": 41.34108851454506,
+        "zlen_mm": 203.2
+      }
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "_notes": {
+    "source": "D3Dfinalassemblyv1902.fcstd",
+    "extracted": "2026-03-29",
+    "gaps": [
+      "Frame bars (d3d_frame_*_bar): the Frame object is a compound at (0,0,0) — individual bar positions must be extracted from the frame-specific source CAD file.",
+      "Fasteners (fastener_*): bolts/pegs are not modeled as separate objects in this FreeCAD assembly.",
+      "d3d_extruder_5015_blower, d3d_extruder_sensor_holder, d3d_extruder_mount_top_plate: no clear FreeCAD match yet — visual verify needed."
+    ]
+  },
+
+  "Heated plate":       "d3d_heatbed_body",
+  "Bed clamp 1":        "d3d_heatbed_snapbuckle_left",
+  "Bed clamp 002":      "d3d_heatbed_snapbuckle_right",
+
+  "Extruder - Stripped": "d3d_titan_aero_core",
+  "Full Carriage002":   "d3d_extruder_simplified_carriage",
+
+  "Motor Side001":      "d3d_y_left_axis_unit",
+  "Motor Side002":      "d3d_y_right_axis_unit",
+
+  "Motor Side":         "d3d_x_axis_motor_holder_unit",
+  "Idler004":           "d3d_x_axis_idler_unit",
+
+  "half carriage":      "d3d_x_axis_half_carriage",
+  "X1 Bracket":         "d3d_extruder_mount_bracket",
+  "X2 Bracket":         "d3d_x_axis_carriage_side",
+  "X Endstop":          "d3d_extruder_8mm_sensor",
+  "Pocket038":          "d3d_extruder_nozzle_assembly",
+  "Rod 1":              "d3d_x_axis_rod_pair"
+}

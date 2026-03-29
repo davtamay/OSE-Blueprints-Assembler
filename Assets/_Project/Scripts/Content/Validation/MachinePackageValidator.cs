@@ -203,7 +203,7 @@ namespace OSE.Content.Validation
                 ValidateRequiredEnum(part.category, PartCategoryValues, $"{path}.category", issues);
                 ValidateRequiredText(part.material, $"{path}.material", issues);
                 ValidateRequiredText(part.function, $"{path}.function", issues);
-                ValidateRequiredText(part.assetRef, $"{path}.assetRef", issues);
+                // assetRef is optional — the resolver can discover parts by filename or GLB node search.
 
                 if (part.quantity < 1)
                 {

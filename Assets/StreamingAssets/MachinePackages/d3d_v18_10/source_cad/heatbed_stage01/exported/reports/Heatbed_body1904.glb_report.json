@@ -1,0 +1,27 @@
+{
+  "input_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\heatbed_stage01\\exported\\stl\\Heatbed_body1904.stl",
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\heatbed_stage01\\exported\\glb_candidates\\Heatbed_body1904.glb",
+  "units": "m",
+  "object_count": 1,
+  "material_name": "D3D Heatbed Steel",
+  "base_color": [
+    0.45,
+    0.46,
+    0.48,
+    1.0
+  ],
+  "metallic": 0.15,
+  "roughness": 0.65,
+  "center_mode": "base_center",
+  "bound_box": {
+    "xmin_m": -0.10160002112388611,
+    "xmax_m": 0.10160000622272491,
+    "ymin_m": -0.020670544356107712,
+    "ymax_m": 0.02067054808139801,
+    "zmin_m": 0.0,
+    "zmax_m": 0.20320001244544983,
+    "xlen_m": 0.20320002734661102,
+    "ylen_m": 0.04134109243750572,
+    "zlen_m": 0.20320001244544983
+  }
+}

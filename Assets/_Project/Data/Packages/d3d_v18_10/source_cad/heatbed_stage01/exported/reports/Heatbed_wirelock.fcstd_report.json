@@ -1,0 +1,50 @@
+{
+  "input_fcstd": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\heatbed_stage01\\raw\\Heatbed_wirelock.fcstd",
+  "output_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\heatbed_stage01\\exported\\stl\\Heatbed_wirelock.stl",
+  "source_mode": "archive_brep",
+  "units": "mm",
+  "object_count": 2,
+  "mesh_facets": 244,
+  "mesh_points": 122,
+  "combined_bound_box": {
+    "xmin_mm": -31.313396419330402,
+    "xmax_mm": 111.40249100000001,
+    "ymin_mm": -32.289062304045586,
+    "ymax_mm": 53.163678,
+    "zmin_mm": -0.05229439652661938,
+    "zmax_mm": 17.364234580984416,
+    "xlen_mm": 142.71588741933041,
+    "ylen_mm": 85.45274030404559,
+    "zlen_mm": 17.416528977511035
+  },
+  "objects": [
+    {
+      "name": "PartShape.brp",
+      "bound_box": {
+        "xmin_mm": -31.31339641933049,
+        "xmax_mm": -21.625698697325607,
+        "ymin_mm": -32.28906230404562,
+        "ymax_mm": 0.887949311497465,
+        "zmin_mm": -0.05229439652667062,
+        "zmax_mm": 17.364234580984363,
+        "xlen_mm": 9.687697722004884,
+        "ylen_mm": 33.17701161554309,
+        "zlen_mm": 17.41652897751103
+      }
+    },
+    {
+      "name": "PartShape1.brp",
+      "bound_box": {
+        "xmin_mm": 92.846397,
+        "xmax_mm": 111.40249100000003,
+        "ymin_mm": 51.51757400000001,
+        "ymax_mm": 53.163678000000054,
+        "zmin_mm": 5.235412999999994,
+        "zmax_mm": 10.235403000000005,
+        "xlen_mm": 18.55609400000003,
+        "ylen_mm": 1.6461040000000438,
+        "zlen_mm": 4.999990000000011
+      }
+    }
+  ]
+}

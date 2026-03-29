@@ -730,6 +730,33 @@ namespace OSE.UI.Root
             partGo.transform.localScale = pScale;
         }
 
+        /// <summary>
+        /// Moves every spawned part to its play position and marks it Completed.
+        /// Used when navigating to the final "assembly complete" step so the user
+        /// sees the fully assembled machine regardless of per-step part references.
+        /// </summary>
+        public void ShowAllPartsAssembled()
+        {
+            var parts = _ctx.Spawner?.SpawnedParts;
+            if (parts == null) return;
+
+            for (int i = 0; i < parts.Count; i++)
+            {
+                var partGo = parts[i];
+                if (partGo == null) continue;
+
+                string partId = partGo.name;
+                MovePartToPlayPosition(partId);
+                partGo.SetActive(true);
+                _ctx.PartStates[partId] = PartPlacementState.Completed;
+                SyncPartGrabInteractivity(partGo, partId);
+                ApplyPartVisualForState(partGo, partId, PartPlacementState.Completed);
+                _revealedPartIds.Add(partId);
+            }
+
+            OseLog.Info($"[ShowAllPartsAssembled] Placed {parts.Count} parts at play positions.");
+        }
+
         public void RevertFutureStepParts(StepDefinition[] allSteps, int fromStepIndex)
         {
             var package = _ctx.Spawner?.CurrentPackage;

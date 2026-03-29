@@ -14,12 +14,20 @@ It answers:
 
 ## Implementation Status
 
-`Heated Bed Stage 01` is not yet authored in `machine.json`.
+`Heated Bed Stage 01` is now authored in `machine.json` as steps `73` through `76`.
 
-This brief locks the next conservative mechanical-first heated-bed slice after:
+What is now implemented directly from this brief:
 
-- `Axes Stage 01`
-- `Extruder Stages 01-03`
+- `d3d_heatbed_body` placement
+- `d3d_heatbed_snapbuckle_left` placement
+- `d3d_heatbed_snapbuckle_right` placement
+- bed-envelope / nozzle-clearance QC
+
+What remains intentionally deferred:
+
+- `d3d_heatbed_wirelock`
+- explicit snapbuckle fastener story
+- heater wiring and thermistor routing
 
 ## Sources Consulted
 

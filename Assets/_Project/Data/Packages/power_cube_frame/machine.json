@@ -67,7 +67,7 @@
         "tool_angle_grinder",
         "tool_welder"
       ],
-      "assetRef": "assets/parts/base_tube_long.glb",
+      "assetRef": "base_tube_long.glb",
       "allowPhysicalSubstitution": true,
       "tags": [
         "power_cube",
@@ -86,7 +86,7 @@
         "tool_angle_grinder",
         "tool_welder"
       ],
-      "assetRef": "assets/parts/base_tube_short.glb",
+      "assetRef": "base_tube_short.glb",
       "allowPhysicalSubstitution": true,
       "tags": [
         "power_cube",
@@ -105,7 +105,7 @@
         "tool_angle_grinder",
         "tool_welder"
       ],
-      "assetRef": "assets/parts/vertical_post.glb",
+      "assetRef": "vertical_post.glb",
       "searchTerms": [
         "vertical post",
         "corner post",
@@ -129,7 +129,7 @@
         "tool_tape_measure",
         "tool_welder"
       ],
-      "assetRef": "assets/parts/base_tube_long.glb",
+      "assetRef": "base_tube_long.glb",
       "allowPhysicalSubstitution": true,
       "tags": [
         "power_cube",
@@ -147,7 +147,7 @@
         "tool_tape_measure",
         "tool_welder"
       ],
-      "assetRef": "assets/parts/base_tube_short.glb",
+      "assetRef": "base_tube_short.glb",
       "allowPhysicalSubstitution": true,
       "tags": [
         "power_cube",
@@ -551,7 +551,7 @@
         "tool_angle_grinder",
         "tool_welder"
       ],
-      "assetRef": "assets/parts/engine_mount_plate.glb",
+      "assetRef": "engine_mount_plate.glb",
       "searchTerms": [
         "mount plate",
         "engine plate",
@@ -578,7 +578,7 @@
       "toolIds": [
         "tool_torque_wrench"
       ],
-      "assetRef": "assets/parts/engine.glb",
+      "assetRef": "engine.glb",
       "searchTerms": [
         "engine",
         "motor",
@@ -606,7 +606,7 @@
       "toolIds": [
         "tool_torque_wrench"
       ],
-      "assetRef": "assets/parts/pump_coupling.glb",
+      "assetRef": "pump_coupling.glb",
       "searchTerms": [
         "coupling",
         "lovejoy",
@@ -633,7 +633,7 @@
       "toolIds": [
         "tool_torque_wrench"
       ],
-      "assetRef": "assets/parts/hydraulic_pump.glb",
+      "assetRef": "hydraulic_pump.glb",
       "searchTerms": [
         "pump",
         "gear pump",
@@ -660,7 +660,7 @@
       "toolIds": [
         "tool_torque_wrench"
       ],
-      "assetRef": "assets/parts/reservoir.glb",
+      "assetRef": "reservoir.glb",
       "searchTerms": [
         "reservoir",
         "tank",
@@ -687,7 +687,7 @@
       "toolIds": [
         "tool_line_wrench"
       ],
-      "assetRef": "assets/parts/pressure_hose.glb",
+      "assetRef": "pressure_hose.glb",
       "searchTerms": [
         "pressure hose",
         "hydraulic hose",
@@ -714,7 +714,7 @@
       "toolIds": [
         "tool_line_wrench"
       ],
-      "assetRef": "assets/parts/return_hose.glb",
+      "assetRef": "return_hose.glb",
       "searchTerms": [
         "return hose",
         "return line",
@@ -742,7 +742,7 @@
         "tool_torque_wrench",
         "tool_line_wrench"
       ],
-      "assetRef": "assets/parts/oil_cooler.glb",
+      "assetRef": "oil_cooler.glb",
       "searchTerms": [
         "cooler",
         "oil cooler",
@@ -770,7 +770,7 @@
       "toolIds": [
         "tool_socket_set"
       ],
-      "assetRef": "assets/parts/fuel_tank.glb",
+      "assetRef": "fuel_tank.glb",
       "searchTerms": [
         "fuel tank",
         "gas tank",
@@ -795,7 +795,7 @@
       "toolIds": [
         "tool_socket_set"
       ],
-      "assetRef": "assets/parts/fuel_line.glb",
+      "assetRef": "fuel_line.glb",
       "searchTerms": [
         "fuel line",
         "fuel hose",
@@ -820,7 +820,7 @@
       "toolIds": [
         "tool_socket_set"
       ],
-      "assetRef": "assets/parts/fuel_shutoff_valve.glb",
+      "assetRef": "fuel_shutoff_valve.glb",
       "searchTerms": [
         "shutoff",
         "fuel valve",
@@ -846,7 +846,7 @@
       "toolIds": [
         "tool_socket_set"
       ],
-      "assetRef": "assets/parts/battery.glb",
+      "assetRef": "battery.glb",
       "searchTerms": [
         "battery",
         "12V",
@@ -873,7 +873,7 @@
         "tool_socket_set",
         "tool_wire_crimper"
       ],
-      "assetRef": "assets/parts/battery_cables.glb",
+      "assetRef": "battery_cables.glb",
       "searchTerms": [
         "battery cable",
         "positive cable",
@@ -900,7 +900,7 @@
         "tool_socket_set",
         "tool_wire_crimper"
       ],
-      "assetRef": "assets/parts/key_switch.glb",
+      "assetRef": "key_switch.glb",
       "searchTerms": [
         "key switch",
         "ignition switch",
@@ -925,7 +925,7 @@
       "toolIds": [
         "tool_socket_set"
       ],
-      "assetRef": "assets/parts/choke_cable.glb",
+      "assetRef": "choke_cable.glb",
       "searchTerms": [
         "choke cable",
         "choke control",
@@ -950,7 +950,7 @@
       "toolIds": [
         "tool_socket_set"
       ],
-      "assetRef": "assets/parts/throttle_cable.glb",
+      "assetRef": "throttle_cable.glb",
       "searchTerms": [
         "throttle cable",
         "throttle control",
@@ -975,7 +975,7 @@
       "toolIds": [
         "tool_line_wrench"
       ],
-      "assetRef": "assets/parts/pressure_gauge.glb",
+      "assetRef": "pressure_gauge.glb",
       "searchTerms": [
         "pressure gauge",
         "hydraulic gauge",
@@ -997,7 +997,7 @@
       "category": "measurement",
       "purpose": "Measures and marks steel tubing to the cut list dimensions.",
       "usageNotes": "Hook the end on the tube edge, pull taut, mark with soapstone at the target length.",
-      "assetRef": "assets/tools/tool_tape_measure.glb",
+      "assetRef": "tool_tape_measure.glb",
       "useOrientationOverride": true,
       "orientationEuler": {
         "x": 180,
@@ -1012,7 +1012,7 @@
       "purpose": "Cuts 4Ã—4 tubular steel to length using a cutting disc.",
       "usageNotes": "Wear eye and ear protection. Clamp the tube securely before cutting. Cut on the waste side of the mark.",
       "safetyNotes": "Always wear safety glasses, face shield, and hearing protection. Keep the guard in place.",
-      "assetRef": "assets/tools/tool_angle_grinder.glb"
+      "assetRef": "tool_angle_grinder.glb"
     },
     {
       "id": "tool_welder",
@@ -1021,7 +1021,7 @@
       "purpose": "Joins steel tubes at frame joints using MIG welding.",
       "usageNotes": "Tack-weld corners first to hold geometry, then run full beads after squareness is confirmed.",
       "safetyNotes": "Wear welding helmet (shade 10+), leather gloves, and long sleeves. Ensure adequate ventilation.",
-      "assetRef": "assets/tools/tool_welder.glb",
+      "assetRef": "tool_welder.glb",
       "useOrientationOverride": true,
       "orientationEuler": {
         "x": 180,
@@ -1043,7 +1043,7 @@
       "category": "measurement",
       "purpose": "Verifies corners are at exactly 90 degrees.",
       "usageNotes": "Place the square against both tubes at a corner. Both edges should make full contact with no gaps.",
-      "assetRef": "assets/tools/tool_framing_square.glb",
+      "assetRef": "tool_framing_square.glb",
       "scaleOverride": 0.55,
       "useOrientationOverride": true,
       "orientationEuler": {
@@ -1058,7 +1058,7 @@
       "category": "hand_tool",
       "purpose": "Holds tubes in alignment during tack-welding.",
       "usageNotes": "Clamp tubes flush before tacking. Remove clamps only after tack welds have cooled.",
-      "assetRef": "assets/tools/tool_clamp.glb",
+      "assetRef": "tool_clamp.glb",
       "scaleOverride": 0.55,
       "persistent": true
     },
@@ -1069,7 +1069,7 @@
       "purpose": "Tightens bolts to a precise torque specification to prevent under- or over-tightening.",
       "usageNotes": "Set the desired torque on the micrometer scale. Pull smoothly until the wrench clicks â€” stop immediately at the click. Always torque in a star pattern.",
       "safetyNotes": "Never use a torque wrench to loosen bolts. Store at the lowest torque setting to preserve calibration.",
-      "assetRef": "assets/tools/tool_torque_wrench.glb"
+      "assetRef": "tool_torque_wrench.glb"
     },
     {
       "id": "tool_line_wrench",
@@ -1078,7 +1078,7 @@
       "purpose": "Tightens hydraulic hose fittings without rounding the soft brass or steel hex nuts.",
       "usageNotes": "Slide over the hose, seat fully on the fitting hex, and turn 1/4 past finger-tight. Check for leaks before applying pressure.",
       "safetyNotes": "Never tighten fittings while the system is pressurized. Wipe up any spilled hydraulic fluid immediately â€” it is slippery.",
-      "assetRef": "assets/tools/tool_line_wrench.glb"
+      "assetRef": "tool_line_wrench.glb"
     },
     {
       "id": "tool_wire_crimper",
@@ -1087,7 +1087,7 @@
       "purpose": "Strips wire insulation and crimps ring terminals onto cable ends.",
       "usageNotes": "Match the stripper notch to the wire gauge. For crimps, insert the terminal, squeeze until the crimper clicks, then tug-test the connection.",
       "safetyNotes": "Disconnect the battery before working on any electrical connection.",
-      "assetRef": "assets/tools/tool_wire_crimper.glb"
+      "assetRef": "tool_wire_crimper.glb"
     },
     {
       "id": "tool_socket_set",
@@ -1095,7 +1095,7 @@
       "category": "hand_tool",
       "purpose": "Drives bolts and nuts for mounting brackets, battery terminals, and accessories.",
       "usageNotes": "Use the correct socket size â€” don't force an oversized socket onto a bolt head. Use a torque wrench for critical fasteners.",
-      "assetRef": "assets/tools/tool_socket_set.glb",
+      "assetRef": "tool_socket_set.glb",
       "useOrientationOverride": true,
       "orientationEuler": {
         "x": 0,
@@ -1110,7 +1110,7 @@
       "purpose": "Tests electrical continuity, voltage, and resistance in the wiring harness.",
       "usageNotes": "Set to continuity mode (beep symbol) to check wire connections. Set to DC voltage to verify 12V at the battery and key switch.",
       "safetyNotes": "Never probe a live circuit in current (amp) mode without proper fuse protection.",
-      "assetRef": "assets/tools/tool_multimeter.glb",
+      "assetRef": "tool_multimeter.glb",
       "useOrientationOverride": true,
       "orientationEuler": {
         "x": 0,
@@ -3970,3212 +3970,3787 @@
     "uiRefs": []
   },
   "previewConfig": {
+    "defaultAssemblyScaleMultiplier": 1.0,
     "partPlacements": [
-      {
-        "partId": "base_tube_long_1",
-        "startPosition": {
-          "x": -3.5,
-          "y": 0.550000011920929,
-          "z": -3.5
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.6421,
-          "y": 0.2152,
-          "z": 0.2419
-        },
-        "color": {
-          "r": 0.550000011920929,
-          "g": 0.5799999833106995,
-          "b": 0.6200000047683716,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.0,
-          "y": 0.05079999938607216,
-          "z": -0.35580000281333923
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 0.6421,
-          "y": 0.2152,
-          "z": 0.2419
-        },
-        "splinePath": {
-          "radius": 0.0,
-          "segments": 0,
-          "metallic": 0.0,
-          "smoothness": 0.0,
-          "knots": []
-        }
-      },
-      {
-        "partId": "base_tube_long_2",
-        "startPosition": {
-          "x": -3.5,
-          "y": 0.550000011920929,
-          "z": -3.0
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.6421,
-          "y": 0.2152,
-          "z": 0.2419
-        },
-        "color": {
-          "r": 0.550000011920929,
-          "g": 0.5799999833106995,
-          "b": 0.6200000047683716,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.0,
-          "y": 0.05079999938607216,
-          "z": 0.35580000281333923
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 0.6421,
-          "y": 0.2152,
-          "z": 0.2419
-        },
-        "splinePath": {
-          "radius": 0.0,
-          "segments": 0,
-          "metallic": 0.0,
-          "smoothness": 0.0,
-          "knots": []
-        }
-      },
-      {
-        "partId": "base_tube_short_1",
-        "startPosition": {
-          "x": -3.5,
-          "y": 0.550000011920929,
-          "z": -2.0
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.7071067690849304,
-          "z": 0.0,
-          "w": 0.7071067690849304
-        },
-        "startScale": {
-          "x": 0.3211,
-          "y": 0.2906,
-          "z": 0.3506
-        },
-        "color": {
-          "r": 0.6000000238418579,
-          "g": 0.6200000047683716,
-          "b": 0.6600000262260437,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": -0.5591999888420105,
-          "y": 0.05079999938607216,
-          "z": 0.0
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.7071067690849304,
-          "z": 0.0,
-          "w": 0.7071067690849304
-        },
-        "playScale": {
-          "x": 0.3211,
-          "y": 0.2906,
-          "z": 0.3506
-        },
-        "splinePath": {
-          "radius": 0.0,
-          "segments": 0,
-          "metallic": 0.0,
-          "smoothness": 0.0,
-          "knots": []
-        }
-      },
-      {
-        "partId": "base_tube_short_2",
-        "startPosition": {
-          "x": -3.5,
-          "y": 0.550000011920929,
-          "z": -0.800000011920929
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.7071067690849304,
-          "z": 0.0,
-          "w": 0.7071067690849304
-        },
-        "startScale": {
-          "x": 0.3211,
-          "y": 0.2906,
-          "z": 0.3506
-        },
-        "color": {
-          "r": 0.6000000238418579,
-          "g": 0.6200000047683716,
-          "b": 0.6600000262260437,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.5591999888420105,
-          "y": 0.05079999938607216,
-          "z": 0.0
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.7071067690849304,
-          "z": 0.0,
-          "w": 0.7071067690849304
-        },
-        "playScale": {
-          "x": 0.3211,
-          "y": 0.2906,
-          "z": 0.3506
-        },
-        "splinePath": {
-          "radius": 0.0,
-          "segments": 0,
-          "metallic": 0.0,
-          "smoothness": 0.0,
-          "knots": []
-        }
-      },
-      {
-        "partId": "vertical_post_1",
-        "startPosition": {
-          "x": 3.5,
-          "y": 0.550000011920929,
-          "z": -3.0
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.2464,
-          "y": 0.2671,
-          "z": 0.2488
-        },
-        "color": {
-          "r": 0.7200000286102295,
-          "g": 0.550000011920929,
-          "b": 0.30000001192092896,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": -0.5591999888420105,
-          "y": 0.3555999994277954,
-          "z": -0.35580000281333923
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 0.2464,
-          "y": 0.2671,
-          "z": 0.2488
-        },
-        "splinePath": {
-          "radius": 0.0,
-          "segments": 0,
-          "metallic": 0.0,
-          "smoothness": 0.0,
-          "knots": []
-        }
-      },
-      {
-        "partId": "vertical_post_2",
-        "startPosition": {
-          "x": 3.5,
-          "y": 0.550000011920929,
-          "z": -2.4000000953674316
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.2464,
-          "y": 0.2671,
-          "z": 0.2488
-        },
-        "color": {
-          "r": 0.7200000286102295,
-          "g": 0.550000011920929,
-          "b": 0.30000001192092896,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.5591999888420105,
-          "y": 0.3555999994277954,
-          "z": -0.35580000281333923
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 0.2464,
-          "y": 0.2671,
-          "z": 0.2488
-        },
-        "splinePath": {
-          "radius": 0.0,
-          "segments": 0,
-          "metallic": 0.0,
-          "smoothness": 0.0,
-          "knots": []
-        }
-      },
-      {
-        "partId": "vertical_post_3",
-        "startPosition": {
-          "x": 3.5,
-          "y": 0.550000011920929,
-          "z": -1.7999999523162842
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.2464,
-          "y": 0.2671,
-          "z": 0.2488
-        },
-        "color": {
-          "r": 0.7200000286102295,
-          "g": 0.550000011920929,
-          "b": 0.30000001192092896,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": -0.5591999888420105,
-          "y": 0.3555999994277954,
-          "z": 0.35580000281333923
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 0.2464,
-          "y": 0.2671,
-          "z": 0.2488
-        },
-        "splinePath": {
-          "radius": 0.0,
-          "segments": 0,
-          "metallic": 0.0,
-          "smoothness": 0.0,
-          "knots": []
-        }
-      },
-      {
-        "partId": "vertical_post_4",
-        "startPosition": {
-          "x": 3.5,
-          "y": 0.550000011920929,
-          "z": -1.2000000476837158
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.2464,
-          "y": 0.2671,
-          "z": 0.2488
-        },
-        "color": {
-          "r": 0.7200000286102295,
-          "g": 0.550000011920929,
-          "b": 0.30000001192092896,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.5591999888420105,
-          "y": 0.3555999994277954,
-          "z": 0.35580000281333923
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 0.2464,
-          "y": 0.2671,
-          "z": 0.2488
-        },
-        "splinePath": {
-          "radius": 0.0,
-          "segments": 0,
-          "metallic": 0.0,
-          "smoothness": 0.0,
-          "knots": []
-        }
-      },
-      {
-        "partId": "top_tube_long_1",
-        "startPosition": {
-          "x": -3.5,
-          "y": 0.550000011920929,
-          "z": 0.5
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.6421,
-          "y": 0.2152,
-          "z": 0.2419
-        },
-        "color": {
-          "r": 0.44999998807907104,
-          "g": 0.5799999833106995,
-          "b": 0.7200000286102295,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.0,
-          "y": 0.6603999733924866,
-          "z": -0.35580000281333923
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 0.6421,
-          "y": 0.2152,
-          "z": 0.2419
-        },
-        "splinePath": {
-          "radius": 0.0,
-          "segments": 0,
-          "metallic": 0.0,
-          "smoothness": 0.0,
-          "knots": []
-        }
-      },
-      {
-        "partId": "top_tube_long_2",
-        "startPosition": {
-          "x": -3.5,
-          "y": 0.550000011920929,
-          "z": 1.0
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.6421,
-          "y": 0.2152,
-          "z": 0.2419
-        },
-        "color": {
-          "r": 0.44999998807907104,
-          "g": 0.5799999833106995,
-          "b": 0.7200000286102295,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.0,
-          "y": 0.6603999733924866,
-          "z": 0.35580000281333923
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 0.6421,
-          "y": 0.2152,
-          "z": 0.2419
-        },
-        "splinePath": {
-          "radius": 0.0,
-          "segments": 0,
-          "metallic": 0.0,
-          "smoothness": 0.0,
-          "knots": []
-        }
-      },
-      {
-        "partId": "top_tube_short_1",
-        "startPosition": {
-          "x": -3.5,
-          "y": 0.550000011920929,
-          "z": 2.0
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.7071067690849304,
-          "z": 0.0,
-          "w": 0.7071067690849304
-        },
-        "startScale": {
-          "x": 0.3211,
-          "y": 0.2906,
-          "z": 0.3506
-        },
-        "color": {
-          "r": 0.5,
-          "g": 0.6200000047683716,
-          "b": 0.7599999904632568,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": -0.5591999888420105,
-          "y": 0.6603999733924866,
-          "z": 0.0
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.7071067690849304,
-          "z": 0.0,
-          "w": 0.7071067690849304
-        },
-        "playScale": {
-          "x": 0.3211,
-          "y": 0.2906,
-          "z": 0.3506
-        },
-        "splinePath": {
-          "radius": 0.0,
-          "segments": 0,
-          "metallic": 0.0,
-          "smoothness": 0.0,
-          "knots": []
-        }
-      },
-      {
-        "partId": "top_tube_short_2",
-        "startPosition": {
-          "x": -3.5,
-          "y": 0.550000011920929,
-          "z": 3.200000047683716
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.7071067690849304,
-          "z": 0.0,
-          "w": 0.7071067690849304
-        },
-        "startScale": {
-          "x": 0.3211,
-          "y": 0.2906,
-          "z": 0.3506
-        },
-        "color": {
-          "r": 0.5,
-          "g": 0.6200000047683716,
-          "b": 0.7599999904632568,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.5591999888420105,
-          "y": 0.6603999733924866,
-          "z": 0.0
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.7071067690849304,
-          "z": 0.0,
-          "w": 0.7071067690849304
-        },
-        "playScale": {
-          "x": 0.3211,
-          "y": 0.2906,
-          "z": 0.3506
-        },
-        "splinePath": {
-          "radius": 0.0,
-          "segments": 0,
-          "metallic": 0.0,
-          "smoothness": 0.0,
-          "knots": []
-        }
-      },
-      {
-        "partId": "engine_mount_plate",
-        "startPosition": {
-          "x": 5.0,
-          "y": 0.550000011920929,
-          "z": -3.5
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.1579,
-          "y": 0.0437,
-          "z": 0.158
-        },
-        "color": {
-          "r": 0.5,
-          "g": 0.5199999809265137,
-          "b": 0.550000011920929,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.0,
-          "y": 0.7142000198364258,
-          "z": 0.0
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 0.1579,
-          "y": 0.0437,
-          "z": 0.158
-        },
-        "splinePath": {
-          "radius": 0.0,
-          "segments": 0,
-          "metallic": 0.0,
-          "smoothness": 0.0,
-          "knots": []
-        }
-      },
-      {
-        "partId": "engine",
-        "startPosition": {
-          "x": 5.0,
-          "y": 0.550000011920929,
-          "z": -2.0
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.2386,
-          "y": 0.2386,
-          "z": 0.2386
-        },
-        "color": {
-          "r": 0.3499999940395355,
-          "g": 0.3799999952316284,
-          "b": 0.41999998688697815,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.0,
-          "y": 0.889,
-          "z": 0.0
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 0.2386,
-          "y": 0.2386,
-          "z": 0.2386
-        },
-        "splinePath": {
-          "radius": 0.0,
-          "segments": 0,
-          "metallic": 0.0,
-          "smoothness": 0.0,
-          "knots": []
-        }
-      },
-      {
-        "partId": "pump_coupling",
-        "startPosition": {
-          "x": 5.0,
-          "y": 0.550000011920929,
-          "z": -0.800000011920929
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.0527,
-          "y": 0.0527,
-          "z": 0.0527
-        },
-        "color": {
-          "r": 0.6499999761581421,
-          "g": 0.6000000238418579,
-          "b": 0.44999998807907104,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": -0.20000000298023224,
-          "y": 0.2791000008583069,
-          "z": 0.0
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 0.0527,
-          "y": 0.0527,
-          "z": 0.0527
-        },
-        "splinePath": {
-          "radius": 0.0,
-          "segments": 0,
-          "metallic": 0.0,
-          "smoothness": 0.0,
-          "knots": []
-        }
-      },
-      {
-        "partId": "hydraulic_pump",
-        "startPosition": {
-          "x": 5.0,
-          "y": 0.550000011920929,
-          "z": 0.0
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.1051,
-          "y": 0.1051,
-          "z": 0.1051
-        },
-        "color": {
-          "r": 0.30000001192092896,
-          "g": 0.3199999928474426,
-          "b": 0.3799999952316284,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": -0.20000000298023224,
-          "y": 0.17159999907016754,
-          "z": 0.0
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 0.1051,
-          "y": 0.1051,
-          "z": 0.1051
-        },
-        "splinePath": {
-          "radius": 0.0,
-          "segments": 0,
-          "metallic": 0.0,
-          "smoothness": 0.0,
-          "knots": []
-        }
-      },
-      {
-        "partId": "reservoir",
-        "startPosition": {
-          "x": -5.5,
-          "y": 0.550000011920929,
-          "z": -3.0
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.1578,
-          "y": 0.1578,
-          "z": 0.1578
-        },
-        "color": {
-          "r": 0.25,
-          "g": 0.30000001192092896,
-          "b": 0.44999998807907104,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.20000000298023224,
-          "y": 0.2515999972820282,
-          "z": 0.0
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 0.1578,
-          "y": 0.1578,
-          "z": 0.1578
-        },
-        "splinePath": {
-          "radius": 0.0,
-          "segments": 0,
-          "metallic": 0.0,
-          "smoothness": 0.0,
-          "knots": []
-        }
-      },
-      {
-        "partId": "pressure_hose",
-        "startPosition": {
-          "x": -5.5,
-          "y": 0.550000011920929,
-          "z": -1.5
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.02500000037252903,
-          "y": 0.02500000037252903,
-          "z": 0.5
-        },
-        "color": {
-          "r": 0.6499999761581421,
-          "g": 0.6499999761581421,
-          "b": 0.6800000071525574,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "splinePath": {
-          "radius": 0.009499999694526196,
-          "segments": 8,
-          "metallic": 0.699999988079071,
-          "smoothness": 0.44999998807907104,
-          "knots": [
-            {
-              "x": -0.3499999940395355,
-              "y": 0.23999999463558197,
-              "z": 0.05999999865889549
+        {
+            "partId": "base_tube_long_1",
+            "startPosition": {
+                "x": -3.5,
+                "y": 0.55,
+                "z": -3.5
             },
-            {
-              "x": -0.41999998688697815,
-              "y": 0.1599999964237213,
-              "z": 0.15000000596046448
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
             },
-            {
-              "x": -0.4000000059604645,
-              "y": 0.12999999523162842,
-              "z": 0.30000001192092896
+            "startScale": {
+                "x": 0.6421,
+                "y": 0.2152,
+                "z": 0.2419
             },
-            {
-              "x": -0.10000000149011612,
-              "y": 0.12999999523162842,
-              "z": 0.33000001311302185
+            "color": {
+                "r": 0.55,
+                "g": 0.58,
+                "b": 0.62,
+                "a": 1.0
             },
-            {
-              "x": 0.25,
-              "y": 0.15000000596046448,
-              "z": 0.33000001311302185
+            "playPosition": {
+                "x": 0.0,
+                "y": 0.0508,
+                "z": -0.3558
             },
-            {
-              "x": 0.44999998807907104,
-              "y": 0.20000000298023224,
-              "z": 0.30000001192092896
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 0.6421,
+                "y": 0.2152,
+                "z": 0.2419
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
             }
-          ]
-        }
-      },
-      {
-        "partId": "return_hose",
-        "startPosition": {
-          "x": -5.5,
-          "y": 0.550000011920929,
-          "z": -0.5
         },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.03200000151991844,
-          "y": 0.03200000151991844,
-          "z": 0.4000000059604645
-        },
-        "color": {
-          "r": 0.11999999731779099,
-          "g": 0.11999999731779099,
-          "b": 0.11999999731779099,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "splinePath": {
-          "radius": 0.013000000268220901,
-          "segments": 8,
-          "metallic": 0.0,
-          "smoothness": 0.20000000298023224,
-          "knots": [
-            {
-              "x": 0.44999998807907104,
-              "y": 0.23999999463558197,
-              "z": 0.2800000011920929
+        {
+            "partId": "base_tube_long_2",
+            "startPosition": {
+                "x": -3.5,
+                "y": 0.55,
+                "z": -3.0
             },
-            {
-              "x": 0.5,
-              "y": 0.1599999964237213,
-              "z": 0.20000000298023224
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
             },
-            {
-              "x": 0.5199999809265137,
-              "y": 0.12999999523162842,
-              "z": 0.05000000074505806
+            "startScale": {
+                "x": 0.6421,
+                "y": 0.2152,
+                "z": 0.2419
             },
-            {
-              "x": 0.5,
-              "y": 0.15000000596046448,
-              "z": -0.05000000074505806
+            "color": {
+                "r": 0.55,
+                "g": 0.58,
+                "b": 0.62,
+                "a": 1.0
             },
-            {
-              "x": 0.44999998807907104,
-              "y": 0.2199999988079071,
-              "z": 0.0
+            "playPosition": {
+                "x": 0.0,
+                "y": 0.0508,
+                "z": 0.3558
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 0.6421,
+                "y": 0.2152,
+                "z": 0.2419
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
             }
-          ]
-        }
-      },
-      {
-        "partId": "oil_cooler",
-        "startPosition": {
-          "x": -5.5,
-          "y": 0.550000011920929,
-          "z": 0.800000011920929
         },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.1315,
-          "y": 0.1315,
-          "z": 0.1315
-        },
-        "color": {
-          "r": 0.6000000238418579,
-          "g": 0.6200000047683716,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.0,
-          "y": 0.2515999972820282,
-          "z": -0.35580000281333923
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 0.1315,
-          "y": 0.1315,
-          "z": 0.1315
-        },
-        "splinePath": {
-          "radius": 0.0,
-          "segments": 0,
-          "metallic": 0.0,
-          "smoothness": 0.0,
-          "knots": []
-        }
-      },
-      {
-        "partId": "fuel_tank",
-        "startPosition": {
-          "x": -4.0,
-          "y": 0.550000011920929,
-          "z": 1.5
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.1586,
-          "y": 0.1586,
-          "z": 0.1586
-        },
-        "color": {
-          "r": 0.8500000238418579,
-          "g": 0.6000000238418579,
-          "b": 0.15000000596046448,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": -0.25,
-          "y": 0.22660000622272491,
-          "z": 0.05000000074505806
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 0.1586,
-          "y": 0.1586,
-          "z": 0.1586
-        },
-        "splinePath": {
-          "radius": 0.0,
-          "segments": 0,
-          "metallic": 0.0,
-          "smoothness": 0.0,
-          "knots": []
-        }
-      },
-      {
-        "partId": "fuel_line",
-        "startPosition": {
-          "x": -4.0,
-          "y": 0.550000011920929,
-          "z": 2.0
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.012000000104308128,
-          "y": 0.012000000104308128,
-          "z": 0.3499999940395355
-        },
-        "color": {
-          "r": 0.3499999940395355,
-          "g": 0.25,
-          "b": 0.10000000149011612,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "splinePath": {
-          "radius": 0.004999999888241291,
-          "segments": 8,
-          "metallic": 0.0,
-          "smoothness": 0.25,
-          "knots": [
-            {
-              "x": -0.5,
-              "y": 0.17000000178813934,
-              "z": 0.10000000149011612
+        {
+            "partId": "base_tube_short_1",
+            "startPosition": {
+                "x": -3.5,
+                "y": 0.55,
+                "z": -2.0
             },
-            {
-              "x": -0.5,
-              "y": 0.15000000596046448,
-              "z": 0.05000000074505806
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
             },
-            {
-              "x": -0.5,
-              "y": 0.2199999988079071,
-              "z": 0.0
+            "startScale": {
+                "x": 0.3211,
+                "y": 0.2906,
+                "z": 0.3506
             },
-            {
-              "x": -0.47999998927116394,
-              "y": 0.3499999940395355,
-              "z": -0.05000000074505806
+            "color": {
+                "r": 0.6,
+                "g": 0.62,
+                "b": 0.66,
+                "a": 1.0
             },
-            {
-              "x": -0.30000001192092896,
-              "y": 0.550000011920929,
-              "z": -0.029999999329447746
+            "playPosition": {
+                "x": -0.5592,
+                "y": 0.0508,
+                "z": 0.0
             },
-            {
-              "x": -0.10000000149011612,
-              "y": 0.7200000286102295,
-              "z": 0.07999999821186066
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "playScale": {
+                "x": 0.3211,
+                "y": 0.2906,
+                "z": 0.3506
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
             }
-          ]
-        }
-      },
-      {
-        "partId": "fuel_shutoff_valve",
-        "startPosition": {
-          "x": -4.0,
-          "y": 0.550000011920929,
-          "z": 2.5
         },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.0211,
-          "y": 0.0211,
-          "z": 0.0211
-        },
-        "color": {
-          "r": 0.8500000238418579,
-          "g": 0.6000000238418579,
-          "b": 0.15000000596046448,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": -0.15000000596046448,
-          "y": 0.11659999936819077,
-          "z": 0.05000000074505806
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 0.0211,
-          "y": 0.0211,
-          "z": 0.0211
-        },
-        "splinePath": {
-          "radius": 0.0,
-          "segments": 0,
-          "metallic": 0.0,
-          "smoothness": 0.0,
-          "knots": []
-        }
-      },
-      {
-        "partId": "battery",
-        "startPosition": {
-          "x": 4.0,
-          "y": 0.550000011920929,
-          "z": 1.5
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.1105,
-          "y": 0.1105,
-          "z": 0.1105
-        },
-        "color": {
-          "r": 0.25,
-          "g": 0.5,
-          "b": 0.8500000238418579,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.30000001192092896,
-          "y": 0.20010000467300415,
-          "z": -0.11999999731779099
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 0.1105,
-          "y": 0.1105,
-          "z": 0.1105
-        },
-        "splinePath": {
-          "radius": 0.0,
-          "segments": 0,
-          "metallic": 0.0,
-          "smoothness": 0.0,
-          "knots": []
-        }
-      },
-      {
-        "partId": "battery_cables",
-        "startPosition": {
-          "x": 4.0,
-          "y": 0.550000011920929,
-          "z": 2.0
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.014999999664723873,
-          "y": 0.014999999664723873,
-          "z": 0.4000000059604645
-        },
-        "color": {
-          "r": 0.44999998807907104,
-          "g": 0.07999999821186066,
-          "b": 0.07999999821186066,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "splinePath": {
-          "radius": 0.006000000052154064,
-          "segments": 8,
-          "metallic": 0.0,
-          "smoothness": 0.30000001192092896,
-          "knots": [
-            {
-              "x": 0.4000000059604645,
-              "y": 0.2800000011920929,
-              "z": -0.20000000298023224
+        {
+            "partId": "base_tube_short_2",
+            "startPosition": {
+                "x": -3.5,
+                "y": 0.55,
+                "z": -0.8
             },
-            {
-              "x": 0.3799999952316284,
-              "y": 0.14000000059604645,
-              "z": -0.18000000715255737
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
             },
-            {
-              "x": 0.20000000298023224,
-              "y": 0.11999999731779099,
-              "z": -0.10000000149011612
+            "startScale": {
+                "x": 0.3211,
+                "y": 0.2906,
+                "z": 0.3506
             },
-            {
-              "x": 0.0,
-              "y": 0.11999999731779099,
-              "z": -0.05000000074505806
+            "color": {
+                "r": 0.6,
+                "g": 0.62,
+                "b": 0.66,
+                "a": 1.0
             },
-            {
-              "x": -0.10000000149011612,
-              "y": 0.3499999940395355,
-              "z": 0.0
+            "playPosition": {
+                "x": 0.5592,
+                "y": 0.0508,
+                "z": 0.0
             },
-            {
-              "x": -0.07999999821186066,
-              "y": 0.6499999761581421,
-              "z": -0.05000000074505806
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
             },
-            {
-              "x": -0.05000000074505806,
-              "y": 0.7200000286102295,
-              "z": -0.10000000149011612
+            "playScale": {
+                "x": 0.3211,
+                "y": 0.2906,
+                "z": 0.3506
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
             }
-          ]
-        }
-      },
-      {
-        "partId": "key_switch",
-        "startPosition": {
-          "x": 4.0,
-          "y": 0.550000011920929,
-          "z": 2.5
         },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.0263,
-          "y": 0.0263,
-          "z": 0.0263
-        },
-        "color": {
-          "r": 0.25,
-          "g": 0.5,
-          "b": 0.8500000238418579,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.15000000596046448,
-          "y": 0.2515999972820282,
-          "z": -0.35580000281333923
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 0.0263,
-          "y": 0.0263,
-          "z": 0.0263
-        },
-        "splinePath": {
-          "radius": 0.0,
-          "segments": 0,
-          "metallic": 0.0,
-          "smoothness": 0.0,
-          "knots": []
-        }
-      },
-      {
-        "partId": "choke_cable",
-        "startPosition": {
-          "x": 4.0,
-          "y": 0.550000011920929,
-          "z": 3.0
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.00800000037997961,
-          "y": 0.00800000037997961,
-          "z": 0.5
-        },
-        "color": {
-          "r": 0.15000000596046448,
-          "g": 0.15000000596046448,
-          "b": 0.15000000596046448,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "splinePath": {
-          "radius": 0.004000000189989805,
-          "segments": 6,
-          "metallic": 0.0,
-          "smoothness": 0.30000001192092896,
-          "knots": [
-            {
-              "x": -0.05000000074505806,
-              "y": 0.20000000298023224,
-              "z": -0.3100000023841858
+        {
+            "partId": "vertical_post_1",
+            "startPosition": {
+                "x": 3.5,
+                "y": 0.55,
+                "z": -3.0
             },
-            {
-              "x": -0.05000000074505806,
-              "y": 0.25,
-              "z": -0.27000001072883606
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
             },
-            {
-              "x": -0.07999999821186066,
-              "y": 0.41999998688697815,
-              "z": -0.15000000596046448
+            "startScale": {
+                "x": 0.2464,
+                "y": 0.2671,
+                "z": 0.2488
             },
-            {
-              "x": -0.10000000149011612,
-              "y": 0.6000000238418579,
-              "z": -0.05000000074505806
+            "color": {
+                "r": 0.72,
+                "g": 0.55,
+                "b": 0.3,
+                "a": 1.0
             },
-            {
-              "x": -0.11999999731779099,
-              "y": 0.7200000286102295,
-              "z": 0.07999999821186066
+            "playPosition": {
+                "x": -0.5592,
+                "y": 0.3556,
+                "z": -0.3558
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 0.2464,
+                "y": 0.2671,
+                "z": 0.2488
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
             }
-          ]
-        }
-      },
-      {
-        "partId": "throttle_cable",
-        "startPosition": {
-          "x": 4.0,
-          "y": 0.550000011920929,
-          "z": 3.5
         },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.00800000037997961,
-          "y": 0.00800000037997961,
-          "z": 0.5
-        },
-        "color": {
-          "r": 0.15000000596046448,
-          "g": 0.15000000596046448,
-          "b": 0.15000000596046448,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "splinePath": {
-          "radius": 0.004000000189989805,
-          "segments": 6,
-          "metallic": 0.0,
-          "smoothness": 0.30000001192092896,
-          "knots": [
-            {
-              "x": 0.05000000074505806,
-              "y": 0.20000000298023224,
-              "z": -0.3100000023841858
+        {
+            "partId": "vertical_post_2",
+            "startPosition": {
+                "x": 3.5,
+                "y": 0.55,
+                "z": -2.4
             },
-            {
-              "x": 0.05000000074505806,
-              "y": 0.25,
-              "z": -0.27000001072883606
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
             },
-            {
-              "x": 0.07999999821186066,
-              "y": 0.41999998688697815,
-              "z": -0.15000000596046448
+            "startScale": {
+                "x": 0.2464,
+                "y": 0.2671,
+                "z": 0.2488
             },
-            {
-              "x": 0.10000000149011612,
-              "y": 0.6000000238418579,
-              "z": -0.05000000074505806
+            "color": {
+                "r": 0.72,
+                "g": 0.55,
+                "b": 0.3,
+                "a": 1.0
             },
-            {
-              "x": 0.11999999731779099,
-              "y": 0.7200000286102295,
-              "z": 0.07999999821186066
+            "playPosition": {
+                "x": 0.5592,
+                "y": 0.3556,
+                "z": -0.3558
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 0.2464,
+                "y": 0.2671,
+                "z": 0.2488
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
             }
-          ]
+        },
+        {
+            "partId": "vertical_post_3",
+            "startPosition": {
+                "x": 3.5,
+                "y": 0.55,
+                "z": -1.8
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.2464,
+                "y": 0.2671,
+                "z": 0.2488
+            },
+            "color": {
+                "r": 0.72,
+                "g": 0.55,
+                "b": 0.3,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": -0.5592,
+                "y": 0.3556,
+                "z": 0.3558
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 0.2464,
+                "y": 0.2671,
+                "z": 0.2488
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
+            }
+        },
+        {
+            "partId": "vertical_post_4",
+            "startPosition": {
+                "x": 3.5,
+                "y": 0.55,
+                "z": -1.2
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.2464,
+                "y": 0.2671,
+                "z": 0.2488
+            },
+            "color": {
+                "r": 0.72,
+                "g": 0.55,
+                "b": 0.3,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.5592,
+                "y": 0.3556,
+                "z": 0.3558
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 0.2464,
+                "y": 0.2671,
+                "z": 0.2488
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
+            }
+        },
+        {
+            "partId": "top_tube_long_1",
+            "startPosition": {
+                "x": -3.5,
+                "y": 0.55,
+                "z": 0.5
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.6421,
+                "y": 0.2152,
+                "z": 0.2419
+            },
+            "color": {
+                "r": 0.45,
+                "g": 0.58,
+                "b": 0.72,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.0,
+                "y": 0.6604,
+                "z": -0.3558
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 0.6421,
+                "y": 0.2152,
+                "z": 0.2419
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
+            }
+        },
+        {
+            "partId": "top_tube_long_2",
+            "startPosition": {
+                "x": -3.5,
+                "y": 0.55,
+                "z": 1.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.6421,
+                "y": 0.2152,
+                "z": 0.2419
+            },
+            "color": {
+                "r": 0.45,
+                "g": 0.58,
+                "b": 0.72,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.0,
+                "y": 0.6604,
+                "z": 0.3558
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 0.6421,
+                "y": 0.2152,
+                "z": 0.2419
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
+            }
+        },
+        {
+            "partId": "top_tube_short_1",
+            "startPosition": {
+                "x": -3.5,
+                "y": 0.55,
+                "z": 2.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "startScale": {
+                "x": 0.3211,
+                "y": 0.2906,
+                "z": 0.3506
+            },
+            "color": {
+                "r": 0.5,
+                "g": 0.62,
+                "b": 0.76,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": -0.5592,
+                "y": 0.6604,
+                "z": 0.0
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "playScale": {
+                "x": 0.3211,
+                "y": 0.2906,
+                "z": 0.3506
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
+            }
+        },
+        {
+            "partId": "top_tube_short_2",
+            "startPosition": {
+                "x": -3.5,
+                "y": 0.55,
+                "z": 3.2
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "startScale": {
+                "x": 0.3211,
+                "y": 0.2906,
+                "z": 0.3506
+            },
+            "color": {
+                "r": 0.5,
+                "g": 0.62,
+                "b": 0.76,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.5592,
+                "y": 0.6604,
+                "z": 0.0
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "playScale": {
+                "x": 0.3211,
+                "y": 0.2906,
+                "z": 0.3506
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
+            }
+        },
+        {
+            "partId": "engine_mount_plate",
+            "startPosition": {
+                "x": 5.0,
+                "y": 0.55,
+                "z": -3.5
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.1579,
+                "y": 0.1579,
+                "z": 0.1579
+            },
+            "color": {
+                "r": 0.5,
+                "g": 0.52,
+                "b": 0.55,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
+            }
+        },
+        {
+            "partId": "engine",
+            "startPosition": {
+                "x": 5.0,
+                "y": 0.55,
+                "z": -2.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.2386,
+                "y": 0.2386,
+                "z": 0.2386
+            },
+            "color": {
+                "r": 0.35,
+                "g": 0.38,
+                "b": 0.42,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
+            }
+        },
+        {
+            "partId": "pump_coupling",
+            "startPosition": {
+                "x": 5.0,
+                "y": 0.55,
+                "z": -0.8
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.0527,
+                "y": 0.0527,
+                "z": 0.0527
+            },
+            "color": {
+                "r": 0.65,
+                "g": 0.6,
+                "b": 0.45,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
+            }
+        },
+        {
+            "partId": "hydraulic_pump",
+            "startPosition": {
+                "x": 5.0,
+                "y": 0.55,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.1051,
+                "y": 0.1051,
+                "z": 0.1051
+            },
+            "color": {
+                "r": 0.3,
+                "g": 0.32,
+                "b": 0.38,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
+            }
+        },
+        {
+            "partId": "reservoir",
+            "startPosition": {
+                "x": -5.5,
+                "y": 0.55,
+                "z": -3.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.1578,
+                "y": 0.1578,
+                "z": 0.1578
+            },
+            "color": {
+                "r": 0.25,
+                "g": 0.3,
+                "b": 0.45,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
+            }
+        },
+        {
+            "partId": "pressure_hose",
+            "startPosition": {
+                "x": -5.5,
+                "y": 0.55,
+                "z": -1.5
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.025,
+                "y": 0.025,
+                "z": 0.5
+            },
+            "color": {
+                "r": 0.65,
+                "g": 0.65,
+                "b": 0.68,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0095,
+                "segments": 8,
+                "metallic": 0.7,
+                "smoothness": 0.45,
+                "knots": [
+                    {
+                        "x": -0.35,
+                        "y": 0.24,
+                        "z": 0.06
+                    },
+                    {
+                        "x": -0.42,
+                        "y": 0.16,
+                        "z": 0.15
+                    },
+                    {
+                        "x": -0.4,
+                        "y": 0.13,
+                        "z": 0.3
+                    },
+                    {
+                        "x": -0.1,
+                        "y": 0.13,
+                        "z": 0.33
+                    },
+                    {
+                        "x": 0.25,
+                        "y": 0.15,
+                        "z": 0.33
+                    },
+                    {
+                        "x": 0.45,
+                        "y": 0.2,
+                        "z": 0.3
+                    }
+                ]
+            }
+        },
+        {
+            "partId": "return_hose",
+            "startPosition": {
+                "x": -5.5,
+                "y": 0.55,
+                "z": -0.5
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.032,
+                "y": 0.032,
+                "z": 0.4
+            },
+            "color": {
+                "r": 0.12,
+                "g": 0.12,
+                "b": 0.12,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.013,
+                "segments": 8,
+                "metallic": 0.0,
+                "smoothness": 0.2,
+                "knots": [
+                    {
+                        "x": 0.45,
+                        "y": 0.24,
+                        "z": 0.28
+                    },
+                    {
+                        "x": 0.5,
+                        "y": 0.16,
+                        "z": 0.2
+                    },
+                    {
+                        "x": 0.52,
+                        "y": 0.13,
+                        "z": 0.05
+                    },
+                    {
+                        "x": 0.5,
+                        "y": 0.15,
+                        "z": -0.05
+                    },
+                    {
+                        "x": 0.45,
+                        "y": 0.22,
+                        "z": 0.0
+                    }
+                ]
+            }
+        },
+        {
+            "partId": "oil_cooler",
+            "startPosition": {
+                "x": -5.5,
+                "y": 0.55,
+                "z": 0.8
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.1315,
+                "y": 0.1315,
+                "z": 0.1315
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.62,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
+            }
+        },
+        {
+            "partId": "fuel_tank",
+            "startPosition": {
+                "x": -4.0,
+                "y": 0.55,
+                "z": 1.5
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.1586,
+                "y": 0.1586,
+                "z": 0.1586
+            },
+            "color": {
+                "r": 0.85,
+                "g": 0.6,
+                "b": 0.15,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
+            }
+        },
+        {
+            "partId": "fuel_line",
+            "startPosition": {
+                "x": -4.0,
+                "y": 0.55,
+                "z": 2.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.012,
+                "y": 0.012,
+                "z": 0.35
+            },
+            "color": {
+                "r": 0.35,
+                "g": 0.25,
+                "b": 0.1,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.005,
+                "segments": 8,
+                "metallic": 0.0,
+                "smoothness": 0.25,
+                "knots": [
+                    {
+                        "x": -0.5,
+                        "y": 0.17,
+                        "z": 0.1
+                    },
+                    {
+                        "x": -0.5,
+                        "y": 0.15,
+                        "z": 0.05
+                    },
+                    {
+                        "x": -0.5,
+                        "y": 0.22,
+                        "z": 0.0
+                    },
+                    {
+                        "x": -0.48,
+                        "y": 0.35,
+                        "z": -0.05
+                    },
+                    {
+                        "x": -0.3,
+                        "y": 0.55,
+                        "z": -0.03
+                    },
+                    {
+                        "x": -0.1,
+                        "y": 0.72,
+                        "z": 0.08
+                    }
+                ]
+            }
+        },
+        {
+            "partId": "fuel_shutoff_valve",
+            "startPosition": {
+                "x": -4.0,
+                "y": 0.55,
+                "z": 2.5
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.0211,
+                "y": 0.0211,
+                "z": 0.0211
+            },
+            "color": {
+                "r": 0.85,
+                "g": 0.6,
+                "b": 0.15,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
+            }
+        },
+        {
+            "partId": "battery",
+            "startPosition": {
+                "x": 4.0,
+                "y": 0.55,
+                "z": 1.5
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.1105,
+                "y": 0.1105,
+                "z": 0.1105
+            },
+            "color": {
+                "r": 0.25,
+                "g": 0.5,
+                "b": 0.85,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
+            }
+        },
+        {
+            "partId": "battery_cables",
+            "startPosition": {
+                "x": 4.0,
+                "y": 0.55,
+                "z": 2.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.015,
+                "y": 0.015,
+                "z": 0.4
+            },
+            "color": {
+                "r": 0.45,
+                "g": 0.08,
+                "b": 0.08,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.006,
+                "segments": 8,
+                "metallic": 0.0,
+                "smoothness": 0.3,
+                "knots": [
+                    {
+                        "x": 0.4,
+                        "y": 0.28,
+                        "z": -0.2
+                    },
+                    {
+                        "x": 0.38,
+                        "y": 0.14,
+                        "z": -0.18
+                    },
+                    {
+                        "x": 0.2,
+                        "y": 0.12,
+                        "z": -0.1
+                    },
+                    {
+                        "x": 0.0,
+                        "y": 0.12,
+                        "z": -0.05
+                    },
+                    {
+                        "x": -0.1,
+                        "y": 0.35,
+                        "z": 0.0
+                    },
+                    {
+                        "x": -0.08,
+                        "y": 0.65,
+                        "z": -0.05
+                    },
+                    {
+                        "x": -0.05,
+                        "y": 0.72,
+                        "z": -0.1
+                    }
+                ]
+            }
+        },
+        {
+            "partId": "key_switch",
+            "startPosition": {
+                "x": 4.0,
+                "y": 0.55,
+                "z": 2.5
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.0263,
+                "y": 0.0263,
+                "z": 0.0263
+            },
+            "color": {
+                "r": 0.25,
+                "g": 0.5,
+                "b": 0.85,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
+            }
+        },
+        {
+            "partId": "choke_cable",
+            "startPosition": {
+                "x": 4.0,
+                "y": 0.55,
+                "z": 3.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.008,
+                "y": 0.008,
+                "z": 0.5
+            },
+            "color": {
+                "r": 0.15,
+                "g": 0.15,
+                "b": 0.15,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.004,
+                "segments": 6,
+                "metallic": 0.0,
+                "smoothness": 0.3,
+                "knots": [
+                    {
+                        "x": -0.05,
+                        "y": 0.2,
+                        "z": -0.31
+                    },
+                    {
+                        "x": -0.05,
+                        "y": 0.25,
+                        "z": -0.27
+                    },
+                    {
+                        "x": -0.08,
+                        "y": 0.42,
+                        "z": -0.15
+                    },
+                    {
+                        "x": -0.1,
+                        "y": 0.6,
+                        "z": -0.05
+                    },
+                    {
+                        "x": -0.12,
+                        "y": 0.72,
+                        "z": 0.08
+                    }
+                ]
+            }
+        },
+        {
+            "partId": "throttle_cable",
+            "startPosition": {
+                "x": 4.0,
+                "y": 0.55,
+                "z": 3.5
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.008,
+                "y": 0.008,
+                "z": 0.5
+            },
+            "color": {
+                "r": 0.15,
+                "g": 0.15,
+                "b": 0.15,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.004,
+                "segments": 6,
+                "metallic": 0.0,
+                "smoothness": 0.3,
+                "knots": [
+                    {
+                        "x": 0.05,
+                        "y": 0.2,
+                        "z": -0.31
+                    },
+                    {
+                        "x": 0.05,
+                        "y": 0.25,
+                        "z": -0.27
+                    },
+                    {
+                        "x": 0.08,
+                        "y": 0.42,
+                        "z": -0.15
+                    },
+                    {
+                        "x": 0.1,
+                        "y": 0.6,
+                        "z": -0.05
+                    },
+                    {
+                        "x": 0.12,
+                        "y": 0.72,
+                        "z": 0.08
+                    }
+                ]
+            }
+        },
+        {
+            "partId": "pressure_gauge_inline",
+            "startPosition": {
+                "x": 4.5,
+                "y": 0.55,
+                "z": 1.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 0.0316,
+                "y": 0.0316,
+                "z": 0.0316
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.75,
+                "b": 0.4,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": -0.2,
+                "y": 0.2516,
+                "z": -0.3558
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 0.0316,
+                "y": 0.0316,
+                "z": 0.0316
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
+            }
         }
-      },
-      {
-        "partId": "pressure_gauge_inline",
-        "startPosition": {
-          "x": 4.5,
-          "y": 0.550000011920929,
-          "z": 1.0
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 0.0316,
-          "y": 0.0316,
-          "z": 0.0316
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.75,
-          "b": 0.4000000059604645,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": -0.20000000298023224,
-          "y": 0.2515999972820282,
-          "z": -0.35580000281333923
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 0.0316,
-          "y": 0.0316,
-          "z": 0.0316
-        },
-        "splinePath": {
-          "radius": 0.0,
-          "segments": 0,
-          "metallic": 0.0,
-          "smoothness": 0.0,
-          "knots": []
-        }
-      }
     ],
     "targetPlacements": [
-      {
-        "targetId": "target_base_long_1_measure",
-        "position": {
-          "x": -2.5,
-          "y": 0.75,
-          "z": -1.5
+        {
+            "targetId": "target_base_long_1_measure",
+            "position": {
+                "x": -2.5,
+                "y": 0.75,
+                "z": -1.5
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.15,
+                "y": 0.15,
+                "z": 0.15
+            },
+            "color": {
+                "r": 0.9,
+                "g": 0.75,
+                "b": 0.2,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
         },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+        {
+            "targetId": "target_base_long_1_measure_end",
+            "position": {
+                "x": -1.8904,
+                "y": 0.75,
+                "z": -1.5
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.15,
+                "y": 0.15,
+                "z": 0.15
+            },
+            "color": {
+                "r": 0.9,
+                "g": 0.75,
+                "b": 0.2,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
         },
-        "scale": {
-          "x": 0.15,
-          "y": 0.15,
-          "z": 0.15
+        {
+            "targetId": "target_base_long_1_cut",
+            "position": {
+                "x": -2.2,
+                "y": 0.75,
+                "z": -1.5
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.3,
+                "y": 0.3,
+                "z": 0.3
+            },
+            "color": {
+                "r": 0.85,
+                "g": 0.3,
+                "b": 0.2,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
         },
-        "color": {
-          "r": 0.8999999761581421,
-          "g": 0.75,
-          "b": 0.20000000298023224,
-          "a": 1.0
+        {
+            "targetId": "target_base_long_2_cut",
+            "position": {
+                "x": -2.2,
+                "y": 0.75,
+                "z": -1.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.3,
+                "y": 0.3,
+                "z": 0.3
+            },
+            "color": {
+                "r": 0.85,
+                "g": 0.3,
+                "b": 0.2,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_base_short_1_measure",
+            "position": {
+                "x": -2.5,
+                "y": 0.75,
+                "z": -0.5
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.15,
+                "y": 0.15,
+                "z": 0.15
+            },
+            "color": {
+                "r": 0.9,
+                "g": 0.75,
+                "b": 0.2,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_base_short_1_measure_end",
+            "position": {
+                "x": -2.5,
+                "y": 0.75,
+                "z": -0.9064
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.15,
+                "y": 0.15,
+                "z": 0.15
+            },
+            "color": {
+                "r": 0.9,
+                "g": 0.75,
+                "b": 0.2,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_base_short_1_cut",
+            "position": {
+                "x": -2.2,
+                "y": 0.75,
+                "z": -0.5
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.3,
+                "y": 0.3,
+                "z": 0.3
+            },
+            "color": {
+                "r": 0.85,
+                "g": 0.3,
+                "b": 0.2,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_base_short_2_cut",
+            "position": {
+                "x": -2.2,
+                "y": 0.75,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.3,
+                "y": 0.3,
+                "z": 0.3
+            },
+            "color": {
+                "r": 0.85,
+                "g": 0.3,
+                "b": 0.2,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_base_long_1_slot",
+            "position": {
+                "x": 0.0,
+                "y": 0.0508,
+                "z": -0.3558
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.6421,
+                "y": 0.2186,
+                "z": 0.2458
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_base_long_2_slot",
+            "position": {
+                "x": 0.0,
+                "y": 0.0508,
+                "z": 0.3558
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.6421,
+                "y": 0.2186,
+                "z": 0.2458
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_base_short_1_slot",
+            "position": {
+                "x": -0.5592,
+                "y": 0.0508,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "scale": {
+                "x": 0.3211,
+                "y": 0.2952,
+                "z": 0.3562
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_base_short_2_slot",
+            "position": {
+                "x": 0.5592,
+                "y": 0.0508,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "scale": {
+                "x": 0.3211,
+                "y": 0.2952,
+                "z": 0.3562
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_tack_corner_fl",
+            "position": {
+                "x": -0.7,
+                "y": 0.15,
+                "z": -0.6
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.2,
+                "y": 0.2,
+                "z": 0.2
+            },
+            "color": {
+                "r": 0.95,
+                "g": 0.55,
+                "b": 0.15,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_tack_corner_fr",
+            "position": {
+                "x": 0.7,
+                "y": 0.15,
+                "z": -0.6
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.2,
+                "y": 0.2,
+                "z": 0.2
+            },
+            "color": {
+                "r": 0.95,
+                "g": 0.55,
+                "b": 0.15,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_tack_corner_bl",
+            "position": {
+                "x": -0.7,
+                "y": 0.15,
+                "z": 0.6
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.2,
+                "y": 0.2,
+                "z": 0.2
+            },
+            "color": {
+                "r": 0.95,
+                "g": 0.55,
+                "b": 0.15,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_tack_corner_br",
+            "position": {
+                "x": 0.7,
+                "y": 0.15,
+                "z": 0.6
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.2,
+                "y": 0.2,
+                "z": 0.2
+            },
+            "color": {
+                "r": 0.95,
+                "g": 0.55,
+                "b": 0.15,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_square_check_point",
+            "position": {
+                "x": -0.7,
+                "y": 0.25,
+                "z": -0.6
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.25,
+                "y": 0.25,
+                "z": 0.25
+            },
+            "color": {
+                "r": 0.3,
+                "g": 0.7,
+                "b": 0.9,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_vertical_cut_point",
+            "position": {
+                "x": 3.0,
+                "y": 0.75,
+                "z": -1.5
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.3,
+                "y": 0.3,
+                "z": 0.3
+            },
+            "color": {
+                "r": 0.85,
+                "g": 0.3,
+                "b": 0.2,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_post_fl",
+            "position": {
+                "x": -0.5592,
+                "y": 0.3556,
+                "z": -0.3558
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.2464,
+                "y": 0.2671,
+                "z": 0.2488
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_post_fr",
+            "position": {
+                "x": 0.5592,
+                "y": 0.3556,
+                "z": -0.3558
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.2464,
+                "y": 0.2671,
+                "z": 0.2488
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_post_bl",
+            "position": {
+                "x": -0.5592,
+                "y": 0.3556,
+                "z": 0.3558
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.2464,
+                "y": 0.2671,
+                "z": 0.2488
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_post_br",
+            "position": {
+                "x": 0.5592,
+                "y": 0.3556,
+                "z": 0.3558
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.2464,
+                "y": 0.2671,
+                "z": 0.2488
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_top_long_1_slot",
+            "position": {
+                "x": 0.0,
+                "y": 0.6604,
+                "z": -0.3558
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.6421,
+                "y": 0.2186,
+                "z": 0.2458
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_top_long_2_slot",
+            "position": {
+                "x": 0.0,
+                "y": 0.6604,
+                "z": 0.3558
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.6421,
+                "y": 0.2186,
+                "z": 0.2458
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_top_short_1_slot",
+            "position": {
+                "x": -0.5592,
+                "y": 0.6604,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "scale": {
+                "x": 0.3211,
+                "y": 0.2952,
+                "z": 0.3562
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_top_short_2_slot",
+            "position": {
+                "x": 0.5592,
+                "y": 0.6604,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "scale": {
+                "x": 0.3211,
+                "y": 0.2952,
+                "z": 0.3562
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_top_weld_fl",
+            "position": {
+                "x": -0.7,
+                "y": 1.4,
+                "z": -0.6
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.2,
+                "y": 0.2,
+                "z": 0.2
+            },
+            "color": {
+                "r": 0.95,
+                "g": 0.55,
+                "b": 0.15,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_top_weld_fr",
+            "position": {
+                "x": 0.7,
+                "y": 1.4,
+                "z": -0.6
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.2,
+                "y": 0.2,
+                "z": 0.2
+            },
+            "color": {
+                "r": 0.95,
+                "g": 0.55,
+                "b": 0.15,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_top_weld_bl",
+            "position": {
+                "x": -0.7,
+                "y": 1.4,
+                "z": 0.6
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.2,
+                "y": 0.2,
+                "z": 0.2
+            },
+            "color": {
+                "r": 0.95,
+                "g": 0.55,
+                "b": 0.15,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_top_weld_br",
+            "position": {
+                "x": 0.7,
+                "y": 1.4,
+                "z": 0.6
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.2,
+                "y": 0.2,
+                "z": 0.2
+            },
+            "color": {
+                "r": 0.95,
+                "g": 0.55,
+                "b": 0.15,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_final_check_point",
+            "position": {
+                "x": 0.0,
+                "y": 0.7,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.35,
+                "y": 0.35,
+                "z": 0.35
+            },
+            "color": {
+                "r": 0.3,
+                "g": 0.7,
+                "b": 0.9,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_mount_plate_cut",
+            "position": {
+                "x": -2.5,
+                "y": 0.75,
+                "z": 1.5
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.3,
+                "y": 0.3,
+                "z": 0.3
+            },
+            "color": {
+                "r": 0.85,
+                "g": 0.3,
+                "b": 0.2,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_mount_plate_slot",
+            "position": {
+                "x": 0.0,
+                "y": 0.7142,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.1579,
+                "y": 0.0437,
+                "z": 0.158
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_plate_weld_fl",
+            "position": {
+                "x": -0.65,
+                "y": 1.45,
+                "z": -0.45
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.18,
+                "y": 0.18,
+                "z": 0.18
+            },
+            "color": {
+                "r": 0.95,
+                "g": 0.55,
+                "b": 0.15,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_plate_weld_fr",
+            "position": {
+                "x": 0.65,
+                "y": 1.45,
+                "z": -0.45
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.18,
+                "y": 0.18,
+                "z": 0.18
+            },
+            "color": {
+                "r": 0.95,
+                "g": 0.55,
+                "b": 0.15,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_plate_weld_bl",
+            "position": {
+                "x": -0.65,
+                "y": 1.45,
+                "z": 0.45
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.18,
+                "y": 0.18,
+                "z": 0.18
+            },
+            "color": {
+                "r": 0.95,
+                "g": 0.55,
+                "b": 0.15,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_plate_weld_br",
+            "position": {
+                "x": 0.65,
+                "y": 1.45,
+                "z": 0.45
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.18,
+                "y": 0.18,
+                "z": 0.18
+            },
+            "color": {
+                "r": 0.95,
+                "g": 0.55,
+                "b": 0.15,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_engine_slot",
+            "position": {
+                "x": 0.0,
+                "y": 0.9172,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.3878,
+                "y": 0.2105,
+                "z": 0.2287
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_engine_bolt_point",
+            "position": {
+                "x": 0.15,
+                "y": 1.55,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.25,
+                "y": 0.25,
+                "z": 0.25
+            },
+            "color": {
+                "r": 0.9,
+                "g": 0.75,
+                "b": 0.2,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_coupling_slot",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_pump_slot",
+            "position": {
+                "x": -0.2,
+                "y": 0.1716,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.2335,
+                "y": 0.1202,
+                "z": 0.0631
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_pump_bolt_point",
+            "position": {
+                "x": -0.9,
+                "y": 1.35,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.2,
+                "y": 0.2,
+                "z": 0.2
+            },
+            "color": {
+                "r": 0.9,
+                "g": 0.75,
+                "b": 0.2,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_reservoir_slot",
+            "position": {
+                "x": 0.2,
+                "y": 0.2516,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.3198,
+                "y": 0.1578,
+                "z": 0.1939
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_reservoir_bolt_point",
+            "position": {
+                "x": 0.95,
+                "y": 0.65,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.2,
+                "y": 0.2,
+                "z": 0.2
+            },
+            "color": {
+                "r": 0.9,
+                "g": 0.75,
+                "b": 0.2,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_pressure_hose_slot",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": -0.2,
+                "y": 0.205,
+                "z": -0.06
+            },
+            "portB": {
+                "x": 0.155,
+                "y": 0.26,
+                "z": -0.06
+            }
+        },
+        {
+            "targetId": "target_return_hose_slot",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": -0.04,
+                "y": 0.215,
+                "z": -0.055
+            },
+            "portB": {
+                "x": 0.19,
+                "y": 0.245,
+                "z": -0.055
+            }
+        },
+        {
+            "targetId": "target_cooler_slot",
+            "position": {
+                "x": 0.0,
+                "y": 0.2516,
+                "z": -0.3558
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.1578,
+                "y": 0.2587,
+                "z": 0.0742
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_fitting_check_point",
+            "position": {
+                "x": 0.0,
+                "y": 1.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.35,
+                "y": 0.35,
+                "z": 0.35
+            },
+            "color": {
+                "r": 0.3,
+                "g": 0.7,
+                "b": 0.9,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_fuel_tank_slot",
+            "position": {
+                "x": -0.25,
+                "y": 0.2266,
+                "z": 0.05
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.291,
+                "y": 0.1636,
+                "z": 0.1321
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_fuel_line_slot",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": -0.242,
+                "y": 0.197,
+                "z": 0.09
+            },
+            "portB": {
+                "x": -0.065,
+                "y": 0.18,
+                "z": 0.055
+            }
+        },
+        {
+            "targetId": "target_fuel_shutoff_slot",
+            "position": {
+                "x": -0.15,
+                "y": 0.1166,
+                "z": 0.05
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.0692,
+                "y": 0.0238,
+                "z": 0.0158
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_fuel_check_point",
+            "position": {
+                "x": -0.5,
+                "y": 0.7,
+                "z": 0.2
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.35,
+                "y": 0.35,
+                "z": 0.35
+            },
+            "color": {
+                "r": 0.3,
+                "g": 0.7,
+                "b": 0.9,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_battery_slot",
+            "position": {
+                "x": 0.3,
+                "y": 0.2001,
+                "z": -0.12
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.1094,
+                "y": 0.1174,
+                "z": 0.152
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_battery_cable_slot",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.285,
+                "y": 0.235,
+                "z": -0.1
+            },
+            "portB": {
+                "x": 0.08,
+                "y": 0.76,
+                "z": 0.04
+            }
+        },
+        {
+            "targetId": "target_key_switch_slot",
+            "position": {
+                "x": 0.15,
+                "y": 0.2516,
+                "z": -0.3558
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.0224,
+                "y": 0.0344,
+                "z": 0.0158
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_starter_wire_point",
+            "position": {
+                "x": 0.3,
+                "y": 0.55,
+                "z": 0.15
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.15,
+                "y": 0.15,
+                "z": 0.15
+            },
+            "color": {
+                "r": 0.9,
+                "g": 0.75,
+                "b": 0.2,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_choke_cable_slot",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.05,
+                "y": 0.3,
+                "z": -0.35
+            },
+            "portB": {
+                "x": 0.1,
+                "y": 0.88,
+                "z": -0.05
+            }
+        },
+        {
+            "targetId": "target_throttle_cable_slot",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.05,
+                "y": 0.35,
+                "z": -0.35
+            },
+            "portB": {
+                "x": 0.1,
+                "y": 0.9,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_electrical_test_point",
+            "position": {
+                "x": 0.3,
+                "y": 0.5,
+                "z": -0.3
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.35,
+                "y": 0.35,
+                "z": 0.35
+            },
+            "color": {
+                "r": 0.3,
+                "g": 0.7,
+                "b": 0.9,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_fill_point",
+            "position": {
+                "x": 0.95,
+                "y": 0.75,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.25,
+                "y": 0.25,
+                "z": 0.25
+            },
+            "color": {
+                "r": 0.9,
+                "g": 0.75,
+                "b": 0.2,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_pressure_gauge_slot",
+            "position": {
+                "x": -0.2,
+                "y": 0.2516,
+                "z": -0.3558
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.0425,
+                "y": 0.0331,
+                "z": 0.1776
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_start_check_point",
+            "position": {
+                "x": 0.0,
+                "y": 0.8,
+                "z": -1.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.4,
+                "y": 0.4,
+                "z": 0.4
+            },
+            "color": {
+                "r": 0.3,
+                "g": 0.7,
+                "b": 0.9,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_final_signoff_point",
+            "position": {
+                "x": 0.0,
+                "y": 0.8,
+                "z": -1.2
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.5,
+                "y": 0.5,
+                "z": 0.5
+            },
+            "color": {
+                "r": 0.3,
+                "g": 0.7,
+                "b": 0.9,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
         }
-      },
-      {
-        "targetId": "target_base_long_1_measure_end",
-        "position": {
-          "x": -1.8904,
-          "y": 0.75,
-          "z": -1.5
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.15,
-          "y": 0.15,
-          "z": 0.15
-        },
-        "color": {
-          "r": 0.8999999761581421,
-          "g": 0.75,
-          "b": 0.20000000298023224,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_base_long_1_cut",
-        "position": {
-          "x": -2.200000047683716,
-          "y": 0.75,
-          "z": -1.5
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.30000001192092896,
-          "y": 0.30000001192092896,
-          "z": 0.30000001192092896
-        },
-        "color": {
-          "r": 0.8500000238418579,
-          "g": 0.30000001192092896,
-          "b": 0.20000000298023224,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_base_long_2_cut",
-        "position": {
-          "x": -2.200000047683716,
-          "y": 0.75,
-          "z": -1.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.30000001192092896,
-          "y": 0.30000001192092896,
-          "z": 0.30000001192092896
-        },
-        "color": {
-          "r": 0.8500000238418579,
-          "g": 0.30000001192092896,
-          "b": 0.20000000298023224,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_base_short_1_measure",
-        "position": {
-          "x": -2.5,
-          "y": 0.75,
-          "z": -0.5
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.15,
-          "y": 0.15,
-          "z": 0.15
-        },
-        "color": {
-          "r": 0.8999999761581421,
-          "g": 0.75,
-          "b": 0.20000000298023224,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_base_short_1_measure_end",
-        "position": {
-          "x": -2.5,
-          "y": 0.75,
-          "z": -0.9064
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.15,
-          "y": 0.15,
-          "z": 0.15
-        },
-        "color": {
-          "r": 0.8999999761581421,
-          "g": 0.75,
-          "b": 0.20000000298023224,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_base_short_1_cut",
-        "position": {
-          "x": -2.200000047683716,
-          "y": 0.75,
-          "z": -0.5
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.30000001192092896,
-          "y": 0.30000001192092896,
-          "z": 0.30000001192092896
-        },
-        "color": {
-          "r": 0.8500000238418579,
-          "g": 0.30000001192092896,
-          "b": 0.20000000298023224,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_base_short_2_cut",
-        "position": {
-          "x": -2.200000047683716,
-          "y": 0.75,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.30000001192092896,
-          "y": 0.30000001192092896,
-          "z": 0.30000001192092896
-        },
-        "color": {
-          "r": 0.8500000238418579,
-          "g": 0.30000001192092896,
-          "b": 0.20000000298023224,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_base_long_1_slot",
-        "position": {
-          "x": 0.0,
-          "y": 0.05079999938607216,
-          "z": -0.35580000281333923
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.6420714855194092,
-          "y": 0.2186356782913208,
-          "z": 0.24582627415657043
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_base_long_2_slot",
-        "position": {
-          "x": 0.0,
-          "y": 0.05079999938607216,
-          "z": 0.35580000281333923
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.6420714855194092,
-          "y": 0.2186356782913208,
-          "z": 0.24582627415657043
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_base_short_1_slot",
-        "position": {
-          "x": -0.5591999888420105,
-          "y": 0.05079999938607216,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.7071067690849304,
-          "z": 0.0,
-          "w": 0.7071067690849304
-        },
-        "scale": {
-          "x": 0.32106953859329224,
-          "y": 0.2951772212982178,
-          "z": 0.35624122619628906
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_base_short_2_slot",
-        "position": {
-          "x": 0.5591999888420105,
-          "y": 0.05079999938607216,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.7071067690849304,
-          "z": 0.0,
-          "w": 0.7071067690849304
-        },
-        "scale": {
-          "x": 0.32106953859329224,
-          "y": 0.2951772212982178,
-          "z": 0.35624122619628906
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_tack_corner_fl",
-        "position": {
-          "x": -0.699999988079071,
-          "y": 0.15000000596046448,
-          "z": -0.6000000238418579
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.20000000298023224,
-          "y": 0.20000000298023224,
-          "z": 0.20000000298023224
-        },
-        "color": {
-          "r": 0.949999988079071,
-          "g": 0.550000011920929,
-          "b": 0.15000000596046448,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_tack_corner_fr",
-        "position": {
-          "x": 0.699999988079071,
-          "y": 0.15000000596046448,
-          "z": -0.6000000238418579
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.20000000298023224,
-          "y": 0.20000000298023224,
-          "z": 0.20000000298023224
-        },
-        "color": {
-          "r": 0.949999988079071,
-          "g": 0.550000011920929,
-          "b": 0.15000000596046448,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_tack_corner_bl",
-        "position": {
-          "x": -0.699999988079071,
-          "y": 0.15000000596046448,
-          "z": 0.6000000238418579
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.20000000298023224,
-          "y": 0.20000000298023224,
-          "z": 0.20000000298023224
-        },
-        "color": {
-          "r": 0.949999988079071,
-          "g": 0.550000011920929,
-          "b": 0.15000000596046448,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_tack_corner_br",
-        "position": {
-          "x": 0.699999988079071,
-          "y": 0.15000000596046448,
-          "z": 0.6000000238418579
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.20000000298023224,
-          "y": 0.20000000298023224,
-          "z": 0.20000000298023224
-        },
-        "color": {
-          "r": 0.949999988079071,
-          "g": 0.550000011920929,
-          "b": 0.15000000596046448,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_square_check_point",
-        "position": {
-          "x": -0.699999988079071,
-          "y": 0.25,
-          "z": -0.6000000238418579
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.25,
-          "y": 0.25,
-          "z": 0.25
-        },
-        "color": {
-          "r": 0.30000001192092896,
-          "g": 0.699999988079071,
-          "b": 0.8999999761581421,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_vertical_cut_point",
-        "position": {
-          "x": 3.0,
-          "y": 0.75,
-          "z": -1.5
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.30000001192092896,
-          "y": 0.30000001192092896,
-          "z": 0.30000001192092896
-        },
-        "color": {
-          "r": 0.8500000238418579,
-          "g": 0.30000001192092896,
-          "b": 0.20000000298023224,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_post_fl",
-        "position": {
-          "x": -0.5591999888420105,
-          "y": 0.3555999994277954,
-          "z": -0.35580000281333923
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.24642251431941986,
-          "y": 0.26708728075027466,
-          "z": 0.24877570569515228
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_post_fr",
-        "position": {
-          "x": 0.5591999888420105,
-          "y": 0.3555999994277954,
-          "z": -0.35580000281333923
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.24642251431941986,
-          "y": 0.26708728075027466,
-          "z": 0.24877570569515228
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_post_bl",
-        "position": {
-          "x": -0.5591999888420105,
-          "y": 0.3555999994277954,
-          "z": 0.35580000281333923
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.24642251431941986,
-          "y": 0.26708728075027466,
-          "z": 0.24877570569515228
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_post_br",
-        "position": {
-          "x": 0.5591999888420105,
-          "y": 0.3555999994277954,
-          "z": 0.35580000281333923
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.24642251431941986,
-          "y": 0.26708728075027466,
-          "z": 0.24877570569515228
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_top_long_1_slot",
-        "position": {
-          "x": 0.0,
-          "y": 0.6603999733924866,
-          "z": -0.35580000281333923
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.6420714855194092,
-          "y": 0.2186356782913208,
-          "z": 0.24582627415657043
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_top_long_2_slot",
-        "position": {
-          "x": 0.0,
-          "y": 0.6603999733924866,
-          "z": 0.35580000281333923
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.6420714855194092,
-          "y": 0.2186356782913208,
-          "z": 0.24582627415657043
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_top_short_1_slot",
-        "position": {
-          "x": -0.5591999888420105,
-          "y": 0.6603999733924866,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.7071067690849304,
-          "z": 0.0,
-          "w": 0.7071067690849304
-        },
-        "scale": {
-          "x": 0.32106953859329224,
-          "y": 0.2951772212982178,
-          "z": 0.35624122619628906
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_top_short_2_slot",
-        "position": {
-          "x": 0.5591999888420105,
-          "y": 0.6603999733924866,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.7071067690849304,
-          "z": 0.0,
-          "w": 0.7071067690849304
-        },
-        "scale": {
-          "x": 0.32106953859329224,
-          "y": 0.2951772212982178,
-          "z": 0.35624122619628906
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_top_weld_fl",
-        "position": {
-          "x": -0.699999988079071,
-          "y": 1.399999976158142,
-          "z": -0.6000000238418579
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.20000000298023224,
-          "y": 0.20000000298023224,
-          "z": 0.20000000298023224
-        },
-        "color": {
-          "r": 0.949999988079071,
-          "g": 0.550000011920929,
-          "b": 0.15000000596046448,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_top_weld_fr",
-        "position": {
-          "x": 0.699999988079071,
-          "y": 1.399999976158142,
-          "z": -0.6000000238418579
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.20000000298023224,
-          "y": 0.20000000298023224,
-          "z": 0.20000000298023224
-        },
-        "color": {
-          "r": 0.949999988079071,
-          "g": 0.550000011920929,
-          "b": 0.15000000596046448,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_top_weld_bl",
-        "position": {
-          "x": -0.699999988079071,
-          "y": 1.399999976158142,
-          "z": 0.6000000238418579
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.20000000298023224,
-          "y": 0.20000000298023224,
-          "z": 0.20000000298023224
-        },
-        "color": {
-          "r": 0.949999988079071,
-          "g": 0.550000011920929,
-          "b": 0.15000000596046448,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_top_weld_br",
-        "position": {
-          "x": 0.699999988079071,
-          "y": 1.399999976158142,
-          "z": 0.6000000238418579
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.20000000298023224,
-          "y": 0.20000000298023224,
-          "z": 0.20000000298023224
-        },
-        "color": {
-          "r": 0.949999988079071,
-          "g": 0.550000011920929,
-          "b": 0.15000000596046448,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_final_check_point",
-        "position": {
-          "x": 0.0,
-          "y": 0.699999988079071,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.3499999940395355,
-          "y": 0.3499999940395355,
-          "z": 0.3499999940395355
-        },
-        "color": {
-          "r": 0.30000001192092896,
-          "g": 0.699999988079071,
-          "b": 0.8999999761581421,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_mount_plate_cut",
-        "position": {
-          "x": -2.5,
-          "y": 0.75,
-          "z": 1.5
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.30000001192092896,
-          "y": 0.30000001192092896,
-          "z": 0.30000001192092896
-        },
-        "color": {
-          "r": 0.8500000238418579,
-          "g": 0.30000001192092896,
-          "b": 0.20000000298023224,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_mount_plate_slot",
-        "position": {
-          "x": 0.0,
-          "y": 0.7142000198364258,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.1579030454158783,
-          "y": 0.043668121099472046,
-          "z": 0.1580028384923935
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_plate_weld_fl",
-        "position": {
-          "x": -0.6499999761581421,
-          "y": 1.4500000476837158,
-          "z": -0.44999998807907104
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.18000000715255737,
-          "y": 0.18000000715255737,
-          "z": 0.18000000715255737
-        },
-        "color": {
-          "r": 0.949999988079071,
-          "g": 0.550000011920929,
-          "b": 0.15000000596046448,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_plate_weld_fr",
-        "position": {
-          "x": 0.6499999761581421,
-          "y": 1.4500000476837158,
-          "z": -0.44999998807907104
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.18000000715255737,
-          "y": 0.18000000715255737,
-          "z": 0.18000000715255737
-        },
-        "color": {
-          "r": 0.949999988079071,
-          "g": 0.550000011920929,
-          "b": 0.15000000596046448,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_plate_weld_bl",
-        "position": {
-          "x": -0.6499999761581421,
-          "y": 1.4500000476837158,
-          "z": 0.44999998807907104
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.18000000715255737,
-          "y": 0.18000000715255737,
-          "z": 0.18000000715255737
-        },
-        "color": {
-          "r": 0.949999988079071,
-          "g": 0.550000011920929,
-          "b": 0.15000000596046448,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_plate_weld_br",
-        "position": {
-          "x": 0.6499999761581421,
-          "y": 1.4500000476837158,
-          "z": 0.44999998807907104
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.18000000715255737,
-          "y": 0.18000000715255737,
-          "z": 0.18000000715255737
-        },
-        "color": {
-          "r": 0.949999988079071,
-          "g": 0.550000011920929,
-          "b": 0.15000000596046448,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_engine_slot",
-        "position": {
-          "x": 0.0,
-          "y": 0.9172000288963318,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.3877790570259094,
-          "y": 0.21050837635993958,
-          "z": 0.22867032885551453
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_engine_bolt_point",
-        "position": {
-          "x": 0.15000000596046448,
-          "y": 1.5499999523162842,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.25,
-          "y": 0.25,
-          "z": 0.25
-        },
-        "color": {
-          "r": 0.8999999761581421,
-          "g": 0.75,
-          "b": 0.20000000298023224,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_coupling_slot",
-        "position": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_pump_slot",
-        "position": {
-          "x": -0.20000000298023224,
-          "y": 0.17159999907016754,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.23348993062973022,
-          "y": 0.12024062126874924,
-          "z": 0.06307367235422134
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_pump_bolt_point",
-        "position": {
-          "x": -0.8999999761581421,
-          "y": 1.350000023841858,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.20000000298023224,
-          "y": 0.20000000298023224,
-          "z": 0.20000000298023224
-        },
-        "color": {
-          "r": 0.8999999761581421,
-          "g": 0.75,
-          "b": 0.20000000298023224,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_reservoir_slot",
-        "position": {
-          "x": 0.20000000298023224,
-          "y": 0.2515999972820282,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.31977078318595886,
-          "y": 0.15777988731861115,
-          "z": 0.19390831887722015
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_reservoir_bolt_point",
-        "position": {
-          "x": 0.949999988079071,
-          "y": 0.6499999761581421,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.20000000298023224,
-          "y": 0.20000000298023224,
-          "z": 0.20000000298023224
-        },
-        "color": {
-          "r": 0.8999999761581421,
-          "g": 0.75,
-          "b": 0.20000000298023224,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_pressure_hose_slot",
-        "position": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        },
-        "portA": {
-          "x": -0.2,
-          "y": 0.205,
-          "z": -0.06
-        },
-        "portB": {
-          "x": 0.155,
-          "y": 0.26,
-          "z": -0.06
-        }
-      },
-      {
-        "targetId": "target_return_hose_slot",
-        "position": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        },
-        "portA": {
-          "x": -0.04,
-          "y": 0.215,
-          "z": -0.055
-        },
-        "portB": {
-          "x": 0.19,
-          "y": 0.245,
-          "z": -0.055
-        }
-      },
-      {
-        "targetId": "target_cooler_slot",
-        "position": {
-          "x": 0.0,
-          "y": 0.2515999972820282,
-          "z": -0.35580000281333923
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.1577906757593155,
-          "y": 0.2587074339389801,
-          "z": 0.07423650473356247
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_fitting_check_point",
-        "position": {
-          "x": 0.0,
-          "y": 1.0,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.3499999940395355,
-          "y": 0.3499999940395355,
-          "z": 0.3499999940395355
-        },
-        "color": {
-          "r": 0.30000001192092896,
-          "g": 0.699999988079071,
-          "b": 0.8999999761581421,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_fuel_tank_slot",
-        "position": {
-          "x": -0.25,
-          "y": 0.22660000622272491,
-          "z": 0.05000000074505806
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.29103851318359375,
-          "y": 0.16358131170272827,
-          "z": 0.1321488618850708
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_fuel_line_slot",
-        "position": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        },
-        "portA": {
-          "x": -0.242,
-          "y": 0.197,
-          "z": 0.09
-        },
-        "portB": {
-          "x": -0.065,
-          "y": 0.18,
-          "z": 0.055
-        }
-      },
-      {
-        "targetId": "target_fuel_shutoff_slot",
-        "position": {
-          "x": -0.15000000596046448,
-          "y": 0.11659999936819077,
-          "z": 0.05000000074505806
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.06915935128927231,
-          "y": 0.023808123543858528,
-          "z": 0.015842387452721596
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_fuel_check_point",
-        "position": {
-          "x": -0.5,
-          "y": 0.699999988079071,
-          "z": 0.20000000298023224
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.3499999940395355,
-          "y": 0.3499999940395355,
-          "z": 0.3499999940395355
-        },
-        "color": {
-          "r": 0.30000001192092896,
-          "g": 0.699999988079071,
-          "b": 0.8999999761581421,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_battery_slot",
-        "position": {
-          "x": 0.30000001192092896,
-          "y": 0.20010000467300415,
-          "z": -0.11999999731779099
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.10944896936416626,
-          "y": 0.11737389862537384,
-          "z": 0.1520216166973114
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_battery_cable_slot",
-        "position": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        },
-        "portA": {
-          "x": 0.285,
-          "y": 0.235,
-          "z": -0.1
-        },
-        "portB": {
-          "x": 0.08,
-          "y": 0.76,
-          "z": 0.04
-        }
-      },
-      {
-        "targetId": "target_key_switch_slot",
-        "position": {
-          "x": 0.15000000596046448,
-          "y": 0.2515999972820282,
-          "z": -0.35580000281333923
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.02238800935447216,
-          "y": 0.03439357504248619,
-          "z": 0.015786532312631607
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_starter_wire_point",
-        "position": {
-          "x": 0.30000001192092896,
-          "y": 0.550000011920929,
-          "z": 0.15000000596046448
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.15000000596046448,
-          "y": 0.15000000596046448,
-          "z": 0.15000000596046448
-        },
-        "color": {
-          "r": 0.8999999761581421,
-          "g": 0.75,
-          "b": 0.20000000298023224,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_choke_cable_slot",
-        "position": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        },
-        "portA": {
-          "x": 0.05,
-          "y": 0.30,
-          "z": -0.35
-        },
-        "portB": {
-          "x": 0.10,
-          "y": 0.88,
-          "z": -0.05
-        }
-      },
-      {
-        "targetId": "target_throttle_cable_slot",
-        "position": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        },
-        "portA": {
-          "x": 0.05,
-          "y": 0.35,
-          "z": -0.35
-        },
-        "portB": {
-          "x": 0.10,
-          "y": 0.90,
-          "z": 0.0
-        }
-      },
-      {
-        "targetId": "target_electrical_test_point",
-        "position": {
-          "x": 0.30000001192092896,
-          "y": 0.5,
-          "z": -0.30000001192092896
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.3499999940395355,
-          "y": 0.3499999940395355,
-          "z": 0.3499999940395355
-        },
-        "color": {
-          "r": 0.30000001192092896,
-          "g": 0.699999988079071,
-          "b": 0.8999999761581421,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_fill_point",
-        "position": {
-          "x": 0.949999988079071,
-          "y": 0.75,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.25,
-          "y": 0.25,
-          "z": 0.25
-        },
-        "color": {
-          "r": 0.8999999761581421,
-          "g": 0.75,
-          "b": 0.20000000298023224,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_pressure_gauge_slot",
-        "position": {
-          "x": -0.20000000298023224,
-          "y": 0.2515999972820282,
-          "z": -0.35580000281333923
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.04247014597058296,
-          "y": 0.03313616290688515,
-          "z": 0.17763777077198029
-        },
-        "color": {
-          "r": 0.20000000298023224,
-          "g": 0.8399999737739563,
-          "b": 0.5799999833106995,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_start_check_point",
-        "position": {
-          "x": 0.0,
-          "y": 0.800000011920929,
-          "z": -1.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.4000000059604645,
-          "y": 0.4000000059604645,
-          "z": 0.4000000059604645
-        },
-        "color": {
-          "r": 0.30000001192092896,
-          "g": 0.699999988079071,
-          "b": 0.8999999761581421,
-          "a": 1.0
-        }
-      },
-      {
-        "targetId": "target_final_signoff_point",
-        "position": {
-          "x": 0.0,
-          "y": 0.800000011920929,
-          "z": -1.2000000476837158
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 0.5,
-          "y": 0.5,
-          "z": 0.5
-        },
-        "color": {
-          "r": 0.30000001192092896,
-          "g": 0.699999988079071,
-          "b": 0.8999999761581421,
-          "a": 1.0
-        }
-      }
-    ]
-  }
+    ],
+    "subassemblyPlacements": [],
+    "constrainedSubassemblyFitPlacements": [],
+    "completedSubassemblyParkingPlacements": [],
+    "integratedSubassemblyPlacements": []
+}
 }

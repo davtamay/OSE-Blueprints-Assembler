@@ -434,6 +434,14 @@ namespace OSE.Runtime
 
         private void HandleAssemblyCompleted(string assemblyId)
         {
+            // During explicit navigation (skip-to-end, step forward/back),
+            // suppress assembly advancement and session completion.
+            if (_navigation != null && _navigation.IsNavigating)
+            {
+                OseLog.Info($"[MachineSessionController] Assembly '{assemblyId}' completed during navigation — suppressed.");
+                return;
+            }
+
             OseLog.Info($"[MachineSessionController] Assembly '{assemblyId}' completed. Checking for next assembly.");
 
             _currentAssemblyIndex++;
@@ -518,6 +526,12 @@ namespace OSE.Runtime
         /// This is review/navigation behavior, not durable progression advancement.
         /// </summary>
         public bool StepForward() => _navigation?.StepForward() ?? false;
+
+        /// <summary>Jumps directly to the last step, showing all parts at final positions.</summary>
+        public bool NavigateToLastStep() => _navigation?.NavigateToLastStep() ?? false;
+
+        /// <summary>Jumps to a specific global step index (0-based).</summary>
+        public bool NavigateToGlobalStep(int globalIndex) => _navigation?.NavigateToGlobalStep(globalIndex) ?? false;
 
         private void CompleteSession()
         {

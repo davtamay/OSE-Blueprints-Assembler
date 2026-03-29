@@ -113,7 +113,10 @@ namespace OSE.UI.Root
             GameObject previewTool = null;
             if (!string.IsNullOrWhiteSpace(tool.assetRef))
             {
-                previewTool = await spawner.LoadPackageAssetAsync(tool.assetRef, ct: ct);
+                string toolPath = tool.assetRef.Contains("/")
+                    ? tool.assetRef
+                    : "assets/tools/" + tool.assetRef;
+                previewTool = await spawner.LoadPackageAssetAsync(toolPath, ct: ct);
             }
 
             // Another RefreshAsync call started while we were awaiting — discard our result

@@ -51,6 +51,8 @@ namespace OSE.Runtime
 
         bool StepBack();
         bool StepForward();
+        bool NavigateToLastStep();
+        bool NavigateToGlobalStep(int globalIndex);
 
         bool RestoreToStep(int completedStepCount);
     }

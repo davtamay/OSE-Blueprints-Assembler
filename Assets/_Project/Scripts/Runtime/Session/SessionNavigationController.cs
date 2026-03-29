@@ -27,6 +27,7 @@ namespace OSE.Runtime
     internal sealed class SessionNavigationController
     {
         private readonly INavigationHost _host;
+        private int _lastNavigatedGlobalIndex = -1;
 
         /// <summary>True while an explicit back/forward navigation is in progress.</summary>
         public bool IsNavigating { get; private set; }
@@ -43,8 +44,14 @@ namespace OSE.Runtime
         {
             get
             {
-                return TryGetCurrentGlobalStepIndex(out int currentGlobalIndex) &&
-                       currentGlobalIndex > 0;
+                // During navigation the StepController is in a transitional state;
+                // trust the index we just committed to.
+                int idx;
+                if (IsNavigating)
+                    idx = _lastNavigatedGlobalIndex;
+                else if (!TryGetCurrentGlobalStepIndex(out idx))
+                    idx = _lastNavigatedGlobalIndex;
+                return idx > 0;
             }
         }
 
@@ -52,14 +59,17 @@ namespace OSE.Runtime
         {
             get
             {
-                if (!TryGetCurrentGlobalStepIndex(out int currentGlobalIndex))
-                    return false;
-
                 StepDefinition[] orderedSteps = _host.Package?.GetOrderedSteps() ?? Array.Empty<StepDefinition>();
                 if (orderedSteps.Length == 0)
                     return false;
 
-                return currentGlobalIndex < orderedSteps.Length - 1;
+                int idx;
+                if (IsNavigating)
+                    idx = _lastNavigatedGlobalIndex;
+                else if (!TryGetCurrentGlobalStepIndex(out idx))
+                    idx = _lastNavigatedGlobalIndex;
+
+                return idx >= 0 && idx < orderedSteps.Length - 1;
             }
         }
 
@@ -119,6 +129,27 @@ namespace OSE.Runtime
             return NavigateToGlobalStepInternal(currentGlobalIndex + 1);
         }
 
+        /// <summary>
+        /// Jumps directly to the last step in the package-wide ordered step list.
+        /// All prior parts are treated as completed and placed at their playPositions.
+        /// </summary>
+        public bool NavigateToLastStep()
+        {
+            StepDefinition[] orderedSteps = _host.Package?.GetOrderedSteps() ?? Array.Empty<StepDefinition>();
+            if (orderedSteps.Length == 0)
+                return false;
+
+            return NavigateToGlobalStepInternal(orderedSteps.Length - 1);
+        }
+
+        /// <summary>
+        /// Jumps directly to a specific global step index (0-based).
+        /// </summary>
+        public bool NavigateToGlobalStep(int targetGlobalIndex)
+        {
+            return NavigateToGlobalStepInternal(targetGlobalIndex);
+        }
+
         private bool NavigateToGlobalStepInternal(int targetGlobalIndex)
         {
             StepDefinition[] orderedSteps = _host.Package?.GetOrderedSteps() ?? Array.Empty<StepDefinition>();
@@ -158,6 +189,7 @@ namespace OSE.Runtime
             OseLog.Info($"[Nav] NavigateToGlobalStepInternal: from global {previousGlobalIndex} to {clampedTargetGlobalIndex}, assembly='{targetAssemblyId}', localTargetIndex={localTargetIndex}, totalGlobalSteps={orderedSteps.Length}");
 
             IsNavigating = true;
+            _lastNavigatedGlobalIndex = clampedTargetGlobalIndex;
             try
             {
                 _host.PartController.RecomputePartsForNavigation(completedGlobalSteps, targetStep);
@@ -174,7 +206,7 @@ namespace OSE.Runtime
                 }
                 else
                 {
-                    assembly.RestoreAssemblyState(targetAssemblyId, localTargetIndex, () => sessionState.ElapsedSeconds);
+                    assembly.NavigateToStepInAssembly(targetAssemblyId, localTargetIndex, () => sessionState.ElapsedSeconds);
                 }
 
                 if (assembly.StepController.HasActiveStep)

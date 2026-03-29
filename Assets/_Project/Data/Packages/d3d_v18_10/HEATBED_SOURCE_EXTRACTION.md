@@ -13,7 +13,7 @@ It answers:
 
 ## Status
 
-This slice is not yet authored in `machine.json`.
+This slice is now authored in `machine.json` as `Heated Bed Stage 01`.
 
 Its concrete next-step brief now exists in:
 

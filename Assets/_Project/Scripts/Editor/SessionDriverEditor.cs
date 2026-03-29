@@ -166,13 +166,22 @@ namespace OSE.Editor
                 return;
             }
 
-            // Find the current step index
+            // Find the current step index.
+            // _orderedSteps.Length is reserved for the "Fully Assembled" virtual entry.
             int currentSeq = stepSeqProp.intValue;
-            int currentIdx = 0;
-            for (int i = 0; i < _orderedSteps.Length; i++)
+            int lastStepSeq = _orderedSteps[_orderedSteps.Length - 1].sequenceIndex;
+            bool isFullyAssembled = currentSeq > lastStepSeq;
+            int currentIdx = isFullyAssembled ? _orderedSteps.Length : 0;
+            if (!isFullyAssembled)
             {
-                if (_orderedSteps[i].sequenceIndex == currentSeq) { currentIdx = i; break; }
+                for (int i = 0; i < _orderedSteps.Length; i++)
+                {
+                    if (_orderedSteps[i].sequenceIndex == currentSeq) { currentIdx = i; break; }
+                }
             }
+
+            // Total entries: all steps + 1 virtual "Fully Assembled" entry
+            int totalEntries = _orderedSteps.Length + 1;
 
             EditorGUILayout.LabelField("Preview Step", EditorStyles.boldLabel);
             EditorGUILayout.BeginHorizontal();
@@ -182,7 +191,9 @@ namespace OSE.Editor
                 CommitStep(stepSeqProp, currentIdx - 1);
             EditorGUI.EndDisabledGroup();
 
-            string navLabel = $"Step {currentIdx + 1} / {_orderedSteps.Length}";
+            string navLabel = isFullyAssembled
+                ? "Fully Assembled"
+                : $"Step {currentIdx + 1} / {_orderedSteps.Length}";
             if (GUILayout.Button(navLabel, EditorStyles.popup))
             {
                 var menu = new GenericMenu();
@@ -192,10 +203,16 @@ namespace OSE.Editor
                     menu.AddItem(new GUIContent(_stepLabels[i]), i == currentIdx,
                         () => CommitStep(stepSeqProp, captured));
                 }
+                // Add "Fully Assembled" entry at the end
+                menu.AddSeparator("");
+                menu.AddItem(
+                    new GUIContent("Fully Assembled — all parts at play positions"),
+                    isFullyAssembled,
+                    () => CommitStep(stepSeqProp, _orderedSteps.Length));
                 menu.ShowAsContext();
             }
 
-            EditorGUI.BeginDisabledGroup(currentIdx >= _orderedSteps.Length - 1);
+            EditorGUI.BeginDisabledGroup(currentIdx >= totalEntries - 1);
             if (GUILayout.Button("►", GUILayout.Width(28)))
                 CommitStep(stepSeqProp, currentIdx + 1);
             EditorGUI.EndDisabledGroup();
@@ -203,19 +220,41 @@ namespace OSE.Editor
             EditorGUILayout.EndHorizontal();
 
             // Step info card
-            var step = _orderedSteps[currentIdx];
-            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-            EditorGUILayout.LabelField($"[{step.sequenceIndex}] {step.name}", EditorStyles.boldLabel);
-            string stepProfile = string.IsNullOrEmpty(step.profile) ? "—" : step.profile;
-            int targetCount = step.targetIds?.Length ?? 0;
-            EditorGUILayout.LabelField($"Profile: {stepProfile}  ·  {targetCount} target(s)", EditorStyles.miniLabel);
-            EditorGUILayout.EndVertical();
+            if (isFullyAssembled)
+            {
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                EditorGUILayout.LabelField("Fully Assembled", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("All parts shown at their assembled (play) positions.", EditorStyles.miniLabel);
+                EditorGUILayout.EndVertical();
+            }
+            else
+            {
+                var step = _orderedSteps[currentIdx];
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                EditorGUILayout.LabelField($"[{step.sequenceIndex}] {step.name}", EditorStyles.boldLabel);
+                string stepProfile = string.IsNullOrEmpty(step.profile) ? "—" : step.profile;
+                int targetCount = step.targetIds?.Length ?? 0;
+                EditorGUILayout.LabelField($"Profile: {stepProfile}  ·  {targetCount} target(s)", EditorStyles.miniLabel);
+                EditorGUILayout.EndVertical();
+            }
         }
 
         private void CommitStep(SerializedProperty stepSeqProp, int newIdx)
         {
-            if (newIdx < 0 || newIdx >= _orderedSteps.Length) return;
-            int sequenceIndex = _orderedSteps[newIdx].sequenceIndex;
+            if (newIdx < 0 || newIdx > _orderedSteps.Length) return;
+
+            int sequenceIndex;
+            if (newIdx == _orderedSteps.Length)
+            {
+                // "Fully Assembled" virtual entry — use lastStepSeq + 1 so
+                // ApplyStepAwarePositions treats it as past the final step.
+                sequenceIndex = _orderedSteps[_orderedSteps.Length - 1].sequenceIndex + 1;
+            }
+            else
+            {
+                sequenceIndex = _orderedSteps[newIdx].sequenceIndex;
+            }
+
             // SetEditModeStep first — fires EditModeStepChanged while the old value
             // is still set, so the event fires with changed=true and syncs the window.
             ((SessionDriver)target).SetEditModeStep(sequenceIndex);

@@ -25,6 +25,7 @@ namespace OSE.UI.Controllers
             _view.HintButton.clicked += HandleHintClicked;
             _view.BackButton.clicked += HandleBackClicked;
             _view.ForwardButton.clicked += HandleForwardClicked;
+            _view.SkipToEndButton.clicked += HandleSkipToEndClicked;
         }
 
         protected override void ApplyViewModel(StepPanelViewModel viewModel)
@@ -45,11 +46,13 @@ namespace OSE.UI.Controllers
             {
                 _view.SetBackEnabled(session.CanStepBack);
                 _view.SetForwardEnabled(session.CanStepForward);
+                _view.SetSkipToEndEnabled(session.CanStepForward);
             }
             else
             {
                 _view.SetBackEnabled(false);
                 _view.SetForwardEnabled(false);
+                _view.SetSkipToEndEnabled(false);
             }
         }
 
@@ -62,6 +65,7 @@ namespace OSE.UI.Controllers
                 _view.HintButton.clicked -= HandleHintClicked;
                 _view.BackButton.clicked -= HandleBackClicked;
                 _view.ForwardButton.clicked -= HandleForwardClicked;
+                _view.SkipToEndButton.clicked -= HandleSkipToEndClicked;
             }
             _view = null;
         }
@@ -154,6 +158,15 @@ namespace OSE.UI.Controllers
             session.StepForward();
         }
 
+        private void HandleSkipToEndClicked()
+        {
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
+                return;
+
+            bool result = session.NavigateToLastStep();
+            OseLog.Info($"[StepPanel] SkipToEnd clicked — NavigateToLastStep returned {result}");
+        }
+
         private sealed class StepPanelView : VisualElement
         {
             public Label StepLabel { get; }
@@ -164,6 +177,7 @@ namespace OSE.UI.Controllers
             public Button HintButton { get; }
             public Button BackButton { get; }
             public Button ForwardButton { get; }
+            public Button SkipToEndButton { get; }
 
             private readonly VisualElement _progressTrack;
             private readonly VisualElement _progressFill;
@@ -195,6 +209,8 @@ namespace OSE.UI.Controllers
 
                 BackButton = CreateNavButton("\u25C0"); // ◀
                 ForwardButton = CreateNavButton("\u25B6"); // ▶
+                SkipToEndButton = CreateNavButton("\u25B6|"); // ▶|
+                SkipToEndButton.style.marginLeft = 4f;
 
                 StepLabel.style.flexGrow = 1f;
                 StepLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
@@ -204,6 +220,7 @@ namespace OSE.UI.Controllers
                 navRow.Add(BackButton);
                 navRow.Add(StepLabel);
                 navRow.Add(ForwardButton);
+                navRow.Add(SkipToEndButton);
                 Add(navRow);
 
                 TitleLabel = UIToolkitStyleUtility.CreateTitleLabel("Awaiting Step Data");
@@ -341,6 +358,12 @@ namespace OSE.UI.Controllers
             {
                 ForwardButton.SetEnabled(enabled);
                 ForwardButton.style.opacity = enabled ? 1f : 0.3f;
+            }
+
+            public void SetSkipToEndEnabled(bool enabled)
+            {
+                SkipToEndButton.SetEnabled(enabled);
+                SkipToEndButton.style.opacity = enabled ? 1f : 0.3f;
             }
 
             private static Button CreateNavButton(string text)

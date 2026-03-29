@@ -11,7 +11,20 @@
       "WebSearch",
       "Bash(find 'c:/Users/davta/Repos/OSE Blueprints Assembler/Assets' -path */Packages/* -name *.gltf -o -path */Packages/* -name *.glb)",
       "Bash(md5sum \"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Data/Packages/power_cube_frame_corner/assets/parts/\"*.glb \"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Data/Packages/onboarding_tutorial/assets/parts/\"*.bin)",
-      "Bash(SA=\"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/StreamingAssets/MachinePackages/power_cube_frame\" mkdir -p \"$SA/assets/parts\" \"$SA/assets/tools\" __NEW_LINE_81a30dac1b24c3f5__ cp -r \"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Data/Packages/power_cube_frame/assets/parts/\"* \"$SA/assets/parts/\" cp -r \"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Data/Packages/power_cube_frame/assets/tools/\"* \"$SA/assets/tools/\" __NEW_LINE_81a30dac1b24c3f5__ echo \"StreamingAssets structure:\" find \"$SA\" -type f)"
+      "Bash(SA=\"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/StreamingAssets/MachinePackages/power_cube_frame\" mkdir -p \"$SA/assets/parts\" \"$SA/assets/tools\" __NEW_LINE_81a30dac1b24c3f5__ cp -r \"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Data/Packages/power_cube_frame/assets/parts/\"* \"$SA/assets/parts/\" cp -r \"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Data/Packages/power_cube_frame/assets/tools/\"* \"$SA/assets/tools/\" __NEW_LINE_81a30dac1b24c3f5__ echo \"StreamingAssets structure:\" find \"$SA\" -type f)",
+      "Bash(python -c \":*)",
+      "Bash(python fix_parts.py)",
+      "Bash(python -u -c \":*)",
+      "Bash(python add_orphan_stages.py)",
+      "Bash(python update_part_metadata.py)",
+      "Bash(ls c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Data/Packages/d3d_v18_10/source_cad/heatbed_stage01/raw/*.py)",
+      "Bash(curl -L -o \"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Data/Packages/d3d_v18_10/source_cad/extruder/raw/Titanaeromarcin.fcstd\" \"https://wiki.opensourceecology.org/images/c/c8/Titanaeromarcin.fcstd\" -w \"\\\\nHTTP Status: %{http_code}\\\\nSize: %{size_download} bytes\\\\n\")",
+      "WebFetch(domain:wiki.opensourceecology.org)",
+      "Bash(curl -L -o \"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Data/Packages/d3d_v18_10/source_cad/extruder/raw/base_extruder_plus_fan.fcstd\" \"https://github.com/OpenSourceEcology/3D-Printer-Part-Library/raw/master/base%20extruder%20plus%20fan.fcstd\" -w \"\\\\nHTTP Status: %{http_code}\\\\nSize: %{size_download} bytes\\\\n\")",
+      "Bash(curl -L -o \"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Data/Packages/d3d_v18_10/source_cad/extruder/raw/holder_motor_titan.fcstd\" \"https://github.com/OpenSourceEcology/3D-Printer-Part-Library/raw/master/holder%20%2B%20motor%20%2B%20Titan.fcstd\" -w \"\\\\nHTTP Status: %{http_code}\\\\nSize: %{size_download} bytes\\\\n\")",
+      "Bash(ls \"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Data/Packages/d3d_v18_10/assets/parts/\"*.glb)",
+      "Bash(ls c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Data/Packages/d3d_v18_10/assets/parts/*.glb)",
+      "Bash(ls \"/c/Program Files \\(x86\\)/Blender Foundation/\")"
     ]
   }
 }

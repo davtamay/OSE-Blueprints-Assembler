@@ -1,0 +1,173 @@
+{
+  "d3d_heatbed_body": {
+    "playPosition": {
+      "x": 0.016,
+      "y": 0.6467,
+      "z": 0.0218
+    },
+    "playRotation": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "w": 1.0
+    },
+    "fc_label": "Heated plate",
+    "global_center_mm": {
+      "x": 136.35,
+      "y": 130.6,
+      "z": 94.73
+    }
+  },
+  "d3d_heatbed_snapbuckle_left": {
+    "playPosition": {
+      "x": 0.0073,
+      "y": 0.5973,
+      "z": 0.1627
+    },
+    "playRotation": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "w": 1.0
+    },
+    "fc_label": "Bed clamp 1",
+    "global_center_mm": {
+      "x": 145.14,
+      "y": -10.33,
+      "z": 45.29
+    }
+  },
+  "d3d_heatbed_snapbuckle_right": {
+    "playPosition": {
+      "x": 0.0073,
+      "y": 0.5975,
+      "z": -0.1638
+    },
+    "playRotation": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "w": 1.0
+    },
+    "fc_label": "Bed clamp 002",
+    "global_center_mm": {
+      "x": 145.14,
+      "y": 316.23,
+      "z": 45.53
+    }
+  },
+  "d3d_titan_aero_core": {
+    "playPosition": {
+      "x": -0.1013,
+      "y": 0.8999,
+      "z": 0.0499
+    },
+    "playRotation": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "w": 1.0
+    },
+    "fc_label": "Extruder - Stripped",
+    "global_center_mm": {
+      "x": 253.74,
+      "y": 102.53,
+      "z": 347.93
+    }
+  },
+  "d3d_extruder_simplified_carriage": {
+    "playPosition": {
+      "x": -0.0899,
+      "y": 0.8773,
+      "z": 0.006
+    },
+    "playRotation": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "w": 1.0
+    },
+    "fc_label": "Full Carriage002",
+    "global_center_mm": {
+      "x": 242.34,
+      "y": 146.45,
+      "z": 325.3
+    }
+  },
+  "d3d_y_left_axis_unit": {
+    "playPosition": {
+      "x": 0.1644,
+      "y": 0.8223,
+      "z": -0.1985
+    },
+    "playRotation": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "w": 1.0
+    },
+    "fc_label": "Motor Side001",
+    "global_center_mm": {
+      "x": -12.02,
+      "y": 350.92,
+      "z": 270.33
+    }
+  },
+  "d3d_y_right_axis_unit": {
+    "playPosition": {
+      "x": -0.1652,
+      "y": 0.8189,
+      "z": -0.1985
+    },
+    "playRotation": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "w": 1.0
+    },
+    "fc_label": "Motor Side002",
+    "global_center_mm": {
+      "x": 317.6,
+      "y": 350.91,
+      "z": 266.92
+    }
+  },
+  "d3d_x_axis_motor_holder_unit": {
+    "playPosition": {
+      "x": 0.2072,
+      "y": 0.8775,
+      "z": 0.0059
+    },
+    "playRotation": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "w": 1.0
+    },
+    "fc_label": "Motor Side",
+    "global_center_mm": {
+      "x": -54.84,
+      "y": 146.49,
+      "z": 325.52
+    }
+  },
+  "d3d_x_axis_idler_unit": {
+    "playPosition": {
+      "x": -0.1579,
+      "y": 0.8773,
+      "z": 0.0062
+    },
+    "playRotation": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "w": 1.0
+    },
+    "fc_label": "Idler004",
+    "global_center_mm": {
+      "x": 310.27,
+      "y": 146.17,
+      "z": 325.35
+    }
+  }
+}

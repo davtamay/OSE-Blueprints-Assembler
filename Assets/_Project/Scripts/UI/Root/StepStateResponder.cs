@@ -109,6 +109,7 @@ namespace OSE.UI.Root
                     _ctx.PreviewManager?.SpawnPreviewsForStep(evt.StepId);
                     if (TryBuildHandlerContext(out var activatedCtx))
                         _ctx.Router?.OnStepActivated(in activatedCtx);
+                    ApplyFinalAssemblyOverviewIfLastStep(evt.StepId);
                     _ctx.FocusComputer?.FocusCameraOnStepArea(evt.StepId);
 
                     OseLog.VerboseInfo(
@@ -183,6 +184,16 @@ namespace OSE.UI.Root
 
             if (targetGlobalIndex < orderedSteps.Length)
                 _ctx.VisualFeedback?.RevertFutureStepParts(orderedSteps, targetGlobalIndex);
+
+            // When navigating to the very last step, ensure every spawned part
+            // is visible at its assembled (play) position — not just those
+            // referenced in requiredPartIds.
+            if (targetGlobalIndex == orderedSteps.Length - 1)
+            {
+                _ctx.VisualFeedback?.ShowAllPartsAssembled();
+                if (completedSteps.Length > 0)
+                    _ctx.SubassemblyController?.RestoreCompletedPlacements(completedSteps);
+            }
 
             OseLog.Info(
                 $"[PartInteraction] Navigated from global step {evt.PreviousStepIndex + 1} " +
@@ -277,6 +288,8 @@ namespace OSE.UI.Root
             if (TryBuildHandlerContext(out var rebuildCtx))
                 _ctx.Router?.OnStepActivated(in rebuildCtx);
 
+            ApplyFinalAssemblyOverviewIfLastStep(activeStepId, completedSteps);
+
             _ctx.FocusComputer?.FocusCameraOnStepArea(activeStepId, resetToDefaultView);
             _ctx.ToolAction?.RefreshToolPreviewIndicator();
             _ctx.RefreshToolActionTargets();
@@ -327,6 +340,37 @@ namespace OSE.UI.Root
             }
 
             return session?.SessionState?.CurrentStepId;
+        }
+
+        private void ApplyFinalAssemblyOverviewIfLastStep(string activeStepId, StepDefinition[] completedSteps = null)
+        {
+            if (string.IsNullOrWhiteSpace(activeStepId))
+                return;
+
+            MachinePackageDefinition package = _ctx.Spawner?.CurrentPackage;
+            StepDefinition[] orderedSteps = package?.GetOrderedSteps();
+            if (orderedSteps == null || orderedSteps.Length == 0)
+                return;
+
+            if (!string.Equals(orderedSteps[orderedSteps.Length - 1]?.id, activeStepId, System.StringComparison.OrdinalIgnoreCase))
+                return;
+
+            if (completedSteps == null && ServiceRegistry.TryGet<IMachineSessionController>(out var session))
+            {
+                int completedCount = session.SessionState != null ? session.SessionState.CompletedStepCount : 0;
+                completedSteps = GetCompletedSteps(session, completedCount);
+            }
+
+            _ctx.VisualFeedback?.ShowAllPartsAssembled();
+            if (completedSteps != null && completedSteps.Length > 0)
+                _ctx.SubassemblyController?.RestoreCompletedPlacements(completedSteps);
+
+            // The Stage 02 "simplified carriage" is a procedural surrogate for the
+            // later printer-side carriage body. In the final machine overview we
+            // show the Stage 03 carriage-side body instead of a second duplicate.
+            GameObject simplifiedCarriage = _ctx.FindSpawnedPart("d3d_extruder_simplified_carriage");
+            if (simplifiedCarriage != null)
+                simplifiedCarriage.SetActive(false);
         }
     }
 }

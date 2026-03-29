@@ -1,0 +1,27 @@
+{
+  "input_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\heatbed_stage01\\exported\\stl\\Heatbed_snapbuckle1904.stl",
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\heatbed_stage01\\exported\\glb_candidates\\Heatbed_snapbuckle1904.glb",
+  "units": "m",
+  "object_count": 1,
+  "material_name": "D3D Snapbuckle Black",
+  "base_color": [
+    0.16,
+    0.16,
+    0.17,
+    1.0
+  ],
+  "metallic": 0.0,
+  "roughness": 0.72,
+  "center_mode": "base_center",
+  "bound_box": {
+    "xmin_m": -0.006021406501531601,
+    "xmax_m": 0.006021406501531601,
+    "ymin_m": -0.016949547454714775,
+    "ymax_m": 0.016949545592069626,
+    "zmin_m": 0.0,
+    "zmax_m": 0.010000000707805157,
+    "xlen_m": 0.012042813003063202,
+    "ylen_m": 0.0338990930467844,
+    "zlen_m": 0.010000000707805157
+  }
+}

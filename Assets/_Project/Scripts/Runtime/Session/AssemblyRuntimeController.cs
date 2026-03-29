@@ -90,7 +90,7 @@ namespace OSE.Runtime
             OseLog.Info($"[AssemblyRuntimeController] Restoring assembly '{assemblyId}' at step index {stepIndex} of {assemblySteps.Length}.");
             RuntimeEventBus.Publish(new AssemblyStarted(assemblyId));
 
-            int clampedIndex = System.Math.Max(0, System.Math.Min(stepIndex, assemblySteps.Length));
+            int clampedIndex = System.Math.Max(0, System.Math.Min(stepIndex, assemblySteps.Length - 1));
             if (clampedIndex > 0)
                 ProgressionController.SkipToIndex(clampedIndex);
 
@@ -138,6 +138,36 @@ namespace OSE.Runtime
                 PublishStepActivated(step);
                 OseLog.Info($"[AssemblyRuntimeController] Navigated to step {targetIndex + 1}/{ProgressionController.TotalSteps}: '{step.id}'");
             }
+        }
+
+        /// <summary>
+        /// Switches to a different assembly and navigates to a specific local step index.
+        /// Used by cross-assembly navigation (e.g. skip-to-end) where the target step
+        /// is in a different assembly than the current one.
+        /// </summary>
+        public void NavigateToStepInAssembly(string assemblyId, int localStepIndex, Func<float> getElapsed)
+        {
+            if (_package == null)
+            {
+                OseLog.Error("[AssemblyRuntimeController] Cannot navigate cross-assembly — not initialized.");
+                return;
+            }
+
+            _currentAssemblyId = assemblyId;
+
+            StepDefinition[] assemblySteps = ResolveAssemblySteps(assemblyId);
+            if (assemblySteps.Length == 0)
+            {
+                OseLog.Warn($"[AssemblyRuntimeController] Assembly '{assemblyId}' has no steps.");
+                return;
+            }
+
+            ProgressionController.Initialize(assemblySteps);
+
+            int clamped = Math.Max(0, Math.Min(localStepIndex, assemblySteps.Length - 1));
+            OseLog.Info($"[AssemblyRuntimeController] Switching to assembly '{assemblyId}', step {clamped + 1}/{assemblySteps.Length}.");
+
+            NavigateToStep(clamped, getElapsed);
         }
 
         private void HandleStepStateChanged(StepStateChanged evt)

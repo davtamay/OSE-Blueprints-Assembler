@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text.RegularExpressions;
 using OSE.Content;
 using UnityEngine;
 
@@ -11,6 +12,30 @@ namespace OSE.Editor
     internal static class PackageJsonUtils
     {
         internal const string AuthoringRoot = "Assets/_Project/Data/Packages";
+
+        // Matches any float literal with 5 or more decimal digits (e.g. 1.23456789, -0.00123456).
+        // Replaced by the same value rounded to 4 decimal places.
+        private static readonly Regex _floatPattern =
+            new(@"-?\d+\.\d{5,}", RegexOptions.Compiled);
+
+        /// <summary>
+        /// Rounds all float literals in a JSON string to <paramref name="decimals"/> decimal places
+        /// (default 4). Unity's JsonUtility writes up to 9 significant digits; 4 places gives
+        /// 0.1 mm / 0.01° precision — sufficient for assembly training content.
+        /// </summary>
+        internal static string RoundFloatsInJson(string json, int decimals = 4)
+        {
+            return _floatPattern.Replace(json, m =>
+            {
+                if (double.TryParse(m.Value,
+                        System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        out double v))
+                    return System.Math.Round(v, decimals)
+                               .ToString("0.####", System.Globalization.CultureInfo.InvariantCulture);
+                return m.Value;
+            });
+        }
 
         /// <summary>
         /// Returns the absolute path to the authoring machine.json for a given package id,
@@ -46,7 +71,7 @@ namespace OSE.Editor
         internal static void WritePreviewConfig(string jsonPath, PackagePreviewConfig config)
         {
             string text      = File.ReadAllText(jsonPath);
-            string configJson = JsonUtility.ToJson(config, true);
+            string configJson = RoundFloatsInJson(JsonUtility.ToJson(config, true));
 
             const string label = "\"previewConfig\"";
             int labelIdx = text.IndexOf(label, System.StringComparison.Ordinal);

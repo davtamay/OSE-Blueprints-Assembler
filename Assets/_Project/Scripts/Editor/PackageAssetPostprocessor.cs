@@ -102,6 +102,13 @@ namespace OSE.Editor
             string packageId = rel.Split(new[] { '/', '\\' }, 2)[0];
             if (string.IsNullOrEmpty(packageId)) return;
 
+            // Individual part/tool GLBs in assets/parts/ or assets/tools/ are NOT layout scenes.
+            // Their transforms are authored externally (FreeCAD export, manual). Skip them so
+            // we don't overwrite hand-computed playPositions with the node's identity transform.
+            string relLower = rel.Replace('\\', '/').ToLowerInvariant();
+            if (relLower.Contains("/assets/parts/") || relLower.Contains("/assets/tools/"))
+                return;
+
             string jsonPath = Path.Combine(PackagesDataPath, packageId, "machine.json");
             if (!File.Exists(jsonPath)) return;
 

@@ -1964,6 +1964,7 @@ namespace OSE.Editor
 
         private static bool TryInjectBlock(ref string json, string id, string block, string blockJson)
         {
+            blockJson = PackageJsonUtils.RoundFloatsInJson(blockJson);
             string fullPattern = $"\"id\": \"{id}\"";
             int idPos = json.IndexOf(fullPattern, StringComparison.Ordinal);
             if (idPos < 0)

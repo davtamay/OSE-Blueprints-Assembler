@@ -414,7 +414,53 @@ namespace OSE.UI.Root
 
             EnsureToolDock();
             _toolDock.EnsureSubscription();
-            TryRestoreRuntimePanelsAfterIntroDismiss();
+
+            // StepNavigated fires BEFORE the assembly controller activates the target
+            // step, so StepController still has the old/reset state.  Resolve the
+            // target step directly from the event's global index to refresh the UI.
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
+                return;
+
+            MachinePackageDefinition package = session.Package;
+            if (package == null)
+                return;
+
+            StepDefinition[] orderedSteps = package.GetOrderedSteps();
+            if (orderedSteps.Length == 0 || evt.TargetStepIndex < 0 || evt.TargetStepIndex >= orderedSteps.Length)
+                return;
+
+            StepDefinition targetStep = orderedSteps[evt.TargetStepIndex];
+            if (targetStep == null)
+                return;
+
+            int stepNumber = evt.TargetStepIndex + 1;
+            int totalSteps = evt.TotalSteps;
+
+            StepUiContentUtility.StepShellContent stepShell =
+                StepUiContentUtility.BuildStepShellContent(targetStep);
+
+            ShowStepShell(
+                stepNumber,
+                totalSteps,
+                stepShell.Title,
+                stepShell.Instruction,
+                stepShell.ShowConfirmButton,
+                stepShell.ShowHintButton,
+                stepShell.ConfirmGate);
+
+            StepUiContentUtility.PartInfoShellContent partInfo =
+                StepUiContentUtility.BuildStepPartInfoShellContent(package, targetStep, includeFallbackWhenNoRequiredPart: false);
+            if (partInfo.HasContent)
+            {
+                ShowPartInfoShell(
+                    partInfo.PartName,
+                    partInfo.Function,
+                    partInfo.Material,
+                    partInfo.Tool,
+                    partInfo.SearchTerms);
+            }
+
+            ShowProgressUpdate(stepNumber > 0 ? stepNumber - 1 : 0, totalSteps);
         }
 
         private void HandleRuntimeSessionCompleted(SessionCompleted evt)

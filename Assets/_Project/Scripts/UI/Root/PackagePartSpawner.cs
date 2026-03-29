@@ -41,6 +41,7 @@ namespace OSE.UI.Root
         private MachinePackageDefinition _currentPackage;
         private PackagePreviewConfig _currentPreviewConfig;
         private readonly List<GameObject> _spawnedParts = new List<GameObject>();
+        private readonly PackageAssetResolver _resolver = new PackageAssetResolver();
 
         // ── Public accessors ──
 
@@ -150,6 +151,13 @@ namespace OSE.UI.Root
                 }
             }
 
+            // "Fully Assembled" mode: targetSequenceIndex past the last step means
+            // show every assigned part at its playPosition (same as runtime final view).
+            int lastStepSeq = orderedSteps.Length > 0
+                ? orderedSteps[orderedSteps.Length - 1].sequenceIndex
+                : 0;
+            bool fullyAssembled = targetSequenceIndex > lastStepSeq;
+
             foreach (var partGo in _spawnedParts)
             {
                 if (partGo == null) continue;
@@ -158,7 +166,7 @@ namespace OSE.UI.Root
                 if (SplinePartFactory.HasSplineData(pp)) continue;
 
                 bool assigned = partStepSeq.TryGetValue(partGo.name, out int partSeq);
-                if (!assigned || partSeq > targetSequenceIndex)
+                if (!assigned || (!fullyAssembled && partSeq > targetSequenceIndex))
                 {
                     partGo.SetActive(false);
                 }
@@ -167,7 +175,7 @@ namespace OSE.UI.Root
                     partGo.SetActive(true);
                     // Subassembly members are pre-assembled before their step — no
                     // meaningful individual startPosition, always use playPosition.
-                    bool usePlay = partSeq < targetSequenceIndex || subassemblyParts.Contains(partGo.name);
+                    bool usePlay = fullyAssembled || partSeq < targetSequenceIndex || subassemblyParts.Contains(partGo.name);
                     Vector3 pos = usePlay
                         ? new Vector3(pp.playPosition.x, pp.playPosition.y, pp.playPosition.z)
                         : new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z);
@@ -338,8 +346,9 @@ namespace OSE.UI.Root
                 return null;
 
 #if UNITY_EDITOR
+            string normalizedRef = assetRef.Replace('\\', '/');
             string assetPath =
-                $"Assets/_Project/Data/Packages/{_currentPackage.packageId}/{assetRef.Replace('\\', '/')}";
+                $"Assets/_Project/Data/Packages/{_currentPackage.packageId}/{normalizedRef}";
 
             var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
             if (prefab == null)
@@ -393,12 +402,110 @@ namespace OSE.UI.Root
 #endif
         }
 
+        /// <summary>
+        /// Loads a node from a combined GLB file. Caches the loaded GLB root so
+        /// multiple parts referencing the same combined file only trigger one load.
+        /// Returns a new GameObject containing just the requested subtree, or null.
+        /// </summary>
+        private GameObject TryLoadCombinedGlbNode(
+            string assetRef,
+            string nodeName,
+            Dictionary<string, GameObject> cache)
+        {
+#if UNITY_EDITOR
+            if (string.IsNullOrWhiteSpace(assetRef) || string.IsNullOrWhiteSpace(nodeName) ||
+                string.IsNullOrWhiteSpace(_currentPackage?.packageId))
+                return null;
+
+            string assetPath =
+                $"Assets/_Project/Data/Packages/{_currentPackage.packageId}/{assetRef.Replace('\\', '/')}";
+
+            // Load or retrieve cached combined GLB root
+            if (!cache.TryGetValue(assetPath, out GameObject root) || root == null)
+            {
+                var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
+                if (prefab == null)
+                {
+                    foreach (var asset in UnityEditor.AssetDatabase.LoadAllAssetsAtPath(assetPath))
+                        if (asset is GameObject go) { prefab = go; break; }
+                }
+                if (prefab == null) return null;
+
+                root = (GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(prefab);
+                root.transform.SetParent(_setup.PreviewRoot, false);
+                cache[assetPath] = root;
+            }
+
+            // Find the named node in the hierarchy
+            Transform node = FindNodeRecursive(root.transform, nodeName);
+            if (node == null)
+            {
+                // Also try matching with suffix stripping
+                string targetId = PackageAssetResolver.NormalizeToPartId(nodeName);
+                node = FindNodeByNormalizedName(root.transform, targetId);
+            }
+
+            if (node == null) return null;
+
+            // Instantiate a copy of the node subtree — can't reparent inside a prefab instance
+            GameObject copy = Instantiate(node.gameObject, _setup.PreviewRoot);
+            copy.name = node.name; // strip "(Clone)" suffix
+
+            // Strip colliders in edit mode (same as TryLoadPackageAsset)
+            if (!Application.isPlaying)
+            {
+                foreach (var col in copy.GetComponentsInChildren<Collider>(true))
+                    DestroyImmediate(col);
+            }
+
+            return copy;
+#else
+            return null;
+#endif
+        }
+
+        private static Transform FindNodeRecursive(Transform t, string name)
+        {
+            if (t.name.Equals(name, System.StringComparison.OrdinalIgnoreCase)) return t;
+            foreach (Transform child in t)
+            {
+                var found = FindNodeRecursive(child, name);
+                if (found != null) return found;
+            }
+            return null;
+        }
+
+        private static Transform FindNodeByNormalizedName(Transform t, string normalizedId)
+        {
+            foreach (Transform child in t)
+            {
+                if (PackageAssetResolver.NormalizeToPartId(child.name)
+                    .Equals(normalizedId, System.StringComparison.OrdinalIgnoreCase))
+                    return child;
+                var found = FindNodeByNormalizedName(child, normalizedId);
+                if (found != null) return found;
+            }
+            return null;
+        }
+
         // ── Events ──
 
         private void HandlePackageChanged(MachinePackageDefinition package)
         {
             _currentPackage = package;
             _currentPreviewConfig = package?.previewConfig;
+
+            // Build the asset resolution catalog — scans the parts folder and maps
+            // part IDs to GLB files (individual or nodes inside combined files).
+            if (package != null && !string.IsNullOrWhiteSpace(package.packageId))
+            {
+                _resolver.BuildCatalog(package.packageId, package.parts);
+                if (_resolver.HasUnresolved)
+                    _resolver.LogUnresolved(package.packageId);
+                OseLog.Info($"[PackagePartSpawner] Asset catalog: {_resolver.ResolvedCount} resolved, " +
+                            $"{_resolver.UnresolvedParts.Count} unresolved.");
+            }
+
             ClearSpawnedParts();
             RespawnAndPosition();
         }
@@ -452,7 +559,13 @@ namespace OSE.UI.Root
                     { partDef = p; break; }
                 }
 
-                if (partDef == null || string.IsNullOrWhiteSpace(partDef.assetRef))
+                if (partDef == null)
+                    continue;
+
+                // Resolve asset path via catalog, falling back to explicit assetRef
+                AssetResolution resolution = _resolver.Resolve(partDef.id);
+                string assetRefToLoad = resolution.IsResolved ? resolution.AssetPath : partDef.assetRef;
+                if (string.IsNullOrWhiteSpace(assetRefToLoad))
                     continue;
 
                 // Skip if this is already an imported model (not a primitive placeholder)
@@ -464,7 +577,8 @@ namespace OSE.UI.Root
                 if (SplinePartFactory.HasSplineData(splinePP))
                     continue;
 
-                GameObject loaded = await LoadPackageAssetAsync(partDef.assetRef, _setup.PreviewRoot);
+                // TODO: combined GLB node extraction at runtime (currently only individual GLBs)
+                GameObject loaded = await LoadPackageAssetAsync(assetRefToLoad, _setup.PreviewRoot);
                 if (loaded == null) continue;
 
                 // Swap placeholder for real model
@@ -490,9 +604,12 @@ namespace OSE.UI.Root
                 return;
             }
 
+            // Cache for combined GLBs: load once, extract multiple nodes.
+            var combinedGlbCache = new Dictionary<string, GameObject>(System.StringComparer.OrdinalIgnoreCase);
+
             foreach (var part in _currentPackage.parts)
             {
-                if (string.IsNullOrWhiteSpace(part.id) || string.IsNullOrWhiteSpace(part.assetRef))
+                if (string.IsNullOrWhiteSpace(part.id))
                     continue;
 
                 Transform existing = _setup.PreviewRoot.Find(part.id);
@@ -523,7 +640,22 @@ namespace OSE.UI.Root
                     continue;
                 }
 
-                GameObject go = TryLoadPackageAsset(part.assetRef);
+                // Resolve via the asset catalog (supports both individual and combined GLBs)
+                AssetResolution resolution = _resolver.Resolve(part.id);
+                string assetRefToLoad = resolution.IsResolved ? resolution.AssetPath : part.assetRef;
+                GameObject go = null;
+
+                if (resolution.IsResolved && resolution.IsNodeInCombined)
+                {
+                    // Combined GLB — extract the specific child node
+                    go = TryLoadCombinedGlbNode(assetRefToLoad, resolution.NodeName, combinedGlbCache);
+                }
+
+                if (go == null && !string.IsNullOrWhiteSpace(assetRefToLoad))
+                {
+                    go = TryLoadPackageAsset(assetRefToLoad);
+                }
+
                 if (go != null)
                 {
                     MaterialHelper.MarkAsImported(go);
@@ -535,6 +667,10 @@ namespace OSE.UI.Root
                     TryEnableXRGrabInteractable(go, part.grabConfig);
                 _spawnedParts.Add(go);
             }
+
+            // Clean up cached combined GLB roots (the extracted nodes are already reparented)
+            foreach (var kvp in combinedGlbCache)
+                SafeDestroy(kvp.Value);
 
             bool showGeometry = _setup.ActiveProfile.ShowGeometryPreview;
             foreach (var p in _spawnedParts)

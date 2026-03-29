@@ -78,7 +78,7 @@
       "toolIds": [
         "tool_tape_measure"
       ],
-      "assetRef": "assets/parts/training_beam.gltf",
+      "assetRef": "training_beam.gltf",
       "searchTerms": [
         "training beam",
         "tutorial beam",
@@ -103,7 +103,7 @@
       "toolIds": [
         "tool_tape_measure"
       ],
-      "assetRef": "assets/parts/training_bracket.gltf",
+      "assetRef": "training_bracket.gltf",
       "searchTerms": [
         "training bracket",
         "tutorial bracket",
@@ -124,7 +124,7 @@
       "category": "measurement",
       "purpose": "Helps compare part size to target spacing.",
       "usageNotes": "Observe the part dimensions before placing.",
-      "assetRef": "assets/tools/tool_tape_measure.gltf"
+      "assetRef": "tool_tape_measure.gltf"
     }
   ],
   "steps": [
@@ -421,12 +421,13 @@
     "uiRefs": []
   },
   "previewConfig": {
+    "defaultAssemblyScaleMultiplier": 1.0,
     "partPlacements": [
         {
             "partId": "training_beam",
             "startPosition": {
                 "x": -2.0,
-                "y": 0.550000011920929,
+                "y": 0.55,
                 "z": 0.0
             },
             "startRotation": {
@@ -436,14 +437,14 @@
                 "w": 1.0
             },
             "startScale": {
-                "x": 1.2000000476837159,
-                "y": 0.30000001192092898,
-                "z": 0.4000000059604645
+                "x": 1.2,
+                "y": 0.3,
+                "z": 0.4
             },
             "color": {
-                "r": 0.9399999976158142,
-                "g": 0.550000011920929,
-                "b": 0.18000000715255738,
+                "r": 0.94,
+                "g": 0.55,
+                "b": 0.18,
                 "a": 1.0
             },
             "playPosition": {
@@ -461,13 +462,20 @@
                 "x": 1.0,
                 "y": 1.0,
                 "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
             }
         },
         {
             "partId": "training_bracket",
             "startPosition": {
                 "x": 2.0,
-                "y": 0.550000011920929,
+                "y": 0.55,
                 "z": 0.0
             },
             "startRotation": {
@@ -477,14 +485,14 @@
                 "w": 1.0
             },
             "startScale": {
-                "x": 0.4000000059604645,
-                "y": 0.6000000238418579,
-                "z": 0.4000000059604645
+                "x": 0.4,
+                "y": 0.6,
+                "z": 0.4
             },
             "color": {
-                "r": 0.30000001192092898,
-                "g": 0.550000011920929,
-                "b": 0.8500000238418579,
+                "r": 0.3,
+                "g": 0.55,
+                "b": 0.85,
                 "a": 1.0
             },
             "playPosition": {
@@ -502,6 +510,13 @@
                 "x": 1.0,
                 "y": 1.0,
                 "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "knots": []
             }
         }
     ],
@@ -509,8 +524,8 @@
         {
             "targetId": "target_beam_slot",
             "position": {
-                "x": -0.30000001192092898,
-                "y": 0.03999999910593033,
+                "x": -0.3,
+                "y": 0.04,
                 "z": 0.0
             },
             "rotation": {
@@ -520,23 +535,33 @@
                 "w": 1.0
             },
             "scale": {
-                "x": 1.2000000476837159,
-                "y": 0.03999999910593033,
-                "z": 0.4000000059604645
+                "x": 1.2,
+                "y": 0.04,
+                "z": 0.4
             },
             "color": {
-                "r": 0.20000000298023225,
-                "g": 0.8399999737739563,
-                "b": 0.5799999833106995,
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
                 "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
             }
         },
         {
             "targetId": "target_bracket_slot",
             "position": {
-                "x": 0.800000011920929,
-                "y": 0.15000000596046449,
-                "z": 0.4000000059604645
+                "x": 0.8,
+                "y": 0.15,
+                "z": 0.4
             },
             "rotation": {
                 "x": 0.0,
@@ -545,17 +570,31 @@
                 "w": 1.0
             },
             "scale": {
-                "x": 0.4000000059604645,
-                "y": 0.6000000238418579,
-                "z": 0.4000000059604645
+                "x": 0.4,
+                "y": 0.6,
+                "z": 0.4
             },
             "color": {
-                "r": 0.20000000298023225,
-                "g": 0.8399999737739563,
-                "b": 0.5799999833106995,
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
                 "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
             }
         }
-    ]
+    ],
+    "subassemblyPlacements": [],
+    "constrainedSubassemblyFitPlacements": [],
+    "completedSubassemblyParkingPlacements": [],
+    "integratedSubassemblyPlacements": []
 }
 }
