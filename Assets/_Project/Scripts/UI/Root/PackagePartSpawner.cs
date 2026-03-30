@@ -151,6 +151,27 @@ namespace OSE.UI.Root
                 }
             }
 
+            // Build partId → IntegratedMemberPreviewPlacement map from all integrated
+            // subassembly placements.  Play mode uses these canonical poses when a
+            // completed subassembly is committed to a target; the editor preview must
+            // use the same data to stay in sync.
+            var integratedMemberMap = new Dictionary<string, IntegratedMemberPreviewPlacement>(System.StringComparer.Ordinal);
+            IntegratedSubassemblyPreviewPlacement[] intPlacements = _currentPreviewConfig?.integratedSubassemblyPlacements;
+            if (intPlacements != null)
+            {
+                for (int ip = 0; ip < intPlacements.Length; ip++)
+                {
+                    IntegratedSubassemblyPreviewPlacement intPlacement = intPlacements[ip];
+                    if (intPlacement?.memberPlacements == null) continue;
+                    for (int mp = 0; mp < intPlacement.memberPlacements.Length; mp++)
+                    {
+                        IntegratedMemberPreviewPlacement member = intPlacement.memberPlacements[mp];
+                        if (member != null && !string.IsNullOrEmpty(member.partId))
+                            integratedMemberMap[member.partId] = member;
+                    }
+                }
+            }
+
             // "Fully Assembled" mode: targetSequenceIndex past the last step means
             // show every assigned part at its playPosition (same as runtime final view).
             int lastStepSeq = orderedSteps.Length > 0
@@ -176,19 +197,39 @@ namespace OSE.UI.Root
                     // Subassembly members are pre-assembled before their step — no
                     // meaningful individual startPosition, always use playPosition.
                     bool usePlay = fullyAssembled || partSeq < targetSequenceIndex || subassemblyParts.Contains(partGo.name);
-                    Vector3 pos = usePlay
-                        ? new Vector3(pp.playPosition.x, pp.playPosition.y, pp.playPosition.z)
-                        : new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z);
-                    Quaternion rot = usePlay
-                        ? (!pp.playRotation.IsIdentity
+
+                    Vector3 pos;
+                    Quaternion rot;
+                    Vector3 scl;
+
+                    // Prefer integrated member placement when available — these are
+                    // the canonical assembled poses that play mode commits via
+                    // SubassemblyPlacementController.TryApplyIntegratedPlacement().
+                    if (usePlay && integratedMemberMap.TryGetValue(partGo.name, out IntegratedMemberPreviewPlacement imp))
+                    {
+                        pos = new Vector3(imp.position.x, imp.position.y, imp.position.z);
+                        rot = !imp.rotation.IsIdentity
+                            ? new Quaternion(imp.rotation.x, imp.rotation.y, imp.rotation.z, imp.rotation.w)
+                            : Quaternion.identity;
+                        scl = new Vector3(imp.scale.x, imp.scale.y, imp.scale.z);
+                    }
+                    else if (usePlay)
+                    {
+                        pos = new Vector3(pp.playPosition.x, pp.playPosition.y, pp.playPosition.z);
+                        rot = !pp.playRotation.IsIdentity
                             ? new Quaternion(pp.playRotation.x, pp.playRotation.y, pp.playRotation.z, pp.playRotation.w)
-                            : Quaternion.identity)
-                        : (!pp.startRotation.IsIdentity
+                            : Quaternion.identity;
+                        scl = new Vector3(pp.playScale.x, pp.playScale.y, pp.playScale.z);
+                    }
+                    else
+                    {
+                        pos = new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z);
+                        rot = !pp.startRotation.IsIdentity
                             ? new Quaternion(pp.startRotation.x, pp.startRotation.y, pp.startRotation.z, pp.startRotation.w)
-                            : Quaternion.identity);
-                    Vector3 scl = usePlay
-                        ? new Vector3(pp.playScale.x, pp.playScale.y, pp.playScale.z)
-                        : new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z);
+                            : Quaternion.identity;
+                        scl = new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z);
+                    }
+
                     // Fall back to playScale when startScale is zero
                     if (!usePlay && scl.sqrMagnitude < 0.00001f)
                         scl = new Vector3(pp.playScale.x, pp.playScale.y, pp.playScale.z);
@@ -520,6 +561,19 @@ namespace OSE.UI.Root
 #if UNITY_EDITOR
             SpawnPackageParts();
             PositionParts();
+            // Immediately apply step-aware positions so the editor preview
+            // matches play-mode layout from the moment parts spawn.
+            if (!Application.isPlaying)
+            {
+                var driver = FindAnyObjectByType<SessionDriver>();
+                if (driver != null)
+                {
+                    int stepSeq = driver.PreviewStepSequenceIndex;
+                    var pkg = driver.EditModePackage;
+                    if (stepSeq > 0 && pkg != null)
+                        ApplyStepAwarePositions(stepSeq, pkg);
+                }
+            }
             PositionTargetMarker();
             RuntimeEventBus.Publish(new SpawnerPartsReady());
 #else
