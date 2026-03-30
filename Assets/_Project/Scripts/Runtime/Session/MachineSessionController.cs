@@ -432,6 +432,8 @@ namespace OSE.Runtime
             // Metrics update only — persisted on next step completion or flush.
         }
 
+        private bool _awaitingTransitionResume;
+
         private void HandleAssemblyCompleted(string assemblyId)
         {
             // During explicit navigation (skip-to-end, step forward/back),
@@ -447,12 +449,62 @@ namespace OSE.Runtime
             _currentAssemblyIndex++;
             if (_currentAssemblyIndex < _assemblyOrder.Length)
             {
-                BeginCurrentAssembly();
+                // Publish transition event so the UI can show an interstitial overlay.
+                string completedName = null;
+                if (_package != null && _package.TryGetAssembly(assemblyId, out var completedAssembly))
+                    completedName = completedAssembly.name;
+
+                string nextId = _assemblyOrder[_currentAssemblyIndex];
+                string nextName = null;
+                string nextDescription = null;
+                string nextLearningFocus = null;
+                if (_package != null && _package.TryGetAssembly(nextId, out var nextAssembly))
+                {
+                    nextName = nextAssembly.name;
+                    nextDescription = nextAssembly.description;
+                    nextLearningFocus = nextAssembly.learningFocus;
+                }
+
+                int completedStepsGlobal = 0;
+                int totalStepsGlobal = 0;
+                if (_package != null)
+                {
+                    var orderedSteps = _package.GetOrderedSteps();
+                    totalStepsGlobal = orderedSteps?.Length ?? 0;
+                    // Count steps belonging to assemblies up to and including the completed one
+                    for (int i = 0; i < _currentAssemblyIndex && i < _assemblyOrder.Length; i++)
+                    {
+                        if (_package.TryGetAssembly(_assemblyOrder[i], out var a) && a?.stepIds != null)
+                            completedStepsGlobal += a.stepIds.Length;
+                    }
+                }
+
+                _awaitingTransitionResume = true;
+                RuntimeEventBus.Publish(new AssemblyTransitionRequested(
+                    completedName ?? assemblyId,
+                    nextId,
+                    nextName ?? nextId,
+                    nextDescription,
+                    nextLearningFocus,
+                    _currentAssemblyIndex, // 0-based index of next module (also count of completed modules)
+                    _assemblyOrder.Length,
+                    completedStepsGlobal,
+                    totalStepsGlobal));
             }
             else
             {
                 CompleteSession();
             }
+        }
+
+        public void ResumeAfterTransition()
+        {
+            if (!_awaitingTransitionResume)
+                return;
+
+            _awaitingTransitionResume = false;
+            OseLog.Info($"[MachineSessionController] Transition dismissed — beginning assembly index {_currentAssemblyIndex}.");
+            BeginCurrentAssembly();
         }
 
         private void AutoSave()

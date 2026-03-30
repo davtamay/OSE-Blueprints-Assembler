@@ -754,6 +754,14 @@ namespace OSE.Content.Validation
                         subassemblyPartIds = new HashSet<string>(subassembly.partIds ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
                     }
 
+                    // Warn when member placement count doesn't match subassembly part count
+                    // (catches authoring omissions where some members were forgotten).
+                    if (subassemblyPartIds != null && placement.memberPlacements.Length != subassemblyPartIds.Count)
+                    {
+                        issues.Add(Warning($"{path}.memberPlacements",
+                            $"Integrated placement has {placement.memberPlacements.Length} member(s) but subassembly '{placement.subassemblyId}' defines {subassemblyPartIds.Count} part(s). Some members may be missing or extraneous."));
+                    }
+
                     for (int j = 0; j < placement.memberPlacements.Length; j++)
                     {
                         IntegratedMemberPreviewPlacement member = placement.memberPlacements[j];

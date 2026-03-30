@@ -187,6 +187,8 @@ namespace OSE.Editor
             EditorGUILayout.BeginHorizontal();
 
             EditorGUI.BeginDisabledGroup(currentIdx <= 0);
+            if (GUILayout.Button("◄|", GUILayout.Width(28)))
+                CommitStep(stepSeqProp, 0);
             if (GUILayout.Button("◄", GUILayout.Width(28)))
                 CommitStep(stepSeqProp, currentIdx - 1);
             EditorGUI.EndDisabledGroup();
@@ -215,6 +217,8 @@ namespace OSE.Editor
             EditorGUI.BeginDisabledGroup(currentIdx >= totalEntries - 1);
             if (GUILayout.Button("►", GUILayout.Width(28)))
                 CommitStep(stepSeqProp, currentIdx + 1);
+            if (GUILayout.Button("|►", GUILayout.Width(28)))
+                CommitStep(stepSeqProp, _orderedSteps.Length);
             EditorGUI.EndDisabledGroup();
 
             EditorGUILayout.EndHorizontal();

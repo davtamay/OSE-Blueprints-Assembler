@@ -52,6 +52,7 @@ namespace OSE.UI.Root
         private RepositionUiController _repositionUi;
         private VisualElement _rootElement;
         private IntroOverlayController _introController;
+        private AssemblyTransitionController _transitionController;
         private const float ToolCursorBadgeWidth = 172f;
         private const float ToolCursorBadgeHeight = 34f;
         private const float MouseCursorOffsetY = 22f;
@@ -113,6 +114,7 @@ namespace OSE.UI.Root
             RuntimeEventBus.Subscribe<StepStateChanged>(HandleRuntimeStepStateChanged);
             RuntimeEventBus.Subscribe<StepNavigated>(HandleRuntimeStepNavigated);
             RuntimeEventBus.Subscribe<SessionCompleted>(HandleRuntimeSessionCompleted);
+            RuntimeEventBus.Subscribe<AssemblyTransitionRequested>(HandleAssemblyTransitionRequested);
         }
 
         private void Start()
@@ -133,6 +135,7 @@ namespace OSE.UI.Root
             RuntimeEventBus.Unsubscribe<StepStateChanged>(HandleRuntimeStepStateChanged);
             RuntimeEventBus.Unsubscribe<StepNavigated>(HandleRuntimeStepNavigated);
             RuntimeEventBus.Unsubscribe<SessionCompleted>(HandleRuntimeSessionCompleted);
+            RuntimeEventBus.Unsubscribe<AssemblyTransitionRequested>(HandleAssemblyTransitionRequested);
             _toolDock?.Unsubscribe();
             UnregisterPresentationAdapter();
             TeardownUi();
@@ -710,6 +713,44 @@ namespace OSE.UI.Root
             string contextActionLabel = null;
             bool contextActionEnabled = false;
             float? progressOverride = _gate.ProgressComplete ? 1f : ResolveIntraStepProgress();
+
+            // Resolve assembly name and global progress from session
+            string assemblyName = null;
+            int globalStepIndex = 0;
+            int globalTotalSteps = 0;
+            if (ServiceRegistry.TryGet<IMachineSessionController>(out var sessionForProgress))
+            {
+                var pkg = sessionForProgress.Package;
+                if (pkg != null)
+                {
+                    string assemblyId = sessionForProgress.AssemblyController?.CurrentAssemblyId;
+                    if (!string.IsNullOrEmpty(assemblyId) &&
+                        pkg.TryGetAssembly(assemblyId, out var assemblyDef) &&
+                        assemblyDef != null)
+                    {
+                        assemblyName = assemblyDef.name;
+                    }
+
+                    var orderedSteps = pkg.GetOrderedSteps();
+                    globalTotalSteps = orderedSteps?.Length ?? 0;
+                    string activeStepId = sessionForProgress.AssemblyController?.StepController?.HasActiveStep == true
+                        ? sessionForProgress.AssemblyController.StepController.CurrentStepState.StepId
+                        : sessionForProgress.SessionState?.CurrentStepId;
+                    if (!string.IsNullOrEmpty(activeStepId) && orderedSteps != null)
+                    {
+                        for (int i = 0; i < orderedSteps.Length; i++)
+                        {
+                            if (orderedSteps[i] != null &&
+                                string.Equals(orderedSteps[i].id, activeStepId, System.StringComparison.OrdinalIgnoreCase))
+                            {
+                                globalStepIndex = i;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
             StepPanelViewModel viewModel = _stepPresenter.Create(
                 _currentStepNumber,
                 _totalSteps,
@@ -722,7 +763,10 @@ namespace OSE.UI.Root
                 showContextActionButton,
                 contextActionLabel,
                 contextActionEnabled,
-                progressOverride);
+                progressOverride,
+                assemblyName,
+                globalStepIndex,
+                globalTotalSteps);
 
             _stepPanelController.Show(viewModel);
         }
@@ -999,6 +1043,7 @@ namespace OSE.UI.Root
             _toolCursorBadge = null;
             _toolCursorLabel = null;
             _introController?.Teardown();
+            _transitionController?.Teardown();
             _activeToolId = null;
             _toolDock?.Teardown();
             _repositionUi?.Teardown();
@@ -1008,6 +1053,33 @@ namespace OSE.UI.Root
         private void HandleRepositionModeChangedUI(RepositionModeChanged evt)
         {
             _repositionUi?.HandleRepositionModeChanged(evt);
+        }
+
+        // ── Assembly Transition Overlay ──
+
+        private void EnsureTransitionController()
+        {
+            _transitionController ??= new AssemblyTransitionController(
+                () => _rootElement,
+                HandleTransitionContinue);
+        }
+
+        private void HandleAssemblyTransitionRequested(AssemblyTransitionRequested evt)
+        {
+            EnsureTransitionController();
+            _transitionController.Show(evt);
+        }
+
+        private void HandleTransitionContinue()
+        {
+            if (ServiceRegistry.TryGet<IMachineSessionController>(out var session))
+                session.ResumeAfterTransition();
+
+            RefreshStepPanel();
+            RefreshSessionHudPanel();
+            RefreshPartInfoPanel();
+            RefreshToolDockPanel();
+            RefreshToolInfoPanel();
         }
 
         // ── Machine Intro Overlay (delegated to IntroOverlayController) ──

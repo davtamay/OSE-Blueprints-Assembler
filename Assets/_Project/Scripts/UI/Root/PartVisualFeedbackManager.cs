@@ -746,7 +746,7 @@ namespace OSE.UI.Root
                 if (partGo == null) continue;
 
                 string partId = partGo.name;
-                MovePartToPlayPosition(partId);
+                MovePartToIntegratedOrPlayPosition(partId, partGo);
                 partGo.SetActive(true);
                 _ctx.PartStates[partId] = PartPlacementState.Completed;
                 SyncPartGrabInteractivity(partGo, partId);
@@ -754,7 +754,28 @@ namespace OSE.UI.Root
                 _revealedPartIds.Add(partId);
             }
 
-            OseLog.Info($"[ShowAllPartsAssembled] Placed {parts.Count} parts at play positions.");
+            OseLog.Info($"[ShowAllPartsAssembled] Placed {parts.Count} parts at assembled positions.");
+        }
+
+        private void MovePartToIntegratedOrPlayPosition(string partId, GameObject partGo)
+        {
+            // In the fully-assembled view, prefer integrated member placement
+            // (canonical cube pose) so subassembly members appear at their stacked
+            // positions rather than their fabrication-station playPositions.
+            IntegratedMemberPreviewPlacement imp = _ctx.Spawner?.FindIntegratedMemberPlacement(partId);
+            if (imp != null)
+            {
+                Vector3 iPos = new Vector3(imp.position.x, imp.position.y, imp.position.z);
+                Quaternion iRot = !imp.rotation.IsIdentity
+                    ? new Quaternion(imp.rotation.x, imp.rotation.y, imp.rotation.z, imp.rotation.w)
+                    : Quaternion.identity;
+                Vector3 iScl = new Vector3(imp.scale.x, imp.scale.y, imp.scale.z);
+                partGo.transform.SetLocalPositionAndRotation(iPos, iRot);
+                partGo.transform.localScale = iScl;
+                return;
+            }
+
+            MovePartToPlayPosition(partId);
         }
 
         public void RevertFutureStepParts(StepDefinition[] allSteps, int fromStepIndex)

@@ -138,7 +138,7 @@
         {
             "id": "assembly_d3d_frame",
             "name": "D3D Frame",
-            "description": "Complete set of six D3D frame sides authored as source-backed layup, clamp-up, tack-welded panels, stacked cube targets, first-pass cube corner joining, seam-weld passes, grinder cleanup at later mounting faces, post-cleanup square verification, and frame acceptance before motion hardware.",
+            "description": "Complete set of six D3D frame sides authored as source-backed layup, clamp-up, tack-welded panels, stacked cube targets, bracket-based cube joining with staged bolt tightening, post-bracket square verification, and frame acceptance before motion hardware.",
             "machineId": "d3d_v18_10",
             "subassemblyIds": [
                 "subassembly_bottom_frame_side",
@@ -181,17 +181,17 @@
                 "step_stack_rear_frame_side",
                 "step_stack_top_frame_side",
                 "step_verify_stacked_cube_square",
-                "step_clamp_cube_opposite_top_corners",
-                "step_tack_weld_lower_cube_corners",
-                "step_tack_weld_upper_cube_corners",
-                "step_seam_weld_lower_cube_corners",
-                "step_seam_weld_upper_cube_corners",
-                "step_verify_welded_cube_square",
-                "step_cleanup_upper_frame_joints",
-                "step_recheck_cleaned_cube_square",
+                "step_place_lower_corner_brackets",
+                "step_snug_lower_bracket_bolts",
+                "step_place_upper_corner_brackets",
+                "step_snug_upper_bracket_bolts",
+                "step_verify_bracketed_cube_square",
+                "step_final_tighten_all_bracket_bolts",
+                "step_verify_tightened_cube_square",
+                "step_recheck_cube_corners",
                 "step_accept_frame_for_motion_hardware"
             ],
-            "learningFocus": "Repeatable frame-side geometry, square verification, heat-control tack order, stable hold-down, correct spatial stacking of the finished frame sides into the cube, the first tack-to-seam joining sequence that locks the frame, and the cleanup/recheck logic used before motion hardware is added."
+            "learningFocus": "Repeatable frame-side geometry, square verification, stable hold-down, correct spatial stacking of the finished frame sides into the cube, bracket-based cube joining with staged bolt tightening, square verification between stages, and the acceptance logic used before motion hardware is added."
         },
         {
             "id": "assembly_d3d_axes_stage_01",
@@ -487,7 +487,7 @@
             "id": "subassembly_cube_joining",
             "name": "Frame Cube Joining",
             "assemblyId": "assembly_d3d_frame",
-            "description": "Uses the six completed frame-side panels as rigid learner-placeable units, positions them into the open printer cube, checks the stacked frame, pins opposite top corners, places the first cube corner tacks, completes the first seam-weld pass, grinds key upper joints, rechecks the welded cube, and accepts the frame before later subsystems are mounted.",
+            "description": "Uses the six completed frame-side panels as rigid learner-placeable units, positions them into the open printer cube, checks the stacked frame, attaches 8 printed PLA corner brackets with M6 bolts in a staged finger-tight then final-tighten sequence, verifies squareness between stages, and accepts the frame before later subsystems are mounted.",
             "partIds": [
                 "d3d_frame_bottom_top_bar",
                 "d3d_frame_bottom_right_bar",
@@ -523,17 +523,17 @@
                 "step_stack_rear_frame_side",
                 "step_stack_top_frame_side",
                 "step_verify_stacked_cube_square",
-                "step_clamp_cube_opposite_top_corners",
-                "step_tack_weld_lower_cube_corners",
-                "step_tack_weld_upper_cube_corners",
-                "step_seam_weld_lower_cube_corners",
-                "step_seam_weld_upper_cube_corners",
-                "step_verify_welded_cube_square",
-                "step_cleanup_upper_frame_joints",
-                "step_recheck_cleaned_cube_square",
+                "step_place_lower_corner_brackets",
+                "step_snug_lower_bracket_bolts",
+                "step_place_upper_corner_brackets",
+                "step_snug_upper_bracket_bolts",
+                "step_verify_bracketed_cube_square",
+                "step_final_tighten_all_bracket_bolts",
+                "step_verify_tightened_cube_square",
+                "step_recheck_cube_corners",
                 "step_accept_frame_for_motion_hardware"
             ],
-            "milestoneMessage": "The printer cube is stacked, pinned, tack-welded, seam-welded, cleaned up, rechecked, and accepted for later motion hardware."
+            "milestoneMessage": "The printer cube is stacked, bracketed at all eight corners, bolt-tightened, verified for square, and accepted for later motion hardware."
         },
         {
             "id": "subassembly_y_left_axis",
@@ -1197,13 +1197,13 @@
         },
         {
             "id": "compound007",
-            "displayName": "Compound007",
+            "displayName": "Frame Corner Bracket",
             "assetRef": "compound007_approved.glb",
             "name": "Frame Corner Bracket",
             "category": "bracket",
-            "material": "Steel bracket",
-            "function": "Structural component near the frame bottom-left corner area.",
-            "quantity": 1
+            "material": "3D-printed PLA",
+            "function": "Bolts to two adjacent frame sides at each cube corner using M6x18 bolts (included), replacing welded joints. 8 brackets secure all corners of the cubic frame.",
+            "quantity": 8
         },
         {
             "id": "d3d_extruder_8mm_sensor",
@@ -3769,14 +3769,16 @@
             ]
         },
         {
-            "id": "step_clamp_cube_opposite_top_corners",
-            "name": "Clamp opposite top cube corners",
+            "id": "step_place_lower_corner_brackets",
+            "name": "Place 4 lower corner brackets",
             "assemblyId": "assembly_d3d_frame",
             "subassemblyId": "subassembly_cube_joining",
             "sequenceIndex": 32,
-            "instructionText": "Equip the locking clamp and pin the top-front-left cube corner first, then the top-rear-right corner. Keep the stacked panels registered before the first cube tacks go in.",
-            "whyItMattersText": "Holding opposite top corners resists rack across the open frame while the lower cube corners are tacked.",
-            "requiredPartIds": [],
+            "instructionText": "Position a 3D-printed corner bracket at each of the four lower cube corners. Align the bracket holes with the frame sides and start two M6×18 bolts per bracket finger-tight. Work in this order: front-left, rear-right, front-right, then rear-left.",
+            "whyItMattersText": "Starting with the lower corners establishes the base geometry of the cube before the upper corners are locked in.",
+            "requiredPartIds": [
+                "compound007"
+            ],
             "optionalPartIds": [
                 "d3d_frame_bottom_top_bar",
                 "d3d_frame_bottom_right_bar",
@@ -3804,94 +3806,7 @@
                 "d3d_frame_rear_left_bar"
             ],
             "relevantToolIds": [
-                "tool_locking_clamp"
-            ],
-            "targetIds": [
-                "target_cube_clamp_top_front_left",
-                "target_cube_clamp_top_rear_right"
-            ],
-            "targetOrder": "sequential",
-            "completionType": "tool_action",
-            "family": "Use",
-            "profile": "Torque",
-            "viewMode": "WorkZone",
-            "validationRuleIds": [],
-            "hintIds": [
-                "hint_cube_clamp_top_front_left",
-                "hint_cube_clamp_top_rear_right"
-            ],
-            "effectTriggerIds": [],
-            "requiredToolActions": [
-                {
-                    "id": "action_cube_clamp_top_front_left",
-                    "toolId": "tool_locking_clamp",
-                    "actionType": "tighten",
-                    "targetId": "target_cube_clamp_top_front_left",
-                    "requiredCount": 1,
-                    "successMessage": "Top-front-left cube corner pinned.",
-                    "failureMessage": "Equip the locking clamp and use it on the highlighted top-front-left cube corner."
-                },
-                {
-                    "id": "action_cube_clamp_top_rear_right",
-                    "toolId": "tool_locking_clamp",
-                    "actionType": "tighten",
-                    "targetId": "target_cube_clamp_top_rear_right",
-                    "requiredCount": 1,
-                    "successMessage": "Top-rear-right cube corner pinned.",
-                    "failureMessage": "Equip the locking clamp and use it on the highlighted top-rear-right cube corner."
-                }
-            ],
-            "allowSkip": false,
-            "challengeFlags": {
-                "penalizeHintUsage": false,
-                "penalizeInvalidPlacement": false,
-                "stricterToleranceAvailable": true
-            },
-            "eventTags": [
-                "d3d",
-                "frame",
-                "cube",
-                "clamp",
-                "opposite_corners"
-            ]
-        },
-        {
-            "id": "step_tack_weld_lower_cube_corners",
-            "name": "Tack-weld the lower cube corners",
-            "assemblyId": "assembly_d3d_frame",
-            "subassemblyId": "subassembly_cube_joining",
-            "sequenceIndex": 33,
-            "instructionText": "Equip the MIG torch and place four short tack welds at the lower cube corners in this order: front-left, rear-right, front-right, then rear-left. Keep the frame registered against the clamp points and avoid a long heat soak at any one corner.",
-            "whyItMattersText": "Lower corner tacks lock the base geometry first, reducing the chance that the open cube walks out of square when the upper corners are closed.",
-            "requiredPartIds": [],
-            "optionalPartIds": [
-                "d3d_frame_bottom_top_bar",
-                "d3d_frame_bottom_right_bar",
-                "d3d_frame_bottom_bottom_bar",
-                "d3d_frame_bottom_left_bar",
-                "d3d_frame_top_top_bar",
-                "d3d_frame_top_right_bar",
-                "d3d_frame_top_bottom_bar",
-                "d3d_frame_top_left_bar",
-                "d3d_frame_left_top_bar",
-                "d3d_frame_left_right_bar",
-                "d3d_frame_left_bottom_bar",
-                "d3d_frame_left_left_bar",
-                "d3d_frame_right_top_bar",
-                "d3d_frame_right_right_bar",
-                "d3d_frame_right_bottom_bar",
-                "d3d_frame_right_left_bar",
-                "d3d_frame_front_top_bar",
-                "d3d_frame_front_right_bar",
-                "d3d_frame_front_bottom_bar",
-                "d3d_frame_front_left_bar",
-                "d3d_frame_rear_top_bar",
-                "d3d_frame_rear_right_bar",
-                "d3d_frame_rear_bottom_bar",
-                "d3d_frame_rear_left_bar"
-            ],
-            "relevantToolIds": [
-                "tool_mig_torch"
+                "tool_allen_key_metric"
             ],
             "targetIds": [
                 "target_cube_weld_lower_front_left",
@@ -3902,52 +3817,49 @@
             "targetOrder": "sequential",
             "completionType": "tool_action",
             "family": "Use",
-            "profile": "Weld",
-            "viewMode": "PathView",
+            "profile": "Torque",
+            "viewMode": "WorkZone",
             "validationRuleIds": [],
             "hintIds": [
-                "hint_cube_weld_lower_front_left",
-                "hint_cube_weld_lower_rear_right",
-                "hint_cube_weld_lower_front_right",
-                "hint_cube_weld_lower_rear_left"
+                "hint_bracket_lower_placement"
             ],
             "effectTriggerIds": [],
             "requiredToolActions": [
                 {
-                    "id": "action_cube_weld_lower_front_left",
-                    "toolId": "tool_mig_torch",
-                    "actionType": "weld_pass",
+                    "id": "action_bracket_lower_front_left",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
                     "targetId": "target_cube_weld_lower_front_left",
                     "requiredCount": 1,
-                    "successMessage": "Lower front-left cube corner tack complete.",
-                    "failureMessage": "Equip the MIG torch and use it on the highlighted lower cube corner."
+                    "successMessage": "Lower front-left bracket placed.",
+                    "failureMessage": "Equip the allen key and place the bracket at the highlighted lower corner."
                 },
                 {
-                    "id": "action_cube_weld_lower_rear_right",
-                    "toolId": "tool_mig_torch",
-                    "actionType": "weld_pass",
+                    "id": "action_bracket_lower_rear_right",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
                     "targetId": "target_cube_weld_lower_rear_right",
                     "requiredCount": 1,
-                    "successMessage": "Lower rear-right cube corner tack complete.",
-                    "failureMessage": "Equip the MIG torch and use it on the highlighted lower cube corner."
+                    "successMessage": "Lower rear-right bracket placed.",
+                    "failureMessage": "Equip the allen key and place the bracket at the highlighted lower corner."
                 },
                 {
-                    "id": "action_cube_weld_lower_front_right",
-                    "toolId": "tool_mig_torch",
-                    "actionType": "weld_pass",
+                    "id": "action_bracket_lower_front_right",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
                     "targetId": "target_cube_weld_lower_front_right",
                     "requiredCount": 1,
-                    "successMessage": "Lower front-right cube corner tack complete.",
-                    "failureMessage": "Equip the MIG torch and use it on the highlighted lower cube corner."
+                    "successMessage": "Lower front-right bracket placed.",
+                    "failureMessage": "Equip the allen key and place the bracket at the highlighted lower corner."
                 },
                 {
-                    "id": "action_cube_weld_lower_rear_left",
-                    "toolId": "tool_mig_torch",
-                    "actionType": "weld_pass",
+                    "id": "action_bracket_lower_rear_left",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
                     "targetId": "target_cube_weld_lower_rear_left",
                     "requiredCount": 1,
-                    "successMessage": "Lower rear-left cube corner tack complete.",
-                    "failureMessage": "Equip the MIG torch and use it on the highlighted lower cube corner."
+                    "successMessage": "Lower rear-left bracket placed.",
+                    "failureMessage": "Equip the allen key and place the bracket at the highlighted lower corner."
                 }
             ],
             "allowSkip": false,
@@ -3960,23 +3872,18 @@
                 "d3d",
                 "frame",
                 "cube",
-                "weld",
+                "bracket",
                 "lower_corners"
-            ],
-            "feedback": {
-                "completionEffectColor": "#FF8A33",
-                "completionPulseScale": 1.35,
-                "completionParticleId": "weld_glow"
-            }
+            ]
         },
         {
-            "id": "step_tack_weld_upper_cube_corners",
-            "name": "Tack-weld the upper cube corners",
+            "id": "step_snug_lower_bracket_bolts",
+            "name": "Snug lower bracket bolts finger-tight",
             "assemblyId": "assembly_d3d_frame",
             "subassemblyId": "subassembly_cube_joining",
-            "sequenceIndex": 34,
-            "instructionText": "Equip the MIG torch and place four short tack welds at the upper cube corners in this order: front-left, rear-right, front-right, then rear-left. Keep the tacks short so the frame stays true before seam welding.",
-            "whyItMattersText": "Upper corner tacks complete the first structural lock of the cube while still leaving the frame open to final seam-weld sequencing.",
+            "sequenceIndex": 33,
+            "instructionText": "Use the allen key to snug all 8 bolts on the four lower brackets to finger-tight. Do not fully tighten yet — the frame needs to stay adjustable for the upper brackets.",
+            "whyItMattersText": "Leaving bolts finger-tight allows minor adjustments when the upper brackets are added, ensuring the cube stays square.",
             "requiredPartIds": [],
             "optionalPartIds": [
                 "d3d_frame_bottom_top_bar",
@@ -4005,7 +3912,116 @@
                 "d3d_frame_rear_left_bar"
             ],
             "relevantToolIds": [
-                "tool_mig_torch"
+                "tool_allen_key_metric"
+            ],
+            "targetIds": [
+                "target_cube_weld_lower_front_left",
+                "target_cube_weld_lower_rear_right",
+                "target_cube_weld_lower_front_right",
+                "target_cube_weld_lower_rear_left"
+            ],
+            "targetOrder": "sequential",
+            "completionType": "tool_action",
+            "family": "Use",
+            "profile": "Torque",
+            "viewMode": "WorkZone",
+            "validationRuleIds": [],
+            "hintIds": [
+                "hint_snug_not_tight"
+            ],
+            "effectTriggerIds": [],
+            "requiredToolActions": [
+                {
+                    "id": "action_snug_lower_front_left",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
+                    "targetId": "target_cube_weld_lower_front_left",
+                    "requiredCount": 1,
+                    "successMessage": "Lower front-left bolts snugged.",
+                    "failureMessage": "Use the allen key on the highlighted lower bracket bolts."
+                },
+                {
+                    "id": "action_snug_lower_rear_right",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
+                    "targetId": "target_cube_weld_lower_rear_right",
+                    "requiredCount": 1,
+                    "successMessage": "Lower rear-right bolts snugged.",
+                    "failureMessage": "Use the allen key on the highlighted lower bracket bolts."
+                },
+                {
+                    "id": "action_snug_lower_front_right",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
+                    "targetId": "target_cube_weld_lower_front_right",
+                    "requiredCount": 1,
+                    "successMessage": "Lower front-right bolts snugged.",
+                    "failureMessage": "Use the allen key on the highlighted lower bracket bolts."
+                },
+                {
+                    "id": "action_snug_lower_rear_left",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
+                    "targetId": "target_cube_weld_lower_rear_left",
+                    "requiredCount": 1,
+                    "successMessage": "Lower rear-left bolts snugged.",
+                    "failureMessage": "Use the allen key on the highlighted lower bracket bolts."
+                }
+            ],
+            "allowSkip": false,
+            "challengeFlags": {
+                "penalizeHintUsage": false,
+                "penalizeInvalidPlacement": false,
+                "stricterToleranceAvailable": true
+            },
+            "eventTags": [
+                "d3d",
+                "frame",
+                "cube",
+                "bracket",
+                "snug",
+                "lower"
+            ]
+        },
+        {
+            "id": "step_place_upper_corner_brackets",
+            "name": "Place 4 upper corner brackets",
+            "assemblyId": "assembly_d3d_frame",
+            "subassemblyId": "subassembly_cube_joining",
+            "sequenceIndex": 34,
+            "instructionText": "Position a corner bracket at each of the four upper cube corners. Start two M6×18 bolts per bracket finger-tight. Work in the same order: front-left, rear-right, front-right, then rear-left.",
+            "whyItMattersText": "Upper brackets complete the structural lock of all eight cube corners.",
+            "requiredPartIds": [
+                "compound007"
+            ],
+            "optionalPartIds": [
+                "d3d_frame_bottom_top_bar",
+                "d3d_frame_bottom_right_bar",
+                "d3d_frame_bottom_bottom_bar",
+                "d3d_frame_bottom_left_bar",
+                "d3d_frame_top_top_bar",
+                "d3d_frame_top_right_bar",
+                "d3d_frame_top_bottom_bar",
+                "d3d_frame_top_left_bar",
+                "d3d_frame_left_top_bar",
+                "d3d_frame_left_right_bar",
+                "d3d_frame_left_bottom_bar",
+                "d3d_frame_left_left_bar",
+                "d3d_frame_right_top_bar",
+                "d3d_frame_right_right_bar",
+                "d3d_frame_right_bottom_bar",
+                "d3d_frame_right_left_bar",
+                "d3d_frame_front_top_bar",
+                "d3d_frame_front_right_bar",
+                "d3d_frame_front_bottom_bar",
+                "d3d_frame_front_left_bar",
+                "d3d_frame_rear_top_bar",
+                "d3d_frame_rear_right_bar",
+                "d3d_frame_rear_bottom_bar",
+                "d3d_frame_rear_left_bar"
+            ],
+            "relevantToolIds": [
+                "tool_allen_key_metric"
             ],
             "targetIds": [
                 "target_cube_weld_upper_front_left",
@@ -4016,52 +4032,49 @@
             "targetOrder": "sequential",
             "completionType": "tool_action",
             "family": "Use",
-            "profile": "Weld",
-            "viewMode": "PathView",
+            "profile": "Torque",
+            "viewMode": "WorkZone",
             "validationRuleIds": [],
             "hintIds": [
-                "hint_cube_weld_upper_front_left",
-                "hint_cube_weld_upper_rear_right",
-                "hint_cube_weld_upper_front_right",
-                "hint_cube_weld_upper_rear_left"
+                "hint_bracket_upper_placement"
             ],
             "effectTriggerIds": [],
             "requiredToolActions": [
                 {
-                    "id": "action_cube_weld_upper_front_left",
-                    "toolId": "tool_mig_torch",
-                    "actionType": "weld_pass",
+                    "id": "action_bracket_upper_front_left",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
                     "targetId": "target_cube_weld_upper_front_left",
                     "requiredCount": 1,
-                    "successMessage": "Upper front-left cube corner tack complete.",
-                    "failureMessage": "Equip the MIG torch and use it on the highlighted upper cube corner."
+                    "successMessage": "Upper front-left bracket placed.",
+                    "failureMessage": "Equip the allen key and place the bracket at the highlighted upper corner."
                 },
                 {
-                    "id": "action_cube_weld_upper_rear_right",
-                    "toolId": "tool_mig_torch",
-                    "actionType": "weld_pass",
+                    "id": "action_bracket_upper_rear_right",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
                     "targetId": "target_cube_weld_upper_rear_right",
                     "requiredCount": 1,
-                    "successMessage": "Upper rear-right cube corner tack complete.",
-                    "failureMessage": "Equip the MIG torch and use it on the highlighted upper cube corner."
+                    "successMessage": "Upper rear-right bracket placed.",
+                    "failureMessage": "Equip the allen key and place the bracket at the highlighted upper corner."
                 },
                 {
-                    "id": "action_cube_weld_upper_front_right",
-                    "toolId": "tool_mig_torch",
-                    "actionType": "weld_pass",
+                    "id": "action_bracket_upper_front_right",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
                     "targetId": "target_cube_weld_upper_front_right",
                     "requiredCount": 1,
-                    "successMessage": "Upper front-right cube corner tack complete.",
-                    "failureMessage": "Equip the MIG torch and use it on the highlighted upper cube corner."
+                    "successMessage": "Upper front-right bracket placed.",
+                    "failureMessage": "Equip the allen key and place the bracket at the highlighted upper corner."
                 },
                 {
-                    "id": "action_cube_weld_upper_rear_left",
-                    "toolId": "tool_mig_torch",
-                    "actionType": "weld_pass",
+                    "id": "action_bracket_upper_rear_left",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
                     "targetId": "target_cube_weld_upper_rear_left",
                     "requiredCount": 1,
-                    "successMessage": "Upper rear-left cube corner tack complete.",
-                    "failureMessage": "Equip the MIG torch and use it on the highlighted upper cube corner."
+                    "successMessage": "Upper rear-left bracket placed.",
+                    "failureMessage": "Equip the allen key and place the bracket at the highlighted upper corner."
                 }
             ],
             "allowSkip": false,
@@ -4074,23 +4087,18 @@
                 "d3d",
                 "frame",
                 "cube",
-                "weld",
+                "bracket",
                 "upper_corners"
-            ],
-            "feedback": {
-                "completionEffectColor": "#FF8A33",
-                "completionPulseScale": 1.35,
-                "completionParticleId": "weld_glow"
-            }
+            ]
         },
         {
-            "id": "step_seam_weld_lower_cube_corners",
-            "name": "Seam-weld the lower cube corners",
+            "id": "step_snug_upper_bracket_bolts",
+            "name": "Snug upper bracket bolts finger-tight",
             "assemblyId": "assembly_d3d_frame",
             "subassemblyId": "subassembly_cube_joining",
             "sequenceIndex": 35,
-            "instructionText": "Equip the MIG torch and complete the lower cube seam passes in this order: front-left, rear-right, front-right, then rear-left. Keep the frame braced and spread heat around the base instead of lingering on one corner.",
-            "whyItMattersText": "Completing the lower seam passes first locks the base of the cube before the upper frame is fully welded out.",
+            "instructionText": "Use the allen key to snug all 8 bolts on the four upper brackets to finger-tight. The cube should now hold its shape loosely with all 8 brackets in place.",
+            "whyItMattersText": "With all brackets finger-tight the cube can still be nudged square before the final tightening pass.",
             "requiredPartIds": [],
             "optionalPartIds": [
                 "d3d_frame_bottom_top_bar",
@@ -4119,63 +4127,60 @@
                 "d3d_frame_rear_left_bar"
             ],
             "relevantToolIds": [
-                "tool_mig_torch"
+                "tool_allen_key_metric"
             ],
             "targetIds": [
-                "target_cube_seam_lower_front_left",
-                "target_cube_seam_lower_rear_right",
-                "target_cube_seam_lower_front_right",
-                "target_cube_seam_lower_rear_left"
+                "target_cube_weld_upper_front_left",
+                "target_cube_weld_upper_rear_right",
+                "target_cube_weld_upper_front_right",
+                "target_cube_weld_upper_rear_left"
             ],
             "targetOrder": "sequential",
             "completionType": "tool_action",
             "family": "Use",
-            "profile": "Weld",
-            "viewMode": "PathView",
+            "profile": "Torque",
+            "viewMode": "WorkZone",
             "validationRuleIds": [],
             "hintIds": [
-                "hint_cube_seam_lower_front_left",
-                "hint_cube_seam_lower_rear_right",
-                "hint_cube_seam_lower_front_right",
-                "hint_cube_seam_lower_rear_left"
+                "hint_snug_not_tight"
             ],
             "effectTriggerIds": [],
             "requiredToolActions": [
                 {
-                    "id": "action_cube_seam_lower_front_left",
-                    "toolId": "tool_mig_torch",
-                    "actionType": "weld_pass",
-                    "targetId": "target_cube_seam_lower_front_left",
+                    "id": "action_snug_upper_front_left",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
+                    "targetId": "target_cube_weld_upper_front_left",
                     "requiredCount": 1,
-                    "successMessage": "Lower front-left seam pass complete.",
-                    "failureMessage": "Equip the MIG torch and use it on the highlighted lower seam target."
+                    "successMessage": "Upper front-left bolts snugged.",
+                    "failureMessage": "Use the allen key on the highlighted upper bracket bolts."
                 },
                 {
-                    "id": "action_cube_seam_lower_rear_right",
-                    "toolId": "tool_mig_torch",
-                    "actionType": "weld_pass",
-                    "targetId": "target_cube_seam_lower_rear_right",
+                    "id": "action_snug_upper_rear_right",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
+                    "targetId": "target_cube_weld_upper_rear_right",
                     "requiredCount": 1,
-                    "successMessage": "Lower rear-right seam pass complete.",
-                    "failureMessage": "Equip the MIG torch and use it on the highlighted lower seam target."
+                    "successMessage": "Upper rear-right bolts snugged.",
+                    "failureMessage": "Use the allen key on the highlighted upper bracket bolts."
                 },
                 {
-                    "id": "action_cube_seam_lower_front_right",
-                    "toolId": "tool_mig_torch",
-                    "actionType": "weld_pass",
-                    "targetId": "target_cube_seam_lower_front_right",
+                    "id": "action_snug_upper_front_right",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
+                    "targetId": "target_cube_weld_upper_front_right",
                     "requiredCount": 1,
-                    "successMessage": "Lower front-right seam pass complete.",
-                    "failureMessage": "Equip the MIG torch and use it on the highlighted lower seam target."
+                    "successMessage": "Upper front-right bolts snugged.",
+                    "failureMessage": "Use the allen key on the highlighted upper bracket bolts."
                 },
                 {
-                    "id": "action_cube_seam_lower_rear_left",
-                    "toolId": "tool_mig_torch",
-                    "actionType": "weld_pass",
-                    "targetId": "target_cube_seam_lower_rear_left",
+                    "id": "action_snug_upper_rear_left",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
+                    "targetId": "target_cube_weld_upper_rear_left",
                     "requiredCount": 1,
-                    "successMessage": "Lower rear-left seam pass complete.",
-                    "failureMessage": "Equip the MIG torch and use it on the highlighted lower seam target."
+                    "successMessage": "Upper rear-left bolts snugged.",
+                    "failureMessage": "Use the allen key on the highlighted upper bracket bolts."
                 }
             ],
             "allowSkip": false,
@@ -4188,137 +4193,19 @@
                 "d3d",
                 "frame",
                 "cube",
-                "weld",
-                "lower_seams"
-            ],
-            "feedback": {
-                "completionEffectColor": "#FF8A33",
-                "completionPulseScale": 1.35,
-                "completionParticleId": "weld_glow"
-            }
+                "bracket",
+                "snug",
+                "upper"
+            ]
         },
         {
-            "id": "step_seam_weld_upper_cube_corners",
-            "name": "Seam-weld the upper cube corners",
+            "id": "step_verify_bracketed_cube_square",
+            "name": "Verify bracketed cube is square",
             "assemblyId": "assembly_d3d_frame",
             "subassemblyId": "subassembly_cube_joining",
             "sequenceIndex": 36,
-            "instructionText": "Equip the MIG torch and complete the upper cube seam passes in this order: front-left, rear-right, front-right, then rear-left. Keep the passes short and balanced so the top frame does not rack while it cools.",
-            "whyItMattersText": "The upper seam passes complete the first welded cube frame and set the structure up for later cleanup or subsystem mounting.",
-            "requiredPartIds": [],
-            "optionalPartIds": [
-                "d3d_frame_bottom_top_bar",
-                "d3d_frame_bottom_right_bar",
-                "d3d_frame_bottom_bottom_bar",
-                "d3d_frame_bottom_left_bar",
-                "d3d_frame_top_top_bar",
-                "d3d_frame_top_right_bar",
-                "d3d_frame_top_bottom_bar",
-                "d3d_frame_top_left_bar",
-                "d3d_frame_left_top_bar",
-                "d3d_frame_left_right_bar",
-                "d3d_frame_left_bottom_bar",
-                "d3d_frame_left_left_bar",
-                "d3d_frame_right_top_bar",
-                "d3d_frame_right_right_bar",
-                "d3d_frame_right_bottom_bar",
-                "d3d_frame_right_left_bar",
-                "d3d_frame_front_top_bar",
-                "d3d_frame_front_right_bar",
-                "d3d_frame_front_bottom_bar",
-                "d3d_frame_front_left_bar",
-                "d3d_frame_rear_top_bar",
-                "d3d_frame_rear_right_bar",
-                "d3d_frame_rear_bottom_bar",
-                "d3d_frame_rear_left_bar"
-            ],
-            "relevantToolIds": [
-                "tool_mig_torch"
-            ],
-            "targetIds": [
-                "target_cube_seam_upper_front_left",
-                "target_cube_seam_upper_rear_right",
-                "target_cube_seam_upper_front_right",
-                "target_cube_seam_upper_rear_left"
-            ],
-            "targetOrder": "sequential",
-            "completionType": "tool_action",
-            "family": "Use",
-            "profile": "Weld",
-            "viewMode": "PathView",
-            "validationRuleIds": [],
-            "hintIds": [
-                "hint_cube_seam_upper_front_left",
-                "hint_cube_seam_upper_rear_right",
-                "hint_cube_seam_upper_front_right",
-                "hint_cube_seam_upper_rear_left"
-            ],
-            "effectTriggerIds": [],
-            "requiredToolActions": [
-                {
-                    "id": "action_cube_seam_upper_front_left",
-                    "toolId": "tool_mig_torch",
-                    "actionType": "weld_pass",
-                    "targetId": "target_cube_seam_upper_front_left",
-                    "requiredCount": 1,
-                    "successMessage": "Upper front-left seam pass complete.",
-                    "failureMessage": "Equip the MIG torch and use it on the highlighted upper seam target."
-                },
-                {
-                    "id": "action_cube_seam_upper_rear_right",
-                    "toolId": "tool_mig_torch",
-                    "actionType": "weld_pass",
-                    "targetId": "target_cube_seam_upper_rear_right",
-                    "requiredCount": 1,
-                    "successMessage": "Upper rear-right seam pass complete.",
-                    "failureMessage": "Equip the MIG torch and use it on the highlighted upper seam target."
-                },
-                {
-                    "id": "action_cube_seam_upper_front_right",
-                    "toolId": "tool_mig_torch",
-                    "actionType": "weld_pass",
-                    "targetId": "target_cube_seam_upper_front_right",
-                    "requiredCount": 1,
-                    "successMessage": "Upper front-right seam pass complete.",
-                    "failureMessage": "Equip the MIG torch and use it on the highlighted upper seam target."
-                },
-                {
-                    "id": "action_cube_seam_upper_rear_left",
-                    "toolId": "tool_mig_torch",
-                    "actionType": "weld_pass",
-                    "targetId": "target_cube_seam_upper_rear_left",
-                    "requiredCount": 1,
-                    "successMessage": "Upper rear-left seam pass complete.",
-                    "failureMessage": "Equip the MIG torch and use it on the highlighted upper seam target."
-                }
-            ],
-            "allowSkip": false,
-            "challengeFlags": {
-                "penalizeHintUsage": false,
-                "penalizeInvalidPlacement": false,
-                "stricterToleranceAvailable": true
-            },
-            "eventTags": [
-                "d3d",
-                "frame",
-                "cube",
-                "weld",
-                "upper_seams"
-            ],
-            "feedback": {
-                "completionEffectColor": "#FF8A33",
-                "completionPulseScale": 1.35,
-                "completionParticleId": "weld_glow"
-            }
-        },
-        {
-            "id": "step_verify_welded_cube_square",
-            "name": "Verify the welded cube remains square",
-            "assemblyId": "assembly_d3d_frame",
-            "subassemblyId": "subassembly_cube_joining",
-            "sequenceIndex": 37,
-            "instructionText": "Equip the framing square and recheck the top-front-left cube corner after the seam passes are complete. Confirm the frame stayed true through the weld sequence.",
-            "whyItMattersText": "A final square check catches weld pull before later systems are mounted to the frame.",
+            "instructionText": "Equip the framing square and check the top-front-left cube corner. Tap any out-of-square sides into alignment while the bolts are still finger-tight.",
+            "whyItMattersText": "This is the last chance to adjust the cube geometry before the bolts are fully tightened.",
             "requiredPartIds": [],
             "optionalPartIds": [
                 "d3d_frame_bottom_top_bar",
@@ -4358,18 +4245,18 @@
             "viewMode": "WorkZone",
             "validationRuleIds": [],
             "hintIds": [
-                "hint_cube_square_check_post_weld"
+                "hint_cube_square_check_front_left"
             ],
             "effectTriggerIds": [],
             "requiredToolActions": [
                 {
-                    "id": "action_cube_square_check_post_weld",
+                    "id": "action_bracket_square_check",
                     "toolId": "tool_framing_square",
                     "actionType": "measure",
                     "targetId": "target_cube_square_check_front_left",
                     "requiredCount": 1,
-                    "successMessage": "Welded cube checked for square.",
-                    "failureMessage": "Equip the framing square and use it on the highlighted welded cube corner marker."
+                    "successMessage": "Bracketed cube checked for square.",
+                    "failureMessage": "Equip the framing square and check the highlighted cube corner."
                 }
             ],
             "allowSkip": false,
@@ -4383,17 +4270,17 @@
                 "frame",
                 "cube",
                 "measure",
-                "post_weld_square_check"
+                "bracket_square_check"
             ]
         },
         {
-            "id": "step_cleanup_upper_frame_joints",
-            "name": "Clean the upper rail-mounting joints",
+            "id": "step_final_tighten_all_bracket_bolts",
+            "name": "Final-tighten all bracket bolts",
             "assemblyId": "assembly_d3d_frame",
             "subassemblyId": "subassembly_cube_joining",
-            "sequenceIndex": 38,
-            "instructionText": "Equip the angle grinder and make light cleanup passes on the four upper cube joints. Remove obvious proud weld metal and spatter that would interfere with later rail or bracket seating.",
-            "whyItMattersText": "Later motion hardware inherits these upper frame faces. Leaving weld buildup here makes later rail and gantry alignment harder.",
+            "sequenceIndex": 37,
+            "instructionText": "Use the allen key to fully tighten all 16 bracket bolts across all 8 corners. Work in alternating diagonal pairs (lower front-left then upper rear-right, etc.) to distribute clamping force evenly.",
+            "whyItMattersText": "Even tightening prevents one corner from pulling the frame out of square while the opposite corner is still loose.",
             "requiredPartIds": [],
             "optionalPartIds": [
                 "d3d_frame_bottom_top_bar",
@@ -4422,58 +4309,100 @@
                 "d3d_frame_rear_left_bar"
             ],
             "relevantToolIds": [
-                "tool_angle_grinder"
+                "tool_allen_key_metric"
             ],
             "targetIds": [
-                "target_cube_cleanup_upper_front_left",
-                "target_cube_cleanup_upper_rear_right",
-                "target_cube_cleanup_upper_front_right",
-                "target_cube_cleanup_upper_rear_left"
+                "target_cube_weld_lower_front_left",
+                "target_cube_weld_lower_rear_right",
+                "target_cube_weld_lower_front_right",
+                "target_cube_weld_lower_rear_left",
+                "target_cube_weld_upper_front_left",
+                "target_cube_weld_upper_rear_right",
+                "target_cube_weld_upper_front_right",
+                "target_cube_weld_upper_rear_left"
             ],
             "targetOrder": "sequential",
             "completionType": "tool_action",
             "family": "Use",
-            "profile": "Cut",
-            "viewMode": "PathView",
+            "profile": "Torque",
+            "viewMode": "WorkZone",
             "validationRuleIds": [],
-            "hintIds": [],
+            "hintIds": [
+                "hint_diagonal_tighten_order"
+            ],
             "effectTriggerIds": [],
             "requiredToolActions": [
                 {
-                    "id": "action_cube_cleanup_upper_front_left",
-                    "toolId": "tool_angle_grinder",
-                    "actionType": "grind_pass",
-                    "targetId": "target_cube_cleanup_upper_front_left",
+                    "id": "action_tighten_lower_front_left",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
+                    "targetId": "target_cube_weld_lower_front_left",
                     "requiredCount": 1,
-                    "successMessage": "Upper front-left joint cleanup complete.",
-                    "failureMessage": "Equip the angle grinder and use it on the highlighted upper cleanup target."
+                    "successMessage": "Lower front-left bolts fully tightened.",
+                    "failureMessage": "Use the allen key to fully tighten the highlighted bracket bolts."
                 },
                 {
-                    "id": "action_cube_cleanup_upper_rear_right",
-                    "toolId": "tool_angle_grinder",
-                    "actionType": "grind_pass",
-                    "targetId": "target_cube_cleanup_upper_rear_right",
+                    "id": "action_tighten_lower_rear_right",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
+                    "targetId": "target_cube_weld_lower_rear_right",
                     "requiredCount": 1,
-                    "successMessage": "Upper rear-right joint cleanup complete.",
-                    "failureMessage": "Equip the angle grinder and use it on the highlighted upper cleanup target."
+                    "successMessage": "Lower rear-right bolts fully tightened.",
+                    "failureMessage": "Use the allen key to fully tighten the highlighted bracket bolts."
                 },
                 {
-                    "id": "action_cube_cleanup_upper_front_right",
-                    "toolId": "tool_angle_grinder",
-                    "actionType": "grind_pass",
-                    "targetId": "target_cube_cleanup_upper_front_right",
+                    "id": "action_tighten_lower_front_right",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
+                    "targetId": "target_cube_weld_lower_front_right",
                     "requiredCount": 1,
-                    "successMessage": "Upper front-right joint cleanup complete.",
-                    "failureMessage": "Equip the angle grinder and use it on the highlighted upper cleanup target."
+                    "successMessage": "Lower front-right bolts fully tightened.",
+                    "failureMessage": "Use the allen key to fully tighten the highlighted bracket bolts."
                 },
                 {
-                    "id": "action_cube_cleanup_upper_rear_left",
-                    "toolId": "tool_angle_grinder",
-                    "actionType": "grind_pass",
-                    "targetId": "target_cube_cleanup_upper_rear_left",
+                    "id": "action_tighten_lower_rear_left",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
+                    "targetId": "target_cube_weld_lower_rear_left",
                     "requiredCount": 1,
-                    "successMessage": "Upper rear-left joint cleanup complete.",
-                    "failureMessage": "Equip the angle grinder and use it on the highlighted upper cleanup target."
+                    "successMessage": "Lower rear-left bolts fully tightened.",
+                    "failureMessage": "Use the allen key to fully tighten the highlighted bracket bolts."
+                },
+                {
+                    "id": "action_tighten_upper_front_left",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
+                    "targetId": "target_cube_weld_upper_front_left",
+                    "requiredCount": 1,
+                    "successMessage": "Upper front-left bolts fully tightened.",
+                    "failureMessage": "Use the allen key to fully tighten the highlighted bracket bolts."
+                },
+                {
+                    "id": "action_tighten_upper_rear_right",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
+                    "targetId": "target_cube_weld_upper_rear_right",
+                    "requiredCount": 1,
+                    "successMessage": "Upper rear-right bolts fully tightened.",
+                    "failureMessage": "Use the allen key to fully tighten the highlighted bracket bolts."
+                },
+                {
+                    "id": "action_tighten_upper_front_right",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
+                    "targetId": "target_cube_weld_upper_front_right",
+                    "requiredCount": 1,
+                    "successMessage": "Upper front-right bolts fully tightened.",
+                    "failureMessage": "Use the allen key to fully tighten the highlighted bracket bolts."
+                },
+                {
+                    "id": "action_tighten_upper_rear_left",
+                    "toolId": "tool_allen_key_metric",
+                    "actionType": "tighten",
+                    "targetId": "target_cube_weld_upper_rear_left",
+                    "requiredCount": 1,
+                    "successMessage": "Upper rear-left bolts fully tightened.",
+                    "failureMessage": "Use the allen key to fully tighten the highlighted bracket bolts."
                 }
             ],
             "allowSkip": false,
@@ -4486,19 +4415,93 @@
                 "d3d",
                 "frame",
                 "cube",
-                "cleanup",
-                "grind",
-                "upper_joints"
+                "bracket",
+                "final_tighten"
             ]
         },
         {
-            "id": "step_recheck_cleaned_cube_square",
-            "name": "Recheck the cleaned frame for square",
+            "id": "step_verify_tightened_cube_square",
+            "name": "Verify cube after final tightening",
+            "assemblyId": "assembly_d3d_frame",
+            "subassemblyId": "subassembly_cube_joining",
+            "sequenceIndex": 38,
+            "instructionText": "Equip the framing square and recheck the top-front-left cube corner after all bolts are fully tightened. Confirm the frame stayed true through the tightening sequence.",
+            "whyItMattersText": "A post-tightening square check catches any shift introduced by bolt clamping forces.",
+            "requiredPartIds": [],
+            "optionalPartIds": [
+                "d3d_frame_bottom_top_bar",
+                "d3d_frame_bottom_right_bar",
+                "d3d_frame_bottom_bottom_bar",
+                "d3d_frame_bottom_left_bar",
+                "d3d_frame_top_top_bar",
+                "d3d_frame_top_right_bar",
+                "d3d_frame_top_bottom_bar",
+                "d3d_frame_top_left_bar",
+                "d3d_frame_left_top_bar",
+                "d3d_frame_left_right_bar",
+                "d3d_frame_left_bottom_bar",
+                "d3d_frame_left_left_bar",
+                "d3d_frame_right_top_bar",
+                "d3d_frame_right_right_bar",
+                "d3d_frame_right_bottom_bar",
+                "d3d_frame_right_left_bar",
+                "d3d_frame_front_top_bar",
+                "d3d_frame_front_right_bar",
+                "d3d_frame_front_bottom_bar",
+                "d3d_frame_front_left_bar",
+                "d3d_frame_rear_top_bar",
+                "d3d_frame_rear_right_bar",
+                "d3d_frame_rear_bottom_bar",
+                "d3d_frame_rear_left_bar"
+            ],
+            "relevantToolIds": [
+                "tool_framing_square"
+            ],
+            "targetIds": [
+                "target_cube_square_check_front_left"
+            ],
+            "completionType": "tool_action",
+            "family": "Use",
+            "profile": "Measure",
+            "viewMode": "WorkZone",
+            "validationRuleIds": [],
+            "hintIds": [
+                "hint_cube_square_check_front_left"
+            ],
+            "effectTriggerIds": [],
+            "requiredToolActions": [
+                {
+                    "id": "action_post_tighten_square_check",
+                    "toolId": "tool_framing_square",
+                    "actionType": "measure",
+                    "targetId": "target_cube_square_check_front_left",
+                    "requiredCount": 1,
+                    "successMessage": "Tightened cube checked for square.",
+                    "failureMessage": "Equip the framing square and check the highlighted cube corner."
+                }
+            ],
+            "allowSkip": false,
+            "challengeFlags": {
+                "penalizeHintUsage": false,
+                "penalizeInvalidPlacement": false,
+                "stricterToleranceAvailable": true
+            },
+            "eventTags": [
+                "d3d",
+                "frame",
+                "cube",
+                "measure",
+                "post_tighten_square_check"
+            ]
+        },
+        {
+            "id": "step_recheck_cube_corners",
+            "name": "Recheck opposite cube corners",
             "assemblyId": "assembly_d3d_frame",
             "subassemblyId": "subassembly_cube_joining",
             "sequenceIndex": 39,
-            "instructionText": "Equip the framing square and recheck the cleaned frame at the top-front-left and top-rear-right corners. Confirm the cleanup passes did not compromise the cube geometry.",
-            "whyItMattersText": "A quick recheck after cleanup makes sure the frame still holds the reference geometry needed for later rail and gantry work.",
+            "instructionText": "Equip the framing square and verify both the top-front-left and top-rear-right cube corners. This cross-check confirms the cube is true on opposite diagonals.",
+            "whyItMattersText": "Checking opposite corners catches twist that a single-corner check might miss.",
             "requiredPartIds": [],
             "optionalPartIds": [
                 "d3d_frame_bottom_top_bar",
@@ -4539,26 +4542,28 @@
             "profile": "Measure",
             "viewMode": "WorkZone",
             "validationRuleIds": [],
-            "hintIds": [],
+            "hintIds": [
+                "hint_cube_square_check_front_left"
+            ],
             "effectTriggerIds": [],
             "requiredToolActions": [
                 {
-                    "id": "action_cube_square_check_post_cleanup_front_left",
+                    "id": "action_recheck_front_left",
                     "toolId": "tool_framing_square",
                     "actionType": "measure",
                     "targetId": "target_cube_square_check_front_left",
                     "requiredCount": 1,
-                    "successMessage": "Top-front-left corner rechecked after cleanup.",
-                    "failureMessage": "Equip the framing square and use it on the highlighted front-left corner marker."
+                    "successMessage": "Front-left corner rechecked.",
+                    "failureMessage": "Equip the framing square and check the highlighted corner."
                 },
                 {
-                    "id": "action_cube_square_check_post_cleanup_rear_right",
+                    "id": "action_recheck_rear_right",
                     "toolId": "tool_framing_square",
                     "actionType": "measure",
                     "targetId": "target_cube_square_check_rear_right",
                     "requiredCount": 1,
-                    "successMessage": "Top-rear-right corner rechecked after cleanup.",
-                    "failureMessage": "Equip the framing square and use it on the highlighted rear-right corner marker."
+                    "successMessage": "Rear-right corner rechecked.",
+                    "failureMessage": "Equip the framing square and check the highlighted corner."
                 }
             ],
             "allowSkip": false,
@@ -4572,7 +4577,7 @@
                 "frame",
                 "cube",
                 "measure",
-                "post_cleanup_square_check"
+                "final_recheck"
             ]
         },
         {
@@ -4581,10 +4586,9 @@
             "assemblyId": "assembly_d3d_frame",
             "subassemblyId": "subassembly_cube_joining",
             "sequenceIndex": 40,
-            "instructionText": "Make a final acceptance check on the welded frame and continue only when it is ready for the first rail, gantry, and motion-hardware installation steps.",
+            "instructionText": "Make a final acceptance check on the bracketed frame and continue only when it is ready for the first rail, gantry, and motion-hardware installation steps.",
             "whyItMattersText": "Closing the frame phase explicitly helps prevent structural errors from propagating into the next subsystem.",
             "requiredPartIds": [
-                "frame",
                 "compound007"
             ],
             "optionalPartIds": [],
@@ -6505,6 +6509,37 @@
             "toolId": "tool_framing_square",
             "targetId": "target_cube_square_check_front_left",
             "priority": "medium"
+        },
+        {
+            "id": "hint_bracket_lower_placement",
+            "type": "tool_reminder",
+            "title": "Lower bracket placement order",
+            "message": "Place brackets at the four lower cube corners in diagonal order: front-left, rear-right, front-right, rear-left. Start two M6 bolts per bracket but leave them loose.",
+            "toolId": "tool_allen_key_metric",
+            "priority": "medium"
+        },
+        {
+            "id": "hint_bracket_upper_placement",
+            "type": "tool_reminder",
+            "title": "Upper bracket placement order",
+            "message": "Place brackets at the four upper cube corners in the same diagonal order. Start two M6 bolts per bracket but leave them loose.",
+            "toolId": "tool_allen_key_metric",
+            "priority": "medium"
+        },
+        {
+            "id": "hint_snug_not_tight",
+            "type": "text",
+            "title": "Finger-tight only",
+            "message": "Snug the bolts just enough to hold the bracket in place. Do not fully tighten until all 8 brackets are placed and the cube has been checked for square.",
+            "priority": "high"
+        },
+        {
+            "id": "hint_diagonal_tighten_order",
+            "type": "tool_reminder",
+            "title": "Diagonal tightening pattern",
+            "message": "Tighten bolts in alternating diagonal pairs to distribute clamping force evenly. For example: lower front-left, then upper rear-right, then lower front-right, then upper rear-left.",
+            "toolId": "tool_allen_key_metric",
+            "priority": "medium"
         }
     ],
     "targets": [
@@ -7569,16 +7604,15 @@
         },
         {
             "id": "target_cube_weld_lower_front_left",
-            "name": "Cube Lower Front-Left Tack Target",
+            "name": "Cube Lower Front-Left Corner",
             "anchorRef": "anchors/d3d/cube/weld_lower_front_left",
-            "description": "Lower front-left tack-weld target for the assembled D3D frame cube.",
+            "description": "Lower front-left corner target for the D3D frame cube.",
             "tags": [
                 "d3d",
                 "frame",
                 "cube",
-                "weld",
-                "lower",
-                "front_left"
+                "corner",
+                "lower"
             ],
             "weldAxis": {
                 "x": 0,
@@ -7589,16 +7623,15 @@
         },
         {
             "id": "target_cube_weld_lower_rear_right",
-            "name": "Cube Lower Rear-Right Tack Target",
+            "name": "Cube Lower Rear-Right Corner",
             "anchorRef": "anchors/d3d/cube/weld_lower_rear_right",
-            "description": "Lower rear-right tack-weld target for the assembled D3D frame cube.",
+            "description": "Lower rear-right corner target for the D3D frame cube.",
             "tags": [
                 "d3d",
                 "frame",
                 "cube",
-                "weld",
-                "lower",
-                "rear_right"
+                "corner",
+                "lower"
             ],
             "weldAxis": {
                 "x": 0,
@@ -7609,16 +7642,15 @@
         },
         {
             "id": "target_cube_weld_lower_front_right",
-            "name": "Cube Lower Front-Right Tack Target",
+            "name": "Cube Lower Front-Right Corner",
             "anchorRef": "anchors/d3d/cube/weld_lower_front_right",
-            "description": "Lower front-right tack-weld target for the assembled D3D frame cube.",
+            "description": "Lower front-right corner target for the D3D frame cube.",
             "tags": [
                 "d3d",
                 "frame",
                 "cube",
-                "weld",
-                "lower",
-                "front_right"
+                "corner",
+                "lower"
             ],
             "weldAxis": {
                 "x": 0,
@@ -7629,16 +7661,15 @@
         },
         {
             "id": "target_cube_weld_lower_rear_left",
-            "name": "Cube Lower Rear-Left Tack Target",
+            "name": "Cube Lower Rear-Left Corner",
             "anchorRef": "anchors/d3d/cube/weld_lower_rear_left",
-            "description": "Lower rear-left tack-weld target for the assembled D3D frame cube.",
+            "description": "Lower rear-left corner target for the D3D frame cube.",
             "tags": [
                 "d3d",
                 "frame",
                 "cube",
-                "weld",
-                "lower",
-                "rear_left"
+                "corner",
+                "lower"
             ],
             "weldAxis": {
                 "x": 0,
@@ -7649,16 +7680,15 @@
         },
         {
             "id": "target_cube_weld_upper_front_left",
-            "name": "Cube Upper Front-Left Tack Target",
+            "name": "Cube Upper Front-Left Corner",
             "anchorRef": "anchors/d3d/cube/weld_upper_front_left",
-            "description": "Upper front-left tack-weld target for the assembled D3D frame cube.",
+            "description": "Upper front-left corner target for the D3D frame cube.",
             "tags": [
                 "d3d",
                 "frame",
                 "cube",
-                "weld",
-                "upper",
-                "front_left"
+                "corner",
+                "upper"
             ],
             "weldAxis": {
                 "x": 0,
@@ -7669,16 +7699,15 @@
         },
         {
             "id": "target_cube_weld_upper_rear_right",
-            "name": "Cube Upper Rear-Right Tack Target",
+            "name": "Cube Upper Rear-Right Corner",
             "anchorRef": "anchors/d3d/cube/weld_upper_rear_right",
-            "description": "Upper rear-right tack-weld target for the assembled D3D frame cube.",
+            "description": "Upper rear-right corner target for the D3D frame cube.",
             "tags": [
                 "d3d",
                 "frame",
                 "cube",
-                "weld",
-                "upper",
-                "rear_right"
+                "corner",
+                "upper"
             ],
             "weldAxis": {
                 "x": 0,
@@ -7689,16 +7718,15 @@
         },
         {
             "id": "target_cube_weld_upper_front_right",
-            "name": "Cube Upper Front-Right Tack Target",
+            "name": "Cube Upper Front-Right Corner",
             "anchorRef": "anchors/d3d/cube/weld_upper_front_right",
-            "description": "Upper front-right tack-weld target for the assembled D3D frame cube.",
+            "description": "Upper front-right corner target for the D3D frame cube.",
             "tags": [
                 "d3d",
                 "frame",
                 "cube",
-                "weld",
-                "upper",
-                "front_right"
+                "corner",
+                "upper"
             ],
             "weldAxis": {
                 "x": 0,
@@ -7709,16 +7737,15 @@
         },
         {
             "id": "target_cube_weld_upper_rear_left",
-            "name": "Cube Upper Rear-Left Tack Target",
+            "name": "Cube Upper Rear-Left Corner",
             "anchorRef": "anchors/d3d/cube/weld_upper_rear_left",
-            "description": "Upper rear-left tack-weld target for the assembled D3D frame cube.",
+            "description": "Upper rear-left corner target for the D3D frame cube.",
             "tags": [
                 "d3d",
                 "frame",
                 "cube",
-                "weld",
-                "upper",
-                "rear_left"
+                "corner",
+                "upper"
             ],
             "weldAxis": {
                 "x": 0,

@@ -25,6 +25,7 @@ namespace OSE.UI.Controllers
             _view.HintButton.clicked += HandleHintClicked;
             _view.BackButton.clicked += HandleBackClicked;
             _view.ForwardButton.clicked += HandleForwardClicked;
+            _view.SkipToStartButton.clicked += HandleSkipToStartClicked;
             _view.SkipToEndButton.clicked += HandleSkipToEndClicked;
         }
 
@@ -33,6 +34,7 @@ namespace OSE.UI.Controllers
             _view.StepLabel.text = viewModel.StepLabel;
             _view.TitleLabel.text = viewModel.Title;
             _view.InstructionLabel.text = viewModel.Instruction;
+            _view.SetAssemblyName(viewModel.AssemblyName);
             _view.SetContextActionButtonVisible(viewModel.ShowContextActionButton);
             _view.SetContextActionLabel(viewModel.ContextActionLabel);
             _view.SetContextActionEnabled(viewModel.ContextActionEnabled);
@@ -40,16 +42,19 @@ namespace OSE.UI.Controllers
             _view.SetConfirmEnabled(viewModel.ConfirmUnlocked);
             _view.SetHintButtonVisible(viewModel.ShowHintButton);
             _view.SetProgress(viewModel.ProgressRatio);
+            _view.SetGlobalProgress(viewModel.GlobalProgressRatio, viewModel.GlobalProgressLabel);
 
             // Update navigation button states
             if (ServiceRegistry.TryGet<IMachineSessionController>(out var session))
             {
+                _view.SetSkipToStartEnabled(session.CanStepBack);
                 _view.SetBackEnabled(session.CanStepBack);
                 _view.SetForwardEnabled(session.CanStepForward);
                 _view.SetSkipToEndEnabled(session.CanStepForward);
             }
             else
             {
+                _view.SetSkipToStartEnabled(false);
                 _view.SetBackEnabled(false);
                 _view.SetForwardEnabled(false);
                 _view.SetSkipToEndEnabled(false);
@@ -65,6 +70,7 @@ namespace OSE.UI.Controllers
                 _view.HintButton.clicked -= HandleHintClicked;
                 _view.BackButton.clicked -= HandleBackClicked;
                 _view.ForwardButton.clicked -= HandleForwardClicked;
+                _view.SkipToStartButton.clicked -= HandleSkipToStartClicked;
                 _view.SkipToEndButton.clicked -= HandleSkipToEndClicked;
             }
             _view = null;
@@ -158,6 +164,15 @@ namespace OSE.UI.Controllers
             session.StepForward();
         }
 
+        private void HandleSkipToStartClicked()
+        {
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
+                return;
+
+            bool result = session.NavigateToGlobalStep(0);
+            OseLog.Info($"[StepPanel] SkipToStart clicked — NavigateToGlobalStep(0) returned {result}");
+        }
+
         private void HandleSkipToEndClicked()
         {
             if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
@@ -169,6 +184,7 @@ namespace OSE.UI.Controllers
 
         private sealed class StepPanelView : VisualElement
         {
+            public Label AssemblyLabel { get; }
             public Label StepLabel { get; }
             public Label TitleLabel { get; }
             public Label InstructionLabel { get; }
@@ -177,10 +193,14 @@ namespace OSE.UI.Controllers
             public Button HintButton { get; }
             public Button BackButton { get; }
             public Button ForwardButton { get; }
+            public Button SkipToStartButton { get; }
             public Button SkipToEndButton { get; }
 
             private readonly VisualElement _progressTrack;
             private readonly VisualElement _progressFill;
+            private readonly VisualElement _globalProgressTrack;
+            private readonly VisualElement _globalProgressFill;
+            private readonly Label _globalProgressLabel;
 
             private static readonly Color ContextEnabledBg = new Color(0.46f, 0.34f, 0.12f, 0.96f);
             private static readonly Color ContextDisabledBg = new Color(0.28f, 0.24f, 0.18f, 0.7f);
@@ -198,6 +218,16 @@ namespace OSE.UI.Controllers
                 UIToolkitStyleUtility.ApplyPanelSurface(this);
                 style.alignSelf = Align.FlexStart;
 
+                // Assembly name label (eyebrow above nav row)
+                AssemblyLabel = new Label();
+                AssemblyLabel.style.fontSize = 11f;
+                AssemblyLabel.style.color = new Color(0.65f, 0.78f, 0.95f, 0.85f);
+                AssemblyLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+                AssemblyLabel.style.unityTextAlign = TextAnchor.MiddleLeft;
+                AssemblyLabel.style.marginBottom = 2f;
+                AssemblyLabel.style.display = DisplayStyle.None;
+                Add(AssemblyLabel);
+
                 StepLabel = UIToolkitStyleUtility.CreateEyebrowLabel("Current Step");
 
                 // Navigation row: [Back] Step Label [Forward]
@@ -207,6 +237,8 @@ namespace OSE.UI.Controllers
                 navRow.style.justifyContent = Justify.SpaceBetween;
                 navRow.style.marginBottom = 2f;
 
+                SkipToStartButton = CreateNavButton("|\u25C0"); // |◀
+                SkipToStartButton.style.marginRight = 4f;
                 BackButton = CreateNavButton("\u25C0"); // ◀
                 ForwardButton = CreateNavButton("\u25B6"); // ▶
                 SkipToEndButton = CreateNavButton("\u25B6|"); // ▶|
@@ -217,6 +249,7 @@ namespace OSE.UI.Controllers
                 StepLabel.style.marginLeft = 6f;
                 StepLabel.style.marginRight = 6f;
 
+                navRow.Add(SkipToStartButton);
                 navRow.Add(BackButton);
                 navRow.Add(StepLabel);
                 navRow.Add(ForwardButton);
@@ -248,6 +281,36 @@ namespace OSE.UI.Controllers
                 _progressFill.style.borderBottomRightRadius = 2f;
                 _progressFill.style.width = Length.Percent(0f);
                 _progressTrack.Add(_progressFill);
+
+                // Global progress bar (thin, blue-tinted)
+                _globalProgressTrack = new VisualElement();
+                _globalProgressTrack.style.height = 2f;
+                _globalProgressTrack.style.backgroundColor = new Color(0.18f, 0.22f, 0.3f, 0.5f);
+                _globalProgressTrack.style.marginBottom = 4f;
+                _globalProgressTrack.style.borderTopLeftRadius = 1f;
+                _globalProgressTrack.style.borderTopRightRadius = 1f;
+                _globalProgressTrack.style.borderBottomLeftRadius = 1f;
+                _globalProgressTrack.style.borderBottomRightRadius = 1f;
+                _globalProgressTrack.style.display = DisplayStyle.None;
+                Add(_globalProgressTrack);
+
+                _globalProgressFill = new VisualElement();
+                _globalProgressFill.style.height = 2f;
+                _globalProgressFill.style.backgroundColor = new Color(0.42f, 0.68f, 1f, 0.8f);
+                _globalProgressFill.style.borderTopLeftRadius = 1f;
+                _globalProgressFill.style.borderTopRightRadius = 1f;
+                _globalProgressFill.style.borderBottomLeftRadius = 1f;
+                _globalProgressFill.style.borderBottomRightRadius = 1f;
+                _globalProgressFill.style.width = Length.Percent(0f);
+                _globalProgressTrack.Add(_globalProgressFill);
+
+                _globalProgressLabel = new Label();
+                _globalProgressLabel.style.fontSize = 10f;
+                _globalProgressLabel.style.color = new Color(0.55f, 0.7f, 0.9f, 0.7f);
+                _globalProgressLabel.style.unityTextAlign = TextAnchor.MiddleRight;
+                _globalProgressLabel.style.marginBottom = 4f;
+                _globalProgressLabel.style.display = DisplayStyle.None;
+                Add(_globalProgressLabel);
 
                 Add(TitleLabel);
                 Add(InstructionLabel);
@@ -348,6 +411,27 @@ namespace OSE.UI.Controllers
                 _progressFill.style.width = Length.Percent(pct);
             }
 
+            public void SetAssemblyName(string name)
+            {
+                bool hasName = !string.IsNullOrWhiteSpace(name);
+                AssemblyLabel.style.display = hasName ? DisplayStyle.Flex : DisplayStyle.None;
+                if (hasName)
+                    AssemblyLabel.text = name;
+            }
+
+            public void SetGlobalProgress(float ratio, string label)
+            {
+                bool hasGlobal = !string.IsNullOrEmpty(label);
+                _globalProgressTrack.style.display = hasGlobal ? DisplayStyle.Flex : DisplayStyle.None;
+                _globalProgressLabel.style.display = hasGlobal ? DisplayStyle.Flex : DisplayStyle.None;
+                if (hasGlobal)
+                {
+                    float pct = Mathf.Clamp01(ratio) * 100f;
+                    _globalProgressFill.style.width = Length.Percent(pct);
+                    _globalProgressLabel.text = label;
+                }
+            }
+
             public void SetBackEnabled(bool enabled)
             {
                 BackButton.SetEnabled(enabled);
@@ -358,6 +442,12 @@ namespace OSE.UI.Controllers
             {
                 ForwardButton.SetEnabled(enabled);
                 ForwardButton.style.opacity = enabled ? 1f : 0.3f;
+            }
+
+            public void SetSkipToStartEnabled(bool enabled)
+            {
+                SkipToStartButton.SetEnabled(enabled);
+                SkipToStartButton.style.opacity = enabled ? 1f : 0.3f;
             }
 
             public void SetSkipToEndEnabled(bool enabled)

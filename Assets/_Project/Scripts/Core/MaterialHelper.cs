@@ -226,16 +226,19 @@ namespace OSE.Core
             var renderers = GetRenderers(target);
             if (renderers == null || renderers.Length == 0) return;
 
+            bool useShared = !Application.isPlaying;
+
             foreach (var renderer in renderers)
             {
-                var mats = renderer.materials; // instance copies
+                var mats = useShared ? renderer.sharedMaterials : renderer.materials;
                 foreach (var mat in mats)
                 {
                     if (mat == null) continue;
                     ConfigureOpaque(mat);
                     SetBaseColorAlpha(mat, 1f);
                 }
-                renderer.materials = mats;
+                if (!useShared)
+                    renderer.materials = mats;
             }
         }
 
@@ -309,13 +312,13 @@ namespace OSE.Core
             var renderers = GetRenderers(target);
             if (renderers == null || renderers.Length == 0) return;
 
+            bool useShared = !Application.isPlaying;
+
             foreach (var renderer in renderers)
             {
                 if (renderer.gameObject.name == OutlineChildName) continue;
 
-                // Use .materials to get per-renderer instances for ALL material slots.
-                // renderer.material only returns slot 0, missing sub-meshes on multi-material models.
-                Material[] mats = renderer.materials;
+                Material[] mats = useShared ? renderer.sharedMaterials : renderer.materials;
                 for (int m = 0; m < mats.Length; m++)
                 {
                     Material material = mats[m];
@@ -332,7 +335,8 @@ namespace OSE.Core
                     if (material.HasProperty("emissiveFactor"))
                         material.SetColor("emissiveFactor", color * 0.08f);
                 }
-                renderer.materials = mats;
+                if (!useShared)
+                    renderer.materials = mats;
             }
         }
 
@@ -348,6 +352,10 @@ namespace OSE.Core
             if (renderers == null || renderers.Length == 0) return;
 
             bool hasEmission = emissionColor.r > 0f || emissionColor.g > 0f || emissionColor.b > 0f;
+            // In edit mode, .materials creates leaked instances. Use .sharedMaterials
+            // to modify materials in-place (safe — they are per-import instances, not
+            // project assets).
+            bool useShared = !Application.isPlaying;
 
             foreach (var renderer in renderers)
             {
@@ -355,7 +363,7 @@ namespace OSE.Core
 
                 // Use .materials (not .material) to update ALL material slots.
                 // .material only returns slot 0, missing sub-meshes on multi-material models.
-                Material[] mats = renderer.materials;
+                Material[] mats = useShared ? renderer.sharedMaterials : renderer.materials;
                 for (int m = 0; m < mats.Length; m++)
                 {
                     Material material = mats[m];
@@ -381,7 +389,8 @@ namespace OSE.Core
                             material.DisableKeyword("_EMISSIVE");
                     }
                 }
-                renderer.materials = mats;
+                if (!useShared)
+                    renderer.materials = mats;
             }
         }
 

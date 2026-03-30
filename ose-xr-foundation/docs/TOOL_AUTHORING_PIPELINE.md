@@ -224,60 +224,15 @@ This reads the GLB's native bounding box, looks up the target dimensions in `Par
 
 ### 6.4A CAD-Derived Tool Hardening Via FreeCAD + Blender CLI
 
-When a tool or fixture has a real CAD source (`.FCStd`, STEP, or an OSE part-library file), prefer a CAD-first pipeline over text-to-3D or image-to-3D. This is the correct path for fit-critical or dimension-sensitive tool geometry.
+When a tool has a real CAD source, use the CAD-first CLI pipeline documented in
+[PART_AUTHORING_PIPELINE.md §9.11](PART_AUTHORING_PIPELINE.md#911-freecad--blender-cli-pipeline--end-to-end).
+The scripts, folder structure, material conventions, and lessons learned are identical for parts and tools.
 
-Recommended CLI workflow:
+Tool-specific notes:
 
-1. **Export only the exact CAD bodies you want from FreeCAD**
-   - Keep raw CAD in a package-local `source_cad/` folder.
-   - Export specific labeled objects, not the whole document, when the CAD file mixes the target body with assembly context.
-
-```powershell
-& "C:\Program Files\FreeCAD 1.0\bin\python.exe" export_fcstd_selection_to_stl.py `
-  --input  "source_cad/tools/raw/Clamp.fcstd" `
-  --output "source_cad/tools/exported/stl/Clamp_selected.stl" `
-  --report "source_cad/tools/exported/reports/Clamp_selected_freecad.json" `
-  --labels "Clamp Body,Clamp Screw"
-```
-
-2. **Normalize scale, pivot, and base material in Blender CLI**
-   - Convert mm CAD mesh output to meter-scale GLB.
-   - Recenter the mesh to a sane runtime pivot:
-     - `center` for symmetric handheld tools
-     - `base_center` when the contact point should sit on the world plane
-   - Assign a simple Principled material so the GLB is not exported untextured.
-
-```powershell
-& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" -b -P stl_to_glb.py -- `
-  --input "source_cad/tools/exported/stl/Clamp_selected.stl" `
-  --output "source_cad/tools/exported/glb_candidates/Clamp_selected.glb" `
-  --report "source_cad/tools/exported/reports/Clamp_selected_blender.json" `
-  --material-name "OSE Clamp Dark" `
-  --base-color "0.20,0.20,0.22,1.0" `
-  --roughness 0.55 `
-  --center-mode base_center
-```
-
-3. **Pack the approved runtime mesh**
-
-```powershell
-.\tools\gltfpack.exe `
-  -i Assets/_Project/Data/Packages/<pkg>/assets/tools/tool_clamp.glb `
-  -o Assets/_Project/Data/Packages/<pkg>/assets/tools/tool_clamp_packed.glb `
-  -noq -cc
-```
-
-4. **Switch the package `assetRef` only after approval**
-   - Keep raw CAD, exported STL, Blender reports, and approved runtime GLBs separate.
-   - The package should reference only the approved GLB in `assets/tools/`.
-
-Practical rules:
-
-- **FreeCAD is the authority** for selecting exact bodies from `.FCStd`.
-- **Blender is the normalizer** for pivot, material assignment, and final GLB export.
-- **Do not** use Blender edits to invent missing dimensions for fit-critical tools.
-- **Do not** export an entire CAD document blindly if it contains assembly context you do not want.
-- Record provenance and bounds reports for every approved runtime mesh.
+- Use `center` mode (not `base_center`) for handheld tools — the pivot should be at the grip center.
+- Deploy approved GLBs to `assets/tools/` instead of `assets/parts/`.
+- The tool's `assetRef` in `machine.json` is just the filename (e.g. `tool_clamp_approved.glb`).
 
 ### 6.5 Verify Proportions
 

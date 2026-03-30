@@ -219,7 +219,10 @@ namespace OSE.Runtime.Preview
 #if UNITY_EDITOR
             if (Application.isPlaying) return;
             if (ServiceRegistry.TryGet<IStepAwarePositioner>(out var positioner))
+            {
                 positioner.ApplyStepAwarePositions(_previewStepSequenceIndex, _editModePackage);
+                UnityEditor.SceneView.RepaintAll();
+            }
 #endif
         }
 

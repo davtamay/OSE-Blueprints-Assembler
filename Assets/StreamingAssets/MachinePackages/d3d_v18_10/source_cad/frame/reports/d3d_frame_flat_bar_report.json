@@ -1,0 +1,31 @@
+{
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\assets\\parts\\d3d_frame_flat_bar_approved.glb",
+  "units": "m",
+  "spec": {
+    "length_in": 13.0,
+    "width_in": 1.0,
+    "thickness_in": 0.125
+  },
+  "length_m": 0.3302,
+  "width_m": 0.0254,
+  "thickness_m": 0.003175,
+  "material_name": "OSE Frame Steel",
+  "base_color": [
+    0.35,
+    0.35,
+    0.38,
+    1.0
+  ],
+  "roughness": 0.45,
+  "bound_box": {
+    "xmin_m": -0.1651,
+    "xmax_m": 0.1651,
+    "ymin_m": -0.0127,
+    "ymax_m": 0.0127,
+    "zmin_m": -0.001587,
+    "zmax_m": 0.001587,
+    "xlen_m": 0.3302,
+    "ylen_m": 0.0254,
+    "zlen_m": 0.003175
+  }
+}

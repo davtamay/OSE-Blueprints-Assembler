@@ -31,6 +31,19 @@ namespace OSE.UI.Root
             public string CurrentTargetId;
             public FitRecord ActiveFit;
             public float CurrentFitTravel;
+
+            // ── Perf: cached member GameObjects (avoid FindSpawnedPart linear scan per frame) ──
+            public GameObject[] CachedMemberObjects;
+
+            // ── Perf: cached local-space bounds (avoid per-frame renderer queries) ──
+            public Bounds CachedLocalBounds;
+            public bool HasCachedBounds;
+
+            // ── Perf: dirty flag — skip member update when proxy hasn't moved ──
+            public bool TransformDirty;
+            public Vector3 LastPosition;
+            public Quaternion LastRotation;
+            public Vector3 LastScale;
         }
 
         private sealed class FitRecord
@@ -310,23 +323,53 @@ namespace OSE.UI.Root
             if (hitTransform == null)
                 return null;
 
-            if (string.IsNullOrWhiteSpace(_activeSubassemblyId))
-                return null;
-
-            if (!_records.TryGetValue(_activeSubassemblyId, out ProxyRecord record) || record?.Root == null || !record.Root.activeInHierarchy)
-                return null;
-
-            Transform current = hitTransform;
-            while (current != null)
+            // Fast path: check the active proxy first (the one being dragged/placed).
+            if (!string.IsNullOrWhiteSpace(_activeSubassemblyId)
+                && _records.TryGetValue(_activeSubassemblyId, out ProxyRecord activeRecord)
+                && activeRecord?.Root != null && activeRecord.Root.activeInHierarchy)
             {
-                SubassemblyPlacementProxy proxy = current.GetComponent<SubassemblyPlacementProxy>();
-                if (proxy != null && string.Equals(proxy.SubassemblyId, _activeSubassemblyId, StringComparison.OrdinalIgnoreCase))
-                    return record.Root;
-                current = current.parent;
+                Transform current = hitTransform;
+                while (current != null)
+                {
+                    SubassemblyPlacementProxy proxy = current.GetComponent<SubassemblyPlacementProxy>();
+                    if (proxy != null && string.Equals(proxy.SubassemblyId, _activeSubassemblyId, StringComparison.OrdinalIgnoreCase))
+                        return activeRecord.Root;
+                    current = current.parent;
+                }
+
+                GameObject partGo = FindMemberPartFromHit(activeRecord, hitTransform);
+                if (partGo != null)
+                    return activeRecord.Root;
             }
 
-            GameObject partGo = FindMemberPartFromHit(record, hitTransform);
-            return partGo != null ? record.Root : null;
+            // Fallback: check if the hit belongs to ANY subassembly with an active proxy
+            // (e.g. parked/completed subassemblies that are visible but not currently being placed).
+            Transform walkHit = hitTransform;
+            Transform previewRoot = _ctx.Setup?.PreviewRoot;
+            while (walkHit != null && walkHit != previewRoot)
+            {
+                // Direct proxy hit
+                SubassemblyPlacementProxy proxyComp = walkHit.GetComponent<SubassemblyPlacementProxy>();
+                if (proxyComp != null
+                    && !string.IsNullOrWhiteSpace(proxyComp.SubassemblyId)
+                    && _records.TryGetValue(proxyComp.SubassemblyId, out ProxyRecord hitRecord)
+                    && hitRecord?.Root != null && hitRecord.Root.activeInHierarchy)
+                {
+                    return hitRecord.Root;
+                }
+
+                // Member part reverse lookup
+                if (_memberToSubassembly.TryGetValue(walkHit.name, out string ownerSubId)
+                    && _records.TryGetValue(ownerSubId, out ProxyRecord ownerRecord)
+                    && ownerRecord?.Root != null && ownerRecord.Root.activeInHierarchy)
+                {
+                    return ownerRecord.Root;
+                }
+
+                walkHit = walkHit.parent;
+            }
+
+            return null;
         }
 
         public bool TryGetDisplayInfo(GameObject target, out string displayName, out string description)
@@ -644,6 +687,14 @@ namespace OSE.UI.Root
                 _memberToSubassembly[partId] = subassemblyId;
             }
 
+            // Cache member GameObjects to avoid per-frame FindSpawnedPart linear scans.
+            GameObject[] cachedMembers = new GameObject[memberIds.Length];
+            for (int i = 0; i < memberIds.Length; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(memberIds[i]))
+                    cachedMembers[i] = _ctx.FindSpawnedPart(memberIds[i]);
+            }
+
             ProxyRecord record = new ProxyRecord
             {
                 SubassemblyId = subassemblyId,
@@ -651,10 +702,12 @@ namespace OSE.UI.Root
                 MemberPartIds = memberIds,
                 MemberLocalPositions = localPositions,
                 MemberLocalRotations = localRotations,
-                MemberLocalScales = localScales
+                MemberLocalScales = localScales,
+                CachedMemberObjects = cachedMembers,
+                TransformDirty = true
             };
 
-            UpdateProxyCollider(record);
+            RecalculateBoundsAndCollider(record);
             proxyRoot.SetActive(false);
             return record;
         }
@@ -671,6 +724,7 @@ namespace OSE.UI.Root
             record.Root.transform.SetLocalPositionAndRotation(ToVector3(frame.position), ToQuaternion(frame.rotation));
             record.Root.transform.localScale = SanitizeScale(ToVector3(frame.scale), Vector3.one);
             record.CurrentTargetId = null;
+            record.TransformDirty = true;
         }
 
         private bool MoveProxyToParkingPlacement(ProxyRecord record)
@@ -685,6 +739,7 @@ namespace OSE.UI.Root
             record.Root.transform.SetLocalPositionAndRotation(ToVector3(parking.position), ToQuaternion(parking.rotation));
             record.Root.transform.localScale = SanitizeScale(ToVector3(parking.scale), Vector3.one);
             record.CurrentTargetId = null;
+            record.TransformDirty = true;
             return true;
         }
 
@@ -698,17 +753,41 @@ namespace OSE.UI.Root
             Quaternion rootRot = root.localRotation;
             Vector3 rootScale = SanitizeScale(root.localScale, Vector3.one);
 
+            // Dirty-flag check: skip member update if proxy hasn't moved.
+            bool posChanged = rootPos != record.LastPosition;
+            bool rotChanged = rootRot != record.LastRotation;
+            bool sclChanged = rootScale != record.LastScale;
+            if (!record.TransformDirty && !posChanged && !rotChanged && !sclChanged)
+                return;
+
+            record.LastPosition = rootPos;
+            record.LastRotation = rootRot;
+            record.LastScale = rootScale;
+            record.TransformDirty = false;
+
+            bool anyPartMissing = false;
             for (int i = 0; i < record.MemberPartIds.Length; i++)
             {
-                string partId = record.MemberPartIds[i];
-                GameObject partGo = _ctx.FindSpawnedPart(partId);
+                // Use cached member reference; fall back to lookup if stale.
+                GameObject partGo = (record.CachedMemberObjects != null && i < record.CachedMemberObjects.Length)
+                    ? record.CachedMemberObjects[i]
+                    : null;
                 if (partGo == null)
+                {
+                    partGo = _ctx.FindSpawnedPart(record.MemberPartIds[i]);
+                    if (record.CachedMemberObjects != null && i < record.CachedMemberObjects.Length)
+                        record.CachedMemberObjects[i] = partGo;
+                }
+                if (partGo == null)
+                {
+                    anyPartMissing = true;
                     continue;
+                }
 
                 Vector3 memberLocalPosition = record.MemberLocalPositions[i];
                 if (record.ActiveFit != null &&
                     record.ActiveFit.DrivenPartIds != null &&
-                    record.ActiveFit.DrivenPartIds.Contains(partId))
+                    record.ActiveFit.DrivenPartIds.Contains(record.MemberPartIds[i]))
                 {
                     float fitOffset = record.CurrentFitTravel - record.ActiveFit.MinTravel;
                     memberLocalPosition += record.ActiveFit.AxisLocal * fitOffset;
@@ -723,7 +802,9 @@ namespace OSE.UI.Root
                 partGo.SetActive(true);
             }
 
-            UpdateProxyCollider(record);
+            // Use cached bounds instead of per-frame renderer queries.
+            if (!anyPartMissing)
+                ApplyCachedBoundsToCollider(record, rootPos, rootRot, rootScale);
         }
 
         private bool TryApplyIntegratedPlacement(ProxyRecord record, string targetId)
@@ -840,7 +921,11 @@ namespace OSE.UI.Root
             record.CurrentFitTravel = 0f;
         }
 
-        private void UpdateProxyCollider(ProxyRecord record)
+        /// <summary>
+        /// Computes world bounds from member renderers, converts to proxy-local space,
+        /// and caches them in the record. Called once at build time and on explicit recalc.
+        /// </summary>
+        private void RecalculateBoundsAndCollider(ProxyRecord record)
         {
             if (record?.Root == null)
                 return;
@@ -848,7 +933,9 @@ namespace OSE.UI.Root
             Bounds? combined = null;
             for (int i = 0; i < record.MemberPartIds.Length; i++)
             {
-                GameObject partGo = _ctx.FindSpawnedPart(record.MemberPartIds[i]);
+                GameObject partGo = (record.CachedMemberObjects != null && i < record.CachedMemberObjects.Length)
+                    ? record.CachedMemberObjects[i]
+                    : _ctx.FindSpawnedPart(record.MemberPartIds[i]);
                 if (!TryGetWorldBounds(partGo, out Bounds bounds))
                     continue;
 
@@ -858,24 +945,46 @@ namespace OSE.UI.Root
             }
 
             if (!combined.HasValue)
+            {
+                record.HasCachedBounds = false;
                 return;
+            }
+
+            Bounds worldBounds = combined.Value;
+            Vector3 localCenter = record.Root.transform.InverseTransformPoint(worldBounds.center);
+            Vector3 localSize = AbsVector(record.Root.transform.InverseTransformVector(worldBounds.size));
+            localSize = SanitizeScale(localSize, Vector3.one * 0.01f);
+
+            // Expand for thin panels so the user can grab/select the whole panel.
+            localSize = new Vector3(
+                Mathf.Max(localSize.x, 0.18f),
+                Mathf.Max(localSize.y, 0.18f),
+                Mathf.Max(localSize.z, 0.18f));
+
+            record.CachedLocalBounds = new Bounds(localCenter, localSize);
+            record.HasCachedBounds = true;
 
             BoxCollider collider = record.Root.GetComponent<BoxCollider>();
             if (collider == null)
                 collider = record.Root.AddComponent<BoxCollider>();
+            collider.center = localCenter;
+            collider.size = localSize;
+        }
 
-            Bounds worldBounds = combined.Value;
-            collider.center = record.Root.transform.InverseTransformPoint(worldBounds.center);
-            Vector3 localSize = AbsVector(record.Root.transform.InverseTransformVector(worldBounds.size));
-            localSize = SanitizeScale(localSize, Vector3.one * 0.01f);
+        /// <summary>
+        /// Applies the cached local-space bounds to the proxy collider without re-querying renderers.
+        /// </summary>
+        private static void ApplyCachedBoundsToCollider(ProxyRecord record, Vector3 rootPos, Quaternion rootRot, Vector3 rootScale)
+        {
+            if (record?.Root == null || !record.HasCachedBounds)
+                return;
 
-            // Finished panels are thin and often upright during cube-joining.
-            // Expand the proxy collider so the user can grab/select the whole panel
-            // without having to hit one of the narrow bars exactly.
-            collider.size = new Vector3(
-                Mathf.Max(localSize.x, 0.18f),
-                Mathf.Max(localSize.y, 0.18f),
-                Mathf.Max(localSize.z, 0.18f));
+            BoxCollider collider = record.Root.GetComponent<BoxCollider>();
+            if (collider == null)
+                return;
+
+            collider.center = record.CachedLocalBounds.center;
+            collider.size = record.CachedLocalBounds.size;
         }
 
         private static bool AreAllSubassemblyStepsCompleted(SubassemblyDefinition subassembly, HashSet<string> completedStepIds)

@@ -55,5 +55,7 @@ namespace OSE.Runtime
         bool NavigateToGlobalStep(int globalIndex);
 
         bool RestoreToStep(int completedStepCount);
+
+        void ResumeAfterTransition();
     }
 }

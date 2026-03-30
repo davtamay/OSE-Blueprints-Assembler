@@ -286,6 +286,45 @@ namespace OSE.Core
         }
     }
 
+    /// <summary>
+    /// Published when one assembly completes and another is queued to begin.
+    /// The UI layer shows a transition overlay before resuming.
+    /// </summary>
+    public readonly struct AssemblyTransitionRequested
+    {
+        public readonly string CompletedAssemblyName;
+        public readonly string NextAssemblyId;
+        public readonly string NextAssemblyName;
+        public readonly string NextAssemblyDescription;
+        public readonly string NextLearningFocus;
+        public readonly int CompletedModuleIndex;
+        public readonly int TotalModules;
+        public readonly int CompletedStepsGlobal;
+        public readonly int TotalStepsGlobal;
+
+        public AssemblyTransitionRequested(
+            string completedAssemblyName,
+            string nextAssemblyId,
+            string nextAssemblyName,
+            string nextAssemblyDescription,
+            string nextLearningFocus,
+            int completedModuleIndex,
+            int totalModules,
+            int completedStepsGlobal,
+            int totalStepsGlobal)
+        {
+            CompletedAssemblyName = completedAssemblyName;
+            NextAssemblyId = nextAssemblyId;
+            NextAssemblyName = nextAssemblyName;
+            NextAssemblyDescription = nextAssemblyDescription;
+            NextLearningFocus = nextLearningFocus;
+            CompletedModuleIndex = completedModuleIndex;
+            TotalModules = totalModules;
+            CompletedStepsGlobal = completedStepsGlobal;
+            TotalStepsGlobal = totalStepsGlobal;
+        }
+    }
+
     public readonly struct MachineIntroDismissed
     {
         public readonly string MachineId;

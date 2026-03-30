@@ -42,6 +42,7 @@ namespace OSE.UI.Root
         private PackagePreviewConfig _currentPreviewConfig;
         private readonly List<GameObject> _spawnedParts = new List<GameObject>();
         private readonly PackageAssetResolver _resolver = new PackageAssetResolver();
+        private readonly List<GameObject> _editModeGhosts = new List<GameObject>();
 
         // ── Public accessors ──
 
@@ -105,15 +106,17 @@ namespace OSE.UI.Root
         /// </summary>
         public void ApplyStepAwarePositions(int targetSequenceIndex, MachinePackageDefinition pkg)
         {
-            if (_spawnedParts.Count == 0) return;
+            if (_spawnedParts.Count == 0) { ClearEditModeGhosts(); return; }
 
             if (pkg == null || targetSequenceIndex <= 0)
             {
                 // All Steps mode — restore all parts to startPosition and make visible
+                ClearEditModeGhosts();
                 foreach (var partGo in _spawnedParts)
                 {
                     if (partGo == null) continue;
                     partGo.SetActive(true);
+                    RestoreEditModeVisual(partGo);
                 }
                 PositionPartsFallback();
                 return;
@@ -151,10 +154,29 @@ namespace OSE.UI.Root
                 }
             }
 
-            // Build partId → IntegratedMemberPreviewPlacement map from all integrated
-            // subassembly placements.  Play mode uses these canonical poses when a
-            // completed subassembly is committed to a target; the editor preview must
-            // use the same data to stay in sync.
+            // "Fully Assembled" mode: targetSequenceIndex past the last step means
+            // show every assigned part at its playPosition (same as runtime final view).
+            int lastStepSeq = orderedSteps.Length > 0
+                ? orderedSteps[orderedSteps.Length - 1].sequenceIndex
+                : 0;
+            bool fullyAssembled = targetSequenceIndex > lastStepSeq;
+
+            // Build the set of subassembly IDs whose stacking step is completed
+            // (sequenceIndex < targetSequenceIndex).  Only these subassemblies have
+            // their members placed at integrated (cube) positions; members whose
+            // stacking step hasn't happened yet stay at their fabrication playPosition.
+            var stackedSubassemblyIds = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+            foreach (var step in orderedSteps)
+            {
+                if (step == null || string.IsNullOrEmpty(step.requiredSubassemblyId)) continue;
+                if (fullyAssembled || step.sequenceIndex < targetSequenceIndex)
+                    stackedSubassemblyIds.Add(step.requiredSubassemblyId);
+            }
+
+            // Build partId → IntegratedMemberPreviewPlacement map ONLY for subassemblies
+            // whose stacking step is completed.  This ensures bars stay at fabrication
+            // positions during their fabrication steps and move to cube positions only
+            // after their stacking step completes.
             var integratedMemberMap = new Dictionary<string, IntegratedMemberPreviewPlacement>(System.StringComparer.Ordinal);
             IntegratedSubassemblyPreviewPlacement[] intPlacements = _currentPreviewConfig?.integratedSubassemblyPlacements;
             if (intPlacements != null)
@@ -163,6 +185,7 @@ namespace OSE.UI.Root
                 {
                     IntegratedSubassemblyPreviewPlacement intPlacement = intPlacements[ip];
                     if (intPlacement?.memberPlacements == null) continue;
+                    if (!stackedSubassemblyIds.Contains(intPlacement.subassemblyId ?? "")) continue;
                     for (int mp = 0; mp < intPlacement.memberPlacements.Length; mp++)
                     {
                         IntegratedMemberPreviewPlacement member = intPlacement.memberPlacements[mp];
@@ -172,12 +195,39 @@ namespace OSE.UI.Root
                 }
             }
 
-            // "Fully Assembled" mode: targetSequenceIndex past the last step means
-            // show every assigned part at its playPosition (same as runtime final view).
-            int lastStepSeq = orderedSteps.Length > 0
-                ? orderedSteps[orderedSteps.Length - 1].sequenceIndex
-                : 0;
-            bool fullyAssembled = targetSequenceIndex > lastStepSeq;
+            // ── Pre-compute which part IDs will be covered by subassembly ghosts ──
+            // At the current step, subassembly member parts would otherwise render at
+            // their individual play positions AND as ghost children — hide the real ones
+            // so only the ghost silhouette shows.  Single-part ghosts are fine: the real
+            // part sits at its start position while the ghost shows the play position.
+            var ghostedSubassemblyPartIds = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+            if (!Application.isPlaying && !fullyAssembled)
+            {
+                StepDefinition ghostStep = null;
+                foreach (var step in orderedSteps)
+                {
+                    if (step != null && step.sequenceIndex == targetSequenceIndex)
+                    { ghostStep = step; break; }
+                }
+                if (ghostStep?.targetIds != null)
+                {
+                    foreach (string tid in ghostStep.targetIds)
+                    {
+                        if (string.IsNullOrEmpty(tid) || !pkg.TryGetTarget(tid, out var tgt)) continue;
+
+                        if (!string.IsNullOrWhiteSpace(tgt.associatedSubassemblyId) &&
+                            pkg.TryGetSubassembly(tgt.associatedSubassemblyId, out var sub) &&
+                            sub?.partIds != null)
+                        {
+                            foreach (string pid in sub.partIds)
+                            {
+                                if (!string.IsNullOrEmpty(pid))
+                                    ghostedSubassemblyPartIds.Add(pid);
+                            }
+                        }
+                    }
+                }
+            }
 
             foreach (var partGo in _spawnedParts)
             {
@@ -188,6 +238,11 @@ namespace OSE.UI.Root
 
                 bool assigned = partStepSeq.TryGetValue(partGo.name, out int partSeq);
                 if (!assigned || (!fullyAssembled && partSeq > targetSequenceIndex))
+                {
+                    partGo.SetActive(false);
+                }
+                // Hide real parts whose subassembly ghost replaces them
+                else if (ghostedSubassemblyPartIds.Contains(partGo.name))
                 {
                     partGo.SetActive(false);
                 }
@@ -235,8 +290,395 @@ namespace OSE.UI.Root
                         scl = new Vector3(pp.playScale.x, pp.playScale.y, pp.playScale.z);
                     partGo.transform.SetLocalPositionAndRotation(pos, rot);
                     partGo.transform.localScale = scl;
+
+                    // ── Visual feedback (edit-mode only) ──
+                    // Keep original materials on all parts. Active step parts get an
+                    // emission glow; prior-step parts keep their textures with no glow.
+                    if (!Application.isPlaying)
+                    {
+                        MaterialHelper.ClearTint(partGo);
+                        MaterialHelper.SetEmission(partGo, !usePlay
+                            ? InteractionVisualConstants.ActiveStepEmission
+                            : Color.black);
+                    }
                 }
             }
+
+            // ── Fully-assembled visual restore ──
+            if (!Application.isPlaying && fullyAssembled)
+            {
+                foreach (var partGo in _spawnedParts)
+                {
+                    if (partGo != null)
+                        RestoreEditModeVisual(partGo);
+                }
+            }
+
+            // ── Edit-mode ghost previews ──
+            // Show translucent ghosts at the play (target) position for parts that
+            // are currently at their start position (i.e. the parts being placed in
+            // the active step). This mirrors what PreviewSpawnManager does at runtime.
+            SpawnEditModeGhosts(pkg, orderedSteps, targetSequenceIndex, fullyAssembled, partStepSeq, subassemblyParts);
+        }
+
+        // ── Edit-mode visual helpers ────────────────────────────────────
+
+        /// <summary>
+        /// Restores a part to its neutral visual state: original materials, no
+        /// emission, no tint.  Used when leaving step-aware mode or entering
+        /// "All Steps" / "Fully Assembled" view.
+        /// </summary>
+        private static void RestoreEditModeVisual(GameObject partGo)
+        {
+            if (partGo == null) return;
+            MaterialHelper.SetEmission(partGo, Color.black);
+            MaterialHelper.ClearTint(partGo);
+        }
+
+        // ── Edit-mode ghost previews ────────────────────────────────────
+
+        private void ClearEditModeGhosts()
+        {
+            foreach (var ghost in _editModeGhosts)
+            {
+                if (ghost != null)
+                    SafeDestroy(ghost);
+            }
+            _editModeGhosts.Clear();
+        }
+
+        private void SpawnEditModeGhosts(
+            MachinePackageDefinition pkg,
+            StepDefinition[] orderedSteps,
+            int targetSequenceIndex,
+            bool fullyAssembled,
+            Dictionary<string, int> partStepSeq,
+            HashSet<string> subassemblyParts)
+        {
+            ClearEditModeGhosts();
+            if (Application.isPlaying || fullyAssembled || _setup?.PreviewRoot == null)
+                return;
+
+            // Find the step at targetSequenceIndex
+            StepDefinition currentStep = null;
+            foreach (var step in orderedSteps)
+            {
+                if (step != null && step.sequenceIndex == targetSequenceIndex)
+                { currentStep = step; break; }
+            }
+
+            if (currentStep == null)
+            {
+                OseLog.VerboseInfo($"[EditGhost] No step found at sequenceIndex={targetSequenceIndex}.");
+                return;
+            }
+
+            string[] targetIds = currentStep.targetIds;
+            if (targetIds == null || targetIds.Length == 0)
+                return;
+
+            // Build the set of part IDs that this step is actively placing.
+            // A ghost is warranted when the part is visible but not yet at its play position.
+            var currentStepPartIds = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+            if (currentStep.requiredPartIds != null)
+            {
+                foreach (string pid in currentStep.requiredPartIds)
+                {
+                    if (!string.IsNullOrEmpty(pid))
+                        currentStepPartIds.Add(pid);
+                }
+            }
+
+            foreach (string targetId in targetIds)
+            {
+                if (string.IsNullOrEmpty(targetId)) continue;
+                if (!pkg.TryGetTarget(targetId, out var target)) continue;
+
+                // Subassembly target — spawn composite ghost with all member parts
+                if (!string.IsNullOrWhiteSpace(target.associatedSubassemblyId))
+                {
+                    SpawnEditModeSubassemblyGhost(pkg, targetId, target);
+                    continue;
+                }
+
+                string partId = target.associatedPartId;
+                if (string.IsNullOrEmpty(partId)) continue;
+
+                // Show ghost when the part is being placed in THIS step (at start
+                // position, not yet at play position). A part is at its start
+                // position when its earliest step == targetSequenceIndex AND it's
+                // not a subassembly member. Also accept parts listed in the step's
+                // requiredPartIds even if they were introduced earlier (re-placement).
+                bool isCurrentStepPart = false;
+                if (partStepSeq.TryGetValue(partId, out int partSeq) &&
+                    partSeq == targetSequenceIndex &&
+                    !subassemblyParts.Contains(partId))
+                {
+                    isCurrentStepPart = true;
+                }
+                else if (currentStepPartIds.Contains(partId))
+                {
+                    isCurrentStepPart = true;
+                }
+
+                if (!isCurrentStepPart) continue;
+
+                PartPreviewPlacement pp = FindPartPlacement(partId);
+                if (pp == null) continue;
+
+                // Ghost position = play position (where the part will end up)
+                Vector3 ghostPos = new Vector3(pp.playPosition.x, pp.playPosition.y, pp.playPosition.z);
+                Quaternion ghostRot = !pp.playRotation.IsIdentity
+                    ? new Quaternion(pp.playRotation.x, pp.playRotation.y, pp.playRotation.z, pp.playRotation.w)
+                    : Quaternion.identity;
+                Vector3 ghostScale = new Vector3(pp.playScale.x, pp.playScale.y, pp.playScale.z);
+                if (ghostScale.sqrMagnitude < 0.00001f) ghostScale = Vector3.one;
+
+                // Find the real spawned part and clone it for the ghost
+                GameObject sourcePart = null;
+                foreach (var go in _spawnedParts)
+                {
+                    if (go != null && string.Equals(go.name, partId, System.StringComparison.OrdinalIgnoreCase))
+                    { sourcePart = go; break; }
+                }
+
+                GameObject ghost = null;
+                if (sourcePart != null && !IsPrimitive(sourcePart))
+                {
+                    // Clone the real mesh for an accurate silhouette
+                    ghost = Instantiate(sourcePart, _setup.PreviewRoot);
+                }
+                else
+                {
+                    // No real mesh from clone — try loading via the asset resolver
+                    AssetResolution resolution = _resolver.Resolve(partId);
+                    string assetRefToLoad = resolution.IsResolved ? resolution.AssetPath : null;
+
+                    // Fall back to partDef.assetRef if resolver has nothing
+                    if (string.IsNullOrWhiteSpace(assetRefToLoad) &&
+                        pkg.TryGetPart(partId, out var partDef) &&
+                        !string.IsNullOrWhiteSpace(partDef.assetRef))
+                    {
+                        assetRefToLoad = partDef.assetRef;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(assetRefToLoad))
+                        ghost = TryLoadPackageAsset(assetRefToLoad);
+                }
+
+                if (ghost == null)
+                {
+                    OseLog.VerboseInfo($"[EditGhost] Could not create ghost for part '{partId}' at target '{targetId}' — no mesh available.");
+                    continue;
+                }
+
+                ghost.name = $"EditGhost_{partId}";
+                ghost.transform.SetParent(_setup.PreviewRoot, false);
+                ghost.transform.SetLocalPositionAndRotation(ghostPos, ghostRot);
+                ghost.transform.localScale = ghostScale;
+                ghost.SetActive(true);
+
+                // Strip colliders — ghosts are visual only
+                foreach (var col in ghost.GetComponentsInChildren<Collider>(true))
+                    SafeDestroy(col);
+
+                // Strip any XR interactable components from the clone
+                foreach (var interactable in ghost.GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable>(true))
+                    SafeDestroy(interactable);
+
+                MaterialHelper.ApplyPreviewMaterial(ghost);
+                _editModeGhosts.Add(ghost);
+                OseLog.VerboseInfo($"[EditGhost] Spawned ghost for '{partId}' at target '{targetId}' pos={ghostPos} scale={ghostScale}.");
+            }
+        }
+
+        /// <summary>
+        /// Spawns a composite ghost for a subassembly placement target.
+        /// Mirrors <see cref="PreviewSpawnManager.SpawnPreviewForSubassemblyTarget"/>
+        /// but uses edit-mode-safe instantiation (no IBridgeContext needed).
+        /// </summary>
+        private void SpawnEditModeSubassemblyGhost(
+            MachinePackageDefinition pkg,
+            string targetId,
+            TargetDefinition target)
+        {
+            string subassemblyId = target.associatedSubassemblyId;
+            if (!pkg.TryGetSubassembly(subassemblyId, out SubassemblyDefinition subassembly) ||
+                subassembly?.partIds == null || subassembly.partIds.Length == 0)
+                return;
+
+            SubassemblyPreviewPlacement frame = FindSubassemblyPlacement(subassemblyId);
+            if (frame == null)
+            {
+                OseLog.VerboseInfo($"[EditGhost] Subassembly '{subassemblyId}' has no authored preview frame — skipping ghost.");
+                return;
+            }
+
+            // Root object for the composite ghost
+            var subGhostRoot = new GameObject($"EditGhost_{subassemblyId}");
+            subGhostRoot.transform.SetParent(_setup.PreviewRoot, false);
+
+            Vector3 framePos = PreviewSpawnManager.ToVector3(frame.position);
+            Quaternion frameRot = PreviewSpawnManager.ToQuaternion(frame.rotation);
+            Vector3 frameScale = PreviewSpawnManager.SanitizeScale(PreviewSpawnManager.ToVector3(frame.scale), Vector3.one);
+
+            subGhostRoot.transform.SetLocalPositionAndRotation(framePos, frameRot);
+            subGhostRoot.transform.localScale = frameScale;
+
+            // Integrated placement data (canonical assembled poses)
+            IntegratedSubassemblyPreviewPlacement integratedPlacement =
+                FindIntegratedSubassemblyPlacement(subassemblyId, targetId);
+
+            // Constrained-fit data
+            ConstrainedSubassemblyFitPreviewPlacement fitPlacement =
+                FindConstrainedSubassemblyFitPlacement(subassemblyId, targetId);
+            Vector3 fitAxisLocal = fitPlacement != null
+                ? PreviewSpawnManager.ToVector3(fitPlacement.fitAxisLocal) : Vector3.zero;
+            if (fitAxisLocal.sqrMagnitude > 0.000001f)
+                fitAxisLocal.Normalize();
+            float fitTravel = fitPlacement != null
+                ? Mathf.Clamp(
+                    fitPlacement.completionTravel,
+                    Mathf.Min(fitPlacement.minTravel, fitPlacement.maxTravel),
+                    Mathf.Max(fitPlacement.minTravel, fitPlacement.maxTravel))
+                : 0f;
+            bool isAxisFitPreview = fitPlacement?.drivenPartIds != null && fitPlacement.drivenPartIds.Length > 0;
+            var fitPreviewChildren = isAxisFitPreview ? new List<Transform>() : null;
+
+            // Spawn each member part as a child of the ghost root
+            for (int i = 0; i < subassembly.partIds.Length; i++)
+            {
+                string memberId = subassembly.partIds[i];
+                if (string.IsNullOrWhiteSpace(memberId) || !pkg.TryGetPart(memberId, out PartDefinition part))
+                    continue;
+                if (isAxisFitPreview && System.Array.IndexOf(fitPlacement.drivenPartIds, memberId) < 0)
+                    continue;
+
+                PartPreviewPlacement placement = FindPartPlacement(memberId);
+                if (placement == null) continue;
+
+                // Try to clone the spawned part, or load the asset
+                GameObject childGhost = null;
+                GameObject sourcePart = null;
+                foreach (var go in _spawnedParts)
+                {
+                    if (go != null && string.Equals(go.name, memberId, System.StringComparison.OrdinalIgnoreCase))
+                    { sourcePart = go; break; }
+                }
+
+                if (sourcePart != null && !IsPrimitive(sourcePart))
+                {
+                    childGhost = Instantiate(sourcePart, subGhostRoot.transform);
+                }
+                else
+                {
+                    AssetResolution resolution = _resolver.Resolve(memberId);
+                    string assetRef = resolution.IsResolved ? resolution.AssetPath : part.assetRef;
+                    if (!string.IsNullOrWhiteSpace(assetRef))
+                        childGhost = TryLoadPackageAsset(assetRef);
+                }
+
+                if (childGhost == null) continue;
+
+                childGhost.name = $"EditGhost_{memberId}";
+                childGhost.transform.SetParent(subGhostRoot.transform, false);
+
+                // Compute local position relative to the frame
+                Vector3 memberLocalPos;
+                Quaternion memberLocalRot;
+                Vector3 memberLocalScale;
+
+                if (integratedPlacement?.memberPlacements != null &&
+                    TryFindIntegratedMember(integratedPlacement, memberId,
+                        out Vector3 intPos, out Quaternion intRot, out Vector3 intScale))
+                {
+                    memberLocalPos = PreviewSpawnManager.InverseTransformPoint(
+                        subGhostRoot.transform.localPosition,
+                        subGhostRoot.transform.localRotation,
+                        PreviewSpawnManager.SanitizeScale(subGhostRoot.transform.localScale, Vector3.one),
+                        intPos);
+                    memberLocalRot = Quaternion.Inverse(subGhostRoot.transform.localRotation) * intRot;
+                    memberLocalScale = PreviewSpawnManager.DivideScale(intScale,
+                        PreviewSpawnManager.SanitizeScale(subGhostRoot.transform.localScale, Vector3.one));
+                }
+                else
+                {
+                    Vector3 memberPlayPos = new Vector3(placement.playPosition.x, placement.playPosition.y, placement.playPosition.z);
+                    Quaternion memberPlayRot = !placement.playRotation.IsIdentity
+                        ? new Quaternion(placement.playRotation.x, placement.playRotation.y, placement.playRotation.z, placement.playRotation.w)
+                        : Quaternion.identity;
+                    Vector3 memberPlayScale = PreviewSpawnManager.SanitizeScale(
+                        new Vector3(placement.playScale.x, placement.playScale.y, placement.playScale.z), Vector3.one);
+
+                    memberLocalPos = PreviewSpawnManager.InverseTransformPoint(framePos, frameRot, frameScale, memberPlayPos);
+                    memberLocalRot = Quaternion.Inverse(frameRot) * memberPlayRot;
+                    memberLocalScale = PreviewSpawnManager.DivideScale(memberPlayScale, frameScale);
+                }
+
+                // Apply constrained-fit axis offset
+                if (fitPlacement?.drivenPartIds != null &&
+                    System.Array.IndexOf(fitPlacement.drivenPartIds, memberId) >= 0)
+                {
+                    memberLocalPos += fitAxisLocal * (fitTravel - fitPlacement.minTravel);
+                }
+
+                childGhost.transform.SetLocalPositionAndRotation(memberLocalPos, memberLocalRot);
+                childGhost.transform.localScale = memberLocalScale;
+                childGhost.SetActive(true);
+                if (fitPreviewChildren != null)
+                    fitPreviewChildren.Add(childGhost.transform);
+
+                // Strip colliders and interactables
+                foreach (var col in childGhost.GetComponentsInChildren<Collider>(true))
+                    SafeDestroy(col);
+                foreach (var interactable in childGhost.GetComponentsInChildren<XRBaseInteractable>(true))
+                    SafeDestroy(interactable);
+            }
+
+            // Recenter axis-fit previews around their centroid
+            if (isAxisFitPreview && fitPreviewChildren != null && fitPreviewChildren.Count > 0)
+            {
+                Vector3 anchorLocal = Vector3.zero;
+                for (int i = 0; i < fitPreviewChildren.Count; i++)
+                    anchorLocal += fitPreviewChildren[i].localPosition;
+                anchorLocal /= fitPreviewChildren.Count;
+
+                subGhostRoot.transform.localPosition = PreviewSpawnManager.TransformPoint(
+                    subGhostRoot.transform.localPosition,
+                    subGhostRoot.transform.localRotation,
+                    PreviewSpawnManager.SanitizeScale(subGhostRoot.transform.localScale, Vector3.one),
+                    anchorLocal);
+
+                for (int i = 0; i < fitPreviewChildren.Count; i++)
+                    fitPreviewChildren[i].localPosition -= anchorLocal;
+            }
+
+            MaterialHelper.ApplyPreviewMaterial(subGhostRoot);
+            _editModeGhosts.Add(subGhostRoot);
+            OseLog.VerboseInfo($"[EditGhost] Spawned subassembly ghost for '{subassemblyId}' at target '{targetId}'.");
+        }
+
+        private static bool TryFindIntegratedMember(
+            IntegratedSubassemblyPreviewPlacement intPlacement,
+            string partId,
+            out Vector3 position, out Quaternion rotation, out Vector3 scale)
+        {
+            position = Vector3.zero;
+            rotation = Quaternion.identity;
+            scale = Vector3.one;
+            if (intPlacement?.memberPlacements == null) return false;
+
+            for (int i = 0; i < intPlacement.memberPlacements.Length; i++)
+            {
+                IntegratedMemberPreviewPlacement m = intPlacement.memberPlacements[i];
+                if (m == null || !string.Equals(m.partId, partId, System.StringComparison.OrdinalIgnoreCase))
+                    continue;
+                position = PreviewSpawnManager.ToVector3(m.position);
+                rotation = PreviewSpawnManager.ToQuaternion(m.rotation);
+                scale = PreviewSpawnManager.SanitizeScale(PreviewSpawnManager.ToVector3(m.scale), Vector3.one);
+                return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -321,6 +763,37 @@ namespace OSE.UI.Root
                     string.Equals(placement.targetId, targetId, System.StringComparison.OrdinalIgnoreCase))
                 {
                     return placement;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Returns the integrated member placement for a specific partId, or null if the
+        /// part is not covered by any <c>integratedSubassemblyPlacements</c> entry.
+        /// Used by play-mode restore paths to place completed subassembly members at their
+        /// canonical assembled poses instead of individual <c>playPosition</c>.
+        /// </summary>
+        public IntegratedMemberPreviewPlacement FindIntegratedMemberPlacement(string partId)
+        {
+            if (string.IsNullOrEmpty(partId))
+                return null;
+
+            IntegratedSubassemblyPreviewPlacement[] intPlacements = _currentPreviewConfig?.integratedSubassemblyPlacements;
+            if (intPlacements == null)
+                return null;
+
+            for (int ip = 0; ip < intPlacements.Length; ip++)
+            {
+                IntegratedSubassemblyPreviewPlacement intPlacement = intPlacements[ip];
+                if (intPlacement?.memberPlacements == null) continue;
+
+                for (int mp = 0; mp < intPlacement.memberPlacements.Length; mp++)
+                {
+                    IntegratedMemberPreviewPlacement member = intPlacement.memberPlacements[mp];
+                    if (member != null && string.Equals(member.partId, partId, System.StringComparison.OrdinalIgnoreCase))
+                        return member;
                 }
             }
 
@@ -1006,6 +1479,7 @@ namespace OSE.UI.Root
 
         private void ClearSpawnedParts()
         {
+            ClearEditModeGhosts();
             foreach (var go in _spawnedParts)
             {
                 if (go == null) continue;

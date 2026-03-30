@@ -585,6 +585,161 @@ Tighten to 2–5 mm position / 5–10° rotation after exact positions are in pl
 
 ---
 
+## 9.11 FreeCAD + Blender CLI Pipeline — End-to-End
+
+When a part has a real CAD source (`.FCStd`, STEP), use this CLI pipeline instead of AI generation.
+The same scripts and workflow apply to both parts and tools (see TOOL_AUTHORING_PIPELINE §6.4A).
+
+### Pipeline overview
+
+```
+FreeCAD (.fcstd) → STL (mm, Z-up) → Blender CLI → GLB (m, Y-up) → [gltfpack] → Unity
+```
+
+### Prerequisites
+
+| Tool | Version | Path (Windows) |
+|------|---------|----------------|
+| FreeCAD | 1.0+ | `C:\Program Files\FreeCAD 1.0\bin\FreeCADCmd.exe` |
+| Blender | 5.0+ | `C:\Program Files\Blender Foundation\Blender 5.0\blender.exe` |
+| gltfpack | latest | `tools\gltfpack.exe` (in repo root) |
+
+FreeCAD scripts run under FreeCAD's embedded Python. Blender scripts run via `blender.exe -b -P`.
+
+### Scripts (reusable across all stages)
+
+| Script | Runner | Purpose |
+|--------|--------|---------|
+| `export_fcstd_to_stl.py` | FreeCADCmd | Export all bodies from an `.fcstd` to a single STL |
+| `export_fcstd_selection_to_stl.py` | FreeCADCmd | Export only specific labeled bodies |
+| `stl_to_glb.py` | Blender -b -P | Scale mm→m, recenter pivot, assign material, export GLB |
+
+All live in `source_cad/extruder/scripts/` and are shared by every stage.
+
+### Step-by-step commands
+
+**1. Inspect the .fcstd (identify bodies and bounding boxes)**
+
+```powershell
+& "C:\Program Files\FreeCAD 1.0\bin\FreeCADCmd.exe" -c "
+import FreeCAD; doc = FreeCAD.openDocument(r'INPUT.fcstd'); doc.recompute()
+for o in doc.Objects:
+    s = getattr(o,'Shape',None)
+    if s and not s.isNull() and len(s.Faces)>0:
+        b=s.BoundBox; print(f'{o.Label:40s} {b.XLength:.1f} x {b.YLength:.1f} x {b.ZLength:.1f} mm')
+"
+```
+
+**2. Export to STL**
+
+```powershell
+# All bodies:
+& "C:\Program Files\FreeCAD 1.0\bin\FreeCADCmd.exe" `
+  source_cad/extruder/scripts/export_fcstd_to_stl.py `
+  --input INPUT.fcstd --output OUTPUT.stl --report REPORT.json
+
+# Selected bodies only:
+& "C:\Program Files\FreeCAD 1.0\bin\FreeCADCmd.exe" `
+  source_cad/extruder/scripts/export_fcstd_selection_to_stl.py `
+  --input INPUT.fcstd --output OUTPUT.stl --report REPORT.json --labels "Body1,Body2"
+```
+
+**3. Convert STL → GLB in Blender**
+
+```powershell
+& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" -b -P `
+  source_cad/extruder/scripts/stl_to_glb.py -- `
+  --input OUTPUT.stl --output CANDIDATE.glb --report REPORT_BLENDER.json `
+  --material-name "OSE Part Steel" --base-color "0.35,0.35,0.38,1.0" --roughness 0.45 `
+  --center-mode center
+```
+
+Center modes: `center` (symmetric parts), `base_center` (parts that sit on a surface).
+
+**4. (Optional) Compress with gltfpack**
+
+```powershell
+.\tools\gltfpack.exe -i CANDIDATE.glb -o APPROVED.glb -noq -cc
+```
+
+`-noq` = no quantization (preserves vertex precision for snap alignment). `-cc` = geometry compression.
+
+**5. Deploy to authoring folder**
+
+```powershell
+Copy-Item APPROVED.glb Assets/_Project/Data/Packages/<pkg>/assets/parts/<partId>_approved.glb
+```
+
+PackageAssetPostprocessor auto-syncs to StreamingAssets. Never copy there manually.
+
+### Material conventions
+
+| Part type | Base color | Metallic | Roughness |
+|-----------|-----------|----------|-----------|
+| Steel sheet/plate | `0.35,0.35,0.38` | 0.0 | 0.45 |
+| Dark steel/iron | `0.20,0.20,0.22` | 0.0 | 0.55 |
+| 3D-printed (PLA/PETG) | `0.15,0.15,0.18` | 0.0 | 0.65 |
+| Aluminum | `0.70,0.72,0.74` | 0.0 | 0.35 |
+
+Keep `metallic` at 0.0 — glTFast renders high metallic dark without environment probes.
+
+### Folder structure
+
+```
+source_cad/<stage_name>/
+  raw/                    ← Original .fcstd (read-only, never modify)
+  exported/
+    stl/                  ← Intermediate STLs (regenerable)
+    glb_candidates/       ← Blender output (review before promoting)
+    reports/              ← JSON reports from each step (audit trail)
+  scripts/                ← Stage-specific scripts (if any)
+  notes/                  ← Provenance + conversion status docs
+  placements.json         ← Extracted positions (§9.7)
+  label_map.json          ← FreeCAD label → partId mapping (§9.7.2)
+```
+
+### Lessons learned from D3D conversion passes
+
+**FreeCAD:**
+
+1. **Never export an entire assembly blindly.** `D3Dfinalassemblyv1902.fcstd` has 61 shapes.
+   Always inspect and select specific bodies with `--labels`.
+2. **Labels are not stable across revisions.** Maintain `label_map.json` to decouple CAD labels
+   from runtime part IDs.
+3. **Call `doc.recompute()` before export.** Sketch-derived features may not be resolved otherwise.
+4. **Multi-body files may not be one part.** The heatbed wirelock has two separated bodies — inspect
+   before assuming it's a single installed part.
+5. **BREP extraction is tried first.** The script extracts `.brp` from the FCStd ZIP before
+   falling back to document shapes. This is more reliable for complex assemblies.
+
+**Blender:**
+
+6. **Apply mm→m scale (0.001) before anything else.** Must call `transform_apply(scale=True)`
+   before recentering or material assignment.
+7. **Don't manually rotate meshes.** Blender's glTF exporter handles Z-up → Y-up automatically.
+   Manual rotation double-rotates the result.
+8. **Object names become GLB node names.** For combined GLBs, name objects to match part IDs.
+9. **STL has no material data.** Every import needs material assignment — the script handles this.
+   Without it, GLB appears as default magenta in Unity.
+
+**Unity/Runtime:**
+
+10. **High metallic values render dark** without environment probes. Use roughness instead.
+11. **Don't manually copy to StreamingAssets.** PostProcessor handles the sync.
+12. **`_approved` and `_mesh` suffixes are stripped** by the resolver when matching part IDs.
+13. **Combined GLB nodes use `Instantiate`, not `SetParent`** — can't reparent prefab children.
+14. **`assetRef` is just a filename** — no path prefix. Resolver knows parts/ vs tools/.
+
+**Process:**
+
+15. **Keep candidates separate from approved.** `glb_candidates/` → review → `assets/parts/`.
+16. **Always generate reports.** JSON reports at both FreeCAD and Blender stages capture bounding
+    boxes and settings — invaluable when debugging weeks later.
+17. **Composite runtime meshes are authored, not exported.** The Y-axis units combine multiple
+    STL sources + dimension-authored rods. Document these explicitly in conversion status notes.
+
+---
+
 # 10. Asset Simplification and Variants
 
 Some parts may need multiple visual forms.
