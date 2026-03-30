@@ -871,6 +871,21 @@ namespace OSE.UI.Root
                     if (asset is GameObject go) { prefab = go; break; }
             }
 
+            // Fallback: try with assets/parts/ prefix when the ref is a bare filename
+            if (prefab == null && !normalizedRef.Contains("/"))
+            {
+                string prefixedPath =
+                    $"Assets/_Project/Data/Packages/{_currentPackage.packageId}/assets/parts/{normalizedRef}";
+                prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(prefixedPath);
+                if (prefab == null)
+                {
+                    foreach (var asset in UnityEditor.AssetDatabase.LoadAllAssetsAtPath(prefixedPath))
+                        if (asset is GameObject go) { prefab = go; break; }
+                }
+                if (prefab != null)
+                    assetPath = prefixedPath;
+            }
+
             if (prefab == null && assetPath.EndsWith(".glb"))
             {
                 string gltfPath = Path.ChangeExtension(assetPath, ".gltf");
