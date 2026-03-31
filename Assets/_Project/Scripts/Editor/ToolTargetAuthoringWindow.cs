@@ -79,7 +79,7 @@ namespace OSE.Editor
         private readonly HashSet<string> _dirtyToolIds  = new HashSet<string>(StringComparer.Ordinal);
         private readonly HashSet<string> _dirtyStepIds  = new HashSet<string>(StringComparer.Ordinal);
         // When false (default), targets not linked to any tool action are hidden
-        private bool _showGhostTargets;
+        [SerializeField] private bool _showGhostTargets;
 
         // SceneView part-count summary updated by RespawnScene
         private int _previewAssembled;
@@ -108,7 +108,7 @@ namespace OSE.Editor
         private readonly Dictionary<string, GameObject> _partMeshes = new();
 
         // Tool preview — cyan-tinted ghost mesh parented under _previewRoot
-        private bool _showToolPreview = true;
+        [SerializeField] private bool _showToolPreview = true;
         private ToolDefinition _toolPreviewDef;   // ToolDefinition for the previewed tool
         private GameObject _toolPreviewGO;         // instantiated tool mesh (HideAndDontSave)
 
@@ -167,13 +167,23 @@ namespace OSE.Editor
             }
             SceneView.duringSceneGui += OnSceneGUI;
             SessionDriver.EditModeStepChanged += OnSessionDriverStepChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeChanged;
         }
 
         private void OnDisable()
         {
             SceneView.duringSceneGui -= OnSceneGUI;
             SessionDriver.EditModeStepChanged -= OnSessionDriverStepChanged;
+            EditorApplication.playModeStateChanged -= OnPlayModeChanged;
             Cleanup();
+        }
+
+        private void OnPlayModeChanged(PlayModeStateChange state)
+        {
+            if (state != PlayModeStateChange.EnteredEditMode) return;
+            // Reload the package so the window reflects any runtime changes.
+            if (!string.IsNullOrEmpty(_pkgId))
+                LoadPkg(_pkgId);
         }
 
         private void OnSessionDriverStepChanged(int sequenceIndex)
@@ -919,14 +929,15 @@ namespace OSE.Editor
             {
                 ref TargetEditState sel     = ref _targets[_selectedIdx];
                 Vector3    worldPos = root.TransformPoint(sel.position);
-                Quaternion worldRot = root.rotation * sel.rotation;
+                Quaternion worldRot = Quaternion.Normalize(root.rotation * sel.rotation);
                 float      size     = HandleUtility.GetHandleSize(worldPos) * 0.14f;
 
                 Handles.color = ColSelected;
                 Handles.DrawWireDisc(worldPos, sv.camera.transform.forward, size * 1.6f);
 
                 EditorGUI.BeginChangeCheck();
-                Vector3 newWorldPos = Handles.PositionHandle(worldPos, worldRot);
+                Quaternion handleRot = Tools.pivotRotation == PivotRotation.Local ? worldRot : Quaternion.identity;
+                Vector3 newWorldPos = Handles.PositionHandle(worldPos, handleRot);
                 if (EditorGUI.EndChangeCheck())
                 {
                     BeginEdit();
@@ -1320,8 +1331,18 @@ namespace OSE.Editor
                 list.Add(state);
             }
 
+            // Preserve selection across rebuilds by matching target ID
+            string prevSelectedId = (_selectedIdx >= 0 && _targets != null && _selectedIdx < _targets.Length)
+                ? _targets[_selectedIdx].def.id : null;
+
             _targets     = list.ToArray();
-            _selectedIdx = _targets.Length > 0 ? 0 : -1;
+            _selectedIdx = -1;
+            if (prevSelectedId != null)
+            {
+                for (int i = 0; i < _targets.Length; i++)
+                    if (_targets[i].def.id == prevSelectedId) { _selectedIdx = i; break; }
+            }
+            if (_selectedIdx < 0 && _targets.Length > 0) _selectedIdx = 0;
             _multiSelected.Clear();
             if (_selectedIdx >= 0) RefreshToolPreview(ref _targets[_selectedIdx]);
             else ClearToolPreview();
@@ -1530,6 +1551,18 @@ namespace OSE.Editor
         {
             string path = $"Assets/_Project/Data/Packages/{_pkgId}/{assetRef}";
             var pfb = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+
+            // Fallback: try assets/parts/ prefix when assetRef is a bare filename
+            if (pfb == null && !assetRef.Contains("/"))
+            {
+                string prefixed = $"Assets/_Project/Data/Packages/{_pkgId}/assets/parts/{assetRef}";
+                pfb = AssetDatabase.LoadAssetAtPath<GameObject>(prefixed);
+                if (pfb == null)
+                    foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(prefixed))
+                        if (asset is GameObject go2) { pfb = go2; break; }
+                if (pfb != null) path = prefixed;
+            }
+
             if (pfb == null)
             {
                 Debug.LogWarning($"[ToolTargetAuthoring] Asset not found: {path}");
@@ -1597,6 +1630,18 @@ namespace OSE.Editor
 
             string path = $"Assets/_Project/Data/Packages/{_pkgId}/{toolDef.assetRef}";
             var pfb = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+
+            // Fallback: try assets/tools/ prefix when assetRef is a bare filename
+            if (pfb == null && !toolDef.assetRef.Contains("/"))
+            {
+                string prefixed = $"Assets/_Project/Data/Packages/{_pkgId}/assets/tools/{toolDef.assetRef}";
+                pfb = AssetDatabase.LoadAssetAtPath<GameObject>(prefixed);
+                if (pfb == null)
+                    foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(prefixed))
+                        if (asset is GameObject go2) { pfb = go2; break; }
+                if (pfb != null) path = prefixed;
+            }
+
             if (pfb == null)
             {
                 Debug.LogWarning($"[ToolTargetAuthoring] Tool asset not found: {path}");

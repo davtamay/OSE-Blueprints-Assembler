@@ -35,6 +35,8 @@ namespace OSE.UI.Root
         private Material[][] _toolPreviewOriginalMaterials;
         private int _refreshGeneration;
         private Vector3 _baseLocalScale;
+        private float _baseToolScale;             // CursorUniformScale * scaleOverride before assembly scale
+        private PreviewSceneSetup _sceneSetup;  // cached to read assembly scale each frame
         private GameObject _pipeCursorPreview;
         private bool _cursorInReadyState;
         private bool _positionUpdateSuspended;
@@ -137,9 +139,11 @@ namespace OSE.UI.Root
             _toolPreviewIndicator.transform.SetParent(
                 mainCam != null ? mainCam.transform : _fallbackParent, false);
 
+            _sceneSetup = setup;
             float toolScale = (tool.scaleOverride > 0f)
                 ? CursorUniformScale * tool.scaleOverride
                 : CursorUniformScale;
+            _baseToolScale = toolScale;
             _toolPreviewIndicator.transform.localScale = Vector3.one * toolScale;
 
             _toolPreviewUpCorrection = ToolPoseResolver.ResolvePreviewRotation(tool, _toolPreviewIndicator);
@@ -184,6 +188,10 @@ namespace OSE.UI.Root
             float halfH = CursorRayDistance * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
             float halfW = halfH * cam.aspect;
             float localX = (vp.x - 0.5f) * 2f * halfW;
+
+            // Cursor tool stays at fixed camera-relative size (_baseToolScale).
+            // Assembly-matched scale is applied by ToolActionPreviewController during
+            // the approach lerp so the tool matches the parts when it reaches the target.
 
             if (_toolPreviewIndicator != null && !_positionUpdateSuspended)
             {
@@ -293,7 +301,7 @@ namespace OSE.UI.Root
         /// </summary>
         public void UpdateReadyPulse()
         {
-            if (!_cursorInReadyState || _toolPreviewIndicator == null) return;
+            if (!_cursorInReadyState || _toolPreviewIndicator == null || _positionUpdateSuspended) return;
 
             float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 5f);
             float scale = 1f + 0.08f * pulse;
@@ -359,6 +367,16 @@ namespace OSE.UI.Root
         }
 
         // ── Private helpers ────────────────────────────────────────────────────────
+
+        public float AssemblyScale
+        {
+            get
+            {
+                if (_sceneSetup != null && _sceneSetup.PreviewRoot != null)
+                    return _sceneSetup.PreviewRoot.lossyScale.x;
+                return 1f;
+            }
+        }
 
         private static bool TryGetActiveToolDefinition(out string toolId, out ToolDefinition tool)
         {

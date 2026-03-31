@@ -112,16 +112,21 @@ namespace OSE.UI.Root
                     isPersistent = toolDefForPersist.persistent;
             }
 
+            // Compute a stable surface position from BaseLocalPosition (set at spawn,
+            // unaffected by ToolTargetAnimator's pulse). This avoids the ±2.5 cm error
+            // that occurs when reading the animated transform.position at an arbitrary
+            // frame. Using the parent transform keeps it dynamic when previewRoot moves.
+            Transform markerParent = resolvedTarget.transform.parent;
+            Vector3 stableWorldPos = markerParent != null
+                ? markerParent.TransformPoint(resolvedTarget.BaseLocalPosition)
+                : resolvedTarget.transform.position;
+            Vector3 surfaceWorldPos = stableWorldPos - Vector3.up * resolvedTarget.MarkerLift;
+
             context = new ToolActionContext
             {
                 TargetId = resolvedTarget.TargetId,
-                TargetWorldPos = resolvedTarget.transform.position,
-                // Compute surface pos dynamically from the sphere's current world transform
-                // rather than using the baked SurfaceWorldPos. The baked value is stale when
-                // the scene root (previewRoot) repositions itself after FrameToolAction runs
-                // just before Enter() is called — causing the tool to animate to the old
-                // (wrong) surface position while the sphere has already moved to the new one.
-                SurfaceWorldPos = resolvedTarget.transform.position - Vector3.up * resolvedTarget.MarkerLift,
+                TargetWorldPos = stableWorldPos,
+                SurfaceWorldPos = surfaceWorldPos,
                 TargetWorldRotation = resolvedTarget.TargetWorldRotation,
                 WeldAxis = resolvedTarget.WeldAxis,
                 WeldLength = resolvedTarget.WeldLength,
@@ -129,6 +134,7 @@ namespace OSE.UI.Root
                 ToolActionRotation = resolvedTarget.ToolActionRotation,
                 ToolPose = toolPose,
                 InstantPlacement = isPersistent,
+                AssemblyScale = _ctx.CursorManager.AssemblyScale,
             };
             return !string.IsNullOrWhiteSpace(context.TargetId);
         }

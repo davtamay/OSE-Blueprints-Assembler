@@ -40,6 +40,7 @@ namespace OSE.Interaction
         private Renderer _targetSphereRenderer;
         private bool _completed;
         private bool _instantPlacement;
+        private float _startScale, _targetScale;
         private ToolActionVisualGuide _visualGuide;
 
         // Return animation state
@@ -93,10 +94,18 @@ namespace OSE.Interaction
             _startRot = toolPreview.transform.rotation;
             _surfacePos = ctx.SurfaceWorldPos;
 
+            // Scale lerp: cursor size → assembly-matched size during approach
+            _startScale = toolPreview.transform.localScale.x;
+            _targetScale = _startScale * Mathf.Max(ctx.AssemblyScale, 0.01f);
+
+
             // Compute working position and action orientation.
             // Prefer authored tip distance from toolPose; fall back to AABB estimation.
+            // Scale toolReach by assembly ratio so the working position matches the
+            // target scale the tool will be at when it arrives.
             float toolReach = EstimateTipDistance(toolPreview, ctx.ToolPose);
-            ComputeWorkingPose(ctx.SurfaceWorldPos, toolReach, profile, ctx, out _workingPos, out _actionRot);
+            float scaleRatio = _startScale > 0.001f ? _targetScale / _startScale : 1f;
+            ComputeWorkingPose(ctx.SurfaceWorldPos, toolReach * scaleRatio, profile, ctx, out _workingPos, out _actionRot);
 
             toolPreview.transform.SetParent(null, worldPositionStays: true);
 
@@ -104,22 +113,29 @@ namespace OSE.Interaction
             {
                 // When the author has locked in an exact rotation, derive the working
                 // position analytically: place the tool root so its tip lands exactly
-                // at the surface. The TransformPoint correction (below) breaks for
-                // authored rotations because the tip may point away from the approach
-                // direction, causing a large erroneous shift.
-                float s = toolPreview.transform.lossyScale.x;
-                _workingPos = ctx.SurfaceWorldPos - _actionRot * (ctx.ToolPose.GetTipPoint() * s);
+                // at the surface. Use _targetScale (assembly-matched) since that's the
+                // scale the tool will be at when it reaches the target.
+                _workingPos = ctx.SurfaceWorldPos - _actionRot * (ctx.ToolPose.GetTipPoint() * _targetScale);
+            }
+            else if (ctx.HasToolActionRotation)
+            {
+                // Authored rotation but no tipPoint: the tool's origin is the contact
+                // point, matching the editor preview which places pivot at target.
+                _workingPos = ctx.SurfaceWorldPos;
             }
             else if (ctx.ToolPose != null && ctx.ToolPose.HasTipPoint)
             {
                 // No authored rotation: approach from camera side and nudge the working
                 // position so the tip lands at the surface using TransformPoint.
+                // Temporarily set target scale so TransformPoint computes the correct offset.
+                toolPreview.transform.localScale = Vector3.one * _targetScale;
                 toolPreview.transform.SetPositionAndRotation(_workingPos, _actionRot);
                 Vector3 currentTipWorld = toolPreview.transform.TransformPoint(ctx.ToolPose.GetTipPoint());
                 const float tipClearance = 0.002f;
                 Vector3 desiredTip = ctx.SurfaceWorldPos + _approachDir * tipClearance;
                 _workingPos += desiredTip - currentTipWorld;
                 // Restore so the approach animation starts from cursor.
+                toolPreview.transform.localScale = Vector3.one * _startScale;
                 toolPreview.transform.SetPositionAndRotation(_startPos, _startRot);
             }
 
@@ -211,11 +227,13 @@ namespace OSE.Interaction
 
             _toolPreview.transform.position = Vector3.Lerp(_startPos, _workingPos, eased);
             _toolPreview.transform.rotation = Quaternion.Slerp(_startRot, _actionRot, eased);
-
+            float lerpedScale = Mathf.Lerp(_startScale, _targetScale, eased);
+            _toolPreview.transform.localScale = Vector3.one * lerpedScale;
             if (t >= 1f)
             {
                 _toolPreview.transform.position = _workingPos;
                 _toolPreview.transform.rotation = _actionRot;
+                _toolPreview.transform.localScale = Vector3.one * _targetScale;
 
                 // Persistent tools (clamps, fixtures): snap into place at end of approach.
                 // No action animation plays yet — a screw-tighten animation can be plugged
@@ -299,6 +317,8 @@ namespace OSE.Interaction
 
             _toolPreview.transform.position = Vector3.Lerp(_returnStartPos, _returnEndPos, eased);
             _toolPreview.transform.rotation = Quaternion.Slerp(_returnStartRot, _returnEndRot, eased);
+            float returnScale = Mathf.Lerp(_targetScale, _startScale, eased);
+            _toolPreview.transform.localScale = Vector3.one * returnScale;
 
             if (t >= 1f)
                 FinishExit();
@@ -360,6 +380,7 @@ namespace OSE.Interaction
                     _toolPreview.transform.SetParent(parent, worldPositionStays: false);
                     _toolPreview.transform.localPosition = _originalLocalPos;
                     _toolPreview.transform.localRotation = _originalLocalRot;
+                    _toolPreview.transform.localScale = Vector3.one * _startScale;
                 }
             }
 
@@ -444,10 +465,9 @@ namespace OSE.Interaction
             float workingDist = profileDesc.WorkingDistance;
             workingPos = surfacePos + approachDir * (toolHalfLength + workingDist);
 
-            // SquareCheck: lay the L-square flat on the surface, visible from camera.
-            // Ignores authored toolActionRotation — a single fixed Euler can't work for
-            // all 6 frame face orientations. Computed dynamically from camera approach.
-            if (profileDesc.PreviewStyle == PreviewStyle.SquareCheck)
+            // SquareCheck: prefer authored toolActionRotation when available (same as
+            // clamp/torque path), fall back to dynamic camera-based pose otherwise.
+            if (profileDesc.PreviewStyle == PreviewStyle.SquareCheck && !ctx.HasToolActionRotation)
             {
                 ComputeSquareCheckPose(approachDir, out actionRot);
             }

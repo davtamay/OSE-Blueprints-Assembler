@@ -31,6 +31,14 @@ namespace OSE.Interaction
         /// </summary>
         public bool InstantPlacement;
 
+        // ── Assembly scale ──
+        /// <summary>
+        /// Current assembly UI scale multiplier. The preview controller lerps tool
+        /// scale from its cursor size to cursor × assemblyScale during approach so
+        /// the tool matches the parts at the target without being oversized on the cursor.
+        /// </summary>
+        public float AssemblyScale;
+
         // ── Tool spatial metadata (grip, tip, action axis) ──
         public ToolPoseConfig ToolPose;
     }

@@ -185,12 +185,21 @@ namespace OSE.Editor
         {
             RefreshPackageList();
             SceneView.duringSceneGui += OnSceneGUI;
+            EditorApplication.playModeStateChanged += OnPlayModeChanged;
         }
 
         private void OnDisable()
         {
             SceneView.duringSceneGui -= OnSceneGUI;
+            EditorApplication.playModeStateChanged -= OnPlayModeChanged;
             Cleanup();
+        }
+
+        private void OnPlayModeChanged(PlayModeStateChange state)
+        {
+            if (state != PlayModeStateChange.EnteredEditMode) return;
+            if (!string.IsNullOrEmpty(_pkgId))
+                LoadPkg(_pkgId);
         }
 
         private void OnDestroy()
@@ -650,7 +659,7 @@ namespace OSE.Editor
                 float prev = _scaleOverride;
                 _scaleOverride = EditorGUILayout.Slider(
                     new GUIContent("Scale Override", "Runtime multiplier on CursorUniformScale (0.16). 0 = use default."),
-                    _scaleOverride, 0f, 5f);
+                    _scaleOverride, 0f, 20f);
                 if (EditorGUI.EndChangeCheck() && !Mathf.Approximately(prev, _scaleOverride))
                 {
                     _dirty = true;
@@ -1001,6 +1010,29 @@ namespace OSE.Editor
 
             string path = $"Assets/_Project/Data/Packages/{_pkgId}/{assetRef}";
             var pfb = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+
+            // Fallback: try assets/tools/ prefix when assetRef is a bare filename
+            if (pfb == null && !assetRef.Contains("/"))
+            {
+                string prefixed = $"Assets/_Project/Data/Packages/{_pkgId}/assets/tools/{assetRef}";
+                pfb = AssetDatabase.LoadAssetAtPath<GameObject>(prefixed);
+                if (pfb == null)
+                    foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(prefixed))
+                        if (asset is GameObject go) { pfb = go; break; }
+                if (pfb != null) path = prefixed;
+            }
+
+            // Fallback: try assets/parts/ prefix
+            if (pfb == null && !assetRef.Contains("/"))
+            {
+                string prefixed = $"Assets/_Project/Data/Packages/{_pkgId}/assets/parts/{assetRef}";
+                pfb = AssetDatabase.LoadAssetAtPath<GameObject>(prefixed);
+                if (pfb == null)
+                    foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(prefixed))
+                        if (asset is GameObject go) { pfb = go; break; }
+                if (pfb != null) path = prefixed;
+            }
+
             if (pfb == null) { Debug.LogWarning($"[GrabPoseEditor] Not found: {path}"); return; }
 
             _model = Instantiate(pfb);
