@@ -176,11 +176,20 @@
         "step_rear_tack_weld_corners",
         "step_stack_bottom_frame_side",
         "step_stack_left_frame_side",
+        "step_tack_left_to_bottom",
         "step_stack_right_frame_side",
+        "step_tack_right_to_bottom",
         "step_stack_front_frame_side",
+        "step_tack_front_to_sides",
         "step_stack_rear_frame_side",
+        "step_tack_rear_to_sides",
         "step_stack_top_frame_side",
+        "step_tack_top_to_verticals",
         "step_verify_stacked_cube_square",
+        "step_seam_weld_lower_cube_edges",
+        "step_seam_weld_upper_cube_edges",
+        "step_grind_upper_cube_joints",
+        "step_verify_cube_post_weld",
         "step_place_lower_corner_brackets",
         "step_snug_lower_bracket_bolts",
         "step_place_upper_corner_brackets",
@@ -512,17 +521,25 @@
         "d3d_frame_rear_top_bar",
         "d3d_frame_rear_right_bar",
         "d3d_frame_rear_bottom_bar",
-        "d3d_frame_rear_left_bar",
-        "compound007"
+        "d3d_frame_rear_left_bar"
       ],
       "stepIds": [
         "step_stack_bottom_frame_side",
         "step_stack_left_frame_side",
+        "step_tack_left_to_bottom",
         "step_stack_right_frame_side",
+        "step_tack_right_to_bottom",
         "step_stack_front_frame_side",
+        "step_tack_front_to_sides",
         "step_stack_rear_frame_side",
+        "step_tack_rear_to_sides",
         "step_stack_top_frame_side",
+        "step_tack_top_to_verticals",
         "step_verify_stacked_cube_square",
+        "step_seam_weld_lower_cube_edges",
+        "step_seam_weld_upper_cube_edges",
+        "step_grind_upper_cube_joints",
+        "step_verify_cube_post_weld",
         "step_place_lower_corner_brackets",
         "step_snug_lower_bracket_bolts",
         "step_place_upper_corner_brackets",
@@ -1851,14 +1868,26 @@
         "layout square"
       ],
       "toolPose": {
-                "gripPoint": { "x": 0, "y": 0, "z": 0 },
-                "gripRotation": { "x": 0, "y": 0, "z": 0 },
-                "tipPoint": { "x": 0, "y": 0, "z": 0 },
-                "handedness": "right",
-                "poseHint": "power_grip"
-            },
-      "scaleOverride": 1
-  },
+        "gripPoint": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "gripRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "tipPoint": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "handedness": "right",
+        "poseHint": "power_grip"
+      },
+      "scaleOverride": 0
+    },
     {
       "id": "tool_locking_clamp",
       "name": "Locking Clamp",
@@ -1919,9 +1948,9 @@
       "assetRef": "tool_mig_torch.glb",
       "useOrientationOverride": true,
       "orientationEuler": {
-        "x": 180.0,
-        "y": 90.0,
-        "z": 0.0
+        "x": 180,
+        "y": 90,
+        "z": 0
       },
       "toolPose": {
         "gripPoint": {
@@ -2019,24 +2048,24 @@
       "assetRef": "tool_hex_driver_metric_small.glb",
       "toolPose": {
         "gripPoint": {
-          "x": 0.0,
+          "x": 0,
           "y": -0.0637,
-          "z": 0.0
+          "z": 0
         },
         "tipPoint": {
-          "x": 0.0,
-          "y": 0.0,
+          "x": 0,
+          "y": 0,
           "z": 0.021
         },
         "tipAxis": {
-          "x": 0.0,
+          "x": 0,
           "y": 0.9497,
           "z": 0.3131
         },
         "actionAxis": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 1.0
+          "x": 0,
+          "y": 0,
+          "z": 1
         },
         "handedness": "either",
         "poseHint": "precision"
@@ -3859,11 +3888,72 @@
       "allowSkip": false
     },
     {
+      "id": "step_tack_left_to_bottom",
+      "name": "Tack-weld left panel to bottom",
+      "assemblyId": "assembly_d3d_frame",
+      "subassemblyId": "subassembly_cube_joining",
+      "sequenceIndex": 27,
+      "instructionText": "Equip the MIG torch and place a short tack weld at the front-left and rear-left cube corners to secure the left panel to the bottom.",
+      "whyItMattersText": "Tacking each panel immediately after placement prevents it from shifting or falling as the next panels are added.",
+      "requiredPartIds": [],
+      "relevantToolIds": [
+        "tool_mig_torch"
+      ],
+      "targetIds": [
+        "target_cube_weld_lower_front_left",
+        "target_cube_weld_lower_rear_left"
+      ],
+      "targetOrder": "sequential",
+      "completionType": "tool_action",
+      "family": "Use",
+      "profile": "Weld",
+      "viewMode": "PathView",
+      "validationRuleIds": [],
+      "hintIds": [
+        "hint_cube_weld_lower_front_left",
+        "hint_cube_weld_lower_rear_left"
+      ],
+      "effectTriggerIds": [],
+      "requiredToolActions": [
+        {
+          "id": "action_tack_left_front_left",
+          "toolId": "tool_mig_torch",
+          "actionType": "weld_pass",
+          "targetId": "target_cube_weld_lower_front_left",
+          "requiredCount": 1,
+          "successMessage": "Lower front-left corner tack complete.",
+          "failureMessage": "Equip the MIG torch and use it on the highlighted target."
+        },
+        {
+          "id": "action_tack_left_rear_left",
+          "toolId": "tool_mig_torch",
+          "actionType": "weld_pass",
+          "targetId": "target_cube_weld_lower_rear_left",
+          "requiredCount": 1,
+          "successMessage": "Lower rear-left corner tack complete.",
+          "failureMessage": "Equip the MIG torch and use it on the highlighted target."
+        }
+      ],
+      "allowSkip": false,
+      "eventTags": [
+        "d3d",
+        "frame",
+        "cube",
+        "weld",
+        "tack_sequence"
+      ],
+      "feedback": {
+        "completionEffectColor": "#FF8A33",
+        "completionPulseScale": 1.35,
+        "completionParticleId": "weld_glow"
+      }
+    },
+    {
       "id": "step_stack_right_frame_side",
       "name": "Place the right frame side",
       "assemblyId": "assembly_d3d_frame",
       "subassemblyId": "subassembly_cube_joining",
-      "sequenceIndex": 27,
+      "sequenceIndex": 28,
       "instructionText": "Lift the completed right frame side and place it on the right cube target.",
       "whyItMattersText": "The right panel locks the cube width opposite the left face.",
       "requiredPartIds": [],
@@ -3880,11 +3970,72 @@
       "allowSkip": false
     },
     {
+      "id": "step_tack_right_to_bottom",
+      "name": "Tack-weld right panel to bottom",
+      "assemblyId": "assembly_d3d_frame",
+      "subassemblyId": "subassembly_cube_joining",
+      "sequenceIndex": 29,
+      "instructionText": "Place a short tack weld at the front-right and rear-right cube corners to secure the right panel to the bottom.",
+      "whyItMattersText": "Both vertical side panels are now tacked to the bottom, forming a rigid U-channel that captures the front and rear panels.",
+      "requiredPartIds": [],
+      "relevantToolIds": [
+        "tool_mig_torch"
+      ],
+      "targetIds": [
+        "target_cube_weld_lower_front_right",
+        "target_cube_weld_lower_rear_right"
+      ],
+      "targetOrder": "sequential",
+      "completionType": "tool_action",
+      "family": "Use",
+      "profile": "Weld",
+      "viewMode": "PathView",
+      "validationRuleIds": [],
+      "hintIds": [
+        "hint_cube_weld_lower_front_right",
+        "hint_cube_weld_lower_rear_right"
+      ],
+      "effectTriggerIds": [],
+      "requiredToolActions": [
+        {
+          "id": "action_tack_right_front_right",
+          "toolId": "tool_mig_torch",
+          "actionType": "weld_pass",
+          "targetId": "target_cube_weld_lower_front_right",
+          "requiredCount": 1,
+          "successMessage": "Lower front-right corner tack complete.",
+          "failureMessage": "Equip the MIG torch and use it on the highlighted target."
+        },
+        {
+          "id": "action_tack_right_rear_right",
+          "toolId": "tool_mig_torch",
+          "actionType": "weld_pass",
+          "targetId": "target_cube_weld_lower_rear_right",
+          "requiredCount": 1,
+          "successMessage": "Lower rear-right corner tack complete.",
+          "failureMessage": "Equip the MIG torch and use it on the highlighted target."
+        }
+      ],
+      "allowSkip": false,
+      "eventTags": [
+        "d3d",
+        "frame",
+        "cube",
+        "weld",
+        "tack_sequence"
+      ],
+      "feedback": {
+        "completionEffectColor": "#FF8A33",
+        "completionPulseScale": 1.35,
+        "completionParticleId": "weld_glow"
+      }
+    },
+    {
       "id": "step_stack_front_frame_side",
       "name": "Place the front frame side",
       "assemblyId": "assembly_d3d_frame",
       "subassemblyId": "subassembly_cube_joining",
-      "sequenceIndex": 28,
+      "sequenceIndex": 30,
       "instructionText": "Lift the completed front frame side and place it on the front cube target.",
       "whyItMattersText": "The front panel starts closing the cube depth and establishes the front opening plane.",
       "requiredPartIds": [],
@@ -3901,11 +4052,72 @@
       "allowSkip": false
     },
     {
+      "id": "step_tack_front_to_sides",
+      "name": "Tack-weld front panel to side panels",
+      "assemblyId": "assembly_d3d_frame",
+      "subassemblyId": "subassembly_cube_joining",
+      "sequenceIndex": 31,
+      "instructionText": "Place a short tack weld at the front-left and front-right mid-height edges to secure the front panel to the left and right side panels.",
+      "whyItMattersText": "Tacking immediately after placement prevents the front panel from shifting when the rear panel is added.",
+      "requiredPartIds": [],
+      "relevantToolIds": [
+        "tool_mig_torch"
+      ],
+      "targetIds": [
+        "target_cube_tack_front_left_edge",
+        "target_cube_tack_front_right_edge"
+      ],
+      "targetOrder": "sequential",
+      "completionType": "tool_action",
+      "family": "Use",
+      "profile": "Weld",
+      "viewMode": "PathView",
+      "validationRuleIds": [],
+      "hintIds": [
+        "hint_cube_tack_front_left_edge",
+        "hint_cube_tack_front_right_edge"
+      ],
+      "effectTriggerIds": [],
+      "requiredToolActions": [
+        {
+          "id": "action_tack_front_left_edge",
+          "toolId": "tool_mig_torch",
+          "actionType": "weld_pass",
+          "targetId": "target_cube_tack_front_left_edge",
+          "requiredCount": 1,
+          "successMessage": "Front-left edge tack complete.",
+          "failureMessage": "Equip the MIG torch and use it on the highlighted target."
+        },
+        {
+          "id": "action_tack_front_right_edge",
+          "toolId": "tool_mig_torch",
+          "actionType": "weld_pass",
+          "targetId": "target_cube_tack_front_right_edge",
+          "requiredCount": 1,
+          "successMessage": "Front-right edge tack complete.",
+          "failureMessage": "Equip the MIG torch and use it on the highlighted target."
+        }
+      ],
+      "allowSkip": false,
+      "eventTags": [
+        "d3d",
+        "frame",
+        "cube",
+        "weld",
+        "tack_sequence"
+      ],
+      "feedback": {
+        "completionEffectColor": "#FF8A33",
+        "completionPulseScale": 1.35,
+        "completionParticleId": "weld_glow"
+      }
+    },
+    {
       "id": "step_stack_rear_frame_side",
       "name": "Place the rear frame side",
       "assemblyId": "assembly_d3d_frame",
       "subassemblyId": "subassembly_cube_joining",
-      "sequenceIndex": 29,
+      "sequenceIndex": 32,
       "instructionText": "Lift the completed rear frame side and place it on the rear cube target.",
       "whyItMattersText": "The rear panel completes the four vertical faces before the top closes the frame.",
       "requiredPartIds": [],
@@ -3922,11 +4134,72 @@
       "allowSkip": false
     },
     {
+      "id": "step_tack_rear_to_sides",
+      "name": "Tack-weld rear panel to side panels",
+      "assemblyId": "assembly_d3d_frame",
+      "subassemblyId": "subassembly_cube_joining",
+      "sequenceIndex": 33,
+      "instructionText": "Place a short tack weld at the rear-left and rear-right mid-height edges to secure the rear panel to the left and right side panels.",
+      "whyItMattersText": "All four vertical panels are now tacked at their mid-height edges. The cube base is rigid enough for the top panel.",
+      "requiredPartIds": [],
+      "relevantToolIds": [
+        "tool_mig_torch"
+      ],
+      "targetIds": [
+        "target_cube_tack_rear_left_edge",
+        "target_cube_tack_rear_right_edge"
+      ],
+      "targetOrder": "sequential",
+      "completionType": "tool_action",
+      "family": "Use",
+      "profile": "Weld",
+      "viewMode": "PathView",
+      "validationRuleIds": [],
+      "hintIds": [
+        "hint_cube_tack_rear_left_edge",
+        "hint_cube_tack_rear_right_edge"
+      ],
+      "effectTriggerIds": [],
+      "requiredToolActions": [
+        {
+          "id": "action_tack_rear_left_edge",
+          "toolId": "tool_mig_torch",
+          "actionType": "weld_pass",
+          "targetId": "target_cube_tack_rear_left_edge",
+          "requiredCount": 1,
+          "successMessage": "Rear-left edge tack complete.",
+          "failureMessage": "Equip the MIG torch and use it on the highlighted target."
+        },
+        {
+          "id": "action_tack_rear_right_edge",
+          "toolId": "tool_mig_torch",
+          "actionType": "weld_pass",
+          "targetId": "target_cube_tack_rear_right_edge",
+          "requiredCount": 1,
+          "successMessage": "Rear-right edge tack complete.",
+          "failureMessage": "Equip the MIG torch and use it on the highlighted target."
+        }
+      ],
+      "allowSkip": false,
+      "eventTags": [
+        "d3d",
+        "frame",
+        "cube",
+        "weld",
+        "tack_sequence"
+      ],
+      "feedback": {
+        "completionEffectColor": "#FF8A33",
+        "completionPulseScale": 1.35,
+        "completionParticleId": "weld_glow"
+      }
+    },
+    {
       "id": "step_stack_top_frame_side",
       "name": "Place the top frame side",
       "assemblyId": "assembly_d3d_frame",
       "subassemblyId": "subassembly_cube_joining",
-      "sequenceIndex": 30,
+      "sequenceIndex": 34,
       "instructionText": "Move the completed top frame side to the upper cube target to close the frame layout.",
       "whyItMattersText": "The top panel completes the first-pass cube stack and exposes any remaining alignment issues before final joining.",
       "requiredPartIds": [],
@@ -3943,13 +4216,96 @@
       "allowSkip": false
     },
     {
-      "id": "step_verify_stacked_cube_square",
-      "name": "Verify the stacked cube is square",
+      "id": "step_tack_top_to_verticals",
+      "name": "Tack-weld top panel to vertical panels",
       "assemblyId": "assembly_d3d_frame",
       "subassemblyId": "subassembly_cube_joining",
-      "sequenceIndex": 31,
-      "instructionText": "Equip the framing square and check the top-front-left cube corner after all six panels are stacked but before the frame is clamped and tacked together.",
-      "whyItMattersText": "This catches accumulated twist or panel drift before the first cube tacks lock the assembled frame.",
+      "sequenceIndex": 35,
+      "instructionText": "Place short tacks at all four upper cube corners in diagonal order: front-left, rear-right, front-right, rear-left. This locks the top panel to all four vertical sides.",
+      "whyItMattersText": "All eight corners are now tacked. The cube is structurally held and ready for squareness verification before seam welding.",
+      "requiredPartIds": [],
+      "relevantToolIds": [
+        "tool_mig_torch"
+      ],
+      "targetIds": [
+        "target_cube_weld_upper_front_left",
+        "target_cube_weld_upper_rear_right",
+        "target_cube_weld_upper_front_right",
+        "target_cube_weld_upper_rear_left"
+      ],
+      "targetOrder": "sequential",
+      "completionType": "tool_action",
+      "family": "Use",
+      "profile": "Weld",
+      "viewMode": "PathView",
+      "validationRuleIds": [],
+      "hintIds": [
+        "hint_cube_weld_upper_front_left",
+        "hint_cube_weld_upper_rear_right",
+        "hint_cube_weld_upper_front_right",
+        "hint_cube_weld_upper_rear_left"
+      ],
+      "effectTriggerIds": [],
+      "requiredToolActions": [
+        {
+          "id": "action_tack_top_upper_front_left",
+          "toolId": "tool_mig_torch",
+          "actionType": "weld_pass",
+          "targetId": "target_cube_weld_upper_front_left",
+          "requiredCount": 1,
+          "successMessage": "Upper front-left corner tack complete.",
+          "failureMessage": "Equip the MIG torch and use it on the highlighted target."
+        },
+        {
+          "id": "action_tack_top_upper_rear_right",
+          "toolId": "tool_mig_torch",
+          "actionType": "weld_pass",
+          "targetId": "target_cube_weld_upper_rear_right",
+          "requiredCount": 1,
+          "successMessage": "Upper rear-right corner tack complete.",
+          "failureMessage": "Equip the MIG torch and use it on the highlighted target."
+        },
+        {
+          "id": "action_tack_top_upper_front_right",
+          "toolId": "tool_mig_torch",
+          "actionType": "weld_pass",
+          "targetId": "target_cube_weld_upper_front_right",
+          "requiredCount": 1,
+          "successMessage": "Upper front-right corner tack complete.",
+          "failureMessage": "Equip the MIG torch and use it on the highlighted target."
+        },
+        {
+          "id": "action_tack_top_upper_rear_left",
+          "toolId": "tool_mig_torch",
+          "actionType": "weld_pass",
+          "targetId": "target_cube_weld_upper_rear_left",
+          "requiredCount": 1,
+          "successMessage": "Upper rear-left corner tack complete.",
+          "failureMessage": "Equip the MIG torch and use it on the highlighted target."
+        }
+      ],
+      "allowSkip": false,
+      "eventTags": [
+        "d3d",
+        "frame",
+        "cube",
+        "weld",
+        "tack_sequence"
+      ],
+      "feedback": {
+        "completionEffectColor": "#FF8A33",
+        "completionPulseScale": 1.35,
+        "completionParticleId": "weld_glow"
+      }
+    },
+    {
+      "id": "step_verify_stacked_cube_square",
+      "name": "Verify the tacked cube is square",
+      "assemblyId": "assembly_d3d_frame",
+      "subassemblyId": "subassembly_cube_joining",
+      "sequenceIndex": 36,
+      "instructionText": "Equip the framing square and check the top-front-left cube corner. All six panels are now tacked in place — verify the cube is square before running the seam welds.",
+      "whyItMattersText": "This catches accumulated twist or panel drift before the seam welds permanently lock the cube geometry.",
       "requiredPartIds": [],
       "optionalPartIds": [
         "d3d_frame_bottom_top_bar",
@@ -3985,7 +4341,7 @@
       ],
       "completionType": "tool_action",
       "family": "Use",
-      "profile": "Measure",
+      "profile": "SquareCheck",
       "viewMode": "WorkZone",
       "validationRuleIds": [],
       "hintIds": [
@@ -4018,11 +4374,311 @@
       ]
     },
     {
+      "id": "step_seam_weld_lower_cube_edges",
+      "name": "Seam-weld the 4 lower cube edges",
+      "assemblyId": "assembly_d3d_frame",
+      "subassemblyId": "subassembly_cube_joining",
+      "sequenceIndex": 37,
+      "instructionText": "Run a continuous weld bead along each of the four lower vertical corner edges. Start from the bottom and travel upward on each seam.",
+      "whyItMattersText": "Seam welds create the permanent structural bond between frame sides. A continuous bead distributes load evenly along the full joint length.",
+      "requiredPartIds": [],
+      "relevantToolIds": [
+        "tool_mig_torch"
+      ],
+      "targetIds": [
+        "target_cube_seam_lower_front_left",
+        "target_cube_seam_lower_rear_right",
+        "target_cube_seam_lower_front_right",
+        "target_cube_seam_lower_rear_left"
+      ],
+      "targetOrder": "sequential",
+      "completionType": "tool_action",
+      "family": "Use",
+      "profile": "Weld",
+      "viewMode": "PathView",
+      "validationRuleIds": [],
+      "hintIds": [
+        "hint_cube_seam_lower_front_left",
+        "hint_cube_seam_lower_rear_right",
+        "hint_cube_seam_lower_front_right",
+        "hint_cube_seam_lower_rear_left"
+      ],
+      "effectTriggerIds": [],
+      "requiredToolActions": [
+        {
+          "id": "action_cube_seam_lower_front_left",
+          "toolId": "tool_mig_torch",
+          "actionType": "weld_pass",
+          "targetId": "target_cube_seam_lower_front_left",
+          "requiredCount": 1,
+          "successMessage": "Lower front-left seam complete.",
+          "failureMessage": "Equip the MIG torch and use it on the highlighted target."
+        },
+        {
+          "id": "action_cube_seam_lower_rear_right",
+          "toolId": "tool_mig_torch",
+          "actionType": "weld_pass",
+          "targetId": "target_cube_seam_lower_rear_right",
+          "requiredCount": 1,
+          "successMessage": "Lower rear-right seam complete.",
+          "failureMessage": "Equip the MIG torch and use it on the highlighted target."
+        },
+        {
+          "id": "action_cube_seam_lower_front_right",
+          "toolId": "tool_mig_torch",
+          "actionType": "weld_pass",
+          "targetId": "target_cube_seam_lower_front_right",
+          "requiredCount": 1,
+          "successMessage": "Lower front-right seam complete.",
+          "failureMessage": "Equip the MIG torch and use it on the highlighted target."
+        },
+        {
+          "id": "action_cube_seam_lower_rear_left",
+          "toolId": "tool_mig_torch",
+          "actionType": "weld_pass",
+          "targetId": "target_cube_seam_lower_rear_left",
+          "requiredCount": 1,
+          "successMessage": "Lower rear-left seam complete.",
+          "failureMessage": "Equip the MIG torch and use it on the highlighted target."
+        }
+      ],
+      "allowSkip": false,
+      "eventTags": [
+        "d3d",
+        "frame",
+        "cube",
+        "weld",
+        "seam"
+      ],
+      "feedback": {
+        "completionEffectColor": "#FF8A33",
+        "completionPulseScale": 1.35,
+        "completionParticleId": "weld_glow"
+      }
+    },
+    {
+      "id": "step_seam_weld_upper_cube_edges",
+      "name": "Seam-weld the 4 upper cube edges",
+      "assemblyId": "assembly_d3d_frame",
+      "subassemblyId": "subassembly_cube_joining",
+      "sequenceIndex": 38,
+      "instructionText": "Run a continuous weld bead along each of the four upper vertical corner edges. Same bottom-to-top travel direction.",
+      "whyItMattersText": "Upper seams complete the cube weld structure. All eight vertical edges are now fully welded.",
+      "requiredPartIds": [],
+      "relevantToolIds": [
+        "tool_mig_torch"
+      ],
+      "targetIds": [
+        "target_cube_seam_upper_front_left",
+        "target_cube_seam_upper_rear_right",
+        "target_cube_seam_upper_front_right",
+        "target_cube_seam_upper_rear_left"
+      ],
+      "targetOrder": "sequential",
+      "completionType": "tool_action",
+      "family": "Use",
+      "profile": "Weld",
+      "viewMode": "PathView",
+      "validationRuleIds": [],
+      "hintIds": [
+        "hint_cube_seam_upper_front_left",
+        "hint_cube_seam_upper_rear_right",
+        "hint_cube_seam_upper_front_right",
+        "hint_cube_seam_upper_rear_left"
+      ],
+      "effectTriggerIds": [],
+      "requiredToolActions": [
+        {
+          "id": "action_cube_seam_upper_front_left",
+          "toolId": "tool_mig_torch",
+          "actionType": "weld_pass",
+          "targetId": "target_cube_seam_upper_front_left",
+          "requiredCount": 1,
+          "successMessage": "Upper front-left seam complete.",
+          "failureMessage": "Equip the MIG torch and use it on the highlighted target."
+        },
+        {
+          "id": "action_cube_seam_upper_rear_right",
+          "toolId": "tool_mig_torch",
+          "actionType": "weld_pass",
+          "targetId": "target_cube_seam_upper_rear_right",
+          "requiredCount": 1,
+          "successMessage": "Upper rear-right seam complete.",
+          "failureMessage": "Equip the MIG torch and use it on the highlighted target."
+        },
+        {
+          "id": "action_cube_seam_upper_front_right",
+          "toolId": "tool_mig_torch",
+          "actionType": "weld_pass",
+          "targetId": "target_cube_seam_upper_front_right",
+          "requiredCount": 1,
+          "successMessage": "Upper front-right seam complete.",
+          "failureMessage": "Equip the MIG torch and use it on the highlighted target."
+        },
+        {
+          "id": "action_cube_seam_upper_rear_left",
+          "toolId": "tool_mig_torch",
+          "actionType": "weld_pass",
+          "targetId": "target_cube_seam_upper_rear_left",
+          "requiredCount": 1,
+          "successMessage": "Upper rear-left seam complete.",
+          "failureMessage": "Equip the MIG torch and use it on the highlighted target."
+        }
+      ],
+      "allowSkip": false,
+      "eventTags": [
+        "d3d",
+        "frame",
+        "cube",
+        "weld",
+        "seam"
+      ],
+      "feedback": {
+        "completionEffectColor": "#FF8A33",
+        "completionPulseScale": 1.35,
+        "completionParticleId": "weld_glow"
+      },
+      "reinforcement": {
+        "milestoneMessage": "All eight cube seams welded. The frame is structurally joined.",
+        "safetyNote": "Let the welds cool before grinding. Hot steel grinds unevenly and throws hotter sparks."
+      }
+    },
+    {
+      "id": "step_grind_upper_cube_joints",
+      "name": "Grind the 4 upper cube seam joints",
+      "assemblyId": "assembly_d3d_frame",
+      "subassemblyId": "subassembly_cube_joining",
+      "sequenceIndex": 39,
+      "instructionText": "Equip the angle grinder and clean up the four upper corner seam joints. Remove spatter and proud weld bead so the upper brackets will sit flush.",
+      "whyItMattersText": "Upper bracket faces must be flat. Weld spatter or proud bead under a bracket creates a gap that lets the bolt loosen over time.",
+      "requiredPartIds": [],
+      "relevantToolIds": [
+        "tool_angle_grinder"
+      ],
+      "targetIds": [
+        "target_cube_cleanup_upper_front_left",
+        "target_cube_cleanup_upper_rear_right",
+        "target_cube_cleanup_upper_front_right",
+        "target_cube_cleanup_upper_rear_left"
+      ],
+      "targetOrder": "sequential",
+      "completionType": "tool_action",
+      "family": "Use",
+      "profile": "grind",
+      "viewMode": "WorkZone",
+      "validationRuleIds": [],
+      "hintIds": [],
+      "effectTriggerIds": [],
+      "requiredToolActions": [
+        {
+          "id": "action_cube_cleanup_upper_front_left",
+          "toolId": "tool_angle_grinder",
+          "actionType": "grind_pass",
+          "targetId": "target_cube_cleanup_upper_front_left",
+          "requiredCount": 1,
+          "successMessage": "Upper front-left joint cleaned.",
+          "failureMessage": "Equip the angle grinder and use it on the highlighted joint."
+        },
+        {
+          "id": "action_cube_cleanup_upper_rear_right",
+          "toolId": "tool_angle_grinder",
+          "actionType": "grind_pass",
+          "targetId": "target_cube_cleanup_upper_rear_right",
+          "requiredCount": 1,
+          "successMessage": "Upper rear-right joint cleaned.",
+          "failureMessage": "Equip the angle grinder and use it on the highlighted joint."
+        },
+        {
+          "id": "action_cube_cleanup_upper_front_right",
+          "toolId": "tool_angle_grinder",
+          "actionType": "grind_pass",
+          "targetId": "target_cube_cleanup_upper_front_right",
+          "requiredCount": 1,
+          "successMessage": "Upper front-right joint cleaned.",
+          "failureMessage": "Equip the angle grinder and use it on the highlighted joint."
+        },
+        {
+          "id": "action_cube_cleanup_upper_rear_left",
+          "toolId": "tool_angle_grinder",
+          "actionType": "grind_pass",
+          "targetId": "target_cube_cleanup_upper_rear_left",
+          "requiredCount": 1,
+          "successMessage": "Upper rear-left joint cleaned.",
+          "failureMessage": "Equip the angle grinder and use it on the highlighted joint."
+        }
+      ],
+      "allowSkip": false,
+      "eventTags": [
+        "d3d",
+        "frame",
+        "cube",
+        "cleanup",
+        "grind"
+      ]
+    },
+    {
+      "id": "step_verify_cube_post_weld",
+      "name": "Verify cube is square after welding",
+      "assemblyId": "assembly_d3d_frame",
+      "subassemblyId": "subassembly_cube_joining",
+      "sequenceIndex": 40,
+      "instructionText": "Use the framing square on the front-left and rear-right cube corners to confirm weld heat did not rack the frame.",
+      "whyItMattersText": "Weld shrinkage can pull corners out of square. Catching it now is far easier to correct than after brackets are installed.",
+      "requiredPartIds": [],
+      "relevantToolIds": [
+        "tool_framing_square"
+      ],
+      "targetIds": [
+        "target_cube_square_check_front_left",
+        "target_cube_square_check_rear_right"
+      ],
+      "targetOrder": "sequential",
+      "completionType": "tool_action",
+      "family": "Use",
+      "profile": "SquareCheck",
+      "validationRuleIds": [],
+      "hintIds": [
+        "hint_cube_square_check_post_weld"
+      ],
+      "effectTriggerIds": [],
+      "requiredToolActions": [
+        {
+          "id": "action_cube_square_post_weld_fl",
+          "toolId": "tool_framing_square",
+          "actionType": "measure",
+          "targetId": "target_cube_square_check_front_left",
+          "requiredCount": 1,
+          "successMessage": "Front-left corner verified square.",
+          "failureMessage": "Equip the framing square and use it on the highlighted corner."
+        },
+        {
+          "id": "action_cube_square_post_weld_rr",
+          "toolId": "tool_framing_square",
+          "actionType": "measure",
+          "targetId": "target_cube_square_check_rear_right",
+          "requiredCount": 1,
+          "successMessage": "Rear-right corner verified square.",
+          "failureMessage": "Equip the framing square and use it on the highlighted corner."
+        }
+      ],
+      "allowSkip": false,
+      "eventTags": [
+        "d3d",
+        "frame",
+        "cube",
+        "measure",
+        "post_weld"
+      ],
+      "reinforcement": {
+        "milestoneMessage": "Frame cube welded, ground, and verified square. Ready for corner brackets."
+      }
+    },
+    {
       "id": "step_place_lower_corner_brackets",
       "name": "Place 4 lower corner brackets",
       "assemblyId": "assembly_d3d_frame",
       "subassemblyId": "subassembly_cube_joining",
-      "sequenceIndex": 32,
+      "sequenceIndex": 41,
       "instructionText": "Position a 3D-printed corner bracket at each of the four lower cube corners. Align the bracket holes with the frame sides and start two M6Ã—18 bolts per bracket finger-tight. Work in this order: front-left, rear-right, front-right, then rear-left.",
       "whyItMattersText": "Starting with the lower corners establishes the base geometry of the cube before the upper corners are locked in.",
       "requiredPartIds": [
@@ -4130,7 +4786,7 @@
       "name": "Snug lower bracket bolts finger-tight",
       "assemblyId": "assembly_d3d_frame",
       "subassemblyId": "subassembly_cube_joining",
-      "sequenceIndex": 33,
+      "sequenceIndex": 42,
       "instructionText": "Use the allen key to snug all 8 bolts on the four lower brackets to finger-tight. Do not fully tighten yet â€” the frame needs to stay adjustable for the upper brackets.",
       "whyItMattersText": "Leaving bolts finger-tight allows minor adjustments when the upper brackets are added, ensuring the cube stays square.",
       "requiredPartIds": [],
@@ -4237,7 +4893,7 @@
       "name": "Place 4 upper corner brackets",
       "assemblyId": "assembly_d3d_frame",
       "subassemblyId": "subassembly_cube_joining",
-      "sequenceIndex": 34,
+      "sequenceIndex": 43,
       "instructionText": "Position a corner bracket at each of the four upper cube corners. Start two M6Ã—18 bolts per bracket finger-tight. Work in the same order: front-left, rear-right, front-right, then rear-left.",
       "whyItMattersText": "Upper brackets complete the structural lock of all eight cube corners.",
       "requiredPartIds": [
@@ -4345,7 +5001,7 @@
       "name": "Snug upper bracket bolts finger-tight",
       "assemblyId": "assembly_d3d_frame",
       "subassemblyId": "subassembly_cube_joining",
-      "sequenceIndex": 35,
+      "sequenceIndex": 44,
       "instructionText": "Use the allen key to snug all 8 bolts on the four upper brackets to finger-tight. The cube should now hold its shape loosely with all 8 brackets in place.",
       "whyItMattersText": "With all brackets finger-tight the cube can still be nudged square before the final tightening pass.",
       "requiredPartIds": [],
@@ -4452,7 +5108,7 @@
       "name": "Verify bracketed cube is square",
       "assemblyId": "assembly_d3d_frame",
       "subassemblyId": "subassembly_cube_joining",
-      "sequenceIndex": 36,
+      "sequenceIndex": 45,
       "instructionText": "Equip the framing square and check the top-front-left cube corner. Tap any out-of-square sides into alignment while the bolts are still finger-tight.",
       "whyItMattersText": "This is the last chance to adjust the cube geometry before the bolts are fully tightened.",
       "requiredPartIds": [],
@@ -4527,7 +5183,7 @@
       "name": "Final-tighten all bracket bolts",
       "assemblyId": "assembly_d3d_frame",
       "subassemblyId": "subassembly_cube_joining",
-      "sequenceIndex": 37,
+      "sequenceIndex": 46,
       "instructionText": "Use the allen key to fully tighten all 16 bracket bolts across all 8 corners. Work in alternating diagonal pairs (lower front-left then upper rear-right, etc.) to distribute clamping force evenly.",
       "whyItMattersText": "Even tightening prevents one corner from pulling the frame out of square while the opposite corner is still loose.",
       "requiredPartIds": [],
@@ -4673,7 +5329,7 @@
       "name": "Verify cube after final tightening",
       "assemblyId": "assembly_d3d_frame",
       "subassemblyId": "subassembly_cube_joining",
-      "sequenceIndex": 38,
+      "sequenceIndex": 47,
       "instructionText": "Equip the framing square and recheck the top-front-left cube corner after all bolts are fully tightened. Confirm the frame stayed true through the tightening sequence.",
       "whyItMattersText": "A post-tightening square check catches any shift introduced by bolt clamping forces.",
       "requiredPartIds": [],
@@ -4748,7 +5404,7 @@
       "name": "Recheck opposite cube corners",
       "assemblyId": "assembly_d3d_frame",
       "subassemblyId": "subassembly_cube_joining",
-      "sequenceIndex": 39,
+      "sequenceIndex": 48,
       "instructionText": "Equip the framing square and verify both the top-front-left and top-rear-right cube corners. This cross-check confirms the cube is true on opposite diagonals.",
       "whyItMattersText": "Checking opposite corners catches twist that a single-corner check might miss.",
       "requiredPartIds": [],
@@ -4834,7 +5490,7 @@
       "name": "Accept the frame for motion hardware",
       "assemblyId": "assembly_d3d_frame",
       "subassemblyId": "subassembly_cube_joining",
-      "sequenceIndex": 40,
+      "sequenceIndex": 49,
       "instructionText": "Make a final acceptance check on the bracketed frame and continue only when it is ready for the first rail, gantry, and motion-hardware installation steps.",
       "whyItMattersText": "Closing the frame phase explicitly helps prevent structural errors from propagating into the next subsystem.",
       "requiredPartIds": [
@@ -4870,7 +5526,7 @@
       "name": "Mount the Y-left axis to the frame",
       "assemblyId": "assembly_d3d_axes_stage_01",
       "subassemblyId": "subassembly_y_left_axis",
-      "sequenceIndex": 41,
+      "sequenceIndex": 50,
       "instructionText": "Place the completed Y-left axis unit onto the welded frame at the authored left-side mount.",
       "completionType": "placement",
       "family": "Place",
@@ -4886,7 +5542,7 @@
       "name": "Confirm the Y-left axis seats cleanly on the frame",
       "assemblyId": "assembly_d3d_axes_stage_01",
       "subassemblyId": "subassembly_y_left_axis",
-      "sequenceIndex": 42,
+      "sequenceIndex": 51,
       "instructionText": "Inspect the mounted Y-left axis and confirm its travel direction is clear and the unit sits flat on the frame-side mount.",
       "completionType": "confirmation",
       "family": "Confirm",
@@ -4901,7 +5557,7 @@
       "name": "Mount the Y-right axis to the frame",
       "assemblyId": "assembly_d3d_axes_stage_01",
       "subassemblyId": "subassembly_y_right_axis",
-      "sequenceIndex": 43,
+      "sequenceIndex": 52,
       "instructionText": "Place the completed Y-right axis unit onto the welded frame at the authored right-side mount.",
       "completionType": "placement",
       "family": "Place",
@@ -4917,7 +5573,7 @@
       "name": "Confirm the Y-axis pair establishes the X-axis span",
       "assemblyId": "assembly_d3d_axes_stage_01",
       "subassemblyId": "subassembly_y_right_axis",
-      "sequenceIndex": 44,
+      "sequenceIndex": 53,
       "instructionText": "Inspect the mounted Y-left and Y-right axes together and confirm they establish a clean span for the X-axis between them.",
       "completionType": "confirmation",
       "family": "Confirm",
@@ -4932,7 +5588,7 @@
       "name": "Tighten the X-axis idler screws",
       "assemblyId": "assembly_d3d_axes_stage_01",
       "subassemblyId": "subassembly_x_axis_fitting",
-      "sequenceIndex": 45,
+      "sequenceIndex": 54,
       "instructionText": "Tighten the X-axis idler screws while the module is still staged in the work area.",
       "completionType": "tool_action",
       "family": "Use",
@@ -4975,7 +5631,7 @@
       "name": "Place the X-axis assembly with the idler side anchored on Y-right",
       "assemblyId": "assembly_d3d_axes_stage_01",
       "subassemblyId": "subassembly_x_axis_fitting",
-      "sequenceIndex": 46,
+      "sequenceIndex": 55,
       "instructionText": "Place the X-axis idler side, rod pair, motor-holder side, and the two Y-right M6x30 bolts into their pre-fit positions so the idler side anchors on Y-right first.",
       "completionType": "placement",
       "family": "Place",
@@ -4999,7 +5655,7 @@
       "name": "Snug the Y-right M6x30 anchor bolts",
       "assemblyId": "assembly_d3d_axes_stage_01",
       "subassemblyId": "subassembly_x_axis_fitting",
-      "sequenceIndex": 47,
+      "sequenceIndex": 56,
       "instructionText": "Use the metric Allen key to snug the two Y-right M6x30 bolts so the idler side stays anchored while the motor-holder side still remains adjustable.",
       "completionType": "tool_action",
       "family": "Use",
@@ -5034,7 +5690,7 @@
       "name": "Loosely start the X-axis motor-holder bolts on the Y-left carriage",
       "assemblyId": "assembly_d3d_axes_stage_01",
       "subassemblyId": "subassembly_x_axis_fitting",
-      "sequenceIndex": 48,
+      "sequenceIndex": 57,
       "instructionText": "Place the two Y-left M6x30 motor-holder bolts by hand only loosely so the X-axis span can still be adjusted.",
       "completionType": "placement",
       "family": "Place",
@@ -5052,7 +5708,7 @@
       "name": "Lengthen the X-axis to fit tightly between the Y axes",
       "assemblyId": "assembly_d3d_axes_stage_01",
       "subassemblyId": "subassembly_x_axis_fitting",
-      "sequenceIndex": 49,
+      "sequenceIndex": 58,
       "instructionText": "Drag the yellow motor-holder side left along the fit guide until it reaches the green final-fit marker and seats against the Y-left side.",
       "completionType": "placement",
       "family": "Place",
@@ -5067,7 +5723,7 @@
       "name": "Lock the Y-left mount bolts and motor-holder screws",
       "assemblyId": "assembly_d3d_axes_stage_01",
       "subassemblyId": "subassembly_x_axis_fitting",
-      "sequenceIndex": 50,
+      "sequenceIndex": 59,
       "instructionText": "After the X-axis span is seated tightly, tighten the two Y-left M6x30 mount bolts first, then lock the motor-holder-side internal screws.",
       "completionType": "tool_action",
       "family": "Use",
@@ -5158,7 +5814,7 @@
       "name": "Tension the X-axis belt",
       "assemblyId": "assembly_d3d_axes_stage_01",
       "subassemblyId": "subassembly_x_axis_fitting",
-      "sequenceIndex": 51,
+      "sequenceIndex": 60,
       "instructionText": "Pull the X-axis belt to final hand tension only after the span and fasteners are locked.",
       "completionType": "tool_action",
       "family": "Use",
@@ -5184,7 +5840,7 @@
       "id": "step_reinsert_x_axis_belt_peg",
       "name": "Reinsert the belt peg",
       "assemblyId": "assembly_d3d_axes_stage_01",
-      "sequenceIndex": 52,
+      "sequenceIndex": 61,
       "instructionText": "Place the belt peg back into the retainer once the belt is tensioned.",
       "completionType": "placement",
       "family": "Place",
@@ -5200,7 +5856,7 @@
       "name": "Check X-axis tightness and travel",
       "assemblyId": "assembly_d3d_axes_stage_01",
       "subassemblyId": "subassembly_x_axis_fitting",
-      "sequenceIndex": 53,
+      "sequenceIndex": 62,
       "instructionText": "Inspect the fitted X-axis and confirm it can travel along the mounted Y axes without binding, without a visible gap at the left interface, and with the Y-left end-stop relationship preserved.",
       "completionType": "confirmation",
       "family": "Confirm",
@@ -5216,7 +5872,7 @@
       "name": "Stage the Titan Aero core",
       "assemblyId": "assembly_d3d_extruder_stage_01",
       "subassemblyId": "subassembly_titan_aero_core",
-      "sequenceIndex": 54,
+      "sequenceIndex": 63,
       "instructionText": "Place the Titan Aero core into the extruder work zone so the nozzle, fan, and sensor-side parts can be added in sequence.",
       "completionType": "placement",
       "family": "Place",
@@ -5232,7 +5888,7 @@
       "name": "Attach the nozzle assembly",
       "assemblyId": "assembly_d3d_extruder_stage_01",
       "subassemblyId": "subassembly_titan_aero_core",
-      "sequenceIndex": 55,
+      "sequenceIndex": 64,
       "instructionText": "Place the nozzle assembly onto the staged Titan Aero core before any cooling or sensor-side hardware is added.",
       "completionType": "placement",
       "family": "Place",
@@ -5248,7 +5904,7 @@
       "name": "Place the print-cooling blower",
       "assemblyId": "assembly_d3d_extruder_stage_01",
       "subassemblyId": "subassembly_extruder_sensor_and_fan_attachment",
-      "sequenceIndex": 56,
+      "sequenceIndex": 65,
       "instructionText": "Place the 5015 blower on the fan side of the nozzle module before securing its mount points.",
       "completionType": "placement",
       "family": "Place",
@@ -5264,7 +5920,7 @@
       "name": "Secure the blower attachment",
       "assemblyId": "assembly_d3d_extruder_stage_01",
       "subassemblyId": "subassembly_extruder_sensor_and_fan_attachment",
-      "sequenceIndex": 57,
+      "sequenceIndex": 66,
       "instructionText": "Tighten the blower-side fasteners only after the blower body is seated on the nozzle module.",
       "completionType": "tool_action",
       "family": "Use",
@@ -5299,7 +5955,7 @@
       "name": "Place the sensor holder",
       "assemblyId": "assembly_d3d_extruder_stage_01",
       "subassemblyId": "subassembly_extruder_sensor_and_fan_attachment",
-      "sequenceIndex": 58,
+      "sequenceIndex": 67,
       "instructionText": "Place the sensor holder on the nozzle module after the blower side is established.",
       "completionType": "placement",
       "family": "Place",
@@ -5315,7 +5971,7 @@
       "name": "Secure the sensor holder",
       "assemblyId": "assembly_d3d_extruder_stage_01",
       "subassemblyId": "subassembly_extruder_sensor_and_fan_attachment",
-      "sequenceIndex": 59,
+      "sequenceIndex": 68,
       "instructionText": "Tighten the small holder-side fasteners so the sensor holder is fixed before the sensor is inserted.",
       "completionType": "tool_action",
       "family": "Use",
@@ -5350,7 +6006,7 @@
       "name": "Place the 8 mm sensor",
       "assemblyId": "assembly_d3d_extruder_stage_01",
       "subassemblyId": "subassembly_extruder_sensor_and_fan_attachment",
-      "sequenceIndex": 60,
+      "sequenceIndex": 69,
       "instructionText": "Place the 8 mm sensor into the holder after the holder is secured.",
       "completionType": "placement",
       "family": "Place",
@@ -5366,7 +6022,7 @@
       "name": "Check nozzle-module clearance",
       "assemblyId": "assembly_d3d_extruder_stage_01",
       "subassemblyId": "subassembly_extruder_nozzle_module",
-      "sequenceIndex": 61,
+      "sequenceIndex": 70,
       "instructionText": "Inspect the completed nozzle module and confirm the nozzle, blower side, and sensor side all keep clear service space for later carriage integration.",
       "completionType": "confirmation",
       "family": "Confirm",
@@ -5382,7 +6038,7 @@
       "name": "Stage the simplified carriage",
       "assemblyId": "assembly_d3d_extruder_stage_02",
       "subassemblyId": "subassembly_extruder_carriage_mount_stack",
-      "sequenceIndex": 62,
+      "sequenceIndex": 71,
       "instructionText": "Place the simplified carriage into the carriage-mount work zone before the printed bracket and top plate are added.",
       "completionType": "placement",
       "family": "Place",
@@ -5398,7 +6054,7 @@
       "name": "Place the Titan Aero mount bracket",
       "assemblyId": "assembly_d3d_extruder_stage_02",
       "subassemblyId": "subassembly_extruder_carriage_mount_stack",
-      "sequenceIndex": 63,
+      "sequenceIndex": 72,
       "instructionText": "Place the stock Titan Aero mount bracket onto the staged simplified carriage before any fasteners are tightened.",
       "completionType": "placement",
       "family": "Place",
@@ -5414,7 +6070,7 @@
       "name": "Secure the mount bracket",
       "assemblyId": "assembly_d3d_extruder_stage_02",
       "subassemblyId": "subassembly_extruder_carriage_mount_stack",
-      "sequenceIndex": 64,
+      "sequenceIndex": 73,
       "instructionText": "Use the metric Allen key to tighten the two bracket fasteners only after the bracket sits flat on the simplified carriage.",
       "completionType": "tool_action",
       "family": "Use",
@@ -5449,7 +6105,7 @@
       "name": "Place the Titan Aero mount top plate",
       "assemblyId": "assembly_d3d_extruder_stage_02",
       "subassemblyId": "subassembly_extruder_carriage_mount_stack",
-      "sequenceIndex": 65,
+      "sequenceIndex": 74,
       "instructionText": "Place the top plate over the bracket stack so the carriage-side mount can be locked before the completed nozzle module is added.",
       "completionType": "placement",
       "family": "Place",
@@ -5465,7 +6121,7 @@
       "name": "Secure the mount top plate",
       "assemblyId": "assembly_d3d_extruder_stage_02",
       "subassemblyId": "subassembly_extruder_carriage_mount_stack",
-      "sequenceIndex": 66,
+      "sequenceIndex": 75,
       "instructionText": "Use the small hex driver to tighten the top-plate fasteners so the bracket stack is locked before the completed nozzle module is mounted.",
       "completionType": "tool_action",
       "family": "Use",
@@ -5500,7 +6156,7 @@
       "name": "Mount the completed nozzle module to the carriage stack",
       "assemblyId": "assembly_d3d_extruder_stage_02",
       "subassemblyId": "subassembly_extruder_carriage_unit",
-      "sequenceIndex": 67,
+      "sequenceIndex": 76,
       "instructionText": "Move the completed Titan Aero nozzle module onto the prepared carriage-side bracket stack. Keep the module square to the mount and let the rigid subassembly target guide the final seated pose.",
       "completionType": "placement",
       "family": "Place",
@@ -5514,7 +6170,7 @@
       "name": "Check carriage-mount clearance and access",
       "assemblyId": "assembly_d3d_extruder_stage_02",
       "subassemblyId": "subassembly_extruder_carriage_unit",
-      "sequenceIndex": 68,
+      "sequenceIndex": 77,
       "instructionText": "Inspect the completed carriage-side Titan Aero mount and confirm the body, nozzle, and sensor side all keep basic service access before later printer-wide integration is authored.",
       "completionType": "confirmation",
       "family": "Confirm",
@@ -5530,7 +6186,7 @@
       "name": "Stage the X-axis carriage side",
       "assemblyId": "assembly_d3d_extruder_stage_03",
       "subassemblyId": "subassembly_extruder_x_axis_mount",
-      "sequenceIndex": 69,
+      "sequenceIndex": 78,
       "instructionText": "Place the X-axis carriage-side interface onto the rod-pair work area so the completed extruder carriage unit has a real printer-side receiving body.",
       "completionType": "placement",
       "family": "Place",
@@ -5546,7 +6202,7 @@
       "name": "Mount the completed extruder carriage unit onto the X-axis interface",
       "assemblyId": "assembly_d3d_extruder_stage_03",
       "subassemblyId": "subassembly_extruder_x_axis_mount",
-      "sequenceIndex": 70,
+      "sequenceIndex": 79,
       "instructionText": "Move the completed extruder carriage unit onto the X-axis carriage-side interface and let the rigid mount target guide the first seated printer-side position.",
       "completionType": "placement",
       "family": "Place",
@@ -5560,7 +6216,7 @@
       "name": "Close the half carriage over the mounted extruder unit",
       "assemblyId": "assembly_d3d_extruder_stage_03",
       "subassemblyId": "subassembly_extruder_x_axis_mount",
-      "sequenceIndex": 71,
+      "sequenceIndex": 80,
       "instructionText": "Bring the half carriage in square to the mounted carriage side so the clamp-side body closes over the rod path and captures the mounted extruder unit.",
       "completionType": "placement",
       "family": "Place",
@@ -5576,7 +6232,7 @@
       "name": "Check extruder X-axis travel clearance",
       "assemblyId": "assembly_d3d_extruder_stage_03",
       "subassemblyId": "subassembly_extruder_x_axis_mount",
-      "sequenceIndex": 72,
+      "sequenceIndex": 81,
       "instructionText": "Inspect the mounted extruder carriage and confirm it can move along the X-axis without visible interference at the left and right travel limits and with nozzle-side clearance preserved.",
       "completionType": "confirmation",
       "family": "Confirm",
@@ -5592,7 +6248,7 @@
       "name": "Stage the heatbed body",
       "assemblyId": "assembly_d3d_heatbed_stage_01",
       "subassemblyId": "subassembly_heatbed_mechanical_stack",
-      "sequenceIndex": 73,
+      "sequenceIndex": 82,
       "instructionText": "Place the heatbed body into the printer so the first mechanical bed envelope is established before the retainers are added.",
       "completionType": "placement",
       "family": "Place",
@@ -5608,7 +6264,7 @@
       "name": "Place the left snapbuckle",
       "assemblyId": "assembly_d3d_heatbed_stage_01",
       "subassemblyId": "subassembly_heatbed_mechanical_stack",
-      "sequenceIndex": 74,
+      "sequenceIndex": 83,
       "instructionText": "Place the left snapbuckle retainer onto the left bed-side contact point after the heatbed body is seated.",
       "completionType": "placement",
       "family": "Place",
@@ -5624,7 +6280,7 @@
       "name": "Place the right snapbuckle",
       "assemblyId": "assembly_d3d_heatbed_stage_01",
       "subassemblyId": "subassembly_heatbed_mechanical_stack",
-      "sequenceIndex": 75,
+      "sequenceIndex": 84,
       "instructionText": "Place the right snapbuckle retainer onto the right bed-side contact point so the first mechanical bed path is held symmetrically.",
       "completionType": "placement",
       "family": "Place",
@@ -5640,7 +6296,7 @@
       "name": "Check heated-bed envelope clearance",
       "assemblyId": "assembly_d3d_heatbed_stage_01",
       "subassemblyId": "subassembly_heatbed_mechanical_stack",
-      "sequenceIndex": 76,
+      "sequenceIndex": 85,
       "instructionText": "Inspect the staged heatbed body and retainer pair and confirm the bed envelope stays centered under the nozzle path with clear left and right margins.",
       "completionType": "confirmation",
       "family": "Confirm",
@@ -5656,7 +6312,7 @@
       "name": "Assembly complete",
       "assemblyId": "assembly_d3d_heatbed_stage_01",
       "subassemblyId": "subassembly_heatbed_mechanical_stack",
-      "sequenceIndex": 77,
+      "sequenceIndex": 86,
       "instructionText": "All parts are now in their final assembled positions. Rotate the view to inspect the completed D3D printer stage 1 assembly.",
       "completionType": "confirmation",
       "family": "Confirm",
@@ -5669,7 +6325,7 @@
       "instructionText": "Position the Y-left axis internal components: carriage plate, belt idler, stepper motor, guide rods, endstop sensor, and mounting bracket. These are the sub-parts inside the pre-assembled Y-left axis unit.",
       "completionType": "confirmation",
       "family": "Confirm",
-      "sequenceIndex": 78,
+      "sequenceIndex": 87,
       "requiredPartIds": [
         "full_carriage",
         "idler002",
@@ -5689,7 +6345,7 @@
       "instructionText": "Position the Y-right axis internal components: carriage plate, belt idler, stepper motor, guide rods, and mounting bracket. These mirror the Y-left axis on the opposite side of the frame.",
       "completionType": "confirmation",
       "family": "Confirm",
-      "sequenceIndex": 79,
+      "sequenceIndex": 88,
       "requiredPartIds": [
         "full_carriage001",
         "idler003",
@@ -5706,7 +6362,7 @@
       "instructionText": "Position the X-axis stepper motor and guide rods. The motor mounts on the left side of the X-axis module and the rods span horizontally between the Y carriages.",
       "completionType": "confirmation",
       "family": "Confirm",
-      "sequenceIndex": 80,
+      "sequenceIndex": 89,
       "requiredPartIds": [
         "motor004",
         "rod_009",
@@ -5720,7 +6376,7 @@
       "instructionText": "Position the front Z-axis column components: stepper motor at the top, motor mount, carriage, lower idler, and spacers. This column provides the front vertical motion for the X-axis gantry.",
       "completionType": "confirmation",
       "family": "Confirm",
-      "sequenceIndex": 81,
+      "sequenceIndex": 90,
       "requiredPartIds": [
         "motor",
         "motor_piece",
@@ -5737,7 +6393,7 @@
       "instructionText": "Position the back Z-axis column components: stepper motor, motor mount, carriage, lower idler, and spacers. This column mirrors the front column on the opposite side.",
       "completionType": "confirmation",
       "family": "Confirm",
-      "sequenceIndex": 82,
+      "sequenceIndex": 91,
       "requiredPartIds": [
         "motor001",
         "motor_piece001",
@@ -5754,7 +6410,7 @@
       "instructionText": "Position the six bed raiser standoffs and two bed guide rods. The raisers support the heated bed at the correct height above the Z carriages, and the guide rods allow smooth Y-axis travel.",
       "completionType": "confirmation",
       "family": "Confirm",
-      "sequenceIndex": 83,
+      "sequenceIndex": 92,
       "requiredPartIds": [
         "bed_raiser",
         "bed_raiser001",
@@ -5773,7 +6429,7 @@
       "instructionText": "Position the Y-axis bed guide rods connecting the front and back Z carriages. These rods enable the bed platform to travel smoothly along the Y axis.",
       "completionType": "confirmation",
       "family": "Confirm",
-      "sequenceIndex": 84,
+      "sequenceIndex": 93,
       "requiredPartIds": [
         "rod_2",
         "rod_003",
@@ -5787,7 +6443,7 @@
       "instructionText": "Position the cable chain assemblies: X-axis cable chain at the top of the gantry, Y-axis cable chain along the left side, and the cable chain bracket that anchors the Y chain to the Y-left carriage.",
       "completionType": "confirmation",
       "family": "Confirm",
-      "sequenceIndex": 85,
+      "sequenceIndex": 94,
       "requiredPartIds": [
         "cable_chain",
         "cable_chain_y",
@@ -6789,6 +7445,42 @@
       "message": "Tighten bolts in alternating diagonal pairs to distribute clamping force evenly. For example: lower front-left, then upper rear-right, then lower front-right, then upper rear-left.",
       "toolId": "tool_allen_key_metric",
       "priority": "medium"
+    },
+    {
+      "id": "hint_cube_tack_front_left_edge",
+      "type": "tool_reminder",
+      "title": "Tack the front-left edge",
+      "message": "Use the MIG torch to place a short tack at the mid-height front-left edge where the front panel meets the left panel.",
+      "toolId": "tool_mig_torch",
+      "targetId": "target_cube_tack_front_left_edge",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_cube_tack_front_right_edge",
+      "type": "tool_reminder",
+      "title": "Tack the front-right edge",
+      "message": "Use the MIG torch to place a short tack at the mid-height front-right edge where the front panel meets the right panel.",
+      "toolId": "tool_mig_torch",
+      "targetId": "target_cube_tack_front_right_edge",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_cube_tack_rear_left_edge",
+      "type": "tool_reminder",
+      "title": "Tack the rear-left edge",
+      "message": "Use the MIG torch to place a short tack at the mid-height rear-left edge where the rear panel meets the left panel.",
+      "toolId": "tool_mig_torch",
+      "targetId": "target_cube_tack_rear_left_edge",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_cube_tack_rear_right_edge",
+      "type": "tool_reminder",
+      "title": "Tack the rear-right edge",
+      "message": "Use the MIG torch to place a short tack at the mid-height rear-right edge where the rear panel meets the right panel.",
+      "toolId": "tool_mig_torch",
+      "targetId": "target_cube_tack_rear_right_edge",
+      "priority": "medium"
     }
   ],
   "targets": [
@@ -6851,10 +7543,18 @@
         "bottom",
         "measure"
       ],
-      "weldAxis": { "x": 0, "y": 0, "z": 0 },
+      "weldAxis": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
       "useToolActionRotation": true,
-      "toolActionRotation": { "x": 0, "y": 180, "z": 0 }
-  },
+      "toolActionRotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      }
+    },
     {
       "id": "target_top_top_bar",
       "name": "Top Frame Side Top Bar Target",
@@ -6913,8 +7613,11 @@
         "frame",
         "top",
         "measure"
-      ]
-    },
+      ],
+      "weldAxis": { "x": 0, "y": 0, "z": 0 },
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 180, "z": 0 }
+  },
     {
       "id": "target_left_top_bar",
       "name": "Left Frame Side Top Bar Target",
@@ -6973,7 +7676,13 @@
         "frame",
         "left",
         "measure"
-      ]
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      }
     },
     {
       "id": "target_right_top_bar",
@@ -7033,7 +7742,13 @@
         "frame",
         "right",
         "measure"
-      ]
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      }
     },
     {
       "id": "target_front_top_bar",
@@ -7093,7 +7808,13 @@
         "frame",
         "front",
         "measure"
-      ]
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      }
     },
     {
       "id": "target_rear_top_bar",
@@ -7153,7 +7874,13 @@
         "frame",
         "rear",
         "measure"
-      ]
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      }
     },
     {
       "id": "target_bottom_clamp_panel",
@@ -7288,8 +8015,11 @@
         "frame",
         "top",
         "clamp"
-      ]
-    },
+      ],
+      "weldAxis": { "x": 0, "y": 0, "z": 0 },
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 344.2303, "y": 260.1167, "z": 0.9778 }
+  },
     {
       "id": "target_top_weld_upper_left",
       "name": "Top Frame Side Upper-Left Tack Target",
@@ -7302,13 +8032,11 @@
         "weld",
         "upper_left"
       ],
-      "weldAxis": {
-        "x": 0,
-        "y": 1,
-        "z": 0
-      },
-      "weldLength": 0.025
-    },
+      "weldAxis": { "x": 0, "y": 0.0026, "z": -1 },
+      "weldLength": 0.001,
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 356.6251, "y": 136.6792, "z": 1.245 }
+  },
     {
       "id": "target_top_weld_lower_right",
       "name": "Top Frame Side Lower-Right Tack Target",
@@ -7321,13 +8049,11 @@
         "weld",
         "lower_right"
       ],
-      "weldAxis": {
-        "x": 0,
-        "y": 1,
-        "z": 0
-      },
-      "weldLength": 0.025
-    },
+      "weldAxis": { "x": -0.9994, "y": -0.0332, "z": 0 },
+      "weldLength": 0.001,
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 12.4904, "y": 307.7291, "z": 6.2884 }
+  },
     {
       "id": "target_top_weld_upper_right",
       "name": "Top Frame Side Upper-Right Tack Target",
@@ -7340,13 +8066,11 @@
         "weld",
         "upper_right"
       ],
-      "weldAxis": {
-        "x": 0,
-        "y": 1,
-        "z": 0
-      },
-      "weldLength": 0.025
-    },
+      "weldAxis": { "x": 0, "y": 1, "z": 0 },
+      "weldLength": 0.001,
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 346.5357, "y": 220.6222, "z": 4.7631 }
+  },
     {
       "id": "target_top_weld_lower_left",
       "name": "Top Frame Side Lower-Left Tack Target",
@@ -7359,13 +8083,11 @@
         "weld",
         "lower_left"
       ],
-      "weldAxis": {
-        "x": 0,
-        "y": 1,
-        "z": 0
-      },
-      "weldLength": 0.025
-    },
+      "weldAxis": { "x": 0, "y": -0.0382, "z": 0.9993 },
+      "weldLength": 0.001,
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 39.3631, "z": 0 }
+  },
     {
       "id": "target_left_clamp_panel",
       "name": "Left Frame Side Clamp Target",
@@ -7376,7 +8098,13 @@
         "frame",
         "left",
         "clamp"
-      ]
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 341.661,
+        "y": 271.7354,
+        "z": 3.8056
+      }
     },
     {
       "id": "target_left_weld_upper_left",
@@ -7392,10 +8120,16 @@
       ],
       "weldAxis": {
         "x": 0,
-        "y": 1,
-        "z": 0
+        "y": 0.0026,
+        "z": -1
       },
-      "weldLength": 0.025
+      "weldLength": 0.001,
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 356.4172,
+        "y": 151.8369,
+        "z": 0.3198
+      }
     },
     {
       "id": "target_left_weld_lower_right",
@@ -7410,11 +8144,17 @@
         "lower_right"
       ],
       "weldAxis": {
-        "x": 0,
-        "y": 1,
+        "x": -0.9994,
+        "y": -0.0332,
         "z": 0
       },
-      "weldLength": 0.025
+      "weldLength": 0.001,
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 4.1603,
+        "y": 338.7817,
+        "z": 3.5261
+      }
     },
     {
       "id": "target_left_weld_upper_right",
@@ -7433,7 +8173,13 @@
         "y": 1,
         "z": 0
       },
-      "weldLength": 0.025
+      "weldLength": 0.001,
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 345.8652,
+        "y": 244.2841,
+        "z": 357.0356
+      }
     },
     {
       "id": "target_left_weld_lower_left",
@@ -7449,10 +8195,16 @@
       ],
       "weldAxis": {
         "x": 0,
-        "y": 1,
-        "z": 0
+        "y": -0.0382,
+        "z": 0.9993
       },
-      "weldLength": 0.025
+      "weldLength": 0.001,
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 39.3587,
+        "z": 0
+      }
     },
     {
       "id": "target_right_clamp_panel",
@@ -7464,7 +8216,13 @@
         "frame",
         "right",
         "clamp"
-      ]
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 341.661,
+        "y": 271.7354,
+        "z": 3.8056
+      }
     },
     {
       "id": "target_right_weld_upper_left",
@@ -7480,10 +8238,16 @@
       ],
       "weldAxis": {
         "x": 0,
-        "y": 1,
-        "z": 0
+        "y": 0.0026,
+        "z": -1
       },
-      "weldLength": 0.025
+      "weldLength": 0.001,
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 356.4172,
+        "y": 151.8369,
+        "z": 0.3198
+      }
     },
     {
       "id": "target_right_weld_lower_right",
@@ -7498,11 +8262,17 @@
         "lower_right"
       ],
       "weldAxis": {
-        "x": 0,
-        "y": 1,
+        "x": -0.9994,
+        "y": -0.0332,
         "z": 0
       },
-      "weldLength": 0.025
+      "weldLength": 0.001,
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 4.1603,
+        "y": 338.7817,
+        "z": 3.5261
+      }
     },
     {
       "id": "target_right_weld_upper_right",
@@ -7521,7 +8291,13 @@
         "y": 1,
         "z": 0
       },
-      "weldLength": 0.025
+      "weldLength": 0.001,
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 345.8652,
+        "y": 244.2841,
+        "z": 357.0356
+      }
     },
     {
       "id": "target_right_weld_lower_left",
@@ -7537,10 +8313,16 @@
       ],
       "weldAxis": {
         "x": 0,
-        "y": 1,
-        "z": 0
+        "y": -0.0382,
+        "z": 0.9993
       },
-      "weldLength": 0.025
+      "weldLength": 0.001,
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 39.3587,
+        "z": 0
+      }
     },
     {
       "id": "target_front_clamp_panel",
@@ -7552,7 +8334,13 @@
         "frame",
         "front",
         "clamp"
-      ]
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 341.661,
+        "y": 271.7354,
+        "z": 3.8056
+      }
     },
     {
       "id": "target_front_weld_upper_left",
@@ -7568,10 +8356,16 @@
       ],
       "weldAxis": {
         "x": 0,
-        "y": 1,
-        "z": 0
+        "y": 0.0026,
+        "z": -1
       },
-      "weldLength": 0.025
+      "weldLength": 0.001,
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 356.4172,
+        "y": 151.8369,
+        "z": 0.3198
+      }
     },
     {
       "id": "target_front_weld_lower_right",
@@ -7586,11 +8380,17 @@
         "lower_right"
       ],
       "weldAxis": {
-        "x": 0,
-        "y": 1,
+        "x": -0.9994,
+        "y": -0.0332,
         "z": 0
       },
-      "weldLength": 0.025
+      "weldLength": 0.001,
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 4.1603,
+        "y": 338.7817,
+        "z": 3.5261
+      }
     },
     {
       "id": "target_front_weld_upper_right",
@@ -7609,7 +8409,13 @@
         "y": 1,
         "z": 0
       },
-      "weldLength": 0.025
+      "weldLength": 0.001,
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 345.8652,
+        "y": 244.2841,
+        "z": 357.0356
+      }
     },
     {
       "id": "target_front_weld_lower_left",
@@ -7625,10 +8431,16 @@
       ],
       "weldAxis": {
         "x": 0,
-        "y": 1,
-        "z": 0
+        "y": -0.0382,
+        "z": 0.9993
       },
-      "weldLength": 0.025
+      "weldLength": 0.001,
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 39.3587,
+        "z": 0
+      }
     },
     {
       "id": "target_rear_clamp_panel",
@@ -7640,7 +8452,13 @@
         "frame",
         "rear",
         "clamp"
-      ]
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 341.661,
+        "y": 271.7354,
+        "z": 3.8056
+      }
     },
     {
       "id": "target_rear_weld_upper_left",
@@ -7656,10 +8474,16 @@
       ],
       "weldAxis": {
         "x": 0,
-        "y": 1,
-        "z": 0
+        "y": 0.0026,
+        "z": -1
       },
-      "weldLength": 0.025
+      "weldLength": 0.001,
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 356.4172,
+        "y": 151.8369,
+        "z": 0.3198
+      }
     },
     {
       "id": "target_rear_weld_lower_right",
@@ -7674,11 +8498,17 @@
         "lower_right"
       ],
       "weldAxis": {
-        "x": 0,
-        "y": 1,
+        "x": -0.9994,
+        "y": -0.0332,
         "z": 0
       },
-      "weldLength": 0.025
+      "weldLength": 0.001,
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 4.1603,
+        "y": 338.7817,
+        "z": 3.5261
+      }
     },
     {
       "id": "target_rear_weld_upper_right",
@@ -7697,7 +8527,13 @@
         "y": 1,
         "z": 0
       },
-      "weldLength": 0.025
+      "weldLength": 0.001,
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 345.8652,
+        "y": 244.2841,
+        "z": 357.0356
+      }
     },
     {
       "id": "target_rear_weld_lower_left",
@@ -7713,10 +8549,16 @@
       ],
       "weldAxis": {
         "x": 0,
-        "y": 1,
-        "z": 0
+        "y": -0.0382,
+        "z": 0.9993
       },
-      "weldLength": 0.025
+      "weldLength": 0.001,
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 39.3587,
+        "z": 0
+      }
     },
     {
       "id": "target_cube_bottom_side",
@@ -8551,6 +9393,90 @@
       "id": "target_heatbed_nozzle_clearance",
       "name": "Heatbed Nozzle Clearance",
       "anchorRef": "anchors/d3d/heatbed/qc/nozzle"
+    },
+    {
+      "id": "target_cube_tack_front_left_edge",
+      "name": "Cube Front-Left Edge (mid-height)",
+      "anchorRef": "anchors/d3d/cube/tack_front_left_edge",
+      "description": "Mid-height tack point where the front panel meets the left panel.",
+      "tags": [
+        "d3d",
+        "frame",
+        "cube",
+        "edge",
+        "front",
+        "left",
+        "tack"
+      ],
+      "weldAxis": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
+      "weldLength": 0.025
+    },
+    {
+      "id": "target_cube_tack_front_right_edge",
+      "name": "Cube Front-Right Edge (mid-height)",
+      "anchorRef": "anchors/d3d/cube/tack_front_right_edge",
+      "description": "Mid-height tack point where the front panel meets the right panel.",
+      "tags": [
+        "d3d",
+        "frame",
+        "cube",
+        "edge",
+        "front",
+        "right",
+        "tack"
+      ],
+      "weldAxis": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
+      "weldLength": 0.025
+    },
+    {
+      "id": "target_cube_tack_rear_left_edge",
+      "name": "Cube Rear-Left Edge (mid-height)",
+      "anchorRef": "anchors/d3d/cube/tack_rear_left_edge",
+      "description": "Mid-height tack point where the rear panel meets the left panel.",
+      "tags": [
+        "d3d",
+        "frame",
+        "cube",
+        "edge",
+        "rear",
+        "left",
+        "tack"
+      ],
+      "weldAxis": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
+      "weldLength": 0.025
+    },
+    {
+      "id": "target_cube_tack_rear_right_edge",
+      "name": "Cube Rear-Right Edge (mid-height)",
+      "anchorRef": "anchors/d3d/cube/tack_rear_right_edge",
+      "description": "Mid-height tack point where the rear panel meets the right panel.",
+      "tags": [
+        "d3d",
+        "frame",
+        "cube",
+        "edge",
+        "rear",
+        "right",
+        "tack"
+      ],
+      "weldAxis": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
+      "weldLength": 0.025
     }
   ],
   "challengeConfig": {
@@ -13210,7 +14136,7 @@
                 "x": 0.0,
                 "y": -1.0,
                 "z": 0.0,
-                "w": -4.3711e-8
+                "w": 0.0
             },
             "scale": {
                 "x": 0.04,
@@ -13377,15 +14303,15 @@
         {
             "targetId": "target_top_square_check",
             "position": {
-                "x": 0.2403,
-                "y": 0.6016,
-                "z": 0.5597
+                "x": 0.3269,
+                "y": 0.5534,
+                "z": 0.4979
             },
             "rotation": {
                 "x": 0.0,
-                "y": 0.0,
+                "y": -1.0,
                 "z": 0.0,
-                "w": 1.0
+                "w": 0.0
             },
             "scale": {
                 "x": 0.04,
@@ -13558,9 +14484,9 @@
             },
             "rotation": {
                 "x": 0.0,
-                "y": 0.0,
+                "y": -1.0,
                 "z": 0.0,
-                "w": 1.0
+                "w": 0.0
             },
             "scale": {
                 "x": 0.04,
@@ -13733,9 +14659,9 @@
             },
             "rotation": {
                 "x": 0.0,
-                "y": 0.0,
+                "y": -1.0,
                 "z": 0.0,
-                "w": 1.0
+                "w": 0.0
             },
             "scale": {
                 "x": 0.04,
@@ -13908,9 +14834,9 @@
             },
             "rotation": {
                 "x": 0.0,
-                "y": 0.0,
+                "y": -1.0,
                 "z": 0.0,
-                "w": 1.0
+                "w": 0.0
             },
             "scale": {
                 "x": 0.04,
@@ -14083,9 +15009,9 @@
             },
             "rotation": {
                 "x": 0.0,
-                "y": 0.0,
+                "y": -1.0,
                 "z": 0.0,
-                "w": 1.0
+                "w": 0.0
             },
             "scale": {
                 "x": 0.04,
@@ -14147,9 +15073,9 @@
         {
             "targetId": "target_bottom_weld_upper_left",
             "position": {
-                "x": -0.5326,
+                "x": -0.5314,
                 "y": 0.552,
-                "z": 0.5729
+                "z": 0.5735
             },
             "rotation": {
                 "x": -0.0049,
@@ -14182,9 +15108,9 @@
         {
             "targetId": "target_bottom_weld_upper_right",
             "position": {
-                "x": -0.2234,
-                "y": 0.5537,
-                "z": 0.5718
+                "x": -0.228,
+                "y": 0.555,
+                "z": 0.5696
             },
             "rotation": {
                 "x": -0.0437,
@@ -14287,15 +15213,15 @@
         {
             "targetId": "target_top_clamp_panel",
             "position": {
-                "x": 0.38,
-                "y": 0.6066,
-                "z": 0.42
+                "x": 0.5197,
+                "y": 0.5459,
+                "z": 0.5469
             },
             "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "x": 0.0948,
+                "y": 0.7574,
+                "z": 0.0996,
+                "w": -0.6384
             },
             "scale": {
                 "x": 0.055,
@@ -14322,15 +15248,15 @@
         {
             "targetId": "target_top_weld_upper_left",
             "position": {
-                "x": 0.2149,
-                "y": 0.5916,
-                "z": 0.5851
+                "x": 0.2265,
+                "y": 0.5533,
+                "z": 0.571
             },
             "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "x": -0.0008,
+                "y": 0.929,
+                "z": 0.0314,
+                "w": 0.3686
             },
             "scale": {
                 "x": 0.05,
@@ -14357,15 +15283,15 @@
         {
             "targetId": "target_top_weld_upper_right",
             "position": {
-                "x": 0.5451,
-                "y": 0.5916,
-                "z": 0.5851
+                "x": 0.5319,
+                "y": 0.5527,
+                "z": 0.5725
             },
             "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "x": -0.0794,
+                "y": -0.9289,
+                "z": -0.0955,
+                "w": 0.349
             },
             "scale": {
                 "x": 0.05,
@@ -14392,15 +15318,15 @@
         {
             "targetId": "target_top_weld_lower_right",
             "position": {
-                "x": 0.5451,
-                "y": 0.5916,
-                "z": 0.2549
+                "x": 0.5323,
+                "y": 0.5529,
+                "z": 0.2654
             },
             "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "x": 0.0735,
+                "y": -0.4426,
+                "z": 0.0968,
+                "w": 0.8885
             },
             "scale": {
                 "x": 0.05,
@@ -14427,15 +15353,15 @@
         {
             "targetId": "target_top_weld_lower_left",
             "position": {
-                "x": 0.2149,
-                "y": 0.5916,
-                "z": 0.2549
+                "x": 0.2261,
+                "y": 0.5538,
+                "z": 0.2686
             },
             "rotation": {
                 "x": 0.0,
-                "y": 0.0,
+                "y": 0.3368,
                 "z": 0.0,
-                "w": 1.0
+                "w": 0.9416
             },
             "scale": {
                 "x": 0.05,
@@ -14467,10 +15393,10 @@
                 "z": 0.0
             },
             "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "x": -0.1371,
+                "y": -0.6832,
+                "z": -0.0874,
+                "w": 0.7119
             },
             "scale": {
                 "x": 0.055,
@@ -14502,10 +15428,10 @@
                 "z": 0.1651
             },
             "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "x": -0.0049,
+                "y": 0.9695,
+                "z": 0.031,
+                "w": 0.2431
             },
             "scale": {
                 "x": 0.05,
@@ -14537,10 +15463,10 @@
                 "z": 0.1651
             },
             "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "x": -0.0437,
+                "y": -0.8417,
+                "z": -0.1178,
+                "w": 0.5251
             },
             "scale": {
                 "x": 0.05,
@@ -14572,10 +15498,10 @@
                 "z": -0.1651
             },
             "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "x": 0.03,
+                "y": -0.185,
+                "z": 0.0369,
+                "w": 0.9816
             },
             "scale": {
                 "x": 0.05,
@@ -14608,9 +15534,9 @@
             },
             "rotation": {
                 "x": 0.0,
-                "y": 0.0,
+                "y": 0.3368,
                 "z": 0.0,
-                "w": 1.0
+                "w": 0.9416
             },
             "scale": {
                 "x": 0.05,
@@ -14642,10 +15568,10 @@
                 "z": 0.0
             },
             "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "x": -0.1371,
+                "y": -0.6832,
+                "z": -0.0874,
+                "w": 0.7119
             },
             "scale": {
                 "x": 0.055,
@@ -14677,10 +15603,10 @@
                 "z": 0.1651
             },
             "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "x": -0.0049,
+                "y": 0.9695,
+                "z": 0.031,
+                "w": 0.2431
             },
             "scale": {
                 "x": 0.05,
@@ -14712,10 +15638,10 @@
                 "z": 0.1651
             },
             "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "x": -0.0437,
+                "y": -0.8417,
+                "z": -0.1178,
+                "w": 0.5251
             },
             "scale": {
                 "x": 0.05,
@@ -14747,10 +15673,10 @@
                 "z": -0.1651
             },
             "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "x": 0.03,
+                "y": -0.185,
+                "z": 0.0369,
+                "w": 0.9816
             },
             "scale": {
                 "x": 0.05,
@@ -14783,9 +15709,9 @@
             },
             "rotation": {
                 "x": 0.0,
-                "y": 0.0,
+                "y": 0.3368,
                 "z": 0.0,
-                "w": 1.0
+                "w": 0.9416
             },
             "scale": {
                 "x": 0.05,
@@ -14817,10 +15743,10 @@
                 "z": -0.42
             },
             "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "x": -0.1371,
+                "y": -0.6832,
+                "z": -0.0874,
+                "w": 0.7119
             },
             "scale": {
                 "x": 0.055,
@@ -14852,10 +15778,10 @@
                 "z": -0.2549
             },
             "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "x": -0.0049,
+                "y": 0.9695,
+                "z": 0.031,
+                "w": 0.2431
             },
             "scale": {
                 "x": 0.05,
@@ -14887,10 +15813,10 @@
                 "z": -0.2549
             },
             "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "x": -0.0437,
+                "y": -0.8417,
+                "z": -0.1178,
+                "w": 0.5251
             },
             "scale": {
                 "x": 0.05,
@@ -14922,10 +15848,10 @@
                 "z": -0.5851
             },
             "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "x": 0.03,
+                "y": -0.185,
+                "z": 0.0369,
+                "w": 0.9816
             },
             "scale": {
                 "x": 0.05,
@@ -14958,9 +15884,9 @@
             },
             "rotation": {
                 "x": 0.0,
-                "y": 0.0,
+                "y": 0.3368,
                 "z": 0.0,
-                "w": 1.0
+                "w": 0.9416
             },
             "scale": {
                 "x": 0.05,
@@ -14992,10 +15918,10 @@
                 "z": -0.42
             },
             "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "x": -0.1371,
+                "y": -0.6832,
+                "z": -0.0874,
+                "w": 0.7119
             },
             "scale": {
                 "x": 0.055,
@@ -15027,10 +15953,10 @@
                 "z": -0.2549
             },
             "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "x": -0.0049,
+                "y": 0.9695,
+                "z": 0.031,
+                "w": 0.2431
             },
             "scale": {
                 "x": 0.05,
@@ -15062,10 +15988,10 @@
                 "z": -0.2549
             },
             "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "x": -0.0437,
+                "y": -0.8417,
+                "z": -0.1178,
+                "w": 0.5251
             },
             "scale": {
                 "x": 0.05,
@@ -15097,10 +16023,10 @@
                 "z": -0.5851
             },
             "rotation": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "x": 0.03,
+                "y": -0.185,
+                "z": 0.0369,
+                "w": 0.9816
             },
             "scale": {
                 "x": 0.05,
@@ -15133,9 +16059,9 @@
             },
             "rotation": {
                 "x": 0.0,
-                "y": 0.0,
+                "y": 0.3368,
                 "z": 0.0,
-                "w": 1.0
+                "w": 0.9416
             },
             "scale": {
                 "x": 0.05,

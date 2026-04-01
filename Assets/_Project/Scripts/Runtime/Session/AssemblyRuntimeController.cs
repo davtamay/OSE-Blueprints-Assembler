@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using OSE.App;
 using OSE.Content;
 using OSE.Core;
@@ -218,32 +217,14 @@ namespace OSE.Runtime
 
         private StepDefinition[] ResolveAssemblySteps(string assemblyId)
         {
-            if (!_package.TryGetAssembly(assemblyId, out AssemblyDefinition assembly))
-            {
-                OseLog.Warn($"[AssemblyRuntimeController] Assembly '{assemblyId}' not found in package.");
-                return Array.Empty<StepDefinition>();
-            }
+            // Derive assembly steps from step.assemblyId — no dependency on
+            // the assembly's stepIds array, eliminating the sync-bug class.
+            StepDefinition[] derived = _package.GetStepsForAssembly(assemblyId);
+            if (derived.Length > 0)
+                return derived;
 
-            string[] stepIds = assembly.stepIds ?? Array.Empty<string>();
-            if (stepIds.Length == 0)
-            {
-                // Fallback: use all ordered steps from the package
-                OseLog.VerboseInfo($"[AssemblyRuntimeController] Assembly '{assemblyId}' has no explicit stepIds. Using all package steps.");
-                return _package.GetOrderedSteps();
-            }
-
-            // Collect steps matching the assembly's stepIds, preserving package order
-            StepDefinition[] allOrdered = _package.GetOrderedSteps();
-            var stepIdSet = new HashSet<string>(stepIds, StringComparer.OrdinalIgnoreCase);
-            var result = new List<StepDefinition>(stepIds.Length);
-
-            for (int i = 0; i < allOrdered.Length; i++)
-            {
-                if (allOrdered[i] != null && stepIdSet.Contains(allOrdered[i].id))
-                    result.Add(allOrdered[i]);
-            }
-
-            return result.ToArray();
+            OseLog.Warn($"[AssemblyRuntimeController] Assembly '{assemblyId}' has no steps with matching assemblyId.");
+            return Array.Empty<StepDefinition>();
         }
     }
 }

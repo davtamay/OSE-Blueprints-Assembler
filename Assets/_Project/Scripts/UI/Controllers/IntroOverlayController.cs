@@ -31,6 +31,13 @@ namespace OSE.UI.Controllers
         private int _pendingSavedCompletedSteps;
         private int _pendingSavedTotalSteps;
 
+        /// <summary>
+        /// When true, the intro overlay shows a "Choose Section" button that
+        /// publishes <see cref="AssemblyPickerRequested"/>. Set by the coordinator
+        /// based on whether the package has multiple assemblies.
+        /// </summary>
+        public bool ShowSectionPicker { get; set; }
+
         public bool IsVisible => _introVisible;
         public bool HasPendingBuild => _pendingBuild;
 
@@ -378,6 +385,37 @@ namespace OSE.UI.Controllers
                 RuntimeEventBus.Publish(new MachineIntroDismissed(_introMachineId ?? string.Empty));
             };
             buttonArea.Add(continueBtn);
+
+            // "Choose Section" button — only visible for multi-assembly packages
+            if (ShowSectionPicker)
+            {
+                var sectionBtn = new Button();
+                sectionBtn.text = "Choose Section";
+                sectionBtn.style.height = 34f;
+                sectionBtn.style.width = 200f;
+                sectionBtn.style.fontSize = 13f;
+                sectionBtn.style.marginTop = 8f;
+                sectionBtn.style.backgroundColor = new Color(0.14f, 0.18f, 0.26f, 1f);
+                sectionBtn.style.color = new Color(0.6f, 0.75f, 0.95f);
+                sectionBtn.style.borderTopLeftRadius = 10f;
+                sectionBtn.style.borderTopRightRadius = 10f;
+                sectionBtn.style.borderBottomLeftRadius = 10f;
+                sectionBtn.style.borderBottomRightRadius = 10f;
+                sectionBtn.style.borderTopWidth = 1f;
+                sectionBtn.style.borderBottomWidth = 1f;
+                sectionBtn.style.borderLeftWidth = 1f;
+                sectionBtn.style.borderRightWidth = 1f;
+                sectionBtn.style.borderTopColor = new Color(0.3f, 0.4f, 0.6f, 0.4f);
+                sectionBtn.style.borderBottomColor = new Color(0.3f, 0.4f, 0.6f, 0.4f);
+                sectionBtn.style.borderLeftColor = new Color(0.3f, 0.4f, 0.6f, 0.4f);
+                sectionBtn.style.borderRightColor = new Color(0.3f, 0.4f, 0.6f, 0.4f);
+                sectionBtn.clicked += () =>
+                {
+                    Dismiss();
+                    RuntimeEventBus.Publish(new AssemblyPickerRequested());
+                };
+                buttonArea.Add(sectionBtn);
+            }
 
             if (hasSavedProgress)
             {

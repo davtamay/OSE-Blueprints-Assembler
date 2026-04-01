@@ -924,6 +924,18 @@ namespace OSE.Editor
                 DrawPartConnector(ref t, worldPos, alpha);
             }
 
+            // F key → frame on selected target gizmo
+            if (_selectedIdx >= 0 && _selectedIdx < _targets.Length
+                && Event.current.type == EventType.KeyDown
+                && Event.current.keyCode == KeyCode.F)
+            {
+                ref TargetEditState ft = ref _targets[_selectedIdx];
+                Vector3 worldPos = root.TransformPoint(ft.position);
+                float frameSize = HandleUtility.GetHandleSize(worldPos) * 0.5f;
+                sv.Frame(new Bounds(worldPos, Vector3.one * frameSize), false);
+                Event.current.Use();
+            }
+
             // Handles for selected target
             if (_selectedIdx >= 0 && _selectedIdx < _targets.Length)
             {
@@ -1728,9 +1740,23 @@ namespace OSE.Editor
         private void FrameInScene()
         {
             if (_previewRoot == null) return;
-            Selection.activeGameObject = _previewRoot;
             var sv = SceneView.lastActiveSceneView;
-            if (sv != null) { sv.FrameSelected(); sv.Repaint(); }
+            if (sv == null) return;
+
+            // Frame on selected target position if available
+            if (_selectedIdx >= 0 && _selectedIdx < _targets.Length)
+            {
+                Vector3 worldPos = _previewRoot.transform.TransformPoint(_targets[_selectedIdx].position);
+                float frameSize = HandleUtility.GetHandleSize(worldPos) * 0.5f;
+                sv.Frame(new Bounds(worldPos, Vector3.one * frameSize), false);
+            }
+            else
+            {
+                Selection.activeGameObject = _previewRoot;
+                sv.FrameSelected();
+            }
+
+            sv.Repaint();
         }
 
         // ── Undo / Redo ───────────────────────────────────────────────────────

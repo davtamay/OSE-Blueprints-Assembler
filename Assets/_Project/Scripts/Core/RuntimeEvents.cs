@@ -437,4 +437,31 @@ namespace OSE.Core
     public readonly struct SpawnerPartsReady
     {
     }
+
+    // ── Assembly Picker Events ──
+
+    /// <summary>
+    /// Published when the user requests to see the assembly section picker.
+    /// Fired from the intro overlay ("Choose Section") or the step panel HUD button.
+    /// </summary>
+    public readonly struct AssemblyPickerRequested
+    {
+    }
+
+    /// <summary>
+    /// Published when the user dismisses the assembly picker, optionally selecting a section.
+    /// </summary>
+    public readonly struct AssemblyPickerDismissed
+    {
+        /// <summary>Selected assembly ID, or null if the user tapped "Resume".</summary>
+        public readonly string SelectedAssemblyId;
+        /// <summary>Global step index of the first step in the selected assembly, or -1.</summary>
+        public readonly int GlobalStepIndex;
+
+        public AssemblyPickerDismissed(string selectedAssemblyId, int globalStepIndex)
+        {
+            SelectedAssemblyId = selectedAssemblyId;
+            GlobalStepIndex = globalStepIndex;
+        }
+    }
 }

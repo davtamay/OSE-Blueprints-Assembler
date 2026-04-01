@@ -6,15 +6,19 @@ namespace OSE.Content.Validation
 {
     public static class MachinePackageValidator
     {
+        /// <summary>
+        /// Optional delegate that checks whether a profile string is registered.
+        /// Set by higher-level code (e.g. ToolProfileRegistry.Has) at startup.
+        /// When null, profile validation is skipped (all profiles accepted).
+        /// </summary>
+        public static Func<string, bool> IsProfileRegistered { get; set; }
+
         private static readonly HashSet<string> DifficultyValues = CreateSet("beginner", "intermediate", "advanced");
         private static readonly HashSet<string> RecommendedModeValues = CreateSet("tutorial", "guided", "standard", "challenge");
         private static readonly HashSet<string> PartCategoryValues = CreateSet("plate", "bracket", "fastener", "shaft", "panel", "housing", "pipe", "custom");
         private static readonly HashSet<string> ToolCategoryValues = CreateSet("hand_tool", "power_tool", "measurement", "safety", "specialty");
         private static readonly HashSet<string> CompletionTypeValues = CreateSet("placement", "tool_action", "confirmation", "pipe_connection");
         private static readonly HashSet<string> FamilyValues = CreateSet("Place", "Use", "Connect", "Confirm");
-        private static readonly HashSet<string> PlaceProfileValues = CreateSet("Clamp", "AxisFit");
-        private static readonly HashSet<string> UseProfileValues = CreateSet("Torque", "Weld", "Cut", "Measure");
-        private static readonly HashSet<string> ConnectProfileValues = CreateSet("Cable");
         private static readonly HashSet<string> ViewModeValues = CreateSet("SourceAndTarget", "PairEndpoints", "WorkZone", "PathView", "Overview", "Inspect");
         private static readonly HashSet<string> TargetOrderValues = CreateSet("sequential", "parallel");
         private static readonly HashSet<string> ValidationTypeValues = CreateSet("placement", "orientation", "part_identity", "dependency", "multi_part", "confirmation");
@@ -75,6 +79,9 @@ namespace OSE.Content.Validation
             DetectOrphanParts(package, stepIds, issues);
             DetectOrphanTargets(package, issues);
             DetectOrphanSteps(package, assemblyIds, issues);
+
+            // Structural integrity
+            ValidateContiguousSequenceIndices(package.GetSteps(), issues);
 
             return new MachinePackageValidationResult(issues.ToArray());
         }
@@ -428,30 +435,15 @@ namespace OSE.Content.Validation
             if (string.IsNullOrWhiteSpace(step.profile))
                 return;
 
-            StepFamily resolvedFamily = step.ResolvedFamily;
-            HashSet<string> allowedProfiles;
+            var checker = IsProfileRegistered;
+            if (checker == null)
+                return; // No registry wired — skip profile validation.
 
-            switch (resolvedFamily)
-            {
-                case StepFamily.Place:   allowedProfiles = PlaceProfileValues;   break;
-                case StepFamily.Use:     allowedProfiles = UseProfileValues;     break;
-                case StepFamily.Connect: allowedProfiles = ConnectProfileValues; break;
-                case StepFamily.Confirm: allowedProfiles = null;                 break;
-                default:                 allowedProfiles = null;                 break;
-            }
-
-            if (allowedProfiles == null)
+            if (!checker(step.profile))
             {
                 issues.Add(Warning($"{path}.profile",
-                    $"Profile '{step.profile}' is set but family '{resolvedFamily}' has no defined profiles."));
-                return;
-            }
-
-            if (!allowedProfiles.Contains(step.profile))
-            {
-                issues.Add(Warning($"{path}.profile",
-                    $"Profile '{step.profile}' is not a recognized profile for family '{resolvedFamily}'. " +
-                    $"Accepted: {string.Join(", ", allowedProfiles)}."));
+                    $"Profile '{step.profile}' is not a registered profile. " +
+                    $"Register it in ToolProfileRegistry or fix the typo in machine.json."));
             }
         }
 
@@ -1201,32 +1193,45 @@ namespace OSE.Content.Validation
             List<MachinePackageValidationIssue> issues)
         {
             StepDefinition[] steps = package.GetSteps();
-            AssemblyDefinition[] assemblies = package.GetAssemblies();
-            SubassemblyDefinition[] subassemblies = package.GetSubassemblies();
             if (steps.Length == 0) return;
 
-            var referencedStepIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            for (int i = 0; i < assemblies.Length; i++)
-            {
-                string[] sIds = assemblies[i].stepIds;
-                if (sIds != null)
-                    for (int j = 0; j < sIds.Length; j++)
-                        referencedStepIds.Add(sIds[j]);
-            }
-            for (int i = 0; i < subassemblies.Length; i++)
-            {
-                string[] sIds = subassemblies[i].stepIds;
-                if (sIds != null)
-                    for (int j = 0; j < sIds.Length; j++)
-                        referencedStepIds.Add(sIds[j]);
-            }
-
+            // A step is orphaned if it has no assemblyId (i.e. no assembly owns it).
+            // This replaces the old check against assembly/subassembly stepIds arrays.
             for (int i = 0; i < steps.Length; i++)
             {
-                if (!string.IsNullOrEmpty(steps[i].id) && !referencedStepIds.Contains(steps[i].id))
+                if (steps[i] == null) continue;
+                if (string.IsNullOrWhiteSpace(steps[i].assemblyId))
                 {
                     issues.Add(Warning($"steps[{i}]",
-                        $"Step '{steps[i].id}' is defined but not listed in any assembly or subassembly."));
+                        $"Step '{steps[i].id}' has no assemblyId — it won't appear in any assembly."));
+                }
+                else if (!assemblyIds.Contains(steps[i].assemblyId))
+                {
+                    issues.Add(Warning($"steps[{i}]",
+                        $"Step '{steps[i].id}' references assemblyId '{steps[i].assemblyId}' which does not exist."));
+                }
+            }
+        }
+
+        private static void ValidateContiguousSequenceIndices(
+            StepDefinition[] steps,
+            List<MachinePackageValidationIssue> issues)
+        {
+            if (steps == null || steps.Length == 0) return;
+
+            var sorted = new StepDefinition[steps.Length];
+            Array.Copy(steps, sorted, steps.Length);
+            Array.Sort(sorted, (a, b) => a.sequenceIndex.CompareTo(b.sequenceIndex));
+
+            for (int i = 0; i < sorted.Length; i++)
+            {
+                int expected = i + 1;
+                if (sorted[i].sequenceIndex != expected)
+                {
+                    issues.Add(Error("steps",
+                        $"sequenceIndex gap or shift: step '{sorted[i].id}' has sequenceIndex {sorted[i].sequenceIndex}, expected {expected}. " +
+                        $"Indices must be contiguous 1..{sorted.Length}."));
+                    break; // One error is enough to flag the problem
                 }
             }
         }

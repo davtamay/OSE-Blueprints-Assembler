@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace OSE.Content
 {
@@ -30,12 +31,15 @@ namespace OSE.Content
 
         // ── Lookup caches (non-serialized, built lazily after load) ─────────
         [NonSerialized] private StepDefinition[] _orderedSteps;
-        [NonSerialized] private System.Collections.Generic.Dictionary<string, PartDefinition> _partsById;
-        [NonSerialized] private System.Collections.Generic.Dictionary<string, StepDefinition> _stepsById;
-        [NonSerialized] private System.Collections.Generic.Dictionary<string, ToolDefinition> _toolsById;
-        [NonSerialized] private System.Collections.Generic.Dictionary<string, TargetDefinition> _targetsById;
-        [NonSerialized] private System.Collections.Generic.Dictionary<string, HintDefinition> _hintsById;
-        [NonSerialized] private System.Collections.Generic.Dictionary<string, EffectDefinition> _effectsById;
+        [NonSerialized] private Dictionary<string, PartDefinition> _partsById;
+        [NonSerialized] private Dictionary<string, StepDefinition> _stepsById;
+        [NonSerialized] private Dictionary<string, ToolDefinition> _toolsById;
+        [NonSerialized] private Dictionary<string, TargetDefinition> _targetsById;
+        [NonSerialized] private Dictionary<string, HintDefinition> _hintsById;
+        [NonSerialized] private Dictionary<string, EffectDefinition> _effectsById;
+        [NonSerialized] private Dictionary<string, StepDefinition[]> _stepsByAssemblyId;
+        [NonSerialized] private Dictionary<string, StepDefinition[]> _stepsBySubassemblyId;
+        [NonSerialized] private string _stepStructureHash;
 
         public AssemblyDefinition[] GetAssemblies() => assemblies ?? Array.Empty<AssemblyDefinition>();
 
@@ -69,6 +73,107 @@ namespace OSE.Content
             Array.Sort(sorted, CompareStepOrder);
             _orderedSteps = sorted;
             return _orderedSteps;
+        }
+
+        /// <summary>
+        /// Returns all steps belonging to the given assembly, sorted by sequenceIndex.
+        /// Derived from each step's <see cref="StepDefinition.assemblyId"/> — the
+        /// assembly's <c>stepIds</c> array in machine.json is no longer authoritative.
+        /// </summary>
+        public StepDefinition[] GetStepsForAssembly(string assemblyId)
+        {
+            if (string.IsNullOrWhiteSpace(assemblyId))
+                return Array.Empty<StepDefinition>();
+
+            if (_stepsByAssemblyId == null)
+                BuildStepsByOwnerCaches();
+
+            return _stepsByAssemblyId.TryGetValue(assemblyId, out var result)
+                ? result
+                : Array.Empty<StepDefinition>();
+        }
+
+        /// <summary>
+        /// Returns all steps belonging to the given subassembly, sorted by sequenceIndex.
+        /// Derived from each step's <see cref="StepDefinition.subassemblyId"/>.
+        /// </summary>
+        public StepDefinition[] GetStepsForSubassembly(string subassemblyId)
+        {
+            if (string.IsNullOrWhiteSpace(subassemblyId))
+                return Array.Empty<StepDefinition>();
+
+            if (_stepsBySubassemblyId == null)
+                BuildStepsByOwnerCaches();
+
+            return _stepsBySubassemblyId.TryGetValue(subassemblyId, out var result)
+                ? result
+                : Array.Empty<StepDefinition>();
+        }
+
+        /// <summary>
+        /// A hash of the step structure (count + ordered IDs) used to detect
+        /// when a saved session is stale after machine.json changes.
+        /// </summary>
+        public string StepStructureHash
+        {
+            get
+            {
+                if (_stepStructureHash != null)
+                    return _stepStructureHash;
+
+                StepDefinition[] ordered = GetOrderedSteps();
+                // Use a simple hash: stepCount + concatenated IDs
+                var sb = new System.Text.StringBuilder(ordered.Length * 32);
+                sb.Append(ordered.Length);
+                for (int i = 0; i < ordered.Length; i++)
+                {
+                    sb.Append('|');
+                    sb.Append(ordered[i]?.id ?? string.Empty);
+                }
+                _stepStructureHash = sb.ToString().GetHashCode().ToString("X8");
+                return _stepStructureHash;
+            }
+        }
+
+        private void BuildStepsByOwnerCaches()
+        {
+            StepDefinition[] ordered = GetOrderedSteps();
+            var byAsm = new Dictionary<string, List<StepDefinition>>(StringComparer.OrdinalIgnoreCase);
+            var bySub = new Dictionary<string, List<StepDefinition>>(StringComparer.OrdinalIgnoreCase);
+
+            for (int i = 0; i < ordered.Length; i++)
+            {
+                StepDefinition step = ordered[i];
+                if (step == null) continue;
+
+                if (!string.IsNullOrWhiteSpace(step.assemblyId))
+                {
+                    if (!byAsm.TryGetValue(step.assemblyId, out var asmList))
+                    {
+                        asmList = new List<StepDefinition>();
+                        byAsm[step.assemblyId] = asmList;
+                    }
+                    asmList.Add(step);
+                }
+
+                if (!string.IsNullOrWhiteSpace(step.subassemblyId))
+                {
+                    if (!bySub.TryGetValue(step.subassemblyId, out var subList))
+                    {
+                        subList = new List<StepDefinition>();
+                        bySub[step.subassemblyId] = subList;
+                    }
+                    subList.Add(step);
+                }
+            }
+
+            _stepsByAssemblyId = new Dictionary<string, StepDefinition[]>(byAsm.Count, StringComparer.OrdinalIgnoreCase);
+            foreach (var kvp in byAsm)
+                _stepsByAssemblyId[kvp.Key] = kvp.Value.ToArray();
+
+            _stepsBySubassemblyId = new Dictionary<string, StepDefinition[]>(bySub.Count, StringComparer.OrdinalIgnoreCase);
+            foreach (var kvp in bySub)
+                _stepsBySubassemblyId[kvp.Key] = kvp.Value.ToArray();
         }
 
         public string GetDisplayMachineName() =>
@@ -168,7 +273,7 @@ namespace OSE.Content
         }
 
         private static bool TryGetByIdFast<T>(
-            ref System.Collections.Generic.Dictionary<string, T> cache,
+            ref Dictionary<string, T> cache,
             T[] source,
             Func<T, string> keySelector,
             string id,
@@ -183,7 +288,7 @@ namespace OSE.Content
 
             if (cache == null)
             {
-                cache = new System.Collections.Generic.Dictionary<string, T>(
+                cache = new Dictionary<string, T>(
                     source.Length, StringComparer.OrdinalIgnoreCase);
                 for (int i = 0; i < source.Length; i++)
                 {

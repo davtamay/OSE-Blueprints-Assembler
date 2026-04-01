@@ -474,6 +474,7 @@ namespace OSE.UI.Root
             marker.transform.SetLocalPositionAndRotation(markerPos, markerRot);
             marker.transform.localScale = ResolveToolTargetMarkerScale(markerScale);
 
+            Vector3 surfaceLocalPos = marker.transform.localPosition;
             Vector3 surfaceWorldPos = marker.transform.position;
 
             float markerLift = Mathf.Max(markerScale.y * 0.75f, marker.transform.localScale.y * 0.6f);
@@ -490,6 +491,7 @@ namespace OSE.UI.Root
             info.RequiredToolId = requiredToolId;
             info.BaseScale = marker.transform.localScale;
             info.BaseLocalPosition = marker.transform.localPosition;
+            info.SurfaceLocalPosition = surfaceLocalPos;
             info.SurfaceWorldPos = surfaceWorldPos;
             info.MarkerLift = markerLift;
             info.TargetWorldRotation = marker.transform.rotation;
@@ -556,6 +558,7 @@ namespace OSE.UI.Root
                 info.RequiredToolId = null;
                 info.BaseScale = Vector3.one;
                 info.BaseLocalPosition = Vector3.zero;
+                info.SurfaceLocalPosition = Vector3.zero;
                 info.SurfaceWorldPos = Vector3.zero;
                 info.MarkerLift = 0f;
                 info.TargetWorldRotation = Quaternion.identity;

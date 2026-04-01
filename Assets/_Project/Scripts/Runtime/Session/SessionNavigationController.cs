@@ -47,11 +47,26 @@ namespace OSE.Runtime
                 // During navigation the StepController is in a transitional state;
                 // trust the index we just committed to.
                 int idx;
+                bool resolved;
                 if (IsNavigating)
+                {
                     idx = _lastNavigatedGlobalIndex;
-                else if (!TryGetCurrentGlobalStepIndex(out idx))
-                    idx = _lastNavigatedGlobalIndex;
-                return idx > 0;
+                    resolved = true;
+                }
+                else
+                {
+                    resolved = TryGetCurrentGlobalStepIndex(out idx);
+                    if (!resolved)
+                        idx = _lastNavigatedGlobalIndex;
+                }
+
+                bool result = idx > 0;
+                if (!result)
+                {
+                    OseLog.Warn($"[Nav] CanStepBack=false: resolved={resolved}, idx={idx}, " +
+                        $"_lastNavigatedGlobalIndex={_lastNavigatedGlobalIndex}, IsNavigating={IsNavigating}");
+                }
+                return result;
             }
         }
 
@@ -240,7 +255,12 @@ namespace OSE.Runtime
                     : _host.SessionState?.CurrentStepId;
 
             if (orderedSteps.Length == 0 || string.IsNullOrWhiteSpace(activeStepId))
+            {
+                OseLog.Warn($"[Nav] TryGetCurrentGlobalStepIndex FAILED: orderedSteps={orderedSteps.Length}, " +
+                    $"activeStepId='{activeStepId}', hasActiveStep={assembly?.StepController?.HasActiveStep}, " +
+                    $"sessionStepId='{_host.SessionState?.CurrentStepId}'");
                 return false;
+            }
 
             for (int i = 0; i < orderedSteps.Length; i++)
             {
@@ -252,6 +272,7 @@ namespace OSE.Runtime
                 }
             }
 
+            OseLog.Warn($"[Nav] TryGetCurrentGlobalStepIndex FAILED: step '{activeStepId}' not found in {orderedSteps.Length} ordered steps.");
             return false;
         }
 

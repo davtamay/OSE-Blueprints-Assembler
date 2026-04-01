@@ -80,6 +80,7 @@ namespace OSE.Runtime.Preview
         private int _savedCompletedSteps;
         private int _savedTotalSteps;
         private string _savedMachineVersion;
+        private string _savedStepStructureHash;
 
         // Edit-mode preview state
         private readonly MachinePackageLoader _loader = new MachinePackageLoader();
@@ -122,6 +123,8 @@ namespace OSE.Runtime.Preview
                 RuntimeEventBus.Unsubscribe<ToolActionFailed>(HandleToolActionFailed);
                 RuntimeEventBus.Unsubscribe<MachineIntroDismissed>(HandleIntroDismissed);
                 RuntimeEventBus.Unsubscribe<MachineIntroReset>(HandleIntroReset);
+                RuntimeEventBus.Unsubscribe<AssemblyPickerRequested>(HandleAssemblyPickerRequested);
+                RuntimeEventBus.Unsubscribe<AssemblyPickerDismissed>(HandleAssemblyPickerDismissed);
             }
             _sessionStarted = false;
             _introActive = false;
@@ -240,6 +243,8 @@ namespace OSE.Runtime.Preview
                 RuntimeEventBus.Unsubscribe<ToolActionFailed>(HandleToolActionFailed);
                 RuntimeEventBus.Unsubscribe<MachineIntroDismissed>(HandleIntroDismissed);
                 RuntimeEventBus.Unsubscribe<MachineIntroReset>(HandleIntroReset);
+                RuntimeEventBus.Unsubscribe<AssemblyPickerRequested>(HandleAssemblyPickerRequested);
+                RuntimeEventBus.Unsubscribe<AssemblyPickerDismissed>(HandleAssemblyPickerDismissed);
             }
         }
 
@@ -342,6 +347,8 @@ namespace OSE.Runtime.Preview
                 RuntimeEventBus.Unsubscribe<ToolActionFailed>(HandleToolActionFailed);
                 RuntimeEventBus.Unsubscribe<MachineIntroDismissed>(HandleIntroDismissed);
                 RuntimeEventBus.Unsubscribe<MachineIntroReset>(HandleIntroReset);
+                RuntimeEventBus.Unsubscribe<AssemblyPickerRequested>(HandleAssemblyPickerRequested);
+                RuntimeEventBus.Unsubscribe<AssemblyPickerDismissed>(HandleAssemblyPickerDismissed);
                 _session.EndSession();
                 _session = null;
             }
@@ -359,6 +366,7 @@ namespace OSE.Runtime.Preview
             _savedCompletedSteps = 0;
             _savedTotalSteps = 0;
             _savedMachineVersion = null;
+            _savedStepStructureHash = null;
 
             OseLog.Info($"[SessionDriver] Restarting session with package '{_packageId}'.");
             await StartSessionAsync();
@@ -407,10 +415,12 @@ namespace OSE.Runtime.Preview
                 {
                     // Version guard: discard saved progress if the package changed
                     string savedVersion = saved.MachineVersion ?? string.Empty;
+                    string savedHash = saved.StepStructureHash ?? string.Empty;
                     // We cannot check package version yet (not loaded), so store
-                    // the saved version and validate after load below.
+                    // the saved version/hash and validate after load below.
                     _savedCompletedSteps = saved.CompletedStepCount;
                     _savedMachineVersion = savedVersion;
+                    _savedStepStructureHash = savedHash;
                 }
             }
 
@@ -429,6 +439,8 @@ namespace OSE.Runtime.Preview
             RuntimeEventBus.Subscribe<ToolActionFailed>(HandleToolActionFailed);
             RuntimeEventBus.Subscribe<MachineIntroDismissed>(HandleIntroDismissed);
             RuntimeEventBus.Subscribe<MachineIntroReset>(HandleIntroReset);
+            RuntimeEventBus.Subscribe<AssemblyPickerRequested>(HandleAssemblyPickerRequested);
+            RuntimeEventBus.Subscribe<AssemblyPickerDismissed>(HandleAssemblyPickerDismissed);
 
             if (success)
             {
@@ -440,15 +452,34 @@ namespace OSE.Runtime.Preview
                 // Resolve total steps now that the package is loaded
                 _savedTotalSteps = _session.Package?.GetOrderedSteps().Length ?? 0;
 
-                // Version guard: if the package version changed, the restore step
-                // count we passed was based on stale data. The session controller
-                // already started at the (possibly wrong) restore point, but since
-                // content may have shifted we warn. Future: clear and restart fresh.
-                if (_savedCompletedSteps > 0)
+                // Structure guard: if the step structure changed (steps added, removed,
+                // or reordered), the saved CompletedStepCount is invalid. Auto-discard
+                // and restart fresh to prevent silent navigation bugs.
+                if (_savedCompletedSteps > 0 && _session.Package != null)
                 {
-                    string currentVersion = _session.Package?.packageVersion ?? string.Empty;
-                    if (!string.IsNullOrEmpty(_savedMachineVersion)
-                        && _savedMachineVersion != currentVersion)
+                    string currentHash = _session.Package.StepStructureHash;
+                    bool hashMismatch = !string.IsNullOrEmpty(_savedStepStructureHash)
+                        && _savedStepStructureHash != currentHash;
+
+                    string currentVersion = _session.Package.packageVersion ?? string.Empty;
+                    bool versionMismatch = !string.IsNullOrEmpty(_savedMachineVersion)
+                        && _savedMachineVersion != currentVersion;
+
+                    if (hashMismatch)
+                    {
+                        OseLog.Warn($"[SessionDriver] Step structure changed (saved hash='{_savedStepStructureHash}', " +
+                            $"current='{currentHash}'). Discarding stale saved progress and restarting fresh.");
+
+                        if (ServiceRegistry.TryGet<IPersistenceService>(out var p))
+                            p.ClearSession(_packageId);
+
+                        _savedCompletedSteps = 0;
+                        _savedStepStructureHash = null;
+                        _ = RestartSession(clearSavedProgress: true);
+                        return;
+                    }
+
+                    if (versionMismatch)
                     {
                         OseLog.Warn($"[SessionDriver] Package version changed (saved='{_savedMachineVersion}', " +
                             $"current='{currentVersion}'). Saved progress may be invalid.");
@@ -628,9 +659,36 @@ namespace OSE.Runtime.Preview
             _savedCompletedSteps = 0;
             _savedTotalSteps = 0;
             _savedMachineVersion = null;
+            _savedStepStructureHash = null;
 
             OseLog.Info("[SessionDriver] Progress reset. Restarting session.");
             _ = RestartSession(clearSavedProgress: true);
+        }
+
+        private void HandleAssemblyPickerRequested(AssemblyPickerRequested evt)
+        {
+            if (!ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
+                return;
+
+            ui.ShowAssemblyPicker();
+        }
+
+        private void HandleAssemblyPickerDismissed(AssemblyPickerDismissed evt)
+        {
+            if (ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
+                ui.DismissAssemblyPicker();
+
+            if (!string.IsNullOrEmpty(evt.SelectedAssemblyId) && evt.GlobalStepIndex >= 0 && _session != null)
+            {
+                OseLog.Info($"[SessionDriver] Assembly picker: jumping to '{evt.SelectedAssemblyId}' (global step {evt.GlobalStepIndex}).");
+                _session.NavigateToGlobalStep(evt.GlobalStepIndex);
+            }
+
+            // Ensure step UI is pushed after picker dismissal (handles the intro→picker→dismiss flow).
+            _introDismissed = true;
+            _introActive = false;
+            IsIntroActive = false;
+            _pendingStepUiPush = !PushStepToUI();
         }
 
         private void HandleIntroDismissed(MachineIntroDismissed evt)

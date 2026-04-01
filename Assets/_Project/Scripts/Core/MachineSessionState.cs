@@ -32,6 +32,9 @@ namespace OSE.Core
         public float TotalStepDurationSeconds;
         public int CompletedStepCount;
 
+        // Structure fingerprint — detects stale saves after step changes
+        public string StepStructureHash;
+
         // Lifecycle
         public SessionLifecycle Lifecycle;
         public bool IsRestored;

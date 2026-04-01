@@ -55,6 +55,9 @@ namespace OSE.Core
         void ResetMachineIntroState();
         void ShowMachineIntro(string title, string description, string difficulty, int estimatedMinutes, string[] learningObjectives, string imageRef, int savedCompletedSteps = 0, int savedTotalSteps = 0);
         void DismissMachineIntro();
+        bool IsAssemblyPickerVisible { get; }
+        void ShowAssemblyPicker();
+        void DismissAssemblyPicker();
         void HidePartInfoPanel();
         void HideAll();
     }

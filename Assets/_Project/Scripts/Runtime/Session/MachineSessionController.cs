@@ -106,6 +106,7 @@ namespace OSE.Runtime
 
             _package = result.Package;
             _sessionState.MachineVersion = _package.packageVersion ?? string.Empty;
+            _sessionState.StepStructureHash = _package.StepStructureHash;
             _sessionState.ChallengeActive = ResolveChallengeActive(mode, _package);
 
             // Determine assembly order
@@ -474,8 +475,7 @@ namespace OSE.Runtime
                     // Count steps belonging to assemblies up to and including the completed one
                     for (int i = 0; i < _currentAssemblyIndex && i < _assemblyOrder.Length; i++)
                     {
-                        if (_package.TryGetAssembly(_assemblyOrder[i], out var a) && a?.stepIds != null)
-                            completedStepsGlobal += a.stepIds.Length;
+                        completedStepsGlobal += _package.GetStepsForAssembly(_assemblyOrder[i]).Length;
                     }
                 }
 

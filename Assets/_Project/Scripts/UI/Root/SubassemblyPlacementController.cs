@@ -187,7 +187,7 @@ namespace OSE.UI.Root
                 if (!IsSubassemblyReady(subassembly.id))
                     continue;
 
-                if (!AreAllSubassemblyStepsCompleted(subassembly, completedStepIds))
+                if (!AreAllSubassemblyStepsCompleted(subassembly, completedStepIds, package))
                     continue;
 
                 if (!EnsureProxyRecord(subassembly.id, out ProxyRecord record))
@@ -987,9 +987,31 @@ namespace OSE.UI.Root
             collider.size = record.CachedLocalBounds.size;
         }
 
-        private static bool AreAllSubassemblyStepsCompleted(SubassemblyDefinition subassembly, HashSet<string> completedStepIds)
+        private static bool AreAllSubassemblyStepsCompleted(
+            SubassemblyDefinition subassembly,
+            HashSet<string> completedStepIds,
+            MachinePackageDefinition package = null)
         {
-            if (subassembly?.stepIds == null || subassembly.stepIds.Length == 0)
+            if (subassembly == null)
+                return false;
+
+            // Prefer derived steps from step.subassemblyId when package is available
+            if (package != null)
+            {
+                StepDefinition[] derivedSteps = package.GetStepsForSubassembly(subassembly.id);
+                if (derivedSteps.Length == 0)
+                    return false;
+
+                for (int i = 0; i < derivedSteps.Length; i++)
+                {
+                    if (!completedStepIds.Contains(derivedSteps[i].id))
+                        return false;
+                }
+                return true;
+            }
+
+            // Fallback to subassembly.stepIds
+            if (subassembly.stepIds == null || subassembly.stepIds.Length == 0)
                 return false;
 
             for (int i = 0; i < subassembly.stepIds.Length; i++)

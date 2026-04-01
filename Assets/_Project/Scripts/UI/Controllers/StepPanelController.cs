@@ -27,6 +27,7 @@ namespace OSE.UI.Controllers
             _view.ForwardButton.clicked += HandleForwardClicked;
             _view.SkipToStartButton.clicked += HandleSkipToStartClicked;
             _view.SkipToEndButton.clicked += HandleSkipToEndClicked;
+            _view.SectionsButton.clicked += HandleSectionsClicked;
         }
 
         protected override void ApplyViewModel(StepPanelViewModel viewModel)
@@ -35,6 +36,16 @@ namespace OSE.UI.Controllers
             _view.TitleLabel.text = viewModel.Title;
             _view.InstructionLabel.text = viewModel.Instruction;
             _view.SetAssemblyName(viewModel.AssemblyName);
+
+            // Show sections button only when package has multiple assemblies
+            bool showSections = false;
+            if (ServiceRegistry.TryGet<IMachineSessionController>(out var pickerSession) && pickerSession.Package?.machine != null)
+            {
+                var entryIds = pickerSession.Package.machine.entryAssemblyIds;
+                showSections = (entryIds != null && entryIds.Length > 1)
+                    || (entryIds == null && pickerSession.Package.GetAssemblies().Length > 1);
+            }
+            _view.SetSectionsButtonVisible(showSections);
             _view.SetContextActionButtonVisible(viewModel.ShowContextActionButton);
             _view.SetContextActionLabel(viewModel.ContextActionLabel);
             _view.SetContextActionEnabled(viewModel.ContextActionEnabled);
@@ -72,6 +83,7 @@ namespace OSE.UI.Controllers
                 _view.ForwardButton.clicked -= HandleForwardClicked;
                 _view.SkipToStartButton.clicked -= HandleSkipToStartClicked;
                 _view.SkipToEndButton.clicked -= HandleSkipToEndClicked;
+                _view.SectionsButton.clicked -= HandleSectionsClicked;
             }
             _view = null;
         }
@@ -182,9 +194,15 @@ namespace OSE.UI.Controllers
             OseLog.Info($"[StepPanel] SkipToEnd clicked — NavigateToLastStep returned {result}");
         }
 
+        private void HandleSectionsClicked()
+        {
+            RuntimeEventBus.Publish(new AssemblyPickerRequested());
+        }
+
         private sealed class StepPanelView : VisualElement
         {
             public Label AssemblyLabel { get; }
+            public Button SectionsButton { get; }
             public Label StepLabel { get; }
             public Label TitleLabel { get; }
             public Label InstructionLabel { get; }
@@ -218,15 +236,50 @@ namespace OSE.UI.Controllers
                 UIToolkitStyleUtility.ApplyPanelSurface(this);
                 style.alignSelf = Align.FlexStart;
 
-                // Assembly name label (eyebrow above nav row)
+                // Assembly name row (eyebrow above nav row) with optional Sections button
+                var assemblyRow = new VisualElement();
+                assemblyRow.style.flexDirection = FlexDirection.Row;
+                assemblyRow.style.alignItems = Align.Center;
+                assemblyRow.style.justifyContent = Justify.SpaceBetween;
+                assemblyRow.style.marginBottom = 2f;
+                assemblyRow.style.display = DisplayStyle.None;
+
                 AssemblyLabel = new Label();
                 AssemblyLabel.style.fontSize = 11f;
                 AssemblyLabel.style.color = new Color(0.65f, 0.78f, 0.95f, 0.85f);
                 AssemblyLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
                 AssemblyLabel.style.unityTextAlign = TextAnchor.MiddleLeft;
-                AssemblyLabel.style.marginBottom = 2f;
-                AssemblyLabel.style.display = DisplayStyle.None;
-                Add(AssemblyLabel);
+                AssemblyLabel.style.flexGrow = 1f;
+                assemblyRow.Add(AssemblyLabel);
+
+                SectionsButton = new Button();
+                SectionsButton.text = "\u2630"; // ☰ hamburger menu
+                SectionsButton.style.width = 28f;
+                SectionsButton.style.height = 22f;
+                SectionsButton.style.fontSize = 14f;
+                SectionsButton.style.backgroundColor = new Color(0.15f, 0.2f, 0.28f, 0.8f);
+                SectionsButton.style.color = new Color(0.6f, 0.75f, 0.95f, 0.9f);
+                SectionsButton.style.borderTopLeftRadius = 4f;
+                SectionsButton.style.borderTopRightRadius = 4f;
+                SectionsButton.style.borderBottomLeftRadius = 4f;
+                SectionsButton.style.borderBottomRightRadius = 4f;
+                SectionsButton.style.borderTopWidth = 1f;
+                SectionsButton.style.borderBottomWidth = 1f;
+                SectionsButton.style.borderLeftWidth = 1f;
+                SectionsButton.style.borderRightWidth = 1f;
+                SectionsButton.style.borderTopColor = new Color(0.3f, 0.4f, 0.6f, 0.3f);
+                SectionsButton.style.borderBottomColor = new Color(0.3f, 0.4f, 0.6f, 0.3f);
+                SectionsButton.style.borderLeftColor = new Color(0.3f, 0.4f, 0.6f, 0.3f);
+                SectionsButton.style.borderRightColor = new Color(0.3f, 0.4f, 0.6f, 0.3f);
+                SectionsButton.style.paddingLeft = 0f;
+                SectionsButton.style.paddingRight = 0f;
+                SectionsButton.style.paddingTop = 0f;
+                SectionsButton.style.paddingBottom = 0f;
+                SectionsButton.style.unityTextAlign = TextAnchor.MiddleCenter;
+                SectionsButton.style.display = DisplayStyle.None;
+                assemblyRow.Add(SectionsButton);
+
+                Add(assemblyRow);
 
                 StepLabel = UIToolkitStyleUtility.CreateEyebrowLabel("Current Step");
 
@@ -414,9 +467,14 @@ namespace OSE.UI.Controllers
             public void SetAssemblyName(string name)
             {
                 bool hasName = !string.IsNullOrWhiteSpace(name);
-                AssemblyLabel.style.display = hasName ? DisplayStyle.Flex : DisplayStyle.None;
+                AssemblyLabel.parent.style.display = hasName ? DisplayStyle.Flex : DisplayStyle.None;
                 if (hasName)
                     AssemblyLabel.text = name;
+            }
+
+            public void SetSectionsButtonVisible(bool visible)
+            {
+                SectionsButton.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
             }
 
             public void SetGlobalProgress(float ratio, string label)

@@ -112,15 +112,16 @@ namespace OSE.UI.Root
                     isPersistent = toolDefForPersist.persistent;
             }
 
-            // Compute a stable surface position from BaseLocalPosition (set at spawn,
-            // unaffected by ToolTargetAnimator's pulse). This avoids the ±2.5 cm error
-            // that occurs when reading the animated transform.position at an arbitrary
-            // frame. Using the parent transform keeps it dynamic when previewRoot moves.
+            // Compute stable positions from local-space snapshots (set at spawn,
+            // unaffected by ToolTargetAnimator's pulse). TransformPoint keeps them
+            // accurate when the assembly scale changes after spawn.
             Transform markerParent = resolvedTarget.transform.parent;
             Vector3 stableWorldPos = markerParent != null
                 ? markerParent.TransformPoint(resolvedTarget.BaseLocalPosition)
                 : resolvedTarget.transform.position;
-            Vector3 surfaceWorldPos = stableWorldPos - Vector3.up * resolvedTarget.MarkerLift;
+            Vector3 surfaceWorldPos = markerParent != null
+                ? markerParent.TransformPoint(resolvedTarget.SurfaceLocalPosition)
+                : resolvedTarget.transform.position;
 
             context = new ToolActionContext
             {

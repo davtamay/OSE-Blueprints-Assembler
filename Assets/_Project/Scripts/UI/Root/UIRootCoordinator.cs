@@ -53,6 +53,7 @@ namespace OSE.UI.Root
         private VisualElement _rootElement;
         private IntroOverlayController _introController;
         private AssemblyTransitionController _transitionController;
+        private AssemblyPickerController _pickerController;
         private const float ToolCursorBadgeWidth = 172f;
         private const float ToolCursorBadgeHeight = 34f;
         private const float MouseCursorOffsetY = 22f;
@@ -320,6 +321,17 @@ namespace OSE.UI.Root
                 TryInitialize();
 
             EnsureIntroController();
+
+            // Show "Choose Section" button when the package has multiple assemblies.
+            bool multiAssembly = false;
+            if (ServiceRegistry.TryGet<IMachineSessionController>(out var introSession) && introSession.Package?.machine != null)
+            {
+                var entryIds = introSession.Package.machine.entryAssemblyIds;
+                multiAssembly = (entryIds != null && entryIds.Length > 1)
+                    || (entryIds == null && introSession.Package.GetAssemblies().Length > 1);
+            }
+            _introController.ShowSectionPicker = multiAssembly;
+
             _introController.Show(title, description, difficulty, estimatedMinutes,
                 learningObjectives, imageRef, savedCompletedSteps, savedTotalSteps);
         }
@@ -1044,6 +1056,7 @@ namespace OSE.UI.Root
             _toolCursorLabel = null;
             _introController?.Teardown();
             _transitionController?.Teardown();
+            _pickerController?.Teardown();
             _activeToolId = null;
             _toolDock?.Teardown();
             _repositionUi?.Teardown();
@@ -1080,6 +1093,26 @@ namespace OSE.UI.Root
             RefreshPartInfoPanel();
             RefreshToolDockPanel();
             RefreshToolInfoPanel();
+        }
+
+        // ── Assembly Picker Overlay ──
+
+        public bool IsAssemblyPickerVisible => _pickerController?.IsVisible ?? false;
+
+        public void ShowAssemblyPicker()
+        {
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session) || session.Package == null)
+                return;
+
+            _pickerController ??= new AssemblyPickerController(() => _rootElement);
+
+            int completedSteps = session.SessionState?.CompletedStepCount ?? 0;
+            _pickerController.Show(session.Package, completedSteps);
+        }
+
+        public void DismissAssemblyPicker()
+        {
+            _pickerController?.Dismiss();
         }
 
         // ── Machine Intro Overlay (delegated to IntroOverlayController) ──

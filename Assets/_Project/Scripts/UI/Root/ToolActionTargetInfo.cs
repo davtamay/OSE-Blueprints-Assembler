@@ -13,7 +13,9 @@ namespace OSE.UI.Root
         public string RequiredToolId;
         public Vector3 BaseScale;
         public Vector3 BaseLocalPosition;
-        /// <summary>World position of the actual action point on the surface (before sphere lift).</summary>
+        /// <summary>Local position of the surface action point (before sphere lift). Scale-safe.</summary>
+        public Vector3 SurfaceLocalPosition;
+        /// <summary>World position of the actual action point on the surface (before sphere lift). Snapshot at spawn.</summary>
         public Vector3 SurfaceWorldPos;
         /// <summary>Vertical distance the sphere was lifted above the surface for click-ability.</summary>
         public float MarkerLift;
