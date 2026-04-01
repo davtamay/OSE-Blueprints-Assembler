@@ -9,7 +9,6 @@ using OSE.UI.Controllers;
 using OSE.UI.Presenters;
 using OSE.UI.Utilities;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
 
 namespace OSE.UI.Root
@@ -47,17 +46,13 @@ namespace OSE.UI.Root
         private SelectionService _selectionService;
         private ToolDockStateMachine _toolDock;
         private bool _showingHoverPartInfo;
-        private VisualElement _toolCursorBadge;
-        private Label _toolCursorLabel;
         private RepositionUiController _repositionUi;
         private VisualElement _rootElement;
         private IntroOverlayController _introController;
         private AssemblyTransitionController _transitionController;
         private AssemblyPickerController _pickerController;
-        private const float ToolCursorBadgeWidth = 172f;
-        private const float ToolCursorBadgeHeight = 34f;
-        private const float MouseCursorOffsetY = 22f;
-        private const float TouchCursorOffsetY = 24f;
+        private ToolCursorBadgeController _toolCursorBadgeController;
+        private SessionHudMediator _sessionHudMediator;
 
         private int _currentStepNumber = 1;
         private int _totalSteps = 1;
@@ -71,30 +66,9 @@ namespace OSE.UI.Root
         private string _partSearchTerms = "Search terms will be supplied by runtime content.";
         private string _activeToolId; // sync'd from _toolDock for ShowToolInfo path
 
-        private int _hintsUsed;
-        private int _failedAttempts;
-        private float _currentStepSeconds;
-        private float _totalSeconds;
-        private bool _challengeActive;
-
         private bool _showConfirmButton;
         private bool _showHintButton;
         private ConfirmGateController _gate = new ConfirmGateController();
-
-        private string _hintTitle = "Guidance";
-        private string _hintMessage = "Follow the guidance to continue.";
-        private string _hintType = "Hint";
-        private float _hintHideAtSeconds;
-        private bool _hintToastActive;
-        private const float HintToastDuration = 6f;
-
-        private string _stepToastMessage;
-        private float _stepToastHideAtSeconds;
-        private bool _stepToastActive;
-        private const float StepToastDuration = 2f;
-
-        private string _milestoneMessage;
-        private bool _milestoneActive;
 
         private bool _isBuilt;
         private bool _isPresentationAdapterRegistered;
@@ -163,23 +137,14 @@ namespace OSE.UI.Root
                 _toolDock.EnsureSubscription();
             }
 
-            UpdateToolCursorVisual();
+            _toolCursorBadgeController?.UpdateToolCursorVisual();
             _repositionUi?.RefreshScaleUi();
 
             if (!_isBuilt || _sessionHudPanelController == null || !_sessionHudPanelController.IsBound)
                 return;
 
-            if (Application.isPlaying && _hintHideAtSeconds > 0f && Time.time >= _hintHideAtSeconds)
+            if (_sessionHudMediator != null && _sessionHudMediator.TickTimers())
             {
-                _hintHideAtSeconds = 0f;
-                _hintToastActive = false;
-                RefreshSessionHudPanel();
-            }
-
-            if (Application.isPlaying && _stepToastHideAtSeconds > 0f && Time.time >= _stepToastHideAtSeconds)
-            {
-                _stepToastHideAtSeconds = 0f;
-                _stepToastActive = false;
                 RefreshSessionHudPanel();
             }
 
@@ -223,14 +188,9 @@ namespace OSE.UI.Root
 
         public void ShowHintContent(string title, string message, string hintType)
         {
-            if (!IsHintDisplayAllowed)
+            if (_sessionHudMediator == null || !_sessionHudMediator.ShowHintContent(title, message, hintType))
                 return;
 
-            _hintTitle = string.IsNullOrWhiteSpace(title) ? _hintTitle : title;
-            _hintMessage = string.IsNullOrWhiteSpace(message) ? _hintMessage : message;
-            _hintType = string.IsNullOrWhiteSpace(hintType) ? _hintType : hintType;
-            _hintHideAtSeconds = Application.isPlaying ? Time.time + HintToastDuration : 0f;
-            _hintToastActive = true;
             RefreshSessionHudPanel();
 
             if (_gate.TryUnlockOnHintRequested())
@@ -289,24 +249,22 @@ namespace OSE.UI.Root
 
         public void ShowStepCompletionToast(string message)
         {
-            _stepToastMessage = string.IsNullOrWhiteSpace(message) ? "Step Complete!" : message;
-            _stepToastHideAtSeconds = Application.isPlaying ? Time.time + StepToastDuration : 0f;
-            _stepToastActive = true;
+            _sessionHudMediator?.ShowStepCompletionToast(message);
             RefreshSessionHudPanel();
         }
 
         public void ShowMilestoneFeedback(string milestoneKey)
         {
-            _milestoneMessage = string.IsNullOrWhiteSpace(milestoneKey)
+            string message = string.IsNullOrWhiteSpace(milestoneKey)
                 ? "Session Complete!"
                 : milestoneKey;
-            _milestoneActive = true;
+            _sessionHudMediator?.SetMilestone(message);
             _showConfirmButton = false;
             _showHintButton = false;
             _gate.ProgressComplete = true;
 
             // Clear stale step content so the panel doesn't keep showing the last step.
-            _stepTitle = _milestoneMessage;
+            _stepTitle = message;
             _instruction = string.Empty;
 
             RefreshStepPanel();
@@ -503,11 +461,7 @@ namespace OSE.UI.Root
             float totalSeconds,
             bool challengeActive)
         {
-            _hintsUsed = hintsUsed;
-            _failedAttempts = failedAttempts;
-            _currentStepSeconds = currentStepSeconds;
-            _totalSeconds = totalSeconds;
-            _challengeActive = challengeActive;
+            _sessionHudMediator?.ShowChallengeMetrics(hintsUsed, failedAttempts, currentStepSeconds, totalSeconds, challengeActive);
             RefreshSessionHudPanel();
         }
 
@@ -665,7 +619,12 @@ namespace OSE.UI.Root
             root.Add(leftColumn);
             root.Add(rightColumn);
             root.Add(centerDock);
-            BuildToolCursorVisual(root);
+            _toolCursorBadgeController = new ToolCursorBadgeController(() => _toolDock);
+            _toolCursorBadgeController.BuildToolCursorVisual(root);
+            _sessionHudMediator = new SessionHudMediator(
+                _sessionHudPresenter,
+                _sessionHudPanelController,
+                () => IsHintDisplayAllowed);
 
             _stepPanelController.Bind(leftColumn);
             _sessionHudPanelController.Bind(leftColumn);
@@ -884,40 +843,7 @@ namespace OSE.UI.Root
 
         private void RefreshSessionHudPanel()
         {
-            if (!_isBuilt)
-            {
-                return;
-            }
-
-            if (_hasActiveModeProfile && !_activeModeProfile.ShowSessionHud)
-            {
-                _sessionHudPanelController.Hide();
-                return;
-            }
-
-            SessionHudViewModel viewModel = _sessionHudPresenter.Create(
-                _hintToastActive && IsHintDisplayAllowed,
-                _hintType,
-                _hintTitle,
-                _hintMessage,
-                _challengeActive,
-                _hintsUsed,
-                _failedAttempts,
-                _currentStepSeconds,
-                _totalSeconds,
-                _stepToastActive,
-                _stepToastMessage,
-                _milestoneActive,
-                _milestoneMessage);
-
-            if (viewModel.IsVisible)
-            {
-                _sessionHudPanelController.Show(viewModel);
-            }
-            else
-            {
-                _sessionHudPanelController.Hide();
-            }
+            _sessionHudMediator?.RefreshSessionHudPanel(_isBuilt, _hasActiveModeProfile, _activeModeProfile.ShowSessionHud);
         }
 
         // ── Tool Dock State Machine (delegated to ToolDockStateMachine) ──
@@ -1052,8 +978,9 @@ namespace OSE.UI.Root
             _toolDockPanelController?.Unbind();
             _isBuilt = false;
             _rootElement = null;
-            _toolCursorBadge = null;
-            _toolCursorLabel = null;
+            _toolCursorBadgeController?.Teardown();
+            _toolCursorBadgeController = null;
+            _sessionHudMediator = null;
             _introController?.Teardown();
             _transitionController?.Teardown();
             _pickerController?.Teardown();
@@ -1206,8 +1133,7 @@ namespace OSE.UI.Root
 
             if (!_activeModeProfile.AllowHints)
             {
-                _hintToastActive = false;
-                _hintHideAtSeconds = 0f;
+                _sessionHudMediator?.ClearHintState();
             }
 
             if (_isBuilt)
@@ -1288,110 +1214,5 @@ namespace OSE.UI.Root
             };
         }
 
-        private void BuildToolCursorVisual(VisualElement root)
-        {
-            _toolCursorBadge = new VisualElement();
-            _toolCursorBadge.name = "ose-tool-cursor-badge";
-            _toolCursorBadge.style.position = Position.Absolute;
-            _toolCursorBadge.style.width = ToolCursorBadgeWidth;
-            _toolCursorBadge.style.height = ToolCursorBadgeHeight;
-            _toolCursorBadge.style.alignItems = Align.Center;
-            _toolCursorBadge.style.justifyContent = Justify.Center;
-            _toolCursorBadge.style.paddingLeft = 10f;
-            _toolCursorBadge.style.paddingRight = 10f;
-            _toolCursorBadge.style.paddingTop = 4f;
-            _toolCursorBadge.style.paddingBottom = 4f;
-            _toolCursorBadge.style.backgroundColor = new Color(0.20f, 0.14f, 0.06f, 0.92f);
-            _toolCursorBadge.style.borderTopLeftRadius = 8f;
-            _toolCursorBadge.style.borderTopRightRadius = 8f;
-            _toolCursorBadge.style.borderBottomLeftRadius = 8f;
-            _toolCursorBadge.style.borderBottomRightRadius = 8f;
-            _toolCursorBadge.style.borderTopColor = new Color(0.98f, 0.82f, 0.42f, 0.95f);
-            _toolCursorBadge.style.borderRightColor = new Color(0.98f, 0.82f, 0.42f, 0.95f);
-            _toolCursorBadge.style.borderBottomColor = new Color(0.98f, 0.82f, 0.42f, 0.95f);
-            _toolCursorBadge.style.borderLeftColor = new Color(0.98f, 0.82f, 0.42f, 0.95f);
-            _toolCursorBadge.style.display = DisplayStyle.None;
-            _toolCursorBadge.pickingMode = PickingMode.Ignore;
-
-            _toolCursorLabel = new Label("Tool");
-            _toolCursorLabel.style.fontSize = 12f;
-            _toolCursorLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
-            _toolCursorLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
-            _toolCursorLabel.style.color = new Color(1f, 0.95f, 0.75f, 1f);
-            _toolCursorBadge.Add(_toolCursorLabel);
-
-            root.Add(_toolCursorBadge);
-        }
-
-        private void UpdateToolCursorVisual()
-        {
-            if (!_isBuilt || _toolCursorBadge == null || _toolCursorLabel == null)
-                return;
-
-            string activeToolId = _toolDock?.ActiveToolId;
-            if (!Application.isPlaying ||
-                _toolDock == null ||
-                string.IsNullOrWhiteSpace(activeToolId) ||
-                !_toolDock.TryPopulateToolInfo(activeToolId))
-            {
-                _toolCursorBadge.style.display = DisplayStyle.None;
-                return;
-            }
-
-            if (!TryGetPointerScreenPosition(out Vector2 screenPos, out bool isTouchInput))
-            {
-                _toolCursorBadge.style.display = DisplayStyle.None;
-                return;
-            }
-
-            IPanel panel = _toolCursorBadge.panel;
-            if (panel == null || panel.visualTree == null)
-            {
-                _toolCursorBadge.style.display = DisplayStyle.None;
-                return;
-            }
-
-            Vector2 panelPos = RuntimePanelUtils.ScreenToPanel(panel, screenPos);
-
-            float x = panelPos.x - (ToolCursorBadgeWidth * 0.5f);
-            Rect panelBounds = panel.visualTree.worldBound;
-            float y = (panelBounds.height - panelPos.y) + MouseCursorOffsetY;
-
-            if (isTouchInput)
-            {
-                y += TouchCursorOffsetY;
-            }
-
-            float maxX = Mathf.Max(4f, panelBounds.width - ToolCursorBadgeWidth - 4f);
-            float maxY = Mathf.Max(4f, panelBounds.height - ToolCursorBadgeHeight - 4f);
-            x = Mathf.Clamp(x, 4f, maxX);
-            y = Mathf.Clamp(y, 4f, maxY);
-
-            _toolCursorLabel.text = $"Tool: {_toolDock.ToolName}";
-            _toolCursorBadge.style.left = x;
-            _toolCursorBadge.style.top = y;
-            _toolCursorBadge.style.display = DisplayStyle.Flex;
-        }
-
-        private static bool TryGetPointerScreenPosition(out Vector2 screenPos, out bool isTouchInput)
-        {
-            screenPos = default;
-            isTouchInput = false;
-
-            if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.isPressed)
-            {
-                screenPos = Touchscreen.current.primaryTouch.position.ReadValue();
-                isTouchInput = true;
-                return true;
-            }
-
-            if (Mouse.current != null)
-            {
-                screenPos = Mouse.current.position.ReadValue();
-                return true;
-            }
-
-            return false;
-        }
     }
 }

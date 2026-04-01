@@ -92,6 +92,7 @@ namespace OSE.Editor
 
         private Vector2 _listScroll;
         private Vector2 _detailScroll;
+        private Vector3 _batchPositionOffset;
 
         private bool _clickToSnapActive;
 
@@ -727,6 +728,36 @@ namespace OSE.Editor
             if (_selectedIdx < 0 || _selectedIdx >= _targets.Length) return;
             ref TargetEditState rep = ref _targets[_selectedIdx];
 
+            // ── Position offset ───────────────────────────────────────────────
+            // Each target keeps its own position; this shifts ALL selected by a delta.
+            EditorGUILayout.LabelField("Position offset (added to all selected)", EditorStyles.boldLabel);
+            _batchPositionOffset = EditorGUILayout.Vector3Field("Offset (X, Y, Z)", _batchPositionOffset);
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Apply offset"))
+            {
+                foreach (int idx in _multiSelected)
+                { ref var t = ref _targets[idx]; t.position += _batchPositionOffset; t.isDirty = true; }
+                _batchPositionOffset = Vector3.zero;
+                SceneView.RepaintAll(); Repaint();
+            }
+            if (GUILayout.Button("Reset"))
+                _batchPositionOffset = Vector3.zero;
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space(4);
+
+            // ── Position (absolute, all selected) ─────────────────────────────
+            // Sets every selected target to the exact same position.
+            EditorGUILayout.LabelField("Position (absolute, all selected)", EditorStyles.boldLabel);
+            EditorGUI.BeginChangeCheck();
+            Vector3 batchPos = EditorGUILayout.Vector3Field("Position (local)", rep.position);
+            if (EditorGUI.EndChangeCheck())
+            {
+                foreach (int idx in _multiSelected)
+                { ref var t = ref _targets[idx]; t.position = batchPos; t.isDirty = true; }
+                SceneView.RepaintAll(); Repaint();
+            }
+            EditorGUILayout.Space(4);
+
             // ── Rotation ──────────────────────────────────────────────────────
             // Useful for setting all clamp/tool targets to the same approach orientation.
             EditorGUILayout.LabelField("Rotation (absolute, all selected)", EditorStyles.boldLabel);
@@ -737,7 +768,7 @@ namespace OSE.Editor
                 Quaternion batchRot = Quaternion.Euler(batchEuler);
                 foreach (int idx in _multiSelected)
                 { ref var t = ref _targets[idx]; t.rotation = batchRot; t.isDirty = true; }
-                SceneView.RepaintAll();
+                SceneView.RepaintAll(); Repaint();
             }
             EditorGUILayout.Space(4);
 
@@ -750,6 +781,7 @@ namespace OSE.Editor
             {
                 foreach (int idx in _multiSelected)
                 { ref var t = ref _targets[idx]; t.scale = batchScale; t.isDirty = true; }
+                SceneView.RepaintAll(); Repaint();
             }
             EditorGUILayout.Space(4);
 

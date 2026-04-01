@@ -9,12 +9,6 @@ using OSE.Runtime;
 using OSE.Runtime.Preview;
 using System.IO;
 using UnityEngine;
-using UnityEngine.XR.Interaction.Toolkit;
-using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.Receiver.Rendering;
-using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.Rendering;
-using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.State;
-using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.Theme;
-using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.Theme.Primitives;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 namespace OSE.UI.Root
@@ -33,8 +27,6 @@ namespace OSE.UI.Root
     public sealed class PackagePartSpawner : MonoBehaviour, Interaction.ISpawnerQueryService, IStepAwarePositioner
     {
         private const string SamplePartName = "Sample Beam";
-        private static readonly Color HoveredAffordanceColor = new Color(0.60f, 0.82f, 1.0f, 1.0f);
-        private static readonly Color SelectedAffordanceColor = new Color(1.0f, 0.85f, 0.2f, 1.0f);
         private static readonly HashSet<string> MissingAssetWarnings = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
 
         private PreviewSceneSetup _setup;
@@ -43,6 +35,7 @@ namespace OSE.UI.Root
         private readonly List<GameObject> _spawnedParts = new List<GameObject>();
         private readonly PackageAssetResolver _resolver = new PackageAssetResolver();
         private readonly List<GameObject> _editModeGhosts = new List<GameObject>();
+        private readonly PreviewConfigLookup _configLookup = new PreviewConfigLookup();
 
         // ── Public accessors ──
 
@@ -91,12 +84,7 @@ namespace OSE.UI.Root
         /// the current preview config. Returns null if not found.
         /// </summary>
         public PartPreviewPlacement FindPartPlacement(string partId)
-        {
-            if (_currentPreviewConfig?.partPlacements == null) return null;
-            foreach (var p in _currentPreviewConfig.partPlacements)
-                if (p.partId == partId) return p;
-            return null;
-        }
+            => _configLookup.FindPartPlacement(partId);
 
         /// <summary>
         /// Repositions existing spawned parts for step-aware preview in edit mode.
@@ -685,89 +673,32 @@ namespace OSE.UI.Root
         /// Finds the <see cref="TargetPreviewPlacement"/> for a given target id.
         /// </summary>
         public TargetPreviewPlacement FindTargetPlacement(string targetId)
-        {
-            if (_currentPreviewConfig?.targetPlacements == null) return null;
-            foreach (var t in _currentPreviewConfig.targetPlacements)
-                if (t.targetId == targetId) return t;
-            return null;
-        }
+            => _configLookup.FindTargetPlacement(targetId);
 
         /// <summary>
         /// Finds the <see cref="SubassemblyPreviewPlacement"/> for a given subassembly id.
         /// </summary>
         public SubassemblyPreviewPlacement FindSubassemblyPlacement(string subassemblyId)
-        {
-            if (_currentPreviewConfig?.subassemblyPlacements == null) return null;
-            foreach (var placement in _currentPreviewConfig.subassemblyPlacements)
-            {
-                if (placement != null &&
-                    string.Equals(placement.subassemblyId, subassemblyId, System.StringComparison.OrdinalIgnoreCase))
-                {
-                    return placement;
-                }
-            }
-            return null;
-        }
+            => _configLookup.FindSubassemblyPlacement(subassemblyId);
 
         /// <summary>
         /// Finds the constrained-fit payload for a subassembly placement target.
         /// </summary>
         public ConstrainedSubassemblyFitPreviewPlacement FindConstrainedSubassemblyFitPlacement(string subassemblyId, string targetId)
-        {
-            if (_currentPreviewConfig?.constrainedSubassemblyFitPlacements == null)
-                return null;
-
-            foreach (var placement in _currentPreviewConfig.constrainedSubassemblyFitPlacements)
-            {
-                if (placement != null &&
-                    string.Equals(placement.subassemblyId, subassemblyId, System.StringComparison.OrdinalIgnoreCase) &&
-                    string.Equals(placement.targetId, targetId, System.StringComparison.OrdinalIgnoreCase))
-                {
-                    return placement;
-                }
-            }
-
-            return null;
-        }
+            => _configLookup.FindConstrainedSubassemblyFitPlacement(subassemblyId, targetId);
 
         /// <summary>
         /// Finds the optional parking frame for a completed fabricated subassembly.
         /// </summary>
         public SubassemblyPreviewPlacement FindCompletedSubassemblyParkingPlacement(string subassemblyId)
-        {
-            if (_currentPreviewConfig?.completedSubassemblyParkingPlacements == null) return null;
-            foreach (var placement in _currentPreviewConfig.completedSubassemblyParkingPlacements)
-            {
-                if (placement != null &&
-                    string.Equals(placement.subassemblyId, subassemblyId, System.StringComparison.OrdinalIgnoreCase))
-                {
-                    return placement;
-                }
-            }
-            return null;
-        }
+            => _configLookup.FindCompletedSubassemblyParkingPlacement(subassemblyId);
 
         /// <summary>
         /// Finds the canonical integrated placement authored for a completed subassembly
         /// when it is committed to a specific assembly target.
         /// </summary>
         public IntegratedSubassemblyPreviewPlacement FindIntegratedSubassemblyPlacement(string subassemblyId, string targetId)
-        {
-            if (_currentPreviewConfig?.integratedSubassemblyPlacements == null)
-                return null;
-
-            foreach (var placement in _currentPreviewConfig.integratedSubassemblyPlacements)
-            {
-                if (placement != null &&
-                    string.Equals(placement.subassemblyId, subassemblyId, System.StringComparison.OrdinalIgnoreCase) &&
-                    string.Equals(placement.targetId, targetId, System.StringComparison.OrdinalIgnoreCase))
-                {
-                    return placement;
-                }
-            }
-
-            return null;
-        }
+            => _configLookup.FindIntegratedSubassemblyPlacement(subassemblyId, targetId);
 
         /// <summary>
         /// Returns the integrated member placement for a specific partId, or null if the
@@ -776,29 +707,7 @@ namespace OSE.UI.Root
         /// canonical assembled poses instead of individual <c>playPosition</c>.
         /// </summary>
         public IntegratedMemberPreviewPlacement FindIntegratedMemberPlacement(string partId)
-        {
-            if (string.IsNullOrEmpty(partId))
-                return null;
-
-            IntegratedSubassemblyPreviewPlacement[] intPlacements = _currentPreviewConfig?.integratedSubassemblyPlacements;
-            if (intPlacements == null)
-                return null;
-
-            for (int ip = 0; ip < intPlacements.Length; ip++)
-            {
-                IntegratedSubassemblyPreviewPlacement intPlacement = intPlacements[ip];
-                if (intPlacement?.memberPlacements == null) continue;
-
-                for (int mp = 0; mp < intPlacement.memberPlacements.Length; mp++)
-                {
-                    IntegratedMemberPreviewPlacement member = intPlacement.memberPlacements[mp];
-                    if (member != null && string.Equals(member.partId, partId, System.StringComparison.OrdinalIgnoreCase))
-                        return member;
-                }
-            }
-
-            return null;
-        }
+            => _configLookup.FindIntegratedMemberPlacement(partId);
 
         /// <summary>
         /// Applies a package snapshot immediately. Used by late-initializing listeners
@@ -1023,6 +932,7 @@ namespace OSE.UI.Root
         {
             _currentPackage = package;
             _currentPreviewConfig = package?.previewConfig;
+            _configLookup.SetConfig(_currentPreviewConfig);
 
             // Build the asset resolution catalog — scans the parts folder and maps
             // part IDs to GLB files (individual or nodes inside combined files).
@@ -1531,322 +1441,17 @@ namespace OSE.UI.Root
         }
 
         private static void TryEnableXRGrabInteractable(GameObject target, PartGrabConfig grabConfig = null)
-        {
-            if (target == null)
-                return;
-
-            XRGrabInteractable grabInteractable = target.GetComponent<XRGrabInteractable>();
-            if (grabInteractable == null)
-            {
-                var rb = target.GetComponent<Rigidbody>();
-                if (rb == null)
-                    rb = target.AddComponent<Rigidbody>();
-
-                rb.isKinematic = true;
-                rb.useGravity = false;
-
-                grabInteractable = target.AddComponent<XRGrabInteractable>();
-            }
-
-            // Apply authored grip point as XRI attachTransform offset
-            if (grabConfig != null && grabConfig.HasGripPoint)
-            {
-                var attachName = "GripAttach";
-                var existing = target.transform.Find(attachName);
-                Transform attach = existing != null ? existing : new GameObject(attachName).transform;
-                attach.SetParent(target.transform, false);
-                attach.localPosition = grabConfig.GetGripPoint();
-                if (grabConfig.HasGripRotation)
-                    attach.localRotation = grabConfig.GetGripRotation();
-
-                grabInteractable.useDynamicAttach = false;
-                grabInteractable.attachTransform = attach;
-            }
-
-            DisablePartColorAffordance(target);
-            ClearRendererPropertyBlocks(target);
-        }
-
-        private static void DisablePartColorAffordance(GameObject target)
-        {
-            if (target == null)
-                return;
-
-            var stateProvider = target.GetComponent<XRInteractableAffordanceStateProvider>();
-            if (stateProvider != null)
-            {
-                if (Application.isPlaying)
-                    Object.Destroy(stateProvider);
-                else
-                    Object.DestroyImmediate(stateProvider);
-            }
-
-            var receivers = target.GetComponentsInChildren<ColorMaterialPropertyAffordanceReceiver>(includeInactive: true);
-            for (int i = 0; i < receivers.Length; i++)
-            {
-                if (receivers[i] == null)
-                    continue;
-
-                if (Application.isPlaying)
-                    Object.Destroy(receivers[i]);
-                else
-                    Object.DestroyImmediate(receivers[i]);
-            }
-
-            var blockHelpers = target.GetComponentsInChildren<MaterialPropertyBlockHelper>(includeInactive: true);
-            for (int i = 0; i < blockHelpers.Length; i++)
-            {
-                if (blockHelpers[i] == null)
-                    continue;
-
-                if (Application.isPlaying)
-                    Object.Destroy(blockHelpers[i]);
-                else
-                    Object.DestroyImmediate(blockHelpers[i]);
-            }
-        }
-
-        private static void EnsurePartColorAffordance(GameObject target, XRGrabInteractable grabInteractable)
-        {
-            if (target == null || grabInteractable == null)
-                return;
-
-            var stateProvider = target.GetComponent<XRInteractableAffordanceStateProvider>();
-            if (stateProvider == null)
-                stateProvider = target.AddComponent<XRInteractableAffordanceStateProvider>();
-
-            stateProvider.interactableSource = grabInteractable;
-            stateProvider.transitionDuration = 0.08f;
-            stateProvider.ignoreHoverEvents = true;
-            stateProvider.ignoreHoverPriorityEvents = true;
-            stateProvider.ignoreFocusEvents = true;
-            stateProvider.ignoreSelectEvents = true;
-            stateProvider.ignoreActivateEvents = true;
-            stateProvider.selectClickAnimationMode = XRInteractableAffordanceStateProvider.SelectClickAnimationMode.None;
-            stateProvider.activateClickAnimationMode = XRInteractableAffordanceStateProvider.ActivateClickAnimationMode.None;
-
-            ColorAffordanceTheme theme = CreatePartColorAffordanceTheme();
-            var renderers = MaterialHelper.GetRenderers(target);
-            for (int i = 0; i < renderers.Length; i++)
-            {
-                Renderer renderer = renderers[i];
-                if (renderer == null || renderer.sharedMaterial == null)
-                    continue;
-
-                var blockHelper = renderer.GetComponent<MaterialPropertyBlockHelper>();
-                if (blockHelper == null)
-                    blockHelper = renderer.gameObject.AddComponent<MaterialPropertyBlockHelper>();
-                blockHelper.rendererTarget = renderer;
-                blockHelper.materialIndex = 0;
-
-                var colorReceiver = renderer.GetComponent<ColorMaterialPropertyAffordanceReceiver>();
-                if (colorReceiver == null)
-                    colorReceiver = renderer.gameObject.AddComponent<ColorMaterialPropertyAffordanceReceiver>();
-
-                colorReceiver.affordanceStateProvider = stateProvider;
-                colorReceiver.replaceIdleStateValueWithInitialValue = true;
-                colorReceiver.materialPropertyBlockHelper = blockHelper;
-                colorReceiver.colorPropertyName = ResolveColorPropertyName(renderer.sharedMaterial);
-
-                colorReceiver.affordanceTheme = theme;
-            }
-        }
-
-        private static string ResolveColorPropertyName(Material material)
-        {
-            if (material != null)
-            {
-                if (material.HasProperty("_BaseColor"))
-                    return "_BaseColor";
-
-                if (material.HasProperty("_Color"))
-                    return "_Color";
-            }
-
-            return "_BaseColor";
-        }
-
-        private static ColorAffordanceTheme CreatePartColorAffordanceTheme()
-        {
-            var theme = new ColorAffordanceTheme
-            {
-                colorBlendMode = ColorBlendMode.Solid,
-                blendAmount = 1f
-            };
-            theme.SetAnimationCurve(AnimationCurve.Linear(0f, 0f, 1f, 1f));
-            theme.SetAffordanceThemeDataList(new List<AffordanceThemeData<Color>>
-            {
-                new AffordanceThemeData<Color>
-                {
-                    stateName = nameof(AffordanceStateShortcuts.disabled),
-                    animationStateStartValue = Color.clear,
-                    animationStateEndValue = Color.clear
-                },
-                new AffordanceThemeData<Color>
-                {
-                    stateName = nameof(AffordanceStateShortcuts.idle),
-                    animationStateStartValue = Color.clear,
-                    animationStateEndValue = Color.clear
-                },
-                new AffordanceThemeData<Color>
-                {
-                    stateName = nameof(AffordanceStateShortcuts.hovered),
-                    animationStateStartValue = HoveredAffordanceColor,
-                    animationStateEndValue = HoveredAffordanceColor
-                },
-                new AffordanceThemeData<Color>
-                {
-                    stateName = nameof(AffordanceStateShortcuts.hoveredPriority),
-                    animationStateStartValue = HoveredAffordanceColor,
-                    animationStateEndValue = HoveredAffordanceColor
-                },
-                new AffordanceThemeData<Color>
-                {
-                    stateName = nameof(AffordanceStateShortcuts.selected),
-                    animationStateStartValue = SelectedAffordanceColor,
-                    animationStateEndValue = SelectedAffordanceColor
-                },
-                new AffordanceThemeData<Color>
-                {
-                    stateName = nameof(AffordanceStateShortcuts.activated),
-                    animationStateStartValue = SelectedAffordanceColor,
-                    animationStateEndValue = SelectedAffordanceColor
-                },
-                new AffordanceThemeData<Color>
-                {
-                    stateName = nameof(AffordanceStateShortcuts.focused),
-                    animationStateStartValue = SelectedAffordanceColor,
-                    animationStateEndValue = SelectedAffordanceColor
-                }
-            });
-
-            return theme;
-        }
-
-        private static bool TryApplyAffordanceState(GameObject target, byte stateIndex, float transitionAmount = 1f)
-        {
-            if (target == null)
-                return false;
-
-            var stateProvider = target.GetComponent<XRInteractableAffordanceStateProvider>();
-            if (stateProvider == null)
-                return false;
-
-            stateProvider.UpdateAffordanceState(new AffordanceStateData(stateIndex, transitionAmount));
-            return true;
-        }
+            => XRPartInteractionSetup.TryEnableXRGrabInteractable(target, grabConfig);
 
         private static void ClearRendererPropertyBlocks(GameObject target)
-        {
-            if (target == null)
-                return;
-
-            var renderers = MaterialHelper.GetRenderers(target);
-            for (int i = 0; i < renderers.Length; i++)
-            {
-                Renderer renderer = renderers[i];
-                if (renderer != null)
-                    renderer.SetPropertyBlock(null);
-            }
-        }
+            => XRPartInteractionSetup.ClearRendererPropertyBlocks(target);
 
         /// <summary>
         /// Adds MeshColliders to every child with a MeshFilter for accurate raycasting.
         /// Falls back to a fitted BoxCollider if no MeshFilters exist.
         /// </summary>
         public static void EnsureColliders(GameObject target)
-        {
-            // Spline parts have a deferred binder that adds a MeshCollider once
-            // the SplineExtrude mesh is generated — don't add a fallback BoxCollider.
-            if (target.GetComponent<SplineMeshColliderBinder>() != null)
-                return;
-
-            // Add MeshColliders to every mesh child that doesn't already have one.
-            // Don't skip when some children already have colliders — GLB imports
-            // may only include a collider on one child, leaving others unclickable.
-            bool addedAny = false;
-            var meshFilters = target.GetComponentsInChildren<MeshFilter>(true);
-            foreach (var mf in meshFilters)
-            {
-                if (mf.sharedMesh != null && mf.GetComponent<Collider>() == null)
-                {
-                    mf.gameObject.AddComponent<MeshCollider>();
-                    addedAny = true;
-                }
-            }
-
-            // Also handle SkinnedMeshRenderer children (rare in glTFast but possible)
-            var skinned = target.GetComponentsInChildren<SkinnedMeshRenderer>(true);
-            foreach (var smr in skinned)
-            {
-                if (smr.sharedMesh != null && smr.GetComponent<Collider>() == null)
-                {
-                    var mc = smr.gameObject.AddComponent<MeshCollider>();
-                    mc.sharedMesh = smr.sharedMesh;
-                    addedAny = true;
-                }
-            }
-
-            if (!addedAny && target.GetComponentInChildren<Collider>(true) == null)
-            {
-                // No mesh filters and no colliders at all — add a fitted BoxCollider
-                var renderers = MaterialHelper.GetRenderers(target);
-                if (renderers.Length > 0)
-                {
-                    Bounds bounds = renderers[0].bounds;
-                    for (int i = 1; i < renderers.Length; i++)
-                        bounds.Encapsulate(renderers[i].bounds);
-                    var box = target.AddComponent<BoxCollider>();
-                    box.center = target.transform.InverseTransformPoint(bounds.center);
-                    box.size = target.transform.InverseTransformVector(bounds.size);
-                }
-                else
-                {
-                    target.AddComponent<BoxCollider>();
-                }
-            }
-
-            EnsureThinPartSelectionProxy(target);
-        }
-
-        private static void EnsureThinPartSelectionProxy(GameObject target)
-        {
-            if (target == null)
-                return;
-
-            if (target.GetComponent<BoxCollider>() != null)
-                return;
-
-            var renderers = MaterialHelper.GetRenderers(target);
-            if (renderers.Length == 0)
-                return;
-
-            Bounds bounds = renderers[0].bounds;
-            for (int i = 1; i < renderers.Length; i++)
-                bounds.Encapsulate(renderers[i].bounds);
-
-            Vector3 localSize = AbsVector(target.transform.InverseTransformVector(bounds.size));
-            float minAxis = Mathf.Min(localSize.x, Mathf.Min(localSize.y, localSize.z));
-
-            const float MinClickableAxisMeters = 0.012f;
-            if (minAxis >= MinClickableAxisMeters)
-                return;
-
-            var proxy = target.AddComponent<BoxCollider>();
-            proxy.center = target.transform.InverseTransformPoint(bounds.center);
-            proxy.size = new Vector3(
-                Mathf.Max(localSize.x, MinClickableAxisMeters),
-                Mathf.Max(localSize.y, MinClickableAxisMeters),
-                Mathf.Max(localSize.z, MinClickableAxisMeters));
-        }
-
-        private static Vector3 AbsVector(Vector3 value)
-        {
-            return new Vector3(
-                Mathf.Abs(value.x),
-                Mathf.Abs(value.y),
-                Mathf.Abs(value.z));
-        }
+            => XRPartInteractionSetup.EnsureColliders(target);
 
         private static Vector3 ResolvePresentationStartPosition(PartPreviewPlacement placement)
         {

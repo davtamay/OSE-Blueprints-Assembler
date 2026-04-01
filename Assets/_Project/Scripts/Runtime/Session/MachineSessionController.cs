@@ -25,6 +25,7 @@ namespace OSE.Runtime
         private int _currentAssemblyIndex;
 
         private SessionNavigationController _navigation;
+        private bool _isLoading;
 
         // INavigationHost explicit implementations (private — callers use IMachineSessionController)
         MachinePackageDefinition INavigationHost.Package => _package;
@@ -80,6 +81,16 @@ namespace OSE.Runtime
                 OseLog.Error(OseErrorCode.SessionStartFailed, "[MachineSessionController] Package id is required.");
                 return false;
             }
+
+            if (_isLoading)
+            {
+                OseLog.Warn(OseErrorCode.SessionStartFailed, "[MachineSessionController] Session load already in progress — ignoring concurrent request.");
+                return false;
+            }
+
+            _isLoading = true;
+            try
+            {
 
             // Clean up any previous session
             EndSession();
@@ -155,6 +166,12 @@ namespace OSE.Runtime
                 BeginCurrentAssembly();
 
             return true;
+
+            }
+            finally
+            {
+                _isLoading = false;
+            }
         }
 
         private static bool ResolveChallengeActive(SessionMode mode, MachinePackageDefinition package)

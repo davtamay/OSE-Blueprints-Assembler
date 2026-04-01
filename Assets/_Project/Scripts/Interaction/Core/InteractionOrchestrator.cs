@@ -1,6 +1,4 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using OSE.App;
 using OSE.Content;
 using OSE.Core;
@@ -62,6 +60,10 @@ namespace OSE.Interaction
         private ToolActionPreviewController _previewController;
         private TargetSphereAnimator _targetSphereAnimator;
 
+        // -- Extracted subsystems --
+        private CameraIntentRouter _cameraRouter;
+        private StepGuidanceCoordinator _stepGuidance;
+
         // -- Internal state --
 
         private bool _cameraIntentActiveLastFrame;
@@ -71,9 +73,6 @@ namespace OSE.Interaction
 
         // Part validation + guidance context (typed interface replaces reflection)
         private ISpawnerQueryService _spawnerQuery;
-        private bool _guidanceContextProvided;
-        private int _deferredFrameRequestId;
-        private string _pendingIntroFrameStepId; // deferred framing until intro dismissed
 
         // -- Lifecycle --
 
@@ -199,6 +198,17 @@ namespace OSE.Interaction
             _previewController = new ToolActionPreviewController();
             _targetSphereAnimator = new TargetSphereAnimator();
 
+            // -- 13. Extracted subsystems --
+            _cameraRouter = new CameraIntentRouter(
+                _cameraRig, _camera,
+                validateAndNormalize: go => NormalizeSelectableTarget(ValidatePartHit(go)),
+                isToolModeLocked: IsToolModeLockedForParts,
+                isPartLockedForMovement: IsPartLockedForMovement);
+
+            _stepGuidance = new StepGuidanceCoordinator(
+                _guidanceService, _targetSphereAnimator, _spawnerQuery, _partBridge,
+                startCoroutine: StartCoroutine);
+
             RuntimeEventBus.Subscribe<PartStateChanged>(HandlePartStateChanged);
             RuntimeEventBus.Subscribe<StepStateChanged>(HandleStepStateChanged);
             RuntimeEventBus.Subscribe<StepActivated>(HandleStepActivated);
@@ -210,7 +220,7 @@ namespace OSE.Interaction
             OseLog.Info($"[InteractionOrchestrator] READY. Mode={mode} Camera={_camera.name} Bridge={_partBridge != null}");
 
             // If a step is already active (e.g. hot reload), frame it now
-            TryFrameCurrentStep();
+            _stepGuidance.TryFrameCurrentStep();
         }
 
         /// <summary>
@@ -254,6 +264,9 @@ namespace OSE.Interaction
 
         private void OnDestroy()
         {
+            if (_stepGuidance != null)
+                _stepGuidance.IsAlive = false;
+
             RuntimeEventBus.Unsubscribe<PartStateChanged>(HandlePartStateChanged);
             RuntimeEventBus.Unsubscribe<StepStateChanged>(HandleStepStateChanged);
             RuntimeEventBus.Unsubscribe<StepActivated>(HandleStepActivated);
@@ -280,33 +293,7 @@ namespace OSE.Interaction
         private void HandleSessionRestored(SessionRestored evt)
         {
             if (!_bootstrapped) return;
-            // After restore, the next StepActivated will trigger framing.
-            // But if it already fired, frame the current step now.
-            TryFrameCurrentStep();
-        }
-
-        private void TryFrameCurrentStep()
-        {
-            if (_guidanceService == null || _partBridge == null) return;
-
-            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
-                return;
-
-            var stepCtrl = session?.AssemblyController?.StepController;
-            if (stepCtrl == null || !stepCtrl.HasActiveStep) return;
-
-            string stepId = stepCtrl.CurrentStepState.StepId;
-            if (string.IsNullOrWhiteSpace(stepId)) return;
-
-            if (OSE.Runtime.Preview.SessionDriver.IsIntroActive)
-            {
-                _pendingIntroFrameStepId = stepId;
-                OseLog.Info($"[Interaction] TryFrameCurrentStep '{stepId}' � intro active, deferring.");
-                return;
-            }
-
-            OseLog.Info($"[Interaction] TryFrameCurrentStep '{stepId}'");
-            _guidanceService.FrameStep(stepId);
+            _stepGuidance?.HandleSessionRestored(evt);
         }
 
         private void HandleStepActivated(StepActivated evt)
@@ -314,120 +301,16 @@ namespace OSE.Interaction
             OseLog.Info($"[Interaction] HandleStepActivated '{evt.StepId}' bootstrapped={_bootstrapped}");
             if (!_bootstrapped) return;
 
-            // Stop any previous target sphere pulsing
-            _targetSphereAnimator?.Stop();
-
             // Remove persistent tools (clamps) if the new step no longer needs them
             CleanUpPersistentToolsForStep(evt.StepId);
 
-            if (_guidanceService != null)
-            {
-                // Lazily provide package context on first activation
-                if (!_guidanceContextProvided)
-                    TryProvideGuidanceContext();
-
-                // Defer camera framing until the intro overlay is dismissed so the
-                // user doesn't see multiple camera jumps behind the intro screen.
-                if (OSE.Runtime.Preview.SessionDriver.IsIntroActive)
-                {
-                    _pendingIntroFrameStepId = evt.StepId;
-                    _guidanceService.OnStepActivatedNoFrame(evt);
-                    OseLog.Info($"[Interaction] Intro active � deferring camera frame for step '{evt.StepId}'.");
-                }
-                else
-                {
-                    _guidanceService.OnStepActivated(evt);
-                    ScheduleDeferredStepFrame(evt.StepId);
-                }
-            }
-
-            // Start target sphere pulsing for Use steps (deferred so targets are spawned first)
-            StartCoroutine(DeferredStartTargetPulsing());
-
+            _stepGuidance?.HandleStepActivated(evt);
         }
 
         private void HandleIntroDismissedFraming(MachineIntroDismissed evt)
         {
-            if (!_bootstrapped || _guidanceService == null)
-                return;
-
-            string stepId = _pendingIntroFrameStepId;
-            _pendingIntroFrameStepId = null;
-
-            if (string.IsNullOrWhiteSpace(stepId))
-                return;
-
-            OseLog.Info($"[Interaction] Intro dismissed � framing step '{stepId}'.");
-            _guidanceService.FrameStep(stepId);
-            _guidanceService.CaptureHome();
-        }
-
-        private void ScheduleDeferredStepFrame(string stepId)
-        {
-            if (string.IsNullOrWhiteSpace(stepId) || _guidanceService == null)
-                return;
-
-            _deferredFrameRequestId++;
-            StartCoroutine(DeferredFrameStep(stepId, _deferredFrameRequestId));
-        }
-
-        private IEnumerator DeferredFrameStep(string stepId, int requestId)
-        {
-            yield return null;
-
-            if (!_bootstrapped || _guidanceService == null || requestId != _deferredFrameRequestId)
-                yield break;
-
-            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
-                yield break;
-
-            string activeStepId = session?.AssemblyController?.StepController?.CurrentStepState.StepId;
-            if (string.IsNullOrWhiteSpace(activeStepId))
-                activeStepId = session?.SessionState?.CurrentStepId;
-
-            if (!string.Equals(activeStepId, stepId, StringComparison.Ordinal))
-                yield break;
-
-            OseLog.Info($"[Interaction] Deferred reframe for step '{stepId}' after transition visuals settled.");
-            _guidanceService.FrameStep(stepId);
-        }
-
-        private IEnumerator DeferredStartTargetPulsing()
-        {
-            // Wait one frame so the UseStepHandler has spawned tool-action target markers
-            yield return null;
-
-            if (!_bootstrapped || _targetSphereAnimator == null || _partBridge == null)
-                yield break;
-
-            // Only pulse for Use steps
-            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
-                yield break;
-            var step = session?.AssemblyController?.StepController?.CurrentStepDefinition;
-            if (step == null || step.ResolvedFamily != Content.StepFamily.Use)
-                yield break;
-
-            var positions = _partBridge.GetActiveToolTargetPositions();
-            if (positions.Length > 0)
-            {
-                _targetSphereAnimator.StartAtPositions(positions);
-                OseLog.Info($"[Interaction] Target sphere pulsing started for {positions.Length} target(s).");
-            }
-        }
-
-        private void TryProvideGuidanceContext()
-        {
-            if (_spawnerQuery == null) return;
-
-            var package = _spawnerQuery.CurrentPackage;
-            if (package == null) return;
-
-            Func<string, TargetPreviewPlacement> findTarget = _spawnerQuery.FindTargetPlacement;
-            Transform previewRoot = _spawnerQuery.PreviewRoot;
-
-            _guidanceService.SetPackageContext(package, findTarget, previewRoot);
-            _guidanceContextProvided = true;
-            OseLog.Info("[InteractionOrchestrator] Guidance service package context provided.");
+            if (!_bootstrapped) return;
+            _stepGuidance?.HandleIntroDismissedFraming(evt);
         }
 
         private void HandleRepositionModeChanged(RepositionModeChanged evt)
@@ -774,65 +657,14 @@ namespace OSE.Interaction
             }
         }
 
-        // -- Camera routing --
+        // -- Camera routing (delegated to CameraIntentRouter) --
 
         private void RouteCameraIntent(InteractionIntent intent)
         {
-            if (intent.IntentKind == InteractionIntent.Kind.Zoom)
-            {
-                float scrollAmount = intent.ScrollDelta + intent.PinchDelta;
-
-                // -- Contextual scroll: depth adjust vs camera zoom --
-                // While dragging ? always depth-adjust the dragged part
-                if (CurrentState == InteractionState.DraggingPart && DraggedPart != null && _camera != null)
-                {
-                    DraggedPart.transform.position += _camera.transform.forward * scrollAmount * 5f;
-                    return;
-                }
-
-                // Scroll over the selected part ? depth-adjust it (forward/backward)
-                if (SelectedPart != null && intent.HitTarget != null)
-                {
-                    GameObject validHit = NormalizeSelectableTarget(ValidatePartHit(intent.HitTarget));
-                    if (validHit != null &&
-                        validHit == SelectedPart &&
-                        _camera != null &&
-                        !IsToolModeLockedForParts() &&
-                        !IsPartLockedForMovement(SelectedPart))
-                    {
-                        SelectedPart.transform.position += _camera.transform.forward * scrollAmount * 5f;
-                        return;
-                    }
-                }
-
-                // Otherwise ? camera zoom
-                if (_cameraRig != null)
-                {
-                    if (!IsCameraState(CurrentState) && CurrentState != InteractionState.DraggingPart)
-                        TransitionTo(InteractionState.CameraZoom);
-                    _cameraRig.ApplyZoom(scrollAmount);
-                }
-                return;
-            }
-
-            // Never orbit/pan while dragging a part
-            if (CurrentState == InteractionState.DraggingPart)
-                return;
-
-            if (_cameraRig == null) return;
-
-            switch (intent.IntentKind)
-            {
-                case InteractionIntent.Kind.Orbit:
-                    TransitionTo(InteractionState.CameraOrbit);
-                    _cameraRig.ApplyOrbit(intent.ScreenDelta);
-                    break;
-
-                case InteractionIntent.Kind.Pan:
-                    TransitionTo(InteractionState.CameraPan);
-                    _cameraRig.ApplyPan(intent.ScreenDelta);
-                    break;
-            }
+            if (_cameraRouter == null) return;
+            var newState = _cameraRouter.RouteCameraIntent(intent, CurrentState, SelectedPart, DraggedPart);
+            if (newState.HasValue)
+                TransitionTo(newState.Value);
         }
 
         // -- Part interaction handlers --
@@ -999,12 +831,7 @@ namespace OSE.Interaction
 
         private void HandleFocus()
         {
-            if (_cameraRig == null) return;
-
-            if (SelectedPart != null)
-                _cameraRig.FocusOn(SelectedPart.transform.position);
-            else
-                _cameraRig.ResetToDefault();
+            _cameraRouter?.HandleFocus(SelectedPart);
         }
 
         private void HandleCancel()
@@ -1098,9 +925,7 @@ namespace OSE.Interaction
         }
 
         private static bool IsCameraState(InteractionState state) =>
-            state is InteractionState.CameraOrbit
-                or InteractionState.CameraPan
-                or InteractionState.CameraZoom;
+            CameraIntentRouter.IsCameraState(state);
 
         private bool IsPartLockedForMovement(GameObject part)
         {

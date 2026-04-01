@@ -30,7 +30,7 @@ namespace OSE.Core
 
             if (!Presets.TryGetValue(presetId, out var configure))
             {
-                Debug.LogWarning($"[CompletionParticleEffect] Unknown preset '{presetId}'.");
+                OseLog.Warn(OseErrorCode.ContentLoadFailed, $"[CompletionParticleEffect] Unknown preset '{presetId}'.");
                 return false;
             }
 

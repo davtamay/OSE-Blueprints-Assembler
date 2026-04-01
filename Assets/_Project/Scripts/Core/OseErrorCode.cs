@@ -34,6 +34,7 @@ namespace OSE.Core
         MissingToolDefinition       = 3003,
         SchemaVersionMismatch       = 3004,
         MissingRequiredField        = 3005,
+        ContentLoadFailed           = 3006,
 
         // ── Interaction / Input ──────────────────────────────────────────
         ToolActionResolutionFailed  = 4001,
