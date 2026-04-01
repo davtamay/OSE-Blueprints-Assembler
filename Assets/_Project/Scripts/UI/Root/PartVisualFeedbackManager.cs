@@ -59,6 +59,14 @@ namespace OSE.UI.Root
         public HashSet<string> ActiveStepPartIds => _activeStepPartIds;
         public bool PartsHiddenOnSpawn => _partsHiddenOnSpawn;
 
+        /// <summary>
+        /// Resets the one-shot guard so <see cref="HideNonIntroducedParts"/> will
+        /// execute again.  Call this before a full visual-state rebuild
+        /// (e.g. after async GLB swap or navigation) so that newly-spawned parts
+        /// that are not yet revealed get properly hidden.
+        /// </summary>
+        public void ResetHiddenOnSpawnGuard() => _partsHiddenOnSpawn = false;
+
         public GameObject HintPreview
         {
             get => _hintPreview;
@@ -480,13 +488,18 @@ namespace OSE.UI.Root
             // Determine which subassembly we're in
             string subassemblyId = step.subassemblyId;
 
-            // Collect all part ids for this subassembly (from all its steps)
+            // Collect part ids from steps in this subassembly up to and including
+            // the current step. Parts from future steps stay hidden until their
+            // step activates — prevents e.g. brackets appearing during panel placement.
+            int currentSeq = step.sequenceIndex;
             var subassemblyPartIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (!string.IsNullOrWhiteSpace(subassemblyId))
             {
                 StepDefinition[] allSteps = package.GetOrderedSteps();
                 for (int s = 0; s < allSteps.Length; s++)
                 {
+                    if (allSteps[s].sequenceIndex > currentSeq)
+                        continue;
                     if (!string.Equals(allSteps[s].subassemblyId, subassemblyId, StringComparison.OrdinalIgnoreCase))
                         continue;
                     string[] rp = allSteps[s].requiredPartIds;

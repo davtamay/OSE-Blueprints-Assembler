@@ -1129,9 +1129,16 @@ namespace OSE.UI.Root
                 if (Application.isPlaying)
                     TryEnableXRGrabInteractable(loaded, partDef.grabConfig);
 
+                // Preserve the placeholder's active state — if HideNonIntroducedParts
+                // already ran and hid it, the replacement must stay hidden too.
+                bool wasActive = existing.activeSelf;
+
                 // Destroy placeholder, insert real model at same list index
                 SafeDestroy(existing);
                 _spawnedParts[i] = loaded;
+
+                if (!wasActive)
+                    loaded.SetActive(false);
             }
         }
 

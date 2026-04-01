@@ -182,6 +182,11 @@ namespace OSE.UI.Root
                 _ctx.SubassemblyController?.RestoreCompletedPlacements(completedSteps);
             }
 
+            // Reset + re-hide so that parts not in any completed/current step
+            // are guaranteed hidden after navigation.
+            _ctx.VisualFeedback?.ResetHiddenOnSpawnGuard();
+            _ctx.VisualFeedback?.HideNonIntroducedParts();
+
             if (targetGlobalIndex < orderedSteps.Length)
                 _ctx.VisualFeedback?.RevertFutureStepParts(orderedSteps, targetGlobalIndex);
 
@@ -279,6 +284,9 @@ namespace OSE.UI.Root
                 _ctx.SubassemblyController?.RestoreCompletedPlacements(completedSteps);
             }
 
+            // Full rebuild — reset the one-shot guard so HideNonIntroducedParts
+            // actually re-hides parts (e.g. after async GLB swap replaced models).
+            _ctx.VisualFeedback?.ResetHiddenOnSpawnGuard();
             _ctx.VisualFeedback?.HideNonIntroducedParts();
             _ctx.VisualFeedback?.RevealStepParts(activeStepId);
             _ctx.VisualFeedback?.ApplyStepPartHighlighting(activeStepId);
