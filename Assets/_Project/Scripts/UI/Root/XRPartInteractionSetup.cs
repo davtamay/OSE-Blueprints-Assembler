@@ -8,6 +8,7 @@ using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.Theme.Primitives;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using System.Collections.Generic;
 using OSE.Content;
+using OSE.Core;
 
 namespace OSE.UI.Root
 {

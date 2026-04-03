@@ -229,7 +229,7 @@ namespace OSE.Tests.EditMode
             var stepCtrl = new StepController();
             stepCtrl.ActivateStep(step, 0f);
 
-            stepCtrl.FailAttempt(0.5f);
+            stepCtrl.FailAttempt();
 
             Assert.AreEqual(1, stepCtrl.CurrentStepState.AttemptCount);
             Assert.AreEqual(StepState.Active, stepCtrl.CurrentStepState.State);
@@ -243,9 +243,9 @@ namespace OSE.Tests.EditMode
             var stepCtrl = new StepController();
             stepCtrl.ActivateStep(step, 0f);
 
-            stepCtrl.FailAttempt(0.5f);
-            stepCtrl.FailAttempt(1.0f);
-            stepCtrl.FailAttempt(1.5f);
+            stepCtrl.FailAttempt();
+            stepCtrl.FailAttempt();
+            stepCtrl.FailAttempt();
 
             Assert.AreEqual(3, stepCtrl.CurrentStepState.AttemptCount);
         }

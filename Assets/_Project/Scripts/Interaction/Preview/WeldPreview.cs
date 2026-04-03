@@ -21,6 +21,7 @@ namespace OSE.Interaction
         private GameObject _weldBeadObj;
         private LineRenderer _weldLine;
         private bool _arcSpawned;
+        private GameObject _arcEffect;
 
         // Computed on Begin — weld seam geometry
         private Vector3 _weldDir;
@@ -38,6 +39,7 @@ namespace OSE.Interaction
             base.Begin(context);
             _actionRot = context.ToolPreview != null ? context.ToolPreview.transform.rotation : Quaternion.identity;
             _arcSpawned = false;
+            _arcEffect = null;
             _weldBeadObj = null;
             _weldLine = null;
 
@@ -61,6 +63,14 @@ namespace OSE.Interaction
 
         public override void End(bool completed)
         {
+            // Stop the continuous weld arc particles
+            if (_arcEffect != null)
+            {
+                var ps = _arcEffect.GetComponent<ParticleSystem>();
+                if (ps != null) ps.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+                _arcEffect = null; // ParticleAutoDestroy handles cleanup
+            }
+
             if (_ctx.ToolPreview != null)
                 MaterialHelper.SetEmission(_ctx.ToolPreview, Color.black);
 
@@ -78,7 +88,7 @@ namespace OSE.Interaction
 
         protected override void ApplyEffects(float progress)
         {
-            // At 10%: arc glow + sparks
+            // At 10%: start continuous weld arc sparks that track the torch
             if (!_arcSpawned && progress >= 0.1f)
             {
                 _arcSpawned = true;
@@ -86,11 +96,18 @@ namespace OSE.Interaction
                 if (_ctx.ToolPreview != null)
                     MaterialHelper.SetEmission(_ctx.ToolPreview, new Color(0.9f, 0.95f, 1f, 1f) * 1.5f);
 
-                CompletionParticleEffect.TrySpawn("weld_glow",
+                _arcEffect = CompletionParticleEffect.TrySpawnContinuous("weld_arc",
                     _ctx.TargetWorldPos, Vector3.one * 0.06f);
             }
 
             float travelProgress = Mathf.InverseLerp(0.15f, 0.9f, progress);
+
+            // Move the arc effect to follow the current weld point
+            if (_arcEffect != null)
+            {
+                Vector3 currentWeldPoint = Vector3.Lerp(_weldStart, _weldEnd, travelProgress);
+                _arcEffect.transform.position = currentWeldPoint;
+            }
 
             // Tool movement: smooth travel along weld seam
             if (_ctx.ToolPreview != null && progress > 0.05f && progress < 0.95f)

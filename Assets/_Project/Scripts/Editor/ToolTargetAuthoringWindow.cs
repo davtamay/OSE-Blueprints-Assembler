@@ -54,20 +54,23 @@ namespace OSE.Editor
 
         // ── State ─────────────────────────────────────────────────────────────
         private string[]   _packageIds;
-        private int        _pkgIdx;
-        private string     _pkgId;
+        [SerializeField] private int        _pkgIdx;
+        [SerializeField] private string     _pkgId;
         private MachinePackageDefinition _pkg;
 
         private string[]   _stepOptions;        // "(All Steps)", then "[seq] name · tool · profile"
         private string[]   _stepIds;            // null at index 0, then actual step ids
         private int[]      _stepSequenceIdxs;   // 0 at index 0, then step.sequenceIndex
-        private int        _stepFilterIdx;
+        [SerializeField] private int        _stepFilterIdx;
         private bool       _suppressStepSync;   // prevent circular sync with SessionDriver
         private int        _lastPolledDriverStep = -1; // last SessionDriver step seen during poll
 
         // Active-step context (null = All Steps)
         private string          _activeStepProfile;
         private HashSet<string> _activeStepTargetIds;
+
+        // Serialized for domain-reload restoration (target ID survives list rebuild)
+        [SerializeField] private string _selectedTargetId;
 
         // targetId → display name of the tool that acts on it (from requiredToolActions)
         private Dictionary<string, string> _targetToolMap;
@@ -86,13 +89,13 @@ namespace OSE.Editor
         private int _previewCurrent;
         private int _previewHidden;
 
+
         private TargetEditState[] _targets;
-        private int               _selectedIdx = -1;
+        [SerializeField] private int _selectedIdx = -1;
         private readonly HashSet<int> _multiSelected = new HashSet<int>();
 
         private Vector2 _listScroll;
         private Vector2 _detailScroll;
-        private Vector3 _batchPositionOffset;
 
         private bool _clickToSnapActive;
 
@@ -103,6 +106,12 @@ namespace OSE.Editor
 
         // File backup
         private string _lastBackupPath;
+
+        // Rotation gizmo — track drag-start baselines for batch rotation
+        private bool       _rotDragActive;
+        private Quaternion _rotDragStartHandle;
+        private Quaternion _rotDragStartLocal;
+        private Dictionary<int, Quaternion> _rotDragStartMulti;
 
         // Scene objects
         private GameObject _previewRoot;
@@ -159,9 +168,11 @@ namespace OSE.Editor
         private void OnEnable()
         {
             RefreshPackageList();
-            // Auto-reload the last-used package after domain reload or window re-open.
-            // Without this, _pkg / _targetToolIdMap are null and toggles don't appear.
-            if (_pkg == null && _packageIds != null && _packageIds.Length > 0
+            // Package restore after domain reload is handled by OnGUI (first frame)
+            // where the AssetDatabase is guaranteed to be ready.
+            // Only handle the fresh-open fallback (no _pkgId yet) here.
+            if (_pkg == null && string.IsNullOrEmpty(_pkgId)
+                && _packageIds != null && _packageIds.Length > 0
                 && _pkgIdx >= 0 && _pkgIdx < _packageIds.Length)
             {
                 LoadPkg(_packageIds[_pkgIdx]);
@@ -176,7 +187,14 @@ namespace OSE.Editor
             SceneView.duringSceneGui -= OnSceneGUI;
             SessionDriver.EditModeStepChanged -= OnSessionDriverStepChanged;
             EditorApplication.playModeStateChanged -= OnPlayModeChanged;
-            Cleanup();
+            // Destroy scene objects but do NOT reset serialized state (_selectedIdx,
+            // _selectedTargetId, etc.) — OnDisable runs BEFORE Unity serializes
+            // [SerializeField] fields during domain reload, so resetting here
+            // would erase the values we need to restore in OnEnable.
+            KillPartMeshes();
+            ClearToolPreview();
+            if (_previewRoot != null) DestroyImmediate(_previewRoot);
+            _previewRoot = null;
         }
 
         private void OnPlayModeChanged(PlayModeStateChange state)
@@ -223,6 +241,16 @@ namespace OSE.Editor
 
         private void OnGUI()
         {
+            // Restore after domain reload: _pkgId survives via [SerializeField] but
+            // _pkg (not serializable) is lost.  By the time OnGUI runs the
+            // AssetDatabase is ready, so scene meshes and tool previews load correctly.
+            if (_pkg == null && !string.IsNullOrEmpty(_pkgId))
+            {
+                LoadPkg(_pkgId, restoring: true);
+                // If load failed, clear _pkgId to avoid retrying every frame
+                if (_pkg == null) _pkgId = null;
+            }
+
             EditorGUILayout.Space(4);
             DrawPkgPicker();
             if (_pkg == null) return;
@@ -540,6 +568,8 @@ namespace OSE.Editor
                     }
                     _clickToSnapActive = false;
                     _snapshotPending   = false;
+                    _selectedTargetId  = (_selectedIdx >= 0 && _selectedIdx < _targets.Length)
+                        ? _targets[_selectedIdx].def.id : null;
                     if (_multiSelected.Count <= 1 && _selectedIdx >= 0 && _selectedIdx < _targets.Length)
                         RefreshToolPreview(ref _targets[_selectedIdx]);
                     SceneView.RepaintAll();
@@ -728,32 +758,34 @@ namespace OSE.Editor
             if (_selectedIdx < 0 || _selectedIdx >= _targets.Length) return;
             ref TargetEditState rep = ref _targets[_selectedIdx];
 
-            // ── Position offset ───────────────────────────────────────────────
-            // Each target keeps its own position; this shifts ALL selected by a delta.
-            EditorGUILayout.LabelField("Position offset (added to all selected)", EditorStyles.boldLabel);
-            _batchPositionOffset = EditorGUILayout.Vector3Field("Offset (X, Y, Z)", _batchPositionOffset);
-            EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Apply offset"))
-            {
-                foreach (int idx in _multiSelected)
-                { ref var t = ref _targets[idx]; t.position += _batchPositionOffset; t.isDirty = true; }
-                _batchPositionOffset = Vector3.zero;
-                SceneView.RepaintAll(); Repaint();
-            }
-            if (GUILayout.Button("Reset"))
-                _batchPositionOffset = Vector3.zero;
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.Space(4);
+            // ── Position (per-axis, all selected) ─────────────────────────────
+            // Each axis is independent — changing X only writes X to every target.
+            EditorGUILayout.LabelField("Position (all selected)", EditorStyles.boldLabel);
 
-            // ── Position (absolute, all selected) ─────────────────────────────
-            // Sets every selected target to the exact same position.
-            EditorGUILayout.LabelField("Position (absolute, all selected)", EditorStyles.boldLabel);
             EditorGUI.BeginChangeCheck();
-            Vector3 batchPos = EditorGUILayout.Vector3Field("Position (local)", rep.position);
+            float batchX = EditorGUILayout.FloatField("X", rep.position.x);
             if (EditorGUI.EndChangeCheck())
             {
                 foreach (int idx in _multiSelected)
-                { ref var t = ref _targets[idx]; t.position = batchPos; t.isDirty = true; }
+                { ref var t = ref _targets[idx]; t.position.x = batchX; t.isDirty = true; }
+                SceneView.RepaintAll(); Repaint();
+            }
+
+            EditorGUI.BeginChangeCheck();
+            float batchY = EditorGUILayout.FloatField("Y", rep.position.y);
+            if (EditorGUI.EndChangeCheck())
+            {
+                foreach (int idx in _multiSelected)
+                { ref var t = ref _targets[idx]; t.position.y = batchY; t.isDirty = true; }
+                SceneView.RepaintAll(); Repaint();
+            }
+
+            EditorGUI.BeginChangeCheck();
+            float batchZ = EditorGUILayout.FloatField("Z", rep.position.z);
+            if (EditorGUI.EndChangeCheck())
+            {
+                foreach (int idx in _multiSelected)
+                { ref var t = ref _targets[idx]; t.position.z = batchZ; t.isDirty = true; }
                 SceneView.RepaintAll(); Repaint();
             }
             EditorGUILayout.Space(4);
@@ -940,6 +972,7 @@ namespace OSE.Editor
                     if (Handles.Button(worldPos, Quaternion.identity, size, size * 1.5f, Handles.SphereHandleCap))
                     {
                         _selectedIdx       = i;
+                        _selectedTargetId  = _targets[i].def.id;
                         _clickToSnapActive = false;
                         _snapshotPending   = false;
                         RefreshToolPreview(ref _targets[i]);
@@ -985,19 +1018,65 @@ namespace OSE.Editor
                 if (EditorGUI.EndChangeCheck())
                 {
                     BeginEdit();
-                    sel.position = root.InverseTransformPoint(newWorldPos);
+                    Vector3 newLocal = root.InverseTransformPoint(newWorldPos);
+                    Vector3 delta = newLocal - sel.position;
+                    sel.position = newLocal;
                     sel.isDirty  = true;
+                    if (_multiSelected.Count > 1)
+                    {
+                        foreach (int idx in _multiSelected)
+                        {
+                            if (idx == _selectedIdx) continue;
+                            ref var t = ref _targets[idx];
+                            t.position += delta;
+                            t.isDirty = true;
+                        }
+                    }
                     Repaint();
                 }
 
                 EditorGUI.BeginChangeCheck();
-                Quaternion newWorldRot = Handles.RotationHandle(worldRot, worldPos);
+                Quaternion rotHandleOrientation = Tools.pivotRotation == PivotRotation.Local ? worldRot : Quaternion.identity;
+                Quaternion newWorldRot = Handles.RotationHandle(rotHandleOrientation, worldPos);
                 if (EditorGUI.EndChangeCheck())
                 {
                     BeginEdit();
-                    sel.rotation = Quaternion.Inverse(root.rotation) * newWorldRot;
+
+                    // Snapshot baselines on first frame of drag (for batch rotation)
+                    if (!_rotDragActive)
+                    {
+                        _rotDragActive      = true;
+                        _rotDragStartHandle = rotHandleOrientation;
+                        _rotDragStartLocal  = sel.rotation;
+                        _rotDragStartMulti  = new Dictionary<int, Quaternion>();
+                        if (_multiSelected.Count > 1)
+                            foreach (int idx in _multiSelected)
+                                if (idx != _selectedIdx)
+                                    _rotDragStartMulti[idx] = _targets[idx].rotation;
+                    }
+
+                    // World-space delta from the handle, applied directly (no damping).
+                    Quaternion worldDelta = newWorldRot * Quaternion.Inverse(_rotDragStartHandle);
+                    Quaternion newLocalRot = Quaternion.Inverse(root.rotation) * (worldDelta * (root.rotation * _rotDragStartLocal));
+                    Quaternion localDelta = newLocalRot * Quaternion.Inverse(_rotDragStartLocal);
+                    sel.rotation = newLocalRot;
                     sel.isDirty  = true;
+                    if (_multiSelected.Count > 1)
+                    {
+                        foreach (int idx in _multiSelected)
+                        {
+                            if (idx == _selectedIdx) continue;
+                            ref var t = ref _targets[idx];
+                            Quaternion startRot = _rotDragStartMulti.TryGetValue(idx, out var sr) ? sr : t.rotation;
+                            t.rotation = localDelta * startRot;
+                            t.isDirty = true;
+                        }
+                    }
                     Repaint();
+                }
+                else if (_rotDragActive)
+                {
+                    _rotDragActive = false;
                 }
 
                 if (Event.current.type == EventType.MouseUp)
@@ -1204,27 +1283,42 @@ namespace OSE.Editor
             _packageIds = ids.ToArray();
         }
 
-        private void LoadPkg(string id)
+        private void LoadPkg(string id) => LoadPkg(id, restoring: false);
+
+        private void LoadPkg(string id, bool restoring)
         {
             Cleanup();
             _pkg   = PackageJsonUtils.LoadPackage(id);
             _pkgId = id;
             if (_pkg == null) return;
 
-            _stepFilterIdx = 0;
+            // When restoring after domain reload, keep the serialized _stepFilterIdx.
+            // Otherwise reset to "All Steps" and try to sync from SessionDriver.
+            if (!restoring)
+            {
+                _stepFilterIdx = 0;
+            }
+
             BuildStepOptions();
             BuildTargetToolMap();
 
-            // Sync initial step from SessionDriver if present
-            var driver = UnityEngine.Object.FindFirstObjectByType<SessionDriver>();
-            if (driver != null && _stepSequenceIdxs != null)
+            if (!restoring)
             {
-                int seq = driver.PreviewStepSequenceIndex;
-                for (int k = 1; k < _stepSequenceIdxs.Length; k++)
+                // Sync initial step from SessionDriver if present
+                var driver = UnityEngine.Object.FindFirstObjectByType<SessionDriver>();
+                if (driver != null && _stepSequenceIdxs != null)
                 {
-                    if (_stepSequenceIdxs[k] == seq) { _stepFilterIdx = k; break; }
+                    int seq = driver.PreviewStepSequenceIndex;
+                    for (int k = 1; k < _stepSequenceIdxs.Length; k++)
+                    {
+                        if (_stepSequenceIdxs[k] == seq) { _stepFilterIdx = k; break; }
+                    }
                 }
             }
+
+            // Clamp in case stored index is out of range after package edit
+            if (_stepOptions != null && _stepFilterIdx >= _stepOptions.Length)
+                _stepFilterIdx = 0;
 
             UpdateActiveStep();
             BuildTargetList();
@@ -1375,9 +1469,10 @@ namespace OSE.Editor
                 list.Add(state);
             }
 
-            // Preserve selection across rebuilds by matching target ID
+            // Preserve selection across rebuilds by matching target ID.
+            // _selectedTargetId is serialized, so it survives domain reload even when _targets is null.
             string prevSelectedId = (_selectedIdx >= 0 && _targets != null && _selectedIdx < _targets.Length)
-                ? _targets[_selectedIdx].def.id : null;
+                ? _targets[_selectedIdx].def.id : _selectedTargetId;
 
             _targets     = list.ToArray();
             _selectedIdx = -1;
@@ -1387,6 +1482,8 @@ namespace OSE.Editor
                     if (_targets[i].def.id == prevSelectedId) { _selectedIdx = i; break; }
             }
             if (_selectedIdx < 0 && _targets.Length > 0) _selectedIdx = 0;
+            _selectedTargetId = (_selectedIdx >= 0 && _selectedIdx < _targets.Length)
+                ? _targets[_selectedIdx].def.id : null;
             _multiSelected.Clear();
             if (_selectedIdx >= 0) RefreshToolPreview(ref _targets[_selectedIdx]);
             else ClearToolPreview();

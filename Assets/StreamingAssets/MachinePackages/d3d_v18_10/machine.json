@@ -7738,13 +7738,10 @@
         "right",
         "measure"
       ],
+      "weldAxis": { "x": 0, "y": 0, "z": 0 },
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 0,
-        "y": 180,
-        "z": 0
-      }
-    },
+      "toolActionRotation": { "x": 0.8938, "y": 180, "z": 0 }
+  },
     {
       "id": "target_front_top_bar",
       "name": "Front Frame Side Top Bar Target",
@@ -7870,13 +7867,10 @@
         "rear",
         "measure"
       ],
+      "weldAxis": { "x": 0, "y": 0, "z": 0 },
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 0,
-        "y": 180,
-        "z": 0
-      }
-    },
+      "toolActionRotation": { "x": 0, "y": 180, "z": 0 }
+  },
     {
       "id": "target_bottom_clamp_panel",
       "name": "Bottom Frame Side Clamp Target",
@@ -8011,18 +8005,10 @@
         "top",
         "clamp"
       ],
-      "weldAxis": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
+      "weldAxis": { "x": 0, "y": 0, "z": 0 },
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 344.2303,
-        "y": 260.1167,
-        "z": 0.9778
-      }
-    },
+      "toolActionRotation": { "x": 338.0364, "y": 347.3719, "z": 10.538 }
+  },
     {
       "id": "target_top_weld_upper_left",
       "name": "Top Frame Side Upper-Left Tack Target",
@@ -8136,7 +8122,7 @@
       ],
       "weldAxis": { "x": 0, "y": 0, "z": 0 },
       "useToolActionRotation": true,
-      "toolActionRotation": { "x": 343.9476, "y": 174.0019, "z": 356.7541 }
+      "toolActionRotation": { "x": 343.9483, "y": 174.0056, "z": 6.9212 }
   },
     {
       "id": "target_left_weld_upper_left",
@@ -8150,19 +8136,11 @@
         "weld",
         "upper_left"
       ],
-      "weldAxis": {
-        "x": 0,
-        "y": 0.0026,
-        "z": -1
-      },
+      "weldAxis": { "x": 0, "y": 0.0026, "z": -1 },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 356.4172,
-        "y": 151.8369,
-        "z": 0.3198
-      }
-    },
+      "toolActionRotation": { "x": 356.549, "y": 140.537, "z": 1.0152 }
+  },
     {
       "id": "target_left_weld_lower_right",
       "name": "Left Frame Side Lower-Right Tack Target",
@@ -8175,19 +8153,11 @@
         "weld",
         "lower_right"
       ],
-      "weldAxis": {
-        "x": -0.9994,
-        "y": -0.0332,
-        "z": 0
-      },
+      "weldAxis": { "x": -0.9994, "y": -0.0332, "z": 0 },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 4.1603,
-        "y": 338.7817,
-        "z": 3.5261
-      }
-    },
+      "toolActionRotation": { "x": 5.4112, "y": 305.4328, "z": 0.6629 }
+  },
     {
       "id": "target_left_weld_upper_right",
       "name": "Left Frame Side Upper-Right Tack Target",
@@ -8200,19 +8170,11 @@
         "weld",
         "upper_right"
       ],
-      "weldAxis": {
-        "x": 0,
-        "y": 1,
-        "z": 0
-      },
+      "weldAxis": { "x": 0, "y": 1, "z": 0 },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 345.8652,
-        "y": 244.2841,
-        "z": 357.0356
-      }
-    },
+      "toolActionRotation": { "x": 345.8652, "y": 244.2841, "z": 357.0356 }
+  },
     {
       "id": "target_left_weld_lower_left",
       "name": "Left Frame Side Lower-Left Tack Target",
@@ -8225,19 +8187,11 @@
         "weld",
         "lower_left"
       ],
-      "weldAxis": {
-        "x": 0,
-        "y": -0.0382,
-        "z": 0.9993
-      },
+      "weldAxis": { "x": 0, "y": -0.0382, "z": 0.9993 },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 0,
-        "y": 39.3587,
-        "z": 0
-      }
-    },
+      "toolActionRotation": { "x": 0.9021, "y": 39.724, "z": 359.4854 }
+  },
     {
       "id": "target_right_clamp_panel",
       "name": "Right Frame Side Clamp Target",
@@ -8249,13 +8203,10 @@
         "right",
         "clamp"
       ],
+      "weldAxis": { "x": 0, "y": 0, "z": 0 },
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 341.661,
-        "y": 271.7354,
-        "z": 3.8056
-      }
-    },
+      "toolActionRotation": { "x": 341.6618, "y": 325.4889, "z": 3.7991 }
+  },
     {
       "id": "target_right_weld_upper_left",
       "name": "Right Frame Side Upper-Left Tack Target",
@@ -8268,19 +8219,11 @@
         "weld",
         "upper_left"
       ],
-      "weldAxis": {
-        "x": 0,
-        "y": 0.0026,
-        "z": -1
-      },
+      "weldAxis": { "x": 0, "y": 0.0026, "z": -1 },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 356.4172,
-        "y": 151.8369,
-        "z": 0.3198
-      }
-    },
+      "toolActionRotation": { "x": 356.4172, "y": 134.9848, "z": 0.3198 }
+  },
     {
       "id": "target_right_weld_lower_right",
       "name": "Right Frame Side Lower-Right Tack Target",
@@ -8293,19 +8236,11 @@
         "weld",
         "lower_right"
       ],
-      "weldAxis": {
-        "x": -0.9994,
-        "y": -0.0332,
-        "z": 0
-      },
+      "weldAxis": { "x": -0.9994, "y": -0.0332, "z": 0 },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 4.1603,
-        "y": 338.7817,
-        "z": 3.5261
-      }
-    },
+      "toolActionRotation": { "x": 4.1603, "y": 338.7817, "z": 3.5261 }
+  },
     {
       "id": "target_right_weld_upper_right",
       "name": "Right Frame Side Upper-Right Tack Target",
@@ -8318,19 +8253,11 @@
         "weld",
         "upper_right"
       ],
-      "weldAxis": {
-        "x": 0,
-        "y": 1,
-        "z": 0
-      },
+      "weldAxis": { "x": 0, "y": 1, "z": 0 },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 345.8652,
-        "y": 244.2841,
-        "z": 357.0356
-      }
-    },
+      "toolActionRotation": { "x": 345.8652, "y": 244.2841, "z": 357.0356 }
+  },
     {
       "id": "target_right_weld_lower_left",
       "name": "Right Frame Side Lower-Left Tack Target",
@@ -8343,19 +8270,11 @@
         "weld",
         "lower_left"
       ],
-      "weldAxis": {
-        "x": 0,
-        "y": -0.0382,
-        "z": 0.9993
-      },
+      "weldAxis": { "x": 0, "y": -0.0382, "z": 0.9993 },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 0,
-        "y": 39.3587,
-        "z": 0
-      }
-    },
+      "toolActionRotation": { "x": 0, "y": 39.3631, "z": 0 }
+  },
     {
       "id": "target_front_clamp_panel",
       "name": "Front Frame Side Clamp Target",
@@ -8367,13 +8286,10 @@
         "front",
         "clamp"
       ],
+      "weldAxis": { "x": 0, "y": 0, "z": 0 },
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 341.661,
-        "y": 271.7354,
-        "z": 3.8056
-      }
-    },
+      "toolActionRotation": { "x": 341.6618, "y": 213.0166, "z": 3.7991 }
+  },
     {
       "id": "target_front_weld_upper_left",
       "name": "Front Frame Side Upper-Left Tack Target",
@@ -8386,19 +8302,11 @@
         "weld",
         "upper_left"
       ],
-      "weldAxis": {
-        "x": 0,
-        "y": 0.0026,
-        "z": -1
-      },
+      "weldAxis": { "x": 0, "y": 0.0026, "z": -1 },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 356.4172,
-        "y": 151.8369,
-        "z": 0.3198
-      }
-    },
+      "toolActionRotation": { "x": 356.4172, "y": 151.8369, "z": 0.3198 }
+  },
     {
       "id": "target_front_weld_lower_right",
       "name": "Front Frame Side Lower-Right Tack Target",
@@ -8411,19 +8319,11 @@
         "weld",
         "lower_right"
       ],
-      "weldAxis": {
-        "x": -0.9994,
-        "y": -0.0332,
-        "z": 0
-      },
+      "weldAxis": { "x": -0.9994, "y": -0.0332, "z": 0 },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 4.1603,
-        "y": 338.7817,
-        "z": 3.5261
-      }
-    },
+      "toolActionRotation": { "x": 4.1892, "y": 342.1013, "z": 7.1238 }
+  },
     {
       "id": "target_front_weld_upper_right",
       "name": "Front Frame Side Upper-Right Tack Target",
@@ -8436,19 +8336,11 @@
         "weld",
         "upper_right"
       ],
-      "weldAxis": {
-        "x": 0,
-        "y": 1,
-        "z": 0
-      },
+      "weldAxis": { "x": 0, "y": 1, "z": 0 },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 345.8652,
-        "y": 244.2841,
-        "z": 357.0356
-      }
-    },
+      "toolActionRotation": { "x": 350.0528, "y": 242.5003, "z": 5.5655 }
+  },
     {
       "id": "target_front_weld_lower_left",
       "name": "Front Frame Side Lower-Left Tack Target",
@@ -8461,19 +8353,11 @@
         "weld",
         "lower_left"
       ],
-      "weldAxis": {
-        "x": 0,
-        "y": -0.0382,
-        "z": 0.9993
-      },
+      "weldAxis": { "x": 0, "y": -0.0382, "z": 0.9993 },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 0,
-        "y": 39.3587,
-        "z": 0
-      }
-    },
+      "toolActionRotation": { "x": 0, "y": 39.3631, "z": 0 }
+  },
     {
       "id": "target_rear_clamp_panel",
       "name": "Rear Frame Side Clamp Target",
@@ -8485,13 +8369,10 @@
         "rear",
         "clamp"
       ],
+      "weldAxis": { "x": 0, "y": 0, "z": 0 },
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 341.661,
-        "y": 271.7354,
-        "z": 3.8056
-      }
-    },
+      "toolActionRotation": { "x": 342.2914, "y": 359.0361, "z": 357.5353 }
+  },
     {
       "id": "target_rear_weld_upper_left",
       "name": "Rear Frame Side Upper-Left Tack Target",
@@ -8504,19 +8385,11 @@
         "weld",
         "upper_left"
       ],
-      "weldAxis": {
-        "x": 0,
-        "y": 0.0026,
-        "z": -1
-      },
+      "weldAxis": { "x": 0, "y": 0.0026, "z": -1 },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 356.4172,
-        "y": 151.8369,
-        "z": 0.3198
-      }
-    },
+      "toolActionRotation": { "x": 358.69, "y": 159.3861, "z": 1.8923 }
+  },
     {
       "id": "target_rear_weld_lower_right",
       "name": "Rear Frame Side Lower-Right Tack Target",
@@ -8529,19 +8402,11 @@
         "weld",
         "lower_right"
       ],
-      "weldAxis": {
-        "x": -0.9994,
-        "y": -0.0332,
-        "z": 0
-      },
+      "weldAxis": { "x": -0.9994, "y": -0.0332, "z": 0 },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 4.1603,
-        "y": 338.7817,
-        "z": 3.5261
-      }
-    },
+      "toolActionRotation": { "x": 352.7308, "y": 338.0764, "z": 3.5453 }
+  },
     {
       "id": "target_rear_weld_upper_right",
       "name": "Rear Frame Side Upper-Right Tack Target",
@@ -8554,19 +8419,11 @@
         "weld",
         "upper_right"
       ],
-      "weldAxis": {
-        "x": 0,
-        "y": 1,
-        "z": 0
-      },
+      "weldAxis": { "x": 0, "y": 1, "z": 0 },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 345.8652,
-        "y": 244.2841,
-        "z": 357.0356
-      }
-    },
+      "toolActionRotation": { "x": 345.8652, "y": 244.2841, "z": 357.0356 }
+  },
     {
       "id": "target_rear_weld_lower_left",
       "name": "Rear Frame Side Lower-Left Tack Target",
@@ -8579,19 +8436,11 @@
         "weld",
         "lower_left"
       ],
-      "weldAxis": {
-        "x": 0,
-        "y": -0.0382,
-        "z": 0.9993
-      },
+      "weldAxis": { "x": 0, "y": -0.0382, "z": 0.9993 },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 0,
-        "y": 39.3587,
-        "z": 0
-      }
-    },
+      "toolActionRotation": { "x": 0, "y": 39.3631, "z": 0 }
+  },
     {
       "id": "target_cube_bottom_side",
       "name": "Cube Bottom Side",
@@ -8740,11 +8589,19 @@
         "corner",
         "lower"
       ],
-      "weldAxis": { "x": 0, "y": 1, "z": 0 },
+      "weldAxis": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
       "weldLength": 0.025,
       "useToolActionRotation": true,
-      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
-  },
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
     {
       "id": "target_cube_weld_lower_rear_right",
       "name": "Cube Lower Rear-Right Corner",
@@ -8757,11 +8614,19 @@
         "corner",
         "lower"
       ],
-      "weldAxis": { "x": 0, "y": 1, "z": 0 },
+      "weldAxis": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
       "weldLength": 0.025,
       "useToolActionRotation": true,
-      "toolActionRotation": { "x": 0, "y": 190.932, "z": 0 }
-  },
+      "toolActionRotation": {
+        "x": 0,
+        "y": 190.932,
+        "z": 0
+      }
+    },
     {
       "id": "target_cube_weld_lower_front_right",
       "name": "Cube Lower Front-Right Corner",
@@ -8774,11 +8639,19 @@
         "corner",
         "lower"
       ],
-      "weldAxis": { "x": 0, "y": 1, "z": 0 },
+      "weldAxis": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
       "weldLength": 0.025,
       "useToolActionRotation": true,
-      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
-  },
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
     {
       "id": "target_cube_weld_lower_rear_left",
       "name": "Cube Lower Rear-Left Corner",
@@ -8791,11 +8664,19 @@
         "corner",
         "lower"
       ],
-      "weldAxis": { "x": 0, "y": 1, "z": 0 },
+      "weldAxis": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
       "weldLength": 0.025,
       "useToolActionRotation": true,
-      "toolActionRotation": { "x": 0, "y": 188.5281, "z": 0 }
-  },
+      "toolActionRotation": {
+        "x": 0,
+        "y": 188.5281,
+        "z": 0
+      }
+    },
     {
       "id": "target_cube_weld_upper_front_left",
       "name": "Cube Upper Front-Left Corner",
@@ -8808,11 +8689,19 @@
         "corner",
         "upper"
       ],
-      "weldAxis": { "x": 0, "y": 1, "z": 0 },
+      "weldAxis": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
       "weldLength": 0.025,
       "useToolActionRotation": true,
-      "toolActionRotation": { "x": 0, "y": 42.8403, "z": 0 }
-  },
+      "toolActionRotation": {
+        "x": 0,
+        "y": 42.8403,
+        "z": 0
+      }
+    },
     {
       "id": "target_cube_weld_upper_rear_right",
       "name": "Cube Upper Rear-Right Corner",
@@ -8825,11 +8714,19 @@
         "corner",
         "upper"
       ],
-      "weldAxis": { "x": 0, "y": 1, "z": 0 },
+      "weldAxis": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
       "weldLength": 0.025,
       "useToolActionRotation": true,
-      "toolActionRotation": { "x": 0, "y": 235.3156, "z": 0 }
-  },
+      "toolActionRotation": {
+        "x": 0,
+        "y": 235.3156,
+        "z": 0
+      }
+    },
     {
       "id": "target_cube_weld_upper_front_right",
       "name": "Cube Upper Front-Right Corner",
@@ -8842,11 +8739,19 @@
         "corner",
         "upper"
       ],
-      "weldAxis": { "x": 0, "y": 1, "z": 0 },
+      "weldAxis": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
       "weldLength": 0.025,
       "useToolActionRotation": true,
-      "toolActionRotation": { "x": 0, "y": 338.1206, "z": 0 }
-  },
+      "toolActionRotation": {
+        "x": 0,
+        "y": 338.1206,
+        "z": 0
+      }
+    },
     {
       "id": "target_cube_weld_upper_rear_left",
       "name": "Cube Upper Rear-Left Corner",
@@ -8859,11 +8764,19 @@
         "corner",
         "upper"
       ],
-      "weldAxis": { "x": 0, "y": 1, "z": 0 },
+      "weldAxis": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
       "weldLength": 0.025,
       "useToolActionRotation": true,
-      "toolActionRotation": { "x": 2.2913, "y": 80.333, "z": 13.2084 }
-  },
+      "toolActionRotation": {
+        "x": 2.2913,
+        "y": 80.333,
+        "z": 13.2084
+      }
+    },
     {
       "id": "target_cube_seam_lower_front_left",
       "name": "Cube Lower Front-Left Seam Target",
@@ -12970,7 +12883,7 @@
             "playPosition": {
                 "x": -0.38,
                 "y": 0.5548,
-                "z": -0.1651
+                "z": -0.1397
             },
             "playRotation": {
                 "x": 0.0,
@@ -13114,7 +13027,7 @@
             "playPosition": {
                 "x": -0.38,
                 "y": 0.5548,
-                "z": 0.1651
+                "z": 0.1397
             },
             "playRotation": {
                 "x": 0.0,
@@ -13354,7 +13267,7 @@
             "playPosition": {
                 "x": 0.38,
                 "y": 0.5548,
-                "z": -0.1651
+                "z": -0.1397
             },
             "playRotation": {
                 "x": 0.0,
@@ -13498,7 +13411,7 @@
             "playPosition": {
                 "x": 0.38,
                 "y": 0.5548,
-                "z": 0.1651
+                "z": 0.1397
             },
             "playRotation": {
                 "x": 0.0,
@@ -14446,9 +14359,9 @@
         {
             "targetId": "target_left_square_check",
             "position": {
-                "x": -0.4342,
+                "x": -0.4325,
                 "y": 0.5499,
-                "z": 0.1058
+                "z": 0.0801
             },
             "rotation": {
                 "x": 0.0,
@@ -14621,14 +14534,14 @@
         {
             "targetId": "target_right_square_check",
             "position": {
-                "x": 0.2403,
-                "y": 0.6016,
-                "z": 0.1651
+                "x": 0.3279,
+                "y": 0.5506,
+                "z": 0.0785
             },
             "rotation": {
                 "x": 0.0,
                 "y": -1.0,
-                "z": 0.0,
+                "z": 0.0078,
                 "w": 0.0
             },
             "scale": {
@@ -14971,9 +14884,9 @@
         {
             "targetId": "target_rear_square_check",
             "position": {
-                "x": 0.2403,
-                "y": 0.6016,
-                "z": -0.2803
+                "x": 0.3255,
+                "y": 0.5503,
+                "z": -0.3363
             },
             "rotation": {
                 "x": 0.0,
@@ -15183,13 +15096,13 @@
             "position": {
                 "x": 0.5197,
                 "y": 0.5459,
-                "z": 0.5469
+                "z": 0.5693
             },
             "rotation": {
-                "x": 0.0948,
-                "y": 0.7574,
-                "z": 0.0996,
-                "w": -0.6384
+                "x": 0.1985,
+                "y": 0.0901,
+                "z": -0.0687,
+                "w": -0.9735
             },
             "scale": {
                 "x": 0.055,
@@ -15356,15 +15269,15 @@
         {
             "targetId": "target_left_clamp_panel",
             "position": {
-                "x": -0.5154,
-                "y": 0.5543,
-                "z": 0.1619
+                "x": -0.5158,
+                "y": 0.5604,
+                "z": 0.1416
             },
             "rotation": {
-                "x": 0.0353,
-                "y": -0.9882,
-                "z": -0.1379,
-                "w": -0.0557
+                "x": -0.0524,
+                "y": -0.9875,
+                "z": -0.1423,
+                "w": -0.0433
             },
             "scale": {
                 "x": 0.055,
@@ -15391,15 +15304,15 @@
         {
             "targetId": "target_left_weld_upper_left",
             "position": {
-                "x": -0.5451,
-                "y": 0.5916,
-                "z": 0.1651
+                "x": -0.5341,
+                "y": 0.5537,
+                "z": 0.1517
             },
             "rotation": {
-                "x": -0.0049,
-                "y": 0.9695,
-                "z": 0.031,
-                "w": 0.2431
+                "x": -0.0018,
+                "y": 0.9409,
+                "z": 0.0313,
+                "w": 0.3372
             },
             "scale": {
                 "x": 0.05,
@@ -15426,9 +15339,9 @@
         {
             "targetId": "target_left_weld_upper_right",
             "position": {
-                "x": -0.2149,
-                "y": 0.5916,
-                "z": 0.1651
+                "x": -0.2297,
+                "y": 0.551,
+                "z": 0.1564
             },
             "rotation": {
                 "x": -0.0437,
@@ -15461,15 +15374,15 @@
         {
             "targetId": "target_left_weld_lower_right",
             "position": {
-                "x": -0.2149,
-                "y": 0.5916,
-                "z": -0.1651
+                "x": -0.2197,
+                "y": 0.5549,
+                "z": -0.1554
             },
             "rotation": {
-                "x": 0.03,
-                "y": -0.185,
-                "z": 0.0369,
-                "w": 0.9816
+                "x": 0.0393,
+                "y": -0.4581,
+                "z": 0.0268,
+                "w": 0.8876
             },
             "scale": {
                 "x": 0.05,
@@ -15496,15 +15409,15 @@
         {
             "targetId": "target_left_weld_lower_left",
             "position": {
-                "x": -0.5451,
-                "y": 0.5916,
-                "z": -0.1651
+                "x": -0.531,
+                "y": 0.5526,
+                "z": -0.1542
             },
             "rotation": {
-                "x": 0.0,
-                "y": 0.3368,
-                "z": 0.0,
-                "w": 0.9416
+                "x": 0.0059,
+                "y": 0.3398,
+                "z": -0.0069,
+                "w": 0.9405
             },
             "scale": {
                 "x": 0.05,
@@ -15531,15 +15444,15 @@
         {
             "targetId": "target_right_clamp_panel",
             "position": {
-                "x": 0.38,
-                "y": 0.6066,
-                "z": 0.0
+                "x": 0.5175,
+                "y": 0.5755,
+                "z": 0.1343
             },
             "rotation": {
-                "x": -0.1371,
-                "y": -0.6832,
-                "z": -0.0874,
-                "w": 0.7119
+                "x": -0.1618,
+                "y": -0.2876,
+                "z": -0.016,
+                "w": 0.9438
             },
             "scale": {
                 "x": 0.055,
@@ -15566,15 +15479,15 @@
         {
             "targetId": "target_right_weld_upper_left",
             "position": {
-                "x": 0.2149,
-                "y": 0.5916,
-                "z": 0.1651
+                "x": 0.2251,
+                "y": 0.5494,
+                "z": 0.1441
             },
             "rotation": {
-                "x": -0.0049,
-                "y": 0.9695,
-                "z": 0.031,
-                "w": 0.2431
+                "x": -0.0094,
+                "y": 0.9234,
+                "z": 0.0299,
+                "w": 0.3825
             },
             "scale": {
                 "x": 0.05,
@@ -15601,9 +15514,9 @@
         {
             "targetId": "target_right_weld_upper_right",
             "position": {
-                "x": 0.5451,
-                "y": 0.5916,
-                "z": 0.1651
+                "x": 0.5317,
+                "y": 0.5534,
+                "z": 0.1528
             },
             "rotation": {
                 "x": -0.0437,
@@ -15636,9 +15549,9 @@
         {
             "targetId": "target_right_weld_lower_right",
             "position": {
-                "x": 0.5451,
-                "y": 0.5916,
-                "z": -0.1651
+                "x": 0.5317,
+                "y": 0.5497,
+                "z": -0.1774
             },
             "rotation": {
                 "x": 0.03,
@@ -15671,9 +15584,9 @@
         {
             "targetId": "target_right_weld_lower_left",
             "position": {
-                "x": 0.2149,
-                "y": 0.5916,
-                "z": -0.1651
+                "x": 0.228,
+                "y": 0.5541,
+                "z": -0.1523
             },
             "rotation": {
                 "x": 0.0,
@@ -15706,15 +15619,15 @@
         {
             "targetId": "target_front_clamp_panel",
             "position": {
-                "x": -0.38,
-                "y": 0.6066,
-                "z": -0.42
+                "x": -0.5141,
+                "y": 0.564,
+                "z": -0.2824
             },
             "rotation": {
-                "x": -0.1371,
-                "y": -0.6832,
-                "z": -0.0874,
-                "w": 0.7119
+                "x": 0.0766,
+                "y": 0.9445,
+                "z": 0.1434,
+                "w": -0.2854
             },
             "scale": {
                 "x": 0.055,
@@ -15742,7 +15655,7 @@
             "targetId": "target_front_weld_upper_left",
             "position": {
                 "x": -0.5451,
-                "y": 0.5916,
+                "y": 0.554,
                 "z": -0.2549
             },
             "rotation": {
@@ -15776,15 +15689,15 @@
         {
             "targetId": "target_front_weld_upper_right",
             "position": {
-                "x": -0.2149,
-                "y": 0.5916,
-                "z": -0.2549
+                "x": -0.2275,
+                "y": 0.554,
+                "z": -0.2681
             },
             "rotation": {
-                "x": -0.0437,
-                "y": -0.8417,
-                "z": -0.1178,
-                "w": 0.5251
+                "x": -0.0863,
+                "y": -0.8485,
+                "z": -0.0489,
+                "w": 0.5198
             },
             "scale": {
                 "x": 0.05,
@@ -15811,15 +15724,15 @@
         {
             "targetId": "target_front_weld_lower_right",
             "position": {
-                "x": -0.2149,
-                "y": 0.5916,
-                "z": -0.5851
+                "x": -0.2211,
+                "y": 0.5476,
+                "z": -0.5684
             },
             "rotation": {
-                "x": 0.03,
-                "y": -0.185,
-                "z": 0.0369,
-                "w": 0.9816
+                "x": 0.0264,
+                "y": -0.1574,
+                "z": 0.067,
+                "w": 0.9849
             },
             "scale": {
                 "x": 0.05,
@@ -15846,9 +15759,9 @@
         {
             "targetId": "target_front_weld_lower_left",
             "position": {
-                "x": -0.5451,
-                "y": 0.5916,
-                "z": -0.5851
+                "x": -0.5328,
+                "y": 0.554,
+                "z": -0.571
             },
             "rotation": {
                 "x": 0.0,
@@ -15881,15 +15794,15 @@
         {
             "targetId": "target_rear_clamp_panel",
             "position": {
-                "x": 0.38,
-                "y": 0.6066,
-                "z": -0.42
+                "x": 0.512,
+                "y": 0.5469,
+                "z": -0.2734
             },
             "rotation": {
-                "x": -0.1371,
-                "y": -0.6832,
-                "z": -0.0874,
-                "w": 0.7119
+                "x": -0.1537,
+                "y": -0.0116,
+                "z": -0.0225,
+                "w": 0.9878
             },
             "scale": {
                 "x": 0.055,
@@ -15916,15 +15829,15 @@
         {
             "targetId": "target_rear_weld_upper_left",
             "position": {
-                "x": 0.2149,
-                "y": 0.5916,
-                "z": -0.2549
+                "x": 0.2258,
+                "y": 0.554,
+                "z": -0.2674
             },
             "rotation": {
-                "x": -0.0049,
-                "y": 0.9695,
-                "z": 0.031,
-                "w": 0.2431
+                "x": -0.0142,
+                "y": -0.9837,
+                "z": -0.0142,
+                "w": -0.1787
             },
             "scale": {
                 "x": 0.05,
@@ -15951,9 +15864,9 @@
         {
             "targetId": "target_rear_weld_upper_right",
             "position": {
-                "x": 0.5451,
-                "y": 0.5916,
-                "z": -0.2549
+                "x": 0.5295,
+                "y": 0.5495,
+                "z": -0.265
             },
             "rotation": {
                 "x": -0.0437,
@@ -15986,15 +15899,15 @@
         {
             "targetId": "target_rear_weld_lower_right",
             "position": {
-                "x": 0.5451,
-                "y": 0.5916,
-                "z": -0.5851
+                "x": 0.5399,
+                "y": 0.5457,
+                "z": -0.5643
             },
             "rotation": {
-                "x": 0.03,
-                "y": -0.185,
-                "z": 0.0369,
-                "w": 0.9816
+                "x": -0.0681,
+                "y": -0.1878,
+                "z": 0.0183,
+                "w": 0.9797
             },
             "scale": {
                 "x": 0.05,
@@ -16021,9 +15934,9 @@
         {
             "targetId": "target_rear_weld_lower_left",
             "position": {
-                "x": 0.2149,
-                "y": 0.5916,
-                "z": -0.5851
+                "x": 0.2258,
+                "y": 0.5526,
+                "z": -0.5718
             },
             "rotation": {
                 "x": 0.0,
