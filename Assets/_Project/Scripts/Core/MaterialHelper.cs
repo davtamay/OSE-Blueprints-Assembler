@@ -20,10 +20,14 @@ namespace OSE.Core
         private static Shader _urpLitShader;
 
         // Shared tint materials keyed by (materialName + Color32). Avoids allocating
-        // a new Material on every Apply / ApplyTint call. Cache is bounded by the number
-        // of distinct (name, color) combinations used at runtime (typically < 10).
-        private static readonly Dictionary<int, Material> _tintMaterialCache =
-            new Dictionary<int, Material>();
+        // a new Material on every Apply / ApplyTint call.
+        // LRU-evicts oldest entry when capacity is exceeded so long sessions with many
+        // distinct (name, color) pairs (debug overlays, authoring tools) don't leak.
+        private const int TintCacheCapacity = 20;
+        private static readonly Dictionary<int, LinkedListNode<(int key, Material mat)>> _tintCacheMap =
+            new Dictionary<int, LinkedListNode<(int, Material)>>();
+        private static readonly LinkedList<(int key, Material mat)> _tintCacheLru =
+            new LinkedList<(int, Material)>();
 
         private static int TintCacheKey(string name, Color color)
         {
@@ -31,6 +35,34 @@ namespace OSE.Core
             // Cheap hash: combine string hash with packed RGBA int.
             int rgba = (c32.r << 24) | (c32.g << 16) | (c32.b << 8) | c32.a;
             return (name?.GetHashCode() ?? 0) * 397 ^ rgba;
+        }
+
+        private static bool TryGetCachedTint(int key, out Material mat)
+        {
+            if (!_tintCacheMap.TryGetValue(key, out var node)) { mat = null; return false; }
+            // Move to front (most-recently-used).
+            _tintCacheLru.Remove(node);
+            _tintCacheLru.AddFirst(node);
+            mat = node.Value.mat;
+            return mat != null;
+        }
+
+        private static void AddTintToCache(int key, Material mat)
+        {
+            if (_tintCacheMap.ContainsKey(key)) return; // already present (race guard)
+
+            // Evict least-recently-used entry when at capacity.
+            if (_tintCacheLru.Count >= TintCacheCapacity)
+            {
+                var lru = _tintCacheLru.Last;
+                _tintCacheLru.RemoveLast();
+                _tintCacheMap.Remove(lru.Value.key);
+                if (Application.isPlaying) Object.Destroy(lru.Value.mat);
+                else Object.DestroyImmediate(lru.Value.mat);
+            }
+
+            var node = _tintCacheLru.AddFirst((key, mat));
+            _tintCacheMap[key] = node;
         }
 
         private static Shader UrpLitShader =>
@@ -165,7 +197,7 @@ namespace OSE.Core
         private static void ApplyColorToAllSlots(GameObject target, Color color, string materialName = "OSE_Tint")
         {
             int key = TintCacheKey(materialName, color);
-            if (!_tintMaterialCache.TryGetValue(key, out Material tintMat) || tintMat == null)
+            if (!TryGetCachedTint(key, out Material tintMat))
             {
                 tintMat = CreateUrpMaterial(materialName);
                 if (tintMat == null) return;
@@ -177,7 +209,7 @@ namespace OSE.Core
                     tintMat.EnableKeyword("_EMISSION");
                 }
 
-                _tintMaterialCache[key] = tintMat;
+                AddTintToCache(key, tintMat);
             }
 
             ApplyToAllSlots(target, tintMat, skipOutline: true);

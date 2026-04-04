@@ -17,23 +17,58 @@ namespace OSE.UI.Root
     internal static class PartPositionResolver
     {
         // ── Layout constants ──────────────────────────────────────────────────
+        //
+        // These values define the arc layout used in play-mode: parts are arranged
+        // along a circular arc centered at the scene origin, facing the camera (−Z).
+        //
+        // Spatial rationale:
+        //   • LayoutRadius (3.8 m): chosen so a human-scale learner standing at the
+        //     origin can reach any part without stepping forward. Tested with the D3D
+        //     v18.10 package; keeps the widest parts (800 mm frame tubes) within arm
+        //     reach. Increase if packages with larger parts are added.
+        //
+        //   • LayoutArcDegrees (220°): leaves a 140° "blind spot" directly behind
+        //     the learner so parts never spawn out of the natural field of view. The
+        //     arc is symmetric; LayoutArcStartDeg = −LayoutArcDegrees / 2.
+        //
+        //   • LayoutY (0.55 m): approximately table-top height for a standing adult.
+        //     Keeps parts in the comfortable grab zone for XR controllers (roughly
+        //     mid-torso when the learner stands upright). Adjust if the floor plane
+        //     moves or if seated/desktop modes are added.
+        //
+        //   • LayoutPadding (0.15 m): minimum gap between parts sharing the same
+        //     assetRef, preventing Z-fighting and visual overlap on 150 mm+ diameter
+        //     parts.
+        //
+        //   • LayoutGroupGap (0.3 m): extra visual separation between different part
+        //     types so the learner can distinguish groups at a glance without reading
+        //     labels.
 
-        /// <summary>Distance from arc center to part centers.</summary>
+        /// <summary>
+        /// Distance from arc center to part centers (metres).
+        /// Chosen to keep all parts within arm reach of a standing learner.
+        /// </summary>
         internal const float LayoutRadius = 3.8f;
 
-        /// <summary>Total arc spread in degrees.</summary>
+        /// <summary>
+        /// Total arc spread in degrees (220° keeps parts in front of the learner,
+        /// leaving a 140° gap directly behind).
+        /// </summary>
         internal const float LayoutArcDegrees = 220f;
 
-        /// <summary>Arc start angle, centered on the negative-Z (camera-facing) side.</summary>
+        /// <summary>Arc start angle in degrees, symmetric about the −Z (camera-facing) axis.</summary>
         internal const float LayoutArcStartDeg = -110f;
 
-        /// <summary>Height above the floor plane.</summary>
+        /// <summary>
+        /// Height of part centers above the floor plane (metres).
+        /// Approximates comfortable grab height for a standing XR user.
+        /// </summary>
         internal const float LayoutY = 0.55f;
 
-        /// <summary>Gap between parts within the same asset group.</summary>
+        /// <summary>Minimum gap between parts in the same asset group (metres).</summary>
         internal const float LayoutPadding = 0.15f;
 
-        /// <summary>Extra gap between different asset groups on the arc.</summary>
+        /// <summary>Extra gap between different asset groups on the arc (metres).</summary>
         internal const float LayoutGroupGap = 0.3f;
 
         // ── Public API ────────────────────────────────────────────────────────

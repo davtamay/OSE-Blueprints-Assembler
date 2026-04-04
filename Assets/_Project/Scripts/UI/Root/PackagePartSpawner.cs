@@ -8,7 +8,6 @@ using OSE.Core;
 using OSE.Runtime;
 using OSE.Runtime.Preview;
 using UnityEngine;
-using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 namespace OSE.UI.Root
 {
@@ -87,6 +86,9 @@ namespace OSE.UI.Root
             if (!ServiceRegistry.TryGet<IXRGrabSetup>(out _xrGrabSetup))
                 _xrGrabSetup = new XRGrabSetupAdapter();
 
+            // Register so sibling systems (PartInteractionBridge, PartVisualFeedbackManager)
+            // can resolve IXRGrabSetup without directly importing XRI types (ADR 005).
+            ServiceRegistry.Register<IXRGrabSetup>(_xrGrabSetup);
             ServiceRegistry.Register<Interaction.ISpawnerQueryService>(this);
             ServiceRegistry.Register<IStepAwarePositioner>(this);
             RuntimeEventBus.Subscribe<PackageLoaded>(OnPackageLoaded);
@@ -104,6 +106,7 @@ namespace OSE.UI.Root
             _spawnCts?.Dispose();
             _spawnCts = null;
             RuntimeEventBus.Unsubscribe<PackageLoaded>(OnPackageLoaded);
+            ServiceRegistry.Unregister<IXRGrabSetup>();
             ServiceRegistry.Unregister<Interaction.ISpawnerQueryService>();
             ServiceRegistry.Unregister<IStepAwarePositioner>();
         }

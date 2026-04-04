@@ -1029,4 +1029,13 @@ The long-term goal is an open, scalable platform where people can learn how to b
 
 through immersive, modular, web-delivered spatial instruction.
 
+---
+
+## Related Documents
+
+- [STEP_SCHEMA.md](STEP_SCHEMA.md) — Complete field reference for every `StepDefinition` field, payload type, family × profile matrix, and authoring checklist
+- [DATA_SCHEMA.md](DATA_SCHEMA.md) — machine.json top-level structure (packages, assemblies, previewConfig)
+- [STEP_CAPABILITY_MATRIX.md](STEP_CAPABILITY_MATRIX.md) — which profiles are active vs. planned
+- [INTERACTION_MODEL.md](INTERACTION_MODEL.md) — how the interaction layer maps to family/profile
+
 The architecture should always support that future, even when building the smallest first prototype.

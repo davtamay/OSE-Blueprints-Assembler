@@ -9,8 +9,6 @@ using OSE.Runtime;
 using OSE.Runtime.Preview;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.State;
-using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 namespace OSE.UI.Root
 {
@@ -82,6 +80,7 @@ namespace OSE.UI.Root
         private const int HoverPollInterval = 3; // ~20 Hz at 60 fps
         private ToolActionExecutor _toolAction;
         private PartLookupService _lookup;
+        private IXRGrabSetup _xrGrabSetup;
 
         // ── Extracted coordinators ────────────────────────────────────────
         private SelectionCoordinator _selection;
@@ -103,6 +102,8 @@ namespace OSE.UI.Root
         {
             _spawner = GetComponent<PackagePartSpawner>();
             _setup = GetComponent<PreviewSceneSetup>();
+            if (!ServiceRegistry.TryGet<IXRGrabSetup>(out _xrGrabSetup))
+                _xrGrabSetup = new XRGrabSetupAdapter();
             _lookup ??= new PartLookupService(
                 () => _spawner,
                 () => _setup,
@@ -311,7 +312,7 @@ namespace OSE.UI.Root
 
         private void HandleHintAction()
         {
-            if (ServiceRegistry.TryGet<IPresentationAdapter>(out var ui) && !ui.IsHintDisplayAllowed)
+            if (ServiceRegistry.TryGet<IHintPresenter>(out var ui) && !ui.IsHintDisplayAllowed)
                 return;
 
             if (ServiceRegistry.TryGet<IMachineSessionController>(out var session))
@@ -1029,8 +1030,7 @@ namespace OSE.UI.Root
                 if (partGo == null)
                     continue;
 
-                XRGrabInteractable grabInteractable = partGo.GetComponent<XRGrabInteractable>();
-                if (grabInteractable != null && grabInteractable.isHovered)
+                if (_xrGrabSetup.IsHovered(partGo))
                     return NormalizeSelectablePlacementTarget(partGo);
             }
 

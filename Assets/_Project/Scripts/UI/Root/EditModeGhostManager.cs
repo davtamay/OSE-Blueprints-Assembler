@@ -5,7 +5,6 @@ using OSE.Content.Loading;
 using OSE.Core;
 using OSE.Runtime.Preview;
 using UnityEngine;
-using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 namespace OSE.UI.Root
 {

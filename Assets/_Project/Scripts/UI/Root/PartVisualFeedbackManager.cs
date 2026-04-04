@@ -5,10 +5,6 @@ using OSE.Core;
 using OSE.Interaction;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.Receiver.Rendering;
-using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.Rendering;
-using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.State;
-using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 namespace OSE.UI.Root
 {
@@ -373,22 +369,12 @@ namespace OSE.UI.Root
             if (partGo == null || string.IsNullOrWhiteSpace(partId) || _ctx.IsSubassemblyProxy(partGo))
                 return;
 
-            XRGrabInteractable grabInteractable = partGo.GetComponent<XRGrabInteractable>();
-            if (grabInteractable == null)
-                return;
-
             bool shouldEnableGrab = !_ctx.IsPartMovementLocked(partId);
-            if (grabInteractable.enabled == shouldEnableGrab)
-                return;
 
-            grabInteractable.enabled = shouldEnableGrab;
-
-            Rigidbody rb = partGo.GetComponent<Rigidbody>();
-            if (rb != null)
-            {
-                rb.isKinematic = true;
-                rb.useGravity = false;
-            }
+            // Delegate XRI-specific enable/disable to IXRGrabSetup so this class
+            // has no direct dependency on XRGrabInteractable (ADR 005).
+            if (ServiceRegistry.TryGet<IXRGrabSetup>(out var grabSetup))
+                grabSetup.SetGrabEnabled(partGo, shouldEnableGrab);
 
             if (!shouldEnableGrab && _ctx.Drag?.DraggedPart == partGo)
                 _ctx.ResetDragState();
