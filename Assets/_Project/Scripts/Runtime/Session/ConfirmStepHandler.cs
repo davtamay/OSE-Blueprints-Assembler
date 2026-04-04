@@ -1,3 +1,4 @@
+using OSE.App;
 using OSE.Core;
 using UnityEngine;
 
@@ -21,6 +22,8 @@ namespace OSE.Runtime
                 return false;
 
             OseLog.VerboseInfo("[ConfirmHandler] Completing confirmation step.");
+            if (ServiceRegistry.TryGet<IEffectPlayer>(out var fx))
+                fx.PlayHaptic(EffectRole.HapticFeedback);
             context.StepController.CompleteStep(context.ElapsedSeconds);
             return true;
         }

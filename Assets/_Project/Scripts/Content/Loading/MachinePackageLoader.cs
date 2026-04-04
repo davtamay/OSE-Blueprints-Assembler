@@ -9,7 +9,7 @@ using UnityEngine.Networking;
 
 namespace OSE.Content.Loading
 {
-    public sealed class MachinePackageLoader
+    public sealed class MachinePackageLoader : IMachinePackageLoader
     {
         private const string MachinePackagesFolderName = "MachinePackages";
         private const string MachineJsonFileName = "machine.json";
@@ -49,8 +49,18 @@ namespace OSE.Content.Loading
                 json = migration.Json;
 
                 MachinePackageDefinition package;
-                using (OseLog.Timed($"Deserialize({sanitizedPackageId})"))
-                    package = JsonUtility.FromJson<MachinePackageDefinition>(json);
+                try
+                {
+                    using (OseLog.Timed($"Deserialize({sanitizedPackageId})"))
+                        package = JsonUtility.FromJson<MachinePackageDefinition>(json);
+                }
+                catch (ArgumentException parseEx)
+                {
+                    string parseError = $"JSON parse error in '{packagePath}': {parseEx.Message}";
+                    OseLog.Error(OseErrorCode.PackageLoadFailed, $"[Content] {parseError}");
+                    return Failure(sanitizedPackageId, packagePath, parseError);
+                }
+
                 if (package == null || package.machine == null)
                 {
                     return Failure(sanitizedPackageId, packagePath, "Package JSON did not deserialize into a valid machine package.");

@@ -164,6 +164,8 @@ namespace OSE.UI.Root
                 _ctx.SelectionService?.NotifySelected(partGo);
                 StartPreviewSelectionPulse(selectionId);
                 session.AssemblyController?.StepController?.FailAttempt();
+                if (ServiceRegistry.TryGet<IEffectPlayer>(out var fxReject))
+                    fxReject.PlayHaptic(EffectRole.ErrorHighlight);
                 return;
             }
 
@@ -180,6 +182,8 @@ namespace OSE.UI.Root
                 _ctx.SelectionService?.NotifySelected(partGo);
                 StartPreviewSelectionPulse(selectionId);
                 session.AssemblyController?.StepController?.FailAttempt();
+                if (ServiceRegistry.TryGet<IEffectPlayer>(out var fxInvalid))
+                    fxInvalid.PlayHaptic(EffectRole.ErrorHighlight);
                 return;
             }
 
@@ -193,6 +197,8 @@ namespace OSE.UI.Root
                     _ctx.SelectionService?.NotifySelected(partGo);
                     StartPreviewSelectionPulse(selectionId);
                     session.AssemblyController?.StepController?.FailAttempt();
+                    if (ServiceRegistry.TryGet<IEffectPlayer>(out var fxNotReady))
+                        fxNotReady.PlayHaptic(EffectRole.ErrorHighlight);
                     return;
                 }
 
@@ -202,6 +208,8 @@ namespace OSE.UI.Root
                     _ctx.SelectionService?.NotifySelected(partGo);
                     StartPreviewSelectionPulse(selectionId);
                     session.AssemblyController?.StepController?.FailAttempt();
+                    if (ServiceRegistry.TryGet<IEffectPlayer>(out var fxNoPlace))
+                        fxNoPlace.PlayHaptic(EffectRole.ErrorHighlight);
                     return;
                 }
             }
@@ -534,6 +542,8 @@ namespace OSE.UI.Root
             if (!result.IsValid)
             {
                 FlashInvalidSelection(partGo, selectionId);
+                if (ServiceRegistry.TryGet<IEffectPlayer>(out var fxClickInvalid))
+                    fxClickInvalid.PlayHaptic(EffectRole.ErrorHighlight);
                 return;
             }
 
@@ -544,12 +554,16 @@ namespace OSE.UI.Root
                 if (!subassemblyController.IsPlacementCommitReady(partGo, targetId))
                 {
                     FlashInvalidSelection(partGo, selectionId);
+                    if (ServiceRegistry.TryGet<IEffectPlayer>(out var fxClickNotReady))
+                        fxClickNotReady.PlayHaptic(EffectRole.ErrorHighlight);
                     return;
                 }
 
                 if (!subassemblyController.TryApplyPlacement(subassemblyId, targetId))
                 {
                     FlashInvalidSelection(partGo, selectionId);
+                    if (ServiceRegistry.TryGet<IEffectPlayer>(out var fxClickNoPlace))
+                        fxClickNoPlace.PlayHaptic(EffectRole.ErrorHighlight);
                     return;
                 }
             }
@@ -579,10 +593,16 @@ namespace OSE.UI.Root
                 if ((_ctx.PreviewManager?.IsSequentialStep ?? false))
                 {
                     if ((_ctx.PreviewManager?.AdvanceSequentialTarget() ?? true))
+                    {
+                        if (ServiceRegistry.TryGet<IEffectPlayer>(out var fxSeqSub))
+                            fxSeqSub.PlayHaptic(EffectRole.HapticFeedback);
                         session.AssemblyController?.StepController?.CompleteStep(session.GetElapsedSeconds());
+                    }
                 }
                 else
                 {
+                    if (ServiceRegistry.TryGet<IEffectPlayer>(out var fxSub))
+                        fxSub.PlayHaptic(EffectRole.HapticFeedback);
                     session.AssemblyController?.StepController?.CompleteStep(session.GetElapsedSeconds());
                 }
 
@@ -592,10 +612,16 @@ namespace OSE.UI.Root
             if ((_ctx.PreviewManager?.IsSequentialStep ?? false))
             {
                 if ((_ctx.PreviewManager?.AdvanceSequentialTarget() ?? true))
+                {
+                    if (ServiceRegistry.TryGet<IEffectPlayer>(out var fxSeq))
+                        fxSeq.PlayHaptic(EffectRole.HapticFeedback);
                     session.AssemblyController?.StepController?.CompleteStep(session.GetElapsedSeconds());
+                }
             }
             else if (partController.AreActiveStepRequiredPartsPlaced())
             {
+                if (ServiceRegistry.TryGet<IEffectPlayer>(out var fx))
+                    fx.PlayHaptic(EffectRole.HapticFeedback);
                 session.AssemblyController?.StepController?.CompleteStep(session.GetElapsedSeconds());
             }
         }

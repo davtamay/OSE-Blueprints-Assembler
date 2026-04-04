@@ -285,6 +285,8 @@ namespace OSE.UI.Root
 
             string stepId = stepController?.CurrentStepState.StepId ?? "unknown";
             OseLog.Info($"[UseStepHandler] HandleToolPrimaryResult: COMPLETING step '{stepId}'.");
+            if (ServiceRegistry.TryGet<IEffectPlayer>(out var fx))
+                fx.PlayHaptic(EffectRole.HapticFeedback);
             stepController.CompleteStep(session.GetElapsedSeconds());
             return true;
         }

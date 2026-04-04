@@ -2,7 +2,6 @@ using System;
 using OSE.App;
 using OSE.Content;
 using OSE.Core;
-using OSE.Interaction;
 using OSE.Runtime;
 using OSE.UI.Bindings;
 using OSE.UI.Controllers;
@@ -18,34 +17,12 @@ namespace OSE.UI.Root
     [RequireComponent(typeof(UIDocumentBootstrap))]
     public sealed class UIRootCoordinator : MonoBehaviour, IPresentationAdapter
     {
-        [Serializable]
-        private struct SessionUiModeProfile
-        {
-            public SessionMode Mode;
-            public bool ShowStepPanel;
-            public bool ShowPartInfoPanel;
-            public bool ShowSessionHud;
-            public bool AllowHints;
-        }
-
         [SerializeField] private UIDocumentBootstrap _documentBootstrap;
         [SerializeField] private bool _showShellPlaceholders = true;
         [Header("Session UI Modes")]
-        [SerializeField] private SessionUiModeProfile[] _modeProfiles = CreateDefaultModeProfiles();
+        [SerializeField] private UiSessionModeManager.SessionUiModeProfile[] _modeProfiles = UiSessionModeManager.CreateDefaultProfiles();
 
-        private StepPanelPresenter _stepPresenter;
-        private PartInfoPanelPresenter _partInfoPresenter;
-        private SessionHudPanelPresenter _sessionHudPresenter;
-        private ToolDockPanelPresenter _toolDockPresenter;
-        private ToolInfoPanelPresenter _toolInfoPresenter;
-        private StepPanelController _stepPanelController;
-        private PartInfoPanelController _partInfoPanelController;
-        private SessionHudPanelController _sessionHudPanelController;
-        private ToolDockPanelController _toolDockPanelController;
-        private ToolInfoPanelController _toolInfoPanelController;
-        private SelectionService _selectionService;
         private ToolDockStateMachine _toolDock;
-        private bool _showingHoverPartInfo;
         private RepositionUiController _repositionUi;
         private VisualElement _rootElement;
         private IntroOverlayController _introController;
@@ -53,33 +30,17 @@ namespace OSE.UI.Root
         private AssemblyPickerController _pickerController;
         private ToolCursorBadgeController _toolCursorBadgeController;
         private SessionHudMediator _sessionHudMediator;
-
-        private int _currentStepNumber = 1;
-        private int _totalSteps = 1;
-        private string _stepTitle = "Assembly Step";
-        private string _instruction = "Instruction text will be provided by the active runtime step.";
-
-        private string _partName = "Selected Part";
-        private string _partFunction = "Function metadata will be supplied by runtime content.";
-        private string _partMaterial = "Material metadata will be supplied by runtime content.";
-        private string _partTool = "Tool metadata will be supplied by runtime content.";
-        private string _partSearchTerms = "Search terms will be supplied by runtime content.";
-        private string _activeToolId; // sync'd from _toolDock for ShowToolInfo path
-
-        private bool _showConfirmButton;
-        private bool _showHintButton;
         private ConfirmGateController _gate = new ConfirmGateController();
 
         private bool _isBuilt;
         private bool _isPresentationAdapterRegistered;
-        private SessionMode _activeMode = SessionMode.Guided;
-        private SessionUiModeProfile _activeModeProfile;
-        private bool _hasActiveModeProfile;
+        private UiSessionModeManager _modeManager;
+        private PresentationPanelOrchestrator _orchestrator;
 
         private void Awake()
         {
             EnsureDependencies();
-            ApplySessionMode(_activeMode);
+            _modeManager.SetMode(_modeManager.ActiveMode);
         }
 
         private void OnEnable()
@@ -140,45 +101,41 @@ namespace OSE.UI.Root
             _toolCursorBadgeController?.UpdateToolCursorVisual();
             _repositionUi?.RefreshScaleUi();
 
-            if (!_isBuilt || _sessionHudPanelController == null || !_sessionHudPanelController.IsBound)
+            if (!_isBuilt || _orchestrator?.SessionHudPanelController == null || !_orchestrator.SessionHudPanelController.IsBound)
                 return;
 
             if (_sessionHudMediator != null && _sessionHudMediator.TickTimers())
             {
-                RefreshSessionHudPanel();
+                _orchestrator.RefreshSessionHudPanel();
             }
 
             if (Application.isPlaying
-                && _partInfoPanelController != null
-                && _partInfoPanelController.IsBound
-                && !HasActivePartContext())
+                && _orchestrator?.PartInfoPanelController != null
+                && _orchestrator.PartInfoPanelController.IsBound)
             {
-                _partInfoPanelController.Hide();
+                _orchestrator.RefreshPartInfoPanel();
             }
         }
 
         public void SetSessionMode(SessionMode mode)
         {
-            ApplySessionMode(mode);
+            _modeManager.SetMode(mode);
         }
 
-        public bool IsHintDisplayAllowed => _hasActiveModeProfile ? _activeModeProfile.AllowHints : true;
+        public bool IsHintDisplayAllowed => _modeManager.IsHintDisplayAllowed;
         public bool IsMachineIntroVisible => _introController?.IsVisible ?? false;
 
         public void ResetMachineIntroState()
         {
             _introController?.ResetState();
-            _activeToolId = null;
+            if (_orchestrator != null) _orchestrator.ActiveToolId = null;
             _toolDock?.Teardown();
         }
 
         public void ShowInstruction(string instructionKey)
         {
-            _instruction = string.IsNullOrWhiteSpace(instructionKey)
-                ? _instruction
-                : instructionKey;
-
-            RefreshStepPanel();
+            _orchestrator?.SetInstructionOnly(instructionKey);
+            _orchestrator?.RefreshStepPanel();
         }
 
         public void ShowHint(string hintKey)
@@ -191,38 +148,30 @@ namespace OSE.UI.Root
             if (_sessionHudMediator == null || !_sessionHudMediator.ShowHintContent(title, message, hintType))
                 return;
 
-            RefreshSessionHudPanel();
+            _orchestrator.RefreshSessionHudPanel();
 
             if (_gate.TryUnlockOnHintRequested())
-                RefreshStepPanel();
+                _orchestrator.RefreshStepPanel();
         }
 
         public void ShowPartInfo(string partId)
         {
-            _partName = string.IsNullOrWhiteSpace(partId)
-                ? _partName
-                : partId;
-
-            if (!string.IsNullOrWhiteSpace(partId))
-            {
-                _partSearchTerms = partId;
-            }
-
-            RefreshPartInfoPanel();
+            _orchestrator?.SetPartNameOnly(partId);
+            _orchestrator?.RefreshPartInfoPanel();
         }
 
         public void ShowToolInfo(string toolId)
         {
             if (!string.IsNullOrWhiteSpace(toolId))
             {
-                _partTool = toolId;
-                _activeToolId = toolId;
+                _orchestrator?.SetToolForPart(toolId);
+                if (_orchestrator != null) _orchestrator.ActiveToolId = toolId;
                 EnsureToolDock();
                 _toolDock.SetActiveToolId(toolId);
             }
 
-            RefreshPartInfoPanel();
-            RefreshToolInfoPanel();
+            _orchestrator?.RefreshPartInfoPanel();
+            _orchestrator?.RefreshToolInfoPanel();
         }
 
         public void ToggleToolDock()
@@ -233,24 +182,14 @@ namespace OSE.UI.Root
 
         public void ShowProgressUpdate(int completedSteps, int totalSteps)
         {
-            if (totalSteps <= 0)
-            {
-                _currentStepNumber = 0;
-                _totalSteps = 0;
-            }
-            else
-            {
-                _totalSteps = totalSteps;
-                _currentStepNumber = Mathf.Clamp(completedSteps + 1, 1, totalSteps);
-            }
-
-            RefreshStepPanel();
+            _orchestrator?.SetProgressContent(completedSteps, totalSteps);
+            _orchestrator?.RefreshStepPanel();
         }
 
         public void ShowStepCompletionToast(string message)
         {
             _sessionHudMediator?.ShowStepCompletionToast(message);
-            RefreshSessionHudPanel();
+            _orchestrator?.RefreshSessionHudPanel();
         }
 
         public void ShowMilestoneFeedback(string milestoneKey)
@@ -259,16 +198,13 @@ namespace OSE.UI.Root
                 ? "Session Complete!"
                 : milestoneKey;
             _sessionHudMediator?.SetMilestone(message);
-            _showConfirmButton = false;
-            _showHintButton = false;
             _gate.ProgressComplete = true;
 
             // Clear stale step content so the panel doesn't keep showing the last step.
-            _stepTitle = message;
-            _instruction = string.Empty;
+            _orchestrator?.SetMilestoneContent(message, string.Empty);
 
-            RefreshStepPanel();
-            RefreshSessionHudPanel();
+            _orchestrator?.RefreshStepPanel();
+            _orchestrator?.RefreshSessionHudPanel();
         }
 
         public void ShowMachineIntro(string title, string description, string difficulty,
@@ -462,23 +398,18 @@ namespace OSE.UI.Root
             bool challengeActive)
         {
             _sessionHudMediator?.ShowChallengeMetrics(hintsUsed, failedAttempts, currentStepSeconds, totalSeconds, challengeActive);
-            RefreshSessionHudPanel();
+            _orchestrator?.RefreshSessionHudPanel();
         }
 
         public void HidePartInfoPanel()
         {
-            _showingHoverPartInfo = false;
-            _partInfoPanelController?.Hide();
+            _orchestrator?.ClearHoverPartInfo();
+            _orchestrator?.PartInfoPanelController?.Hide();
         }
 
         public void HideAll()
         {
-            _showingHoverPartInfo = false;
-            _stepPanelController?.Hide();
-            _partInfoPanelController?.Hide();
-            _sessionHudPanelController?.Hide();
-            _toolInfoPanelController?.Hide();
-            _toolDockPanelController?.Hide();
+            _orchestrator?.HideAll();
         }
 
         public void ShowStepShell(int currentStepNumber, int totalSteps, string title, string instruction, bool showConfirmButton = false, bool showHintButton = false, ConfirmGate confirmGate = ConfirmGate.None)
@@ -489,15 +420,18 @@ namespace OSE.UI.Root
                 _toolDock.EnsureSubscription();
             }
 
-            _currentStepNumber = Mathf.Max(currentStepNumber, 0);
-            _totalSteps = Mathf.Max(totalSteps, 0);
-            _stepTitle = title;
-            _instruction = instruction;
-            _showConfirmButton = showConfirmButton;
-            _showHintButton = showHintButton && IsHintDisplayAllowed;
             EnsureToolDock();
             _gate.Configure(confirmGate, () => _toolDock.IsEquipToolGateSatisfied());
-            RefreshStepPanel();
+
+            _orchestrator?.SetStepContent(
+                Mathf.Max(currentStepNumber, 0),
+                Mathf.Max(totalSteps, 0),
+                title,
+                instruction,
+                showConfirmButton,
+                showHintButton && IsHintDisplayAllowed);
+
+            _orchestrator?.RefreshStepPanel();
         }
 
         public void ShowPartInfoShell(
@@ -507,26 +441,12 @@ namespace OSE.UI.Root
             string tool,
             string searchTerms)
         {
-            _showingHoverPartInfo = false;
-            string resolvedPartName = string.IsNullOrWhiteSpace(partName) ? _partName : partName;
-            bool samePart = string.Equals(resolvedPartName, _partName, StringComparison.Ordinal);
-
-            _partName = resolvedPartName;
-            _partFunction = function;
-            _partMaterial = material;
-            if (!string.IsNullOrWhiteSpace(tool))
-            {
-                _partTool = tool;
-            }
-            else if (!samePart)
-            {
-                _partTool = "No specific tool required.";
-            }
-            _partSearchTerms = searchTerms;
-            RefreshPartInfoPanel();
+            if (_orchestrator == null) return;
+            _orchestrator.SetPartInfoContent(partName, function, material, tool, searchTerms);
+            _orchestrator.RefreshPartInfoPanel();
 
             if (_gate.TryUnlockOnPartSelected())
-                RefreshStepPanel();
+                _orchestrator.RefreshStepPanel();
         }
 
         public void ShowHoverPartInfoShell(
@@ -536,36 +456,14 @@ namespace OSE.UI.Root
             string tool,
             string searchTerms)
         {
-            _showingHoverPartInfo = true;
-
-            string resolvedPartName = string.IsNullOrWhiteSpace(partName) ? _partName : partName;
-            bool samePart = string.Equals(resolvedPartName, _partName, StringComparison.Ordinal);
-
-            _partName = resolvedPartName;
-            _partFunction = function;
-            _partMaterial = material;
-            if (!string.IsNullOrWhiteSpace(tool))
-            {
-                _partTool = tool;
-            }
-            else if (!samePart)
-            {
-                _partTool = "No specific tool required.";
-            }
-            _partSearchTerms = searchTerms;
-            RefreshPartInfoPanel();
+            if (_orchestrator == null) return;
+            _orchestrator.SetHoverPartInfoContent(partName, function, material, tool, searchTerms);
+            _orchestrator.RefreshPartInfoPanel();
         }
 
         public void ClearHoverPartInfo()
         {
-            if (!_showingHoverPartInfo)
-                return;
-
-            _showingHoverPartInfo = false;
-            if (HasSelectionContext())
-                RefreshPartInfoPanel();
-            else
-                _partInfoPanelController?.Hide();
+            _orchestrator?.ClearHoverPartInfo();
         }
 
         public bool TryInitialize()
@@ -622,228 +520,47 @@ namespace OSE.UI.Root
             _toolCursorBadgeController = new ToolCursorBadgeController(() => _toolDock);
             _toolCursorBadgeController.BuildToolCursorVisual(root);
             _sessionHudMediator = new SessionHudMediator(
-                _sessionHudPresenter,
-                _sessionHudPanelController,
+                _orchestrator.SessionHudPresenter,
+                _orchestrator.SessionHudPanelController,
                 () => IsHintDisplayAllowed);
 
-            _stepPanelController.Bind(leftColumn);
-            _sessionHudPanelController.Bind(leftColumn);
-            _partInfoPanelController.Bind(rightColumn);
-            _toolInfoPanelController.Bind(rightColumn);
-            _toolDockPanelController.Bind(centerDock);
+            _orchestrator.StepPanelController.Bind(leftColumn);
+            _orchestrator.SessionHudPanelController.Bind(leftColumn);
+            _orchestrator.PartInfoPanelController.Bind(rightColumn);
+            _orchestrator.ToolInfoPanelController.Bind(rightColumn);
+            _orchestrator.ToolDockPanelController.Bind(centerDock);
             _repositionUi ??= new RepositionUiController();
             _repositionUi.Build(centerDock);
 
             EnsureToolDock();
-            _toolDockPanelController.ToggleRequested += _toolDock.HandleToggleRequested;
-            _toolDockPanelController.ToolSelected += _toolDock.HandleToolSelected;
-            _toolDockPanelController.UnequipRequested += _toolDock.HandleUnequipRequested;
-            _toolDockPanelController.ToolHovered += _toolDock.HandleToolHovered;
-            _toolDockPanelController.ToolHoverCleared += _toolDock.HandleToolHoverCleared;
+            _orchestrator.ToolDockPanelController.ToggleRequested += _toolDock.HandleToggleRequested;
+            _orchestrator.ToolDockPanelController.ToolSelected    += _toolDock.HandleToolSelected;
+            _orchestrator.ToolDockPanelController.UnequipRequested += _toolDock.HandleUnequipRequested;
+            _orchestrator.ToolDockPanelController.ToolHovered     += _toolDock.HandleToolHovered;
+            _orchestrator.ToolDockPanelController.ToolHoverCleared += _toolDock.HandleToolHoverCleared;
 
             _isBuilt = true;
 
             // Part info panel starts hidden — only shown when a part is selected
-            _partInfoPanelController.Hide();
-            _toolInfoPanelController.Hide();
-            _toolDockPanelController.Hide();
+            _orchestrator.PartInfoPanelController.Hide();
+            _orchestrator.ToolInfoPanelController.Hide();
+            _orchestrator.ToolDockPanelController.Hide();
 
             if (_showShellPlaceholders)
             {
-                RefreshStepPanel();
-                RefreshSessionHudPanel();
+                _orchestrator.RefreshStepPanel();
+                _orchestrator.RefreshSessionHudPanel();
             }
             else
             {
-                HideAll();
+                _orchestrator.HideAll();
             }
 
-            RefreshToolDockPanel();
-            RefreshToolInfoPanel();
+            _orchestrator.RefreshToolDockPanel();
+            _orchestrator.RefreshToolInfoPanel();
 
             OseLog.Info("[UI] UI Toolkit root coordinator initialized.");
             return true;
-        }
-
-        private void RefreshStepPanel()
-        {
-            if (!_isBuilt)
-            {
-                return;
-            }
-
-            if (_hasActiveModeProfile && !_activeModeProfile.ShowStepPanel)
-            {
-                _stepPanelController.Hide();
-                return;
-            }
-
-            // Finished-panel stacking now uses in-world guided docking and preview interaction
-            // as the primary affordance. Keep the step shell focused on instruction/progress.
-            bool showContextActionButton = false;
-            string contextActionLabel = null;
-            bool contextActionEnabled = false;
-            float? progressOverride = _gate.ProgressComplete ? 1f : ResolveIntraStepProgress();
-
-            // Resolve assembly name and global progress from session
-            string assemblyName = null;
-            int globalStepIndex = 0;
-            int globalTotalSteps = 0;
-            if (ServiceRegistry.TryGet<IMachineSessionController>(out var sessionForProgress))
-            {
-                var pkg = sessionForProgress.Package;
-                if (pkg != null)
-                {
-                    string assemblyId = sessionForProgress.AssemblyController?.CurrentAssemblyId;
-                    if (!string.IsNullOrEmpty(assemblyId) &&
-                        pkg.TryGetAssembly(assemblyId, out var assemblyDef) &&
-                        assemblyDef != null)
-                    {
-                        assemblyName = assemblyDef.name;
-                    }
-
-                    var orderedSteps = pkg.GetOrderedSteps();
-                    globalTotalSteps = orderedSteps?.Length ?? 0;
-                    string activeStepId = sessionForProgress.AssemblyController?.StepController?.HasActiveStep == true
-                        ? sessionForProgress.AssemblyController.StepController.CurrentStepState.StepId
-                        : sessionForProgress.SessionState?.CurrentStepId;
-                    if (!string.IsNullOrEmpty(activeStepId) && orderedSteps != null)
-                    {
-                        for (int i = 0; i < orderedSteps.Length; i++)
-                        {
-                            if (orderedSteps[i] != null &&
-                                string.Equals(orderedSteps[i].id, activeStepId, System.StringComparison.OrdinalIgnoreCase))
-                            {
-                                globalStepIndex = i;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            StepPanelViewModel viewModel = _stepPresenter.Create(
-                _currentStepNumber,
-                _totalSteps,
-                _stepTitle,
-                _instruction,
-                _showConfirmButton,
-                _showHintButton,
-                _gate.Gate,
-                _gate.IsUnlocked,
-                showContextActionButton,
-                contextActionLabel,
-                contextActionEnabled,
-                progressOverride,
-                assemblyName,
-                globalStepIndex,
-                globalTotalSteps);
-
-            _stepPanelController.Show(viewModel);
-        }
-
-        private bool TryBuildGuidedStackActionState(out string actionLabel, out bool actionEnabled)
-        {
-            actionLabel = null;
-            actionEnabled = false;
-
-            if (!Application.isPlaying)
-                return false;
-
-            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
-                return false;
-
-            StepController stepController = session.AssemblyController?.StepController;
-            StepDefinition step = stepController?.CurrentStepDefinition;
-            if (stepController == null ||
-                !stepController.HasActiveStep ||
-                step == null ||
-                !step.IsPlacement ||
-                !step.RequiresSubassemblyPlacement ||
-                step.targetIds == null ||
-                step.targetIds.Length != 1)
-            {
-                return false;
-            }
-
-            string subassemblyLabel = step.requiredSubassemblyId;
-            if (session.Package != null &&
-                session.Package.TryGetSubassembly(step.requiredSubassemblyId, out SubassemblyDefinition subassembly) &&
-                subassembly != null)
-            {
-                subassemblyLabel = subassembly.GetDisplayName();
-            }
-
-            actionLabel = $"Place {subassemblyLabel}";
-
-            actionEnabled =
-                ServiceRegistry.TryGet<ISubassemblyPlacementService>(out var subassemblyController) &&
-                subassemblyController != null &&
-                subassemblyController.IsSubassemblyReady(step.requiredSubassemblyId);
-
-            return true;
-        }
-
-        /// <summary>
-        /// Computes a progress override that blends step-level progress with within-step
-        /// tool action progress, giving a smoother bar for tool-action-heavy steps.
-        /// Returns null when no tool action is active (falls back to step-level formula).
-        /// </summary>
-        private float? ResolveIntraStepProgress()
-        {
-            if (_totalSteps <= 0 || _currentStepNumber <= 0)
-                return null;
-
-            var runtime = _toolDock?.RuntimeController;
-            if (runtime == null ||
-                !runtime.TryGetPrimaryActionSnapshot(
-                    out ToolRuntimeController.ToolActionSnapshot snapshot))
-                return null;
-
-            if (!snapshot.IsConfigured || snapshot.RequiredCount <= 0)
-                return null;
-
-            // Base progress: completed steps / total steps
-            float baseProgress = (float)(_currentStepNumber - 1) / _totalSteps;
-            // Intra-step progress: tool action current / required
-            float intraStep = (float)snapshot.CurrentCount / snapshot.RequiredCount;
-            float stepSlice = 1f / _totalSteps;
-
-            return Mathf.Clamp01(baseProgress + intraStep * stepSlice);
-        }
-
-        private void RefreshPartInfoPanel()
-        {
-            if (!_isBuilt)
-            {
-                return;
-            }
-
-            if (_hasActiveModeProfile && !_activeModeProfile.ShowPartInfoPanel)
-            {
-                _partInfoPanelController.Hide();
-                return;
-            }
-
-            if (!HasActivePartContext())
-            {
-                _partInfoPanelController.Hide();
-                return;
-            }
-
-            PartInfoPanelViewModel viewModel = _partInfoPresenter.Create(
-                _partName,
-                _partFunction,
-                _partMaterial,
-                _partTool,
-                _partSearchTerms);
-
-            _partInfoPanelController.Show(viewModel);
-        }
-
-        private void RefreshSessionHudPanel()
-        {
-            _sessionHudMediator?.RefreshSessionHudPanel(_isBuilt, _hasActiveModeProfile, _activeModeProfile.ShowSessionHud);
         }
 
         // ── Tool Dock State Machine (delegated to ToolDockStateMachine) ──
@@ -857,75 +574,24 @@ namespace OSE.UI.Root
                 setConfirmUnlocked: unlocked =>
                 {
                     _gate.IsUnlocked = unlocked;
-                    RefreshStepPanel();
+                    _orchestrator?.RefreshStepPanel();
                 });
         }
 
         private void HandleToolDockStateChanged()
         {
-            _activeToolId = _toolDock.ActiveToolId;
-            if (_toolDock.TryPopulateToolInfo(_activeToolId))
-                _partTool = _toolDock.ToolName;
-
-            RefreshToolDockPanel();
-            RefreshToolInfoPanel();
-            RefreshPartInfoPanel();
-            RefreshStepPanel();
-        }
-
-        private void RefreshToolDockPanel()
-        {
-            if (!_isBuilt || _toolDockPanelController == null || !_toolDockPanelController.IsBound)
-                return;
-
-            var runtime = _toolDock?.RuntimeController;
-            if (!Application.isPlaying || runtime == null || !runtime.HasPackage)
+            if (_orchestrator != null)
             {
-                _toolDockPanelController.Hide();
-                return;
+                _orchestrator.ActiveToolId = _toolDock.ActiveToolId;
+                if (_toolDock.TryPopulateToolInfo(_orchestrator.ActiveToolId))
+                    _orchestrator.SetToolForPart(_toolDock.ToolName);
             }
 
-            ToolDockPanelViewModel viewModel = _toolDockPresenter.Create(
-                runtime.GetAvailableTools(),
-                runtime.GetRequiredToolIds(),
-                runtime.ActiveToolId,
-                _toolDock.ToolDockExpanded);
-
-            _toolDockPanelController.Show(viewModel);
+            _orchestrator?.RefreshToolDockPanel();
+            _orchestrator?.RefreshToolInfoPanel();
+            _orchestrator?.RefreshPartInfoPanel();
+            _orchestrator?.RefreshStepPanel();
         }
-
-        private void RefreshToolInfoPanel()
-        {
-            if (!_isBuilt || _toolInfoPanelController == null || !_toolInfoPanelController.IsBound)
-                return;
-
-            if (_hasActiveModeProfile && !_activeModeProfile.ShowPartInfoPanel)
-            {
-                _toolInfoPanelController.Hide();
-                return;
-            }
-
-            string hoveredToolId = _toolDock?.HoveredToolId;
-            string toolId = !string.IsNullOrWhiteSpace(hoveredToolId)
-                ? hoveredToolId
-                : _activeToolId;
-
-            if (string.IsNullOrWhiteSpace(toolId) || _toolDock == null || !_toolDock.TryPopulateToolInfo(toolId))
-            {
-                _toolInfoPanelController.Hide();
-                return;
-            }
-
-            ToolInfoPanelViewModel viewModel = _toolInfoPresenter.Create(
-                _toolDock.ToolName,
-                _toolDock.ToolCategory,
-                _toolDock.ToolPurpose,
-                _toolDock.ToolUsageNotes,
-                _toolDock.ToolSafetyNotes);
-
-            _toolInfoPanelController.Show(viewModel);
-        }
-
 
         private void RegisterPresentationAdapter()
         {
@@ -972,20 +638,20 @@ namespace OSE.UI.Root
 
         private void TeardownUi()
         {
-            if (_toolDockPanelController != null && _toolDock != null)
+            if (_orchestrator?.ToolDockPanelController != null && _toolDock != null)
             {
-                _toolDockPanelController.ToggleRequested -= _toolDock.HandleToggleRequested;
-                _toolDockPanelController.ToolSelected -= _toolDock.HandleToolSelected;
-                _toolDockPanelController.UnequipRequested -= _toolDock.HandleUnequipRequested;
-                _toolDockPanelController.ToolHovered -= _toolDock.HandleToolHovered;
-                _toolDockPanelController.ToolHoverCleared -= _toolDock.HandleToolHoverCleared;
+                _orchestrator.ToolDockPanelController.ToggleRequested  -= _toolDock.HandleToggleRequested;
+                _orchestrator.ToolDockPanelController.ToolSelected     -= _toolDock.HandleToolSelected;
+                _orchestrator.ToolDockPanelController.UnequipRequested -= _toolDock.HandleUnequipRequested;
+                _orchestrator.ToolDockPanelController.ToolHovered      -= _toolDock.HandleToolHovered;
+                _orchestrator.ToolDockPanelController.ToolHoverCleared -= _toolDock.HandleToolHoverCleared;
             }
 
-            _stepPanelController?.Unbind();
-            _partInfoPanelController?.Unbind();
-            _sessionHudPanelController?.Unbind();
-            _toolInfoPanelController?.Unbind();
-            _toolDockPanelController?.Unbind();
+            _orchestrator?.StepPanelController?.Unbind();
+            _orchestrator?.PartInfoPanelController?.Unbind();
+            _orchestrator?.SessionHudPanelController?.Unbind();
+            _orchestrator?.ToolInfoPanelController?.Unbind();
+            _orchestrator?.ToolDockPanelController?.Unbind();
             _isBuilt = false;
             _rootElement = null;
             _toolCursorBadgeController?.Teardown();
@@ -994,7 +660,7 @@ namespace OSE.UI.Root
             _introController?.Teardown();
             _transitionController?.Teardown();
             _pickerController?.Teardown();
-            _activeToolId = null;
+            if (_orchestrator != null) _orchestrator.ActiveToolId = null;
             _toolDock?.Teardown();
             _repositionUi?.Teardown();
             _repositionUi = null;
@@ -1025,11 +691,7 @@ namespace OSE.UI.Root
             if (ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 session.ResumeAfterTransition();
 
-            RefreshStepPanel();
-            RefreshSessionHudPanel();
-            RefreshPartInfoPanel();
-            RefreshToolDockPanel();
-            RefreshToolInfoPanel();
+            _orchestrator?.RefreshAll();
         }
 
         // ── Assembly Picker Overlay ──
@@ -1068,12 +730,12 @@ namespace OSE.UI.Root
             // Deferring this back to event order reintroduced the missing-shell regressions.
             if (!TryRestoreRuntimePanelsAfterIntroDismiss())
             {
-                RefreshStepPanel();
-                RefreshSessionHudPanel();
-                RefreshPartInfoPanel();
+                _orchestrator?.RefreshStepPanel();
+                _orchestrator?.RefreshSessionHudPanel();
+                _orchestrator?.RefreshPartInfoPanel();
             }
-            RefreshToolDockPanel();
-            RefreshToolInfoPanel();
+            _orchestrator?.RefreshToolDockPanel();
+            _orchestrator?.RefreshToolInfoPanel();
         }
 
         private void Reset()
@@ -1089,139 +751,22 @@ namespace OSE.UI.Root
                 _documentBootstrap = GetComponent<UIDocumentBootstrap>();
             }
 
-            EnsureModeProfiles();
-            _stepPresenter ??= new StepPanelPresenter();
-            _partInfoPresenter ??= new PartInfoPanelPresenter();
-            _sessionHudPresenter ??= new SessionHudPanelPresenter();
-            _toolDockPresenter ??= new ToolDockPanelPresenter();
-            _toolInfoPresenter ??= new ToolInfoPanelPresenter();
-            _stepPanelController ??= new StepPanelController();
-            _partInfoPanelController ??= new PartInfoPanelController();
-            _sessionHudPanelController ??= new SessionHudPanelController();
-            _toolDockPanelController ??= new ToolDockPanelController();
-            _toolInfoPanelController ??= new ToolInfoPanelController();
-
-            if (_selectionService == null)
-                ServiceRegistry.TryGet<SelectionService>(out _selectionService);
-
-        }
-
-        private bool HasActivePartContext()
-        {
-            if (!Application.isPlaying)
-                return true;
-
-            if (_showingHoverPartInfo)
-                return true;
-
-            return HasSelectionContext();
-        }
-
-        private bool HasSelectionContext()
-        {
-            if (_selectionService == null)
-                ServiceRegistry.TryGet<SelectionService>(out _selectionService);
-
-            return _selectionService != null
-                && (_selectionService.CurrentSelection != null
-                    || _selectionService.CurrentInspection != null);
-        }
-
-        private void EnsureModeProfiles()
-        {
-            if (_modeProfiles == null || _modeProfiles.Length == 0)
+            if (_modeManager == null)
             {
-                _modeProfiles = CreateDefaultModeProfiles();
-            }
-        }
-
-        private void ApplySessionMode(SessionMode mode)
-        {
-            _activeMode = mode;
-            _activeModeProfile = ResolveModeProfile(mode);
-            _hasActiveModeProfile = true;
-
-            if (!_activeModeProfile.AllowHints)
-            {
-                _sessionHudMediator?.ClearHintState();
+                _modeManager = new UiSessionModeManager(_modeProfiles);
+                _modeManager.OnModeChanged     = () => _orchestrator?.RefreshAll();
+                _modeManager.OnHintsDisabled   = () => _sessionHudMediator?.ClearHintState();
             }
 
-            if (_isBuilt)
+            if (_orchestrator == null)
             {
-                RefreshStepPanel();
-                RefreshPartInfoPanel();
-                RefreshSessionHudPanel();
-                RefreshToolDockPanel();
-                RefreshToolInfoPanel();
+                _orchestrator = new PresentationPanelOrchestrator(
+                    () => _isBuilt,
+                    () => _modeManager,
+                    () => _toolDock,
+                    () => _gate,
+                    () => _sessionHudMediator);
             }
-        }
-
-        private SessionUiModeProfile ResolveModeProfile(SessionMode mode)
-        {
-            if (_modeProfiles != null)
-            {
-                for (int i = 0; i < _modeProfiles.Length; i++)
-                {
-                    if (_modeProfiles[i].Mode == mode)
-                        return _modeProfiles[i];
-                }
-            }
-
-            return new SessionUiModeProfile
-            {
-                Mode = mode,
-                ShowStepPanel = true,
-                ShowPartInfoPanel = true,
-                ShowSessionHud = true,
-                AllowHints = true
-            };
-        }
-
-        private static SessionUiModeProfile[] CreateDefaultModeProfiles()
-        {
-            return new[]
-            {
-                new SessionUiModeProfile
-                {
-                    Mode = SessionMode.Tutorial,
-                    ShowStepPanel = true,
-                    ShowPartInfoPanel = true,
-                    ShowSessionHud = true,
-                    AllowHints = true
-                },
-                new SessionUiModeProfile
-                {
-                    Mode = SessionMode.Guided,
-                    ShowStepPanel = true,
-                    ShowPartInfoPanel = true,
-                    ShowSessionHud = true,
-                    AllowHints = true
-                },
-                new SessionUiModeProfile
-                {
-                    Mode = SessionMode.Standard,
-                    ShowStepPanel = true,
-                    ShowPartInfoPanel = true,
-                    ShowSessionHud = false,
-                    AllowHints = false
-                },
-                new SessionUiModeProfile
-                {
-                    Mode = SessionMode.Challenge,
-                    ShowStepPanel = true,
-                    ShowPartInfoPanel = true,
-                    ShowSessionHud = true,
-                    AllowHints = true
-                },
-                new SessionUiModeProfile
-                {
-                    Mode = SessionMode.Review,
-                    ShowStepPanel = true,
-                    ShowPartInfoPanel = true,
-                    ShowSessionHud = false,
-                    AllowHints = false
-                }
-            };
         }
 
     }

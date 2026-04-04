@@ -447,6 +447,20 @@ namespace OSE.Runtime
                     _activeToolId = null;
                 }
 
+                // Auto-dismiss carried-over tool when entering a pure placement step.
+                // Placement steps involve physically positioning a part — no tool should be active.
+                if (!string.IsNullOrWhiteSpace(_activeToolId)
+                    && _requiredToolIds.Length == 0
+                    && _toolActions.Length == 0
+                    && _package.TryGetStep(evt.StepId, out StepDefinition placementStepCheck)
+                    && string.Equals(placementStepCheck.completionType, "placement", StringComparison.OrdinalIgnoreCase))
+                {
+                    string dismissedTool = _activeToolId;
+                    _activeToolId = null;
+                    OseLog.Info($"[ToolRuntime] Auto-dismissed tool '{dismissedTool}' — entering placement step '{evt.StepId}'.");
+                    RuntimeEventBus.Publish(new ActiveToolChanged(dismissedTool, null, false));
+                }
+
                 RaiseStateChanged();
                 TryAutoCompleteTargetlessPrimaryActionIfReady();
             }
@@ -763,22 +777,8 @@ namespace OSE.Runtime
             return $"{noun} complete.";
         }
 
-        private ToolActionType ParseActionType(string actionType)
-        {
-            if (string.IsNullOrWhiteSpace(actionType))
-                return ToolActionType.None;
-
-            string value = actionType.Trim().ToLowerInvariant();
-            return value switch
-            {
-                "measure" => ToolActionType.Measure,
-                "tighten" => ToolActionType.Tighten,
-                "strike" => ToolActionType.Strike,
-                "weld_pass" => ToolActionType.WeldPass,
-                "grind_pass" => ToolActionType.GrindPass,
-                _ => ToolActionType.None
-            };
-        }
+        private static ToolActionType ParseActionType(string actionType)
+            => ToolActionTypeHelper.Parse(actionType);
 
         private string ResolveToolDisplayName(string toolId)
         {
@@ -792,30 +792,10 @@ namespace OSE.Runtime
         }
 
         private static string ResolveActionVerb(ToolActionType actionType)
-        {
-            return actionType switch
-            {
-                ToolActionType.Measure => "Measurement pass",
-                ToolActionType.Tighten => "Tightening pass",
-                ToolActionType.Strike => "Strike",
-                ToolActionType.WeldPass => "Weld pass",
-                ToolActionType.GrindPass => "Grinding pass",
-                _ => "Action"
-            };
-        }
+            => ToolActionTypeHelper.GetVerb(actionType);
 
         private static string ResolveActionNoun(ToolActionType actionType)
-        {
-            return actionType switch
-            {
-                ToolActionType.Measure => "Measurement",
-                ToolActionType.Tighten => "Tightening",
-                ToolActionType.Strike => "Impact",
-                ToolActionType.WeldPass => "Weld pass",
-                ToolActionType.GrindPass => "Grinding pass",
-                _ => "Tool action"
-            };
-        }
+            => ToolActionTypeHelper.GetNoun(actionType);
 
         private void RaiseStateChanged()
         {

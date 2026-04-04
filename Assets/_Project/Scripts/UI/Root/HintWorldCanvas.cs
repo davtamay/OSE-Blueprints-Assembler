@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 namespace OSE.UI.Root
 {
     [DisallowMultipleComponent]
-    public sealed class HintWorldCanvas : MonoBehaviour
+    internal sealed class HintWorldCanvas : MonoBehaviour
     {
         private const float DefaultVisibleSeconds = 6f;
         private const float DefaultWorldScale = 0.0015f;
