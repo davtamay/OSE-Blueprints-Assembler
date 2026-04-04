@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using OSE.App;
 using OSE.Content;
 using OSE.Core;
 using OSE.Runtime;
@@ -17,11 +18,28 @@ namespace OSE.UI.Root
         private readonly IBridgeContext _ctx;
 
         private readonly List<GameObject> _spawnedPortSpheres = new();
+        private readonly HashSet<GameObject> _confirmedSpheres = new();
         public bool HasActivePortSpheres => _spawnedPortSpheres.Count > 0;
         private readonly List<GameObject> _cablePreviews = new();
         private readonly List<GameObject> _renderedPipeSplines = new();
         private bool _pipePortAConfirmed;
         private AnchorToAnchorInteraction _anchorInteraction;
+
+        // Per-sphere port lookup — keyed by GameObject so multi-wire steps (multiple
+        // targetIds) each carry their own portA/portB pair instead of one shared field.
+        private readonly Dictionary<GameObject, Vector3> _portAByGo = new();
+        private readonly Dictionary<GameObject, Vector3> _portBByGo = new();
+
+        // Per-sphere polarity type — populated for WireConnect profile steps.
+        // Value is a polarity token: "+12V", "GND", "signal", etc. Null for Cable profile.
+        private readonly Dictionary<GameObject, string> _polarityByGo = new();
+
+        // Material pool — reused across step activations to avoid per-sphere new Material().
+        // Populated lazily; all instances destroyed in Cleanup().
+        private readonly List<Material> _sphereMatPool = new();
+        private Shader _portSphereShader;
+
+        // World positions for the active in-progress anchor interaction.
         private Vector3 _portAWorldPos;
         private Vector3 _portBWorldPos;
 
@@ -70,14 +88,39 @@ namespace OSE.UI.Root
 
             if (!_pipePortAConfirmed)
             {
+                // WireConnect polarity-order enforcement: when enforcePortOrder is true,
+                // the learner must click portA (the positive/hot side) first.
+                // Clicking portB first triggers a warning and rejects the click.
+                if (step.ResolvedProfile == StepProfile.WireConnect &&
+                    step.wireConnect?.IsConfigured == true &&
+                    step.wireConnect.enforcePortOrder &&
+                    hitGo.name.Contains("_B"))
+                {
+                    OseLog.Info("[ConnectStepHandler] WireConnect order violation — click the positive/hot port (red) first.");
+                    FlashPortSphereRejected(hitGo);
+                    return true; // consumed — don't fall through
+                }
+
                 _pipePortAConfirmed = true;
                 SetPortSphereConfirmed(hitGo);
 
-                // Start anchor-to-anchor interaction with a live cable visual.
+                // Resolve port world positions from the per-sphere lookup so multi-wire
+                // steps each use the correct pair rather than the last-written shared field.
                 bool isPortA = hitGo.name.Contains("_A");
+                if (_portAByGo.TryGetValue(hitGo, out Vector3 pairA) &&
+                    _portBByGo.TryGetValue(hitGo, out Vector3 pairB))
+                {
+                    _portAWorldPos = pairA;
+                    _portBWorldPos = pairB;
+                }
+
                 Vector3 anchorA = isPortA ? _portAWorldPos : _portBWorldPos;
                 Vector3 anchorB = isPortA ? _portBWorldPos : _portAWorldPos;
-                Color cableColor = new Color(0.2f, 0.2f, 0.2f, 1f);
+
+                // Resolve wire color from the part placement of the step's first part.
+                string partId = step.requiredPartIds?.Length > 0 ? step.requiredPartIds[0] : null;
+                Color cableColor = ResolveWireColor(
+                    partId != null ? _ctx.Spawner.FindPartPlacement(partId) : null);
 
                 _anchorInteraction = new AnchorToAnchorInteraction(new AnchorToAnchorInteraction.Config
                 {
@@ -129,6 +172,9 @@ namespace OSE.UI.Root
         {
             ClearTransientVisuals();
             ClearRenderedPipeSplines();
+            foreach (var mat in _sphereMatPool)
+                if (mat != null) UnityEngine.Object.Destroy(mat);
+            _sphereMatPool.Clear();
         }
 
         // ── Port-sphere spawning ──
@@ -143,8 +189,10 @@ namespace OSE.UI.Root
             string[] targetIds = step.targetIds;
             if (targetIds == null) return;
 
-            foreach (string targetId in targetIds)
+            for (int ti = 0; ti < targetIds.Length; ti++)
             {
+                string targetId = targetIds[ti];
+
                 TargetPreviewPlacement tp = _ctx.Spawner.FindTargetPlacement(targetId);
                 if (tp == null)
                 {
@@ -163,15 +211,36 @@ namespace OSE.UI.Root
                     portBPos = c + new Vector3( 0.12f, 0.06f, 0f);
                 }
 
-                // Cache world positions for the anchor interaction.
-                _portAWorldPos = previewRoot.TransformPoint(portAPos);
-                _portBWorldPos = previewRoot.TransformPoint(portBPos);
+                // Resolve wire color from the part's splinePath if authored, else default near-black.
+                // For multi-wire steps each targetId maps to its own part by index (or first part).
+                string partId = (step.requiredPartIds?.Length > ti)
+                    ? step.requiredPartIds[ti]
+                    : (step.requiredPartIds?.Length > 0 ? step.requiredPartIds[0] : targetId);
+                Color wireColor = ResolveWireColor(_ctx.Spawner.FindPartPlacement(partId));
 
-                SpawnPortSphere(portAPos, isPortA: true, previewRoot);
-                SpawnPortSphere(portBPos, isPortA: false, previewRoot);
+                // For WireConnect profile, resolve per-port polarity from the payload.
+                // Falls back to null (generic A/B colors) when not a WireConnect step.
+                WireConnectEntry wireEntry = ResolveWireEntry(step, targetId, ti);
+                string polarityA = wireEntry?.portAPolarityType;
+                string polarityB = wireEntry?.portBPolarityType;
+
+                // Per-sphere world-space port pair — stored so multi-wire steps each
+                // carry the correct pair regardless of iteration order.
+                Vector3 worldA = previewRoot.TransformPoint(portAPos);
+                Vector3 worldB = previewRoot.TransformPoint(portBPos);
+
+                GameObject sphereA = SpawnPortSphere(portAPos, isPortA: true,  previewRoot, polarityA);
+                GameObject sphereB = SpawnPortSphere(portBPos, isPortA: false, previewRoot, polarityB);
+
+                _portAByGo[sphereA] = worldA;
+                _portBByGo[sphereA] = worldB;
+                _portAByGo[sphereB] = worldA;
+                _portBByGo[sphereB] = worldB;
+
+                if (polarityA != null) _polarityByGo[sphereA] = polarityA;
+                if (polarityB != null) _polarityByGo[sphereB] = polarityB;
 
                 // Cable preview — shows the connection path while the user taps the ports.
-                string partName = (step.requiredPartIds?.Length > 0) ? step.requiredPartIds[0] : targetId;
                 var previewPath = new SplinePathDefinition
                 {
                     radius     = 0.018f,
@@ -187,7 +256,7 @@ namespace OSE.UI.Root
                         new SceneFloat3 { x = portBPos.x, y = portBPos.y, z = portBPos.z },
                     }
                 };
-                GameObject cablePreview = SplinePartFactory.CreatePreview(partName, previewPath, previewRoot);
+                GameObject cablePreview = SplinePartFactory.CreatePreview(partId, previewPath, previewRoot);
                 if (cablePreview != null)
                 {
                     MaterialHelper.ApplyPreviewMaterial(cablePreview);
@@ -201,7 +270,12 @@ namespace OSE.UI.Root
             SpawnPipeCursorPreview(package, step);
         }
 
-        private void SpawnPortSphere(Vector3 localPos, bool isPortA, Transform parent)
+        /// <param name="polarityType">
+        /// Optional polarity token (+12V, GND, signal, etc.) for WireConnect steps.
+        /// When non-null, the sphere color is resolved from <see cref="PolarityToColor"/>
+        /// instead of the default red/blue A/B pair.
+        /// </param>
+        private GameObject SpawnPortSphere(Vector3 localPos, bool isPortA, Transform parent, string polarityType = null)
         {
             var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             go.name = isPortA ? "PortSphere_A" : "PortSphere_B";
@@ -216,15 +290,15 @@ namespace OSE.UI.Root
             var mr = go.GetComponent<MeshRenderer>();
             if (mr != null)
             {
-                Color c = isPortA
-                    ? new Color(1.00f, 0.18f, 0.18f, 1f)
-                    : new Color(0.18f, 0.50f, 1.00f, 1f);
+                // WireConnect: color by polarity type so learner reads the wire intent visually.
+                // Cable/default: generic red (A) or blue (B) positional coding.
+                Color c = polarityType != null
+                    ? PolarityToColor(polarityType)
+                    : isPortA
+                        ? new Color(1.00f, 0.18f, 0.18f, 1f)
+                        : new Color(0.18f, 0.50f, 1.00f, 1f);
 
-                var shader = Shader.Find("OSE/PortSphereOnTop")
-                          ?? Shader.Find("Universal Render Pipeline/Unlit")
-                          ?? Shader.Find("Universal Render Pipeline/Lit");
-
-                var mat = shader != null ? new Material(shader) : new Material(mr.sharedMaterial);
+                var mat = AcquirePortMaterial(mr);
                 mat.name = go.name + "_Mat";
 
                 if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", c);
@@ -233,7 +307,10 @@ namespace OSE.UI.Root
                 mr.sharedMaterial = mat;
             }
 
+            AddPortShapeMarker(go, isPortA);
+
             _spawnedPortSpheres.Add(go);
+            return go;
         }
 
         // ── Screen-proximity hit detection ──
@@ -246,23 +323,33 @@ namespace OSE.UI.Root
 
         // ── Port-sphere visual state ──
 
-        private static bool IsPortSphereConfirmed(GameObject sphere)
+        private bool IsPortSphereConfirmed(GameObject sphere)
         {
-            var mr = sphere?.GetComponent<MeshRenderer>();
-            if (mr?.sharedMaterial == null) return false;
-            Color c = mr.sharedMaterial.GetColor("_BaseColor");
-            return c.g > 0.9f && c.r < 0.5f;
+            return sphere != null && _confirmedSpheres.Contains(sphere);
         }
 
-        private static void SetPortSphereConfirmed(GameObject sphere)
+        private void SetPortSphereConfirmed(GameObject sphere)
         {
+            _confirmedSpheres.Add(sphere);
+
             var mr = sphere.GetComponent<MeshRenderer>();
-            if (mr == null) return;
-            var mat = mr.material;
-            if (mat == null) return;
-            Color green = new Color(0.25f, 1.00f, 0.35f, 1f);
-            mat.SetColor("_BaseColor", green);
-            mat.SetColor("_EmissionColor", green * 0.6f);
+            if (mr != null)
+            {
+                // Use sharedMaterial — each sphere already owns its own Material instance
+                // (created in SpawnPortSphere), so mutating sharedMaterial is safe and
+                // avoids the implicit new-instance allocation that mr.material triggers.
+                var mat = mr.sharedMaterial;
+                if (mat != null)
+                {
+                    Color green = new Color(0.25f, 1.00f, 0.35f, 1f);
+                    mat.SetColor("_BaseColor", green);
+                    mat.SetColor("_EmissionColor", green * 0.6f);
+                }
+            }
+
+            // Audio feedback — fires if an IEffectPlayer is registered; no-op otherwise.
+            if (ServiceRegistry.TryGet<IEffectPlayer>(out var fx))
+                fx.Play(EffectRole.PlacementFeedback, sphere.transform.position);
         }
 
         // ── Pipe spline rendering ──
@@ -312,7 +399,7 @@ namespace OSE.UI.Root
                 };
 
                 string partName = (step.requiredPartIds?.Length > 0) ? step.requiredPartIds[0] : targetId;
-                Color hoseColor = new Color(0.15f, 0.15f, 0.15f, 1f);
+                Color hoseColor = ResolveWireColor(_ctx.Spawner.FindPartPlacement(partName));
 
                 GameObject splineGo = SplinePartFactory.Create(partName, path, hoseColor, previewRoot);
                 if (splineGo != null)
@@ -330,9 +417,24 @@ namespace OSE.UI.Root
         {
             foreach (var s in _spawnedPortSpheres)
             {
-                if (s != null) UnityEngine.Object.Destroy(s);
+                if (s == null) continue;
+                // The sphere's own material goes back to the pool; child shape-marker
+                // materials (AccessibilityMarker_H / _V cubes) are destroyed outright.
+                foreach (var mr in s.GetComponentsInChildren<MeshRenderer>(true))
+                {
+                    if (mr == null || mr.sharedMaterial == null) continue;
+                    if (mr.gameObject == s)
+                        ReturnPortMaterialToPool(mr.sharedMaterial);
+                    else
+                        UnityEngine.Object.Destroy(mr.sharedMaterial);
+                }
+                UnityEngine.Object.Destroy(s);
             }
             _spawnedPortSpheres.Clear();
+            _confirmedSpheres.Clear();
+            _portAByGo.Clear();
+            _portBByGo.Clear();
+            _polarityByGo.Clear();
             _pipePortAConfirmed = false;
 
             var cursorManager = _ctx.CursorManager;
@@ -343,7 +445,11 @@ namespace OSE.UI.Root
         {
             foreach (var g in _cablePreviews)
             {
-                if (g != null) UnityEngine.Object.Destroy(g);
+                if (g == null) continue;
+                var mr = g.GetComponent<MeshRenderer>();
+                if (mr != null && mr.sharedMaterial != null)
+                    UnityEngine.Object.Destroy(mr.sharedMaterial);
+                UnityEngine.Object.Destroy(g);
             }
             _cablePreviews.Clear();
         }
@@ -352,7 +458,11 @@ namespace OSE.UI.Root
         {
             foreach (var p in _renderedPipeSplines)
             {
-                if (p != null) UnityEngine.Object.Destroy(p);
+                if (p == null) continue;
+                var mr = p.GetComponent<MeshRenderer>();
+                if (mr != null && mr.sharedMaterial != null)
+                    UnityEngine.Object.Destroy(mr.sharedMaterial);
+                UnityEngine.Object.Destroy(p);
             }
             _renderedPipeSplines.Clear();
         }
@@ -371,6 +481,157 @@ namespace OSE.UI.Root
             var cursorManager = _ctx.CursorManager;
             if (cursorManager != null)
                 _ = cursorManager.SpawnPipeCursorPreviewAsync(package, step, _ctx.FindSpawnedPart, _ctx.Spawner);
+        }
+
+        // ── Helpers ──
+
+        /// <summary>
+        /// Adds a shape symbol to the sphere so port identity is not conveyed by color alone.
+        /// portA gets a "+" (two perpendicular flat cubes); portB gets a "−" (one horizontal cube).
+        /// Markers are white, slightly larger than the sphere surface, and have no colliders.
+        /// </summary>
+        private static void AddPortShapeMarker(GameObject sphere, bool isPortA)
+        {
+            // Scale relative to the sphere's local scale (sphere is 0.12 world units).
+            // Marker cubes are scaled in the sphere's local space, so they appear the same
+            // regardless of the sphere's world scale.
+            const float barLong  = 1.10f;  // relative: spans slightly wider than sphere diameter
+            const float barShort = 0.18f;  // relative: thin bar
+            const float barDepth = 0.18f;  // relative: thin in Z
+
+            GameObject hBar = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            hBar.name = "ShapeMarker_H";
+            hBar.transform.SetParent(sphere.transform, false);
+            hBar.transform.localPosition = Vector3.zero;
+            hBar.transform.localScale    = new Vector3(barLong, barShort, barDepth);
+            Object.Destroy(hBar.GetComponent<BoxCollider>());
+            ApplyMarkerMaterial(hBar);
+
+            if (isPortA)
+            {
+                // Vertical bar of the "+" — only portA
+                GameObject vBar = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                vBar.name = "ShapeMarker_V";
+                vBar.transform.SetParent(sphere.transform, false);
+                vBar.transform.localPosition = Vector3.zero;
+                vBar.transform.localScale    = new Vector3(barShort, barLong, barDepth);
+                Object.Destroy(vBar.GetComponent<BoxCollider>());
+                ApplyMarkerMaterial(vBar);
+            }
+        }
+
+        private static void ApplyMarkerMaterial(GameObject marker)
+        {
+            var mr = marker.GetComponent<MeshRenderer>();
+            if (mr == null) return;
+            var shader = Shader.Find("Universal Render Pipeline/Unlit")
+                      ?? Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null) return;
+            var mat = new Material(shader) { name = "PortMarker_Mat" };
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", Color.white);
+            if (mat.HasProperty("_Color"))     mat.SetColor("_Color",     Color.white);
+            mr.sharedMaterial = mat;
+        }
+
+        private Material AcquirePortMaterial(MeshRenderer fallbackMr)
+        {
+            if (_sphereMatPool.Count > 0)
+            {
+                int last = _sphereMatPool.Count - 1;
+                var pooled = _sphereMatPool[last];
+                _sphereMatPool.RemoveAt(last);
+                return pooled;
+            }
+
+            if (_portSphereShader == null)
+                _portSphereShader = Shader.Find("OSE/PortSphereOnTop")
+                                 ?? Shader.Find("Universal Render Pipeline/Unlit")
+                                 ?? Shader.Find("Universal Render Pipeline/Lit");
+
+            return _portSphereShader != null
+                ? new Material(_portSphereShader)
+                : new Material(fallbackMr.sharedMaterial);
+        }
+
+        private void ReturnPortMaterialToPool(Material mat)
+        {
+            // Reset to a neutral state so stale colors don't bleed into the next step.
+            if (mat.HasProperty("_BaseColor"))     mat.SetColor("_BaseColor",     Color.gray);
+            if (mat.HasProperty("_EmissionColor")) mat.SetColor("_EmissionColor", Color.black);
+            _sphereMatPool.Add(mat);
+        }
+
+        /// <summary>
+        /// Finds the <see cref="WireConnectEntry"/> for the given targetId/index
+        /// from the step's wireConnect payload. Returns null for non-WireConnect steps
+        /// or when no matching entry is found.
+        /// </summary>
+        private static WireConnectEntry ResolveWireEntry(StepDefinition step, string targetId, int targetIndex)
+        {
+            if (step.ResolvedProfile != StepProfile.WireConnect) return null;
+            var payload = step.wireConnect;
+            if (payload == null || !payload.IsConfigured) return null;
+
+            // Prefer explicit targetId match, fall back to index.
+            foreach (var entry in payload.wires)
+            {
+                if (entry.targetId == targetId) return entry;
+            }
+            return targetIndex < payload.wires.Length ? payload.wires[targetIndex] : null;
+        }
+
+        /// <summary>
+        /// Maps a polarity token to its conventional wire color.
+        /// <list type="table">
+        ///   <item>+12V / +5V / + → red</item>
+        ///   <item>GND / - / -12V → near-black</item>
+        ///   <item>signal / pwm / enable / endstop → yellow</item>
+        ///   <item>thermistor / fan → blue</item>
+        ///   <item>unknown → blue (generic default)</item>
+        /// </list>
+        /// </summary>
+        private static Color PolarityToColor(string polarityType) => polarityType switch
+        {
+            "+12V" or "+5V" or "+"          => new Color(1.00f, 0.18f, 0.18f, 1f),  // red — positive power
+            "GND"  or "-"   or "-12V"       => new Color(0.08f, 0.08f, 0.08f, 1f),  // near-black — ground/negative
+            "signal" or "pwm" or "enable"
+                or "endstop"                => new Color(1.00f, 0.85f, 0.00f, 1f),  // yellow — logic/signal
+            "thermistor" or "fan"           => new Color(0.20f, 0.60f, 1.00f, 1f),  // blue — sensor/fan
+            _                               => new Color(0.18f, 0.50f, 1.00f, 1f),  // blue — unrecognized
+        };
+
+        /// <summary>
+        /// Briefly flashes a port sphere orange to signal a rejected click
+        /// (e.g. wrong polarity order). Does not permanently change the sphere's color.
+        /// </summary>
+        private static void FlashPortSphereRejected(GameObject sphere)
+        {
+            var mr = sphere?.GetComponent<MeshRenderer>();
+            if (mr == null) return;
+            // Immediate orange flash — the sphere will restore on the next step activation.
+            // A coroutine-based fade-back is intentionally omitted to avoid MonoBehaviour
+            // coupling; the visual is transient enough for tap interactions.
+            // Use sharedMaterial to avoid allocating a new instance (each sphere owns its own).
+            var mat = mr.sharedMaterial;
+            if (mat == null) return;
+            Color orange = new Color(1.00f, 0.55f, 0.00f, 1f);
+            mat.SetColor("_BaseColor", orange);
+            mat.SetColor("_EmissionColor", orange * 0.4f);
+        }
+
+        /// <summary>
+        /// Returns the wire color from the part's authored splinePath.color when alpha > 0,
+        /// otherwise returns the default near-black cable color.
+        /// </summary>
+        private static Color ResolveWireColor(PartPreviewPlacement pp)
+        {
+            if (pp?.splinePath != null)
+            {
+                SceneFloat4 c = pp.splinePath.color;
+                if (c.a > 0f)
+                    return new Color(c.r, c.g, c.b, c.a);
+            }
+            return new Color(0.15f, 0.15f, 0.15f, 1f);
         }
     }
 }

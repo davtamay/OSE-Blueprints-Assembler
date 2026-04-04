@@ -941,6 +941,11 @@ namespace OSE.UI.Root
             }
 
             ServiceRegistry.Register<IPresentationAdapter>(this);
+            ServiceRegistry.Register<IHintPresenter>(this);
+            ServiceRegistry.Register<IStepPresenter>(this);
+            ServiceRegistry.Register<IPartInfoPresenter>(this);
+            ServiceRegistry.Register<IMachineIntroPresenter>(this);
+            ServiceRegistry.Register<IAssemblyPickerPresenter>(this);
             _isPresentationAdapterRegistered = true;
         }
 
@@ -955,6 +960,11 @@ namespace OSE.UI.Root
                 ReferenceEquals(existingAdapter, this))
             {
                 ServiceRegistry.Unregister<IPresentationAdapter>();
+                ServiceRegistry.Unregister<IHintPresenter>();
+                ServiceRegistry.Unregister<IStepPresenter>();
+                ServiceRegistry.Unregister<IPartInfoPresenter>();
+                ServiceRegistry.Unregister<IMachineIntroPresenter>();
+                ServiceRegistry.Unregister<IAssemblyPickerPresenter>();
             }
 
             _isPresentationAdapterRegistered = false;

@@ -1,5 +1,4 @@
 using System;
-using OSE.App;
 using OSE.Content;
 using OSE.Core;
 
@@ -14,6 +13,7 @@ namespace OSE.Runtime
         private MachinePackageDefinition _package;
         private string _currentAssemblyId;
         private float _sessionElapsedRef;
+        private Func<bool> _isSessionNavigating;
 
         public string CurrentAssemblyId => _currentAssemblyId;
         public StepController StepController { get; } = new StepController();
@@ -26,9 +26,10 @@ namespace OSE.Runtime
         /// </summary>
         public event Action<string> OnAssemblyCompleted;
 
-        public void Initialize(MachinePackageDefinition package)
+        public void Initialize(MachinePackageDefinition package, Func<bool> isNavigating = null)
         {
             _package = package;
+            _isSessionNavigating = isNavigating ?? (() => false);
 
             RuntimeEventBus.Subscribe<StepStateChanged>(HandleStepStateChanged);
         }
@@ -176,7 +177,7 @@ namespace OSE.Runtime
 
             // During explicit navigation, suppress auto-advance so the user
             // stays on the step they navigated to.
-            if (ServiceRegistry.TryGet<IMachineSessionController>(out var session) && session.IsNavigating)
+            if (_isSessionNavigating())
                 return;
 
             // Record the completed step

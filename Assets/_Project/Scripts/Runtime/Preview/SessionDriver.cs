@@ -25,6 +25,9 @@ namespace OSE.Runtime.Preview
         /// The scene harness subscribes to apply per-package visual configuration without
         /// any ScriptableObject dependency — enabling the runtime package-runner model.
         /// </summary>
+        /// <remarks>Prefer subscribing to <see cref="PackageLoaded"/> via <see cref="RuntimeEventBus"/>
+        /// over this static event.</remarks>
+        [Obsolete("Subscribe to RuntimeEventBus.Subscribe<PackageLoaded> instead.")]
         public static event Action<MachinePackageDefinition> PackageChanged;
         public static MachinePackageDefinition CurrentPackage { get; private set; }
 
@@ -860,7 +863,10 @@ namespace OSE.Runtime.Preview
         private static void PublishPackageChanged(MachinePackageDefinition package)
         {
             CurrentPackage = package;
+#pragma warning disable CS0618 // kept for any legacy subscribers still on the old event
             PackageChanged?.Invoke(package);
+#pragma warning restore CS0618
+            RuntimeEventBus.Publish(new PackageLoaded(package?.packageId));
         }
 
         // --------------------------------------------------------------------

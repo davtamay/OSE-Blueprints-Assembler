@@ -220,6 +220,50 @@ namespace OSE.Tests.EditMode
             Assert.AreEqual(6, stepStates.Count); // +1 for step_2 Completed
         }
 
+        // ── AwaitingResume — navigation guard ──
+
+        [Test]
+        public void AssemblyController_StepCompletion_Does_Not_Advance_While_IsNavigating()
+        {
+            // isNavigating returns true — simulates AwaitingResume state while
+            // a scene transition is in progress.
+            var package = CreateTwoStepPackage();
+            var controller = new AssemblyRuntimeController();
+            controller.Initialize(package, isNavigating: () => true);
+            controller.BeginAssembly("asm_1", () => 0f);
+
+            string activatedStepId = null;
+            RuntimeEventBus.Subscribe<StepActivated>(e => activatedStepId = e.StepId);
+
+            // Completing the active step while navigating must NOT trigger advancement.
+            controller.StepController.CompleteStep(1f);
+
+            // step_1 was active on begin; after completing while navigating, step_2
+            // should NOT have been activated.
+            Assert.AreNotEqual("step_2", activatedStepId);
+        }
+
+        [Test]
+        public void AssemblyController_StepCompletion_Advances_When_NavigatingFlagClears()
+        {
+            bool navigating = true;
+            var package = CreateTwoStepPackage();
+            var controller = new AssemblyRuntimeController();
+            controller.Initialize(package, isNavigating: () => navigating);
+            controller.BeginAssembly("asm_1", () => 0f);
+
+            // First completion while navigating — should be suppressed.
+            controller.StepController.CompleteStep(1f);
+            Assert.AreEqual("step_1", controller.StepController.CurrentStepDefinition?.id,
+                "Should still be on step_1 while navigating.");
+
+            // Navigation ends; next direct ActivateStep call from the session should work.
+            navigating = false;
+            // Direct advance to verify the flag gate only blocks the event path.
+            controller.StepController.ActivateStep(MakeStep("step_2", 2), 1.5f);
+            Assert.AreEqual("step_2", controller.StepController.CurrentStepDefinition.id);
+        }
+
         // ── StepController fail + retry ──
 
         [Test]

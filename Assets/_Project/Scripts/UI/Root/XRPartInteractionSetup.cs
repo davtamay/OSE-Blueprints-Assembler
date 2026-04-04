@@ -22,6 +22,8 @@ namespace OSE.UI.Root
         internal static readonly Color HoveredAffordanceColor = new Color(0.60f, 0.82f, 1.0f, 1.0f);
         internal static readonly Color SelectedAffordanceColor = new Color(1.0f, 0.85f, 0.2f, 1.0f);
 
+        private static ColorAffordanceTheme _sharedPartTheme;
+
         internal static void TryEnableXRGrabInteractable(GameObject target, PartGrabConfig grabConfig = null)
         {
             if (target == null)
@@ -160,6 +162,9 @@ namespace OSE.UI.Root
 
         internal static ColorAffordanceTheme CreatePartColorAffordanceTheme()
         {
+            if (_sharedPartTheme != null)
+                return _sharedPartTheme;
+
             var theme = new ColorAffordanceTheme
             {
                 colorBlendMode = ColorBlendMode.Solid,
@@ -212,6 +217,7 @@ namespace OSE.UI.Root
                 }
             });
 
+            _sharedPartTheme = theme;
             return theme;
         }
 
@@ -248,10 +254,6 @@ namespace OSE.UI.Root
         /// </summary>
         public static void EnsureColliders(GameObject target)
         {
-            // Spline parts use SplineMeshColliderBinder for deferred MeshCollider — skip EnsureColliders
-            if (target.GetComponent<SplineMeshColliderBinder>() != null)
-                return;
-
             // Add MeshColliders to every mesh child that doesn't already have one.
             // Don't skip when some children already have colliders — GLB imports
             // may only include a collider on one child, leaving others unclickable.

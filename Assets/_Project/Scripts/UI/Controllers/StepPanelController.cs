@@ -13,6 +13,18 @@ namespace OSE.UI.Controllers
     {
         private StepPanelView _view;
 
+        // Cached on first successful lookup; never re-fetches null once set.
+        private IMachineSessionController _session;
+        private IMachineSessionController Session
+        {
+            get
+            {
+                if (_session == null)
+                    ServiceRegistry.TryGet<IMachineSessionController>(out _session);
+                return _session;
+            }
+        }
+
         protected override string PanelName => "ose-step-panel";
 
         protected override VisualElement CreateView() => new StepPanelView();
@@ -39,11 +51,11 @@ namespace OSE.UI.Controllers
 
             // Show sections button only when package has multiple assemblies
             bool showSections = false;
-            if (ServiceRegistry.TryGet<IMachineSessionController>(out var pickerSession) && pickerSession.Package?.machine != null)
+            if (Session?.Package?.machine != null)
             {
-                var entryIds = pickerSession.Package.machine.entryAssemblyIds;
+                var entryIds = Session.Package.machine.entryAssemblyIds;
                 showSections = (entryIds != null && entryIds.Length > 1)
-                    || (entryIds == null && pickerSession.Package.GetAssemblies().Length > 1);
+                    || (entryIds == null && Session.Package.GetAssemblies().Length > 1);
             }
             _view.SetSectionsButtonVisible(showSections);
             _view.SetContextActionButtonVisible(viewModel.ShowContextActionButton);
@@ -56,20 +68,12 @@ namespace OSE.UI.Controllers
             _view.SetGlobalProgress(viewModel.GlobalProgressRatio, viewModel.GlobalProgressLabel);
 
             // Update navigation button states
-            if (ServiceRegistry.TryGet<IMachineSessionController>(out var session))
-            {
-                _view.SetSkipToStartEnabled(session.CanStepBack);
-                _view.SetBackEnabled(session.CanStepBack);
-                _view.SetForwardEnabled(session.CanStepForward);
-                _view.SetSkipToEndEnabled(session.CanStepForward);
-            }
-            else
-            {
-                _view.SetSkipToStartEnabled(false);
-                _view.SetBackEnabled(false);
-                _view.SetForwardEnabled(false);
-                _view.SetSkipToEndEnabled(false);
-            }
+            bool canBack = Session?.CanStepBack ?? false;
+            bool canForward = Session?.CanStepForward ?? false;
+            _view.SetSkipToStartEnabled(canBack);
+            _view.SetBackEnabled(canBack);
+            _view.SetForwardEnabled(canForward);
+            _view.SetSkipToEndEnabled(canForward);
         }
 
         protected override void OnUnbind()
@@ -90,10 +94,10 @@ namespace OSE.UI.Controllers
 
         private void HandleContextActionClicked()
         {
-            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
+            if (Session == null)
                 return;
 
-            StepController stepController = session.AssemblyController?.StepController;
+            StepController stepController = Session.AssemblyController?.StepController;
             StepDefinition step = stepController?.CurrentStepDefinition;
             if (stepController == null ||
                 !stepController.HasActiveStep ||
@@ -120,28 +124,28 @@ namespace OSE.UI.Controllers
                 return;
             }
 
-            stepController.CompleteStep(session.GetElapsedSeconds());
+            stepController.CompleteStep(Session.GetElapsedSeconds());
         }
 
         private void HandleConfirmClicked()
         {
-            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
+            if (Session == null)
                 return;
 
-            var stepController = session.AssemblyController?.StepController;
+            var stepController = Session.AssemblyController?.StepController;
             if (stepController == null || !stepController.HasActiveStep)
                 return;
 
-            if (session.ToolController != null)
+            if (Session.ToolController != null)
             {
                 // Check if this step requires a tool action to complete.
                 // If it does, the Confirm button must NOT bypass it.
-                if (session.ToolController.TryGetPrimaryActionSnapshot(
+                if (Session.ToolController.TryGetPrimaryActionSnapshot(
                         out ToolRuntimeController.ToolActionSnapshot snapshot)
                     && snapshot.IsConfigured && !snapshot.IsCompleted)
                 {
                     ToolRuntimeController.ToolActionExecutionResult toolResult =
-                        session.ToolController.TryExecutePrimaryAction();
+                        Session.ToolController.TryExecutePrimaryAction();
 
                     // Block completion unless the tool action says the step is done.
                     if (!toolResult.ShouldCompleteStep)
@@ -149,48 +153,35 @@ namespace OSE.UI.Controllers
                 }
             }
 
-            stepController.CompleteStep(session.GetElapsedSeconds());
+            stepController.CompleteStep(Session.GetElapsedSeconds());
         }
 
         private void HandleHintClicked()
         {
-            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
-                return;
-
-            session.AssemblyController?.StepController?.RequestHint();
+            Session?.AssemblyController?.StepController?.RequestHint();
         }
 
         private void HandleBackClicked()
         {
-            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
-                return;
-
-            session.StepBack();
+            Session?.StepBack();
         }
 
         private void HandleForwardClicked()
         {
-            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
-                return;
-
-            session.StepForward();
+            Session?.StepForward();
         }
 
         private void HandleSkipToStartClicked()
         {
-            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
-                return;
-
-            bool result = session.NavigateToGlobalStep(0);
+            if (Session == null) return;
+            bool result = Session.NavigateToGlobalStep(0);
             OseLog.Info($"[StepPanel] SkipToStart clicked — NavigateToGlobalStep(0) returned {result}");
         }
 
         private void HandleSkipToEndClicked()
         {
-            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
-                return;
-
-            bool result = session.NavigateToLastStep();
+            if (Session == null) return;
+            bool result = Session.NavigateToLastStep();
             OseLog.Info($"[StepPanel] SkipToEnd clicked — NavigateToLastStep returned {result}");
         }
 

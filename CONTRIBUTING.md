@@ -82,6 +82,62 @@ Validation errors are structured: `[path] message (severity)`. Fix all `Error` s
 
 ---
 
+## Branch Strategy
+
+- `master` is the integration branch — always in a buildable state
+- Feature branches: `feat/<short-slug>` (e.g. `feat/weld-pass-audio`)
+- Bug fixes: `fix/<short-slug>`
+- Content-only changes (machine.json, GLB): `content/<packageId>-<description>`
+- Keep branches short-lived; merge or rebase within a few days
+
+---
+
+## Pull Request Conventions
+
+- Title format: `feat:` / `fix:` / `refactor:` / `content:` prefix, imperative mood, ≤ 72 chars
+- Link any related issue or design note in the PR description
+- One logical change per PR — split content edits from code changes
+- Do not force-push to `master`
+- Resolve all conversations before merging
+
+---
+
+## Tests
+
+Tests live under `Assets/_Tests/`. Each test file targets a specific class or contract:
+
+| Test file | What it covers |
+|-----------|---------------|
+| `RuntimeEventBusTests.cs` | Subscribe, publish, unsubscribe, snapshot-before-invoke |
+| `ServiceRegistryTests.cs` | Register, Get, TryGet, Unregister contracts |
+| `MachinePackageValidatorTests.cs` | Validation pass execution, IPackageValidationPass extension |
+| `StepPreflightValidatorTests.cs` | Pre-flight checks, StepReadinessChecked event |
+
+**Requirements for new code:**
+- Any new `RuntimeEventBus` event with non-trivial dispatch logic → add a `RuntimeEventBusTests` case
+- Any new `IPackageValidationPass` → add a validator test
+- Any new FSM state in `SessionLifecycle` → add a reachability and stuck-state test
+- Tests must be self-contained: no shared static state, no editor dependencies
+
+---
+
+## machine.json Authoring
+
+**Always edit the authoring copy, never StreamingAssets:**
+
+```
+Assets/_Project/Data/Packages/<packageId>/machine.json   ← edit here
+Assets/StreamingAssets/MachinePackages/<packageId>/machine.json  ← build pipeline only
+```
+
+After any bulk hand-edit of position/rotation/scale values, normalize float precision:
+
+> Unity menu: **OSE › Package Builder › Normalize Float Precision (All Packages)**
+
+This enforces 4 decimal places (0.1 mm / 0.01°) and keeps diffs readable.
+
+---
+
 ## Before Submitting
 
 - [ ] Zero compiler warnings introduced
@@ -90,3 +146,5 @@ Validation errors are structured: `[path] message (severity)`. Fix all `Error` s
 - [ ] New public methods have XML `<summary>` docs
 - [ ] No `Time.frameCount` comparisons introduced (use elapsed time)
 - [ ] No magic numbers — extract to named constants
+- [ ] Float precision normalized after any bulk machine.json edits
+- [ ] Tests added or updated for new events, FSM states, or validation passes

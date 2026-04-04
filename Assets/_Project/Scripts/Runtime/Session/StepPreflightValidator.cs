@@ -1,7 +1,7 @@
-using System;
 using System.Collections.Generic;
 using OSE.Content;
 using OSE.Core;
+using System;
 
 namespace OSE.Runtime
 {
@@ -135,8 +135,11 @@ namespace OSE.Runtime
 
         private void Publish(string stepId)
         {
-            string[] issues = _issues.Count > 0 ? _issues.ToArray() : Array.Empty<string>();
-            RuntimeEventBus.Publish(new StepReadinessChecked(stepId ?? string.Empty, issues.Length == 0, issues));
+            RuntimeEventBus.Publish(new StepReadinessChecked(
+                stepId ?? string.Empty,
+                isReady: _issues.Count == 0,
+                issueCount: _issues.Count,
+                firstIssue: _issues.Count > 0 ? _issues[0] : null));
         }
 
         private static bool IsValidActionType(string actionType)

@@ -254,13 +254,17 @@ namespace OSE.Core
     {
         public readonly string StepId;
         public readonly bool IsReady;
-        public readonly string[] Issues;
+        /// <summary>Total number of preflight issues found (0 = step is ready).</summary>
+        public readonly int IssueCount;
+        /// <summary>First issue message for logging; null when <see cref="IsReady"/> is true.</summary>
+        public readonly string FirstIssue;
 
-        public StepReadinessChecked(string stepId, bool isReady, string[] issues)
+        public StepReadinessChecked(string stepId, bool isReady, int issueCount, string firstIssue)
         {
             StepId = stepId;
             IsReady = isReady;
-            Issues = issues;
+            IssueCount = issueCount;
+            FirstIssue = firstIssue;
         }
     }
 
@@ -436,6 +440,21 @@ namespace OSE.Core
 
     public readonly struct SpawnerPartsReady
     {
+    }
+
+    // ── Package Events ──
+
+    /// <summary>
+    /// Published by <see cref="OSE.Runtime.Preview.SessionDriver"/> whenever a machine
+    /// package finishes loading, in both edit and play mode. Replaces the legacy
+    /// <c>SessionDriver.PackageChanged</c> static C# event.
+    /// Consumers that need the full definition read <c>SessionDriver.CurrentPackage</c>,
+    /// which is set before this event fires.
+    /// </summary>
+    public readonly struct PackageLoaded
+    {
+        public readonly string PackageId;
+        public PackageLoaded(string packageId) { PackageId = packageId; }
     }
 
     // ── Assembly Picker Events ──

@@ -15,7 +15,18 @@ namespace OSE.Runtime
     /// </summary>
     public sealed class MachineSessionController : IMachineSessionController, INavigationHost
     {
-        private readonly MachinePackageLoader _loader = new MachinePackageLoader();
+        private readonly IMachinePackageLoader _loader;
+
+        public MachineSessionController() : this(new MachinePackageLoader()) { }
+
+        /// <summary>
+        /// Accepts an explicit <see cref="IMachinePackageLoader"/> — useful for testing
+        /// with a stub loader that returns a pre-built package without hitting the file system.
+        /// </summary>
+        public MachineSessionController(IMachinePackageLoader loader)
+        {
+            _loader = loader;
+        }
         private MachineSessionState _sessionState;
         private MachinePackageDefinition _package;
         private AssemblyRuntimeController _assemblyController;
@@ -132,7 +143,7 @@ namespace OSE.Runtime
 
             // Create child controllers
             _assemblyController = new AssemblyRuntimeController();
-            _assemblyController.Initialize(_package);
+            _assemblyController.Initialize(_package, () => _navigation?.IsNavigating ?? false);
             _assemblyController.OnAssemblyCompleted += HandleAssemblyCompleted;
 
             // Initialize part runtime controller if registered
@@ -290,7 +301,7 @@ namespace OSE.Runtime
 
         private void BeginCurrentAssembly()
         {
-            if (_currentAssemblyIndex >= _assemblyOrder.Length)
+            if (_assemblyOrder == null || _currentAssemblyIndex >= _assemblyOrder.Length)
             {
                 CompleteSession();
                 return;
@@ -318,7 +329,7 @@ namespace OSE.Runtime
         /// </summary>
         private void BeginCurrentAssemblyRestored(int completedStepCount)
         {
-            if (_currentAssemblyIndex >= _assemblyOrder.Length)
+            if (_assemblyOrder == null || _currentAssemblyIndex >= _assemblyOrder.Length)
             {
                 CompleteSession();
                 return;
@@ -450,8 +461,6 @@ namespace OSE.Runtime
             // Metrics update only — persisted on next step completion or flush.
         }
 
-        private bool _awaitingTransitionResume;
-
         private void HandleAssemblyCompleted(string assemblyId)
         {
             // During explicit navigation (skip-to-end, step forward/back),
@@ -496,7 +505,7 @@ namespace OSE.Runtime
                     }
                 }
 
-                _awaitingTransitionResume = true;
+                SetLifecycle(SessionLifecycle.AwaitingResume);
                 RuntimeEventBus.Publish(new AssemblyTransitionRequested(
                     completedName ?? assemblyId,
                     nextId,
@@ -516,10 +525,9 @@ namespace OSE.Runtime
 
         public void ResumeAfterTransition()
         {
-            if (!_awaitingTransitionResume)
+            if (_sessionState?.Lifecycle != SessionLifecycle.AwaitingResume)
                 return;
 
-            _awaitingTransitionResume = false;
             OseLog.Info($"[MachineSessionController] Transition dismissed — beginning assembly index {_currentAssemblyIndex}.");
             BeginCurrentAssembly();
         }

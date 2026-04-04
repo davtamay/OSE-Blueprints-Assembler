@@ -17,6 +17,21 @@ namespace OSE.Interaction
         private static readonly Dictionary<string, ToolProfileDescriptor> Profiles
             = new(StringComparer.OrdinalIgnoreCase);
 
+        private static readonly Dictionary<StepProfile, string> ProfileNames
+            = new Dictionary<StepProfile, string>
+        {
+            { StepProfile.Clamp,       ToolActionProfiles.Clamp },
+            { StepProfile.AxisFit,     ToolActionProfiles.AxisFit },
+            { StepProfile.Torque,      ToolActionProfiles.Torque },
+            { StepProfile.Weld,        ToolActionProfiles.Weld },
+            { StepProfile.Cut,         ToolActionProfiles.Cut },
+            { StepProfile.Strike,      ToolActionProfiles.Strike },
+            { StepProfile.Measure,     ToolActionProfiles.Measure },
+            { StepProfile.SquareCheck, ToolActionProfiles.SquareCheck },
+            { StepProfile.Cable,       ToolActionProfiles.Cable },
+            { StepProfile.WireConnect, ToolActionProfiles.WireConnect },
+        };
+
         /// <summary>Returned when no profile matches.</summary>
         public static readonly ToolProfileDescriptor Default = new()
         {
@@ -114,6 +129,18 @@ namespace OSE.Interaction
                 PlaceViewModeOverride = ViewMode.WorkZone,
                 SpawnClickEffect = false,
             });
+
+            // ── Connect-family profiles ──
+
+            Register(ToolActionProfiles.WireConnect, new ToolProfileDescriptor
+            {
+                FramingDistance = 1.2f,
+                WorkingDistance = 0.03f,
+                ApproachTiltDegrees = 0f,
+                PreviewStyle = PreviewStyle.Default,
+                UseViewModeOverride = ViewMode.PairEndpoints,
+                SpawnClickEffect = false,
+            });
         }
 
         /// <summary>
@@ -146,19 +173,8 @@ namespace OSE.Interaction
 
         private static string ProfileToString(StepProfile profile)
         {
-            switch (profile)
-            {
-                case StepProfile.Clamp:       return ToolActionProfiles.Clamp;
-                case StepProfile.AxisFit:     return ToolActionProfiles.AxisFit;
-                case StepProfile.Torque:      return ToolActionProfiles.Torque;
-                case StepProfile.Weld:        return ToolActionProfiles.Weld;
-                case StepProfile.Cut:         return ToolActionProfiles.Cut;
-                case StepProfile.Strike:      return ToolActionProfiles.Strike;
-                case StepProfile.Measure:     return ToolActionProfiles.Measure;
-                case StepProfile.SquareCheck: return ToolActionProfiles.SquareCheck;
-                case StepProfile.Cable:       return ToolActionProfiles.Cable;
-                default:                      return null;
-            }
+            ProfileNames.TryGetValue(profile, out var name);
+            return name;
         }
 
         /// <summary>

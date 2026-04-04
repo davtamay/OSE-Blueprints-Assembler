@@ -20,6 +20,7 @@ namespace OSE.Core
         Validating,
         Completing,
         Completed,
+        AwaitingResume,
         Paused,
         Restoring,
         Error

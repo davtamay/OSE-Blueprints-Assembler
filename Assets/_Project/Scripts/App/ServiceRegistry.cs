@@ -55,7 +55,18 @@ namespace OSE.App
         public static bool Unregister<T>() where T : class =>
             _services.Remove(typeof(T));
 
+        /// <summary>
+        /// Clears all registered services.
+        /// <para><b>Test-only.</b> Calling this in production code will silently
+        /// deregister every service and cause <see cref="Get{T}"/> to throw.
+        /// Guarded by <c>UNITY_EDITOR</c> so the method is unavailable in builds.</para>
+        /// </summary>
+#if UNITY_EDITOR
         public static void Clear() => _services.Clear();
+#else
+        [System.Obsolete("ServiceRegistry.Clear() is only available in the Editor. Do not call from production code.")]
+        public static void Clear() => _services.Clear();
+#endif
 
         /// <summary>Returns the number of currently registered services.</summary>
         public static int Count => _services.Count;

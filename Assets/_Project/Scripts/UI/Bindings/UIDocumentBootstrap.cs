@@ -23,15 +23,7 @@ namespace OSE.UI.Bindings
 
         private PanelSettings _runtimePanelSettings;
         private bool _xrUiInputModuleConfigured;
-
-        private InputActionReference _pointActionReference;
-        private InputActionReference _leftClickActionReference;
-        private InputActionReference _middleClickActionReference;
-        private InputActionReference _rightClickActionReference;
-        private InputActionReference _scrollWheelActionReference;
-        private InputActionReference _navigateActionReference;
-        private InputActionReference _submitActionReference;
-        private InputActionReference _cancelActionReference;
+        private readonly IXRInputConfigurator _xrInputConfigurator = new XRUIInputConfigurator();
 
         public UISceneMode SceneMode => _sceneMode;
         public UIPresentationSurface PresentationSurface => _presentationSurface;
@@ -108,6 +100,11 @@ namespace OSE.UI.Bindings
 
         private void Update()
         {
+            // Once both systems are fully configured in play mode, skip per-frame
+            // scene queries (FindObjectsByType calls inside EnsureEventSystem).
+            if (Application.isPlaying && _xrUiInputModuleConfigured)
+                return;
+
             EnsureEventSystem();
             TryConfigureXrUiInputModule();
         }
@@ -156,63 +153,13 @@ namespace OSE.UI.Bindings
             if (!Application.isPlaying || _xrUiInputModuleConfigured)
                 return;
 
-            EventSystem eventSystem = EventSystem.current != null
-                ? EventSystem.current
-                : FindFirstObjectByType<EventSystem>();
-            if (eventSystem == null)
-                return;
-
-            XRUIInputModule uiInputModule = eventSystem.GetComponent<XRUIInputModule>();
-            if (uiInputModule == null)
-                return;
-
             if (_uiInputActions == null)
                 _uiInputActions = ResolveUiInputActionAsset();
 
-            if (_uiInputActions == null)
-                return;
-
-            InputActionMap uiActionMap = _uiInputActions.FindActionMap("XRI UI", throwIfNotFound: false);
-            if (uiActionMap == null)
-                return;
-
-            // Force explicit XRI UI bindings. XRUIInputModule can lazily create internal fallback
-            // actions which appear configured via properties but do not use this project's action map.
-            uiInputModule.pointAction = GetOrCreateActionReference(uiActionMap, "Point", ref _pointActionReference);
-            uiInputModule.leftClickAction = GetOrCreateActionReference(uiActionMap, "Click", ref _leftClickActionReference);
-            uiInputModule.middleClickAction = GetOrCreateActionReference(uiActionMap, "MiddleClick", ref _middleClickActionReference);
-            uiInputModule.rightClickAction = GetOrCreateActionReference(uiActionMap, "RightClick", ref _rightClickActionReference);
-            uiInputModule.scrollWheelAction = GetOrCreateActionReference(uiActionMap, "ScrollWheel", ref _scrollWheelActionReference);
-            uiInputModule.navigateAction = GetOrCreateActionReference(uiActionMap, "Navigate", ref _navigateActionReference);
-            uiInputModule.submitAction = GetOrCreateActionReference(uiActionMap, "Submit", ref _submitActionReference);
-            uiInputModule.cancelAction = GetOrCreateActionReference(uiActionMap, "Cancel", ref _cancelActionReference);
-
-            uiInputModule.enableBuiltinActionsAsFallback = false;
-            _xrUiInputModuleConfigured = uiInputModule.pointAction != null &&
-                                         uiInputModule.leftClickAction != null &&
-                                         uiInputModule.scrollWheelAction != null &&
-                                         uiInputModule.navigateAction != null &&
-                                         uiInputModule.submitAction != null &&
-                                         uiInputModule.cancelAction != null;
+            _xrUiInputModuleConfigured = _xrInputConfigurator.TryConfigure(_uiInputActions);
 
             if (_xrUiInputModuleConfigured)
                 OseLog.Info("[UI] Bound XR UI Input Module actions from XRI UI action map.");
-        }
-
-        private static InputActionReference GetOrCreateActionReference(
-            InputActionMap actionMap,
-            string actionName,
-            ref InputActionReference cachedReference)
-        {
-            if (cachedReference != null)
-                return cachedReference;
-
-            InputAction action = actionMap.FindAction(actionName, throwIfNotFound: false);
-            if (action == null)
-                return null;
-
-            cachedReference = InputActionReference.Create(action);
-            return cachedReference;
         }
 
         private static InputActionAsset ResolveUiInputActionAsset()
@@ -265,27 +212,7 @@ namespace OSE.UI.Bindings
                 _runtimePanelSettings = null;
             }
 
-            DestroyActionReference(ref _pointActionReference);
-            DestroyActionReference(ref _leftClickActionReference);
-            DestroyActionReference(ref _middleClickActionReference);
-            DestroyActionReference(ref _rightClickActionReference);
-            DestroyActionReference(ref _scrollWheelActionReference);
-            DestroyActionReference(ref _navigateActionReference);
-            DestroyActionReference(ref _submitActionReference);
-            DestroyActionReference(ref _cancelActionReference);
-        }
-
-        private static void DestroyActionReference(ref InputActionReference actionReference)
-        {
-            if (actionReference == null)
-                return;
-
-            if (Application.isPlaying)
-                Destroy(actionReference);
-            else
-                DestroyImmediate(actionReference);
-
-            actionReference = null;
+            (_xrInputConfigurator as XRUIInputConfigurator)?.DestroyActionReferences();
         }
     }
 }

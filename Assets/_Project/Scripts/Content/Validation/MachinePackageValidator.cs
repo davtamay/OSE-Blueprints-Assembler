@@ -13,6 +13,28 @@ namespace OSE.Content.Validation
         /// </summary>
         public static Func<string, bool> IsProfileRegistered { get; set; }
 
+        /// <summary>
+        /// Additional passes registered at startup by external systems.
+        /// Executed after all built-in passes. Extend without modifying this class.
+        /// </summary>
+        private static readonly List<IPackageValidationPass> _externalPasses = new List<IPackageValidationPass>();
+
+        /// <summary>
+        /// Register a custom validation pass to run at the end of every
+        /// <see cref="Validate"/> call. Safe to call at startup before any validation.
+        /// </summary>
+        public static void RegisterPass(IPackageValidationPass pass)
+        {
+            if (pass != null && !_externalPasses.Contains(pass))
+                _externalPasses.Add(pass);
+        }
+
+        /// <summary>
+        /// Removes all externally registered passes.
+        /// <para><b>Test-only.</b> Use in <c>[TearDown]</c> to prevent cross-test contamination.</para>
+        /// </summary>
+        public static void ClearExternalPasses() => _externalPasses.Clear();
+
         private static readonly HashSet<string> DifficultyValues = CreateSet("beginner", "intermediate", "advanced");
         private static readonly HashSet<string> RecommendedModeValues = CreateSet("tutorial", "guided", "standard", "challenge");
         private static readonly HashSet<string> PartCategoryValues = CreateSet("plate", "bracket", "fastener", "shaft", "panel", "housing", "pipe", "custom");
@@ -82,6 +104,19 @@ namespace OSE.Content.Validation
 
             // Structural integrity
             ValidateContiguousSequenceIndices(package.GetSteps(), issues);
+
+            // External passes registered via RegisterPass — run after all built-in passes.
+            if (_externalPasses.Count > 0)
+            {
+                var ctx = new ValidationPassContext(
+                    package, issues,
+                    assemblyIds, subassemblyIds, partIds, toolIds,
+                    stepIds, validationRuleIds, hintIds, effectIds,
+                    targetIds, toolDefsById);
+
+                foreach (var pass in _externalPasses)
+                    pass.Execute(ctx);
+            }
 
             return new MachinePackageValidationResult(issues.ToArray());
         }

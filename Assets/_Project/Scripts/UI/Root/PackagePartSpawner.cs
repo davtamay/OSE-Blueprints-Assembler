@@ -7,7 +7,6 @@ using OSE.Content.Loading;
 using OSE.Core;
 using OSE.Runtime;
 using OSE.Runtime.Preview;
-using System.IO;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
@@ -27,15 +26,19 @@ namespace OSE.UI.Root
     public sealed class PackagePartSpawner : MonoBehaviour, Interaction.ISpawnerQueryService, IStepAwarePositioner
     {
         private const string SamplePartName = "Sample Beam";
-        private static readonly HashSet<string> MissingAssetWarnings = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
-
         private PreviewSceneSetup _setup;
         private MachinePackageDefinition _currentPackage;
         private PackagePreviewConfig _currentPreviewConfig;
         private readonly List<GameObject> _spawnedParts = new List<GameObject>();
         private readonly PackageAssetResolver _resolver = new PackageAssetResolver();
-        private readonly List<GameObject> _editModeGhosts = new List<GameObject>();
         private readonly PreviewConfigLookup _configLookup = new PreviewConfigLookup();
+        private EditModeGhostManager _ghostManager;
+        private PartAssetLoader _assetLoader;
+        private IXRGrabSetup _xrGrabSetup;
+
+        // Guards re-entrant async spawns: if HandlePackageChanged fires while a spawn is
+        // in-flight, the previous task is cancelled before the new one starts.
+        private CancellationTokenSource _spawnCts;
 
         // ── Public accessors ──
 
@@ -49,19 +52,39 @@ namespace OSE.UI.Root
         /// Defaults to <see cref="StreamingAssetsSource"/> (reads from the build's StreamingAssets folder).
         /// Swap for a <see cref="RemoteAssetSource"/> to load from S3, a CDN, or any HTTP server.
         /// </summary>
-        public IAssetSource AssetSource { get; set; }
+        public IAssetSource AssetSource
+        {
+            get => _assetLoader?.AssetSource;
+            set { if (_assetLoader != null) _assetLoader.AssetSource = value; }
+        }
 
         // ── Lifecycle ──
 
         private void OnEnable()
         {
             _setup = GetComponent<PreviewSceneSetup>();
+            _assetLoader = new PartAssetLoader(
+                () => _currentPackage?.packageId,
+                () => _setup?.PreviewRoot);
 #if !UNITY_EDITOR
-            AssetSource ??= new StreamingAssetsSource();
+            _assetLoader.AssetSource = new StreamingAssetsSource();
 #endif
+            _ghostManager = new EditModeGhostManager(
+                _spawnedParts,
+                () => _setup?.PreviewRoot,
+                FindPartPlacement,
+                FindSubassemblyPlacement,
+                FindIntegratedSubassemblyPlacement,
+                FindConstrainedSubassemblyFitPlacement,
+                _resolver,
+                TryLoadPackageAsset);
+
+            if (!ServiceRegistry.TryGet<IXRGrabSetup>(out _xrGrabSetup))
+                _xrGrabSetup = new XRGrabSetupAdapter();
+
             ServiceRegistry.Register<Interaction.ISpawnerQueryService>(this);
             ServiceRegistry.Register<IStepAwarePositioner>(this);
-            SessionDriver.PackageChanged += HandlePackageChanged;
+            RuntimeEventBus.Subscribe<PackageLoaded>(OnPackageLoaded);
 
             // Catch up if this component enabled after the latest package event.
             if (SessionDriver.CurrentPackage != null)
@@ -72,7 +95,10 @@ namespace OSE.UI.Root
 
         private void OnDisable()
         {
-            SessionDriver.PackageChanged -= HandlePackageChanged;
+            _spawnCts?.Cancel();
+            _spawnCts?.Dispose();
+            _spawnCts = null;
+            RuntimeEventBus.Unsubscribe<PackageLoaded>(OnPackageLoaded);
             ServiceRegistry.Unregister<Interaction.ISpawnerQueryService>();
             ServiceRegistry.Unregister<IStepAwarePositioner>();
         }
@@ -94,12 +120,12 @@ namespace OSE.UI.Root
         /// </summary>
         public void ApplyStepAwarePositions(int targetSequenceIndex, MachinePackageDefinition pkg)
         {
-            if (_spawnedParts.Count == 0) { ClearEditModeGhosts(); return; }
+            if (_spawnedParts.Count == 0) { _ghostManager?.Clear(); return; }
 
             if (pkg == null || targetSequenceIndex <= 0)
             {
                 // All Steps mode — restore all parts to startPosition and make visible
-                ClearEditModeGhosts();
+                _ghostManager?.Clear();
                 foreach (var partGo in _spawnedParts)
                 {
                     if (partGo == null) continue;
@@ -306,7 +332,7 @@ namespace OSE.UI.Root
             // Show translucent ghosts at the play (target) position for parts that
             // are currently at their start position (i.e. the parts being placed in
             // the active step). This mirrors what PreviewSpawnManager does at runtime.
-            SpawnEditModeGhosts(pkg, orderedSteps, targetSequenceIndex, fullyAssembled, partStepSeq, subassemblyParts);
+            _ghostManager?.SpawnGhosts(pkg, orderedSteps, targetSequenceIndex, fullyAssembled, partStepSeq, subassemblyParts);
         }
 
         // ── Edit-mode visual helpers ────────────────────────────────────
@@ -323,351 +349,9 @@ namespace OSE.UI.Root
             MaterialHelper.ClearTint(partGo);
         }
 
-        // ── Edit-mode ghost previews ────────────────────────────────────
+        // ── Edit-mode ghost previews — delegated to EditModeGhostManager.cs ──
 
-        private void ClearEditModeGhosts()
-        {
-            foreach (var ghost in _editModeGhosts)
-            {
-                if (ghost != null)
-                    SafeDestroy(ghost);
-            }
-            _editModeGhosts.Clear();
-        }
-
-        private void SpawnEditModeGhosts(
-            MachinePackageDefinition pkg,
-            StepDefinition[] orderedSteps,
-            int targetSequenceIndex,
-            bool fullyAssembled,
-            Dictionary<string, int> partStepSeq,
-            HashSet<string> subassemblyParts)
-        {
-            ClearEditModeGhosts();
-            if (Application.isPlaying || fullyAssembled || _setup?.PreviewRoot == null)
-                return;
-
-            // Find the step at targetSequenceIndex
-            StepDefinition currentStep = null;
-            foreach (var step in orderedSteps)
-            {
-                if (step != null && step.sequenceIndex == targetSequenceIndex)
-                { currentStep = step; break; }
-            }
-
-            if (currentStep == null)
-            {
-                OseLog.VerboseInfo($"[EditGhost] No step found at sequenceIndex={targetSequenceIndex}.");
-                return;
-            }
-
-            string[] targetIds = currentStep.targetIds;
-            if (targetIds == null || targetIds.Length == 0)
-                return;
-
-            // Build the set of part IDs that this step is actively placing.
-            // A ghost is warranted when the part is visible but not yet at its play position.
-            var currentStepPartIds = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
-            if (currentStep.requiredPartIds != null)
-            {
-                foreach (string pid in currentStep.requiredPartIds)
-                {
-                    if (!string.IsNullOrEmpty(pid))
-                        currentStepPartIds.Add(pid);
-                }
-            }
-
-            foreach (string targetId in targetIds)
-            {
-                if (string.IsNullOrEmpty(targetId)) continue;
-                if (!pkg.TryGetTarget(targetId, out var target)) continue;
-
-                // Subassembly target — spawn composite ghost with all member parts
-                if (!string.IsNullOrWhiteSpace(target.associatedSubassemblyId))
-                {
-                    SpawnEditModeSubassemblyGhost(pkg, targetId, target);
-                    continue;
-                }
-
-                string partId = target.associatedPartId;
-                if (string.IsNullOrEmpty(partId)) continue;
-
-                // Show ghost when the part is being placed in THIS step (at start
-                // position, not yet at play position). A part is at its start
-                // position when its earliest step == targetSequenceIndex AND it's
-                // not a subassembly member. Also accept parts listed in the step's
-                // requiredPartIds even if they were introduced earlier (re-placement).
-                bool isCurrentStepPart = false;
-                if (partStepSeq.TryGetValue(partId, out int partSeq) &&
-                    partSeq == targetSequenceIndex &&
-                    !subassemblyParts.Contains(partId))
-                {
-                    isCurrentStepPart = true;
-                }
-                else if (currentStepPartIds.Contains(partId))
-                {
-                    isCurrentStepPart = true;
-                }
-
-                if (!isCurrentStepPart) continue;
-
-                PartPreviewPlacement pp = FindPartPlacement(partId);
-                if (pp == null) continue;
-
-                // Ghost position = play position (where the part will end up)
-                Vector3 ghostPos = new Vector3(pp.playPosition.x, pp.playPosition.y, pp.playPosition.z);
-                Quaternion ghostRot = !pp.playRotation.IsIdentity
-                    ? new Quaternion(pp.playRotation.x, pp.playRotation.y, pp.playRotation.z, pp.playRotation.w)
-                    : Quaternion.identity;
-                Vector3 ghostScale = new Vector3(pp.playScale.x, pp.playScale.y, pp.playScale.z);
-                if (ghostScale.sqrMagnitude < 0.00001f) ghostScale = Vector3.one;
-
-                // Find the real spawned part and clone it for the ghost
-                GameObject sourcePart = null;
-                foreach (var go in _spawnedParts)
-                {
-                    if (go != null && string.Equals(go.name, partId, System.StringComparison.OrdinalIgnoreCase))
-                    { sourcePart = go; break; }
-                }
-
-                GameObject ghost = null;
-                if (sourcePart != null && !IsPrimitive(sourcePart))
-                {
-                    // Clone the real mesh for an accurate silhouette
-                    ghost = Instantiate(sourcePart, _setup.PreviewRoot);
-                }
-                else
-                {
-                    // No real mesh from clone — try loading via the asset resolver
-                    AssetResolution resolution = _resolver.Resolve(partId);
-                    string assetRefToLoad = resolution.IsResolved ? resolution.AssetPath : null;
-
-                    // Fall back to partDef.assetRef if resolver has nothing
-                    if (string.IsNullOrWhiteSpace(assetRefToLoad) &&
-                        pkg.TryGetPart(partId, out var partDef) &&
-                        !string.IsNullOrWhiteSpace(partDef.assetRef))
-                    {
-                        assetRefToLoad = partDef.assetRef;
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(assetRefToLoad))
-                        ghost = TryLoadPackageAsset(assetRefToLoad);
-                }
-
-                if (ghost == null)
-                {
-                    OseLog.VerboseInfo($"[EditGhost] Could not create ghost for part '{partId}' at target '{targetId}' — no mesh available.");
-                    continue;
-                }
-
-                ghost.name = $"EditGhost_{partId}";
-                ghost.transform.SetParent(_setup.PreviewRoot, false);
-                ghost.transform.SetLocalPositionAndRotation(ghostPos, ghostRot);
-                ghost.transform.localScale = ghostScale;
-                ghost.SetActive(true);
-
-                // Strip colliders — ghosts are visual only
-                foreach (var col in ghost.GetComponentsInChildren<Collider>(true))
-                    SafeDestroy(col);
-
-                // Strip any XR interactable components from the clone
-                foreach (var interactable in ghost.GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable>(true))
-                    SafeDestroy(interactable);
-
-                MaterialHelper.ApplyPreviewMaterial(ghost);
-                _editModeGhosts.Add(ghost);
-                OseLog.VerboseInfo($"[EditGhost] Spawned ghost for '{partId}' at target '{targetId}' pos={ghostPos} scale={ghostScale}.");
-            }
-        }
-
-        /// <summary>
-        /// Spawns a composite ghost for a subassembly placement target.
-        /// Mirrors <see cref="PreviewSpawnManager.SpawnPreviewForSubassemblyTarget"/>
-        /// but uses edit-mode-safe instantiation (no IBridgeContext needed).
-        /// </summary>
-        private void SpawnEditModeSubassemblyGhost(
-            MachinePackageDefinition pkg,
-            string targetId,
-            TargetDefinition target)
-        {
-            string subassemblyId = target.associatedSubassemblyId;
-            if (!pkg.TryGetSubassembly(subassemblyId, out SubassemblyDefinition subassembly) ||
-                subassembly?.partIds == null || subassembly.partIds.Length == 0)
-                return;
-
-            SubassemblyPreviewPlacement frame = FindSubassemblyPlacement(subassemblyId);
-            if (frame == null)
-            {
-                OseLog.VerboseInfo($"[EditGhost] Subassembly '{subassemblyId}' has no authored preview frame — skipping ghost.");
-                return;
-            }
-
-            // Root object for the composite ghost
-            var subGhostRoot = new GameObject($"EditGhost_{subassemblyId}");
-            subGhostRoot.transform.SetParent(_setup.PreviewRoot, false);
-
-            Vector3 framePos = PreviewSpawnManager.ToVector3(frame.position);
-            Quaternion frameRot = PreviewSpawnManager.ToQuaternion(frame.rotation);
-            Vector3 frameScale = PreviewSpawnManager.SanitizeScale(PreviewSpawnManager.ToVector3(frame.scale), Vector3.one);
-
-            subGhostRoot.transform.SetLocalPositionAndRotation(framePos, frameRot);
-            subGhostRoot.transform.localScale = frameScale;
-
-            // Integrated placement data (canonical assembled poses)
-            IntegratedSubassemblyPreviewPlacement integratedPlacement =
-                FindIntegratedSubassemblyPlacement(subassemblyId, targetId);
-
-            // Constrained-fit data
-            ConstrainedSubassemblyFitPreviewPlacement fitPlacement =
-                FindConstrainedSubassemblyFitPlacement(subassemblyId, targetId);
-            Vector3 fitAxisLocal = fitPlacement != null
-                ? PreviewSpawnManager.ToVector3(fitPlacement.fitAxisLocal) : Vector3.zero;
-            if (fitAxisLocal.sqrMagnitude > 0.000001f)
-                fitAxisLocal.Normalize();
-            float fitTravel = fitPlacement != null
-                ? Mathf.Clamp(
-                    fitPlacement.completionTravel,
-                    Mathf.Min(fitPlacement.minTravel, fitPlacement.maxTravel),
-                    Mathf.Max(fitPlacement.minTravel, fitPlacement.maxTravel))
-                : 0f;
-            bool isAxisFitPreview = fitPlacement?.drivenPartIds != null && fitPlacement.drivenPartIds.Length > 0;
-            var fitPreviewChildren = isAxisFitPreview ? new List<Transform>() : null;
-
-            // Spawn each member part as a child of the ghost root
-            for (int i = 0; i < subassembly.partIds.Length; i++)
-            {
-                string memberId = subassembly.partIds[i];
-                if (string.IsNullOrWhiteSpace(memberId) || !pkg.TryGetPart(memberId, out PartDefinition part))
-                    continue;
-                if (isAxisFitPreview && System.Array.IndexOf(fitPlacement.drivenPartIds, memberId) < 0)
-                    continue;
-
-                PartPreviewPlacement placement = FindPartPlacement(memberId);
-                if (placement == null) continue;
-
-                // Try to clone the spawned part, or load the asset
-                GameObject childGhost = null;
-                GameObject sourcePart = null;
-                foreach (var go in _spawnedParts)
-                {
-                    if (go != null && string.Equals(go.name, memberId, System.StringComparison.OrdinalIgnoreCase))
-                    { sourcePart = go; break; }
-                }
-
-                if (sourcePart != null && !IsPrimitive(sourcePart))
-                {
-                    childGhost = Instantiate(sourcePart, subGhostRoot.transform);
-                }
-                else
-                {
-                    AssetResolution resolution = _resolver.Resolve(memberId);
-                    string assetRef = resolution.IsResolved ? resolution.AssetPath : part.assetRef;
-                    if (!string.IsNullOrWhiteSpace(assetRef))
-                        childGhost = TryLoadPackageAsset(assetRef);
-                }
-
-                if (childGhost == null) continue;
-
-                childGhost.name = $"EditGhost_{memberId}";
-                childGhost.transform.SetParent(subGhostRoot.transform, false);
-
-                // Compute local position relative to the frame
-                Vector3 memberLocalPos;
-                Quaternion memberLocalRot;
-                Vector3 memberLocalScale;
-
-                if (integratedPlacement?.memberPlacements != null &&
-                    TryFindIntegratedMember(integratedPlacement, memberId,
-                        out Vector3 intPos, out Quaternion intRot, out Vector3 intScale))
-                {
-                    memberLocalPos = PreviewSpawnManager.InverseTransformPoint(
-                        subGhostRoot.transform.localPosition,
-                        subGhostRoot.transform.localRotation,
-                        PreviewSpawnManager.SanitizeScale(subGhostRoot.transform.localScale, Vector3.one),
-                        intPos);
-                    memberLocalRot = Quaternion.Inverse(subGhostRoot.transform.localRotation) * intRot;
-                    memberLocalScale = PreviewSpawnManager.DivideScale(intScale,
-                        PreviewSpawnManager.SanitizeScale(subGhostRoot.transform.localScale, Vector3.one));
-                }
-                else
-                {
-                    Vector3 memberPlayPos = new Vector3(placement.playPosition.x, placement.playPosition.y, placement.playPosition.z);
-                    Quaternion memberPlayRot = !placement.playRotation.IsIdentity
-                        ? new Quaternion(placement.playRotation.x, placement.playRotation.y, placement.playRotation.z, placement.playRotation.w)
-                        : Quaternion.identity;
-                    Vector3 memberPlayScale = PreviewSpawnManager.SanitizeScale(
-                        new Vector3(placement.playScale.x, placement.playScale.y, placement.playScale.z), Vector3.one);
-
-                    memberLocalPos = PreviewSpawnManager.InverseTransformPoint(framePos, frameRot, frameScale, memberPlayPos);
-                    memberLocalRot = Quaternion.Inverse(frameRot) * memberPlayRot;
-                    memberLocalScale = PreviewSpawnManager.DivideScale(memberPlayScale, frameScale);
-                }
-
-                // Apply constrained-fit axis offset
-                if (fitPlacement?.drivenPartIds != null &&
-                    System.Array.IndexOf(fitPlacement.drivenPartIds, memberId) >= 0)
-                {
-                    memberLocalPos += fitAxisLocal * (fitTravel - fitPlacement.minTravel);
-                }
-
-                childGhost.transform.SetLocalPositionAndRotation(memberLocalPos, memberLocalRot);
-                childGhost.transform.localScale = memberLocalScale;
-                childGhost.SetActive(true);
-                if (fitPreviewChildren != null)
-                    fitPreviewChildren.Add(childGhost.transform);
-
-                // Strip colliders and interactables
-                foreach (var col in childGhost.GetComponentsInChildren<Collider>(true))
-                    SafeDestroy(col);
-                foreach (var interactable in childGhost.GetComponentsInChildren<XRBaseInteractable>(true))
-                    SafeDestroy(interactable);
-            }
-
-            // Recenter axis-fit previews around their centroid
-            if (isAxisFitPreview && fitPreviewChildren != null && fitPreviewChildren.Count > 0)
-            {
-                Vector3 anchorLocal = Vector3.zero;
-                for (int i = 0; i < fitPreviewChildren.Count; i++)
-                    anchorLocal += fitPreviewChildren[i].localPosition;
-                anchorLocal /= fitPreviewChildren.Count;
-
-                subGhostRoot.transform.localPosition = PreviewSpawnManager.TransformPoint(
-                    subGhostRoot.transform.localPosition,
-                    subGhostRoot.transform.localRotation,
-                    PreviewSpawnManager.SanitizeScale(subGhostRoot.transform.localScale, Vector3.one),
-                    anchorLocal);
-
-                for (int i = 0; i < fitPreviewChildren.Count; i++)
-                    fitPreviewChildren[i].localPosition -= anchorLocal;
-            }
-
-            MaterialHelper.ApplyPreviewMaterial(subGhostRoot);
-            _editModeGhosts.Add(subGhostRoot);
-            OseLog.VerboseInfo($"[EditGhost] Spawned subassembly ghost for '{subassemblyId}' at target '{targetId}'.");
-        }
-
-        private static bool TryFindIntegratedMember(
-            IntegratedSubassemblyPreviewPlacement intPlacement,
-            string partId,
-            out Vector3 position, out Quaternion rotation, out Vector3 scale)
-        {
-            position = Vector3.zero;
-            rotation = Quaternion.identity;
-            scale = Vector3.one;
-            if (intPlacement?.memberPlacements == null) return false;
-
-            for (int i = 0; i < intPlacement.memberPlacements.Length; i++)
-            {
-                IntegratedMemberPreviewPlacement m = intPlacement.memberPlacements[i];
-                if (m == null || !string.Equals(m.partId, partId, System.StringComparison.OrdinalIgnoreCase))
-                    continue;
-                position = PreviewSpawnManager.ToVector3(m.position);
-                rotation = PreviewSpawnManager.ToQuaternion(m.rotation);
-                scale = PreviewSpawnManager.SanitizeScale(PreviewSpawnManager.ToVector3(m.scale), Vector3.one);
-                return true;
-            }
-            return false;
-        }
+        // ── Placement config lookup ──
 
         /// <summary>
         /// Finds the <see cref="TargetPreviewPlacement"/> for a given target id.
@@ -723,222 +407,61 @@ namespace OSE.UI.Root
 
         /// <summary>
         /// Asynchronously loads a package model asset using the registered <see cref="AssetSource"/>.
-        /// Returns the instantiated root GameObject parented under <paramref name="parent"/> (or
-        /// <see cref="PreviewSceneSetup.PreviewRoot"/> when null), or null on failure.
-        /// In the Editor this falls back to the synchronous AssetDatabase path so Play-mode and
-        /// edit-mode previews continue to work without glTFast round-trips.
+        /// Delegates to <see cref="PartAssetLoader.LoadAsync"/>.
         /// </summary>
-        public async Task<GameObject> LoadPackageAssetAsync(
+        public Task<GameObject> LoadPackageAssetAsync(
             string assetRef,
             Transform parent = null,
             CancellationToken ct = default)
-        {
-            if (string.IsNullOrWhiteSpace(assetRef) ||
-                string.IsNullOrWhiteSpace(_currentPackage?.packageId))
-                return null;
-
-            Transform target = parent != null ? parent : _setup.PreviewRoot;
-
-#if UNITY_EDITOR
-            // In the editor use the synchronous AssetDatabase path so imports are immediate.
-            return TryLoadPackageAsset(assetRef);
-#else
-            if (AssetSource == null)
-            {
-                OseLog.Warn("[PackagePartSpawner] AssetSource is null — cannot load asset at runtime.");
-                return null;
-            }
-
-            GameObject go = await AssetSource.LoadAsync(_currentPackage.packageId, assetRef, target, ct);
-            if (go != null)
-                EnsureColliders(go);
-            return go;
-#endif
-        }
+            => _assetLoader.LoadAsync(assetRef, parent, ct);
 
         /// <summary>
-        /// Loads a package model asset from AssetDatabase and returns a new scene instance
-        /// parented under PreviewRoot, or null if the asset isn't imported yet.
-        /// Play-mode instances get MeshColliders; edit-mode colliders are stripped.
-        /// <para>In builds, prefer <see cref="LoadPackageAssetAsync"/> instead.</para>
+        /// Loads a package model asset from AssetDatabase (editor) or null (builds — use <see cref="LoadPackageAssetAsync"/>).
+        /// Delegates to <see cref="PartAssetLoader.TryLoad"/>.
         /// </summary>
-        public GameObject TryLoadPackageAsset(string assetRef)
-        {
-            if (string.IsNullOrWhiteSpace(assetRef) ||
-                string.IsNullOrWhiteSpace(_currentPackage?.packageId))
-                return null;
+        public GameObject TryLoadPackageAsset(string assetRef) => _assetLoader.TryLoad(assetRef);
 
-#if UNITY_EDITOR
-            string normalizedRef = assetRef.Replace('\\', '/');
-            string assetPath =
-                $"Assets/_Project/Data/Packages/{_currentPackage.packageId}/{normalizedRef}";
-
-            var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
-            if (prefab == null)
-            {
-                foreach (var asset in UnityEditor.AssetDatabase.LoadAllAssetsAtPath(assetPath))
-                    if (asset is GameObject go) { prefab = go; break; }
-            }
-
-            // Fallback: try with assets/parts/ prefix when the ref is a bare filename
-            if (prefab == null && !normalizedRef.Contains("/"))
-            {
-                string prefixedPath =
-                    $"Assets/_Project/Data/Packages/{_currentPackage.packageId}/assets/parts/{normalizedRef}";
-                prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(prefixedPath);
-                if (prefab == null)
-                {
-                    foreach (var asset in UnityEditor.AssetDatabase.LoadAllAssetsAtPath(prefixedPath))
-                        if (asset is GameObject go) { prefab = go; break; }
-                }
-                if (prefab != null)
-                    assetPath = prefixedPath;
-            }
-
-            if (prefab == null && assetPath.EndsWith(".glb"))
-            {
-                string gltfPath = Path.ChangeExtension(assetPath, ".gltf");
-                prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(gltfPath);
-                if (prefab == null)
-                {
-                    foreach (var asset in UnityEditor.AssetDatabase.LoadAllAssetsAtPath(gltfPath))
-                        if (asset is GameObject go) { prefab = go; break; }
-                }
-
-                if (prefab != null)
-                    OseLog.Warn($"[PackagePartSpawner] Fallback loaded GLTF for missing GLB ref: {assetPath} -> {gltfPath}");
-            }
-
-            if (prefab == null)
-            {
-                if (MissingAssetWarnings.Add(assetPath))
-                {
-                    if (File.Exists(assetPath))
-                        OseLog.Warn($"[PackagePartSpawner] Model exists but could not be imported as a GameObject: {assetPath}. Falling back to primitive preview.");
-                    else
-                        OseLog.Warn($"[PackagePartSpawner] Asset prefab not in AssetDatabase: {assetPath}");
-                }
-                return null;
-            }
-
-            var instance = (GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(prefab);
-            instance.transform.SetParent(_setup.PreviewRoot, false);
-            if (Application.isPlaying)
-            {
-                EnsureColliders(instance);
-            }
-            else
-            {
-                foreach (var col in instance.GetComponentsInChildren<Collider>(true))
-                    DestroyImmediate(col);
-            }
-            return instance;
-#else
-            // In builds use LoadPackageAssetAsync instead.
-            OseLog.Warn("[PackagePartSpawner] TryLoadPackageAsset called in a build — use LoadPackageAssetAsync.");
-            return null;
-#endif
-        }
-
-        /// <summary>
-        /// Loads a node from a combined GLB file. Caches the loaded GLB root so
-        /// multiple parts referencing the same combined file only trigger one load.
-        /// Returns a new GameObject containing just the requested subtree, or null.
-        /// </summary>
         private GameObject TryLoadCombinedGlbNode(
             string assetRef,
             string nodeName,
             Dictionary<string, GameObject> cache)
-        {
-#if UNITY_EDITOR
-            if (string.IsNullOrWhiteSpace(assetRef) || string.IsNullOrWhiteSpace(nodeName) ||
-                string.IsNullOrWhiteSpace(_currentPackage?.packageId))
-                return null;
-
-            string assetPath =
-                $"Assets/_Project/Data/Packages/{_currentPackage.packageId}/{assetRef.Replace('\\', '/')}";
-
-            // Load or retrieve cached combined GLB root
-            if (!cache.TryGetValue(assetPath, out GameObject root) || root == null)
-            {
-                var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
-                if (prefab == null)
-                {
-                    foreach (var asset in UnityEditor.AssetDatabase.LoadAllAssetsAtPath(assetPath))
-                        if (asset is GameObject go) { prefab = go; break; }
-                }
-                if (prefab == null) return null;
-
-                root = (GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(prefab);
-                root.transform.SetParent(_setup.PreviewRoot, false);
-                cache[assetPath] = root;
-            }
-
-            // Find the named node in the hierarchy
-            Transform node = FindNodeRecursive(root.transform, nodeName);
-            if (node == null)
-            {
-                // Also try matching with suffix stripping
-                string targetId = PackageAssetResolver.NormalizeToPartId(nodeName);
-                node = FindNodeByNormalizedName(root.transform, targetId);
-            }
-
-            if (node == null) return null;
-
-            // Instantiate a copy of the node subtree — can't reparent inside a prefab instance
-            GameObject copy = Instantiate(node.gameObject, _setup.PreviewRoot);
-            copy.name = node.name; // strip "(Clone)" suffix
-
-            // Strip colliders in edit mode (same as TryLoadPackageAsset)
-            if (!Application.isPlaying)
-            {
-                foreach (var col in copy.GetComponentsInChildren<Collider>(true))
-                    DestroyImmediate(col);
-            }
-
-            return copy;
-#else
-            return null;
-#endif
-        }
-
-        private static Transform FindNodeRecursive(Transform t, string name)
-        {
-            if (t.name.Equals(name, System.StringComparison.OrdinalIgnoreCase)) return t;
-            foreach (Transform child in t)
-            {
-                var found = FindNodeRecursive(child, name);
-                if (found != null) return found;
-            }
-            return null;
-        }
-
-        private static Transform FindNodeByNormalizedName(Transform t, string normalizedId)
-        {
-            foreach (Transform child in t)
-            {
-                if (PackageAssetResolver.NormalizeToPartId(child.name)
-                    .Equals(normalizedId, System.StringComparison.OrdinalIgnoreCase))
-                    return child;
-                var found = FindNodeByNormalizedName(child, normalizedId);
-                if (found != null) return found;
-            }
-            return null;
-        }
+            => _assetLoader.TryLoadCombinedNode(assetRef, nodeName, cache);
 
         // ── Events ──
 
+        private void OnPackageLoaded(PackageLoaded e) => HandlePackageChanged(SessionDriver.CurrentPackage);
+
         private void HandlePackageChanged(MachinePackageDefinition package)
         {
+            // Cancel any in-flight async spawn before clearing parts.
+            _spawnCts?.Cancel();
+            _spawnCts?.Dispose();
+            _spawnCts = new CancellationTokenSource();
+
             _currentPackage = package;
             _currentPreviewConfig = package?.previewConfig;
             _configLookup.SetConfig(_currentPreviewConfig);
 
             // Build the asset resolution catalog — scans the parts folder and maps
             // part IDs to GLB files (individual or nodes inside combined files).
+            // Spline parts (hoses, cables with splinePath data) are rendered procedurally
+            // by SplinePartFactory and never need a GLB — exclude them from the catalog
+            // so they don't appear as false "unresolved" errors.
             if (package != null && !string.IsNullOrWhiteSpace(package.packageId))
             {
-                _resolver.BuildCatalog(package.packageId, package.parts);
+                PartDefinition[] glbParts = package.parts;
+                if (package.previewConfig?.partPlacements != null)
+                {
+                    var splineIds = new System.Collections.Generic.HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+                    foreach (var pp in package.previewConfig.partPlacements)
+                        if (SplinePartFactory.HasSplineData(pp))
+                            splineIds.Add(pp.partId);
+
+                    if (splineIds.Count > 0)
+                        glbParts = System.Array.FindAll(package.parts, p => !splineIds.Contains(p.id));
+                }
+
+                _resolver.BuildCatalog(package.packageId, glbParts);
                 if (_resolver.HasUnresolved)
                     _resolver.LogUnresolved(package.packageId);
                 OseLog.Info($"[PackagePartSpawner] Asset catalog: {_resolver.ResolvedCount} resolved, " +
@@ -975,14 +498,15 @@ namespace OSE.UI.Root
             PositionTargetMarker();
             RuntimeEventBus.Publish(new SpawnerPartsReady());
 #else
-            _ = SpawnPackagePartsAsync();
+            _ = SpawnPackagePartsAsync(_spawnCts.Token);
 #endif
         }
 
-        private async Task SpawnPackagePartsAsync()
+        private async Task SpawnPackagePartsAsync(CancellationToken ct)
         {
-            SpawnPackageParts();          // allocates primitives / spline parts synchronously
-            await SpawnGlbPartsAsync();   // then fills in GLB models asynchronously
+            SpawnPackageParts();                  // allocates primitives / spline parts synchronously
+            await SpawnGlbPartsAsync(ct);         // then fills in GLB models asynchronously
+            if (ct.IsCancellationRequested) return;
             PositionParts();
             PositionTargetMarker();
             RuntimeEventBus.Publish(new SpawnerPartsReady());
@@ -993,13 +517,14 @@ namespace OSE.UI.Root
         /// and replace the placeholder. Runs after <see cref="SpawnPackageParts"/> has populated
         /// the list (with primitives where assets weren't available synchronously).
         /// </summary>
-        private async Task SpawnGlbPartsAsync()
+        private async Task SpawnGlbPartsAsync(CancellationToken ct)
         {
             if (_currentPackage?.parts == null || AssetSource == null)
                 return;
 
             for (int i = 0; i < _spawnedParts.Count; i++)
             {
+                if (ct.IsCancellationRequested) return;
                 GameObject existing = _spawnedParts[i];
                 if (existing == null) continue;
 
@@ -1030,7 +555,7 @@ namespace OSE.UI.Root
                     continue;
 
                 // TODO: combined GLB node extraction at runtime (currently only individual GLBs)
-                GameObject loaded = await LoadPackageAssetAsync(assetRefToLoad, _setup.PreviewRoot);
+                GameObject loaded = await LoadPackageAssetAsync(assetRefToLoad, _setup.PreviewRoot, ct);
                 if (loaded == null) continue;
 
                 // Swap placeholder for real model
@@ -1076,9 +601,7 @@ namespace OSE.UI.Root
                 {
                     if (Application.isPlaying)
                     {
-                        // Spline parts use SplineMeshColliderBinder for deferred MeshCollider — skip EnsureColliders
-                        if (existing.GetComponent<SplineMeshColliderBinder>() == null)
-                            EnsureColliders(existing.gameObject);
+                        EnsureColliders(existing.gameObject);
                     }
                     if (enableRuntimeGrab)
                         TryEnableXRGrabInteractable(existing.gameObject, part.grabConfig);
@@ -1136,13 +659,7 @@ namespace OSE.UI.Root
                 SetObjectActive(p, showGeometry);
         }
 
-        // Layout constants for auto-positioning parts around the floor perimeter
-        private const float LayoutRadius = 3.8f;           // distance from center
-        private const float LayoutArcDegrees = 220f;       // total arc spread
-        private const float LayoutArcStartDeg = -110f;     // centered on negative Z (camera side)
-        private const float LayoutY = 0.55f;               // height above floor
-        private const float LayoutPadding = 0.15f;         // gap between parts within a group
-        private const float LayoutGroupGap = 0.3f;         // extra gap between different groups on the arc
+        // Layout constants moved to PartPositionResolver — access via PartPositionResolver.LayoutRadius etc.
 
         public void RefreshLoosePartPresentationLayout()
         {
@@ -1155,237 +672,28 @@ namespace OSE.UI.Root
 
         private void PositionParts()
         {
-            if (!_setup.ActiveProfile.ShowGeometryPreview)
-                return;
-
-            if (!Application.isPlaying || _currentPackage?.parts == null)
-            {
-                PositionPartsFallback();
-                return;
-            }
-
-            // Group parts by assetRef so identical parts cluster together
-            var groups = new List<List<int>>();
-            var assetToGroup = new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase);
-
-            for (int i = 0; i < _spawnedParts.Count; i++)
-            {
-                var partGo = _spawnedParts[i];
-                if (partGo == null) continue;
-
-                string assetRef = null;
-                foreach (var part in _currentPackage.parts)
-                {
-                    if (string.Equals(part.id, partGo.name, System.StringComparison.OrdinalIgnoreCase))
-                    {
-                        assetRef = part.assetRef;
-                        break;
-                    }
-                }
-
-                string groupKey = assetRef ?? partGo.name;
-                if (assetToGroup.TryGetValue(groupKey, out int groupIdx))
-                {
-                    groups[groupIdx].Add(i);
-                }
-                else
-                {
-                    assetToGroup[groupKey] = groups.Count;
-                    groups.Add(new List<int> { i });
-                }
-            }
-
-            int groupCount = groups.Count;
-            if (groupCount == 0) return;
-
-            // Pre-resolve scale for every part (needed for bounds-aware spacing)
-            var partScales = new Vector3[_spawnedParts.Count];
-            for (int i = 0; i < _spawnedParts.Count; i++)
-            {
-                var go = _spawnedParts[i];
-                if (go == null) { partScales[i] = Vector3.one; continue; }
-                PartPreviewPlacement pp = FindPartPlacement(go.name);
-                partScales[i] = pp != null
-                    ? new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z)
-                    : Vector3.one;
-            }
-
-            // Compute the tangent-direction width of each part at a given angle.
-            // The tangent is perpendicular to the radius on the XZ plane.
-            // Part footprint on tangent = |scale.x * cos(angle)| + |scale.z * sin(angle)|
-            // This gives the maximum extent along the tangent direction.
-
-            // For each group, compute its total tangent span (sum of member widths + padding).
-            // We'll use a representative angle (will refine after layout) — start with even spacing.
-            float[] groupSpans = new float[groupCount];
-            float totalSpan = 0f;
-
-            // First pass: estimate spans using evenly-spaced angles
-            float roughArcStep = groupCount > 1 ? LayoutArcDegrees / (groupCount - 1) : 0f;
-            for (int g = 0; g < groupCount; g++)
-            {
-                float angle = (LayoutArcStartDeg + roughArcStep * g) * Mathf.Deg2Rad;
-                float tanX = Mathf.Abs(Mathf.Cos(angle));
-                float tanZ = Mathf.Abs(Mathf.Sin(angle));
-
-                var members = groups[g];
-                float span = 0f;
-                for (int m = 0; m < members.Count; m++)
-                {
-                    Vector3 s = partScales[members[m]];
-                    float memberWidth = s.x * tanX + s.z * tanZ;
-                    span += memberWidth;
-                    if (m < members.Count - 1)
-                        span += LayoutPadding;
-                }
-                groupSpans[g] = span;
-                totalSpan += span;
-            }
-
-            // Add inter-group gaps
-            totalSpan += (groupCount - 1) * LayoutGroupGap;
-
-            // Convert total linear span to arc degrees at LayoutRadius
-            float totalArcNeeded = (totalSpan / (LayoutRadius * Mathf.Deg2Rad)) * (180f / Mathf.PI);
-            // If the needed arc exceeds available, scale radius up to fit
-            float effectiveRadius = LayoutRadius;
-            if (totalArcNeeded > LayoutArcDegrees && totalSpan > 0f)
-            {
-                // Increase radius so everything fits within the arc
-                float arcLengthAvailable = LayoutArcDegrees * Mathf.Deg2Rad * LayoutRadius;
-                if (totalSpan > arcLengthAvailable)
-                    effectiveRadius = totalSpan / (LayoutArcDegrees * Mathf.Deg2Rad);
-            }
-
-            // Distribute groups proportionally along the arc based on their span
-            float arcLength = LayoutArcDegrees * Mathf.Deg2Rad * effectiveRadius;
-            float cursor = 0f; // linear position along the arc
-
-            for (int g = 0; g < groupCount; g++)
-            {
-                float groupCenter = cursor + groupSpans[g] * 0.5f;
-                float groupAngleRad = (LayoutArcStartDeg * Mathf.Deg2Rad) + (groupCenter / effectiveRadius);
-
-                float cx = Mathf.Sin(groupAngleRad) * effectiveRadius;
-                float cz = -Mathf.Cos(groupAngleRad) * effectiveRadius;
-
-                var members = groups[g];
-
-                // Tangent direction at this angle
-                float tangentX = Mathf.Cos(groupAngleRad);
-                float tangentZ = Mathf.Sin(groupAngleRad);
-                float absTanX = Mathf.Abs(tangentX);
-                float absTanZ = Mathf.Abs(tangentZ);
-
-                // Compute individual member widths along tangent
-                float[] memberWidths = new float[members.Count];
-                float groupTotalWidth = 0f;
-                for (int m = 0; m < members.Count; m++)
-                {
-                    Vector3 s = partScales[members[m]];
-                    memberWidths[m] = s.x * absTanX + s.z * absTanZ;
-                    groupTotalWidth += memberWidths[m];
-                    if (m < members.Count - 1)
-                        groupTotalWidth += LayoutPadding;
-                }
-
-                // Place members centered on group center
-                float memberCursor = -groupTotalWidth * 0.5f;
-                for (int m = 0; m < members.Count; m++)
-                {
-                    int partIdx = members[m];
-                    var partGo = _spawnedParts[partIdx];
-                    if (partGo == null) continue;
-
-                    // Skip spline parts — their geometry is defined by spline knots
-                    PartPreviewPlacement spCheck = FindPartPlacement(partGo.name);
-                    if (SplinePartFactory.HasSplineData(spCheck)) continue;
-
-                    float offset = memberCursor + memberWidths[m] * 0.5f;
-                    float px = cx + tangentX * offset;
-                    float pz = cz + tangentZ * offset;
-
-                    PartPreviewPlacement pp = FindPartPlacement(partGo.name);
-                    Vector3 scale = partScales[partIdx];
-                    Color col = pp != null
-                        ? new Color(pp.color.r, pp.color.g, pp.color.b, pp.color.a)
-                        : new Color(0.94f, 0.55f, 0.18f, 1f);
-                    Quaternion rot = pp != null && !pp.startRotation.IsIdentity
-                        ? new Quaternion(pp.startRotation.x, pp.startRotation.y, pp.startRotation.z, pp.startRotation.w)
-                        : Quaternion.identity;
-
-                    // Use the authored startPosition when available; fall back to arc for un-configured parts.
-                    Vector3 pos = (pp != null && HasAuthoredStartPosition(pp))
-                        ? ResolvePresentationStartPosition(pp)
-                        : new Vector3(px, LayoutY, pz);
-
-                    if (!ShouldPreservePartTransform(partGo.name))
-                        partGo.transform.SetLocalPositionAndRotation(pos, rot);
-                    partGo.transform.localScale = scale;
-
-                    // Preserve original GLB materials; only apply solid color to primitives
-                    if (!MaterialHelper.IsImportedModel(partGo))
-                        MaterialHelper.Apply(partGo, "Preview Part Material", col);
-
-                    ClearRendererPropertyBlocks(partGo);
-
-                    memberCursor += memberWidths[m] + LayoutPadding;
-                }
-
-                cursor += groupSpans[g] + LayoutGroupGap;
-            }
+            PartPositionResolver.PositionParts(
+                _spawnedParts,
+                _currentPackage,
+                Application.isPlaying,
+                _setup.ActiveProfile.ShowGeometryPreview,
+                FindPartPlacement,
+                ShouldPreservePartTransform);
         }
 
         /// <summary>
         /// Edit-mode fallback: use previewConfig positions or linear grid.
+        /// Delegates to <see cref="PartPositionResolver.PositionPartsFallback"/>.
         /// </summary>
         private void PositionPartsFallback()
         {
-            for (int i = 0; i < _spawnedParts.Count; i++)
-            {
-                var partGo = _spawnedParts[i];
-                if (partGo == null) continue;
-
-                PartPreviewPlacement pp = FindPartPlacement(partGo.name);
-
-                // Skip spline parts — their geometry is defined by spline knots
-                if (SplinePartFactory.HasSplineData(pp)) continue;
-
-                Vector3 pos;
-                Vector3 scale;
-                Color col;
-                Quaternion rot;
-
-                if (pp != null)
-                {
-                    pos   = HasAuthoredStartPosition(pp)
-                        ? ResolvePresentationStartPosition(pp)
-                        : new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z);
-                    scale = new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z);
-                    col   = new Color(pp.color.r, pp.color.g, pp.color.b, pp.color.a);
-                    rot   = !pp.startRotation.IsIdentity
-                        ? new Quaternion(pp.startRotation.x, pp.startRotation.y, pp.startRotation.z, pp.startRotation.w)
-                        : Quaternion.identity;
-                }
-                else
-                {
-                    pos   = new Vector3(-2f + i * 1.5f, 0.55f, 0f);
-                    scale = Vector3.one * 0.5f;
-                    col   = new Color(0.94f, 0.55f, 0.18f, 1f);
-                    rot   = Quaternion.identity;
-                }
-
-                if (!ShouldPreservePartTransform(partGo.name))
-                    partGo.transform.SetLocalPositionAndRotation(pos, rot);
-                partGo.transform.localScale = scale;
-
-                // Preserve original GLB materials; only apply solid color to primitives
-                if (!MaterialHelper.IsImportedModel(partGo))
-                    MaterialHelper.Apply(partGo, "Preview Part Material", col);
-
-                ClearRendererPropertyBlocks(partGo);
-            }
+            PartPositionResolver.PositionPartsFallback(
+                _spawnedParts,
+                Application.isPlaying,
+                FindPartPlacement,
+                ShouldPreservePartTransform);
         }
+
 
         private void PositionTargetMarker()
         {
@@ -1411,7 +719,7 @@ namespace OSE.UI.Root
 
         private void ClearSpawnedParts()
         {
-            ClearEditModeGhosts();
+            _ghostManager?.Clear();
             foreach (var go in _spawnedParts)
             {
                 if (go == null) continue;
@@ -1419,6 +727,11 @@ namespace OSE.UI.Root
                 SafeDestroy(go);
             }
             _spawnedParts.Clear();
+
+            // Release GPU/CPU memory from destroyed objects.
+            // Fire-and-forget: the AsyncOperation runs in the background without blocking spawn.
+            if (Application.isPlaying)
+                Resources.UnloadUnusedAssets();
         }
 
         // ── Helpers ──
@@ -1440,11 +753,8 @@ namespace OSE.UI.Root
             return prim;
         }
 
-        private static void TryEnableXRGrabInteractable(GameObject target, PartGrabConfig grabConfig = null)
-            => XRPartInteractionSetup.TryEnableXRGrabInteractable(target, grabConfig);
-
-        private static void ClearRendererPropertyBlocks(GameObject target)
-            => XRPartInteractionSetup.ClearRendererPropertyBlocks(target);
+        private void TryEnableXRGrabInteractable(GameObject target, PartGrabConfig grabConfig = null)
+            => _xrGrabSetup?.EnableGrab(target, grabConfig);
 
         /// <summary>
         /// Adds MeshColliders to every child with a MeshFilter for accurate raycasting.
@@ -1452,33 +762,6 @@ namespace OSE.UI.Root
         /// </summary>
         public static void EnsureColliders(GameObject target)
             => XRPartInteractionSetup.EnsureColliders(target);
-
-        private static Vector3 ResolvePresentationStartPosition(PartPreviewPlacement placement)
-        {
-            // Return the authored start position directly. Because loose parts
-            // and previews are both children of PreviewRoot, uniform scaling is
-            // purely presentational — the local-space layout is identical at
-            // every scale factor, so no compensation is needed or wanted.
-            return new Vector3(
-                placement.startPosition.x,
-                placement.startPosition.y,
-                placement.startPosition.z);
-        }
-
-        private static bool HasAuthoredStartPosition(PartPreviewPlacement placement)
-        {
-            return placement != null && HasAnyValue(new Vector3(
-                placement.startPosition.x,
-                placement.startPosition.y,
-                placement.startPosition.z));
-        }
-
-        private static bool HasAnyValue(Vector3 value)
-        {
-            return !Mathf.Approximately(value.x, 0f) ||
-                   !Mathf.Approximately(value.y, 0f) ||
-                   !Mathf.Approximately(value.z, 0f);
-        }
 
         private static bool ShouldPreservePartTransform(string partId)
         {
@@ -1510,15 +793,5 @@ namespace OSE.UI.Root
             else DestroyImmediate(target);
         }
 
-        private static bool IsPrimitive(GameObject go)
-        {
-            // Unity primitives created by GetOrCreatePrimitive have a MeshFilter
-            // with a shared mesh named after the primitive type
-            var mf = go.GetComponent<MeshFilter>();
-            if (mf == null || mf.sharedMesh == null) return false;
-            string meshName = mf.sharedMesh.name;
-            return meshName == "Cube" || meshName == "Sphere" || meshName == "Cylinder"
-                || meshName == "Capsule" || meshName == "Plane" || meshName == "Quad";
-        }
     }
 }

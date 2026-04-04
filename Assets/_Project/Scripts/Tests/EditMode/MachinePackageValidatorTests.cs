@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using NUnit.Framework;
 using OSE.Content;
 using OSE.Content.Validation;
@@ -8,6 +9,65 @@ namespace OSE.Tests.EditMode
     [TestFixture]
     public class MachinePackageValidatorTests
     {
+        [TearDown]
+        public void TearDown()
+        {
+            MachinePackageValidator.ClearExternalPasses();
+        }
+
+        // ── IPackageValidationPass extension point ──
+
+        [Test]
+        public void RegisterPass_CustomPass_IsExecutedDuringValidation()
+        {
+            bool executed = false;
+            var pass = new LambdaValidationPass(_ => executed = true);
+            MachinePackageValidator.RegisterPass(pass);
+
+            MachinePackageValidator.Validate(CreateMinimalValidPackage());
+
+            Assert.IsTrue(executed, "Custom pass was not executed.");
+        }
+
+        [Test]
+        public void RegisterPass_CustomPass_CanAddIssue()
+        {
+            const string marker = "CustomPassMarker";
+            var pass = new LambdaValidationPass(ctx =>
+                ctx.Issues.Add(new MachinePackageValidationIssue(
+                    MachinePackageIssueSeverity.Warning, "custom.path", marker)));
+            MachinePackageValidator.RegisterPass(pass);
+
+            var result = MachinePackageValidator.Validate(CreateMinimalValidPackage());
+
+            AssertHasIssueContaining(result, marker);
+        }
+
+        [Test]
+        public void RegisterPass_SameInstance_NotAddedTwice()
+        {
+            int callCount = 0;
+            var pass = new LambdaValidationPass(_ => callCount++);
+            MachinePackageValidator.RegisterPass(pass);
+            MachinePackageValidator.RegisterPass(pass); // duplicate
+
+            MachinePackageValidator.Validate(CreateMinimalValidPackage());
+
+            Assert.AreEqual(1, callCount, "Pass was called more than once despite duplicate registration.");
+        }
+
+        [Test]
+        public void ClearExternalPasses_Removes_All_Registered_Passes()
+        {
+            bool executed = false;
+            MachinePackageValidator.RegisterPass(new LambdaValidationPass(_ => executed = true));
+            MachinePackageValidator.ClearExternalPasses();
+
+            MachinePackageValidator.Validate(CreateMinimalValidPackage());
+
+            Assert.IsFalse(executed, "Pass was executed after ClearExternalPasses.");
+        }
+
         // ── Null / Empty ──
 
         [Test]
@@ -1131,5 +1191,16 @@ namespace OSE.Tests.EditMode
             }
             Assert.Fail($"Expected an issue containing '{substring}'. Issues:\n{result.FormatSummary(20)}");
         }
+    }
+
+    /// <summary>
+    /// Test helper — wraps a lambda as an <see cref="IPackageValidationPass"/> so
+    /// tests don't need to define a full class per scenario.
+    /// </summary>
+    internal sealed class LambdaValidationPass : IPackageValidationPass
+    {
+        private readonly System.Action<ValidationPassContext> _action;
+        public LambdaValidationPass(System.Action<ValidationPassContext> action) { _action = action; }
+        public void Execute(ValidationPassContext ctx) => _action(ctx);
     }
 }
