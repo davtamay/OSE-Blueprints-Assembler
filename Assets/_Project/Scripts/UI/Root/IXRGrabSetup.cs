@@ -1,17 +1,16 @@
 using OSE.Content;
 using UnityEngine;
-using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 namespace OSE.UI.Root
 {
     /// <summary>
-    /// Abstracts XR Grab Interactable component setup so callers (e.g.
-    /// <see cref="PackagePartSpawner"/>, <see cref="PartInteractionBridge"/>,
+    /// Abstracts XR Grab Interactable component setup so callers
+    /// (<see cref="PackagePartSpawner"/>, <see cref="PartInteractionBridge"/>,
     /// <see cref="PartVisualFeedbackManager"/>) are not directly coupled to the XRI SDK.
     /// Swap the registered implementation to target a different XR backend.
     ///
-    /// ADR 005: all XRI-specific logic lives in this interface's implementation.
-    /// UI callers must not import XRI SDK types directly.
+    /// ADR 005: this interface file is intentionally XRI-free.
+    /// All XRI-specific logic lives in <see cref="XRGrabSetupAdapter"/>.
     /// </summary>
     internal interface IXRGrabSetup
     {
@@ -33,38 +32,5 @@ namespace OSE.UI.Root
         /// No-op if no interactable component is present.
         /// </summary>
         void SetGrabEnabled(GameObject target, bool enabled);
-    }
-
-    /// <summary>
-    /// Default implementation — delegates to the static <see cref="XRPartInteractionSetup"/>
-    /// utility which requires the XRI SDK to be present.
-    /// </summary>
-    internal sealed class XRGrabSetupAdapter : IXRGrabSetup
-    {
-        public void EnableGrab(GameObject target, PartGrabConfig grabConfig = null)
-            => XRPartInteractionSetup.TryEnableXRGrabInteractable(target, grabConfig);
-
-        public bool IsHovered(GameObject target)
-        {
-            if (target == null) return false;
-            var grab = target.GetComponent<XRGrabInteractable>();
-            return grab != null && grab.isHovered;
-        }
-
-        public void SetGrabEnabled(GameObject target, bool enabled)
-        {
-            if (target == null) return;
-            var grab = target.GetComponent<XRGrabInteractable>();
-            if (grab == null || grab.enabled == enabled) return;
-
-            grab.enabled = enabled;
-
-            var rb = target.GetComponent<Rigidbody>();
-            if (rb != null)
-            {
-                rb.isKinematic = true;
-                rb.useGravity  = false;
-            }
-        }
     }
 }

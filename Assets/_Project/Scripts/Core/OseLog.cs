@@ -10,17 +10,20 @@ namespace OSE.Core
         public static bool Verbose { get; set; } = false;
 
         private static string _sessionTag;
+        private static string _prefix = "[OSE]";
 
         /// <summary>
         /// Sets a short correlation tag (e.g. a session GUID prefix) that is
         /// prepended to every log line.  Call once on session start; call with
         /// <c>null</c> to clear.
         /// </summary>
-        public static void SetSessionTag(string tag) =>
+        public static void SetSessionTag(string tag)
+        {
             _sessionTag = string.IsNullOrWhiteSpace(tag) ? null : tag.Trim();
+            _prefix     = _sessionTag != null ? $"[OSE][{_sessionTag}]" : "[OSE]";
+        }
 
-        private static string Prefix =>
-            _sessionTag != null ? $"[OSE][{_sessionTag}]" : "[OSE]";
+        private static string Prefix => _prefix;
 
         public static void Info(string message) =>
             Debug.Log($"{Prefix} {message}");

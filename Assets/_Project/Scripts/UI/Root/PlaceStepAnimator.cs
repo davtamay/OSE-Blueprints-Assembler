@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using OSE.App;
+using OSE.Content;
 using OSE.Core;
 using OSE.Runtime;
 using UnityEngine;

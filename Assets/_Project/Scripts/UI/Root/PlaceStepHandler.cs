@@ -4,7 +4,6 @@ using OSE.Content;
 using OSE.Core;
 using OSE.Runtime;
 using UnityEngine;
-// PlacementPreviewInfo is now a top-level type in this namespace.
 
 namespace OSE.UI.Root
 {
@@ -148,7 +147,7 @@ namespace OSE.UI.Root
 
             if (!result.IsValid)
             {
-                FlashInvalidSelection(partGo, selectionId);
+                _animator.FlashInvalidSelection(partGo, selectionId);
                 if (!isSubassemblySelection)
                     partController.SelectPart(selectionId);
                 _ctx.SelectionService?.NotifySelected(partGo);
@@ -165,7 +164,7 @@ namespace OSE.UI.Root
             {
                 if (!subassemblyController.IsPlacementCommitReady(partGo, matchedTargetId))
                 {
-                    FlashInvalidSelection(partGo, selectionId);
+                    _animator.FlashInvalidSelection(partGo, selectionId);
                     _ctx.SelectionService?.NotifySelected(partGo);
                     StartPreviewSelectionPulse(selectionId);
                     session.AssemblyController?.StepController?.FailAttempt();
@@ -176,7 +175,7 @@ namespace OSE.UI.Root
 
                 if (!subassemblyController.TryApplyPlacement(subassemblyId, matchedTargetId))
                 {
-                    FlashInvalidSelection(partGo, selectionId);
+                    _animator.FlashInvalidSelection(partGo, selectionId);
                     _ctx.SelectionService?.NotifySelected(partGo);
                     StartPreviewSelectionPulse(selectionId);
                     session.AssemblyController?.StepController?.FailAttempt();

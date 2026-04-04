@@ -51,41 +51,27 @@ namespace OSE.UI.Root
         /// World position of the last successfully executed tool action target.
         /// Updated by TryExternalToolAction; read by orchestrator via IPartActionBridge to focus camera.
         /// </summary>
-        public Vector3 LastToolActionWorldPos => _toolAction?.LastToolActionWorldPos ?? Vector3.zero;
+        public Vector3 LastToolActionWorldPos => _mgr?.ToolAction?.LastToolActionWorldPos ?? Vector3.zero;
 
         private PackagePartSpawner _spawner;
         private PreviewSceneSetup _setup;
         private readonly List<GameObject> _spawnedPreviews = new List<GameObject>();
-        private PreviewSpawnManager _previewManager;
-        private StepFocusComputer _focusComputer;
         private ToolCursorManager _cursorManager;
         private ToolCursorManager CursorManager => _cursorManager ??= new ToolCursorManager(transform);
-        private UseStepHandler _useHandler;
-        private ConnectStepHandler _connectHandler;
-        private PlaceStepHandler _placeHandler;
-        private SubassemblyPlacementController _subassemblyPlacementController;
-        private StepExecutionRouter _router;
         [SerializeField] private InputActionRouter _actionRouter;
         [SerializeField] private SelectionService _selectionService;
 
         // ── Persistent tools (clamps, fixtures) that remain in scene across steps ──
         private PersistentToolManagerBridge _persistentToolMgr;
 
-        // ── Visual feedback (hover, selection, hint highlight, revelation) ──
-        private PartVisualFeedbackManager _visualFeedback;
-        private DragController _drag;
-        private HintManager _hintManager;
+        // ── All plain-C# sub-systems owned by BridgeSubsystemManager ──
+        private BridgeSubsystemManager _mgr;
+
         private readonly Dictionary<string, PartPlacementState> _partStates = new Dictionary<string, PartPlacementState>(StringComparer.OrdinalIgnoreCase);
         private int _hoverPollFrame;
         private const int HoverPollInterval = 3; // ~20 Hz at 60 fps
-        private ToolActionExecutor _toolAction;
         private PartLookupService _lookup;
         private IXRGrabSetup _xrGrabSetup;
-
-        // ── Extracted coordinators ────────────────────────────────────────
-        private SelectionCoordinator _selection;
-        private StepStateResponder _stepResponder;
-        private DockArcCoordinator _dockArc;
 
         // Step-based part visibility state is owned by _visualFeedback.
         private const float PartGridSpacing = InteractionVisualConstants.PartGridSpacing;
@@ -107,35 +93,16 @@ namespace OSE.UI.Root
             _lookup ??= new PartLookupService(
                 () => _spawner,
                 () => _setup,
-                () => _subassemblyPlacementController,
+                () => _mgr?.SubassemblyController,
                 _partStates);
             _persistentToolMgr ??= new PersistentToolManagerBridge(
                 () => CursorManager.ToolPreview,
                 () => CursorManager.DetachPreview(),
                 () => _setup != null ? _setup.PreviewRoot : null,
                 RefreshToolPreviewIndicator);
-            // All extracted classes share a single context reference back to
-            // this bridge, replacing the previous 40+ Func<>/Action lambdas.
-            IBridgeContext ctx = this;
-            _useHandler ??= new UseStepHandler(ctx);
-            _router ??= new StepExecutionRouter();
-            _router.Register(StepFamily.Use, _useHandler);
-            _router.Register(StepFamily.Confirm, new ConfirmStepHandler());
-            _connectHandler ??= new ConnectStepHandler(ctx);
-            _router.Register(StepFamily.Connect, _connectHandler);
-            _subassemblyPlacementController ??= new SubassemblyPlacementController(ctx);
-            ServiceRegistry.Register<ISubassemblyPlacementService>(_subassemblyPlacementController);
-            _visualFeedback ??= new PartVisualFeedbackManager(ctx);
-            _drag ??= new DragController(() => _setup);
-            _hintManager ??= new HintManager(ctx);
-            _previewManager ??= new PreviewSpawnManager(ctx);
-            _focusComputer ??= new StepFocusComputer(ctx);
-            _placeHandler ??= new PlaceStepHandler(ctx);
-            _router.Register(StepFamily.Place, _placeHandler);
-            _toolAction ??= new ToolActionExecutor(ctx);
-            _selection ??= new SelectionCoordinator(ctx);
-            _stepResponder ??= new StepStateResponder(ctx, _selection);
-            _dockArc ??= new DockArcCoordinator(ctx);
+            // All extracted sub-systems share a single IBridgeContext back to this bridge.
+            _mgr ??= new BridgeSubsystemManager(this, () => _setup);
+            _mgr.EnsureInitialized();
             // All event subscriptions go through RuntimeEventBus — one pattern,
             // no null-checked references, symmetric subscribe/unsubscribe.
             RuntimeEventBus.Subscribe<StepStateChanged>(HandleStepStateChanged);
@@ -152,7 +119,7 @@ namespace OSE.UI.Root
 
             EnsureInputWiring();
 
-            _stepResponder.SetStartupSyncPending(true);
+            _mgr.StepResponder.SetStartupSyncPending(true);
         }
 
         private void OnDisable()
@@ -169,27 +136,19 @@ namespace OSE.UI.Root
             RuntimeEventBus.Unsubscribe<PartInspected>(HandlePartInspected);
             RuntimeEventBus.Unsubscribe<SpawnerPartsReady>(HandleSpawnerPartsReady);
 
-            _visualFeedback?.Clear();
-            _dockArc?.Clear();
+            _mgr?.Teardown();
             _partStates.Clear();
-            _toolAction?.ClearToolPreviewIndicator();
-            ClearToolActionTargets();
-            _router?.CleanupAll();
-            _subassemblyPlacementController?.Dispose();
-            _subassemblyPlacementController = null;
-            ServiceRegistry.Unregister<ISubassemblyPlacementService>();
-            _stepResponder?.SetStartupSyncPending(false);
         }
 
         private void Update()
         {
             // Startup sync must run even during intro so parts are revealed
-            _stepResponder?.TrySyncStartupState();
+            _mgr?.StepResponder?.TrySyncStartupState();
 
             // Block all interaction while the intro overlay is displayed
             if (SessionDriver.IsIntroActive)
             {
-                _dockArc?.Clear();
+                _mgr?.DockArc?.Clear();
                 return;
             }
 
@@ -201,19 +160,19 @@ namespace OSE.UI.Root
             bool hoverFrame = (++_hoverPollFrame % HoverPollInterval) == 0;
             if (hoverFrame)
             {
-                _visualFeedback?.UpdatePartHoverVisual();
-                _visualFeedback?.UpdateSelectedSubassemblyVisual();
-                _dockArc?.Update();
+                _mgr?.VisualFeedback?.UpdatePartHoverVisual();
+                _mgr?.VisualFeedback?.UpdateSelectedSubassemblyVisual();
+                _mgr?.DockArc?.Update();
             }
 
-            _visualFeedback?.UpdatePointerDragSelectionVisual();
-            _visualFeedback?.UpdateHintHighlight();
+            _mgr?.VisualFeedback?.UpdatePointerDragSelectionVisual();
+            _mgr?.VisualFeedback?.UpdateHintHighlight();
             // Stop preview pulse when dragging starts — proximity highlight takes over
-            if (_drag.DraggedPart != null)
-                _placeHandler?.StopPreviewSelectionPulse();
+            if (_mgr?.Drag?.DraggedPart != null)
+                _mgr?.PlaceHandler?.StopPreviewSelectionPulse();
             UpdateToolPreviewIndicatorPosition();
             if (TryBuildHandlerContext(out var updateCtx))
-                _router.Update(in updateCtx, Time.deltaTime);
+                _mgr.Router.Update(in updateCtx, Time.deltaTime);
         }
 
         // ── Canonical actions ──
@@ -221,10 +180,10 @@ namespace OSE.UI.Root
         // ── RuntimeEventBus wrappers (delegate to existing handlers) ──
 
         private void HandleCanonicalActionDispatched(CanonicalActionDispatched evt) => HandleCanonicalAction(evt.Action);
-        private void HandlePartSelected(PartSelected evt) => _selection.HandleSelectionServiceSelected(evt.Target);
-        private void HandlePartDeselected(PartDeselected evt) => _selection.HandleSelectionServiceDeselected(evt.Target);
-        private void HandlePartInspected(PartInspected evt) => _selection.HandleSelectionServiceInspected(evt.Target);
-        private void HandleSpawnerPartsReady(SpawnerPartsReady _) => _stepResponder.HandlePartsReady();
+        private void HandlePartSelected(PartSelected evt) => _mgr?.Selection?.HandleSelectionServiceSelected(evt.Target);
+        private void HandlePartDeselected(PartDeselected evt) => _mgr?.Selection?.HandleSelectionServiceDeselected(evt.Target);
+        private void HandlePartInspected(PartInspected evt) => _mgr?.Selection?.HandleSelectionServiceInspected(evt.Target);
+        private void HandleSpawnerPartsReady(SpawnerPartsReady _) => _mgr?.StepResponder?.HandlePartsReady();
 
         private void HandleCanonicalAction(CanonicalAction action)
         {
@@ -284,7 +243,7 @@ namespace OSE.UI.Root
                 return;
             }
 
-            if (!_drag.PointerDown)
+            if (!(_mgr?.Drag?.PointerDown ?? false))
                 BeginXRGrabTracking(selected);
         }
 
@@ -293,10 +252,10 @@ namespace OSE.UI.Root
             if (IsToolModeLockedForParts())
                 return;
 
-            if (_drag.IsDragging && _drag.PointerDown)
+            if ((_mgr?.Drag?.IsDragging ?? false) && (_mgr?.Drag?.PointerDown ?? false))
                 return; // pointer-up path handles placement
 
-            GameObject selected = _drag.DraggedPart;
+            GameObject selected = _mgr?.Drag?.DraggedPart;
             if (selected == null && _selectionService != null)
                 selected = _selectionService.CurrentSelection;
 
@@ -306,7 +265,7 @@ namespace OSE.UI.Root
 
             AttemptPlacementForSelection(selected);
 
-            if (!_drag.PointerDown)
+            if (!(_mgr?.Drag?.PointerDown ?? false))
                 ResetDragState();
         }
 
@@ -329,7 +288,7 @@ namespace OSE.UI.Root
             // Let registered handlers consume the action first (e.g. ConfirmStepHandler).
             if (TryBuildHandlerContext(out var actionCtx))
             {
-                if (_router.TryHandlePointerAction(in actionCtx))
+                if (_mgr.Router.TryHandlePointerAction(in actionCtx))
                     return;
             }
 
@@ -349,14 +308,14 @@ namespace OSE.UI.Root
 
             if (stepHasToolActions)
             {
-                OseLog.Info($"[PartInteraction] V1 tool action path: step='{step.id}', allowCompletion={allowToolActionStepCompletion}, spawnedTargets={_toolAction?.SpawnedTargetCount ?? 0}.");
+                OseLog.Info($"[PartInteraction] V1 tool action path: step='{step.id}', allowCompletion={allowToolActionStepCompletion}, spawnedTargets={_mgr?.ToolAction?.SpawnedTargetCount ?? 0}.");
                 if (TryExecuteToolPrimaryActionFromPointer(session, stepController, allowToolActionStepCompletion))
                     return;
 
                 OseLog.Info($"[PartInteraction] V1 tool action path: TryExecuteToolPrimaryActionFromPointer returned false.");
                 if (step.IsToolAction)
                 {
-                    if ((_toolAction?.SpawnedTargetCount ?? 0) > 0)
+                    if ((_mgr?.ToolAction?.SpawnedTargetCount ?? 0) > 0)
                         FlashToolTargetOnFailure();
 
                     return;
@@ -398,16 +357,16 @@ namespace OSE.UI.Root
         /// </summary>
         public bool TryResolveExternalToolActionTarget(Vector2 screenPos, out ToolActionContext context)
         {
-            if (_toolAction != null) return _toolAction.TryResolveToolActionTarget(screenPos, out context);
+            if (_mgr?.ToolAction != null) return _mgr.ToolAction.TryResolveToolActionTarget(screenPos, out context);
             context = default;
             return false;
         }
 
         public bool TryExecuteExternalToolAction(string interactedTargetId)
-            => _toolAction?.TryExecuteToolAction(interactedTargetId) ?? false;
+            => _mgr?.ToolAction?.TryExecuteToolAction(interactedTargetId) ?? false;
 
         public bool TryExternalToolAction(Vector2 screenPos)
-            => _toolAction?.TryExecuteToolActionAtScreen(screenPos) ?? false;
+            => _mgr?.ToolAction?.TryExecuteToolActionAtScreen(screenPos) ?? false;
 
         /// <summary>
         /// Called by orchestrator via IPartActionBridge for any tap (regardless of
@@ -422,7 +381,7 @@ namespace OSE.UI.Root
             if (!TryBuildHandlerContext(out var ctx))
                 return false;
 
-            return _connectHandler != null && _connectHandler.TryHandlePointerDown(in ctx, screenPos);
+            return _mgr?.ConnectHandler != null && _mgr.ConnectHandler.TryHandlePointerDown(in ctx, screenPos);
         }
 
         public GameObject NormalizeExternalSelectableTarget(GameObject target)
@@ -438,7 +397,7 @@ namespace OSE.UI.Root
         /// Delegates to <see cref="SelectionCoordinator.SetExternalHoveredPart"/>.
         /// </summary>
         public void SetExternalHoveredPart(GameObject hoveredPart)
-            => _selection.SetExternalHoveredPart(hoveredPart);
+            => _mgr?.Selection?.SetExternalHoveredPart(hoveredPart);
 
         // ── IPartActionBridge explicit implementations ──
         // Maps interface names to the existing "External"-prefixed methods.
@@ -486,13 +445,13 @@ namespace OSE.UI.Root
             // subassembly whose other members are completed, lock it.
             // Uses PartRuntimeController.IsPartLockedForMovement which handles the
             // Selected-from-Completed case (previousState tracking).
-            if (!locked && _subassemblyPlacementController != null)
+            if (!locked && _mgr?.SubassemblyController != null)
             {
                 ServiceRegistry.TryGet<IPartRuntimeController>(out var memberController);
-                if (_subassemblyPlacementController.TryGetSubassemblyId(target, out string subId) &&
+                if (_mgr.SubassemblyController.TryGetSubassemblyId(target, out string subId) &&
                     !string.IsNullOrWhiteSpace(subId))
                 {
-                    foreach (GameObject member in _subassemblyPlacementController.EnumerateMemberParts(target))
+                    foreach (GameObject member in _mgr.SubassemblyController.EnumerateMemberParts(target))
                     {
                         if (member == null) continue;
                         bool memberLocked = memberController != null
@@ -533,7 +492,7 @@ namespace OSE.UI.Root
         bool IPartActionBridge.TryGetStepFocusBounds(string stepId, out Bounds bounds)
         {
             bounds = default;
-            if (_focusComputer == null || !_focusComputer.TryResolveStepFocusBounds(stepId, out bounds))
+            if (_mgr?.FocusComputer == null || !_mgr.FocusComputer.TryResolveStepFocusBounds(stepId, out bounds))
                 return false;
             bounds.Expand(new Vector3(0.18f, 0.12f, 0.18f));
             return true;
@@ -557,12 +516,12 @@ namespace OSE.UI.Root
         string IPartQueryContext.ResolveSelectionId(GameObject target) => ResolveSelectionId(target);
         bool IPartQueryContext.IsPartMovementLocked(string partId) => IsPartMovementLocked(partId);
         bool IPartQueryContext.IsToolModeLockedForParts() => IsToolModeLockedForParts();
-        SubassemblyPlacementController IPartQueryContext.SubassemblyController => _subassemblyPlacementController;
+        SubassemblyPlacementController IPartQueryContext.SubassemblyController => _mgr?.SubassemblyController;
 
         // IInteractionStateContext
         SelectionService IInteractionStateContext.SelectionService => _selectionService;
-        DragController IInteractionStateContext.Drag => _drag;
-        bool IInteractionStateContext.IsDragging => _drag != null && _drag.IsDragging;
+        DragController IInteractionStateContext.Drag => _mgr?.Drag;
+        bool IInteractionStateContext.IsDragging => _mgr?.Drag?.IsDragging ?? false;
         bool IInteractionStateContext.IsExternalControlEnabled => ExternalControlEnabled;
         GameObject IInteractionStateContext.GetHoveredPartFromXri() => GetHoveredPartFromXri();
         GameObject IInteractionStateContext.GetHoveredPartFromMouse() => GetHoveredPartFromMouse();
@@ -570,54 +529,54 @@ namespace OSE.UI.Root
 
         // IPreviewContext
         List<GameObject> IPreviewContext.SpawnedPreviews => _spawnedPreviews;
-        PreviewSpawnManager IPreviewContext.PreviewManager => _previewManager;
+        PreviewSpawnManager IPreviewContext.PreviewManager => _mgr?.PreviewManager;
         void IPreviewContext.RefreshToolActionTargets() => RefreshToolActionTargets();
-        void IPreviewContext.HandlePlacementSucceeded(GameObject target) => _selection.HandlePlacementSucceeded(target);
+        void IPreviewContext.HandlePlacementSucceeded(GameObject target) => _mgr?.Selection?.HandlePlacementSucceeded(target);
 
         // ISiblingAccessContext
-        PlaceStepHandler ISiblingAccessContext.PlaceHandler => _placeHandler;
-        UseStepHandler ISiblingAccessContext.UseHandler => _useHandler;
-        ConnectStepHandler ISiblingAccessContext.ConnectHandler => _connectHandler;
-        PartVisualFeedbackManager ISiblingAccessContext.VisualFeedback => _visualFeedback;
-        StepExecutionRouter ISiblingAccessContext.Router => _router;
+        PlaceStepHandler ISiblingAccessContext.PlaceHandler => _mgr?.PlaceHandler;
+        UseStepHandler ISiblingAccessContext.UseHandler => _mgr?.UseHandler;
+        ConnectStepHandler ISiblingAccessContext.ConnectHandler => _mgr?.ConnectHandler;
+        PartVisualFeedbackManager ISiblingAccessContext.VisualFeedback => _mgr?.VisualFeedback;
+        StepExecutionRouter ISiblingAccessContext.Router => _mgr?.Router;
         ToolCursorManager ISiblingAccessContext.CursorManager => CursorManager;
-        ToolActionExecutor ISiblingAccessContext.ToolAction => _toolAction;
-        StepFocusComputer ISiblingAccessContext.FocusComputer => _focusComputer;
+        ToolActionExecutor ISiblingAccessContext.ToolAction => _mgr?.ToolAction;
+        StepFocusComputer ISiblingAccessContext.FocusComputer => _mgr?.FocusComputer;
         void ISiblingAccessContext.ClearHintHighlight() => ClearHintHighlight();
         void ISiblingAccessContext.RestorePartVisual(GameObject part) => RestorePartVisual(part);
 
         // ── Tool Action Preview bridge methods ──
 
-        public GameObject GetToolPreview() => _toolAction?.GetToolPreview();
-        public int GetCompletedToolTargetCount() => _toolAction?.GetCompletedToolTargetCount() ?? 0;
-        public void IncrementCompletedToolTargetCount() => _toolAction?.IncrementCompletedToolTargetCount();
-        public void SetToolPreviewPositionSuspended(bool suspended) => _toolAction?.SetToolPreviewPositionSuspended(suspended);
-        public string GetActiveToolProfile() => _toolAction?.GetActiveToolProfile();
+        public GameObject GetToolPreview() => _mgr?.ToolAction?.GetToolPreview();
+        public int GetCompletedToolTargetCount() => _mgr?.ToolAction?.GetCompletedToolTargetCount() ?? 0;
+        public void IncrementCompletedToolTargetCount() => _mgr?.ToolAction?.IncrementCompletedToolTargetCount();
+        public void SetToolPreviewPositionSuspended(bool suspended) => _mgr?.ToolAction?.SetToolPreviewPositionSuspended(suspended);
+        public string GetActiveToolProfile() => _mgr?.ToolAction?.GetActiveToolProfile();
 
         /// <summary>Returns the currently equipped tool ID, or null.</summary>
         public string GetActiveToolId()
-            => _toolAction?.GetActiveToolId();
+            => _mgr?.ToolAction?.GetActiveToolId();
 
         private bool TryFocusCameraOnToolTarget(Vector2 screenPos)
-            => _toolAction?.TryFocusCameraOnToolTarget(screenPos) ?? false;
+            => _mgr?.ToolAction?.TryFocusCameraOnToolTarget(screenPos) ?? false;
 
         private void FlashToolTargetOnFailure()
-            => _toolAction?.FlashToolTargetOnFailure();
+            => _mgr?.ToolAction?.FlashToolTargetOnFailure();
 
         private bool TryExecuteToolPrimaryActionFromPointer(
             IMachineSessionController session,
             StepController stepController,
             bool allowStepCompletion = true)
-            => _toolAction?.TryExecuteToolPrimaryActionFromPointer(session, stepController, allowStepCompletion) ?? false;
+            => _mgr?.ToolAction?.TryExecuteToolPrimaryActionFromPointer(session, stepController, allowStepCompletion) ?? false;
 
         private void RefreshToolActionTargets()
-            => _toolAction?.RefreshToolActionTargets();
+            => _mgr?.ToolAction?.RefreshToolActionTargets();
 
         private void TrySelectFromPointer(bool isInspect)
         {
             if (ExternalControlEnabled)
             {
-                _drag.PendingSelectPart = null;
+                if (_mgr?.Drag != null) _mgr.Drag.PendingSelectPart = null;
                 return;
             }
 
@@ -627,7 +586,7 @@ namespace OSE.UI.Root
             if (_selectionService == null)
                 return;
 
-            GameObject candidate = _drag.PendingSelectPart;
+            GameObject candidate = _mgr?.Drag?.PendingSelectPart;
             if (candidate == null)
             {
                 if (!TryGetPointerPosition(out Vector2 screenPos))
@@ -644,7 +603,8 @@ namespace OSE.UI.Root
             else
                 _selectionService.NotifySelected(candidate);
 
-            _drag.PendingSelectPart = null;
+            if (_mgr?.Drag != null)
+                _mgr.Drag.PendingSelectPart = null;
         }
 
         private void EnsureInputWiring()
@@ -705,7 +665,7 @@ namespace OSE.UI.Root
             if (string.IsNullOrWhiteSpace(selectionId))
                 return;
 
-            _placeHandler?.AttemptPlacement(targetGo, selectionId);
+            _mgr?.PlaceHandler?.AttemptPlacement(targetGo, selectionId);
         }
 
         // ── Click-to-place ──
@@ -716,11 +676,11 @@ namespace OSE.UI.Root
         /// </summary>
         private bool TryHandleClickToPlace(GameObject selected, Vector2 screenPos)
         {
-            int previewCount = _previewManager?.SpawnedPreviews.Count ?? 0;
-            if (previewCount == 0 || _placeHandler == null)
+            int previewCount = _mgr?.PreviewManager?.SpawnedPreviews.Count ?? 0;
+            if (previewCount == 0 || _mgr?.PlaceHandler == null)
                 return false;
 
-            if (selected == null || _drag.DraggedPart != null)
+            if (selected == null || _mgr?.Drag?.DraggedPart != null)
                 return false;
 
             selected = NormalizeSelectablePlacementTarget(selected);
@@ -728,7 +688,7 @@ namespace OSE.UI.Root
             // Skip click-to-place within 50ms of selection to prevent the
             // pointer-down that triggered selection from also triggering placement.
             const float SelectionCooldownSeconds = 0.05f;
-            float selectionTime = _selection.SelectionTime;
+            float selectionTime = _mgr?.Selection?.SelectionTime ?? -1f;
             if (selectionTime >= 0f && Time.realtimeSinceStartup - selectionTime < SelectionCooldownSeconds)
                 return false;
 
@@ -739,7 +699,7 @@ namespace OSE.UI.Root
             if (IsPartMovementLocked(selectionId))
                 return false;
 
-            return _placeHandler.TryClickToPlace(selectionId, selected, screenPos);
+            return _mgr.PlaceHandler.TryClickToPlace(selectionId, selected, screenPos);
         }
 
         // Preview raycast, screen proximity, and click-to-place execution
@@ -749,16 +709,16 @@ namespace OSE.UI.Root
 
         private void UpdatePreviewProximity()
         {
-            if (_drag.DraggedPart == null || (_previewManager?.SpawnedPreviews.Count ?? 0) == 0)
+            if (_mgr?.Drag?.DraggedPart == null || (_mgr?.PreviewManager?.SpawnedPreviews.Count ?? 0) == 0)
                 return;
 
-            _placeHandler?.UpdateDragProximity(_drag.DraggedPart, _drag.DraggedPartId, _drag.IsDragging);
+            _mgr?.PlaceHandler?.UpdateDragProximity(_mgr.Drag.DraggedPart, _mgr.Drag.DraggedPartId, _mgr.Drag.IsDragging);
         }
-        private void StopPreviewSelectionPulse() => _placeHandler?.StopPreviewSelectionPulse();
+        private void StopPreviewSelectionPulse() => _mgr?.PlaceHandler?.StopPreviewSelectionPulse();
 
         // ── Required-part pulse (highlights parts the user needs to grab) ──
 
-        private void ClearRequiredPartEmission() => _placeHandler?.ClearRequiredPartEmission();
+        private void ClearRequiredPartEmission() => _mgr?.PlaceHandler?.ClearRequiredPartEmission();
 
         /// <summary>
         /// Shows and positions all parts belonging to the current step's subassembly.
@@ -767,9 +727,9 @@ namespace OSE.UI.Root
         /// Parts are arranged in an arc on the near side of the floor,
         /// keeping the center clear for the machine being assembled.
         /// </summary>
-        private void HideNonIntroducedParts() => _visualFeedback?.HideNonIntroducedParts();
+        private void HideNonIntroducedParts() => _mgr?.VisualFeedback?.HideNonIntroducedParts();
 
-        private void RevealStepParts(string stepId) => _visualFeedback?.RevealStepParts(stepId);
+        private void RevealStepParts(string stepId) => _mgr?.VisualFeedback?.RevealStepParts(stepId);
 
 
         /// <summary>
@@ -777,13 +737,13 @@ namespace OSE.UI.Root
         /// previously-revealed parts that belong to the subassembly but aren't needed
         /// for the current step.
         /// </summary>
-        private void ApplyStepPartHighlighting(string stepId) => _visualFeedback?.ApplyStepPartHighlighting(stepId);
+        private void ApplyStepPartHighlighting(string stepId) => _mgr?.VisualFeedback?.ApplyStepPartHighlighting(stepId);
 
 
         // RefreshRequiredPartIds and UpdateRequiredPartPulse are now owned by PlaceStepHandler
         // (called via router lifecycle: OnStepActivated/Update).
 
-        private void ClearHintHighlight() => _visualFeedback?.ClearHintHighlight();
+        private void ClearHintHighlight() => _mgr?.VisualFeedback?.ClearHintHighlight();
 
 
         /// <summary>
@@ -793,7 +753,7 @@ namespace OSE.UI.Root
         public bool TryGetPreviewWorldPosForPart(string partId, out Vector3 worldPos)
         {
             worldPos = Vector3.zero;
-            return _placeHandler != null && _placeHandler.TryGetPreviewWorldPosForPart(partId, out worldPos);
+            return _mgr?.PlaceHandler != null && _mgr.PlaceHandler.TryGetPreviewWorldPosForPart(partId, out worldPos);
         }
 
         // Snap animation, flash invalid, and their update loops are now
@@ -802,16 +762,20 @@ namespace OSE.UI.Root
         // ── Runtime event handlers ──
 
         private void HandleSessionRestored(SessionRestored evt)
-            => _stepResponder.HandleSessionRestored(evt);
+            => _mgr?.StepResponder?.HandleSessionRestored(evt);
 
         private void HandleStepNavigated(StepNavigated evt)
-            => _stepResponder.HandleStepNavigated(evt);
+            => _mgr?.StepResponder?.HandleStepNavigated(evt);
 
         private void HandleStepStateChanged(StepStateChanged evt)
-            => _stepResponder.HandleStepStateChanged(evt);
+            => _mgr?.StepResponder?.HandleStepStateChanged(evt);
 
         private bool TryBuildHandlerContext(out StepHandlerContext context)
-            => _stepResponder.TryBuildHandlerContext(out context);
+        {
+            if (_mgr?.StepResponder != null) return _mgr.StepResponder.TryBuildHandlerContext(out context);
+            context = default;
+            return false;
+        }
 
         private void HandleActiveToolChanged(ActiveToolChanged evt)
         {
@@ -830,71 +794,71 @@ namespace OSE.UI.Root
             if (partGo == null) return;
 
             _partStates[evt.PartId] = evt.Current;
-            _visualFeedback?.SyncPartGrabInteractivity(partGo, evt.PartId);
-            _visualFeedback?.ApplyPartVisualForState(partGo, evt.PartId, evt.Current);
+            _mgr?.VisualFeedback?.SyncPartGrabInteractivity(partGo, evt.PartId);
+            _mgr?.VisualFeedback?.ApplyPartVisualForState(partGo, evt.PartId, evt.Current);
 
-            if (_visualFeedback?.HoveredPart == partGo && CanApplyHoverVisual(partGo, evt.PartId))
+            if (_mgr?.VisualFeedback?.HoveredPart == partGo && CanApplyHoverVisual(partGo, evt.PartId))
                 ApplyHoveredPartVisual(partGo);
 
             if (evt.Current == PartPlacementState.Selected || evt.Current == PartPlacementState.Inspected)
             {
-                _selection.PushPartInfoToUI(evt.PartId);
+                _mgr?.Selection?.PushPartInfoToUI(evt.PartId);
             }
 
             // Remove placed parts from the required-part pulse list
             if (evt.Current == PartPlacementState.PlacedVirtually || evt.Current == PartPlacementState.Completed)
             {
-                _placeHandler?.RemoveFromRequiredPartIds(evt.PartId);
+                _mgr?.PlaceHandler?.RemoveFromRequiredPartIds(evt.PartId);
             }
         }
 
         private void HandleHintRequested(HintRequested evt)
-            => _hintManager?.HandleHintRequested(evt);
+            => _mgr?.HintManager?.HandleHintRequested(evt);
 
 
         // ── Preview parts ──
 
         private bool AdvanceSequentialTarget()
-            => _previewManager?.AdvanceSequentialTarget() ?? true;
+            => _mgr?.PreviewManager?.AdvanceSequentialTarget() ?? true;
 
         private void RefreshToolPreviewIndicator()
-            => _toolAction?.RefreshToolPreviewIndicator();
+            => _mgr?.ToolAction?.RefreshToolPreviewIndicator();
 
         private void UpdateToolPreviewIndicatorPosition()
         {
             if (!TryGetPointerPosition(out Vector2 screenPos))
                 screenPos = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
-            _toolAction?.UpdateToolPreviewIndicatorPosition(screenPos);
+            _mgr?.ToolAction?.UpdateToolPreviewIndicatorPosition(screenPos);
         }
 
         private bool IsToolModeLockedForParts()
-            => _toolAction?.IsToolModeLockedForParts() ?? false;
+            => _mgr?.ToolAction?.IsToolModeLockedForParts() ?? false;
 
         private void ClearToolActionTargets()
-            => _toolAction?.ClearToolActionTargets();
+            => _mgr?.ToolAction?.ClearToolActionTargets();
 
         public bool TryGetNearestToolTargetWorldPos(Vector2 screenPos, out Vector3 worldPos)
         {
-            if (_toolAction != null) return _toolAction.TryGetNearestToolTargetWorldPos(screenPos, out worldPos);
+            if (_mgr?.ToolAction != null) return _mgr.ToolAction.TryGetNearestToolTargetWorldPos(screenPos, out worldPos);
             worldPos = Vector3.zero;
             return false;
         }
 
         public Vector3[] GetActiveToolTargetPositions()
-            => _toolAction?.GetActiveToolTargetPositions() ?? Array.Empty<Vector3>();
+            => _mgr?.ToolAction?.GetActiveToolTargetPositions() ?? Array.Empty<Vector3>();
 
         // TryGetPreviewTargetPose is now owned by PlaceStepHandler.
 
         private void RemovePreviewForPart(string partId)
         {
             // Clear hint highlight if the hint preview is being removed
-            if (_visualFeedback?.HintPreview != null && !string.IsNullOrEmpty(partId))
+            if (_mgr?.VisualFeedback?.HintPreview != null && !string.IsNullOrEmpty(partId))
             {
-                PlacementPreviewInfo hInfo = _visualFeedback.HintPreview.GetComponent<PlacementPreviewInfo>();
+                PlacementPreviewInfo hInfo = _mgr.VisualFeedback.HintPreview.GetComponent<PlacementPreviewInfo>();
                 if (hInfo != null && hInfo.MatchesPart(partId))
                     ClearHintHighlight();
             }
-            _placeHandler?.RemovePreviewForPart(partId);
+            _mgr?.PlaceHandler?.RemovePreviewForPart(partId);
         }
 
         // ── Step completion: move parts to assembled position ──
@@ -904,7 +868,7 @@ namespace OSE.UI.Root
         /// completed visuals. Used by session restore to position parts in bulk
         /// without replaying step events.
         /// </summary>
-        public void RestoreCompletedStepParts(StepDefinition[] steps) => _visualFeedback?.RestoreCompletedStepParts(steps);
+        public void RestoreCompletedStepParts(StepDefinition[] steps) => _mgr?.VisualFeedback?.RestoreCompletedStepParts(steps);
 
 
         /// <summary>
@@ -912,7 +876,7 @@ namespace OSE.UI.Root
         /// to their start positions with available visuals, undoing any play-position
         /// placement. Called during backward navigation so future parts visually rewind.
         /// </summary>
-        private void RevertFutureStepParts(StepDefinition[] allSteps, int fromStepIndex) => _visualFeedback?.RevertFutureStepParts(allSteps, fromStepIndex);
+        private void RevertFutureStepParts(StepDefinition[] allSteps, int fromStepIndex) => _mgr?.VisualFeedback?.RevertFutureStepParts(allSteps, fromStepIndex);
 
 
         // ── Context menu: place selected part at target (debug shortcut) ──
@@ -980,7 +944,7 @@ namespace OSE.UI.Root
 
             RemovePreviewForPart(selectedId);
 
-            if (_previewManager != null && _previewManager.IsSequentialStep)
+            if (_mgr?.PreviewManager != null && _mgr.PreviewManager.IsSequentialStep)
             {
                 if (AdvanceSequentialTarget())
                     session.AssemblyController?.StepController?.CompleteStep(session.GetElapsedSeconds());
@@ -996,27 +960,27 @@ namespace OSE.UI.Root
         // ── Helpers ──
 
         private void BeginDragTracking(GameObject partGo)
-            => _drag?.BeginDragTracking(partGo, ResolveSelectionId(partGo));
+            => _mgr?.Drag?.BeginDragTracking(partGo, ResolveSelectionId(partGo));
 
 
         private void ResetDragState()
         {
-            _drag?.Reset();
-            _placeHandler?.ClearPreviewHighlight();
+            _mgr?.Drag?.Reset();
+            _mgr?.PlaceHandler?.ClearPreviewHighlight();
         }
 
 
         private void BeginXRGrabTracking(GameObject partGo)
-            => _drag?.BeginXRGrabTracking(partGo, ResolveSelectionId(partGo));
+            => _mgr?.Drag?.BeginXRGrabTracking(partGo, ResolveSelectionId(partGo));
 
 
 
         private void UpdateXRPreviewProximity()
         {
-            if (_drag.PointerDown)
+            if (_mgr?.Drag?.PointerDown ?? false)
                 return;
 
-            if (_drag.IsDragging && _drag.DraggedPart != null)
+            if ((_mgr?.Drag?.IsDragging ?? false) && _mgr?.Drag?.DraggedPart != null)
                 UpdatePreviewProximity();
         }
 
@@ -1051,13 +1015,13 @@ namespace OSE.UI.Root
             return RaycastSelectableObject(cam.ScreenPointToRay(mouse.position.ReadValue()));
         }
 
-        private bool CanApplyHoverVisual(GameObject partGo, string partId) => _visualFeedback != null && _visualFeedback.CanApplyHoverVisual(partGo, partId);
+        private bool CanApplyHoverVisual(GameObject partGo, string partId) => _mgr?.VisualFeedback != null && _mgr.VisualFeedback.CanApplyHoverVisual(partGo, partId);
 
 
-        private void ClearPartHoverVisual() => _visualFeedback?.ClearPartHoverVisual();
+        private void ClearPartHoverVisual() => _mgr?.VisualFeedback?.ClearPartHoverVisual();
 
 
-        private void RestorePartVisual(GameObject partGo) => _visualFeedback?.RestorePartVisual(partGo);
+        private void RestorePartVisual(GameObject partGo) => _mgr?.VisualFeedback?.RestorePartVisual(partGo);
 
 
         private PartPlacementState GetPartState(string partId)
@@ -1070,10 +1034,10 @@ namespace OSE.UI.Root
                 : PartPlacementState.Available;
         }
 
-        private void ApplyHoveredPartVisual(GameObject partGo) => _visualFeedback?.ApplyHoveredPartVisual(partGo);
+        private void ApplyHoveredPartVisual(GameObject partGo) => _mgr?.VisualFeedback?.ApplyHoveredPartVisual(partGo);
 
 
-        private void ApplySelectedPartVisual(GameObject partGo) => _visualFeedback?.ApplySelectedPartVisual(partGo);
+        private void ApplySelectedPartVisual(GameObject partGo) => _mgr?.VisualFeedback?.ApplySelectedPartVisual(partGo);
 
 
         /// <summary>
@@ -1086,28 +1050,15 @@ namespace OSE.UI.Root
 
             // Also highlight sibling members so the whole subassembly lights up.
             // EnumerateMemberParts works with or without a proxy record.
-            if (_subassemblyPlacementController != null)
+            if (_mgr?.SubassemblyController != null)
             {
-                foreach (GameObject member in _subassemblyPlacementController.EnumerateMemberParts(clickedMember))
+                foreach (GameObject member in _mgr.SubassemblyController.EnumerateMemberParts(clickedMember))
                 {
                     if (member == null || member == clickedMember) continue;
                     ApplySelectedPartVisual(member);
                     MaterialHelper.SetEmission(member, SelectedSubassemblyEmission);
                 }
             }
-        }
-
-        private static bool TryApplyAffordanceState(GameObject partGo, byte stateIndex, float transitionAmount = 1f)
-        {
-            if (partGo == null)
-                return false;
-
-            var provider = partGo.GetComponent<XRInteractableAffordanceStateProvider>();
-            if (provider == null)
-                return false;
-
-            provider.UpdateAffordanceState(new AffordanceStateData(stateIndex, transitionAmount));
-            return true;
         }
 
         // BeginSnapToTarget is now owned by PlaceStepHandler.
@@ -1117,7 +1068,7 @@ namespace OSE.UI.Root
             pos = Vector3.zero;
             rot = Quaternion.identity;
             scale = Vector3.one;
-            return _placeHandler != null && _placeHandler.TryResolveSnapPose(partId, targetId, out pos, out rot, out scale);
+            return _mgr?.PlaceHandler != null && _mgr.PlaceHandler.TryResolveSnapPose(partId, targetId, out pos, out rot, out scale);
         }
 
 

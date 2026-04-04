@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.XR.Interaction.Toolkit.AffordanceSystem.State;
 
 namespace OSE.UI.Root
 {
@@ -7,7 +6,7 @@ namespace OSE.UI.Root
     /// Abstracts XR affordance-state operations so callers are not directly coupled
     /// to the XRI Affordance System SDK types.
     ///
-    /// ADR 005: all XRI-specific logic lives in this interface's implementation.
+    /// ADR 005: this interface file is intentionally XRI-free.
     /// The only files that may import XRI affordance namespaces are:
     ///   <see cref="XRPartInteractionSetup"/> (wiring utility) and
     ///   <see cref="XRAffordanceSetupAdapter"/> (this interface's adapter).
