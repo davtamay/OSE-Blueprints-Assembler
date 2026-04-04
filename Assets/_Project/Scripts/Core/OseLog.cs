@@ -9,27 +9,40 @@ namespace OSE.Core
     {
         public static bool Verbose { get; set; } = false;
 
+        private static string _sessionTag;
+
+        /// <summary>
+        /// Sets a short correlation tag (e.g. a session GUID prefix) that is
+        /// prepended to every log line.  Call once on session start; call with
+        /// <c>null</c> to clear.
+        /// </summary>
+        public static void SetSessionTag(string tag) =>
+            _sessionTag = string.IsNullOrWhiteSpace(tag) ? null : tag.Trim();
+
+        private static string Prefix =>
+            _sessionTag != null ? $"[OSE][{_sessionTag}]" : "[OSE]";
+
         public static void Info(string message) =>
-            Debug.Log($"[OSE] {message}");
+            Debug.Log($"{Prefix} {message}");
 
         public static void Warn(string message) =>
-            Debug.LogWarning($"[OSE] {message}");
+            Debug.LogWarning($"{Prefix} {message}");
 
         public static void Error(string message) =>
-            Debug.LogError($"[OSE] {message}");
+            Debug.LogError($"{Prefix} {message}");
 
         /// <summary>Logs an error with a stable <see cref="OseErrorCode"/> prefix for filtering.</summary>
         public static void Error(OseErrorCode code, string message) =>
-            Debug.LogError($"[OSE][{(int)code:D4}] {message}");
+            Debug.LogError($"{Prefix}[{(int)code:D4}] {message}");
 
         /// <summary>Logs a warning with a stable <see cref="OseErrorCode"/> prefix for filtering.</summary>
         public static void Warn(OseErrorCode code, string message) =>
-            Debug.LogWarning($"[OSE][{(int)code:D4}] {message}");
+            Debug.LogWarning($"{Prefix}[{(int)code:D4}] {message}");
 
         public static void VerboseInfo(string message)
         {
             if (Verbose)
-                Debug.Log($"[OSE:V] {message}");
+                Debug.Log($"{Prefix}:V {message}");
         }
 
         public static void StepEvent(string stepId, StepState state) =>

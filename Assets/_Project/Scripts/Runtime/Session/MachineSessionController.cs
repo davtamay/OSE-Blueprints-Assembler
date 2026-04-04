@@ -114,6 +114,10 @@ namespace OSE.Runtime
                 Lifecycle = SessionLifecycle.Uninitialized
             };
 
+            // Stamp all log output with a short session ID so multi-session logs are filterable.
+            string sessionTag = $"{packageId}/{System.Guid.NewGuid().ToString("N")[..8]}";
+            OseLog.SetSessionTag(sessionTag);
+
             SetLifecycle(SessionLifecycle.Initializing);
 
             // Load the package
@@ -227,6 +231,7 @@ namespace OSE.Runtime
             if (_sessionState == null)
                 return;
 
+            OseLog.SetSessionTag(null);
             FlushPersistenceSnapshot();
 
             RuntimeEventBus.Unsubscribe<StepStateChanged>(HandleStepStateChanged);
