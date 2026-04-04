@@ -117,6 +117,7 @@ namespace OSE.Core
         StructuralReveal,
         PreviewGuidance,
         ErrorHighlight,
-        ChallengeSuccess
+        ChallengeSuccess,
+        HapticFeedback
     }
 }

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -17,6 +18,20 @@ namespace OSE.Core
 
         // Cached shader — resolved on first use. Unity clears this on domain reload.
         private static Shader _urpLitShader;
+
+        // Shared tint materials keyed by (materialName + Color32). Avoids allocating
+        // a new Material on every Apply / ApplyTint call. Cache is bounded by the number
+        // of distinct (name, color) combinations used at runtime (typically < 10).
+        private static readonly Dictionary<int, Material> _tintMaterialCache =
+            new Dictionary<int, Material>();
+
+        private static int TintCacheKey(string name, Color color)
+        {
+            var c32 = (Color32)color;
+            // Cheap hash: combine string hash with packed RGBA int.
+            int rgba = (c32.r << 24) | (c32.g << 16) | (c32.b << 8) | c32.a;
+            return (name?.GetHashCode() ?? 0) * 397 ^ rgba;
+        }
 
         private static Shader UrpLitShader =>
             _urpLitShader != null ? _urpLitShader
@@ -144,17 +159,25 @@ namespace OSE.Core
         /// <summary>
         /// Replaces every material slot on every renderer with a single shared
         /// URP/Lit material in the given color. Skips outline children.
+        /// Materials are cached by (name, color) so repeated calls with the same
+        /// arguments allocate nothing after the first call.
         /// </summary>
         private static void ApplyColorToAllSlots(GameObject target, Color color, string materialName = "OSE_Tint")
         {
-            Material tintMat = CreateUrpMaterial(materialName);
-            if (tintMat == null) return;
-
-            SetBaseColor(tintMat, color);
-            if (tintMat.HasProperty("_EmissionColor"))
+            int key = TintCacheKey(materialName, color);
+            if (!_tintMaterialCache.TryGetValue(key, out Material tintMat) || tintMat == null)
             {
-                tintMat.SetColor("_EmissionColor", color * 0.15f);
-                tintMat.EnableKeyword("_EMISSION");
+                tintMat = CreateUrpMaterial(materialName);
+                if (tintMat == null) return;
+
+                SetBaseColor(tintMat, color);
+                if (tintMat.HasProperty("_EmissionColor"))
+                {
+                    tintMat.SetColor("_EmissionColor", color * 0.15f);
+                    tintMat.EnableKeyword("_EMISSION");
+                }
+
+                _tintMaterialCache[key] = tintMat;
             }
 
             ApplyToAllSlots(target, tintMat, skipOutline: true);

@@ -9,42 +9,59 @@ namespace OSE.Core
     /// </summary>
     public static class RuntimeEventBus
     {
-        private static readonly Dictionary<Type, Delegate> _listeners = new Dictionary<Type, Delegate>();
+        // Tracks all types that have ever been subscribed so Clear() can reset them.
+        // Only written on Subscribe (cold path); never read on Publish (hot path).
+        private static readonly List<Action> _clearActions = new List<Action>();
+
+        /// <summary>
+        /// Per-type static handler store. Generic static fields are instantiated once
+        /// per concrete T by the CLR, giving O(1) field access with zero dictionary
+        /// lookup on the hot Publish path.
+        /// </summary>
+        private static class Listener<T> where T : struct
+        {
+            // ReSharper disable once StaticMemberInGenericType
+            internal static Action<T> Handler;
+            // ReSharper disable once StaticMemberInGenericType
+            internal static bool IsTracked;
+        }
 
         public static void Subscribe<T>(Action<T> listener) where T : struct
         {
-            var type = typeof(T);
-            if (_listeners.TryGetValue(type, out var existing))
-                _listeners[type] = Delegate.Combine(existing, listener);
-            else
-                _listeners[type] = listener;
+            // Register a clear action once per type — survives Clear() calls so
+            // re-subscribing after Clear doesn't add a duplicate clear action.
+            if (!Listener<T>.IsTracked)
+            {
+                _clearActions.Add(() => Listener<T>.Handler = null);
+                Listener<T>.IsTracked = true;
+            }
+
+            Listener<T>.Handler = (Action<T>)Delegate.Combine(Listener<T>.Handler, listener);
         }
 
         public static void Unsubscribe<T>(Action<T> listener) where T : struct
         {
-            var type = typeof(T);
-            if (_listeners.TryGetValue(type, out var existing))
-            {
-                var result = Delegate.Remove(existing, listener);
-                if (result == null)
-                    _listeners.Remove(type);
-                else
-                    _listeners[type] = result;
-            }
+            Listener<T>.Handler = (Action<T>)Delegate.Remove(Listener<T>.Handler, listener);
         }
 
+        /// <summary>
+        /// Publishes <paramref name="evt"/> to all current subscribers of type <typeparamref name="T"/>.
+        /// Zero dictionary lookup — resolves directly to the per-type static handler.
+        /// </summary>
         public static void Publish<T>(T evt) where T : struct
         {
-            if (!_listeners.TryGetValue(typeof(T), out var existing))
-                return;
-
             // Snapshot before invoke so a handler that calls Unsubscribe<T> during
             // execution doesn't affect the current dispatch (Delegate is immutable).
-            var snapshot = (Action<T>)existing;
-            snapshot?.Invoke(evt);
+            Listener<T>.Handler?.Invoke(evt);
         }
 
-        public static void Clear() => _listeners.Clear();
+        public static void Clear()
+        {
+            // Reset all handlers. Keep _clearActions and IsTracked so re-subscribing
+            // after Clear doesn't double-register clear actions.
+            foreach (var clear in _clearActions)
+                clear();
+        }
     }
 
     // ── Session Events ──

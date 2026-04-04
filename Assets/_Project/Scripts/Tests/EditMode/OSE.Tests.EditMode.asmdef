@@ -8,7 +8,8 @@
         "OSE.Runtime",
         "OSE.Validation",
         "OSE.Challenge",
-        "OSE.Persistence"
+        "OSE.Persistence",
+        "OSE.UI"
     ],
     "includePlatforms": [
         "Editor"

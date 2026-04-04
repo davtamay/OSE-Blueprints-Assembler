@@ -40,6 +40,11 @@ namespace OSE.UI.Root
         // in-flight, the previous task is cancelled before the new one starts.
         private CancellationTokenSource _spawnCts;
 
+        // Prevents synchronous re-entrancy: editor callbacks (e.g. OnDisable on a
+        // destroyed child) could publish a PackageLoaded event while ClearSpawnedParts
+        // is iterating. The flag makes the nested call a no-op.
+        private bool _isHandlingPackageChange;
+
         // ── Public accessors ──
 
         public IReadOnlyList<GameObject> SpawnedParts => _spawnedParts;
@@ -432,6 +437,20 @@ namespace OSE.UI.Root
         private void OnPackageLoaded(PackageLoaded e) => HandlePackageChanged(SessionDriver.CurrentPackage);
 
         private void HandlePackageChanged(MachinePackageDefinition package)
+        {
+            if (_isHandlingPackageChange) return;
+            _isHandlingPackageChange = true;
+            try
+            {
+                HandlePackageChangedCore(package);
+            }
+            finally
+            {
+                _isHandlingPackageChange = false;
+            }
+        }
+
+        private void HandlePackageChangedCore(MachinePackageDefinition package)
         {
             // Cancel any in-flight async spawn before clearing parts.
             _spawnCts?.Cancel();

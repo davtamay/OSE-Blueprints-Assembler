@@ -347,9 +347,12 @@ namespace OSE.UI.Root
                 }
             }
 
-            // Audio feedback — fires if an IEffectPlayer is registered; no-op otherwise.
+            // Audio + haptic feedback — fires if an IEffectPlayer is registered; no-op otherwise.
             if (ServiceRegistry.TryGet<IEffectPlayer>(out var fx))
+            {
                 fx.Play(EffectRole.PlacementFeedback, sphere.transform.position);
+                fx.PlayHaptic(EffectRole.HapticFeedback);
+            }
         }
 
         // ── Pipe spline rendering ──

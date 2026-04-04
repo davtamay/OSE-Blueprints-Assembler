@@ -19,6 +19,13 @@ namespace OSE.Core
         void Play(EffectRole role, UnityEngine.Vector3 worldPosition);
         void Stop(EffectRole role);
         bool IsPlaying(EffectRole role);
+
+        /// <summary>
+        /// Triggers a controller haptic pulse. No-op on non-XR platforms.
+        /// </summary>
+        /// <param name="amplitude">Vibration strength, 0–1.</param>
+        /// <param name="duration">Duration in seconds.</param>
+        void PlayHaptic(EffectRole role, float amplitude = 0.3f, float duration = 0.08f);
     }
 
     public interface IPersistenceService
