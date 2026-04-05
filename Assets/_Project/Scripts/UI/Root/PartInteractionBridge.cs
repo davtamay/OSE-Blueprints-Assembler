@@ -144,6 +144,9 @@ namespace OSE.UI.Root
         {
             // Startup sync must run even during intro so parts are revealed
             _mgr?.StepResponder?.TrySyncStartupState();
+            // Re-apply integrated cube positions every frame until all member GLBs have
+            // loaded — controller removes a subassembly from pending once all parts confirmed.
+            _mgr?.SubassemblyController?.TickPendingIntegration();
 
             // Block all interaction while the intro overlay is displayed
             if (SessionDriver.IsIntroActive)
