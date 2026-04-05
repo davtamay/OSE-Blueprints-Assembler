@@ -564,3 +564,93 @@ This should be rare. A new family means a fundamentally new interaction shape �
 4. Add the legacy mapping in §6 (if a `completionType` value exists).
 5. Implement family dispatch in the runtime.
 6. Update `MachinePackageValidator.cs`.
+
+---
+
+# Step View Framing
+
+*Merged from STEP_VIEW_FRAMING.md*
+
+Step View Framing defines how the camera should frame each assembly step's spatial context during guided training. It is the sixth canonical concept in the step execution taxonomy (after Entity Role, Step Family, Interaction Pattern, Profile, and Payloads).
+
+## Design Principles
+
+- **Guided, not free-roam** — the system provides a useful default perspective on every step activation
+- **Recoverable** — learner can always return via **Back** (previous step framing) or **Step Home** (current step framing)
+- **Non-jarring** — soft animated transitions, never hard cuts; transition speed adapts to distance
+- **Selection does not reframe** — tapping a part may subtly adjust pivot but never repositions the camera
+- **Focus is intentional** — every camera movement has a clear instructional reason
+
+## View Modes
+
+A view mode is a semantic classification of what spatial context a step needs the learner to see. It is not a camera angle — it resolves into camera parameters at runtime.
+
+| View Mode | Description | Pivot Target |
+|-----------|-------------|--------------|
+| `SourceAndTarget` | Frame the source part and its ghost/target zone together | Midpoint of source and target |
+| `PairEndpoints` | Frame both endpoints of a connection or measurement | Midpoint of A and B |
+| `WorkZone` | Frame the tool target area at working distance | Target centroid |
+| `PathView` | Frame a linear work path (weld seam, cut line) | Path midpoint |
+| `Overview` | Wide shot of the full assembly | Assembly center |
+| `Inspect` | Close-up detail view for verification | Inspection target |
+
+**View mode vs. viewpoint:** A view mode is semantic ("show source and target together"). A viewpoint is a concrete camera parameterization (yaw, pitch, distance, pivot offset). The existing `ViewpointLibrary` presets (Front, Side, Top, Iso, Detail) remain available as manual overrides.
+
+## Family-to-View-Mode Default Mapping
+
+| Family | Default View Mode | Rationale |
+|--------|-------------------|-----------|
+| Place | `SourceAndTarget` | Learner needs to see both part and target |
+| Use | `WorkZone` | Learner needs the tool target area at working distance |
+| Connect | `PairEndpoints` | Learner needs to see both connection endpoints |
+| Confirm | `Overview` | Confirmation steps are review/acknowledgment — wide context |
+
+### Profile Overrides
+
+| Profile | View Mode Override |
+|---------|-------------------|
+| Use.Weld | `PathView` — weld seam requires path framing |
+| Use.Cut | `PathView` — cut line requires path framing |
+| Use.Measure | `PairEndpoints` — measurement spans two anchors |
+| Connect.Cable | `PairEndpoints` — cable connects two port endpoints |
+
+### Resolution Order
+
+1. If the step declares an explicit `viewMode` field, use it directly.
+2. If absent but a profile override exists, use the profile override.
+3. Otherwise, use the family default.
+
+## Schema Integration
+
+Steps may declare an explicit `viewMode` override in machine.json:
+
+```json
+{
+  "id": "step_final_square_check",
+  "family": "Confirm",
+  "viewMode": "Inspect"
+}
+```
+
+When absent, the runtime resolves from family + profile. Valid values: `SourceAndTarget`, `PairEndpoints`, `WorkZone`, `PathView`, `Overview`, `Inspect`. Unknown values fall back to the family default.
+
+`viewMode` is **not** an authored camera angle — it is a semantic classification. Authors should think "what does the learner need to see?" not "what camera angle should we use?"
+
+## Framing Behavior
+
+- **On step activation:** resolve view mode → compute target viewpoint from step spatial data → animate camera to target → store as step's home framing
+- **On part selection:** may adjust pivot subtly; camera position and orientation remain stable
+- **On step completion:** camera holds; next step activation handles the transition
+- **Back:** animate to previous step's home framing
+- **Step Home:** animate to current step's home framing
+
+## Runtime Infrastructure
+
+| Component | Role | File |
+|-----------|------|------|
+| `AssemblyCameraRig` | Orbital camera with `FocusOn()`, `FrameBounds()`, `ApplyViewpoint()` | `Interaction/Camera/AssemblyCameraRig.cs` |
+| `StepViewpoint` | Struct: Yaw, Pitch, Distance, PivotOffset, Label | `Interaction/Guidance/StepViewpoint.cs` |
+| `ViewpointLibrary` | 5 presets: Front, Side, Top, Iso, Detail | `Interaction/Guidance/StepViewpoint.cs` |
+| `CameraPivotResolver` | PivotSource: AssemblyCenter, SelectedPart, GhostTarget, StepTarget, Custom | `Interaction/Camera/CameraPivotResolver.cs` |
+| `StepGuidanceService` | Bridge between step activation and camera commands | `Interaction/Guidance/StepGuidanceService.cs` |
+| `InteractionSettings` | Feature toggles: EnableAutoFraming, EnableStepViewGuidance, etc. | `Interaction/Core/InteractionSettings.cs` |

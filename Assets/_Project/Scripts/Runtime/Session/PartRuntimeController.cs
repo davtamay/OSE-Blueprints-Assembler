@@ -246,8 +246,8 @@ namespace OSE.Runtime
             {
                 for (int i = 0; i < completedSteps.Length; i++)
                 {
-                    string[] partIds = completedSteps[i]?.requiredPartIds;
-                    if (partIds == null) continue;
+                    string[] partIds = completedSteps[i]?.GetEffectiveRequiredPartIds();
+                    if (partIds == null || partIds.Length == 0) continue;
                     for (int p = 0; p < partIds.Length; p++)
                     {
                         if (!string.IsNullOrEmpty(partIds[p]))
@@ -259,8 +259,8 @@ namespace OSE.Runtime
             if (targetStep != null)
             {
                 _activeStepId = targetStep.id;
-                string[] partIds = targetStep.requiredPartIds;
-                if (partIds != null)
+                string[] partIds = targetStep.GetEffectiveRequiredPartIds();
+                if (partIds != null && partIds.Length > 0)
                 {
                     for (int p = 0; p < partIds.Length; p++)
                     {
@@ -284,8 +284,8 @@ namespace OSE.Runtime
 
             for (int s = 0; s < steps.Length; s++)
             {
-                string[] partIds = steps[s].requiredPartIds;
-                if (partIds == null) continue;
+                string[] partIds = steps[s].GetEffectiveRequiredPartIds();
+                if (partIds == null || partIds.Length == 0) continue;
 
                 for (int p = 0; p < partIds.Length; p++)
                 {
@@ -322,7 +322,7 @@ namespace OSE.Runtime
             if (!_package.TryGetStep(_activeStepId, out var step))
                 return Array.Empty<string>();
 
-            return step.requiredPartIds ?? Array.Empty<string>();
+            return step.GetEffectiveRequiredPartIds();
         }
 
         /// <summary>
@@ -343,7 +343,7 @@ namespace OSE.Runtime
                        subassemblyController.IsActiveStepPlacementSatisfied(_activeStepId);
             }
 
-            string[] required = step.requiredPartIds;
+            string[] required = step.GetEffectiveRequiredPartIds();
             if (required == null || required.Length == 0)
                 return true;
 
@@ -418,8 +418,8 @@ namespace OSE.Runtime
             if (_package == null || !_package.TryGetStep(stepId, out var step))
                 return;
 
-            string[] partIds = step.requiredPartIds;
-            if (partIds != null)
+            string[] partIds = step.GetEffectiveRequiredPartIds();
+            if (partIds != null && partIds.Length > 0)
             {
                 for (int i = 0; i < partIds.Length; i++)
                 {
@@ -459,8 +459,8 @@ namespace OSE.Runtime
             if (_package == null || !_package.TryGetStep(stepId, out var step))
                 return;
 
-            string[] partIds = step.requiredPartIds;
-            if (partIds != null)
+            string[] partIds = step.GetEffectiveRequiredPartIds();
+            if (partIds != null && partIds.Length > 0)
             {
                 for (int i = 0; i < partIds.Length; i++)
                 {

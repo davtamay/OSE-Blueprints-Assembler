@@ -1,0 +1,36 @@
+{
+  "input_fcstd": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\electronics_stage01\\raw\\Smartcontroller_v1904.fcstd",
+  "output_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\electronics_stage01\\exported\\stl\\d3d_smart_controller.stl",
+  "source_mode": "archive_brep",
+  "units": "mm",
+  "object_count": 1,
+  "mesh_facets": 1702,
+  "mesh_points": 837,
+  "combined_bound_box": {
+    "xmin_mm": -271.81380443109,
+    "xmax_mm": -168.91380443109,
+    "ymin_mm": -59.30000000000001,
+    "ymax_mm": -24.6,
+    "zmin_mm": -12.869517262891002,
+    "zmax_mm": 73.88048273710899,
+    "xlen_mm": 102.89999999999998,
+    "ylen_mm": 34.70000000000001,
+    "zlen_mm": 86.75
+  },
+  "objects": [
+    {
+      "name": "PartShape.brp",
+      "bound_box": {
+        "xmin_mm": -271.81380443109,
+        "xmax_mm": -168.91380443109,
+        "ymin_mm": -59.30000000000005,
+        "ymax_mm": -24.59999999999998,
+        "zmin_mm": -12.869517262891002,
+        "zmax_mm": 73.88048273710899,
+        "xlen_mm": 102.89999999999998,
+        "ylen_mm": 34.70000000000007,
+        "zlen_mm": 86.75
+      }
+    }
+  ]
+}

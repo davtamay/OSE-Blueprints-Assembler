@@ -1,0 +1,122 @@
+[
+  {
+    "partId": "d3d_control_panel",
+    "center_mode": "base_center",
+    "assembly_anchor_mm": {
+      "x": -68.0,
+      "y": 76.2,
+      "z": 0.0
+    },
+    "playPosition": {
+      "x": -0.2204,
+      "y": 0.5532,
+      "z": -0.0762
+    },
+    "playRotation": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "w": 1.0
+    },
+    "startPosition": {
+      "x": 1.2796,
+      "y": 0.5532,
+      "z": -0.0762
+    },
+    "glb_size_m": {
+      "x": 0.1359,
+      "y": 0.1361,
+      "z": 0.135
+    }
+  },
+  {
+    "partId": "d3d_psu_atx",
+    "center_mode": "base_center",
+    "assembly_anchor_mm": {
+      "x": -68.0,
+      "y": 76.2,
+      "z": 65.0
+    },
+    "playPosition": {
+      "x": -0.2204,
+      "y": 0.6182,
+      "z": -0.0762
+    },
+    "playRotation": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "w": 1.0
+    },
+    "startPosition": {
+      "x": 1.2796,
+      "y": 0.6182,
+      "z": -0.0762
+    },
+    "glb_size_m": {
+      "x": 0.2028,
+      "y": 0.0623,
+      "z": 0.0597
+    }
+  },
+  {
+    "partId": "d3d_ramps_14_board",
+    "center_mode": "base_center",
+    "assembly_anchor_mm": {
+      "x": -68.0,
+      "y": 76.2,
+      "z": 15.0
+    },
+    "playPosition": {
+      "x": -0.2204,
+      "y": 0.5682,
+      "z": -0.0762
+    },
+    "playRotation": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "w": 1.0
+    },
+    "startPosition": {
+      "x": 1.2796,
+      "y": 0.5682,
+      "z": -0.0762
+    },
+    "glb_size_m": {
+      "x": 0.1062,
+      "y": 0.0245,
+      "z": 0.0619
+    }
+  },
+  {
+    "partId": "d3d_smart_controller",
+    "center_mode": "center",
+    "assembly_anchor_mm": {
+      "x": -136.0,
+      "y": 58.9,
+      "z": 67.5
+    },
+    "playPosition": {
+      "x": -0.2884,
+      "y": 0.6207,
+      "z": -0.0935
+    },
+    "playRotation": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "w": 1.0
+    },
+    "startPosition": {
+      "x": 1.2116,
+      "y": 0.6207,
+      "z": -0.0935
+    },
+    "glb_size_m": {
+      "x": 0.1029,
+      "y": 0.0347,
+      "z": 0.0868
+    }
+  }
+]

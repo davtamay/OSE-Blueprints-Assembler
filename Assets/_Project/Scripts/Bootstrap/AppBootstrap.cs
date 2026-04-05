@@ -1,6 +1,7 @@
 using OSE.App;
 using OSE.Core;
 using OSE.Persistence;
+using OSE.Platform;
 using OSE.Runtime;
 using UnityEngine;
 
@@ -45,9 +46,9 @@ namespace OSE.Bootstrap
 
         private void InitializePlatform()
         {
-            // Platform capability profiling will be implemented in Phase 3+.
-            // For now we default to a standard desktop profile.
-            OseLog.Info("[Bootstrap] Platform initialized with default capability profile.");
+            var platform = new DefaultPlatformCapabilityProvider();
+            ServiceRegistry.Register<IPlatformCapabilityProvider>(platform);
+            OseLog.Info($"[Bootstrap] Platform initialized: {platform.PlatformDescription}");
         }
     }
 }

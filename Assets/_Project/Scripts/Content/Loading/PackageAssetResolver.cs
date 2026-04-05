@@ -90,8 +90,14 @@ namespace OSE.Content.Loading
 
             var required = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var p in parts)
-                if (!string.IsNullOrWhiteSpace(p.id))
-                    required.Add(p.id);
+            {
+                if (string.IsNullOrWhiteSpace(p.id)) continue;
+                // assetRef == "" (empty string, not null) means the part is procedurally
+                // generated (e.g. spline wires) and intentionally has no GLB asset.
+                // Skip it so it doesn't appear as an unresolved warning.
+                if (p.assetRef != null && p.assetRef.Length == 0) continue;
+                required.Add(p.id);
+            }
 
             if (required.Count == 0) return;
 

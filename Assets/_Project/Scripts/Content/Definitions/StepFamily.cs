@@ -50,6 +50,14 @@ namespace OSE.Content
         // ── Connect-family profiles ──
 
         /// <summary>Two-port cable/pipe connection.</summary>
-        Cable = 30
+        Cable = 30,
+
+        /// <summary>
+        /// Polarity-aware wire connection. Augments <see cref="Cable"/> with per-port
+        /// polarity types (+12V, GND, signal, etc.) and optional order enforcement.
+        /// Port spheres are colored by polarity rather than by A/B position.
+        /// Connecting wrong polarity to a terminal triggers a mismatch warning.
+        /// </summary>
+        WireConnect = 31
     }
 }

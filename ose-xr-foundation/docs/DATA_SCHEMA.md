@@ -1034,3 +1034,106 @@ The correct schema strategy is:
 - preserve room for future multiplayer and content growth
 
 That is how the data layer becomes strong enough to support the long-term vision of the project.
+
+
+---
+
+# Content Hierarchy and Physical Fidelity
+
+*Merged from CONTENT_MODEL.md*
+
+## Content Hierarchy
+
+Machine > Assembly > Subassembly > Step (Part / Tool / Instruction)
+
+- **Machine** - complete buildable machine (Power Cube, D3D Printer, CEB Press). Contains metadata, assemblies, asset manifests.
+- **Assembly** - major subsystem (frame, hydraulic system, electrical system).
+- **Subassembly** - mechanical grouping inside an assembly (wheel hub, pump mount, frame cross-brace).
+- **Step** - single instructional action. Belongs to one family: Place, Use, Connect, Confirm. May declare a profile. Resolves an interaction pattern and view mode at runtime.
+
+## Physical Fidelity Standard
+
+Instructional content may simplify complexity but must not silently fake physical reality.
+
+### Measurement Requirements
+
+Every authored part and tool must have source-backed physical dimensions:
+- Width, height, depth in meters
+- Source of those dimensions (exact / converted / estimated / inferred)
+- Important secondary dimensions (hole spacing, tube OD/wall thickness, hose ID/OD, wrench drive size)
+
+If exact dimensions are unknown: infer carefully, record the assumption explicitly.
+
+### Placement and Orientation Requirements
+
+Step targets and final assembled positions must be authored from the real machine layout. For every placed item the author must know: where it attaches, which face/hole is the interface, which direction it faces, and what neighbors constrain its orientation. Visual separation for instructional clarity must be a deliberate choice, not a replacement for the real assembled pose.
+
+### Appearance Requirements
+
+Every part or tool should specify: base shape and silhouette, material family and surface finish, dominant colors, notable hardware details, and what to omit. Examples: "black powder-coated square steel tube", "zinc-plated hex-head fastener with washer".
+
+### AI Asset Prompt Requirements
+
+When using text/image-to-3D workflows the prompt is engineering input. Every prompt must include: dimensions with units, aspect ratio, upright orientation, real-world material and finish, visible mounting features, and negative constraints.
+
+Example: "Corner bracket for D3D printer frame, right-angle steel bracket, 65 mm wide, 65 mm tall, 8 mm thick, black powder-coated steel, two bolt holes on each leg, upright with bracket corner at world origin, no logos, no text, no background."
+
+### Source Provenance Rule
+
+For each authored slice keep a source record identifying which document informed dimensions, placement, orientation, and appearance, and which details were inferred or still need confirmation.
+
+**Canonical rule:** If there is a conflict between "looks good enough" and "matches the real machine," the real machine wins unless the deviation is explicitly documented as an instructional simplification.
+
+---
+
+# Subassembly Stacking Architecture
+
+*Merged from STACKING_ARCHITECTURE.md*
+
+Defines the canonical model for steps that move a previously completed subassembly as one finished unit (e.g., stand a welded frame side upright, place a finished panel onto a cube face).
+
+## Core Rule
+
+Do not replace finished subassemblies with fake composite parts. The canonical model:
+- Parts keep their original identities for metadata, history, validation, and replay
+- A finished subassembly gets a runtime placement proxy
+- The proxy temporarily owns the transform for the whole completed unit
+- Member part poses are derived from the proxy plus authored local offsets
+
+## Spatial Representation States
+
+| State | Purpose |
+|-------|---------|
+| Fabrication / Stacking | Learner-facing during the stack step - selecting the unit, guided docking toward the target |
+| Completed Parking | Persisted display after fabrication but before integration |
+| Canonical Integrated | Final committed display - bakes member parts to integrated poses to avoid overlapping coplanar geometry |
+
+## JSON Schema
+
+**StepDefinition:** use  (optional; v1: mutually exclusive with ; use on normal Place steps)
+
+**TargetDefinition:** use  (optional; v1: mutually exclusive with )
+
+**previewConfig.subassemblyPlacements** - authored fabrication reference frame for each stackable subassembly.
+
+**previewConfig.completedSubassemblyParkingPlacements** - parking pose for completed units before stacking.
+
+**previewConfig.integratedSubassemblyPlacements** - canonical final display after commit, keyed by (subassemblyId, targetId), with explicit memberPlacements per part.
+
+## Authoring Rules
+
+Use when the learner must move a previously completed unit as one rigid object. Do NOT use when the step is still placing loose parts one by one.
+
+Required: keep original part IDs, one requiredSubassemblyId per v1 stack step, author subassemblyPlacements for every stackable unit, author integratedSubassemblyPlacements whenever final display would overlap or z-fight.
+
+## Validation Rules
+
+Reject or warn on: step uses both requiredPartIds and requiredSubassemblyId; target uses both associatedPartId and associatedSubassemblyId; requiredSubassemblyId does not resolve; stacking step has no valid target; stackable subassembly has no subassemblyPlacements entry; integrated placement references a missing part or part outside the referenced subassembly.
+
+## Adjustable Fitting Extension
+
+For steps that fit a completed subassembly with one side anchored and the other moving along a constrained axis (e.g., D3D X-axis fitting between the Y axes): keep the step in the normal Place family, keep the movable unit as a real subassembly, do not invent a separate Adjust family. Resolve special behavior from family + profile + step data shape.
+
+## Reference Implementation
+
+ is the canonical reference: completed square frame sides as stackable subassemblies, one shared near-camera fabrication bay with parked finished-panel slots, guided docking into cube position, and canonical integrated member poses after commit.

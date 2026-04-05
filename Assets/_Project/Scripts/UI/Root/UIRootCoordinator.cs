@@ -51,6 +51,7 @@ namespace OSE.UI.Root
             RuntimeEventBus.Subscribe<StepNavigated>(HandleRuntimeStepNavigated);
             RuntimeEventBus.Subscribe<SessionCompleted>(HandleRuntimeSessionCompleted);
             RuntimeEventBus.Subscribe<AssemblyTransitionRequested>(HandleAssemblyTransitionRequested);
+            RuntimeEventBus.Subscribe<ObserveTargetsCompleted>(HandleObserveTargetsCompleted);
         }
 
         private void Start()
@@ -72,6 +73,7 @@ namespace OSE.UI.Root
             RuntimeEventBus.Unsubscribe<StepNavigated>(HandleRuntimeStepNavigated);
             RuntimeEventBus.Unsubscribe<SessionCompleted>(HandleRuntimeSessionCompleted);
             RuntimeEventBus.Unsubscribe<AssemblyTransitionRequested>(HandleAssemblyTransitionRequested);
+            RuntimeEventBus.Unsubscribe<ObserveTargetsCompleted>(HandleObserveTargetsCompleted);
             _toolDock?.Unsubscribe();
             UnregisterPresentationAdapter();
             TeardownUi();
@@ -370,6 +372,13 @@ namespace OSE.UI.Root
             }
 
             ShowProgressUpdate(stepNumber > 0 ? stepNumber - 1 : 0, totalSteps);
+        }
+
+        private void HandleObserveTargetsCompleted(ObserveTargetsCompleted evt)
+        {
+            if (!Application.isPlaying) return;
+            if (_gate.TryUnlockOnObserveComplete())
+                _orchestrator?.RefreshStepPanel();
         }
 
         private void HandleRuntimeSessionCompleted(SessionCompleted evt)

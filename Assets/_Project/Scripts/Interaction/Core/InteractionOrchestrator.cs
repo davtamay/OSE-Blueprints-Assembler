@@ -1197,7 +1197,7 @@ namespace OSE.Interaction
 
         private void UpdateInstructionForPreview(PreviewMode mode, string toolId)
         {
-            if (!ServiceRegistry.TryGet<IPresentationAdapter>(out var ui)) return;
+            if (!ServiceRegistry.TryGet<IStepPresenter>(out var ui)) return;
 
             // Save the step's original instruction for restoration after preview
             if (_savedInstruction == null)
@@ -1205,7 +1205,7 @@ namespace OSE.Interaction
                 if (ServiceRegistry.TryGet<IMachineSessionController>(out var sess))
                 {
                     var step = sess?.AssemblyController?.StepController?.CurrentStepDefinition;
-                    _savedInstruction = step?.instructionText ?? "";
+                    _savedInstruction = step?.ResolvedInstructionText ?? "";
                 }
             }
 
@@ -1224,7 +1224,7 @@ namespace OSE.Interaction
         private void RestoreInstructionAfterPreview()
         {
             if (_savedInstruction == null) return;
-            if (ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
+            if (ServiceRegistry.TryGet<IStepPresenter>(out var ui))
                 ui.ShowInstruction(_savedInstruction);
             _savedInstruction = null;
         }

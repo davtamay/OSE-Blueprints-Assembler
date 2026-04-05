@@ -1,0 +1,380 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "machine.schema.json",
+  "title": "OSE Machine Package",
+  "description": "Schema for machine.json assembly training packages used by OSE Blueprints Assembler.",
+  "type": "object",
+  "required": ["schemaVersion", "machine", "assemblies"],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "description": "Schema version for migration compatibility. Current: '1.0'.",
+      "examples": ["1.0"]
+    },
+    "packageVersion": {
+      "type": "string",
+      "description": "Semantic version of this package content.",
+      "examples": ["0.6.1"]
+    },
+    "machine": {
+      "type": "object",
+      "required": ["id", "name"],
+      "description": "Root machine descriptor.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique machine identifier. Matches the package folder name." },
+        "name": { "type": "string", "description": "Short display name." },
+        "displayName": { "type": "string", "description": "Full display name for UI headers." },
+        "description": { "type": "string", "description": "Long-form machine description." },
+        "difficulty": { "type": "string", "enum": ["beginner", "intermediate", "advanced"] },
+        "estimatedBuildTimeMinutes": { "type": "integer", "minimum": 1 },
+        "recommendedMode": { "type": "string", "enum": ["tutorial", "guided", "challenge"] },
+        "entryAssemblyIds": {
+          "type": "array",
+          "description": "Ordered list of top-level assembly IDs shown at session start.",
+          "items": { "type": "string" }
+        },
+        "learningObjectives": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "prerequisiteNotes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "sourceReferences": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "type", "title"],
+            "properties": {
+              "id": { "type": "string" },
+              "type": { "type": "string", "enum": ["reference_doc", "cad_source", "video", "wiki"] },
+              "title": { "type": "string" },
+              "referencePath": { "type": "string" },
+              "notes": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "assemblies": {
+      "type": "array",
+      "description": "All assemblies in the package. An assembly groups related subassemblies and steps.",
+      "items": {
+        "type": "object",
+        "required": ["id", "name"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "stepIds": {
+            "type": "array",
+            "description": "Ordered step IDs within this assembly.",
+            "items": { "type": "string" }
+          },
+          "subassemblyIds": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "dependencyAssemblyIds": {
+            "type": "array",
+            "description": "Assemblies that must be completed before this one can start.",
+            "items": { "type": "string" }
+          },
+          "tags": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "subassemblies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "partIds": { "type": "array", "items": { "type": "string" } },
+          "assetRef": { "type": "string", "description": "Path to GLB asset for subassembly proxy." }
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "description": "All assembly steps in the package. See STEP_SCHEMA.md for full field reference.",
+      "items": {
+        "type": "object",
+        "required": ["id", "sequenceIndex", "assemblyId"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "assemblyId": { "type": "string" },
+          "subassemblyId": { "type": "string" },
+          "sequenceIndex": { "type": "integer", "minimum": 1 },
+          "family": {
+            "type": "string",
+            "description": "Authoritative step family. Prefer this over completionType.",
+            "enum": ["Place", "Use", "Connect", "Confirm"]
+          },
+          "profile": {
+            "type": "string",
+            "description": "Family-scoped profile refining behavior.",
+            "enum": ["Clamp", "AxisFit", "Torque", "Weld", "Cut", "Strike", "Measure", "SquareCheck", "Cable", "WireConnect"]
+          },
+          "completionType": {
+            "type": "string",
+            "description": "DEPRECATED — use family instead.",
+            "enum": ["placement", "tool_action", "pipe_connection", "confirmation"]
+          },
+          "viewMode": {
+            "type": "string",
+            "enum": ["SourceAndTarget", "PairEndpoints", "WorkZone", "PathView", "Overview", "Inspect", "ToolFocus"]
+          },
+          "targetOrder": {
+            "type": "string",
+            "enum": ["parallel", "sequential"]
+          },
+          "requiredPartIds": { "type": "array", "items": { "type": "string" } },
+          "requiredSubassemblyId": { "type": "string" },
+          "optionalPartIds": { "type": "array", "items": { "type": "string" } },
+          "relevantToolIds": { "type": "array", "items": { "type": "string" } },
+          "targetIds": { "type": "array", "items": { "type": "string" } },
+          "removePersistentToolIds": { "type": "array", "items": { "type": "string" } },
+          "eventTags": { "type": "array", "items": { "type": "string" } },
+          "requiredToolActions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["toolId", "actionType"],
+              "properties": {
+                "toolId": { "type": "string" },
+                "actionType": { "type": "string" },
+                "targetId": { "type": "string" },
+                "requiredCount": { "type": "integer", "minimum": 1 }
+              }
+            }
+          },
+          "taskOrder": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["kind", "id"],
+              "properties": {
+                "kind": { "type": "string", "enum": ["part", "toolAction", "wire", "target"] },
+                "id": { "type": "string" }
+              }
+            }
+          },
+          "guidance": {
+            "type": "object",
+            "description": "Grouped guidance payload (preferred over flat instructionText/whyItMattersText/hintIds).",
+            "properties": {
+              "instructionText": { "type": "string" },
+              "whyItMattersText": { "type": "string" },
+              "hintIds": { "type": "array", "items": { "type": "string" } }
+            }
+          },
+          "validation": {
+            "type": "object",
+            "description": "Grouped validation payload.",
+            "properties": {
+              "validationRuleIds": { "type": "array", "items": { "type": "string" } }
+            }
+          },
+          "feedback": {
+            "type": "object",
+            "description": "Grouped feedback payload.",
+            "properties": {
+              "effectTriggerIds": { "type": "array", "items": { "type": "string" } }
+            }
+          },
+          "difficulty": {
+            "type": "object",
+            "description": "Grouped difficulty payload.",
+            "properties": {
+              "allowSkip": { "type": "boolean" },
+              "challengeFlags": { "type": "object" }
+            }
+          },
+          "reinforcement": {
+            "type": "object",
+            "description": "Grouped reinforcement payload (hints-on-failure, spacing, tracking).",
+            "properties": {
+              "correctionHintId": { "type": "string" },
+              "counterfactualText": { "type": "string" },
+              "trackTime": { "type": "boolean" },
+              "trackRetries": { "type": "boolean" },
+              "trackHintUsage": { "type": "boolean" }
+            }
+          },
+          "measurement": {
+            "type": "object",
+            "description": "Anchor-to-anchor measurement config for Use.Measure profile.",
+            "properties": {
+              "anchorRef": { "type": "string" },
+              "expectedPartId": { "type": "string" }
+            }
+          },
+          "gesture": {
+            "type": "object",
+            "description": "Gesture config for Use-family steps.",
+            "properties": {
+              "gestureMode": { "type": "string" },
+              "minTravel": { "type": "number" },
+              "maxTravel": { "type": "number" }
+            }
+          },
+          "wireConnect": {
+            "type": "object",
+            "description": "Per-wire polarity config for Connect.WireConnect profile.",
+            "properties": {
+              "wires": { "type": "array", "items": { "type": "object" } },
+              "enforcePortOrder": { "type": "boolean" }
+            }
+          },
+          "instructionText": {
+            "type": "string",
+            "description": "DEPRECATED — use guidance.instructionText instead."
+          },
+          "whyItMattersText": {
+            "type": "string",
+            "description": "DEPRECATED — use guidance.whyItMattersText instead."
+          },
+          "hintIds": {
+            "type": "array",
+            "description": "DEPRECATED — use guidance.hintIds instead.",
+            "items": { "type": "string" }
+          },
+          "validationRuleIds": {
+            "type": "array",
+            "description": "DEPRECATED — use validation.validationRuleIds instead.",
+            "items": { "type": "string" }
+          },
+          "effectTriggerIds": {
+            "type": "array",
+            "description": "DEPRECATED — use feedback.effectTriggerIds instead.",
+            "items": { "type": "string" }
+          },
+          "allowSkip": {
+            "type": "boolean",
+            "description": "DEPRECATED — use difficulty.allowSkip instead."
+          }
+        }
+      }
+    },
+    "parts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "category": { "type": "string" },
+          "material": { "type": "string" },
+          "function": { "type": "string" },
+          "templateId": { "type": "string", "description": "Inherit model/tools from a PartTemplateDefinition." },
+          "assetRef": { "type": "string", "description": "Path to GLB asset file." },
+          "toolIds": { "type": "array", "items": { "type": "string" } },
+          "quantity": { "type": "integer", "minimum": 1 },
+          "isOptional": { "type": "boolean" },
+          "tags": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "category": { "type": "string" },
+          "purpose": { "type": "string" },
+          "safetyNote": { "type": "string" },
+          "assetRef": { "type": "string" }
+        }
+      }
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": { "type": "string" },
+          "associatedPartId": { "type": "string" },
+          "associatedSubassemblyId": { "type": "string" },
+          "position": {
+            "type": "object",
+            "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "z": { "type": "number" } }
+          },
+          "rotation": {
+            "type": "object",
+            "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "z": { "type": "number" }, "w": { "type": "number" } }
+          },
+          "weldAxis": {
+            "type": "object",
+            "description": "Direction of weld line for Use.Weld profile.",
+            "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "z": { "type": "number" } }
+          },
+          "weldLength": { "type": "number" },
+          "toolActionRotation": {
+            "type": "object",
+            "description": "Override rotation for tool approach angle.",
+            "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "z": { "type": "number" } }
+          },
+          "snapTolerance": { "type": "number" }
+        }
+      }
+    },
+    "hints": {
+      "type": "array",
+      "description": "Define one hint per type of action. Hints with no targetId/partId context should be shared across steps via hintIds.",
+      "items": {
+        "type": "object",
+        "required": ["id", "message"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "message": { "type": "string" },
+          "targetId": { "type": "string", "description": "Optional: highlights this target when hint is shown." },
+          "partId": { "type": "string", "description": "Optional: highlights this part when hint is shown." },
+          "toolId": { "type": "string" }
+        }
+      }
+    },
+    "effects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type"],
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string" },
+          "assetRef": { "type": "string" }
+        }
+      }
+    },
+    "validationRules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": { "type": "string" },
+          "snapTolerance": { "type": "number", "description": "Position tolerance in mm." },
+          "rotationToleranceDeg": { "type": "number", "description": "Rotation tolerance in degrees." }
+        }
+      }
+    },
+    "previewConfig": {
+      "type": "object",
+      "description": "Edit-mode ghost placements for parts and subassemblies at different completion levels."
+    },
+    "challengeConfig": {
+      "type": "object",
+      "description": "Challenge mode rules (mistake limits, timing constraints)."
+    }
+  }
+}

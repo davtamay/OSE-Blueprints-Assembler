@@ -49,3 +49,9 @@ Tools/*.exe
 .env
 .env.*
 !.env.example
+
+# Backup files
+*.bak
+
+# Agent-generated audit cache (regenerated from machine.json on demand)
+audit-index.json

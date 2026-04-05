@@ -1,0 +1,50 @@
+{
+  "input_fcstd": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\electronics_stage01\\raw\\Powersupply_v1904.fcstd",
+  "output_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\electronics_stage01\\exported\\stl\\d3d_psu_atx.stl",
+  "source_mode": "archive_brep",
+  "units": "mm",
+  "object_count": 2,
+  "mesh_facets": 1192,
+  "mesh_points": 608,
+  "combined_bound_box": {
+    "xmin_mm": -166.92715949840704,
+    "xmax_mm": 35.851032,
+    "ymin_mm": -45.2957478095288,
+    "ymax_mm": 16.976288,
+    "zmin_mm": 3.0,
+    "zmax_mm": 62.710026160025706,
+    "xlen_mm": 202.77819149840704,
+    "ylen_mm": 62.2720358095288,
+    "zlen_mm": 59.710026160025706
+  },
+  "objects": [
+    {
+      "name": "PartShape.brp",
+      "bound_box": {
+        "xmin_mm": -60.701626000000005,
+        "xmax_mm": 35.851032000000004,
+        "ymin_mm": -29.981426000000003,
+        "ymax_mm": 16.976288,
+        "zmin_mm": 3.0,
+        "zmax_mm": 13.0,
+        "xlen_mm": 96.55265800000001,
+        "ylen_mm": 46.957714,
+        "zlen_mm": 10.0
+      }
+    },
+    {
+      "name": "PartShape1.brp",
+      "bound_box": {
+        "xmin_mm": -166.9271594984069,
+        "xmax_mm": -60.42715949840688,
+        "ymin_mm": -45.295747809528756,
+        "ymax_mm": -32.2957414073358,
+        "zmin_mm": 5.710025802398238,
+        "zmax_mm": 62.71002616002578,
+        "xlen_mm": 106.50000000000001,
+        "ylen_mm": 13.000006402192959,
+        "zlen_mm": 57.00000035762754
+      }
+    }
+  ]
+}

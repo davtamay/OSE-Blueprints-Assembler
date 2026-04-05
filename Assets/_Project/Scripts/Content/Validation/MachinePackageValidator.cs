@@ -41,6 +41,11 @@ namespace OSE.Content.Validation
         private static readonly HashSet<string> ToolCategoryValues = CreateSet("hand_tool", "power_tool", "measurement", "safety", "specialty");
         private static readonly HashSet<string> CompletionTypeValues = CreateSet("placement", "tool_action", "confirmation", "pipe_connection");
         private static readonly HashSet<string> FamilyValues = CreateSet("Place", "Use", "Connect", "Confirm");
+        private static readonly HashSet<string> ProfileValues = CreateSet(
+            "None",
+            "Clamp", "AxisFit",                              // Place family
+            "Torque", "Weld", "Cut", "Strike", "Measure", "SquareCheck",  // Use family
+            "Cable", "WireConnect");                         // Connect family
         private static readonly HashSet<string> ViewModeValues = CreateSet("SourceAndTarget", "PairEndpoints", "WorkZone", "PathView", "Overview", "Inspect");
         private static readonly HashSet<string> TargetOrderValues = CreateSet("sequential", "parallel");
         private static readonly HashSet<string> ValidationTypeValues = CreateSet("placement", "orientation", "part_identity", "dependency", "multi_part", "confirmation");
@@ -327,9 +332,19 @@ namespace OSE.Content.Validation
                 ValidateRequiredText(step.name, $"{path}.name", issues);
                 ValidateSingleReference(step.assemblyId, assemblyIds, $"{path}.assemblyId", issues);
                 ValidateOptionalReference(step.subassemblyId, subassemblyIds, $"{path}.subassemblyId", issues);
-                ValidateRequiredText(step.instructionText, $"{path}.instructionText", issues);
-                ValidateRequiredEnum(step.completionType, CompletionTypeValues, $"{path}.completionType", issues);
-                ValidateOptionalEnum(step.family, FamilyValues, $"{path}.family", issues);
+                // Validate resolved instruction text so steps using guidance payload pass the check.
+                ValidateRequiredText(step.ResolvedInstructionText, $"{path}.instructionText (resolved)", issues);
+                // family is authoritative; completionType is the legacy fallback — require at least one.
+                if (string.IsNullOrEmpty(step.family))
+                {
+#pragma warning disable CS0618
+                    ValidateRequiredEnum(step.completionType, CompletionTypeValues, $"{path}.completionType", issues);
+#pragma warning restore CS0618
+                }
+                else
+                {
+                    ValidateOptionalEnum(step.family, FamilyValues, $"{path}.family", issues);
+                }
                 ValidateStepProfile(step, $"{path}", issues);
                 ValidateOptionalEnum(step.viewMode, ViewModeValues, $"{path}.viewMode", issues);
                 ValidateOptionalEnum(step.targetOrder, TargetOrderValues, $"{path}.targetOrder", issues);
@@ -338,9 +353,10 @@ namespace OSE.Content.Validation
                 ValidateOptionalReferences(step.optionalPartIds, partIds, $"{path}.optionalPartIds", issues);
                 ValidateOptionalReferences(step.relevantToolIds, toolIds, $"{path}.relevantToolIds", issues);
                 ValidateOptionalReferences(step.targetIds, targetIds, $"{path}.targetIds", issues);
-                ValidateOptionalReferences(step.validationRuleIds, validationRuleIds, $"{path}.validationRuleIds", issues);
-                ValidateOptionalReferences(step.hintIds, hintIds, $"{path}.hintIds", issues);
-                ValidateOptionalReferences(step.effectTriggerIds, effectIds, $"{path}.effectTriggerIds", issues);
+                // Validate resolved arrays so both payload and flat-field paths are checked.
+                ValidateOptionalReferences(step.ResolvedValidationRuleIds, validationRuleIds, $"{path}.validationRuleIds (resolved)", issues);
+                ValidateOptionalReferences(step.ResolvedHintIds, hintIds, $"{path}.hintIds (resolved)", issues);
+                ValidateOptionalReferences(step.ResolvedEffectTriggerIds, effectIds, $"{path}.effectTriggerIds (resolved)", issues);
                 ValidateToolActions(step.requiredToolActions, toolIds, targetIds, $"{path}.requiredToolActions", issues);
 
                 // Payload sub-object validation
@@ -470,15 +486,20 @@ namespace OSE.Content.Validation
             if (string.IsNullOrWhiteSpace(step.profile))
                 return;
 
-            var checker = IsProfileRegistered;
-            if (checker == null)
-                return; // No registry wired — skip profile validation.
+            if (!ProfileValues.Contains(step.profile))
+            {
+                issues.Add(Error($"{path}.profile",
+                    $"Profile '{step.profile}' is not a known profile. " +
+                    $"Valid values: {string.Join(", ", ProfileValues)}."));
+                return;
+            }
 
-            if (!checker(step.profile))
+            var checker = IsProfileRegistered;
+            if (checker != null && !checker(step.profile))
             {
                 issues.Add(Warning($"{path}.profile",
-                    $"Profile '{step.profile}' is not a registered profile. " +
-                    $"Register it in ToolProfileRegistry or fix the typo in machine.json."));
+                    $"Profile '{step.profile}' is not registered in ToolProfileRegistry. " +
+                    $"Register it or fix the typo in machine.json."));
             }
         }
 
@@ -929,7 +950,7 @@ namespace OSE.Content.Validation
             StepDefinition[] steps = package.GetSteps();
             foreach (StepDefinition step in steps)
             {
-                if (step == null || !string.Equals(step.completionType, "placement", StringComparison.OrdinalIgnoreCase))
+                if (step == null || !step.IsPlacement)
                     continue;
 
                 string[] stepTargetIds = step.targetIds ?? Array.Empty<string>();
@@ -1052,7 +1073,7 @@ namespace OSE.Content.Validation
 
             if (!allowedValues.Contains(value))
             {
-                issues.Add(Error(path, $"Value '{value}' is not allowed here."));
+                issues.Add(Error(path, $"Value '{value}' is not allowed here. Valid values: {string.Join(", ", allowedValues)}."));
             }
         }
 
@@ -1064,7 +1085,7 @@ namespace OSE.Content.Validation
         {
             if (!string.IsNullOrWhiteSpace(value) && !allowedValues.Contains(value))
             {
-                issues.Add(Error(path, $"Value '{value}' is not allowed here."));
+                issues.Add(Error(path, $"Value '{value}' is not allowed here. Valid values: {string.Join(", ", allowedValues)}."));
             }
         }
 

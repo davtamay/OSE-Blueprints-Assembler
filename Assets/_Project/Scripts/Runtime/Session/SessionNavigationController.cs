@@ -63,7 +63,7 @@ namespace OSE.Runtime
                 bool result = idx > 0;
                 if (!result)
                 {
-                    OseLog.Warn($"[Nav] CanStepBack=false: resolved={resolved}, idx={idx}, " +
+                    OseLog.VerboseInfo($"[Nav] CanStepBack=false: resolved={resolved}, idx={idx}, " +
                         $"_lastNavigatedGlobalIndex={_lastNavigatedGlobalIndex}, IsNavigating={IsNavigating}");
                 }
                 return result;
@@ -110,7 +110,7 @@ namespace OSE.Runtime
 
             if (currentGlobalIndex <= 0)
             {
-                OseLog.Warn($"[Nav] StepBack BLOCKED: already at first global step (currentGlobalIndex={currentGlobalIndex}).");
+                OseLog.VerboseInfo($"[Nav] StepBack BLOCKED: already at first global step (currentGlobalIndex={currentGlobalIndex}).");
                 return false;
             }
 
@@ -205,6 +205,9 @@ namespace OSE.Runtime
 
             IsNavigating = true;
             _lastNavigatedGlobalIndex = clampedTargetGlobalIndex;
+            // Block step completion for the duration of navigation so that a same-frame
+            // input cannot re-complete the step we are navigating away from.
+            _host.AssemblyController.StepController.SetCompletionBlocked(true);
             try
             {
                 _host.PartController.RecomputePartsForNavigation(completedGlobalSteps, targetStep);
@@ -240,6 +243,7 @@ namespace OSE.Runtime
             {
                 IsNavigating = false;
                 LastNavigationTime = UnityEngine.Time.realtimeSinceStartup;
+                _host.AssemblyController.StepController.SetCompletionBlocked(false);
             }
         }
 
@@ -256,7 +260,7 @@ namespace OSE.Runtime
 
             if (orderedSteps.Length == 0 || string.IsNullOrWhiteSpace(activeStepId))
             {
-                OseLog.Warn($"[Nav] TryGetCurrentGlobalStepIndex FAILED: orderedSteps={orderedSteps.Length}, " +
+                OseLog.VerboseInfo($"[Nav] TryGetCurrentGlobalStepIndex: orderedSteps={orderedSteps.Length}, " +
                     $"activeStepId='{activeStepId}', hasActiveStep={assembly?.StepController?.HasActiveStep}, " +
                     $"sessionStepId='{_host.SessionState?.CurrentStepId}'");
                 return false;
@@ -272,7 +276,7 @@ namespace OSE.Runtime
                 }
             }
 
-            OseLog.Warn($"[Nav] TryGetCurrentGlobalStepIndex FAILED: step '{activeStepId}' not found in {orderedSteps.Length} ordered steps.");
+            OseLog.VerboseInfo($"[Nav] TryGetCurrentGlobalStepIndex: step '{activeStepId}' not found in {orderedSteps.Length} ordered steps.");
             return false;
         }
 

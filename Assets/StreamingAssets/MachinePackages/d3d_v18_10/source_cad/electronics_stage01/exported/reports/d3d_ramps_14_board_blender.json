@@ -1,0 +1,27 @@
+{
+  "input_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\electronics_stage01\\exported\\stl\\ramps_14_board.stl",
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\electronics_stage01\\exported\\glb_candidates\\ramps_14_board_candidate.glb",
+  "units": "m",
+  "object_count": 1,
+  "material_name": "OSE PCB",
+  "base_color": [
+    0.05,
+    0.25,
+    0.1,
+    1.0
+  ],
+  "metallic": 0.0,
+  "roughness": 0.65,
+  "center_mode": "base_center",
+  "bound_box": {
+    "xmin_m": -0.053085580468177795,
+    "xmax_m": 0.053085580468177795,
+    "ymin_m": -0.012250002473592758,
+    "ymax_m": 0.012250002473592758,
+    "zmin_m": 0.0,
+    "zmax_m": 0.06190924346446991,
+    "xlen_m": 0.10617116093635559,
+    "ylen_m": 0.024500004947185516,
+    "zlen_m": 0.06190924346446991
+  }
+}

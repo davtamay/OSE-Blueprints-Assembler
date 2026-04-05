@@ -80,8 +80,13 @@ namespace OSE.Content
             if (step.IsToolAction)
                 return ConfirmGate.EquipTool;
 
-            if (HasAnyNonEmpty(step.requiredPartIds))
+            if (HasAnyNonEmpty(step.GetEffectiveRequiredPartIds()))
                 return ConfirmGate.SelectPart;
+
+            // Confirm steps with inspection targets require the trainee to frame each
+            // location with the camera before the button unlocks.
+            if (step.IsConfirmation && HasAnyNonEmpty(step.targetIds))
+                return ConfirmGate.ObserveTargets;
 
             return ConfirmGate.None;
         }
@@ -163,7 +168,7 @@ namespace OSE.Content
             if (package == null || step == null)
                 return default;
 
-            string partId = GetFirstNonEmpty(step.requiredPartIds);
+            string partId = GetFirstNonEmpty(step.GetEffectiveRequiredPartIds());
             if (!string.IsNullOrEmpty(partId) && package.TryGetPart(partId, out PartDefinition part))
             {
                 return new PartInfoShellContent(
@@ -179,7 +184,7 @@ namespace OSE.Content
 
             return new PartInfoShellContent(
                 "No part referenced",
-                step.instructionText ?? string.Empty,
+                step.ResolvedInstructionText ?? string.Empty,
                 string.Empty,
                 ResolveToolNames(package, step.relevantToolIds),
                 string.Empty);

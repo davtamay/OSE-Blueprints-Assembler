@@ -73,18 +73,57 @@ Machine packages live in `Assets/_Project/Data/Packages/<packageId>/`. Each pack
 
 ## Architecture
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for:
-- Layer model (OSE.Core → Runtime → Content → Interaction → UI)
-- Bootstrap sequence
-- Architectural Decision Records (ADR 001–005)
-- Key file reference table
+Dependency arrows flow inward — UI and Interaction depend on Runtime; Runtime depends on Content and Core; Core has no Unity UI or XR SDK knowledge.
+
+```
+OSE.Core  ←  OSE.Content  ←  OSE.Runtime  ←  OSE.App  ←  OSE.Bootstrap
+                                                        ←  OSE.UI
+                                                        ←  OSE.Interaction
+```
+
+Business logic (`StepController`, `ProgressionController`, `MachineSessionController`) is plain C# with no `MonoBehaviour` — fully unit-testable without the Unity runtime.
+
+### Key Entry Points
+
+| File | Role |
+|------|------|
+| `Scripts/Bootstrap/AppBootstrap.cs` | Scene entry — registers all core services in `Awake()` |
+| `Scripts/App/ServiceRegistry.cs` | Service locator; header documents the `Awake/OnEnable/Start` init order |
+| `Scripts/Runtime/Session/MachineSessionController.cs` | Top-level session orchestrator (load → step FSM → completion) |
+| `Scripts/Runtime/Session/StepController.cs` | Step FSM with validated state transitions |
+| `Scripts/Core/RuntimeEvents.cs` | All published events (all `readonly struct`, zero GC allocation) |
+| `Scripts/Core/OseErrorCode.cs` | Numeric error code ranges for grepping logs |
+
+### Service Bootstrap Convention
+
+```
+Awake()    — self-register via ServiceRegistry + local init only
+OnEnable() — resolve cross-service dependencies via ServiceRegistry.TryGet<T>()
+Start()    — multi-service orchestration
+```
+Never call `ServiceRegistry.TryGet<T>()` inside `Awake()` — Unity does not guarantee ordering across GameObjects.
 
 ---
 
-## Contributing
+## Adding Content
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for:
-- Adding a new machine package
-- Adding a new step family handler
-- Adding a new runtime event
-- Code standards and pre-submit checklist
+To add a new machine: create `Assets/_Project/Data/Packages/<newId>/machine.json`, add mesh assets alongside it, and follow `ose-xr-foundation/docs/DATA_SCHEMA.md`. No C# changes required.
+
+To add a new step profile: add an entry to `ProfileLookup` in `StepDefinition.cs` and, if it needs a new handler, implement `IStepFamilyHandler`.
+
+---
+
+## Tests
+
+Run via **Window › General › Test Runner** in the Unity Editor.
+EditMode tests (no Unity runtime needed) live in `Scripts/Tests/EditMode/`.
+
+| Test file | What it covers |
+|-----------|---------------|
+| `StepControllerTests.cs` | Full FSM — all valid and invalid transitions (~50 cases) |
+| `SessionLifecycleTests.cs` | Assembly begin → step complete → assembly complete |
+| `SessionStartTests.cs` | `StartSessionAsync` with injected stub loader |
+| `PlayerPrefsPersistenceServiceTests.cs` | Save/load round-trip, corrupt-data recovery |
+| `PlacementValidatorTests.cs` | Position and rotation tolerance boundary checks |
+| `RuntimeEventBusTests.cs` | Subscribe, unsubscribe, multi-subscriber, type isolation |
+| `MachinePackageValidatorTests.cs` | Schema validation rules |

@@ -215,9 +215,10 @@ namespace OSE.Interaction
                             AddPoint(new Vector3(placement.playPosition.x, placement.playPosition.y, placement.playPosition.z));
                     }
                 }
-                else if (step.requiredPartIds != null)
+                else
                 {
-                    foreach (string partId in step.requiredPartIds)
+                    string[] effectiveParts = step.GetEffectiveRequiredPartIds();
+                    foreach (string partId in effectiveParts)
                     {
                         if (string.IsNullOrWhiteSpace(partId))
                             continue;
@@ -227,9 +228,10 @@ namespace OSE.Interaction
                     }
                 }
 
-                if (includeSourceStarts && step.requiredPartIds != null)
+                if (includeSourceStarts)
                 {
-                    foreach (string partId in step.requiredPartIds)
+                    string[] effectiveParts = step.GetEffectiveRequiredPartIds();
+                    foreach (string partId in effectiveParts)
                     {
                         if (string.IsNullOrWhiteSpace(partId))
                             continue;

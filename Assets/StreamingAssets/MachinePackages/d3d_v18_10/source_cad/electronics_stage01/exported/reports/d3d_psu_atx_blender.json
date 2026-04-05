@@ -1,0 +1,27 @@
+{
+  "input_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\electronics_stage01\\exported\\stl\\d3d_psu_atx.stl",
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\electronics_stage01\\exported\\glb_candidates\\d3d_psu_atx_candidate.glb",
+  "units": "m",
+  "object_count": 1,
+  "material_name": "OSE PSU",
+  "base_color": [
+    0.15,
+    0.15,
+    0.18,
+    1.0
+  ],
+  "metallic": 0.0,
+  "roughness": 0.6,
+  "center_mode": "base_center",
+  "bound_box": {
+    "xmin_m": -0.1013890951871872,
+    "xmax_m": 0.1013890951871872,
+    "ymin_m": -0.03113602101802826,
+    "ymax_m": 0.03113602101802826,
+    "zmin_m": 0.0,
+    "zmax_m": 0.05971003323793411,
+    "xlen_m": 0.2027781903743744,
+    "ylen_m": 0.06227204203605652,
+    "zlen_m": 0.05971003323793411
+  }
+}

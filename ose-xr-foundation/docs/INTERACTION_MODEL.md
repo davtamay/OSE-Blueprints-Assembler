@@ -561,3 +561,113 @@ The correct strategy is:
 - preserve portability and future multiplayer compatibility
 
 That is how the interaction model stays coherent as the project grows.
+
+---
+
+# Interaction Patterns
+
+*Merged from INTERACTION_PATTERN_MATRIX.md*
+
+An **Interaction Pattern** is the reusable learner-facing interaction contract — the physical shape of how a step is performed. It is distinct from Step Family (what the step means) and Profile (specialized variation). A single pattern may be shared across multiple families and profiles.
+
+**Key rule:** Entity Role ≠ Step Family ≠ Interaction Pattern. A Tool can be placed (Place) or used (Use). Two different families can share the same pattern implementation.
+
+## Pattern Catalog
+
+### PlaceOnZone
+User moves an object to a target zone and releases it.
+- **Learner action:** Drag or click-to-place
+- **Runtime:** Preview targets spawned; part grabs, moves toward target, releases; position/rotation tolerance validation; snaps on success
+- **Runtime class:** `PlaceStepHandler`
+- **Used by:** Place (default), Place.Clamp
+
+### SelectPair
+User selects point A, then point B.
+- **Learner action:** Two taps/clicks
+- **Runtime:** Two anchor markers spawned; user taps first anchor; live visual tracks cursor; user taps second anchor; completes
+- **Runtime class:** `AnchorToAnchorInteraction`
+- **Used by:** Use.Measure, Connect (default), Connect.Cable
+
+### TargetHit
+User activates a tool on a single target.
+- **Learner action:** One tap/click with tool equipped
+- **Runtime:** Tool auto-equipped; target marker spawned; user activates tool on target; validates tool identity and target coverage
+- **Runtime class:** `UseStepHandler` (single target mode)
+- **Used by:** Use (default), Use.Torque (single bolt)
+
+### OrderedTargets
+User activates a tool on multiple targets in sequence.
+- **Learner action:** Sequential taps/clicks with tool equipped
+- **Runtime:** Tool auto-equipped; targets revealed one at a time in `targetIds` order; each activation advances to the next; completes when all targets hit
+- **Runtime class:** `UseStepHandler` (sequential mode, `targetOrder: "sequential"`)
+- **Used by:** Use.Torque (multi-bolt)
+
+### HoldOnTarget
+User presses and holds a tool on a target for a duration.
+- **Learner action:** Hold/press gesture
+- **Runtime class:** *(future)*
+- **Used by:** Use.Weld *(planned)*
+
+### PathProgress
+User follows a path with a tool.
+- **Learner action:** Drag along a path
+- **Runtime class:** *(future)*
+- **Used by:** Use.Cut *(planned)*
+
+### SingleConfirm
+User presses a Continue or Confirm button.
+- **Learner action:** Button press
+- **Runtime:** No preview targets, no tool equip, no spatial interaction; user reads content and presses Continue
+- **Runtime class:** `ConfirmStepHandler`
+- **Used by:** Confirm (default)
+
+## Family-to-Pattern Mapping
+
+| Family | Profile | Pattern |
+|--------|---------|---------|
+| Place | (default) | PlaceOnZone |
+| Place | Clamp | PlaceOnZone |
+| Use | (default) | TargetHit |
+| Use | Torque | TargetHit / OrderedTargets (depends on target count + `targetOrder`) |
+| Use | Measure | SelectPair |
+| Use | Weld | HoldOnTarget *(future)* |
+| Use | Cut | PathProgress *(future)* |
+| Connect | (default) | SelectPair |
+| Connect | Cable | SelectPair (with `CableLineVisual`) |
+| Confirm | (default) | SingleConfirm |
+
+**Pattern is NOT a schema field.** It is resolved at runtime from `family` + `profile` + step data shape. Authors set only `family` and `profile`.
+
+## Entity Role Reference
+
+Entity Role classifies what a scene object **is**, independent of what step it participates in.
+
+| Role | Definition | Schema type |
+|------|------------|-------------|
+| Part | Physical component assembled into the machine | `PartDefinition` |
+| Tool | Instrument used during assembly, not permanently attached | `ToolDefinition` |
+| Connector | Flexible link between two points (cable, hose, pipe) | `PartDefinition` with `category: "pipe"` |
+| Fixture | Device that holds/secures parts during assembly | `PartDefinition` or `ToolDefinition` |
+| Consumable | Material consumed during a process *(future — not yet in schema)* | — |
+
+### Canonical Examples
+
+| Object | Entity Role | Family | Pattern | Profile |
+|--------|-------------|--------|---------|---------|
+| Tape Measure | Tool | Use | SelectPair | Measure |
+| Cable / Hose | Connector | Connect | SelectPair | Cable |
+| Clamp | Fixture | Place | PlaceOnZone | Clamp |
+| Torque Wrench (single bolt) | Tool | Use | TargetHit | Torque |
+| Torque Wrench (multi-bolt) | Tool | Use | OrderedTargets | Torque |
+| Grinder / Saw | Tool | Use | PathProgress | Cut |
+| Welder | Tool | Use | HoldOnTarget | Weld |
+| Bracket / Plate | Part | Place | PlaceOnZone | (default) |
+| Safety Check | — | Confirm | SingleConfirm | (default) |
+
+## Rules for Adding Patterns
+
+1. Must represent a genuinely distinct learner-facing interaction shape
+2. Should be needed by at least two Family.Profile combinations, OR be inexpressible as a variation of an existing pattern
+3. Name must describe the **learner's physical action**, not the runtime implementation
+4. Must be implementable across desktop, mobile, and XR
+5. Add to the pattern catalog, family-to-pattern mapping, and entity role examples

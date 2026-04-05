@@ -1,11 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using OSE.App;
 using OSE.Content;
+using OSE.Content.Loading;
+using OSE.Core;
 using OSE.Interaction;
 using OSE.Runtime.Preview;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace OSE.Editor
@@ -40,7 +44,8 @@ namespace OSE.Editor
     /// </summary>
     public sealed class ToolTargetAuthoringWindow : EditorWindow
     {
-        private const string MenuPath = "OSE/Tool Target Authoring";
+        private const string MenuPath      = "OSE/Authoring/Tool Target Authoring";
+        private const string MenuPathAlias = "OSE/Authoring/Assembly Step Authoring";
         private const int MaxUndoHistory = 50;
         private const float DefaultTargetScale = 0.05f;
 
@@ -64,10 +69,30 @@ namespace OSE.Editor
         [SerializeField] private int        _stepFilterIdx;
         private bool       _suppressStepSync;   // prevent circular sync with SessionDriver
         private int        _lastPolledDriverStep = -1; // last SessionDriver step seen during poll
+        private Rect       _stepNumRect;        // cached rect of the step-number field for scroll/drag detection
+        private bool       _stepDragging;           // true while mouse-dragging the step number field
+        private float      _stepDragAccum;          // sub-step drag accumulator
+        private int        _stepDragStartVal = -1;  // step index at drag start (-1 = not dragging)
+        private double     _lastDriverSyncTime;     // EditorApplication.timeSinceStartup at last SyncSessionDriverStep
+
+        // Cached step-scene context, written by RespawnScene, read by SyncAllPartMeshesToActivePose.
+        // Allows sync to apply the same past/current/future logic as RespawnScene without rebuilding.
+        private bool                    _sceneBuildStepActive;
+        private int                     _sceneBuildCurrentSeq;
+        private Dictionary<string, int> _sceneBuildPartStepSeq        = new();
+        private HashSet<string>         _sceneBuildCurrentSubassembly = new();
+
+        // Measured height of top content (PkgPicker + StepFilter) — updated each Repaint
+        // so DrawUnifiedList gets exactly the right height without overlapping the bottom bar.
+        private float           _topContentHeight = 90f;
 
         // Active-step context (null = All Steps)
         private string          _activeStepProfile;
+        private bool            _activeStepIsConnect; // true for ANY Connect-family step (covers legacy completionType)
         private HashSet<string> _activeStepTargetIds;
+
+        // Active-task context (null = no task selected)
+        private string          _activeTaskKind; // kind of the currently selected task entry
 
         // Serialized for domain-reload restoration (target ID survives list rebuild)
         [SerializeField] private string _selectedTargetId;
@@ -76,13 +101,12 @@ namespace OSE.Editor
         private Dictionary<string, string> _targetToolMap;
         // targetId → toolId (raw id, for looking up ToolDefinition.persistent)
         private Dictionary<string, string> _targetToolIdMap;
-        // Target IDs referenced by at least one requiredToolAction (non-ghost targets)
         private HashSet<string> _toolActionTargetIds;
         // Dirty tracking for tool/step fields written outside the target placement flow
-        private readonly HashSet<string> _dirtyToolIds  = new HashSet<string>(StringComparer.Ordinal);
-        private readonly HashSet<string> _dirtyStepIds  = new HashSet<string>(StringComparer.Ordinal);
-        // When false (default), targets not linked to any tool action are hidden
-        [SerializeField] private bool _showGhostTargets;
+        private readonly HashSet<string> _dirtyToolIds         = new HashSet<string>(StringComparer.Ordinal);
+        private readonly HashSet<string> _dirtyStepIds         = new HashSet<string>(StringComparer.Ordinal);
+        private readonly HashSet<string> _dirtyPartAssetRefIds = new HashSet<string>(StringComparer.Ordinal);
+        private readonly PackageAssetResolver _assetResolver = new PackageAssetResolver();
 
         // SceneView part-count summary updated by RespawnScene
         private int _previewAssembled;
@@ -113,14 +137,77 @@ namespace OSE.Editor
         private Quaternion _rotDragStartLocal;
         private Dictionary<int, Quaternion> _rotDragStartMulti;
 
-        // Scene objects
-        private GameObject _previewRoot;
-        private readonly Dictionary<string, GameObject> _partMeshes = new();
+        // Scene objects — no hidden preview root; we work directly with live spawned parts.
+        // MeshColliders added to live parts for click-to-snap are tracked here and removed on Cleanup.
+        private readonly List<(GameObject go, MeshCollider col)> _addedMeshColliders = new();
 
-        // Tool preview — cyan-tinted ghost mesh parented under _previewRoot
+        // Tool preview — cyan-tinted ghost mesh parented under the spawner's PreviewRoot
         [SerializeField] private bool _showToolPreview = true;
         private ToolDefinition _toolPreviewDef;   // ToolDefinition for the previewed tool
         private GameObject _toolPreviewGO;         // instantiated tool mesh (HideAndDontSave)
+
+        // ── Parts tab ─────────────────────────────────────────────────────────
+        // Part model preview panel
+        private PartModelPreviewRenderer _partPreview;
+        private string                   _partPreviewId;   // partId currently loaded in preview
+        private const string             PrefDimUnit = "OSE.AuthoringWindow.DimUnit"; // "mm" or "in"
+
+        private PartEditState[]          _parts;
+        [SerializeField] private int    _selectedPartIdx = -1;
+        [SerializeField] private string _selectedPartId;
+        private readonly HashSet<int>   _multiSelectedParts = new HashSet<int>();
+        [SerializeField] private bool   _editPlayPose;         // false=start, true=play
+        private readonly List<(int idx, PartSnapshot snap)> _undoStackParts = new();
+        private readonly List<(int idx, PartSnapshot snap)> _redoStackParts = new();
+        private bool _snapshotPendingPart;
+        private bool       _rotDragActivePart;
+        private Quaternion _rotDragStartHandlePart;
+        private Quaternion _rotDragStartLocalPart;
+        private Dictionary<int, Quaternion> _rotDragStartMultiPart;
+        private Vector2 _partListScroll;
+
+        // ── Task sequence / add-task state ────────────────────────────────────
+
+        // Dirty tracking for taskOrder writes
+        private readonly HashSet<string> _dirtyTaskOrderStepIds = new HashSet<string>(StringComparer.Ordinal);
+        // Cached derived task order for the currently selected step
+        private List<TaskOrderEntry> _cachedTaskOrder;
+        private string               _cachedTaskOrderForStepId;
+
+        // Drag-and-drop reorderable list for TASK SEQUENCE
+        private ReorderableList _taskSeqReorderList;
+        private string          _taskSeqReorderListForStepId;
+        private int             _selectedTaskSeqIdx = -1; // selected row in TASK SEQUENCE
+
+        // Add-task inline picker (shown below task sequence)
+        private enum AddTaskPicker { None, Part, ToolTarget, Wire }
+        private AddTaskPicker _addTaskPicker = AddTaskPicker.None;
+        private int    _addPickerPartIdx;
+        private int    _addPickerTargetIdx;
+        private int    _addPickerToolIdx;
+        private int    _addPickerWirePartIdx;
+        private string _addPickerPolarityA  = "";
+        private string _addPickerPolarityB  = "";
+        private string _addPickerConnectorA = "";
+        private string _addPickerConnectorB = "";
+
+        // New-step creation form
+        private bool   _showNewStepForm;
+        private string _newStepId      = "";
+        private string _newStepName    = "";
+        private int    _newStepFamilyIdx;  // index into _familyOptions
+        private int    _newStepProfileIdx; // index into profile sub-options
+        private int    _newStepAssemblyIdx;
+        private int    _newStepSeqIdx;
+
+        private static readonly string[] _familyOptions = { "Place", "Use", "Connect", "Confirm" };
+        private static readonly string[][] _profileOptions =
+        {
+            new[] { "(none)", "AxisFit" },                               // Place
+            new[] { "(none)", "Torque", "Weld", "Cut", "SquareCheck", "Measure" }, // Use
+            new[] { "(none)", "Cable", "WireConnect" },                  // Connect
+            new[] { "(none)" },                                          // Confirm
+        };
 
         // ── Nested types ──────────────────────────────────────────────────────
 
@@ -153,13 +240,34 @@ namespace OSE.Editor
             public Vector3 portA; public Vector3 portB;
         }
 
+        private struct PartEditState
+        {
+            public PartDefinition       def;
+            public PartPreviewPlacement placement;
+            public bool   hasPlacement, isDirty;
+            public Vector3    startPosition, startScale, playPosition, playScale;
+            public Quaternion startRotation, playRotation;
+            public Color      color;
+        }
+
+        private struct PartSnapshot
+        {
+            public Vector3 startPosition; public Quaternion startRotation; public Vector3 startScale;
+            public Vector3 playPosition;  public Quaternion playRotation;  public Vector3 playScale;
+        }
+
         // ── MenuItem ──────────────────────────────────────────────────────────
 
         [MenuItem(MenuPath)]
-        public static void Open()
+        public static void Open() => OpenWindow();
+
+        [MenuItem(MenuPathAlias)]
+        public static void OpenAlias() => OpenWindow();
+
+        private static void OpenWindow()
         {
-            var w = GetWindow<ToolTargetAuthoringWindow>("Tool Target Authoring");
-            w.minSize = new Vector2(420, 560);
+            var w = GetWindow<ToolTargetAuthoringWindow>("Assembly Step Authoring");
+            w.minSize = new Vector2(440, 580);
             w.Show();
         }
 
@@ -167,6 +275,10 @@ namespace OSE.Editor
 
         private void OnEnable()
         {
+            // Destroy any stale PreviewRoot objects left from a previous session that
+            // survived domain reload with HideFlags.HideAndDontSave.
+            // (No stale preview roots to destroy — TTAW no longer creates HideAndDontSave objects.)
+
             RefreshPackageList();
             // Package restore after domain reload is handled by OnGUI (first frame)
             // where the AssetDatabase is guaranteed to be ready.
@@ -180,6 +292,7 @@ namespace OSE.Editor
             SceneView.duringSceneGui += OnSceneGUI;
             SessionDriver.EditModeStepChanged += OnSessionDriverStepChanged;
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
+            RuntimeEventBus.Subscribe<SpawnerPartsReady>(OnSpawnerPartsReady);
         }
 
         private void OnDisable()
@@ -187,14 +300,16 @@ namespace OSE.Editor
             SceneView.duringSceneGui -= OnSceneGUI;
             SessionDriver.EditModeStepChanged -= OnSessionDriverStepChanged;
             EditorApplication.playModeStateChanged -= OnPlayModeChanged;
+            RuntimeEventBus.Unsubscribe<SpawnerPartsReady>(OnSpawnerPartsReady);
             // Destroy scene objects but do NOT reset serialized state (_selectedIdx,
             // _selectedTargetId, etc.) — OnDisable runs BEFORE Unity serializes
             // [SerializeField] fields during domain reload, so resetting here
             // would erase the values we need to restore in OnEnable.
-            KillPartMeshes();
+            _partPreview?.Dispose();
+            _partPreview   = null;
+            _partPreviewId = null;
+            RemoveMeshCollidersFromLiveParts();
             ClearToolPreview();
-            if (_previewRoot != null) DestroyImmediate(_previewRoot);
-            _previewRoot = null;
         }
 
         private void OnPlayModeChanged(PlayModeStateChange state)
@@ -203,6 +318,16 @@ namespace OSE.Editor
             // Reload the package so the window reflects any runtime changes.
             if (!string.IsNullOrEmpty(_pkgId))
                 LoadPkg(_pkgId);
+        }
+
+        /// <summary>
+        /// Fired each time <see cref="PackagePartSpawner"/> finishes a spawn cycle.
+        /// Re-sync live part positions and add mesh colliders so click-to-snap still works.
+        /// </summary>
+        private void OnSpawnerPartsReady(SpawnerPartsReady _)
+        {
+            SyncAllPartMeshesToActivePose();
+            AddMeshCollidersToLiveParts();
         }
 
         private void OnSessionDriverStepChanged(int sequenceIndex)
@@ -226,15 +351,65 @@ namespace OSE.Editor
             Cleanup();
         }
 
+        /// <summary>
+        /// Returns the spawner's PreviewRoot transform, used as the coordinate space
+        /// for all target positions and tool preview placement.
+        /// </summary>
+        private static Transform GetPreviewRoot()
+        {
+            return ServiceRegistry.TryGet<ISpawnerQueryService>(out var s) ? s.PreviewRoot : null;
+        }
+
+        /// <summary>
+        /// Adds a MeshCollider to each face of every live spawned part so the user can
+        /// click directly on a mesh surface to snap a target (click-to-snap).
+        /// Colliders are tracked in <see cref="_addedMeshColliders"/> and removed by
+        /// <see cref="RemoveMeshCollidersFromLiveParts"/>.
+        /// </summary>
+        private void AddMeshCollidersToLiveParts()
+        {
+            RemoveMeshCollidersFromLiveParts(); // clear stale ones first
+            if (!ServiceRegistry.TryGet<ISpawnerQueryService>(out var spawner) || spawner?.SpawnedParts == null)
+                return;
+
+            foreach (var go in spawner.SpawnedParts)
+            {
+                if (go == null) continue;
+                foreach (var mf in go.GetComponentsInChildren<MeshFilter>(true))
+                {
+                    if (mf.sharedMesh == null) continue;
+                    var mc = mf.gameObject.AddComponent<MeshCollider>();
+                    mc.sharedMesh = mf.sharedMesh;
+                    _addedMeshColliders.Add((mf.gameObject, mc));
+                }
+            }
+        }
+
+        /// <summary>Removes MeshColliders that were added by <see cref="AddMeshCollidersToLiveParts"/>.</summary>
+        private void RemoveMeshCollidersFromLiveParts()
+        {
+            foreach (var (go, col) in _addedMeshColliders)
+            {
+                if (go != null && col != null)
+                    DestroyImmediate(col);
+            }
+            _addedMeshColliders.Clear();
+        }
+
         private void Cleanup()
         {
-            KillPartMeshes();
+            RemoveMeshCollidersFromLiveParts();
+            _partPreview?.Dispose();
+            _partPreview   = null;
+            _partPreviewId = null;
+            RemoveMeshCollidersFromLiveParts();
             ClearToolPreview();
-            if (_previewRoot != null) DestroyImmediate(_previewRoot);
-            _previewRoot = null;
             _targets = null;
             _selectedIdx = -1;
             _multiSelected.Clear();
+            _parts = null;
+            _selectedPartIdx = -1;
+            _multiSelectedParts.Clear();
         }
 
         // ── Main GUI ──────────────────────────────────────────────────────────
@@ -258,21 +433,47 @@ namespace OSE.Editor
             DrawStepFilter();
             EditorGUILayout.Space(2);
 
-            float listH = Mathf.Clamp(position.height * 0.35f, 80f, 220f);
-            DrawTargetList(listH);
-            EditorGUILayout.Space(4);
+            // Measure where top content ends (only accurate during Repaint, cached for other events)
+            if (Event.current.type == EventType.Repaint)
+                _topContentHeight = GUILayoutUtility.GetLastRect().yMax + 4f;
 
-            _detailScroll = EditorGUILayout.BeginScrollView(_detailScroll);
-            if (_multiSelected.Count > 1)
-                DrawBatchPanel();
-            else if (_selectedIdx >= 0 && _targets != null && _selectedIdx < _targets.Length)
-                DrawDetailPanel(ref _targets[_selectedIdx]);
-            else
-                EditorGUILayout.HelpBox("Select a target above.\nCtrl+click or Shift+click for multi-select.", MessageType.Info);
-            EditorGUILayout.Space(8);
-            DrawActions();
-            EditorGUILayout.Space(4);
-            EditorGUILayout.EndScrollView();
+            // ── Layout constants ──────────────────────────────────────────────
+            // When a task is selected the context panel lives inside the scroll area,
+            // so the pinned bottom bar shrinks to just the action buttons.
+            bool taskDetailInScroll = _selectedTaskSeqIdx >= 0 && _stepFilterIdx > 0;
+            float kEditH      = taskDetailInScroll ? 0f : 230f;
+            const float kActionsH   =  54f;
+            float kBottomBarH = kEditH + kActionsH + 10f;
+
+            // List height: exact gap between measured top and pinned bottom bar
+            float listH = Mathf.Max(position.height - _topContentHeight - kBottomBarH - 4f, 60f);
+            DrawUnifiedList(listH);
+
+            // ── Pinned bottom bar ─────────────────────────────────────────────
+            Rect bottomRect = new Rect(4f, position.height - kBottomBarH,
+                                       position.width - 8f, kBottomBarH);
+            GUILayout.BeginArea(bottomRect);
+
+            // Separator
+            EditorGUI.DrawRect(new Rect(0f, 0f, bottomRect.width, 1f),
+                               new Color(0.13f, 0.13f, 0.13f));
+            EditorGUILayout.Space(3);
+
+            // Edit fields — only shown when no task is driving the context panel
+            // (in that case, detail is rendered inline in the scroll area above).
+            if (!taskDetailInScroll)
+            {
+                _detailScroll = EditorGUILayout.BeginScrollView(
+                    _detailScroll, GUILayout.Height(kEditH));
+                DrawBottomEditPanel();
+                EditorGUILayout.EndScrollView();
+                EditorGUILayout.Space(3);
+            }
+
+            // Action buttons (always visible)
+            DrawUnifiedActions();
+
+            GUILayout.EndArea();
         }
 
         // ── Package picker ────────────────────────────────────────────────────
@@ -291,6 +492,99 @@ namespace OSE.Editor
             EditorGUILayout.EndHorizontal();
             if (i != _pkgIdx) { _pkgIdx = i; LoadPkg(_packageIds[i]); }
             if (_pkg == null && GUILayout.Button("Load")) LoadPkg(_packageIds[_pkgIdx]);
+        }
+
+        // ── New step form ─────────────────────────────────────────────────────
+
+        private void DrawNewStepForm()
+        {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField("New Step", EditorStyles.boldLabel);
+
+            _newStepId   = EditorGUILayout.TextField("ID",   _newStepId);
+            _newStepName = EditorGUILayout.TextField("Name", _newStepName);
+
+            _newStepFamilyIdx  = EditorGUILayout.Popup("Family",  _newStepFamilyIdx,  _familyOptions);
+            _newStepProfileIdx = EditorGUILayout.Popup("Profile", _newStepProfileIdx, _profileOptions[_newStepFamilyIdx]);
+
+            // Assembly picker
+            if (_pkg?.assemblies != null && _pkg.assemblies.Length > 0)
+            {
+                string[] asmOpts = _pkg.assemblies.Select(a => a?.id ?? "?").ToArray();
+                _newStepAssemblyIdx = Mathf.Clamp(_newStepAssemblyIdx, 0, asmOpts.Length - 1);
+                _newStepAssemblyIdx = EditorGUILayout.Popup("Assembly", _newStepAssemblyIdx, asmOpts);
+            }
+
+            _newStepSeqIdx = EditorGUILayout.IntField("Sequence Index", _newStepSeqIdx);
+
+            // Validation feedback
+            bool idEmpty    = string.IsNullOrWhiteSpace(_newStepId);
+            bool idConflict = !idEmpty && _pkg?.steps != null && System.Array.Exists(_pkg.steps, s => s?.id == _newStepId.Trim());
+            if (idEmpty)    EditorGUILayout.HelpBox("ID is required.", MessageType.Warning);
+            if (idConflict) EditorGUILayout.HelpBox($"Step ID '{_newStepId.Trim()}' already exists.", MessageType.Error);
+
+            EditorGUILayout.BeginHorizontal();
+            EditorGUI.BeginDisabledGroup(idEmpty || idConflict);
+            if (GUILayout.Button("Create Step", GUILayout.Width(90)))
+            {
+                CommitNewStep();
+                _showNewStepForm = false;
+            }
+            EditorGUI.EndDisabledGroup();
+            if (GUILayout.Button("Cancel", GUILayout.Width(60))) _showNewStepForm = false;
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
+        }
+
+        private void CommitNewStep()
+        {
+            string profile = _profileOptions[_newStepFamilyIdx][_newStepProfileIdx];
+            if (profile == "(none)") profile = null;
+
+            string assemblyId = null;
+            if (_pkg?.assemblies != null && _pkg.assemblies.Length > 0 && _newStepAssemblyIdx < _pkg.assemblies.Length)
+                assemblyId = _pkg.assemblies[_newStepAssemblyIdx]?.id;
+
+            var newStep = new StepDefinition
+            {
+                id            = _newStepId.Trim(),
+                name          = _newStepName.Trim(),
+                family        = _familyOptions[_newStepFamilyIdx],
+                profile       = profile,
+                assemblyId    = assemblyId,
+                sequenceIndex = _newStepSeqIdx,
+            };
+
+            string jsonPath = PackageJsonUtils.GetJsonPath(_pkgId);
+            if (string.IsNullOrEmpty(jsonPath) || !System.IO.File.Exists(jsonPath))
+            {
+                UnityEditor.EditorUtility.DisplayDialog("Error", "Could not locate machine.json.", "OK");
+                return;
+            }
+
+            try
+            {
+                PackageJsonUtils.InsertStep(jsonPath, newStep);
+            }
+            catch (System.Exception ex)
+            {
+                UnityEditor.EditorUtility.DisplayDialog("Error", $"Failed to insert step:\n{ex.Message}", "OK");
+                return;
+            }
+
+            // Reload and select the new step
+            _pkg = PackageJsonUtils.LoadPackage(_pkgId);
+            if (_pkg != null)
+                _assetResolver.BuildCatalog(_pkgId, _pkg.parts ?? System.Array.Empty<PartDefinition>());
+            BuildStepOptions();
+            BuildTargetList();
+            BuildPartList();
+            BuildTargetToolMap();
+
+            // Find and select the new step in the dropdown
+            if (_stepIds != null)
+                for (int i = 0; i < _stepIds.Length; i++)
+                    if (_stepIds[i] == newStep.id) { ApplyStepFilter(i); break; }
         }
 
         // ── Step filter ───────────────────────────────────────────────────────
@@ -330,40 +624,94 @@ namespace OSE.Editor
                 ApplyStepFilter(_stepFilterIdx - 1);
             EditorGUI.EndDisabledGroup();
 
-            // Compact GenericMenu button — opens the full step list as a context menu
-            string navLabel = _stepFilterIdx == 0
-                ? $"All Steps  ({stepCount})"
-                : $"Step {_stepFilterIdx} / {stepCount}";
+            // Step number: drag left/right to scrub, click to type
+            _stepNumRect = EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight, GUILayout.Width(46));
+            EditorGUIUtility.AddCursorRect(_stepNumRect, MouseCursor.SlideArrow);
 
-            if (GUILayout.Button(navLabel, EditorStyles.popup))
+            var ev = Event.current;
+            // Mouse-down on the field — start potential drag, don't consume (let IntField handle click-to-edit)
+            if (ev.type == EventType.MouseDown && ev.button == 0 && _stepNumRect.Contains(ev.mousePosition))
             {
-                var menu = new GenericMenu();
-                for (int j = 0; j < _stepOptions.Length; j++)
-                {
-                    int captured = j;
-                    menu.AddItem(new GUIContent(_stepOptions[j]), _stepFilterIdx == j,
-                        () => ApplyStepFilter(captured));
-                }
-                menu.ShowAsContext();
+                _stepDragging    = false;
+                _stepDragAccum   = 0f;
+                _stepDragStartVal = _stepFilterIdx;
+            }
+            // Mouse-drag — scrub the step index; consume so the text field doesn't see it
+            if (ev.type == EventType.MouseDrag && ev.button == 0 && _stepDragStartVal >= 0)
+            {
+                if (!_stepDragging)
+                    GUIUtility.keyboardControl = 0; // release text focus so the field shows the live value
+                _stepDragging  = true;
+                _stepDragAccum += ev.delta.x;
+                int scrubbed = Mathf.Clamp(_stepDragStartVal + Mathf.RoundToInt(_stepDragAccum / 4f), 0, stepCount);
+                if (scrubbed != _stepFilterIdx) { ApplyStepFilter(scrubbed); Repaint(); }
+                ev.Use();
+            }
+            if (ev.type == EventType.MouseUp && ev.button == 0)
+            {
+                bool wasDragging = _stepDragging;
+                _stepDragging    = false;
+                _stepDragStartVal = -1;
+                // Force a final sync to the SessionDriver on drag release so the scene
+                // always lands on the correct step regardless of throttling.
+                if (wasDragging && !_suppressStepSync)
+                    SyncSessionDriverStep();
             }
 
-            EditorGUI.BeginDisabledGroup(_stepFilterIdx == 0 || _stepFilterIdx >= _stepOptions.Length - 1);
+            var numStyle = new GUIStyle(EditorStyles.numberField) { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
+            int typedVal = EditorGUI.IntField(_stepNumRect, _stepFilterIdx, numStyle);
+            if (!_stepDragging)
+            {
+                typedVal = Mathf.Clamp(typedVal, 0, stepCount);
+                if (typedVal != _stepFilterIdx) ApplyStepFilter(typedVal);
+            }
+
+            // Scroll-wheel also scrubs (delta.y > 0 = scroll down = previous step)
+            if (_stepNumRect.Contains(Event.current.mousePosition) && Event.current.type == EventType.ScrollWheel)
+            {
+                int delta    = Event.current.delta.y > 0f ? -1 : 1;
+                int scrolled = Mathf.Clamp(_stepFilterIdx + delta, 0, stepCount);
+                if (scrolled != _stepFilterIdx) ApplyStepFilter(scrolled);
+                Event.current.Use();
+                Repaint();
+            }
+
+            GUILayout.Label($"/{stepCount}", EditorStyles.boldLabel, GUILayout.ExpandWidth(false));
+            GUILayout.Space(6);
+
+            // Step title — fills remaining space, clips if window is narrow
+            string stepTitle = _stepFilterIdx == 0
+                ? "All Steps"
+                : ((_stepIds != null && _stepFilterIdx < _stepIds.Length)
+                    ? (FindStep(_stepIds[_stepFilterIdx])?.GetDisplayName() ?? "")
+                    : "");
+            var titleStyle = new GUIStyle(EditorStyles.boldLabel) { clipping = TextClipping.Clip };
+            GUILayout.Label(stepTitle, titleStyle);
+
+            EditorGUI.BeginDisabledGroup(_stepFilterIdx >= stepCount);
             if (GUILayout.Button("►", GUILayout.Width(28)))
                 ApplyStepFilter(_stepFilterIdx + 1);
             EditorGUI.EndDisabledGroup();
 
+            GUILayout.Space(4);
+            if (GUILayout.Button("+ New Step", GUILayout.Width(82)))
+            {
+                _showNewStepForm   = !_showNewStepForm;
+                _newStepId         = "";
+                _newStepName       = "";
+                _newStepFamilyIdx  = 0;
+                _newStepProfileIdx = 0;
+                _newStepAssemblyIdx = 0;
+                int afterSeq = _stepFilterIdx > 0 && _stepSequenceIdxs != null
+                    ? _stepSequenceIdxs[_stepFilterIdx] + 1
+                    : (_pkg?.GetSteps()?.Max(s => s?.sequenceIndex ?? 0) ?? 0) + 1;
+                _newStepSeqIdx = afterSeq;
+            }
+
             EditorGUILayout.EndHorizontal();
 
-            // ── Ghost target toggle ───────────────────────────────────────────
-            EditorGUI.BeginChangeCheck();
-            bool newShow = EditorGUILayout.ToggleLeft(
-                "Show part-snap targets (ghost)", _showGhostTargets, EditorStyles.miniLabel);
-            if (EditorGUI.EndChangeCheck() && newShow != _showGhostTargets)
-            {
-                _showGhostTargets = newShow;
-                BuildTargetList();
-                Repaint();
-            }
+            // ── New step form ──────────────────────────────────────────────��──
+            if (_showNewStepForm) DrawNewStepForm();
 
             // ── Step info card (hidden in All Steps mode) ─────────────────────
             if (_stepFilterIdx > 0 && _stepFilterIdx < _stepIds.Length)
@@ -380,7 +728,9 @@ namespace OSE.Editor
                     int    tCount     = step.targetIds?.Length ?? 0;
 
                     EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-                    EditorGUILayout.LabelField($"[{step.sequenceIndex}] {step.name}", EditorStyles.boldLabel);
+                    string stepDisplayName = step.GetDisplayName();
+                    if (!string.IsNullOrEmpty(stepDisplayName))
+                        EditorGUILayout.LabelField(stepDisplayName, EditorStyles.boldLabel);
                     EditorGUILayout.LabelField(
                         $"Tool: {toolName}{profileStr}  ·  {tCount} target{(tCount == 1 ? "" : "s")}",
                         EditorStyles.miniLabel);
@@ -388,56 +738,6 @@ namespace OSE.Editor
                         EditorGUILayout.LabelField(
                             $"{_previewAssembled} assembled  ·  {_previewCurrent} at start pos  ·  {_previewHidden} hidden",
                             EditorStyles.miniLabel);
-
-                    // ── removePersistentToolIds editor ────────────────────────
-                    EditorGUILayout.Space(2);
-                    var removeIds = step.removePersistentToolIds ?? Array.Empty<string>();
-
-                    EditorGUILayout.LabelField("Removes persistent tools at start of step:", EditorStyles.miniLabel);
-
-                    string toRemove = null;
-                    foreach (string rid in removeIds)
-                    {
-                        EditorGUILayout.BeginHorizontal();
-                        string rname = FindToolName(rid);
-                        EditorGUILayout.LabelField($"  · {rname}", EditorStyles.miniLabel);
-                        if (GUILayout.Button("×", EditorStyles.miniButton, GUILayout.Width(18)))
-                            toRemove = rid;
-                        EditorGUILayout.EndHorizontal();
-                    }
-                    if (toRemove != null)
-                    {
-                        step.removePersistentToolIds = System.Array.FindAll(
-                            removeIds, r => r != toRemove);
-                        _dirtyStepIds.Add(step.id);
-                        Repaint();
-                    }
-
-                    // Add button — only shows persistent tools that are actually active
-                    // (placed by a prior step and not yet removed by an intermediate step).
-                    var activePersistent = GetActivePersistentToolIds(step);
-                    // Remove tools already listed in this step's removal array
-                    foreach (string rid in removeIds) activePersistent.Remove(rid);
-
-                    if (activePersistent.Count > 0 && GUILayout.Button("+ Add removal", EditorStyles.miniButton))
-                    {
-                        var menu = new GenericMenu();
-                        foreach (string toolId in activePersistent)
-                        {
-                            string capturedId   = toolId;
-                            string capturedName = FindToolName(toolId);
-                            menu.AddItem(new GUIContent(capturedName), false, () =>
-                            {
-                                var newList = new List<string>(
-                                    step.removePersistentToolIds ?? Array.Empty<string>());
-                                newList.Add(capturedId);
-                                step.removePersistentToolIds = newList.ToArray();
-                                _dirtyStepIds.Add(step.id);
-                                Repaint();
-                            });
-                        }
-                        menu.ShowAsContext();
-                    }
 
                     EditorGUILayout.EndVertical();
                 }
@@ -448,16 +748,47 @@ namespace OSE.Editor
         {
             _stepFilterIdx    = newIdx;
             _selectedIdx      = -1;
+            _selectedPartIdx  = -1;
             _multiSelected.Clear();
+            _multiSelectedParts.Clear();
             _clickToSnapActive = false;
+            _addTaskPicker          = AddTaskPicker.None;
+            _selectedTaskSeqIdx     = -1;
+            _activeTaskKind         = null;
+            _taskSeqReorderList     = null;
+            _taskSeqReorderListForStepId = null;
+            InvalidateTaskOrderCache();
             UpdateActiveStep();
             BuildTargetList();
+            BuildPartList();
             RespawnScene();
+            SyncAllPartMeshesToActivePose(); // must come AFTER RespawnScene
+            AutoSelectFirstTaskEntry();      // default-select first badge so a section is visible
             if (!_suppressStepSync)
                 SyncSessionDriverStep();
             SceneView.RepaintAll();
             Repaint();
         }
+
+        /// <summary>
+        /// When a step is first loaded, auto-select the first task entry so the
+        /// matching section (parts / targets / wire) is immediately visible.
+        /// </summary>
+        private void AutoSelectFirstTaskEntry()
+        {
+            if (_stepFilterIdx <= 0 || _stepIds == null || _stepFilterIdx >= _stepIds.Length) return;
+            var step = FindStep(_stepIds[_stepFilterIdx]);
+            if (step == null) return;
+            var order = GetOrDeriveTaskOrder(step);
+            if (order.Count == 0) return;
+            _selectedTaskSeqIdx = 0;
+            ApplyTaskEntrySelection(step, order[0]);
+        }
+
+        // Minimum seconds between SessionDriver pushes while dragging the step scrubber.
+        // Prevents hammering ApplyStepAwarePositions (and any async loaders) on every
+        // pixel of mouse movement. Value chosen to allow ~10 updates/sec during drag.
+        private const double DriverSyncMinIntervalSec = 0.1;
 
         private void SyncSessionDriverStep()
         {
@@ -466,6 +797,21 @@ namespace OSE.Editor
             if (driver == null) return;
             if (_stepFilterIdx <= 0 || _stepSequenceIdxs == null || _stepFilterIdx >= _stepSequenceIdxs.Length)
                 return;
+
+            // Throttle during drag so the scene spawner isn't driven for every
+            // intermediate step the mouse passes through.
+            if (_stepDragging)
+            {
+                double now = EditorApplication.timeSinceStartup;
+                if (now - _lastDriverSyncTime < DriverSyncMinIntervalSec)
+                    return;
+                _lastDriverSyncTime = now;
+            }
+            else
+            {
+                _lastDriverSyncTime = EditorApplication.timeSinceStartup;
+            }
+
             int sequenceIndex = _stepSequenceIdxs[_stepFilterIdx];
             _suppressStepSync     = true;
             _lastPolledDriverStep = sequenceIndex; // prevent poll from re-triggering
@@ -476,6 +822,7 @@ namespace OSE.Editor
         private void UpdateActiveStep()
         {
             _activeStepProfile   = null;
+            _activeStepIsConnect = false;
             _activeStepTargetIds = null;
 
             if (_stepFilterIdx <= 0 || _stepIds == null || _stepFilterIdx >= _stepIds.Length)
@@ -484,10 +831,16 @@ namespace OSE.Editor
             var step = FindStep(_stepIds[_stepFilterIdx]);
             if (step == null) return;
 
-            _activeStepProfile = string.IsNullOrEmpty(step.profile) ? null : step.profile;
+            _activeStepProfile   = string.IsNullOrEmpty(step.profile) ? null : step.profile;
+            _activeStepIsConnect = step.ResolvedFamily == OSE.Content.StepFamily.Connect;
 
-            if (step.targetIds != null && step.targetIds.Length > 0)
-                _activeStepTargetIds = new HashSet<string>(step.targetIds, StringComparer.Ordinal);
+            // Always assign a HashSet (even empty) so hasStepFilter is true and
+            // targets not belonging to this step are dimmed. Leaving it null causes
+            // every target in the package to render at full brightness for steps
+            // that have no targetIds (e.g. CONFIRM steps).
+            _activeStepTargetIds = step.targetIds != null && step.targetIds.Length > 0
+                ? new HashSet<string>(step.targetIds, StringComparer.Ordinal)
+                : new HashSet<string>(StringComparer.Ordinal);
         }
 
         // ── Target list ───────────────────────────────────────────────────────
@@ -583,7 +936,6 @@ namespace OSE.Editor
 
         private void DrawDetailPanel(ref TargetEditState t)
         {
-            EditorGUILayout.LabelField($"Target: {t.def.id}", EditorStyles.boldLabel);
             if (!string.IsNullOrEmpty(t.def.name))
                 EditorGUILayout.LabelField($"Name: {t.def.name}", EditorStyles.miniLabel);
             if (!string.IsNullOrEmpty(t.def.associatedPartId))
@@ -632,11 +984,13 @@ namespace OSE.Editor
                 }
             }
 
-            // State badge
-            string stateLbl = t.isDirty ? "Unsaved changes" : t.hasPlacement ? "Authored" : "No placement data";
-            Color  badgeCol = t.isDirty ? ColDirty : t.hasPlacement ? ColAuthored : ColNoPlacement;
-            var badgeStyle  = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = badgeCol } };
-            EditorGUILayout.LabelField(stateLbl, badgeStyle);
+            // State shown only when there is no placement data yet (the context panel
+            // header handles "Unsaved Changes" and "Saved" is implicit when editing works).
+            if (!t.hasPlacement && !t.isDirty)
+            {
+                var noDataStyle = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = ColNoPlacement } };
+                EditorGUILayout.LabelField("No placement data", noDataStyle);
+            }
 
             EditorGUILayout.Space(4);
 
@@ -652,25 +1006,38 @@ namespace OSE.Editor
 
             EditorGUILayout.Space(4);
 
-            // ── Always: Position / Rotation / Scale ───────────────────────────
+            // ── Fields driven by TaskFieldProfile ────────────────────────────
+            var fieldProfile = TaskFieldRegistry.Get(_activeTaskKind ?? "");
 
-            EditorGUI.BeginChangeCheck();
-            Vector3 newPos = EditorGUILayout.Vector3Field("Position (local)", t.position);
-            if (EditorGUI.EndChangeCheck()) { BeginEdit(); t.position = newPos; t.isDirty = true; EndEdit(); SceneView.RepaintAll(); }
+            if (fieldProfile.ShowPosition)
+            {
+                EditorGUI.BeginChangeCheck();
+                Vector3 newPos = EditorGUILayout.Vector3Field("Position (local)", t.position);
+                if (EditorGUI.EndChangeCheck()) { BeginEdit(); t.position = newPos; t.isDirty = true; EndEdit(); SceneView.RepaintAll(); }
+            }
 
-            EditorGUI.BeginChangeCheck();
-            Vector3 newEuler = EditorGUILayout.Vector3Field("Rotation (euler)", t.rotation.eulerAngles);
-            if (EditorGUI.EndChangeCheck()) { BeginEdit(); t.rotation = Quaternion.Euler(newEuler); t.isDirty = true; EndEdit(); SceneView.RepaintAll(); }
+            if (fieldProfile.ShowRotation)
+            {
+                EditorGUI.BeginChangeCheck();
+                Vector3 newEuler = EditorGUILayout.Vector3Field("Rotation (euler)", t.rotation.eulerAngles);
+                if (EditorGUI.EndChangeCheck()) { BeginEdit(); t.rotation = Quaternion.Euler(newEuler); t.isDirty = true; EndEdit(); SceneView.RepaintAll(); }
+            }
 
-            EditorGUI.BeginChangeCheck();
-            Vector3 newScale = EditorGUILayout.Vector3Field("Scale", t.scale);
-            if (EditorGUI.EndChangeCheck()) { BeginEdit(); t.scale = newScale; t.isDirty = true; EndEdit(); }
+            if (fieldProfile.ShowScale)
+            {
+                EditorGUI.BeginChangeCheck();
+                Vector3 newScale = EditorGUILayout.Vector3Field("Scale", t.scale);
+                if (EditorGUI.EndChangeCheck()) { BeginEdit(); t.scale = newScale; t.isDirty = true; EndEdit(); }
+            }
+
+            if (!fieldProfile.ShowPosition && !fieldProfile.ShowRotation && !fieldProfile.ShowScale)
+                return; // nothing left to render for this task kind
 
             EditorGUILayout.Space(4);
 
             // ── Profile-gated groups ──────────────────────────────────────────
 
-            if (ShowWeldGroup())
+            if (fieldProfile.ShowWeldAxis && ShowWeldGroup())
             {
                 // Weld gizmo toggle — places two draggable handles in SceneView
                 EditorGUI.BeginChangeCheck();
@@ -713,7 +1080,7 @@ namespace OSE.Editor
                 }
             }
 
-            if (ShowPortGroup())
+            if (fieldProfile.ShowPortFields && ShowPortGroup())
             {
                 EditorGUI.BeginChangeCheck();
                 Vector3 newPortA = EditorGUILayout.Vector3Field("Port A (local)", t.portA);
@@ -729,16 +1096,17 @@ namespace OSE.Editor
             // rotation is the single source of truth for both visual placement and play-mode
             // tool orientation.
 
-            EditorGUILayout.Space(6);
-
-            // Click-to-snap toggle
-            EditorGUI.BeginChangeCheck();
-            _clickToSnapActive = EditorGUILayout.Toggle(
-                new GUIContent("Click-to-Snap",
-                    "Enable, then left-click any mesh surface in SceneView.\n" +
-                    "Target snaps to that point; rotation and weld axis auto-align to surface normal."),
-                _clickToSnapActive);
-            if (EditorGUI.EndChangeCheck()) SceneView.RepaintAll();
+            if (fieldProfile.ShowClickToSnap)
+            {
+                EditorGUILayout.Space(6);
+                EditorGUI.BeginChangeCheck();
+                _clickToSnapActive = EditorGUILayout.Toggle(
+                    new GUIContent("Click-to-Snap",
+                        "Enable, then left-click any mesh surface in SceneView.\n" +
+                        "Target snaps to that point; rotation and weld axis auto-align to surface normal."),
+                    _clickToSnapActive);
+                if (EditorGUI.EndChangeCheck()) SceneView.RepaintAll();
+            }
 
             if (_clickToSnapActive)
                 EditorGUILayout.HelpBox("Left-click a mesh surface in SceneView to snap.", MessageType.Info);
@@ -911,10 +1279,8 @@ namespace OSE.Editor
                                           || _activeStepProfile == "Weld"
                                           || _activeStepProfile == "Cut";
 
-        // portA/portB are hose/cable endpoints (pipe_connection / Cable profile).
-        // Measure steps (framing square) only need position+rotation.
-        private bool ShowPortGroup()    => string.IsNullOrEmpty(_activeStepProfile)
-                                          || _activeStepProfile == "Cable";
+        // portA/portB are wire/pipe endpoints — visible only for Connect-family steps.
+        private bool ShowPortGroup()    => _activeStepIsConnect;
 
         // ── Actions ───────────────────────────────────────────────────────────
 
@@ -931,6 +1297,23 @@ namespace OSE.Editor
             if (GUILayout.Button("Extract from GLB Anchors"))
                 ExtractFromGlbAnchors();
 
+            // Show unlinked count and offer auto-link for filename-matched parts
+            if (_pkg?.parts != null)
+            {
+                int unlinked = 0;
+                foreach (var pd in _pkg.parts)
+                    if (pd != null && string.IsNullOrEmpty(pd.assetRef)) unlinked++;
+
+                if (unlinked > 0)
+                {
+                    var warnStyle = new GUIStyle(EditorStyles.miniLabel)
+                        { normal = { textColor = new Color(1f, 0.75f, 0.2f) } };
+                    EditorGUILayout.LabelField($"⚠ {unlinked} parts have no assetRef", warnStyle);
+                    if (GUILayout.Button("Auto-link by filename", EditorStyles.miniButton))
+                        AutoLinkPartsByFilename();
+                }
+            }
+
             EditorGUI.BeginDisabledGroup(string.IsNullOrEmpty(_lastBackupPath) || !File.Exists(_lastBackupPath));
             if (GUILayout.Button("Revert Last Write (restore backup)"))
                 RevertFromBackup();
@@ -940,15 +1323,2067 @@ namespace OSE.Editor
             if (GUILayout.Button("Frame in SceneView")) FrameInScene();
         }
 
+        private void DrawPartPoseToggle()
+        {
+            EditorGUILayout.BeginHorizontal();
+            bool wantStart = GUILayout.Toggle(!_editPlayPose, "Start Pose", EditorStyles.miniButtonLeft);
+            bool wantPlay  = GUILayout.Toggle(_editPlayPose,  "Play Pose",  EditorStyles.miniButtonRight);
+            EditorGUILayout.EndHorizontal();
+
+            bool clickedStart = wantStart && _editPlayPose;
+            bool clickedPlay  = wantPlay  && !_editPlayPose;
+            if (clickedStart || clickedPlay)
+            {
+                _editPlayPose = clickedPlay;
+                SyncAllPartMeshesToActivePose();
+                SceneView.RepaintAll();
+            }
+        }
+
+        // ── Unified list ──────────────────────────────────────────────────────
+
+        private void DrawUnifiedList(float height)
+        {
+            _partListScroll = EditorGUILayout.BeginScrollView(_partListScroll, GUILayout.Height(height));
+
+            bool hasStepSelected = _stepFilterIdx > 0 && _stepIds != null && _stepFilterIdx < _stepIds.Length;
+
+            if (!hasStepSelected)
+            {
+                // All Steps mode — show flat part + target counts only
+                if (_pkg != null)
+                {
+                    DrawUnifiedSectionHeader($"PART PLACEMENT ({_pkg.GetParts()?.Length ?? 0})", 0);
+                    EditorGUILayout.LabelField("  Select a step to view tasks.", EditorStyles.miniLabel);
+                    EditorGUILayout.Space(4);
+                    int allTargets = _pkg.GetTargets()?.Length ?? 0;
+                    DrawUnifiedSectionHeader($"TOOL TARGETS ({allTargets})", 0);
+                    EditorGUILayout.LabelField("  Select a step to view tasks.", EditorStyles.miniLabel);
+                }
+                EditorGUILayout.EndScrollView();
+                return;
+            }
+
+            var step = FindStep(_stepIds[_stepFilterIdx]);
+            if (step == null) { EditorGUILayout.EndScrollView(); return; }
+
+            var order = GetOrDeriveTaskOrder(step);
+
+            // ── TASK SEQUENCE ──────────────────────────────────────────────────
+            DrawUnifiedSectionHeader($"TASK SEQUENCE ({order.Count})", order.Count,
+                () =>
+                {
+                    var menu = new GenericMenu();
+                    menu.AddItem(new GUIContent("Part"),           false, () => { _addTaskPicker = AddTaskPicker.Part;       _addPickerPartIdx = 0; _selectedTaskSeqIdx = -1; });
+                    menu.AddItem(new GUIContent("Tool Target"),    false, () => { _addTaskPicker = AddTaskPicker.ToolTarget; _addPickerTargetIdx = 0; _addPickerToolIdx = 0; _selectedTaskSeqIdx = -1; });
+                    menu.AddItem(new GUIContent("Wire Connection"),false, () => { _addTaskPicker = AddTaskPicker.Wire;       _addPickerTargetIdx = 0; _addPickerWirePartIdx = 0; _addPickerPolarityA = ""; _addPickerPolarityB = ""; _addPickerConnectorA = ""; _addPickerConnectorB = ""; _selectedTaskSeqIdx = -1; });
+                    menu.ShowAsContext();
+                });
+
+            if (order.Count == 0)
+                EditorGUILayout.LabelField("  No tasks yet. Press + to add.", EditorStyles.miniLabel);
+            else
+                DrawTaskSequenceDragList(step, order);
+
+            // ── Add-task picker (shown below sequence list) ────────────────────
+            if (_addTaskPicker == AddTaskPicker.Part)       DrawAddPartPicker();
+            if (_addTaskPicker == AddTaskPicker.ToolTarget) DrawAddToolTargetPicker();
+            if (_addTaskPicker == AddTaskPicker.Wire)       DrawAddWirePicker();
+
+            // ── Section for selected task kind (one section at a time) ─────────
+            if (_selectedTaskSeqIdx >= 0 && _selectedTaskSeqIdx < order.Count)
+            {
+                var selEntry = order[_selectedTaskSeqIdx];
+                EditorGUILayout.Space(4);
+
+                switch (selEntry.kind)
+                {
+                    case "part":
+                    {
+                        DrawUnifiedSectionHeader($"PART CONTEXT ({selEntry.id})", 0);
+                        if (IsTaskEntryDirty(selEntry, step))
+                        {
+                            EditorGUILayout.BeginHorizontal();
+                            var ds = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = ColDirty }, fontStyle = FontStyle.Bold };
+                            EditorGUILayout.LabelField("● Unsaved Changes", ds);
+                            if (GUILayout.Button("Revert", EditorStyles.miniButton, GUILayout.Width(52)))
+                                RevertPartEntry(selEntry.id);
+                            EditorGUILayout.EndHorizontal();
+                        }
+                        DrawPartPoseToggle();
+                        if (_parts != null)
+                            for (int i = 0; i < _parts.Length; i++)
+                                if (_parts[i].def?.id == selEntry.id)
+                                { DrawPartDetailPanel(ref _parts[i]); break; }
+                        break;
+                    }
+                    case "wire":
+                    {
+                        DrawUnifiedSectionHeader($"WIRE CONTEXT ({selEntry.id})", 0);
+                        if (IsTaskEntryDirty(selEntry, step))
+                        {
+                            EditorGUILayout.BeginHorizontal();
+                            var ds = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = ColDirty }, fontStyle = FontStyle.Bold };
+                            EditorGUILayout.LabelField("● Unsaved Changes", ds);
+                            if (GUILayout.Button("Revert", EditorStyles.miniButton, GUILayout.Width(52)))
+                                RevertTargetEntry(selEntry.id);
+                            EditorGUILayout.EndHorizontal();
+                        }
+
+                        // Polarity / connector fields for the selected wire entry
+                        if (step.wireConnect?.IsConfigured == true && step.wireConnect.wires != null)
+                        {
+                            WireConnectEntry wire = null;
+                            foreach (var w in step.wireConnect.wires)
+                                if (string.Equals(w.targetId, selEntry.id, StringComparison.Ordinal))
+                                { wire = w; break; }
+
+                            if (wire != null)
+                            {
+                                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+
+                                EditorGUI.BeginChangeCheck();
+                                EditorGUILayout.BeginHorizontal();
+                                EditorGUILayout.LabelField("Polarity A:", GUILayout.Width(74));
+                                wire.portAPolarityType = EditorGUILayout.TextField(wire.portAPolarityType ?? "", GUILayout.Width(80));
+                                EditorGUILayout.LabelField("Polarity B:", GUILayout.Width(74));
+                                wire.portBPolarityType = EditorGUILayout.TextField(wire.portBPolarityType ?? "");
+                                EditorGUILayout.EndHorizontal();
+
+                                EditorGUILayout.BeginHorizontal();
+                                EditorGUILayout.LabelField("Connector A:", GUILayout.Width(74));
+                                wire.portAConnectorType = EditorGUILayout.TextField(wire.portAConnectorType ?? "", GUILayout.Width(80));
+                                EditorGUILayout.LabelField("Connector B:", GUILayout.Width(74));
+                                wire.portBConnectorType = EditorGUILayout.TextField(wire.portBConnectorType ?? "");
+                                EditorGUILayout.EndHorizontal();
+                                if (EditorGUI.EndChangeCheck()) _dirtyStepIds.Add(step.id);
+
+                                EditorGUI.BeginChangeCheck();
+                                EditorGUILayout.BeginHorizontal();
+                                wire.polarityOrderMatters = EditorGUILayout.ToggleLeft(
+                                    "Polarity order matters", wire.polarityOrderMatters, EditorStyles.miniLabel,
+                                    GUILayout.Width(150));
+                                if (step.wireConnect != null)
+                                    step.wireConnect.enforcePortOrder = EditorGUILayout.ToggleLeft(
+                                        "Enforce port order (A first)", step.wireConnect.enforcePortOrder,
+                                        EditorStyles.miniLabel);
+                                EditorGUILayout.EndHorizontal();
+                                if (EditorGUI.EndChangeCheck()) _dirtyStepIds.Add(step.id);
+
+                                EditorGUILayout.EndVertical();
+
+                                // Part section — wire entry owns its part directly
+                                EditorGUILayout.Space(2);
+                                DrawUnifiedSectionHeader("Part", 0);
+                                EditorGUI.BeginChangeCheck();
+                                var allParts = _pkg?.GetParts();
+                                string[] partOpts = allParts != null
+                                    ? System.Array.ConvertAll(allParts, p => string.IsNullOrEmpty(p?.id) ? "(empty)" : p.id)
+                                    : System.Array.Empty<string>();
+                                string[] partOptsWithNone = new string[partOpts.Length + 1];
+                                partOptsWithNone[0] = "(none)";
+                                System.Array.Copy(partOpts, 0, partOptsWithNone, 1, partOpts.Length);
+                                int curPartIdx = 0;
+                                if (!string.IsNullOrEmpty(wire.partId) && allParts != null)
+                                    for (int pi = 0; pi < allParts.Length; pi++)
+                                        if (string.Equals(allParts[pi]?.id, wire.partId, StringComparison.Ordinal))
+                                        { curPartIdx = pi + 1; break; }
+                                int newPartIdx = EditorGUILayout.Popup("Part", curPartIdx, partOptsWithNone);
+                                if (EditorGUI.EndChangeCheck())
+                                {
+                                    wire.partId = newPartIdx == 0 ? null : allParts[newPartIdx - 1].id;
+                                    _dirtyStepIds.Add(step.id);
+                                }
+
+                                // Show part detail panel for the wire-embedded part
+                                if (!string.IsNullOrEmpty(wire.partId) && _parts != null)
+                                    for (int pi = 0; pi < _parts.Length; pi++)
+                                        if (_parts[pi].def?.id == wire.partId)
+                                        { DrawPartDetailPanel(ref _parts[pi]); break; }
+                            }
+                        }
+
+                        // Target transform detail
+                        if (_targets != null)
+                            for (int i = 0; i < _targets.Length; i++)
+                                if (_targets[i].def?.id == selEntry.id)
+                                { DrawDetailPanel(ref _targets[i]); break; }
+                        break;
+                    }
+                    case "confirm_action":
+                    {
+                        DrawUnifiedSectionHeader("CONFIRM CONTEXT", 0);
+                        EditorGUILayout.LabelField(
+                            "  User presses the Confirm button to complete this step.",
+                            EditorStyles.miniLabel);
+                        break;
+                    }
+                    case "confirm":
+                    {
+                        // Confirm-family inspection points — no tool, just position reference
+                        DrawUnifiedSectionHeader($"OBSERVE CONTEXT ({selEntry.id})", 0);
+                        EditorGUILayout.LabelField(
+                            "  Camera must frame this location before Confirm unlocks. No tool required.",
+                            EditorStyles.miniLabel);
+                        EditorGUILayout.Space(4);
+                        if (_targets != null)
+                            for (int i = 0; i < _targets.Length; i++)
+                                if (_targets[i].def?.id == selEntry.id)
+                                { DrawDetailPanel(ref _targets[i]); break; }
+                        break;
+                    }
+                    default: // toolAction, target
+                    {
+                        DrawUnifiedSectionHeader($"TOOL CONTEXT ({selEntry.id})", 0);
+                        if (IsTaskEntryDirty(selEntry, step))
+                        {
+                            EditorGUILayout.BeginHorizontal();
+                            var ds = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = ColDirty }, fontStyle = FontStyle.Bold };
+                            EditorGUILayout.LabelField("● Unsaved Changes", ds);
+                            if (GUILayout.Button("Revert", EditorStyles.miniButton, GUILayout.Width(52)))
+                                RevertTargetEntry(selEntry.id);
+                            EditorGUILayout.EndHorizontal();
+                        }
+
+                        // ── Tool picker ───────────────────────────────────────
+                        // Find the requiredToolAction entry for this target (may be null if not yet set)
+                        ToolActionDefinition taskAction = null;
+                        if (step.requiredToolActions != null)
+                            foreach (var a in step.requiredToolActions)
+                                if (a?.targetId == selEntry.id) { taskAction = a; break; }
+
+                        if (_pkg?.tools != null && _pkg.tools.Length > 0)
+                        {
+                            // Build parallel name/id arrays (index 0 = none)
+                            var toolDefs  = _pkg.tools;
+                            var toolNames = new string[toolDefs.Length + 1];
+                            var toolIds   = new string[toolDefs.Length + 1];
+                            toolNames[0] = "(none)";
+                            toolIds[0]   = "";
+                            int currentToolIdx = 0;
+                            for (int ti = 0; ti < toolDefs.Length; ti++)
+                            {
+                                toolNames[ti + 1] = toolDefs[ti]?.name ?? toolDefs[ti]?.id ?? "?";
+                                toolIds[ti + 1]   = toolDefs[ti]?.id ?? "";
+                                if (taskAction != null && toolIds[ti + 1] == taskAction.toolId)
+                                    currentToolIdx = ti + 1;
+                            }
+
+                            EditorGUI.BeginChangeCheck();
+                            EditorGUILayout.BeginHorizontal();
+                            EditorGUILayout.LabelField("Tool:", EditorStyles.miniLabel, GUILayout.Width(32));
+                            int newToolIdx = EditorGUILayout.Popup(currentToolIdx, toolNames);
+                            EditorGUILayout.EndHorizontal();
+                            if (EditorGUI.EndChangeCheck() && newToolIdx != currentToolIdx)
+                            {
+                                string pickedToolId = toolIds[newToolIdx];
+                                if (taskAction == null)
+                                {
+                                    // No action entry yet — create one
+                                    string actionId = $"action_{selEntry.id}";
+                                    taskAction = new ToolActionDefinition
+                                        { id = actionId, toolId = pickedToolId, targetId = selEntry.id };
+                                    var aList = new System.Collections.Generic.List<ToolActionDefinition>(
+                                        step.requiredToolActions ?? System.Array.Empty<ToolActionDefinition>());
+                                    aList.Add(taskAction);
+                                    step.requiredToolActions = aList.ToArray();
+                                }
+                                else
+                                {
+                                    taskAction.toolId = pickedToolId;
+                                }
+                                _dirtyStepIds.Add(step.id);
+                                BuildTargetToolMap();
+                                if (_targets != null)
+                                    for (int ti = 0; ti < _targets.Length; ti++)
+                                        if (_targets[ti].def?.id == selEntry.id)
+                                        { RefreshToolPreview(ref _targets[ti]); break; }
+                                Repaint();
+                            }
+
+                            // Show selected tool's category as context
+                            if (currentToolIdx > 0)
+                            {
+                                var selTool = toolDefs[currentToolIdx - 1];
+                                if (!string.IsNullOrEmpty(selTool?.category))
+                                    EditorGUILayout.LabelField($"Category: {selTool.category}", EditorStyles.miniLabel);
+                            }
+                        }
+
+                        DrawPersistentToolRemovalRows();
+
+                        // Target transform detail
+                        string toolTargetId = selEntry.id;
+                        if (_targets != null)
+                            for (int i = 0; i < _targets.Length; i++)
+                                if (_targets[i].def?.id == toolTargetId)
+                                { DrawDetailPanel(ref _targets[i]); break; }
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                EditorGUILayout.Space(8);
+                EditorGUILayout.LabelField("  Click a task to view its details.",
+                    EditorStyles.centeredGreyMiniLabel);
+            }
+
+            EditorGUILayout.EndScrollView();
+        }
+
+        // ── Task sequence helpers ─────────────────────────────────────────────
+
+        private List<TaskOrderEntry> GetOrDeriveTaskOrder(StepDefinition step)
+        {
+            if (_cachedTaskOrderForStepId == step.id && _cachedTaskOrder != null)
+                return _cachedTaskOrder;
+
+            var family2    = step.ResolvedFamily;
+            bool isConfirm2 = family2 == OSE.Content.StepFamily.Confirm;
+
+            List<TaskOrderEntry> order;
+            if (step.taskOrder != null && step.taskOrder.Length > 0)
+            {
+                order = new List<TaskOrderEntry>(step.taskOrder);
+            }
+            else
+            {
+                order = new List<TaskOrderEntry>();
+                bool isWire  = family2 == OSE.Content.StepFamily.Connect;
+                bool isPlace = family2 == OSE.Content.StepFamily.Place;
+
+                if (step.requiredPartIds != null)
+                {
+                    // Skip parts already embedded in wire entries — the WIRE task owns them.
+                    var wireOwnedParts = new HashSet<string>(StringComparer.Ordinal);
+                    if (step.wireConnect?.wires != null)
+                        foreach (var w in step.wireConnect.wires)
+                            if (!string.IsNullOrEmpty(w?.partId))
+                                wireOwnedParts.Add(w.partId);
+
+                    foreach (var pid in step.requiredPartIds)
+                        if (!string.IsNullOrEmpty(pid) && !wireOwnedParts.Contains(pid))
+                            order.Add(new TaskOrderEntry { kind = "part", id = pid });
+                }
+
+                // Place-family targets are snap anchors, not user-facing tasks — omit them.
+                // Confirm-family targets are inspection points — shown as "confirm" kind (no tool picker).
+                // Use/Connect targets are tool interaction points.
+                var coveredTargetIds = new HashSet<string>(StringComparer.Ordinal);
+                if (!isPlace && step.targetIds != null)
+                    foreach (var tid in step.targetIds)
+                        if (!string.IsNullOrEmpty(tid))
+                        {
+                            string kind = isWire ? "wire" : isConfirm2 ? "confirm" : "target";
+                            order.Add(new TaskOrderEntry { kind = kind, id = tid });
+                            coveredTargetIds.Add(tid);
+                        }
+
+                // Only add toolAction entries whose target isn't already shown via targetIds
+                if (step.requiredToolActions != null)
+                    foreach (var a in step.requiredToolActions)
+                        if (!string.IsNullOrEmpty(a?.id) && !coveredTargetIds.Contains(a.targetId ?? ""))
+                            order.Add(new TaskOrderEntry { kind = "toolAction", id = a.id });
+            }
+
+            // Confirm-family steps always end with a button press — always append as display-only terminal task
+            if (isConfirm2)
+                order.Add(new TaskOrderEntry { kind = "confirm_action", id = "confirm" });
+
+            _cachedTaskOrderForStepId = step.id;
+            _cachedTaskOrder = order;
+            return order;
+        }
+
+        private void InvalidateTaskOrderCache() { _cachedTaskOrder = null; _cachedTaskOrderForStepId = null; }
+
+        /// <summary>Returns true when the item backing this task entry has in-memory unsaved edits.</summary>
+        private bool IsTaskEntryDirty(TaskOrderEntry entry, StepDefinition step)
+        {
+            if (entry == null) return false;
+            if (entry.kind == "part")
+            {
+                if (_parts != null)
+                    for (int i = 0; i < _parts.Length; i++)
+                        if (_parts[i].def?.id == entry.id) return _parts[i].isDirty;
+                return false;
+            }
+            // wire, tool, target — check the backing target
+            if (_targets != null)
+                for (int i = 0; i < _targets.Length; i++)
+                    if (_targets[i].def?.id == entry.id) return _targets[i].isDirty;
+            // Wire steps also dirty when polarity/step fields changed
+            if (entry.kind == "wire") return _dirtyStepIds.Contains(step?.id ?? "");
+            return false;
+        }
+
+        /// <summary>
+        /// Reloads a single part's placement data from disk and clears its dirty flag.
+        /// Does not affect any other part or target.
+        /// </summary>
+        private void RevertPartEntry(string partId)
+        {
+            var fresh = PackageJsonUtils.LoadPackage(_pkgId);
+            if (fresh == null || _parts == null) return;
+
+            PartPreviewPlacement pp = null;
+            if (fresh.previewConfig?.partPlacements != null)
+                foreach (var p in fresh.previewConfig.partPlacements)
+                    if (p?.partId == partId) { pp = p; break; }
+
+            bool hasP = pp != null;
+            for (int i = 0; i < _parts.Length; i++)
+            {
+                if (_parts[i].def?.id != partId) continue;
+                _parts[i].placement     = pp;
+                _parts[i].hasPlacement  = hasP;
+                _parts[i].startPosition = hasP ? PackageJsonUtils.ToVector3(pp.startPosition) : Vector3.zero;
+                _parts[i].startRotation = hasP ? PackageJsonUtils.ToUnityQuaternion(pp.startRotation) : Quaternion.identity;
+                _parts[i].startScale    = hasP ? PackageJsonUtils.ToVector3(pp.startScale)    : Vector3.one;
+                _parts[i].playPosition  = hasP ? PackageJsonUtils.ToVector3(pp.playPosition)  : Vector3.zero;
+                _parts[i].playRotation  = hasP ? PackageJsonUtils.ToUnityQuaternion(pp.playRotation) : Quaternion.identity;
+                _parts[i].playScale     = hasP ? PackageJsonUtils.ToVector3(pp.playScale)     : Vector3.one;
+                _parts[i].isDirty       = false;
+                SyncPartMeshToActivePose(ref _parts[i]);
+                break;
+            }
+            _undoStackParts.Clear();
+            _redoStackParts.Clear();
+            SceneView.RepaintAll();
+            Repaint();
+        }
+
+        /// <summary>
+        /// Reloads a single target's placement data from disk and clears its dirty flag.
+        /// Does not affect any other part or target.
+        /// </summary>
+        private void RevertTargetEntry(string targetId)
+        {
+            var fresh = PackageJsonUtils.LoadPackage(_pkgId);
+            if (fresh == null || _targets == null) return;
+
+            TargetPreviewPlacement placement = null;
+            if (fresh.previewConfig?.targetPlacements != null)
+                foreach (var p in fresh.previewConfig.targetPlacements)
+                    if (p?.targetId == targetId) { placement = p; break; }
+
+            bool hasP = placement != null;
+            for (int i = 0; i < _targets.Length; i++)
+            {
+                if (_targets[i].def?.id != targetId) continue;
+                _targets[i].placement    = placement;
+                _targets[i].hasPlacement = hasP;
+                _targets[i].position     = hasP ? PackageJsonUtils.ToVector3(placement.position)        : Vector3.zero;
+                _targets[i].rotation     = hasP ? PackageJsonUtils.ToUnityQuaternion(placement.rotation) : Quaternion.identity;
+                _targets[i].scale        = hasP ? PackageJsonUtils.ToVector3(placement.scale)            : Vector3.one;
+                _targets[i].portA        = hasP ? PackageJsonUtils.ToVector3(placement.portA)            : Vector3.zero;
+                _targets[i].portB        = hasP ? PackageJsonUtils.ToVector3(placement.portB)            : Vector3.zero;
+                _targets[i].isDirty      = false;
+                break;
+            }
+            _undoStack.Clear();
+            _redoStack.Clear();
+            SceneView.RepaintAll();
+            Repaint();
+        }
+
+        private static readonly Color _seqColorWire    = new Color(0.2f, 0.9f, 0.9f, 1f);
+        private static readonly Color _seqColorTool    = new Color(1.0f, 0.6f, 0.1f, 1f);
+        private static readonly Color _seqColorPart    = new Color(0.3f, 0.9f, 0.3f, 1f);
+        private static readonly Color _seqColorTarget  = new Color(0.2f, 0.8f, 0.7f, 1f);
+        private static readonly Color _seqColorObserve = new Color(0.8f, 0.5f, 1.0f, 1f);  // purple — observe/inspect
+        private static readonly Color _seqColorConfirm = new Color(1.0f, 0.85f, 0.2f, 1f); // gold — confirm button press
+
+        private void DrawTaskSequenceDragList(StepDefinition step, List<TaskOrderEntry> order)
+        {
+            // Rebuild the ReorderableList whenever the step changes or the list is null
+            if (_taskSeqReorderList == null || _taskSeqReorderListForStepId != step.id)
+            {
+                _taskSeqReorderList = new ReorderableList(order, typeof(TaskOrderEntry),
+                    draggable: true, displayHeader: false, displayAddButton: false, displayRemoveButton: false);
+
+                _taskSeqReorderList.elementHeight = EditorGUIUtility.singleLineHeight + 2f;
+
+                _taskSeqReorderList.drawElementBackgroundCallback = (rect, index, isActive, isFocused) =>
+                {
+                    if (index == _selectedTaskSeqIdx)
+                        EditorGUI.DrawRect(rect, new Color(0.25f, 0.50f, 0.90f, 0.35f));
+                };
+
+                _taskSeqReorderList.drawElementCallback = (rect, index, isActive, isFocused) =>
+                {
+                    if (index >= order.Count) return;
+                    var entry = order[index];
+
+                    // Sequence number
+                    var numRect = new Rect(rect.x, rect.y + 1f, 22f, rect.height);
+                    EditorGUI.LabelField(numRect, $"{index + 1}", EditorStyles.miniLabel);
+
+                    // Type badge — colored label (not a button; whole row is the click target)
+                    Color badgeCol = entry.kind switch
+                    {
+                        "wire"           => _seqColorWire,
+                        "part"           => _seqColorPart,
+                        "confirm"        => _seqColorObserve,
+                        "confirm_action" => _seqColorConfirm,
+                        _                => _seqColorTool,
+                    };
+                    string badge = entry.kind switch
+                    {
+                        "wire"           => "WIRE",
+                        "part"           => "PART",
+                        "confirm"        => "OBSERVE",
+                        "confirm_action" => "CONFIRM",
+                        _                => "TOOL",
+                    };
+                    var badgeStyle = new GUIStyle(EditorStyles.miniLabel)
+                    {
+                        normal    = { textColor = badgeCol },
+                        fontStyle = FontStyle.Bold,
+                        fontSize  = 9,
+                        alignment = TextAnchor.MiddleCenter,
+                    };
+                    var badgeRect = new Rect(rect.x + 24f, rect.y + 1f, 52f, rect.height - 2f);
+                    EditorGUI.LabelField(badgeRect, badge, badgeStyle);
+
+                    // ID label + per-task dirty dot
+                    bool entryDirty = IsTaskEntryDirty(entry, step);
+                    float idW = entryDirty ? rect.width - 124f : rect.width - 110f;
+                    var idRect = new Rect(rect.x + 80f, rect.y + 1f, idW, rect.height);
+                    EditorGUI.LabelField(idRect, entry.id ?? "—", EditorStyles.miniLabel);
+                    if (entryDirty)
+                    {
+                        var dotStyle = new GUIStyle(EditorStyles.miniLabel)
+                        {
+                            normal    = { textColor = ColDirty },
+                            fontStyle = FontStyle.Bold,
+                            alignment = TextAnchor.MiddleLeft,
+                        };
+                        EditorGUI.LabelField(new Rect(idRect.xMax + 2f, rect.y + 1f, 14f, rect.height), "●", dotStyle);
+                    }
+
+                    // Whole-row click (excluding × button) — MouseDown so it fires before
+                    // onMouseUpCallback and can call Event.current.Use() to block it.
+                    var rowClickRect = new Rect(rect.x, rect.y, rect.width - 26f, rect.height);
+                    if (Event.current.type == EventType.MouseDown
+                        && rowClickRect.Contains(Event.current.mousePosition))
+                    {
+                        // Toggle: click selected row to deselect; click other row to switch.
+                        int newIdx = (_selectedTaskSeqIdx == index) ? -1 : index;
+                        _selectedTaskSeqIdx = newIdx;
+                        _addTaskPicker = AddTaskPicker.None;
+                        if (newIdx >= 0)
+                            ApplyTaskEntrySelection(step, order[newIdx]);
+                        else
+                        { _selectedPartIdx = -1; _selectedIdx = -1; _activeTaskKind = null; }
+                        Event.current.Use(); // prevent onMouseUpCallback from also firing
+                        SceneView.RepaintAll();
+                        Repaint();
+                    }
+
+                    var removeRect = new Rect(rect.xMax - 22f, rect.y + 1f, 22f, rect.height - 2f);
+                    if (GUI.Button(removeRect, "×", EditorStyles.miniButton))
+                    {
+                        order.RemoveAt(index);
+                        if (_selectedTaskSeqIdx >= order.Count) _selectedTaskSeqIdx = order.Count - 1;
+                        step.taskOrder = order.ToArray();
+                        _cachedTaskOrder = order;
+                        _dirtyTaskOrderStepIds.Add(step.id);
+                        _dirtyStepIds.Add(step.id);
+                        // Force list rebuild next frame
+                        _taskSeqReorderListForStepId = null;
+                        Repaint();
+                    }
+                };
+
+                _taskSeqReorderList.onReorderCallbackWithDetails = (list, oldIdx, newIdx) =>
+                {
+                    step.taskOrder = order.ToArray();
+                    _cachedTaskOrder = order;
+                    _dirtyTaskOrderStepIds.Add(step.id);
+                    _dirtyStepIds.Add(step.id);
+                    // Keep selection tracking the moved item
+                    if (_selectedTaskSeqIdx == oldIdx) _selectedTaskSeqIdx = newIdx;
+                };
+
+                // No onMouseUpCallback — row selection is handled by MouseDown inside
+                // drawElementCallback. Using MouseUp via the callback would fire on the
+                // MouseUp following any click (even after we Used the MouseDown) and
+                // overwrite _selectedTaskSeqIdx with the stale ReorderableList index.
+
+                _taskSeqReorderListForStepId = step.id;
+            }
+
+            // Keep the internal list reference in sync (entries may have been added)
+            if (_taskSeqReorderList.list != order)
+                _taskSeqReorderList.list = order;
+
+            _taskSeqReorderList.DoLayoutList();
+        }
+
+        // ── Context panel ─────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Resolves and applies editor selection state for the given task order entry.
+        /// Call this from click handlers (not from draw methods) so the scene view
+        /// highlights and detail panel update on the same frame.
+        /// </summary>
+        private void ApplyTaskEntrySelection(StepDefinition step, TaskOrderEntry entry)
+        {
+            if (entry == null) return;
+            _activeTaskKind = entry.kind;
+            switch (entry.kind)
+            {
+                case "part":
+                    _selectedIdx = -1;
+                    _multiSelected.Clear();
+                    _multiSelectedParts.Clear();
+                    if (_parts != null)
+                    {
+                        // Find the exact part; fall back to first if not matched
+                        int pick = 0;
+                        for (int i = 0; i < _parts.Length; i++)
+                            if (_parts[i].def?.id == entry.id) { pick = i; break; }
+                        _selectedPartIdx = pick;
+                        _selectedPartId  = _parts[pick].def?.id;
+                        SyncPartMeshToActivePose(ref _parts[pick]);
+                        var liveGO = FindLivePartGO(_selectedPartId);
+                        if (liveGO != null) UnityEditor.Selection.activeGameObject = liveGO;
+                    }
+                    break;
+
+                case "confirm_action":
+                    // Terminal button-press task — no target, clear all gizmos and selection.
+                    _selectedPartIdx = -1;
+                    _selectedIdx     = -1;
+                    _multiSelected.Clear();
+                    _multiSelectedParts.Clear();
+                    ClearToolPreview();
+                    UnityEditor.Selection.activeGameObject = null;
+                    break;
+
+                default: // confirm (observe), toolAction, wire, target
+                {
+                    string targetId = entry.id;
+                    // For toolAction, resolve through requiredToolActions to get the targetId
+                    if (entry.kind == "toolAction" && step.requiredToolActions != null)
+                        foreach (var a in step.requiredToolActions)
+                            if (a?.id == entry.id) { targetId = a.targetId; break; }
+
+                    _selectedPartIdx = -1;
+                    _multiSelectedParts.Clear();
+                    _multiSelected.Clear();
+                    if (_targets != null && _targets.Length > 0)
+                    {
+                        // Find the exact target; -1 if not matched (no fallback to index 0).
+                        _selectedIdx = -1;
+                        for (int i = 0; i < _targets.Length; i++)
+                            if (_targets[i].def?.id == targetId) { _selectedIdx = i; break; }
+                        _selectedTargetId = _selectedIdx >= 0 ? _targets[_selectedIdx].def?.id : null;
+                    }
+                    break;
+                }
+            }
+        }
+
+        private void DrawTaskContextPanel(StepDefinition step, TaskOrderEntry entry)
+        {
+            switch (entry.kind)
+            {
+                case "part":
+                    DrawPartContextPanel(step, entry.id);
+                    break;
+                case "toolAction":
+                    DrawToolActionContextPanel(step, entry.id);
+                    break;
+                case "wire":
+                case "target":
+                    DrawWireOrTargetContextPanel(step, entry.id, entry.kind == "wire");
+                    break;
+            }
+        }
+
+        private void DrawPartContextPanel(StepDefinition step, string partId)
+        {
+            DrawUnifiedSectionHeader($"PART: {partId}", 1);
+
+            if (_parts != null)
+            {
+                for (int i = 0; i < _parts.Length; i++)
+                {
+                    if (_parts[i].def?.id == partId)
+                    {
+                        DrawPartPoseToggle();
+                        ServiceRegistry.TryGet<ISpawnerQueryService>(out var chkSpawner);
+                        if (chkSpawner == null)
+                            EditorGUILayout.HelpBox("PackagePartSpawner not in scene — part handles unavailable.", MessageType.Warning);
+                        DrawPartRowsInline();
+                        return;
+                    }
+                }
+            }
+            EditorGUILayout.LabelField($"  Part '{partId}' not in current step filter.", EditorStyles.miniLabel);
+        }
+
+        private void DrawToolActionContextPanel(StepDefinition step, string actionId)
+        {
+            // Resolve the action's targetId
+            string targetId = null;
+            if (step.requiredToolActions != null)
+                foreach (var a in step.requiredToolActions)
+                    if (a?.id == actionId) { targetId = a.targetId; break; }
+
+            DrawUnifiedSectionHeader($"TOOL: {actionId}", 1);
+
+            if (targetId == null)
+            {
+                EditorGUILayout.LabelField($"  Action '{actionId}' not found.", EditorStyles.miniLabel);
+                return;
+            }
+
+            // Find target index in _targets[] and render (selection applied by click handler)
+            if (_targets != null)
+            {
+                for (int i = 0; i < _targets.Length; i++)
+                {
+                    if (_targets[i].def?.id == targetId)
+                    {
+                        DrawTargetRowsInline();
+                        DrawPersistentToolRemovalRows();
+                        return;
+                    }
+                }
+            }
+            EditorGUILayout.LabelField($"  Target '{targetId}' not in current step filter.", EditorStyles.miniLabel);
+        }
+
+        private void DrawWireOrTargetContextPanel(StepDefinition step, string targetId, bool isWire)
+        {
+            int count = _targets?.Length ?? 0;
+            DrawUnifiedSectionHeader(isWire ? $"WIRE CONNECTIONS ({count})" : $"TARGETS ({count})", count);
+
+            // Selectable list — same pattern as DrawPartRowsInline / DrawTargetRowsInline
+            DrawTargetRowsInline();
+
+            // Wire payload details for the currently selected target
+            if (isWire && _selectedIdx >= 0 && _selectedIdx < count
+                && step.wireConnect?.IsConfigured == true)
+            {
+                string selTargetId = _targets[_selectedIdx].def?.id;
+                WireConnectEntry wire = null;
+                if (selTargetId != null && step.wireConnect.wires != null)
+                    foreach (var w in step.wireConnect.wires)
+                        if (string.Equals(w.targetId, selTargetId, StringComparison.Ordinal))
+                        { wire = w; break; }
+
+                if (wire != null)
+                {
+                    EditorGUILayout.Space(2);
+                    EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+
+                    EditorGUI.BeginChangeCheck();
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField("Polarity A:", GUILayout.Width(74));
+                    wire.portAPolarityType = EditorGUILayout.TextField(wire.portAPolarityType ?? "", GUILayout.Width(80));
+                    EditorGUILayout.LabelField("Polarity B:", GUILayout.Width(74));
+                    wire.portBPolarityType = EditorGUILayout.TextField(wire.portBPolarityType ?? "");
+                    EditorGUILayout.EndHorizontal();
+
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField("Connector A:", GUILayout.Width(74));
+                    wire.portAConnectorType = EditorGUILayout.TextField(wire.portAConnectorType ?? "", GUILayout.Width(80));
+                    EditorGUILayout.LabelField("Connector B:", GUILayout.Width(74));
+                    wire.portBConnectorType = EditorGUILayout.TextField(wire.portBConnectorType ?? "");
+                    EditorGUILayout.EndHorizontal();
+                    if (EditorGUI.EndChangeCheck()) _dirtyStepIds.Add(step.id);
+
+                    EditorGUI.BeginChangeCheck();
+                    EditorGUILayout.BeginHorizontal();
+                    wire.polarityOrderMatters = EditorGUILayout.ToggleLeft(
+                        "Polarity order matters", wire.polarityOrderMatters, EditorStyles.miniLabel,
+                        GUILayout.Width(150));
+                    if (step.wireConnect != null)
+                        step.wireConnect.enforcePortOrder = EditorGUILayout.ToggleLeft(
+                            "Enforce port order (A first)", step.wireConnect.enforcePortOrder,
+                            EditorStyles.miniLabel);
+                    EditorGUILayout.EndHorizontal();
+                    if (EditorGUI.EndChangeCheck()) _dirtyStepIds.Add(step.id);
+
+                    EditorGUILayout.EndVertical();
+                }
+            }
+        }
+
+        private static string BuildTaskOrderJson(List<TaskOrderEntry> entries)
+        {
+            if (entries == null || entries.Count == 0) return "[]";
+            var rows = new System.Text.StringBuilder();
+            rows.Append("[");
+            for (int i = 0; i < entries.Count; i++)
+            {
+                if (i > 0) rows.Append(",\n        ");
+                rows.Append($"{{\"kind\":\"{entries[i].kind}\",\"id\":\"{entries[i].id}\"}}");
+            }
+            rows.Append("]");
+            return rows.ToString();
+        }
+
+        // ── Add-task inline pickers ───────────────────────────────────────────
+
+        private void DrawAddPartPicker()
+        {
+            if (_pkg?.GetParts() == null) return;
+            var step = _stepFilterIdx > 0 ? FindStep(_stepIds[_stepFilterIdx]) : null;
+            var existing = new HashSet<string>(step?.requiredPartIds ?? System.Array.Empty<string>(), StringComparer.Ordinal);
+            var available = new List<PartDefinition>();
+            foreach (var p in _pkg.GetParts())
+                if (p != null && !string.IsNullOrEmpty(p.id) && !existing.Contains(p.id))
+                    available.Add(p);
+
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField("Add Part to Step", EditorStyles.boldLabel);
+            if (available.Count == 0)
+            {
+                EditorGUILayout.LabelField("  All parts already assigned.", EditorStyles.miniLabel);
+            }
+            else
+            {
+                string[] opts = available.Select(p => $"{p.id}{(string.IsNullOrEmpty(p.name) ? "" : " — " + p.name)}").ToArray();
+                _addPickerPartIdx = Mathf.Clamp(_addPickerPartIdx, 0, opts.Length - 1);
+                _addPickerPartIdx = EditorGUILayout.Popup("Part", _addPickerPartIdx, opts);
+            }
+            EditorGUILayout.BeginHorizontal();
+            EditorGUI.BeginDisabledGroup(available.Count == 0);
+            if (GUILayout.Button("Add", GUILayout.Width(60)))
+            {
+                CommitAddPart(step, available[_addPickerPartIdx].id);
+                _addTaskPicker = AddTaskPicker.None;
+            }
+            EditorGUI.EndDisabledGroup();
+            if (GUILayout.Button("Cancel", GUILayout.Width(60))) _addTaskPicker = AddTaskPicker.None;
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
+        }
+
+        private void DrawAddToolTargetPicker()
+        {
+            if (_pkg?.GetTargets() == null || _pkg?.GetTools() == null) return;
+            var step = _stepFilterIdx > 0 ? FindStep(_stepIds[_stepFilterIdx]) : null;
+            var existingT = new HashSet<string>(step?.targetIds ?? System.Array.Empty<string>(), StringComparer.Ordinal);
+            var availTargets = new List<TargetDefinition>();
+            foreach (var t in _pkg.GetTargets())
+                if (t != null && !string.IsNullOrEmpty(t.id) && !existingT.Contains(t.id))
+                    availTargets.Add(t);
+            var allTools = _pkg.GetTools()?.Where(t => t != null && !string.IsNullOrEmpty(t.id)).ToArray() ?? System.Array.Empty<ToolDefinition>();
+
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField("Add Tool Target to Step", EditorStyles.boldLabel);
+            if (availTargets.Count == 0)
+            {
+                EditorGUILayout.LabelField("  All targets already assigned.", EditorStyles.miniLabel);
+            }
+            else
+            {
+                string[] tOpts = availTargets.Select(t => t.id).ToArray();
+                _addPickerTargetIdx = Mathf.Clamp(_addPickerTargetIdx, 0, tOpts.Length - 1);
+                _addPickerTargetIdx = EditorGUILayout.Popup("Target", _addPickerTargetIdx, tOpts);
+                if (allTools.Length > 0)
+                {
+                    string[] toolOpts = allTools.Select(t => $"{t.id}{(string.IsNullOrEmpty(t.name) ? "" : " — " + t.name)}").ToArray();
+                    _addPickerToolIdx = Mathf.Clamp(_addPickerToolIdx, 0, toolOpts.Length - 1);
+                    _addPickerToolIdx = EditorGUILayout.Popup("Tool", _addPickerToolIdx, toolOpts);
+                }
+            }
+            EditorGUILayout.BeginHorizontal();
+            EditorGUI.BeginDisabledGroup(availTargets.Count == 0 || allTools.Length == 0);
+            if (GUILayout.Button("Add", GUILayout.Width(60)))
+            {
+                CommitAddToolTarget(step, availTargets[_addPickerTargetIdx].id, allTools[_addPickerToolIdx].id);
+                _addTaskPicker = AddTaskPicker.None;
+            }
+            EditorGUI.EndDisabledGroup();
+            if (GUILayout.Button("Cancel", GUILayout.Width(60))) _addTaskPicker = AddTaskPicker.None;
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
+        }
+
+        private void DrawAddWirePicker()
+        {
+            if (_pkg?.GetTargets() == null) return;
+            var step = _stepFilterIdx > 0 ? FindStep(_stepIds[_stepFilterIdx]) : null;
+            var existingT = new HashSet<string>(step?.targetIds ?? System.Array.Empty<string>(), StringComparer.Ordinal);
+            var availTargets = new List<TargetDefinition>();
+            foreach (var t in _pkg.GetTargets())
+                if (t != null && !string.IsNullOrEmpty(t.id) && !existingT.Contains(t.id))
+                    availTargets.Add(t);
+
+            // Build available parts (exclude parts already in requiredPartIds or in existing wire entries)
+            var existingParts = new HashSet<string>(step?.requiredPartIds ?? System.Array.Empty<string>(), StringComparer.Ordinal);
+            if (step?.wireConnect?.wires != null)
+                foreach (var w in step.wireConnect.wires)
+                    if (!string.IsNullOrEmpty(w?.partId))
+                        existingParts.Add(w.partId);
+            var availParts = new List<PartDefinition>();
+            if (_pkg?.GetParts() != null)
+                foreach (var p in _pkg.GetParts())
+                    if (p != null && !string.IsNullOrEmpty(p.id) && !existingParts.Contains(p.id))
+                        availParts.Add(p);
+
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField("Add Wire Connection to Step", EditorStyles.boldLabel);
+            if (availTargets.Count == 0)
+            {
+                EditorGUILayout.LabelField("  All targets already assigned.", EditorStyles.miniLabel);
+            }
+            else
+            {
+                string[] tOpts = availTargets.Select(t => t.id).ToArray();
+                _addPickerTargetIdx = Mathf.Clamp(_addPickerTargetIdx, 0, tOpts.Length - 1);
+                _addPickerTargetIdx = EditorGUILayout.Popup("Target", _addPickerTargetIdx, tOpts);
+            }
+
+            // Part picker — wire task owns its part directly (no separate PART task row)
+            string[] pOpts = System.Array.Empty<string>();
+            if (availParts.Count > 0)
+            {
+                pOpts = availParts.Select(p => $"{p.id}{(string.IsNullOrEmpty(p.name) ? "" : " — " + p.name)}").ToArray();
+                _addPickerWirePartIdx = Mathf.Clamp(_addPickerWirePartIdx, 0, pOpts.Length - 1);
+                _addPickerWirePartIdx = EditorGUILayout.Popup("Part", _addPickerWirePartIdx, pOpts);
+            }
+            else
+            {
+                EditorGUILayout.LabelField("  (no unassigned parts)", EditorStyles.miniLabel);
+            }
+
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Polarity A", GUILayout.Width(72));
+            _addPickerPolarityA = EditorGUILayout.TextField(_addPickerPolarityA);
+            EditorGUILayout.LabelField("Polarity B", GUILayout.Width(72));
+            _addPickerPolarityB = EditorGUILayout.TextField(_addPickerPolarityB);
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Connector A", GUILayout.Width(72));
+            _addPickerConnectorA = EditorGUILayout.TextField(_addPickerConnectorA);
+            EditorGUILayout.LabelField("Connector B", GUILayout.Width(72));
+            _addPickerConnectorB = EditorGUILayout.TextField(_addPickerConnectorB);
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.BeginHorizontal();
+            EditorGUI.BeginDisabledGroup(availTargets.Count == 0);
+            if (GUILayout.Button("Add", GUILayout.Width(60)))
+            {
+                string wirePartId = availParts.Count > 0 ? availParts[_addPickerWirePartIdx].id : null;
+                CommitAddWire(step, availTargets[_addPickerTargetIdx].id,
+                    wirePartId,
+                    _addPickerPolarityA, _addPickerPolarityB, _addPickerConnectorA, _addPickerConnectorB);
+                _addTaskPicker = AddTaskPicker.None;
+            }
+            EditorGUI.EndDisabledGroup();
+            if (GUILayout.Button("Cancel", GUILayout.Width(60))) _addTaskPicker = AddTaskPicker.None;
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
+        }
+
+        // ── Commit helpers (modify in-memory step data + mark dirty) ──────────
+
+        private void CommitAddPart(StepDefinition step, string partId)
+        {
+            if (step == null) return;
+            var list = new List<string>(step.requiredPartIds ?? System.Array.Empty<string>()) { partId };
+            step.requiredPartIds = list.ToArray();
+            var order = GetOrDeriveTaskOrder(step);
+            order.Add(new TaskOrderEntry { kind = "part", id = partId });
+            step.taskOrder = order.ToArray();
+            InvalidateTaskOrderCache();
+            _dirtyStepIds.Add(step.id);
+            BuildPartList();
+            Repaint();
+        }
+
+        private void CommitAddToolTarget(StepDefinition step, string targetId, string toolId)
+        {
+            if (step == null) return;
+            var tList = new List<string>(step.targetIds ?? System.Array.Empty<string>()) { targetId };
+            step.targetIds = tList.ToArray();
+            var actionId = $"action_{targetId}";
+            var aList = new List<ToolActionDefinition>(step.requiredToolActions ?? System.Array.Empty<ToolActionDefinition>());
+            aList.Add(new ToolActionDefinition { id = actionId, toolId = toolId, targetId = targetId });
+            step.requiredToolActions = aList.ToArray();
+            var order = GetOrDeriveTaskOrder(step);
+            order.Add(new TaskOrderEntry { kind = "toolAction", id = actionId });
+            step.taskOrder = order.ToArray();
+            InvalidateTaskOrderCache();
+            UpdateActiveStep();
+            _dirtyStepIds.Add(step.id);
+            BuildTargetList();
+            Repaint();
+        }
+
+        private void CommitAddWire(StepDefinition step, string targetId, string partId, string polA, string polB, string conA, string conB)
+        {
+            if (step == null) return;
+            var tList = new List<string>(step.targetIds ?? System.Array.Empty<string>()) { targetId };
+            step.targetIds = tList.ToArray();
+            step.wireConnect ??= new StepWireConnectPayload();
+            var wList = new List<WireConnectEntry>(step.wireConnect.wires ?? System.Array.Empty<WireConnectEntry>());
+            wList.Add(new WireConnectEntry
+            {
+                targetId           = targetId,
+                partId             = string.IsNullOrWhiteSpace(partId) ? null : partId.Trim(),
+                portAPolarityType  = string.IsNullOrWhiteSpace(polA) ? null : polA.Trim(),
+                portBPolarityType  = string.IsNullOrWhiteSpace(polB) ? null : polB.Trim(),
+                portAConnectorType = string.IsNullOrWhiteSpace(conA) ? null : conA.Trim(),
+                portBConnectorType = string.IsNullOrWhiteSpace(conB) ? null : conB.Trim(),
+            });
+            step.wireConnect.wires = wList.ToArray();
+            var order = GetOrDeriveTaskOrder(step);
+            order.Add(new TaskOrderEntry { kind = "wire", id = targetId });
+            step.taskOrder = order.ToArray();
+            InvalidateTaskOrderCache();
+            UpdateActiveStep();
+            _dirtyStepIds.Add(step.id);
+            BuildTargetList();
+            Repaint();
+        }
+
+        private bool DrawUnifiedSectionHeader(string title, int count, System.Action onAdd = null)
+        {
+            EditorGUILayout.Space(2);
+            Rect r = EditorGUILayout.GetControlRect(GUILayout.Height(EditorGUIUtility.singleLineHeight + 4f));
+            EditorGUI.DrawRect(r, new Color(0.18f, 0.18f, 0.18f, 1f));
+
+            bool addClicked = false;
+            if (onAdd != null)
+            {
+                const float btnW = 22f;
+                Rect btnRect  = new Rect(r.xMax - btnW - 2f, r.y + 1f, btnW, r.height - 2f);
+                Rect lblRect  = new Rect(r.x + 4f, r.y + 2f, r.width - btnW - 10f, r.height);
+                GUI.Label(lblRect, title, EditorStyles.boldLabel);
+                if (GUI.Button(btnRect, "+", EditorStyles.miniButton))
+                {
+                    onAdd();
+                    addClicked = true;
+                }
+            }
+            else
+            {
+                GUI.Label(new Rect(r.x + 4f, r.y + 2f, r.width - 8f, r.height), title, EditorStyles.boldLabel);
+            }
+
+            EditorGUILayout.Space(1);
+            return addClicked;
+        }
+
+        private void DrawPartRowsInline()
+        {
+            if (_parts == null) return;
+            var selBg   = new Color(0.25f, 0.50f, 0.90f, 0.35f);
+            var multiBg = new Color(0.25f, 0.50f, 0.90f, 0.18f);
+
+            for (int i = 0; i < _parts.Length; i++)
+            {
+                ref PartEditState p = ref _parts[i];
+                Color col = p.isDirty ? ColDirty : p.hasPlacement ? ColAuthored : ColNoPlacement;
+
+                bool isPrimary  = i == _selectedPartIdx;
+                bool isInMulti  = _multiSelectedParts.Count > 1 && _multiSelectedParts.Contains(i);
+                bool isSelected = isPrimary || isInMulti;
+
+                if (isSelected)
+                {
+                    Rect rowRect = EditorGUILayout.GetControlRect(GUILayout.Height(0));
+                    rowRect.height = EditorGUIUtility.singleLineHeight + 2f;
+                    rowRect.y     -= 1f;
+                    EditorGUI.DrawRect(rowRect, isPrimary ? selBg : multiBg);
+                }
+
+                var style = new GUIStyle(isSelected ? EditorStyles.boldLabel : EditorStyles.label)
+                {
+                    normal  = { textColor = col },
+                    focused = { textColor = col }
+                };
+                string badge = p.isDirty ? " ●" : p.hasPlacement ? "" : " ○";
+                Rect labelRect = EditorGUILayout.GetControlRect();
+                EditorGUI.LabelField(labelRect, $"  {p.def.id}{badge}", style);
+
+                if (labelRect.Contains(Event.current.mousePosition) && Event.current.type == EventType.MouseDown)
+                {
+                    bool ctrl  = Event.current.control;
+                    bool shift = Event.current.shift;
+
+                    // Clear target selection — parts and targets are mutually exclusive
+                    _selectedIdx = -1;
+                    _multiSelected.Clear();
+
+                    if (ctrl)
+                    {
+                        if (_multiSelectedParts.Contains(i)) _multiSelectedParts.Remove(i);
+                        else { _multiSelectedParts.Add(i); _selectedPartIdx = i; _selectedPartId = p.def.id; }
+                    }
+                    else if (shift && _selectedPartIdx >= 0)
+                    {
+                        int lo = Mathf.Min(_selectedPartIdx, i);
+                        int hi = Mathf.Max(_selectedPartIdx, i);
+                        _multiSelectedParts.Clear();
+                        for (int j = lo; j <= hi; j++) _multiSelectedParts.Add(j);
+                        _selectedPartIdx = i; _selectedPartId = p.def.id;
+                    }
+                    else
+                    {
+                        _multiSelectedParts.Clear();
+                        _selectedPartIdx = i;
+                        _selectedPartId  = p.def.id;
+                        // Select live GO so it highlights in hierarchy/scene (mirrors PPAW)
+                        var clickedGO = FindLivePartGO(p.def.id);
+                        if (clickedGO != null) Selection.activeGameObject = clickedGO;
+                    }
+
+                    if (_selectedPartIdx >= 0 && _selectedPartIdx < _parts.Length)
+                        SyncPartMeshToActivePose(ref _parts[_selectedPartIdx]);
+                    SceneView.RepaintAll();
+                    Event.current.Use();
+                    Repaint();
+                }
+            }
+        }
+
+        private void DrawPersistentToolRemovalRows()
+        {
+            if (_stepFilterIdx <= 0 || _stepFilterIdx >= _stepIds.Length) return;
+            var step = FindStep(_stepIds[_stepFilterIdx]);
+            if (step == null) return;
+
+            var removeIds = step.removePersistentToolIds ?? Array.Empty<string>();
+
+            // Only show the label when there are entries or candidates to add.
+            var activePersistent = GetActivePersistentToolIds(step);
+            foreach (string rid in removeIds) activePersistent.Remove(rid);
+            if (removeIds.Length == 0 && activePersistent.Count == 0) return;
+
+            EditorGUILayout.Space(4);
+            EditorGUILayout.LabelField("Removes persistent tools at start of step:", EditorStyles.miniLabel);
+
+            string toRemove = null;
+            foreach (string rid in removeIds)
+            {
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField($"  · {FindToolName(rid)}", EditorStyles.miniLabel);
+                if (GUILayout.Button("×", EditorStyles.miniButton, GUILayout.Width(18)))
+                    toRemove = rid;
+                EditorGUILayout.EndHorizontal();
+            }
+            if (toRemove != null)
+            {
+                step.removePersistentToolIds = System.Array.FindAll(removeIds, r => r != toRemove);
+                _dirtyStepIds.Add(step.id);
+                Repaint();
+            }
+
+            if (activePersistent.Count > 0 && GUILayout.Button("+ Add removal", EditorStyles.miniButton))
+            {
+                var menu = new GenericMenu();
+                foreach (string toolId in activePersistent)
+                {
+                    string capturedId   = toolId;
+                    string capturedName = FindToolName(toolId);
+                    menu.AddItem(new GUIContent(capturedName), false, () =>
+                    {
+                        var newList = new List<string>(step.removePersistentToolIds ?? Array.Empty<string>());
+                        newList.Add(capturedId);
+                        step.removePersistentToolIds = newList.ToArray();
+                        _dirtyStepIds.Add(step.id);
+                        Repaint();
+                    });
+                }
+                menu.ShowAsContext();
+            }
+        }
+
+        /// <param name="taskSelectedIdx">
+        /// When >= 0, this index is used as the primary selection highlight instead of
+        /// <see cref="_selectedIdx"/>. Used by the wire context so the highlight is always
+        /// driven by the task-sequence entry rather than by independent click state.
+        /// </param>
+        private void DrawTargetRowsInline(int taskSelectedIdx = -1)
+        {
+            if (_targets == null) return;
+            var selBg   = new Color(0.25f, 0.50f, 0.90f, 0.35f);
+            var multiBg = new Color(0.25f, 0.50f, 0.90f, 0.18f);
+
+            int effectiveSelected = taskSelectedIdx >= 0 ? taskSelectedIdx : _selectedIdx;
+
+            for (int i = 0; i < _targets.Length; i++)
+            {
+                ref TargetEditState t = ref _targets[i];
+                Color col = t.isDirty ? ColDirty : t.hasPlacement ? ColAuthored : ColNoPlacement;
+
+                bool isPrimary  = i == effectiveSelected;
+                bool isInMulti  = _multiSelected.Count > 1 && _multiSelected.Contains(i);
+                bool isSelected = isPrimary || isInMulti;
+
+                var style = new GUIStyle(isSelected ? EditorStyles.boldLabel : EditorStyles.label)
+                {
+                    normal  = { textColor = col },
+                    focused = { textColor = col }
+                };
+
+                string badge     = t.isDirty ? " ●" : t.hasPlacement ? "" : " ○";
+                string toolBadge = (_targetToolMap != null && _targetToolMap.TryGetValue(t.def.id, out string tn))
+                                    ? $"  [{tn}]" : "";
+                string portBadge = (t.portA.sqrMagnitude > 0.00001f || t.portB.sqrMagnitude > 0.00001f) ? "  ↔"
+                                 : (t.weldAxis.sqrMagnitude > 0.001f) ? "  →" : "";
+
+                // Use GetControlRect + MouseDown (same as DrawPartRowsInline) so clicks are
+                // not consumed by the ReorderableList above this content in the scrollview.
+                Rect labelRect = EditorGUILayout.GetControlRect();
+                if (isSelected) EditorGUI.DrawRect(labelRect, isPrimary ? selBg : multiBg);
+                EditorGUI.LabelField(labelRect, $"  {t.def.id}{toolBadge}{portBadge}{badge}", style);
+
+                if (labelRect.Contains(Event.current.mousePosition) && Event.current.type == EventType.MouseDown)
+                {
+                    bool ctrl  = Event.current.control;
+                    bool shift = Event.current.shift;
+
+                    // Clear part selection — mutually exclusive
+                    _selectedPartIdx = -1;
+                    _multiSelectedParts.Clear();
+
+                    if (ctrl)
+                    {
+                        if (_multiSelected.Contains(i)) _multiSelected.Remove(i);
+                        else _multiSelected.Add(i);
+                        if (!_multiSelected.Contains(_selectedIdx)) _selectedIdx = i;
+                        if (_multiSelected.Count == 1) _selectedIdx = _multiSelected.GetEnumerator().Current;
+                    }
+                    else if (shift && _selectedIdx >= 0)
+                    {
+                        _multiSelected.Clear();
+                        int lo = Mathf.Min(_selectedIdx, i), hi = Mathf.Max(_selectedIdx, i);
+                        for (int j = lo; j <= hi; j++) _multiSelected.Add(j);
+                        _selectedIdx = i;
+                    }
+                    else
+                    {
+                        _multiSelected.Clear();
+                        _selectedIdx = i;
+                    }
+                    _clickToSnapActive = false;
+                    _snapshotPending   = false;
+                    _selectedTargetId  = (_selectedIdx >= 0 && _selectedIdx < _targets.Length)
+                        ? _targets[_selectedIdx].def.id : null;
+                    if (_multiSelected.Count <= 1 && _selectedIdx >= 0 && _selectedIdx < _targets.Length)
+                        RefreshToolPreview(ref _targets[_selectedIdx]);
+                    SceneView.RepaintAll();
+                    Event.current.Use();
+                    Repaint();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Decides what to render in the pinned bottom edit area.
+        /// When a task sequence entry is selected, it drives the panel (wire → target detail,
+        /// part → part detail). Otherwise falls back to direct _selectedIdx / _selectedPartIdx.
+        /// This avoids the _selectedPartIdx > _selectedIdx priority bug.
+        /// </summary>
+        private void DrawBottomEditPanel()
+        {
+            // ── Task-sequence-driven (authoritative when a task is selected) ──────
+            if (_selectedTaskSeqIdx >= 0 && _stepFilterIdx > 0
+                && _stepIds != null && _stepFilterIdx < _stepIds.Length)
+            {
+                var step  = FindStep(_stepIds[_stepFilterIdx]);
+                var order = step != null ? GetOrDeriveTaskOrder(step) : null;
+                if (order != null && _selectedTaskSeqIdx < order.Count)
+                {
+                    var entry = order[_selectedTaskSeqIdx];
+                    switch (entry.kind)
+                    {
+                        case "part":
+                        {
+                            if (_parts != null)
+                                for (int i = 0; i < _parts.Length; i++)
+                                    if (_parts[i].def?.id == entry.id)
+                                    { DrawPartDetailPanel(ref _parts[i]); return; }
+                            break;
+                        }
+                        default: // wire, toolAction, target
+                        {
+                            string targetId = entry.id;
+                            if (entry.kind == "toolAction" && step?.requiredToolActions != null)
+                                foreach (var a in step.requiredToolActions)
+                                    if (a?.id == entry.id) { targetId = a.targetId; break; }
+                            if (_targets != null)
+                                for (int i = 0; i < _targets.Length; i++)
+                                    if (_targets[i].def?.id == targetId)
+                                    { DrawDetailPanel(ref _targets[i]); return; }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // ── Fallback: direct selection state (no task sequence active) ────────
+            if (_multiSelectedParts.Count > 1)
+                DrawPartBatchPanel();
+            else if (_selectedPartIdx >= 0 && _parts != null && _selectedPartIdx < _parts.Length)
+                DrawPartDetailPanel(ref _parts[_selectedPartIdx]);
+            else if (_multiSelected.Count > 1)
+                DrawBatchPanel();
+            else if (_selectedIdx >= 0 && _targets != null && _selectedIdx < _targets.Length)
+                DrawDetailPanel(ref _targets[_selectedIdx]);
+            else
+                EditorGUILayout.LabelField("Select a part or target in the sequence above.",
+                    EditorStyles.centeredGreyMiniLabel);
+        }
+
+        private void DrawUnifiedActions()
+        {
+            bool anyDirty = AnyDirty();
+            EditorGUI.BeginDisabledGroup(!anyDirty);
+            GUI.backgroundColor = anyDirty ? new Color(0.3f, 0.9f, 0.4f) : Color.white;
+            if (GUILayout.Button("Write to machine.json", GUILayout.Height(26))) WriteJson();
+            GUI.backgroundColor = Color.white;
+            EditorGUI.EndDisabledGroup();
+
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Extract from GLB", EditorStyles.miniButton)) ExtractFromGlbAnchors();
+            EditorGUI.BeginDisabledGroup(string.IsNullOrEmpty(_lastBackupPath) || !File.Exists(_lastBackupPath));
+            if (GUILayout.Button("Revert Last Write", EditorStyles.miniButton)) RevertFromBackup();
+            EditorGUI.EndDisabledGroup();
+            if (GUILayout.Button("Frame in Scene", EditorStyles.miniButton)) FrameInScene();
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private void DrawPartModelPreview(ref PartEditState p)
+        {
+            if (p.def == null || string.IsNullOrEmpty(_pkgId))
+                return;
+
+            string partsFolder = $"Assets/_Project/Data/Packages/{_pkgId}/assets/parts/";
+            string glbFile     = ResolvePartAssetRef(p.def);
+            if (string.IsNullOrEmpty(glbFile)) return;
+
+            // Lazy-create or replace when part changes
+            if (_partPreviewId != p.def.id)
+            {
+                _partPreview?.Dispose();
+                _partPreview   = null;
+                _partPreviewId = null;
+                string assetPath = partsFolder + glbFile;
+                if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(assetPath) != null)
+                {
+                    _partPreview   = new PartModelPreviewRenderer(assetPath, p.startRotation.eulerAngles);
+                    _partPreviewId = p.def.id;
+                }
+            }
+            if (_partPreview == null) return;
+
+            // ── Header row: label + unit toggle ──────────────────────────────
+            bool useMm = EditorPrefs.GetString(PrefDimUnit, "mm") == "mm";
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Model Preview", EditorStyles.boldLabel);
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Toggle(useMm,  "mm", EditorStyles.miniButtonLeft,  GUILayout.Width(32)))
+                { if (!useMm) { EditorPrefs.SetString(PrefDimUnit, "mm"); Repaint(); } }
+            if (GUILayout.Toggle(!useMm, "in", EditorStyles.miniButtonRight, GUILayout.Width(32)))
+                { if (useMm) { EditorPrefs.SetString(PrefDimUnit, "in"); Repaint(); } }
+            EditorGUILayout.EndHorizontal();
+
+            // ── 3D preview rect ───────────────────────────────────────────────
+            const float PreviewHeight = 220f;
+            Rect previewRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none,
+                GUILayout.Height(PreviewHeight), GUILayout.ExpandWidth(true));
+
+            // Orbit on mouse drag inside rect
+            var ev = Event.current;
+            if (ev.type == EventType.MouseDrag && previewRect.Contains(ev.mousePosition))
+            {
+                _partPreview.Orbit(ev.delta);
+                ev.Use();
+                Repaint();
+            }
+
+            bool needsRepaint = _partPreview.Draw(previewRect, useMm);
+            if (needsRepaint) Repaint();
+
+            // ── Euler rotation fields ─────────────────────────────────────────
+            EditorGUILayout.Space(2);
+            EditorGUI.BeginChangeCheck();
+            Vector3 euler    = _partPreview.ModelEuler;
+            Vector3 newEuler = EditorGUILayout.Vector3Field("Rotation", euler);
+            if (EditorGUI.EndChangeCheck())
+            {
+                _partPreview.SetModelEuler(newEuler);
+                Repaint();
+            }
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Reset View", EditorStyles.miniButton, GUILayout.Width(68)))
+            {
+                _partPreview.ResetView();
+                Repaint();
+            }
+            if (GUILayout.Button("Reset Rotation", EditorStyles.miniButton, GUILayout.Width(90)))
+            {
+                _partPreview.SetModelEuler(Vector3.zero);
+                Repaint();
+            }
+            EditorGUILayout.EndHorizontal();
+
+            // ── Confirm button ────────────────────────────────────────────────
+            EditorGUILayout.Space(2);
+            if (GUILayout.Button("Confirm Orientation", GUILayout.Height(22)))
+            {
+                Quaternion confirmed = Quaternion.Euler(_partPreview.ModelEuler);
+                p.startRotation = confirmed;
+                p.isDirty       = true;
+                // Find the part by id and sync (p is a ref but _selectedPartIdx may differ)
+                if (_parts != null)
+                    for (int k = 0; k < _parts.Length; k++)
+                        if (_parts[k].def?.id == p.def.id)
+                        { SyncPartMeshToActivePose(ref _parts[k]); break; }
+                SceneView.RepaintAll();
+            }
+            EditorGUILayout.Space(6);
+        }
+
+        private void DrawPartDetailPanel(ref PartEditState p)
+        {
+            // ── Asset Ref field ───────────────────────────────────────────────
+            if (p.def != null && !string.IsNullOrEmpty(_pkgId))
+            {
+                string partsFolder = $"Assets/_Project/Data/Packages/{_pkgId}/assets/parts/";
+                string explicit_    = p.def.assetRef ?? "";
+                bool isAutoDiscovered = string.IsNullOrEmpty(explicit_);
+                string resolvedFile;
+                if (!isAutoDiscovered)
+                {
+                    resolvedFile = explicit_;
+                }
+                else
+                {
+                    var res = _assetResolver.Resolve(p.def.id);
+                    resolvedFile = res.IsResolved ? Path.GetFileName(res.AssetPath) : null;
+                }
+                isAutoDiscovered = isAutoDiscovered && !string.IsNullOrEmpty(resolvedFile);
+
+                string assetPath = !string.IsNullOrEmpty(resolvedFile)
+                    ? partsFolder + resolvedFile
+                    : null;
+                var currentObj = assetPath != null
+                    ? AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(assetPath)
+                    : null;
+
+                // Label shows "(auto)" when discovered via filename convention, not explicit.
+                string fieldLabel = isAutoDiscovered
+                    ? "Model Asset (auto)"
+                    : "Model Asset";
+                string tooltip = isAutoDiscovered
+                    ? "Resolved by filename convention. Drag a GLB here to set an explicit reference."
+                    : "Explicit assetRef in machine.json.";
+
+                EditorGUI.BeginChangeCheck();
+                var newObj = EditorGUILayout.ObjectField(
+                    new GUIContent(fieldLabel, tooltip),
+                    currentObj, typeof(UnityEngine.Object), false);
+                if (EditorGUI.EndChangeCheck() && newObj != currentObj)
+                {
+                    string newPath = newObj != null ? AssetDatabase.GetAssetPath(newObj) : null;
+                    string newFile = newPath != null ? Path.GetFileName(newPath) : "";
+                    if (newFile != explicit_)
+                    {
+                        p.def.assetRef = newFile;
+                        _dirtyPartAssetRefIds.Add(p.def.id);
+                        _partPreview?.Dispose();
+                        _partPreview   = null;
+                        _partPreviewId = null;
+                        WriteJson();
+                    }
+                }
+                EditorGUILayout.Space(4);
+            }
+
+            DrawPartModelPreview(ref p);
+
+            if (_editPlayPose)
+            {
+                EditorGUI.BeginChangeCheck();
+                p.playPosition = EditorGUILayout.Vector3Field("Play Position", p.playPosition);
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.isDirty = true; SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
+
+                EditorGUI.BeginChangeCheck();
+                Vector3 playEuler = EditorGUILayout.Vector3Field("Play Rotation", p.playRotation.eulerAngles);
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.playRotation = Quaternion.Euler(playEuler); p.isDirty = true; SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
+
+                EditorGUI.BeginChangeCheck();
+                p.playScale = EditorGUILayout.Vector3Field("Play Scale", p.playScale);
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.isDirty = true; SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
+            }
+            else
+            {
+                EditorGUI.BeginChangeCheck();
+                p.startPosition = EditorGUILayout.Vector3Field("Start Position", p.startPosition);
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.isDirty = true; SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
+
+                EditorGUI.BeginChangeCheck();
+                Vector3 startEuler = EditorGUILayout.Vector3Field("Start Rotation", p.startRotation.eulerAngles);
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.startRotation = Quaternion.Euler(startEuler); p.isDirty = true; SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
+
+                EditorGUI.BeginChangeCheck();
+                p.startScale = EditorGUILayout.Vector3Field("Start Scale", p.startScale);
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.isDirty = true; SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
+            }
+
+            EditorGUILayout.Space(4);
+            EditorGUILayout.BeginHorizontal();
+            EditorGUI.BeginDisabledGroup(_undoStackParts.Count == 0);
+            if (GUILayout.Button("Undo", EditorStyles.miniButtonLeft,  GUILayout.Width(60))) UndoPartPose();
+            EditorGUI.EndDisabledGroup();
+            EditorGUI.BeginDisabledGroup(_redoStackParts.Count == 0);
+            if (GUILayout.Button("Redo", EditorStyles.miniButtonRight, GUILayout.Width(60))) RedoPartPose();
+            EditorGUI.EndDisabledGroup();
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private void DrawPartBatchPanel()
+        {
+            int count = _multiSelectedParts.Count;
+            EditorGUILayout.LabelField($"Batch edit — {count} parts", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox(
+                "Values shown are from the primary (last-clicked) part.\n" +
+                "Any field you change is applied as a delta to ALL selected parts.",
+                MessageType.None);
+            EditorGUILayout.Space(4);
+            if (_selectedPartIdx < 0 || _selectedPartIdx >= _parts.Length) return;
+            ref PartEditState rep = ref _parts[_selectedPartIdx];
+
+            EditorGUILayout.LabelField("Position Offset (all selected)", EditorStyles.boldLabel);
+            EditorGUI.BeginChangeCheck();
+            float dx = EditorGUILayout.FloatField("Delta X", 0f);
+            if (EditorGUI.EndChangeCheck() && dx != 0f)
+            {
+                foreach (int idx in _multiSelectedParts)
+                {
+                    ref PartEditState p2 = ref _parts[idx];
+                    if (_editPlayPose) p2.playPosition.x  += dx;
+                    else               p2.startPosition.x += dx;
+                    p2.isDirty = true;
+                    SyncPartMeshToActivePose(ref p2);
+                }
+                SceneView.RepaintAll(); Repaint();
+            }
+
+            EditorGUI.BeginChangeCheck();
+            float dy = EditorGUILayout.FloatField("Delta Y", 0f);
+            if (EditorGUI.EndChangeCheck() && dy != 0f)
+            {
+                foreach (int idx in _multiSelectedParts)
+                {
+                    ref PartEditState p2 = ref _parts[idx];
+                    if (_editPlayPose) p2.playPosition.y  += dy;
+                    else               p2.startPosition.y += dy;
+                    p2.isDirty = true;
+                    SyncPartMeshToActivePose(ref p2);
+                }
+                SceneView.RepaintAll(); Repaint();
+            }
+
+            EditorGUI.BeginChangeCheck();
+            float dz = EditorGUILayout.FloatField("Delta Z", 0f);
+            if (EditorGUI.EndChangeCheck() && dz != 0f)
+            {
+                foreach (int idx in _multiSelectedParts)
+                {
+                    ref PartEditState p2 = ref _parts[idx];
+                    if (_editPlayPose) p2.playPosition.z  += dz;
+                    else               p2.startPosition.z += dz;
+                    p2.isDirty = true;
+                    SyncPartMeshToActivePose(ref p2);
+                }
+                SceneView.RepaintAll(); Repaint();
+            }
+
+            EditorGUILayout.Space(4);
+            EditorGUILayout.LabelField("Uniform Scale (all selected)", EditorStyles.boldLabel);
+            EditorGUI.BeginChangeCheck();
+            float uniformScale = EditorGUILayout.FloatField("Scale", 1f);
+            if (EditorGUI.EndChangeCheck() && Mathf.Abs(uniformScale - 1f) > 0.00001f && uniformScale > 0f)
+            {
+                foreach (int idx in _multiSelectedParts)
+                {
+                    ref PartEditState p2 = ref _parts[idx];
+                    if (_editPlayPose) p2.playScale  *= uniformScale;
+                    else               p2.startScale *= uniformScale;
+                    p2.isDirty = true;
+                    SyncPartMeshToActivePose(ref p2);
+                }
+                SceneView.RepaintAll(); Repaint();
+            }
+        }
+
+        // ── Parts tab — BuildPartList + sync ──────────────────────────────────
+
+        private void BuildPartList()
+        {
+            if (_pkg?.parts == null) { _parts = Array.Empty<PartEditState>(); return; }
+
+            HashSet<string> filterIds = null;
+            if (_stepFilterIdx > 0 && _stepIds != null && _stepFilterIdx < _stepIds.Length)
+            {
+                var step = FindStep(_stepIds[_stepFilterIdx]);
+                // Always set filterIds when a step is selected — null means "show all", but a step
+                // with no requiredPartIds (e.g. OBSERVE/CONFIRM steps) should show zero parts.
+                filterIds = step?.requiredPartIds != null
+                    ? new HashSet<string>(step.requiredPartIds, StringComparer.OrdinalIgnoreCase)
+                    : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            var list = new List<PartEditState>();
+            foreach (var def in _pkg.parts)
+            {
+                if (def == null) continue;
+                if (filterIds != null && !filterIds.Contains(def.id)) continue;
+
+                PartPreviewPlacement pp = FindPartPlacement(def.id);
+                bool hasP = pp != null;
+
+                var state = new PartEditState
+                {
+                    def           = def,
+                    placement     = pp,
+                    hasPlacement  = hasP,
+                    startPosition = hasP ? PackageJsonUtils.ToVector3(pp.startPosition) : Vector3.zero,
+                    startRotation = hasP ? PackageJsonUtils.ToUnityQuaternion(pp.startRotation) : Quaternion.identity,
+                    startScale    = hasP ? PackageJsonUtils.ToVector3(pp.startScale)    : Vector3.one,
+                    playPosition  = hasP ? PackageJsonUtils.ToVector3(pp.playPosition)  : Vector3.zero,
+                    playRotation  = hasP ? PackageJsonUtils.ToUnityQuaternion(pp.playRotation) : Quaternion.identity,
+                    playScale     = hasP ? PackageJsonUtils.ToVector3(pp.playScale)     : Vector3.one,
+                    color         = hasP ? new Color(pp.color.r, pp.color.g, pp.color.b, pp.color.a) : ColAuthored,
+                    isDirty       = false,
+                };
+                if (state.startScale.sqrMagnitude < 0.00001f) state.startScale = Vector3.one;
+                if (state.playScale.sqrMagnitude  < 0.00001f) state.playScale  = Vector3.one;
+                list.Add(state);
+            }
+
+            // Restore selection across rebuilds by matching part ID
+            string prevSelectedId = (_selectedPartIdx >= 0 && _parts != null && _selectedPartIdx < _parts.Length)
+                ? _parts[_selectedPartIdx].def.id : _selectedPartId;
+
+            _parts          = list.ToArray();
+            _selectedPartIdx = -1;
+            if (prevSelectedId != null)
+            {
+                for (int i = 0; i < _parts.Length; i++)
+                    if (string.Equals(_parts[i].def.id, prevSelectedId, StringComparison.OrdinalIgnoreCase))
+                    { _selectedPartIdx = i; break; }
+            }
+            _multiSelectedParts.Clear();
+        }
+
+        // ── Live spawner GO helpers (mirrors PPAW) ────────────────────────────
+
+        private GameObject FindLivePartGO(string partId)
+        {
+            if (!ServiceRegistry.TryGet<ISpawnerQueryService>(out var s) || s?.SpawnedParts == null)
+                return null;
+            foreach (var go in s.SpawnedParts)
+                if (go != null && go.name == partId) return go;
+            return null;
+        }
+
+        /// <summary>
+        /// Moves both the live spawner GO and the TTAW preview GO to the current
+        /// active pose.  State is always the source of truth.
+        /// </summary>
+        /// <summary>
+        /// Returns the display position/rotation/scale for a part, respecting the
+        /// step-filter context cached by the last <see cref="RespawnScene"/> call.
+        ///
+        /// When a step is selected:
+        ///   - Past parts  → always playPosition  (already assembled)
+        ///   - Current part → startPosition unless <c>_editPlayPose</c> or part is a
+        ///                    subassembly member (which arrives pre-assembled)
+        ///   - Future parts → caller should skip; returns false
+        ///
+        /// When no step selected (All Steps mode): always obeys <c>_editPlayPose</c>.
+        /// </summary>
+        private bool TryGetStepAwarePose(ref PartEditState p,
+            out Vector3 pos, out Quaternion rot, out Vector3 scl)
+        {
+            string pid = p.def.id;
+
+            if (_sceneBuildStepActive)
+            {
+                bool inMap = _sceneBuildPartStepSeq.TryGetValue(pid, out int placedAt);
+
+                if (inMap && placedAt > _sceneBuildCurrentSeq)
+                {
+                    // Future part — must not be shown in the scene
+                    pos = Vector3.zero; rot = Quaternion.identity; scl = Vector3.one;
+                    return false;
+                }
+
+                bool useStart = inMap
+                    && placedAt == _sceneBuildCurrentSeq
+                    && !_sceneBuildCurrentSubassembly.Contains(pid)
+                    && !_editPlayPose;
+
+                pos = useStart ? p.startPosition : p.playPosition;
+                rot = useStart ? p.startRotation  : p.playRotation;
+                scl = useStart ? p.startScale     : p.playScale;
+            }
+            else
+            {
+                pos = _editPlayPose ? p.playPosition : p.startPosition;
+                rot = _editPlayPose ? p.playRotation  : p.startRotation;
+                scl = _editPlayPose ? p.playScale     : p.startScale;
+            }
+
+            if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
+            return true;
+        }
+
+        private void SyncPartMeshToActivePose(ref PartEditState p)
+        {
+            if (!TryGetStepAwarePose(ref p, out Vector3 pos, out Quaternion rot, out Vector3 scl))
+                return; // future part — leave hidden
+
+            var liveGO = FindLivePartGO(p.def.id);
+            if (liveGO != null)
+            {
+                liveGO.transform.localPosition = pos;
+                liveGO.transform.localRotation = rot;
+                if (scl.sqrMagnitude > 0.00001f) liveGO.transform.localScale = scl;
+            }
+        }
+
+        private void SyncAllPartMeshesToActivePose()
+        {
+            if (_parts == null) return;
+            for (int i = 0; i < _parts.Length; i++)
+            {
+                if (!_parts[i].hasPlacement) continue;
+                string pid = _parts[i].def.id;
+
+                // Compute step-aware pose first; skip future parts entirely.
+                if (!TryGetStepAwarePose(ref _parts[i], out Vector3 pos, out Quaternion rot, out Vector3 scl))
+                    continue;
+
+                SyncPartMeshToActivePose(ref _parts[i]);
+            }
+        }
+
+        // ── Parts tab — Undo / Redo ───────────────────────────────────────────
+
+        private PartSnapshot CapturePartSnapshot(ref PartEditState p) => new()
+        {
+            startPosition = p.startPosition,
+            startRotation = p.startRotation,
+            startScale    = p.startScale,
+            playPosition  = p.playPosition,
+            playRotation  = p.playRotation,
+            playScale     = p.playScale,
+        };
+
+        private void BeginPartEdit(int forIdx)
+        {
+            if (_snapshotPendingPart || forIdx < 0 || _parts == null || forIdx >= _parts.Length) return;
+            _undoStackParts.Add((forIdx, CapturePartSnapshot(ref _parts[forIdx])));
+            if (_undoStackParts.Count > MaxUndoHistory) _undoStackParts.RemoveAt(0);
+            _redoStackParts.Clear();
+            _snapshotPendingPart = true;
+        }
+
+        private void EndPartEdit() => _snapshotPendingPart = false;
+
+        private void UndoPartPose()
+        {
+            if (_undoStackParts.Count == 0 || _parts == null) return;
+            var (idx, prev) = _undoStackParts[_undoStackParts.Count - 1];
+            _undoStackParts.RemoveAt(_undoStackParts.Count - 1);
+            if (idx < _parts.Length)
+            {
+                _redoStackParts.Add((idx, CapturePartSnapshot(ref _parts[idx])));
+                ApplyPartSnapshot(idx, prev);
+            }
+        }
+
+        private void RedoPartPose()
+        {
+            if (_redoStackParts.Count == 0 || _parts == null) return;
+            var (idx, next) = _redoStackParts[_redoStackParts.Count - 1];
+            _redoStackParts.RemoveAt(_redoStackParts.Count - 1);
+            if (idx < _parts.Length)
+            {
+                _undoStackParts.Add((idx, CapturePartSnapshot(ref _parts[idx])));
+                ApplyPartSnapshot(idx, next);
+            }
+        }
+
+        private void ApplyPartSnapshot(int idx, PartSnapshot s)
+        {
+            ref PartEditState p = ref _parts[idx];
+            p.startPosition = s.startPosition;
+            p.startRotation = s.startRotation;
+            p.startScale    = s.startScale;
+            p.playPosition  = s.playPosition;
+            p.playRotation  = s.playRotation;
+            p.playScale     = s.playScale;
+            p.isDirty            = true;
+            _snapshotPendingPart = false;
+            SyncPartMeshToActivePose(ref p);
+            Repaint();
+            SceneView.RepaintAll();
+        }
+
+        // ── Parts tab — SceneView handles ─────────────────────────────────────
+
+        private void DrawPartSceneHandles(SceneView sv)
+        {
+            if (_parts == null || _parts.Length == 0) return;
+
+            // Use spawner.PreviewRoot as the coordinate root — exactly as PPAW does.
+            ServiceRegistry.TryGet<ISpawnerQueryService>(out var spawner);
+            Transform root = spawner?.PreviewRoot;
+
+            if (Event.current.type == EventType.MouseUp) EndPartEdit();
+
+            // F key → frame on selected part
+            if (_selectedPartIdx >= 0 && _selectedPartIdx < _parts.Length
+                && Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.F)
+            {
+                var liveGO = FindLivePartGO(_parts[_selectedPartIdx].def.id);
+                if (liveGO != null) { Selection.activeGameObject = liveGO; sv.FrameSelected(); }
+                Event.current.Use();
+            }
+
+            // Scene selection → window selection sync (click GO in Hierarchy to select it)
+            if (spawner?.SpawnedParts != null)
+            {
+                var activeGO = Selection.activeGameObject;
+                if (activeGO != null)
+                {
+                    foreach (var liveGO in spawner.SpawnedParts)
+                    {
+                        if (liveGO == null) continue;
+                        if (activeGO != liveGO && !activeGO.transform.IsChildOf(liveGO.transform)) continue;
+                        for (int si = 0; si < _parts.Length; si++)
+                        {
+                            if (_parts[si].def.id != liveGO.name) continue;
+                            if (_selectedPartIdx != si)
+                            {
+                                _selectedPartIdx = si;
+                                _selectedPartId  = liveGO.name;
+                                _multiSelectedParts.Clear();
+                                // Clear target selection
+                                _selectedIdx = -1;
+                                _multiSelected.Clear();
+                                Repaint();
+                            }
+                            break;
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // Indicator dots — live GO world position, fallback to state via root
+            if (root != null)
+            {
+                for (int i = 0; i < _parts.Length; i++)
+                {
+                    ref PartEditState p = ref _parts[i];
+                    if (!p.hasPlacement) continue;
+                    var liveGO = FindLivePartGO(p.def.id);
+                    Vector3 worldPos = liveGO != null
+                        ? liveGO.transform.position
+                        : root.TransformPoint(_editPlayPose ? p.playPosition : p.startPosition);
+                    float size = HandleUtility.GetHandleSize(worldPos) * 0.08f;
+
+                    bool isSelected = i == _selectedPartIdx
+                                   || (_multiSelectedParts.Count > 1 && _multiSelectedParts.Contains(i));
+                    Color col = isSelected     ? ColSelected
+                              : p.isDirty      ? ColDirty
+                              : p.hasPlacement ? ColAuthored
+                              :                  ColNoPlacement;
+                    Handles.color = col;
+                    Handles.SphereHandleCap(0, worldPos, Quaternion.identity, size, EventType.Repaint);
+                }
+            }
+
+            // Native Move-tool polling on selected part only (matches PPAW)
+            if (_selectedPartIdx >= 0 && _selectedPartIdx < _parts.Length &&
+                (Event.current.type == EventType.Repaint || Event.current.type == EventType.Layout))
+            {
+                ref PartEditState pp = ref _parts[_selectedPartIdx];
+                var pollGO = FindLivePartGO(pp.def.id);
+                if (pollGO != null)
+                {
+                    Vector3    goPos    = pollGO.transform.localPosition;
+                    Quaternion goRot    = pollGO.transform.localRotation;
+                    Vector3    statePos = _editPlayPose ? pp.playPosition : pp.startPosition;
+                    Quaternion stateRot = _editPlayPose ? pp.playRotation  : pp.startRotation;
+                    bool posChg = (goPos - statePos).sqrMagnitude > 1e-8f;
+                    bool rotChg = Quaternion.Angle(goRot, stateRot) > 0.005f;
+                    if (posChg || rotChg)
+                    {
+                        BeginPartEdit(_selectedPartIdx);
+                        if (_editPlayPose) { pp.playPosition = goPos;  pp.playRotation = goRot; }
+                        else               { pp.startPosition = goPos; pp.startRotation = goRot; }
+                        pp.isDirty = true;
+                        Repaint();
+                    }
+                }
+            }
+
+            // Position + Rotation handles for selected part (PPAW pattern)
+            if (_selectedPartIdx < 0 || _selectedPartIdx >= _parts.Length || root == null) return;
+
+            ref PartEditState sel     = ref _parts[_selectedPartIdx];
+            var selectedGO = FindLivePartGO(sel.def.id);
+            if (selectedGO == null) return;
+
+            Vector3    selWorldPos = selectedGO.transform.position;
+            Quaternion selWorldRot = selectedGO.transform.rotation;
+
+            Handles.color = ColSelected;
+            Handles.DrawWireDisc(selWorldPos, sv.camera.transform.forward,
+                HandleUtility.GetHandleSize(selWorldPos) * 0.14f);
+
+            // Position handle
+            EditorGUI.BeginChangeCheck();
+            Quaternion posHandleRot = Tools.pivotRotation == PivotRotation.Local ? selWorldRot : Quaternion.identity;
+            Vector3    newWorldPos  = Handles.PositionHandle(selWorldPos, posHandleRot);
+            if (EditorGUI.EndChangeCheck())
+            {
+                BeginPartEdit(_selectedPartIdx);
+                selectedGO.transform.position = newWorldPos;
+                Vector3 newLocalPos = selectedGO.transform.localPosition;
+                Vector3 delta = newLocalPos - (_editPlayPose ? sel.playPosition : sel.startPosition);
+                if (_editPlayPose) sel.playPosition  = newLocalPos;
+                else               sel.startPosition = newLocalPos;
+                sel.isDirty = true;
+
+                if (_multiSelectedParts.Count > 1)
+                    foreach (int midx in _multiSelectedParts)
+                    {
+                        if (midx == _selectedPartIdx || midx < 0 || midx >= _parts.Length) continue;
+                        ref PartEditState mp = ref _parts[midx];
+                        if (_editPlayPose) mp.playPosition  += delta;
+                        else               mp.startPosition += delta;
+                        mp.isDirty = true;
+                        var otherGO = FindLivePartGO(mp.def.id);
+                        if (otherGO != null) otherGO.transform.localPosition += delta;
+                    }
+                Repaint();
+            }
+
+            // Rotation handle
+            EditorGUI.BeginChangeCheck();
+            Quaternion rotOrientation = Tools.pivotRotation == PivotRotation.Local ? selWorldRot : Quaternion.identity;
+            Quaternion newWorldRot    = Handles.RotationHandle(rotOrientation, selWorldPos);
+            if (EditorGUI.EndChangeCheck())
+            {
+                BeginPartEdit(_selectedPartIdx);
+                if (!_rotDragActivePart)
+                {
+                    _rotDragActivePart      = true;
+                    _rotDragStartHandlePart = rotOrientation;
+                    _rotDragStartLocalPart  = _editPlayPose ? sel.playRotation : sel.startRotation;
+                    _rotDragStartMultiPart  = new Dictionary<int, Quaternion>();
+                    if (_multiSelectedParts.Count > 1)
+                        foreach (int midx in _multiSelectedParts)
+                            if (midx != _selectedPartIdx)
+                                _rotDragStartMultiPart[midx] = _editPlayPose
+                                    ? _parts[midx].playRotation : _parts[midx].startRotation;
+                }
+                Quaternion rootRot     = root.rotation;
+                Quaternion worldDelta  = newWorldRot * Quaternion.Inverse(_rotDragStartHandlePart);
+                Quaternion newLocalRot = Quaternion.Inverse(rootRot) * (worldDelta * (rootRot * _rotDragStartLocalPart));
+                Quaternion localDelta  = newLocalRot * Quaternion.Inverse(_rotDragStartLocalPart);
+
+                selectedGO.transform.localRotation = newLocalRot;
+                if (_editPlayPose) sel.playRotation  = newLocalRot;
+                else               sel.startRotation = newLocalRot;
+                sel.isDirty = true;
+
+                if (_multiSelectedParts.Count > 1)
+                    foreach (int midx in _multiSelectedParts)
+                    {
+                        if (midx == _selectedPartIdx || midx < 0 || midx >= _parts.Length) continue;
+                        ref PartEditState mp = ref _parts[midx];
+                        Quaternion startR = _rotDragStartMultiPart != null && _rotDragStartMultiPart.TryGetValue(midx, out var sr)
+                            ? sr : (_editPlayPose ? mp.playRotation : mp.startRotation);
+                        Quaternion newR = localDelta * startR;
+                        if (_editPlayPose) mp.playRotation  = newR;
+                        else               mp.startRotation = newR;
+                        mp.isDirty = true;
+                        var otherGO = FindLivePartGO(mp.def.id);
+                        if (otherGO != null) otherGO.transform.localRotation = newR;
+                    }
+                Repaint();
+            }
+            else if (_rotDragActivePart) _rotDragActivePart = false;
+        }
+
+        private void DrawConnectionsSceneOverlay()
+        {
+            if (_targets == null || _targets.Length == 0) return;
+            Transform root = GetPreviewRoot();
+            if (root == null) return;
+
+            foreach (var t in _targets)
+            {
+                if (t.portA.sqrMagnitude < 0.000001f && t.portB.sqrMagnitude < 0.000001f) continue;
+
+                Vector3 wA = root.TransformPoint(t.portA);
+                Vector3 wB = root.TransformPoint(t.portB);
+
+                // Sag midpoint matches the runtime 3-knot spline in ConnectStepHandler
+                Vector3 localSagMid = new Vector3(
+                    (t.portA.x + t.portB.x) * 0.5f,
+                    Mathf.Min(t.portA.y, t.portB.y) - 0.04f,
+                    (t.portA.z + t.portB.z) * 0.5f);
+                Vector3 wMid = root.TransformPoint(localSagMid);
+
+                // Bezier with both control points at the sag midpoint → natural cable droop
+                Handles.DrawBezier(wA, wB, wMid, wMid, ColPortPoint, null, 3f);
+
+                float sA = HandleUtility.GetHandleSize(wA) * 0.08f;
+                float sB = HandleUtility.GetHandleSize(wB) * 0.08f;
+                Handles.color = ColPortPoint;
+                Handles.SphereHandleCap(0, wA, Quaternion.identity, sA, EventType.Repaint);
+                Handles.SphereHandleCap(0, wB, Quaternion.identity, sB, EventType.Repaint);
+
+                Handles.Label(wA, " A", EditorStyles.boldLabel);
+                Handles.Label(wB, " B", EditorStyles.boldLabel);
+            }
+        }
+
         // ── SceneView ─────────────────────────────────────────────────────────
 
         private void OnSceneGUI(SceneView sv)
         {
-            if (_targets == null || _targets.Length == 0 || _previewRoot == null)
-                return;
+            Transform root = GetPreviewRoot();
+            if (root == null) return;
 
-            Transform root         = _previewRoot.transform;
+            bool hasTaskFilter   = _selectedTaskSeqIdx >= 0;
+            bool isConfirmAction = hasTaskFilter && _activeTaskKind == "confirm_action";
+
+            DrawPartSceneHandles(sv);
+
+            // confirm_action = terminal button-press — no targets, skip all target gizmos.
+            if (isConfirmAction) return;
+
+            DrawConnectionsSceneOverlay();
+            if (_targets == null || _targets.Length == 0) return;
             bool      hasStepFilter = _activeStepTargetIds != null;
+            var       sceneProfile  = TaskFieldRegistry.Get(_activeTaskKind ?? "");
+
+            // No associated target for this task — draw nothing.
+            if (hasTaskFilter && _selectedIdx < 0) return;
 
             for (int i = 0; i < _targets.Length; i++)
             {
@@ -957,36 +3392,33 @@ namespace OSE.Editor
                 float   size     = HandleUtility.GetHandleSize(worldPos) * 0.12f;
 
                 bool isSelected  = i == _selectedIdx;
-                bool inStep      = !hasStepFilter || (_activeStepTargetIds?.Contains(t.def.id) ?? true);
-                float alpha      = inStep ? 1f : 0.2f;
+                bool inStep      = !hasStepFilter || _activeStepTargetIds.Contains(t.def.id);
+
+                // When a step is selected but this target doesn't belong to it, skip entirely.
+                if (!inStep) continue;
+
+                // When a task is selected, only draw that task's own target.
+                if (hasTaskFilter && !isSelected) continue;
 
                 Color col = isSelected ? ColSelected
                           : t.isDirty  ? ColDirty
                           : t.hasPlacement ? ColAuthored
                           : ColNoPlacement;
-                col.a *= alpha;
                 Handles.color = col;
 
-                if (inStep)
+                if (Handles.Button(worldPos, Quaternion.identity, size, size * 1.5f, Handles.SphereHandleCap))
                 {
-                    if (Handles.Button(worldPos, Quaternion.identity, size, size * 1.5f, Handles.SphereHandleCap))
-                    {
-                        _selectedIdx       = i;
-                        _selectedTargetId  = _targets[i].def.id;
-                        _clickToSnapActive = false;
-                        _snapshotPending   = false;
-                        RefreshToolPreview(ref _targets[i]);
-                        Repaint();
-                    }
-                }
-                else
-                {
-                    Handles.SphereHandleCap(0, worldPos, Quaternion.identity, size, EventType.Repaint);
+                    _selectedIdx       = i;
+                    _selectedTargetId  = _targets[i].def.id;
+                    _clickToSnapActive = false;
+                    _snapshotPending   = false;
+                    RefreshToolPreview(ref _targets[i]);
+                    Repaint();
                 }
 
-                DrawWeldAxisArrow(ref t, worldPos, alpha);
-                DrawPortPoints(ref t, root, alpha);
-                DrawPartConnector(ref t, worldPos, alpha);
+                if (sceneProfile.SceneWeldArrow)    DrawWeldAxisArrow(ref t, worldPos, 1f);
+                if (sceneProfile.ScenePortPoints)   DrawPortPoints(ref t, root, 1f);
+                if (sceneProfile.ScenePartConnector) DrawPartConnector(ref t, worldPos, 1f);
             }
 
             // F key → frame on selected target gizmo
@@ -1035,48 +3467,51 @@ namespace OSE.Editor
                     Repaint();
                 }
 
-                EditorGUI.BeginChangeCheck();
-                Quaternion rotHandleOrientation = Tools.pivotRotation == PivotRotation.Local ? worldRot : Quaternion.identity;
-                Quaternion newWorldRot = Handles.RotationHandle(rotHandleOrientation, worldPos);
-                if (EditorGUI.EndChangeCheck())
+                if (sceneProfile.SceneRotationHandle)
                 {
-                    BeginEdit();
-
-                    // Snapshot baselines on first frame of drag (for batch rotation)
-                    if (!_rotDragActive)
+                    EditorGUI.BeginChangeCheck();
+                    Quaternion rotHandleOrientation = Tools.pivotRotation == PivotRotation.Local ? worldRot : Quaternion.identity;
+                    Quaternion newWorldRot = Handles.RotationHandle(rotHandleOrientation, worldPos);
+                    if (EditorGUI.EndChangeCheck())
                     {
-                        _rotDragActive      = true;
-                        _rotDragStartHandle = rotHandleOrientation;
-                        _rotDragStartLocal  = sel.rotation;
-                        _rotDragStartMulti  = new Dictionary<int, Quaternion>();
-                        if (_multiSelected.Count > 1)
-                            foreach (int idx in _multiSelected)
-                                if (idx != _selectedIdx)
-                                    _rotDragStartMulti[idx] = _targets[idx].rotation;
-                    }
+                        BeginEdit();
 
-                    // World-space delta from the handle, applied directly (no damping).
-                    Quaternion worldDelta = newWorldRot * Quaternion.Inverse(_rotDragStartHandle);
-                    Quaternion newLocalRot = Quaternion.Inverse(root.rotation) * (worldDelta * (root.rotation * _rotDragStartLocal));
-                    Quaternion localDelta = newLocalRot * Quaternion.Inverse(_rotDragStartLocal);
-                    sel.rotation = newLocalRot;
-                    sel.isDirty  = true;
-                    if (_multiSelected.Count > 1)
-                    {
-                        foreach (int idx in _multiSelected)
+                        // Snapshot baselines on first frame of drag (for batch rotation)
+                        if (!_rotDragActive)
                         {
-                            if (idx == _selectedIdx) continue;
-                            ref var t = ref _targets[idx];
-                            Quaternion startRot = _rotDragStartMulti.TryGetValue(idx, out var sr) ? sr : t.rotation;
-                            t.rotation = localDelta * startRot;
-                            t.isDirty = true;
+                            _rotDragActive      = true;
+                            _rotDragStartHandle = rotHandleOrientation;
+                            _rotDragStartLocal  = sel.rotation;
+                            _rotDragStartMulti  = new Dictionary<int, Quaternion>();
+                            if (_multiSelected.Count > 1)
+                                foreach (int idx in _multiSelected)
+                                    if (idx != _selectedIdx)
+                                        _rotDragStartMulti[idx] = _targets[idx].rotation;
                         }
+
+                        // World-space delta from the handle, applied directly (no damping).
+                        Quaternion worldDelta = newWorldRot * Quaternion.Inverse(_rotDragStartHandle);
+                        Quaternion newLocalRot = Quaternion.Inverse(root.rotation) * (worldDelta * (root.rotation * _rotDragStartLocal));
+                        Quaternion localDelta = newLocalRot * Quaternion.Inverse(_rotDragStartLocal);
+                        sel.rotation = newLocalRot;
+                        sel.isDirty  = true;
+                        if (_multiSelected.Count > 1)
+                        {
+                            foreach (int idx in _multiSelected)
+                            {
+                                if (idx == _selectedIdx) continue;
+                                ref var t = ref _targets[idx];
+                                Quaternion startRot = _rotDragStartMulti.TryGetValue(idx, out var sr) ? sr : t.rotation;
+                                t.rotation = localDelta * startRot;
+                                t.isDirty = true;
+                            }
+                        }
+                        Repaint();
                     }
-                    Repaint();
-                }
-                else if (_rotDragActive)
-                {
-                    _rotDragActive = false;
+                    else if (_rotDragActive)
+                    {
+                        _rotDragActive = false;
+                    }
                 }
 
                 if (Event.current.type == EventType.MouseUp)
@@ -1085,8 +3520,8 @@ namespace OSE.Editor
                 // Tool preview — tracks the position/rotation gizmo in real-time
                 UpdateToolPreview(ref sel);
 
-                // portA / portB drag handles (Cable profile only)
-                if (_activeStepProfile == "Cable")
+                // portA / portB drag handles — any Connect-family step
+                if (_activeStepIsConnect)
                 {
                     Handles.color = ColPortPoint;
 
@@ -1170,7 +3605,9 @@ namespace OSE.Editor
         private void DrawWeldAxisArrow(ref TargetEditState t, Vector3 worldPos, float alpha = 1f)
         {
             if (t.weldAxis.sqrMagnitude < 0.001f) return;
-            Vector3 worldAxis = _previewRoot.transform.TransformDirection(t.weldAxis.normalized);
+            Transform weldRoot = GetPreviewRoot();
+            if (weldRoot == null) return;
+            Vector3 worldAxis = weldRoot.TransformDirection(t.weldAxis.normalized);
             float   arrowLen  = HandleUtility.GetHandleSize(worldPos) * 1.2f;
             Color   c         = ColWeldAxis; c.a *= alpha;
             Handles.color = c;
@@ -1192,7 +3629,8 @@ namespace OSE.Editor
         private void DrawPartConnector(ref TargetEditState t, Vector3 worldPos, float alpha = 1f)
         {
             if (string.IsNullOrEmpty(t.def.associatedPartId)) return;
-            if (!_partMeshes.TryGetValue(t.def.associatedPartId, out var partGo) || partGo == null) return;
+            var partGo = FindLivePartGO(t.def.associatedPartId);
+            if (partGo == null) return;
 
             Color c = Handles.color;
             c.a = alpha * 0.25f;
@@ -1217,8 +3655,8 @@ namespace OSE.Editor
 
         private void DrawPortPoints(ref TargetEditState t, Transform root, float alpha = 1f)
         {
-            // Show port spheres for Cable (pipe_connection) profile, or in All Steps mode
-            if (!string.IsNullOrEmpty(_activeStepProfile) && _activeStepProfile != "Cable") return;
+            // Show port spheres for any Connect-family step, or in All Steps mode
+            if (!string.IsNullOrEmpty(_activeStepProfile) && !_activeStepIsConnect) return;
             if (t.portA.sqrMagnitude < 0.00001f && t.portB.sqrMagnitude < 0.00001f) return;
 
             Color c = ColPortPoint; c.a *= alpha;
@@ -1245,18 +3683,21 @@ namespace OSE.Editor
             if (!Physics.Raycast(ray, out RaycastHit hit, 100f))
                 return;
 
-            // Only snap if we hit one of our spawned part meshes
+            // Only snap if we hit one of our live spawned part meshes
             bool hitPartMesh = false;
-            foreach (var kv in _partMeshes)
+            if (ServiceRegistry.TryGet<ISpawnerQueryService>(out var snapSpawner) && snapSpawner?.SpawnedParts != null)
             {
-                if (kv.Value != null && hit.transform.IsChildOf(kv.Value.transform))
-                { hitPartMesh = true; break; }
+                foreach (var go in snapSpawner.SpawnedParts)
+                    if (go != null && hit.transform.IsChildOf(go.transform))
+                    { hitPartMesh = true; break; }
             }
             if (!hitPartMesh) return;
 
+            Transform root = GetPreviewRoot();
+            if (root == null) return;
+
             ref TargetEditState sel = ref _targets[_selectedIdx];
             BeginEdit();
-            Transform root  = _previewRoot.transform;
             sel.position    = root.InverseTransformPoint(hit.point);
             Vector3 localN  = root.InverseTransformDirection(hit.normal).normalized;
             sel.rotation    = Quaternion.FromToRotation(Vector3.up, localN);
@@ -1291,6 +3732,7 @@ namespace OSE.Editor
             _pkg   = PackageJsonUtils.LoadPackage(id);
             _pkgId = id;
             if (_pkg == null) return;
+            _assetResolver.BuildCatalog(_pkgId, _pkg.parts ?? System.Array.Empty<PartDefinition>());
 
             // When restoring after domain reload, keep the serialized _stepFilterIdx.
             // Otherwise reset to "All Steps" and try to sync from SessionDriver.
@@ -1322,7 +3764,9 @@ namespace OSE.Editor
 
             UpdateActiveStep();
             BuildTargetList();
+            BuildPartList();
             RespawnScene();
+            SyncAllPartMeshesToActivePose(); // must come AFTER RespawnScene
         }
 
         private void BuildStepOptions()
@@ -1403,7 +3847,9 @@ namespace OSE.Editor
         {
             if (_pkg?.targets == null) { _targets = Array.Empty<TargetEditState>(); return; }
 
-            // Determine which targetIds to show
+            // Determine which targetIds to show.
+            // Always assign a HashSet (even empty) when a step is selected — null means
+            // "no filter" (All Steps mode) and would show every package target.
             HashSet<string> filterIds = null;
             if (_stepFilterIdx > 0 && _stepIds != null && _stepFilterIdx < _stepIds.Length)
             {
@@ -1411,23 +3857,10 @@ namespace OSE.Editor
                 if (stepId != null)
                 {
                     var step = FindStep(stepId);
-                    if (step?.targetIds != null)
-                        filterIds = new HashSet<string>(step.targetIds, StringComparer.Ordinal);
+                    filterIds = step?.targetIds != null && step.targetIds.Length > 0
+                        ? new HashSet<string>(step.targetIds, StringComparer.Ordinal)
+                        : new HashSet<string>(StringComparer.Ordinal);
                 }
-            }
-
-            // Build per-step tool-action target set for ghost filtering.
-            // A "ghost" target is in a step's targetIds but has no requiredToolAction in THAT step.
-            // (A target can be a tool-action target in step 5 but a ghost at step 1 — global set can't catch this.)
-            HashSet<string> stepToolActionIds = null;
-            if (!_showGhostTargets && _stepFilterIdx > 0 && _stepIds != null && _stepFilterIdx < _stepIds.Length)
-            {
-                var curStep = FindStep(_stepIds[_stepFilterIdx]);
-                stepToolActionIds = new HashSet<string>(StringComparer.Ordinal);
-                if (curStep?.requiredToolActions != null)
-                    foreach (var action in curStep.requiredToolActions)
-                        if (!string.IsNullOrEmpty(action?.targetId))
-                            stepToolActionIds.Add(action.targetId);
             }
 
             var list = new List<TargetEditState>();
@@ -1435,8 +3868,6 @@ namespace OSE.Editor
             {
                 if (def == null) continue;
                 if (filterIds != null && !filterIds.Contains(def.id)) continue;
-                // Ghost targets: in a step's targetIds but not linked to any tool action in THIS step.
-                if (stepToolActionIds != null && !stepToolActionIds.Contains(def.id)) continue;
 
                 TargetPreviewPlacement placement = FindPlacement(def.id);
                 bool hasP = placement != null;
@@ -1496,6 +3927,63 @@ namespace OSE.Editor
             foreach (var p in arr)
                 if (p != null && p.targetId == targetId) return p;
             return null;
+        }
+
+        /// <summary>
+        /// For every part in the package that has no <c>assetRef</c>, attempts to find
+        /// a GLB in the parts folder whose stem (after stripping _approved / _mesh) matches
+        /// the part ID. Matched parts are written to machine.json immediately.
+        /// Reports how many were linked and how many still need manual assignment.
+        /// </summary>
+        private void AutoLinkPartsByFilename()
+        {
+            if (_pkg?.parts == null || string.IsNullOrEmpty(_pkgId)) return;
+
+            int linked = 0, skipped = 0;
+            foreach (var def in _pkg.parts)
+            {
+                if (def == null || !string.IsNullOrEmpty(def.assetRef)) continue;
+                var res = _assetResolver.Resolve(def.id);
+                if (res.IsResolved)
+                {
+                    def.assetRef = Path.GetFileName(res.AssetPath);
+                    _dirtyPartAssetRefIds.Add(def.id);
+                    linked++;
+                }
+                else
+                {
+                    skipped++;
+                }
+            }
+
+            if (linked > 0)
+            {
+                // Rebuild part states so the new assetRefs take effect in the scene
+                BuildPartList();
+                RespawnScene();
+                SyncAllPartMeshesToActivePose();
+                WriteJson();
+                Debug.Log($"[PartAutoLink] Linked {linked} parts by filename. " +
+                          $"{skipped} still need manual assetRef (shared/renamed meshes).");
+            }
+            else
+            {
+                Debug.Log($"[PartAutoLink] No filename matches found. " +
+                          $"{skipped} parts need manual assetRef assignment via the Model Asset field.");
+            }
+        }
+
+        /// <summary>
+        /// Returns the effective asset filename for a part: explicit <c>assetRef</c> if set,
+        /// otherwise resolved via all 3 resolver passes (filename match + GLB node search).
+        /// Returns null when neither is available.
+        /// </summary>
+        private string ResolvePartAssetRef(PartDefinition def)
+        {
+            if (def == null) return null;
+            if (!string.IsNullOrEmpty(def.assetRef)) return def.assetRef;
+            var res = _assetResolver.Resolve(def.id);
+            return res.IsResolved ? Path.GetFileName(res.AssetPath) : null;
         }
 
         private PartPreviewPlacement FindPartPlacement(string partId)
@@ -1563,54 +4051,41 @@ namespace OSE.Editor
             return false;
         }
 
-        // ── Scene spawning ────────────────────────────────────────────────────
+        // ── Scene setup ────────────────────────────────────────────────────────
 
         private void RespawnScene()
         {
-            KillPartMeshes();
-            if (_previewRoot != null) { DestroyImmediate(_previewRoot); _previewRoot = null; }
+            // No hidden preview root — we work directly with the live spawned parts.
+            // Just compute the step-aware context cache and position live parts accordingly.
             if (_pkg?.previewConfig?.partPlacements == null) return;
-
-            _previewRoot = new GameObject("[ToolTargetAuthoring] PreviewRoot")
-            {
-                hideFlags = HideFlags.HideAndDontSave
-            };
-
-            // Match the scene's PreviewRoot transform so target positions align with
-            // the actual parts (e.g. when PreviewRoot is offset for XR testing).
-            if (ServiceRegistry.TryGet<ISpawnerQueryService>(out var spawner)
-                && spawner.PreviewRoot != null)
-            {
-                Transform sceneRoot = spawner.PreviewRoot;
-                _previewRoot.transform.SetPositionAndRotation(sceneRoot.position, sceneRoot.rotation);
-                _previewRoot.transform.localScale = sceneRoot.lossyScale;
-            }
 
             _previewAssembled = 0;
             _previewCurrent   = 0;
             _previewHidden    = 0;
 
-            // Build part → sequenceIndex map for step-aware placement
             bool stepSelected = _stepFilterIdx > 0 && _stepIds != null
                                 && _stepFilterIdx < _stepIds.Length
                                 && _stepIds[_stepFilterIdx] != null;
 
-            // Default: show everything (All Steps mode or step not found)
             int currentSeq  = int.MaxValue;
             var partStepSeq = new Dictionary<string, int>(StringComparer.Ordinal);
-            // Parts that belong to any subassembly always use playPosition — they are
-            // pre-assembled before their step and have no meaningful individual startPosition.
-            var subassemblyPartIds = new HashSet<string>(StringComparer.Ordinal);
+            var currentStepSubassemblyPartIds = new HashSet<string>(StringComparer.Ordinal);
 
             if (stepSelected && _pkg.steps != null)
             {
                 var sel = FindStep(_stepIds[_stepFilterIdx]);
-                // Keep int.MaxValue if step not found so nothing is wrongly hidden
                 if (sel != null) currentSeq = sel.sequenceIndex;
+
+                if (sel != null && !string.IsNullOrEmpty(sel.requiredSubassemblyId)
+                    && _pkg.TryGetSubassembly(sel.requiredSubassemblyId, out SubassemblyDefinition curSubDef)
+                    && curSubDef?.partIds != null)
+                {
+                    foreach (string pid in curSubDef.partIds)
+                        if (!string.IsNullOrEmpty(pid)) currentStepSubassemblyPartIds.Add(pid);
+                }
 
                 foreach (var step in _pkg.steps)
                 {
-                    // Map from requiredPartIds (individual placement steps)
                     if (step?.requiredPartIds != null)
                     {
                         foreach (string pid in step.requiredPartIds)
@@ -1621,7 +4096,6 @@ namespace OSE.Editor
                         }
                     }
 
-                    // Map from requiredSubassemblyId → subassembly member parts
                     if (!string.IsNullOrEmpty(step?.requiredSubassemblyId)
                         && _pkg.TryGetSubassembly(step.requiredSubassemblyId, out SubassemblyDefinition subDef)
                         && subDef?.partIds != null)
@@ -1631,133 +4105,83 @@ namespace OSE.Editor
                             if (string.IsNullOrEmpty(pid)) continue;
                             if (!partStepSeq.ContainsKey(pid) || step.sequenceIndex < partStepSeq[pid])
                                 partStepSeq[pid] = step.sequenceIndex;
-                            subassemblyPartIds.Add(pid);
                         }
                     }
                 }
             }
 
-            foreach (var pp in _pkg.previewConfig.partPlacements)
-            {
-                if (pp == null || string.IsNullOrEmpty(pp.partId)) continue;
-                if (!_pkg.TryGetPart(pp.partId, out PartDefinition partDef)) continue;
-                if (string.IsNullOrEmpty(partDef.assetRef)) continue;
+            _sceneBuildStepActive          = stepSelected;
+            _sceneBuildCurrentSeq          = currentSeq;
+            _sceneBuildPartStepSeq         = partStepSeq;
+            _sceneBuildCurrentSubassembly  = currentStepSubassemblyPartIds;
 
-                if (stepSelected)
-                {
-                    bool inStepMap = partStepSeq.TryGetValue(pp.partId, out int placedAt);
-                    if (!inStepMap)
-                    {
-                        // Part not assigned to any step — always show at playPosition
-                        _previewAssembled++;
-                        SpawnPartMesh(pp.partId, partDef.assetRef,
-                            PackageJsonUtils.ToVector3(pp.playPosition),
-                            PackageJsonUtils.ToUnityQuaternion(pp.playRotation),
-                            PackageJsonUtils.ToVector3(pp.playScale));
-                        continue;
-                    }
+            // Position and show/hide live parts based on step-aware context.
+            SyncAllPartMeshesToActivePose();
 
-                    if (placedAt > currentSeq) { _previewHidden++; continue; }
+            // Add MeshColliders to live parts so click-to-snap works on their surfaces.
+            AddMeshCollidersToLiveParts();
 
-                    // Subassembly members are pre-assembled before their step so they
-                    // have no meaningful individual startPosition — always use playPosition.
-                    bool useStart = placedAt == currentSeq && !subassemblyPartIds.Contains(pp.partId);
-                    if (placedAt == currentSeq) _previewCurrent++; else _previewAssembled++;
-                    Vector3    pos  = useStart ? PackageJsonUtils.ToVector3(pp.startPosition) : PackageJsonUtils.ToVector3(pp.playPosition);
-                    Quaternion rot  = useStart ? PackageJsonUtils.ToUnityQuaternion(pp.startRotation) : PackageJsonUtils.ToUnityQuaternion(pp.playRotation);
-                    Vector3    sclR = PackageJsonUtils.ToVector3(useStart ? pp.startScale : pp.playScale);
-                    // Fall back to playScale when startScale is zero (not authored in machine.json)
-                    Vector3 scl = sclR.sqrMagnitude > 0.00001f ? sclR : PackageJsonUtils.ToVector3(pp.playScale);
-                    SpawnPartMesh(pp.partId, partDef.assetRef, pos, rot, scl);
-                }
-                else
-                {
-                    // All Steps mode — show everything at play position
-                    _previewAssembled++;
-                    SpawnPartMesh(pp.partId, partDef.assetRef,
-                        PackageJsonUtils.ToVector3(pp.playPosition),
-                        PackageJsonUtils.ToUnityQuaternion(pp.playRotation),
-                        PackageJsonUtils.ToVector3(pp.playScale));
-                }
-            }
-
-            AddMeshColliders();
-
-            // Refresh tool preview now that _previewRoot exists
+            // Refresh tool preview using the spawner's PreviewRoot as coordinate space.
             if (_selectedIdx >= 0 && _selectedIdx < _targets.Length)
                 RefreshToolPreview(ref _targets[_selectedIdx]);
         }
 
-        private void SpawnPartMesh(string partId, string assetRef, Vector3 localPos, Quaternion localRot, Vector3 localScl)
+        // SpawnPartMesh removed — TTAW no longer creates hidden preview objects.
+
+        /// <summary>
+        /// Clears the Unity editor selection if any of the supplied objects (or their
+        /// children) are currently selected, then forces all open inspectors to rebuild
+        /// so they release stale references before <see cref="DestroyImmediate"/> runs.
+        /// </summary>
+        private static void DeselectIfSelected(params UnityEngine.Object[] objects)
         {
-            string path = $"Assets/_Project/Data/Packages/{_pkgId}/{assetRef}";
-            var pfb = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (objects == null || objects.Length == 0) return;
+            var sel = UnityEditor.Selection.objects;
+            if (sel == null || sel.Length == 0) return;
 
-            // Fallback: try assets/parts/ prefix when assetRef is a bare filename
-            if (pfb == null && !assetRef.Contains("/"))
+            bool needsClear = false;
+            foreach (var obj in objects)
             {
-                string prefixed = $"Assets/_Project/Data/Packages/{_pkgId}/assets/parts/{assetRef}";
-                pfb = AssetDatabase.LoadAssetAtPath<GameObject>(prefixed);
-                if (pfb == null)
-                    foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(prefixed))
-                        if (asset is GameObject go2) { pfb = go2; break; }
-                if (pfb != null) path = prefixed;
-            }
-
-            if (pfb == null)
-            {
-                Debug.LogWarning($"[ToolTargetAuthoring] Asset not found: {path}");
-                return;
-            }
-
-            var go = Instantiate(pfb, _previewRoot.transform);
-            go.name      = $"[ToolTargetAuthoring] {partId}";
-            go.hideFlags = HideFlags.HideAndDontSave;
-
-            go.transform.localPosition = localPos;
-            go.transform.localRotation = localRot;
-            go.transform.localScale    = localScl;
-
-            // Remove existing colliders; MeshColliders added by AddMeshColliders
-            foreach (var c in go.GetComponentsInChildren<Collider>(true))
-                DestroyImmediate(c);
-
-            _partMeshes[partId] = go;
-        }
-
-        private void AddMeshColliders()
-        {
-            foreach (var kv in _partMeshes)
-            {
-                if (kv.Value == null) continue;
-                foreach (var mf in kv.Value.GetComponentsInChildren<MeshFilter>(true))
+                if (obj == null) continue;
+                if (System.Array.IndexOf(sel, obj) >= 0) { needsClear = true; break; }
+                if (obj is GameObject go)
                 {
-                    if (mf.sharedMesh == null) continue;
-                    var mc = mf.gameObject.AddComponent<MeshCollider>();
-                    mc.sharedMesh = mf.sharedMesh;
+                    foreach (var s in sel)
+                        if (s is GameObject sg && sg != null && sg.transform.IsChildOf(go.transform))
+                        { needsClear = true; break; }
                 }
+                if (needsClear) break;
             }
+
+            if (!needsClear) return;
+
+            // Wipe the full selection array (more thorough than activeObject = null).
+            UnityEditor.Selection.objects = System.Array.Empty<UnityEngine.Object>();
+            // Force all open inspectors to rebuild synchronously so they release the
+            // stale m_Targets references before DestroyImmediate executes.
+            UnityEditor.ActiveEditorTracker.sharedTracker.ForceRebuild();
         }
 
-        private void KillPartMeshes()
-        {
-            foreach (var kv in _partMeshes)
-                if (kv.Value != null) DestroyImmediate(kv.Value);
-            _partMeshes.Clear();
-        }
+        // KillPartMeshes removed — no hidden preview objects to destroy.
 
         // ── Tool preview ──────────────────────────────────────────────────────
 
         private void ClearToolPreview()
         {
-            if (_toolPreviewGO != null) { DestroyImmediate(_toolPreviewGO); _toolPreviewGO = null; }
+            if (_toolPreviewGO != null)
+            {
+                DeselectIfSelected(_toolPreviewGO);
+                DestroyImmediate(_toolPreviewGO);
+                _toolPreviewGO = null;
+            }
             _toolPreviewDef = null;
         }
 
         private void RefreshToolPreview(ref TargetEditState t)
         {
             ClearToolPreview();
-            if (!_showToolPreview || _previewRoot == null) return;
+            Transform previewRoot = GetPreviewRoot();
+            if (!_showToolPreview || previewRoot == null) return;
             if (string.IsNullOrEmpty(_pkgId)) return;
 
             if (_targetToolIdMap == null || !_targetToolIdMap.TryGetValue(t.def.id, out string toolId)) return;
@@ -1789,8 +4213,8 @@ namespace OSE.Editor
                 return;
             }
 
-            // Spawn as a child of _previewRoot so it lives in the same coordinate space
-            _toolPreviewGO           = Instantiate(pfb, _previewRoot.transform);
+            // Spawn as a child of previewRoot so it lives in the same coordinate space
+            _toolPreviewGO           = Instantiate(pfb, previewRoot);
             _toolPreviewGO.name      = "[ToolTargetAuthoring] ToolPreview";
             _toolPreviewGO.hideFlags = HideFlags.HideAndDontSave;
 
@@ -1801,7 +4225,7 @@ namespace OSE.Editor
             float toolCursorScale = (toolDef.scaleOverride > 0f)
                 ? RuntimeCursorScale * toolDef.scaleOverride
                 : RuntimeCursorScale;
-            float rootS = _previewRoot.transform.lossyScale.x;
+            float rootS = previewRoot.lossyScale.x;
             float localToolScale = Mathf.Approximately(rootS, 0f) ? toolCursorScale : toolCursorScale / rootS;
             _toolPreviewGO.transform.localScale = Vector3.one * localToolScale;
 
@@ -1821,7 +4245,7 @@ namespace OSE.Editor
         }
 
         /// <summary>
-        /// Computes the tool's local position and rotation under _previewRoot so that
+        /// Computes the tool's local position and rotation under previewRoot so that
         /// the tool's tipPoint sits at the target position and gripRotation is respected.
         /// </summary>
         private void ComputeToolLocalTransform(ref TargetEditState t,
@@ -1849,7 +4273,7 @@ namespace OSE.Editor
 
         private void UpdateToolPreview(ref TargetEditState sel)
         {
-            if (!_showToolPreview || _toolPreviewGO == null || _previewRoot == null) return;
+            if (!_showToolPreview || _toolPreviewGO == null || GetPreviewRoot() == null) return;
 
             ComputeToolLocalTransform(ref sel, out Vector3 localPos, out Quaternion localRot);
             _toolPreviewGO.transform.localPosition = localPos;
@@ -1868,20 +4292,21 @@ namespace OSE.Editor
 
         private void FrameInScene()
         {
-            if (_previewRoot == null) return;
+            Transform previewRoot = GetPreviewRoot();
+            if (previewRoot == null) return;
             var sv = SceneView.lastActiveSceneView;
             if (sv == null) return;
 
             // Frame on selected target position if available
             if (_selectedIdx >= 0 && _selectedIdx < _targets.Length)
             {
-                Vector3 worldPos = _previewRoot.transform.TransformPoint(_targets[_selectedIdx].position);
+                Vector3 worldPos = previewRoot.TransformPoint(_targets[_selectedIdx].position);
                 float frameSize = HandleUtility.GetHandleSize(worldPos) * 0.5f;
                 sv.Frame(new Bounds(worldPos, Vector3.one * frameSize), false);
             }
             else
             {
-                Selection.activeGameObject = _previewRoot;
+                Selection.activeGameObject = previewRoot.gameObject;
                 sv.FrameSelected();
             }
 
@@ -1961,8 +4386,8 @@ namespace OSE.Editor
         private bool AnyDirty()
         {
             if (_dirtyToolIds.Count > 0 || _dirtyStepIds.Count > 0) return true;
-            if (_targets == null) return false;
-            foreach (var t in _targets) if (t.isDirty) return true;
+            if (_targets != null) foreach (var t in _targets) if (t.isDirty) return true;
+            if (_parts   != null) foreach (var p in _parts)   if (p.isDirty) return true;
             return false;
         }
 
@@ -2000,6 +4425,30 @@ namespace OSE.Editor
             }
             _pkg.previewConfig.targetPlacements = placements.ToArray();
 
+            // Step 1b: Merge dirty _parts into previewConfig.partPlacements
+            if (_parts != null)
+            {
+                var pp = _pkg.previewConfig.partPlacements != null
+                    ? new List<PartPreviewPlacement>(_pkg.previewConfig.partPlacements)
+                    : new List<PartPreviewPlacement>();
+                foreach (ref PartEditState p in _parts.AsSpan())
+                {
+                    if (!p.isDirty) continue;
+                    string pid = p.def.id;
+                    int pidx = pp.FindIndex(e => e != null && e.partId == pid);
+                    var entry = pidx >= 0 ? pp[pidx] : new PartPreviewPlacement { partId = pid };
+                    entry.startPosition = PackageJsonUtils.ToFloat3(p.startPosition);
+                    entry.startRotation = PackageJsonUtils.ToQuaternion(p.startRotation);
+                    entry.startScale    = PackageJsonUtils.ToFloat3(p.startScale);
+                    entry.playPosition  = PackageJsonUtils.ToFloat3(p.playPosition);
+                    entry.playRotation  = PackageJsonUtils.ToQuaternion(p.playRotation);
+                    entry.playScale     = PackageJsonUtils.ToFloat3(p.playScale);
+                    entry.color = new SceneFloat4 { r = p.color.r, g = p.color.g, b = p.color.b, a = p.color.a };
+                    if (pidx >= 0) pp[pidx] = entry; else pp.Add(entry);
+                }
+                _pkg.previewConfig.partPlacements = pp.ToArray();
+            }
+
             // Step 2: Validate original JSON
             string json = File.ReadAllText(jsonPath);
             try { JsonUtility.FromJson<MachinePackageDefinition>(json); }
@@ -2027,8 +4476,8 @@ namespace OSE.Editor
 
                 // Placement rotation IS the tool action rotation — always enable it so play mode
                 // respects whatever the author sets via the gizmo or euler field.
-                Quaternion worldRot   = _previewRoot != null
-                    ? _previewRoot.transform.rotation * t.rotation
+                Quaternion worldRot   = GetPreviewRoot() is Transform wr
+                    ? wr.rotation * t.rotation
                     : t.rotation;
                 Vector3 worldEuler    = worldRot.eulerAngles;
                 TryInjectBlock(ref json, t.def.id, "useToolActionRotation", "true");
@@ -2048,20 +4497,104 @@ namespace OSE.Editor
             }
             _dirtyToolIds.Clear();
 
-            // Step 5b: Inject StepDefinition.removePersistentToolIds for dirty steps
+            // Step 5b: Inject modified step fields for dirty steps
             foreach (string stepId in _dirtyStepIds)
             {
                 var step = FindStep(stepId);
                 if (step == null) continue;
+
+                // removePersistentToolIds
                 string idsJson = step.removePersistentToolIds == null || step.removePersistentToolIds.Length == 0
                     ? "[]"
-                    : "[ " + string.Join(", ", Array.ConvertAll(
-                        step.removePersistentToolIds, id => $"\"{id}\"")) + " ]";
+                    : "[ " + string.Join(", ", Array.ConvertAll(step.removePersistentToolIds, id => $"\"{id}\"")) + " ]";
                 TryInjectBlock(ref json, stepId, "removePersistentToolIds", idsJson);
+
+                // targetIds
+                if (step.targetIds != null)
+                {
+                    string tJson = step.targetIds.Length == 0 ? "[]"
+                        : "[ " + string.Join(", ", Array.ConvertAll(step.targetIds, id => $"\"{id}\"")) + " ]";
+                    TryInjectBlock(ref json, stepId, "targetIds", tJson);
+                }
+
+                // requiredPartIds
+                if (step.requiredPartIds != null)
+                {
+                    string pJson = step.requiredPartIds.Length == 0 ? "[]"
+                        : "[ " + string.Join(", ", Array.ConvertAll(step.requiredPartIds, id => $"\"{id}\"")) + " ]";
+                    TryInjectBlock(ref json, stepId, "requiredPartIds", pJson);
+                }
+
+                // requiredToolActions
+                if (step.requiredToolActions != null)
+                {
+                    string aJson;
+                    if (step.requiredToolActions.Length == 0)
+                    {
+                        aJson = "[]";
+                    }
+                    else
+                    {
+                        var rows = Array.ConvertAll(step.requiredToolActions, a =>
+                        {
+                            if (a == null) return "{}";
+                            var sb = new System.Text.StringBuilder("{");
+                            if (!string.IsNullOrEmpty(a.id))       sb.Append($"\"id\":\"{a.id}\",");
+                            if (!string.IsNullOrEmpty(a.toolId))   sb.Append($"\"toolId\":\"{a.toolId}\",");
+                            if (!string.IsNullOrEmpty(a.targetId)) sb.Append($"\"targetId\":\"{a.targetId}\"");
+                            else if (sb[sb.Length - 1] == ',')     sb.Length--; // trim trailing comma
+                            sb.Append("}");
+                            return sb.ToString();
+                        });
+                        aJson = "[ " + string.Join(", ", rows) + " ]";
+                    }
+                    TryInjectBlock(ref json, stepId, "requiredToolActions", aJson);
+                }
+
+                // wireConnect
+                if (step.wireConnect?.IsConfigured == true)
+                {
+                    var wc = step.wireConnect;
+                    var wRows = Array.ConvertAll(wc.wires, w =>
+                    {
+                        if (w == null) return "{}";
+                        var sb = new System.Text.StringBuilder("{");
+                        if (!string.IsNullOrEmpty(w.targetId))           sb.Append($"\"targetId\":\"{w.targetId}\",");
+                        if (!string.IsNullOrEmpty(w.partId))             sb.Append($"\"partId\":\"{w.partId}\",");
+                        if (!string.IsNullOrEmpty(w.portAPolarityType))  sb.Append($"\"portAPolarityType\":\"{w.portAPolarityType}\",");
+                        if (!string.IsNullOrEmpty(w.portBPolarityType))  sb.Append($"\"portBPolarityType\":\"{w.portBPolarityType}\",");
+                        if (!string.IsNullOrEmpty(w.portAConnectorType)) sb.Append($"\"portAConnectorType\":\"{w.portAConnectorType}\",");
+                        if (!string.IsNullOrEmpty(w.portBConnectorType)) sb.Append($"\"portBConnectorType\":\"{w.portBConnectorType}\",");
+                        sb.Append($"\"polarityOrderMatters\":{(w.polarityOrderMatters ? "true" : "false")}");
+                        sb.Append("}");
+                        return sb.ToString();
+                    });
+                    string wcJson = $"{{\"enforcePortOrder\":{(wc.enforcePortOrder ? "true" : "false")},\"wires\":[ {string.Join(", ", wRows)} ]}}";
+                    TryInjectBlock(ref json, stepId, "wireConnect", wcJson);
+                }
+
+                // taskOrder
+                if (step.taskOrder != null && step.taskOrder.Length > 0)
+                    TryInjectBlock(ref json, stepId, "taskOrder", BuildTaskOrderJson(new List<TaskOrderEntry>(step.taskOrder)));
             }
             _dirtyStepIds.Clear();
+            _dirtyTaskOrderStepIds.Clear();
 
-            // Step 5c: Validate result
+            // Step 5c: Inject assetRef for parts whose model was changed in the authoring window
+            foreach (string partId in _dirtyPartAssetRefIds)
+            {
+                if (_parts == null) break;
+                foreach (ref PartEditState p in _parts.AsSpan())
+                {
+                    if (p.def?.id != partId) continue;
+                    if (!string.IsNullOrEmpty(p.def.assetRef))
+                        TryInjectBlock(ref json, partId, "assetRef", $"\"{p.def.assetRef}\"");
+                    break;
+                }
+            }
+            _dirtyPartAssetRefIds.Clear();
+
+            // Step 5e: Validate result
             try { JsonUtility.FromJson<MachinePackageDefinition>(json); }
             catch (Exception ex)
             {
@@ -2084,7 +4617,13 @@ namespace OSE.Editor
 
             // Step 7: Reload and clear dirty flags
             _pkg = PackageJsonUtils.LoadPackage(_pkgId);
+            if (_pkg != null)
+                _assetResolver.BuildCatalog(_pkgId, _pkg.parts ?? System.Array.Empty<PartDefinition>());
+            BuildTargetToolMap();
             BuildTargetList();
+            BuildPartList();
+            RespawnScene();
+            SyncAllPartMeshesToActivePose(); // must come AFTER RespawnScene
         }
 
         private void RevertFromBackup()
@@ -2097,6 +4636,8 @@ namespace OSE.Editor
             _lastBackupPath = null;
             _pkg = PackageJsonUtils.LoadPackage(_pkgId);
             BuildTargetList();
+            BuildPartList();
+            SyncAllPartMeshesToActivePose();
         }
 
         // ── Extract from GLB anchors ──────────────────────────────────────────
@@ -2230,11 +4771,44 @@ namespace OSE.Editor
 
         private static int FindObjectStart(string json, int from)
         {
+            // Walk backward with brace depth tracking to find the '{' that directly
+            // contains 'from'. Depth 0 = not yet inside any nested closer; the first
+            // '{' we hit at depth 0 is the containing object start.
+            // We skip string literals (including escaped quotes) so braces inside
+            // strings are not counted.
+            int depth = 0;
             for (int i = from - 1; i >= 0; i--)
             {
                 char c = json[i];
-                if (c == '{') return i;
-                if (!char.IsWhiteSpace(c)) return -1;
+                if (c == '"')
+                {
+                    // Count preceding backslashes to determine if the quote is escaped
+                    int slashes = 0;
+                    for (int j = i - 1; j >= 0 && json[j] == '\\'; j--) slashes++;
+                    if (slashes % 2 == 0)
+                    {
+                        // Unescaped quote — skip backward over the string literal
+                        i--;
+                        while (i >= 0)
+                        {
+                            char sc = json[i];
+                            if (sc == '"')
+                            {
+                                int sl2 = 0;
+                                for (int j = i - 1; j >= 0 && json[j] == '\\'; j--) sl2++;
+                                if (sl2 % 2 == 0) break; // found unescaped opening quote
+                            }
+                            i--;
+                        }
+                        continue;
+                    }
+                }
+                if (c == '}') { depth++; continue; }
+                if (c == '{')
+                {
+                    if (depth == 0) return i;
+                    depth--;
+                }
             }
             return -1;
         }

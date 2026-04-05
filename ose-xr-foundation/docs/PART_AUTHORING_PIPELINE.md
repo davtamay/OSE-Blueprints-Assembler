@@ -740,6 +740,122 @@ source_cad/<stage_name>/
 
 ---
 
+## 9.12 Cross-File Placement — Anchoring to the Assembly Reference Frame
+
+Each FreeCAD part file has its own arbitrary local origin. After `stl_to_glb.py` recenters the
+mesh pivot via `center_mode`, the GLB's local origin (0,0,0) lands at a known geometric point
+(bounding box base-center or centroid). `playPosition` in machine.json is the Unity world-space
+position of that pivot. If you eyeball this position, the part will be wrong.
+
+**The right approach: measure the assembly anchor, then run `compute_play_position.py`.**
+
+### The D3D Assembly Reference Frame
+
+All positions in the D3D assembly are expressed relative to the FreeCAD assembly origin, which is
+the **bottom-front-left corner of the frame cube** (the frame `Pocket002` object sits at 0,0,0
+with its bbox running 0–304.8 mm in X, Y, and Z).
+
+Calibrated transform (verified against `D3Dfinalassemblyv1902.fcstd` + machine.json, ~2mm accuracy):
+
+```
+unity.x = (fc_x_mm - 152.4) / 1000      # FC X -> Unity X  (frame center at X=0)
+unity.y =  fc_z_mm          / 1000 + 0.5532   # FC Z (up) -> Unity Y  (floor at Y=0.5532)
+unity.z = (fc_y_mm - 152.4) / 1000      # FC Y (depth) -> Unity Z  (frame center at Z=0)
+```
+
+Constants:
+- `FRAME_CENTER_MM = 152.4` — half of 304.8 mm (12-inch D3D frame)
+- `FLOOR_Y_UNITY = 0.5532` — Unity Y-height of FreeCAD Z=0 (bottom of frame bar)
+
+### Choosing the Assembly Anchor
+
+The anchor is the point you pass to `compute_play_position.py`. It must match what `center_mode`
+produces in the GLB:
+
+| `center_mode` | Anchor to use |
+|---|---|
+| `base_center` | Bottom-center of the part's bounding box **in the assembled machine** (i.e. the lowest Z face, X/Y centered) |
+| `center` | Geometric centroid of the part **in the assembled machine** |
+
+### How to Measure the Anchor
+
+**Case A — Part is in a full assembly FCStd (e.g. `D3Dfinalassemblyv1902.fcstd`):**
+
+Run the extraction script to get all placed positions:
+```powershell
+$env:FCSTD_INPUT  = "path\to\assembly.fcstd"
+$env:FCSTD_OUTPUT = "assembly_positions.json"
+& "C:\Program Files\FreeCAD 1.0\bin\freecadcmd.exe" "extract_assembly_positions.py"
+```
+Read the `boundBox.cx/cy/cz` for `center` mode, or `boundBox.xmin..xmax` center + `zmin` for
+`base_center` mode.
+
+**Case B — Part has its own FCStd (electronics, custom parts):**
+
+Open the part file in FreeCAD GUI. Use the **Measure → Measure Linear** tool or read the
+Part BoundBox to find the mounting face coordinates. Then add the known offset from the frame
+(e.g., electronics on the D3D mount to the right side: frame right face = FC X=304.8 mm, so
+the part face rests at ~X=320 mm with a ~15 mm standoff from the frame tube face).
+
+**Case C — No CAD available:**
+
+Use the physical build manual dimensions (mm measurements from the OSE wiki or BOM).
+Convert from the frame corner using the formula above.
+
+### Running the Script
+
+```powershell
+python3 source_cad/extruder/scripts/compute_play_position.py \
+    --part-id       d3d_control_panel \
+    --blender-report source_cad/electronics_stage01/exported/reports/d3d_control_panel_blender.json \
+    --assembly-x    375.7 \
+    --assembly-y    152.4 \
+    --assembly-z    0.0 \
+    --output        source_cad/electronics_stage01/placements.json
+```
+
+The script reads `center_mode` from the blender report automatically. Override with `--center-mode`
+if needed.
+
+**Batch mode** (all parts at once):
+```powershell
+python3 source_cad/extruder/scripts/compute_play_position.py \
+    --batch  source_cad/electronics_stage01/components.json \
+    --output source_cad/electronics_stage01/placements.json
+```
+
+### The `run_pipeline.ps1` Convention
+
+Each `$Components` entry carries `asm_x`, `asm_y`, `asm_z` fields. After Step 3 (gltfpack),
+the pipeline automatically calls `compute_play_position.py` and writes/updates `placements.json`
+in the stage folder. Run `-SkipGeometry` to recompute placements only (no FreeCAD/Blender):
+
+```powershell
+.\run_pipeline.ps1 -SkipGeometry
+```
+
+### Using `placements.json` in machine.json
+
+`placements.json` is the **source of truth for computed positions**. Copy `playPosition`,
+`playRotation`, and `startPosition` from it into `machine.json`'s `previewConfig.partPlacements`.
+
+The computed positions are accurate to ~5 mm (limited by FreeCAD measurement resolution and
+geometry center vs. mounting point offset). After applying them:
+
+1. Enter Play mode — the part should appear at the correct frame-relative location.
+2. Use **OSE > Target Authoring** to fine-tune to sub-mm precision if needed.
+3. Never hand-author `playPosition` without the transform formula — eyeballed positions
+   silently drift across CAD revisions.
+
+### Accuracy Note
+
+The ~2 mm residual error seen in motor positions is caused by the GLB pivot (after `center_mode`
+recentering) not exactly coinciding with the assembly placement origin (which is a CAD feature
+reference point, not the mesh center). This is expected and acceptable for preview placement.
+For snap-to-target tolerance, author `targetPlacement.position` separately via the authoring tool.
+
+---
+
 # 10. Asset Simplification and Variants
 
 Some parts may need multiple visual forms.

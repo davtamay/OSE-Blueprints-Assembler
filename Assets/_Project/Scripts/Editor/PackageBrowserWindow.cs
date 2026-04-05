@@ -158,10 +158,10 @@ namespace OSE.Editor
                     DrawSubSection(key + ":step:" + step.id,
                         $"[{step.sequenceIndex}] {step.GetDisplayName()}", () =>
                     {
-                        DrawField("Instruction", step.instructionText);
+                        DrawField("Instruction", step.ResolvedInstructionText);
                         DrawField("Parts",       string.Join(", ", step.requiredPartIds ?? new string[0]));
                         DrawField("Tools",       string.Join(", ", step.relevantToolIds ?? new string[0]));
-                        DrawField("Completion",  step.completionType);
+                        DrawField("Family",      step.ResolvedFamily.ToString());
                     });
                 }
             });

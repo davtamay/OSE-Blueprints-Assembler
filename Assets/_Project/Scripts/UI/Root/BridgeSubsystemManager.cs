@@ -29,6 +29,7 @@ namespace OSE.UI.Root
         public SelectionCoordinator             Selection             { get; private set; }
         public StepStateResponder               StepResponder         { get; private set; }
         public DockArcCoordinator               DockArc               { get; private set; }
+        public IConfirmInspectionService        ConfirmInspection     { get; private set; }
 
         public BridgeSubsystemManager(IBridgeContext ctx, Func<PreviewSceneSetup> getSetup)
         {
@@ -61,6 +62,11 @@ namespace OSE.UI.Root
             Selection     ??= new SelectionCoordinator(_ctx);
             StepResponder ??= new StepStateResponder(_ctx, Selection);
             DockArc       ??= new DockArcCoordinator(_ctx);
+            if (ConfirmInspection == null)
+            {
+                ConfirmInspection = new ConfirmInspectionService();
+                ServiceRegistry.Register<IConfirmInspectionService>(ConfirmInspection);
+            }
         }
 
         /// <summary>
@@ -78,6 +84,9 @@ namespace OSE.UI.Root
             SubassemblyController = null;
             ServiceRegistry.Unregister<ISubassemblyPlacementService>();
             StepResponder?.SetStartupSyncPending(false);
+            ConfirmInspection?.ClearMarkers();
+            ConfirmInspection = null;
+            ServiceRegistry.Unregister<IConfirmInspectionService>();
         }
     }
 }

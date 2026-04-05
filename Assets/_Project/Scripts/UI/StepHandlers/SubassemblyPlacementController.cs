@@ -263,12 +263,21 @@ namespace OSE.UI.Root
 
                 // Pending (fabrication complete, not yet stacked) → hide bars so they
                 // don't clutter the scene during other panels' stacking steps.
+                // Guard: never hide a bar that is already Completed — it was explicitly
+                // placed in a prior step and must remain visible (e.g. when navigating
+                // backward from a stacking step into the fabrication sequence).
                 for (int i = 0; i < record.MemberPartIds.Length; i++)
                 {
+                    string memberId = record.MemberPartIds[i];
+                    PartPlacementState memberState = _ctx.GetPartState(memberId);
+                    if (memberState == PartPlacementState.Completed ||
+                        memberState == PartPlacementState.PlacedVirtually)
+                        continue;
+
                     GameObject partGo = (record.CachedMemberObjects != null && i < record.CachedMemberObjects.Length)
                         ? record.CachedMemberObjects[i] : null;
                     if (partGo == null)
-                        partGo = _ctx.FindSpawnedPart(record.MemberPartIds[i]);
+                        partGo = _ctx.FindSpawnedPart(memberId);
                     if (partGo != null) partGo.SetActive(false);
                 }
             }

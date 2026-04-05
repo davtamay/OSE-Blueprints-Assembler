@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using OSE.App;
 using OSE.Content;
 using OSE.Core;
 
@@ -11,14 +10,13 @@ namespace OSE.Runtime
     /// </summary>
     public sealed class StepController
     {
-        // 50 ms covers ~3 frames at 60 fps — enough for UIToolkit to settle —
-        // while being imperceptibly short to the user.
-        // Prevents a back-click input processed on the same Update tick as navigation
-        // from re-completing the step (UIToolkit frame-ordering race).
-        private const float NavigationCooldownSeconds = 0.05f;
-
         private StepDefinition _currentStep;
         private RuntimeStepState _currentState;
+
+        // Set by the navigation layer (SessionNavigationController) to structurally
+        // block step completion while navigation is in progress. This replaces the
+        // previous wall-clock cooldown approach which was fragile under frame timing.
+        private bool _completionBlocked;
 
         public RuntimeStepState CurrentStepState => _currentState;
         public StepDefinition CurrentStepDefinition => _currentStep;
@@ -46,32 +44,30 @@ namespace OSE.Runtime
             TransitionTo(StepState.Active, atSeconds);
         }
 
+        /// <summary>
+        /// Called by the navigation layer to structurally block or unblock step completion.
+        /// Block before navigation starts; unblock in the finally clause when it ends.
+        /// This prevents a same-frame input (e.g. back-click) from re-completing the
+        /// step that was just navigated away from (UIToolkit frame-ordering race).
+        /// </summary>
+        public void SetCompletionBlocked(bool blocked)
+        {
+            _completionBlocked = blocked;
+            if (blocked)
+                OseLog.VerboseInfo($"[StepController] Completion blocked for step '{_currentStep?.id}'.");
+            else
+                OseLog.VerboseInfo($"[StepController] Completion unblocked for step '{_currentStep?.id}'.");
+        }
+
         public void CompleteStep(float atSeconds)
         {
-            // Failsafe: never complete a step during explicit navigation.
-            if (ServiceRegistry.TryGet<IMachineSessionController>(out var navSession))
+            // Structurally blocked by the navigation layer — a navigation is either
+            // in progress or just completed this frame.
+            if (_completionBlocked)
             {
-                if (navSession.IsNavigating)
-                {
-                    OseLog.Warn(OseErrorCode.StepCompletionBlocked,
-                        $"[StepController] CompleteStep blocked during active navigation for step '{_currentStep?.id}'. " +
-                        $"Caller stack: {System.Environment.StackTrace}");
-                    return;
-                }
-
-                // Block completion within a short window after navigation.
-                // Unity runs Update() (InteractionOrchestrator) BEFORE UpdatePanels()
-                // (UIToolkit), so a back-click input processed on the same Update tick
-                // as navigation would otherwise re-complete the step.
-                float timeSinceNav = UnityEngine.Time.realtimeSinceStartup - navSession.LastNavigationTime;
-                if (navSession.LastNavigationTime >= 0f && timeSinceNav < NavigationCooldownSeconds)
-                {
-                    OseLog.Warn(OseErrorCode.StepCompletionBlocked,
-                        $"[StepController] CompleteStep blocked within navigation cooldown " +
-                        $"({timeSinceNav * 1000f:F1}ms since nav, cooldown={NavigationCooldownSeconds * 1000f:F0}ms) " +
-                        $"for step '{_currentStep?.id}'.");
-                    return;
-                }
+                OseLog.Warn(OseErrorCode.StepCompletionBlocked,
+                    $"[StepController] CompleteStep blocked (navigation active) for step '{_currentStep?.id}'.");
+                return;
             }
 
             if (!HasActiveStep)
@@ -166,6 +162,7 @@ namespace OSE.Runtime
         {
             _currentStep = null;
             _currentState = default;
+            _completionBlocked = false;
         }
 
         private void TransitionTo(StepState newState, float atSeconds)

@@ -1,0 +1,36 @@
+{
+  "input_fcstd": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\electronics_stage01\\raw\\Controlpanel_v1904.fcstd",
+  "output_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\electronics_stage01\\exported\\stl\\d3d_control_panel.stl",
+  "source_mode": "archive_brep",
+  "units": "mm",
+  "object_count": 1,
+  "mesh_facets": 10518,
+  "mesh_points": 3926,
+  "combined_bound_box": {
+    "xmin_mm": -272.385193,
+    "xmax_mm": -136.4507599999,
+    "ymin_mm": -33.65241028752,
+    "ymax_mm": 102.40836800002,
+    "zmin_mm": -0.002642000000009,
+    "zmax_mm": 135.009202,
+    "xlen_mm": 135.93443300010003,
+    "ylen_mm": 136.06077828754002,
+    "zlen_mm": 135.011844
+  },
+  "objects": [
+    {
+      "name": "PartShape.brp",
+      "bound_box": {
+        "xmin_mm": -272.385193,
+        "xmax_mm": -136.45075999989996,
+        "ymin_mm": -33.65241028752316,
+        "ymax_mm": 102.40836800002,
+        "zmin_mm": -0.002642000000009,
+        "zmax_mm": 135.009202,
+        "xlen_mm": 135.93443300010006,
+        "ylen_mm": 136.06077828754317,
+        "zlen_mm": 135.011844
+      }
+    }
+  ]
+}

@@ -43,6 +43,28 @@ namespace OSE.Core
         void InjectAction(CanonicalAction action);
     }
 
+    /// <summary>
+    /// Audio feedback for key session events. Provides a non-visual feedback channel
+    /// on desktop and mobile where XR haptics are unavailable.
+    ///
+    /// Register an implementation in AppBootstrap. No-op stub is acceptable for
+    /// platforms that have no audio or don't require accessibility audio.
+    /// </summary>
+    public interface IAudioFeedbackService
+    {
+        /// <summary>Play a short success sound on step completion.</summary>
+        void PlayStepCompleted();
+
+        /// <summary>Play a short error chime when placement/validation fails.</summary>
+        void PlayValidationFailed();
+
+        /// <summary>Play a soft notification when a hint is displayed.</summary>
+        void PlayHintRequested();
+
+        /// <summary>Play a milestone fanfare when an assembly is completed.</summary>
+        void PlayAssemblyCompleted();
+    }
+
     /// <summary>Hint-display capability — safe to depend on from HintManager.</summary>
     public interface IHintPresenter
     {
@@ -141,6 +163,8 @@ namespace OSE.Core
         None,
         SelectPart,
         RequestHint,
-        EquipTool
+        EquipTool,
+        /// <summary>Confirm step with inspection targets — button unlocks when all targets have been framed by the camera.</summary>
+        ObserveTargets
     }
 }

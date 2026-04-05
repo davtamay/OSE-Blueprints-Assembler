@@ -80,6 +80,20 @@ namespace OSE.UI.Controllers
             return false;
         }
 
+        /// <summary>
+        /// Called when all inspection targets on an ObserveTargets-gated Confirm step
+        /// have been framed by the camera. Unlocks the gate.
+        /// Returns true if the unlock state changed (caller should refresh UI).
+        /// </summary>
+        public bool TryUnlockOnObserveComplete()
+        {
+            if (Gate != ConfirmGate.ObserveTargets || IsUnlocked)
+                return false;
+
+            IsUnlocked = true;
+            return true;
+        }
+
         private static bool ResolveInitial(ConfirmGate gate, Func<bool> equipToolCheck)
         {
             if (gate == ConfirmGate.None)
@@ -88,7 +102,7 @@ namespace OSE.UI.Controllers
             if (gate == ConfirmGate.EquipTool)
                 return equipToolCheck?.Invoke() ?? false;
 
-            return false;
+            return false; // SelectPart, RequestHint, ObserveTargets — start locked
         }
     }
 }

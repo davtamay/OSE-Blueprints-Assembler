@@ -144,6 +144,31 @@ Affected files:
 
 ---
 
+## ADR 006 — OSE.Interaction Must Not Be autoReferenced
+
+**Problem:** `OSE.Interaction.asmdef` had `autoReferenced: true`, silently granting every assembly in the project access to all `OSE.Interaction` types without an explicit declaration. This made it impossible to know which assemblies actually depend on Interaction, and bypassed the compiler-enforced dependency graph.
+
+**Decision:** Set `autoReferenced: false`. Add explicit `OSE.Interaction` references only to the three assemblies that legitimately depend on it: `OSE.UI`, `OSE.Editor`, `OSE.Tests.PlayMode`.
+
+**Rule:** Every new assembly that needs `OSE.Interaction` types must declare the dependency explicitly in its `.asmdef`. No exceptions.
+
+---
+
+## ADR 007 — StepDefinition Legacy Field Migration
+
+**Problem:** `StepDefinition` carried both legacy flat fields (`instructionText`, `whyItMattersText`, `hintIds`, `validationRuleIds`, `effectTriggerIds`, `allowSkip`, `challengeFlags`, `completionType`) and their grouped-payload replacements (`guidance`, `validation`, `feedback`, `difficulty`). New content could accidentally use legacy fields instead of payloads, and `BuildInstructionBody()` bypassed the payload resolver entirely.
+
+**Decision:**
+1. Mark all legacy flat fields `[Obsolete]` to surface accidental use at compile time.
+2. Add `#pragma warning disable CS0618` only inside the `Resolved*` accessors that intentionally read the legacy field as a fallback, and in `ResolvedFamily` which reads `completionType`.
+3. Fix all runtime callers (`StepUiContentUtility`, `HintManager`, `InteractionOrchestrator`, `StepPreflightValidator`, `ToolRuntimeController`) to use `Resolved*` accessors.
+4. Fix `BuildInstructionBody()` to use `ResolvedInstructionText` / `ResolvedWhyItMattersText`.
+5. Test files that test the backward-compat serialization path get a file-level `#pragma warning disable CS0618` with an explanatory comment.
+
+**Future:** When all `machine.json` files have been migrated to payload format, run `PackageSchemaMigrator` to strip the flat fields, then remove the legacy field declarations and the `[Obsolete]` attributes.
+
+---
+
 ## Key Files
 
 | File | Role |

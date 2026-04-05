@@ -21,6 +21,7 @@ namespace OSE.Interaction
 
         // ── Connect-family profiles ──
         public const string Cable = "Cable";
+        public const string WireConnect = "WireConnect";
 
         // ── Tool action types (requiredToolActions[].type) ──
         public static class ActionTypes

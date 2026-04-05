@@ -453,7 +453,7 @@ namespace OSE.Runtime
                     && _requiredToolIds.Length == 0
                     && _toolActions.Length == 0
                     && _package.TryGetStep(evt.StepId, out StepDefinition placementStepCheck)
-                    && string.Equals(placementStepCheck.completionType, "placement", StringComparison.OrdinalIgnoreCase))
+                    && placementStepCheck.IsPlacement)
                 {
                     string dismissedTool = _activeToolId;
                     _activeToolId = null;

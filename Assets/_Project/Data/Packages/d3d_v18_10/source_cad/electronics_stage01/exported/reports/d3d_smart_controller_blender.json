@@ -1,0 +1,27 @@
+{
+  "input_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\electronics_stage01\\exported\\stl\\d3d_smart_controller.stl",
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\electronics_stage01\\exported\\glb_candidates\\d3d_smart_controller_candidate.glb",
+  "units": "m",
+  "object_count": 1,
+  "material_name": "OSE Controller",
+  "base_color": [
+    0.1,
+    0.1,
+    0.12,
+    1.0
+  ],
+  "metallic": 0.0,
+  "roughness": 0.7,
+  "center_mode": "center",
+  "bound_box": {
+    "xmin_m": -0.05145001411437988,
+    "xmax_m": 0.05145001411437988,
+    "ymin_m": -0.017349999397993088,
+    "ymax_m": 0.017350001260638237,
+    "zmin_m": -0.04337500035762787,
+    "zmax_m": 0.04337500035762787,
+    "xlen_m": 0.10290002822875977,
+    "ylen_m": 0.034700000658631325,
+    "zlen_m": 0.08675000071525574
+  }
+}

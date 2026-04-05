@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using OSE.Content;
+using OSE.UI.Root;
 
 namespace OSE.Tests.EditMode
 {

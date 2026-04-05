@@ -41,6 +41,7 @@ namespace OSE.Runtime
             ValidateTargetReferences(package, step);
             ValidateToolReferences(package, step);
             ValidateToolActions(package, step);
+            ValidateCompletionTypeConsistency(step);
 
             bool isReady = _issues.Count == 0;
 
@@ -130,6 +131,26 @@ namespace OSE.Runtime
                 // Cross-reference: tool action toolId should be in step's relevantToolIds
                 if (!string.IsNullOrWhiteSpace(action.toolId) && !ArrayContains(step.relevantToolIds, action.toolId))
                     _issues.Add($"requiredToolActions[{i}] ('{action.id}') toolId '{action.toolId}' is not in step's relevantToolIds array.");
+            }
+        }
+
+        private void ValidateCompletionTypeConsistency(StepDefinition step)
+        {
+            bool isPlacement = step.IsPlacement;
+
+            if (isPlacement)
+            {
+                if (step.relevantToolIds != null && step.relevantToolIds.Length > 0)
+                    _issues.Add($"family='Place' but relevantToolIds is non-empty ({string.Join(", ", step.relevantToolIds)}). Remove tools — placement steps should not arm a tool.");
+
+                if (step.requiredToolActions != null && step.requiredToolActions.Length > 0)
+                    _issues.Add($"family='Place' but requiredToolActions is non-empty. Use family='Use' for steps that require tool use.");
+            }
+
+            if (step.IsToolAction)
+            {
+                if (step.requiredToolActions == null || step.requiredToolActions.Length == 0)
+                    _issues.Add("family='Use' but requiredToolActions is empty. Add tool actions or change family.");
             }
         }
 

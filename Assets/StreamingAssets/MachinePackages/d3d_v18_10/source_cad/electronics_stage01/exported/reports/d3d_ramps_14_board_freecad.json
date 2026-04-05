@@ -1,0 +1,36 @@
+{
+  "input_fcstd": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\electronics_stage01\\raw\\RAMPS14_v1904.fcstd",
+  "output_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\electronics_stage01\\exported\\stl\\ramps_14_board.stl",
+  "source_mode": "archive_brep",
+  "units": "mm",
+  "object_count": 1,
+  "mesh_facets": 4121,
+  "mesh_points": 2052,
+  "combined_bound_box": {
+    "xmin_mm": -268.673751082588,
+    "xmax_mm": -162.502576009425,
+    "ymin_mm": -56.9549730605712,
+    "ymax_mm": -32.454968670882295,
+    "zmin_mm": 72.18841444740953,
+    "zmax_mm": 134.097656794801,
+    "xlen_mm": 106.171175073163,
+    "ylen_mm": 24.500004389688904,
+    "zlen_mm": 61.90924234739147
+  },
+  "objects": [
+    {
+      "name": "PartShape.brp",
+      "bound_box": {
+        "xmin_mm": -268.6737510825874,
+        "xmax_mm": -162.502576009425,
+        "ymin_mm": -56.9549730605712,
+        "ymax_mm": -32.45496867088231,
+        "zmin_mm": 72.18841444740954,
+        "zmax_mm": 134.0976567948008,
+        "xlen_mm": 106.17117507316237,
+        "ylen_mm": 24.50000438968889,
+        "zlen_mm": 61.909242347391256
+      }
+    }
+  ]
+}

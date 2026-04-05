@@ -1,0 +1,49 @@
+{
+  "_notes": {
+    "source": "OSE wiki FreeCAD files — individual component files (not master assembly)",
+    "extracted": "pending — run extract_placements.py after download",
+    "gaps": [
+      "RAMPS 1.4: body labels unknown until FCStd is inspected. Likely single compound body.",
+      "Power supply: likely single body (housing only — no internal PCB detail).",
+      "Smart Controller: may have 2 bodies (PCB + housing). Inspect first.",
+      "Control Panel: may have multiple bodies (enclosure + cutouts + mounting tabs). Inspect first.",
+      "Positions within D3D frame: NOT in these files. Author from Final Assembly PDF §25-47 or physical measurement."
+    ],
+    "workflow": [
+      "1. Run download_ose_electronics.py",
+      "2. Run extract_placements.py — populates placements.json with bounding sizes",
+      "3. Run run_pipeline.ps1 — produces *_approved.glb in assets/parts/",
+      "4. Import in Unity, verify orientation via §9.8.2 audit",
+      "5. Author playPosition in machine.json from Final Assembly PDF frame dimensions",
+      "6. Update this file with confirmed FreeCAD label → partId mappings"
+    ]
+  },
+
+  "ramps_14_board": {
+    "fcstd_file": "RAMPS14_v1904.fcstd",
+    "part_id": "ramps_14_board",
+    "expected_size_mm": "~85 x 55 x 15",
+    "label_map": {}
+  },
+
+  "d3d_psu_atx": {
+    "fcstd_file": "Powersupply_v1904.fcstd",
+    "part_id": "d3d_psu_atx",
+    "expected_size_mm": "~150 x 86 x 50",
+    "label_map": {}
+  },
+
+  "d3d_smart_controller": {
+    "fcstd_file": "Smartcontroller_v1904.fcstd",
+    "part_id": "d3d_smart_controller",
+    "expected_size_mm": "~100 x 60 x 25",
+    "label_map": {}
+  },
+
+  "d3d_control_panel": {
+    "fcstd_file": "Controlpanel_v1904.fcstd",
+    "part_id": "d3d_control_panel",
+    "expected_size_mm": "~180 x 120 x 30",
+    "label_map": {}
+  }
+}

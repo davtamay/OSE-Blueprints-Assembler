@@ -1,3 +1,6 @@
+// These tests intentionally set legacy flat fields (completionType, hintIds, etc.) to verify
+// the validator's backward-compatibility path. Suppress the obsolete-field warnings file-wide.
+#pragma warning disable CS0618
 using System;
 using System.Collections.Generic;
 using NUnit.Framework;

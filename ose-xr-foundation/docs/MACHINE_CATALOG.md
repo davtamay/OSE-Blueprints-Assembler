@@ -232,3 +232,30 @@ This means you can have a **fully functional assembly trainer** with placeholder
 ---
 
 *This document is updated as new machine packages are authored or expanded.*
+
+---
+
+# Machine Selection Criteria
+
+*Merged from MACHINE_SELECTION_RESEARCH.md*
+
+When selecting a machine or subassembly as a first authoring target, apply these criteria:
+
+| Criterion | Requirement |
+|-----------|-------------|
+| **Complexity** | 5–15 parts maximum for a first authentic slice |
+| **Documentation** | Clear blueprint diagrams, identifiable parts, tool references |
+| **Mechanical clarity** | Visually understandable assembly logic (structural alignment, bracket mounting, frame construction) |
+| **Modular subassemblies** | Naturally breaks into subassemblies — supports nested architecture |
+| **Educational value** | Teaches how parts relate, why order matters, how tools are used |
+| **XR suitability** | Works well with hand placement, rotation, snapping, alignment — avoid extremely precise internal geometry |
+
+**Decision matrix for first candidate selection:**
+
+| Candidate | Complexity | Documentation | Educational Value | XR Suitability |
+|-----------|-----------|--------------|------------------|----------------|
+| Power Cube Frame Corner | Low | High | High | High |
+| CEB Press Linkage | Medium | Medium | Medium | Medium |
+| MicroHouse Joint | Low | Medium | Medium | High |
+
+The Power Cube was selected as the first target because it is central to many OSE machines (learning it gives foundational knowledge), has natural subassemblies, and scales incrementally from a small frame corner slice to the full cube.

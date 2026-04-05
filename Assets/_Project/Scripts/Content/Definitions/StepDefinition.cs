@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace OSE.Content
@@ -11,8 +12,15 @@ namespace OSE.Content
         public string assemblyId;
         public string subassemblyId;
         public int sequenceIndex;
+
+        /// <summary>Legacy flat field. Use <see cref="guidance"/>.instructionText and read via <see cref="ResolvedInstructionText"/>.</summary>
+        [Obsolete("Use guidance.instructionText and read via ResolvedInstructionText. Retained for JsonUtility backward-compat only.")]
         public string instructionText;
+
+        /// <summary>Legacy flat field. Use <see cref="guidance"/>.whyItMattersText and read via <see cref="ResolvedWhyItMattersText"/>.</summary>
+        [Obsolete("Use guidance.whyItMattersText and read via ResolvedWhyItMattersText. Retained for JsonUtility backward-compat only.")]
         public string whyItMattersText;
+
         public string[] requiredPartIds;
         public string requiredSubassemblyId;
         public string[] optionalPartIds;
@@ -25,6 +33,7 @@ namespace OSE.Content
         /// When <see cref="family"/> is present it takes precedence.
         /// When absent, <see cref="ResolvedFamily"/> derives the family from this field.</para>
         /// </summary>
+        [Obsolete("Use family + profile and read via ResolvedFamily. Retained for JsonUtility backward-compat only.")]
         public string completionType;
 
         /// <summary>
@@ -48,8 +57,16 @@ namespace OSE.Content
         /// </summary>
         public string viewMode;
 
+        /// <summary>Legacy flat field. Use <see cref="validation"/>.validationRuleIds and read via <see cref="ResolvedValidationRuleIds"/>.</summary>
+        [Obsolete("Use validation.validationRuleIds and read via ResolvedValidationRuleIds. Retained for JsonUtility backward-compat only.")]
         public string[] validationRuleIds;
+
+        /// <summary>Legacy flat field. Use <see cref="guidance"/>.hintIds and read via <see cref="ResolvedHintIds"/>.</summary>
+        [Obsolete("Use guidance.hintIds and read via ResolvedHintIds. Retained for JsonUtility backward-compat only.")]
         public string[] hintIds;
+
+        /// <summary>Legacy flat field. Use <see cref="feedback"/>.effectTriggerIds and read via <see cref="ResolvedEffectTriggerIds"/>.</summary>
+        [Obsolete("Use feedback.effectTriggerIds and read via ResolvedEffectTriggerIds. Retained for JsonUtility backward-compat only.")]
         public string[] effectTriggerIds;
         public ToolActionDefinition[] requiredToolActions;
 
@@ -59,7 +76,12 @@ namespace OSE.Content
         /// </summary>
         public string[] removePersistentToolIds;
 
+        /// <summary>Legacy flat field. Use <see cref="difficulty"/>.allowSkip and read via <see cref="ResolvedAllowSkip"/>.</summary>
+        [Obsolete("Use difficulty.allowSkip and read via ResolvedAllowSkip. Retained for JsonUtility backward-compat only.")]
         public bool allowSkip;
+
+        /// <summary>Legacy flat field. Use <see cref="difficulty"/>.challengeFlags and read via <see cref="ResolvedChallengeFlags"/>.</summary>
+        [Obsolete("Use difficulty.challengeFlags and read via ResolvedChallengeFlags. Retained for JsonUtility backward-compat only.")]
         public StepChallengeFlagsDefinition challengeFlags;
         public string[] eventTags;
 
@@ -86,7 +108,24 @@ namespace OSE.Content
         /// <summary>Optional gesture payload for tool-use engagement (Use family). Controls gesture type, thresholds, and guides.</summary>
         public StepGesturePayload gesture;
 
+        /// <summary>
+        /// Optional polarity-aware wire connection payload for Connect-family steps
+        /// with <c>profile: "WireConnect"</c>. Defines per-wire polarity types and
+        /// connector types for port sphere color coding and mismatch detection.
+        /// </summary>
+        public StepWireConnectPayload wireConnect;
+
+        /// <summary>
+        /// Explicit cross-section task sequence. Defines the order in which parts,
+        /// tool actions, and wire/cable connections should be performed within this step.
+        /// Null or empty = no explicit order (sections displayed independently).
+        /// Runtime can use this for sequential task enforcement in future.
+        /// </summary>
+        public TaskOrderEntry[] taskOrder;
+
         // --- Resolved accessors (payload-first, flat-fallback) ---
+        // These intentionally read the [Obsolete] flat fields as fallbacks — suppress the warning here only.
+#pragma warning disable CS0618
 
         /// <summary>Guidance instruction text: payload first, then flat field.</summary>
         public string ResolvedInstructionText =>
@@ -116,6 +155,8 @@ namespace OSE.Content
         public StepChallengeFlagsDefinition ResolvedChallengeFlags =>
             difficulty?.challengeFlags ?? challengeFlags;
 
+#pragma warning restore CS0618
+
         /// <summary>
         /// Controls whether targets within this step are processed all at once or one at a time.
         /// <list type="bullet">
@@ -132,32 +173,39 @@ namespace OSE.Content
         public bool RequiresSubassemblyPlacement =>
             !string.IsNullOrWhiteSpace(requiredSubassemblyId);
 
+        private static readonly Dictionary<string, StepProfile> ProfileLookup =
+            new Dictionary<string, StepProfile>(StringComparer.Ordinal)
+            {
+                { "Clamp",       StepProfile.Clamp       },
+                { "AxisFit",     StepProfile.AxisFit     },
+                { "Torque",      StepProfile.Torque      },
+                { "Weld",        StepProfile.Weld        },
+                { "Cut",         StepProfile.Cut         },
+                { "Strike",      StepProfile.Strike      },
+                { "Measure",     StepProfile.Measure     },
+                { "SquareCheck", StepProfile.SquareCheck },
+                { "Cable",       StepProfile.Cable       },
+                { "WireConnect", StepProfile.WireConnect },
+            };
+
+        private static readonly Dictionary<string, StepFamily> FamilyLookup =
+            new Dictionary<string, StepFamily>(StringComparer.Ordinal)
+            {
+                { "Place",   StepFamily.Place   },
+                { "Use",     StepFamily.Use     },
+                { "Connect", StepFamily.Connect },
+                { "Confirm", StepFamily.Confirm },
+            };
+
         /// <summary>
         /// Resolves the step profile enum from the <see cref="profile"/> string.
         /// Returns <see cref="StepProfile.None"/> when the string is null, empty, or unrecognized.
+        /// Adding a new profile requires only a new entry in <see cref="ProfileLookup"/>.
         /// </summary>
-        public StepProfile ResolvedProfile
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(profile))
-                    return StepProfile.None;
-
-                switch (profile)
-                {
-                    case "Clamp":       return StepProfile.Clamp;
-                    case "AxisFit":     return StepProfile.AxisFit;
-                    case "Torque":      return StepProfile.Torque;
-                    case "Weld":        return StepProfile.Weld;
-                    case "Cut":         return StepProfile.Cut;
-                    case "Strike":      return StepProfile.Strike;
-                    case "Measure":     return StepProfile.Measure;
-                    case "SquareCheck": return StepProfile.SquareCheck;
-                    case "Cable":       return StepProfile.Cable;
-                    default:            return StepProfile.None;
-                }
-            }
-        }
+        public StepProfile ResolvedProfile =>
+            !string.IsNullOrEmpty(profile) && ProfileLookup.TryGetValue(profile, out var p)
+                ? p
+                : StepProfile.None;
 
         /// <summary>True when this place step uses the constrained adjustable-fit profile.</summary>
         public bool IsAxisFitPlacement =>
@@ -175,42 +223,71 @@ namespace OSE.Content
         /// <summary>True when the resolved family is Connect.</summary>
         public bool IsPipeConnection => ResolvedFamily == StepFamily.Connect;
 
+        /// <summary>
+        /// Returns all part IDs this step requires — the union of <see cref="requiredPartIds"/>
+        /// and any <c>partId</c> embedded in <see cref="wireConnect"/> entries.
+        /// Use this instead of <see cref="requiredPartIds"/> directly so Connect-family
+        /// steps whose wire tasks own the part are handled correctly without a separate
+        /// PART task row.
+        /// </summary>
+        public string[] GetEffectiveRequiredPartIds()
+        {
+            bool hasRequired = requiredPartIds != null && requiredPartIds.Length > 0;
+            bool hasWireParts = wireConnect?.wires != null &&
+                System.Array.Exists(wireConnect.wires, w => !string.IsNullOrWhiteSpace(w?.partId));
+
+            if (!hasWireParts) return requiredPartIds ?? System.Array.Empty<string>();
+
+            if (!hasRequired)
+            {
+                var result = new System.Collections.Generic.List<string>();
+                foreach (var w in wireConnect.wires)
+                    if (!string.IsNullOrWhiteSpace(w?.partId)) result.Add(w.partId);
+                return result.ToArray();
+            }
+
+            // Merge: start with requiredPartIds, append wire-owned parts not already present.
+            var merged = new System.Collections.Generic.List<string>(requiredPartIds);
+            foreach (var w in wireConnect.wires)
+                if (!string.IsNullOrWhiteSpace(w?.partId) && !merged.Contains(w.partId))
+                    merged.Add(w.partId);
+            return merged.ToArray();
+        }
+
         /// <summary>True when the resolved family is Confirm (alias for <see cref="IsConfirmation"/>).</summary>
         public bool IsConfirm => ResolvedFamily == StepFamily.Confirm;
+
+        // Legacy completionType → StepFamily mapping (used when family field is absent).
+        private static readonly Dictionary<string, StepFamily> LegacyCompletionTypeLookup =
+            new Dictionary<string, StepFamily>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "placement",       StepFamily.Place   },
+                { "tool_action",     StepFamily.Use     },
+                { "pipe_connection", StepFamily.Connect },
+                { "confirmation",    StepFamily.Confirm },
+            };
 
         /// <summary>
         /// Resolves the step family enum. Returns the parsed <see cref="family"/> if set,
         /// otherwise derives from <see cref="completionType"/> using the legacy mapping.
+        /// Adding a new family requires only a new entry in <see cref="FamilyLookup"/>.
         /// </summary>
+#pragma warning disable CS0618
         public StepFamily ResolvedFamily
         {
             get
             {
-                if (!string.IsNullOrEmpty(family))
-                {
-                    switch (family)
-                    {
-                        case "Place":   return StepFamily.Place;
-                        case "Use":     return StepFamily.Use;
-                        case "Connect": return StepFamily.Connect;
-                        case "Confirm": return StepFamily.Confirm;
-                        default:        return StepFamily.Place;
-                    }
-                }
+                if (!string.IsNullOrEmpty(family) && FamilyLookup.TryGetValue(family, out var f))
+                    return f;
 
-                if (string.IsNullOrEmpty(completionType))
-                    return StepFamily.Place;
+                if (!string.IsNullOrEmpty(completionType) &&
+                    LegacyCompletionTypeLookup.TryGetValue(completionType, out var legacy))
+                    return legacy;
 
-                switch (completionType.ToLowerInvariant())
-                {
-                    case "placement":       return StepFamily.Place;
-                    case "tool_action":     return StepFamily.Use;
-                    case "pipe_connection": return StepFamily.Connect;
-                    case "confirmation":    return StepFamily.Confirm;
-                    default:                return StepFamily.Place;
-                }
+                return StepFamily.Place;
             }
         }
+#pragma warning restore CS0618
 
         public string GetDisplayName()
         {
@@ -229,9 +306,10 @@ namespace OSE.Content
 
         public string BuildInstructionBody()
         {
-            string instruction = string.IsNullOrWhiteSpace(instructionText)
+            string resolvedInstruction = ResolvedInstructionText;
+            string instruction = string.IsNullOrWhiteSpace(resolvedInstruction)
                 ? "Instruction text is missing from this step definition."
-                : instructionText.Trim();
+                : resolvedInstruction.Trim();
 
             if (RequiresSubassemblyPlacement)
             {
@@ -245,18 +323,43 @@ namespace OSE.Content
                     "Adjust the completed axis as one unit while the anchored side stays fixed. Drag along the fit direction until the gap closes and the axis seats fully.";
             }
 
-            if (string.IsNullOrWhiteSpace(whyItMattersText))
+            string resolvedWhyItMatters = ResolvedWhyItMattersText;
+            if (string.IsNullOrWhiteSpace(resolvedWhyItMatters))
             {
                 return instruction;
             }
 
-            StringBuilder builder = new StringBuilder(instruction.Length + whyItMattersText.Length + 22);
+            StringBuilder builder = new StringBuilder(instruction.Length + resolvedWhyItMatters.Length + 22);
             builder.Append(instruction);
             builder.AppendLine();
             builder.AppendLine();
             builder.Append("Why it matters: ");
-            builder.Append(whyItMattersText.Trim());
+            builder.Append(resolvedWhyItMatters.Trim());
             return builder.ToString();
         }
+    }
+
+    /// <summary>
+    /// One entry in <see cref="StepDefinition.taskOrder"/>: identifies a single
+    /// task (part placement, tool action, or wire/cable connection) by kind and id.
+    /// </summary>
+    [Serializable]
+    public sealed class TaskOrderEntry
+    {
+        /// <summary>
+        /// Task kind: "part" | "toolAction" | "wire" | "target"
+        /// <list type="bullet">
+        ///   <item>"part"       → id is a requiredPartIds entry</item>
+        ///   <item>"toolAction" → id is a requiredToolActions[].id</item>
+        ///   <item>"wire"       → id is a targetIds entry (Cable / WireConnect profile)</item>
+        ///   <item>"target"     → id is a targetIds entry (Place / Use profile)</item>
+        /// </list>
+        /// </summary>
+        public string kind;
+
+        /// <summary>
+        /// The identifier of the referenced part, action, or target.
+        /// </summary>
+        public string id;
     }
 }

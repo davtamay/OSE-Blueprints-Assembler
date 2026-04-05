@@ -1,0 +1,27 @@
+{
+  "input_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\electronics_stage01\\exported\\stl\\d3d_control_panel.stl",
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\electronics_stage01\\exported\\glb_candidates\\d3d_control_panel_candidate.glb",
+  "units": "m",
+  "object_count": 1,
+  "material_name": "OSE Panel",
+  "base_color": [
+    0.18,
+    0.18,
+    0.2,
+    1.0
+  ],
+  "metallic": 0.0,
+  "roughness": 0.65,
+  "center_mode": "base_center",
+  "bound_box": {
+    "xmin_m": -0.06796722114086151,
+    "xmax_m": 0.06796722114086151,
+    "ymin_m": -0.06803039461374283,
+    "ymax_m": 0.06803039461374283,
+    "zmin_m": 0.0,
+    "zmax_m": 0.13501185178756714,
+    "xlen_m": 0.13593444228172302,
+    "ylen_m": 0.13606078922748566,
+    "zlen_m": 0.13501185178756714
+  }
+}

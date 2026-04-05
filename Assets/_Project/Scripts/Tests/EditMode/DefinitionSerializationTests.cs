@@ -38,6 +38,7 @@ namespace OSE.Tests.EditMode
         }
 
         [Test]
+#pragma warning disable CS0618 // Intentionally testing backward-compat serialization of legacy flat fields
         public void StepDefinition_RoundTrips_Through_Json()
         {
             var original = new StepDefinition
@@ -66,6 +67,7 @@ namespace OSE.Tests.EditMode
             Assert.AreEqual(original.requiredPartIds, deserialized.requiredPartIds);
             Assert.AreEqual(original.targetIds, deserialized.targetIds);
         }
+#pragma warning restore CS0618
 
         [Test]
         public void PartDefinition_RoundTrips_Through_Json()

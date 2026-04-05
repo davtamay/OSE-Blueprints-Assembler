@@ -69,11 +69,11 @@ These documents define how the runtime system is structured.
 
 - **INTERACTION_MODEL.md**
 
-Defines canonical interaction actions across platforms and the interaction-stack direction.
+Defines canonical interaction actions across platforms, the interaction-stack direction, and reusable step-level interaction patterns (PlaceOnZone, SelectPair, TargetHit, etc.).
 
-- **INTERACTION_PATTERN_MATRIX.md**
+- **INTERACTION_ARCHITECTURE.md**
 
-Defines reusable step-level interaction patterns (PlaceOnZone, SelectPair, TargetHit, etc.), the family-to-pattern mapping, and entity role classification. Patterns are the learner-facing physical interaction contracts that implement step execution.
+State machine design, orchestrator, intent providers, camera rig, placement assist, and feedback systems for PC and Mobile. Code lives in `Assets/_Project/Scripts/Interaction/`.
 
 The current XR interaction baseline is:
 
@@ -93,9 +93,9 @@ Interaction semantics must remain platform-agnostic even while XR implementation
 
 # View System
 
-- **STEP_VIEW_FRAMING.md**
+- **STEP_CAPABILITY_MATRIX.md**
 
-Defines how the camera should frame each assembly step's spatial context. Establishes the sixth canonical concept alongside Entity Role, Step Family, Interaction Pattern, Profile, and Payloads.
+Step family/profile taxonomy (Place/Use/Connect/Confirm), view mode resolution, and capability payloads. Also covers camera framing semantics per step family.
 
 Key concepts:
 
@@ -128,14 +128,8 @@ Machine experiences are defined through **data-driven packages**.
 
 Documents:
 
-- **CONTENT_MODEL.md**  
-  Conceptual content hierarchy for machines, assemblies, subassemblies, parts, tools, and steps.
-
 - **DATA_SCHEMA.md**  
-  Canonical machine package format.
-
-- **STACKING_ARCHITECTURE.md**  
-  Canonical model for moving a previously completed subassembly as one rigid unit while preserving part identity.
+  Canonical machine package format — content hierarchy, all JSON fields, stacking model, and validation rules.
 
 - **PART_AUTHORING_PIPELINE.md**  
   Workflow for turning real-world machines into digital training content.
@@ -190,21 +184,10 @@ Testing protects the architecture from accidental breakage.
 
 ---
 
-# Implementation Order
+# Implementation Progress
 
-- **IMPLEMENTATION_CHECKLIST.md**
-
-Defines the recommended order for implementing the system from:
-
-1. runtime core
-2. interaction layer
-3. validation systems
-4. UI layer
-5. content pipeline
-6. vertical slice
-
-Keep **APP_CURRENT_PROGRESS_FOR_AGENT.md** updated alongside this checklist.  
-It tracks what has already been completed in the real codebase and what the next active phase should be.
+See **APP_CURRENT_PROGRESS_FOR_AGENT.md** for the current phase, what is done, and what is next.
+The implementation checklist has been archived (`docs/archived/IMPLEMENTATION_CHECKLIST.md`) — the progress doc is the live source of truth.
 
 ---
 
@@ -223,22 +206,6 @@ This file defines the canonical agent workflow for:
 - commit discipline
 
 It is the operational companion to **CLAUDE_TASK_PROMPT.md**.
-
----
-
-# Vertical Slice Definition
-
-- **VERTICAL_SLICE_SPEC.md**
-
-Defines the first full end-to-end learning experience used to validate the architecture.
-
----
-
-# Machine Selection Research
-
-- **MACHINE_SELECTION_RESEARCH.md**
-
-Research on candidate machines suitable for the first training experience.
 
 ---
 

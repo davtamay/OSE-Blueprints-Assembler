@@ -410,6 +410,13 @@ namespace OSE.Core
         }
     }
 
+    /// <summary>
+    /// Published by <c>ConfirmInspectionService</c> when every inspection target
+    /// on the active Confirm step has been framed by the camera. Triggers the
+    /// UI layer to unlock the Confirm button.
+    /// </summary>
+    public readonly struct ObserveTargetsCompleted { }
+
     // ── Input / Selection Events ──
     // These bridge C# events from InputActionRouter, SelectionService, and
     // PackagePartSpawner into RuntimeEventBus so subscribers can use a single

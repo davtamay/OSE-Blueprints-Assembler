@@ -66,6 +66,20 @@ namespace OSE.Content.Loading
                     return Failure(sanitizedPackageId, packagePath, "Package JSON did not deserialize into a valid machine package.");
                 }
 
+                // Quick structural check: catch completely empty JSON (e.g. `{}` or wrong file)
+                // before the normalizer runs. The full validator will catch finer-grained issues.
+                if (string.IsNullOrWhiteSpace(package.machine.id))
+                {
+                    return Failure(sanitizedPackageId, packagePath,
+                        "Package JSON is missing required field 'machine.id'. Check that the file is the correct machine.json.");
+                }
+
+                if (package.assemblies == null || package.assemblies.Length == 0)
+                {
+                    return Failure(sanitizedPackageId, packagePath,
+                        "Package JSON has no assemblies defined. At least one assembly is required.");
+                }
+
                 // Inflate compact JSON conventions (templates, inferred parent IDs, etc.)
                 using (OseLog.Timed($"Normalize({sanitizedPackageId})"))
                     MachinePackageNormalizer.Normalize(package);

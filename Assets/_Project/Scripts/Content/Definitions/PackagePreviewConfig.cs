@@ -107,6 +107,12 @@ namespace OSE.Content
         public float metallic;
         /// <summary>PBR smoothness value (0 = rough rubber, 0.5 = polished metal).</summary>
         public float smoothness;
+        /// <summary>
+        /// Optional RGBA wire/hose color. When alpha &gt; 0, overrides the hardcoded
+        /// default in ConnectStepHandler and SplinePartFactory callers.
+        /// Set to (1,0,0,1) for red wires, (0,0,0,1) for black wires, etc.
+        /// </summary>
+        public SceneFloat4 color;
         /// <summary>Ordered spline control points in PreviewRoot local space.</summary>
         public SceneFloat3[] knots;
     }

@@ -6,14 +6,21 @@ namespace OSE.Runtime
 {
     /// <summary>
     /// Handles <see cref="Content.StepFamily.Confirm"/> steps.
-    /// Confirm steps have no visual setup or cleanup — the only action
-    /// is completing the step when the user presses Confirm.
+    ///
+    /// When the step has <c>targetIds</c>, an observe-phase runs first:
+    /// inspection markers are spawned at each target location and the camera
+    /// frustum is tested each frame via <see cref="IConfirmInspectionService"/>.
+    /// Once all locations are framed, <see cref="ObserveTargetsCompleted"/> is
+    /// published and the UI layer unlocks the Confirm button.
+    ///
+    /// Pure Confirm steps (no targetIds) complete on button press immediately.
     /// </summary>
     public sealed class ConfirmStepHandler : IStepFamilyHandler
     {
         public void OnStepActivated(in StepHandlerContext context)
         {
-            // Confirm steps have no visual setup.
+            if (ServiceRegistry.TryGet<IConfirmInspectionService>(out var svc))
+                svc.ShowMarkersForStep(context.Step);
         }
 
         public bool TryHandlePointerAction(in StepHandlerContext context)
@@ -35,17 +42,23 @@ namespace OSE.Runtime
 
         public void Update(in StepHandlerContext context, float deltaTime)
         {
-            // Confirm steps have no per-frame work.
+            if (ServiceRegistry.TryGet<IConfirmInspectionService>(out var svc))
+                svc.UpdateObservations();
         }
 
         public void OnStepCompleted(in StepHandlerContext context)
         {
-            // Confirm steps have no cleanup.
+            // Clear markers immediately on step completion so they don't persist
+            // into the next step. Cleanup() is only called during navigation, not
+            // on normal step completion, so we must clear here as well.
+            if (ServiceRegistry.TryGet<IConfirmInspectionService>(out var svc))
+                svc.ClearMarkers();
         }
 
         public void Cleanup()
         {
-            // Confirm steps have no visual artifacts.
+            if (ServiceRegistry.TryGet<IConfirmInspectionService>(out var svc))
+                svc.ClearMarkers();
         }
     }
 }

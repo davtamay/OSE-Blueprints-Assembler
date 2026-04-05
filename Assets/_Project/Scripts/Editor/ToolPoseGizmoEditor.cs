@@ -19,7 +19,7 @@ namespace OSE.Editor
     /// </summary>
     public sealed class ToolPoseGizmoEditor : EditorWindow
     {
-        private const string MenuPath = "OSE/Grab Pose Editor";
+        private const string MenuPath = "OSE/Authoring/Grab Pose Editor";
         private const string RightHandFbx =
             "Assets/Samples/XR Hands/1.7.3/HandVisualizer/Models/RightHand.fbx";
         private const string LeftHandFbx =
