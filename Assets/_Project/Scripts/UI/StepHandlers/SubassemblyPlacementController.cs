@@ -1046,10 +1046,8 @@ namespace OSE.UI.Root
             if (!anyMoved)
                 return false;
 
-            // Use targetId when available; fall back to subassemblyId as a sentinel so
-            // HideNonActivePendingProxyBars (which checks for null CurrentTargetId) keeps
-            // these bars visible even for stacking steps that have no targetIds defined.
-            record.CurrentTargetId = !string.IsNullOrWhiteSpace(targetId) ? targetId : record.SubassemblyId;
+            if (!string.IsNullOrWhiteSpace(targetId))
+                record.CurrentTargetId = targetId;
             record.Root.SetActive(false);
             if (string.Equals(_activeSubassemblyId, record.SubassemblyId, StringComparison.OrdinalIgnoreCase))
                 _activeSubassemblyId = null;
