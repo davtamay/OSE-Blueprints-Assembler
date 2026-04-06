@@ -2557,6 +2557,208 @@
       "category": "hand_tool",
       "purpose": "Secures the blower attachment during the first Titan Aero module build.",
       "assetRef": "tool_screwdriver_small.glb"
+    },
+    {
+      "id": "tool_power_drill",
+      "name": "Power Drill",
+      "category": "power_tool",
+      "purpose": "Drills pilot holes and drives screws during D3D frame and axis assembly.",
+      "usageNotes": "Use a 3 mm bit for pilot holes in flat stock. Switch to a driver bit for M3/M5 screws.",
+      "safetyNotes": "Wear eye protection. Secure the workpiece before drilling.",
+      "assetRef": "tool_power_drill.glb",
+      "defaultOrientationHint": "Hold grip with trigger facing down, bit pointing forward.",
+      "searchTerms": [
+        "drill",
+        "power drill",
+        "cordless drill"
+      ],
+      "toolPose": {
+        "gripPoint": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": -0.1
+        },
+        "gripRotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "tipPoint": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.15
+        },
+        "cursorOffset": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.1
+        },
+        "handedness": "right",
+        "poseHint": "power_grip"
+      },
+      "scaleOverride": 1
+    },
+    {
+      "id": "tool_box_cutter",
+      "name": "Box Cutter",
+      "category": "hand_tool",
+      "purpose": "Cuts cable ties, opens packaging, and trims wire insulation during wiring steps.",
+      "usageNotes": "Extend the blade one notch only. Cut away from fingers.",
+      "safetyNotes": "Retract blade immediately after use. Keep fingers behind the blade guard.",
+      "assetRef": "tool_box_cutter.glb",
+      "defaultOrientationHint": "Hold handle with blade pointing forward along +Z.",
+      "searchTerms": [
+        "box cutter",
+        "utility knife",
+        "retractable knife"
+      ],
+      "toolPose": {
+        "gripPoint": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": -0.05
+        },
+        "gripRotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "tipPoint": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.08
+        },
+        "cursorOffset": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.05
+        },
+        "handedness": "right",
+        "poseHint": "pinch_grip"
+      },
+      "scaleOverride": 1
+    },
+    {
+      "id": "tool_sandpaper",
+      "name": "Sandpaper (220 Grit)",
+      "category": "hand_tool",
+      "purpose": "Smooths rough weld spatter and 3D-printed surfaces before assembly.",
+      "usageNotes": "Sand in one direction along the grain. Replace when the grit loads with metal dust.",
+      "safetyNotes": "Wear a dust mask when sanding metal or plastic. Keep away from weld sparks.",
+      "assetRef": "tool_sandpaper.glb",
+      "defaultOrientationHint": "Hold flat with abrasive side facing the work surface.",
+      "searchTerms": [
+        "sandpaper",
+        "220 grit",
+        "abrasive paper"
+      ],
+      "toolPose": {
+        "gripPoint": {
+          "x": 0.0,
+          "y": 0.02,
+          "z": 0.0
+        },
+        "gripRotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "tipPoint": {
+          "x": 0.0,
+          "y": -0.01,
+          "z": 0.0
+        },
+        "cursorOffset": {
+          "x": 0.0,
+          "y": 0.02,
+          "z": 0.0
+        },
+        "handedness": "right",
+        "poseHint": "flat_grip"
+      },
+      "scaleOverride": 1
+    },
+    {
+      "id": "tool_lubricant_spray",
+      "name": "Lubricant Spray",
+      "category": "consumable",
+      "purpose": "Lubricates smooth rod surfaces and linear bearing housings to reduce friction.",
+      "usageNotes": "Apply a thin coat to the rod surface. Wipe off excess before inserting bearings.",
+      "safetyNotes": "Use in a ventilated area. Avoid spraying near open flames or electronics.",
+      "assetRef": "tool_lubricant_spray.glb",
+      "defaultOrientationHint": "Hold upright with nozzle pointing toward the work area.",
+      "searchTerms": [
+        "lubricant",
+        "WD-40",
+        "spray oil",
+        "penetrating oil"
+      ],
+      "toolPose": {
+        "gripPoint": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": -0.05
+        },
+        "gripRotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "tipPoint": {
+          "x": 0.0,
+          "y": 0.07,
+          "z": 0.0
+        },
+        "cursorOffset": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.05
+        },
+        "handedness": "right",
+        "poseHint": "power_grip"
+      },
+      "scaleOverride": 1
+    },
+    {
+      "id": "tool_drill_bits",
+      "name": "Drill Bits (3 mm + 6 mm)",
+      "category": "accessory",
+      "purpose": "3 mm bit for pilot holes in flat stock; 6 mm bit for larger clearance holes.",
+      "usageNotes": "Insert bit fully into the chuck and tighten before drilling. Use cutting fluid on metal.",
+      "safetyNotes": "Discard bent or dull bits. Never touch a spinning bit.",
+      "assetRef": "tool_drill_bits.glb",
+      "defaultOrientationHint": "Bits pointing forward along +Z, shank end at the back.",
+      "searchTerms": [
+        "drill bit",
+        "twist drill",
+        "3mm drill",
+        "6mm drill"
+      ],
+      "toolPose": {
+        "gripPoint": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": -0.04
+        },
+        "gripRotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "tipPoint": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.04
+        },
+        "cursorOffset": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.04
+        },
+        "handedness": "right",
+        "poseHint": "pinch_grip"
+      },
+      "scaleOverride": 1
     }
   ],
   "steps": [
@@ -7010,7 +7212,8 @@
       "isOptional": false,
       "relevantToolIds": [
         "tool_allen_key_metric"
-      ]
+      ],
+      "family": "Use"
     },
     {
       "id": "step_mount_z_front_axis_to_frame",
@@ -7039,7 +7242,8 @@
       "hintIds": [
         "hint_mount_z_front_axis"
       ],
-      "isOptional": false
+      "isOptional": false,
+      "family": "Place"
     },
     {
       "id": "step_lock_z_front_motor_holder",
@@ -7077,7 +7281,8 @@
       "isOptional": false,
       "relevantToolIds": [
         "tool_allen_key_metric"
-      ]
+      ],
+      "family": "Use"
     },
     {
       "id": "step_tension_z_front_belt",
@@ -7107,7 +7312,8 @@
       "isOptional": false,
       "relevantToolIds": [
         "tool_pliers"
-      ]
+      ],
+      "family": "Use"
     },
     {
       "id": "step_reinsert_z_front_belt_peg",
@@ -7128,7 +7334,8 @@
       "hintIds": [
         "hint_reinsert_z_front_belt_peg"
       ],
-      "isOptional": false
+      "isOptional": false,
+      "family": "Place"
     },
     {
       "id": "step_check_z_front_axis_travel",
@@ -7147,7 +7354,8 @@
       "hintIds": [
         "hint_check_z_front_axis_travel"
       ],
-      "isOptional": false
+      "isOptional": false,
+      "family": "Confirm"
     },
     {
       "id": "step_tighten_z_back_idler_screws",
@@ -7185,7 +7393,8 @@
       "isOptional": false,
       "relevantToolIds": [
         "tool_allen_key_metric"
-      ]
+      ],
+      "family": "Use"
     },
     {
       "id": "step_mount_z_back_axis_to_frame",
@@ -7214,7 +7423,8 @@
       "hintIds": [
         "hint_mount_z_back_axis"
       ],
-      "isOptional": false
+      "isOptional": false,
+      "family": "Place"
     },
     {
       "id": "step_lock_z_back_motor_holder",
@@ -7252,7 +7462,8 @@
       "isOptional": false,
       "relevantToolIds": [
         "tool_allen_key_metric"
-      ]
+      ],
+      "family": "Use"
     },
     {
       "id": "step_tension_z_back_belt",
@@ -7282,7 +7493,8 @@
       "isOptional": false,
       "relevantToolIds": [
         "tool_pliers"
-      ]
+      ],
+      "family": "Use"
     },
     {
       "id": "step_reinsert_z_back_belt_peg",
@@ -7303,7 +7515,8 @@
       "hintIds": [
         "hint_reinsert_z_back_belt_peg"
       ],
-      "isOptional": false
+      "isOptional": false,
+      "family": "Place"
     },
     {
       "id": "step_check_z_back_axis_travel",
@@ -7322,7 +7535,8 @@
       "hintIds": [
         "hint_check_z_back_axis_travel"
       ],
-      "isOptional": false
+      "isOptional": false,
+      "family": "Confirm"
     },
     {
       "id": "step_mount_bed_guide_rods",
@@ -7345,7 +7559,8 @@
       "hintIds": [
         "hint_mount_bed_guide_rods"
       ],
-      "isOptional": false
+      "isOptional": false,
+      "family": "Place"
     },
     {
       "id": "step_place_bed_raisers",
@@ -7371,7 +7586,8 @@
       "hintIds": [
         "hint_place_bed_raisers"
       ],
-      "isOptional": false
+      "isOptional": false,
+      "family": "Place"
     },
     {
       "id": "step_check_bed_platform_alignment",
@@ -7390,7 +7606,8 @@
       "hintIds": [
         "hint_check_bed_platform_alignment"
       ],
-      "isOptional": false
+      "isOptional": false,
+      "family": "Confirm"
     },
     {
       "id": "step_place_y_bed_rods",
@@ -7452,7 +7669,8 @@
       "hintIds": [
         "hint_mount_control_panel"
       ],
-      "requiredToolActions": []
+      "requiredToolActions": [],
+      "family": "Place"
     },
     {
       "id": "step_install_ramps_board",
@@ -7470,7 +7688,8 @@
       "hintIds": [
         "hint_install_ramps_board"
       ],
-      "requiredToolActions": []
+      "requiredToolActions": [],
+      "family": "Place"
     },
     {
       "id": "step_secure_control_panel",
@@ -7497,7 +7716,8 @@
       ],
       "relevantToolIds": [
         "tool_screwdriver_small"
-      ]
+      ],
+      "family": "Use"
     },
     {
       "id": "step_connect_psu_12v",
@@ -7660,7 +7880,8 @@
       "hintIds": [
         "hint_verify_psu_connections"
       ],
-      "requiredToolActions": []
+      "requiredToolActions": [],
+      "family": "Confirm"
     },
     {
       "id": "step_connect_x_motor",
@@ -8215,7 +8436,8 @@
       "hintIds": [
         "hint_route_cables_chain"
       ],
-      "requiredToolActions": []
+      "requiredToolActions": [],
+      "family": "Use"
     }
   ],
   "validationRules": [
@@ -22283,7 +22505,7 @@
       {
         "targetId": "target_x_axis_idler_mount_y_right_bolt_place_a",
         "position": {
-          "x": 0.154,
+          "x": 0.163,
           "y": 0.834,
           "z": 0.018
         },
@@ -22318,7 +22540,7 @@
       {
         "targetId": "target_x_axis_idler_mount_y_right_bolt_place_b",
         "position": {
-          "x": 0.154,
+          "x": 0.163,
           "y": 0.774,
           "z": -0.018
         },
@@ -22353,7 +22575,7 @@
       {
         "targetId": "target_x_axis_motor_mount_y_left_bolt_place_a",
         "position": {
-          "x": -0.154,
+          "x": -0.163,
           "y": 0.834,
           "z": 0.018
         },
@@ -22388,7 +22610,7 @@
       {
         "targetId": "target_x_axis_motor_mount_y_left_bolt_place_b",
         "position": {
-          "x": -0.154,
+          "x": -0.163,
           "y": 0.774,
           "z": -0.018
         },
@@ -24873,9 +25095,9 @@
       {
         "targetId": "target_bed_rod_a_mount",
         "position": {
-          "x": 0.05,
-          "y": 0.598,
-          "z": 0.0
+          "x": 0.032,
+          "y": 0.5983,
+          "z": 0.0057
         },
         "rotation": {
           "x": 0.0,
@@ -24908,9 +25130,9 @@
       {
         "targetId": "target_bed_rod_b_mount",
         "position": {
-          "x": -0.05,
-          "y": 0.598,
-          "z": 0.0
+          "x": -0.0208,
+          "y": 0.597,
+          "z": 0.0057
         },
         "rotation": {
           "x": 0.0,
@@ -25013,9 +25235,9 @@
       {
         "targetId": "target_control_panel_mount",
         "position": {
-          "x": -0.04,
-          "y": 0.14,
-          "z": -0.165
+          "x": -0.2204,
+          "y": 0.5532,
+          "z": -0.0762
         },
         "rotation": {
           "x": 0.0,
@@ -25048,9 +25270,9 @@
       {
         "targetId": "target_ramps_board_slot",
         "position": {
-          "x": -0.04,
-          "y": 0.13,
-          "z": -0.145
+          "x": -0.2204,
+          "y": 0.5682,
+          "z": -0.0762
         },
         "rotation": {
           "x": 0.0,
