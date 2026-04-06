@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0",
-  "packageVersion": "0.6.1",
+  "packageVersion": "0.6.2",
   "machine": {
     "id": "d3d_v18_10",
     "name": "D3D v18.1",
@@ -2213,7 +2213,7 @@
       "category": "custom",
       "quantity": 1,
       "name": "RAMPS 1.4 Controller Board",
-      "material": "PCB assembly \u00e2\u20ac\u201d stepper driver shield for Arduino Mega",
+      "material": "PCB assembly â€” stepper driver shield for Arduino Mega",
       "function": "Routes power and signals from PSU and firmware to stepper motors, endstops, heater, and thermistor."
     },
     {
@@ -2233,7 +2233,7 @@
       "category": "custom",
       "quantity": 1,
       "name": "Smart Controller LCD + Encoder",
-      "material": "PCB assembly \u00e2\u20ac\u201d RepRap Discount Smart Controller",
+      "material": "PCB assembly â€” RepRap Discount Smart Controller",
       "function": "Provides LCD display and rotary encoder for standalone printer operation without a host computer."
     },
     {
@@ -2859,7 +2859,7 @@
       "subassemblyId": "subassembly_top_frame_side",
       "sequenceIndex": 5,
       "instructionText": "Place the four top frame bars. Same 1-inch overlap, same 14-inch square.",
-      "whyItMattersText": "Same geometry rules apply \u00e2\u20ac\u201d keep the 14-inch outer square consistent across every side.",
+      "whyItMattersText": "Same geometry rules apply â€” keep the 14-inch outer square consistent across every side.",
       "requiredPartIds": [
         "d3d_frame_top_top_bar",
         "d3d_frame_top_right_bar",
@@ -2911,7 +2911,7 @@
       },
       "guidance": {
         "instructionText": "Place the four top frame bars. Same 1-inch overlap, same 14-inch square.",
-        "whyItMattersText": "Same geometry rules apply \u00e2\u20ac\u201d keep the 14-inch outer square consistent across every side."
+        "whyItMattersText": "Same geometry rules apply â€” keep the 14-inch outer square consistent across every side."
       }
     },
     {
@@ -3436,7 +3436,7 @@
         "whyItMattersText": null
       },
       "reinforcement": {
-        "milestoneMessage": "Three sides complete \u00e2\u20ac\u201d you did this one on your own.",
+        "milestoneMessage": "Three sides complete â€” you did this one on your own.",
         "safetyNote": "Keep the MIG torch tip clean between tacks. A dirty tip causes spatter and weak penetration."
       }
     },
@@ -4796,7 +4796,7 @@
       "assemblyId": "assembly_d3d_frame",
       "subassemblyId": "subassembly_cube_joining",
       "sequenceIndex": 36,
-      "instructionText": "Equip the framing square and check the top-front-left cube corner. All six panels are now tacked in place \u00e2\u20ac\u201d verify the cube is square before running the seam welds.",
+      "instructionText": "Equip the framing square and check the top-front-left cube corner. All six panels are now tacked in place â€” verify the cube is square before running the seam welds.",
       "whyItMattersText": "This catches accumulated twist or panel drift before the seam welds permanently lock the cube geometry.",
       "requiredPartIds": [],
       "optionalPartIds": [
@@ -5173,7 +5173,7 @@
       "assemblyId": "assembly_d3d_frame",
       "subassemblyId": "subassembly_cube_joining",
       "sequenceIndex": 41,
-      "instructionText": "Slide a 3D-printed corner bracket onto each of the four lower cube corners \u00e2\u20ac\u201d the three bracket arms wrap around the outside faces of the three frame tubes meeting at that corner. Push each bracket flush until it seats against the frame. Thread two M6x18 bolts per bracket in by hand until finger-tight \u00e2\u20ac\u201d do not use the allen key yet. Work in this order: front-left, rear-right, front-right, rear-left.",
+      "instructionText": "Slide a 3D-printed corner bracket onto each of the four lower cube corners â€” the three bracket arms wrap around the outside faces of the three frame tubes meeting at that corner. Push each bracket flush until it seats against the frame. Thread two M6x18 bolts per bracket in by hand until finger-tight â€” do not use the allen key yet. Work in this order: front-left, rear-right, front-right, rear-left.",
       "whyItMattersText": "Starting with the lower corners establishes the base geometry of the cube before the upper corners are locked in.",
       "requiredPartIds": [
         "compound007_lower_fl",
@@ -5245,7 +5245,7 @@
       "assemblyId": "assembly_d3d_frame",
       "subassemblyId": "subassembly_cube_joining",
       "sequenceIndex": 42,
-      "instructionText": "Use the M5 allen key to snug all 8 bolts across the four lower brackets. Snug means the bolt is fully seated and the bracket cannot rock on the frame \u00e2\u20ac\u201d not final torque. Keep the frame slightly adjustable for the upper brackets to align.",
+      "instructionText": "Use the M5 allen key to snug all 8 bolts across the four lower brackets. Snug means the bolt is fully seated and the bracket cannot rock on the frame â€” not final torque. Keep the frame slightly adjustable for the upper brackets to align.",
       "whyItMattersText": "Leaving bolts finger-tight allows minor adjustments when the upper brackets are added, ensuring the cube stays square.",
       "requiredPartIds": [],
       "optionalPartIds": [
@@ -5463,7 +5463,7 @@
       "assemblyId": "assembly_d3d_frame",
       "subassemblyId": "subassembly_cube_joining",
       "sequenceIndex": 44,
-      "instructionText": "Use the allen key to snug all 8 bolts on the four upper brackets. All 8 brackets should now hold the cube shape loosely \u00e2\u20ac\u201d bolts seated but frame still adjustable for squaring.",
+      "instructionText": "Use the allen key to snug all 8 bolts on the four upper brackets. All 8 brackets should now hold the cube shape loosely â€” bolts seated but frame still adjustable for squaring.",
       "whyItMattersText": "With all brackets finger-tight the cube can still be nudged square before the final tightening pass.",
       "requiredPartIds": [],
       "optionalPartIds": [
@@ -6956,7 +6956,7 @@
       "assemblyId": "assembly_d3d_z_axis_stage_01",
       "subassemblyId": null,
       "sequenceIndex": 90,
-      "instructionText": "Tighten the two shorter M6x18 bolts on the Z-front idler using an electric drill on low torque. This locks the rods flush against the back of the idler. Leave the longer M6x30 bolt loose \u00e2\u20ac\u201d it will attach to the frame.",
+      "instructionText": "Tighten the two shorter M6x18 bolts on the Z-front idler using an electric drill on low torque. This locks the rods flush against the back of the idler. Leave the longer M6x30 bolt loose â€” it will attach to the frame.",
       "profile": "Torque",
       "completionType": "tool_action",
       "requiredPartIds": [],
@@ -7061,7 +7061,7 @@
       "assemblyId": "assembly_d3d_z_axis_stage_01",
       "subassemblyId": null,
       "sequenceIndex": 93,
-      "instructionText": "Grip the loose belt end with pliers and pull until the belt is taut enough to twang like a guitar string when plucked. Do not overtighten \u00e2\u20ac\u201d the belt can snap. Hold tension and proceed to insert the belt peg.",
+      "instructionText": "Grip the loose belt end with pliers and pull until the belt is taut enough to twang like a guitar string when plucked. Do not overtighten â€” the belt can snap. Hold tension and proceed to insert the belt peg.",
       "profile": "Torque",
       "completionType": "tool_action",
       "requiredPartIds": [],
@@ -7091,7 +7091,7 @@
       "assemblyId": "assembly_d3d_z_axis_stage_01",
       "subassemblyId": null,
       "sequenceIndex": 94,
-      "instructionText": "Insert the belt end approximately \u00c2\u00be inch through the peg, foot facing away from the axis center. Push the peg firmly into the small ribbed belt-catcher hole to lock the belt tension.",
+      "instructionText": "Insert the belt end approximately Â¾ inch through the peg, foot facing away from the axis center. Push the peg firmly into the small ribbed belt-catcher hole to lock the belt tension.",
       "profile": "",
       "completionType": "placement",
       "requiredPartIds": [
@@ -7198,7 +7198,7 @@
       "assemblyId": "assembly_d3d_z_axis_stage_01",
       "subassemblyId": null,
       "sequenceIndex": 98,
-      "instructionText": "Tighten the two motor-piece bolts on the Z-back axis. Verify both Z columns are aligned \u00e2\u20ac\u201d Z-back carriage should be at the same height as Z-front carriage before locking.",
+      "instructionText": "Tighten the two motor-piece bolts on the Z-back axis. Verify both Z columns are aligned â€” Z-back carriage should be at the same height as Z-front carriage before locking.",
       "profile": "Torque",
       "completionType": "tool_action",
       "requiredPartIds": [],
@@ -7266,7 +7266,7 @@
       "assemblyId": "assembly_d3d_z_axis_stage_01",
       "subassemblyId": null,
       "sequenceIndex": 100,
-      "instructionText": "Insert belt end ~\u00c2\u00be inch through the peg, foot facing away from axis center. Push peg firmly into the ribbed belt-catcher hole.",
+      "instructionText": "Insert belt end ~Â¾ inch through the peg, foot facing away from axis center. Push peg firmly into the ribbed belt-catcher hole.",
       "profile": "",
       "completionType": "placement",
       "requiredPartIds": [
@@ -7443,7 +7443,7 @@
       "name": "Secure the control panel with M3 screws",
       "assemblyId": "assembly_d3d_electronics",
       "sequenceIndex": 109,
-      "instructionText": "Thread M3 screws through the panel mounting tabs. Snug finger-tight, then a quarter-turn \u00e2\u20ac\u201d do not overtighten plastic tabs.",
+      "instructionText": "Thread M3 screws through the panel mounting tabs. Snug finger-tight, then a quarter-turn â€” do not overtighten plastic tabs.",
       "completionType": "tool_action",
       "targetIds": [
         "target_control_panel_fastener"
@@ -7519,7 +7519,7 @@
       "name": "Connect GND wire from PSU to RAMPS",
       "assemblyId": "assembly_d3d_electronics",
       "sequenceIndex": 111,
-      "instructionText": "Connect the black GND wire from the PSU GND output to the GND screw terminal on the RAMPS board. Polarity matters \u00e2\u20ac\u201d do not swap with the +12V terminal.",
+      "instructionText": "Connect the black GND wire from the PSU GND output to the GND screw terminal on the RAMPS board. Polarity matters â€” do not swap with the +12V terminal.",
       "completionType": "pipe_connection",
       "targetIds": [
         "target_wire_psu_gnd"
@@ -7617,7 +7617,7 @@
       "name": "Verify all PSU connections to RAMPS",
       "assemblyId": "assembly_d3d_electronics",
       "sequenceIndex": 113,
-      "instructionText": "Check all three PSU connections: V+ (red wire), GND (black wire), and the PS_ON enable jumper. Gently tug each \u00e2\u20ac\u201d a properly seated terminal will not pull free.",
+      "instructionText": "Check all three PSU connections: V+ (red wire), GND (black wire), and the PS_ON enable jumper. Gently tug each â€” a properly seated terminal will not pull free.",
       "completionType": "confirmation",
       "targetIds": [
         "target_psu_connections_verify"
@@ -8074,7 +8074,7 @@
       "name": "Connect extruder thermistor to RAMPS",
       "assemblyId": "assembly_d3d_electronics",
       "sequenceIndex": 123,
-      "instructionText": "Connect the thermistor to the T0 2-pin header (signal + GND). Polarity matters \u00e2\u20ac\u201d reversing causes false 300\u00c2\u00b0C readings and thermal runaway shutdown.",
+      "instructionText": "Connect the thermistor to the T0 2-pin header (signal + GND). Polarity matters â€” reversing causes false 300Â°C readings and thermal runaway shutdown.",
       "completionType": "pipe_connection",
       "targetIds": [
         "target_wire_thermistor"
@@ -9294,7 +9294,7 @@
       "id": "hint_verify_y_left_axis_seating",
       "type": "highlight",
       "title": "Carriage shake test + rod-slide test",
-      "message": "Run both bearing fit tests before calling the axis good. Shake test: compress the carriage halves by hand and shake \u00e2\u20ac\u201d bearings must not rattle inside. Rod-slide test: hold the carriage with a rod running vertically \u00e2\u20ac\u201d the rod should slide through with slight resistance, not drop freely. If too loose, wrap each bearing in one layer of electrical tape; if too tight, remove tape. Also push the carriage along the full rod length \u00e2\u20ac\u201d no binding.",
+      "message": "Run both bearing fit tests before calling the axis good. Shake test: compress the carriage halves by hand and shake â€” bearings must not rattle inside. Rod-slide test: hold the carriage with a rod running vertically â€” the rod should slide through with slight resistance, not drop freely. If too loose, wrap each bearing in one layer of electrical tape; if too tight, remove tape. Also push the carriage along the full rod length â€” no binding.",
       "targetId": "target_y_left_axis_qc",
       "priority": "medium"
     },
@@ -9302,7 +9302,7 @@
       "id": "hint_mount_y_right_axis",
       "type": "highlight",
       "title": "Seat Y-right idler and lock all 8 motor-holder bolts",
-      "message": "Mirror the Y-left procedure for the right face. Loosen the idler long bolt, fit it through the correct frame hole, and secure with a nut. Span the axis outward until the motor-holder long bolt reaches the opposite frame hole. Tighten all 8 motor-holder bolts (3 M6x18 + 4 M3 screws + long M6x30) before fastening to frame \u00e2\u20ac\u201d they are inaccessible afterward. Anchor both ends with pliers.",
+      "message": "Mirror the Y-left procedure for the right face. Loosen the idler long bolt, fit it through the correct frame hole, and secure with a nut. Span the axis outward until the motor-holder long bolt reaches the opposite frame hole. Tighten all 8 motor-holder bolts (3 M6x18 + 4 M3 screws + long M6x30) before fastening to frame â€” they are inaccessible afterward. Anchor both ends with pliers.",
       "targetId": "target_y_right_axis_mount",
       "partId": "d3d_y_right_axis_unit",
       "priority": "medium"
@@ -9311,7 +9311,7 @@
       "id": "hint_verify_y_axis_pair",
       "type": "highlight",
       "title": "Both Y axes: smooth motion, end stop, motors at back",
-      "message": "Check all four items: (1) Carriage slides smoothly along each Y axis without binding. (2) Each motor shaft spins freely when you turn the carriage by hand. (3) On Y-left, push the carriage into the end stop and confirm it clicks. (4) Both motors are at the back of the frame \u00e2\u20ac\u201d the axes are mirror images of each other.",
+      "message": "Check all four items: (1) Carriage slides smoothly along each Y axis without binding. (2) Each motor shaft spins freely when you turn the carriage by hand. (3) On Y-left, push the carriage into the end stop and confirm it clicks. (4) Both motors are at the back of the frame â€” the axes are mirror images of each other.",
       "targetId": "target_y_left_axis_mount",
       "priority": "medium"
     },
@@ -9319,7 +9319,7 @@
       "id": "hint_tighten_x_axis_idler_screws",
       "type": "tool_reminder",
       "title": "Tighten the two shorter M6x18 idler bolts; leave M6x30 loose",
-      "message": "Use a drill on low torque to tighten the two shorter M6x18 bolts on the idler. These lock the rods flush against the back of the idler so they cannot be pushed out when the axis is extended. Leave the longer M6x30 bolt loose \u00e2\u20ac\u201d it will attach the idler to the Y-right carriage in the next step.",
+      "message": "Use a drill on low torque to tighten the two shorter M6x18 bolts on the idler. These lock the rods flush against the back of the idler so they cannot be pushed out when the axis is extended. Leave the longer M6x30 bolt loose â€” it will attach the idler to the Y-right carriage in the next step.",
       "toolId": "tool_allen_key_metric",
       "targetId": "target_x_axis_idler_screw_1",
       "priority": "medium"
@@ -9328,7 +9328,7 @@
       "id": "hint_anchor_x_axis_idler",
       "type": "highlight",
       "title": "Drop two M6x30 bolts through Y-right carriage into idler",
-      "message": "Insert two M6x30 bolts through the Y-right carriage from the outside. Move the X-axis so those bolts enter the idler nut catchers. Fasten with drill on low-torque setting \u00e2\u20ac\u201d do not overtighten. The idler is now anchored; the motor-holder side remains free to slide outward for the span-fit step. Note: it does not matter yet whether the X-axis is perfectly vertical.",
+      "message": "Insert two M6x30 bolts through the Y-right carriage from the outside. Move the X-axis so those bolts enter the idler nut catchers. Fasten with drill on low-torque setting â€” do not overtighten. The idler is now anchored; the motor-holder side remains free to slide outward for the span-fit step. Note: it does not matter yet whether the X-axis is perfectly vertical.",
       "targetId": "target_x_axis_idler_anchor_prefit",
       "priority": "high"
     },
@@ -9336,7 +9336,7 @@
       "id": "hint_snug_x_axis_idler_bolts",
       "type": "tool_reminder",
       "title": "Snug motor-holder bolts then back off half a turn each",
-      "message": "Before extending the X-axis to its final span, minimize play in the motor holder: tighten the 3 M6x18 bolts and 4 M3 motor screws by hand until snug, then loosen each by half a turn. The long M6x30 bolt stays completely loose at this stage. The holder must still slide freely along the rods for the span-fit step \u00e2\u20ac\u201d but without excessive wobble.",
+      "message": "Before extending the X-axis to its final span, minimize play in the motor holder: tighten the 3 M6x18 bolts and 4 M3 motor screws by hand until snug, then loosen each by half a turn. The long M6x30 bolt stays completely loose at this stage. The holder must still slide freely along the rods for the span-fit step â€” but without excessive wobble.",
       "toolId": "tool_allen_key_metric",
       "targetId": "target_x_axis_idler_mount_y_right_a",
       "priority": "high"
@@ -9353,7 +9353,7 @@
       "id": "hint_fit_x_axis_span",
       "type": "highlight",
       "title": "Push Y carriages to rod ends; extend X to Y-left face",
-      "message": "For the most accurate span fit, slide both Y-axis carriages toward the far ends of the Y rods where the rods are most constrained. Then push the X-axis motor holder outward until it butts flush against the Y-left carriage face. While extending, regularly check that both rods remain flush in the idler \u00e2\u20ac\u201d if they start to protrude, push them back in.",
+      "message": "For the most accurate span fit, slide both Y-axis carriages toward the far ends of the Y rods where the rods are most constrained. Then push the X-axis motor holder outward until it butts flush against the Y-left carriage face. While extending, regularly check that both rods remain flush in the idler â€” if they start to protrude, push them back in.",
       "targetId": "target_x_axis_span_fit",
       "priority": "high"
     },
@@ -9369,8 +9369,8 @@
     {
       "id": "hint_tension_x_axis_belt",
       "type": "tool_reminder",
-      "title": "Pull belt taut with pliers \u00e2\u20ac\u201d twang test before inserting peg",
-      "message": "Grip the loose belt end with pliers and pull, or grip and twist, until the belt is taut. Pluck the belt \u00e2\u20ac\u201d it should twang like a guitar string. Be firm but careful: excessive force can snap the belt. When the belt feels correct, hold tension and insert the belt peg in the next step without releasing.",
+      "title": "Pull belt taut with pliers â€” twang test before inserting peg",
+      "message": "Grip the loose belt end with pliers and pull, or grip and twist, until the belt is taut. Pluck the belt â€” it should twang like a guitar string. Be firm but careful: excessive force can snap the belt. When the belt feels correct, hold tension and insert the belt peg in the next step without releasing.",
       "toolId": "tool_pliers",
       "targetId": "target_x_axis_belt_tension",
       "priority": "high"
@@ -9378,8 +9378,8 @@
     {
       "id": "hint_reinsert_x_axis_belt_peg",
       "type": "highlight",
-      "title": "Insert belt ~\u00c2\u00be\" through peg foot; foot faces away from center",
-      "message": "Thread the belt end through the inside of the peg approximately \u00c2\u00be inch, with the peg foot turned away from the toothed side of the belt. Quick check: the foot faces away from the center of the axis assembly; the belt passes through the carriage before going through the foot. Insert the peg into the small, ribbed belt-catcher hole and push firmly. This peg locks the belt tail so tension is maintained.",
+      "title": "Insert belt ~Â¾\" through peg foot; foot faces away from center",
+      "message": "Thread the belt end through the inside of the peg approximately Â¾ inch, with the peg foot turned away from the toothed side of the belt. Quick check: the foot faces away from the center of the axis assembly; the belt passes through the carriage before going through the foot. Insert the peg into the small, ribbed belt-catcher hole and push firmly. This peg locks the belt tail so tension is maintained.",
       "targetId": "target_x_axis_belt_peg_insert",
       "partId": "fastener_x_axis_belt_peg",
       "priority": "medium"
@@ -9388,7 +9388,7 @@
       "id": "hint_check_x_axis_travel",
       "type": "highlight",
       "title": "Four-point X-axis QC: travel, flush rods, bolt sides, belt direction",
-      "message": "Run the full QC checklist before calling the X-axis complete: (1) Carriage moves smoothly along full X travel \u00e2\u20ac\u201d no binding. Lubricate rods if tightness remains after checking rod alignment. (2) Rods are flush with the idler bottom \u00e2\u20ac\u201d not protruding. (3) Idler and carriage bolt heads are on the same side. (4) Toothed side of belt faces inward. (5) X-axis butts tightly to both Y-axes with no visible gap. (6) Extruder carriage reaches and triggers the X-axis end stop.",
+      "message": "Run the full QC checklist before calling the X-axis complete: (1) Carriage moves smoothly along full X travel â€” no binding. Lubricate rods if tightness remains after checking rod alignment. (2) Rods are flush with the idler bottom â€” not protruding. (3) Idler and carriage bolt heads are on the same side. (4) Toothed side of belt faces inward. (5) X-axis butts tightly to both Y-axes with no visible gap. (6) Extruder carriage reaches and triggers the X-axis end stop.",
       "targetId": "target_x_axis_qc_left_travel",
       "priority": "high"
     },
@@ -9660,7 +9660,7 @@
       "id": "hint_tighten_z_front_idler_screws",
       "type": "tool_reminder",
       "title": "Tighten the two shorter M6x18 bolts; leave M6x30 loose",
-      "message": "Use a drill on low torque to tighten the two shorter M6x18 bolts on the Z-front idler. These lock the rods flush against the back of the idler. Leave the longer M6x30 bolt loose \u00e2\u20ac\u201d it attaches to the bottom of the front frame face in the next step.",
+      "message": "Use a drill on low torque to tighten the two shorter M6x18 bolts on the Z-front idler. These lock the rods flush against the back of the idler. Leave the longer M6x30 bolt loose â€” it attaches to the bottom of the front frame face in the next step.",
       "targetId": "target_z_front_idler_screw_1",
       "partId": "",
       "toolId": "tool_allen_key_metric",
@@ -9669,8 +9669,8 @@
     {
       "id": "hint_mount_z_front_axis",
       "type": "highlight",
-      "title": "Idler to frame bottom; motor to frame top \u00e2\u20ac\u201d tighten all 8 motor bolts first",
-      "message": "Pop out the belt peg that does NOT have a belt passing through it and set it aside. Tighten all 8 motor-piece bolts (3 M6x18 + 4 M3 screws + 1 M6x30) before mounting to frame \u00e2\u20ac\u201d they become inaccessible once the axis is on the frame. Fit the long idler bolt through the bottom hole of the front frame face and fasten with a nut. Lengthen the axis until the motor-holder long bolt reaches the top frame hole and fasten. While extending, keep checking that rods stay flush in the idler.",
+      "title": "Idler to frame bottom; motor to frame top â€” tighten all 8 motor bolts first",
+      "message": "Pop out the belt peg that does NOT have a belt passing through it and set it aside. Tighten all 8 motor-piece bolts (3 M6x18 + 4 M3 screws + 1 M6x30) before mounting to frame â€” they become inaccessible once the axis is on the frame. Fit the long idler bolt through the bottom hole of the front frame face and fasten with a nut. Lengthen the axis until the motor-holder long bolt reaches the top frame hole and fasten. While extending, keep checking that rods stay flush in the idler.",
       "targetId": "target_z_front_axis_idler_bolt",
       "partId": "",
       "toolId": "",
@@ -9680,7 +9680,7 @@
       "id": "hint_lock_z_front_motor_holder",
       "type": "tool_reminder",
       "title": "Lock motor-piece bolts to set the span",
-      "message": "Tighten both motor-piece bolts fully once the axis is at the correct frame length. These prevent the rods from shifting during belt tensioning. Use the allen key to reach the bolts \u00e2\u20ac\u201d they are on the face that was accessible before mounting.",
+      "message": "Tighten both motor-piece bolts fully once the axis is at the correct frame length. These prevent the rods from shifting during belt tensioning. Use the allen key to reach the bolts â€” they are on the face that was accessible before mounting.",
       "targetId": "target_z_front_motor_holder_bolt_1",
       "partId": "",
       "toolId": "tool_allen_key_metric",
@@ -9689,8 +9689,8 @@
     {
       "id": "hint_tension_z_front_belt",
       "type": "tool_reminder",
-      "title": "Pliers tension \u00e2\u20ac\u201d belt should twang like a guitar string",
-      "message": "Grip the loose belt end with pliers and pull, or grip and twist, until the belt is taut. Pluck the belt \u00e2\u20ac\u201d it should twang like a guitar string. Be firm but careful: excessive force can snap the belt. Hold tension while reinserting the belt peg in the next step.",
+      "title": "Pliers tension â€” belt should twang like a guitar string",
+      "message": "Grip the loose belt end with pliers and pull, or grip and twist, until the belt is taut. Pluck the belt â€” it should twang like a guitar string. Be firm but careful: excessive force can snap the belt. Hold tension while reinserting the belt peg in the next step.",
       "targetId": "target_z_front_belt_tension",
       "partId": "",
       "toolId": "tool_pliers",
@@ -9699,8 +9699,8 @@
     {
       "id": "hint_reinsert_z_front_belt_peg",
       "type": "highlight",
-      "title": "Insert belt ~\u00c2\u00be\" through peg; foot faces away from axis center",
-      "message": "Thread the belt end approximately \u00c2\u00be inch through the peg, with the peg foot turned away from the toothed side of the belt. The foot faces away from the center of the axis assembly. Push the peg firmly into the small, ribbed belt-catcher hole to lock belt tension.",
+      "title": "Insert belt ~Â¾\" through peg; foot faces away from axis center",
+      "message": "Thread the belt end approximately Â¾ inch through the peg, with the peg foot turned away from the toothed side of the belt. The foot faces away from the center of the axis assembly. Push the peg firmly into the small, ribbed belt-catcher hole to lock belt tension.",
       "targetId": "target_z_front_belt_peg_insert",
       "partId": "",
       "toolId": "",
@@ -9710,7 +9710,7 @@
       "id": "hint_check_z_front_axis_travel",
       "type": "highlight",
       "title": "Four-point Z-front QC: travel, rods flush, bolt sides, belt direction",
-      "message": "Run the full QC checklist: (1) Carriage moves smoothly along full Z travel \u00e2\u20ac\u201d no binding; lubricate rods if tight. (2) Rods are flush with the idler bottom \u00e2\u20ac\u201d not protruding. (3) Idler and carriage bolt heads are on the same side. (4) Toothed side of belt faces inward.",
+      "message": "Run the full QC checklist: (1) Carriage moves smoothly along full Z travel â€” no binding; lubricate rods if tight. (2) Rods are flush with the idler bottom â€” not protruding. (3) Idler and carriage bolt heads are on the same side. (4) Toothed side of belt faces inward.",
       "targetId": "target_z_front_carriage_travel_qc",
       "partId": "",
       "toolId": "",
@@ -9720,7 +9720,7 @@
       "id": "hint_tighten_z_back_idler_screws",
       "type": "tool_reminder",
       "title": "Tighten the two shorter M6x18 bolts on Z-back; leave M6x30 loose",
-      "message": "Use a drill on low torque to tighten the two shorter M6x18 bolts on the Z-back idler. These lock the rods flush against the back of the idler. Leave the longer M6x30 bolt loose \u00e2\u20ac\u201d it attaches to the bottom of the back frame face in the next step.",
+      "message": "Use a drill on low torque to tighten the two shorter M6x18 bolts on the Z-back idler. These lock the rods flush against the back of the idler. Leave the longer M6x30 bolt loose â€” it attaches to the bottom of the back frame face in the next step.",
       "targetId": "target_z_back_idler_screw_1",
       "partId": "",
       "toolId": "tool_allen_key_metric",
@@ -9729,7 +9729,7 @@
     {
       "id": "hint_mount_z_back_axis",
       "type": "highlight",
-      "title": "Z-back mirrors Z-front \u00e2\u20ac\u201d idler to back-face bottom, motor to top",
+      "title": "Z-back mirrors Z-front â€” idler to back-face bottom, motor to top",
       "message": "This step is identical to Z-front but mounts onto the back face of the frame. Tighten all 8 motor-piece bolts before mounting. Fit idler long bolt to bottom back-face hole, motor long bolt to top back-face hole. Keep checking rods stay flush while lengthening. The Z-back axis should align directly behind the Z-front axis.",
       "targetId": "target_z_back_axis_idler_bolt",
       "partId": "",
@@ -9740,7 +9740,7 @@
       "id": "hint_lock_z_back_motor_holder",
       "type": "tool_reminder",
       "title": "Lock Z-back motor-piece bolts",
-      "message": "Tighten both motor-piece bolts on the Z-back axis once it is at the correct frame length. The two Z columns must be aligned \u00e2\u20ac\u201d check that the Z-back axis sits directly behind the Z-front axis before locking.",
+      "message": "Tighten both motor-piece bolts on the Z-back axis once it is at the correct frame length. The two Z columns must be aligned â€” check that the Z-back axis sits directly behind the Z-front axis before locking.",
       "targetId": "target_z_back_motor_holder_bolt_1",
       "partId": "",
       "toolId": "tool_allen_key_metric",
@@ -9750,7 +9750,7 @@
       "id": "hint_tension_z_back_belt",
       "type": "tool_reminder",
       "title": "Tension Z-back belt to guitar-string tautness",
-      "message": "Grip the loose belt end with pliers and pull until taut. Pluck the belt \u00e2\u20ac\u201d guitar-string twang is the target. Hold tension and insert the belt peg in the next step without releasing.",
+      "message": "Grip the loose belt end with pliers and pull until taut. Pluck the belt â€” guitar-string twang is the target. Hold tension and insert the belt peg in the next step without releasing.",
       "targetId": "target_z_back_belt_tension",
       "partId": "",
       "toolId": "tool_pliers",
@@ -9759,8 +9759,8 @@
     {
       "id": "hint_reinsert_z_back_belt_peg",
       "type": "highlight",
-      "title": "Insert Z-back belt peg ~\u00c2\u00be\"; foot away from axis center",
-      "message": "Thread the belt end approximately \u00c2\u00be inch through the peg foot, with the foot turned away from the center of the axis assembly. Push the peg firmly into the small, ribbed belt-catcher hole.",
+      "title": "Insert Z-back belt peg ~Â¾\"; foot away from axis center",
+      "message": "Thread the belt end approximately Â¾ inch through the peg foot, with the foot turned away from the center of the axis assembly. Push the peg firmly into the small, ribbed belt-catcher hole.",
       "targetId": "target_z_back_belt_peg_insert",
       "partId": "",
       "toolId": "",
@@ -9770,7 +9770,7 @@
       "id": "hint_check_z_back_axis_travel",
       "type": "highlight",
       "title": "Z-back QC: travel, rods flush, bolt sides, belt direction",
-      "message": "QC checklist: (1) Carriage moves smoothly along full Z travel. (2) Rods flush with idler bottom. (3) Idler and carriage bolt heads on the same side. (4) Toothed side of belt faces inward. (5) Z-back carriage is at the same height as Z-front carriage \u00e2\u20ac\u201d they must stay level to keep the bed flat.",
+      "message": "QC checklist: (1) Carriage moves smoothly along full Z travel. (2) Rods flush with idler bottom. (3) Idler and carriage bolt heads on the same side. (4) Toothed side of belt faces inward. (5) Z-back carriage is at the same height as Z-front carriage â€” they must stay level to keep the bed flat.",
       "targetId": "target_z_back_carriage_travel_qc",
       "partId": "",
       "toolId": "",
@@ -9780,7 +9780,7 @@
       "id": "hint_mount_bed_guide_rods",
       "type": "highlight",
       "title": "Slide both bed rods through front and back Z carriages",
-      "message": "Each bed guide rod threads through the hole in the Z-front carriage and the matching hole in the Z-back carriage. Thread two nuts onto each rod before inserting \u00e2\u20ac\u201d the nuts sit on either side of the carriage to provide a flat support surface for the heated bed and to minimize heat transfer to the plastic. Push the rod ends flush with the outer edges of both carriages.",
+      "message": "Each bed guide rod threads through the hole in the Z-front carriage and the matching hole in the Z-back carriage. Thread two nuts onto each rod before inserting â€” the nuts sit on either side of the carriage to provide a flat support surface for the heated bed and to minimize heat transfer to the plastic. Push the rod ends flush with the outer edges of both carriages.",
       "targetId": "target_bed_rod_a_mount",
       "partId": "",
       "toolId": "",
@@ -9790,7 +9790,7 @@
       "id": "hint_place_bed_raisers",
       "type": "highlight",
       "title": "Thread 3 standoff raisers onto each rod; space them evenly",
-      "message": "Thread the 6 bed raiser standoffs onto the two guide rods \u00e2\u20ac\u201d 3 per rod. Space them evenly along the rod length so the heated bed will sit flat. The raisers provide the correct height gap between the Z carriage and the heated bed and allow wiring to pass freely beneath the bed surface.",
+      "message": "Thread the 6 bed raiser standoffs onto the two guide rods â€” 3 per rod. Space them evenly along the rod length so the heated bed will sit flat. The raisers provide the correct height gap between the Z carriage and the heated bed and allow wiring to pass freely beneath the bed surface.",
       "targetId": "target_bed_raisers_set",
       "partId": "",
       "toolId": "",
@@ -9800,7 +9800,7 @@
       "id": "hint_check_bed_platform_alignment",
       "type": "highlight",
       "title": "Confirm rods are flush, raisers level, and no side-to-side rock",
-      "message": "QC checklist: (1) Rod ends are flush with the outer edges of both idler pieces \u00e2\u20ac\u201d not protruding. (2) Two nuts are present on each rod. (3) Bolts are tightened enough to hold the rods but not so tight they deform the plastic. (4) The platform does not rock side to side when you apply light lateral pressure.",
+      "message": "QC checklist: (1) Rod ends are flush with the outer edges of both idler pieces â€” not protruding. (2) Two nuts are present on each rod. (3) Bolts are tightened enough to hold the rods but not so tight they deform the plastic. (4) The platform does not rock side to side when you apply light lateral pressure.",
       "targetId": "target_bed_platform_qc",
       "partId": "",
       "toolId": "",
@@ -9836,7 +9836,7 @@
     },
     {
       "id": "hint_connect_psu_gnd",
-      "message": "The ground line (black wire) connects to the GND screw terminal adjacent to V+. Polarity matters \u00e2\u20ac\u201d reversing +12V and GND will damage the RAMPS board immediately.",
+      "message": "The ground line (black wire) connects to the GND screw terminal adjacent to V+. Polarity matters â€” reversing +12V and GND will damage the RAMPS board immediately.",
       "targetId": null,
       "partId": null,
       "type": "text"
@@ -9850,14 +9850,14 @@
     },
     {
       "id": "hint_verify_psu_connections",
-      "message": "Check all three PSU connections: V+ (red), GND (black), and the PS_ON enable jumper. Wiggle each wire gently \u00e2\u20ac\u201d a properly seated terminal will not move.",
+      "message": "Check all three PSU connections: V+ (red), GND (black), and the PS_ON enable jumper. Wiggle each wire gently â€” a properly seated terminal will not move.",
       "targetId": null,
       "partId": null,
       "type": "text"
     },
     {
       "id": "hint_connect_motor",
-      "message": "Stepper motor connectors are 4-pin dupont. Orientation matters for motor direction but not for damage \u00e2\u20ac\u201d if the axis runs backwards in firmware, reverse the connector.",
+      "message": "Stepper motor connectors are 4-pin dupont. Orientation matters for motor direction but not for damage â€” if the axis runs backwards in firmware, reverse the connector.",
       "targetId": null,
       "partId": null,
       "type": "text"
@@ -9878,7 +9878,7 @@
     },
     {
       "id": "hint_connect_thermistor",
-      "message": "The thermistor connects to the T0 pin header (2-pin, signal + GND). Polarity matters \u00e2\u20ac\u201d reversing the thermistor will read ambient temperature as 300\u00c2\u00b0C and trigger thermal runaway protection.",
+      "message": "The thermistor connects to the T0 pin header (2-pin, signal + GND). Polarity matters â€” reversing the thermistor will read ambient temperature as 300Â°C and trigger thermal runaway protection.",
       "targetId": null,
       "partId": null,
       "type": "text"
@@ -12088,7 +12088,7 @@
       "id": "target_z_front_motor_holder_bolt_1",
       "name": "Z-Front Motor Holder Bolt 1",
       "anchorRef": "anchors/d3d/z_axis_front/motor_holder_bolt_1",
-      "description": "Motor piece bolt on Z-front axis \u00e2\u20ac\u201d lock after span is set",
+      "description": "Motor piece bolt on Z-front axis â€” lock after span is set",
       "associatedPartId": "motor_piece",
       "tags": [
         "screw",
@@ -12099,7 +12099,7 @@
       "id": "target_z_front_motor_holder_bolt_2",
       "name": "Z-Front Motor Holder Bolt 2",
       "anchorRef": "anchors/d3d/z_axis_front/motor_holder_bolt_2",
-      "description": "Motor piece bolt on Z-front axis \u00e2\u20ac\u201d lock after span is set",
+      "description": "Motor piece bolt on Z-front axis â€” lock after span is set",
       "associatedPartId": "motor_piece",
       "tags": [
         "screw",
@@ -12132,7 +12132,7 @@
       "id": "target_z_front_carriage_travel_qc",
       "name": "Z-Front Carriage Travel QC",
       "anchorRef": "anchors/d3d/z_axis_front/carriage_travel_qc",
-      "description": "Carriage travel check point \u00e2\u20ac\u201d Z-front axis",
+      "description": "Carriage travel check point â€” Z-front axis",
       "associatedPartId": "",
       "tags": [
         "qc",
@@ -12231,7 +12231,7 @@
       "id": "target_z_back_carriage_travel_qc",
       "name": "Z-Back Carriage Travel QC",
       "anchorRef": "anchors/d3d/z_axis_back/carriage_travel_qc",
-      "description": "Carriage travel check point \u00e2\u20ac\u201d Z-back axis",
+      "description": "Carriage travel check point â€” Z-back axis",
       "associatedPartId": "",
       "tags": [
         "qc",
@@ -12275,7 +12275,7 @@
       "id": "target_bed_platform_qc",
       "name": "Bed Platform QC",
       "anchorRef": "anchors/d3d/bed/platform_qc",
-      "description": "Check point \u00e2\u20ac\u201d bed platform level and rods flush",
+      "description": "Check point â€” bed platform level and rods flush",
       "associatedPartId": "",
       "tags": [
         "qc",
@@ -12330,7 +12330,7 @@
       "id": "target_cable_chain_route",
       "name": "Cable Chain Route",
       "anchorRef": "anchors/d3d/electronics/cable_chain_route",
-      "description": "Confirmation point \u00e2\u20ac\u201d axis cables routed through cable chain and cover snapped closed.",
+      "description": "Confirmation point â€” axis cables routed through cable chain and cover snapped closed.",
       "associatedPartId": "",
       "tags": [
         "electronics",
@@ -12361,7 +12361,7 @@
       "id": "target_wire_psu_enable",
       "name": "ATX Enable Wire Connection",
       "anchorRef": "anchors/d3d/electronics/wire_psu_enable",
-      "description": "ATX PS_ON to GND jumper \u00e2\u20ac\u201d forces PSU on.",
+      "description": "ATX PS_ON to GND jumper â€” forces PSU on.",
       "tags": [
         "electronics",
         "wiring"
@@ -24915,6 +24915,496 @@
           "x": 0.0,
           "y": 0.0,
           "z": 0.0
+        }
+      },
+      {
+        "targetId": "target_wire_psu_12v",
+        "position": {
+          "x": -0.1,
+          "y": 0.095,
+          "z": -0.07
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 1.0,
+          "g": 0.18,
+          "b": 0.18,
+          "a": 1.0
+        },
+        "portA": {
+          "x": -0.16,
+          "y": 0.09,
+          "z": 0.0
+        },
+        "portB": {
+          "x": -0.04,
+          "y": 0.1,
+          "z": -0.14
+        }
+      },
+      {
+        "targetId": "target_wire_psu_gnd",
+        "position": {
+          "x": -0.1,
+          "y": 0.085,
+          "z": -0.07
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.08,
+          "g": 0.08,
+          "b": 0.08,
+          "a": 1.0
+        },
+        "portA": {
+          "x": -0.16,
+          "y": 0.08,
+          "z": 0.0
+        },
+        "portB": {
+          "x": -0.04,
+          "y": 0.09,
+          "z": -0.14
+        }
+      },
+      {
+        "targetId": "target_wire_psu_enable",
+        "position": {
+          "x": -0.16,
+          "y": 0.07,
+          "z": 0.0
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.1,
+          "g": 0.8,
+          "b": 0.1,
+          "a": 1.0
+        },
+        "portA": {
+          "x": -0.16,
+          "y": 0.07,
+          "z": 0.02
+        },
+        "portB": {
+          "x": -0.16,
+          "y": 0.07,
+          "z": -0.02
+        }
+      },
+      {
+        "targetId": "target_wire_motor_x",
+        "position": {
+          "x": -0.02,
+          "y": 0.155,
+          "z": -0.165
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 1.0,
+          "g": 0.85,
+          "b": 0.0,
+          "a": 1.0
+        },
+        "portA": {
+          "x": 0.0,
+          "y": 0.15,
+          "z": -0.19
+        },
+        "portB": {
+          "x": -0.04,
+          "y": 0.16,
+          "z": -0.14
+        }
+      },
+      {
+        "targetId": "target_wire_motor_y_left",
+        "position": {
+          "x": -0.1,
+          "y": 0.135,
+          "z": -0.07
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 1.0,
+          "g": 0.85,
+          "b": 0.0,
+          "a": 1.0
+        },
+        "portA": {
+          "x": -0.16,
+          "y": 0.12,
+          "z": 0.0
+        },
+        "portB": {
+          "x": -0.04,
+          "y": 0.15,
+          "z": -0.14
+        }
+      },
+      {
+        "targetId": "target_wire_motor_y_right",
+        "position": {
+          "x": 0.055,
+          "y": 0.13,
+          "z": -0.07
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 1.0,
+          "g": 0.85,
+          "b": 0.0,
+          "a": 1.0
+        },
+        "portA": {
+          "x": 0.15,
+          "y": 0.12,
+          "z": 0.0
+        },
+        "portB": {
+          "x": -0.04,
+          "y": 0.14,
+          "z": -0.14
+        }
+      },
+      {
+        "targetId": "target_wire_motor_z_front",
+        "position": {
+          "x": -0.02,
+          "y": 0.185,
+          "z": -0.165
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 1.0,
+          "g": 0.85,
+          "b": 0.0,
+          "a": 1.0
+        },
+        "portA": {
+          "x": 0.0,
+          "y": 0.24,
+          "z": -0.19
+        },
+        "portB": {
+          "x": -0.04,
+          "y": 0.13,
+          "z": -0.14
+        }
+      },
+      {
+        "targetId": "target_wire_motor_z_back",
+        "position": {
+          "x": -0.02,
+          "y": 0.18,
+          "z": 0.025
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 1.0,
+          "g": 0.85,
+          "b": 0.0,
+          "a": 1.0
+        },
+        "portA": {
+          "x": 0.0,
+          "y": 0.24,
+          "z": 0.19
+        },
+        "portB": {
+          "x": -0.04,
+          "y": 0.12,
+          "z": -0.14
+        }
+      },
+      {
+        "targetId": "target_wire_endstop_x",
+        "position": {
+          "x": -0.095,
+          "y": 0.1,
+          "z": -0.1475
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.1,
+          "g": 0.8,
+          "b": 0.1,
+          "a": 1.0
+        },
+        "portA": {
+          "x": -0.15,
+          "y": 0.01,
+          "z": -0.155
+        },
+        "portB": {
+          "x": -0.04,
+          "y": 0.19,
+          "z": -0.14
+        }
+      },
+      {
+        "targetId": "target_wire_endstop_y",
+        "position": {
+          "x": -0.0975,
+          "y": 0.095,
+          "z": -0.07
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.1,
+          "g": 0.8,
+          "b": 0.1,
+          "a": 1.0
+        },
+        "portA": {
+          "x": -0.155,
+          "y": 0.01,
+          "z": 0.0
+        },
+        "portB": {
+          "x": -0.04,
+          "y": 0.18,
+          "z": -0.14
+        }
+      },
+      {
+        "targetId": "target_wire_endstop_z",
+        "position": {
+          "x": -0.02,
+          "y": 0.085,
+          "z": -0.1475
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.1,
+          "g": 0.8,
+          "b": 0.1,
+          "a": 1.0
+        },
+        "portA": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": -0.155
+        },
+        "portB": {
+          "x": -0.04,
+          "y": 0.17,
+          "z": -0.14
+        }
+      },
+      {
+        "targetId": "target_wire_heater_cartridge",
+        "position": {
+          "x": -0.02,
+          "y": 0.165,
+          "z": -0.16
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 1.0,
+          "g": 0.18,
+          "b": 0.18,
+          "a": 1.0
+        },
+        "portA": {
+          "x": 0.0,
+          "y": 0.22,
+          "z": -0.18
+        },
+        "portB": {
+          "x": -0.04,
+          "y": 0.11,
+          "z": -0.14
+        }
+      },
+      {
+        "targetId": "target_wire_thermistor",
+        "position": {
+          "x": -0.02,
+          "y": 0.155,
+          "z": -0.16
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.6,
+          "b": 1.0,
+          "a": 1.0
+        },
+        "portA": {
+          "x": 0.0,
+          "y": 0.21,
+          "z": -0.18
+        },
+        "portB": {
+          "x": -0.04,
+          "y": 0.1,
+          "z": -0.14
+        }
+      },
+      {
+        "targetId": "target_wire_extruder_fan",
+        "position": {
+          "x": -0.01,
+          "y": 0.145,
+          "z": -0.16
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.6,
+          "b": 1.0,
+          "a": 1.0
+        },
+        "portA": {
+          "x": 0.02,
+          "y": 0.2,
+          "z": -0.18
+        },
+        "portB": {
+          "x": -0.04,
+          "y": 0.09,
+          "z": -0.14
         }
       }
     ],
