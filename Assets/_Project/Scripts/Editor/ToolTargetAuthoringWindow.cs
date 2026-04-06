@@ -328,6 +328,10 @@ namespace OSE.Editor
         /// </summary>
         private void OnSpawnerPartsReady(SpawnerPartsReady _)
         {
+            // Re-apply authoritative _pkg positions after the spawn cycle.
+            // The spawn itself calls ApplyStepAwarePositions(_editModePackage) which may
+            // override positions using stale StreamingAssets data — overwrite with _pkg.
+            ApplySpawnerStepPositions();
             SyncAllPartMeshesToActivePose();
             AddMeshCollidersToLiveParts();
         }
@@ -764,11 +768,18 @@ namespace OSE.Editor
             UpdateActiveStep();
             BuildTargetList();
             BuildPartList();
-            RespawnScene();
-            SyncAllPartMeshesToActivePose(); // must come AFTER RespawnScene
+            _editPlayPose = false;           // always land on Start Pose when switching steps
+            RespawnScene();                  // uses _editPlayPose — must come AFTER the reset
+            SyncAllPartMeshesToActivePose(); // second pass: ensures live GOs match after RespawnScene
+            ApplySpawnerStepPositions();     // first pass: push step-aware positions before driver sync
             AutoSelectFirstTaskEntry();      // default-select first badge so a section is visible
             if (!_suppressStepSync)
                 SyncSessionDriverStep();
+            // Final pass: re-apply after SyncSessionDriverStep, because SetEditModeStep →
+            // ApplyStepAwarePartPositions uses _editModePackage (StreamingAssets) which may
+            // override the authoritative _pkg positions set above.
+            ApplySpawnerStepPositions();
+            SyncAllPartMeshesToActivePose();
             var currentStep = _stepFilterIdx > 0 && _stepIds != null && _stepFilterIdx < _stepIds.Length
                 ? FindStep(_stepIds[_stepFilterIdx]) : null;
             RefreshWirePreview(currentStep);
@@ -795,6 +806,24 @@ namespace OSE.Editor
         // Prevents hammering ApplyStepAwarePositions (and any async loaders) on every
         // pixel of mouse movement. Value chosen to allow ~10 updates/sec during drag.
         private const double DriverSyncMinIntervalSec = 0.1;
+
+        /// <summary>
+        /// Directly tells the spawner to reposition parts for the current step filter,
+        /// bypassing the SessionDriver round-trip. Called unconditionally in ApplyStepFilter
+        /// so parts always land at startPosition even when _suppressStepSync is true
+        /// (e.g. when OnSessionDriverStepChanged triggers the step change).
+        /// </summary>
+        private void ApplySpawnerStepPositions()
+        {
+            if (_pkg == null || _stepFilterIdx <= 0 || _stepSequenceIdxs == null
+                || _stepFilterIdx >= _stepSequenceIdxs.Length) return;
+
+            if (ServiceRegistry.TryGet<IStepAwarePositioner>(out var positioner))
+            {
+                int sequenceIndex = _stepSequenceIdxs[_stepFilterIdx];
+                positioner.ApplyStepAwarePositions(sequenceIndex, _pkg);
+            }
+        }
 
         private void SyncSessionDriverStep()
         {
@@ -1959,7 +1988,8 @@ namespace OSE.Editor
                             if (_parts[i].def?.id == entry.id) { pick = i; break; }
                         _selectedPartIdx = pick;
                         _selectedPartId  = _parts[pick].def?.id;
-                        SyncPartMeshToActivePose(ref _parts[pick]);
+                        _editPlayPose = false; // always land on Start Pose when selecting a part
+                        SyncAllPartMeshesToActivePose();
                         var liveGO = FindLivePartGO(_selectedPartId);
                         if (liveGO != null) UnityEditor.Selection.activeGameObject = liveGO;
                     }
@@ -2466,7 +2496,10 @@ namespace OSE.Editor
                     }
 
                     if (_selectedPartIdx >= 0 && _selectedPartIdx < _parts.Length)
-                        SyncPartMeshToActivePose(ref _parts[_selectedPartIdx]);
+                    {
+                        _editPlayPose = false; // always land on Start Pose when selecting a part
+                        SyncAllPartMeshesToActivePose();
+                    }
                     SceneView.RepaintAll();
                     Event.current.Use();
                     Repaint();
@@ -3093,11 +3126,19 @@ namespace OSE.Editor
             for (int i = 0; i < _parts.Length; i++)
             {
                 if (!_parts[i].hasPlacement) continue;
-                string pid = _parts[i].def.id;
 
-                // Compute step-aware pose first; skip future parts entirely.
+                // Compute step-aware pose; hide future parts that don't belong to this step.
                 if (!TryGetStepAwarePose(ref _parts[i], out Vector3 pos, out Quaternion rot, out Vector3 scl))
+                {
+                    var futureGO = FindLivePartGO(_parts[i].def.id);
+                    if (futureGO != null && futureGO.activeSelf)
+                        futureGO.SetActive(false);
                     continue;
+                }
+
+                var liveGO = FindLivePartGO(_parts[i].def.id);
+                if (liveGO != null && !liveGO.activeSelf)
+                    liveGO.SetActive(true);
 
                 SyncPartMeshToActivePose(ref _parts[i]);
             }
