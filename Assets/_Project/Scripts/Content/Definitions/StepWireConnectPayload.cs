@@ -64,13 +64,56 @@ namespace OSE.Content
         /// </summary>
         public string targetId;
 
+        // ── Geometry ───────────────────────────────────────────────────────────
+
         /// <summary>
-        /// The part this wire represents (e.g. <c>"wire_psu_12v"</c>). When set, the
-        /// runtime treats this part identically to a <c>requiredPartId</c> — reveal,
-        /// hide, state tracking, camera framing, and UI display all include it.
-        /// Eliminates the need for a separate PART task row on Connect-family steps.
+        /// World-space (previewRoot-local) position of the wire's A endpoint.
+        /// When set, takes precedence over the target placement's portA.
         /// </summary>
-        public string partId;
+        public SceneFloat3 portA;
+
+        /// <summary>
+        /// World-space (previewRoot-local) position of the wire's B endpoint.
+        /// When set, takes precedence over the target placement's portB.
+        /// </summary>
+        public SceneFloat3 portB;
+
+        /// <summary>
+        /// Number of intermediate sag knots between portA and portB.
+        /// 1 = one midpoint knot (3-knot catenary, default behavior).
+        /// Higher values produce a smoother, more physically realistic drape.
+        /// </summary>
+        public int subdivisions = 1;
+
+        /// <summary>
+        /// Sag multiplier controlling how much the wire droops.
+        /// <para>0 (or unset) = use natural default (equivalent to 1.0).</para>
+        /// <para>0.01–0.3 = rigid / taut conduit.</para>
+        /// <para>1.0 = natural gravity droop.</para>
+        /// <para>2.0+ = heavily sagging cable.</para>
+        /// </summary>
+        public float sag;
+
+        /// <summary>
+        /// Spline interpolation mode between sag knots.
+        /// <para>"bezier" (default) — smooth AutoSmooth curve, wire looks like a natural cable.</para>
+        /// <para>"linear" — straight segments between knots, wire looks like a rigid conduit or kinked cable.</para>
+        /// </summary>
+        public string interpolation;
+
+        // ── Appearance ─────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// RGBA wire color. When alpha &gt; 0, used for the rendered spline tube,
+        /// port sphere tinting, and cursor preview. Defaults to near-black when unset.
+        /// </summary>
+        public SceneFloat4 color;
+
+        /// <summary>
+        /// Tube radius in meters (half the wire diameter).
+        /// Falls back to 0.003 m when zero or unset.
+        /// </summary>
+        public float radius;
 
         // ── Port polarity ──────────────────────────────────────────────────────
 

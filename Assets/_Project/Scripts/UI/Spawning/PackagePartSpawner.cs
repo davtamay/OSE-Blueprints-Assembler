@@ -531,7 +531,6 @@ namespace OSE.UI.Root
                         ApplyStepAwarePositions(stepSeq, pkg);
                 }
             }
-            PositionTargetMarker();
             RuntimeEventBus.Publish(new SpawnerPartsReady());
 #else
             _ = SpawnPackagePartsAsync(_spawnCts.Token);
@@ -544,7 +543,6 @@ namespace OSE.UI.Root
             await SpawnGlbPartsAsync(ct);         // then fills in GLB models asynchronously
             if (ct.IsCancellationRequested) return;
             PositionParts();
-            PositionTargetMarker();
             RuntimeEventBus.Publish(new SpawnerPartsReady());
         }
 
@@ -727,7 +725,6 @@ namespace OSE.UI.Root
                 return;
 
             PositionParts();
-            PositionTargetMarker();
         }
 
         private void PositionParts()
@@ -754,26 +751,6 @@ namespace OSE.UI.Root
                 ShouldPreservePartTransform);
         }
 
-
-        private void PositionTargetMarker()
-        {
-            if (_setup.TargetMarker == null || !_setup.ActiveProfile.ShowGeometryPreview)
-                return;
-
-            TargetPreviewPlacement tp = _currentPreviewConfig?.targetPlacements?.Length > 0
-                ? _currentPreviewConfig.targetPlacements[0] : null;
-
-            Vector3    tPos   = tp != null ? new Vector3(tp.position.x, tp.position.y, tp.position.z) : new Vector3(0f, 0.04f, 0f);
-            Vector3    tScale = tp != null ? new Vector3(tp.scale.x, tp.scale.y, tp.scale.z) : new Vector3(0.9f, 0.04f, 0.9f);
-            Color      tColor = tp != null ? new Color(tp.color.r, tp.color.g, tp.color.b, tp.color.a) : new Color(0.20f, 0.84f, 0.58f, 1f);
-            Quaternion tRot   = tp != null && !tp.rotation.IsIdentity
-                ? new Quaternion(tp.rotation.x, tp.rotation.y, tp.rotation.z, tp.rotation.w)
-                : Quaternion.identity;
-
-            _setup.TargetMarker.transform.SetLocalPositionAndRotation(tPos, tRot);
-            _setup.TargetMarker.transform.localScale = tScale;
-            MaterialHelper.Apply(_setup.TargetMarker, "Preview Target Material", tColor);
-        }
 
         // ── Cleanup ──
 

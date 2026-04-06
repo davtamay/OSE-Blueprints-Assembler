@@ -327,7 +327,7 @@ namespace OSE.UI.Root
 
         private bool ResolveReferences()
         {
-            if (_previewRoot != null && _floor != null && _camera != null)
+            if (_previewRoot != null && _camera != null)
                 return true;
 
             var sceneSetup = GetComponent<PreviewSceneSetup>();
@@ -338,7 +338,6 @@ namespace OSE.UI.Root
             }
 
             _previewRoot = sceneSetup.PreviewRoot;
-            _floor = sceneSetup.Floor;
             _camera = CameraUtil.GetMain();
 
             if (_previewRoot == null)

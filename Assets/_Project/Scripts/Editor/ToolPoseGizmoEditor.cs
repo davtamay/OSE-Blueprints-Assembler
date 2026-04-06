@@ -72,7 +72,6 @@ namespace OSE.Editor
         // Scale
         private float _scale = 1f;
         private float _scaleOverride;
-        private bool _runtimeScale;
 
         // Editable pose — tool-on-hand model
         // Primary: user moves/rotates the tool; grip values are derived.
@@ -341,7 +340,7 @@ namespace OSE.Editor
 
             HandleEmbeddedInput(r);
             UpdateEmbeddedCamera();
-            UpdateModelScale();
+            ApplyToolTransform();
             UpdateHandXform();
 
             _pu.BeginPreview(r, GUIStyle.none);
@@ -530,28 +529,38 @@ namespace OSE.Editor
                 }
                 else EndEdit();
 
-                // Dashed line from hand to cursor point
+                // Dashed line from hand to cursor offset point
                 Handles.color = ColCursor * 0.7f;
                 Handles.DrawDottedLine(handW, cursorW, 3f);
                 if (_showLabels)
                 {
                     var s = new GUIStyle(EditorStyles.boldLabel) { normal = { textColor = ColCursor } };
-                    Handles.Label(cursorW + Vector3.up * baseSize * 3f, "CURSOR POINT", s);
+                    Handles.Label(cursorW + Vector3.up * baseSize * 3f, "Cursor Offset", s);
                 }
 
-                // ── Runtime cursor position (where the mouse actually lands) ──
+                // ── Cursor Preview: where the cursor actually appears at runtime ──
                 // Uses the full tiered preview rotation (same as ToolCursorManager at runtime).
+                // The orientation axes show the effect of Cursor Rotation.
                 Quaternion previewRot = _tool != null
                     ? ToolPoseResolver.ResolvePreviewRotation(_tool, _model)
                     : Quaternion.Euler(_cursorRot);
                 Vector3 runtimeCursorW = root.position + previewRot * (_cursorLocal * _scale);
-                Handles.color = new Color(1f, 0.5f, 0f, 0.9f); // orange
+                Color colPreview = new Color(1f, 0.5f, 0f, 0.9f);
+                Handles.color = colPreview;
                 Handles.SphereHandleCap(0, runtimeCursorW, Quaternion.identity, baseSize * 2f, EventType.Repaint);
                 Handles.DrawDottedLine(cursorW, runtimeCursorW, 2f);
+                // Orientation axes at Cursor Preview — visualizes Cursor Rotation
+                float axLen = baseSize * 4f;
+                Handles.color = new Color(1f, 0.3f, 0.3f, 0.8f);
+                Handles.DrawLine(runtimeCursorW, runtimeCursorW + previewRot * Vector3.right   * axLen);
+                Handles.color = new Color(0.3f, 1f, 0.3f, 0.8f);
+                Handles.DrawLine(runtimeCursorW, runtimeCursorW + previewRot * Vector3.up      * axLen);
+                Handles.color = new Color(0.3f, 0.3f, 1f, 0.8f);
+                Handles.DrawLine(runtimeCursorW, runtimeCursorW + previewRot * Vector3.forward * axLen);
                 if (_showLabels)
                 {
-                    var s = new GUIStyle(EditorStyles.boldLabel) { normal = { textColor = new Color(1f, 0.5f, 0f) } };
-                    Handles.Label(runtimeCursorW + Vector3.up * baseSize * 3f, "RUNTIME CURSOR", s);
+                    var s = new GUIStyle(EditorStyles.boldLabel) { normal = { textColor = colPreview } };
+                    Handles.Label(runtimeCursorW + Vector3.up * baseSize * 3f, "Cursor Preview", s);
                 }
             }
         }
@@ -603,24 +612,32 @@ namespace OSE.Editor
                 if (_showLabels) EmbLabel(end, "tip dir", ColTipA);
             }
 
-            // Cursor point marker (yellow sphere + dashed line from hand)
+            // Cursor offset marker (yellow sphere + dashed line from hand)
             Vector3 cw = root.TransformPoint(_cursorLocal);
             Handles.color = ColCursor;
             Handles.SphereHandleCap(0, cw, Quaternion.identity, sz, EventType.Repaint);
             Handles.color = ColCursor * 0.7f;
             Handles.DrawDottedLine(gw, cw, 2f);
-            if (_showLabels) EmbLabel(cw, "CURSOR POINT", ColCursor);
+            if (_showLabels) EmbLabel(cw, "Cursor Offset", ColCursor);
 
-            // Runtime cursor position (orange) — where mouse actually lands
+            // Cursor Preview (orange) — where cursor actually appears at runtime
+            // Orientation axes visualize the Cursor Rotation field.
             Quaternion previewRot = IsTool && _tool != null
                 ? ToolPoseResolver.ResolvePreviewRotation(_tool, _model)
                 : Quaternion.Euler(_cursorRot);
             Vector3 rcw = root.position + previewRot * (_cursorLocal * _scale);
-            Color colRuntime = new(1f, 0.5f, 0f, 0.9f);
-            Handles.color = colRuntime;
+            Color colPreview = new(1f, 0.5f, 0f, 0.9f);
+            Handles.color = colPreview;
             Handles.SphereHandleCap(0, rcw, Quaternion.identity, sz, EventType.Repaint);
             Handles.DrawDottedLine(cw, rcw, 2f);
-            if (_showLabels) EmbLabel(rcw, "RUNTIME CURSOR", colRuntime);
+            axLen = sz * 3f;
+            Handles.color = new Color(1f, 0.3f, 0.3f, 0.8f);
+            Handles.DrawLine(rcw, rcw + previewRot * Vector3.right   * axLen);
+            Handles.color = new Color(0.3f, 1f, 0.3f, 0.8f);
+            Handles.DrawLine(rcw, rcw + previewRot * Vector3.up      * axLen);
+            Handles.color = new Color(0.3f, 0.3f, 1f, 0.8f);
+            Handles.DrawLine(rcw, rcw + previewRot * Vector3.forward * axLen);
+            if (_showLabels) EmbLabel(rcw, "Cursor Preview", colPreview);
         }
 
 
@@ -634,48 +651,22 @@ namespace OSE.Editor
 
         private void DrawScaleUI()
         {
-            EditorGUILayout.LabelField("Preview Scale", EditorStyles.boldLabel);
-            EditorGUILayout.BeginHorizontal();
-            bool prevRts = _runtimeScale;
-            _runtimeScale = EditorGUILayout.Toggle("Runtime Cursor Scale", _runtimeScale);
-            if (_runtimeScale)
-            {
-                float eff = _scaleOverride > 0f ? RuntimeCursorScale * _scaleOverride : RuntimeCursorScale;
-                EditorGUILayout.LabelField($"({eff:F3})", GUILayout.Width(70));
-            }
-            EditorGUILayout.EndHorizontal();
-            if (_runtimeScale != prevRts) { UpdateEffectiveScale(); RecomputeToolPosForScale(); ApplyToolTransform(); ResetCam(); Repaint(); }
+            if (!IsTool) return;
 
-            if (!_runtimeScale)
+            EditorGUI.BeginChangeCheck();
+            _scaleOverride = EditorGUILayout.Slider(
+                new GUIContent("Tool Scale",
+                    "Controls how large the tool appears when held/previewed.\n" +
+                    "This is saved and used at runtime. Drag to see it live."),
+                _scaleOverride, 0.01f, 20f);
+            if (EditorGUI.EndChangeCheck())
             {
-                EditorGUI.BeginChangeCheck();
-                _scale = EditorGUILayout.Slider("Scale", _scale, 0.01f, 5f);
-                if (EditorGUI.EndChangeCheck()) { RecomputeToolPosForScale(); ApplyToolTransform(); Repaint(); }
-            }
-
-            if (IsTool)
-            {
-                EditorGUI.BeginChangeCheck();
-                float prev = _scaleOverride;
-                _scaleOverride = EditorGUILayout.Slider(
-                    new GUIContent("Scale Override", "Runtime multiplier on CursorUniformScale (0.16). 0 = use default."),
-                    _scaleOverride, 0f, 20f);
-                if (EditorGUI.EndChangeCheck() && !Mathf.Approximately(prev, _scaleOverride))
-                {
-                    _dirty = true;
-                    if (_runtimeScale) { UpdateEffectiveScale(); RecomputeToolPosForScale(); ApplyToolTransform(); Repaint(); }
-                }
-                float rtScale = _scaleOverride > 0f ? RuntimeCursorScale * _scaleOverride : RuntimeCursorScale;
-                EditorGUILayout.LabelField($"  → runtime scale: {rtScale:F4}");
-            }
-        }
-
-        private void UpdateEffectiveScale()
-        {
-            if (_runtimeScale)
-            {
-                float so = IsTool ? _scaleOverride : 0f;
-                _scale = so > 0f ? RuntimeCursorScale * so : RuntimeCursorScale;
+                _scale = RuntimeCursorScale * _scaleOverride;
+                RecomputeToolPosForScale();
+                ApplyToolTransform();
+                _dirty = true;
+                Repaint();
+                SceneView.RepaintAll();
             }
         }
 
@@ -698,18 +689,11 @@ namespace OSE.Editor
         {
             if (!_loaded) return;
             Vector3 s = _bounds.size;
-            Vector3 sc = s * _scale;
-            string info = $"Model bounds: {s.x:F3} x {s.y:F3} x {s.z:F3} m\n" +
-                          $"At scale {_scale:F3}: {sc.x:F3} x {sc.y:F3} x {sc.z:F3} m";
+            string info = $"Model bounds: {s.x:F3} × {s.y:F3} × {s.z:F3} m";
             float maxDim = Mathf.Max(s.x, s.y, s.z);
-            if (maxDim > 2f)
-                info += $"\n(!) Model is {maxDim:F1}m — likely not in meter scale.";
-            EditorGUILayout.HelpBox(info, MessageType.None);
-        }
-
-        private void UpdateModelScale()
-        {
-            ApplyToolTransform();
+            MessageType mt = MessageType.None;
+            if (maxDim > 2f) { info += $"  (!) {maxDim:F1}m — check import scale"; mt = MessageType.Warning; }
+            EditorGUILayout.HelpBox(info, mt);
         }
 
         /// <summary>
@@ -770,9 +754,9 @@ namespace OSE.Editor
             {
                 _tip = EditorGUILayout.Vector3Field("Tip Point", _tip);
                 EditorGUILayout.Space(2);
-                EditorGUILayout.LabelField("Desktop / Mobile Cursor", EditorStyles.miniLabel);
-                _cursorLocal = EditorGUILayout.Vector3Field("Cursor Point", _cursorLocal);
-                _cursorRot = EditorGUILayout.Vector3Field("Cursor Rotation", _cursorRot);
+                EditorGUILayout.LabelField("Cursor (Desktop / Mobile)", EditorStyles.miniLabel);
+                _cursorLocal = EditorGUILayout.Vector3Field(new GUIContent("Cursor Offset", "Model-local point on the tool where the screen cursor anchors. Shown as the yellow sphere."), _cursorLocal);
+                _cursorRot = EditorGUILayout.Vector3Field(new GUIContent("Cursor Rotation", "Euler override for the cursor orientation at runtime. The effect is shown by the RGB axes on the orange Cursor Preview sphere."), _cursorRot);
             }
 
             if (EditorGUI.EndChangeCheck())
@@ -820,8 +804,6 @@ namespace OSE.Editor
                 if (_showHand) SpawnHand(); else KillHand();
                 Repaint();
             }
-            if (_showHand && _scale < 0.5f)
-                EditorGUILayout.HelpBox("Hand may appear oversized at small preview scale.", MessageType.Info);
         }
 
         private void SpawnHand()
@@ -1051,7 +1033,6 @@ namespace OSE.Editor
             }
             // SceneView mode: model is just a scene object with HideAndDontSave
 
-            UpdateEffectiveScale();
             ApplyToolTransform();
             ResetCam();
             if (_showHand) SpawnHand();
@@ -1112,11 +1093,8 @@ namespace OSE.Editor
             Quaternion toolRot = Quaternion.Inverse(Quaternion.Euler(gripRotEuler));
             _toolRotEuler = toolRot.eulerAngles;
 
-            _scaleOverride = t.scaleOverride;
-
-            // Finalize scale before computing _toolPos (LoadModel also calls
-            // UpdateEffectiveScale, but _toolPos depends on the final value).
-            UpdateEffectiveScale();
+            _scaleOverride = t.scaleOverride > 0f ? t.scaleOverride : 1f; // 0 in JSON = "use default 0.16"
+            _scale = RuntimeCursorScale * _scaleOverride;
             _toolPos = -(toolRot * (gripPt * _scale));
 
             LoadModel(t.assetRef, t.id);
@@ -1144,7 +1122,7 @@ namespace OSE.Editor
             Quaternion toolRot = Quaternion.Inverse(Quaternion.Euler(gripRotEuler));
             _toolRotEuler = toolRot.eulerAngles;
 
-            UpdateEffectiveScale();
+            _scale = 1f; // parts always at import scale
             _toolPos = -(toolRot * (gripPt * _scale));
 
             LoadModel(p.assetRef, p.id);

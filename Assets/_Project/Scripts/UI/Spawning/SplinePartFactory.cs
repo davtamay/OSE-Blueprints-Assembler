@@ -1,18 +1,23 @@
 using OSE.Content;
+using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Splines;
 
 namespace OSE.UI.Root
 {
     /// <summary>
-    /// Creates tube-mesh GameObjects driven by <see cref="SplinePathDefinition"/> data.
-    /// Used by <see cref="PackagePartSpawner"/> for hose and cable parts that define
-    /// spline paths instead of referencing GLB assets.
+    /// Creates smooth tube-mesh GameObjects driven by <see cref="SplinePathDefinition"/> data.
     ///
-    /// Implementation: one cylinder primitive per knot-to-knot segment.
-    /// No SplineExtrude / com.unity.splines dependency — eliminates the
-    /// OnValidate crash that fired before SegmentsPerUnit could be set.
+    /// Uses <see cref="SplineMesh.Extrude"/> directly (no SplineExtrude MonoBehaviour) to
+    /// generate the tube geometry. This avoids the Reset()/OnValidate() lifecycle crashes that
+    /// occurred when SplineExtrude fired Rebuild() during AddComponent before SegmentsPerUnit
+    /// or knot data could be set.
+    ///
+    /// Callers that create objects in edit-mode (e.g. TTAW) must set
+    /// HideFlags.HideAndDontSave on the returned GameObject so objects are not saved into
+    /// the scene.
     /// </summary>
-    internal static class SplinePartFactory
+    public static class SplinePartFactory
     {
         private const string ShaderName = "Universal Render Pipeline/Lit";
 
@@ -26,51 +31,55 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
-        /// Creates a parent GameObject containing one capsule/cylinder segment per knot pair.
+        /// Creates a smooth tube GameObject using SplineMesh.Extrude.
         /// Knot positions are in parent-local space.
         /// </summary>
+        /// <param name="tangentMode">
+        /// <see cref="TangentMode.AutoSmooth"/> for a natural cable curve;
+        /// <see cref="TangentMode.Linear"/> for rigid straight segments between knots.
+        /// </param>
         public static GameObject Create(
             string name,
             SplinePathDefinition data,
             Color color,
-            Transform parent)
+            Transform parent,
+            TangentMode tangentMode = TangentMode.AutoSmooth)
         {
             var root = new GameObject(name);
             root.transform.SetParent(parent, false);
 
-            var mat = BuildMaterial(name, color, data.metallic, data.smoothness);
+            var knotData = data.knots;
+            if (knotData == null || knotData.Length < 2)
+                return root;
 
-            var knots = data.knots;
-            float diameter = data.radius * 2f;
+            // Build a plain Spline — no MonoBehaviour component, no lifecycle callbacks.
+            var spline = new Spline();
+            for (int i = 0; i < knotData.Length; i++)
+                spline.Add(
+                    new BezierKnot(new float3(knotData[i].x, knotData[i].y, knotData[i].z)),
+                    tangentMode);
 
-            for (int i = 0; i < knots.Length - 1; i++)
-            {
-                var a = new Vector3(knots[i].x,     knots[i].y,     knots[i].z);
-                var b = new Vector3(knots[i + 1].x, knots[i + 1].y, knots[i + 1].z);
+            float radius     = data.radius > 0f ? data.radius : 0.003f;
+            int   sides      = 8;
+            int   knotCount  = knotData.Length;
+            // More knots → more mesh segments so the shape is fully captured.
+            // Linear mode uses exact knot count; bezier uses higher density for smoothness.
+            int   minSegs    = tangentMode == TangentMode.Linear ? knotCount - 1 : knotCount * 4;
+            int   segPerUnit = data.segments > 0 ? data.segments : 16;
+            // SplineMesh requires segments >= 3; enforce regardless of wire length.
+            int   totalSegs  = Mathf.Max(3, Mathf.Max(minSegs, Mathf.RoundToInt(spline.GetLength() * segPerUnit)));
 
-                Vector3 midpoint = (a + b) * 0.5f;
-                float   length   = Vector3.Distance(a, b);
-                if (length < 0.0001f) continue;
+            var mesh = new Mesh { name = $"{name}_Mesh" };
+            SplineMesh.Extrude(spline, mesh, radius, sides, totalSegs, capped: true);
 
-                // Unity cylinder primitive is 2 units tall along local Y, radius 0.5
-                var seg = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                seg.name = $"{name}_seg{i}";
-                seg.transform.SetParent(root.transform, false);
-                seg.transform.localPosition = midpoint;
-                seg.transform.localRotation = Quaternion.FromToRotation(Vector3.up, b - a);
-                seg.transform.localScale    = new Vector3(diameter, length * 0.5f, diameter);
-
-                // Remove default capsule collider — tube collisions not needed for wire visuals
-                var col = seg.GetComponent<Collider>();
-                if (col != null)
-                {
-                    if (Application.isPlaying) Object.Destroy(col);
-                    else Object.DestroyImmediate(col);
-                }
-
-                if (mat != null)
-                    seg.GetComponent<MeshRenderer>().sharedMaterial = mat;
-            }
+            root.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var mr  = root.AddComponent<MeshRenderer>();
+            // Prefer data.color (spline-definition color) when its alpha > 0; fall back to caller-supplied color.
+            Color resolvedColor = (data.color.a > 0f)
+                ? new Color(data.color.r, data.color.g, data.color.b, 1f)
+                : color;
+            var mat = BuildMaterial(name, resolvedColor, data.metallic, data.smoothness);
+            if (mat != null) mr.sharedMaterial = mat;
 
             return root;
         }

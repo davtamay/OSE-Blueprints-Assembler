@@ -710,7 +710,16 @@ namespace OSE.Content.Validation
                     issues.Add(Warning("previewConfig.partPlacements", $"Part '{partId}' has no placement entry. It will use fallback positioning."));
             }
 
-            // Check target placement coverage
+            // Check target placement coverage.
+            // Wire-connect targets embed portA/portB in the wireConnect entry — they
+            // intentionally have no target placement and should not produce a warning.
+            HashSet<string> wireOwnedTargetIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (package.steps != null)
+                foreach (var step in package.steps)
+                    if (step?.wireConnect?.wires != null)
+                        foreach (var we in step.wireConnect.wires)
+                            if (!string.IsNullOrEmpty(we?.targetId)) wireOwnedTargetIds.Add(we.targetId);
+
             HashSet<string> coveredTargets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (previewConfig.targetPlacements != null)
             {
@@ -722,7 +731,7 @@ namespace OSE.Content.Validation
             }
             foreach (string tId in targetIds)
             {
-                if (!coveredTargets.Contains(tId))
+                if (!coveredTargets.Contains(tId) && !wireOwnedTargetIds.Contains(tId))
                     issues.Add(Warning("previewConfig.targetPlacements", $"Target '{tId}' has no placement entry. Preview will use fallback positioning."));
             }
 

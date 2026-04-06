@@ -8,6 +8,7 @@ using OSE.Content.Loading;
 using OSE.Core;
 using OSE.Interaction;
 using OSE.Runtime.Preview;
+using OSE.UI.Root;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
@@ -44,8 +45,7 @@ namespace OSE.Editor
     /// </summary>
     public sealed class ToolTargetAuthoringWindow : EditorWindow
     {
-        private const string MenuPath      = "OSE/Authoring/Tool Target Authoring";
-        private const string MenuPathAlias = "OSE/Authoring/Assembly Step Authoring";
+        private const string MenuPath = "OSE/Authoring/Assembly Step Authoring";
         private const int MaxUndoHistory = 50;
         private const float DefaultTargetScale = 0.05f;
 
@@ -146,6 +146,9 @@ namespace OSE.Editor
         private ToolDefinition _toolPreviewDef;   // ToolDefinition for the previewed tool
         private GameObject _toolPreviewGO;         // instantiated tool mesh (HideAndDontSave)
 
+        // Wire preview — LineRenderer GameObjects (HideAndDontSave) for wire width visualization
+        private GameObject _wirePreviewRoot;
+
         // ── Parts tab ─────────────────────────────────────────────────────────
         // Part model preview panel
         private PartModelPreviewRenderer _partPreview;
@@ -185,7 +188,8 @@ namespace OSE.Editor
         private int    _addPickerPartIdx;
         private int    _addPickerTargetIdx;
         private int    _addPickerToolIdx;
-        private int    _addPickerWirePartIdx;
+        private Color  _addPickerWireColor  = new Color(0.15f, 0.15f, 0.15f, 1f);
+        private float  _addPickerWireRadius = 0.003f;
         private string _addPickerPolarityA  = "";
         private string _addPickerPolarityB  = "";
         private string _addPickerConnectorA = "";
@@ -261,9 +265,6 @@ namespace OSE.Editor
         [MenuItem(MenuPath)]
         public static void Open() => OpenWindow();
 
-        [MenuItem(MenuPathAlias)]
-        public static void OpenAlias() => OpenWindow();
-
         private static void OpenWindow()
         {
             var w = GetWindow<ToolTargetAuthoringWindow>("Assembly Step Authoring");
@@ -310,6 +311,7 @@ namespace OSE.Editor
             _partPreviewId = null;
             RemoveMeshCollidersFromLiveParts();
             ClearToolPreview();
+            ClearWirePreview();
         }
 
         private void OnPlayModeChanged(PlayModeStateChange state)
@@ -404,6 +406,7 @@ namespace OSE.Editor
             _partPreviewId = null;
             RemoveMeshCollidersFromLiveParts();
             ClearToolPreview();
+            ClearWirePreview();
             _targets = null;
             _selectedIdx = -1;
             _multiSelected.Clear();
@@ -766,6 +769,9 @@ namespace OSE.Editor
             AutoSelectFirstTaskEntry();      // default-select first badge so a section is visible
             if (!_suppressStepSync)
                 SyncSessionDriverStep();
+            var currentStep = _stepFilterIdx > 0 && _stepIds != null && _stepFilterIdx < _stepIds.Length
+                ? FindStep(_stepIds[_stepFilterIdx]) : null;
+            RefreshWirePreview(currentStep);
             SceneView.RepaintAll();
             Repaint();
         }
@@ -1297,6 +1303,9 @@ namespace OSE.Editor
             if (GUILayout.Button("Extract from GLB Anchors"))
                 ExtractFromGlbAnchors();
 
+            if (GUILayout.Button("Sync All Tool Rotations from Placements"))
+                SyncAllToolRotationsFromPlacements();
+
             // Show unlinked count and offer auto-link for filename-matched parts
             if (_pkg?.parts != null)
             {
@@ -1376,7 +1385,7 @@ namespace OSE.Editor
                     var menu = new GenericMenu();
                     menu.AddItem(new GUIContent("Part"),           false, () => { _addTaskPicker = AddTaskPicker.Part;       _addPickerPartIdx = 0; _selectedTaskSeqIdx = -1; });
                     menu.AddItem(new GUIContent("Tool Target"),    false, () => { _addTaskPicker = AddTaskPicker.ToolTarget; _addPickerTargetIdx = 0; _addPickerToolIdx = 0; _selectedTaskSeqIdx = -1; });
-                    menu.AddItem(new GUIContent("Wire Connection"),false, () => { _addTaskPicker = AddTaskPicker.Wire;       _addPickerTargetIdx = 0; _addPickerWirePartIdx = 0; _addPickerPolarityA = ""; _addPickerPolarityB = ""; _addPickerConnectorA = ""; _addPickerConnectorB = ""; _selectedTaskSeqIdx = -1; });
+                    menu.AddItem(new GUIContent("Wire Connection"),false, () => { _addTaskPicker = AddTaskPicker.Wire;       _addPickerTargetIdx = 0; _addPickerWireColor = new Color(0.15f, 0.15f, 0.15f, 1f); _addPickerWireRadius = 0.003f; _addPickerPolarityA = ""; _addPickerPolarityB = ""; _addPickerConnectorA = ""; _addPickerConnectorB = ""; _selectedTaskSeqIdx = -1; });
                     menu.ShowAsContext();
                 });
 
@@ -1472,39 +1481,49 @@ namespace OSE.Editor
 
                                 EditorGUILayout.EndVertical();
 
-                                // Part section — wire entry owns its part directly
+                                // Port positions — read/write directly from wire entry
                                 EditorGUILayout.Space(2);
-                                DrawUnifiedSectionHeader("Part", 0);
-                                EditorGUI.BeginChangeCheck();
-                                var allParts = _pkg?.GetParts();
-                                string[] partOpts = allParts != null
-                                    ? System.Array.ConvertAll(allParts, p => string.IsNullOrEmpty(p?.id) ? "(empty)" : p.id)
-                                    : System.Array.Empty<string>();
-                                string[] partOptsWithNone = new string[partOpts.Length + 1];
-                                partOptsWithNone[0] = "(none)";
-                                System.Array.Copy(partOpts, 0, partOptsWithNone, 1, partOpts.Length);
-                                int curPartIdx = 0;
-                                if (!string.IsNullOrEmpty(wire.partId) && allParts != null)
-                                    for (int pi = 0; pi < allParts.Length; pi++)
-                                        if (string.Equals(allParts[pi]?.id, wire.partId, StringComparison.Ordinal))
-                                        { curPartIdx = pi + 1; break; }
-                                int newPartIdx = EditorGUILayout.Popup("Part", curPartIdx, partOptsWithNone);
-                                if (EditorGUI.EndChangeCheck())
                                 {
-                                    wire.partId = newPartIdx == 0 ? null : allParts[newPartIdx - 1].id;
-                                    _dirtyStepIds.Add(step.id);
+                                    EditorGUI.BeginChangeCheck();
+                                    Vector3 newA = EditorGUILayout.Vector3Field("Port A (local)", new Vector3(wire.portA.x, wire.portA.y, wire.portA.z));
+                                    Vector3 newB = EditorGUILayout.Vector3Field("Port B (local)", new Vector3(wire.portB.x, wire.portB.y, wire.portB.z));
+                                    if (EditorGUI.EndChangeCheck())
+                                    {
+                                        wire.portA = PackageJsonUtils.ToFloat3(newA);
+                                        wire.portB = PackageJsonUtils.ToFloat3(newB);
+                                        if (_targets != null)
+                                            for (int i = 0; i < _targets.Length; i++)
+                                                if (_targets[i].def?.id == selEntry.id)
+                                                { BeginEdit(); _targets[i].portA = newA; _targets[i].portB = newB; _targets[i].isDirty = true; EndEdit(); break; }
+                                        _dirtyStepIds.Add(step.id);
+                                        RefreshWirePreview(step);
+                                        SceneView.RepaintAll();
+                                    }
                                 }
 
-                                // Show part detail panel for the wire-embedded part
-                                if (!string.IsNullOrEmpty(wire.partId) && _parts != null)
-                                    for (int pi = 0; pi < _parts.Length; pi++)
-                                        if (_parts[pi].def?.id == wire.partId)
-                                        { DrawPartDetailPanel(ref _parts[pi]); break; }
+                                // Color + Radius + Subdivisions — wire appearance is self-contained
+                                EditorGUILayout.Space(2);
+                                EditorGUI.BeginChangeCheck();
+                                Color wc = wire.color.a > 0
+                                    ? new Color(wire.color.r, wire.color.g, wire.color.b, wire.color.a)
+                                    : new Color(0.15f, 0.15f, 0.15f, 1f);
+                                Color nc = EditorGUILayout.ColorField("Color", wc);
+                                wire.color = new SceneFloat4 { r = nc.r, g = nc.g, b = nc.b, a = nc.a };
+                                float nw = EditorGUILayout.FloatField("Radius (m)", wire.radius > 0 ? wire.radius : 0.003f);
+                                wire.radius = Mathf.Max(0f, nw);
+                                wire.subdivisions = Mathf.Max(1, EditorGUILayout.IntField("Subdivisions", wire.subdivisions < 1 ? 1 : wire.subdivisions));
+                                float displaySag = wire.sag > 0f ? wire.sag : 1.0f;
+                                float newSag = EditorGUILayout.Slider("Sag", displaySag, 0.01f, 3.0f);
+                                wire.sag = newSag;
+                                bool isLinear = string.Equals(wire.interpolation, "linear", StringComparison.OrdinalIgnoreCase);
+                                int interpIdx = EditorGUILayout.Popup("Interpolation", isLinear ? 1 : 0, new[] { "Bezier", "Linear" });
+                                wire.interpolation = interpIdx == 1 ? "linear" : "bezier";
+                                if (EditorGUI.EndChangeCheck()) { _dirtyStepIds.Add(step.id); RefreshWirePreview(step); SceneView.RepaintAll(); }
                             }
                         }
 
-                        // Target transform detail
-                        if (_targets != null)
+                        // Wire targets: position/rotation have no meaning — skip DrawDetailPanel.
+                        if (_targets != null && step.wireConnect?.IsConfigured != true)
                             for (int i = 0; i < _targets.Length; i++)
                                 if (_targets[i].def?.id == selEntry.id)
                                 { DrawDetailPanel(ref _targets[i]); break; }
@@ -1655,15 +1674,8 @@ namespace OSE.Editor
 
                 if (step.requiredPartIds != null)
                 {
-                    // Skip parts already embedded in wire entries — the WIRE task owns them.
-                    var wireOwnedParts = new HashSet<string>(StringComparer.Ordinal);
-                    if (step.wireConnect?.wires != null)
-                        foreach (var w in step.wireConnect.wires)
-                            if (!string.IsNullOrEmpty(w?.partId))
-                                wireOwnedParts.Add(w.partId);
-
                     foreach (var pid in step.requiredPartIds)
-                        if (!string.IsNullOrEmpty(pid) && !wireOwnedParts.Contains(pid))
+                        if (!string.IsNullOrEmpty(pid))
                             order.Add(new TaskOrderEntry { kind = "part", id = pid });
                 }
 
@@ -2110,6 +2122,42 @@ namespace OSE.Editor
                     EditorGUILayout.EndHorizontal();
                     if (EditorGUI.EndChangeCheck()) _dirtyStepIds.Add(step.id);
 
+                    // Port positions — read/write directly from wire entry
+                    EditorGUILayout.Space(2);
+                    {
+                        EditorGUI.BeginChangeCheck();
+                        Vector3 newA2 = EditorGUILayout.Vector3Field("Port A (local)", new Vector3(wire.portA.x, wire.portA.y, wire.portA.z));
+                        Vector3 newB2 = EditorGUILayout.Vector3Field("Port B (local)", new Vector3(wire.portB.x, wire.portB.y, wire.portB.z));
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            wire.portA = PackageJsonUtils.ToFloat3(newA2);
+                            wire.portB = PackageJsonUtils.ToFloat3(newB2);
+                            if (_targets != null && _selectedIdx >= 0 && _selectedIdx < _targets.Length)
+                            { BeginEdit(); _targets[_selectedIdx].portA = newA2; _targets[_selectedIdx].portB = newB2; _targets[_selectedIdx].isDirty = true; EndEdit(); }
+                            _dirtyStepIds.Add(step.id);
+                            RefreshWirePreview(step);
+                            SceneView.RepaintAll();
+                        }
+                    }
+
+                    // Color + Radius + Subdivisions
+                    EditorGUI.BeginChangeCheck();
+                    Color wc2 = wire.color.a > 0
+                        ? new Color(wire.color.r, wire.color.g, wire.color.b, wire.color.a)
+                        : new Color(0.15f, 0.15f, 0.15f, 1f);
+                    Color nc2 = EditorGUILayout.ColorField("Color", wc2);
+                    wire.color = new SceneFloat4 { r = nc2.r, g = nc2.g, b = nc2.b, a = nc2.a };
+                    float nw2 = EditorGUILayout.FloatField("Radius (m)", wire.radius > 0 ? wire.radius : 0.003f);
+                    wire.radius = Mathf.Max(0f, nw2);
+                    wire.subdivisions = Mathf.Max(1, EditorGUILayout.IntField("Subdivisions", wire.subdivisions < 1 ? 1 : wire.subdivisions));
+                    float displaySag2 = wire.sag > 0f ? wire.sag : 1.0f;
+                    float newSag2 = EditorGUILayout.Slider("Sag", displaySag2, 0.01f, 3.0f);
+                    wire.sag = newSag2;
+                    bool isLinear2 = string.Equals(wire.interpolation, "linear", StringComparison.OrdinalIgnoreCase);
+                    int interpIdx2 = EditorGUILayout.Popup("Interpolation", isLinear2 ? 1 : 0, new[] { "Bezier", "Linear" });
+                    wire.interpolation = interpIdx2 == 1 ? "linear" : "bezier";
+                    if (EditorGUI.EndChangeCheck()) { _dirtyStepIds.Add(step.id); RefreshWirePreview(step); SceneView.RepaintAll(); }
+
                     EditorGUILayout.EndVertical();
                 }
             }
@@ -2218,18 +2266,6 @@ namespace OSE.Editor
                 if (t != null && !string.IsNullOrEmpty(t.id) && !existingT.Contains(t.id))
                     availTargets.Add(t);
 
-            // Build available parts (exclude parts already in requiredPartIds or in existing wire entries)
-            var existingParts = new HashSet<string>(step?.requiredPartIds ?? System.Array.Empty<string>(), StringComparer.Ordinal);
-            if (step?.wireConnect?.wires != null)
-                foreach (var w in step.wireConnect.wires)
-                    if (!string.IsNullOrEmpty(w?.partId))
-                        existingParts.Add(w.partId);
-            var availParts = new List<PartDefinition>();
-            if (_pkg?.GetParts() != null)
-                foreach (var p in _pkg.GetParts())
-                    if (p != null && !string.IsNullOrEmpty(p.id) && !existingParts.Contains(p.id))
-                        availParts.Add(p);
-
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             EditorGUILayout.LabelField("Add Wire Connection to Step", EditorStyles.boldLabel);
             if (availTargets.Count == 0)
@@ -2243,18 +2279,9 @@ namespace OSE.Editor
                 _addPickerTargetIdx = EditorGUILayout.Popup("Target", _addPickerTargetIdx, tOpts);
             }
 
-            // Part picker — wire task owns its part directly (no separate PART task row)
-            string[] pOpts = System.Array.Empty<string>();
-            if (availParts.Count > 0)
-            {
-                pOpts = availParts.Select(p => $"{p.id}{(string.IsNullOrEmpty(p.name) ? "" : " — " + p.name)}").ToArray();
-                _addPickerWirePartIdx = Mathf.Clamp(_addPickerWirePartIdx, 0, pOpts.Length - 1);
-                _addPickerWirePartIdx = EditorGUILayout.Popup("Part", _addPickerWirePartIdx, pOpts);
-            }
-            else
-            {
-                EditorGUILayout.LabelField("  (no unassigned parts)", EditorStyles.miniLabel);
-            }
+            // Wire appearance
+            _addPickerWireColor = EditorGUILayout.ColorField("Color", _addPickerWireColor);
+            _addPickerWireRadius = Mathf.Max(0f, EditorGUILayout.FloatField("Radius (m)", _addPickerWireRadius > 0 ? _addPickerWireRadius : 0.003f));
 
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Polarity A", GUILayout.Width(72));
@@ -2272,9 +2299,8 @@ namespace OSE.Editor
             EditorGUI.BeginDisabledGroup(availTargets.Count == 0);
             if (GUILayout.Button("Add", GUILayout.Width(60)))
             {
-                string wirePartId = availParts.Count > 0 ? availParts[_addPickerWirePartIdx].id : null;
                 CommitAddWire(step, availTargets[_addPickerTargetIdx].id,
-                    wirePartId,
+                    _addPickerWireColor, _addPickerWireRadius,
                     _addPickerPolarityA, _addPickerPolarityB, _addPickerConnectorA, _addPickerConnectorB);
                 _addTaskPicker = AddTaskPicker.None;
             }
@@ -2319,7 +2345,7 @@ namespace OSE.Editor
             Repaint();
         }
 
-        private void CommitAddWire(StepDefinition step, string targetId, string partId, string polA, string polB, string conA, string conB)
+        private void CommitAddWire(StepDefinition step, string targetId, Color color, float radius, string polA, string polB, string conA, string conB)
         {
             if (step == null) return;
             var tList = new List<string>(step.targetIds ?? System.Array.Empty<string>()) { targetId };
@@ -2329,7 +2355,8 @@ namespace OSE.Editor
             wList.Add(new WireConnectEntry
             {
                 targetId           = targetId,
-                partId             = string.IsNullOrWhiteSpace(partId) ? null : partId.Trim(),
+                color              = new SceneFloat4 { r = color.r, g = color.g, b = color.b, a = color.a },
+                radius             = radius > 0f ? radius : 0.003f,
                 portAPolarityType  = string.IsNullOrWhiteSpace(polA) ? null : polA.Trim(),
                 portBPolarityType  = string.IsNullOrWhiteSpace(polB) ? null : polB.Trim(),
                 portAConnectorType = string.IsNullOrWhiteSpace(conA) ? null : conA.Trim(),
@@ -2652,6 +2679,7 @@ namespace OSE.Editor
             if (GUILayout.Button("Revert Last Write", EditorStyles.miniButton)) RevertFromBackup();
             EditorGUI.EndDisabledGroup();
             if (GUILayout.Button("Frame in Scene", EditorStyles.miniButton)) FrameInScene();
+            if (GUILayout.Button("Sync Rotations", EditorStyles.miniButton)) SyncAllToolRotationsFromPlacements();
             EditorGUILayout.EndHorizontal();
         }
 
@@ -3334,29 +3362,31 @@ namespace OSE.Editor
             Transform root = GetPreviewRoot();
             if (root == null) return;
 
+            // Build targetId → WireConnectEntry lookup so endpoint sphere colors match the wire color.
+            var wireEntryMap = new Dictionary<string, WireConnectEntry>(StringComparer.Ordinal);
+            StepDefinition overlayStep = _stepFilterIdx > 0 && _stepIds != null && _stepFilterIdx < _stepIds.Length
+                ? FindStep(_stepIds[_stepFilterIdx]) : null;
+            if (overlayStep?.wireConnect?.wires != null)
+                foreach (var we in overlayStep.wireConnect.wires)
+                    if (we?.targetId != null) wireEntryMap[we.targetId] = we;
+
             foreach (var t in _targets)
             {
                 if (t.portA.sqrMagnitude < 0.000001f && t.portB.sqrMagnitude < 0.000001f) continue;
 
+                wireEntryMap.TryGetValue(t.def?.id ?? "", out WireConnectEntry we2);
+                Color wireColor = (we2 != null && we2.color.a > 0f)
+                    ? new Color(we2.color.r, we2.color.g, we2.color.b, 1f) : ColPortPoint;
+
+                // Wire tube is rendered by _wirePreviewRoot mesh (see RefreshWirePreview).
+                // Here we only draw the A/B endpoint spheres and labels as Handles overlays.
+                Handles.color = wireColor;
                 Vector3 wA = root.TransformPoint(t.portA);
                 Vector3 wB = root.TransformPoint(t.portB);
-
-                // Sag midpoint matches the runtime 3-knot spline in ConnectStepHandler
-                Vector3 localSagMid = new Vector3(
-                    (t.portA.x + t.portB.x) * 0.5f,
-                    Mathf.Min(t.portA.y, t.portB.y) - 0.04f,
-                    (t.portA.z + t.portB.z) * 0.5f);
-                Vector3 wMid = root.TransformPoint(localSagMid);
-
-                // Bezier with both control points at the sag midpoint → natural cable droop
-                Handles.DrawBezier(wA, wB, wMid, wMid, ColPortPoint, null, 3f);
-
                 float sA = HandleUtility.GetHandleSize(wA) * 0.08f;
                 float sB = HandleUtility.GetHandleSize(wB) * 0.08f;
-                Handles.color = ColPortPoint;
                 Handles.SphereHandleCap(0, wA, Quaternion.identity, sA, EventType.Repaint);
                 Handles.SphereHandleCap(0, wB, Quaternion.identity, sB, EventType.Repaint);
-
                 Handles.Label(wA, " A", EditorStyles.boldLabel);
                 Handles.Label(wB, " B", EditorStyles.boldLabel);
             }
@@ -3368,6 +3398,24 @@ namespace OSE.Editor
         {
             Transform root = GetPreviewRoot();
             if (root == null) return;
+
+            // Lazy-init wire preview: ApplyStepFilter may have run before the spawner
+            // service was ready, so we create it here on the first valid SceneView frame.
+            // Wrapped in try-catch so any failure does not abort the rest of OnSceneGUI
+            // (which would hide the portA/portB PositionHandle gizmos).
+            if (_wirePreviewRoot == null && _stepFilterIdx > 0
+                && _stepIds != null && _stepFilterIdx < _stepIds.Length)
+            {
+                try
+                {
+                    var lazyStep = FindStep(_stepIds[_stepFilterIdx]);
+                    RefreshWirePreview(lazyStep);
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogWarning($"[TTAW] Wire preview init failed: {e.Message}");
+                }
+            }
 
             bool hasTaskFilter   = _selectedTaskSeqIdx >= 0;
             bool isConfirmAction = hasTaskFilter && _activeTaskKind == "confirm_action";
@@ -3525,13 +3573,32 @@ namespace OSE.Editor
                 {
                     Handles.color = ColPortPoint;
 
+                    // Resolve the wire entry that owns this target so we can keep
+                    // the wire entry, _targets, and the spline preview in sync.
+                    StepDefinition dragStep = _stepFilterIdx > 0 && _stepIds != null
+                        && _stepFilterIdx < _stepIds.Length
+                        ? FindStep(_stepIds[_stepFilterIdx]) : null;
+                    WireConnectEntry dragWire = null;
+                    if (dragStep?.wireConnect?.wires != null && sel.def != null)
+                        foreach (var w in dragStep.wireConnect.wires)
+                            if (w?.targetId == sel.def.id) { dragWire = w; break; }
+
+                    // Use wire entry positions as authoritative source so gizmo matches spline.
+                    if (dragWire != null)
+                    {
+                        sel.portA = new Vector3(dragWire.portA.x, dragWire.portA.y, dragWire.portA.z);
+                        sel.portB = new Vector3(dragWire.portB.x, dragWire.portB.y, dragWire.portB.z);
+                    }
+
                     EditorGUI.BeginChangeCheck();
                     Vector3 newPortA = Handles.PositionHandle(root.TransformPoint(sel.portA), Quaternion.identity);
                     if (EditorGUI.EndChangeCheck())
                     {
                         BeginEdit();
-                        sel.portA   = root.InverseTransformPoint(newPortA);
+                        sel.portA = root.InverseTransformPoint(newPortA);
                         sel.isDirty = true;
+                        if (dragWire != null) dragWire.portA = PackageJsonUtils.ToFloat3(sel.portA);
+                        if (dragStep != null) { _dirtyStepIds.Add(dragStep.id); RefreshWirePreview(dragStep); }
                         Repaint();
                     }
 
@@ -3540,8 +3607,10 @@ namespace OSE.Editor
                     if (EditorGUI.EndChangeCheck())
                     {
                         BeginEdit();
-                        sel.portB   = root.InverseTransformPoint(newPortB);
+                        sel.portB = root.InverseTransformPoint(newPortB);
                         sel.isDirty = true;
+                        if (dragWire != null) dragWire.portB = PackageJsonUtils.ToFloat3(sel.portB);
+                        if (dragStep != null) { _dirtyStepIds.Add(dragStep.id); RefreshWirePreview(dragStep); }
                         Repaint();
                     }
 
@@ -3863,6 +3932,18 @@ namespace OSE.Editor
                 }
             }
 
+            // Build a wire-entry lookup for the active step so wire targets get portA/portB
+            // from the wire entry when they have no target placement.
+            StepDefinition activeStep = _stepFilterIdx > 0 && _stepIds != null && _stepFilterIdx < _stepIds.Length
+                ? FindStep(_stepIds[_stepFilterIdx]) : null;
+            var wirePortByTargetId = new Dictionary<string, (Vector3 a, Vector3 b)>(StringComparer.Ordinal);
+            if (activeStep?.wireConnect?.wires != null)
+                foreach (var we in activeStep.wireConnect.wires)
+                    if (we?.targetId != null)
+                        wirePortByTargetId[we.targetId] = (
+                            new Vector3(we.portA.x, we.portA.y, we.portA.z),
+                            new Vector3(we.portB.x, we.portB.y, we.portB.z));
+
             var list = new List<TargetEditState>();
             foreach (var def in _pkg.targets)
             {
@@ -3881,6 +3962,12 @@ namespace OSE.Editor
                     if (pp != null) defaultPos = PackageJsonUtils.ToVector3(pp.playPosition);
                 }
 
+                // Port positions: target placement first, then wire entry fallback.
+                Vector3 portA = hasP ? PackageJsonUtils.ToVector3(placement.portA) : Vector3.zero;
+                Vector3 portB = hasP ? PackageJsonUtils.ToVector3(placement.portB) : Vector3.zero;
+                if (portA == Vector3.zero && portB == Vector3.zero && wirePortByTargetId.TryGetValue(def.id, out var wp))
+                { portA = wp.a; portB = wp.b; }
+
                 var state = new TargetEditState
                 {
                     def                     = def,
@@ -3889,8 +3976,8 @@ namespace OSE.Editor
                     position                = hasP ? PackageJsonUtils.ToVector3(placement.position)         : defaultPos,
                     rotation                = hasP ? PackageJsonUtils.ToUnityQuaternion(placement.rotation)  : Quaternion.identity,
                     scale                   = hasP ? PackageJsonUtils.ToVector3(placement.scale)             : Vector3.one * DefaultTargetScale,
-                    portA                   = hasP ? PackageJsonUtils.ToVector3(placement.portA)             : Vector3.zero,
-                    portB                   = hasP ? PackageJsonUtils.ToVector3(placement.portB)             : Vector3.zero,
+                    portA                   = portA,
+                    portB                   = portB,
                     weldAxis                = def.GetWeldAxisVector(),
                     weldLength              = def.weldLength,
                     useToolActionRotation   = def.useToolActionRotation,
@@ -4000,6 +4087,26 @@ namespace OSE.Editor
             if (_pkg?.steps == null) return null;
             foreach (var s in _pkg.steps)
                 if (s != null && s.id == stepId) return s;
+            return null;
+        }
+
+        /// <summary>
+        /// Returns the ToolDefinition for the first ToolActionDefinition that references
+        /// <paramref name="targetId"/>. Used during one-time migration to mesh-rotation format.
+        /// </summary>
+        private ToolDefinition FindToolForTarget(string targetId)
+        {
+            if (_pkg?.steps == null || _pkg.tools == null) return null;
+            foreach (var step in _pkg.steps)
+            {
+                if (step?.requiredToolActions == null) continue;
+                foreach (var action in step.requiredToolActions)
+                {
+                    if (action?.targetId != targetId || string.IsNullOrEmpty(action.toolId)) continue;
+                    foreach (var tool in _pkg.tools)
+                        if (tool?.id == action.toolId) return tool;
+                }
+            }
             return null;
         }
 
@@ -4177,6 +4284,95 @@ namespace OSE.Editor
             _toolPreviewDef = null;
         }
 
+        private void ClearWirePreview()
+        {
+            if (_wirePreviewRoot != null)
+            {
+                // Destroy procedural meshes before the GO — they are unmanaged assets
+                // and won't be GC'd automatically when the MeshFilter is destroyed.
+                foreach (var mf in _wirePreviewRoot.GetComponentsInChildren<MeshFilter>())
+                    if (mf != null && mf.sharedMesh != null)
+                        DestroyImmediate(mf.sharedMesh);
+                DestroyImmediate(_wirePreviewRoot);
+                _wirePreviewRoot = null;
+            }
+        }
+
+        private void RefreshWirePreview(StepDefinition step)
+        {
+            ClearWirePreview();
+
+            Transform root = GetPreviewRoot();
+            if (root == null) return;
+
+            // Collect all Connect-family steps up to and including the current step
+            // so wires from previously completed steps remain visible.
+            int currentSeq = step?.sequenceIndex ?? -1;
+            var stepsToShow = new List<StepDefinition>();
+            if (_pkg?.steps != null)
+                foreach (var s in _pkg.steps)
+                    if (s?.wireConnect?.IsConfigured == true && s.sequenceIndex <= currentSeq)
+                        stepsToShow.Add(s);
+
+            if (stepsToShow.Count == 0) return;
+
+            _wirePreviewRoot = new GameObject("[TTAW] WirePreview");
+            _wirePreviewRoot.hideFlags = HideFlags.HideAndDontSave;
+            _wirePreviewRoot.transform.SetParent(root, false);
+
+            foreach (var showStep in stepsToShow)
+            foreach (var wire in showStep.wireConnect.wires)
+            {
+                if (wire == null) continue;
+
+                Vector3 pA = new Vector3(wire.portA.x, wire.portA.y, wire.portA.z);
+                Vector3 pB = new Vector3(wire.portB.x, wire.portB.y, wire.portB.z);
+                if (pA == Vector3.zero && pB == Vector3.zero) continue;
+
+                float radius = wire.radius > 0f ? wire.radius : 0.003f;
+                Color col = wire.color.a > 0f
+                    ? new Color(wire.color.r, wire.color.g, wire.color.b, 1f)
+                    : new Color(0.1f, 0.1f, 0.1f, 1f);
+                int subdivs = Mathf.Max(1, wire.subdivisions);
+
+                // Build sag knots in local space.
+                // sag=0 (unset) uses natural default (1.0). 0.01=rigid, 1=natural, 2+=heavy droop.
+                float wireLength  = Vector3.Distance(pA, pB);
+                float sagFactor   = wire.sag > 0f ? wire.sag : 1.0f;
+                float sagDepth    = sagFactor * (wireLength * 0.12f + 0.04f);
+                var knotPositions = new SceneFloat3[subdivs + 2];
+                knotPositions[0]           = PackageJsonUtils.ToFloat3(pA);
+                knotPositions[subdivs + 1] = PackageJsonUtils.ToFloat3(pB);
+                for (int k = 0; k < subdivs; k++)
+                {
+                    float t = (k + 1f) / (subdivs + 1f);
+                    knotPositions[k + 1] = PackageJsonUtils.ToFloat3(new Vector3(
+                        Mathf.Lerp(pA.x, pB.x, t),
+                        Mathf.Lerp(pA.y, pB.y, t) - sagDepth * Mathf.Sin(Mathf.PI * t),
+                        Mathf.Lerp(pA.z, pB.z, t)));
+                }
+
+                // Delegate to SplinePartFactory — same path as play mode.
+                var tangentMode = string.Equals(wire.interpolation, "linear",
+                    System.StringComparison.OrdinalIgnoreCase)
+                    ? UnityEngine.Splines.TangentMode.Linear
+                    : UnityEngine.Splines.TangentMode.AutoSmooth;
+
+                var splineDef = new SplinePathDefinition
+                {
+                    radius     = radius,
+                    segments   = 16,
+                    metallic   = 0f,
+                    smoothness = 0.4f,
+                    knots      = knotPositions
+                };
+
+                var wireGo = SplinePartFactory.Create(
+                    $"Wire_{wire.targetId}", splineDef, col, _wirePreviewRoot.transform, tangentMode);
+                wireGo.hideFlags = HideFlags.HideAndDontSave;
+            }
+        }
+
         private void RefreshToolPreview(ref TargetEditState t)
         {
             ClearToolPreview();
@@ -4246,19 +4442,15 @@ namespace OSE.Editor
 
         /// <summary>
         /// Computes the tool's local position and rotation under previewRoot so that
-        /// the tool's tipPoint sits at the target position and gripRotation is respected.
+        /// the tool's tipPoint sits at the target position.
+        /// After migration, t.rotation is already the mesh rotation — no grip correction needed.
         /// </summary>
         private void ComputeToolLocalTransform(ref TargetEditState t,
             out Vector3 localPos, out Quaternion localRot)
         {
             // t.rotation is the single source of truth (gizmo + Euler field).
-            // WriteJson derives toolActionRotation from it at save time.
-            Quaternion approachRot = t.rotation;
-
-            // Undo the grip rotation so the tool sits naturally in the target orientation
-            localRot = approachRot;
-            if (_toolPreviewDef?.toolPose?.HasGripRotation == true)
-                localRot = approachRot * Quaternion.Inverse(_toolPreviewDef.toolPose.GetGripRotation());
+            // After migration it IS the mesh rotation (independent of gripRotation).
+            localRot = t.rotation;
 
             // Offset so tipPoint lands exactly on the target position.
             // tipPoint is in the tool's local space; multiply by the GO's localScale
@@ -4391,6 +4583,64 @@ namespace OSE.Editor
             return false;
         }
 
+        /// <summary>
+        /// Re-derives toolActionRotation for ALL targets from their placement.rotation quaternions.
+        /// Fixes any Euler-convention mismatch introduced by external (Python) migration scripts.
+        /// Does not require targets to be dirty — processes the entire previewConfig.targetPlacements array.
+        /// </summary>
+        private void SyncAllToolRotationsFromPlacements()
+        {
+            if (string.IsNullOrEmpty(_pkgId) || _pkg == null) return;
+            if (_pkg.previewConfig?.targetPlacements == null || _pkg.previewConfig.targetPlacements.Length == 0)
+            {
+                Debug.LogWarning("[ToolTargetAuthoring] SyncAllToolRotations: no targetPlacements in previewConfig.");
+                return;
+            }
+
+            string jsonPath = PackageJsonUtils.GetJsonPath(_pkgId);
+            if (jsonPath == null) { Debug.LogError($"[ToolTargetAuthoring] machine.json not found for '{_pkgId}'"); return; }
+
+            string json = File.ReadAllText(jsonPath);
+            Transform pr = GetPreviewRoot();
+            Quaternion rootRot = pr != null ? pr.rotation : Quaternion.identity;
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            int count = 0;
+
+            foreach (var p in _pkg.previewConfig.targetPlacements)
+            {
+                if (p == null || string.IsNullOrEmpty(p.targetId)) continue;
+                var sq = p.rotation;
+                Quaternion localRot = new Quaternion(sq.x, sq.y, sq.z, sq.w);
+                Vector3 worldEuler = (rootRot * localRot).eulerAngles;
+                TryInjectBlock(ref json, p.targetId, "useToolActionRotation", "true");
+                string tarJson = $"{{ \"x\": {R(worldEuler.x).ToString(inv)}, \"y\": {R(worldEuler.y).ToString(inv)}, \"z\": {R(worldEuler.z).ToString(inv)} }}";
+                TryInjectBlock(ref json, p.targetId, "toolActionRotation", tarJson);
+                count++;
+            }
+
+            try { JsonUtility.FromJson<MachinePackageDefinition>(json); }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[ToolTargetAuthoring] SyncAllToolRotations: result would be invalid JSON, aborting.\n{ex.Message}");
+                return;
+            }
+
+            string backupDir = Path.Combine(Path.GetDirectoryName(jsonPath)!, ".pose_backups");
+            if (!Directory.Exists(backupDir)) Directory.CreateDirectory(backupDir);
+            string ts = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            string backupPath = Path.Combine(backupDir, $"machine_syncrot_{ts}.json");
+            File.Copy(jsonPath, backupPath, true);
+            _lastBackupPath = backupPath;
+
+            File.WriteAllText(jsonPath, json);
+            AssetDatabase.Refresh();
+            PackageSyncTool.Sync();
+            Debug.Log($"[ToolTargetAuthoring] SyncAllToolRotations: updated toolActionRotation for {count} targets (backup: {backupPath}).");
+
+            _pkg = PackageJsonUtils.LoadPackage(_pkgId);
+            BuildTargetList();
+        }
+
         private void WriteJson()
         {
             if (string.IsNullOrEmpty(_pkgId) || _pkg == null || _targets == null) return;
@@ -4459,6 +4709,8 @@ namespace OSE.Editor
             }
 
             // Step 3: Write previewConfig block
+            // Mark as mesh-rotation format so runtime skips the legacy grip correction.
+            _pkg.previewConfig.targetRotationFormat = "mesh";
             PackageJsonUtils.WritePreviewConfig(jsonPath, _pkg.previewConfig);
             json = File.ReadAllText(jsonPath);
 
@@ -4555,12 +4807,34 @@ namespace OSE.Editor
                 if (step.wireConnect?.IsConfigured == true)
                 {
                     var wc = step.wireConnect;
+                    var inv2 = System.Globalization.CultureInfo.InvariantCulture;
+
+                    // Sync portA/portB from TargetEditState → wire entry so drag-handle
+                    // edits are captured in the wire entry (wire targets have no placement).
+                    if (_targets != null)
+                        foreach (ref var te in _targets.AsSpan())
+                            if (te.isDirty && wc.wires != null)
+                                foreach (var we in wc.wires)
+                                    if (we != null && we.targetId == te.def?.id)
+                                    {
+                                        we.portA = PackageJsonUtils.ToFloat3(te.portA);
+                                        we.portB = PackageJsonUtils.ToFloat3(te.portB);
+                                    }
+
                     var wRows = Array.ConvertAll(wc.wires, w =>
                     {
                         if (w == null) return "{}";
                         var sb = new System.Text.StringBuilder("{");
                         if (!string.IsNullOrEmpty(w.targetId))           sb.Append($"\"targetId\":\"{w.targetId}\",");
-                        if (!string.IsNullOrEmpty(w.partId))             sb.Append($"\"partId\":\"{w.partId}\",");
+                        // portA/portB — always write so they survive round-trips
+                        sb.Append($"\"portA\":{{\"x\":{R(w.portA.x).ToString(inv2)},\"y\":{R(w.portA.y).ToString(inv2)},\"z\":{R(w.portA.z).ToString(inv2)}}},");
+                        sb.Append($"\"portB\":{{\"x\":{R(w.portB.x).ToString(inv2)},\"y\":{R(w.portB.y).ToString(inv2)},\"z\":{R(w.portB.z).ToString(inv2)}}},");
+                        // color — always write so the value survives round-trips
+                        sb.Append($"\"color\":{{\"r\":{R(w.color.r).ToString(inv2)},\"g\":{R(w.color.g).ToString(inv2)},\"b\":{R(w.color.b).ToString(inv2)},\"a\":{R(w.color.a).ToString(inv2)}}},");
+                        sb.Append($"\"radius\":{R(w.radius > 0 ? w.radius : 0.003f).ToString(inv2)},");
+                        sb.Append($"\"subdivisions\":{Mathf.Max(1, w.subdivisions)},");
+                        sb.Append($"\"sag\":{R(w.sag > 0f ? w.sag : 1.0f).ToString(inv2)},");
+                        if (!string.IsNullOrEmpty(w.interpolation)) sb.Append($"\"interpolation\":\"{w.interpolation}\",");
                         if (!string.IsNullOrEmpty(w.portAPolarityType))  sb.Append($"\"portAPolarityType\":\"{w.portAPolarityType}\",");
                         if (!string.IsNullOrEmpty(w.portBPolarityType))  sb.Append($"\"portBPolarityType\":\"{w.portBPolarityType}\",");
                         if (!string.IsNullOrEmpty(w.portAConnectorType)) sb.Append($"\"portAConnectorType\":\"{w.portAConnectorType}\",");

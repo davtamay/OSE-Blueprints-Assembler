@@ -34,6 +34,9 @@ namespace OSE.UI.Root
         // Value is a polarity token: "+12V", "GND", "signal", etc. Null for Cable profile.
         private readonly Dictionary<GameObject, string> _polarityByGo = new();
 
+        // Per-sphere wire entry — used to read color/width when building the cable visual.
+        private readonly Dictionary<GameObject, WireConnectEntry> _wireEntryByGo = new();
+
         // Material pool — reused across step activations to avoid per-sphere new Material().
         // Populated lazily; all instances destroyed in Cleanup().
         private readonly List<Material> _sphereMatPool = new();
@@ -117,11 +120,9 @@ namespace OSE.UI.Root
                 Vector3 anchorA = isPortA ? _portAWorldPos : _portBWorldPos;
                 Vector3 anchorB = isPortA ? _portBWorldPos : _portAWorldPos;
 
-                // Resolve wire color from the part placement of the step's first part.
-                string[] effectiveParts = step.GetEffectiveRequiredPartIds();
-                string partId = effectiveParts.Length > 0 ? effectiveParts[0] : null;
-                Color cableColor = ResolveWireColor(
-                    partId != null ? _ctx.Spawner.FindPartPlacement(partId) : null);
+                _wireEntryByGo.TryGetValue(hitGo, out WireConnectEntry hitEntry);
+                Color cableColor = ResolveWireColor(hitEntry);
+                float cableRadius = ResolveWireRadius(hitEntry);
 
                 _anchorInteraction = new AnchorToAnchorInteraction(new AnchorToAnchorInteraction.Config
                 {
@@ -194,35 +195,37 @@ namespace OSE.UI.Root
             {
                 string targetId = targetIds[ti];
 
-                TargetPreviewPlacement tp = _ctx.Spawner.FindTargetPlacement(targetId);
-                if (tp == null)
-                {
-                    OseLog.Warn($"[ConnectStepHandler] No target placement for '{targetId}'.");
-                    continue;
-                }
-
-                Vector3 portAPos = new Vector3(tp.portA.x, tp.portA.y, tp.portA.z);
-                Vector3 portBPos = new Vector3(tp.portB.x, tp.portB.y, tp.portB.z);
-
-                if (portAPos == Vector3.zero && portBPos == Vector3.zero)
-                {
-                    OseLog.Warn($"[ConnectStepHandler] Target '{targetId}' has no portA/portB. Using fallback offset.");
-                    Vector3 c = new Vector3(tp.position.x, tp.position.y, tp.position.z);
-                    portAPos = c + new Vector3(-0.12f, 0.06f, 0f);
-                    portBPos = c + new Vector3( 0.12f, 0.06f, 0f);
-                }
-
-                // Resolve wire color from the part's splinePath if authored, else default near-black.
-                // For multi-wire steps each targetId maps to its own part by index (or first part).
-                string[] effParts = step.GetEffectiveRequiredPartIds();
-                string partId = (effParts.Length > ti)
-                    ? effParts[ti]
-                    : (effParts.Length > 0 ? effParts[0] : targetId);
-                Color wireColor = ResolveWireColor(_ctx.Spawner.FindPartPlacement(partId));
-
-                // For WireConnect profile, resolve per-port polarity from the payload.
-                // Falls back to null (generic A/B colors) when not a WireConnect step.
+                // Resolve the wire entry for this target — contains portA/portB, color, radius, and polarity.
                 WireConnectEntry wireEntry = ResolveWireEntry(step, targetId, ti);
+
+                // Port positions: wire entry is authoritative; fall back to target placement.
+                Vector3 portAPos, portBPos;
+                if (wireEntry != null && (wireEntry.portA.x != 0f || wireEntry.portA.y != 0f || wireEntry.portA.z != 0f ||
+                                          wireEntry.portB.x != 0f || wireEntry.portB.y != 0f || wireEntry.portB.z != 0f))
+                {
+                    portAPos = new Vector3(wireEntry.portA.x, wireEntry.portA.y, wireEntry.portA.z);
+                    portBPos = new Vector3(wireEntry.portB.x, wireEntry.portB.y, wireEntry.portB.z);
+                }
+                else
+                {
+                    TargetPreviewPlacement tp = _ctx.Spawner.FindTargetPlacement(targetId);
+                    if (tp == null)
+                    {
+                        OseLog.Warn($"[ConnectStepHandler] No port positions for '{targetId}' — skipping.");
+                        continue;
+                    }
+                    portAPos = new Vector3(tp.portA.x, tp.portA.y, tp.portA.z);
+                    portBPos = new Vector3(tp.portB.x, tp.portB.y, tp.portB.z);
+                    if (portAPos == Vector3.zero && portBPos == Vector3.zero)
+                    {
+                        OseLog.Warn($"[ConnectStepHandler] Target '{targetId}' has no portA/portB. Using fallback offset.");
+                        Vector3 c = new Vector3(tp.position.x, tp.position.y, tp.position.z);
+                        portAPos = c + new Vector3(-0.12f, 0.06f, 0f);
+                        portBPos = c + new Vector3( 0.12f, 0.06f, 0f);
+                    }
+                }
+                Color wireColor = ResolveWireColor(wireEntry);
+                float wireRadius = ResolveWireRadius(wireEntry);
                 string polarityA = wireEntry?.portAPolarityType;
                 string polarityB = wireEntry?.portBPolarityType;
 
@@ -239,26 +242,20 @@ namespace OSE.UI.Root
                 _portAByGo[sphereB] = worldA;
                 _portBByGo[sphereB] = worldB;
 
+                if (wireEntry != null) { _wireEntryByGo[sphereA] = wireEntry; _wireEntryByGo[sphereB] = wireEntry; }
                 if (polarityA != null) _polarityByGo[sphereA] = polarityA;
                 if (polarityB != null) _polarityByGo[sphereB] = polarityB;
 
                 // Cable preview — shows the connection path while the user taps the ports.
                 var previewPath = new SplinePathDefinition
                 {
-                    radius     = 0.018f,
+                    radius     = wireRadius,
                     segments   = 8,
                     metallic   = 0f,
                     smoothness = 0.25f,
-                    knots = new SceneFloat3[]
-                    {
-                        new SceneFloat3 { x = portAPos.x, y = portAPos.y, z = portAPos.z },
-                        new SceneFloat3 { x = (portAPos.x + portBPos.x) * 0.5f,
-                                          y = Mathf.Min(portAPos.y, portBPos.y) - 0.04f,
-                                          z = (portAPos.z + portBPos.z) * 0.5f },
-                        new SceneFloat3 { x = portBPos.x, y = portBPos.y, z = portBPos.z },
-                    }
+                    knots = BuildSagKnots(portAPos, portBPos, wireEntry?.subdivisions ?? 1, wireEntry?.sag ?? 0f),
                 };
-                GameObject cablePreview = SplinePartFactory.CreatePreview(partId, previewPath, previewRoot);
+                GameObject cablePreview = SplinePartFactory.CreatePreview(targetId, previewPath, previewRoot);
                 if (cablePreview != null)
                 {
                     MaterialHelper.ApplyPreviewMaterial(cablePreview);
@@ -376,43 +373,44 @@ namespace OSE.UI.Root
             Transform previewRoot = setup.PreviewRoot;
             if (previewRoot == null) return;
 
-            foreach (string targetId in targetIds)
+            for (int ti = 0; ti < targetIds.Length; ti++)
             {
-                TargetPreviewPlacement tp = _ctx.Spawner.FindTargetPlacement(targetId);
-                if (tp == null) continue;
+                string targetId = targetIds[ti];
+                WireConnectEntry entry = ResolveWireEntry(step, targetId, ti);
+                Color hoseColor  = ResolveWireColor(entry);
+                float hoseRadius = ResolveWireRadius(entry);
 
-                Vector3 portAPos = new Vector3(tp.portA.x, tp.portA.y, tp.portA.z);
-                Vector3 portBPos = new Vector3(tp.portB.x, tp.portB.y, tp.portB.z);
-                if (portAPos == Vector3.zero && portBPos == Vector3.zero) continue;
-
-                float midX = (portAPos.x + portBPos.x) * 0.5f;
-                float midY = Mathf.Min(portAPos.y, portBPos.y) - 0.04f;
-                float midZ = (portAPos.z + portBPos.z) * 0.5f;
+                Vector3 portAPos, portBPos;
+                if (entry != null && (entry.portA.x != 0f || entry.portA.y != 0f || entry.portA.z != 0f ||
+                                      entry.portB.x != 0f || entry.portB.y != 0f || entry.portB.z != 0f))
+                {
+                    portAPos = new Vector3(entry.portA.x, entry.portA.y, entry.portA.z);
+                    portBPos = new Vector3(entry.portB.x, entry.portB.y, entry.portB.z);
+                }
+                else
+                {
+                    TargetPreviewPlacement tp = _ctx.Spawner.FindTargetPlacement(targetId);
+                    if (tp == null) continue;
+                    portAPos = new Vector3(tp.portA.x, tp.portA.y, tp.portA.z);
+                    portBPos = new Vector3(tp.portB.x, tp.portB.y, tp.portB.z);
+                    if (portAPos == Vector3.zero && portBPos == Vector3.zero) continue;
+                }
 
                 var path = new SplinePathDefinition
                 {
-                    radius     = 0.018f,
+                    radius     = hoseRadius,
                     segments   = 8,
                     metallic   = 0f,
                     smoothness = 0.25f,
-                    knots = new SceneFloat3[]
-                    {
-                        new SceneFloat3 { x = portAPos.x, y = portAPos.y, z = portAPos.z },
-                        new SceneFloat3 { x = midX,       y = midY,       z = midZ       },
-                        new SceneFloat3 { x = portBPos.x, y = portBPos.y, z = portBPos.z },
-                    }
+                    knots = BuildSagKnots(portAPos, portBPos, entry?.subdivisions ?? 1, entry?.sag ?? 0f),
                 };
 
-                string[] effPartsForSpline = step.GetEffectiveRequiredPartIds();
-                string partName = effPartsForSpline.Length > 0 ? effPartsForSpline[0] : targetId;
-                Color hoseColor = ResolveWireColor(_ctx.Spawner.FindPartPlacement(partName));
-
-                GameObject splineGo = SplinePartFactory.Create(partName, path, hoseColor, previewRoot);
+                GameObject splineGo = SplinePartFactory.Create(targetId, path, hoseColor, previewRoot);
                 if (splineGo != null)
                 {
                     MaterialHelper.MarkAsImported(splineGo);
                     _renderedPipeSplines.Add(splineGo);
-                    OseLog.Info($"[ConnectStepHandler] Rendered pipe spline for '{partName}'.");
+                    OseLog.Info($"[ConnectStepHandler] Rendered pipe spline for '{targetId}'.");
                 }
             }
         }
@@ -441,6 +439,7 @@ namespace OSE.UI.Root
             _portAByGo.Clear();
             _portBByGo.Clear();
             _polarityByGo.Clear();
+            _wireEntryByGo.Clear();
             _pipePortAConfirmed = false;
 
             var cursorManager = _ctx.CursorManager;
@@ -568,6 +567,35 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
+        /// Builds sag knots for a wire spline between portA and portB.
+        /// <paramref name="subdivisions"/> controls how many intermediate knots are inserted
+        /// along the parabolic sag curve (1 = one midpoint, 2+ = smoother drape).
+        /// </summary>
+        private static SceneFloat3[] BuildSagKnots(Vector3 a, Vector3 b, int subdivisions, float sag = 1.0f)
+        {
+            int midCount = Mathf.Max(1, subdivisions);
+            var knots = new SceneFloat3[midCount + 2];
+            knots[0] = new SceneFloat3 { x = a.x, y = a.y, z = a.z };
+            knots[knots.Length - 1] = new SceneFloat3 { x = b.x, y = b.y, z = b.z };
+
+            float sagFactor = sag > 0f ? sag : 1.0f;
+            float wireLength = Vector3.Distance(a, b);
+            float sagDepth   = sagFactor * (wireLength * 0.12f + 0.04f);
+            for (int i = 0; i < midCount; i++)
+            {
+                float t = (i + 1f) / (midCount + 1f);
+                float sagY = -sagDepth * Mathf.Sin(Mathf.PI * t);
+                knots[i + 1] = new SceneFloat3
+                {
+                    x = Mathf.Lerp(a.x, b.x, t),
+                    y = Mathf.Lerp(a.y, b.y, t) + sagY,
+                    z = Mathf.Lerp(a.z, b.z, t),
+                };
+            }
+            return knots;
+        }
+
+        /// <summary>
         /// Finds the <see cref="WireConnectEntry"/> for the given targetId/index
         /// from the step's wireConnect payload. Returns null for non-WireConnect steps
         /// or when no matching entry is found.
@@ -626,18 +654,20 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
-        /// Returns the wire color from the part's authored splinePath.color when alpha > 0,
+        /// Returns the wire color from the entry's authored color field when alpha &gt; 0,
         /// otherwise returns the default near-black cable color.
         /// </summary>
-        private static Color ResolveWireColor(PartPreviewPlacement pp)
+        private static Color ResolveWireColor(WireConnectEntry entry)
         {
-            if (pp?.splinePath != null)
-            {
-                SceneFloat4 c = pp.splinePath.color;
-                if (c.a > 0f)
-                    return new Color(c.r, c.g, c.b, c.a);
-            }
+            if (entry != null && entry.color.a > 0f)
+                return new Color(entry.color.r, entry.color.g, entry.color.b, entry.color.a);
             return new Color(0.15f, 0.15f, 0.15f, 1f);
         }
+
+        /// <summary>
+        /// Returns the tube radius from the entry's width field, defaulting to 0.003 m when unset.
+        /// </summary>
+        private static float ResolveWireRadius(WireConnectEntry entry)
+            => entry != null && entry.radius > 0f ? entry.radius : 0.003f;
     }
 }

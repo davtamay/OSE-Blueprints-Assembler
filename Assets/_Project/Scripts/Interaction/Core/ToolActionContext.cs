@@ -41,5 +41,13 @@ namespace OSE.Interaction
 
         // ── Tool spatial metadata (grip, tip, action axis) ──
         public ToolPoseConfig ToolPose;
+
+        /// <summary>
+        /// When true, <see cref="ToolActionRotation"/> is already a direct mesh rotation —
+        /// no <c>Inverse(gripRotation)</c> correction should be applied.
+        /// False (legacy) means <c>ToolActionRotation</c> is an approach vector and the
+        /// correction is still needed for correct visual placement.
+        /// </summary>
+        public bool ToolActionRotationIsMesh;
     }
 }

@@ -7,7 +7,7 @@ namespace OSE.Editor
 {
     /// <summary>
     /// Stateless helpers shared between step-based authoring windows
-    /// (ToolTargetAuthoringWindow, PartPlacementAuthoringWindow, …).
+    /// (ToolTargetAuthoringWindow, …).
     ///
     /// All methods are pure — they take inputs and return outputs, mutating
     /// nothing outside their scope.  This makes them safe to call from any

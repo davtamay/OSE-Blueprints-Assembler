@@ -159,28 +159,58 @@ namespace OSE.Interaction
 
             if (step.targetIds != null)
             {
-                foreach (string tid in step.targetIds)
+                WireConnectEntry[] wireEntries = step.wireConnect?.wires;
+
+                for (int tIdx = 0; tIdx < step.targetIds.Length; tIdx++)
                 {
-                    TargetPreviewPlacement tp = findTarget?.Invoke(tid);
-                    if (tp == null)
-                        continue;
+                    string tid = step.targetIds[tIdx];
 
-                    Vector3 portA = new Vector3(tp.portA.x, tp.portA.y, tp.portA.z);
-                    Vector3 portB = new Vector3(tp.portB.x, tp.portB.y, tp.portB.z);
+                    // Wire entries carry portA/portB directly — prefer them over target placement.
+                    WireConnectEntry wireEntry = null;
+                    if (wireEntries != null)
+                    {
+                        foreach (var w in wireEntries)
+                            if (w?.targetId == tid) { wireEntry = w; break; }
+                        if (wireEntry == null && tIdx < wireEntries.Length)
+                            wireEntry = wireEntries[tIdx];
+                    }
+
+                    Vector3 portA = Vector3.zero;
+                    Vector3 portB = Vector3.zero;
+
+                    if (wireEntry != null &&
+                        (wireEntry.portA.x != 0f || wireEntry.portA.y != 0f || wireEntry.portA.z != 0f ||
+                         wireEntry.portB.x != 0f || wireEntry.portB.y != 0f || wireEntry.portB.z != 0f))
+                    {
+                        portA = new Vector3(wireEntry.portA.x, wireEntry.portA.y, wireEntry.portA.z);
+                        portB = new Vector3(wireEntry.portB.x, wireEntry.portB.y, wireEntry.portB.z);
+                    }
+                    else
+                    {
+                        TargetPreviewPlacement tp = findTarget?.Invoke(tid);
+                        if (tp == null) continue;
+                        portA = new Vector3(tp.portA.x, tp.portA.y, tp.portA.z);
+                        portB = new Vector3(tp.portB.x, tp.portB.y, tp.portB.z);
+
+                        if (portA == Vector3.zero && portB == Vector3.zero)
+                        {
+                            AddPoint(new Vector3(tp.position.x, tp.position.y, tp.position.z));
+                            continue;
+                        }
+                    }
+
                     bool usedPorts = false;
-
                     if (includePorts && (portA != Vector3.zero || portB != Vector3.zero))
                     {
-                        if (portA != Vector3.zero)
-                            AddPoint(portA);
-                        if (portB != Vector3.zero)
-                            AddPoint(portB);
+                        if (portA != Vector3.zero) AddPoint(portA);
+                        if (portB != Vector3.zero) AddPoint(portB);
                         usedPorts = true;
                     }
 
                     if (!usedPorts)
                     {
-                        AddPoint(new Vector3(tp.position.x, tp.position.y, tp.position.z));
+                        if (portA != Vector3.zero) AddPoint(portA);
+                        else if (portB != Vector3.zero) AddPoint(portB);
                     }
                 }
             }

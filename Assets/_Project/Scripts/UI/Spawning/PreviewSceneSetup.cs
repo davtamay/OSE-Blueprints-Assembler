@@ -7,9 +7,9 @@ using UnityEngine.UIElements;
 namespace OSE.UI.Root
 {
     /// <summary>
-    /// Owns the scene scaffold: Preview Scaffold parent, floor plane, target marker,
-    /// camera positioning, and the UI Root host (UIDocument + UIDocumentBootstrap +
-    /// UIRootCoordinator). Reads MechanicsSceneVisualProfile for environment settings.
+    /// Owns the scene scaffold: Preview Scaffold parent, camera positioning,
+    /// and the UI Root host (UIDocument + UIDocumentBootstrap + UIRootCoordinator).
+    /// Reads MechanicsSceneVisualProfile for environment settings.
     ///
     /// This component knows nothing about packages, parts, or runtime events.
     /// It just ensures the scene skeleton exists and looks right.
@@ -20,8 +20,6 @@ namespace OSE.UI.Root
     {
         private const string PreviewRootName = "Preview Scaffold";
         private const string LegacyPreviewRootName = "Generated Preview";
-        private const string FloorName = "Preview Floor";
-        private const string TargetMarkerName = "Placement Target";
         private const string UiHostName = "UI Root";
 
         [SerializeField] private MechanicsSceneVisualProfile _visualProfile;
@@ -32,8 +30,6 @@ namespace OSE.UI.Root
         // ── Public accessors for sibling components ──
 
         public Transform PreviewRoot { get; private set; }
-        public GameObject Floor { get; private set; }
-        public GameObject TargetMarker { get; private set; }
         public GameObject UiHost { get; private set; }
         public UIRootCoordinator UiRootCoordinator { get; private set; }
         public MechanicsSceneVisualProfile ActiveProfile => _visualProfile != null
@@ -118,8 +114,6 @@ namespace OSE.UI.Root
             EnsureScaffold();
             SetScaffoldActive(true);
             ApplyCamera();
-            ApplyFloor();
-            ApplyTargetMarker();
             _applied = true;
         }
 
@@ -138,8 +132,6 @@ namespace OSE.UI.Root
 
             if (PreviewRoot == null) return;
 
-            Floor = FindChild(FloorName);
-            TargetMarker = FindChild(TargetMarkerName);
             UiHost = FindChild(UiHostName);
 
             if (UiHost != null)
@@ -150,12 +142,8 @@ namespace OSE.UI.Root
         {
             CacheScaffold();
             PreviewRoot = GetOrCreateChildTransform(PreviewRootName);
-            Floor = GetOrCreatePrimitive(FloorName, PrimitiveType.Plane);
-            TargetMarker = GetOrCreatePrimitive(TargetMarkerName, PrimitiveType.Cylinder);
             EnsureUiHost();
 
-            SetObjectActive(Floor, ActiveProfile.ShowGeometryPreview);
-            SetObjectActive(TargetMarker, ActiveProfile.ShowGeometryPreview);
             SetObjectActive(UiHost, ActiveProfile.ShowUiPreview);
         }
 
@@ -174,32 +162,6 @@ namespace OSE.UI.Root
             if (!Application.isPlaying) return;
             PreviewCameraSettings cam = ActiveProfile.Camera;
             mainCamera.backgroundColor = cam.backgroundColor;
-        }
-
-        private void ApplyFloor()
-        {
-            if (Floor == null || !ActiveProfile.ShowGeometryPreview) return;
-            PreviewObjectAppearance floor = ActiveProfile.Floor;
-            Floor.transform.SetLocalPositionAndRotation(floor.position, Quaternion.identity);
-            Floor.transform.localScale = floor.scale;
-            MaterialHelper.Apply(Floor, "Preview Floor Material", floor.color);
-        }
-
-        private void ApplyTargetMarker()
-        {
-            if (TargetMarker == null || !ActiveProfile.ShowGeometryPreview) return;
-            // Default placement — PackagePartSpawner overrides from previewConfig
-            Collider col = TargetMarker.GetComponent<Collider>();
-            if (col != null) col.enabled = false;
-
-            // The cylinder only exists as an authoring anchor for scene-capture tools.
-            // Hide its renderer at runtime so it doesn't appear in the game view;
-            // it remains active so SessionDriverEditor can still find and read its transform.
-            if (Application.isPlaying)
-            {
-                var mr = TargetMarker.GetComponent<MeshRenderer>();
-                if (mr != null) mr.enabled = false;
-            }
         }
 
         // ── Events ──
@@ -234,19 +196,6 @@ namespace OSE.UI.Root
             if (existing != null) return existing.gameObject;
             var go = new GameObject(name);
             go.transform.SetParent(PreviewRoot, false);
-            return go;
-        }
-
-        private GameObject GetOrCreatePrimitive(string name, PrimitiveType type)
-        {
-            GameObject go = GetOrCreateChildObject(name);
-            if (go.GetComponent<MeshFilter>() == null || go.GetComponent<MeshRenderer>() == null)
-            {
-                SafeDestroy(go);
-                go = GameObject.CreatePrimitive(type);
-                go.name = name;
-                go.transform.SetParent(PreviewRoot, false);
-            }
             return go;
         }
 

@@ -472,17 +472,23 @@ namespace OSE.Interaction
                 ComputeSquareCheckPose(approachDir, out actionRot);
             }
             // Authored rotation takes priority — content knows best how this tool sits at this target.
-            // Apply Inverse(gripRotation) so the tool GO sits in the same orientation as the
-            // editor preview (which also undoes gripRotation in ComputeToolLocalTransform).
+            // "mesh" packages: use TargetWorldRotation (live world rotation of the spawned sphere =
+            // previewRoot.rotation * placement.rotation), which is exactly what TTAW shows.
+            // This makes the TTAW placement.rotation the single source of truth at runtime —
+            // no Euler file value, no migration errors.
+            // Legacy packages: use the stored ToolActionRotation Euler with grip correction.
             // workingPos here is a placeholder only — Enter() always overrides it with the exact
             // surfacePos - actionRot * tipPoint * scale formula when ToolPose is available.
-            // When ToolPose is null (package not yet loaded on first click) fall back to the
-            // camera-side approach so the pivot is never placed on the wrong side of the surface.
             else if (ctx.HasToolActionRotation)
             {
-                actionRot = ctx.ToolActionRotation;
-                if (ctx.ToolPose != null && ctx.ToolPose.HasGripRotation)
-                    actionRot = ctx.ToolActionRotation * Quaternion.Inverse(ctx.ToolPose.GetGripRotation());
+                if (ctx.ToolActionRotationIsMesh)
+                    actionRot = ctx.TargetWorldRotation;
+                else
+                {
+                    actionRot = ctx.ToolActionRotation;
+                    if (ctx.ToolPose != null && ctx.ToolPose.HasGripRotation)
+                        actionRot = ctx.ToolActionRotation * Quaternion.Inverse(ctx.ToolPose.GetGripRotation());
+                }
                 workingPos = surfacePos + approachDir * toolHalfLength;
             }
             // Torque/weld: align the action axis to the fastener shaft direction from the

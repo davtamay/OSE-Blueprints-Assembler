@@ -115,12 +115,15 @@ namespace OSE.UI.Root
 
                     // Final-pass guarantee: any panels stacked in prior steps stay at
                     // their integrated cube positions after reveal/refresh have run.
+                    // Cap by the active step's index: backward navigation should NOT
+                    // re-assemble bars that belong to future steps.
                     if (ServiceRegistry.TryGet<IMachineSessionController>(out var liveSession))
                     {
                         int liveCompleted = liveSession.SessionState?.CompletedStepCount ?? 0;
-                        if (liveCompleted > 0)
+                        int cappedCompleted = GetCompletedCountCappedByNavigation(liveSession, liveCompleted, evt.StepId);
+                        if (cappedCompleted > 0)
                         {
-                            StepDefinition[] liveCompletedSteps = GetCompletedSteps(liveSession, liveCompleted);
+                            StepDefinition[] liveCompletedSteps = GetCompletedSteps(liveSession, cappedCompleted);
                             _ctx.SubassemblyController?.EnforceIntegratedPositions(liveCompletedSteps);
                         }
                     }
@@ -191,6 +194,14 @@ namespace OSE.UI.Root
             _ctx.VisualFeedback?.RevealedPartIds.Clear();
             _ctx.SubassemblyController?.ResetReplayState();
 
+            // Clear stale part states carried over from a prior session or navigation.
+            // PartInteractionBridge._partStates is a separate dictionary from
+            // PartRuntimeController._partStates — RecomputePartsForNavigation only
+            // clears the runtime copy. Without clearing here, HideNonIntroducedParts
+            // sees old Completed entries and skips hiding parts that should revert
+            // (e.g. frame bars still at their integrated cube positions when scrubbing back).
+            _ctx.PartStates.Clear();
+
             StepDefinition[] completedSteps = Array.Empty<StepDefinition>();
             if (targetGlobalIndex > 0 && orderedSteps.Length > 0)
             {
@@ -257,8 +268,31 @@ namespace OSE.UI.Root
             if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return;
 
-            int completedCount = session.SessionState != null ? session.SessionState.CompletedStepCount : 0;
+            // Force-resave GLB originals now that all async loads are done.
+            // MarkAsImported → Save() fires at swap time (during SpawnGlbPartsAsync),
+            // which may be before glTFast has applied Shader Graph materials to the
+            // instantiated scene. Since _saved is now only set when valid materials
+            // exist, a force-resave here re-captures the final correct materials.
+            var spawnedParts = _ctx.Spawner?.SpawnedParts;
+            if (spawnedParts != null)
+            {
+                for (int i = 0; i < spawnedParts.Count; i++)
+                {
+                    var part = spawnedParts[i];
+                    if (part != null && MaterialHelper.IsImportedModel(part))
+                        MaterialHelper.ForceSaveOriginals(part);
+                }
+            }
+
+            int rawCompletedCount = session.SessionState != null ? session.SessionState.CompletedStepCount : 0;
             string activeStepId = GetActiveStepId(session);
+
+            // session.SessionState.CompletedStepCount reflects actual play progression and does NOT
+            // update when the user navigates backward via the step scrubber. Cap by the active step's
+            // global index so this async callback doesn't re-assemble bars that belong to future steps.
+            // Example: user played to step 47 (rawCompleted=46), then navigated back to step 1 (activeIndex=0)
+            // → effective = min(46,0) = 0 → no EnforceIntegratedPositions → frame stays unassembled. ✓
+            int completedCount = GetCompletedCountCappedByNavigation(session, rawCompletedCount, activeStepId);
 
             if (session.SessionState != null && session.SessionState.IsRestored && completedCount > 0)
             {
@@ -267,34 +301,36 @@ namespace OSE.UI.Root
 
                 OseLog.Info(
                     $"[PartInteraction] Re-applied restore positioning after async part spawn " +
-                    $"({completedSteps.Length} steps).");
+                    $"({completedSteps.Length} steps, capped from {rawCompletedCount}).");
                 return;
             }
 
-            // Parts just finished async GLB loading (PositionParts ran → bars at flat playPosition).
-            // Re-enforce integrated positions for any stacking steps that visually precede the
-            // current navigation target, whether from actual completed steps (live play) or from
-            // scrubbing ahead without completing steps (CompletedStepCount may be 0).
+            // Parts just finished async GLB loading. GLB loading replaces placeholder GameObjects
+            // entirely — any SetActive(true) applied to the placeholder is lost on the new model.
+            // RebuildVisualStateForActiveStep clears _revealedPartIds first, so RevealStepParts
+            // actually calls SetActive(true) on the freshly-loaded GLB objects.
+            // (Contrast with a bare RevealStepParts call, which sees the parts already in
+            // _revealedPartIds and skips them — the new model stays hidden.)
             StepDefinition[] effectiveSteps = GetEffectiveCompletedStepsForPartsReady(
                 session, completedCount, activeStepId);
-            if (effectiveSteps != null && effectiveSteps.Length > 0)
-            {
-                _ctx.SubassemblyController?.EnforceIntegratedPositions(effectiveSteps);
+            RebuildVisualStateForActiveStep(
+                effectiveSteps ?? Array.Empty<StepDefinition>(), activeStepId, resetToDefaultView: false);
 
-                OseLog.VerboseInfo(
-                    $"[PartInteraction] EnforceIntegratedPositions after async GLB swap " +
-                    $"({effectiveSteps.Length} effective steps, activeStep='{activeStepId}').");
-            }
+            OseLog.VerboseInfo(
+                $"[PartInteraction] Rebuilt visual state after async GLB swap " +
+                $"({effectiveSteps?.Length ?? 0} effective steps, activeStep='{activeStepId}').");
         }
 
         /// <summary>
         /// Returns the array of steps to treat as "completed" for <see cref="HandlePartsReady"/>.
-        /// Uses actual CompletedStepCount for live-play sessions; falls back to all steps before
-        /// the currently active step for scrubbing sessions (CompletedStepCount == 0).
+        /// <paramref name="completedCount"/> is already capped by navigation position.
+        /// Uses it directly for live-play sessions; falls back to all steps before the active step
+        /// for scrubbing sessions (CompletedStepCount == 0 and no forward navigation occurred).
         /// </summary>
         private StepDefinition[] GetEffectiveCompletedStepsForPartsReady(
             IMachineSessionController session, int completedCount, string activeStepId)
         {
+            // completedCount is already capped by GetCompletedCountCappedByNavigation.
             if (completedCount > 0)
                 return GetCompletedSteps(session, completedCount);
 
@@ -320,6 +356,35 @@ namespace OSE.UI.Root
             StepDefinition[] result = new StepDefinition[activeIndex];
             Array.Copy(orderedSteps, result, activeIndex);
             return result;
+        }
+
+        /// <summary>
+        /// Caps <paramref name="completedCount"/> by the global index of <paramref name="activeStepId"/>.
+        /// This prevents stale <see cref="IMachineSessionState.CompletedStepCount"/> (which does not
+        /// update on backward navigation) from causing future-step bars to be integrated too early.
+        /// </summary>
+        private int GetCompletedCountCappedByNavigation(
+            IMachineSessionController session, int completedCount, string activeStepId)
+        {
+            if (completedCount <= 0 || string.IsNullOrWhiteSpace(activeStepId))
+                return completedCount;
+
+            MachinePackageDefinition package = _ctx.Spawner?.CurrentPackage ?? session?.Package;
+            StepDefinition[] orderedSteps = package?.GetOrderedSteps();
+            if (orderedSteps == null || orderedSteps.Length == 0)
+                return completedCount;
+
+            int activeIndex = -1;
+            for (int i = 0; i < orderedSteps.Length; i++)
+            {
+                if (string.Equals(orderedSteps[i]?.id, activeStepId, StringComparison.OrdinalIgnoreCase))
+                { activeIndex = i; break; }
+            }
+
+            if (activeIndex < 0)
+                return completedCount;
+
+            return Math.Min(completedCount, activeIndex);
         }
 
         // ── Context builders (also used by PartInteractionBridge.Update) ──

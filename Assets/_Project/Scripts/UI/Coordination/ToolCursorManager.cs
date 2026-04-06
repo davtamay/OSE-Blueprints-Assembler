@@ -226,34 +226,58 @@ namespace OSE.UI.Root
             }
         }
 
-        /// <summary>Spawns a semi-transparent clone of the pipe part that tracks the cursor.</summary>
+        /// <summary>Spawns a semi-transparent wire stub or part clone that tracks the cursor.</summary>
         public async Task SpawnPipeCursorPreviewAsync(MachinePackageDefinition package, StepDefinition step,
                                          Func<string, GameObject> findSpawnedPart, PackagePartSpawner spawner,
                                          CancellationToken ct = default)
         {
             ClearPipeCursorPreview();
 
-            string[] reqParts = step.GetEffectiveRequiredPartIds();
-            if (reqParts == null || reqParts.Length == 0) return;
-            string partId = reqParts[0];
-
             GameObject preview = null;
-            GameObject spawnedSource = findSpawnedPart?.Invoke(partId);
-            if (spawnedSource != null)
-            {
-                preview = UnityEngine.Object.Instantiate(spawnedSource);
-            }
-            else if (package.TryGetPart(partId, out PartDefinition partDef)
-                     && !string.IsNullOrWhiteSpace(partDef.assetRef))
-            {
-                preview = await spawner.LoadPackageAssetAsync(partDef.assetRef, ct: ct);
-            }
 
-            if (preview == null)
-                preview = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            // WireConnect steps carry no part reference — create a small stub tube from
+            // the first wire entry's color and width so the cursor indicates wire mode.
+            if (step.wireConnect?.IsConfigured == true)
+            {
+                WireConnectEntry firstEntry = step.wireConnect.wires[0];
+                float radius = firstEntry.radius > 0f ? firstEntry.radius : 0.003f;
+                Color c = firstEntry.color.a > 0f
+                    ? new Color(firstEntry.color.r, firstEntry.color.g, firstEntry.color.b, firstEntry.color.a)
+                    : new Color(0.15f, 0.15f, 0.15f, 1f);
+                var stubPath = new SplinePathDefinition
+                {
+                    radius = radius, segments = 6, metallic = 0f, smoothness = 0.25f,
+                    knots  = new SceneFloat3[]
+                    {
+                        new SceneFloat3 { x = 0f, y = -0.05f, z = 0f },
+                        new SceneFloat3 { x = 0f, y =  0.05f, z = 0f },
+                    }
+                };
+                preview = SplinePartFactory.Create("CursorWire", stubPath, c, _fallbackParent);
+            }
+            else
+            {
+                string[] reqParts = step.GetEffectiveRequiredPartIds();
+                if (reqParts == null || reqParts.Length == 0) return;
+                string partId = reqParts[0];
+
+                GameObject spawnedSource = findSpawnedPart?.Invoke(partId);
+                if (spawnedSource != null)
+                {
+                    preview = UnityEngine.Object.Instantiate(spawnedSource);
+                }
+                else if (package.TryGetPart(partId, out PartDefinition partDef)
+                         && !string.IsNullOrWhiteSpace(partDef.assetRef))
+                {
+                    preview = await spawner.LoadPackageAssetAsync(partDef.assetRef, ct: ct);
+                }
+
+                if (preview == null)
+                    preview = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            }
 
             _pipeCursorPreview = preview;
-            _pipeCursorPreview.name = $"CursorCable_{partId}";
+            _pipeCursorPreview.name = "CursorCable";
 
             Camera mainCam = CameraUtil.GetMain();
             _pipeCursorPreview.transform.SetParent(

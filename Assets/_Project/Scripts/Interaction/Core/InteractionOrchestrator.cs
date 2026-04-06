@@ -1167,14 +1167,20 @@ namespace OSE.Interaction
                     // When the author has specified a placement rotation, use it directly
                     // rather than the animation's final pose (TorquePreview spins the
                     // preview 120° — the authored rotation should be the resting state).
-                    // Apply Inverse(gripRotation) to match the editor preview orientation
-                    // (ToolCursorManager and ComputeToolLocalTransform both compensate for it).
+                    // "mesh" packages: TargetWorldRotation is the live sphere world rotation
+                    // (previewRoot.rotation * placement.rotation) — identical to TTAW preview.
+                    // Legacy packages: apply grip correction to the stored Euler value.
                     Quaternion placementRot = actionRot;
                     if (ctx.HasToolActionRotation)
                     {
-                        placementRot = ctx.ToolActionRotation;
-                        if (ctx.ToolPose != null && ctx.ToolPose.HasGripRotation)
-                            placementRot = ctx.ToolActionRotation * Quaternion.Inverse(ctx.ToolPose.GetGripRotation());
+                        if (ctx.ToolActionRotationIsMesh)
+                            placementRot = ctx.TargetWorldRotation;
+                        else
+                        {
+                            placementRot = ctx.ToolActionRotation;
+                            if (ctx.ToolPose != null && ctx.ToolPose.HasGripRotation)
+                                placementRot = ctx.ToolActionRotation * Quaternion.Inverse(ctx.ToolPose.GetGripRotation());
+                        }
                     }
 
                     // Offset placement so the tool's tipPoint lands at the surface,

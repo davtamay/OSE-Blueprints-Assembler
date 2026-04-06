@@ -22,6 +22,15 @@ namespace OSE.Content
         public float defaultAssemblyScaleMultiplier = 1f;
 
         /// <summary>
+        /// Indicates the rotation format stored in <see cref="TargetPreviewPlacement.rotation"/>
+        /// and <see cref="TargetDefinition.toolActionRotation"/>.
+        /// <c>"mesh"</c> = direct mesh rotation (no gripRotation correction at use-time).
+        /// Null/empty = legacy approach-vector format (gripRotation correction still applied).
+        /// Set automatically by ToolTargetAuthoringWindow after migration.
+        /// </summary>
+        public string targetRotationFormat;
+
+        /// <summary>
         /// Per-part visual placement overrides for the preview scene.
         /// The harness matches entries by partId to position and color each part.
         /// </summary>

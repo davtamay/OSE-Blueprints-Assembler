@@ -71,6 +71,7 @@ namespace OSE.Core
             var renderers = MaterialHelper.GetRenderers(gameObject);
             _entries = new Entry[renderers.Length];
 
+            bool anyValid = false;
             for (int i = 0; i < renderers.Length; i++)
             {
                 var r = renderers[i];
@@ -81,9 +82,20 @@ namespace OSE.Core
                 mats.CopyTo(copy, 0);
 
                 _entries[i] = new Entry { Renderer = r, Materials = copy };
+
+                // Check that at least one material slot is non-null so we don't
+                // permanently block the fallback preview-material path.
+                for (int m = 0; m < copy.Length; m++)
+                    if (copy[m] != null) { anyValid = true; break; }
             }
 
-            _saved = true;
+            // Only mark as saved when real materials exist. If glTFast hasn't
+            // applied materials yet (e.g. deferred Shader Graph setup), we leave
+            // _saved = false so ForceSave() in HandlePartsReady can retry, and so
+            // RestoreOriginals() returns false — allowing the preview-material
+            // fallback in ApplyAvailablePartVisual to run instead of restoring nulls.
+            if (anyValid)
+                _saved = true;
         }
 
         public void Restore()
@@ -101,28 +113,24 @@ namespace OSE.Core
                 }
             }
 
-            // Clear any emission that SetEmission may have written to these shared materials
-            // during a previous interaction (hover/select/hint). Since Save() stores material
-            // references (not clones), emission changes persist on the cached instances.
+            // Clear any emission residue via per-renderer MaterialPropertyBlock overrides.
+            // DO NOT mutate material objects directly — entry.Materials stores shared
+            // references, so mat.SetColor would bleed across all parts using the same
+            // material asset (e.g. parts extracted from the same combined GLB), causing
+            // the "whack-a-mole" where restoring part A wipes emission from part B.
+            // A zero-emission property block is per-renderer and avoids cross-part mutation.
             if (_isImportedModel)
             {
+                var block = new MaterialPropertyBlock();
+                block.SetColor("emissiveFactor", Color.black);
+                block.SetColor("_EmissionColor", Color.black);
+
                 foreach (var entry in _entries)
                 {
-                    if (entry.Materials == null) continue;
-                    foreach (var mat in entry.Materials)
-                    {
-                        if (mat == null) continue;
-                        if (mat.HasProperty("emissiveFactor"))
-                        {
-                            mat.SetColor("emissiveFactor", Color.black);
-                            mat.DisableKeyword("_EMISSIVE");
-                        }
-                        if (mat.HasProperty("_EmissionColor"))
-                        {
-                            mat.SetColor("_EmissionColor", Color.black);
-                            mat.DisableKeyword("_EMISSION");
-                        }
-                    }
+                    if (entry.Renderer == null) continue;
+                    // Apply a minimal property block that only suppresses emission.
+                    // This is cleared on the next interaction that calls SetPropertyBlock(null).
+                    entry.Renderer.SetPropertyBlock(block);
                 }
             }
         }

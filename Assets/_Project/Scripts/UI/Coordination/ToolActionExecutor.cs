@@ -96,12 +96,16 @@ namespace OSE.UI.Root
 
             // Resolve the active tool's spatial pose metadata (if authored).
             Content.ToolPoseConfig toolPose = null;
+            bool toolActionRotIsMesh = false;
             var activeToolId = GetActiveToolId();
             if (!string.IsNullOrEmpty(activeToolId))
             {
                 var package = _ctx.Spawner?.CurrentPackage;
                 if (package != null && package.TryGetTool(activeToolId, out var toolDef))
+                {
                     toolPose = toolDef.toolPose;
+                    toolActionRotIsMesh = package.previewConfig?.targetRotationFormat == "mesh";
+                }
             }
 
             bool isPersistent = false;
@@ -134,6 +138,7 @@ namespace OSE.UI.Root
                 HasToolActionRotation = resolvedTarget.HasToolActionRotation,
                 ToolActionRotation = resolvedTarget.ToolActionRotation,
                 ToolPose = toolPose,
+                ToolActionRotationIsMesh = toolActionRotIsMesh,
                 InstantPlacement = isPersistent,
                 AssemblyScale = _ctx.CursorManager.AssemblyScale,
             };

@@ -235,31 +235,8 @@ namespace OSE.UI.Root
             return cam.ViewportToWorldPoint(viewportPos);
         }
 
-        private Vector3 ClampToFloorBounds(Vector3 worldPosition, GameObject partGo)
+        private static Vector3 ClampToFloorBounds(Vector3 worldPosition, GameObject partGo)
         {
-            var setup = _getSetup();
-            if (setup == null || setup.Floor == null)
-                return worldPosition;
-
-            float partHalfHeight = TryGetVerticalHalfExtent(partGo, out float halfHeight)
-                ? halfHeight
-                : 0f;
-
-            if (TryGetWorldBounds(setup.Floor, out Bounds floorBounds))
-            {
-                worldPosition.x = Mathf.Clamp(worldPosition.x, floorBounds.min.x, floorBounds.max.x);
-                worldPosition.z = Mathf.Clamp(worldPosition.z, floorBounds.min.z, floorBounds.max.z);
-                float minY = floorBounds.max.y + partHalfHeight + InteractionVisualConstants.DragFloorEpsilon;
-                if (worldPosition.y < minY)
-                    worldPosition.y = minY;
-                return worldPosition;
-            }
-
-            float fallbackFloorY = setup.Floor.transform.position.y;
-            float fallbackMinY = fallbackFloorY + partHalfHeight + InteractionVisualConstants.DragFloorEpsilon;
-            if (worldPosition.y < fallbackMinY)
-                worldPosition.y = fallbackMinY;
-
             return worldPosition;
         }
 

@@ -956,21 +956,7 @@
         "d3d_control_panel",
         "d3d_ramps_14_board",
         "d3d_psu_atx",
-        "d3d_smart_controller",
-        "wire_psu_12v",
-        "wire_psu_gnd",
-        "wire_psu_enable",
-        "wire_motor_x",
-        "wire_motor_y_left",
-        "wire_motor_y_right",
-        "wire_motor_z_front",
-        "wire_motor_z_back",
-        "wire_endstop_x",
-        "wire_endstop_y",
-        "wire_endstop_z",
-        "wire_heater_cartridge",
-        "wire_thermistor",
-        "wire_extruder_fan"
+        "d3d_smart_controller"
       ],
       "stepIds": [
         "step_mount_control_panel",
@@ -2261,146 +2247,6 @@
       "function": "Mounts and protects the RAMPS board and Smart Controller on the printer frame."
     },
     {
-      "id": "wire_psu_12v",
-      "displayName": "+12V Power Wire",
-      "assetRef": "",
-      "category": "pipe",
-      "quantity": 1,
-      "name": "+12V Power Wire",
-      "material": "18 AWG stranded copper, red insulation",
-      "function": "Carries +12V from PSU V+ output to RAMPS power screw terminal."
-    },
-    {
-      "id": "wire_psu_gnd",
-      "displayName": "GND Power Wire",
-      "assetRef": "",
-      "category": "pipe",
-      "quantity": 1,
-      "name": "GND Power Wire",
-      "material": "18 AWG stranded copper, black insulation",
-      "function": "Carries ground from PSU GND output to RAMPS GND screw terminal."
-    },
-    {
-      "id": "wire_psu_enable",
-      "displayName": "ATX Enable Wire",
-      "assetRef": "",
-      "category": "pipe",
-      "quantity": 1,
-      "name": "ATX Enable Jumper Wire",
-      "material": "22 AWG stranded copper, green insulation",
-      "function": "Shorts ATX PS_ON to GND to force the PSU on when the printer is switched on."
-    },
-    {
-      "id": "wire_motor_x",
-      "displayName": "X Motor Wire",
-      "assetRef": "",
-      "category": "pipe",
-      "quantity": 1,
-      "name": "X Motor Wire",
-      "material": "28 AWG 4-conductor ribbon cable, dupont connectors",
-      "function": "Connects the X-axis stepper motor to the X-driver header on the RAMPS board."
-    },
-    {
-      "id": "wire_motor_y_left",
-      "displayName": "Y-Left Motor Wire",
-      "assetRef": "",
-      "category": "pipe",
-      "quantity": 1,
-      "name": "Y-Left Motor Wire",
-      "material": "28 AWG 4-conductor ribbon cable, dupont connectors",
-      "function": "Connects the left Y-axis stepper motor to the Y-driver header on the RAMPS board."
-    },
-    {
-      "id": "wire_motor_y_right",
-      "displayName": "Y-Right Motor Wire",
-      "assetRef": "",
-      "category": "pipe",
-      "quantity": 1,
-      "name": "Y-Right Motor Wire",
-      "material": "28 AWG 4-conductor ribbon cable, dupont connectors",
-      "function": "Connects the right Y-axis stepper motor to the Y-driver header on the RAMPS board."
-    },
-    {
-      "id": "wire_motor_z_front",
-      "displayName": "Z-Front Motor Wire",
-      "assetRef": "",
-      "category": "pipe",
-      "quantity": 1,
-      "name": "Z-Front Motor Wire",
-      "material": "28 AWG 4-conductor ribbon cable, dupont connectors",
-      "function": "Connects the front Z-axis stepper motor to the Z-driver header on the RAMPS board."
-    },
-    {
-      "id": "wire_motor_z_back",
-      "displayName": "Z-Back Motor Wire",
-      "assetRef": "",
-      "category": "pipe",
-      "quantity": 1,
-      "name": "Z-Back Motor Wire",
-      "material": "28 AWG 4-conductor ribbon cable, dupont connectors",
-      "function": "Connects the rear Z-axis stepper motor to the Z-driver header on the RAMPS board."
-    },
-    {
-      "id": "wire_endstop_x",
-      "displayName": "X Endstop Signal Wire",
-      "assetRef": "",
-      "category": "pipe",
-      "quantity": 1,
-      "name": "X Endstop Signal Wire",
-      "material": "28 AWG 2-conductor, dupont connectors",
-      "function": "Carries signal and GND from the X-axis min endstop to the X-MIN header on RAMPS."
-    },
-    {
-      "id": "wire_endstop_y",
-      "displayName": "Y Endstop Signal Wire",
-      "assetRef": "",
-      "category": "pipe",
-      "quantity": 1,
-      "name": "Y Endstop Signal Wire",
-      "material": "28 AWG 2-conductor, dupont connectors",
-      "function": "Carries signal and GND from the Y-axis min endstop to the Y-MIN header on RAMPS."
-    },
-    {
-      "id": "wire_endstop_z",
-      "displayName": "Z Endstop Signal Wire",
-      "assetRef": "",
-      "category": "pipe",
-      "quantity": 1,
-      "name": "Z Endstop Signal Wire",
-      "material": "28 AWG 2-conductor, dupont connectors",
-      "function": "Carries signal and GND from the Z-axis min endstop to the Z-MIN header on RAMPS."
-    },
-    {
-      "id": "wire_heater_cartridge",
-      "displayName": "Heater Cartridge Wire",
-      "assetRef": "",
-      "category": "pipe",
-      "quantity": 1,
-      "name": "Heater Cartridge Wire",
-      "material": "20 AWG silicone-insulated pair, bare wire ends",
-      "function": "Connects the extruder heater cartridge to the E0 heater output (D10) on RAMPS."
-    },
-    {
-      "id": "wire_thermistor",
-      "displayName": "Thermistor Wire",
-      "assetRef": "",
-      "category": "pipe",
-      "quantity": 1,
-      "name": "Thermistor Wire",
-      "material": "28 AWG 2-conductor, dupont connectors",
-      "function": "Connects the hotend NTC thermistor to the T0 temperature input on RAMPS."
-    },
-    {
-      "id": "wire_extruder_fan",
-      "displayName": "Extruder Fan Wire",
-      "assetRef": "",
-      "category": "pipe",
-      "quantity": 1,
-      "name": "Extruder Fan Wire",
-      "material": "28 AWG 2-conductor, dupont connectors",
-      "function": "Connects the part-cooling fan to the always-on 12V FAN header or PWM D9 output on RAMPS."
-    },
-    {
       "name": "Frame Corner Bracket",
       "displayName": "Frame Corner Bracket",
       "category": "bracket",
@@ -2498,24 +2344,29 @@
       ],
       "toolPose": {
         "gripPoint": {
-          "x": 0,
-          "y": 0,
-          "z": 0
+          "x": -0.00057,
+          "y": 0.01496,
+          "z": -1.0795
         },
         "gripRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
+          "x": 65.09076,
+          "y": 95.98488,
+          "z": 4.3616
         },
         "tipPoint": {
           "x": 0,
-          "y": 0,
-          "z": 0
+          "y": -0.01102,
+          "z": 0.04548
+        },
+        "cursorOffset": {
+          "x": 0.00057,
+          "y": -0.01496,
+          "z": 1.0795
         },
         "handedness": "right",
         "poseHint": "power_grip"
       },
-      "scaleOverride": 0
+      "scaleOverride": 1
     },
     {
       "id": "tool_locking_clamp",
@@ -7641,7 +7492,24 @@
             "portAConnectorType": "bare_wire",
             "portBConnectorType": "screw_terminal",
             "polarityOrderMatters": true,
-            "partId": "wire_psu_12v"
+            "color": {
+              "r": 1.0,
+              "g": 0.18,
+              "b": 0.18,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": -0.16,
+              "y": 0.09,
+              "z": 0.0
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.1,
+              "z": -0.14
+            },
+            "subdivisions": 1
           }
         ]
       }
@@ -7673,7 +7541,24 @@
             "portAConnectorType": "bare_wire",
             "portBConnectorType": "screw_terminal",
             "polarityOrderMatters": true,
-            "partId": "wire_psu_gnd"
+            "color": {
+              "r": 0.08,
+              "g": 0.08,
+              "b": 0.08,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": -0.16,
+              "y": 0.08,
+              "z": 0.0
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.09,
+              "z": -0.14
+            },
+            "subdivisions": 1
           }
         ]
       }
@@ -7705,7 +7590,24 @@
             "portAConnectorType": "bare_wire",
             "portBConnectorType": "bare_wire",
             "polarityOrderMatters": false,
-            "partId": "wire_psu_enable"
+            "color": {
+              "r": 0.1,
+              "g": 0.8,
+              "b": 0.1,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": -0.16,
+              "y": 0.07,
+              "z": 0.02
+            },
+            "portB": {
+              "x": -0.16,
+              "y": 0.07,
+              "z": -0.02
+            },
+            "subdivisions": 1
           }
         ]
       }
@@ -7753,7 +7655,24 @@
             "portAConnectorType": "dupont_4pin",
             "portBConnectorType": "dupont_4pin",
             "polarityOrderMatters": false,
-            "partId": "wire_motor_x"
+            "color": {
+              "r": 1.0,
+              "g": 0.85,
+              "b": 0.0,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": 0.0,
+              "y": 0.15,
+              "z": -0.19
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.16,
+              "z": -0.14
+            },
+            "subdivisions": 1
           }
         ]
       }
@@ -7785,7 +7704,24 @@
             "portAConnectorType": "dupont_4pin",
             "portBConnectorType": "dupont_4pin",
             "polarityOrderMatters": false,
-            "partId": "wire_motor_y_left"
+            "color": {
+              "r": 1.0,
+              "g": 0.85,
+              "b": 0.0,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": -0.16,
+              "y": 0.12,
+              "z": 0.0
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.15,
+              "z": -0.14
+            },
+            "subdivisions": 1
           }
         ]
       }
@@ -7817,7 +7753,24 @@
             "portAConnectorType": "dupont_4pin",
             "portBConnectorType": "dupont_4pin",
             "polarityOrderMatters": false,
-            "partId": "wire_motor_y_right"
+            "color": {
+              "r": 1.0,
+              "g": 0.85,
+              "b": 0.0,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": 0.15,
+              "y": 0.12,
+              "z": 0.0
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.14,
+              "z": -0.14
+            },
+            "subdivisions": 1
           }
         ]
       }
@@ -7849,7 +7802,24 @@
             "portAConnectorType": "dupont_4pin",
             "portBConnectorType": "dupont_4pin",
             "polarityOrderMatters": false,
-            "partId": "wire_motor_z_front"
+            "color": {
+              "r": 1.0,
+              "g": 0.85,
+              "b": 0.0,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": 0.0,
+              "y": 0.24,
+              "z": -0.19
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.13,
+              "z": -0.14
+            },
+            "subdivisions": 1
           }
         ]
       }
@@ -7881,7 +7851,24 @@
             "portAConnectorType": "dupont_4pin",
             "portBConnectorType": "dupont_4pin",
             "polarityOrderMatters": false,
-            "partId": "wire_motor_z_back"
+            "color": {
+              "r": 1.0,
+              "g": 0.85,
+              "b": 0.0,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": 0.0,
+              "y": 0.24,
+              "z": 0.19
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.12,
+              "z": -0.14
+            },
+            "subdivisions": 1
           }
         ]
       }
@@ -7913,7 +7900,24 @@
             "portAConnectorType": "dupont_2pin",
             "portBConnectorType": "dupont_2pin",
             "polarityOrderMatters": true,
-            "partId": "wire_endstop_x"
+            "color": {
+              "r": 0.1,
+              "g": 0.8,
+              "b": 0.1,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": -0.15,
+              "y": 0.01,
+              "z": -0.155
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.19,
+              "z": -0.14
+            },
+            "subdivisions": 1
           }
         ]
       }
@@ -7945,7 +7949,24 @@
             "portAConnectorType": "dupont_2pin",
             "portBConnectorType": "dupont_2pin",
             "polarityOrderMatters": true,
-            "partId": "wire_endstop_y"
+            "color": {
+              "r": 0.1,
+              "g": 0.8,
+              "b": 0.1,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": -0.155,
+              "y": 0.01,
+              "z": 0.0
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.18,
+              "z": -0.14
+            },
+            "subdivisions": 1
           }
         ]
       }
@@ -7977,7 +7998,24 @@
             "portAConnectorType": "dupont_2pin",
             "portBConnectorType": "dupont_2pin",
             "polarityOrderMatters": true,
-            "partId": "wire_endstop_z"
+            "color": {
+              "r": 0.1,
+              "g": 0.8,
+              "b": 0.1,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": -0.155
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.17,
+              "z": -0.14
+            },
+            "subdivisions": 1
           }
         ]
       }
@@ -8009,7 +8047,24 @@
             "portAConnectorType": "bare_wire",
             "portBConnectorType": "screw_terminal",
             "polarityOrderMatters": false,
-            "partId": "wire_heater_cartridge"
+            "color": {
+              "r": 1.0,
+              "g": 0.18,
+              "b": 0.18,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": 0.0,
+              "y": 0.22,
+              "z": -0.18
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.11,
+              "z": -0.14
+            },
+            "subdivisions": 1
           }
         ]
       }
@@ -8041,7 +8096,24 @@
             "portAConnectorType": "dupont_2pin",
             "portBConnectorType": "dupont_2pin",
             "polarityOrderMatters": true,
-            "partId": "wire_thermistor"
+            "color": {
+              "r": 0.2,
+              "g": 0.6,
+              "b": 1.0,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": 0.0,
+              "y": 0.21,
+              "z": -0.18
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.1,
+              "z": -0.14
+            },
+            "subdivisions": 1
           }
         ]
       }
@@ -8073,7 +8145,24 @@
             "portAConnectorType": "dupont_2pin",
             "portBConnectorType": "dupont_2pin",
             "polarityOrderMatters": true,
-            "partId": "wire_extruder_fan"
+            "color": {
+              "r": 0.2,
+              "g": 0.6,
+              "b": 1.0,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": 0.02,
+              "y": 0.2,
+              "z": -0.18
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.09,
+              "z": -0.14
+            },
+            "subdivisions": 1
           }
         ]
       }
@@ -9876,9 +9965,9 @@
       },
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 0,
-        "y": 180,
-        "z": 0
+        "x": 360.0,
+        "y": 180.0,
+        "z": 360.0
       }
     },
     {
@@ -9947,9 +10036,9 @@
       },
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 0,
-        "y": 180,
-        "z": 0
+        "x": 360.0,
+        "y": 180.0,
+        "z": 360.0
       }
     },
     {
@@ -10018,9 +10107,9 @@
       },
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 0,
-        "y": 180,
-        "z": 0
+        "x": 360.0,
+        "y": 180.0,
+        "z": 360.0
       }
     },
     {
@@ -10090,8 +10179,8 @@
       "useToolActionRotation": true,
       "toolActionRotation": {
         "x": 0.8938,
-        "y": 180,
-        "z": 0
+        "y": 180.0,
+        "z": 360.0
       }
     },
     {
@@ -10155,9 +10244,9 @@
       ],
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 0,
-        "y": 180,
-        "z": 0
+        "x": 360.0,
+        "y": 180.0,
+        "z": 360.0
       }
     },
     {
@@ -10226,9 +10315,9 @@
       },
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 0,
-        "y": 180,
-        "z": 0
+        "x": 360.0,
+        "y": 180.0,
+        "z": 360.0
       }
     },
     {
@@ -10249,9 +10338,9 @@
       },
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 341.661,
-        "y": 271.7354,
-        "z": 3.8056
+        "x": 4.5566,
+        "y": 296.3781,
+        "z": 2.8303
       }
     },
     {
@@ -10274,9 +10363,9 @@
       "weldLength": 0.001,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 356.4172,
-        "y": 151.8369,
-        "z": 0.3198
+        "x": 10.3335,
+        "y": 151.9751,
+        "z": 347.7102
       }
     },
     {
@@ -10299,9 +10388,9 @@
       "weldLength": 0.001,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 4.1603,
-        "y": 338.7817,
-        "z": 3.5261
+        "x": 18.0459,
+        "y": 339.7352,
+        "z": 351.0933
       }
     },
     {
@@ -10324,9 +10413,9 @@
       "weldLength": 0.001,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 345.8652,
-        "y": 244.2841,
-        "z": 357.0356
+        "x": 359.7671,
+        "y": 243.6304,
+        "z": 344.5001
       }
     },
     {
@@ -10349,9 +10438,9 @@
       "weldLength": 0.001,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 0,
-        "y": 39.3587,
-        "z": 0
+        "x": 13.9168,
+        "y": 39.4196,
+        "z": 347.3896
       }
     },
     {
@@ -10372,9 +10461,9 @@
       },
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 338.0364,
-        "y": 347.3719,
-        "z": 10.538
+        "x": 358.5393,
+        "y": 14.4486,
+        "z": 6.9388
       }
     },
     {
@@ -10397,9 +10486,9 @@
       "weldLength": 0.001,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 356.6251,
-        "y": 136.6792,
-        "z": 1.245
+        "x": 10.5373,
+        "y": 137.0438,
+        "z": 348.6502
       }
     },
     {
@@ -10422,9 +10511,9 @@
       "weldLength": 0.001,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 12.4904,
-        "y": 307.7291,
-        "z": 6.2884
+        "x": 26.3098,
+        "y": 309.4787,
+        "z": 354.256
       }
     },
     {
@@ -10447,9 +10536,9 @@
       "weldLength": 0.001,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 346.5357,
-        "y": 220.6222,
-        "z": 4.7631
+        "x": 0.4015,
+        "y": 221.8254,
+        "z": 352.0075
       }
     },
     {
@@ -10472,9 +10561,9 @@
       "weldLength": 0.001,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 0,
-        "y": 39.3631,
-        "z": 0
+        "x": 13.9168,
+        "y": 39.424,
+        "z": 347.3896
       }
     },
     {
@@ -10495,9 +10584,9 @@
       },
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 343.9483,
-        "y": 174.0056,
-        "z": 6.9212
+        "x": 5.3546,
+        "y": 199.8878,
+        "z": 6.5117
       }
     },
     {
@@ -10520,9 +10609,9 @@
       "weldLength": 0.001,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 356.549,
-        "y": 140.537,
-        "z": 1.0152
+        "x": 10.4625,
+        "y": 140.8454,
+        "z": 348.4164
       }
     },
     {
@@ -10545,9 +10634,9 @@
       "weldLength": 0.001,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 5.4112,
-        "y": 305.4328,
-        "z": 0.6629
+        "x": 19.3264,
+        "y": 305.6643,
+        "z": 348.0951
       }
     },
     {
@@ -10570,9 +10659,9 @@
       "weldLength": 0.001,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 345.8652,
-        "y": 244.2841,
-        "z": 357.0356
+        "x": 359.7671,
+        "y": 243.6304,
+        "z": 344.5001
       }
     },
     {
@@ -10595,9 +10684,9 @@
       "weldLength": 0.001,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 0.9021,
-        "y": 39.724,
-        "z": 359.4854
+        "x": 14.8189,
+        "y": 39.6571,
+        "z": 346.8584
       }
     },
     {
@@ -10618,9 +10707,9 @@
       },
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 341.6618,
-        "y": 325.4889,
-        "z": 3.7991
+        "x": 4.5598,
+        "y": 350.129,
+        "z": 2.825
       }
     },
     {
@@ -10643,9 +10732,9 @@
       "weldLength": 0.001,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 356.4172,
-        "y": 134.9848,
-        "z": 0.3198
+        "x": 10.3335,
+        "y": 135.123,
+        "z": 347.7102
       }
     },
     {
@@ -10668,9 +10757,9 @@
       "weldLength": 0.001,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 4.1603,
-        "y": 338.7817,
-        "z": 3.5261
+        "x": 18.0459,
+        "y": 339.7352,
+        "z": 351.0933
       }
     },
     {
@@ -10693,9 +10782,9 @@
       "weldLength": 0.001,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 345.8652,
-        "y": 244.2841,
-        "z": 357.0356
+        "x": 359.7671,
+        "y": 243.6304,
+        "z": 344.5001
       }
     },
     {
@@ -10718,9 +10807,9 @@
       "weldLength": 0.001,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 0,
-        "y": 39.3631,
-        "z": 0
+        "x": 13.9168,
+        "y": 39.424,
+        "z": 347.3896
       }
     },
     {
@@ -10741,9 +10830,9 @@
       },
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 341.6618,
-        "y": 213.0166,
-        "z": 3.7991
+        "x": 4.5598,
+        "y": 237.6567,
+        "z": 2.825
       }
     },
     {
@@ -10766,9 +10855,9 @@
       "weldLength": 0.001,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 356.4172,
-        "y": 151.8369,
-        "z": 0.3198
+        "x": 10.3335,
+        "y": 151.9751,
+        "z": 347.7102
       }
     },
     {
@@ -10791,9 +10880,9 @@
       "weldLength": 0.001,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 4.1892,
-        "y": 342.1013,
-        "z": 7.1238
+        "x": 17.9868,
+        "y": 343.96,
+        "z": 354.8662
       }
     },
     {
@@ -10816,9 +10905,9 @@
       "weldLength": 0.001,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 350.0528,
-        "y": 242.5003,
-        "z": 5.5655
+        "x": 3.8998,
+        "y": 243.899,
+        "z": 352.8734
       }
     },
     {
@@ -10841,9 +10930,9 @@
       "weldLength": 0.001,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 0,
-        "y": 39.3631,
-        "z": 0
+        "x": 13.9168,
+        "y": 39.424,
+        "z": 347.3896
       }
     },
     {
@@ -10864,9 +10953,9 @@
       },
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 342.2914,
-        "y": 359.0361,
-        "z": 357.5353
+        "x": 7.5042,
+        "y": 21.1847,
+        "z": 357.5796
       }
     },
     {
@@ -10889,9 +10978,9 @@
       "weldLength": 0.001,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 358.69,
-        "y": 159.3861,
-        "z": 1.8923
+        "x": 12.5971,
+        "y": 159.9129,
+        "z": 349.3267
       }
     },
     {
@@ -10914,9 +11003,9 @@
       "weldLength": 0.001,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 352.7308,
-        "y": 338.0764,
-        "z": 3.5453
+        "x": 6.6177,
+        "y": 338.9936,
+        "z": 350.9223
       }
     },
     {
@@ -10939,9 +11028,9 @@
       "weldLength": 0.001,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 345.8652,
-        "y": 244.2841,
-        "z": 357.0356
+        "x": 359.7671,
+        "y": 243.6304,
+        "z": 344.5001
       }
     },
     {
@@ -10964,9 +11053,9 @@
       "weldLength": 0.001,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 0,
-        "y": 39.3631,
-        "z": 0
+        "x": 13.9168,
+        "y": 39.424,
+        "z": 347.3896
       }
     },
     {
@@ -11125,9 +11214,9 @@
       "weldLength": 0.025,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 7.8577,
+        "y": 166.9718,
+        "z": 214.3126
       },
       "associatedPartId": "compound007_lower_fl",
       "completionToolId": null
@@ -11152,9 +11241,9 @@
       "weldLength": 0.025,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 0,
-        "y": 190.932,
-        "z": 0
+        "x": 7.8577,
+        "y": 357.9038,
+        "z": 214.3126
       },
       "associatedPartId": "compound007_lower_rr",
       "completionToolId": null
@@ -11179,9 +11268,9 @@
       "weldLength": 0.025,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 7.8577,
+        "y": 166.9718,
+        "z": 214.3126
       },
       "associatedPartId": "compound007_lower_fr",
       "completionToolId": null
@@ -11206,9 +11295,9 @@
       "weldLength": 0.025,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 0,
-        "y": 188.5281,
-        "z": 0
+        "x": 7.8577,
+        "y": 355.4999,
+        "z": 214.3126
       },
       "associatedPartId": "compound007_lower_rl",
       "completionToolId": null
@@ -11233,9 +11322,9 @@
       "weldLength": 0.025,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 0,
-        "y": 42.8403,
-        "z": 0
+        "x": 7.8577,
+        "y": 209.8121,
+        "z": 214.3126
       },
       "associatedPartId": "compound007_upper_fl",
       "completionToolId": null
@@ -11260,9 +11349,9 @@
       "weldLength": 0.025,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 0,
-        "y": 235.3156,
-        "z": 0
+        "x": 7.8577,
+        "y": 42.2874,
+        "z": 214.3126
       },
       "associatedPartId": "compound007_upper_rr",
       "completionToolId": null
@@ -11287,9 +11376,9 @@
       "weldLength": 0.025,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 0,
-        "y": 338.1206,
-        "z": 0
+        "x": 7.8577,
+        "y": 145.0924,
+        "z": 214.3126
       },
       "associatedPartId": "compound007_upper_fr",
       "completionToolId": null
@@ -11314,9 +11403,9 @@
       "weldLength": 0.025,
       "useToolActionRotation": true,
       "toolActionRotation": {
-        "x": 2.2913,
-        "y": 80.333,
-        "z": 13.2084
+        "x": 2.4886,
+        "y": 245.9217,
+        "z": 201.9779
       },
       "associatedPartId": "compound007_upper_rl",
       "completionToolId": null
@@ -12253,7 +12342,6 @@
       "name": "+12V Wire Connection",
       "anchorRef": "anchors/d3d/electronics/wire_psu_12v",
       "description": "PSU +12V output to RAMPS V+ screw terminal.",
-      "associatedPartId": "wire_psu_12v",
       "tags": [
         "electronics",
         "wiring"
@@ -12264,7 +12352,6 @@
       "name": "GND Wire Connection",
       "anchorRef": "anchors/d3d/electronics/wire_psu_gnd",
       "description": "PSU GND output to RAMPS GND screw terminal.",
-      "associatedPartId": "wire_psu_gnd",
       "tags": [
         "electronics",
         "wiring"
@@ -12275,7 +12362,6 @@
       "name": "ATX Enable Wire Connection",
       "anchorRef": "anchors/d3d/electronics/wire_psu_enable",
       "description": "ATX PS_ON to GND jumper \u00e2\u20ac\u201d forces PSU on.",
-      "associatedPartId": "wire_psu_enable",
       "tags": [
         "electronics",
         "wiring"
@@ -12286,7 +12372,6 @@
       "name": "X Motor Wire Connection",
       "anchorRef": "anchors/d3d/electronics/wire_motor_x",
       "description": "X-axis stepper motor to RAMPS X-driver header.",
-      "associatedPartId": "wire_motor_x",
       "tags": [
         "electronics",
         "wiring"
@@ -12297,7 +12382,6 @@
       "name": "Y-Left Motor Wire Connection",
       "anchorRef": "anchors/d3d/electronics/wire_motor_y_left",
       "description": "Y-left stepper motor to RAMPS Y-driver header.",
-      "associatedPartId": "wire_motor_y_left",
       "tags": [
         "electronics",
         "wiring"
@@ -12308,7 +12392,6 @@
       "name": "Y-Right Motor Wire Connection",
       "anchorRef": "anchors/d3d/electronics/wire_motor_y_right",
       "description": "Y-right stepper motor to RAMPS Y-driver header.",
-      "associatedPartId": "wire_motor_y_right",
       "tags": [
         "electronics",
         "wiring"
@@ -12319,7 +12402,6 @@
       "name": "Z-Front Motor Wire Connection",
       "anchorRef": "anchors/d3d/electronics/wire_motor_z_front",
       "description": "Z-front stepper motor to RAMPS Z-driver header.",
-      "associatedPartId": "wire_motor_z_front",
       "tags": [
         "electronics",
         "wiring"
@@ -12330,7 +12412,6 @@
       "name": "Z-Back Motor Wire Connection",
       "anchorRef": "anchors/d3d/electronics/wire_motor_z_back",
       "description": "Z-back stepper motor to RAMPS Z-driver header.",
-      "associatedPartId": "wire_motor_z_back",
       "tags": [
         "electronics",
         "wiring"
@@ -12341,7 +12422,6 @@
       "name": "X Endstop Wire Connection",
       "anchorRef": "anchors/d3d/electronics/wire_endstop_x",
       "description": "X-axis min endstop to RAMPS X-MIN header.",
-      "associatedPartId": "wire_endstop_x",
       "tags": [
         "electronics",
         "wiring"
@@ -12352,7 +12432,6 @@
       "name": "Y Endstop Wire Connection",
       "anchorRef": "anchors/d3d/electronics/wire_endstop_y",
       "description": "Y-axis min endstop to RAMPS Y-MIN header.",
-      "associatedPartId": "wire_endstop_y",
       "tags": [
         "electronics",
         "wiring"
@@ -12363,7 +12442,6 @@
       "name": "Z Endstop Wire Connection",
       "anchorRef": "anchors/d3d/electronics/wire_endstop_z",
       "description": "Z-axis min endstop to RAMPS Z-MIN header.",
-      "associatedPartId": "wire_endstop_z",
       "tags": [
         "electronics",
         "wiring"
@@ -12374,7 +12452,6 @@
       "name": "Heater Cartridge Connection",
       "anchorRef": "anchors/d3d/electronics/wire_heater_cartridge",
       "description": "Extruder heater cartridge to RAMPS E0 heater output.",
-      "associatedPartId": "wire_heater_cartridge",
       "tags": [
         "electronics",
         "wiring"
@@ -12385,7 +12462,6 @@
       "name": "Thermistor Connection",
       "anchorRef": "anchors/d3d/electronics/wire_thermistor",
       "description": "Extruder NTC thermistor to RAMPS T0 input.",
-      "associatedPartId": "wire_thermistor",
       "tags": [
         "electronics",
         "wiring"
@@ -12396,7 +12472,6 @@
       "name": "Extruder Fan Connection",
       "anchorRef": "anchors/d3d/electronics/wire_extruder_fan",
       "description": "Part-cooling fan to RAMPS FAN or D9 PWM header.",
-      "associatedPartId": "wire_extruder_fan",
       "tags": [
         "electronics",
         "wiring"
@@ -12442,6 +12517,7 @@
   },
   "previewConfig": {
     "defaultAssemblyScaleMultiplier": 2.0,
+    "targetRotationFormat": "mesh",
     "partPlacements": [
       {
         "partId": "bed_raiser",
@@ -17898,986 +17974,6 @@
         }
       },
       {
-        "partId": "wire_psu_12v",
-        "startPosition": {
-          "x": -0.16,
-          "y": 0.55,
-          "z": 0.0
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 1.0,
-          "g": 0.18,
-          "b": 0.18,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": -0.16,
-          "y": 0.09,
-          "z": 0.0
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "splinePath": {
-          "radius": 0.003,
-          "segments": 8,
-          "metallic": 0.0,
-          "smoothness": 0.3,
-          "color": {
-            "r": 1.0,
-            "g": 0.18,
-            "b": 0.18,
-            "a": 1.0
-          },
-          "knots": [
-            {
-              "x": -0.16,
-              "y": 0.09,
-              "z": 0.0
-            },
-            {
-              "x": -0.1,
-              "y": 0.07,
-              "z": -0.07
-            },
-            {
-              "x": -0.04,
-              "y": 0.1,
-              "z": -0.14
-            }
-          ]
-        }
-      },
-      {
-        "partId": "wire_psu_gnd",
-        "startPosition": {
-          "x": -0.16,
-          "y": 0.55,
-          "z": 0.0
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.08,
-          "g": 0.08,
-          "b": 0.08,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": -0.16,
-          "y": 0.08,
-          "z": 0.0
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "splinePath": {
-          "radius": 0.003,
-          "segments": 8,
-          "metallic": 0.0,
-          "smoothness": 0.3,
-          "color": {
-            "r": 0.08,
-            "g": 0.08,
-            "b": 0.08,
-            "a": 1.0
-          },
-          "knots": [
-            {
-              "x": -0.16,
-              "y": 0.08,
-              "z": 0.0
-            },
-            {
-              "x": -0.1,
-              "y": 0.06,
-              "z": -0.07
-            },
-            {
-              "x": -0.04,
-              "y": 0.09,
-              "z": -0.14
-            }
-          ]
-        }
-      },
-      {
-        "partId": "wire_psu_enable",
-        "startPosition": {
-          "x": -0.16,
-          "y": 0.55,
-          "z": 0.02
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.1,
-          "g": 0.8,
-          "b": 0.1,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": -0.16,
-          "y": 0.07,
-          "z": 0.02
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "splinePath": {
-          "radius": 0.003,
-          "segments": 8,
-          "metallic": 0.0,
-          "smoothness": 0.3,
-          "color": {
-            "r": 0.1,
-            "g": 0.8,
-            "b": 0.1,
-            "a": 1.0
-          },
-          "knots": [
-            {
-              "x": -0.16,
-              "y": 0.07,
-              "z": 0.02
-            },
-            {
-              "x": -0.16,
-              "y": 0.05,
-              "z": 0.0
-            },
-            {
-              "x": -0.16,
-              "y": 0.07,
-              "z": -0.02
-            }
-          ]
-        }
-      },
-      {
-        "partId": "wire_motor_x",
-        "startPosition": {
-          "x": 0.0,
-          "y": 0.55,
-          "z": -0.19
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 1.0,
-          "g": 0.85,
-          "b": 0.0,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.0,
-          "y": 0.15,
-          "z": -0.19
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "splinePath": {
-          "radius": 0.003,
-          "segments": 8,
-          "metallic": 0.0,
-          "smoothness": 0.3,
-          "color": {
-            "r": 1.0,
-            "g": 0.85,
-            "b": 0.0,
-            "a": 1.0
-          },
-          "knots": [
-            {
-              "x": 0.0,
-              "y": 0.15,
-              "z": -0.19
-            },
-            {
-              "x": -0.02,
-              "y": 0.13,
-              "z": -0.165
-            },
-            {
-              "x": -0.04,
-              "y": 0.16,
-              "z": -0.14
-            }
-          ]
-        }
-      },
-      {
-        "partId": "wire_motor_y_left",
-        "startPosition": {
-          "x": -0.16,
-          "y": 0.55,
-          "z": 0.0
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 1.0,
-          "g": 0.85,
-          "b": 0.0,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": -0.16,
-          "y": 0.12,
-          "z": 0.0
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "splinePath": {
-          "radius": 0.003,
-          "segments": 8,
-          "metallic": 0.0,
-          "smoothness": 0.3,
-          "color": {
-            "r": 1.0,
-            "g": 0.85,
-            "b": 0.0,
-            "a": 1.0
-          },
-          "knots": [
-            {
-              "x": -0.16,
-              "y": 0.12,
-              "z": 0.0
-            },
-            {
-              "x": -0.1,
-              "y": 0.1,
-              "z": -0.07
-            },
-            {
-              "x": -0.04,
-              "y": 0.15,
-              "z": -0.14
-            }
-          ]
-        }
-      },
-      {
-        "partId": "wire_motor_y_right",
-        "startPosition": {
-          "x": 0.15,
-          "y": 0.55,
-          "z": 0.0
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 1.0,
-          "g": 0.85,
-          "b": 0.0,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.15,
-          "y": 0.12,
-          "z": 0.0
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "splinePath": {
-          "radius": 0.003,
-          "segments": 8,
-          "metallic": 0.0,
-          "smoothness": 0.3,
-          "color": {
-            "r": 1.0,
-            "g": 0.85,
-            "b": 0.0,
-            "a": 1.0
-          },
-          "knots": [
-            {
-              "x": 0.15,
-              "y": 0.12,
-              "z": 0.0
-            },
-            {
-              "x": 0.055,
-              "y": 0.1,
-              "z": -0.07
-            },
-            {
-              "x": -0.04,
-              "y": 0.14,
-              "z": -0.14
-            }
-          ]
-        }
-      },
-      {
-        "partId": "wire_motor_z_front",
-        "startPosition": {
-          "x": 0.0,
-          "y": 0.55,
-          "z": -0.19
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 1.0,
-          "g": 0.85,
-          "b": 0.0,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.0,
-          "y": 0.24,
-          "z": -0.19
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "splinePath": {
-          "radius": 0.003,
-          "segments": 8,
-          "metallic": 0.0,
-          "smoothness": 0.3,
-          "color": {
-            "r": 1.0,
-            "g": 0.85,
-            "b": 0.0,
-            "a": 1.0
-          },
-          "knots": [
-            {
-              "x": 0.0,
-              "y": 0.24,
-              "z": -0.19
-            },
-            {
-              "x": -0.02,
-              "y": 0.11,
-              "z": -0.165
-            },
-            {
-              "x": -0.04,
-              "y": 0.13,
-              "z": -0.14
-            }
-          ]
-        }
-      },
-      {
-        "partId": "wire_motor_z_back",
-        "startPosition": {
-          "x": 0.0,
-          "y": 0.55,
-          "z": 0.19
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 1.0,
-          "g": 0.85,
-          "b": 0.0,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.0,
-          "y": 0.24,
-          "z": 0.19
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "splinePath": {
-          "radius": 0.003,
-          "segments": 8,
-          "metallic": 0.0,
-          "smoothness": 0.3,
-          "color": {
-            "r": 1.0,
-            "g": 0.85,
-            "b": 0.0,
-            "a": 1.0
-          },
-          "knots": [
-            {
-              "x": 0.0,
-              "y": 0.24,
-              "z": 0.19
-            },
-            {
-              "x": -0.02,
-              "y": 0.1,
-              "z": 0.025
-            },
-            {
-              "x": -0.04,
-              "y": 0.12,
-              "z": -0.14
-            }
-          ]
-        }
-      },
-      {
-        "partId": "wire_endstop_x",
-        "startPosition": {
-          "x": -0.15,
-          "y": 0.55,
-          "z": -0.155
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.1,
-          "g": 0.8,
-          "b": 0.1,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": -0.15,
-          "y": 0.01,
-          "z": -0.155
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "splinePath": {
-          "radius": 0.003,
-          "segments": 8,
-          "metallic": 0.0,
-          "smoothness": 0.3,
-          "color": {
-            "r": 0.1,
-            "g": 0.8,
-            "b": 0.1,
-            "a": 1.0
-          },
-          "knots": [
-            {
-              "x": -0.15,
-              "y": 0.01,
-              "z": -0.155
-            },
-            {
-              "x": -0.095,
-              "y": -0.01,
-              "z": -0.1475
-            },
-            {
-              "x": -0.04,
-              "y": 0.19,
-              "z": -0.14
-            }
-          ]
-        }
-      },
-      {
-        "partId": "wire_endstop_y",
-        "startPosition": {
-          "x": -0.155,
-          "y": 0.55,
-          "z": 0.0
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.1,
-          "g": 0.8,
-          "b": 0.1,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": -0.155,
-          "y": 0.01,
-          "z": 0.0
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "splinePath": {
-          "radius": 0.003,
-          "segments": 8,
-          "metallic": 0.0,
-          "smoothness": 0.3,
-          "color": {
-            "r": 0.1,
-            "g": 0.8,
-            "b": 0.1,
-            "a": 1.0
-          },
-          "knots": [
-            {
-              "x": -0.155,
-              "y": 0.01,
-              "z": 0.0
-            },
-            {
-              "x": -0.0975,
-              "y": -0.01,
-              "z": -0.07
-            },
-            {
-              "x": -0.04,
-              "y": 0.18,
-              "z": -0.14
-            }
-          ]
-        }
-      },
-      {
-        "partId": "wire_endstop_z",
-        "startPosition": {
-          "x": 0.0,
-          "y": 0.55,
-          "z": -0.155
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.1,
-          "g": 0.8,
-          "b": 0.1,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": -0.155
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "splinePath": {
-          "radius": 0.003,
-          "segments": 8,
-          "metallic": 0.0,
-          "smoothness": 0.3,
-          "color": {
-            "r": 0.1,
-            "g": 0.8,
-            "b": 0.1,
-            "a": 1.0
-          },
-          "knots": [
-            {
-              "x": 0.0,
-              "y": 0.0,
-              "z": -0.155
-            },
-            {
-              "x": -0.02,
-              "y": -0.02,
-              "z": -0.1475
-            },
-            {
-              "x": -0.04,
-              "y": 0.17,
-              "z": -0.14
-            }
-          ]
-        }
-      },
-      {
-        "partId": "wire_heater_cartridge",
-        "startPosition": {
-          "x": 0.0,
-          "y": 0.55,
-          "z": -0.18
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 1.0,
-          "g": 0.18,
-          "b": 0.18,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.0,
-          "y": 0.22,
-          "z": -0.18
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "splinePath": {
-          "radius": 0.003,
-          "segments": 8,
-          "metallic": 0.0,
-          "smoothness": 0.3,
-          "color": {
-            "r": 1.0,
-            "g": 0.18,
-            "b": 0.18,
-            "a": 1.0
-          },
-          "knots": [
-            {
-              "x": 0.0,
-              "y": 0.22,
-              "z": -0.18
-            },
-            {
-              "x": -0.02,
-              "y": 0.09,
-              "z": -0.16
-            },
-            {
-              "x": -0.04,
-              "y": 0.11,
-              "z": -0.14
-            }
-          ]
-        }
-      },
-      {
-        "partId": "wire_thermistor",
-        "startPosition": {
-          "x": 0.0,
-          "y": 0.55,
-          "z": -0.18
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.2,
-          "g": 0.6,
-          "b": 1.0,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.0,
-          "y": 0.21,
-          "z": -0.18
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "splinePath": {
-          "radius": 0.003,
-          "segments": 8,
-          "metallic": 0.0,
-          "smoothness": 0.3,
-          "color": {
-            "r": 0.2,
-            "g": 0.6,
-            "b": 1.0,
-            "a": 1.0
-          },
-          "knots": [
-            {
-              "x": 0.0,
-              "y": 0.21,
-              "z": -0.18
-            },
-            {
-              "x": -0.02,
-              "y": 0.08,
-              "z": -0.16
-            },
-            {
-              "x": -0.04,
-              "y": 0.1,
-              "z": -0.14
-            }
-          ]
-        }
-      },
-      {
-        "partId": "wire_extruder_fan",
-        "startPosition": {
-          "x": 0.02,
-          "y": 0.55,
-          "z": -0.18
-        },
-        "startRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "startScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.2,
-          "g": 0.6,
-          "b": 1.0,
-          "a": 1.0
-        },
-        "playPosition": {
-          "x": 0.02,
-          "y": 0.2,
-          "z": -0.18
-        },
-        "playRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "playScale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "splinePath": {
-          "radius": 0.003,
-          "segments": 8,
-          "metallic": 0.0,
-          "smoothness": 0.3,
-          "color": {
-            "r": 0.2,
-            "g": 0.6,
-            "b": 1.0,
-            "a": 1.0
-          },
-          "knots": [
-            {
-              "x": 0.02,
-              "y": 0.2,
-              "z": -0.18
-            },
-            {
-              "x": -0.01,
-              "y": 0.07,
-              "z": -0.16
-            },
-            {
-              "x": -0.04,
-              "y": 0.09,
-              "z": -0.14
-            }
-          ]
-        }
-      },
-      {
         "partId": "compound007_lower_fl",
         "startPosition": {
           "x": 0.8,
@@ -19459,10 +18555,10 @@
           "z": 0.4943
         },
         "rotation": {
-          "x": 0.0,
-          "y": -1.0,
-          "z": 0.0,
-          "w": 0.0
+          "x": 0.0173,
+          "y": -0.9992,
+          "z": 0.0303,
+          "w": 0.0207
         },
         "scale": {
           "x": 0.04,
@@ -19634,10 +18730,10 @@
           "z": 0.4979
         },
         "rotation": {
-          "x": 0.0,
+          "x": -0.0,
           "y": -1.0,
-          "z": 0.0,
-          "w": 0.0
+          "z": -0.0,
+          "w": -0.0
         },
         "scale": {
           "x": 0.04,
@@ -19809,10 +18905,10 @@
           "z": 0.0801
         },
         "rotation": {
-          "x": 0.0,
+          "x": -0.0,
           "y": -1.0,
-          "z": 0.0,
-          "w": 0.0
+          "z": -0.0,
+          "w": -0.0
         },
         "scale": {
           "x": 0.04,
@@ -20159,10 +19255,10 @@
           "z": -0.2803
         },
         "rotation": {
-          "x": 0.0,
+          "x": -0.0,
           "y": -1.0,
-          "z": 0.0,
-          "w": 0.0
+          "z": -0.0,
+          "w": -0.0
         },
         "scale": {
           "x": 0.04,
@@ -20334,10 +19430,10 @@
           "z": -0.3363
         },
         "rotation": {
-          "x": 0.0,
+          "x": -0.0,
           "y": -1.0,
-          "z": 0.0,
-          "w": 0.0
+          "z": -0.0,
+          "w": -0.0
         },
         "scale": {
           "x": 0.04,
@@ -20369,10 +19465,10 @@
           "z": 0.5572
         },
         "rotation": {
-          "x": -0.1371,
-          "y": -0.6832,
-          "z": -0.0874,
-          "w": 0.7119
+          "x": -0.543,
+          "y": -0.536,
+          "z": -0.4446,
+          "w": -0.4693
         },
         "scale": {
           "x": 0.055,
@@ -20404,10 +19500,10 @@
           "z": 0.5735
         },
         "rotation": {
-          "x": -0.0049,
-          "y": 0.9695,
-          "z": 0.031,
-          "w": 0.2431
+          "x": 0.4699,
+          "y": 0.0392,
+          "z": 0.8784,
+          "w": 0.0776
         },
         "scale": {
           "x": 0.05,
@@ -20439,10 +19535,10 @@
           "z": 0.5696
         },
         "rotation": {
-          "x": -0.0437,
-          "y": -0.8417,
-          "z": -0.1178,
-          "w": 0.5251
+          "x": -0.9612,
+          "y": 0.0026,
+          "z": -0.2751,
+          "w": 0.0182
         },
         "scale": {
           "x": 0.05,
@@ -20474,10 +19570,10 @@
           "z": 0.2667
         },
         "rotation": {
-          "x": 0.03,
-          "y": -0.185,
-          "z": 0.0369,
-          "w": 0.9816
+          "x": -0.8401,
+          "y": -0.1453,
+          "z": 0.5189,
+          "w": 0.0621
         },
         "scale": {
           "x": 0.05,
@@ -20509,10 +19605,10 @@
           "z": 0.266
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.3368,
-          "z": 0.0,
-          "w": 0.9416
+          "x": -0.4682,
+          "y": -0.0521,
+          "z": 0.8757,
+          "w": 0.1055
         },
         "scale": {
           "x": 0.05,
@@ -20544,10 +19640,10 @@
           "z": 0.5693
         },
         "rotation": {
-          "x": 0.1985,
-          "y": 0.0901,
-          "z": -0.0687,
-          "w": -0.9735
+          "x": 0.6652,
+          "y": 0.7441,
+          "z": -0.0245,
+          "w": 0.0569
         },
         "scale": {
           "x": 0.055,
@@ -20579,10 +19675,10 @@
           "z": 0.571
         },
         "rotation": {
-          "x": -0.0008,
-          "y": 0.929,
-          "z": 0.0314,
-          "w": 0.3686
+          "x": 0.3509,
+          "y": 0.0222,
+          "z": 0.9321,
+          "w": 0.0872
         },
         "scale": {
           "x": 0.05,
@@ -20614,10 +19710,10 @@
           "z": 0.5725
         },
         "rotation": {
-          "x": -0.0794,
-          "y": -0.9289,
-          "z": -0.0955,
-          "w": 0.349
+          "x": -0.8908,
+          "y": 0.0177,
+          "z": -0.4519,
+          "w": -0.0447
         },
         "scale": {
           "x": 0.05,
@@ -20649,10 +19745,10 @@
           "z": 0.2654
         },
         "rotation": {
-          "x": 0.0735,
-          "y": -0.4426,
-          "z": 0.0968,
-          "w": 0.8885
+          "x": -0.9347,
+          "y": -0.2315,
+          "z": 0.2685,
+          "w": 0.0248
         },
         "scale": {
           "x": 0.05,
@@ -20684,10 +19780,10 @@
           "z": 0.2686
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.3368,
-          "z": 0.0,
-          "w": 0.9416
+          "x": -0.4682,
+          "y": -0.0521,
+          "z": 0.8757,
+          "w": 0.1055
         },
         "scale": {
           "x": 0.05,
@@ -20719,10 +19815,10 @@
           "z": 0.1416
         },
         "rotation": {
-          "x": -0.0524,
-          "y": -0.9875,
-          "z": -0.1423,
-          "w": -0.0433
+          "x": -0.0157,
+          "y": -0.0162,
+          "z": -0.681,
+          "w": -0.732
         },
         "scale": {
           "x": 0.055,
@@ -20754,10 +19850,10 @@
           "z": 0.1517
         },
         "rotation": {
-          "x": -0.0018,
-          "y": 0.9409,
-          "z": 0.0313,
-          "w": 0.3372
+          "x": 0.3818,
+          "y": 0.0266,
+          "z": 0.9199,
+          "w": 0.0849
         },
         "scale": {
           "x": 0.05,
@@ -20789,10 +19885,10 @@
           "z": 0.1564
         },
         "rotation": {
-          "x": -0.0437,
-          "y": -0.8417,
-          "z": -0.1178,
-          "w": 0.5251
+          "x": -0.9612,
+          "y": 0.0026,
+          "z": -0.2751,
+          "w": 0.0182
         },
         "scale": {
           "x": 0.05,
@@ -20824,10 +19920,10 @@
           "z": -0.1554
         },
         "rotation": {
-          "x": 0.0393,
-          "y": -0.4581,
-          "z": 0.0268,
-          "w": 0.8876
+          "x": -0.9532,
+          "y": -0.1584,
+          "z": 0.2537,
+          "w": 0.0449
         },
         "scale": {
           "x": 0.05,
@@ -20859,10 +19955,10 @@
           "z": -0.1542
         },
         "rotation": {
-          "x": 0.0059,
-          "y": 0.3398,
-          "z": -0.0069,
-          "w": 0.9405
+          "x": -0.4655,
+          "y": -0.0506,
+          "z": 0.8761,
+          "w": 0.1146
         },
         "scale": {
           "x": 0.05,
@@ -20894,10 +19990,10 @@
           "z": 0.1343
         },
         "rotation": {
-          "x": -0.1618,
-          "y": -0.2876,
-          "z": -0.016,
-          "w": 0.9438
+          "x": -0.6853,
+          "y": -0.6902,
+          "z": -0.1511,
+          "w": -0.1763
         },
         "scale": {
           "x": 0.055,
@@ -20929,10 +20025,10 @@
           "z": 0.1441
         },
         "rotation": {
-          "x": -0.0094,
-          "y": 0.9234,
-          "z": 0.0299,
-          "w": 0.3825
+          "x": 0.3361,
+          "y": 0.0274,
+          "z": 0.9378,
+          "w": 0.0825
         },
         "scale": {
           "x": 0.05,
@@ -20964,10 +20060,10 @@
           "z": 0.1528
         },
         "rotation": {
-          "x": -0.0437,
-          "y": -0.8417,
-          "z": -0.1178,
-          "w": 0.5251
+          "x": -0.9612,
+          "y": 0.0026,
+          "z": -0.2751,
+          "w": 0.0182
         },
         "scale": {
           "x": 0.05,
@@ -20999,10 +20095,10 @@
           "z": -0.1774
         },
         "rotation": {
-          "x": 0.03,
-          "y": -0.185,
-          "z": 0.0369,
-          "w": 0.9816
+          "x": -0.8401,
+          "y": -0.1453,
+          "z": 0.5189,
+          "w": 0.0621
         },
         "scale": {
           "x": 0.05,
@@ -21034,10 +20130,10 @@
           "z": -0.1523
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.3368,
-          "z": 0.0,
-          "w": 0.9416
+          "x": -0.4682,
+          "y": -0.0521,
+          "z": 0.8757,
+          "w": 0.1055
         },
         "scale": {
           "x": 0.05,
@@ -21069,10 +20165,10 @@
           "z": -0.2824
         },
         "rotation": {
-          "x": 0.0766,
-          "y": 0.9445,
-          "z": 0.1434,
-          "w": -0.2854
+          "x": 0.2552,
+          "y": 0.237,
+          "z": 0.6538,
+          "w": 0.6718
         },
         "scale": {
           "x": 0.055,
@@ -21104,10 +20200,10 @@
           "z": -0.2549
         },
         "rotation": {
-          "x": -0.0049,
-          "y": 0.9695,
-          "z": 0.031,
-          "w": 0.2431
+          "x": 0.4699,
+          "y": 0.0392,
+          "z": 0.8784,
+          "w": 0.0776
         },
         "scale": {
           "x": 0.05,
@@ -21139,10 +20235,10 @@
           "z": -0.2681
         },
         "rotation": {
-          "x": -0.0863,
-          "y": -0.8485,
-          "z": -0.0489,
-          "w": 0.5198
+          "x": -0.9595,
+          "y": -0.0198,
+          "z": -0.2744,
+          "w": -0.0601
         },
         "scale": {
           "x": 0.05,
@@ -21174,10 +20270,10 @@
           "z": -0.5684
         },
         "rotation": {
-          "x": 0.0264,
-          "y": -0.1574,
-          "z": 0.067,
-          "w": 0.9849
+          "x": -0.8219,
+          "y": -0.163,
+          "z": 0.5442,
+          "w": 0.042
         },
         "scale": {
           "x": 0.05,
@@ -21209,10 +20305,10 @@
           "z": -0.571
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.3368,
-          "z": 0.0,
-          "w": 0.9416
+          "x": -0.4682,
+          "y": -0.0521,
+          "z": 0.8757,
+          "w": 0.1055
         },
         "scale": {
           "x": 0.05,
@@ -21244,10 +20340,10 @@
           "z": -0.2734
         },
         "rotation": {
-          "x": -0.1537,
-          "y": -0.0116,
-          "z": -0.0225,
-          "w": 0.9878
+          "x": -0.7363,
+          "y": -0.6752,
+          "z": 0.0351,
+          "w": 0.0255
         },
         "scale": {
           "x": 0.055,
@@ -21279,10 +20375,10 @@
           "z": -0.2674
         },
         "rotation": {
-          "x": -0.0142,
-          "y": -0.9837,
-          "z": -0.0142,
-          "w": -0.1787
+          "x": -0.5269,
+          "y": -0.0454,
+          "z": -0.843,
+          "w": -0.0988
         },
         "scale": {
           "x": 0.05,
@@ -21314,10 +20410,10 @@
           "z": -0.265
         },
         "rotation": {
-          "x": -0.0437,
-          "y": -0.8417,
-          "z": -0.1178,
-          "w": 0.5251
+          "x": -0.9612,
+          "y": 0.0026,
+          "z": -0.2751,
+          "w": 0.0182
         },
         "scale": {
           "x": 0.05,
@@ -21349,10 +20445,10 @@
           "z": -0.5643
         },
         "rotation": {
-          "x": -0.0681,
-          "y": -0.1878,
-          "z": 0.0183,
-          "w": 0.9797
+          "x": -0.8501,
+          "y": -0.0662,
+          "z": 0.5224,
+          "w": 0.0019
         },
         "scale": {
           "x": 0.05,
@@ -21384,10 +20480,10 @@
           "z": -0.5718
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.3368,
-          "z": 0.0,
-          "w": 0.9416
+          "x": -0.4682,
+          "y": -0.0521,
+          "z": 0.8757,
+          "w": 0.1055
         },
         "scale": {
           "x": 0.05,
@@ -21629,8 +20725,8 @@
           "z": -0.1524
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
+          "x": -0.0,
+          "y": -0.0,
           "z": 0.0,
           "w": 1.0
         },
@@ -21664,8 +20760,8 @@
           "z": 0.1524
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
+          "x": -0.0,
+          "y": -0.0,
           "z": 0.0,
           "w": 1.0
         },
@@ -21769,10 +20865,10 @@
           "z": -0.1523
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": 0.6578,
+          "y": -0.2087,
+          "z": 0.0893,
+          "w": 0.7182
         },
         "scale": {
           "x": 0.05,
@@ -21804,10 +20900,10 @@
           "z": 0.1523
         },
         "rotation": {
-          "x": 0.0,
-          "y": -0.9955,
-          "z": 0.0,
-          "w": 0.0953
+          "x": -0.0262,
+          "y": -0.7348,
+          "z": 0.6633,
+          "w": -0.1393
         },
         "scale": {
           "x": 0.05,
@@ -21839,10 +20935,10 @@
           "z": -0.1397
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": -0.7358,
+          "y": -0.0845,
+          "z": 0.6669,
+          "w": 0.0818
         },
         "scale": {
           "x": 0.05,
@@ -21874,10 +20970,10 @@
           "z": -0.1397
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": -0.7358,
+          "y": -0.0845,
+          "z": 0.6669,
+          "w": 0.0818
         },
         "scale": {
           "x": 0.05,
@@ -21909,10 +21005,10 @@
           "z": 0.1397
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": -0.7358,
+          "y": -0.0845,
+          "z": 0.6669,
+          "w": 0.0818
         },
         "scale": {
           "x": 0.05,
@@ -21944,10 +21040,10 @@
           "z": 0.1397
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": -0.7358,
+          "y": -0.0845,
+          "z": 0.6669,
+          "w": 0.0818
         },
         "scale": {
           "x": 0.05,
@@ -21979,10 +21075,10 @@
           "z": -0.1523
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": 0.6578,
+          "y": -0.2087,
+          "z": 0.0893,
+          "w": 0.7182
         },
         "scale": {
           "x": 0.05,
@@ -22014,10 +21110,10 @@
           "z": 0.1531
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.9972,
-          "z": 0.0,
-          "w": -0.0744
+          "x": 0.0401,
+          "y": 0.7318,
+          "z": -0.6626,
+          "w": 0.1547
         },
         "scale": {
           "x": 0.05,
@@ -22049,10 +21145,10 @@
           "z": -0.1528
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.3652,
-          "z": 0.0,
-          "w": 0.9309
+          "x": 0.6449,
+          "y": 0.068,
+          "z": -0.1571,
+          "w": 0.7448
         },
         "scale": {
           "x": 0.05,
@@ -22084,10 +21180,10 @@
           "z": 0.1523
         },
         "rotation": {
-          "x": 0.0,
-          "y": -0.8857,
-          "z": 0.0,
-          "w": 0.4642
+          "x": 0.2263,
+          "y": -0.733,
+          "z": 0.624,
+          "w": 0.1485
         },
         "scale": {
           "x": 0.05,
@@ -22119,10 +21215,10 @@
           "z": -0.1533
         },
         "rotation": {
-          "x": 0.0,
-          "y": -0.1898,
-          "z": 0.0,
-          "w": 0.9818
+          "x": 0.6289,
+          "y": -0.3412,
+          "z": 0.2125,
+          "w": 0.6655
         },
         "scale": {
           "x": 0.05,
@@ -22154,10 +21250,10 @@
           "z": 0.1521
         },
         "rotation": {
-          "x": 0.0893,
-          "y": 0.6388,
-          "z": 0.0751,
-          "w": 0.7604
+          "x": 0.637,
+          "y": 0.3415,
+          "z": -0.317,
+          "w": 0.6141
         },
         "scale": {
           "x": 0.05,
@@ -22189,10 +21285,10 @@
           "z": -0.1397
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": -0.7358,
+          "y": -0.0845,
+          "z": 0.6669,
+          "w": 0.0818
         },
         "scale": {
           "x": 0.05,
@@ -22224,10 +21320,10 @@
           "z": 0.1397
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": -0.7358,
+          "y": -0.0845,
+          "z": 0.6669,
+          "w": 0.0818
         },
         "scale": {
           "x": 0.05,
@@ -22259,10 +21355,10 @@
           "z": -0.1397
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": -0.7358,
+          "y": -0.0845,
+          "z": 0.6669,
+          "w": 0.0818
         },
         "scale": {
           "x": 0.05,
@@ -22294,10 +21390,10 @@
           "z": 0.1397
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": -0.7358,
+          "y": -0.0845,
+          "z": 0.6669,
+          "w": 0.0818
         },
         "scale": {
           "x": 0.05,
@@ -22329,10 +21425,10 @@
           "z": -0.1397
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": -0.7358,
+          "y": -0.0845,
+          "z": 0.6669,
+          "w": 0.0818
         },
         "scale": {
           "x": 0.05,
@@ -22364,10 +21460,10 @@
           "z": 0.1397
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": -0.7358,
+          "y": -0.0845,
+          "z": 0.6669,
+          "w": 0.0818
         },
         "scale": {
           "x": 0.05,
@@ -22399,10 +21495,10 @@
           "z": -0.1397
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": -0.7358,
+          "y": -0.0845,
+          "z": 0.6669,
+          "w": 0.0818
         },
         "scale": {
           "x": 0.05,
@@ -22434,10 +21530,10 @@
           "z": 0.1397
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": -0.7358,
+          "y": -0.0845,
+          "z": 0.6669,
+          "w": 0.0818
         },
         "scale": {
           "x": 0.05,
@@ -22714,10 +21810,10 @@
           "z": 0.0062
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": 0.6578,
+          "y": -0.2087,
+          "z": 0.0893,
+          "w": 0.7182
         },
         "scale": {
           "x": 1.0,
@@ -22749,10 +21845,10 @@
           "z": 0.0062
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": 0.6578,
+          "y": -0.2087,
+          "z": 0.0893,
+          "w": 0.7182
         },
         "scale": {
           "x": 1.0,
@@ -22784,10 +21880,10 @@
           "z": 0.0062
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": 0.6578,
+          "y": -0.2087,
+          "z": 0.0893,
+          "w": 0.7182
         },
         "scale": {
           "x": 1.0,
@@ -23064,10 +22160,10 @@
           "z": 0.018
         },
         "rotation": {
-          "x": 0.0,
-          "y": 1.0,
-          "z": 0.0,
-          "w": 0.0
+          "x": 0.0893,
+          "y": 0.7182,
+          "z": -0.6578,
+          "w": 0.2087
         },
         "scale": {
           "x": 0.035,
@@ -23099,10 +22195,10 @@
           "z": -0.018
         },
         "rotation": {
-          "x": 0.0,
-          "y": 1.0,
-          "z": 0.0,
-          "w": 0.0
+          "x": 0.0893,
+          "y": 0.7182,
+          "z": -0.6578,
+          "w": 0.2087
         },
         "scale": {
           "x": 0.035,
@@ -23134,10 +22230,10 @@
           "z": 0.018
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": 0.6578,
+          "y": -0.2087,
+          "z": 0.0893,
+          "w": 0.7182
         },
         "scale": {
           "x": 0.035,
@@ -23169,10 +22265,10 @@
           "z": -0.018
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": 0.6578,
+          "y": -0.2087,
+          "z": 0.0893,
+          "w": 0.7182
         },
         "scale": {
           "x": 0.035,
@@ -23239,10 +22335,10 @@
           "z": 0.0059
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": 0.6578,
+          "y": -0.2087,
+          "z": 0.0893,
+          "w": 0.7182
         },
         "scale": {
           "x": 1.0,
@@ -23274,10 +22370,10 @@
           "z": 0.0059
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": 0.6578,
+          "y": -0.2087,
+          "z": 0.0893,
+          "w": 0.7182
         },
         "scale": {
           "x": 1.0,
@@ -23309,10 +22405,10 @@
           "z": 0.0059
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": 0.6578,
+          "y": -0.2087,
+          "z": 0.0893,
+          "w": 0.7182
         },
         "scale": {
           "x": 1.0,
@@ -23344,10 +22440,10 @@
           "z": 0.0059
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": 0.6578,
+          "y": -0.2087,
+          "z": 0.0893,
+          "w": 0.7182
         },
         "scale": {
           "x": 1.0,
@@ -23379,10 +22475,10 @@
           "z": 0.0059
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": 0.6578,
+          "y": -0.2087,
+          "z": 0.0893,
+          "w": 0.7182
         },
         "scale": {
           "x": 1.0,
@@ -23414,10 +22510,10 @@
           "z": 0.0059
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": 0.6578,
+          "y": -0.2087,
+          "z": 0.0893,
+          "w": 0.7182
         },
         "scale": {
           "x": 1.0,
@@ -23449,10 +22545,10 @@
           "z": 0.0059
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": 0.6578,
+          "y": -0.2087,
+          "z": 0.0893,
+          "w": 0.7182
         },
         "scale": {
           "x": 1.0,
@@ -24149,10 +23245,10 @@
           "z": 0.0069
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": 0.6578,
+          "y": -0.2087,
+          "z": 0.0893,
+          "w": 0.7182
         },
         "scale": {
           "x": 1.0,
@@ -24184,10 +23280,10 @@
           "z": 0.0069
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": 0.6578,
+          "y": -0.2087,
+          "z": 0.0893,
+          "w": 0.7182
         },
         "scale": {
           "x": 1.0,
@@ -24884,10 +23980,10 @@
           "z": -0.188
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": 0.6578,
+          "y": -0.2087,
+          "z": 0.0893,
+          "w": 0.7182
         },
         "scale": {
           "x": 0.035,
@@ -24919,10 +24015,10 @@
           "z": -0.188
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": 0.6578,
+          "y": -0.2087,
+          "z": 0.0893,
+          "w": 0.7182
         },
         "scale": {
           "x": 0.035,
@@ -25024,10 +24120,10 @@
           "z": -0.19
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": 0.6578,
+          "y": -0.2087,
+          "z": 0.0893,
+          "w": 0.7182
         },
         "scale": {
           "x": 0.035,
@@ -25059,10 +24155,10 @@
           "z": -0.19
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": 0.6578,
+          "y": -0.2087,
+          "z": 0.0893,
+          "w": 0.7182
         },
         "scale": {
           "x": 0.035,
@@ -25199,10 +24295,10 @@
           "z": 0.188
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": 0.6578,
+          "y": -0.2087,
+          "z": 0.0893,
+          "w": 0.7182
         },
         "scale": {
           "x": 0.035,
@@ -25234,10 +24330,10 @@
           "z": 0.188
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": 0.6578,
+          "y": -0.2087,
+          "z": 0.0893,
+          "w": 0.7182
         },
         "scale": {
           "x": 0.035,
@@ -25339,10 +24435,10 @@
           "z": 0.19
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": 0.6578,
+          "y": -0.2087,
+          "z": 0.0893,
+          "w": 0.7182
         },
         "scale": {
           "x": 0.035,
@@ -25374,10 +24470,10 @@
           "z": 0.19
         },
         "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
+          "x": 0.6578,
+          "y": -0.2087,
+          "z": 0.0893,
+          "w": 0.7182
         },
         "scale": {
           "x": 0.035,
@@ -25752,111 +24848,6 @@
         }
       },
       {
-        "targetId": "target_wire_psu_12v",
-        "position": {
-          "x": -0.16,
-          "y": 0.09,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.2,
-          "g": 0.6,
-          "b": 1.0,
-          "a": 1.0
-        },
-        "portA": {
-          "x": -0.16,
-          "y": 0.09,
-          "z": 0.0
-        },
-        "portB": {
-          "x": -0.04,
-          "y": 0.1,
-          "z": -0.14
-        }
-      },
-      {
-        "targetId": "target_wire_psu_gnd",
-        "position": {
-          "x": -0.16,
-          "y": 0.08,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.2,
-          "g": 0.6,
-          "b": 1.0,
-          "a": 1.0
-        },
-        "portA": {
-          "x": -0.16,
-          "y": 0.08,
-          "z": 0.0
-        },
-        "portB": {
-          "x": -0.04,
-          "y": 0.09,
-          "z": -0.14
-        }
-      },
-      {
-        "targetId": "target_wire_psu_enable",
-        "position": {
-          "x": -0.16,
-          "y": 0.07,
-          "z": 0.02
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.2,
-          "g": 0.6,
-          "b": 1.0,
-          "a": 1.0
-        },
-        "portA": {
-          "x": -0.16,
-          "y": 0.07,
-          "z": 0.02
-        },
-        "portB": {
-          "x": -0.16,
-          "y": 0.07,
-          "z": -0.02
-        }
-      },
-      {
         "targetId": "target_psu_connections_verify",
         "position": {
           "x": -0.05,
@@ -25889,391 +24880,6 @@
           "x": 0.0,
           "y": 0.0,
           "z": 0.0
-        }
-      },
-      {
-        "targetId": "target_wire_motor_x",
-        "position": {
-          "x": 0.0,
-          "y": 0.15,
-          "z": -0.19
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.2,
-          "g": 0.6,
-          "b": 1.0,
-          "a": 1.0
-        },
-        "portA": {
-          "x": 0.0,
-          "y": 0.15,
-          "z": -0.19
-        },
-        "portB": {
-          "x": -0.04,
-          "y": 0.16,
-          "z": -0.14
-        }
-      },
-      {
-        "targetId": "target_wire_motor_y_left",
-        "position": {
-          "x": -0.16,
-          "y": 0.12,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.2,
-          "g": 0.6,
-          "b": 1.0,
-          "a": 1.0
-        },
-        "portA": {
-          "x": -0.16,
-          "y": 0.12,
-          "z": 0.0
-        },
-        "portB": {
-          "x": -0.04,
-          "y": 0.15,
-          "z": -0.14
-        }
-      },
-      {
-        "targetId": "target_wire_motor_y_right",
-        "position": {
-          "x": 0.15,
-          "y": 0.12,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.2,
-          "g": 0.6,
-          "b": 1.0,
-          "a": 1.0
-        },
-        "portA": {
-          "x": 0.15,
-          "y": 0.12,
-          "z": 0.0
-        },
-        "portB": {
-          "x": -0.04,
-          "y": 0.14,
-          "z": -0.14
-        }
-      },
-      {
-        "targetId": "target_wire_motor_z_front",
-        "position": {
-          "x": 0.0,
-          "y": 0.24,
-          "z": -0.14
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.2,
-          "g": 0.6,
-          "b": 1.0,
-          "a": 1.0
-        },
-        "portA": {
-          "x": 0.0,
-          "y": 0.24,
-          "z": -0.19
-        },
-        "portB": {
-          "x": -0.04,
-          "y": 0.13,
-          "z": -0.14
-        }
-      },
-      {
-        "targetId": "target_wire_motor_z_back",
-        "position": {
-          "x": 0.0,
-          "y": 0.24,
-          "z": 0.14
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.2,
-          "g": 0.6,
-          "b": 1.0,
-          "a": 1.0
-        },
-        "portA": {
-          "x": 0.0,
-          "y": 0.24,
-          "z": 0.19
-        },
-        "portB": {
-          "x": -0.04,
-          "y": 0.12,
-          "z": -0.14
-        }
-      },
-      {
-        "targetId": "target_wire_endstop_x",
-        "position": {
-          "x": -0.15,
-          "y": 0.01,
-          "z": -0.155
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.2,
-          "g": 0.6,
-          "b": 1.0,
-          "a": 1.0
-        },
-        "portA": {
-          "x": -0.15,
-          "y": 0.01,
-          "z": -0.155
-        },
-        "portB": {
-          "x": -0.04,
-          "y": 0.19,
-          "z": -0.14
-        }
-      },
-      {
-        "targetId": "target_wire_endstop_y",
-        "position": {
-          "x": -0.155,
-          "y": 0.01,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.2,
-          "g": 0.6,
-          "b": 1.0,
-          "a": 1.0
-        },
-        "portA": {
-          "x": -0.155,
-          "y": 0.01,
-          "z": 0.0
-        },
-        "portB": {
-          "x": -0.04,
-          "y": 0.18,
-          "z": -0.14
-        }
-      },
-      {
-        "targetId": "target_wire_endstop_z",
-        "position": {
-          "x": 0.0,
-          "y": 0.02,
-          "z": -0.14
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.2,
-          "g": 0.6,
-          "b": 1.0,
-          "a": 1.0
-        },
-        "portA": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": -0.155
-        },
-        "portB": {
-          "x": -0.04,
-          "y": 0.17,
-          "z": -0.14
-        }
-      },
-      {
-        "targetId": "target_wire_heater_cartridge",
-        "position": {
-          "x": 0.0,
-          "y": 0.22,
-          "z": -0.14
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.2,
-          "g": 0.6,
-          "b": 1.0,
-          "a": 1.0
-        },
-        "portA": {
-          "x": 0.0,
-          "y": 0.22,
-          "z": -0.18
-        },
-        "portB": {
-          "x": -0.04,
-          "y": 0.11,
-          "z": -0.14
-        }
-      },
-      {
-        "targetId": "target_wire_thermistor",
-        "position": {
-          "x": 0.0,
-          "y": 0.21,
-          "z": -0.14
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.2,
-          "g": 0.6,
-          "b": 1.0,
-          "a": 1.0
-        },
-        "portA": {
-          "x": 0.0,
-          "y": 0.21,
-          "z": -0.18
-        },
-        "portB": {
-          "x": -0.04,
-          "y": 0.1,
-          "z": -0.14
-        }
-      },
-      {
-        "targetId": "target_wire_extruder_fan",
-        "position": {
-          "x": 0.0,
-          "y": 0.2,
-          "z": -0.14
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.2,
-          "g": 0.6,
-          "b": 1.0,
-          "a": 1.0
-        },
-        "portA": {
-          "x": 0.02,
-          "y": 0.2,
-          "z": -0.18
-        },
-        "portB": {
-          "x": -0.04,
-          "y": 0.09,
-          "z": -0.14
         }
       },
       {

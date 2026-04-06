@@ -224,35 +224,12 @@ namespace OSE.Content
         public bool IsPipeConnection => ResolvedFamily == StepFamily.Connect;
 
         /// <summary>
-        /// Returns all part IDs this step requires — the union of <see cref="requiredPartIds"/>
-        /// and any <c>partId</c> embedded in <see cref="wireConnect"/> entries.
-        /// Use this instead of <see cref="requiredPartIds"/> directly so Connect-family
-        /// steps whose wire tasks own the part are handled correctly without a separate
-        /// PART task row.
+        /// Returns the step's required part IDs.
+        /// Connect-family steps carry no required parts — wire appearance (color, width)
+        /// is embedded directly in each <see cref="WireConnectEntry"/>.
         /// </summary>
         public string[] GetEffectiveRequiredPartIds()
-        {
-            bool hasRequired = requiredPartIds != null && requiredPartIds.Length > 0;
-            bool hasWireParts = wireConnect?.wires != null &&
-                System.Array.Exists(wireConnect.wires, w => !string.IsNullOrWhiteSpace(w?.partId));
-
-            if (!hasWireParts) return requiredPartIds ?? System.Array.Empty<string>();
-
-            if (!hasRequired)
-            {
-                var result = new System.Collections.Generic.List<string>();
-                foreach (var w in wireConnect.wires)
-                    if (!string.IsNullOrWhiteSpace(w?.partId)) result.Add(w.partId);
-                return result.ToArray();
-            }
-
-            // Merge: start with requiredPartIds, append wire-owned parts not already present.
-            var merged = new System.Collections.Generic.List<string>(requiredPartIds);
-            foreach (var w in wireConnect.wires)
-                if (!string.IsNullOrWhiteSpace(w?.partId) && !merged.Contains(w.partId))
-                    merged.Add(w.partId);
-            return merged.ToArray();
-        }
+            => requiredPartIds ?? System.Array.Empty<string>();
 
         /// <summary>True when the resolved family is Confirm (alias for <see cref="IsConfirmation"/>).</summary>
         public bool IsConfirm => ResolvedFamily == StepFamily.Confirm;
