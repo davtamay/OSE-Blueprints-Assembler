@@ -523,7 +523,7 @@ namespace OSE.UI.Root
             // matches play-mode layout from the moment parts spawn.
             if (!Application.isPlaying)
             {
-                var driver = FindAnyObjectByType<SessionDriver>();
+                var driver = FindAnyObjectByType<EditModePreviewDriver>();
                 if (driver != null)
                 {
                     int stepSeq = driver.PreviewStepSequenceIndex;
