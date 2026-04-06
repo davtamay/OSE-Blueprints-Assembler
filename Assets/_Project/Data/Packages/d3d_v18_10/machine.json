@@ -2681,7 +2681,7 @@
     {
       "id": "tool_lubricant_spray",
       "name": "Lubricant Spray",
-      "category": "consumable",
+      "category": "specialty",
       "purpose": "Lubricates smooth rod surfaces and linear bearing housings to reduce friction.",
       "usageNotes": "Apply a thin coat to the rod surface. Wipe off excess before inserting bearings.",
       "safetyNotes": "Use in a ventilated area. Avoid spraying near open flames or electronics.",
@@ -2722,7 +2722,7 @@
     {
       "id": "tool_drill_bits",
       "name": "Drill Bits (3 mm + 6 mm)",
-      "category": "accessory",
+      "category": "specialty",
       "purpose": "3 mm bit for pilot holes in flat stock; 6 mm bit for larger clearance holes.",
       "usageNotes": "Insert bit fully into the chuck and tighten before drilling. Use cutting fluid on metal.",
       "safetyNotes": "Discard bent or dull bits. Never touch a spinning bit.",
@@ -5419,7 +5419,6 @@
       "targetOrder": "sequential",
       "completionType": "placement",
       "family": "Place",
-      "profile": "None",
       "viewMode": "WorkZone",
       "validationRuleIds": [],
       "hintIds": [
