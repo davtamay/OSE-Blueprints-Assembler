@@ -1,4 +1,6 @@
 using System;
+using OSE.App;
+using OSE.Content;
 using OSE.Core;
 using OSE.Interaction.Integration;
 using OSE.Runtime;
