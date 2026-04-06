@@ -116,6 +116,7 @@ namespace OSE.UI.Root
             RuntimeEventBus.Subscribe<PartDeselected>(HandlePartDeselected);
             RuntimeEventBus.Subscribe<PartInspected>(HandlePartInspected);
             RuntimeEventBus.Subscribe<SpawnerPartsReady>(HandleSpawnerPartsReady);
+            RuntimeEventBus.Subscribe<SpawnerPartSwapped>(HandleSpawnerPartSwapped);
 
             EnsureInputWiring();
 
@@ -135,6 +136,7 @@ namespace OSE.UI.Root
             RuntimeEventBus.Unsubscribe<PartDeselected>(HandlePartDeselected);
             RuntimeEventBus.Unsubscribe<PartInspected>(HandlePartInspected);
             RuntimeEventBus.Unsubscribe<SpawnerPartsReady>(HandleSpawnerPartsReady);
+            RuntimeEventBus.Unsubscribe<SpawnerPartSwapped>(HandleSpawnerPartSwapped);
 
             _mgr?.Teardown();
             _partStates.Clear();
@@ -187,6 +189,7 @@ namespace OSE.UI.Root
         private void HandlePartDeselected(PartDeselected evt) => _mgr?.Selection?.HandleSelectionServiceDeselected(evt.Target);
         private void HandlePartInspected(PartInspected evt) => _mgr?.Selection?.HandleSelectionServiceInspected(evt.Target);
         private void HandleSpawnerPartsReady(SpawnerPartsReady _) => _mgr?.StepResponder?.HandlePartsReady();
+        private void HandleSpawnerPartSwapped(SpawnerPartSwapped evt) => _mgr?.StepResponder?.HandlePartSwapped(evt.PartId);
 
         private void HandleCanonicalAction(CanonicalAction action)
         {

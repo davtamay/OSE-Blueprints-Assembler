@@ -260,6 +260,28 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
+        /// Called immediately after a single GLB model swaps in to replace its placeholder.
+        /// Re-applies the correct material/visual state for this part so it doesn't render
+        /// with raw glTFast materials (or pink during Shader Graph compilation) until
+        /// the full <see cref="HandlePartsReady"/> rebuild fires after all GLBs are done.
+        /// </summary>
+        public void HandlePartSwapped(string partId)
+        {
+            if (string.IsNullOrWhiteSpace(partId)) return;
+
+            GameObject partGo = _ctx.FindSpawnedPart(partId);
+            if (partGo == null || !partGo.activeSelf) return;
+
+            // Force-save originals now that this GLB's materials are applied.
+            MaterialHelper.ForceSaveOriginals(partGo);
+
+            // Re-apply whatever visual state this part already has.
+            PartPlacementState state = _ctx.PartStates.TryGetValue(partId, out var s)
+                ? s : PartPlacementState.Available;
+            _ctx.VisualFeedback?.ApplyPartVisualForState(partGo, partId, state);
+        }
+
+        /// <summary>
         /// Called when PackagePartSpawner finishes spawning all parts (including async GLB models).
         /// Re-applies completed-part positioning after async spawn may have overwritten restore positions.
         /// </summary>

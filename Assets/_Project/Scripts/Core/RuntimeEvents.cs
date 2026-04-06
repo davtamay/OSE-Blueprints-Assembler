@@ -466,6 +466,18 @@ namespace OSE.Core
     {
     }
 
+    /// <summary>
+    /// Published by <see cref="OSE.UI.Root.PackagePartSpawner"/> immediately after each
+    /// individual GLB model swaps in to replace its placeholder during async loading.
+    /// Allows the visual system to re-apply the correct material state for this part
+    /// before all other GLBs have finished loading (avoids pink-material flash).
+    /// </summary>
+    public readonly struct SpawnerPartSwapped
+    {
+        public readonly string PartId;
+        public SpawnerPartSwapped(string partId) => PartId = partId;
+    }
+
     // ── Package Events ──
 
     /// <summary>

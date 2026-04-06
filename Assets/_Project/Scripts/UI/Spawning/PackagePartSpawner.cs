@@ -632,6 +632,12 @@ namespace OSE.UI.Root
 
                 if (!wasActive)
                     loaded.SetActive(false);
+
+                // Notify the visual system immediately so it can re-apply the correct
+                // material state for this part. Without this, the newly swapped-in GLB
+                // renders with raw glTFast materials until SpawnerPartsReady fires after
+                // ALL GLBs have loaded — causing a pink flash during Shader Graph compilation.
+                RuntimeEventBus.Publish(new SpawnerPartSwapped(partDef.id));
             }
         }
 

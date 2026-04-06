@@ -21,13 +21,16 @@ namespace OSE.Core
 
         // Shared tint materials keyed by (materialName + Color32). Avoids allocating
         // a new Material on every Apply / ApplyTint call.
-        // LRU-evicts oldest entry when capacity is exceeded so long sessions with many
-        // distinct (name, color) pairs (debug overlays, authoring tools) don't leak.
-        private const int TintCacheCapacity = 20;
-        private static readonly Dictionary<int, LinkedListNode<(int key, Material mat)>> _tintCacheMap =
-            new Dictionary<int, LinkedListNode<(int, Material)>>();
-        private static readonly LinkedList<(int key, Material mat)> _tintCacheLru =
-            new LinkedList<(int, Material)>();
+        //
+        // No eviction: evicting a Material while it is still assigned to a renderer's
+        // sharedMaterials destroys it mid-frame → pink renderer on that part. The cache
+        // has no visibility into which materials are currently live on renderers, so safe
+        // eviction is impossible. The number of unique (name, color) combos is bounded by
+        // the number of distinct part colors + a few interaction states (hover, select) —
+        // typically well under 200 entries. Material objects are ~few KB each; the total
+        // footprint is negligible compared to mesh/texture memory.
+        private static readonly Dictionary<int, Material> _tintCacheMap =
+            new Dictionary<int, Material>();
 
         private static int TintCacheKey(string name, Color color)
         {
@@ -39,30 +42,14 @@ namespace OSE.Core
 
         private static bool TryGetCachedTint(int key, out Material mat)
         {
-            if (!_tintCacheMap.TryGetValue(key, out var node)) { mat = null; return false; }
-            // Move to front (most-recently-used).
-            _tintCacheLru.Remove(node);
-            _tintCacheLru.AddFirst(node);
-            mat = node.Value.mat;
+            if (!_tintCacheMap.TryGetValue(key, out mat)) return false;
             return mat != null;
         }
 
         private static void AddTintToCache(int key, Material mat)
         {
-            if (_tintCacheMap.ContainsKey(key)) return; // already present (race guard)
-
-            // Evict least-recently-used entry when at capacity.
-            if (_tintCacheLru.Count >= TintCacheCapacity)
-            {
-                var lru = _tintCacheLru.Last;
-                _tintCacheLru.RemoveLast();
-                _tintCacheMap.Remove(lru.Value.key);
-                if (Application.isPlaying) Object.Destroy(lru.Value.mat);
-                else Object.DestroyImmediate(lru.Value.mat);
-            }
-
-            var node = _tintCacheLru.AddFirst((key, mat));
-            _tintCacheMap[key] = node;
+            if (!_tintCacheMap.ContainsKey(key))
+                _tintCacheMap[key] = mat;
         }
 
         private static Shader UrpLitShader =>
