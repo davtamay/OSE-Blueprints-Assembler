@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0",
-  "packageVersion": "0.6.3",
+  "packageVersion": "0.6.4",
   "machine": {
     "id": "d3d_v18_10",
     "name": "D3D v18.1",
@@ -7397,8 +7397,8 @@
       "name": "Place Y-Axis Bed Rods",
       "assemblyId": "assembly_d3d_heatbed_stage_02",
       "instructionText": "Position the Y-axis bed guide rods connecting the front and back Z carriages. These rods enable the bed platform to travel smoothly along the Y axis.",
-      "completionType": "confirmation",
-      "family": "Confirm",
+      "completionType": "placement",
+      "family": "Place",
       "sequenceIndex": 105,
       "requiredPartIds": [
         "rod_2",
@@ -7407,6 +7407,11 @@
       ],
       "hintIds": [
         "hint_y_bed_rods"
+      ],
+      "targetIds": [
+        "target_y_bed_rod_a",
+        "target_y_bed_rod_b",
+        "target_y_bed_rod_c"
       ]
     },
     {
@@ -7414,8 +7419,8 @@
       "name": "Place Cable Management",
       "assemblyId": "assembly_d3d_cable_stage_01",
       "instructionText": "Position the cable chain assemblies: X-axis cable chain at the top of the gantry, Y-axis cable chain along the left side, and the cable chain bracket that anchors the Y chain to the Y-left carriage.",
-      "completionType": "confirmation",
-      "family": "Confirm",
+      "completionType": "placement",
+      "family": "Place",
       "sequenceIndex": 106,
       "requiredPartIds": [
         "cable_chain",
@@ -7424,6 +7429,11 @@
       ],
       "hintIds": [
         "hint_cable_management"
+      ],
+      "targetIds": [
+        "target_cable_chain_x",
+        "target_cable_chain_y",
+        "target_cable_chain_bracket"
       ]
     },
     {
@@ -12679,6 +12689,60 @@
       "tags": [
         "axes",
         "stage02"
+      ]
+    },
+    {
+      "id": "target_y_bed_rod_a",
+      "name": "Y-Axis Bed Rod A",
+      "anchorRef": "anchors/d3d/heatbed/bed_rod_a",
+      "associatedPartId": "rod_2",
+      "tags": [
+        "placement"
+      ]
+    },
+    {
+      "id": "target_y_bed_rod_b",
+      "name": "Y-Axis Bed Rod B",
+      "anchorRef": "anchors/d3d/heatbed/bed_rod_b",
+      "associatedPartId": "rod_003",
+      "tags": [
+        "placement"
+      ]
+    },
+    {
+      "id": "target_y_bed_rod_c",
+      "name": "Y-Axis Bed Rod C",
+      "anchorRef": "anchors/d3d/heatbed/bed_rod_c",
+      "associatedPartId": "rod_004",
+      "tags": [
+        "placement"
+      ]
+    },
+    {
+      "id": "target_cable_chain_x",
+      "name": "X-Axis Cable Chain",
+      "anchorRef": "anchors/d3d/cable/cable_chain_x",
+      "associatedPartId": "cable_chain",
+      "tags": [
+        "placement"
+      ]
+    },
+    {
+      "id": "target_cable_chain_y",
+      "name": "Y-Axis Cable Chain",
+      "anchorRef": "anchors/d3d/cable/cable_chain_y",
+      "associatedPartId": "cable_chain_y",
+      "tags": [
+        "placement"
+      ]
+    },
+    {
+      "id": "target_cable_chain_bracket",
+      "name": "Cable Chain Bracket",
+      "anchorRef": "anchors/d3d/cable/cable_chain_bracket",
+      "associatedPartId": "cable_chain_bracket",
+      "tags": [
+        "placement"
       ]
     }
   ],
@@ -26228,6 +26292,216 @@
           "r": 1.0,
           "g": 0.55,
           "b": 0.2,
+          "a": 0.8
+        },
+        "portA": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "portB": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "targetId": "target_y_bed_rod_a",
+        "position": {
+          "x": 0.0317,
+          "y": 0.7178,
+          "z": -0.1883
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.3,
+          "g": 0.85,
+          "b": 0.5,
+          "a": 0.8
+        },
+        "portA": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "portB": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "targetId": "target_y_bed_rod_b",
+        "position": {
+          "x": 0.0337,
+          "y": 0.718,
+          "z": 0.1883
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.3,
+          "g": 0.85,
+          "b": 0.5,
+          "a": 0.8
+        },
+        "portA": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "portB": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "targetId": "target_y_bed_rod_c",
+        "position": {
+          "x": -0.0213,
+          "y": 0.718,
+          "z": 0.1883
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.3,
+          "g": 0.85,
+          "b": 0.5,
+          "a": 0.8
+        },
+        "portA": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "portB": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "targetId": "target_cable_chain_x",
+        "position": {
+          "x": 0.0046,
+          "y": 0.9418,
+          "z": -0.0092
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.9,
+          "g": 0.7,
+          "b": 0.1,
+          "a": 0.8
+        },
+        "portA": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "portB": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "targetId": "target_cable_chain_y",
+        "position": {
+          "x": 0.1379,
+          "y": 0.7028,
+          "z": -0.0702
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.9,
+          "g": 0.7,
+          "b": 0.1,
+          "a": 0.8
+        },
+        "portA": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "portB": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "targetId": "target_cable_chain_bracket",
+        "position": {
+          "x": 0.1387,
+          "y": 0.8062,
+          "z": 0.0176
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.9,
+          "g": 0.7,
+          "b": 0.1,
           "a": 0.8
         },
         "portA": {
