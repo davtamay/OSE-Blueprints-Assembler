@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0",
-  "packageVersion": "0.6.2",
+  "packageVersion": "0.6.3",
   "machine": {
     "id": "d3d_v18_10",
     "name": "D3D v18.1",
@@ -6895,8 +6895,8 @@
       "name": "Place Y-Left Axis Internals",
       "assemblyId": "assembly_d3d_axes_stage_02",
       "instructionText": "Position the Y-left axis internal components: carriage plate, belt idler, stepper motor, guide rods, endstop sensor, and mounting bracket. These are the sub-parts inside the pre-assembled Y-left axis unit.",
-      "completionType": "confirmation",
-      "family": "Confirm",
+      "completionType": "placement",
+      "family": "Place",
       "sequenceIndex": 87,
       "requiredPartIds": [
         "full_carriage",
@@ -6911,6 +6911,17 @@
       ],
       "hintIds": [
         "hint_y_left_axis_internals"
+      ],
+      "targetIds": [
+        "target_y_left_carriage",
+        "target_y_left_idler",
+        "target_y_left_motor",
+        "target_y_left_rod_a",
+        "target_y_left_rod_b",
+        "target_y_left_endstop",
+        "target_y_left_bracket",
+        "target_y_left_pocket_a",
+        "target_y_left_pocket_b"
       ]
     },
     {
@@ -6918,8 +6929,8 @@
       "name": "Place Y-Right Axis Internals",
       "assemblyId": "assembly_d3d_axes_stage_02",
       "instructionText": "Position the Y-right axis internal components: carriage plate, belt idler, stepper motor, guide rods, and mounting bracket. These mirror the Y-left axis on the opposite side of the frame.",
-      "completionType": "confirmation",
-      "family": "Confirm",
+      "completionType": "placement",
+      "family": "Place",
       "sequenceIndex": 88,
       "requiredPartIds": [
         "full_carriage001",
@@ -6931,6 +6942,14 @@
       ],
       "hintIds": [
         "hint_y_right_axis_internals"
+      ],
+      "targetIds": [
+        "target_y_right_carriage",
+        "target_y_right_idler",
+        "target_y_right_motor",
+        "target_y_right_rod_a",
+        "target_y_right_rod_b",
+        "target_y_right_bracket"
       ]
     },
     {
@@ -6938,8 +6957,8 @@
       "name": "Place X-Axis Drive",
       "assemblyId": "assembly_d3d_axes_stage_02",
       "instructionText": "Position the X-axis stepper motor and guide rods. The motor mounts on the left side of the X-axis module and the rods span horizontally between the Y carriages.",
-      "completionType": "confirmation",
-      "family": "Confirm",
+      "completionType": "placement",
+      "family": "Place",
       "sequenceIndex": 89,
       "requiredPartIds": [
         "motor004",
@@ -6948,6 +6967,11 @@
       ],
       "hintIds": [
         "hint_x_axis_drive_components"
+      ],
+      "targetIds": [
+        "target_x_drive_motor",
+        "target_x_drive_rod_a",
+        "target_x_drive_rod_b"
       ]
     },
     {
@@ -12475,6 +12499,186 @@
       "tags": [
         "electronics",
         "wiring"
+      ]
+    },
+    {
+      "id": "target_y_left_carriage",
+      "name": "Y-Left Carriage Plate",
+      "anchorRef": "anchors/d3d/axes/y_left/internals/carriage",
+      "associatedPartId": "full_carriage",
+      "tags": [
+        "axes",
+        "stage02"
+      ]
+    },
+    {
+      "id": "target_y_left_idler",
+      "name": "Y-Left Belt Idler",
+      "anchorRef": "anchors/d3d/axes/y_left/internals/idler",
+      "associatedPartId": "idler002",
+      "tags": [
+        "axes",
+        "stage02"
+      ]
+    },
+    {
+      "id": "target_y_left_motor",
+      "name": "Y-Left Stepper Motor",
+      "anchorRef": "anchors/d3d/axes/y_left/internals/motor",
+      "associatedPartId": "motor002",
+      "tags": [
+        "axes",
+        "stage02"
+      ]
+    },
+    {
+      "id": "target_y_left_rod_a",
+      "name": "Y-Left Guide Rod A",
+      "anchorRef": "anchors/d3d/axes/y_left/internals/rod_a",
+      "associatedPartId": "rod_005",
+      "tags": [
+        "axes",
+        "stage02"
+      ]
+    },
+    {
+      "id": "target_y_left_rod_b",
+      "name": "Y-Left Guide Rod B",
+      "anchorRef": "anchors/d3d/axes/y_left/internals/rod_b",
+      "associatedPartId": "rod_006",
+      "tags": [
+        "axes",
+        "stage02"
+      ]
+    },
+    {
+      "id": "target_y_left_endstop",
+      "name": "Y-Left Endstop Sensor",
+      "anchorRef": "anchors/d3d/axes/y_left/internals/endstop",
+      "associatedPartId": "y_endstop",
+      "tags": [
+        "axes",
+        "stage02"
+      ]
+    },
+    {
+      "id": "target_y_left_bracket",
+      "name": "Y-Left Mounting Bracket",
+      "anchorRef": "anchors/d3d/axes/y_left/internals/bracket",
+      "associatedPartId": "y1_bracket",
+      "tags": [
+        "axes",
+        "stage02"
+      ]
+    },
+    {
+      "id": "target_y_left_pocket_a",
+      "name": "Y-Left Bearing Pocket A",
+      "anchorRef": "anchors/d3d/axes/y_left/internals/pocket_a",
+      "associatedPartId": "pocket039",
+      "tags": [
+        "axes",
+        "stage02"
+      ]
+    },
+    {
+      "id": "target_y_left_pocket_b",
+      "name": "Y-Left Bearing Pocket B",
+      "anchorRef": "anchors/d3d/axes/y_left/internals/pocket_b",
+      "associatedPartId": "pocket040",
+      "tags": [
+        "axes",
+        "stage02"
+      ]
+    },
+    {
+      "id": "target_y_right_carriage",
+      "name": "Y-Right Carriage Plate",
+      "anchorRef": "anchors/d3d/axes/y_right/internals/carriage",
+      "associatedPartId": "full_carriage001",
+      "tags": [
+        "axes",
+        "stage02"
+      ]
+    },
+    {
+      "id": "target_y_right_idler",
+      "name": "Y-Right Belt Idler",
+      "anchorRef": "anchors/d3d/axes/y_right/internals/idler",
+      "associatedPartId": "idler003",
+      "tags": [
+        "axes",
+        "stage02"
+      ]
+    },
+    {
+      "id": "target_y_right_motor",
+      "name": "Y-Right Stepper Motor",
+      "anchorRef": "anchors/d3d/axes/y_right/internals/motor",
+      "associatedPartId": "motor003",
+      "tags": [
+        "axes",
+        "stage02"
+      ]
+    },
+    {
+      "id": "target_y_right_rod_a",
+      "name": "Y-Right Guide Rod A",
+      "anchorRef": "anchors/d3d/axes/y_right/internals/rod_a",
+      "associatedPartId": "rod_007",
+      "tags": [
+        "axes",
+        "stage02"
+      ]
+    },
+    {
+      "id": "target_y_right_rod_b",
+      "name": "Y-Right Guide Rod B",
+      "anchorRef": "anchors/d3d/axes/y_right/internals/rod_b",
+      "associatedPartId": "rod_008",
+      "tags": [
+        "axes",
+        "stage02"
+      ]
+    },
+    {
+      "id": "target_y_right_bracket",
+      "name": "Y-Right Mounting Bracket",
+      "anchorRef": "anchors/d3d/axes/y_right/internals/bracket",
+      "associatedPartId": "y2_bracket",
+      "tags": [
+        "axes",
+        "stage02"
+      ]
+    },
+    {
+      "id": "target_x_drive_motor",
+      "name": "X-Axis Stepper Motor",
+      "anchorRef": "anchors/d3d/axes/x/internals/motor",
+      "associatedPartId": "motor004",
+      "tags": [
+        "axes",
+        "stage02"
+      ]
+    },
+    {
+      "id": "target_x_drive_rod_a",
+      "name": "X-Axis Guide Rod A",
+      "anchorRef": "anchors/d3d/axes/x/internals/rod_a",
+      "associatedPartId": "rod_009",
+      "tags": [
+        "axes",
+        "stage02"
+      ]
+    },
+    {
+      "id": "target_x_drive_rod_b",
+      "name": "X-Axis Guide Rod B",
+      "anchorRef": "anchors/d3d/axes/x/internals/rod_b",
+      "associatedPartId": "rod_010",
+      "tags": [
+        "axes",
+        "stage02"
       ]
     }
   ],
@@ -25405,6 +25609,636 @@
           "x": -0.04,
           "y": 0.09,
           "z": -0.14
+        }
+      },
+      {
+        "targetId": "target_y_left_carriage",
+        "position": {
+          "x": 0.165,
+          "y": 0.8215,
+          "z": 0.0069
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.8,
+          "b": 0.9,
+          "a": 0.8
+        },
+        "portA": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "portB": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "targetId": "target_y_left_idler",
+        "position": {
+          "x": 0.1644,
+          "y": 0.8213,
+          "z": 0.1389
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.8,
+          "b": 0.9,
+          "a": 0.8
+        },
+        "portA": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "portB": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "targetId": "target_y_left_motor",
+        "position": {
+          "x": 0.1964,
+          "y": 0.8224,
+          "z": -0.1952
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.8,
+          "b": 0.9,
+          "a": 0.8
+        },
+        "portA": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "portB": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "targetId": "target_y_left_rod_a",
+        "position": {
+          "x": 0.1651,
+          "y": 0.794,
+          "z": -0.0301
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.8,
+          "b": 0.9,
+          "a": 0.8
+        },
+        "portA": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "portB": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "targetId": "target_y_left_rod_b",
+        "position": {
+          "x": 0.1651,
+          "y": 0.849,
+          "z": -0.0341
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.8,
+          "b": 0.9,
+          "a": 0.8
+        },
+        "portA": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "portB": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "targetId": "target_y_left_endstop",
+        "position": {
+          "x": 0.1659,
+          "y": 0.8027,
+          "z": -0.1623
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.8,
+          "b": 0.9,
+          "a": 0.8
+        },
+        "portA": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "portB": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "targetId": "target_y_left_bracket",
+        "position": {
+          "x": 0.1377,
+          "y": 0.8224,
+          "z": -0.1715
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.8,
+          "b": 0.9,
+          "a": 0.8
+        },
+        "portA": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "portB": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "targetId": "target_y_left_pocket_a",
+        "position": {
+          "x": 0.1479,
+          "y": 0.786,
+          "z": 0.0221
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.8,
+          "b": 0.9,
+          "a": 0.8
+        },
+        "portA": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "portB": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "targetId": "target_y_left_pocket_b",
+        "position": {
+          "x": 0.1509,
+          "y": 0.7861,
+          "z": 0.0219
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.8,
+          "b": 0.9,
+          "a": 0.8
+        },
+        "portA": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "portB": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "targetId": "target_y_right_carriage",
+        "position": {
+          "x": -0.1651,
+          "y": 0.822,
+          "z": 0.0047
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.5,
+          "b": 1.0,
+          "a": 0.8
+        },
+        "portA": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "portB": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "targetId": "target_y_right_idler",
+        "position": {
+          "x": -0.1644,
+          "y": 0.8213,
+          "z": 0.1356
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.5,
+          "b": 1.0,
+          "a": 0.8
+        },
+        "portA": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "portB": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "targetId": "target_y_right_motor",
+        "position": {
+          "x": -0.1973,
+          "y": 0.8201,
+          "z": -0.1955
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.5,
+          "b": 1.0,
+          "a": 0.8
+        },
+        "portA": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "portB": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "targetId": "target_y_right_rod_a",
+        "position": {
+          "x": -0.1652,
+          "y": 0.8486,
+          "z": -0.0339
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.5,
+          "b": 1.0,
+          "a": 0.8
+        },
+        "portA": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "portB": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "targetId": "target_y_right_rod_b",
+        "position": {
+          "x": -0.1652,
+          "y": 0.7936,
+          "z": -0.0293
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.5,
+          "b": 1.0,
+          "a": 0.8
+        },
+        "portA": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "portB": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "targetId": "target_y_right_bracket",
+        "position": {
+          "x": -0.1381,
+          "y": 0.819,
+          "z": -0.1715
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 0.2,
+          "g": 0.5,
+          "b": 1.0,
+          "a": 0.8
+        },
+        "portA": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "portB": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "targetId": "target_x_drive_motor",
+        "position": {
+          "x": 0.2044,
+          "y": 0.9095,
+          "z": 0.0051
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 1.0,
+          "g": 0.55,
+          "b": 0.2,
+          "a": 0.8
+        },
+        "portA": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "portB": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "targetId": "target_x_drive_rod_a",
+        "position": {
+          "x": 0.0074,
+          "y": 0.8774,
+          "z": -0.0215
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 1.0,
+          "g": 0.55,
+          "b": 0.2,
+          "a": 0.8
+        },
+        "portA": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "portB": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "targetId": "target_x_drive_rod_b",
+        "position": {
+          "x": 0.0136,
+          "y": 0.8774,
+          "z": 0.0335
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 0.05,
+          "y": 0.05,
+          "z": 0.05
+        },
+        "color": {
+          "r": 1.0,
+          "g": 0.55,
+          "b": 0.2,
+          "a": 0.8
+        },
+        "portA": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "portB": {
+          "x": 0,
+          "y": 0,
+          "z": 0
         }
       }
     ],
