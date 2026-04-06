@@ -13011,9 +13011,9 @@
       {
         "partId": "bed_raiser",
         "startPosition": {
-          "x": 0.0258,
-          "y": 0.6373,
-          "z": 0.3055
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -13065,9 +13065,9 @@
       {
         "partId": "bed_raiser001",
         "startPosition": {
-          "x": 0.0073,
-          "y": 0.6373,
-          "z": -0.2594
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -13119,9 +13119,9 @@
       {
         "partId": "bed_raiser002",
         "startPosition": {
-          "x": 0.0258,
-          "y": 0.6615,
-          "z": 0.3056
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -13173,9 +13173,9 @@
       {
         "partId": "bed_raiser003",
         "startPosition": {
-          "x": 0.0073,
-          "y": 0.6615,
-          "z": -0.2593
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -13227,9 +13227,9 @@
       {
         "partId": "bed_raiser004",
         "startPosition": {
-          "x": 0.0073,
-          "y": 0.673,
-          "z": -0.2593
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -13281,9 +13281,9 @@
       {
         "partId": "bed_raiser005",
         "startPosition": {
-          "x": 0.0258,
-          "y": 0.673,
-          "z": 0.3056
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -13335,9 +13335,9 @@
       {
         "partId": "bed_rod_002",
         "startPosition": {
-          "x": -0.0208,
-          "y": 0.637,
-          "z": -0.2143
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -13389,9 +13389,9 @@
       {
         "partId": "bed_rod_1",
         "startPosition": {
-          "x": 0.032,
-          "y": 0.6383,
-          "z": -0.2143
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -13443,9 +13443,9 @@
       {
         "partId": "cable_chain",
         "startPosition": {
-          "x": 0.0046,
-          "y": 0.9818,
-          "z": -0.2292
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -13497,9 +13497,9 @@
       {
         "partId": "cable_chain_bracket",
         "startPosition": {
-          "x": 0.3569,
-          "y": 0.8462,
-          "z": 0.0453
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -13551,9 +13551,9 @@
       {
         "partId": "cable_chain_y",
         "startPosition": {
-          "x": 0.334,
-          "y": 0.7428,
-          "z": -0.17
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -13605,9 +13605,9 @@
       {
         "partId": "d3d_extruder_8mm_sensor",
         "startPosition": {
-          "x": 0.3898,
-          "y": 0.9168,
-          "z": 0.0569
+          "x": 0.05,
+          "y": 0.91,
+          "z": -0.6
         },
         "startRotation": {
           "x": 0.0,
@@ -13659,9 +13659,9 @@
       {
         "partId": "d3d_extruder_mount_bracket",
         "startPosition": {
-          "x": 0.412,
-          "y": 0.8864,
-          "z": 0.0148
+          "x": -0.08,
+          "y": 0.845,
+          "z": -0.19
         },
         "startRotation": {
           "x": 0.0,
@@ -13713,9 +13713,9 @@
       {
         "partId": "d3d_extruder_nozzle_assembly",
         "startPosition": {
-          "x": 0.3848,
-          "y": 0.8615,
-          "z": 0.0161
+          "x": -0.11,
+          "y": 0.76,
+          "z": -0.61
         },
         "startRotation": {
           "x": 0.0,
@@ -13767,9 +13767,9 @@
       {
         "partId": "d3d_extruder_simplified_carriage",
         "startPosition": {
-          "x": -0.3094,
-          "y": 0.9173,
-          "z": 0.0207
+          "x": -0.25,
+          "y": 0.84,
+          "z": -0.18
         },
         "startRotation": {
           "x": 0.0,
@@ -13821,9 +13821,9 @@
       {
         "partId": "d3d_heatbed_body",
         "startPosition": {
-          "x": 0.016,
-          "y": 0.6867,
-          "z": -0.1982
+          "x": 0.3,
+          "y": 0.64,
+          "z": -0.24
         },
         "startRotation": {
           "x": 0.0,
@@ -13875,9 +13875,9 @@
       {
         "partId": "d3d_heatbed_snapbuckle_left",
         "startPosition": {
-          "x": 0.0172,
-          "y": 0.6373,
-          "z": 0.3825
+          "x": -0.24,
+          "y": 0.59,
+          "z": -0.23
         },
         "startRotation": {
           "x": 0.0,
@@ -13929,9 +13929,9 @@
       {
         "partId": "d3d_heatbed_snapbuckle_right",
         "startPosition": {
-          "x": 0.0171,
-          "y": 0.6375,
-          "z": -0.3836
+          "x": 0.24,
+          "y": 0.59,
+          "z": -0.23
         },
         "startRotation": {
           "x": 0.0,
@@ -13983,9 +13983,9 @@
       {
         "partId": "d3d_titan_aero_core",
         "startPosition": {
-          "x": -0.2987,
-          "y": 0.9399,
-          "z": 0.1471
+          "x": -0.24,
+          "y": 0.82,
+          "z": -0.6
         },
         "startRotation": {
           "x": 0.0,
@@ -14037,9 +14037,9 @@
       {
         "partId": "d3d_x_axis_carriage_side",
         "startPosition": {
-          "x": -0.4116,
-          "y": 0.8868,
-          "z": 0.011
+          "x": -0.32,
+          "y": 0.82,
+          "z": -0.08
         },
         "startRotation": {
           "x": 0.0,
@@ -14091,9 +14091,9 @@
       {
         "partId": "d3d_x_axis_half_carriage",
         "startPosition": {
-          "x": -0.4098,
-          "y": 0.9173,
-          "z": 0.0112
+          "x": 0.34,
+          "y": 0.82,
+          "z": -0.08
         },
         "startRotation": {
           "x": 0.0,
@@ -14145,9 +14145,9 @@
       {
         "partId": "d3d_x_axis_idler_unit",
         "startPosition": {
-          "x": -0.3777,
-          "y": 0.9173,
-          "z": 0.0148
+          "x": 0.28,
+          "y": 0.69,
+          "z": -0.32
         },
         "startRotation": {
           "x": 0.0,
@@ -14199,9 +14199,9 @@
       {
         "partId": "d3d_x_axis_motor_holder_unit",
         "startPosition": {
-          "x": 0.4271,
-          "y": 0.9175,
-          "z": 0.0122
+          "x": -0.24,
+          "y": 0.69,
+          "z": -0.32
         },
         "startRotation": {
           "x": 0.0,
@@ -14253,9 +14253,9 @@
       {
         "partId": "d3d_x_axis_rod_pair",
         "startPosition": {
-          "x": -0.0503,
-          "y": 0.7578,
-          "z": -0.4066
+          "x": 0.0,
+          "y": 0.69,
+          "z": -0.4
         },
         "startRotation": {
           "x": 0.0,
@@ -14307,9 +14307,9 @@
       {
         "partId": "d3d_y_left_axis_unit",
         "startPosition": {
-          "x": 0.3047,
-          "y": 0.8623,
-          "z": -0.3679
+          "x": -0.42,
+          "y": 0.69,
+          "z": -0.28
         },
         "startRotation": {
           "x": 0.0,
@@ -14361,9 +14361,9 @@
       {
         "partId": "d3d_y_right_axis_unit",
         "startPosition": {
-          "x": -0.3059,
-          "y": 0.8589,
-          "z": -0.3676
+          "x": 0.42,
+          "y": 0.69,
+          "z": -0.28
         },
         "startRotation": {
           "x": 0.0,
@@ -14415,9 +14415,9 @@
       {
         "partId": "full_carriage",
         "startPosition": {
-          "x": 0.3848,
-          "y": 0.8615,
-          "z": 0.0161
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -14469,9 +14469,9 @@
       {
         "partId": "full_carriage001",
         "startPosition": {
-          "x": -0.385,
-          "y": 0.862,
-          "z": 0.011
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -14523,9 +14523,9 @@
       {
         "partId": "idler",
         "startPosition": {
-          "x": 0.0087,
-          "y": 0.6056,
-          "z": -0.4076
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -14577,9 +14577,9 @@
       {
         "partId": "idler001",
         "startPosition": {
-          "x": 0.0139,
-          "y": 0.6058,
-          "z": 0.4075
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -14631,9 +14631,9 @@
       {
         "partId": "idler002",
         "startPosition": {
-          "x": 0.3324,
-          "y": 0.8613,
-          "z": 0.2809
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -14685,9 +14685,9 @@
       {
         "partId": "idler003",
         "startPosition": {
-          "x": -0.3341,
-          "y": 0.8613,
-          "z": 0.2756
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -14739,9 +14739,9 @@
       {
         "partId": "motor",
         "startPosition": {
-          "x": 0.0102,
-          "y": 0.9024,
-          "z": -0.4404
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -14793,9 +14793,9 @@
       {
         "partId": "motor001",
         "startPosition": {
-          "x": 0.0106,
-          "y": 0.9026,
-          "z": 0.4404
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -14847,9 +14847,9 @@
       {
         "partId": "motor002",
         "startPosition": {
-          "x": 0.3524,
-          "y": 0.8624,
-          "z": -0.3503
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -14901,9 +14901,9 @@
       {
         "partId": "motor003",
         "startPosition": {
-          "x": -0.3536,
-          "y": 0.8601,
-          "z": -0.3503
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -14955,9 +14955,9 @@
       {
         "partId": "motor004",
         "startPosition": {
-          "x": 0.4243,
-          "y": 0.9495,
-          "z": 0.0106
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -15009,9 +15009,9 @@
       {
         "partId": "motor_piece",
         "startPosition": {
-          "x": 0.0095,
-          "y": 0.9013,
-          "z": -0.4084
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -15063,9 +15063,9 @@
       {
         "partId": "motor_piece001",
         "startPosition": {
-          "x": 0.013,
-          "y": 0.9015,
-          "z": 0.4084
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -15117,9 +15117,9 @@
       {
         "partId": "pocket039",
         "startPosition": {
-          "x": 0.3655,
-          "y": 0.826,
-          "z": 0.0546
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -15171,9 +15171,9 @@
       {
         "partId": "pocket040",
         "startPosition": {
-          "x": 0.3686,
-          "y": 0.8261,
-          "z": 0.0535
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -15225,9 +15225,9 @@
       {
         "partId": "rod_003",
         "startPosition": {
-          "x": 0.0725,
-          "y": 0.758,
-          "z": 0.4049
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -15279,9 +15279,9 @@
       {
         "partId": "rod_004",
         "startPosition": {
-          "x": -0.046,
-          "y": 0.758,
-          "z": 0.4069
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -15333,9 +15333,9 @@
       {
         "partId": "rod_005",
         "startPosition": {
-          "x": 0.3815,
-          "y": 0.834,
-          "z": -0.0696
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -15387,9 +15387,9 @@
       {
         "partId": "rod_006",
         "startPosition": {
-          "x": 0.3806,
-          "y": 0.889,
-          "z": -0.0786
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -15441,9 +15441,9 @@
       {
         "partId": "rod_007",
         "startPosition": {
-          "x": -0.3807,
-          "y": 0.8886,
-          "z": -0.0781
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -15495,9 +15495,9 @@
       {
         "partId": "rod_008",
         "startPosition": {
-          "x": -0.3818,
-          "y": 0.8336,
-          "z": -0.0677
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -15549,9 +15549,9 @@
       {
         "partId": "rod_009",
         "startPosition": {
-          "x": 0.0074,
-          "y": 0.9174,
-          "z": -0.2415
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -15603,9 +15603,9 @@
       {
         "partId": "rod_010",
         "startPosition": {
-          "x": 0.0136,
-          "y": 0.9174,
-          "z": -0.1865
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -15657,9 +15657,9 @@
       {
         "partId": "rod_2",
         "startPosition": {
-          "x": 0.0682,
-          "y": 0.7578,
-          "z": -0.4052
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -15711,9 +15711,9 @@
       {
         "partId": "y1_bracket",
         "startPosition": {
-          "x": 0.2754,
-          "y": 0.8624,
-          "z": -0.343
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -15765,9 +15765,9 @@
       {
         "partId": "y2_bracket",
         "startPosition": {
-          "x": -0.2761,
-          "y": 0.859,
-          "z": -0.3429
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -15819,9 +15819,9 @@
       {
         "partId": "y_endstop",
         "startPosition": {
-          "x": 0.3232,
-          "y": 0.8427,
-          "z": -0.3161
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -15873,9 +15873,9 @@
       {
         "partId": "z1_half_carriage",
         "startPosition": {
-          "x": 0.0139,
-          "y": 0.6377,
-          "z": 0.4077
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -15927,9 +15927,9 @@
       {
         "partId": "z1_spacer_002",
         "startPosition": {
-          "x": 0.0147,
-          "y": 0.6056,
-          "z": 0.3843
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -15981,9 +15981,9 @@
       {
         "partId": "z1_spacer_1",
         "startPosition": {
-          "x": 0.0136,
-          "y": 0.8858,
-          "z": 0.3844
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -16035,9 +16035,9 @@
       {
         "partId": "z2_half_carriage",
         "startPosition": {
-          "x": 0.0108,
-          "y": 0.6375,
-          "z": -0.4083
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -16089,9 +16089,9 @@
       {
         "partId": "z2_spacer",
         "startPosition": {
-          "x": 0.0126,
-          "y": 0.8858,
-          "z": -0.3847
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -16143,9 +16143,9 @@
       {
         "partId": "z2_spacer_2",
         "startPosition": {
-          "x": 0.0138,
-          "y": 0.6056,
-          "z": -0.3847
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
         },
         "startRotation": {
           "x": 0.0,
@@ -16197,9 +16197,9 @@
       {
         "partId": "d3d_extruder_5015_blower",
         "startPosition": {
-          "x": -0.2884,
-          "y": 0.925,
-          "z": 0.1188
+          "x": 0.18,
+          "y": 0.85,
+          "z": -0.62
         },
         "startRotation": {
           "x": 0.0,
@@ -16251,9 +16251,9 @@
       {
         "partId": "d3d_extruder_mount_top_plate",
         "startPosition": {
-          "x": -0.3093,
-          "y": 0.905,
-          "z": 0.0241
+          "x": 0.05,
+          "y": 0.895,
+          "z": -0.17
         },
         "startRotation": {
           "x": 0.0,
@@ -16305,9 +16305,9 @@
       {
         "partId": "d3d_extruder_sensor_holder",
         "startPosition": {
-          "x": -0.2854,
-          "y": 0.92,
-          "z": 0.1652
+          "x": -0.18,
+          "y": 0.86,
+          "z": -0.59
         },
         "startRotation": {
           "x": 0.0,
@@ -16359,9 +16359,9 @@
       {
         "partId": "d3d_frame_bottom_bottom_bar",
         "startPosition": {
-          "x": -0.557,
-          "y": 0.5948,
-          "z": 0.4109
+          "x": -1.0,
+          "y": 0.5516,
+          "z": 0.395
         },
         "startRotation": {
           "x": 0.0,
@@ -16413,9 +16413,9 @@
       {
         "partId": "d3d_frame_bottom_left_bar",
         "startPosition": {
-          "x": -0.6908,
-          "y": 0.5916,
-          "z": 0.5583
+          "x": -1.0,
+          "y": 0.5516,
+          "z": 0.345
         },
         "startRotation": {
           "x": 0.0,
@@ -16467,9 +16467,9 @@
       {
         "partId": "d3d_frame_bottom_right_bar",
         "startPosition": {
-          "x": -0.3496,
-          "y": 0.5916,
-          "z": 0.611
+          "x": -1.0,
+          "y": 0.5516,
+          "z": 0.445
         },
         "startRotation": {
           "x": 0.0,
@@ -16521,9 +16521,9 @@
       {
         "partId": "d3d_frame_bottom_top_bar",
         "startPosition": {
-          "x": -0.5036,
-          "y": 0.5948,
-          "z": 0.7417
+          "x": -1.0,
+          "y": 0.5516,
+          "z": 0.495
         },
         "startRotation": {
           "x": 0.0,
@@ -16575,9 +16575,9 @@
       {
         "partId": "d3d_frame_front_bottom_bar",
         "startPosition": {
-          "x": -0.5036,
-          "y": 0.5948,
-          "z": -0.7417
+          "x": -1.0,
+          "y": 0.5516,
+          "z": -0.445
         },
         "startRotation": {
           "x": 0.0,
@@ -16629,9 +16629,9 @@
       {
         "partId": "d3d_frame_front_left_bar",
         "startPosition": {
-          "x": -0.6908,
-          "y": 0.5916,
-          "z": -0.5583
+          "x": -1.0,
+          "y": 0.5516,
+          "z": -0.495
         },
         "startRotation": {
           "x": 0.0,
@@ -16683,9 +16683,9 @@
       {
         "partId": "d3d_frame_front_right_bar",
         "startPosition": {
-          "x": -0.3496,
-          "y": 0.5916,
-          "z": -0.611
+          "x": -1.0,
+          "y": 0.5516,
+          "z": -0.395
         },
         "startRotation": {
           "x": 0.0,
@@ -16737,9 +16737,9 @@
       {
         "partId": "d3d_frame_front_top_bar",
         "startPosition": {
-          "x": -0.557,
-          "y": 0.5948,
-          "z": -0.4109
+          "x": -1.0,
+          "y": 0.5516,
+          "z": -0.345
         },
         "startRotation": {
           "x": 0.0,
@@ -16791,9 +16791,9 @@
       {
         "partId": "d3d_frame_left_bottom_bar",
         "startPosition": {
-          "x": -0.5865,
-          "y": 0.5948,
-          "z": -0.2156
+          "x": -1.0,
+          "y": 0.5516,
+          "z": -0.025
         },
         "startRotation": {
           "x": 0.0,
@@ -16845,9 +16845,9 @@
       {
         "partId": "d3d_frame_left_left_bar",
         "startPosition": {
-          "x": -0.7397,
-          "y": 0.5916,
-          "z": 0.0
+          "x": -1.0,
+          "y": 0.5516,
+          "z": -0.075
         },
         "startRotation": {
           "x": 0.0,
@@ -16899,9 +16899,9 @@
       {
         "partId": "d3d_frame_left_right_bar",
         "startPosition": {
-          "x": -0.4603,
-          "y": 0.5916,
-          "z": 0.0
+          "x": -1.0,
+          "y": 0.5516,
+          "z": 0.025
         },
         "startRotation": {
           "x": 0.0,
@@ -16953,9 +16953,9 @@
       {
         "partId": "d3d_frame_left_top_bar",
         "startPosition": {
-          "x": -0.5865,
-          "y": 0.5948,
-          "z": 0.2156
+          "x": -1.0,
+          "y": 0.5516,
+          "z": 0.075
         },
         "startRotation": {
           "x": 0.0,
@@ -17007,9 +17007,9 @@
       {
         "partId": "d3d_frame_rear_bottom_bar",
         "startPosition": {
-          "x": 0.5036,
-          "y": 0.5948,
-          "z": -0.7417
+          "x": 1.0,
+          "y": 0.5516,
+          "z": -0.445
         },
         "startRotation": {
           "x": 0.0,
@@ -17061,9 +17061,9 @@
       {
         "partId": "d3d_frame_rear_left_bar",
         "startPosition": {
-          "x": 0.3496,
-          "y": 0.5916,
-          "z": -0.611
+          "x": 1.0,
+          "y": 0.5516,
+          "z": -0.495
         },
         "startRotation": {
           "x": 0.0,
@@ -17115,9 +17115,9 @@
       {
         "partId": "d3d_frame_rear_right_bar",
         "startPosition": {
-          "x": 0.6908,
-          "y": 0.5916,
-          "z": -0.5583
+          "x": 1.0,
+          "y": 0.5516,
+          "z": -0.395
         },
         "startRotation": {
           "x": 0.0,
@@ -17169,9 +17169,9 @@
       {
         "partId": "d3d_frame_rear_top_bar",
         "startPosition": {
-          "x": 0.557,
-          "y": 0.5948,
-          "z": -0.4109
+          "x": 1.0,
+          "y": 0.5516,
+          "z": -0.345
         },
         "startRotation": {
           "x": 0.0,
@@ -17223,9 +17223,9 @@
       {
         "partId": "d3d_frame_right_bottom_bar",
         "startPosition": {
-          "x": 0.5865,
-          "y": 0.5948,
-          "z": -0.2156
+          "x": 1.0,
+          "y": 0.5516,
+          "z": -0.025
         },
         "startRotation": {
           "x": 0.0,
@@ -17277,9 +17277,9 @@
       {
         "partId": "d3d_frame_right_left_bar",
         "startPosition": {
-          "x": 0.4603,
-          "y": 0.5916,
-          "z": 0.0
+          "x": 1.0,
+          "y": 0.5516,
+          "z": -0.075
         },
         "startRotation": {
           "x": 0.0,
@@ -17331,9 +17331,9 @@
       {
         "partId": "d3d_frame_right_right_bar",
         "startPosition": {
-          "x": 0.7397,
-          "y": 0.5916,
-          "z": 0.0
+          "x": 1.0,
+          "y": 0.5516,
+          "z": 0.025
         },
         "startRotation": {
           "x": 0.0,
@@ -17385,9 +17385,9 @@
       {
         "partId": "d3d_frame_right_top_bar",
         "startPosition": {
-          "x": 0.5865,
-          "y": 0.5948,
-          "z": 0.2156
+          "x": 1.0,
+          "y": 0.5516,
+          "z": 0.075
         },
         "startRotation": {
           "x": 0.0,
@@ -17439,9 +17439,9 @@
       {
         "partId": "d3d_frame_top_bottom_bar",
         "startPosition": {
-          "x": 0.557,
-          "y": 0.5948,
-          "z": 0.4109
+          "x": 1.0,
+          "y": 0.5516,
+          "z": 0.395
         },
         "startRotation": {
           "x": 0.0,
@@ -17493,9 +17493,9 @@
       {
         "partId": "d3d_frame_top_left_bar",
         "startPosition": {
-          "x": 0.3496,
-          "y": 0.5916,
-          "z": 0.611
+          "x": 1.0,
+          "y": 0.5516,
+          "z": 0.345
         },
         "startRotation": {
           "x": 0.0,
@@ -17547,9 +17547,9 @@
       {
         "partId": "d3d_frame_top_right_bar",
         "startPosition": {
-          "x": 0.6908,
-          "y": 0.5916,
-          "z": 0.5583
+          "x": 1.0,
+          "y": 0.5516,
+          "z": 0.445
         },
         "startRotation": {
           "x": 0.0,
@@ -17601,9 +17601,9 @@
       {
         "partId": "d3d_frame_top_top_bar",
         "startPosition": {
-          "x": 0.5036,
-          "y": 0.5948,
-          "z": 0.7417
+          "x": 1.0,
+          "y": 0.5516,
+          "z": 0.495
         },
         "startRotation": {
           "x": 0.0,
@@ -17655,9 +17655,9 @@
       {
         "partId": "fastener_x_axis_belt_peg",
         "startPosition": {
-          "x": -0.2723,
-          "y": 0.832,
-          "z": -0.0563
+          "x": -0.02,
+          "y": 0.68,
+          "z": -0.23
         },
         "startRotation": {
           "x": 0.0,
@@ -17709,9 +17709,9 @@
       {
         "partId": "fastener_x_axis_idler_mount_m6x30_a",
         "startPosition": {
-          "x": 0.2922,
-          "y": 0.874,
-          "z": 0.0323
+          "x": 0.26,
+          "y": 0.77,
+          "z": -0.22
         },
         "startRotation": {
           "x": 0.0,
@@ -17763,9 +17763,9 @@
       {
         "partId": "fastener_x_axis_idler_mount_m6x30_b",
         "startPosition": {
-          "x": 0.2922,
-          "y": 0.814,
-          "z": -0.0323
+          "x": 0.26,
+          "y": 0.74,
+          "z": -0.19
         },
         "startRotation": {
           "x": 0.0,
@@ -17817,9 +17817,9 @@
       {
         "partId": "fastener_x_axis_motor_mount_m6x30_a",
         "startPosition": {
-          "x": -0.2922,
-          "y": 0.874,
-          "z": 0.0323
+          "x": -0.26,
+          "y": 0.77,
+          "z": -0.22
         },
         "startRotation": {
           "x": 0.0,
@@ -17871,9 +17871,9 @@
       {
         "partId": "fastener_x_axis_motor_mount_m6x30_b",
         "startPosition": {
-          "x": -0.2922,
-          "y": 0.814,
-          "z": -0.0323
+          "x": -0.26,
+          "y": 0.74,
+          "z": -0.19
         },
         "startRotation": {
           "x": 0.0,
@@ -17925,9 +17925,9 @@
       {
         "partId": "fastener_z_front_idler_frame_bolt",
         "startPosition": {
-          "x": 0.0092,
-          "y": 0.606,
-          "z": -0.2849
+          "x": 0.005,
+          "y": 0.35,
+          "z": -0.22
         },
         "startRotation": {
           "x": 0.0,
@@ -17979,9 +17979,9 @@
       {
         "partId": "fastener_z_front_motor_frame_bolt",
         "startPosition": {
-          "x": 0.0092,
-          "y": 0.902,
-          "z": -0.2849
+          "x": 0.005,
+          "y": 0.45,
+          "z": -0.22
         },
         "startRotation": {
           "x": 0.0,
@@ -18033,9 +18033,9 @@
       {
         "partId": "fastener_z_front_belt_peg",
         "startPosition": {
-          "x": 0.0085,
-          "y": 0.74,
-          "z": -0.315
+          "x": 0.005,
+          "y": 0.35,
+          "z": -0.22
         },
         "startRotation": {
           "x": 0.0,
@@ -18087,9 +18087,9 @@
       {
         "partId": "fastener_z_back_idler_frame_bolt",
         "startPosition": {
-          "x": 0.0092,
-          "y": 0.606,
-          "z": 0.2849
+          "x": 0.005,
+          "y": 0.35,
+          "z": 0.22
         },
         "startRotation": {
           "x": 0.0,
@@ -18141,9 +18141,9 @@
       {
         "partId": "fastener_z_back_motor_frame_bolt",
         "startPosition": {
-          "x": 0.0092,
-          "y": 0.902,
-          "z": 0.2849
+          "x": 0.005,
+          "y": 0.45,
+          "z": 0.22
         },
         "startRotation": {
           "x": 0.0,
@@ -18195,9 +18195,9 @@
       {
         "partId": "fastener_z_back_belt_peg",
         "startPosition": {
-          "x": 0.0085,
-          "y": 0.74,
-          "z": 0.315
+          "x": 0.005,
+          "y": 0.35,
+          "z": 0.22
         },
         "startRotation": {
           "x": 0.0,
@@ -18249,9 +18249,9 @@
       {
         "partId": "d3d_control_panel",
         "startPosition": {
-          "x": -0.4283,
-          "y": 0.5932,
-          "z": -0.1481
+          "x": 1.2796,
+          "y": 0.5532,
+          "z": -0.0762
         },
         "startRotation": {
           "x": 0.0,
@@ -18303,9 +18303,9 @@
       {
         "partId": "d3d_ramps_14_board",
         "startPosition": {
-          "x": -0.4283,
-          "y": 0.6082,
-          "z": -0.1481
+          "x": 1.2796,
+          "y": 0.5682,
+          "z": -0.0762
         },
         "startRotation": {
           "x": 0.0,
@@ -18357,9 +18357,9 @@
       {
         "partId": "d3d_psu_atx",
         "startPosition": {
-          "x": -0.4283,
-          "y": 0.6582,
-          "z": -0.1481
+          "x": 1.2796,
+          "y": 0.6182,
+          "z": -0.0762
         },
         "startRotation": {
           "x": 0.0,
@@ -18411,9 +18411,9 @@
       {
         "partId": "d3d_smart_controller",
         "startPosition": {
-          "x": -0.4977,
-          "y": 0.6607,
-          "z": -0.1613
+          "x": 1.2116,
+          "y": 0.6207,
+          "z": -0.0935
         },
         "startRotation": {
           "x": 0.0,
@@ -18465,9 +18465,9 @@
       {
         "partId": "compound007_lower_fl",
         "startPosition": {
-          "x": -0.3016,
-          "y": 0.5912,
-          "z": -0.31
+          "x": 0.8,
+          "y": 0.5512,
+          "z": -0.1523
         },
         "startRotation": {
           "x": 0.0,
@@ -18519,9 +18519,9 @@
       {
         "partId": "compound007_lower_fr",
         "startPosition": {
-          "x": 0.3073,
-          "y": 0.5909,
-          "z": -0.3081
+          "x": 0.8,
+          "y": 0.5509,
+          "z": -0.1523
         },
         "startRotation": {
           "x": 0.0,
@@ -18573,9 +18573,9 @@
       {
         "partId": "compound007_lower_rl",
         "startPosition": {
-          "x": -0.307,
-          "y": 0.5915,
-          "z": 0.3092
+          "x": 0.8,
+          "y": 0.5515,
+          "z": 0.1531
         },
         "startRotation": {
           "x": 0.0,
@@ -18627,9 +18627,9 @@
       {
         "partId": "compound007_lower_rr",
         "startPosition": {
-          "x": 0.3079,
-          "y": 0.5916,
-          "z": 0.3079
+          "x": 0.8,
+          "y": 0.5516,
+          "z": 0.1523
         },
         "startRotation": {
           "x": 0.0,
@@ -18681,9 +18681,9 @@
       {
         "partId": "compound007_upper_fl",
         "startPosition": {
-          "x": -0.3084,
-          "y": 0.8954,
-          "z": -0.3084
+          "x": 0.8,
+          "y": 0.8554,
+          "z": -0.1528
         },
         "startRotation": {
           "x": 0.0,
@@ -18735,9 +18735,9 @@
       {
         "partId": "compound007_upper_fr",
         "startPosition": {
-          "x": 0.308,
-          "y": 0.8963,
-          "z": -0.3092
+          "x": 0.8,
+          "y": 0.8563,
+          "z": -0.1533
         },
         "startRotation": {
           "x": 0.0,
@@ -18789,9 +18789,9 @@
       {
         "partId": "compound007_upper_rl",
         "startPosition": {
-          "x": -0.3098,
-          "y": 0.8966,
-          "z": 0.3069
+          "x": 0.8,
+          "y": 0.8566,
+          "z": 0.1521
         },
         "startRotation": {
           "x": 0.0,
@@ -18843,9 +18843,9 @@
       {
         "partId": "compound007_upper_rr",
         "startPosition": {
-          "x": 0.3079,
-          "y": 0.8955,
-          "z": 0.3079
+          "x": 0.8,
+          "y": 0.8555,
+          "z": 0.1523
         },
         "startRotation": {
           "x": 0.0,
