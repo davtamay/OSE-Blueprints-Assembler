@@ -111,6 +111,7 @@ namespace OSE.UI.Root
             ServiceRegistry.Unregister<IXRAffordanceSetup>();
             ServiceRegistry.Unregister<Interaction.ISpawnerQueryService>();
             ServiceRegistry.Unregister<IStepAwarePositioner>();
+            _ghostManager?.Clear(); // destroy ghost GOs before manager is orphaned
             DestroyPooledParts();
         }
 

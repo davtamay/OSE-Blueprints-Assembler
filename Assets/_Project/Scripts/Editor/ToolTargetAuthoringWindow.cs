@@ -417,6 +417,11 @@ namespace OSE.Editor
             _parts = null;
             _selectedPartIdx = -1;
             _multiSelectedParts.Clear();
+            // Discard unsaved dirty tracking so stale bits don't bleed into the next package load.
+            _dirtyToolIds.Clear();
+            _dirtyStepIds.Clear();
+            _dirtyTaskOrderStepIds.Clear();
+            _dirtyPartAssetRefIds.Clear();
         }
 
         // ── Main GUI ──────────────────────────────────────────────────────────
@@ -1323,11 +1328,15 @@ namespace OSE.Editor
         {
             bool anyDirty = AnyDirty();
 
+            EditorGUILayout.BeginHorizontal();
             EditorGUI.BeginDisabledGroup(!anyDirty);
             GUI.backgroundColor = anyDirty ? new Color(0.3f, 0.9f, 0.4f) : Color.white;
             if (GUILayout.Button("Write to machine.json", GUILayout.Height(28))) WriteJson();
             GUI.backgroundColor = Color.white;
             EditorGUI.EndDisabledGroup();
+            if (GUILayout.Button("↺", EditorStyles.miniButton, GUILayout.Width(22), GUILayout.Height(28)))
+                RevertAllChanges();
+            EditorGUILayout.EndHorizontal();
 
             if (GUILayout.Button("Extract from GLB Anchors"))
                 ExtractFromGlbAnchors();
@@ -2700,11 +2709,15 @@ namespace OSE.Editor
         private void DrawUnifiedActions()
         {
             bool anyDirty = AnyDirty();
+            EditorGUILayout.BeginHorizontal();
             EditorGUI.BeginDisabledGroup(!anyDirty);
             GUI.backgroundColor = anyDirty ? new Color(0.3f, 0.9f, 0.4f) : Color.white;
             if (GUILayout.Button("Write to machine.json", GUILayout.Height(26))) WriteJson();
             GUI.backgroundColor = Color.white;
             EditorGUI.EndDisabledGroup();
+            if (GUILayout.Button("↺", EditorStyles.miniButton, GUILayout.Width(22), GUILayout.Height(26)))
+                RevertAllChanges();
+            EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("Extract from GLB", EditorStyles.miniButton)) ExtractFromGlbAnchors();
@@ -3282,8 +3295,11 @@ namespace OSE.Editor
                 }
             }
 
-            // Native Move-tool polling on selected part only (matches PPAW)
+            // Native Move-tool polling on selected part only (matches PPAW).
+            // Guard with Tools.current so the poll cannot fire during async spawner repositioning;
+            // it only runs when the user is actively using Unity's Move or Transform tool.
             if (_selectedPartIdx >= 0 && _selectedPartIdx < _parts.Length &&
+                (Tools.current == Tool.Move || Tools.current == Tool.Transform) &&
                 (Event.current.type == EventType.Repaint || Event.current.type == EventType.Layout))
             {
                 ref PartEditState pp = ref _parts[_selectedPartIdx];
@@ -4953,6 +4969,22 @@ namespace OSE.Editor
             BuildTargetList();
             BuildPartList();
             SyncAllPartMeshesToActivePose();
+        }
+
+        /// <summary>
+        /// Discards ALL unsaved in-memory edits and reloads from the current machine.json on disk.
+        /// Prompts for confirmation first.
+        /// </summary>
+        private void RevertAllChanges()
+        {
+            if (string.IsNullOrEmpty(_pkgId)) return;
+            if (!EditorUtility.DisplayDialog(
+                "Revert All Changes",
+                $"Discard all unsaved edits and reload '{_pkgId}/machine.json' from disk?",
+                "Revert", "Cancel"))
+                return;
+
+            LoadPkg(_pkgId);   // Cleanup() inside clears all dirty sets; rebuilds lists from disk
         }
 
         // ── Extract from GLB anchors ──────────────────────────────────────────
