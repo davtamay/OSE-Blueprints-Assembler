@@ -204,6 +204,24 @@ namespace OSE.Interaction
             ApplyHome();
         }
 
+        // ── Station Transitions ──
+
+        /// <summary>
+        /// Animates the camera to a new station's home position.
+        /// Called when the assembly switches to a different workstation.
+        /// </summary>
+        public void OnStationChanged(StationContextChanged evt)
+        {
+            if (_cameraRig == null) return;
+
+            _cameraRig.FocusOn(evt.CameraHome, evt.CameraDistance);
+
+            // Nudge pitch to a comfortable overhead angle for bench work
+            // (only if the camera isn't already deliberately tilted).
+            OseLog.Info($"[StepGuidance] Camera flying to station '{evt.DisplayName}' " +
+                        $"pivot={evt.CameraHome}, dist={evt.CameraDistance:F2}");
+        }
+
         // ── Recovery Affordances ──
 
         /// <summary>

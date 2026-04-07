@@ -69,6 +69,15 @@ namespace OSE.Content
         /// member poses.
         /// </summary>
         public IntegratedSubassemblyPreviewPlacement[] integratedSubassemblyPlacements;
+
+        /// <summary>
+        /// Named spatial workstations for this package — bench stations where
+        /// subassemblies are built, plus the frame station where units are mounted.
+        /// Referenced by <see cref="AssemblyDefinition.stationId"/>.
+        /// <see cref="AssemblyStationDefinition.surfaceY"/> determines the table
+        /// surface height; parts rest 2 cm above it instead of floating.
+        /// </summary>
+        public AssemblyStationDefinition[] stations;
     }
 
     /// <summary>

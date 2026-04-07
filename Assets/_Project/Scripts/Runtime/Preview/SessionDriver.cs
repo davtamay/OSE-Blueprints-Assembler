@@ -2,21 +2,19 @@ using System;
 using System.Threading.Tasks;
 using OSE.App;
 using OSE.Content;
-using OSE.Content.Loading;
 using OSE.Core;
 using UnityEngine;
 
 namespace OSE.Runtime.Preview
 {
     /// <summary>
-    /// Unified scene bridge for both edit-mode content preview and play-mode
-    /// runtime sessions. In edit mode it loads a machine package and pushes a
-    /// selected step into the UI panels for visual authoring feedback. In play
-    /// mode it starts a MachineSessionController session, subscribes to runtime
-    /// events, and drives the UI from live step transitions.
-    /// This is a preview/test harness component, not the future runtime authority.
+    /// Play-mode session bridge. Starts a <see cref="MachineSessionController"/> session,
+    /// subscribes to runtime events, and drives the UI from live step transitions.
+    ///
+    /// Edit-mode step preview is handled by <see cref="EditModePreviewDriver"/>, which
+    /// uses the same <see cref="PushStepAndPartToUI"/> path — so the editor preview is
+    /// visually identical to what the trainee sees at runtime.
     /// </summary>
-    [ExecuteAlways]
     [DisallowMultipleComponent]
     public sealed class SessionDriver : MonoBehaviour
     {
@@ -37,11 +35,13 @@ namespace OSE.Runtime.Preview
         /// </summary>
         public static event Action<int> EditModeStepChanged;
 
-        /// <summary>The package loaded for edit-mode preview (may be null while loading).</summary>
-        public MachinePackageDefinition EditModePackage => _editModePackage;
-
-        /// <summary>The current preview step sequence index (1-based, matches step.sequenceIndex).</summary>
-        public int PreviewStepSequenceIndex => _previewStepSequenceIndex;
+        /// <summary>
+        /// Fires <see cref="EditModeStepChanged"/>. Called by <see cref="EditModePreviewDriver"/>
+        /// to notify authoring windows of a step change (C# events can only be invoked from
+        /// within their declaring type).
+        /// </summary>
+        internal static void RaiseEditModeStepChanged(int sequenceIndex) =>
+            EditModeStepChanged?.Invoke(sequenceIndex);
 
         /// <summary>
         /// True while the machine intro overlay is displayed.
@@ -52,10 +52,6 @@ namespace OSE.Runtime.Preview
         [Header("Session Configuration")]
         [SerializeField] private string _packageId = "onboarding_tutorial";
         [SerializeField] private SessionMode _sessionMode = SessionMode.Tutorial;
-
-        [Header("Edit Mode Preview")]
-        [SerializeField] private bool _previewInEditMode = true;
-        [SerializeField, Min(1)] private int _previewStepSequenceIndex = 1;
 
         [Header("Runtime State (Read Only)")]
         [SerializeField] private string _lifecycle = "—";
@@ -85,35 +81,18 @@ namespace OSE.Runtime.Preview
         private string _savedMachineVersion;
         private string _savedStepStructureHash;
 
-        // Edit-mode preview state
-        private readonly MachinePackageLoader _loader = new MachinePackageLoader();
-        private MachinePackageDefinition _editModePackage;
-        private bool _editModePreviewApplied;
-        private int _editModeLoadVersion;
-
         // --------------------------------------------------------------------
         // Lifecycle
         // --------------------------------------------------------------------
 
-        private void OnEnable()
-        {
-            if (!Application.isPlaying)
-            {
-                _editModePreviewApplied = false;
-                RequestEditModeRefresh();
-
-                HidePreviewIfPossible();
-            }
-
-        }
+        private void OnEnable() { }
 
         private void OnDisable()
         {
-            // Always reset session state when disabled, regardless of play/edit mode.
-            // With Domain Reload disabled and [ExecuteAlways], OnDisable fires AFTER
-            // Application.isPlaying becomes true during play mode entry, so guarding
-            // with !Application.isPlaying would silently skip the reset and leave
-            // _sessionStarted=true from the previous session, blocking StartSessionAsync.
+            // Reset session state on disable.
+            // With Domain Reload disabled, OnDisable fires AFTER Application.isPlaying
+            // becomes true during play mode entry. Unconditional reset ensures
+            // _sessionStarted is cleared so StartSessionAsync can retry on re-enable.
             if (_session != null)
             {
                 _session.PackageReady -= HandlePackageReady;
@@ -135,12 +114,6 @@ namespace OSE.Runtime.Preview
             _pendingStepUiPush = false;
             IsIntroActive = false;
             _session = null;
-            _editModePreviewApplied = false;
-        }
-
-        private void Start()
-        {
-            HidePreviewIfPossible();
         }
 
         private System.Collections.IEnumerator DeferredStartSession()
@@ -151,85 +124,25 @@ namespace OSE.Runtime.Preview
         private void Update()
         {
             if (Application.isPlaying)
-            {
                 UpdatePlayMode();
-            }
-            else
-            {
-                UpdateEditMode();
-            }
         }
 
         private void OnValidate()
         {
-            if (!isActiveAndEnabled)
+            if (!isActiveAndEnabled || !Application.isPlaying) return;
+
+            // Detect package ID or mode change in play mode and restart session.
+            if (_sessionStarted && _lastPlayModePackageId != _packageId)
+            {
+                _ = RestartSession();
                 return;
-
-            if (Application.isPlaying)
-            {
-                // Detect package ID change in play mode and restart session
-                if (_sessionStarted && _lastPlayModePackageId != _packageId)
-                {
-                    _ = RestartSession();
-                    return;
-                }
-
-                if (_sessionStarted && _lastPlayModeSessionMode != _sessionMode)
-                {
-                    OseLog.Info($"[SessionDriver] Session mode changed to {_sessionMode}. Restarting session.");
-                    _ = RestartSession();
-                }
-            }
-            else
-            {
-                _editModePreviewApplied = false;
-                RequestEditModeRefresh();
-                EditModeStepChanged?.Invoke(_previewStepSequenceIndex);
-            }
-        }
-
-        // --------------------------------------------------------------------
-        // Edit-Mode Step Control (called by editor tooling)
-        // --------------------------------------------------------------------
-
-        /// <summary>
-        /// Sets the preview step sequence index and immediately repositions spawned parts
-        /// to match the assembly state at that step. Fires <see cref="EditModeStepChanged"/>
-        /// so that other editor windows (e.g. ToolTargetAuthoringWindow) stay in sync.
-        /// No-op in play mode.
-        /// </summary>
-        public void SetEditModeStep(int sequenceIndex)
-        {
-            if (Application.isPlaying) return;
-
-            bool changed = _previewStepSequenceIndex != sequenceIndex;
-            if (changed)
-            {
-                _previewStepSequenceIndex = sequenceIndex;
-                _editModePreviewApplied   = false;
-#if UNITY_EDITOR
-                UnityEditor.EditorUtility.SetDirty(this);
-#endif
-                TryApplyEditModePreview();
-                EditModeStepChanged?.Invoke(_previewStepSequenceIndex);
             }
 
-            // Always reposition parts — ApplyModifiedProperties() may have already
-            // set the serialized value before this call, making changed=false while
-            // parts still need to move.
-            ApplyStepAwarePartPositions();
-        }
-
-        private void ApplyStepAwarePartPositions()
-        {
-#if UNITY_EDITOR
-            if (Application.isPlaying) return;
-            if (ServiceRegistry.TryGet<IStepAwarePositioner>(out var positioner))
+            if (_sessionStarted && _lastPlayModeSessionMode != _sessionMode)
             {
-                positioner.ApplyStepAwarePositions(_previewStepSequenceIndex, _editModePackage);
-                UnityEditor.SceneView.RepaintAll();
+                OseLog.Info($"[SessionDriver] Session mode changed to {_sessionMode}. Restarting session.");
+                _ = RestartSession();
             }
-#endif
         }
 
         private void OnDestroy()
@@ -766,101 +679,7 @@ namespace OSE.Runtime.Preview
             return true;
         }
 
-        // --------------------------------------------------------------------
-        // Edit Mode Preview
-        // --------------------------------------------------------------------
-
-        private void UpdateEditMode()
-        {
-            if (!_previewInEditMode)
-            {
-                HidePreviewIfPossible();
-                return;
-            }
-
-            if (!_editModePreviewApplied)
-            {
-                TryApplyEditModePreview();
-            }
-        }
-
-        private void RequestEditModeRefresh()
-        {
-            _editModePreviewApplied = false;
-
-            if (!_previewInEditMode)
-            {
-                HidePreviewIfPossible();
-                return;
-            }
-
-            _ = ReloadEditModePackageAsync(++_editModeLoadVersion);
-        }
-
-        private async Task ReloadEditModePackageAsync(int loadVersion)
-        {
-            string packageId = _packageId;
-            if (string.IsNullOrWhiteSpace(packageId))
-                return;
-
-            MachinePackageLoadResult result = await _loader.LoadFromStreamingAssetsAsync(packageId);
-
-            if (loadVersion != _editModeLoadVersion || !this)
-                return;
-
-            _editModePackage = result.Package;
-            _editModePreviewApplied = false;
-            PublishPackageChanged(_editModePackage);
-
-            if (!result.IsSuccess)
-            {
-                OseLog.Warn($"[SessionDriver] Edit-mode preview failed to load '{packageId}': {result.ErrorMessage}");
-            }
-
-            TryApplyEditModePreview();
-        }
-
-        private void TryApplyEditModePreview()
-        {
-            if (!ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
-                return;
-
-            ui.SetSessionMode(_sessionMode);
-            ui.ShowChallengeMetrics(0, 0, 0f, 0f, ResolveChallengeActive(_sessionMode, _editModePackage));
-
-            if (_editModePackage == null)
-            {
-                ui.ShowStepShell(0, 0, "Preview Unavailable", "Package not loaded.");
-                _editModePreviewApplied = true;
-                return;
-            }
-
-            StepDefinition[] orderedSteps = _editModePackage.GetOrderedSteps();
-            if (orderedSteps.Length == 0)
-            {
-                ui.ShowStepShell(0, 0, "No Steps", "Package has no steps authored.");
-                _editModePreviewApplied = true;
-                return;
-            }
-
-            StepDefinition step = ResolveStepBySequenceIndex(orderedSteps, _previewStepSequenceIndex);
-
-            PushStepAndPartToUI(ui, _editModePackage, step,
-                step.sequenceIndex, orderedSteps.Length);
-
-            _editModePreviewApplied = true;
-            ApplyStepAwarePartPositions();
-        }
-
-        private void HidePreviewIfPossible()
-        {
-            if (ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
-            {
-                ui.HideAll();
-            }
-        }
-
-        private static void PublishPackageChanged(MachinePackageDefinition package)
+        internal static void PublishPackageChanged(MachinePackageDefinition package)
         {
             CurrentPackage = package;
 #pragma warning disable CS0618 // kept for any legacy subscribers still on the old event
@@ -870,10 +689,10 @@ namespace OSE.Runtime.Preview
         }
 
         // --------------------------------------------------------------------
-        // Shared UI Push (used by both edit and play mode)
+        // Shared UI Push (used by both SessionDriver and EditModePreviewDriver)
         // --------------------------------------------------------------------
 
-        private static void PushStepAndPartToUI(
+        internal static void PushStepAndPartToUI(
             IPresentationAdapter ui,
             MachinePackageDefinition package,
             StepDefinition step,
@@ -969,51 +788,8 @@ namespace OSE.Runtime.Preview
         }
 
         // --------------------------------------------------------------------
-        // External Notifications
-        // --------------------------------------------------------------------
-
-        /// <summary>
-        /// Called by editor tooling (e.g. AssetPostprocessor) when a package's
-        /// content files change on disk. If the active SessionDriver is
-        /// showing this package in edit-mode preview, it triggers a reload.
-        /// </summary>
-        public static void NotifyPackageContentChanged(string packageId)
-        {
-#if UNITY_EDITOR
-            if (string.IsNullOrEmpty(packageId))
-                return;
-
-            foreach (var driver in FindObjectsByType<SessionDriver>(FindObjectsSortMode.None))
-            {
-                if (!driver.isActiveAndEnabled)
-                    continue;
-
-                if (!string.Equals(driver._packageId, packageId, StringComparison.Ordinal))
-                    continue;
-
-                if (Application.isPlaying)
-                    continue;
-
-                OseLog.Info($"[SessionDriver] Package content changed for '{packageId}' — reloading preview.");
-                driver.RequestEditModeRefresh();
-            }
-#endif
-        }
-
-        // --------------------------------------------------------------------
         // Helpers
         // --------------------------------------------------------------------
-
-        private static StepDefinition ResolveStepBySequenceIndex(StepDefinition[] orderedSteps, int sequenceIndex)
-        {
-            for (int i = 0; i < orderedSteps.Length; i++)
-            {
-                if (orderedSteps[i] != null && orderedSteps[i].sequenceIndex == sequenceIndex)
-                    return orderedSteps[i];
-            }
-
-            return orderedSteps[0];
-        }
 
         private static bool ResolveChallengeActive(SessionMode mode, MachinePackageDefinition package)
         {

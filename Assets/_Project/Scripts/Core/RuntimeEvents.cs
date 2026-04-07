@@ -519,4 +519,66 @@ namespace OSE.Core
             GlobalStepIndex = globalStepIndex;
         }
     }
+
+    // ── Assembly Station Events ──
+
+    /// <summary>
+    /// Published when the active assembly station changes — i.e. the learner moves
+    /// from one bench to another, or from a bench to the frame station.
+    /// Consumers: <c>StepGuidanceService</c> (camera fly-to), <c>PackagePartSpawner</c>
+    /// (part layout on table), <c>PreviewSceneSetup</c> (bench prop highlight).
+    /// </summary>
+    public readonly struct StationContextChanged
+    {
+        /// <summary>ID of the newly active station, or null if no station is defined.</summary>
+        public readonly string StationId;
+        /// <summary>Human-readable name shown in transition UI.</summary>
+        public readonly string DisplayName;
+        /// <summary>Assembly that caused the station switch.</summary>
+        public readonly string AssemblyId;
+        /// <summary>World-space centre of the new station's table/frame.</summary>
+        public readonly UnityEngine.Vector3 StationPosition;
+        /// <summary>Y coordinate of the table surface; parts rest 2 cm above this.</summary>
+        public readonly float SurfaceY;
+        /// <summary>Preferred orbital camera pivot for this station.</summary>
+        public readonly UnityEngine.Vector3 CameraHome;
+        /// <summary>Preferred orbital camera distance in metres.</summary>
+        public readonly float CameraDistance;
+        /// <summary>True when this station has a physical bench table (false for frame station).</summary>
+        public readonly bool HasBenchSurface;
+
+        public StationContextChanged(
+            string stationId, string displayName, string assemblyId,
+            UnityEngine.Vector3 stationPosition, float surfaceY,
+            UnityEngine.Vector3 cameraHome, float cameraDistance)
+        {
+            StationId       = stationId;
+            DisplayName     = displayName;
+            AssemblyId      = assemblyId;
+            StationPosition = stationPosition;
+            SurfaceY        = surfaceY;
+            CameraHome      = cameraHome;
+            CameraDistance  = cameraDistance;
+            HasBenchSurface = surfaceY > 0.01f;
+        }
+    }
+
+    /// <summary>
+    /// Published when all parts belonging to a bench station have been incorporated
+    /// into their subassembly (i.e. the station's composition step completed).
+    /// The bench table prop can respond by dimming or showing a "cleared" state.
+    /// </summary>
+    public readonly struct StationCompositionCompleted
+    {
+        /// <summary>The station whose bench build is now fully composed.</summary>
+        public readonly string StationId;
+        /// <summary>The subassembly that was composed and staged at the bench.</summary>
+        public readonly string ComposedSubassemblyId;
+
+        public StationCompositionCompleted(string stationId, string composedSubassemblyId)
+        {
+            StationId            = stationId;
+            ComposedSubassemblyId = composedSubassemblyId;
+        }
+    }
 }

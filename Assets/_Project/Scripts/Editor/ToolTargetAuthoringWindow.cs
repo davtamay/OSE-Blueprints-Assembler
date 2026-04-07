@@ -502,7 +502,14 @@ namespace OSE.Editor
             int i = EditorGUILayout.Popup("Package", _pkgIdx, _packageIds);
             if (GUILayout.Button("↺", GUILayout.Width(24))) RefreshPackageList();
             EditorGUILayout.EndHorizontal();
-            if (i != _pkgIdx) { _pkgIdx = i; LoadPkg(_packageIds[i]); }
+            if (i != _pkgIdx)
+            {
+                _pkgIdx = i;
+                LoadPkg(_packageIds[i]);
+                // Sync EditModePreviewDriver so spawned parts match the new package.
+                var driver = UnityEngine.Object.FindFirstObjectByType<EditModePreviewDriver>();
+                if (driver != null) driver.SetPackage(_packageIds[i]);
+            }
             if (_pkg == null && GUILayout.Button("Load")) LoadPkg(_packageIds[_pkgIdx]);
         }
 
@@ -609,7 +616,7 @@ namespace OSE.Editor
             // regardless of whether the static event fired.
             if (!_suppressStepSync && _stepSequenceIdxs != null)
             {
-                var driver = UnityEngine.Object.FindFirstObjectByType<SessionDriver>();
+                var driver = UnityEngine.Object.FindFirstObjectByType<EditModePreviewDriver>();
                 int driverSeq = driver != null ? driver.PreviewStepSequenceIndex : -1;
                 if (driverSeq != _lastPolledDriverStep)
                 {
@@ -833,7 +840,7 @@ namespace OSE.Editor
         private void SyncSessionDriverStep()
         {
             if (_pkg == null) return;
-            var driver = UnityEngine.Object.FindFirstObjectByType<SessionDriver>();
+            var driver = UnityEngine.Object.FindFirstObjectByType<EditModePreviewDriver>();
             if (driver == null) return;
             if (_stepFilterIdx <= 0 || _stepSequenceIdxs == null || _stepFilterIdx >= _stepSequenceIdxs.Length)
                 return;
@@ -3271,13 +3278,18 @@ namespace OSE.Editor
                 }
             }
 
-            // Indicator dots — live GO world position, fallback to state via root
-            if (root != null)
+            // Indicator dots — live GO world position, fallback to state via root.
+            // Show dots for all parts in the active step (the _parts array is already
+            // filtered to the step's requiredPartIds). When no step is selected
+            // (_stepFilterIdx <= 0), hide dots to keep the scene uncluttered.
+            bool hasStep = _stepFilterIdx > 0;
+            if (root != null && hasStep)
             {
                 for (int i = 0; i < _parts.Length; i++)
                 {
                     ref PartEditState p = ref _parts[i];
                     if (!p.hasPlacement) continue;
+
                     var liveGO = FindLivePartGO(p.def.id);
                     Vector3 worldPos = liveGO != null
                         ? liveGO.transform.position
@@ -3873,7 +3885,7 @@ namespace OSE.Editor
             if (!restoring)
             {
                 // Sync initial step from SessionDriver if present
-                var driver = UnityEngine.Object.FindFirstObjectByType<SessionDriver>();
+                var driver = UnityEngine.Object.FindFirstObjectByType<EditModePreviewDriver>();
                 if (driver != null && _stepSequenceIdxs != null)
                 {
                     int seq = driver.PreviewStepSequenceIndex;

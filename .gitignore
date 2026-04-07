@@ -53,5 +53,10 @@ Tools/*.exe
 # Backup files
 *.bak
 
+# Python bytecode (offline validation scripts generate these transiently)
+__pycache__/
+*.pyc
+*.pyo
+
 # Agent-generated audit cache (regenerated from machine.json on demand)
 audit-index.json

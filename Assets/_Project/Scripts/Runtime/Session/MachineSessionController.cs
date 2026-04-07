@@ -5,6 +5,7 @@ using OSE.App;
 using OSE.Content;
 using OSE.Content.Loading;
 using OSE.Core;
+using OSE.Runtime.Session;
 
 namespace OSE.Runtime
 {
@@ -37,6 +38,7 @@ namespace OSE.Runtime
 
         private SessionNavigationController _navigation;
         private bool _isLoading;
+        private readonly AssemblyStationController _stationController = new AssemblyStationController();
 
         // INavigationHost explicit implementations (private — callers use IMachineSessionController)
         MachinePackageDefinition INavigationHost.Package => _package;
@@ -257,6 +259,8 @@ namespace OSE.Runtime
                 _assemblyController = null;
             }
 
+            _stationController.Reset();
+
             string machineId = _sessionState.MachineId;
             SetLifecycle(SessionLifecycle.Completed);
 
@@ -317,6 +321,7 @@ namespace OSE.Runtime
 
             SetLifecycle(SessionLifecycle.StepActive);
 
+            _stationController.OnAssemblyStarted(assemblyId, _package);
             _assemblyController.BeginAssembly(assemblyId, () => _sessionState.ElapsedSeconds);
 
             // Update session state with the first step id
@@ -431,6 +436,10 @@ namespace OSE.Runtime
             }
             else if (evt.Current == StepState.Completed)
             {
+                // If this is a bench composition step, notify the station controller
+                // so the bench table can show a "cleared" state.
+                CheckCompositionStepCompleted(evt.StepId);
+
                 float duration = evt.AtSeconds - _sessionState.CurrentStepStartSeconds;
                 if (duration < 0f) duration = 0f;
 
@@ -445,6 +454,24 @@ namespace OSE.Runtime
                     _sessionState.CompletedStepCount++;
                     AutoSave();
                 }
+            }
+        }
+
+        /// <summary>
+        /// Checks whether the completed step is a bench composition step — a Place-family
+        /// step with a <c>requiredSubassemblyId</c> that ends in "_bench_unit". If so,
+        /// notifies the station controller to publish <see cref="StationCompositionCompleted"/>.
+        /// </summary>
+        private void CheckCompositionStepCompleted(string stepId)
+        {
+            if (_package?.steps == null) return;
+            foreach (var step in _package.steps)
+            {
+                if (!string.Equals(step.id, stepId, System.StringComparison.OrdinalIgnoreCase)) continue;
+                string subId = step.requiredSubassemblyId;
+                if (!string.IsNullOrEmpty(subId) && subId.EndsWith("_bench_unit", System.StringComparison.OrdinalIgnoreCase))
+                    _stationController.OnCompositionStepCompleted(subId);
+                return;
             }
         }
 

@@ -79,7 +79,7 @@ namespace OSE.Editor
                     OseLog.Info($"[PackageAssetPostprocessor] Auto-synced {copied} file(s) to StreamingAssets.");
 
                 foreach (string packageId in changedPackageIds)
-                    SessionDriver.NotifyPackageContentChanged(packageId);
+                    EditModePreviewDriver.NotifyPackageContentChanged(packageId);
             }
         }
 
