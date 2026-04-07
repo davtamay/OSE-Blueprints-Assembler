@@ -801,7 +801,7 @@ namespace OSE.UI.Root
             for (int i = 0; i < _setup.PreviewRoot.childCount; i++)
             {
                 Transform child = _setup.PreviewRoot.GetChild(i);
-                if (child != null && !child.gameObject.activeSelf)
+                if (child != null)
                     toDestroy.Add(child);
             }
             foreach (var child in toDestroy)

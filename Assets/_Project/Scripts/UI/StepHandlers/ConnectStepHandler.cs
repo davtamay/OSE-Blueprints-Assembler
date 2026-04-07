@@ -163,6 +163,21 @@ namespace OSE.UI.Root
             CleanupAnchorInteraction();
         }
 
+        /// <summary>
+        /// Re-renders pipe splines for all Connect-family steps in <paramref name="completedSteps"/>.
+        /// Call this after jumping forward in the step sequence so that wires from past
+        /// Connect steps remain visible in the scene.
+        /// </summary>
+        public void RenderCompletedWires(StepDefinition[] completedSteps)
+        {
+            if (completedSteps == null) return;
+            foreach (var step in completedSteps)
+            {
+                if (step == null || !step.IsPipeConnection) continue;
+                TryRenderPipeSpline(step.id);
+            }
+        }
+
         public void ClearTransientVisuals()
         {
             ClearPortSpheres();
@@ -405,7 +420,7 @@ namespace OSE.UI.Root
                     knots = BuildSagKnots(portAPos, portBPos, entry?.subdivisions ?? 1, entry?.sag ?? 0f),
                 };
 
-                GameObject splineGo = SplinePartFactory.Create(targetId, path, hoseColor, previewRoot);
+                GameObject splineGo = SplinePartFactory.CreateWire(targetId, stepId, path, hoseColor, previewRoot);
                 if (splineGo != null)
                 {
                     MaterialHelper.MarkAsImported(splineGo);

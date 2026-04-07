@@ -88,8 +88,10 @@ namespace OSE.UI.Root
         {
             _spawner = GetComponent<PackagePartSpawner>();
             _setup = GetComponent<PreviewSceneSetup>();
-            if (!ServiceRegistry.TryGet<IXRGrabSetup>(out _xrGrabSetup))
-                _xrGrabSetup = new XRGrabSetupAdapter();
+            // IXRGrabSetup is registered by PackagePartSpawner during its OnEnable.
+            // PartInteractionBridge does not create the adapter — it only consumes
+            // the registered implementation so this file stays XRGrabSetupAdapter-free.
+            ServiceRegistry.TryGet<IXRGrabSetup>(out _xrGrabSetup);
             _lookup ??= new PartLookupService(
                 () => _spawner,
                 () => _setup,

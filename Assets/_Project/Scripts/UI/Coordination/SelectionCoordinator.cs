@@ -46,7 +46,9 @@ namespace OSE.UI.Root
             if (_suppressSelectionEvents)
                 return;
 
-            if (_ctx.IsSubassemblyProxy(target))
+            if (target != null && target.GetComponent<WireSplineMarker>() != null)
+                _ctx.RestorePartVisual(target);
+            else if (_ctx.IsSubassemblyProxy(target))
                 _ctx.RestorePartVisual(target);
             else if (ServiceRegistry.TryGet<IPartRuntimeController>(out var partController))
                 partController.DeselectPart();
@@ -115,7 +117,12 @@ namespace OSE.UI.Root
 
             if (_externalHoveredPartForUi != null)
             {
-                if (_ctx.IsSubassemblyProxy(_externalHoveredPartForUi))
+                var wireMarker = _externalHoveredPartForUi.GetComponent<WireSplineMarker>();
+                if (wireMarker != null)
+                {
+                    PushWireInfoToUI(wireMarker, isHoverInfo: true);
+                }
+                else if (_ctx.IsSubassemblyProxy(_externalHoveredPartForUi))
                 {
                     PushSubassemblyInfoToUI(_externalHoveredPartForUi, isHoverInfo: true);
                 }
@@ -233,6 +240,29 @@ namespace OSE.UI.Root
                 ui.ShowPartInfoShell(displayName, description ?? string.Empty, material, string.Empty, searchTerms);
         }
 
+        public void PushWireInfoToUI(WireSplineMarker marker, bool isHoverInfo = false)
+        {
+            if (marker == null) return;
+            if (!ServiceRegistry.TryGet<IPresentationAdapter>(out var ui)) return;
+
+            var package = _ctx.Spawner?.CurrentPackage;
+            string displayName = marker.targetId;
+            string stepName    = marker.stepId;
+
+            // Try to pull a friendly name from the step definition
+            if (package != null && package.TryGetStep(marker.stepId, out var step))
+                stepName = step.GetDisplayName();
+
+            string functionText = $"Wire connection — {stepName}";
+            const string material   = "Wire";
+            const string searchTerms = "wire connection cable connect";
+
+            if (isHoverInfo && ui is UIRootCoordinator hoverUi)
+                hoverUi.ShowHoverPartInfoShell(displayName, functionText, material, string.Empty, searchTerms);
+            else
+                ui.ShowPartInfoShell(displayName, functionText, material, string.Empty, searchTerms);
+        }
+
         // ── Private ───────────────────────────────────────────────────────
 
         private void HandleSelectionServiceSelection(GameObject target, bool isInspect)
@@ -259,10 +289,22 @@ namespace OSE.UI.Root
             bool accepted;
             string selectionId = _ctx.ResolveSelectionId(target);
             bool isProxy = _ctx.IsSubassemblyProxy(target);
-            bool isMemberOfSubassembly = !isProxy && _ctx.SubassemblyController != null &&
+            bool isWireSpline = target.GetComponent<WireSplineMarker>() != null;
+            bool isMemberOfSubassembly = !isProxy && !isWireSpline && _ctx.SubassemblyController != null &&
                 _ctx.SubassemblyController.TryGetSubassemblyId(target, out _);
 
-            if (isProxy)
+            if (isWireSpline)
+            {
+                accepted = !string.IsNullOrWhiteSpace(selectionId);
+                if (accepted)
+                {
+                    PushWireInfoToUI(target.GetComponent<WireSplineMarker>(), isHoverInfo: false);
+                    _ctx.VisualFeedback?.ClearPartHoverVisual();
+                    _ctx.VisualFeedback?.ApplySelectedPartVisual(target);
+                    _lastSelectedVisualTarget = target;
+                }
+            }
+            else if (isProxy)
             {
                 accepted = !string.IsNullOrWhiteSpace(selectionId);
                 if (accepted)

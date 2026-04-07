@@ -213,6 +213,7 @@ namespace OSE.UI.Root
             {
                 _ctx.VisualFeedback?.RestoreCompletedStepParts(completedSteps);
                 _ctx.SubassemblyController?.RestoreCompletedPlacements(completedSteps);
+                _ctx.ConnectHandler?.RenderCompletedWires(completedSteps);
             }
 
             // Reset + re-hide so that parts not in any completed/current step
@@ -448,6 +449,7 @@ namespace OSE.UI.Root
             {
                 _ctx.VisualFeedback?.RestoreCompletedStepParts(completedSteps);
                 _ctx.SubassemblyController?.RestoreCompletedPlacements(completedSteps);
+                _ctx.ConnectHandler?.RenderCompletedWires(completedSteps);
             }
 
             // Full rebuild — reset the one-shot guard so HideNonIntroducedParts

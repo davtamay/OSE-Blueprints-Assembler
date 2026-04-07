@@ -61,8 +61,11 @@ namespace OSE.UI.Root
         public bool IsSubassemblyProxy(GameObject target) =>
             _subassembly() != null && _subassembly().IsProxy(target);
 
+        public bool IsWireSpline(GameObject target) =>
+            target != null && target.GetComponent<WireSplineMarker>() != null;
+
         public bool IsSelectablePlacementObject(GameObject target) =>
-            IsSpawnedPart(target) || IsSubassemblyProxy(target);
+            IsSpawnedPart(target) || IsSubassemblyProxy(target) || IsWireSpline(target);
 
         // ── Selection ID resolution ──
 
@@ -76,7 +79,10 @@ namespace OSE.UI.Root
             {
                 return subassemblyId;
             }
-            return IsSpawnedPart(target) ? target.name : null;
+            if (IsSpawnedPart(target)) return target.name;
+            var wireMarker = target.GetComponent<WireSplineMarker>();
+            if (wireMarker != null) return wireMarker.targetId;
+            return null;
         }
 
         public GameObject NormalizeSelectablePlacementTarget(GameObject target)
@@ -134,6 +140,10 @@ namespace OSE.UI.Root
             Transform previewRoot = _setup()?.PreviewRoot;
             while (hitTransform != null && hitTransform != previewRoot)
             {
+                // Wire spline GOs have WireSplineMarker — treat them as selectable.
+                var wireMarker = hitTransform.GetComponent<WireSplineMarker>();
+                if (wireMarker != null) return hitTransform.gameObject;
+
                 var parts = _spawner()?.SpawnedParts;
                 if (parts != null)
                 {

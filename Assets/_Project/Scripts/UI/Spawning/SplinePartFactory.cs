@@ -38,6 +38,37 @@ namespace OSE.UI.Root
         /// <see cref="TangentMode.AutoSmooth"/> for a natural cable curve;
         /// <see cref="TangentMode.Linear"/> for rigid straight segments between knots.
         /// </param>
+        /// <summary>
+        /// Creates a selectable wire spline — same geometry as <see cref="Create"/> but
+        /// also attaches a <see cref="WireSplineMarker"/> and a <see cref="MeshCollider"/>
+        /// so the selection system can identify and raycast-hit the wire.
+        /// </summary>
+        public static GameObject CreateWire(
+            string targetId,
+            string stepId,
+            SplinePathDefinition data,
+            Color color,
+            Transform parent,
+            TangentMode tangentMode = TangentMode.AutoSmooth)
+        {
+            var go = Create(targetId, data, color, parent, tangentMode);
+            if (go == null) return go;
+
+            var marker = go.AddComponent<WireSplineMarker>();
+            marker.targetId = targetId;
+            marker.stepId   = stepId;
+
+            var mf = go.GetComponent<MeshFilter>();
+            if (mf != null && mf.sharedMesh != null)
+            {
+                var col = go.AddComponent<MeshCollider>();
+                col.sharedMesh = mf.sharedMesh;
+                col.convex     = false;
+            }
+
+            return go;
+        }
+
         public static GameObject Create(
             string name,
             SplinePathDefinition data,
