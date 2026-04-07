@@ -44,9 +44,6 @@ namespace OSE.UI.Root
         // is iterating. The flag makes the nested call a no-op.
         private bool _isHandlingPackageChange;
 
-        // Tracks the active workstation for station-aware part layout.
-        private AssemblyStationDefinition _activeStation;
-
         // ── Public accessors ──
 
         public IReadOnlyList<GameObject> SpawnedParts => _spawnedParts;
@@ -96,8 +93,6 @@ namespace OSE.UI.Root
             ServiceRegistry.Register<Interaction.ISpawnerQueryService>(this);
             ServiceRegistry.Register<IStepAwarePositioner>(this);
             RuntimeEventBus.Subscribe<PackageLoaded>(OnPackageLoaded);
-            RuntimeEventBus.Subscribe<StationContextChanged>(OnStationContextChanged);
-
             // Catch up if this component enabled after the latest package event.
             if (SessionDriver.CurrentPackage != null)
             {
@@ -111,7 +106,6 @@ namespace OSE.UI.Root
             _spawnCts?.Dispose();
             _spawnCts = null;
             RuntimeEventBus.Unsubscribe<PackageLoaded>(OnPackageLoaded);
-            RuntimeEventBus.Unsubscribe<StationContextChanged>(OnStationContextChanged);
             ServiceRegistry.Unregister<IXRGrabSetup>();
             ServiceRegistry.Unregister<IXRAffordanceSetup>();
             ServiceRegistry.Unregister<Interaction.ISpawnerQueryService>();
@@ -459,18 +453,6 @@ namespace OSE.UI.Root
 
         private void OnPackageLoaded(PackageLoaded e) => HandlePackageChanged(SessionDriver.CurrentPackage);
 
-        private void OnStationContextChanged(StationContextChanged e)
-        {
-            // Cache the active station so PositionParts uses the correct table surface.
-            if (_currentPackage?.previewConfig?.stations == null) { _activeStation = null; return; }
-            foreach (var s in _currentPackage.previewConfig.stations)
-            {
-                if (string.Equals(s.id, e.StationId, System.StringComparison.OrdinalIgnoreCase))
-                { _activeStation = s; return; }
-            }
-            _activeStation = null;
-        }
-
         private void HandlePackageChanged(MachinePackageDefinition package)
         {
             if (_isHandlingPackageChange) return;
@@ -759,8 +741,7 @@ namespace OSE.UI.Root
                 Application.isPlaying,
                 _setup.ActiveProfile.ShowGeometryPreview,
                 FindPartPlacement,
-                ShouldPreservePartTransform,
-                _activeStation);
+                ShouldPreservePartTransform);
         }
 
         /// <summary>

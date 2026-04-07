@@ -284,7 +284,6 @@ namespace OSE.Interaction
             RuntimeEventBus.Subscribe<SessionRestored>(HandleSessionRestored);
             RuntimeEventBus.Subscribe<RepositionModeChanged>(HandleRepositionModeChanged);
             RuntimeEventBus.Subscribe<MachineIntroDismissed>(HandleIntroDismissedFraming);
-            RuntimeEventBus.Subscribe<StationContextChanged>(HandleStationContextChanged);
         }
 
         private void UnsubscribeSessionEvents()
@@ -295,7 +294,6 @@ namespace OSE.Interaction
             RuntimeEventBus.Unsubscribe<SessionRestored>(HandleSessionRestored);
             RuntimeEventBus.Unsubscribe<RepositionModeChanged>(HandleRepositionModeChanged);
             RuntimeEventBus.Unsubscribe<MachineIntroDismissed>(HandleIntroDismissedFraming);
-            RuntimeEventBus.Unsubscribe<StationContextChanged>(HandleStationContextChanged);
         }
 
         private void OnDestroy()
@@ -340,12 +338,6 @@ namespace OSE.Interaction
         {
             if (!_bootstrapped) return;
             _stepGuidance?.HandleIntroDismissedFraming(evt);
-        }
-
-        private void HandleStationContextChanged(StationContextChanged evt)
-        {
-            if (!_bootstrapped) return;
-            _guidanceService?.OnStationChanged(evt);
         }
 
         private void HandleRepositionModeChanged(RepositionModeChanged evt)

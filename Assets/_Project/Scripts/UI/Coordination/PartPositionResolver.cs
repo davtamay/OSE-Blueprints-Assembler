@@ -73,36 +73,10 @@ namespace OSE.UI.Root
 
         // ── Public API ────────────────────────────────────────────────────────
 
-        // ── Station-aware table layout ─────────────────────────────────────────
-
-        /// <summary>
-        /// Computes the world-space position for a part slot on a station table.
-        /// Parts fill left-to-right then front-to-back in 25 cm slots.
-        /// Y is <c>station.surfaceY + 0.02 m</c> so parts rest on the surface.
-        /// </summary>
-        internal static Vector3 TableSlotPosition(AssemblyStationDefinition station, int slot)
-        {
-            int   cols  = Mathf.Max(1, Mathf.FloorToInt(station.layoutWidth / 0.25f));
-            float cellW = station.layoutWidth  / cols;
-            float cellD = 0.25f;
-
-            int   col = slot % cols;
-            int   row = slot / cols;
-
-            float x = station.position.x - station.layoutWidth  * 0.5f + cellW * (col + 0.5f);
-            float z = station.position.z - station.layoutDepth  * 0.5f + cellD * (row + 0.5f);
-            float y = station.surfaceY + 0.02f; // 2 cm above table — resting, not floating
-            return new Vector3(x, y, z);
-        }
-
-        // ── Public API ────────────────────────────────────────────────────────
-
         /// <summary>
         /// Positions parts along an arc (play mode) or at authored start positions
         /// (edit mode). Delegates to <see cref="PositionPartsFallback"/> when running
         /// in edit mode or when the package lacks part definitions.
-        /// When a <paramref name="activeStation"/> is provided and play mode is active,
-        /// parts are laid out on the station's table surface instead of the global arc.
         /// </summary>
         internal static void PositionParts(
             IReadOnlyList<GameObject>          parts,
@@ -110,8 +84,7 @@ namespace OSE.UI.Root
             bool                               isPlaying,
             bool                               showGeometryPreview,
             Func<string, PartPreviewPlacement> findPartPlacement,
-            Func<string, bool>                 shouldPreserveTransform,
-            AssemblyStationDefinition          activeStation = null)
+            Func<string, bool>                 shouldPreserveTransform)
         {
             if (!showGeometryPreview)
                 return;
@@ -252,15 +225,9 @@ namespace OSE.UI.Root
                         ? new Quaternion(pp.startRotation.x, pp.startRotation.y, pp.startRotation.z, pp.startRotation.w)
                         : Quaternion.identity;
 
-                    // Station-aware: if a station is defined and no authored position
-                    // overrides it, place the part on the station table surface.
-                    Vector3 pos;
-                    if (pp != null && HasAuthoredStartPosition(pp))
-                        pos = ResolvePresentationStartPosition(pp);
-                    else if (activeStation != null)
-                        pos = TableSlotPosition(activeStation, partIdx);
-                    else
-                        pos = new Vector3(px, LayoutY, pz);
+                    Vector3 pos = pp != null && HasAuthoredStartPosition(pp)
+                        ? ResolvePresentationStartPosition(pp)
+                        : new Vector3(px, LayoutY, pz);
 
                     if (!shouldPreserveTransform(partGo.name))
                         partGo.transform.SetLocalPositionAndRotation(pos, rot);
@@ -304,9 +271,7 @@ namespace OSE.UI.Root
 
                 if (pp != null)
                 {
-                    pos   = HasAuthoredStartPosition(pp)
-                        ? ResolvePresentationStartPosition(pp)
-                        : new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z);
+                    pos   = new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z);
                     scale = new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z);
                     col   = new Color(pp.color.r, pp.color.g, pp.color.b, pp.color.a);
                     rot   = !pp.startRotation.IsIdentity

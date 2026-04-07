@@ -29,6 +29,11 @@ namespace OSE.UI.Controllers
 
         protected override VisualElement CreateView() => new StepPanelView();
 
+        // Tracks the last global step index pushed to the view — prevents feedback loops
+        // when the input field value changes programmatically during ApplyViewModel.
+        private int _lastAppliedGlobalIndex = -1;
+        private int _lastAppliedGlobalTotal;
+
         protected override void CacheView(VisualElement root)
         {
             _view = (StepPanelView)root;
@@ -40,11 +45,21 @@ namespace OSE.UI.Controllers
             _view.SkipToStartButton.clicked += HandleSkipToStartClicked;
             _view.SkipToEndButton.clicked += HandleSkipToEndClicked;
             _view.SectionsButton.clicked += HandleSectionsClicked;
+            _view.StepNumberField.RegisterCallback<WheelEvent>(HandleStepScroll);
+            _view.StepNumberField.RegisterValueChangedCallback(HandleStepTextChanged);
         }
 
         protected override void ApplyViewModel(StepPanelViewModel viewModel)
         {
             _view.StepLabel.text = viewModel.StepLabel;
+
+            // Update step number display — 1-based (user sees "Step 1" for index 0)
+            int displayStep = viewModel.GlobalStepIndex + 1;
+            int displayTotal = viewModel.GlobalTotalSteps;
+            _lastAppliedGlobalIndex = viewModel.GlobalStepIndex;
+            _lastAppliedGlobalTotal = displayTotal;
+            _view.StepNumberField.SetValueWithoutNotify(displayStep.ToString());
+            _view.StepSuffixLabel.text = $"of {displayTotal}";
             _view.TitleLabel.text = viewModel.Title;
             _view.InstructionLabel.text = viewModel.Instruction;
             _view.SetAssemblyName(viewModel.AssemblyName);
@@ -88,8 +103,41 @@ namespace OSE.UI.Controllers
                 _view.SkipToStartButton.clicked -= HandleSkipToStartClicked;
                 _view.SkipToEndButton.clicked -= HandleSkipToEndClicked;
                 _view.SectionsButton.clicked -= HandleSectionsClicked;
+                _view.StepNumberField.UnregisterCallback<WheelEvent>(HandleStepScroll);
+                _view.StepNumberField.UnregisterValueChangedCallback(HandleStepTextChanged);
             }
             _view = null;
+        }
+
+        private void HandleStepScroll(WheelEvent evt)
+        {
+            if (Session == null) return;
+
+            int delta = evt.delta.y > 0 ? -1 : 1;
+            int targetGlobal = _lastAppliedGlobalIndex + delta;
+            if (targetGlobal < 0) targetGlobal = 0;
+            if (_lastAppliedGlobalTotal > 0 && targetGlobal >= _lastAppliedGlobalTotal)
+                targetGlobal = _lastAppliedGlobalTotal - 1;
+
+            if (targetGlobal == _lastAppliedGlobalIndex) return;
+
+            Session.NavigateToGlobalStep(targetGlobal);
+            evt.StopPropagation();
+        }
+
+        private void HandleStepTextChanged(ChangeEvent<string> evt)
+        {
+            if (Session == null) return;
+            if (!int.TryParse(evt.newValue, out int typed)) return;
+
+            int targetGlobal = typed - 1; // 1-based display → 0-based index
+            if (targetGlobal < 0) targetGlobal = 0;
+            if (_lastAppliedGlobalTotal > 0 && targetGlobal >= _lastAppliedGlobalTotal)
+                targetGlobal = _lastAppliedGlobalTotal - 1;
+
+            if (targetGlobal == _lastAppliedGlobalIndex) return;
+
+            Session.NavigateToGlobalStep(targetGlobal);
         }
 
         private void HandleContextActionClicked()
@@ -195,6 +243,8 @@ namespace OSE.UI.Controllers
             public Label AssemblyLabel { get; }
             public Button SectionsButton { get; }
             public Label StepLabel { get; }
+            public TextField StepNumberField { get; }
+            public Label StepSuffixLabel { get; }
             public Label TitleLabel { get; }
             public Label InstructionLabel { get; }
             public Button ContextActionButton { get; }
@@ -273,8 +323,9 @@ namespace OSE.UI.Controllers
                 Add(assemblyRow);
 
                 StepLabel = UIToolkitStyleUtility.CreateEyebrowLabel("Current Step");
+                StepLabel.style.display = DisplayStyle.None; // hidden; replaced by input row
 
-                // Navigation row: [Back] Step Label [Forward]
+                // Navigation row: [Back] "Step" [input] "of N" [Forward]
                 var navRow = new VisualElement();
                 navRow.style.flexDirection = FlexDirection.Row;
                 navRow.style.alignItems = Align.Center;
@@ -288,14 +339,82 @@ namespace OSE.UI.Controllers
                 SkipToEndButton = CreateNavButton("\u25B6|"); // ▶|
                 SkipToEndButton.style.marginLeft = 4f;
 
-                StepLabel.style.flexGrow = 1f;
-                StepLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
-                StepLabel.style.marginLeft = 6f;
-                StepLabel.style.marginRight = 6f;
+                // "Step" prefix label
+                var stepPrefixLabel = new Label("Step ");
+                stepPrefixLabel.style.fontSize = 11f;
+                stepPrefixLabel.style.color = new Color(0.65f, 0.78f, 0.95f, 0.85f);
+                stepPrefixLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+                stepPrefixLabel.style.marginLeft = 4f;
+                stepPrefixLabel.style.marginRight = 0f;
+                stepPrefixLabel.style.paddingRight = 0f;
+
+                // Editable step number — click to type, scroll to jump
+                StepNumberField = new TextField();
+                StepNumberField.value = "1";
+                StepNumberField.style.width = 52f;
+                StepNumberField.style.height = 26f;
+                StepNumberField.style.marginLeft = 2f;
+                StepNumberField.style.marginRight = 2f;
+                StepNumberField.style.borderTopLeftRadius = 4f;
+                StepNumberField.style.borderTopRightRadius = 4f;
+                StepNumberField.style.borderBottomLeftRadius = 4f;
+                StepNumberField.style.borderBottomRightRadius = 4f;
+                StepNumberField.style.borderTopWidth = 1f;
+                StepNumberField.style.borderRightWidth = 1f;
+                StepNumberField.style.borderBottomWidth = 1f;
+                StepNumberField.style.borderLeftWidth = 1f;
+                StepNumberField.style.borderTopColor = new Color(0.42f, 0.82f, 1f, 0.4f);
+                StepNumberField.style.borderRightColor = new Color(0.42f, 0.82f, 1f, 0.4f);
+                StepNumberField.style.borderBottomColor = new Color(0.42f, 0.82f, 1f, 0.4f);
+                StepNumberField.style.borderLeftColor = new Color(0.42f, 0.82f, 1f, 0.4f);
+
+                // Style the inner input element on attach
+                StepNumberField.RegisterCallback<AttachToPanelEvent>(_ =>
+                {
+                    var inputEl = StepNumberField.Q(className: "unity-text-field__input");
+                    if (inputEl != null)
+                    {
+                        inputEl.style.backgroundColor = new Color(0.10f, 0.14f, 0.20f, 0.95f);
+                        inputEl.style.color = new Color(0.42f, 0.82f, 1f, 1f);
+                        inputEl.style.fontSize = 13f;
+                        inputEl.style.unityTextAlign = TextAnchor.MiddleCenter;
+                        inputEl.style.unityFontStyleAndWeight = FontStyle.Bold;
+                        inputEl.style.paddingLeft = 2f;
+                        inputEl.style.paddingRight = 2f;
+                        inputEl.style.paddingTop = 0f;
+                        inputEl.style.paddingBottom = 0f;
+                        inputEl.style.borderTopLeftRadius = 4f;
+                        inputEl.style.borderTopRightRadius = 4f;
+                        inputEl.style.borderBottomLeftRadius = 4f;
+                        inputEl.style.borderBottomRightRadius = 4f;
+                    }
+                    // Also hide the label element that TextField creates
+                    var labelEl = StepNumberField.Q<Label>(className: "unity-text-field__label");
+                    if (labelEl != null)
+                        labelEl.style.display = DisplayStyle.None;
+                });
+
+                // "of N" suffix label
+                StepSuffixLabel = new Label("of 0");
+                StepSuffixLabel.style.fontSize = 11f;
+                StepSuffixLabel.style.color = new Color(0.65f, 0.78f, 0.95f, 0.85f);
+                StepSuffixLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+                StepSuffixLabel.style.marginLeft = 0f;
+                StepSuffixLabel.style.marginRight = 4f;
+
+                // Center group that holds "Step [input] of N"
+                var stepGroup = new VisualElement();
+                stepGroup.style.flexDirection = FlexDirection.Row;
+                stepGroup.style.alignItems = Align.Center;
+                stepGroup.style.flexGrow = 1f;
+                stepGroup.style.justifyContent = Justify.Center;
+                stepGroup.Add(stepPrefixLabel);
+                stepGroup.Add(StepNumberField);
+                stepGroup.Add(StepSuffixLabel);
 
                 navRow.Add(SkipToStartButton);
                 navRow.Add(BackButton);
-                navRow.Add(StepLabel);
+                navRow.Add(stepGroup);
                 navRow.Add(ForwardButton);
                 navRow.Add(SkipToEndButton);
                 Add(navRow);

@@ -9,7 +9,8 @@ namespace OSE.UI.Presenters
             ConfirmGate confirmGate, bool confirmUnlocked,
             bool showContextActionButton, string contextActionLabel, bool contextActionEnabled,
             string assemblyName = null, float globalProgressRatio = 0f,
-            string globalProgressLabel = null)
+            string globalProgressLabel = null,
+            int globalStepIndex = 0, int globalTotalSteps = 0)
         {
             StepLabel = stepLabel;
             Title = title;
@@ -25,6 +26,8 @@ namespace OSE.UI.Presenters
             AssemblyName = assemblyName;
             GlobalProgressRatio = globalProgressRatio;
             GlobalProgressLabel = globalProgressLabel;
+            GlobalStepIndex = globalStepIndex;
+            GlobalTotalSteps = globalTotalSteps;
         }
 
         public string StepLabel { get; }
@@ -41,6 +44,8 @@ namespace OSE.UI.Presenters
         public string AssemblyName { get; }
         public float GlobalProgressRatio { get; }
         public string GlobalProgressLabel { get; }
+        public int GlobalStepIndex { get; }
+        public int GlobalTotalSteps { get; }
     }
 
     public sealed class StepPanelPresenter
@@ -98,7 +103,8 @@ namespace OSE.UI.Presenters
             return new StepPanelViewModel(stepLabel, displayTitle, displayInstruction,
                 showConfirmButton, progressRatio, showHintButton, confirmGate, confirmUnlocked,
                 showContextActionButton, contextActionLabel, contextActionEnabled,
-                assemblyName, globalProgressRatio, globalProgressLabel);
+                assemblyName, globalProgressRatio, globalProgressLabel,
+                globalStepIndex, globalTotalSteps);
         }
     }
 }
