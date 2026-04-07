@@ -804,13 +804,15 @@ namespace OSE.UI.Root
                 if (child != null)
                     toDestroy.Add(child);
             }
+
+            bool hadAny = toDestroy.Count > 0;
             foreach (var child in toDestroy)
             {
                 if (child != null)
-                    SafeDestroy(child.gameObject);
+                    DestroyImmediate(child.gameObject);
             }
 
-            if (Application.isPlaying && toDestroy.Count > 0)
+            if (hadAny)
                 Resources.UnloadUnusedAssets();
         }
 
