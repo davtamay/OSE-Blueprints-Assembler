@@ -16,6 +16,12 @@ namespace OSE.UI.Controllers
         public event Action<string> ToolHovered;
         public event Action ToolHoverCleared;
 
+        /// <summary>
+        /// The compact icon button for the action bar pill.
+        /// Available after <see cref="PanelControllerBase{T}.Bind"/> is called.
+        /// </summary>
+        public Button ActionBarButton => _view?.ToggleButton;
+
         protected override string PanelName => "ose-tool-dock-panel";
 
         protected override VisualElement CreateView() => new ToolDockPanelView();
@@ -28,7 +34,7 @@ namespace OSE.UI.Controllers
 
         protected override void ApplyViewModel(ToolDockPanelViewModel viewModel)
         {
-            _view.ToggleButton.text = viewModel.ToggleLabel;
+            _view.ApplyToggleStyle(viewModel.IsExpanded, viewModel.ShowUnequipAction);
             _view.ActiveToolLabel.text = viewModel.ActiveToolLabel;
             _view.SetUnequipAction(viewModel.ShowUnequipAction, viewModel.UnequipLabel, HandleUnequipRequested);
             _view.SetPaletteVisible(viewModel.IsExpanded);
@@ -81,7 +87,6 @@ namespace OSE.UI.Controllers
             public Button ToggleButton { get; }
             public Label ActiveToolLabel { get; }
 
-            private readonly VisualElement _topActionRow;
             private readonly VisualElement _paletteCard;
             private readonly ScrollView _toolList;
             private readonly Label _emptyLabel;
@@ -99,60 +104,52 @@ namespace OSE.UI.Controllers
             private bool _dragExceededDeadzone;
             private IVisualElementScheduledItem _momentumSchedule;
 
+            // Icon: hammer-and-pick U+2692
+            private const string ToolIcon = "\u2692";
+
             public ToolDockPanelView()
             {
-                pickingMode = PickingMode.Position;
-                style.width = 520f;
-                style.maxWidth = 620f;
+                pickingMode = PickingMode.Ignore;
                 style.alignItems = Align.Center;
                 style.flexDirection = FlexDirection.Column;
-                style.marginBottom = 6f;
+                style.marginBottom = 0f;
 
-                _topActionRow = new VisualElement();
-                _topActionRow.style.flexDirection = FlexDirection.Row;
-                _topActionRow.style.alignItems = Align.Center;
-                _topActionRow.style.justifyContent = Justify.Center;
-                Add(_topActionRow);
-
+                // ── Compact icon toggle button (lives in action bar pill) ──
                 ToggleButton = new Button();
-                ToggleButton.text = "Tools";
-                ToggleButton.style.height = 42f;
-                ToggleButton.style.minWidth = 180f;
-                ToggleButton.style.paddingLeft = 18f;
-                ToggleButton.style.paddingRight = 18f;
-                ToggleButton.style.fontSize = 14f;
+                ToggleButton.text = ToolIcon;
+                ToggleButton.tooltip = "Tools";
+                ToggleButton.style.width = 40f;
+                ToggleButton.style.height = 40f;
+                ToggleButton.style.fontSize = 18f;
+                ToggleButton.style.unityTextAlign = TextAnchor.MiddleCenter;
                 ToggleButton.style.unityFontStyleAndWeight = FontStyle.Bold;
-                ToggleButton.style.backgroundColor = new Color(0.12f, 0.23f, 0.38f, 0.95f);
+                ToggleButton.style.backgroundColor = Color.clear;
                 ToggleButton.style.color = new Color(0.82f, 0.92f, 1f, 1f);
-                ToggleButton.style.borderTopLeftRadius = 12f;
-                ToggleButton.style.borderTopRightRadius = 12f;
-                ToggleButton.style.borderBottomLeftRadius = 12f;
-                ToggleButton.style.borderBottomRightRadius = 12f;
-                _topActionRow.Add(ToggleButton);
+                ToggleButton.style.borderTopLeftRadius = 10f;
+                ToggleButton.style.borderTopRightRadius = 10f;
+                ToggleButton.style.borderBottomLeftRadius = 10f;
+                ToggleButton.style.borderBottomRightRadius = 10f;
+                ToggleButton.style.borderTopWidth = 0f;
+                ToggleButton.style.borderRightWidth = 0f;
+                ToggleButton.style.borderBottomWidth = 0f;
+                ToggleButton.style.borderLeftWidth = 0f;
+                ToggleButton.style.paddingLeft = 0f;
+                ToggleButton.style.paddingRight = 0f;
+                ToggleButton.style.paddingTop = 0f;
+                ToggleButton.style.paddingBottom = 0f;
+                ToggleButton.RegisterCallback<PointerEnterEvent>(_ =>
+                    ToggleButton.style.backgroundColor = new Color(0.3f, 0.36f, 0.44f, 0.25f));
+                ToggleButton.RegisterCallback<PointerLeaveEvent>(_ =>
+                    ToggleButton.style.backgroundColor = Color.clear);
+                // Toggle button is NOT added here — UIRootCoordinator places it
+                // in the shared action bar pill.
 
-                _unequipButton = new Button();
-                _unequipButton.text = "Clear Active Tool";
-                _unequipButton.style.height = 42f;
-                _unequipButton.style.minWidth = 180f;
-                _unequipButton.style.paddingLeft = 16f;
-                _unequipButton.style.paddingRight = 16f;
-                _unequipButton.style.fontSize = 13f;
-                _unequipButton.style.unityFontStyleAndWeight = FontStyle.Bold;
-                _unequipButton.style.backgroundColor = new Color(0.29f, 0.17f, 0.17f, 0.92f);
-                _unequipButton.style.color = new Color(1f, 0.9f, 0.9f, 1f);
-                _unequipButton.style.borderTopLeftRadius = 12f;
-                _unequipButton.style.borderTopRightRadius = 12f;
-                _unequipButton.style.borderBottomLeftRadius = 12f;
-                _unequipButton.style.borderBottomRightRadius = 12f;
-                _unequipButton.style.marginLeft = 10f;
-                _unequipButton.style.display = DisplayStyle.None;
-                _topActionRow.Add(_unequipButton);
-
+                // ── Palette card (floats above action bar) ──
                 _paletteCard = new VisualElement();
                 UIToolkitStyleUtility.ApplyPanelSurface(_paletteCard);
                 _paletteCard.style.width = 520f;
                 _paletteCard.style.maxWidth = 620f;
-                _paletteCard.style.marginTop = 8f;
+                _paletteCard.style.marginBottom = 8f;
                 _paletteCard.style.paddingTop = 12f;
                 _paletteCard.style.paddingBottom = 12f;
                 _paletteCard.style.paddingLeft = 14f;
@@ -171,6 +168,23 @@ namespace OSE.UI.Controllers
                 ActiveToolLabel.style.color = new Color(0.82f, 0.92f, 1f, 1f);
                 _paletteCard.Add(ActiveToolLabel);
 
+                _unequipButton = new Button();
+                _unequipButton.text = "Clear Active Tool";
+                _unequipButton.style.height = 34f;
+                _unequipButton.style.paddingLeft = 14f;
+                _unequipButton.style.paddingRight = 14f;
+                _unequipButton.style.fontSize = 12f;
+                _unequipButton.style.unityFontStyleAndWeight = FontStyle.Bold;
+                _unequipButton.style.backgroundColor = new Color(0.29f, 0.17f, 0.17f, 0.92f);
+                _unequipButton.style.color = new Color(1f, 0.9f, 0.9f, 1f);
+                _unequipButton.style.borderTopLeftRadius = 8f;
+                _unequipButton.style.borderTopRightRadius = 8f;
+                _unequipButton.style.borderBottomLeftRadius = 8f;
+                _unequipButton.style.borderBottomRightRadius = 8f;
+                _unequipButton.style.marginBottom = 6f;
+                _unequipButton.style.display = DisplayStyle.None;
+                _paletteCard.Add(_unequipButton);
+
                 _emptyLabel = UIToolkitStyleUtility.CreateBodyLabel("No tools are defined for this package.");
                 _emptyLabel.style.marginTop = 4f;
                 _emptyLabel.style.marginBottom = 2f;
@@ -181,19 +195,35 @@ namespace OSE.UI.Controllers
                 _toolList.style.flexDirection = FlexDirection.Row;
                 _toolList.style.marginTop = 2f;
                 _toolList.style.marginBottom = 0f;
-                // Hide scrollbars — dragging is the only scroll mechanism
                 _toolList.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
                 _toolList.verticalScrollerVisibility = ScrollerVisibility.Hidden;
                 _toolList.pickingMode = PickingMode.Position;
-                // Clamped elastic prevents the built-in scroll from fighting with our drag handler
                 _toolList.touchScrollBehavior = ScrollView.TouchScrollBehavior.Clamped;
                 _paletteCard.Add(_toolList);
 
-                // Wire up drag-to-scroll on the tool list
                 _toolList.RegisterCallback<PointerDownEvent>(OnToolListPointerDown);
                 _toolList.RegisterCallback<PointerMoveEvent>(OnToolListPointerMove);
                 _toolList.RegisterCallback<PointerUpEvent>(OnToolListPointerUp);
                 _toolList.RegisterCallback<PointerCaptureOutEvent>(OnToolListPointerCaptureOut);
+            }
+
+            /// <summary>
+            /// Tints the toggle icon when the palette is open or a tool is equipped.
+            /// </summary>
+            public void ApplyToggleStyle(bool isExpanded, bool hasEquippedTool)
+            {
+                if (isExpanded)
+                {
+                    ToggleButton.style.color = new Color(0.42f, 0.82f, 1f, 1f);
+                }
+                else if (hasEquippedTool)
+                {
+                    ToggleButton.style.color = new Color(0.36f, 0.95f, 0.58f, 1f);
+                }
+                else
+                {
+                    ToggleButton.style.color = new Color(0.82f, 0.92f, 1f, 1f);
+                }
             }
 
             private void OnToolListPointerDown(PointerDownEvent evt)

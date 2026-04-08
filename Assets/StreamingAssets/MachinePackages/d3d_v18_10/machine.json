@@ -264,8 +264,7 @@
       "dependencyAssemblyIds": [
         "assembly_d3d_frame"
       ],
-      "learningFocus": "Carriage bearing fit and belt-hole alignment, idler bearing and rod-hole alignment, motor pulley press-fit and belt channel, rod threading order (idler → carriage → motor holder), belt routing and peg locking, endstop gluing, and full bench QC before frame mounting.",
-      "stationId": "station_bench_y_left"
+      "learningFocus": "Carriage bearing fit and belt-hole alignment, idler bearing and rod-hole alignment, motor pulley press-fit and belt channel, rod threading order (idler → carriage → motor holder), belt routing and peg locking, endstop gluing, and full bench QC before frame mounting."
     },
     {
       "id": "assembly_d3d_y_right_bench",
@@ -319,8 +318,7 @@
       "dependencyAssemblyIds": [
         "assembly_d3d_frame"
       ],
-      "learningFocus": "Same bench-build sequence as Y-left: carriage bearing shake and rod-slide tests, idler rod-hole alignment, motor pulley pop-check, rod threading order, belt routing and first peg locked. Note: long M6x30 bolt is in bottom-left of motor half-piece (not top), and motor cable plug faces the belt drive hole.",
-      "stationId": "station_bench_y_right"
+      "learningFocus": "Same bench-build sequence as Y-left: carriage bearing shake and rod-slide tests, idler rod-hole alignment, motor pulley pop-check, rod threading order, belt routing and first peg locked. Note: long M6x30 bolt is in bottom-left of motor half-piece (not top), and motor cable plug faces the belt drive hole."
     },
     {
       "id": "assembly_d3d_x_axis_bench",
@@ -381,8 +379,7 @@
       "dependencyAssemblyIds": [
         "assembly_d3d_frame"
       ],
-      "learningFocus": "X-axis carriage uses same bearing fit tests as Y. X-axis idler uses 5 M6x18 screws and 2 half-bearings with flanges out. Motor holder: two nuts in half-piece, belt toothed-side inward, 4 M3x25 motor screws + 3 M6x18 bolts + 1 M6x30 bolt. Second belt peg left loose — tensioned during frame fitting, not at bench.",
-      "stationId": "station_bench_x_axis"
+      "learningFocus": "X-axis carriage uses same bearing fit tests as Y. X-axis idler uses 5 M6x18 screws and 2 half-bearings with flanges out. Motor holder: two nuts in half-piece, belt toothed-side inward, 4 M3x25 motor screws + 3 M6x18 bolts + 1 M6x30 bolt. Second belt peg left loose — tensioned during frame fitting, not at bench."
     },
     {
       "id": "assembly_d3d_z_front_bench",
@@ -436,8 +433,7 @@
       "dependencyAssemblyIds": [
         "assembly_d3d_frame"
       ],
-      "learningFocus": "Z-Front uses the same build procedure as Y-Right (same plastic piece type). No endstop. The spacer pieces go between the carriage and the half-carriage during rod threading. The second belt peg is left loose — it is tensioned after the axis is mounted and sized to the front frame face.",
-      "stationId": "station_bench_z_front"
+      "learningFocus": "Z-Front uses the same build procedure as Y-Right (same plastic piece type). No endstop. The spacer pieces go between the carriage and the half-carriage during rod threading. The second belt peg is left loose — it is tensioned after the axis is mounted and sized to the front frame face."
     },
     {
       "id": "assembly_d3d_z_back_bench",
@@ -491,8 +487,7 @@
       "dependencyAssemblyIds": [
         "assembly_d3d_frame"
       ],
-      "learningFocus": "Z-Back uses the same build procedure as Y-Left (same plastic piece type). No endstop. During frame mounting, Z-back must be aligned directly behind Z-front before motor-piece bolts are locked — verify both carriages are at equal height.",
-      "stationId": "station_bench_z_back"
+      "learningFocus": "Z-Back uses the same build procedure as Y-Left (same plastic piece type). No endstop. During frame mounting, Z-back must be aligned directly behind Z-front before motor-piece bolts are locked — verify both carriages are at equal height."
     },
     {
       "id": "assembly_d3d_extruder_stage_01",
@@ -627,8 +622,7 @@
         "assembly_d3d_z_front_bench",
         "assembly_d3d_z_back_bench"
       ],
-      "learningFocus": "Y-left idler orientation through left-face hole, all 8 motor-holder bolts tightened before mounting (inaccessible after), Y-right mirroring Y-left with motors at back, five-step X-axis fitting procedure between Y carriages, Z-front idler at front-face bottom hole offset right for print area, Z-back aligned directly behind Z-front.",
-      "stationId": "station_frame"
+      "learningFocus": "Y-left idler orientation through left-face hole, all 8 motor-holder bolts tightened before mounting (inaccessible after), Y-right mirroring Y-left with motors at back, five-step X-axis fitting procedure between Y carriages, Z-front idler at front-face bottom hole offset right for print area, Z-back aligned directly behind Z-front."
     },
     {
       "id": "assembly_d3d_heatbed_stage_02",
@@ -1063,7 +1057,13 @@
       "assemblyId": "assembly_d3d_y_left_bench",
       "description": "Seats four linear bearings in the carriage half-pieces with flanges facing out, aligns the rectangular belt holes (small ribbed hole vs large smooth hole), and bolts the halves together with M6x18 bolts at top and M6x30 bolts at bottom. Verify with shake test (bearings must not rattle) and rod-slide test (rod drops with slight resistance). Wrap bearings in electrical tape if too loose.",
       "partIds": [
-        "full_carriage"
+        "y_left_carriage_half_a",
+        "y_left_carriage_half_b",
+        "y_left_lm8uu_a",
+        "y_left_lm8uu_b",
+        "y_left_lm8uu_c",
+        "y_left_lm8uu_d",
+        "y_left_m6x18_a"
       ],
       "stepIds": [
         "step_y_left_prep_layout",
@@ -1082,7 +1082,10 @@
       "assemblyId": "assembly_d3d_y_left_bench",
       "description": "Inserts M6x18 bolt through one idler half, seats two flanged bearings on the bolt with flanges facing out, aligns the two halves so rod holes line up, secures the bearing bolt fully, inserts M6x30 frame-mount bolt loosely (will attach to frame later), and tightens the remaining M6x18 bolt loosely.",
       "partIds": [
-        "idler002"
+        "idler002",
+        "y_left_625zz_a",
+        "y_left_625zz_b",
+        "y_left_m6x18_b"
       ],
       "stepIds": [
         "step_y_left_idler_insert_bolt",
@@ -1098,7 +1101,17 @@
       "assemblyId": "assembly_d3d_y_left_bench",
       "description": "Places pulley on motor shaft with thin spacer, tightens first set screw, removes spacer, tightens second set screw until pop. Preps motor half-piece with one M6x30 bolt (bottom-left hole, poking up) and three nuts. Places belt toothed-side inward in belt channel of other half. Closes halves gently. Inserts motor with cable plug facing bottom-right. Tightens 4 M3x25 motor screws ¾ tight then 3 M6x18 bolts. Performs dangle test.",
       "partIds": [
-        "motor002"
+        "motor002",
+        "y_left_gt2_pulley",
+        "y_left_gt2_belt",
+        "y_left_m6_nut_a",
+        "y_left_m6_nut_b",
+        "y_left_m6_nut_c",
+        "y_left_m3x25_a",
+        "y_left_m3x25_b",
+        "y_left_m3x25_c",
+        "y_left_m3x25_d",
+        "y_left_m6x18_c"
       ],
       "stepIds": [
         "step_y_left_motor_pulley",
@@ -1178,7 +1191,12 @@
       "assemblyId": "assembly_d3d_y_right_bench",
       "description": "Same procedure as Y-left carriage: seat four linear bearings with flanges out, align belt holes, bolt halves with M6x18 and M6x30 bolts. Run shake test and rod-slide test.",
       "partIds": [
-        "full_carriage001"
+        "y_right_carriage_half_a",
+        "y_right_carriage_half_b",
+        "y_right_lm8uu_a",
+        "y_right_lm8uu_b",
+        "y_right_lm8uu_c",
+        "y_right_lm8uu_d"
       ],
       "stepIds": [
         "step_y_right_prep_layout",
@@ -1705,7 +1723,8 @@
       "assemblyId": "assembly_d3d_y_left_bench",
       "description": "The fully assembled y left axis unit, ready for staging. Contains all bench-built components: carriage, idler, motor holder, rods, and belt.",
       "partIds": [
-        "full_carriage",
+        "y_left_carriage_half_a",
+        "y_left_carriage_half_b",
         "idler002",
         "motor002",
         "rod_005",
@@ -1725,7 +1744,8 @@
       "assemblyId": "assembly_d3d_y_right_bench",
       "description": "The fully assembled y right axis unit, ready for staging. Contains all bench-built components: carriage, idler, motor holder, rods, and belt.",
       "partIds": [
-        "full_carriage001",
+        "y_right_carriage_half_a",
+        "y_right_carriage_half_b",
         "idler003",
         "motor003",
         "rod_007",
@@ -3136,6 +3156,258 @@
       "assetRef": "compound007_approved.glb",
       "id": "compound007_upper_rr",
       "function": "Reinforces and aligns cube frame corners after welding"
+    },
+    {
+      "id": "y_left_lm8uu_a",
+      "displayName": "Y-Left LM8UU A",
+      "name": "Y-Left Linear Bearing A",
+      "assetRef": "d3d_axis_lm8uu_bearing.glb",
+      "category": "custom",
+      "material": "LM8UU linear ball bearing",
+      "function": "Linear bearing seated in Y-left carriage half for smooth rod travel.",
+      "quantity": 1
+    },
+    {
+      "id": "y_left_lm8uu_b",
+      "displayName": "Y-Left LM8UU B",
+      "name": "Y-Left Linear Bearing B",
+      "assetRef": "d3d_axis_lm8uu_bearing.glb",
+      "category": "custom",
+      "material": "LM8UU linear ball bearing",
+      "function": "Linear bearing seated in Y-left carriage half for smooth rod travel.",
+      "quantity": 1
+    },
+    {
+      "id": "y_left_lm8uu_c",
+      "displayName": "Y-Left LM8UU C",
+      "name": "Y-Left Linear Bearing C",
+      "assetRef": "d3d_axis_lm8uu_bearing.glb",
+      "category": "custom",
+      "material": "LM8UU linear ball bearing",
+      "function": "Linear bearing seated in Y-left carriage half for smooth rod travel.",
+      "quantity": 1
+    },
+    {
+      "id": "y_left_lm8uu_d",
+      "displayName": "Y-Left LM8UU D",
+      "name": "Y-Left Linear Bearing D",
+      "assetRef": "d3d_axis_lm8uu_bearing.glb",
+      "category": "custom",
+      "material": "LM8UU linear ball bearing",
+      "function": "Linear bearing seated in Y-left carriage half for smooth rod travel.",
+      "quantity": 1
+    },
+    {
+      "id": "y_left_625zz_a",
+      "displayName": "Y-Left 625ZZ A",
+      "name": "Y-Left Idler Bearing A",
+      "assetRef": "d3d_axis_625zz_bearing.glb",
+      "category": "custom",
+      "material": "625ZZ flanged ball bearing",
+      "function": "Flanged bearing stacked on idler bolt, flanges facing outward.",
+      "quantity": 1
+    },
+    {
+      "id": "y_left_625zz_b",
+      "displayName": "Y-Left 625ZZ B",
+      "name": "Y-Left Idler Bearing B",
+      "assetRef": "d3d_axis_625zz_bearing.glb",
+      "category": "custom",
+      "material": "625ZZ flanged ball bearing",
+      "function": "Flanged bearing stacked on idler bolt, flanges facing outward.",
+      "quantity": 1
+    },
+    {
+      "id": "y_left_gt2_pulley",
+      "displayName": "Y-Left GT2 Pulley",
+      "name": "Y-Left Motor Pulley",
+      "assetRef": "d3d_axis_gt2_pulley_19t.glb",
+      "category": "custom",
+      "material": "GT2 19-tooth aluminum timing pulley",
+      "function": "Press-fit onto motor shaft with spacer; drives GT2 timing belt.",
+      "quantity": 1
+    },
+    {
+      "id": "y_left_gt2_belt",
+      "displayName": "Y-Left GT2 Belt",
+      "name": "Y-Left Timing Belt",
+      "assetRef": "d3d_axis_gt2_belt.glb",
+      "category": "custom",
+      "material": "GT2 timing belt, closed loop",
+      "function": "Routed through carriage belt holes, around idler bearing, and pegged.",
+      "quantity": 1
+    },
+    {
+      "id": "y_left_m6x18_a",
+      "displayName": "Y-Left M6x18 A",
+      "name": "Y-Left M6x18 Bolt A",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "M6x18 hex bolt, zinc-plated",
+      "function": "Secures carriage halves at top position.",
+      "quantity": 1
+    },
+    {
+      "id": "y_left_m6x18_b",
+      "displayName": "Y-Left M6x18 B",
+      "name": "Y-Left M6x18 Bolt B",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "M6x18 hex bolt, zinc-plated",
+      "function": "Secures idler halves together.",
+      "quantity": 1
+    },
+    {
+      "id": "y_left_m6x18_c",
+      "displayName": "Y-Left M6x18 C",
+      "name": "Y-Left M6x18 Bolt C",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "M6x18 hex bolt, zinc-plated",
+      "function": "Secures motor holder halves.",
+      "quantity": 1
+    },
+    {
+      "id": "y_left_m3x25_a",
+      "displayName": "Y-Left M3x25 A",
+      "name": "Y-Left Motor Screw A",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1
+    },
+    {
+      "id": "y_left_m3x25_b",
+      "displayName": "Y-Left M3x25 B",
+      "name": "Y-Left Motor Screw B",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1
+    },
+    {
+      "id": "y_left_m3x25_c",
+      "displayName": "Y-Left M3x25 C",
+      "name": "Y-Left Motor Screw C",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1
+    },
+    {
+      "id": "y_left_m3x25_d",
+      "displayName": "Y-Left M3x25 D",
+      "name": "Y-Left Motor Screw D",
+      "assetRef": "d3d_axis_m3x25_shcs.glb",
+      "category": "fastener",
+      "material": "M3x25 socket head cap screw",
+      "function": "Mounts NEMA17 motor to motor holder.",
+      "quantity": 1
+    },
+    {
+      "id": "y_left_m6_nut_a",
+      "displayName": "Y-Left M6 Nut A",
+      "name": "Y-Left Hex Nut A",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "M6 hex nut, zinc-plated",
+      "function": "Pre-loaded into motor holder before motor blocks access.",
+      "quantity": 1
+    },
+    {
+      "id": "y_left_m6_nut_b",
+      "displayName": "Y-Left M6 Nut B",
+      "name": "Y-Left Hex Nut B",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "M6 hex nut, zinc-plated",
+      "function": "Pre-loaded into motor holder before motor blocks access.",
+      "quantity": 1
+    },
+    {
+      "id": "y_left_m6_nut_c",
+      "displayName": "Y-Left M6 Nut C",
+      "name": "Y-Left Hex Nut C",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "M6 hex nut, zinc-plated",
+      "function": "Pre-loaded into motor holder before motor blocks access.",
+      "quantity": 1
+    },
+    {
+      "id": "y_left_carriage_half_a",
+      "name": "Y-Left Carriage Half A (bearing side)",
+      "function": "Open carriage half with bearing pockets — receives 4 LM8UU bearings.",
+      "category": "custom",
+      "material": "Printed carriage half",
+      "quantity": 1,
+      "assetRef": "y_left_carriage_half_a.glb"
+    },
+    {
+      "id": "y_left_carriage_half_b",
+      "name": "Y-Left Carriage Half B (clamping side)",
+      "function": "Clamping carriage half — bolts onto half A to capture bearings.",
+      "category": "custom",
+      "material": "Printed carriage half",
+      "quantity": 1,
+      "assetRef": "y_left_carriage_half_b.glb"
+    },
+    {
+      "id": "y_right_carriage_half_a",
+      "name": "Y-Right Carriage Half A (bearing side)",
+      "function": "Open carriage half with bearing pockets — receives 4 LM8UU bearings.",
+      "category": "custom",
+      "material": "Printed carriage half",
+      "quantity": 1,
+      "assetRef": "y_left_carriage_half_a.glb"
+    },
+    {
+      "id": "y_right_carriage_half_b",
+      "name": "Y-Right Carriage Half B (clamping side)",
+      "function": "Clamping carriage half — bolts onto half A to capture bearings.",
+      "category": "custom",
+      "material": "Printed carriage half",
+      "quantity": 1,
+      "assetRef": "y_left_carriage_half_b.glb"
+    },
+    {
+      "id": "y_right_lm8uu_a",
+      "name": "Y-Right LM8UU Bearing A",
+      "function": "Linear bearing for Y-right axis carriage.",
+      "category": "custom",
+      "material": "Steel linear bearing",
+      "quantity": 1,
+      "assetRef": "d3d_axis_lm8uu_bearing.glb"
+    },
+    {
+      "id": "y_right_lm8uu_b",
+      "name": "Y-Right LM8UU Bearing B",
+      "function": "Linear bearing for Y-right axis carriage.",
+      "category": "custom",
+      "material": "Steel linear bearing",
+      "quantity": 1,
+      "assetRef": "d3d_axis_lm8uu_bearing.glb"
+    },
+    {
+      "id": "y_right_lm8uu_c",
+      "name": "Y-Right LM8UU Bearing C",
+      "function": "Linear bearing for Y-right axis carriage.",
+      "category": "custom",
+      "material": "Steel linear bearing",
+      "quantity": 1,
+      "assetRef": "d3d_axis_lm8uu_bearing.glb"
+    },
+    {
+      "id": "y_right_lm8uu_d",
+      "name": "Y-Right LM8UU Bearing D",
+      "function": "Linear bearing for Y-right axis carriage.",
+      "category": "custom",
+      "material": "Steel linear bearing",
+      "quantity": 1,
+      "assetRef": "d3d_axis_lm8uu_bearing.glb"
     }
   ],
   "tools": [
@@ -3425,29 +3697,34 @@
       ],
       "toolPose": {
         "gripPoint": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": -0.05
+          "x": 0.00141,
+          "y": -0.23939,
+          "z": -0.34764
         },
         "gripRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0
+          "x": 70.92705,
+          "y": 86.06687,
+          "z": 348.3125
         },
         "tipPoint": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.08
+          "x": 0.9409,
+          "y": -0.14354,
+          "z": -0.01315
+        },
+        "tipAxis": {
+          "x": 0,
+          "y": 0,
+          "z": 1
         },
         "cursorOffset": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.05
+          "x": -0.00141,
+          "y": 0.23056,
+          "z": 0.17708
         },
         "handedness": "right",
-        "poseHint": "pinch_grip"
+        "poseHint": "power_grip"
       },
-      "scaleOverride": 1
+      "scaleOverride": 0.7
     },
     {
       "id": "tool_sandpaper",
@@ -3506,24 +3783,29 @@
       ],
       "toolPose": {
         "gripPoint": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": -0.05
+          "x": -0.05103,
+          "y": 0,
+          "z": 0.00518
         },
         "gripRotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0
+          "x": 0,
+          "y": 99.67501,
+          "z": 0
         },
         "tipPoint": {
-          "x": 0.0,
-          "y": 0.07,
-          "z": 0.0
+          "x": 0.59354,
+          "y": 0.85189,
+          "z": 0.02064
+        },
+        "tipAxis": {
+          "x": 0,
+          "y": 0.81373,
+          "z": 0.58124
         },
         "cursorOffset": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.05
+          "x": 0.05103,
+          "y": 0,
+          "z": -0.00518
         },
         "handedness": "right",
         "poseHint": "power_grip"
@@ -7911,7 +8193,9 @@
       "family": "Confirm",
       "completionType": "confirmation",
       "instructionText": "Gather and lay out all axis pieces: two carriage half-pieces, two idler half-pieces, two motor holder half-pieces, the stepper motor, both guide rods, and all hardware (M3x25 screws, M6x18 and M6x30 bolts, nuts).",
-      "requiredPartIds": [],
+      "requiredPartIds": [
+        "y_left_carriage_half_a"
+      ],
       "targetIds": [],
       "hintIds": []
     },
@@ -7925,8 +8209,24 @@
       "completionType": "tool_action",
       "instructionText": "Use a box cutter or cordless power drill to clear excess plastic from all semi-circle rod holes in the carriage, idler, and motor holder half-pieces. Holes must be smooth so rods insert freely and belts do not rub.",
       "requiredPartIds": [],
-      "targetIds": [],
-      "hintIds": []
+      "targetIds": [
+        "target_y_left_clean_holes"
+      ],
+      "hintIds": [],
+      "requiredToolActions": [
+        {
+          "id": "action_y_left_clean_holes",
+          "toolId": "tool_box_cutter",
+          "actionType": "strike",
+          "targetId": "target_y_left_clean_holes",
+          "requiredCount": 1,
+          "successMessage": "Holes cleaned — plastic removed from rod channels.",
+          "failureMessage": "Equip the box cutter and use it on the carriage holes."
+        }
+      ],
+      "relevantToolIds": [
+        "tool_box_cutter"
+      ]
     },
     {
       "id": "step_y_left_prep_qc_plastic",
@@ -7951,9 +8251,17 @@
       "completionType": "placement",
       "instructionText": "Place four linear bearings into one carriage half-piece with the flanges facing outward (away from each other).",
       "requiredPartIds": [
-        "full_carriage"
+        "y_left_lm8uu_a",
+        "y_left_lm8uu_b",
+        "y_left_lm8uu_c",
+        "y_left_lm8uu_d"
       ],
-      "targetIds": [],
+      "targetIds": [
+        "target_y_left_bearing_a",
+        "target_y_left_bearing_b",
+        "target_y_left_bearing_c",
+        "target_y_left_bearing_d"
+      ],
       "hintIds": []
     },
     {
@@ -7991,7 +8299,11 @@
       "family": "Use",
       "completionType": "tool_action",
       "instructionText": "Secure both halves with M6x18 bolts on top and M6x30 bolts on bottom. Critical alignment: the small ribbed belt hole must sit directly beside the large smooth belt hole. Wrong alignment mismatches the peg holes.",
-      "requiredPartIds": [],
+      "requiredPartIds": [
+        "y_left_carriage_half_b",
+        "y_left_carriage_half_a",
+        "y_left_m6x18_a"
+      ],
       "targetIds": [],
       "hintIds": []
     },
@@ -8005,7 +8317,8 @@
       "completionType": "placement",
       "instructionText": "Begin assembling the idler: place an M6x18 bolt through one idler half-piece from the outside.",
       "requiredPartIds": [
-        "idler002"
+        "idler002",
+        "y_left_m6x18_b"
       ],
       "targetIds": [],
       "hintIds": []
@@ -8019,7 +8332,10 @@
       "family": "Place",
       "completionType": "placement",
       "instructionText": "Insert two bearing pieces one on top of the other onto the bolt, flanges facing outward (away from each other).",
-      "requiredPartIds": [],
+      "requiredPartIds": [
+        "y_left_625zz_a",
+        "y_left_625zz_b"
+      ],
       "targetIds": [],
       "hintIds": []
     },
@@ -8059,7 +8375,8 @@
       "completionType": "placement",
       "instructionText": "Rest the thin spacer on the motor housing, then seat the pulley on the shaft above it. Tighten the first set screw with an Allen key — the spacer keeps the pulley off the housing.",
       "requiredPartIds": [
-        "motor002"
+        "motor002",
+        "y_left_gt2_pulley"
       ],
       "targetIds": [],
       "hintIds": []
@@ -8086,7 +8403,11 @@
       "family": "Place",
       "completionType": "placement",
       "instructionText": "Orient the motor holder half with the rectangular belt channel facing you. Insert one M6x30 bolt and three nuts into the holes now — the motor will cover them and block access later.",
-      "requiredPartIds": [],
+      "requiredPartIds": [
+        "y_left_m6_nut_a",
+        "y_left_m6_nut_b",
+        "y_left_m6_nut_c"
+      ],
       "targetIds": [],
       "hintIds": []
     },
@@ -8099,7 +8420,9 @@
       "family": "Place",
       "completionType": "placement",
       "instructionText": "Insert the belt into the channel in the motor holder half-piece with the toothed side facing inward toward where the pulley will sit.",
-      "requiredPartIds": [],
+      "requiredPartIds": [
+        "y_left_gt2_belt"
+      ],
       "targetIds": [],
       "hintIds": []
     },
@@ -8138,7 +8461,12 @@
       "family": "Use",
       "completionType": "tool_action",
       "instructionText": "Insert the first M3x25 motor screw and tighten 3/4 of the way. Insert the remaining three screws and tighten each the same way — leave slightly loose so the motor retains flex for belt tensioning later.",
-      "requiredPartIds": [],
+      "requiredPartIds": [
+        "y_left_m3x25_a",
+        "y_left_m3x25_b",
+        "y_left_m3x25_c",
+        "y_left_m3x25_d"
+      ],
       "targetIds": [],
       "hintIds": []
     },
@@ -8151,7 +8479,9 @@
       "family": "Use",
       "completionType": "tool_action",
       "instructionText": "Insert M6x18 bolts into the three remaining motor holder holes and tighten each into the nuts with an electric drill.",
-      "requiredPartIds": [],
+      "requiredPartIds": [
+        "y_left_m6x18_c"
+      ],
       "targetIds": [],
       "hintIds": []
     },
@@ -8433,7 +8763,9 @@
       "family": "Confirm",
       "completionType": "confirmation",
       "instructionText": "Gather and lay out all axis pieces: two carriage half-pieces, two idler half-pieces, two motor holder half-pieces, the stepper motor, both guide rods, and all hardware (M3x25 screws, M6x18 and M6x30 bolts, nuts).",
-      "requiredPartIds": [],
+      "requiredPartIds": [
+        "y_right_carriage_half_a"
+      ],
       "targetIds": [],
       "hintIds": []
     },
@@ -8447,8 +8779,24 @@
       "completionType": "tool_action",
       "instructionText": "Use a box cutter or cordless power drill to clear excess plastic from all semi-circle rod holes in the carriage, idler, and motor holder half-pieces. Holes must be smooth so rods insert freely and belts do not rub.",
       "requiredPartIds": [],
-      "targetIds": [],
-      "hintIds": []
+      "targetIds": [
+        "target_y_right_clean_holes"
+      ],
+      "hintIds": [],
+      "requiredToolActions": [
+        {
+          "id": "action_y_right_clean_holes",
+          "toolId": "tool_box_cutter",
+          "actionType": "strike",
+          "targetId": "target_y_right_clean_holes",
+          "requiredCount": 1,
+          "successMessage": "Holes cleaned — plastic removed from rod channels.",
+          "failureMessage": "Equip the box cutter and use it on the carriage holes."
+        }
+      ],
+      "relevantToolIds": [
+        "tool_box_cutter"
+      ]
     },
     {
       "id": "step_y_right_prep_qc_plastic",
@@ -8473,9 +8821,17 @@
       "completionType": "placement",
       "instructionText": "Place four linear bearings into one carriage half-piece with the flanges facing outward (away from each other).",
       "requiredPartIds": [
-        "full_carriage001"
+        "y_right_lm8uu_a",
+        "y_right_lm8uu_b",
+        "y_right_lm8uu_c",
+        "y_right_lm8uu_d"
       ],
-      "targetIds": [],
+      "targetIds": [
+        "target_y_right_bearing_a",
+        "target_y_right_bearing_b",
+        "target_y_right_bearing_c",
+        "target_y_right_bearing_d"
+      ],
       "hintIds": []
     },
     {
@@ -8513,7 +8869,10 @@
       "family": "Use",
       "completionType": "tool_action",
       "instructionText": "Secure both halves with M6x18 bolts on top and M6x30 bolts on bottom. Critical alignment: the small ribbed belt hole must sit directly beside the large smooth belt hole. Wrong alignment mismatches the peg holes.",
-      "requiredPartIds": [],
+      "requiredPartIds": [
+        "y_right_carriage_half_a",
+        "y_right_carriage_half_b"
+      ],
       "targetIds": [],
       "hintIds": []
     },
@@ -14005,10 +14364,18 @@
         "front",
         "measure"
       ],
-      "weldAxis": { "x": 0, "y": 0, "z": 0 },
+      "weldAxis": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
       "useToolActionRotation": true,
-      "toolActionRotation": { "x": 0, "y": 180, "z": 0 }
-  },
+      "toolActionRotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      }
+    },
     {
       "id": "target_rear_top_bar",
       "name": "Rear Frame Side Top Bar Target",
@@ -16878,6 +17245,134 @@
       "name": "Z-Back Axis Staging Position",
       "anchorRef": "anchors/d3d/bench/z_back/staged",
       "associatedSubassemblyId": "subassembly_z_back_bench_unit"
+    },
+    {
+      "id": "target_y_left_bearing_a",
+      "name": "Y-Left Bearing Pocket A",
+      "description": "Bearing pocket for y_left_lm8uu_a inside Y-left carriage half.",
+      "associatedPartId": "y_left_lm8uu_a",
+      "tags": [
+        "d3d",
+        "y_left",
+        "carriage",
+        "bearing"
+      ],
+      "anchorRef": "anchors/d3d/y_left/y_left_bearing_a"
+    },
+    {
+      "id": "target_y_left_bearing_b",
+      "name": "Y-Left Bearing Pocket B",
+      "description": "Bearing pocket for y_left_lm8uu_b inside Y-left carriage half.",
+      "associatedPartId": "y_left_lm8uu_b",
+      "tags": [
+        "d3d",
+        "y_left",
+        "carriage",
+        "bearing"
+      ],
+      "anchorRef": "anchors/d3d/y_left/y_left_bearing_b"
+    },
+    {
+      "id": "target_y_left_bearing_c",
+      "name": "Y-Left Bearing Pocket C",
+      "description": "Bearing pocket for y_left_lm8uu_c inside Y-left carriage half.",
+      "associatedPartId": "y_left_lm8uu_c",
+      "tags": [
+        "d3d",
+        "y_left",
+        "carriage",
+        "bearing"
+      ],
+      "anchorRef": "anchors/d3d/y_left/y_left_bearing_c"
+    },
+    {
+      "id": "target_y_left_bearing_d",
+      "name": "Y-Left Bearing Pocket D",
+      "description": "Bearing pocket for y_left_lm8uu_d inside Y-left carriage half.",
+      "associatedPartId": "y_left_lm8uu_d",
+      "tags": [
+        "d3d",
+        "y_left",
+        "carriage",
+        "bearing"
+      ],
+      "anchorRef": "anchors/d3d/y_left/y_left_bearing_d"
+    },
+    {
+      "id": "target_y_right_bearing_a",
+      "name": "Y-Right Bearing Pocket A",
+      "description": "Bearing pocket for y_right_lm8uu_a inside Y-right carriage half.",
+      "associatedPartId": "y_right_lm8uu_a",
+      "tags": [
+        "d3d",
+        "y_right",
+        "carriage",
+        "bearing"
+      ],
+      "anchorRef": "anchors/d3d/y_right/lm8uu_a"
+    },
+    {
+      "id": "target_y_right_bearing_b",
+      "name": "Y-Right Bearing Pocket B",
+      "description": "Bearing pocket for y_right_lm8uu_b inside Y-right carriage half.",
+      "associatedPartId": "y_right_lm8uu_b",
+      "tags": [
+        "d3d",
+        "y_right",
+        "carriage",
+        "bearing"
+      ],
+      "anchorRef": "anchors/d3d/y_right/lm8uu_b"
+    },
+    {
+      "id": "target_y_right_bearing_c",
+      "name": "Y-Right Bearing Pocket C",
+      "description": "Bearing pocket for y_right_lm8uu_c inside Y-right carriage half.",
+      "associatedPartId": "y_right_lm8uu_c",
+      "tags": [
+        "d3d",
+        "y_right",
+        "carriage",
+        "bearing"
+      ],
+      "anchorRef": "anchors/d3d/y_right/lm8uu_c"
+    },
+    {
+      "id": "target_y_right_bearing_d",
+      "name": "Y-Right Bearing Pocket D",
+      "description": "Bearing pocket for y_right_lm8uu_d inside Y-right carriage half.",
+      "associatedPartId": "y_right_lm8uu_d",
+      "tags": [
+        "d3d",
+        "y_right",
+        "carriage",
+        "bearing"
+      ],
+      "anchorRef": "anchors/d3d/y_right/lm8uu_d"
+    },
+    {
+      "id": "target_y_left_clean_holes",
+      "name": "Y-Left Carriage Hole Cleaning",
+      "anchorRef": "anchors/d3d/y_left/clean_holes",
+      "description": "Tool target for cleaning excess plastic from carriage holes.",
+      "tags": [
+        "d3d",
+        "y_left",
+        "carriage",
+        "tool_action"
+      ]
+    },
+    {
+      "id": "target_y_right_clean_holes",
+      "name": "Y-Right Carriage Hole Cleaning",
+      "anchorRef": "anchors/d3d/y_right/clean_holes",
+      "description": "Tool target for cleaning excess plastic from carriage holes.",
+      "tags": [
+        "d3d",
+        "y_right",
+        "carriage",
+        "tool_action"
+      ]
     }
   ],
   "challengeConfig": {
@@ -18328,9 +18823,9 @@
         {
             "partId": "full_carriage",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": 0.7,
+                "y": 0.55,
+                "z": 0.0
             },
             "startRotation": {
                 "x": 0.0,
@@ -18382,9 +18877,9 @@
         {
             "partId": "full_carriage001",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": -0.75,
+                "y": 0.55,
+                "z": 2.4
             },
             "startRotation": {
                 "x": 0.0,
@@ -18436,9 +18931,9 @@
         {
             "partId": "idler",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": -0.9,
+                "y": 0.55,
+                "z": 3.2
             },
             "startRotation": {
                 "x": 0.0,
@@ -18490,9 +18985,9 @@
         {
             "partId": "idler001",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": -0.9,
+                "y": 0.55,
+                "z": 3.6
             },
             "startRotation": {
                 "x": 0.0,
@@ -18544,9 +19039,9 @@
         {
             "partId": "idler002",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": 0.85,
+                "y": 0.55,
+                "z": 0.0
             },
             "startRotation": {
                 "x": 0.0,
@@ -18598,9 +19093,9 @@
         {
             "partId": "idler003",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": -0.45,
+                "y": 0.55,
+                "z": 2.4
             },
             "startRotation": {
                 "x": 0.0,
@@ -18652,9 +19147,9 @@
         {
             "partId": "motor",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": -0.6,
+                "y": 0.55,
+                "z": 3.2
             },
             "startRotation": {
                 "x": 0.0,
@@ -18706,9 +19201,9 @@
         {
             "partId": "motor001",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": -0.6,
+                "y": 0.55,
+                "z": 3.6
             },
             "startRotation": {
                 "x": 0.0,
@@ -18760,9 +19255,9 @@
         {
             "partId": "motor002",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": 1.0,
+                "y": 0.55,
+                "z": 0.0
             },
             "startRotation": {
                 "x": 0.0,
@@ -18814,9 +19309,9 @@
         {
             "partId": "motor003",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": -0.15,
+                "y": 0.55,
+                "z": 2.4
             },
             "startRotation": {
                 "x": 0.0,
@@ -18868,9 +19363,9 @@
         {
             "partId": "motor004",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": -0.3,
+                "y": 0.55,
+                "z": 2.8
             },
             "startRotation": {
                 "x": 0.0,
@@ -18922,9 +19417,9 @@
         {
             "partId": "motor_piece",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": -0.3,
+                "y": 0.55,
+                "z": 3.2
             },
             "startRotation": {
                 "x": 0.0,
@@ -18976,9 +19471,9 @@
         {
             "partId": "motor_piece001",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": -0.3,
+                "y": 0.55,
+                "z": 3.6
             },
             "startRotation": {
                 "x": 0.0,
@@ -19030,9 +19525,9 @@
         {
             "partId": "pocket039",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": 1.55,
+                "y": 0.55,
+                "z": 0.0
             },
             "startRotation": {
                 "x": 0.0,
@@ -19084,9 +19579,9 @@
         {
             "partId": "pocket040",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": 1.65,
+                "y": 0.55,
+                "z": 0.0
             },
             "startRotation": {
                 "x": 0.0,
@@ -19246,9 +19741,9 @@
         {
             "partId": "rod_005",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": 1.15,
+                "y": 0.55,
+                "z": 0.0
             },
             "startRotation": {
                 "x": 0.0,
@@ -19300,9 +19795,9 @@
         {
             "partId": "rod_006",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": 1.3,
+                "y": 0.55,
+                "z": 0.0
             },
             "startRotation": {
                 "x": 0.0,
@@ -19354,9 +19849,9 @@
         {
             "partId": "rod_007",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": 0.15,
+                "y": 0.55,
+                "z": 2.4
             },
             "startRotation": {
                 "x": 0.0,
@@ -19408,9 +19903,9 @@
         {
             "partId": "rod_008",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": 0.45,
+                "y": 0.55,
+                "z": 2.4
             },
             "startRotation": {
                 "x": 0.0,
@@ -19463,8 +19958,8 @@
             "partId": "rod_009",
             "startPosition": {
                 "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "y": 0.55,
+                "z": 2.8
             },
             "startRotation": {
                 "x": 0.0,
@@ -19516,9 +20011,9 @@
         {
             "partId": "rod_010",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": 0.3,
+                "y": 0.55,
+                "z": 2.8
             },
             "startRotation": {
                 "x": 0.0,
@@ -19624,9 +20119,9 @@
         {
             "partId": "y1_bracket",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": 1.45,
+                "y": 0.55,
+                "z": 0.0
             },
             "startRotation": {
                 "x": 0.0,
@@ -19678,9 +20173,9 @@
         {
             "partId": "y2_bracket",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": 0.75,
+                "y": 0.55,
+                "z": 2.4
             },
             "startRotation": {
                 "x": 0.0,
@@ -19732,9 +20227,9 @@
         {
             "partId": "y_endstop",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": 1.75,
+                "y": 0.55,
+                "z": 0.0
             },
             "startRotation": {
                 "x": 0.0,
@@ -19787,8 +20282,8 @@
             "partId": "z1_half_carriage",
             "startPosition": {
                 "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "y": 0.55,
+                "z": 3.6
             },
             "startRotation": {
                 "x": 0.0,
@@ -19840,9 +20335,9 @@
         {
             "partId": "z1_spacer_002",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": 0.3,
+                "y": 0.55,
+                "z": 3.6
             },
             "startRotation": {
                 "x": 0.0,
@@ -19894,9 +20389,9 @@
         {
             "partId": "z1_spacer_1",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": 0.6,
+                "y": 0.55,
+                "z": 3.6
             },
             "startRotation": {
                 "x": 0.0,
@@ -19949,8 +20444,8 @@
             "partId": "z2_half_carriage",
             "startPosition": {
                 "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "y": 0.55,
+                "z": 3.2
             },
             "startRotation": {
                 "x": 0.0,
@@ -20002,9 +20497,9 @@
         {
             "partId": "z2_spacer",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": 0.3,
+                "y": 0.55,
+                "z": 3.2
             },
             "startRotation": {
                 "x": 0.0,
@@ -20056,9 +20551,9 @@
         {
             "partId": "z2_spacer_2",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
-                "z": -0.5
+                "x": 0.6,
+                "y": 0.55,
+                "z": 3.2
             },
             "startRotation": {
                 "x": 0.0,
@@ -21946,9 +22441,9 @@
         {
             "partId": "fastener_z_front_belt_peg",
             "startPosition": {
-                "x": 0.005,
-                "y": 0.35,
-                "z": -0.22
+                "x": 0.9,
+                "y": 0.55,
+                "z": 3.2
             },
             "startRotation": {
                 "x": 0.0,
@@ -22108,9 +22603,9 @@
         {
             "partId": "fastener_z_back_belt_peg",
             "startPosition": {
-                "x": 0.005,
-                "y": 0.35,
-                "z": 0.22
+                "x": 0.9,
+                "y": 0.55,
+                "z": 3.6
             },
             "startRotation": {
                 "x": 0.0,
@@ -22796,6 +23291,1410 @@
             "splinePath": {
                 "radius": 0.0,
                 "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_left_lm8uu_a",
+            "startPosition": {
+                "x": 0.887,
+                "y": 0.56,
+                "z": 0.015
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.807,
+                "y": 0.5511,
+                "z": 0.028
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "playScale": {
+                "x": 0.8,
+                "y": 0.8,
+                "z": 0.8
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_left_lm8uu_b",
+            "startPosition": {
+                "x": 0.913,
+                "y": 0.56,
+                "z": 0.015
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.833,
+                "y": 0.5511,
+                "z": 0.028
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "playScale": {
+                "x": 0.8,
+                "y": 0.8,
+                "z": 0.8
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_left_lm8uu_c",
+            "startPosition": {
+                "x": 0.887,
+                "y": 0.56,
+                "z": -0.015
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.807,
+                "y": 0.5511,
+                "z": -0.0279
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "playScale": {
+                "x": 0.8,
+                "y": 0.8,
+                "z": 0.8
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_left_lm8uu_d",
+            "startPosition": {
+                "x": 0.913,
+                "y": 0.56,
+                "z": -0.015
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.833,
+                "y": 0.5511,
+                "z": -0.0279
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "playScale": {
+                "x": 0.8,
+                "y": 0.8,
+                "z": 0.8
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_left_m6x18_a",
+            "startPosition": {
+                "x": 0.97,
+                "y": 0.55,
+                "z": 0.15
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.165,
+                "y": 0.84,
+                "z": 0.0
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_left_625zz_a",
+            "startPosition": {
+                "x": 1.08,
+                "y": 0.55,
+                "z": 0.15
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.165,
+                "y": 0.78,
+                "z": -0.17
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_left_625zz_b",
+            "startPosition": {
+                "x": 1.16,
+                "y": 0.55,
+                "z": 0.15
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.165,
+                "y": 0.78,
+                "z": -0.19
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_left_m6x18_b",
+            "startPosition": {
+                "x": 1.24,
+                "y": 0.55,
+                "z": 0.15
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.165,
+                "y": 0.8,
+                "z": -0.18
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_left_gt2_pulley",
+            "startPosition": {
+                "x": 0.65,
+                "y": 0.55,
+                "z": 0.3
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.75,
+                "g": 0.75,
+                "b": 0.78,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.165,
+                "y": 0.78,
+                "z": 0.18
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_left_gt2_belt",
+            "startPosition": {
+                "x": 0.78,
+                "y": 0.55,
+                "z": 0.3
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.12,
+                "g": 0.12,
+                "b": 0.12,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.165,
+                "y": 0.78,
+                "z": 0.1
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_left_m6_nut_a",
+            "startPosition": {
+                "x": 0.9,
+                "y": 0.55,
+                "z": 0.3
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.165,
+                "y": 0.8,
+                "z": 0.16
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_left_m6_nut_b",
+            "startPosition": {
+                "x": 0.98,
+                "y": 0.55,
+                "z": 0.3
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.165,
+                "y": 0.8,
+                "z": 0.2
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_left_m6_nut_c",
+            "startPosition": {
+                "x": 1.06,
+                "y": 0.55,
+                "z": 0.3
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.165,
+                "y": 0.8,
+                "z": 0.22
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_left_m3x25_a",
+            "startPosition": {
+                "x": 1.16,
+                "y": 0.55,
+                "z": 0.3
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.35,
+                "g": 0.35,
+                "b": 0.38,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.165,
+                "y": 0.79,
+                "z": 0.17
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_left_m3x25_b",
+            "startPosition": {
+                "x": 1.24,
+                "y": 0.55,
+                "z": 0.3
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.35,
+                "g": 0.35,
+                "b": 0.38,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.165,
+                "y": 0.79,
+                "z": 0.19
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_left_m3x25_c",
+            "startPosition": {
+                "x": 1.32,
+                "y": 0.55,
+                "z": 0.3
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.35,
+                "g": 0.35,
+                "b": 0.38,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.165,
+                "y": 0.79,
+                "z": 0.21
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_left_m3x25_d",
+            "startPosition": {
+                "x": 1.4,
+                "y": 0.55,
+                "z": 0.3
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.35,
+                "g": 0.35,
+                "b": 0.38,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.165,
+                "y": 0.79,
+                "z": 0.23
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_left_m6x18_c",
+            "startPosition": {
+                "x": 1.5,
+                "y": 0.55,
+                "z": 0.3
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.165,
+                "y": 0.8,
+                "z": 0.2
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_left_carriage_half_a",
+            "startPosition": {
+                "x": 0.82,
+                "y": 0.55,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": -0.5,
+                "y": 0.5,
+                "z": -0.5,
+                "w": 0.5
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.7,
+                "g": 0.7,
+                "b": 0.7,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.82,
+                "y": 0.55,
+                "z": 0.0
+            },
+            "playRotation": {
+                "x": -0.5,
+                "y": 0.5,
+                "z": -0.5,
+                "w": 0.5
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 8,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_left_carriage_half_b",
+            "startPosition": {
+                "x": 0.82,
+                "y": 0.55,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": -0.5,
+                "y": 0.5,
+                "z": -0.5,
+                "w": 0.5
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.7,
+                "g": 0.7,
+                "b": 0.7,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": 0.82,
+                "y": 0.55,
+                "z": 0.0
+            },
+            "playRotation": {
+                "x": -0.5,
+                "y": 0.5,
+                "z": -0.5,
+                "w": 0.5
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 8,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_right_carriage_half_a",
+            "startPosition": {
+                "x": -0.82,
+                "y": 0.55,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": -0.5,
+                "y": 0.5,
+                "z": -0.5,
+                "w": 0.5
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.7,
+                "g": 0.7,
+                "b": 0.7,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": -0.82,
+                "y": 0.55,
+                "z": 0.0
+            },
+            "playRotation": {
+                "x": -0.5,
+                "y": 0.5,
+                "z": -0.5,
+                "w": 0.5
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 8,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_right_carriage_half_b",
+            "startPosition": {
+                "x": -0.82,
+                "y": 0.55,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": -0.5,
+                "y": 0.5,
+                "z": -0.5,
+                "w": 0.5
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.7,
+                "g": 0.7,
+                "b": 0.7,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": -0.82,
+                "y": 0.55,
+                "z": 0.0
+            },
+            "playRotation": {
+                "x": -0.5,
+                "y": 0.5,
+                "z": -0.5,
+                "w": 0.5
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 8,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_right_lm8uu_a",
+            "startPosition": {
+                "x": -0.913,
+                "y": 0.56,
+                "z": 0.015
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.7,
+                "g": 0.7,
+                "b": 0.7,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": -0.833,
+                "y": 0.566,
+                "z": 0.015
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 8,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_right_lm8uu_b",
+            "startPosition": {
+                "x": -0.887,
+                "y": 0.56,
+                "z": 0.015
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.7,
+                "g": 0.7,
+                "b": 0.7,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": -0.807,
+                "y": 0.566,
+                "z": 0.015
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 8,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_right_lm8uu_c",
+            "startPosition": {
+                "x": -0.913,
+                "y": 0.56,
+                "z": -0.015
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.7,
+                "g": 0.7,
+                "b": 0.7,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": -0.833,
+                "y": 0.566,
+                "z": -0.015
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 8,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_right_lm8uu_d",
+            "startPosition": {
+                "x": -0.887,
+                "y": 0.56,
+                "z": -0.015
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.7,
+                "g": 0.7,
+                "b": 0.7,
+                "a": 1.0
+            },
+            "playPosition": {
+                "x": -0.807,
+                "y": 0.566,
+                "z": -0.015
+            },
+            "playRotation": {
+                "x": 0.0,
+                "y": 0.7071,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "playScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 8,
                 "metallic": 0.0,
                 "smoothness": 0.0,
                 "color": {
@@ -30648,6 +32547,356 @@
                 "y": 0.0,
                 "z": 0.0
             }
+        },
+        {
+            "targetId": "target_y_left_bearing_a",
+            "position": {
+                "x": 0.807,
+                "y": 0.566,
+                "z": 0.015
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.015,
+                "y": 0.024,
+                "z": 0.015
+            },
+            "color": {
+                "r": 0.3,
+                "g": 0.85,
+                "b": 0.95,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_y_left_bearing_b",
+            "position": {
+                "x": 0.833,
+                "y": 0.566,
+                "z": 0.015
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.015,
+                "y": 0.024,
+                "z": 0.015
+            },
+            "color": {
+                "r": 0.3,
+                "g": 0.85,
+                "b": 0.95,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_y_left_bearing_c",
+            "position": {
+                "x": 0.807,
+                "y": 0.566,
+                "z": -0.015
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.015,
+                "y": 0.024,
+                "z": 0.015
+            },
+            "color": {
+                "r": 0.3,
+                "g": 0.85,
+                "b": 0.95,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_y_left_bearing_d",
+            "position": {
+                "x": 0.833,
+                "y": 0.566,
+                "z": -0.015
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.015,
+                "y": 0.024,
+                "z": 0.015
+            },
+            "color": {
+                "r": 0.3,
+                "g": 0.85,
+                "b": 0.95,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_y_right_bearing_a",
+            "position": {
+                "x": -0.833,
+                "y": 0.566,
+                "z": 0.015
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.015,
+                "y": 0.024,
+                "z": 0.015
+            },
+            "color": {
+                "r": 0.3,
+                "g": 0.85,
+                "b": 0.95,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_y_right_bearing_b",
+            "position": {
+                "x": -0.807,
+                "y": 0.566,
+                "z": 0.015
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.015,
+                "y": 0.024,
+                "z": 0.015
+            },
+            "color": {
+                "r": 0.3,
+                "g": 0.85,
+                "b": 0.95,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_y_right_bearing_c",
+            "position": {
+                "x": -0.833,
+                "y": 0.566,
+                "z": -0.015
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.015,
+                "y": 0.024,
+                "z": 0.015
+            },
+            "color": {
+                "r": 0.3,
+                "g": 0.85,
+                "b": 0.95,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_y_right_bearing_d",
+            "position": {
+                "x": -0.807,
+                "y": 0.566,
+                "z": -0.015
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.015,
+                "y": 0.024,
+                "z": 0.015
+            },
+            "color": {
+                "r": 0.3,
+                "g": 0.85,
+                "b": 0.95,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_y_left_clean_holes",
+            "position": {
+                "x": 0.82,
+                "y": 0.58,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.05,
+                "y": 0.05,
+                "z": 0.05
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_y_right_clean_holes",
+            "position": {
+                "x": -0.82,
+                "y": 0.58,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 0.05,
+                "y": 0.05,
+                "z": 0.05
+            },
+            "color": {
+                "r": 0.2,
+                "g": 0.84,
+                "b": 0.58,
+                "a": 1.0
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
         }
     ],
     "subassemblyPlacements": [
@@ -31492,116 +33741,6 @@
                     }
                 }
             ]
-        }
-    ],
-    "stations": [
-        {
-            "id": "station_bench_y_left",
-            "displayName": "Y-Left Workbench",
-            "position": {
-                "x": -3.6,
-                "y": 0.0,
-                "z": 1.0
-            },
-            "surfaceY": 0.9,
-            "layoutWidth": 1.6,
-            "layoutDepth": 0.55,
-            "cameraHome": {
-                "x": -3.6,
-                "y": 1.35,
-                "z": 1.0
-            },
-            "cameraDistance": 1.8
-        },
-        {
-            "id": "station_bench_y_right",
-            "displayName": "Y-Right Workbench",
-            "position": {
-                "x": -1.8,
-                "y": 0.0,
-                "z": 1.0
-            },
-            "surfaceY": 0.9,
-            "layoutWidth": 1.6,
-            "layoutDepth": 0.55,
-            "cameraHome": {
-                "x": -1.8,
-                "y": 1.35,
-                "z": 1.0
-            },
-            "cameraDistance": 1.8
-        },
-        {
-            "id": "station_bench_x_axis",
-            "displayName": "X-Axis Workbench",
-            "position": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": 1.0
-            },
-            "surfaceY": 0.9,
-            "layoutWidth": 1.6,
-            "layoutDepth": 0.55,
-            "cameraHome": {
-                "x": 0.0,
-                "y": 1.35,
-                "z": 1.0
-            },
-            "cameraDistance": 1.8
-        },
-        {
-            "id": "station_bench_z_front",
-            "displayName": "Z-Front Workbench",
-            "position": {
-                "x": 1.8,
-                "y": 0.0,
-                "z": 1.0
-            },
-            "surfaceY": 0.9,
-            "layoutWidth": 1.6,
-            "layoutDepth": 0.55,
-            "cameraHome": {
-                "x": 1.8,
-                "y": 1.35,
-                "z": 1.0
-            },
-            "cameraDistance": 1.8
-        },
-        {
-            "id": "station_bench_z_back",
-            "displayName": "Z-Back Workbench",
-            "position": {
-                "x": 3.6,
-                "y": 0.0,
-                "z": 1.0
-            },
-            "surfaceY": 0.9,
-            "layoutWidth": 1.6,
-            "layoutDepth": 0.55,
-            "cameraHome": {
-                "x": 3.6,
-                "y": 1.35,
-                "z": 1.0
-            },
-            "cameraDistance": 1.8
-        },
-        {
-            "id": "station_frame",
-            "displayName": "Assembly Frame",
-            "position": {
-                "x": 0.0,
-                "y": 0.0,
-                "z": -1.5
-            },
-            "surfaceY": 0.0,
-            "layoutWidth": 2.0,
-            "layoutDepth": 2.0,
-            "cameraHome": {
-                "x": 0.0,
-                "y": 1.0,
-                "z": -1.5
-            },
-            "cameraDistance": 3.5
         }
     ]
 }

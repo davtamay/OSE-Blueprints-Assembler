@@ -521,7 +521,7 @@ namespace OSE.UI.Root
             centerDock.style.flexDirection = FlexDirection.Column;
             centerDock.style.alignItems = Align.Center;
             centerDock.style.justifyContent = Justify.FlexEnd;
-            centerDock.pickingMode = PickingMode.Position;
+            centerDock.pickingMode = PickingMode.Ignore;
 
             root.Add(leftColumn);
             root.Add(rightColumn);
@@ -537,12 +537,50 @@ namespace OSE.UI.Root
             _orchestrator.SessionHudPanelController.Bind(leftColumn);
             _orchestrator.PartInfoPanelController.Bind(rightColumn);
             _orchestrator.ToolInfoPanelController.Bind(rightColumn);
+
+            // ── Tool palette (popover area — floats above action bar) ──
             _orchestrator.ToolDockPanelController.Bind(centerDock);
+
+            // ── Scale popover (floats above action bar) ──
             _repositionUi ??= new RepositionUiController();
             _repositionUi.Build(centerDock);
 
+            // ── Compact action bar pill ──
+            var actionBar = new VisualElement();
+            actionBar.name = "ose-action-bar";
+            actionBar.style.flexDirection = FlexDirection.Row;
+            actionBar.style.alignItems = Align.Center;
+            actionBar.style.justifyContent = Justify.Center;
+            actionBar.style.height = 44f;
+            actionBar.style.paddingLeft = 4f;
+            actionBar.style.paddingRight = 4f;
+            actionBar.style.backgroundColor = new Color(0.10f, 0.13f, 0.18f, 0.94f);
+            actionBar.style.borderTopLeftRadius = 22f;
+            actionBar.style.borderTopRightRadius = 22f;
+            actionBar.style.borderBottomLeftRadius = 22f;
+            actionBar.style.borderBottomRightRadius = 22f;
+            actionBar.style.borderTopColor = new Color(0.28f, 0.36f, 0.46f, 0.7f);
+            actionBar.style.borderRightColor = new Color(0.28f, 0.36f, 0.46f, 0.7f);
+            actionBar.style.borderBottomColor = new Color(0.28f, 0.36f, 0.46f, 0.7f);
+            actionBar.style.borderLeftColor = new Color(0.28f, 0.36f, 0.46f, 0.7f);
+            actionBar.style.borderTopWidth = 1f;
+            actionBar.style.borderRightWidth = 1f;
+            actionBar.style.borderBottomWidth = 1f;
+            actionBar.style.borderLeftWidth = 1f;
+            actionBar.pickingMode = PickingMode.Position;
+            centerDock.Add(actionBar);
+
+            // Place icon buttons into the pill
+            var toolBtn = _orchestrator.ToolDockPanelController.ActionBarButton;
+            if (toolBtn != null) actionBar.Add(toolBtn);
+            AddSeparator(actionBar);
+            if (_repositionUi.MoveButton != null) actionBar.Add(_repositionUi.MoveButton);
+            AddSeparator(actionBar);
+            if (_repositionUi.ScaleButton != null) actionBar.Add(_repositionUi.ScaleButton);
+
             EnsureToolDock();
-            _orchestrator.ToolDockPanelController.ToggleRequested += _toolDock.HandleToggleRequested;
+            _repositionUi.ScalePopoverOpened += HandleScalePopoverOpenedExclusion;
+            _orchestrator.ToolDockPanelController.ToggleRequested += HandleToolToggleWithExclusion;
             _orchestrator.ToolDockPanelController.ToolSelected    += _toolDock.HandleToolSelected;
             _orchestrator.ToolDockPanelController.UnequipRequested += _toolDock.HandleUnequipRequested;
             _orchestrator.ToolDockPanelController.ToolHovered     += _toolDock.HandleToolHovered;
@@ -572,12 +610,40 @@ namespace OSE.UI.Root
             return true;
         }
 
+        private static void AddSeparator(VisualElement parent)
+        {
+            var sep = new VisualElement();
+            sep.style.width = 1f;
+            sep.style.height = 20f;
+            sep.style.backgroundColor = new Color(0.4f, 0.46f, 0.54f, 0.4f);
+            sep.style.marginLeft = 2f;
+            sep.style.marginRight = 2f;
+            sep.pickingMode = PickingMode.Ignore;
+            parent.Add(sep);
+        }
+
+        /// <summary>
+        /// Wraps the tool dock toggle to close the scale popover (mutual exclusion).
+        /// </summary>
+        private void HandleToolToggleWithExclusion()
+        {
+            _repositionUi?.SetScalePopoverVisible(false);
+            _toolDock?.HandleToggleRequested();
+        }
+
+        private void HandleScalePopoverOpenedExclusion()
+        {
+            if (_toolDock != null && _toolDock.ToolDockExpanded)
+                _toolDock.HandleToggleRequested();
+        }
+
         // ── Tool Dock State Machine (delegated to ToolDockStateMachine) ──
 
         private void EnsureToolDock()
         {
             _toolDock ??= new ToolDockStateMachine(
                 onStateChanged: HandleToolDockStateChanged,
+                onHoverChanged: HandleToolDockHoverChanged,
                 getConfirmGate: () => _gate.Gate,
                 getConfirmUnlocked: () => _gate.IsUnlocked,
                 setConfirmUnlocked: unlocked =>
@@ -600,6 +666,15 @@ namespace OSE.UI.Root
             _orchestrator?.RefreshToolInfoPanel();
             _orchestrator?.RefreshPartInfoPanel();
             _orchestrator?.RefreshStepPanel();
+        }
+
+        /// <summary>
+        /// Lightweight refresh for tool hover — only updates the tool info panel
+        /// without rebuilding the dock chip list (which would destroy the hovered chip).
+        /// </summary>
+        private void HandleToolDockHoverChanged()
+        {
+            _orchestrator?.RefreshToolInfoPanel();
         }
 
         private void RegisterPresentationAdapter()
@@ -647,9 +722,12 @@ namespace OSE.UI.Root
 
         private void TeardownUi()
         {
+            if (_repositionUi != null)
+                _repositionUi.ScalePopoverOpened -= HandleScalePopoverOpenedExclusion;
+
             if (_orchestrator?.ToolDockPanelController != null && _toolDock != null)
             {
-                _orchestrator.ToolDockPanelController.ToggleRequested  -= _toolDock.HandleToggleRequested;
+                _orchestrator.ToolDockPanelController.ToggleRequested  -= HandleToolToggleWithExclusion;
                 _orchestrator.ToolDockPanelController.ToolSelected     -= _toolDock.HandleToolSelected;
                 _orchestrator.ToolDockPanelController.UnequipRequested -= _toolDock.HandleUnequipRequested;
                 _orchestrator.ToolDockPanelController.ToolHovered      -= _toolDock.HandleToolHovered;

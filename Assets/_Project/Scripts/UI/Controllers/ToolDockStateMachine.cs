@@ -15,6 +15,7 @@ namespace OSE.UI.Controllers
     internal sealed class ToolDockStateMachine
     {
         private readonly Action _onStateChanged;
+        private readonly Action _onHoverChanged;
         private readonly Func<ConfirmGate> _getConfirmGate;
         private readonly Func<bool> _getConfirmUnlocked;
         private readonly Action<bool> _setConfirmUnlocked;
@@ -49,16 +50,22 @@ namespace OSE.UI.Controllers
         /// <param name="onStateChanged">
         /// Invoked after any tool state mutation so the host can refresh panels.
         /// </param>
+        /// <param name="onHoverChanged">
+        /// Lightweight callback for hover-only changes — refreshes the tool info
+        /// panel without rebuilding the dock chip list.
+        /// </param>
         /// <param name="getConfirmGate">Returns the current confirm gate.</param>
         /// <param name="getConfirmUnlocked">Returns whether the confirm gate is unlocked.</param>
-        /// <param name="setConfirmUnlocked">Sets confirm gate unlocked state (triggers step panel refresh in host).</param>
+        /// <param name="setConfirmUnlocked">Sets confirm gate unlocked state.</param>
         public ToolDockStateMachine(
             Action onStateChanged,
+            Action onHoverChanged,
             Func<ConfirmGate> getConfirmGate,
             Func<bool> getConfirmUnlocked,
             Action<bool> setConfirmUnlocked)
         {
             _onStateChanged = onStateChanged;
+            _onHoverChanged = onHoverChanged;
             _getConfirmGate = getConfirmGate;
             _getConfirmUnlocked = getConfirmUnlocked;
             _setConfirmUnlocked = setConfirmUnlocked;
@@ -197,13 +204,13 @@ namespace OSE.UI.Controllers
                 return;
 
             _hoveredToolId = toolId;
-            _onStateChanged?.Invoke();
+            _onHoverChanged?.Invoke();
         }
 
         public void HandleToolHoverCleared()
         {
             _hoveredToolId = null;
-            _onStateChanged?.Invoke();
+            _onHoverChanged?.Invoke();
         }
 
         // ════════════════════════════════════════════════════════════════════

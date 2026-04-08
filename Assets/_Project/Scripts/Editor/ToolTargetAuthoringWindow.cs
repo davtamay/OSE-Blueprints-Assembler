@@ -160,6 +160,7 @@ namespace OSE.Editor
         [SerializeField] private string _selectedPartId;
         private readonly HashSet<int>   _multiSelectedParts = new HashSet<int>();
         [SerializeField] private bool   _editPlayPose;         // false=start, true=play
+        private int _poseSwitchCooldown;  // >0 means pose just toggled; suppress false dirty for N scene frames
         private readonly List<(int idx, PartSnapshot snap)> _undoStackParts = new();
         private readonly List<(int idx, PartSnapshot snap)> _redoStackParts = new();
         private bool _snapshotPendingPart;
@@ -181,6 +182,7 @@ namespace OSE.Editor
         private ReorderableList _taskSeqReorderList;
         private string          _taskSeqReorderListForStepId;
         private int             _selectedTaskSeqIdx = -1; // selected row in TASK SEQUENCE
+        private readonly HashSet<int> _multiSelectedTaskSeqIdxs = new HashSet<int>();
 
         // Add-task inline picker (shown below task sequence)
         private enum AddTaskPicker { None, Part, ToolTarget, Wire }
@@ -417,6 +419,7 @@ namespace OSE.Editor
             _parts = null;
             _selectedPartIdx = -1;
             _multiSelectedParts.Clear();
+            _multiSelectedTaskSeqIdxs.Clear();
             // Discard unsaved dirty tracking so stale bits don't bleed into the next package load.
             _dirtyToolIds.Clear();
             _dirtyStepIds.Clear();
@@ -639,6 +642,8 @@ namespace OSE.Editor
             EditorGUILayout.BeginHorizontal();
 
             EditorGUI.BeginDisabledGroup(_stepFilterIdx <= 1);
+            if (GUILayout.Button("◄|", GUILayout.Width(28)))
+                ApplyStepFilter(1);
             if (GUILayout.Button("◄", GUILayout.Width(28)))
                 ApplyStepFilter(_stepFilterIdx - 1);
             EditorGUI.EndDisabledGroup();
@@ -710,6 +715,8 @@ namespace OSE.Editor
             EditorGUI.BeginDisabledGroup(_stepFilterIdx >= stepCount);
             if (GUILayout.Button("►", GUILayout.Width(28)))
                 ApplyStepFilter(_stepFilterIdx + 1);
+            if (GUILayout.Button("|►", GUILayout.Width(28)))
+                ApplyStepFilter(stepCount);
             EditorGUI.EndDisabledGroup();
 
             GUILayout.Space(4);
@@ -773,6 +780,7 @@ namespace OSE.Editor
             _clickToSnapActive = false;
             _addTaskPicker          = AddTaskPicker.None;
             _selectedTaskSeqIdx     = -1;
+            _multiSelectedTaskSeqIdxs.Clear();
             _activeTaskKind         = null;
             _taskSeqReorderList     = null;
             _taskSeqReorderListForStepId = null;
@@ -1389,6 +1397,7 @@ namespace OSE.Editor
             if (clickedStart || clickedPlay)
             {
                 _editPlayPose = clickedPlay;
+                _poseSwitchCooldown = 3; // suppress false dirty from handle re-init for a few scene frames
                 SyncAllPartMeshesToActivePose();
                 SceneView.RepaintAll();
             }
@@ -1424,13 +1433,16 @@ namespace OSE.Editor
             var order = GetOrDeriveTaskOrder(step);
 
             // ── TASK SEQUENCE ──────────────────────────────────────────────────
-            DrawUnifiedSectionHeader($"TASK SEQUENCE ({order.Count})", order.Count,
+            string taskSeqHeader = _multiSelectedTaskSeqIdxs.Count > 1
+                ? $"TASK SEQUENCE ({order.Count})  —  {_multiSelectedTaskSeqIdxs.Count} selected  (Ctrl+click / Shift+click)"
+                : $"TASK SEQUENCE ({order.Count})";
+            DrawUnifiedSectionHeader(taskSeqHeader, order.Count,
                 () =>
                 {
                     var menu = new GenericMenu();
-                    menu.AddItem(new GUIContent("Part"),           false, () => { _addTaskPicker = AddTaskPicker.Part;       _addPickerPartIdx = 0; _selectedTaskSeqIdx = -1; });
-                    menu.AddItem(new GUIContent("Tool Target"),    false, () => { _addTaskPicker = AddTaskPicker.ToolTarget; _addPickerTargetIdx = 0; _addPickerToolIdx = 0; _selectedTaskSeqIdx = -1; });
-                    menu.AddItem(new GUIContent("Wire Connection"),false, () => { _addTaskPicker = AddTaskPicker.Wire;       _addPickerTargetIdx = 0; _addPickerWireColor = new Color(0.15f, 0.15f, 0.15f, 1f); _addPickerWireRadius = 0.003f; _addPickerPolarityA = ""; _addPickerPolarityB = ""; _addPickerConnectorA = ""; _addPickerConnectorB = ""; _selectedTaskSeqIdx = -1; });
+                    menu.AddItem(new GUIContent("Part"),           false, () => { _addTaskPicker = AddTaskPicker.Part;       _addPickerPartIdx = 0; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
+                    menu.AddItem(new GUIContent("Tool Target"),    false, () => { _addTaskPicker = AddTaskPicker.ToolTarget; _addPickerTargetIdx = 0; _addPickerToolIdx = 0; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
+                    menu.AddItem(new GUIContent("Wire Connection"),false, () => { _addTaskPicker = AddTaskPicker.Wire;       _addPickerTargetIdx = 0; _addPickerWireColor = new Color(0.15f, 0.15f, 0.15f, 1f); _addPickerWireRadius = 0.003f; _addPickerPolarityA = ""; _addPickerPolarityB = ""; _addPickerConnectorA = ""; _addPickerConnectorB = ""; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
                     menu.ShowAsContext();
                 });
 
@@ -1450,7 +1462,20 @@ namespace OSE.Editor
                 var selEntry = order[_selectedTaskSeqIdx];
                 EditorGUILayout.Space(4);
 
-                switch (selEntry.kind)
+                // Multi-selection → batch panel (parts first, then targets, then
+                // fall through to the primary entry's single-item detail panel)
+                if (_multiSelectedTaskSeqIdxs.Count > 1 && _multiSelectedParts.Count > 1)
+                {
+                    DrawUnifiedSectionHeader($"BATCH — {_multiSelectedParts.Count} parts", 0);
+                    DrawPartPoseToggle();
+                    DrawPartBatchPanel();
+                }
+                else if (_multiSelectedTaskSeqIdxs.Count > 1 && _multiSelected.Count > 1)
+                {
+                    DrawUnifiedSectionHeader($"BATCH — {_multiSelected.Count} targets", 0);
+                    DrawBatchPanel();
+                }
+                else switch (selEntry.kind)
                 {
                     case "part":
                     {
@@ -1864,8 +1889,12 @@ namespace OSE.Editor
 
                 _taskSeqReorderList.drawElementBackgroundCallback = (rect, index, isActive, isFocused) =>
                 {
-                    if (index == _selectedTaskSeqIdx)
+                    bool isPrimary = index == _selectedTaskSeqIdx;
+                    bool isMulti   = _multiSelectedTaskSeqIdxs.Count > 1 && _multiSelectedTaskSeqIdxs.Contains(index);
+                    if (isPrimary)
                         EditorGUI.DrawRect(rect, new Color(0.25f, 0.50f, 0.90f, 0.35f));
+                    else if (isMulti)
+                        EditorGUI.DrawRect(rect, new Color(0.25f, 0.50f, 0.90f, 0.20f));
                 };
 
                 _taskSeqReorderList.drawElementCallback = (rect, index, isActive, isFocused) =>
@@ -1926,15 +1955,45 @@ namespace OSE.Editor
                     if (Event.current.type == EventType.MouseDown
                         && rowClickRect.Contains(Event.current.mousePosition))
                     {
-                        // Toggle: click selected row to deselect; click other row to switch.
-                        int newIdx = (_selectedTaskSeqIdx == index) ? -1 : index;
-                        _selectedTaskSeqIdx = newIdx;
+                        bool ctrl  = Event.current.control;
+                        bool shift = Event.current.shift;
                         _addTaskPicker = AddTaskPicker.None;
-                        if (newIdx >= 0)
-                            ApplyTaskEntrySelection(step, order[newIdx]);
+
+                        if (ctrl)
+                        {
+                            // Toggle individual row in/out of multi-selection
+                            if (_multiSelectedTaskSeqIdxs.Contains(index))
+                                _multiSelectedTaskSeqIdxs.Remove(index);
+                            else
+                                _multiSelectedTaskSeqIdxs.Add(index);
+                            _selectedTaskSeqIdx = index;
+                        }
+                        else if (shift && _selectedTaskSeqIdx >= 0)
+                        {
+                            // Range-select from last primary to this row
+                            int lo = Mathf.Min(_selectedTaskSeqIdx, index);
+                            int hi = Mathf.Max(_selectedTaskSeqIdx, index);
+                            _multiSelectedTaskSeqIdxs.Clear();
+                            for (int j = lo; j <= hi; j++) _multiSelectedTaskSeqIdxs.Add(j);
+                            _selectedTaskSeqIdx = index;
+                        }
                         else
-                        { _selectedPartIdx = -1; _selectedIdx = -1; _activeTaskKind = null; }
-                        Event.current.Use(); // prevent onMouseUpCallback from also firing
+                        {
+                            // Plain click — single select (toggle deselect)
+                            _multiSelectedTaskSeqIdxs.Clear();
+                            int newIdx = (_selectedTaskSeqIdx == index) ? -1 : index;
+                            _selectedTaskSeqIdx = newIdx;
+                            if (newIdx >= 0)
+                                ApplyTaskEntrySelection(step, order[newIdx]);
+                            else
+                            { _selectedPartIdx = -1; _selectedIdx = -1; _activeTaskKind = null; }
+                        }
+
+                        // For multi-select, resolve part indices for batch editing
+                        if (_multiSelectedTaskSeqIdxs.Count > 1)
+                            ApplyTaskMultiSelection(order);
+
+                        Event.current.Use();
                         SceneView.RepaintAll();
                         Repaint();
                     }
@@ -1962,6 +2021,7 @@ namespace OSE.Editor
                     _dirtyStepIds.Add(step.id);
                     // Keep selection tracking the moved item
                     if (_selectedTaskSeqIdx == oldIdx) _selectedTaskSeqIdx = newIdx;
+                    _multiSelectedTaskSeqIdxs.Clear();
                 };
 
                 // No onMouseUpCallback — row selection is handled by MouseDown inside
@@ -1990,6 +2050,7 @@ namespace OSE.Editor
         {
             if (entry == null) return;
             _activeTaskKind = entry.kind;
+            _poseSwitchCooldown = 3; // suppress false dirty from handle re-init after selection change
             switch (entry.kind)
             {
                 case "part":
@@ -2004,7 +2065,6 @@ namespace OSE.Editor
                             if (_parts[i].def?.id == entry.id) { pick = i; break; }
                         _selectedPartIdx = pick;
                         _selectedPartId  = _parts[pick].def?.id;
-                        _editPlayPose = false; // always land on Start Pose when selecting a part
                         SyncAllPartMeshesToActivePose();
                         var liveGO = FindLivePartGO(_selectedPartId);
                         if (liveGO != null) UnityEditor.Selection.activeGameObject = liveGO;
@@ -2041,6 +2101,52 @@ namespace OSE.Editor
                         _selectedTargetId = _selectedIdx >= 0 ? _targets[_selectedIdx].def?.id : null;
                     }
                     break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Resolves multi-selected task sequence rows into part/target index sets
+        /// for batch editing. Collects all parts and all targets from the selection
+        /// regardless of kind, so the batch panel always has content.
+        /// </summary>
+        private void ApplyTaskMultiSelection(List<TaskOrderEntry> order)
+        {
+            _multiSelectedParts.Clear();
+            _multiSelected.Clear();
+
+            foreach (int taskIdx in _multiSelectedTaskSeqIdxs)
+            {
+                if (taskIdx < 0 || taskIdx >= order.Count) continue;
+                var entry = order[taskIdx];
+
+                if (entry.kind == "part" && _parts != null)
+                {
+                    for (int i = 0; i < _parts.Length; i++)
+                    {
+                        if (_parts[i].def?.id == entry.id)
+                        {
+                            _multiSelectedParts.Add(i);
+                            _selectedPartIdx = i;
+                            _selectedPartId  = _parts[i].def?.id;
+                            break;
+                        }
+                    }
+                }
+                else if (_targets != null)
+                {
+                    // wire, toolAction, target, confirm — resolve to target index
+                    string targetId = entry.id;
+                    for (int i = 0; i < _targets.Length; i++)
+                    {
+                        if (_targets[i].def?.id == targetId)
+                        {
+                            _multiSelected.Add(i);
+                            _selectedIdx = i;
+                            _selectedTargetId = _targets[i].def?.id;
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -2512,10 +2618,7 @@ namespace OSE.Editor
                     }
 
                     if (_selectedPartIdx >= 0 && _selectedPartIdx < _parts.Length)
-                    {
-                        _editPlayPose = false; // always land on Start Pose when selecting a part
                         SyncAllPartMeshesToActivePose();
-                    }
                     SceneView.RepaintAll();
                     Event.current.Use();
                     Repaint();
@@ -2890,30 +2993,30 @@ namespace OSE.Editor
             if (_editPlayPose)
             {
                 EditorGUI.BeginChangeCheck();
-                p.playPosition = EditorGUILayout.Vector3Field("Play Position", p.playPosition);
-                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.isDirty = true; SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
+                Vector3 newPlayPos = EditorGUILayout.Vector3Field("Play Position", p.playPosition);
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.playPosition = newPlayPos; p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
 
                 EditorGUI.BeginChangeCheck();
                 Vector3 playEuler = EditorGUILayout.Vector3Field("Play Rotation", p.playRotation.eulerAngles);
-                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.playRotation = Quaternion.Euler(playEuler); p.isDirty = true; SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.playRotation = Quaternion.Euler(playEuler); p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
 
                 EditorGUI.BeginChangeCheck();
-                p.playScale = EditorGUILayout.Vector3Field("Play Scale", p.playScale);
-                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.isDirty = true; SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
+                Vector3 newPlayScale = EditorGUILayout.Vector3Field("Play Scale", p.playScale);
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.playScale = newPlayScale; p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
             }
             else
             {
                 EditorGUI.BeginChangeCheck();
-                p.startPosition = EditorGUILayout.Vector3Field("Start Position", p.startPosition);
-                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.isDirty = true; SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
+                Vector3 newStartPos = EditorGUILayout.Vector3Field("Start Position", p.startPosition);
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.startPosition = newStartPos; p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
 
                 EditorGUI.BeginChangeCheck();
                 Vector3 startEuler = EditorGUILayout.Vector3Field("Start Rotation", p.startRotation.eulerAngles);
-                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.startRotation = Quaternion.Euler(startEuler); p.isDirty = true; SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.startRotation = Quaternion.Euler(startEuler); p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
 
                 EditorGUI.BeginChangeCheck();
-                p.startScale = EditorGUILayout.Vector3Field("Start Scale", p.startScale);
-                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.isDirty = true; SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
+                Vector3 newStartScale = EditorGUILayout.Vector3Field("Start Scale", p.startScale);
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.startScale = newStartScale; p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
             }
 
             EditorGUILayout.Space(4);
@@ -2930,16 +3033,102 @@ namespace OSE.Editor
         private void DrawPartBatchPanel()
         {
             int count = _multiSelectedParts.Count;
-            EditorGUILayout.LabelField($"Batch edit — {count} parts", EditorStyles.boldLabel);
+            string poseLabel = _editPlayPose ? "Play Pose" : "Start Pose";
+            EditorGUILayout.LabelField($"Batch edit — {count} parts  ({poseLabel})", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
                 "Values shown are from the primary (last-clicked) part.\n" +
-                "Any field you change is applied as a delta to ALL selected parts.",
+                "Changing a field sets that exact value on ALL selected parts.",
                 MessageType.None);
             EditorGUILayout.Space(4);
             if (_selectedPartIdx < 0 || _selectedPartIdx >= _parts.Length) return;
             ref PartEditState rep = ref _parts[_selectedPartIdx];
 
-            EditorGUILayout.LabelField("Position Offset (all selected)", EditorStyles.boldLabel);
+            // ── Position (absolute, per-axis) ────────────────────────────────
+            EditorGUILayout.LabelField("Position (all selected)", EditorStyles.boldLabel);
+            Vector3 repPos = _editPlayPose ? rep.playPosition : rep.startPosition;
+
+            EditorGUI.BeginChangeCheck();
+            float batchX = EditorGUILayout.FloatField("X", repPos.x);
+            if (EditorGUI.EndChangeCheck())
+            {
+                foreach (int idx in _multiSelectedParts)
+                {
+                    ref PartEditState p2 = ref _parts[idx];
+                    if (_editPlayPose) p2.playPosition.x  = batchX;
+                    else               p2.startPosition.x = batchX;
+                    p2.isDirty = true; SyncPartMeshToActivePose(ref p2);
+                }
+                SceneView.RepaintAll(); Repaint();
+            }
+
+            EditorGUI.BeginChangeCheck();
+            float batchY = EditorGUILayout.FloatField("Y", repPos.y);
+            if (EditorGUI.EndChangeCheck())
+            {
+                foreach (int idx in _multiSelectedParts)
+                {
+                    ref PartEditState p2 = ref _parts[idx];
+                    if (_editPlayPose) p2.playPosition.y  = batchY;
+                    else               p2.startPosition.y = batchY;
+                    p2.isDirty = true; SyncPartMeshToActivePose(ref p2);
+                }
+                SceneView.RepaintAll(); Repaint();
+            }
+
+            EditorGUI.BeginChangeCheck();
+            float batchZ = EditorGUILayout.FloatField("Z", repPos.z);
+            if (EditorGUI.EndChangeCheck())
+            {
+                foreach (int idx in _multiSelectedParts)
+                {
+                    ref PartEditState p2 = ref _parts[idx];
+                    if (_editPlayPose) p2.playPosition.z  = batchZ;
+                    else               p2.startPosition.z = batchZ;
+                    p2.isDirty = true; SyncPartMeshToActivePose(ref p2);
+                }
+                SceneView.RepaintAll(); Repaint();
+            }
+            EditorGUILayout.Space(4);
+
+            // ── Rotation (absolute) ──────────────────────────────────────────
+            EditorGUILayout.LabelField("Rotation (all selected)", EditorStyles.boldLabel);
+            Quaternion repRot = _editPlayPose ? rep.playRotation : rep.startRotation;
+            EditorGUI.BeginChangeCheck();
+            Vector3 batchEuler = EditorGUILayout.Vector3Field("Euler", repRot.eulerAngles);
+            if (EditorGUI.EndChangeCheck())
+            {
+                Quaternion batchRot = Quaternion.Euler(batchEuler);
+                foreach (int idx in _multiSelectedParts)
+                {
+                    ref PartEditState p2 = ref _parts[idx];
+                    if (_editPlayPose) p2.playRotation  = batchRot;
+                    else               p2.startRotation = batchRot;
+                    p2.isDirty = true; SyncPartMeshToActivePose(ref p2);
+                }
+                SceneView.RepaintAll(); Repaint();
+            }
+            EditorGUILayout.Space(4);
+
+            // ── Scale (absolute) ─────────────────────────────────────────────
+            EditorGUILayout.LabelField("Scale (all selected)", EditorStyles.boldLabel);
+            Vector3 repScale = _editPlayPose ? rep.playScale : rep.startScale;
+            EditorGUI.BeginChangeCheck();
+            Vector3 batchScale = EditorGUILayout.Vector3Field("Scale", repScale);
+            if (EditorGUI.EndChangeCheck())
+            {
+                foreach (int idx in _multiSelectedParts)
+                {
+                    ref PartEditState p2 = ref _parts[idx];
+                    if (_editPlayPose) p2.playScale  = batchScale;
+                    else               p2.startScale = batchScale;
+                    p2.isDirty = true; SyncPartMeshToActivePose(ref p2);
+                }
+                SceneView.RepaintAll(); Repaint();
+            }
+            EditorGUILayout.Space(8);
+
+            // ── Position offset (delta) ──────────────────────────────────────
+            EditorGUILayout.LabelField("Position Offset (delta)", EditorStyles.miniBoldLabel);
             EditorGUI.BeginChangeCheck();
             float dx = EditorGUILayout.FloatField("Delta X", 0f);
             if (EditorGUI.EndChangeCheck() && dx != 0f)
@@ -2949,8 +3138,7 @@ namespace OSE.Editor
                     ref PartEditState p2 = ref _parts[idx];
                     if (_editPlayPose) p2.playPosition.x  += dx;
                     else               p2.startPosition.x += dx;
-                    p2.isDirty = true;
-                    SyncPartMeshToActivePose(ref p2);
+                    p2.isDirty = true; SyncPartMeshToActivePose(ref p2);
                 }
                 SceneView.RepaintAll(); Repaint();
             }
@@ -2964,8 +3152,7 @@ namespace OSE.Editor
                     ref PartEditState p2 = ref _parts[idx];
                     if (_editPlayPose) p2.playPosition.y  += dy;
                     else               p2.startPosition.y += dy;
-                    p2.isDirty = true;
-                    SyncPartMeshToActivePose(ref p2);
+                    p2.isDirty = true; SyncPartMeshToActivePose(ref p2);
                 }
                 SceneView.RepaintAll(); Repaint();
             }
@@ -2979,25 +3166,7 @@ namespace OSE.Editor
                     ref PartEditState p2 = ref _parts[idx];
                     if (_editPlayPose) p2.playPosition.z  += dz;
                     else               p2.startPosition.z += dz;
-                    p2.isDirty = true;
-                    SyncPartMeshToActivePose(ref p2);
-                }
-                SceneView.RepaintAll(); Repaint();
-            }
-
-            EditorGUILayout.Space(4);
-            EditorGUILayout.LabelField("Uniform Scale (all selected)", EditorStyles.boldLabel);
-            EditorGUI.BeginChangeCheck();
-            float uniformScale = EditorGUILayout.FloatField("Scale", 1f);
-            if (EditorGUI.EndChangeCheck() && Mathf.Abs(uniformScale - 1f) > 0.00001f && uniformScale > 0f)
-            {
-                foreach (int idx in _multiSelectedParts)
-                {
-                    ref PartEditState p2 = ref _parts[idx];
-                    if (_editPlayPose) p2.playScale  *= uniformScale;
-                    else               p2.startScale *= uniformScale;
-                    p2.isDirty = true;
-                    SyncPartMeshToActivePose(ref p2);
+                    p2.isDirty = true; SyncPartMeshToActivePose(ref p2);
                 }
                 SceneView.RepaintAll(); Repaint();
             }
@@ -3237,6 +3406,13 @@ namespace OSE.Editor
             ServiceRegistry.TryGet<ISpawnerQueryService>(out var spawner);
             Transform root = spawner?.PreviewRoot;
 
+            // Tick down the pose-switch cooldown.  While active, suppress the native
+            // polling and custom handle change-detection so the pose flip doesn't
+            // produce false dirty flags.
+            bool poseCooldownActive = _poseSwitchCooldown > 0;
+            if (poseCooldownActive && Event.current.type == EventType.Repaint)
+                _poseSwitchCooldown--;
+
             if (Event.current.type == EventType.MouseUp) EndPartEdit();
 
             // F key → frame on selected part
@@ -3248,8 +3424,9 @@ namespace OSE.Editor
                 Event.current.Use();
             }
 
-            // Scene selection → window selection sync (click GO in Hierarchy to select it)
-            if (spawner?.SpawnedParts != null)
+            // Scene selection → window selection sync (click GO in Hierarchy to select it).
+            // Skip when multi-selection is active — the user's batch selection takes priority.
+            if (spawner?.SpawnedParts != null && _multiSelectedParts.Count <= 1 && _multiSelectedTaskSeqIdxs.Count <= 1)
             {
                 var activeGO = Selection.activeGameObject;
                 if (activeGO != null)
@@ -3307,30 +3484,39 @@ namespace OSE.Editor
                 }
             }
 
+            // Hide Unity's native transform gizmo when multi-selecting parts so only
+            // our custom Handles.PositionHandle / RotationHandle is visible.
+            bool isMultiPart = _multiSelectedParts.Count > 1;
+            if (Tools.hidden != isMultiPart) Tools.hidden = isMultiPart;
+
             // Native Move-tool polling on selected part only (matches PPAW).
-            // Guard with Tools.current so the poll cannot fire during async spawner repositioning;
-            // it only runs when the user is actively using Unity's Move or Transform tool.
-            if (_selectedPartIdx >= 0 && _selectedPartIdx < _parts.Length &&
+            // Skipped during multi-select — our custom handle drives all parts.
+            // Uses TryGetStepAwarePose for comparison so the expected pose matches
+            // what SyncPartMeshToActivePose set — prevents false re-dirty on past/subassembly parts.
+            if (!poseCooldownActive && !isMultiPart &&
+                _selectedPartIdx >= 0 && _selectedPartIdx < _parts.Length &&
                 (Tools.current == Tool.Move || Tools.current == Tool.Transform) &&
                 (Event.current.type == EventType.Repaint || Event.current.type == EventType.Layout))
             {
                 ref PartEditState pp = ref _parts[_selectedPartIdx];
-                var pollGO = FindLivePartGO(pp.def.id);
-                if (pollGO != null)
+                if (TryGetStepAwarePose(ref pp, out Vector3 expectedPos, out Quaternion expectedRot, out _))
                 {
-                    Vector3    goPos    = pollGO.transform.localPosition;
-                    Quaternion goRot    = pollGO.transform.localRotation;
-                    Vector3    statePos = _editPlayPose ? pp.playPosition : pp.startPosition;
-                    Quaternion stateRot = _editPlayPose ? pp.playRotation  : pp.startRotation;
-                    bool posChg = (goPos - statePos).sqrMagnitude > 1e-8f;
-                    bool rotChg = Quaternion.Angle(goRot, stateRot) > 0.005f;
-                    if (posChg || rotChg)
+                    var pollGO = FindLivePartGO(pp.def.id);
+                    if (pollGO != null)
                     {
-                        BeginPartEdit(_selectedPartIdx);
-                        if (_editPlayPose) { pp.playPosition = goPos;  pp.playRotation = goRot; }
-                        else               { pp.startPosition = goPos; pp.startRotation = goRot; }
-                        pp.isDirty = true;
-                        Repaint();
+                        Vector3    goPos = pollGO.transform.localPosition;
+                        Quaternion goRot = pollGO.transform.localRotation;
+                        bool posChg = (goPos - expectedPos).sqrMagnitude > 1e-8f;
+                        bool rotChg = Quaternion.Angle(goRot, expectedRot) > 0.005f;
+                        if (posChg || rotChg)
+                        {
+                            BeginPartEdit(_selectedPartIdx);
+                            if (_editPlayPose) { pp.playPosition = goPos;  pp.playRotation = goRot; }
+                            else               { pp.startPosition = goPos; pp.startRotation = goRot; }
+                            pp.isDirty = true;
+                            EndPartEdit();
+                            Repaint();
+                        }
                     }
                 }
             }
@@ -3353,27 +3539,33 @@ namespace OSE.Editor
             EditorGUI.BeginChangeCheck();
             Quaternion posHandleRot = Tools.pivotRotation == PivotRotation.Local ? selWorldRot : Quaternion.identity;
             Vector3    newWorldPos  = Handles.PositionHandle(selWorldPos, posHandleRot);
-            if (EditorGUI.EndChangeCheck())
+            if (EditorGUI.EndChangeCheck() && !poseCooldownActive && (newWorldPos - selWorldPos).sqrMagnitude > 1e-10f)
             {
                 BeginPartEdit(_selectedPartIdx);
+                Vector3 oldLocalPos = _editPlayPose ? sel.playPosition : sel.startPosition;
                 selectedGO.transform.position = newWorldPos;
                 Vector3 newLocalPos = selectedGO.transform.localPosition;
-                Vector3 delta = newLocalPos - (_editPlayPose ? sel.playPosition : sel.startPosition);
                 if (_editPlayPose) sel.playPosition  = newLocalPos;
                 else               sel.startPosition = newLocalPos;
                 sel.isDirty = true;
 
+                // Move group as a unit — apply the same delta so offsets are preserved
                 if (_multiSelectedParts.Count > 1)
+                {
+                    Vector3 delta = newLocalPos - oldLocalPos;
                     foreach (int midx in _multiSelectedParts)
                     {
                         if (midx == _selectedPartIdx || midx < 0 || midx >= _parts.Length) continue;
                         ref PartEditState mp = ref _parts[midx];
-                        if (_editPlayPose) mp.playPosition  += delta;
-                        else               mp.startPosition += delta;
+                        Vector3 cur = _editPlayPose ? mp.playPosition : mp.startPosition;
+                        cur += delta;
+                        if (_editPlayPose) mp.playPosition  = cur;
+                        else               mp.startPosition = cur;
                         mp.isDirty = true;
                         var otherGO = FindLivePartGO(mp.def.id);
-                        if (otherGO != null) otherGO.transform.localPosition += delta;
+                        if (otherGO != null) otherGO.transform.localPosition = cur;
                     }
+                }
                 Repaint();
             }
 
@@ -3381,7 +3573,7 @@ namespace OSE.Editor
             EditorGUI.BeginChangeCheck();
             Quaternion rotOrientation = Tools.pivotRotation == PivotRotation.Local ? selWorldRot : Quaternion.identity;
             Quaternion newWorldRot    = Handles.RotationHandle(rotOrientation, selWorldPos);
-            if (EditorGUI.EndChangeCheck())
+            if (EditorGUI.EndChangeCheck() && !poseCooldownActive && Quaternion.Angle(newWorldRot, rotOrientation) > 0.01f)
             {
                 BeginPartEdit(_selectedPartIdx);
                 if (!_rotDragActivePart)
@@ -3389,36 +3581,27 @@ namespace OSE.Editor
                     _rotDragActivePart      = true;
                     _rotDragStartHandlePart = rotOrientation;
                     _rotDragStartLocalPart  = _editPlayPose ? sel.playRotation : sel.startRotation;
-                    _rotDragStartMultiPart  = new Dictionary<int, Quaternion>();
-                    if (_multiSelectedParts.Count > 1)
-                        foreach (int midx in _multiSelectedParts)
-                            if (midx != _selectedPartIdx)
-                                _rotDragStartMultiPart[midx] = _editPlayPose
-                                    ? _parts[midx].playRotation : _parts[midx].startRotation;
                 }
                 Quaternion rootRot     = root.rotation;
                 Quaternion worldDelta  = newWorldRot * Quaternion.Inverse(_rotDragStartHandlePart);
                 Quaternion newLocalRot = Quaternion.Inverse(rootRot) * (worldDelta * (rootRot * _rotDragStartLocalPart));
-                Quaternion localDelta  = newLocalRot * Quaternion.Inverse(_rotDragStartLocalPart);
 
                 selectedGO.transform.localRotation = newLocalRot;
                 if (_editPlayPose) sel.playRotation  = newLocalRot;
                 else               sel.startRotation = newLocalRot;
                 sel.isDirty = true;
 
+                // Apply same absolute rotation to all multi-selected parts
                 if (_multiSelectedParts.Count > 1)
                     foreach (int midx in _multiSelectedParts)
                     {
                         if (midx == _selectedPartIdx || midx < 0 || midx >= _parts.Length) continue;
                         ref PartEditState mp = ref _parts[midx];
-                        Quaternion startR = _rotDragStartMultiPart != null && _rotDragStartMultiPart.TryGetValue(midx, out var sr)
-                            ? sr : (_editPlayPose ? mp.playRotation : mp.startRotation);
-                        Quaternion newR = localDelta * startR;
-                        if (_editPlayPose) mp.playRotation  = newR;
-                        else               mp.startRotation = newR;
+                        if (_editPlayPose) mp.playRotation  = newLocalRot;
+                        else               mp.startRotation = newLocalRot;
                         mp.isDirty = true;
                         var otherGO = FindLivePartGO(mp.def.id);
-                        if (otherGO != null) otherGO.transform.localRotation = newR;
+                        if (otherGO != null) otherGO.transform.localRotation = newLocalRot;
                     }
                 Repaint();
             }
@@ -3564,7 +3747,7 @@ namespace OSE.Editor
                 EditorGUI.BeginChangeCheck();
                 Quaternion handleRot = Tools.pivotRotation == PivotRotation.Local ? worldRot : Quaternion.identity;
                 Vector3 newWorldPos = Handles.PositionHandle(worldPos, handleRot);
-                if (EditorGUI.EndChangeCheck())
+                if (EditorGUI.EndChangeCheck() && (newWorldPos - worldPos).sqrMagnitude > 1e-10f)
                 {
                     BeginEdit();
                     Vector3 newLocal = root.InverseTransformPoint(newWorldPos);
@@ -3589,7 +3772,7 @@ namespace OSE.Editor
                     EditorGUI.BeginChangeCheck();
                     Quaternion rotHandleOrientation = Tools.pivotRotation == PivotRotation.Local ? worldRot : Quaternion.identity;
                     Quaternion newWorldRot = Handles.RotationHandle(rotHandleOrientation, worldPos);
-                    if (EditorGUI.EndChangeCheck())
+                    if (EditorGUI.EndChangeCheck() && Quaternion.Angle(newWorldRot, rotHandleOrientation) > 0.01f)
                     {
                         BeginEdit();
 
@@ -3659,9 +3842,10 @@ namespace OSE.Editor
                         sel.portB = new Vector3(dragWire.portB.x, dragWire.portB.y, dragWire.portB.z);
                     }
 
+                    Vector3 portAWorld = root.TransformPoint(sel.portA);
                     EditorGUI.BeginChangeCheck();
-                    Vector3 newPortA = Handles.PositionHandle(root.TransformPoint(sel.portA), Quaternion.identity);
-                    if (EditorGUI.EndChangeCheck())
+                    Vector3 newPortA = Handles.PositionHandle(portAWorld, Quaternion.identity);
+                    if (EditorGUI.EndChangeCheck() && (newPortA - portAWorld).sqrMagnitude > 1e-10f)
                     {
                         BeginEdit();
                         sel.portA = root.InverseTransformPoint(newPortA);
@@ -3671,9 +3855,10 @@ namespace OSE.Editor
                         Repaint();
                     }
 
+                    Vector3 portBWorld = root.TransformPoint(sel.portB);
                     EditorGUI.BeginChangeCheck();
-                    Vector3 newPortB = Handles.PositionHandle(root.TransformPoint(sel.portB), Quaternion.identity);
-                    if (EditorGUI.EndChangeCheck())
+                    Vector3 newPortB = Handles.PositionHandle(portBWorld, Quaternion.identity);
+                    if (EditorGUI.EndChangeCheck() && (newPortB - portBWorld).sqrMagnitude > 1e-10f)
                     {
                         BeginEdit();
                         sel.portB = root.InverseTransformPoint(newPortB);
@@ -3696,7 +3881,7 @@ namespace OSE.Editor
                     Handles.color = new Color(1f, 0.5f, 0f, 1f);
                     EditorGUI.BeginChangeCheck();
                     Vector3 newWorldA = Handles.PositionHandle(worldA, Quaternion.identity);
-                    if (EditorGUI.EndChangeCheck())
+                    if (EditorGUI.EndChangeCheck() && (newWorldA - worldA).sqrMagnitude > 1e-10f)
                     {
                         BeginEdit();
                         sel.weldGizmoA = root.InverseTransformPoint(newWorldA);
@@ -3709,7 +3894,7 @@ namespace OSE.Editor
                     Handles.color = new Color(1f, 0.9f, 0f, 1f);
                     EditorGUI.BeginChangeCheck();
                     Vector3 newWorldB = Handles.PositionHandle(worldB, Quaternion.identity);
-                    if (EditorGUI.EndChangeCheck())
+                    if (EditorGUI.EndChangeCheck() && (newWorldB - worldB).sqrMagnitude > 1e-10f)
                     {
                         BeginEdit();
                         sel.weldGizmoB = root.InverseTransformPoint(newWorldB);
