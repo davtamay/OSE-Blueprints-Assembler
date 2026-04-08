@@ -114,8 +114,8 @@ for doc_name, d in FreeCAD.listDocuments().items():
         print(f"  Unity pos: ({unity_x}, {unity_y}, {unity_z})")
 
         transforms[name] = {
-            "playPosition": {"x": unity_x, "y": unity_y, "z": unity_z},
-            "playRotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0},
+            "assembledPosition": {"x": unity_x, "y": unity_y, "z": unity_z},
+            "assembledRotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0},
             "fc_label": label,
             "global_center_mm": {"x": round(cx, 2), "y": round(cy, 2), "z": round(cz, 2)}
         }

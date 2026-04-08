@@ -1,7 +1,7 @@
 """
 Add splinePath data to the 6 hose/cable partPlacements in machine.json.
 
-Spline knots are in PreviewRoot local space (same coordinate system as playPosition).
+Spline knots are in PreviewRoot local space (same coordinate system as assembledPosition).
 Routes are based on real Power Cube component positions and frame geometry.
 
 Frame reference:
@@ -10,7 +10,7 @@ Frame reference:
   - FLOOR = 0.1016 (top of base tubes)
   - PLATE_TOP = 0.7172 (engine mount plate top)
 
-Component positions (playPosition):
+Component positions (assembledPosition):
   - Engine: (0.0, 0.7872, 0.0)
   - Hydraulic pump: (-0.35, 0.1716, 0.0)
   - Reservoir: (0.45, 0.2266, 0.0)
@@ -28,7 +28,7 @@ JSON_PATH = os.path.join(BASE, "Assets", "_Project", "Data", "Packages",
 
 # ── spline definitions ──
 # Each entry: { radius, segments, metallic, smoothness, knots: [{x,y,z}, ...] }
-# playPosition/playScale for spline parts are set to identity (0,0,0) / (1,1,1)
+# assembledPosition/assembledScale for spline parts are set to identity (0,0,0) / (1,1,1)
 
 SPLINE_PARTS = {
     "pressure_hose": {
@@ -160,10 +160,10 @@ def main():
             "knots": sp["knots"],
         }
 
-        # Set playPosition to origin (spline knots define geometry)
-        pp["playPosition"] = {"x": 0.0, "y": 0.0, "z": 0.0}
-        pp["playRotation"] = {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}
-        pp["playScale"] = {"x": 1.0, "y": 1.0, "z": 1.0}
+        # Set assembledPosition to origin (spline knots define geometry)
+        pp["assembledPosition"] = {"x": 0.0, "y": 0.0, "z": 0.0}
+        pp["assembledRotation"] = {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}
+        pp["assembledScale"] = {"x": 1.0, "y": 1.0, "z": 1.0}
 
         # Update color
         if pid in SPLINE_COLORS:

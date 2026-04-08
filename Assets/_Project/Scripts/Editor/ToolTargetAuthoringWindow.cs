@@ -30,7 +30,7 @@ namespace OSE.Editor
     /// Step filter shows sequence number, tool name, and profile.
     /// Selecting a step sets the SceneView to the exact machine state the
     /// trainee sees at that point in the assembly — parts placed earlier are at
-    /// playPosition, the current step's part is at startPosition, future parts
+    /// assembledPosition, the current step's part is at startPosition, future parts
     /// are hidden.  Targets not belonging to the active step are dimmed.
     /// The detail panel shows only the fields relevant to the step's profile
     /// (Weld/Cut → weldAxis+weldLength; Cable → portA+portB drag handles;
@@ -159,7 +159,7 @@ namespace OSE.Editor
         [SerializeField] private int    _selectedPartIdx = -1;
         [SerializeField] private string _selectedPartId;
         private readonly HashSet<int>   _multiSelectedParts = new HashSet<int>();
-        [SerializeField] private bool   _editPlayPose;         // false=start, true=play
+        [SerializeField] private bool   _editAssembledPose;         // false=start, true=play
         private int _poseSwitchCooldown;  // >0 means pose just toggled; suppress false dirty for N scene frames
         private readonly List<(int idx, PartSnapshot snap)> _undoStackParts = new();
         private readonly List<(int idx, PartSnapshot snap)> _redoStackParts = new();
@@ -251,15 +251,15 @@ namespace OSE.Editor
             public PartDefinition       def;
             public PartPreviewPlacement placement;
             public bool   hasPlacement, isDirty;
-            public Vector3    startPosition, startScale, playPosition, playScale;
-            public Quaternion startRotation, playRotation;
+            public Vector3    startPosition, startScale, assembledPosition, assembledScale;
+            public Quaternion startRotation, assembledRotation;
             public Color      color;
         }
 
         private struct PartSnapshot
         {
             public Vector3 startPosition; public Quaternion startRotation; public Vector3 startScale;
-            public Vector3 playPosition;  public Quaternion playRotation;  public Vector3 playScale;
+            public Vector3 assembledPosition;  public Quaternion assembledRotation;  public Vector3 assembledScale;
         }
 
         // ── MenuItem ──────────────────────────────────────────────────────────
@@ -788,8 +788,8 @@ namespace OSE.Editor
             UpdateActiveStep();
             BuildTargetList();
             BuildPartList();
-            _editPlayPose = false;           // always land on Start Pose when switching steps
-            RespawnScene();                  // uses _editPlayPose — must come AFTER the reset
+            _editAssembledPose = false;           // always land on Start Pose when switching steps
+            RespawnScene();                  // uses _editAssembledPose — must come AFTER the reset
             SyncAllPartMeshesToActivePose(); // second pass: ensures live GOs match after RespawnScene
             ApplySpawnerStepPositions();     // first pass: push step-aware positions before driver sync
             AutoSelectFirstTaskEntry();      // default-select first badge so a section is visible
@@ -1388,15 +1388,15 @@ namespace OSE.Editor
         private void DrawPartPoseToggle()
         {
             EditorGUILayout.BeginHorizontal();
-            bool wantStart = GUILayout.Toggle(!_editPlayPose, "Start Pose", EditorStyles.miniButtonLeft);
-            bool wantPlay  = GUILayout.Toggle(_editPlayPose,  "Play Pose",  EditorStyles.miniButtonRight);
+            bool wantStart = GUILayout.Toggle(!_editAssembledPose, "Start Pose", EditorStyles.miniButtonLeft);
+            bool wantPlay  = GUILayout.Toggle(_editAssembledPose,  "Assembled Pose",  EditorStyles.miniButtonRight);
             EditorGUILayout.EndHorizontal();
 
-            bool clickedStart = wantStart && _editPlayPose;
-            bool clickedPlay  = wantPlay  && !_editPlayPose;
+            bool clickedStart = wantStart && _editAssembledPose;
+            bool clickedPlay  = wantPlay  && !_editAssembledPose;
             if (clickedStart || clickedPlay)
             {
-                _editPlayPose = clickedPlay;
+                _editAssembledPose = clickedPlay;
                 _poseSwitchCooldown = 3; // suppress false dirty from handle re-init for a few scene frames
                 SyncAllPartMeshesToActivePose();
                 SceneView.RepaintAll();
@@ -1823,9 +1823,9 @@ namespace OSE.Editor
                 _parts[i].startPosition = hasP ? PackageJsonUtils.ToVector3(pp.startPosition) : Vector3.zero;
                 _parts[i].startRotation = hasP ? PackageJsonUtils.ToUnityQuaternion(pp.startRotation) : Quaternion.identity;
                 _parts[i].startScale    = hasP ? PackageJsonUtils.ToVector3(pp.startScale)    : Vector3.one;
-                _parts[i].playPosition  = hasP ? PackageJsonUtils.ToVector3(pp.playPosition)  : Vector3.zero;
-                _parts[i].playRotation  = hasP ? PackageJsonUtils.ToUnityQuaternion(pp.playRotation) : Quaternion.identity;
-                _parts[i].playScale     = hasP ? PackageJsonUtils.ToVector3(pp.playScale)     : Vector3.one;
+                _parts[i].assembledPosition  = hasP ? PackageJsonUtils.ToVector3(pp.assembledPosition)  : Vector3.zero;
+                _parts[i].assembledRotation  = hasP ? PackageJsonUtils.ToUnityQuaternion(pp.assembledRotation) : Quaternion.identity;
+                _parts[i].assembledScale     = hasP ? PackageJsonUtils.ToVector3(pp.assembledScale)     : Vector3.one;
                 _parts[i].isDirty       = false;
                 SyncPartMeshToActivePose(ref _parts[i]);
                 break;
@@ -2990,19 +2990,19 @@ namespace OSE.Editor
 
             DrawPartModelPreview(ref p);
 
-            if (_editPlayPose)
+            if (_editAssembledPose)
             {
                 EditorGUI.BeginChangeCheck();
-                Vector3 newPlayPos = EditorGUILayout.Vector3Field("Play Position", p.playPosition);
-                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.playPosition = newPlayPos; p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
+                Vector3 newPlayPos = EditorGUILayout.Vector3Field("Play Position", p.assembledPosition);
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.assembledPosition = newPlayPos; p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
 
                 EditorGUI.BeginChangeCheck();
-                Vector3 playEuler = EditorGUILayout.Vector3Field("Play Rotation", p.playRotation.eulerAngles);
-                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.playRotation = Quaternion.Euler(playEuler); p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
+                Vector3 playEuler = EditorGUILayout.Vector3Field("Play Rotation", p.assembledRotation.eulerAngles);
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.assembledRotation = Quaternion.Euler(playEuler); p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
 
                 EditorGUI.BeginChangeCheck();
-                Vector3 newPlayScale = EditorGUILayout.Vector3Field("Play Scale", p.playScale);
-                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.playScale = newPlayScale; p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
+                Vector3 newPlayScale = EditorGUILayout.Vector3Field("Play Scale", p.assembledScale);
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.assembledScale = newPlayScale; p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
             }
             else
             {
@@ -3033,7 +3033,7 @@ namespace OSE.Editor
         private void DrawPartBatchPanel()
         {
             int count = _multiSelectedParts.Count;
-            string poseLabel = _editPlayPose ? "Play Pose" : "Start Pose";
+            string poseLabel = _editAssembledPose ? "Assembled Pose" : "Start Pose";
             EditorGUILayout.LabelField($"Batch edit — {count} parts  ({poseLabel})", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
                 "Values shown are from the primary (last-clicked) part.\n" +
@@ -3045,7 +3045,7 @@ namespace OSE.Editor
 
             // ── Position (absolute, per-axis) ────────────────────────────────
             EditorGUILayout.LabelField("Position (all selected)", EditorStyles.boldLabel);
-            Vector3 repPos = _editPlayPose ? rep.playPosition : rep.startPosition;
+            Vector3 repPos = _editAssembledPose ? rep.assembledPosition : rep.startPosition;
 
             EditorGUI.BeginChangeCheck();
             float batchX = EditorGUILayout.FloatField("X", repPos.x);
@@ -3054,7 +3054,7 @@ namespace OSE.Editor
                 foreach (int idx in _multiSelectedParts)
                 {
                     ref PartEditState p2 = ref _parts[idx];
-                    if (_editPlayPose) p2.playPosition.x  = batchX;
+                    if (_editAssembledPose) p2.assembledPosition.x  = batchX;
                     else               p2.startPosition.x = batchX;
                     p2.isDirty = true; SyncPartMeshToActivePose(ref p2);
                 }
@@ -3068,7 +3068,7 @@ namespace OSE.Editor
                 foreach (int idx in _multiSelectedParts)
                 {
                     ref PartEditState p2 = ref _parts[idx];
-                    if (_editPlayPose) p2.playPosition.y  = batchY;
+                    if (_editAssembledPose) p2.assembledPosition.y  = batchY;
                     else               p2.startPosition.y = batchY;
                     p2.isDirty = true; SyncPartMeshToActivePose(ref p2);
                 }
@@ -3082,7 +3082,7 @@ namespace OSE.Editor
                 foreach (int idx in _multiSelectedParts)
                 {
                     ref PartEditState p2 = ref _parts[idx];
-                    if (_editPlayPose) p2.playPosition.z  = batchZ;
+                    if (_editAssembledPose) p2.assembledPosition.z  = batchZ;
                     else               p2.startPosition.z = batchZ;
                     p2.isDirty = true; SyncPartMeshToActivePose(ref p2);
                 }
@@ -3092,7 +3092,7 @@ namespace OSE.Editor
 
             // ── Rotation (absolute) ──────────────────────────────────────────
             EditorGUILayout.LabelField("Rotation (all selected)", EditorStyles.boldLabel);
-            Quaternion repRot = _editPlayPose ? rep.playRotation : rep.startRotation;
+            Quaternion repRot = _editAssembledPose ? rep.assembledRotation : rep.startRotation;
             EditorGUI.BeginChangeCheck();
             Vector3 batchEuler = EditorGUILayout.Vector3Field("Euler", repRot.eulerAngles);
             if (EditorGUI.EndChangeCheck())
@@ -3101,7 +3101,7 @@ namespace OSE.Editor
                 foreach (int idx in _multiSelectedParts)
                 {
                     ref PartEditState p2 = ref _parts[idx];
-                    if (_editPlayPose) p2.playRotation  = batchRot;
+                    if (_editAssembledPose) p2.assembledRotation  = batchRot;
                     else               p2.startRotation = batchRot;
                     p2.isDirty = true; SyncPartMeshToActivePose(ref p2);
                 }
@@ -3111,7 +3111,7 @@ namespace OSE.Editor
 
             // ── Scale (absolute) ─────────────────────────────────────────────
             EditorGUILayout.LabelField("Scale (all selected)", EditorStyles.boldLabel);
-            Vector3 repScale = _editPlayPose ? rep.playScale : rep.startScale;
+            Vector3 repScale = _editAssembledPose ? rep.assembledScale : rep.startScale;
             EditorGUI.BeginChangeCheck();
             Vector3 batchScale = EditorGUILayout.Vector3Field("Scale", repScale);
             if (EditorGUI.EndChangeCheck())
@@ -3119,7 +3119,7 @@ namespace OSE.Editor
                 foreach (int idx in _multiSelectedParts)
                 {
                     ref PartEditState p2 = ref _parts[idx];
-                    if (_editPlayPose) p2.playScale  = batchScale;
+                    if (_editAssembledPose) p2.assembledScale  = batchScale;
                     else               p2.startScale = batchScale;
                     p2.isDirty = true; SyncPartMeshToActivePose(ref p2);
                 }
@@ -3136,7 +3136,7 @@ namespace OSE.Editor
                 foreach (int idx in _multiSelectedParts)
                 {
                     ref PartEditState p2 = ref _parts[idx];
-                    if (_editPlayPose) p2.playPosition.x  += dx;
+                    if (_editAssembledPose) p2.assembledPosition.x  += dx;
                     else               p2.startPosition.x += dx;
                     p2.isDirty = true; SyncPartMeshToActivePose(ref p2);
                 }
@@ -3150,7 +3150,7 @@ namespace OSE.Editor
                 foreach (int idx in _multiSelectedParts)
                 {
                     ref PartEditState p2 = ref _parts[idx];
-                    if (_editPlayPose) p2.playPosition.y  += dy;
+                    if (_editAssembledPose) p2.assembledPosition.y  += dy;
                     else               p2.startPosition.y += dy;
                     p2.isDirty = true; SyncPartMeshToActivePose(ref p2);
                 }
@@ -3164,7 +3164,7 @@ namespace OSE.Editor
                 foreach (int idx in _multiSelectedParts)
                 {
                     ref PartEditState p2 = ref _parts[idx];
-                    if (_editPlayPose) p2.playPosition.z  += dz;
+                    if (_editAssembledPose) p2.assembledPosition.z  += dz;
                     else               p2.startPosition.z += dz;
                     p2.isDirty = true; SyncPartMeshToActivePose(ref p2);
                 }
@@ -3206,14 +3206,14 @@ namespace OSE.Editor
                     startPosition = hasP ? PackageJsonUtils.ToVector3(pp.startPosition) : Vector3.zero,
                     startRotation = hasP ? PackageJsonUtils.ToUnityQuaternion(pp.startRotation) : Quaternion.identity,
                     startScale    = hasP ? PackageJsonUtils.ToVector3(pp.startScale)    : Vector3.one,
-                    playPosition  = hasP ? PackageJsonUtils.ToVector3(pp.playPosition)  : Vector3.zero,
-                    playRotation  = hasP ? PackageJsonUtils.ToUnityQuaternion(pp.playRotation) : Quaternion.identity,
-                    playScale     = hasP ? PackageJsonUtils.ToVector3(pp.playScale)     : Vector3.one,
+                    assembledPosition  = hasP ? PackageJsonUtils.ToVector3(pp.assembledPosition)  : Vector3.zero,
+                    assembledRotation  = hasP ? PackageJsonUtils.ToUnityQuaternion(pp.assembledRotation) : Quaternion.identity,
+                    assembledScale     = hasP ? PackageJsonUtils.ToVector3(pp.assembledScale)     : Vector3.one,
                     color         = hasP ? new Color(pp.color.r, pp.color.g, pp.color.b, pp.color.a) : ColAuthored,
                     isDirty       = false,
                 };
                 if (state.startScale.sqrMagnitude < 0.00001f) state.startScale = Vector3.one;
-                if (state.playScale.sqrMagnitude  < 0.00001f) state.playScale  = Vector3.one;
+                if (state.assembledScale.sqrMagnitude  < 0.00001f) state.assembledScale  = Vector3.one;
                 list.Add(state);
             }
 
@@ -3252,12 +3252,12 @@ namespace OSE.Editor
         /// step-filter context cached by the last <see cref="RespawnScene"/> call.
         ///
         /// When a step is selected:
-        ///   - Past parts  → always playPosition  (already assembled)
-        ///   - Current part → startPosition unless <c>_editPlayPose</c> or part is a
+        ///   - Past parts  → always assembledPosition  (already assembled)
+        ///   - Current part → startPosition unless <c>_editAssembledPose</c> or part is a
         ///                    subassembly member (which arrives pre-assembled)
         ///   - Future parts → caller should skip; returns false
         ///
-        /// When no step selected (All Steps mode): always obeys <c>_editPlayPose</c>.
+        /// When no step selected (All Steps mode): always obeys <c>_editAssembledPose</c>.
         /// </summary>
         private bool TryGetStepAwarePose(ref PartEditState p,
             out Vector3 pos, out Quaternion rot, out Vector3 scl)
@@ -3278,17 +3278,17 @@ namespace OSE.Editor
                 bool useStart = inMap
                     && placedAt == _sceneBuildCurrentSeq
                     && !_sceneBuildCurrentSubassembly.Contains(pid)
-                    && !_editPlayPose;
+                    && !_editAssembledPose;
 
-                pos = useStart ? p.startPosition : p.playPosition;
-                rot = useStart ? p.startRotation  : p.playRotation;
-                scl = useStart ? p.startScale     : p.playScale;
+                pos = useStart ? p.startPosition : p.assembledPosition;
+                rot = useStart ? p.startRotation  : p.assembledRotation;
+                scl = useStart ? p.startScale     : p.assembledScale;
             }
             else
             {
-                pos = _editPlayPose ? p.playPosition : p.startPosition;
-                rot = _editPlayPose ? p.playRotation  : p.startRotation;
-                scl = _editPlayPose ? p.playScale     : p.startScale;
+                pos = _editAssembledPose ? p.assembledPosition : p.startPosition;
+                rot = _editAssembledPose ? p.assembledRotation  : p.startRotation;
+                scl = _editAssembledPose ? p.assembledScale     : p.startScale;
             }
 
             if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
@@ -3340,9 +3340,9 @@ namespace OSE.Editor
             startPosition = p.startPosition,
             startRotation = p.startRotation,
             startScale    = p.startScale,
-            playPosition  = p.playPosition,
-            playRotation  = p.playRotation,
-            playScale     = p.playScale,
+            assembledPosition  = p.assembledPosition,
+            assembledRotation  = p.assembledRotation,
+            assembledScale     = p.assembledScale,
         };
 
         private void BeginPartEdit(int forIdx)
@@ -3386,9 +3386,9 @@ namespace OSE.Editor
             p.startPosition = s.startPosition;
             p.startRotation = s.startRotation;
             p.startScale    = s.startScale;
-            p.playPosition  = s.playPosition;
-            p.playRotation  = s.playRotation;
-            p.playScale     = s.playScale;
+            p.assembledPosition  = s.assembledPosition;
+            p.assembledRotation  = s.assembledRotation;
+            p.assembledScale     = s.assembledScale;
             p.isDirty            = true;
             _snapshotPendingPart = false;
             SyncPartMeshToActivePose(ref p);
@@ -3470,7 +3470,7 @@ namespace OSE.Editor
                     var liveGO = FindLivePartGO(p.def.id);
                     Vector3 worldPos = liveGO != null
                         ? liveGO.transform.position
-                        : root.TransformPoint(_editPlayPose ? p.playPosition : p.startPosition);
+                        : root.TransformPoint(_editAssembledPose ? p.assembledPosition : p.startPosition);
                     float size = HandleUtility.GetHandleSize(worldPos) * 0.08f;
 
                     bool isSelected = i == _selectedPartIdx
@@ -3511,7 +3511,7 @@ namespace OSE.Editor
                         if (posChg || rotChg)
                         {
                             BeginPartEdit(_selectedPartIdx);
-                            if (_editPlayPose) { pp.playPosition = goPos;  pp.playRotation = goRot; }
+                            if (_editAssembledPose) { pp.assembledPosition = goPos;  pp.assembledRotation = goRot; }
                             else               { pp.startPosition = goPos; pp.startRotation = goRot; }
                             pp.isDirty = true;
                             EndPartEdit();
@@ -3542,10 +3542,10 @@ namespace OSE.Editor
             if (EditorGUI.EndChangeCheck() && !poseCooldownActive && (newWorldPos - selWorldPos).sqrMagnitude > 1e-10f)
             {
                 BeginPartEdit(_selectedPartIdx);
-                Vector3 oldLocalPos = _editPlayPose ? sel.playPosition : sel.startPosition;
+                Vector3 oldLocalPos = _editAssembledPose ? sel.assembledPosition : sel.startPosition;
                 selectedGO.transform.position = newWorldPos;
                 Vector3 newLocalPos = selectedGO.transform.localPosition;
-                if (_editPlayPose) sel.playPosition  = newLocalPos;
+                if (_editAssembledPose) sel.assembledPosition  = newLocalPos;
                 else               sel.startPosition = newLocalPos;
                 sel.isDirty = true;
 
@@ -3557,9 +3557,9 @@ namespace OSE.Editor
                     {
                         if (midx == _selectedPartIdx || midx < 0 || midx >= _parts.Length) continue;
                         ref PartEditState mp = ref _parts[midx];
-                        Vector3 cur = _editPlayPose ? mp.playPosition : mp.startPosition;
+                        Vector3 cur = _editAssembledPose ? mp.assembledPosition : mp.startPosition;
                         cur += delta;
-                        if (_editPlayPose) mp.playPosition  = cur;
+                        if (_editAssembledPose) mp.assembledPosition  = cur;
                         else               mp.startPosition = cur;
                         mp.isDirty = true;
                         var otherGO = FindLivePartGO(mp.def.id);
@@ -3580,14 +3580,14 @@ namespace OSE.Editor
                 {
                     _rotDragActivePart      = true;
                     _rotDragStartHandlePart = rotOrientation;
-                    _rotDragStartLocalPart  = _editPlayPose ? sel.playRotation : sel.startRotation;
+                    _rotDragStartLocalPart  = _editAssembledPose ? sel.assembledRotation : sel.startRotation;
                 }
                 Quaternion rootRot     = root.rotation;
                 Quaternion worldDelta  = newWorldRot * Quaternion.Inverse(_rotDragStartHandlePart);
                 Quaternion newLocalRot = Quaternion.Inverse(rootRot) * (worldDelta * (rootRot * _rotDragStartLocalPart));
 
                 selectedGO.transform.localRotation = newLocalRot;
-                if (_editPlayPose) sel.playRotation  = newLocalRot;
+                if (_editAssembledPose) sel.assembledRotation  = newLocalRot;
                 else               sel.startRotation = newLocalRot;
                 sel.isDirty = true;
 
@@ -3597,7 +3597,7 @@ namespace OSE.Editor
                     {
                         if (midx == _selectedPartIdx || midx < 0 || midx >= _parts.Length) continue;
                         ref PartEditState mp = ref _parts[midx];
-                        if (_editPlayPose) mp.playRotation  = newLocalRot;
+                        if (_editAssembledPose) mp.assembledRotation  = newLocalRot;
                         else               mp.startRotation = newLocalRot;
                         mp.isDirty = true;
                         var otherGO = FindLivePartGO(mp.def.id);
@@ -4207,13 +4207,13 @@ namespace OSE.Editor
                 TargetPreviewPlacement placement = FindPlacement(def.id);
                 bool hasP = placement != null;
 
-                // For unplaced targets, default position to the associated part's playPosition
+                // For unplaced targets, default position to the associated part's assembledPosition
                 // so they appear ON the part in the SceneView rather than at world origin.
                 Vector3 defaultPos = Vector3.zero;
                 if (!hasP && !string.IsNullOrEmpty(def.associatedPartId))
                 {
                     var pp = FindPartPlacement(def.associatedPartId);
-                    if (pp != null) defaultPos = PackageJsonUtils.ToVector3(pp.playPosition);
+                    if (pp != null) defaultPos = PackageJsonUtils.ToVector3(pp.assembledPosition);
                 }
 
                 // Port positions: target placement first, then wire entry fallback.
@@ -4944,9 +4944,9 @@ namespace OSE.Editor
                     entry.startPosition = PackageJsonUtils.ToFloat3(p.startPosition);
                     entry.startRotation = PackageJsonUtils.ToQuaternion(p.startRotation);
                     entry.startScale    = PackageJsonUtils.ToFloat3(p.startScale);
-                    entry.playPosition  = PackageJsonUtils.ToFloat3(p.playPosition);
-                    entry.playRotation  = PackageJsonUtils.ToQuaternion(p.playRotation);
-                    entry.playScale     = PackageJsonUtils.ToFloat3(p.playScale);
+                    entry.assembledPosition  = PackageJsonUtils.ToFloat3(p.assembledPosition);
+                    entry.assembledRotation  = PackageJsonUtils.ToQuaternion(p.assembledRotation);
+                    entry.assembledScale     = PackageJsonUtils.ToFloat3(p.assembledScale);
                     entry.color = new SceneFloat4 { r = p.color.r, g = p.color.g, b = p.color.b, a = p.color.a };
                     if (pidx >= 0) pp[pidx] = entry; else pp.Add(entry);
                 }

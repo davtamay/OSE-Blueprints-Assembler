@@ -104,7 +104,7 @@ namespace OSE.Editor
 
             // Individual part/tool GLBs in assets/parts/ or assets/tools/ are NOT layout scenes.
             // Their transforms are authored externally (FreeCAD export, manual). Skip them so
-            // we don't overwrite hand-computed playPositions with the node's identity transform.
+            // we don't overwrite hand-computed assembledPositions with the node's identity transform.
             string relLower = rel.Replace('\\', '/').ToLowerInvariant();
             if (relLower.Contains("/assets/parts/") || relLower.Contains("/assets/tools/"))
                 return;
@@ -118,7 +118,7 @@ namespace OSE.Editor
 
             bool modified = false;
 
-            // ── Parts: assembled transforms go into playPosition/playRotation/playScale
+            // ── Parts: assembled transforms go into assembledPosition/assembledRotation/assembledScale
             if (pkg.previewConfig.partPlacements != null)
             {
                 foreach (var placement in pkg.previewConfig.partPlacements)
@@ -126,9 +126,9 @@ namespace OSE.Editor
                     Transform node = FindNode(root.transform, placement.partId);
                     if (node == null) continue;
 
-                    placement.playPosition = ToFloat3(node.localPosition);
-                    placement.playRotation = ToQuaternion(node.localRotation);
-                    placement.playScale    = ToFloat3(node.localScale);
+                    placement.assembledPosition = ToFloat3(node.localPosition);
+                    placement.assembledRotation = ToQuaternion(node.localRotation);
+                    placement.assembledScale    = ToFloat3(node.localScale);
                     modified = true;
                     OseLog.Info(
                         $"[PackageAssetPostprocessor] '{packageId}' — updated play transform for part '{placement.partId}' from {Path.GetFileName(modelPath)}");

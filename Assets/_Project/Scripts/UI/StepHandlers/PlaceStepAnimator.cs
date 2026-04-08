@@ -132,9 +132,9 @@ namespace OSE.UI.Root
             }
             else if (pp != null)
             {
-                pos = new Vector3(pp.playPosition.x, pp.playPosition.y, pp.playPosition.z);
-                rot = !pp.playRotation.IsIdentity
-                    ? new Quaternion(pp.playRotation.x, pp.playRotation.y, pp.playRotation.z, pp.playRotation.w)
+                pos = new Vector3(pp.assembledPosition.x, pp.assembledPosition.y, pp.assembledPosition.z);
+                rot = !pp.assembledRotation.IsIdentity
+                    ? new Quaternion(pp.assembledRotation.x, pp.assembledRotation.y, pp.assembledRotation.z, pp.assembledRotation.w)
                     : Quaternion.identity;
             }
             else
@@ -144,7 +144,7 @@ namespace OSE.UI.Root
             }
 
             if (pp != null)
-                scale = new Vector3(pp.playScale.x, pp.playScale.y, pp.playScale.z);
+                scale = new Vector3(pp.assembledScale.x, pp.assembledScale.y, pp.assembledScale.z);
             else if (tp != null)
                 scale = new Vector3(tp.scale.x, tp.scale.y, tp.scale.z);
             else

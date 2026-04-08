@@ -25,17 +25,17 @@ for tp in tps:
     if not pp:
         continue
     tp_pos = (round(tp['position']['x'], 4), round(tp['position']['y'], 4), round(tp['position']['z'], 4))
-    pp_pos = (round(pp['playPosition']['x'], 4), round(pp['playPosition']['y'], 4), round(pp['playPosition']['z'], 4))
+    pp_pos = (round(pp['assembledPosition']['x'], 4), round(pp['assembledPosition']['y'], 4), round(pp['assembledPosition']['z'], 4))
 
     tp_rot = (round(tp.get('rotation', {}).get('x', 0), 4), round(tp.get('rotation', {}).get('y', 0), 4),
               round(tp.get('rotation', {}).get('z', 0), 4), round(tp.get('rotation', {}).get('w', 1), 4))
-    pp_rot = (round(pp.get('playRotation', {}).get('x', 0), 4), round(pp.get('playRotation', {}).get('y', 0), 4),
-              round(pp.get('playRotation', {}).get('z', 0), 4), round(pp.get('playRotation', {}).get('w', 1), 4))
+    pp_rot = (round(pp.get('assembledRotation', {}).get('x', 0), 4), round(pp.get('assembledRotation', {}).get('y', 0), 4),
+              round(pp.get('assembledRotation', {}).get('z', 0), 4), round(pp.get('assembledRotation', {}).get('w', 1), 4))
 
     tp_scl = (round(tp.get('scale', {}).get('x', 1), 4), round(tp.get('scale', {}).get('y', 1), 4),
               round(tp.get('scale', {}).get('z', 1), 4))
-    pp_scl = (round(pp.get('playScale', {}).get('x', 1), 4), round(pp.get('playScale', {}).get('y', 1), 4),
-              round(pp.get('playScale', {}).get('z', 1), 4))
+    pp_scl = (round(pp.get('assembledScale', {}).get('x', 1), 4), round(pp.get('assembledScale', {}).get('y', 1), 4),
+              round(pp.get('assembledScale', {}).get('z', 1), 4))
 
     diffs = []
     if tp_pos != pp_pos:

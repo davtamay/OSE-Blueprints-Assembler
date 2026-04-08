@@ -109,10 +109,10 @@ def main():
 
     for pp in data["previewConfig"]["partPlacements"]:
         if pp["partId"] in ("y_left_carriage_half_a", "y_right_carriage_half_a"):
-            pp["playRotation"] = pockets_up.copy()
+            pp["assembledRotation"] = pockets_up.copy()
             print(f"ROTATE {pp['partId']} pockets-up")
         if pp["partId"] in ("y_left_carriage_half_b", "y_right_carriage_half_b"):
-            pp["playRotation"] = pockets_down.copy()
+            pp["assembledRotation"] = pockets_down.copy()
             print(f"ROTATE {pp['partId']} pockets-down (clamp side)")
 
     # ----------------------------------------------------------------
@@ -147,8 +147,8 @@ def main():
         }
         for pp in data["previewConfig"]["partPlacements"]:
             if pp["partId"] == pid:
-                pp["playPosition"] = pos.copy()
-                pp["playRotation"] = bearing_rot.copy()
+                pp["assembledPosition"] = pos.copy()
+                pp["assembledRotation"] = bearing_rot.copy()
         for tp in data["previewConfig"]["targetPlacements"]:
             if tp["targetId"] == tid:
                 tp["position"] = pos.copy()
@@ -193,9 +193,9 @@ def main():
                 "startRotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0},
                 "startScale": {"x": 1.0, "y": 1.0, "z": 1.0},
                 "color": {"r": 0.7, "g": 0.7, "b": 0.7, "a": 1.0},
-                "playPosition": pos.copy(),
-                "playRotation": bearing_rot.copy(),
-                "playScale": {"x": 1.0, "y": 1.0, "z": 1.0},
+                "assembledPosition": pos.copy(),
+                "assembledRotation": bearing_rot.copy(),
+                "assembledScale": {"x": 1.0, "y": 1.0, "z": 1.0},
                 "splinePath": {
                     "radius": 0.0, "segments": 8, "metallic": 0.0, "smoothness": 0.0,
                     "color": {"r": 0.0, "g": 0.0, "b": 0.0, "a": 0.0}, "knots": [],
@@ -205,8 +205,8 @@ def main():
         else:
             for pp in data["previewConfig"]["partPlacements"]:
                 if pp["partId"] == pid:
-                    pp["playPosition"] = pos.copy()
-                    pp["playRotation"] = bearing_rot.copy()
+                    pp["assembledPosition"] = pos.copy()
+                    pp["assembledRotation"] = bearing_rot.copy()
 
         # Target definition
         if tid not in existing_target_ids:

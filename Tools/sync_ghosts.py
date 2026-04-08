@@ -1,5 +1,5 @@
 """
-Sync targetPlacements to match their associated part's playPosition/playRotation/playScale.
+Sync targetPlacements to match their associated part's assembledPosition/assembledRotation/assembledScale.
 This eliminates the stale data that caused ghost vs placement discrepancies.
 """
 import json
@@ -27,12 +27,12 @@ for tp in tps:
     if not pp:
         continue
 
-    # Sync position from playPosition
-    tp["position"] = dict(pp["playPosition"])
-    # Sync rotation from playRotation
-    tp["rotation"] = dict(pp["playRotation"])
-    # Sync scale from playScale
-    tp["scale"] = dict(pp["playScale"])
+    # Sync position from assembledPosition
+    tp["position"] = dict(pp["assembledPosition"])
+    # Sync rotation from assembledRotation
+    tp["rotation"] = dict(pp["assembledRotation"])
+    # Sync scale from assembledScale
+    tp["scale"] = dict(pp["assembledScale"])
 
     synced += 1
     print(f"  synced {tid} <- {pid}")
@@ -40,4 +40,4 @@ for tp in tps:
 with open(JSON_PATH, "w", encoding="utf-8") as f:
     json.dump(data, f, indent=2, ensure_ascii=False)
 
-print(f"\nSynced {synced} targetPlacements to match playPosition")
+print(f"\nSynced {synced} targetPlacements to match assembledPosition")

@@ -275,11 +275,11 @@ namespace OSE.UI.Root
                 PartPreviewPlacement partPlacement = _ctx.Spawner.FindPartPlacement(targetDef.associatedPartId);
                 if (partPlacement != null)
                 {
-                    position = new Vector3(partPlacement.playPosition.x, partPlacement.playPosition.y, partPlacement.playPosition.z);
-                    rotation = !partPlacement.playRotation.IsIdentity
-                        ? new Quaternion(partPlacement.playRotation.x, partPlacement.playRotation.y, partPlacement.playRotation.z, partPlacement.playRotation.w)
+                    position = new Vector3(partPlacement.assembledPosition.x, partPlacement.assembledPosition.y, partPlacement.assembledPosition.z);
+                    rotation = !partPlacement.assembledRotation.IsIdentity
+                        ? new Quaternion(partPlacement.assembledRotation.x, partPlacement.assembledRotation.y, partPlacement.assembledRotation.z, partPlacement.assembledRotation.w)
                         : Quaternion.identity;
-                    scale = new Vector3(partPlacement.playScale.x, partPlacement.playScale.y, partPlacement.playScale.z);
+                    scale = new Vector3(partPlacement.assembledScale.x, partPlacement.assembledScale.y, partPlacement.assembledScale.z);
                     return true;
                 }
             }

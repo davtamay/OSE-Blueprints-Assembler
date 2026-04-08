@@ -7,7 +7,7 @@ print('=== PART PLACEMENTS ===')
 for pp in pc.get('partPlacements', []):
     pid = pp.get('partId','')
     if any(x in pid for x in parts_of_interest):
-        pos = pp.get('playPosition', {})
+        pos = pp.get('assembledPosition', {})
         x,y,z = pos.get('x',0), pos.get('y',0), pos.get('z',0)
         print(f"  {pid}: ({x:.3f}, {y:.3f}, {z:.3f})")
 

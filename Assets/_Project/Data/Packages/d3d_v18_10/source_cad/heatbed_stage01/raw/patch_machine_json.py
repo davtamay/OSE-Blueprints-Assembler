@@ -136,8 +136,8 @@ def load_part_positions():
 
 def set_pos_rot(entry, pos, rot):
     """Update position and rotation fields on a placement entry."""
-    entry["playPosition"] = {"x": r4(pos[0]), "y": r4(pos[1]), "z": r4(pos[2])}
-    entry["playRotation"] = {"x": r4(rot[0]), "y": r4(rot[1]), "z": r4(rot[2]), "w": r4(rot[3])}
+    entry["assembledPosition"] = {"x": r4(pos[0]), "y": r4(pos[1]), "z": r4(pos[2])}
+    entry["assembledRotation"] = {"x": r4(rot[0]), "y": r4(rot[1]), "z": r4(rot[2]), "w": r4(rot[3])}
 
 
 def set_target_pos_rot(entry, pos, rot):
@@ -171,7 +171,7 @@ def main():
     part_placement_map = {p["partId"]: p for p in part_placements}
     target_placement_map = {t["targetId"]: t for t in target_placements}
 
-    # --- Update frame bar playPositions ---
+    # --- Update frame bar assembledPositions ---
     bars_updated = 0
     bars_missing = []
     for part_id, (pos, rot) in FRAME_BAR_POSITIONS.items():
@@ -197,7 +197,7 @@ def main():
 
     print(f"  Bar target placements updated: {bar_targets_updated}")
 
-    # --- Update 9 non-frame part playPositions ---
+    # --- Update 9 non-frame part assembledPositions ---
     parts_updated = 0
     parts_missing = []
     for part_id, (pos, rot) in part_positions.items():

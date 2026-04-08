@@ -304,7 +304,7 @@ What is now implemented:
 - **PlacementValidator** added — implements `IPlacementValidator`, validates position and rotation against tolerance values from `ValidationRuleDefinition`. Converts mm tolerance to Unity units. Also provides `ValidateExact()` for context-menu placement.
 - **PartStateChanged** and **PlacementAttempted** runtime events added to `RuntimeEventBus`. All part state transitions and placement attempts are published for decoupled consumption.
 - **MachineSessionController** now initializes and disposes `PartRuntimeController` alongside session lifecycle.
-- **Ghost parts**: When a step activates, `PartInteractionBridge` spawns transparent copies of the part mesh (same `assetRef`, ghost material applied via `MaterialHelper.ApplyGhost`) at target positions. Ghost position comes from `previewConfig.partPlacements[].playPosition` or `targetPlacements[]`. Ghosts are cleared when the step completes.
+- **Ghost parts**: When a step activates, `PartInteractionBridge` spawns transparent copies of the part mesh (same `assetRef`, ghost material applied via `MaterialHelper.ApplyGhost`) at target positions. Ghost position comes from `previewConfig.partPlacements[].assembledPosition` or `targetPlacements[]`. Ghosts are cleared when the step completes.
 - **Click-to-select**: In play mode, mouse click raycasts through the camera. If a spawned part is hit, `PartRuntimeController.SelectPart` is called. Selected parts turn yellow; completed parts turn green.
 - **Part info driven by runtime state**: Both `SessionDriver` and the harness subscribe to `PartStateChanged`. When a part is Selected or Inspected, part info (name, function, material, tools, search terms) is pushed to the UI panels via `IPresentationAdapter.ShowPartInfoShell`.
 - **"Place Selected Part at Target"** context menu on the harness: validates the placement (exact for context menu), moves the part to its play position, and completes the active step.
@@ -338,7 +338,7 @@ Ghost parts now reuse the same `assetRef` mesh with a transparent material appli
 - **Unified pointer input**: `TryGetPointerState()` abstracts `Mouse.current` and `Touchscreen.current` into a single pressed/released/position interface. Both input sources follow the same code path.
 - **Drag state machine**: pointer-down on a part selects it and prepares for drag. If pointer moves more than 5 pixels, `PartRuntimeController.GrabPart()` is called and the part follows the pointer on its camera-distance plane. On pointer-up, placement is validated.
 - **Tolerance-based validation**: `ResolveTolerances()` looks up the active step's `validationRuleIds`, finds the rule matching the target, and reads `positionToleranceMm` / `rotationToleranceDeg`. Falls back to 50mm / 30° if no rule is found.
-- **PlacementValidationRequest**: built with the part's current local position/rotation vs the expected target position from `previewConfig.partPlacements[].playPosition`.
+- **PlacementValidationRequest**: built with the part's current local position/rotation vs the expected target position from `previewConfig.partPlacements[].assembledPosition`.
 - **Snap animation**: valid placements lerp to exact target position/rotation/scale over multiple frames using `SnapLerpSpeed = 12`.
 - **Invalid flash**: invalid placements flash red for 0.3 seconds, then the part stays where dropped and is deselected.
 - **Visual feedback colors**: Selected = yellow (1.0, 0.85, 0.2), Grabbed = orange (1.0, 0.65, 0.1), Completed = green (0.3, 0.9, 0.4), Invalid flash = red (1.0, 0.2, 0.2).

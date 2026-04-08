@@ -1,6 +1,6 @@
 """
-compute_play_position.py
-Converts a FreeCAD D3D assembly-space anchor (mm) into a Unity playPosition (m).
+compute_assembled_position.py
+Converts a FreeCAD D3D assembly-space anchor (mm) into a Unity assembledPosition (m).
 
 The D3D assembly reference frame (calibrated from D3Dfinalassemblyv1902.fcstd):
   - Frame placed at FreeCAD origin (0, 0, 0).  Bbox 0-304.8 mm (12-inch cube).
@@ -20,19 +20,19 @@ Anchor rules per center_mode:
 Usage examples
 --------------
   # Compute from a blender report + known assembly anchor:
-  python3 compute_play_position.py \\
+  python3 compute_assembled_position.py \\
       --part-id d3d_control_panel \\
       --blender-report ../electronics_stage01/exported/reports/d3d_control_panel_blender.json \\
       --assembly-x 382.8 --assembly-y 152.4 --assembly-z 0.0
 
   # Add to an existing placements.json:
-  python3 compute_play_position.py ... --output ../electronics_stage01/placements.json
+  python3 compute_assembled_position.py ... --output ../electronics_stage01/placements.json
 
   # Batch mode from a JSON components file:
-  python3 compute_play_position.py --batch components.json --output placements.json
+  python3 compute_assembled_position.py --batch components.json --output placements.json
 
   # Verify against a known part (motor001, assembly center 147.1, -68.1, 310.6):
-  python3 compute_play_position.py \\
+  python3 compute_assembled_position.py \\
       --part-id motor001 \\
       --assembly-x 147.1 --assembly-y -68.1 --assembly-z 310.6 \\
       --center-mode center
@@ -84,7 +84,7 @@ def compute_single(
     start_offset_m: float = 1.5,
 ) -> dict:
     """
-    Compute playPosition for one part.
+    Compute assembledPosition for one part.
 
     If blender_report is provided, center_mode is read from it.
     The anchor (assembly_x/y/z) should be:
@@ -106,8 +106,8 @@ def compute_single(
         "partId": part_id,
         "center_mode": center_mode,
         "assembly_anchor_mm": {"x": assembly_x, "y": assembly_y, "z": assembly_z},
-        "playPosition":  play_pos,
-        "playRotation":  {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0},
+        "assembledPosition":  play_pos,
+        "assembledRotation":  {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0},
         "startPosition": start_pos,
     }
 
@@ -179,7 +179,7 @@ def process_batch(batch_path: str, output_path: str, start_offset_m: float) -> N
             start_offset_m=start_offset_m,
         )
         results.append(entry)
-        print(f"  {c['part_id']:35s} playPos=({entry['playPosition']['x']:.4f}, {entry['playPosition']['y']:.4f}, {entry['playPosition']['z']:.4f})")
+        print(f"  {c['part_id']:35s} playPos=({entry['assembledPosition']['x']:.4f}, {entry['assembledPosition']['y']:.4f}, {entry['assembledPosition']['z']:.4f})")
 
     if output_path:
         # For batch we replace the whole file
@@ -193,7 +193,7 @@ def process_batch(batch_path: str, output_path: str, start_offset_m: float) -> N
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Convert FreeCAD assembly-space anchor to Unity playPosition.",
+        description="Convert FreeCAD assembly-space anchor to Unity assembledPosition.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
@@ -213,7 +213,7 @@ def main() -> None:
     # Output
     parser.add_argument("--output", help="Path to placements.json to write/update")
     parser.add_argument("--start-offset", type=float, default=1.5,
-                        help="X offset (m) for startPosition relative to playPosition (default: 1.5)")
+                        help="X offset (m) for startPosition relative to assembledPosition (default: 1.5)")
 
     # Calibration override
     parser.add_argument("--frame-center-mm", type=float, default=FRAME_CENTER_MM,

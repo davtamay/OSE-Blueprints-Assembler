@@ -191,7 +191,7 @@ Every imported replacement should pass all of these:
 
 3. origin and orientation checked
 - upright orientation consistent with current package conventions
-- placement origin suitable for authored `playPosition` / `targetPlacement`
+- placement origin suitable for authored `assembledPosition` / `targetPlacement`
 
 4. fit checked
 - imported mesh does not force changes to authored relationships without a reason

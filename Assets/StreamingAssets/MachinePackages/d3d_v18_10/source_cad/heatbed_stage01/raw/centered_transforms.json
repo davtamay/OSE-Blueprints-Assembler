@@ -1,11 +1,11 @@
 {
   "d3d_heatbed_body": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.016,
       "y": 0.6467,
       "z": 0.0218
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -19,12 +19,12 @@
     }
   },
   "d3d_heatbed_snapbuckle_left": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0073,
       "y": 0.5973,
       "z": 0.1627
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -38,12 +38,12 @@
     }
   },
   "d3d_heatbed_snapbuckle_right": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0073,
       "y": 0.5975,
       "z": -0.1638
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -57,12 +57,12 @@
     }
   },
   "d3d_titan_aero_core": {
-    "playPosition": {
+    "assembledPosition": {
       "x": -0.1013,
       "y": 0.8999,
       "z": 0.0499
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -76,12 +76,12 @@
     }
   },
   "d3d_extruder_simplified_carriage": {
-    "playPosition": {
+    "assembledPosition": {
       "x": -0.0899,
       "y": 0.8773,
       "z": 0.006
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -95,12 +95,12 @@
     }
   },
   "d3d_y_left_axis_unit": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.1644,
       "y": 0.8223,
       "z": -0.1985
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -114,12 +114,12 @@
     }
   },
   "d3d_y_right_axis_unit": {
-    "playPosition": {
+    "assembledPosition": {
       "x": -0.1652,
       "y": 0.8189,
       "z": -0.1985
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -133,12 +133,12 @@
     }
   },
   "d3d_x_axis_motor_holder_unit": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.2072,
       "y": 0.8775,
       "z": 0.0059
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -152,12 +152,12 @@
     }
   },
   "d3d_x_axis_idler_unit": {
-    "playPosition": {
+    "assembledPosition": {
       "x": -0.1579,
       "y": 0.8773,
       "z": 0.0062
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,

@@ -126,7 +126,7 @@ namespace OSE.UI.Root
         /// <summary>
         /// Repositions existing spawned parts for step-aware preview in edit mode.
         /// Parts from steps before <paramref name="targetSequenceIndex"/> are shown
-        /// at their playPosition; the current step's part at startPosition; future
+        /// at their assembledPosition; the current step's part at startPosition; future
         /// parts are hidden. Pass 0 to show all parts at startPosition (All Steps mode).
         /// </summary>
         public void ApplyStepAwarePositions(int targetSequenceIndex, MachinePackageDefinition pkg)
@@ -149,7 +149,7 @@ namespace OSE.UI.Root
 
             // Build partId → earliest sequenceIndex map from step definitions.
             // Also track which parts belong to any subassembly — they are pre-assembled
-            // before their step and always use playPosition regardless of current step.
+            // before their step and always use assembledPosition regardless of current step.
             var partStepSeq      = new Dictionary<string, int>(System.StringComparer.Ordinal);
             var subassemblyParts = new HashSet<string>(System.StringComparer.Ordinal);
             var orderedSteps     = pkg.GetOrderedSteps();
@@ -178,7 +178,7 @@ namespace OSE.UI.Root
             }
 
             // "Fully Assembled" mode: targetSequenceIndex past the last step means
-            // show every assigned part at its playPosition (same as runtime final view).
+            // show every assigned part at its assembledPosition (same as runtime final view).
             int lastStepSeq = orderedSteps.Length > 0
                 ? orderedSteps[orderedSteps.Length - 1].sequenceIndex
                 : 0;
@@ -187,7 +187,7 @@ namespace OSE.UI.Root
             // Build the set of subassembly IDs whose stacking step is completed
             // (sequenceIndex < targetSequenceIndex).  Only these subassemblies have
             // their members placed at integrated (cube) positions; members whose
-            // stacking step hasn't happened yet stay at their fabrication playPosition.
+            // stacking step hasn't happened yet stay at their fabrication assembledPosition.
             var stackedSubassemblyIds = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
             foreach (var step in orderedSteps)
             {
@@ -273,7 +273,7 @@ namespace OSE.UI.Root
                 {
                     partGo.SetActive(true);
                     // Subassembly members are pre-assembled before their step — no
-                    // meaningful individual startPosition, always use playPosition.
+                    // meaningful individual startPosition, always use assembledPosition.
                     bool usePlay = fullyAssembled || partSeq < targetSequenceIndex || subassemblyParts.Contains(partGo.name);
 
                     Vector3 pos;
@@ -293,11 +293,11 @@ namespace OSE.UI.Root
                     }
                     else if (usePlay)
                     {
-                        pos = new Vector3(pp.playPosition.x, pp.playPosition.y, pp.playPosition.z);
-                        rot = !pp.playRotation.IsIdentity
-                            ? new Quaternion(pp.playRotation.x, pp.playRotation.y, pp.playRotation.z, pp.playRotation.w)
+                        pos = new Vector3(pp.assembledPosition.x, pp.assembledPosition.y, pp.assembledPosition.z);
+                        rot = !pp.assembledRotation.IsIdentity
+                            ? new Quaternion(pp.assembledRotation.x, pp.assembledRotation.y, pp.assembledRotation.z, pp.assembledRotation.w)
                             : Quaternion.identity;
-                        scl = new Vector3(pp.playScale.x, pp.playScale.y, pp.playScale.z);
+                        scl = new Vector3(pp.assembledScale.x, pp.assembledScale.y, pp.assembledScale.z);
                     }
                     else
                     {
@@ -308,9 +308,9 @@ namespace OSE.UI.Root
                         scl = new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z);
                     }
 
-                    // Fall back to playScale when startScale is zero
+                    // Fall back to assembledScale when startScale is zero
                     if (!usePlay && scl.sqrMagnitude < 0.00001f)
-                        scl = new Vector3(pp.playScale.x, pp.playScale.y, pp.playScale.z);
+                        scl = new Vector3(pp.assembledScale.x, pp.assembledScale.y, pp.assembledScale.z);
                     partGo.transform.SetLocalPositionAndRotation(pos, rot);
                     partGo.transform.localScale = scl;
 
@@ -397,7 +397,7 @@ namespace OSE.UI.Root
         /// Returns the integrated member placement for a specific partId, or null if the
         /// part is not covered by any <c>integratedSubassemblyPlacements</c> entry.
         /// Used by play-mode restore paths to place completed subassembly members at their
-        /// canonical assembled poses instead of individual <c>playPosition</c>.
+        /// canonical assembled poses instead of individual <c>assembledPosition</c>.
         /// </summary>
         public IntegratedMemberPreviewPlacement FindIntegratedMemberPlacement(string partId)
             => _configLookup.FindIntegratedMemberPlacement(partId);

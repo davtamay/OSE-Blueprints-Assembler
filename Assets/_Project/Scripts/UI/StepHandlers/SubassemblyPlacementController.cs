@@ -223,7 +223,7 @@ namespace OSE.UI.Root
                 ClearFitState(record);
 
                 // MoveStepPartsToPlayPosition (called just before this in StepStateResponder)
-                // moves all requiredPartIds to their flat playPosition, undoing the integrated
+                // moves all requiredPartIds to their flat assembledPosition, undoing the integrated
                 // cube placement that was committed when the user placed the panel.
                 // Re-apply integrated positions so stacked bars stay at their cube positions.
                 if (!string.IsNullOrWhiteSpace(record.CurrentTargetId))
@@ -854,15 +854,15 @@ namespace OSE.UI.Root
                     return null;
                 }
 
-                Vector3 playPos = new Vector3(partPlacement.playPosition.x, partPlacement.playPosition.y, partPlacement.playPosition.z);
-                Quaternion playRot = !partPlacement.playRotation.IsIdentity
-                    ? new Quaternion(partPlacement.playRotation.x, partPlacement.playRotation.y, partPlacement.playRotation.z, partPlacement.playRotation.w)
+                Vector3 playPos = new Vector3(partPlacement.assembledPosition.x, partPlacement.assembledPosition.y, partPlacement.assembledPosition.z);
+                Quaternion playRot = !partPlacement.assembledRotation.IsIdentity
+                    ? new Quaternion(partPlacement.assembledRotation.x, partPlacement.assembledRotation.y, partPlacement.assembledRotation.z, partPlacement.assembledRotation.w)
                     : Quaternion.identity;
-                Vector3 playScale = SanitizeScale(new Vector3(partPlacement.playScale.x, partPlacement.playScale.y, partPlacement.playScale.z), Vector3.one);
+                Vector3 assembledScale = SanitizeScale(new Vector3(partPlacement.assembledScale.x, partPlacement.assembledScale.y, partPlacement.assembledScale.z), Vector3.one);
 
                 localPositions[i] = InverseTransformPoint(proxyRoot.transform.localPosition, proxyRoot.transform.localRotation, proxyRoot.transform.localScale, playPos);
                 localRotations[i] = Quaternion.Inverse(proxyRoot.transform.localRotation) * playRot;
-                localScales[i] = DivideScale(playScale, proxyRoot.transform.localScale);
+                localScales[i] = DivideScale(assembledScale, proxyRoot.transform.localScale);
                 _memberToSubassembly[partId] = subassemblyId;
             }
 

@@ -139,11 +139,11 @@ namespace OSE.UI.Root
                 PartPreviewPlacement pp = _findPartPlacement(partId);
                 if (pp == null) continue;
 
-                Vector3 ghostPos   = new Vector3(pp.playPosition.x, pp.playPosition.y, pp.playPosition.z);
-                Quaternion ghostRot = !pp.playRotation.IsIdentity
-                    ? new Quaternion(pp.playRotation.x, pp.playRotation.y, pp.playRotation.z, pp.playRotation.w)
+                Vector3 ghostPos   = new Vector3(pp.assembledPosition.x, pp.assembledPosition.y, pp.assembledPosition.z);
+                Quaternion ghostRot = !pp.assembledRotation.IsIdentity
+                    ? new Quaternion(pp.assembledRotation.x, pp.assembledRotation.y, pp.assembledRotation.z, pp.assembledRotation.w)
                     : Quaternion.identity;
-                Vector3 ghostScale = new Vector3(pp.playScale.x, pp.playScale.y, pp.playScale.z);
+                Vector3 ghostScale = new Vector3(pp.assembledScale.x, pp.assembledScale.y, pp.assembledScale.z);
                 if (ghostScale.sqrMagnitude < 0.00001f) ghostScale = Vector3.one;
 
                 GameObject sourcePart = FindSpawnedPart(partId);
@@ -293,12 +293,12 @@ namespace OSE.UI.Root
                 }
                 else
                 {
-                    Vector3    memberPlayPos   = new Vector3(placement.playPosition.x, placement.playPosition.y, placement.playPosition.z);
-                    Quaternion memberPlayRot   = !placement.playRotation.IsIdentity
-                        ? new Quaternion(placement.playRotation.x, placement.playRotation.y, placement.playRotation.z, placement.playRotation.w)
+                    Vector3    memberPlayPos   = new Vector3(placement.assembledPosition.x, placement.assembledPosition.y, placement.assembledPosition.z);
+                    Quaternion memberPlayRot   = !placement.assembledRotation.IsIdentity
+                        ? new Quaternion(placement.assembledRotation.x, placement.assembledRotation.y, placement.assembledRotation.z, placement.assembledRotation.w)
                         : Quaternion.identity;
                     Vector3    memberPlayScale  = PreviewSpawnManager.SanitizeScale(
-                        new Vector3(placement.playScale.x, placement.playScale.y, placement.playScale.z), Vector3.one);
+                        new Vector3(placement.assembledScale.x, placement.assembledScale.y, placement.assembledScale.z), Vector3.one);
 
                     memberLocalPos   = PreviewSpawnManager.InverseTransformPoint(framePos, frameRot, frameScale, memberPlayPos);
                     memberLocalRot   = Quaternion.Inverse(frameRot) * memberPlayRot;

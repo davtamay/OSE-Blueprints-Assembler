@@ -76,7 +76,7 @@ for stl_file in stl_files:
     obj = imported_objects[0]
     # Suffix "_mesh" so the GLB node name does NOT match the partId.
     # This prevents PackageAssetPostprocessor from overwriting the
-    # hand-computed playPositions in machine.json with (0,0,0).
+    # hand-computed assembledPositions in machine.json with (0,0,0).
     obj.name = part_id + "_mesh"
 
     # Report original bounds (mm, Z-up)

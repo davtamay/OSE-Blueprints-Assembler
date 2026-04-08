@@ -224,9 +224,9 @@ for pp in data['previewConfig']['partPlacements']:
         # Placeholder: scale = real dims directly
         sx, sy, sz = rd[0], rd[1], rd[2]
     
-    pp['playPosition'] = {'x': p[0], 'y': p[1], 'z': p[2]}
-    pp['playRotation'] = {'x': r[0], 'y': r[1], 'z': r[2], 'w': r[3]}
-    pp['playScale'] = {'x': sx, 'y': sy, 'z': sz}
+    pp['assembledPosition'] = {'x': p[0], 'y': p[1], 'z': p[2]}
+    pp['assembledRotation'] = {'x': r[0], 'y': r[1], 'z': r[2], 'w': r[3]}
+    pp['assembledScale'] = {'x': sx, 'y': sy, 'z': sz}
     pp['startScale'] = {'x': sx, 'y': sy, 'z': sz}
     
     count += 1

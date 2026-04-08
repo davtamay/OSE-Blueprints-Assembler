@@ -1,11 +1,11 @@
 {
   "motor": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0051,
       "y": 0.8624,
       "z": -0.2205
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -19,12 +19,12 @@
     }
   },
   "motor_piece": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0044,
       "y": 0.8613,
       "z": -0.1885
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -38,12 +38,12 @@
     }
   },
   "d3d_x_axis_rod_pair": {
-    "playPosition": {
+    "assembledPosition": {
       "x": -0.0233,
       "y": 0.7178,
       "z": -0.1883
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -57,12 +57,12 @@
     }
   },
   "rod_2": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0317,
       "y": 0.7178,
       "z": -0.1883
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -76,12 +76,12 @@
     }
   },
   "frame": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0,
       "y": 0.7044,
       "z": -0.0
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -95,12 +95,12 @@
     }
   },
   "idler": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.004,
       "y": 0.5656,
       "z": -0.1876
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -114,12 +114,12 @@
     }
   },
   "z2_half_carriage": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.005,
       "y": 0.5975,
       "z": -0.1884
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -133,12 +133,12 @@
     }
   },
   "idler001": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0064,
       "y": 0.5658,
       "z": 0.1876
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -152,12 +152,12 @@
     }
   },
   "z1_half_carriage": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0064,
       "y": 0.5977,
       "z": 0.1878
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -171,12 +171,12 @@
     }
   },
   "motor001": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0053,
       "y": 0.8626,
       "z": 0.2205
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -190,12 +190,12 @@
     }
   },
   "motor_piece001": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.006,
       "y": 0.8615,
       "z": 0.1885
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -209,12 +209,12 @@
     }
   },
   "rod_003": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0337,
       "y": 0.718,
       "z": 0.1883
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -228,12 +228,12 @@
     }
   },
   "rod_004": {
-    "playPosition": {
+    "assembledPosition": {
       "x": -0.0213,
       "y": 0.718,
       "z": 0.1883
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -247,12 +247,12 @@
     }
   },
   "idler002": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.1644,
       "y": 0.8213,
       "z": 0.1389
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -266,12 +266,12 @@
     }
   },
   "motor002": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.1964,
       "y": 0.8224,
       "z": -0.1952
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -285,12 +285,12 @@
     }
   },
   "rod_005": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.1651,
       "y": 0.794,
       "z": -0.0301
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -304,12 +304,12 @@
     }
   },
   "rod_006": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.1651,
       "y": 0.849,
       "z": -0.0341
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -323,12 +323,12 @@
     }
   },
   "full_carriage": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.165,
       "y": 0.8215,
       "z": 0.0069
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -342,12 +342,12 @@
     }
   },
   "idler003": {
-    "playPosition": {
+    "assembledPosition": {
       "x": -0.1644,
       "y": 0.8213,
       "z": 0.1356
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -361,12 +361,12 @@
     }
   },
   "motor003": {
-    "playPosition": {
+    "assembledPosition": {
       "x": -0.1973,
       "y": 0.8201,
       "z": -0.1955
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -380,12 +380,12 @@
     }
   },
   "rod_007": {
-    "playPosition": {
+    "assembledPosition": {
       "x": -0.1652,
       "y": 0.8486,
       "z": -0.0339
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -399,12 +399,12 @@
     }
   },
   "rod_008": {
-    "playPosition": {
+    "assembledPosition": {
       "x": -0.1652,
       "y": 0.7936,
       "z": -0.0293
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -418,12 +418,12 @@
     }
   },
   "full_carriage001": {
-    "playPosition": {
+    "assembledPosition": {
       "x": -0.1651,
       "y": 0.822,
       "z": 0.0047
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -437,12 +437,12 @@
     }
   },
   "z1_spacer_1": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0058,
       "y": 0.8458,
       "z": 0.1645
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -456,12 +456,12 @@
     }
   },
   "z1_spacer_002": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0063,
       "y": 0.5656,
       "z": 0.1645
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -475,12 +475,12 @@
     }
   },
   "d3d_heatbed_snapbuckle_left": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0073,
       "y": 0.5973,
       "z": 0.1627
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -494,12 +494,12 @@
     }
   },
   "d3d_heatbed_snapbuckle_right": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0073,
       "y": 0.5975,
       "z": -0.1638
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -513,12 +513,12 @@
     }
   },
   "bed_rod_1": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.032,
       "y": 0.5983,
       "z": 0.0057
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -532,12 +532,12 @@
     }
   },
   "bed_rod_002": {
-    "playPosition": {
+    "assembledPosition": {
       "x": -0.0208,
       "y": 0.597,
       "z": 0.0057
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -551,12 +551,12 @@
     }
   },
   "d3d_heatbed_body": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.016,
       "y": 0.6467,
       "z": 0.0218
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -570,12 +570,12 @@
     }
   },
   "z2_spacer": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0054,
       "y": 0.8458,
       "z": -0.1648
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -589,12 +589,12 @@
     }
   },
   "z2_spacer_2": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0059,
       "y": 0.5656,
       "z": -0.1648
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -608,12 +608,12 @@
     }
   },
   "d3d_y_left_axis_unit": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.1644,
       "y": 0.8223,
       "z": -0.1985
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -627,12 +627,12 @@
     }
   },
   "y2_bracket": {
-    "playPosition": {
+    "assembledPosition": {
       "x": -0.1381,
       "y": 0.819,
       "z": -0.1715
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -646,12 +646,12 @@
     }
   },
   "d3d_y_right_axis_unit": {
-    "playPosition": {
+    "assembledPosition": {
       "x": -0.1652,
       "y": 0.8189,
       "z": -0.1985
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -665,12 +665,12 @@
     }
   },
   "y1_bracket": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.1377,
       "y": 0.8224,
       "z": -0.1715
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -684,12 +684,12 @@
     }
   },
   "bed_raiser": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0073,
       "y": 0.5973,
       "z": 0.0863
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -703,12 +703,12 @@
     }
   },
   "bed_raiser001": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0073,
       "y": 0.5973,
       "z": -0.0394
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -722,12 +722,12 @@
     }
   },
   "bed_raiser002": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0073,
       "y": 0.6215,
       "z": 0.0864
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -741,12 +741,12 @@
     }
   },
   "bed_raiser003": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0073,
       "y": 0.6215,
       "z": -0.0393
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -760,12 +760,12 @@
     }
   },
   "bed_raiser004": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0073,
       "y": 0.633,
       "z": -0.0393
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -779,12 +779,12 @@
     }
   },
   "bed_raiser005": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0073,
       "y": 0.633,
       "z": 0.0864
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -798,12 +798,12 @@
     }
   },
   "d3d_x_axis_idler_unit": {
-    "playPosition": {
+    "assembledPosition": {
       "x": -0.1579,
       "y": 0.8773,
       "z": 0.0062
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -817,12 +817,12 @@
     }
   },
   "d3d_extruder_simplified_carriage": {
-    "playPosition": {
+    "assembledPosition": {
       "x": -0.0899,
       "y": 0.8773,
       "z": 0.006
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -836,12 +836,12 @@
     }
   },
   "rod_009": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0074,
       "y": 0.8774,
       "z": -0.0215
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -855,12 +855,12 @@
     }
   },
   "motor004": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.2044,
       "y": 0.9095,
       "z": 0.0051
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -874,12 +874,12 @@
     }
   },
   "rod_010": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0136,
       "y": 0.8774,
       "z": 0.0335
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -893,12 +893,12 @@
     }
   },
   "d3d_x_axis_half_carriage": {
-    "playPosition": {
+    "assembledPosition": {
       "x": -0.1899,
       "y": 0.8773,
       "z": 0.0052
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -912,12 +912,12 @@
     }
   },
   "d3d_x_axis_motor_holder_unit": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.2072,
       "y": 0.8775,
       "z": 0.0059
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -931,12 +931,12 @@
     }
   },
   "d3d_titan_aero_core": {
-    "playPosition": {
+    "assembledPosition": {
       "x": -0.1013,
       "y": 0.8999,
       "z": 0.0499
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -950,12 +950,12 @@
     }
   },
   "d3d_x_axis_carriage_side": {
-    "playPosition": {
+    "assembledPosition": {
       "x": -0.1917,
       "y": 0.8468,
       "z": 0.0051
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -969,12 +969,12 @@
     }
   },
   "y_endstop": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.1659,
       "y": 0.8027,
       "z": -0.1623
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -988,12 +988,12 @@
     }
   },
   "d3d_extruder_8mm_sensor": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.1721,
       "y": 0.8768,
       "z": 0.0251
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -1007,12 +1007,12 @@
     }
   },
   "d3d_extruder_mount_bracket": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.1921,
       "y": 0.8464,
       "z": 0.0069
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -1026,12 +1026,12 @@
     }
   },
   "d3d_extruder_nozzle_assembly": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.165,
       "y": 0.8215,
       "z": 0.0069
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -1045,12 +1045,12 @@
     }
   },
   "compound007": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.1788,
       "y": 0.5586,
       "z": 0.1395
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -1064,12 +1064,12 @@
     }
   },
   "cable_chain": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.0046,
       "y": 0.9418,
       "z": -0.0092
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -1083,12 +1083,12 @@
     }
   },
   "cable_chain_y": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.1379,
       "y": 0.7028,
       "z": -0.0702
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -1102,12 +1102,12 @@
     }
   },
   "cable_chain_bracket": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.1387,
       "y": 0.8062,
       "z": 0.0176
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -1121,12 +1121,12 @@
     }
   },
   "pocket039": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.1479,
       "y": 0.786,
       "z": 0.0221
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,
@@ -1140,12 +1140,12 @@
     }
   },
   "pocket040": {
-    "playPosition": {
+    "assembledPosition": {
       "x": 0.1509,
       "y": 0.7861,
       "z": 0.0219
     },
-    "playRotation": {
+    "assembledRotation": {
       "x": 0.0,
       "y": 0.0,
       "z": 0.0,

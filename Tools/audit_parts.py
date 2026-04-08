@@ -27,12 +27,12 @@ print(f"FLOOR (base top) = {FLOOR}, PLATE_TOP = 0.7172\n")
 
 for pp in data['previewConfig']['partPlacements']:
     pid = pp['partId']
-    py = pp['playPosition']['y']
-    px = pp['playPosition']['x']
-    pz = pp['playPosition']['z']
-    sy = pp['playScale']['y']
-    sx = pp['playScale']['x']
-    sz = pp['playScale']['z']
+    py = pp['assembledPosition']['y']
+    px = pp['assembledPosition']['x']
+    pz = pp['assembledPosition']['z']
+    sy = pp['assembledScale']['y']
+    sx = pp['assembledScale']['x']
+    sz = pp['assembledScale']['z']
     
     glb_name = pid
     if 'base_tube_long' in pid or 'top_tube_long' in pid: glb_name = 'base_tube_long'

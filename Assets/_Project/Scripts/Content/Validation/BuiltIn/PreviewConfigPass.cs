@@ -6,7 +6,7 @@ namespace OSE.Content.Validation
     /// <summary>
     /// Validates <see cref="PackagePreviewConfig"/> coverage — checks that every
     /// part, target, and subassembly has a placement entry, and verifies that
-    /// authored target preview positions agree with part playPositions.
+    /// authored target preview positions agree with part assembledPositions.
     /// </summary>
     internal sealed class PreviewConfigPass : IPackageValidationPass
     {
@@ -290,9 +290,9 @@ namespace OSE.Content.Validation
                 if (!targetPartLookup.TryGetValue(tp.targetId, out string partId)) continue;
                 if (!partLookup.TryGetValue(partId, out var pp)) continue;
 
-                float dx = tp.position.x - pp.playPosition.x;
-                float dy = tp.position.y - pp.playPosition.y;
-                float dz = tp.position.z - pp.playPosition.z;
+                float dx = tp.position.x - pp.assembledPosition.x;
+                float dy = tp.position.y - pp.assembledPosition.y;
+                float dz = tp.position.z - pp.assembledPosition.z;
                 float distSq = dx * dx + dy * dy + dz * dz;
 
                 if (distSq > PositionTolerance * PositionTolerance)
@@ -301,9 +301,9 @@ namespace OSE.Content.Validation
                     issues.Add(ValidationPassHelpers.Warning(
                         $"previewConfig.targetPlacements[{tp.targetId}]",
                         $"Preview position ({tp.position.x:F3}, {tp.position.y:F3}, {tp.position.z:F3}) differs from " +
-                        $"part '{partId}' playPosition ({pp.playPosition.x:F3}, {pp.playPosition.y:F3}, {pp.playPosition.z:F3}) " +
+                        $"part '{partId}' assembledPosition ({pp.assembledPosition.x:F3}, {pp.assembledPosition.y:F3}, {pp.assembledPosition.z:F3}) " +
                         $"by {dist:F4}m. Preview will appear at the wrong location. " +
-                        $"Update targetPlacement to match playPosition or the preview code will override it."));
+                        $"Update targetPlacement to match assembledPosition or the preview code will override it."));
                 }
             }
         }

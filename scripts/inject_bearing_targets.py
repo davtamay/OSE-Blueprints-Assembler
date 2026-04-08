@@ -2,7 +2,7 @@
 Add target definitions and target placements for the 4 LM8UU bearings
 at step_y_left_carriage_place_bearings (step 90).
 
-Carriage playPosition: (0.165, 0.8215, 0.0069)
+Carriage assembledPosition: (0.165, 0.8215, 0.0069)
 Carriage extents: ~74mm x 52mm x 24mm
 Bearings sit in 4 pockets: 2 per rod channel, spaced along carriage length.
 """
@@ -88,15 +88,15 @@ def main():
                     print(f"  WIRE step: {step['id']} += {tid}")
             break
 
-    # 4. Also update bearing part playPositions to match target positions
+    # 4. Also update bearing part assembledPositions to match target positions
     placements = data["previewConfig"]["partPlacements"]
     for i, pid in enumerate(BEARING_PARTS):
         dx, dy, dz = BEARING_OFFSETS[i]
         for pp in placements:
             if pp["partId"] == pid:
-                pp["playPosition"]["x"] = round(CX + dx, 4)
-                pp["playPosition"]["y"] = round(CY + dy, 4)
-                pp["playPosition"]["z"] = round(CZ + dz, 4)
+                pp["assembledPosition"]["x"] = round(CX + dx, 4)
+                pp["assembledPosition"]["y"] = round(CY + dy, 4)
+                pp["assembledPosition"]["z"] = round(CZ + dz, 4)
                 print(f"  UPDATE playPos: {pid} -> ({CX+dx:.4f}, {CY+dy:.4f}, {CZ+dz:.4f})")
                 break
 

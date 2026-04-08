@@ -4012,18 +4012,18 @@
           "b": 0.62,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": 0.0,
           "y": 0.0508,
           "z": -0.3558
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 0.6421,
           "y": 0.2152,
           "z": 0.2419
@@ -4060,18 +4060,18 @@
           "b": 0.62,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": 0.0,
           "y": 0.0508,
           "z": 0.3558
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 0.6421,
           "y": 0.2152,
           "z": 0.2419
@@ -4108,18 +4108,18 @@
           "b": 0.66,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": -0.5592,
           "y": 0.0508,
           "z": 0.0
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.7071,
           "z": 0.0,
           "w": 0.7071
         },
-        "playScale": {
+        "assembledScale": {
           "x": 0.3211,
           "y": 0.2906,
           "z": 0.3506
@@ -4156,18 +4156,18 @@
           "b": 0.66,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": 0.5592,
           "y": 0.0508,
           "z": 0.0
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.7071,
           "z": 0.0,
           "w": 0.7071
         },
-        "playScale": {
+        "assembledScale": {
           "x": 0.3211,
           "y": 0.2906,
           "z": 0.3506
@@ -4204,18 +4204,18 @@
           "b": 0.3,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": -0.5592,
           "y": 0.3556,
           "z": -0.3558
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 0.2464,
           "y": 0.2671,
           "z": 0.2488
@@ -4252,18 +4252,18 @@
           "b": 0.3,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": 0.5592,
           "y": 0.3556,
           "z": -0.3558
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 0.2464,
           "y": 0.2671,
           "z": 0.2488
@@ -4300,18 +4300,18 @@
           "b": 0.3,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": -0.5592,
           "y": 0.3556,
           "z": 0.3558
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 0.2464,
           "y": 0.2671,
           "z": 0.2488
@@ -4348,18 +4348,18 @@
           "b": 0.3,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": 0.5592,
           "y": 0.3556,
           "z": 0.3558
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 0.2464,
           "y": 0.2671,
           "z": 0.2488
@@ -4396,18 +4396,18 @@
           "b": 0.72,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": 0.0,
           "y": 0.6604,
           "z": -0.3558
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 0.6421,
           "y": 0.2152,
           "z": 0.2419
@@ -4444,18 +4444,18 @@
           "b": 0.72,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": 0.0,
           "y": 0.6604,
           "z": 0.3558
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 0.6421,
           "y": 0.2152,
           "z": 0.2419
@@ -4492,18 +4492,18 @@
           "b": 0.76,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": -0.5592,
           "y": 0.6604,
           "z": 0.0
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.7071,
           "z": 0.0,
           "w": 0.7071
         },
-        "playScale": {
+        "assembledScale": {
           "x": 0.3211,
           "y": 0.2906,
           "z": 0.3506
@@ -4540,18 +4540,18 @@
           "b": 0.76,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": 0.5592,
           "y": 0.6604,
           "z": 0.0
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.7071,
           "z": 0.0,
           "w": 0.7071
         },
-        "playScale": {
+        "assembledScale": {
           "x": 0.3211,
           "y": 0.2906,
           "z": 0.3506
@@ -4588,18 +4588,18 @@
           "b": 0.55,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 1.0,
           "y": 1.0,
           "z": 1.0
@@ -4636,18 +4636,18 @@
           "b": 0.42,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 1.0,
           "y": 1.0,
           "z": 1.0
@@ -4684,18 +4684,18 @@
           "b": 0.45,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 1.0,
           "y": 1.0,
           "z": 1.0
@@ -4732,18 +4732,18 @@
           "b": 0.38,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 1.0,
           "y": 1.0,
           "z": 1.0
@@ -4780,18 +4780,18 @@
           "b": 0.45,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 1.0,
           "y": 1.0,
           "z": 1.0
@@ -4828,18 +4828,18 @@
           "b": 0.68,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 1.0,
           "y": 1.0,
           "z": 1.0
@@ -4913,18 +4913,18 @@
           "b": 0.12,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 1.0,
           "y": 1.0,
           "z": 1.0
@@ -4993,18 +4993,18 @@
           "b": 0.58,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 1.0,
           "y": 1.0,
           "z": 1.0
@@ -5041,18 +5041,18 @@
           "b": 0.15,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 1.0,
           "y": 1.0,
           "z": 1.0
@@ -5089,18 +5089,18 @@
           "b": 0.1,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 1.0,
           "y": 1.0,
           "z": 1.0
@@ -5174,18 +5174,18 @@
           "b": 0.15,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 1.0,
           "y": 1.0,
           "z": 1.0
@@ -5222,18 +5222,18 @@
           "b": 0.85,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 1.0,
           "y": 1.0,
           "z": 1.0
@@ -5270,18 +5270,18 @@
           "b": 0.08,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 1.0,
           "y": 1.0,
           "z": 1.0
@@ -5360,18 +5360,18 @@
           "b": 0.85,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 1.0,
           "y": 1.0,
           "z": 1.0
@@ -5408,18 +5408,18 @@
           "b": 0.15,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 1.0,
           "y": 1.0,
           "z": 1.0
@@ -5488,18 +5488,18 @@
           "b": 0.15,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 1.0,
           "y": 1.0,
           "z": 1.0
@@ -5568,18 +5568,18 @@
           "b": 0.4,
           "a": 1.0
         },
-        "playPosition": {
+        "assembledPosition": {
           "x": -0.2,
           "y": 0.2516,
           "z": -0.3558
         },
-        "playRotation": {
+        "assembledRotation": {
           "x": 0.0,
           "y": 0.0,
           "z": 0.0,
           "w": 1.0
         },
-        "playScale": {
+        "assembledScale": {
           "x": 0.0316,
           "y": 0.0316,
           "z": 0.0316

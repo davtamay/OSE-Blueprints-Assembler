@@ -30,8 +30,8 @@ def upsert_pp(data, pid, play_pos, play_rot, start_pos, start_rot=None):
     sr = start_rot or ID_ROT.copy()
     for pp in data["previewConfig"]["partPlacements"]:
         if pp["partId"] == pid:
-            pp["playPosition"]  = play_pos
-            pp["playRotation"]  = play_rot
+            pp["assembledPosition"]  = play_pos
+            pp["assembledRotation"]  = play_rot
             pp["startPosition"] = start_pos
             pp["startRotation"] = sr
             return
@@ -40,8 +40,8 @@ def upsert_pp(data, pid, play_pos, play_rot, start_pos, start_rot=None):
         "startPosition": start_pos, "startRotation": sr,
         "startScale": {"x": 1.0, "y": 1.0, "z": 1.0},
         "color": {"r": 0.8, "g": 0.8, "b": 0.8, "a": 1.0},
-        "playPosition": play_pos, "playRotation": play_rot,
-        "playScale": {"x": 1.0, "y": 1.0, "z": 1.0},
+        "assembledPosition": play_pos, "assembledRotation": play_rot,
+        "assembledScale": {"x": 1.0, "y": 1.0, "z": 1.0},
         "splinePath": {"radius": 0.0, "segments": 8, "metallic": 0.0,
                        "smoothness": 0.0,
                        "color": {"r": 0.0, "g": 0.0, "b": 0.0, "a": 0.0},

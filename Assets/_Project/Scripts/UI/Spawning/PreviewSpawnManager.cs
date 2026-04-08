@@ -218,16 +218,16 @@ namespace OSE.UI.Root
             Quaternion previewRot;
             Vector3 previewScale;
 
-            // playPosition is the single source of truth for where a part ends up
+            // assembledPosition is the single source of truth for where a part ends up
             // when placed. Preview must appear at the same location so there is no
             // discrepancy between the preview and the actual placement.
             // TargetPreviewPlacement is only used as fallback for targets without
             // an associated part placement (tool-action targets, checkpoints, etc.).
             if (pp != null)
             {
-                previewPos = new Vector3(pp.playPosition.x, pp.playPosition.y, pp.playPosition.z);
-                previewRot = !pp.playRotation.IsIdentity
-                    ? new Quaternion(pp.playRotation.x, pp.playRotation.y, pp.playRotation.z, pp.playRotation.w)
+                previewPos = new Vector3(pp.assembledPosition.x, pp.assembledPosition.y, pp.assembledPosition.z);
+                previewRot = !pp.assembledRotation.IsIdentity
+                    ? new Quaternion(pp.assembledRotation.x, pp.assembledRotation.y, pp.assembledRotation.z, pp.assembledRotation.w)
                     : Quaternion.identity;
             }
             else if (tp != null)
@@ -252,7 +252,7 @@ namespace OSE.UI.Root
             else if (pp != null)
             {
                 Vector3 authoredStartScale = new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z);
-                Vector3 authoredPlayScale = new Vector3(pp.playScale.x, pp.playScale.y, pp.playScale.z);
+                Vector3 authoredPlayScale = new Vector3(pp.assembledScale.x, pp.assembledScale.y, pp.assembledScale.z);
                 previewScale = authoredStartScale.sqrMagnitude > 0f
                     ? authoredStartScale
                     : (authoredPlayScale.sqrMagnitude > 0f ? authoredPlayScale : Vector3.one);
@@ -415,11 +415,11 @@ namespace OSE.UI.Root
                 }
                 else
                 {
-                    Vector3 memberPlayPos = new Vector3(placement.playPosition.x, placement.playPosition.y, placement.playPosition.z);
-                    Quaternion memberPlayRot = !placement.playRotation.IsIdentity
-                        ? new Quaternion(placement.playRotation.x, placement.playRotation.y, placement.playRotation.z, placement.playRotation.w)
+                    Vector3 memberPlayPos = new Vector3(placement.assembledPosition.x, placement.assembledPosition.y, placement.assembledPosition.z);
+                    Quaternion memberPlayRot = !placement.assembledRotation.IsIdentity
+                        ? new Quaternion(placement.assembledRotation.x, placement.assembledRotation.y, placement.assembledRotation.z, placement.assembledRotation.w)
                         : Quaternion.identity;
-                    Vector3 memberPlayScale = SanitizeScale(new Vector3(placement.playScale.x, placement.playScale.y, placement.playScale.z), Vector3.one);
+                    Vector3 memberPlayScale = SanitizeScale(new Vector3(placement.assembledScale.x, placement.assembledScale.y, placement.assembledScale.z), Vector3.one);
 
                     memberLocalPos = InverseTransformPoint(framePos, frameRot, frameScale, memberPlayPos);
                     memberLocalRot = Quaternion.Inverse(frameRot) * memberPlayRot;

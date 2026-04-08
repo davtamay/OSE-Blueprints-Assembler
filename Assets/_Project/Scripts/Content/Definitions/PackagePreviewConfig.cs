@@ -73,8 +73,8 @@ namespace OSE.Content
 
     /// <summary>
     /// Preview scene placement for a single part.
-    /// Defines its start transform (before the step, floating nearby) and play transform
-    /// (after step completion, assembled into final position). The play transform represents
+    /// Defines its start transform (before the step, floating nearby) and assembled transform
+    /// (after step completion, assembled into final position). The assembled transform represents
     /// the canonical assembled position and is the target for the Blender layout workflow.
     /// </summary>
     [Serializable]
@@ -88,10 +88,10 @@ namespace OSE.Content
         public SceneFloat3    startScale;
         public SceneFloat4    color;
 
-        // Play state — assembled position; populated from the current preview/layout authoring pipeline
-        public SceneFloat3    playPosition;
-        public SceneQuaternion playRotation;
-        public SceneFloat3    playScale;
+        // Assembled state — final position once placed; populated from the current preview/layout authoring pipeline
+        public SceneFloat3    assembledPosition;
+        public SceneQuaternion assembledRotation;
+        public SceneFloat3    assembledScale;
 
         /// <summary>
         /// Optional spline path data. When present, the spawner creates a tube mesh
@@ -103,7 +103,7 @@ namespace OSE.Content
 
     /// <summary>
     /// Defines a tubular spline path for procedural hose/cable rendering.
-    /// Knot positions are in PreviewRoot local space (same coordinate system as playPosition).
+    /// Knot positions are in PreviewRoot local space (same coordinate system as assembledPosition/startPosition).
     /// </summary>
     [Serializable]
     public sealed class SplinePathDefinition
@@ -146,7 +146,7 @@ namespace OSE.Content
 
     /// <summary>
     /// Authored reference frame for a completed subassembly in its fabrication pose.
-    /// Member-part local offsets are derived from this frame and the parts' play transforms.
+    /// Member-part local offsets are derived from this frame and the parts' assembled transforms.
     /// </summary>
     [Serializable]
     public sealed class SubassemblyPreviewPlacement

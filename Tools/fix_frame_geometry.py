@@ -281,9 +281,9 @@ for pp in data.get('previewConfig', {}).get('partPlacements', []):
         p, r, s = pl['pos'], pl['rot'], pl['scale']
         
         # Update play position
-        pp['playPosition'] = {'x': p[0], 'y': p[1], 'z': p[2]}
-        pp['playRotation'] = {'x': r[0], 'y': r[1], 'z': r[2], 'w': r[3]}
-        pp['playScale'] = {'x': s[0], 'y': s[1], 'z': s[2]}
+        pp['assembledPosition'] = {'x': p[0], 'y': p[1], 'z': p[2]}
+        pp['assembledRotation'] = {'x': r[0], 'y': r[1], 'z': r[2], 'w': r[3]}
+        pp['assembledScale'] = {'x': s[0], 'y': s[1], 'z': s[2]}
         
         # Update start scale and rotation to match play (same model, same scale)
         pp['startScale'] = {'x': s[0], 'y': s[1], 'z': s[2]}

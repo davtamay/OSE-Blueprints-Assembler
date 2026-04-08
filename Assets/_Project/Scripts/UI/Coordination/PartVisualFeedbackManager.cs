@@ -682,10 +682,10 @@ namespace OSE.UI.Root
             GameObject partGo = _ctx.FindSpawnedPart(partId);
             if (partGo == null) return;
 
-            Vector3    pPos   = new Vector3(pp.playPosition.x, pp.playPosition.y, pp.playPosition.z);
-            Vector3    pScale = new Vector3(pp.playScale.x, pp.playScale.y, pp.playScale.z);
-            Quaternion pRot   = !pp.playRotation.IsIdentity
-                ? new Quaternion(pp.playRotation.x, pp.playRotation.y, pp.playRotation.z, pp.playRotation.w)
+            Vector3    pPos   = new Vector3(pp.assembledPosition.x, pp.assembledPosition.y, pp.assembledPosition.z);
+            Vector3    pScale = new Vector3(pp.assembledScale.x, pp.assembledScale.y, pp.assembledScale.z);
+            Quaternion pRot   = !pp.assembledRotation.IsIdentity
+                ? new Quaternion(pp.assembledRotation.x, pp.assembledRotation.y, pp.assembledRotation.z, pp.assembledRotation.w)
                 : Quaternion.identity;
 
             partGo.transform.SetLocalPositionAndRotation(pPos, pRot);
@@ -723,7 +723,7 @@ namespace OSE.UI.Root
         {
             // In the fully-assembled view, prefer integrated member placement
             // (canonical cube pose) so subassembly members appear at their stacked
-            // positions rather than their fabrication-station playPositions.
+            // positions rather than their fabrication-station assembledPositions.
             IntegratedMemberPreviewPlacement imp = _ctx.Spawner?.FindIntegratedMemberPlacement(partId);
             if (imp != null)
             {

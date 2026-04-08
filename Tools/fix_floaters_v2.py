@@ -117,8 +117,8 @@ for pp in data['previewConfig']['partPlacements']:
     p = fix['pos']
     r = fix['rot']
     
-    pp['playPosition'] = {'x': p[0], 'y': p[1], 'z': p[2]}
-    pp['playRotation'] = {'x': r[0], 'y': r[1], 'z': r[2], 'w': r[3]}
+    pp['assembledPosition'] = {'x': p[0], 'y': p[1], 'z': p[2]}
+    pp['assembledRotation'] = {'x': r[0], 'y': r[1], 'z': r[2], 'w': r[3]}
     # Keep existing scale (already computed correctly)
     
     rd_key = 'pressure_gauge' if pid == 'pressure_gauge_inline' else pid

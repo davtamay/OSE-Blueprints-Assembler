@@ -62,9 +62,9 @@ for pp in data.get('previewConfig', {}).get('partPlacements', []):
         r = pd['rot']
         s = pd['real']  # Scale = real-world dims for placeholder cubes
         
-        pp['playPosition'] = {'x': p[0], 'y': p[1], 'z': p[2]}
-        pp['playRotation'] = {'x': r[0], 'y': r[1], 'z': r[2], 'w': r[3]}
-        pp['playScale'] = {'x': s[0], 'y': s[1], 'z': s[2]}
+        pp['assembledPosition'] = {'x': p[0], 'y': p[1], 'z': p[2]}
+        pp['assembledRotation'] = {'x': r[0], 'y': r[1], 'z': r[2], 'w': r[3]}
+        pp['assembledScale'] = {'x': s[0], 'y': s[1], 'z': s[2]}
         pp['startScale'] = {'x': s[0], 'y': s[1], 'z': s[2]}
         
         count += 1

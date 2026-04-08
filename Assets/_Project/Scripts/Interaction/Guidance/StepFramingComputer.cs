@@ -242,7 +242,7 @@ namespace OSE.Interaction
                             continue;
 
                         if (TryGetPartPlacement(package, partId, out PartPreviewPlacement placement))
-                            AddPoint(new Vector3(placement.playPosition.x, placement.playPosition.y, placement.playPosition.z));
+                            AddPoint(new Vector3(placement.assembledPosition.x, placement.assembledPosition.y, placement.assembledPosition.z));
                     }
                 }
                 else
@@ -254,7 +254,7 @@ namespace OSE.Interaction
                             continue;
 
                         if (TryGetPartPlacement(package, partId, out PartPreviewPlacement placement))
-                            AddPoint(new Vector3(placement.playPosition.x, placement.playPosition.y, placement.playPosition.z));
+                            AddPoint(new Vector3(placement.assembledPosition.x, placement.assembledPosition.y, placement.assembledPosition.z));
                     }
                 }
 

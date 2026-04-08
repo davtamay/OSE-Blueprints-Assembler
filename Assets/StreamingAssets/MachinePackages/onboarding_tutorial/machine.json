@@ -447,18 +447,18 @@
                 "b": 0.18,
                 "a": 1.0
             },
-            "playPosition": {
+            "assembledPosition": {
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0
             },
-            "playRotation": {
+            "assembledRotation": {
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
                 "w": 1.0
             },
-            "playScale": {
+            "assembledScale": {
                 "x": 1.0,
                 "y": 1.0,
                 "z": 1.0
@@ -495,18 +495,18 @@
                 "b": 0.85,
                 "a": 1.0
             },
-            "playPosition": {
+            "assembledPosition": {
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0
             },
-            "playRotation": {
+            "assembledRotation": {
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0,
                 "w": 1.0
             },
-            "playScale": {
+            "assembledScale": {
                 "x": 1.0,
                 "y": 1.0,
                 "z": 1.0

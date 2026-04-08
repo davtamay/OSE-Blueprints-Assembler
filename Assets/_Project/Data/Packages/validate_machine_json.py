@@ -741,10 +741,10 @@ def _validate_preview_config(
                                     f"for subassembly '{rsa}' and target '{target_id or '<missing>'}'."))
 
     # Preview/play position consistency
-    _validate_preview_play_position_consistency(data, pc, covered_parts, issues)
+    _validate_preview_assembled_position_consistency(data, pc, covered_parts, issues)
 
 
-def _validate_preview_play_position_consistency(
+def _validate_preview_assembled_position_consistency(
     data: dict,
     pc: dict,
     covered_part_ids: set,
@@ -766,11 +766,11 @@ def _validate_preview_play_position_consistency(
                 if tid:
                     placement_target_ids.add(tid)
 
-    # partId -> playPosition
+    # partId -> assembledPosition
     part_play_pos: dict[str, dict] = {}
     for pp in part_placements:
         if pp and not _is_blank(pp.get("partId")):
-            pp_pos = pp.get("playPosition")
+            pp_pos = pp.get("assembledPosition")
             if pp_pos:
                 part_play_pos[pp["partId"]] = pp_pos
 
@@ -801,10 +801,10 @@ def _validate_preview_play_position_consistency(
             issues.append(_warn(
                 f"previewConfig.targetPlacements[{tid}]",
                 f"Preview position ({tp_pos.get('x', 0):.3f}, {tp_pos.get('y', 0):.3f}, {tp_pos.get('z', 0):.3f}) "
-                f"differs from part '{part_id}' playPosition "
+                f"differs from part '{part_id}' assembledPosition "
                 f"({pp_pos.get('x', 0):.3f}, {pp_pos.get('y', 0):.3f}, {pp_pos.get('z', 0):.3f}) "
                 f"by {dist:.4f}m. Preview will appear at the wrong location. "
-                f"Update targetPlacement to match playPosition or the preview code will override it."))
+                f"Update targetPlacement to match assembledPosition or the preview code will override it."))
 
 
 # ── Public API ────────────────────────────────────────────────────────────────

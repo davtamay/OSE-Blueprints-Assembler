@@ -146,7 +146,7 @@ namespace OSE.Runtime
 
         /// <summary>
         /// Jumps directly to the last step in the package-wide ordered step list.
-        /// All prior parts are treated as completed and placed at their playPositions.
+        /// All prior parts are treated as completed and placed at their assembledPositions.
         /// </summary>
         public bool NavigateToLastStep()
         {

@@ -14,7 +14,7 @@
       "2. Run extract_placements.py — populates placements.json with bounding sizes",
       "3. Run run_pipeline.ps1 — produces *_approved.glb in assets/parts/",
       "4. Import in Unity, verify orientation via §9.8.2 audit",
-      "5. Author playPosition in machine.json from Final Assembly PDF frame dimensions",
+      "5. Author assembledPosition in machine.json from Final Assembly PDF frame dimensions",
       "6. Update this file with confirmed FreeCAD label → partId mappings"
     ]
   },

@@ -5,7 +5,7 @@ Layout:
 - Existing Y-left printed parts are in row 1 at z=2.0, y=0.55
 - Hardware parts go in row 2 at z=2.3 (behind row 1, same bench zone)
 - Grouped by subassembly: carriage hardware | idler hardware | motor hardware
-- playPositions cluster around the parent part's playPosition (approximate
+- assembledPositions cluster around the parent part's assembledPosition (approximate
   assembled positions on the axis unit)
 
 The scale on hardware is 1.0 since the GLBs are already in meters at real size.
@@ -19,7 +19,7 @@ MACHINE_JSON = os.path.join(
     REPO_ROOT, "Assets", "_Project", "Data", "Packages", "d3d_v18_10", "machine.json"
 )
 
-# Existing parent part playPositions (from machine.json):
+# Existing parent part assembledPositions (from machine.json):
 # full_carriage:  playPos (0.165, 0.8215, 0.0069)
 # idler002:       playPos ~ (0.165, 0.78, -0.18)  (estimate from axis layout)
 # motor002:       playPos ~ (0.165, 0.78,  0.18)  (estimate)
@@ -74,9 +74,9 @@ def make_placement(part_id, start_x, play_x, play_y, play_z, cr, cg, cb):
         "startRotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0},
         "startScale": {"x": 1.0, "y": 1.0, "z": 1.0},
         "color": {"r": cr, "g": cg, "b": cb, "a": 1.0},
-        "playPosition": {"x": round(play_x, 4), "y": round(play_y, 4), "z": round(play_z, 4)},
-        "playRotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0},
-        "playScale": {"x": 1.0, "y": 1.0, "z": 1.0},
+        "assembledPosition": {"x": round(play_x, 4), "y": round(play_y, 4), "z": round(play_z, 4)},
+        "assembledRotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0},
+        "assembledScale": {"x": 1.0, "y": 1.0, "z": 1.0},
     }
 
 

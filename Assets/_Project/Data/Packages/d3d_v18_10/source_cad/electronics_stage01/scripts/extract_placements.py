@@ -92,7 +92,7 @@ def main():
             "coordinate_mapping": "FreeCAD (Z-up, mm) → Unity (Y-up, m): X→X, Y→Z, Z→Y, divide by 1000",
             "usage": (
                 "centroid positions are relative to each part's own FCStd origin, "
-                "not relative to the D3D frame. Author machine.json playPosition values "
+                "not relative to the D3D frame. Author machine.json assembledPosition values "
                 "from the Final Assembly PDF slide dimensions or physical measurement."
             ),
         }

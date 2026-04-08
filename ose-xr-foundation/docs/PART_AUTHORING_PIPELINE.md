@@ -500,7 +500,7 @@ Without it, every imported mesh has a hidden 90° X rotation that corrupts place
 For every mesh already in the project, verify orientation before trusting placement data:
 
 1. In Unity, find the part's `previewConfig.partPlacements` entry in machine.json
-2. Temporarily set its `playRotation` to identity: `{"x":0,"y":0,"z":0,"w":1}`
+2. Temporarily set its `assembledRotation` to identity: `{"x":0,"y":0,"z":0,"w":1}`
 3. Enter Play mode and inspect the part visually
 4. If the part is correctly oriented → mesh is fine, only position data needs updating
 5. If the part is still wrong (e.g. bed standing upright) → mesh needs re-export from Blender
@@ -533,7 +533,7 @@ Add the mapping to `label_map.json` if not already there.
 
 **Step 5 — Write the placement into machine.json**
 Copy `position` and `rotation` from `placements.json` into the part's
-`previewConfig.partPlacements` entry as `playPosition` and `playRotation`.
+`previewConfig.partPlacements` entry as `assembledPosition` and `assembledRotation`.
 
 The PreviewRoot in the scene must sit at world origin (0, 0, 0, identity rotation) for
 the macro coordinates to map directly into machine.json without a secondary offset transform.
@@ -572,7 +572,7 @@ For parts already in machine.json with manually-estimated positions:
 2. For each already-authored part, audit mesh orientation (9.8.2)
 3. Re-export from Blender if the mesh is wrong, re-import in Unity
 4. Look up the correct position in `placements.json`
-5. Overwrite the existing `playPosition`/`playRotation` in machine.json with the extracted values
+5. Overwrite the existing `assembledPosition`/`assembledRotation` in machine.json with the extracted values
 6. Add the label_map entry
 7. Test in Play mode — if the part still looks wrong, the mesh needs re-export (step 3)
 
@@ -744,10 +744,10 @@ source_cad/<stage_name>/
 
 Each FreeCAD part file has its own arbitrary local origin. After `stl_to_glb.py` recenters the
 mesh pivot via `center_mode`, the GLB's local origin (0,0,0) lands at a known geometric point
-(bounding box base-center or centroid). `playPosition` in machine.json is the Unity world-space
+(bounding box base-center or centroid). `assembledPosition` in machine.json is the Unity world-space
 position of that pivot. If you eyeball this position, the part will be wrong.
 
-**The right approach: measure the assembly anchor, then run `compute_play_position.py`.**
+**The right approach: measure the assembly anchor, then run `compute_assembled_position.py`.**
 
 ### The D3D Assembly Reference Frame
 
@@ -769,7 +769,7 @@ Constants:
 
 ### Choosing the Assembly Anchor
 
-The anchor is the point you pass to `compute_play_position.py`. It must match what `center_mode`
+The anchor is the point you pass to `compute_assembled_position.py`. It must match what `center_mode`
 produces in the GLB:
 
 | `center_mode` | Anchor to use |
@@ -805,7 +805,7 @@ Convert from the frame corner using the formula above.
 ### Running the Script
 
 ```powershell
-python3 source_cad/extruder/scripts/compute_play_position.py \
+python3 source_cad/extruder/scripts/compute_assembled_position.py \
     --part-id       d3d_control_panel \
     --blender-report source_cad/electronics_stage01/exported/reports/d3d_control_panel_blender.json \
     --assembly-x    375.7 \
@@ -819,7 +819,7 @@ if needed.
 
 **Batch mode** (all parts at once):
 ```powershell
-python3 source_cad/extruder/scripts/compute_play_position.py \
+python3 source_cad/extruder/scripts/compute_assembled_position.py \
     --batch  source_cad/electronics_stage01/components.json \
     --output source_cad/electronics_stage01/placements.json
 ```
@@ -827,7 +827,7 @@ python3 source_cad/extruder/scripts/compute_play_position.py \
 ### The `run_pipeline.ps1` Convention
 
 Each `$Components` entry carries `asm_x`, `asm_y`, `asm_z` fields. After Step 3 (gltfpack),
-the pipeline automatically calls `compute_play_position.py` and writes/updates `placements.json`
+the pipeline automatically calls `compute_assembled_position.py` and writes/updates `placements.json`
 in the stage folder. Run `-SkipGeometry` to recompute placements only (no FreeCAD/Blender):
 
 ```powershell
@@ -836,15 +836,15 @@ in the stage folder. Run `-SkipGeometry` to recompute placements only (no FreeCA
 
 ### Using `placements.json` in machine.json
 
-`placements.json` is the **source of truth for computed positions**. Copy `playPosition`,
-`playRotation`, and `startPosition` from it into `machine.json`'s `previewConfig.partPlacements`.
+`placements.json` is the **source of truth for computed positions**. Copy `assembledPosition`,
+`assembledRotation`, and `startPosition` from it into `machine.json`'s `previewConfig.partPlacements`.
 
 The computed positions are accurate to ~5 mm (limited by FreeCAD measurement resolution and
 geometry center vs. mounting point offset). After applying them:
 
 1. Enter Play mode — the part should appear at the correct frame-relative location.
 2. Use **OSE > Target Authoring** to fine-tune to sub-mm precision if needed.
-3. Never hand-author `playPosition` without the transform formula — eyeballed positions
+3. Never hand-author `assembledPosition` without the transform formula — eyeballed positions
    silently drift across CAD revisions.
 
 ### Accuracy Note
@@ -1512,7 +1512,7 @@ Real parts range from 1cm (cables) to 1.2m (tubes). The normalizer corrects this
 2. Computes native bounding box size
 3. Looks up real-world dimensions from `PartDimensionCatalog.cs`
 4. Computes: `uniformScale = targetMaxDimension / nativeMaxDimension`
-5. Writes the scale to both `startScale` and `playScale` in machine.json's previewConfig
+5. Writes the scale to both `startScale` and `assembledScale` in machine.json's previewConfig
 
 ### Run it
 
@@ -1541,7 +1541,7 @@ machine.json → `previewConfig` → `partPlacements`:
 {
     "partId": "fuel_tank",
     "startScale": { "x": 0.16, "y": 0.16, "z": 0.16 },
-    "playScale":  { "x": 0.16, "y": 0.16, "z": 0.16 }
+    "assembledScale":  { "x": 0.16, "y": 0.16, "z": 0.16 }
 }
 ```
 
@@ -1739,7 +1739,7 @@ Then in Unity:
 | Download link expired from Rodin | Rodin download URLs expire after ~10 min | Re-run the generation command |
 | Blobby/unrecognizable shape | Text prompt insufficient for complex part | Use image-to-3D with OSE wiki reference photo |
 | Model looks squished/stretched | AI-generated proportions don't match real-world aspect ratio | Re-generate with explicit proportions in the prompt (see Section 28.16). Check `PartDimensionCatalog.cs` for the W×H×D values and include them as inches/ratios in the prompt |
-| Wrong orientation | Model rotated vs expected in scene | Edit `playRotation` quaternion in machine.json previewConfig |
+| Wrong orientation | Model rotated vs expected in scene | Edit `assembledRotation` quaternion in machine.json previewConfig |
 | Part not in PartDimensionCatalog | New part without size entry | Add entry to `PartDimensionCatalog.cs`, rebuild |
 | Normalizer skips a part | Part has no entry in PartDimensionCatalog | Same as above |
 

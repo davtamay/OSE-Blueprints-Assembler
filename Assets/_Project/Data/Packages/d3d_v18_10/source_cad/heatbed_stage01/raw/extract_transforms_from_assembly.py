@@ -197,8 +197,8 @@ for fc_label, part_id in label_map.items():
     transforms[part_id] = {
         "blender_name": match.name,
         "fc_label": fc_label,
-        "playPosition": {"x": unity_pos[0], "y": unity_pos[1], "z": unity_pos[2]},
-        "playRotation": {"x": unity_rot[0], "y": unity_rot[1], "z": unity_rot[2], "w": unity_rot[3]}
+        "assembledPosition": {"x": unity_pos[0], "y": unity_pos[1], "z": unity_pos[2]},
+        "assembledRotation": {"x": unity_rot[0], "y": unity_rot[1], "z": unity_rot[2], "w": unity_rot[3]}
     }
     matched.append((fc_label, match))
     if fc_label in unmatched_labels:
@@ -212,8 +212,8 @@ if frame_obj:
     unity_rot = blender_to_unity_rotation(rot)
     transforms["_frame_reference"] = {
         "blender_name": frame_obj.name,
-        "playPosition": {"x": unity_pos[0], "y": unity_pos[1], "z": unity_pos[2]},
-        "playRotation": {"x": unity_rot[0], "y": unity_rot[1], "z": unity_rot[2], "w": unity_rot[3]},
+        "assembledPosition": {"x": unity_pos[0], "y": unity_pos[1], "z": unity_pos[2]},
+        "assembledRotation": {"x": unity_rot[0], "y": unity_rot[1], "z": unity_rot[2], "w": unity_rot[3]},
         "note": "Frame reference - should be centered at (0, WORKTABLE_Y, 0)"
     }
 

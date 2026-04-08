@@ -31,7 +31,7 @@ Part positions within the D3D frame must be authored from:
 - Physical D3D dimensions (frame inner bay ~300mm wide, electronics mounted on back-left panel)
 
 Run `scripts/extract_placements.py` to get bounding box sizes from each FCStd.
-Use sizes to sanity-check playPosition values.
+Use sizes to sanity-check assembledPosition values.
 
 ### Known Issues
 - None yet — to be updated during conversion.

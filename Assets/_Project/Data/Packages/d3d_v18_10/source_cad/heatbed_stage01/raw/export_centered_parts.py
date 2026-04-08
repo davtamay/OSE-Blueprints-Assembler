@@ -1,7 +1,7 @@
 """
 export_centered_parts.py
 Exports mapped parts as STL files CENTERED at bounding box center,
-and computes the correct Unity playPositions.
+and computes the correct Unity assembledPositions.
 
 Key insight (2026-03-28 diagnostic):
   obj.Shape in this FreeCAD file already contains geometry in GLOBAL
@@ -111,8 +111,8 @@ for fc_label, part_id in label_map.items():
     print(f"  Unity rot: identity")
 
     transforms[part_id] = {
-        "playPosition": {"x": unity_x, "y": unity_y, "z": unity_z},
-        "playRotation": {"x": unity_qx, "y": unity_qy, "z": unity_qz, "w": unity_qw},
+        "assembledPosition": {"x": unity_x, "y": unity_y, "z": unity_z},
+        "assembledRotation": {"x": unity_qx, "y": unity_qy, "z": unity_qz, "w": unity_qw},
         "fc_label": fc_label,
         "global_center_mm": {"x": round(cx, 2), "y": round(cy, 2), "z": round(cz, 2)}
     }
