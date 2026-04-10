@@ -1,3 +1,4 @@
+using System;
 using OSE.Content;
 
 namespace OSE.UI.Root
@@ -94,6 +95,72 @@ namespace OSE.UI.Root
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Returns the <see cref="StepPoseEntry"/> for the given part at the given step,
+        /// or null if no intermediate pose is authored (caller falls back to assembledPosition).
+        /// </summary>
+        internal StepPoseEntry FindPartStepPose(string partId, string stepId)
+        {
+            if (string.IsNullOrEmpty(partId) || string.IsNullOrEmpty(stepId)) return null;
+            PartPreviewPlacement pp = FindPartPlacement(partId);
+            if (pp?.stepPoses == null) return null;
+            for (int i = 0; i < pp.stepPoses.Length; i++)
+            {
+                if (string.Equals(pp.stepPoses[i].stepId, stepId, StringComparison.OrdinalIgnoreCase))
+                    return pp.stepPoses[i];
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Resolves the pose a part should occupy when viewing the assembly at
+        /// <paramref name="viewingStepIndex"/>. Walks backward through completed steps
+        /// to find the most recent <see cref="StepPoseEntry"/>. Falls back to assembledPosition.
+        /// </summary>
+        internal bool TryResolvePartPoseAtStep(
+            string partId,
+            StepDefinition[] orderedSteps,
+            int viewingStepIndex,
+            out SceneFloat3 position,
+            out SceneQuaternion rotation,
+            out SceneFloat3 scale)
+        {
+            PartPreviewPlacement pp = FindPartPlacement(partId);
+            if (pp == null)
+            {
+                position = default; rotation = default; scale = default;
+                return false;
+            }
+
+            if (pp.stepPoses != null && pp.stepPoses.Length > 0)
+            {
+                // Walk backward from the last completed step to find the most recent stepPose
+                for (int s = viewingStepIndex - 1; s >= 0; s--)
+                {
+                    if (s >= orderedSteps.Length) continue;
+                    string sid = orderedSteps[s]?.id;
+                    if (string.IsNullOrEmpty(sid)) continue;
+
+                    for (int p = 0; p < pp.stepPoses.Length; p++)
+                    {
+                        if (string.Equals(pp.stepPoses[p].stepId, sid, StringComparison.OrdinalIgnoreCase))
+                        {
+                            position = pp.stepPoses[p].position;
+                            rotation = pp.stepPoses[p].rotation;
+                            scale = pp.stepPoses[p].scale;
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            // Fallback: assembledPosition
+            position = pp.assembledPosition;
+            rotation = pp.assembledRotation;
+            scale = pp.assembledScale;
+            return true;
         }
 
         internal IntegratedMemberPreviewPlacement FindIntegratedMemberPlacement(string partId)

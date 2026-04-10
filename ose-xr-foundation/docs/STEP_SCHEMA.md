@@ -52,6 +52,9 @@ Every assembly step in `machine.json` is a `StepDefinition` object inside the to
 | `measurement` | `StepMeasurementPayload` | Phase 3 | Anchor-to-anchor measurement data for `Use.Measure` steps. |
 | `gesture` | `StepGesturePayload` | Phase 3 | Gesture override payload for `Use`-family steps. Overrides profile defaults. |
 | `wireConnect` | `StepWireConnectPayload` | Phase 3 | Polarity-aware wire connection data for `Connect.WireConnect` steps. |
+| `workingOrientation` | `StepWorkingOrientationPayload` | Phase 3 | Temporarily transforms the subassembly for this step (e.g., flip 180° to access underside). Reverts on step transition. Appends orientation hint to instruction text. |
+| `animationCues` | `StepAnimationCuePayload` | Phase 3 | Data-driven animation cues played on step activation. Supports placement demonstrations, pose transitions, pulses, and subassembly orientation. Can defer preview spawning. |
+| `taskOrder` | `TaskOrderEntry[]` | Planned | Explicit cross-section task sequence within a step. Null/empty = no explicit order. |
 
 ---
 
@@ -142,6 +145,66 @@ Every assembly step in `machine.json` is a `StepDefinition` object inside the to
 | `pathControlPointIds` | `string[]` | Ordered waypoint target IDs for `PathTrace`. |
 | `showGestureGuide` | `bool` | Whether to show the gesture overlay. Default: `true`. |
 
+### `StepWorkingOrientationPayload` (Phase 3)
+
+Temporarily transforms the subassembly for the duration of this step (e.g., flip 180° to expose the underside for fastener insertion). The orientation reverts automatically on step transition.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `subassemblyRotation` | `SceneFloat3` | Euler angles (degrees) applied to the subassembly proxy root relative to its authored fabrication pose. |
+| `subassemblyPositionOffset` | `SceneFloat3` | Optional position offset (meters) in PreviewRoot local space, applied after rotation. Useful for keeping a flipped assembly at a comfortable working height. |
+| `hint` | `string` | Optional human-readable explanation shown to the learner. When null/empty, a default message is auto-generated. |
+| `partOverrides` | `StepPartPoseOverride[]` | Optional per-part pose overrides for non-rigid adjustments that can't be expressed as a single subassembly rotation. |
+
+#### `StepPartPoseOverride`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `partId` | `string` | Part ID to override. |
+| `positionOffset` | `SceneFloat3` | Additive offset applied to the part's assembled position. |
+| `rotationOverride` | `SceneFloat3` | Euler degrees — replaces the part's assembled rotation when non-zero. |
+
+### `StepAnimationCuePayload` (Phase 3)
+
+Data-driven animation cues played when the step activates. Supports placement demonstrations (bolt drill-down), pose transitions, emission pulses, and subassembly orientation flips.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `cues` | `AnimationCueEntry[]` | Ordered list of animation cues to play. |
+| `previewDelaySeconds` | `float` | When > 0, preview ghosts are deferred until this many seconds after step activation. Lets orientation/demonstration cues play before ghosts appear. `0` = spawn immediately (default). |
+
+#### `AnimationCueEntry`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | `string` | Animation type key. Accepted values: `"demonstratePlacement"`, `"poseTransition"`, `"pulse"`, `"orientSubassembly"`. |
+| `targetPartIds` | `string[]` | Part IDs to animate (resolved via spawned part lookup). |
+| `targetToolIds` | `string[]` | Tool IDs to animate (resolved via ToolCursorManager / PersistentToolController). |
+| `targetSubassemblyId` | `string` | Subassembly ID to animate (resolved via proxy root or fabrication group). |
+| `trigger` | `string` | When to start: `"onActivate"` (default) or `"afterDelay"`. |
+| `delaySeconds` | `float` | Delay in seconds when trigger is `"afterDelay"`. |
+| `durationSeconds` | `float` | Duration in seconds. `0` = type default. |
+| `loop` | `bool` | When `true`, animation restarts on completion instead of stopping. |
+| `easing` | `string` | Easing curve: `"smoothStep"` (default), `"linear"`, `"easeInOut"`. |
+| `target` | `string` | `"part"` (default) = animate the actual spawned part/tool. `"ghost"` = create a transparent clone and animate that instead. |
+| `fromPose` | `AnimationPose` | Explicit start pose for `poseTransition`. Null = use start transform. |
+| `toPose` | `AnimationPose` | Explicit end pose for `poseTransition`. Null = use assembled transform. |
+| `subassemblyRotation` | `SceneFloat3` | Euler rotation for `orientSubassembly`. |
+| `pulseColorA` | `SceneFloat4` | Pulse color A (RGBA). Alpha > 0 activates override; default is blue `(0, 0.6, 1, 1)`. |
+| `pulseColorB` | `SceneFloat4` | Pulse color B (RGBA). Alpha > 0 activates override; default is gold `(1, 0.85, 0, 1)`. |
+| `pulseSpeed` | `float` | Pulse speed in rad/s. Default: `3.0`. |
+| `spinRevolutions` | `float` | Number of full rotations during `demonstratePlacement` (bolt screw effect). `0` = no spin. e.g., `4` = bolt makes 4 turns while traveling to assembled pose. |
+| `spinAxis` | `SceneFloat3` | Local axis for spin rotation. Defaults to `(0,1,0)` = Y-up (bolt shaft). |
+| `animationClipName` | `string` | Reserved for future GLB-embedded animation support. When set, the player would play the named clip instead of procedural lerp. Not implemented in Phase 1. |
+
+#### `AnimationPose`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `position` | `SceneFloat3` | World or local position. |
+| `rotation` | `SceneQuaternion` | Orientation quaternion. |
+| `scale` | `SceneFloat3` | Scale. |
+
 ### `StepWireConnectPayload` (Phase 3 — `Connect.WireConnect` only)
 
 | Field | Type | Description |
@@ -166,7 +229,7 @@ Every assembly step in `machine.json` is a `StepDefinition` object inside the to
 |-------|------|-------------|
 | `id` | `string` | Unique ID within the step's `requiredToolActions` list. |
 | `toolId` | `string` | Tool that must be used (must match a `tools[].id` in the package). |
-| `actionType` | `string` | Action kind: `"weld"`, `"torque"`, `"cut"`, `"strike"`, `"measure"`, `"square_check"`. |
+| `actionType` | `string` | Action kind: `"tighten"`, `"weld_pass"`, `"grind_pass"`, `"strike"`, `"measure"`. |
 | `targetId` | `string` | Target the tool must be applied to. Must match a `targetPlacements[].targetId`. |
 | `requiredCount` | `int` | Number of times the action must be performed. Default: 1. |
 | `successMessage` | `string` | Message logged/displayed on action completion. |

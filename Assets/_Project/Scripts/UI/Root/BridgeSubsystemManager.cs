@@ -29,6 +29,7 @@ namespace OSE.UI.Root
         public SelectionCoordinator             Selection             { get; private set; }
         public StepStateResponder               StepResponder         { get; private set; }
         public DockArcCoordinator               DockArc               { get; private set; }
+        public AnimationCueCoordinator           AnimationCues         { get; private set; }
         public IConfirmInspectionService        ConfirmInspection     { get; private set; }
 
         public BridgeSubsystemManager(IBridgeContext ctx, Func<PreviewSceneSetup> getSetup)
@@ -62,6 +63,7 @@ namespace OSE.UI.Root
             Selection     ??= new SelectionCoordinator(_ctx);
             StepResponder ??= new StepStateResponder(_ctx, Selection);
             DockArc       ??= new DockArcCoordinator(_ctx);
+            AnimationCues ??= new AnimationCueCoordinator(_ctx);
             if (ConfirmInspection == null)
             {
                 ConfirmInspection = new ConfirmInspectionService();
@@ -75,6 +77,7 @@ namespace OSE.UI.Root
         /// </summary>
         public void Teardown()
         {
+            AnimationCues?.Cleanup();
             VisualFeedback?.Clear();
             DockArc?.Clear();
             ToolAction?.ClearToolPreviewIndicator();

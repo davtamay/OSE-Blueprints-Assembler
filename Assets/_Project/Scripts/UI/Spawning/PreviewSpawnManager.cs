@@ -21,6 +21,7 @@ namespace OSE.UI.Root
 
         private bool _isSequentialStep;
         private int _sequentialTargetIndex;
+        private string _activeStepId;
 
         /// <summary>The shared preview list. Passed by reference to PlaceStepHandler / UseStepHandler.</summary>
         public List<GameObject> SpawnedPreviews => _ctx.SpawnedPreviews;
@@ -37,12 +38,18 @@ namespace OSE.UI.Root
         public void SpawnPreviewsForStep(string stepId)
         {
             ClearPreviews();
+            _activeStepId = stepId;
             var package = _ctx.Spawner.CurrentPackage;
             if (package == null || !package.TryGetStep(stepId, out var step))
                 return;
 
             // Pipe connection steps are handled entirely by ConnectStepHandler via the router.
             if (step.IsPipeConnection)
+                return;
+
+            // Use-family steps (tool actions) operate on parts already in the scene.
+            // No ghost preview needed — the real parts are visible at their stepPose.
+            if (step.IsToolAction)
                 return;
 
             string[] targetIds = step.targetIds;
@@ -218,12 +225,18 @@ namespace OSE.UI.Root
             Quaternion previewRot;
             Vector3 previewScale;
 
-            // assembledPosition is the single source of truth for where a part ends up
-            // when placed. Preview must appear at the same location so there is no
-            // discrepancy between the preview and the actual placement.
+            // Check for step-scoped pose override first, then fall back to assembledPosition.
             // TargetPreviewPlacement is only used as fallback for targets without
             // an associated part placement (tool-action targets, checkpoints, etc.).
-            if (pp != null)
+            StepPoseEntry stepPose = _ctx.Spawner.FindPartStepPose(associatedPartId, _activeStepId);
+            if (stepPose != null)
+            {
+                previewPos = new Vector3(stepPose.position.x, stepPose.position.y, stepPose.position.z);
+                previewRot = !stepPose.rotation.IsIdentity
+                    ? new Quaternion(stepPose.rotation.x, stepPose.rotation.y, stepPose.rotation.z, stepPose.rotation.w)
+                    : Quaternion.identity;
+            }
+            else if (pp != null)
             {
                 previewPos = new Vector3(pp.assembledPosition.x, pp.assembledPosition.y, pp.assembledPosition.z);
                 previewRot = !pp.assembledRotation.IsIdentity

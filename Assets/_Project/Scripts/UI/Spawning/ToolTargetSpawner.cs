@@ -343,7 +343,7 @@ namespace OSE.UI.Root
         public static Vector3 ResolveToolTargetMarkerScale(Vector3 sourceScale)
         {
             float dominant = Mathf.Max(sourceScale.x, Mathf.Max(sourceScale.y, sourceScale.z));
-            float uniform = Mathf.Clamp(dominant * 0.55f, 0.15f, 0.40f);
+            float uniform = Mathf.Clamp(dominant, 0.008f, 0.40f);
             return Vector3.one * uniform;
         }
 

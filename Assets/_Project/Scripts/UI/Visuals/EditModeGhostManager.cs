@@ -94,6 +94,11 @@ namespace OSE.UI.Root
                 return;
             }
 
+            // Use-family steps (tool actions) operate on parts already in the scene —
+            // no ghost needed, the real parts are visible at their stepPose.
+            if (currentStep.IsToolAction)
+                return;
+
             string[] targetIds = currentStep.targetIds;
             if (targetIds == null || targetIds.Length == 0)
                 return;
@@ -139,11 +144,27 @@ namespace OSE.UI.Root
                 PartPreviewPlacement pp = _findPartPlacement(partId);
                 if (pp == null) continue;
 
-                Vector3 ghostPos   = new Vector3(pp.assembledPosition.x, pp.assembledPosition.y, pp.assembledPosition.z);
-                Quaternion ghostRot = !pp.assembledRotation.IsIdentity
-                    ? new Quaternion(pp.assembledRotation.x, pp.assembledRotation.y, pp.assembledRotation.z, pp.assembledRotation.w)
-                    : Quaternion.identity;
-                Vector3 ghostScale = new Vector3(pp.assembledScale.x, pp.assembledScale.y, pp.assembledScale.z);
+                // Use step-scoped pose when available for the current step
+                StepPoseEntry stepPose = FindStepPoseInline(pp, currentStep?.id);
+                Vector3 ghostPos;
+                Quaternion ghostRot;
+                Vector3 ghostScale;
+                if (stepPose != null)
+                {
+                    ghostPos = new Vector3(stepPose.position.x, stepPose.position.y, stepPose.position.z);
+                    ghostRot = !stepPose.rotation.IsIdentity
+                        ? new Quaternion(stepPose.rotation.x, stepPose.rotation.y, stepPose.rotation.z, stepPose.rotation.w)
+                        : Quaternion.identity;
+                    ghostScale = new Vector3(stepPose.scale.x, stepPose.scale.y, stepPose.scale.z);
+                }
+                else
+                {
+                    ghostPos = new Vector3(pp.assembledPosition.x, pp.assembledPosition.y, pp.assembledPosition.z);
+                    ghostRot = !pp.assembledRotation.IsIdentity
+                        ? new Quaternion(pp.assembledRotation.x, pp.assembledRotation.y, pp.assembledRotation.z, pp.assembledRotation.w)
+                        : Quaternion.identity;
+                    ghostScale = new Vector3(pp.assembledScale.x, pp.assembledScale.y, pp.assembledScale.z);
+                }
                 if (ghostScale.sqrMagnitude < 0.00001f) ghostScale = Vector3.one;
 
                 GameObject sourcePart = FindSpawnedPart(partId);
@@ -391,6 +412,17 @@ namespace OSE.UI.Root
             if (target == null) return;
             if (Application.isPlaying) UnityEngine.Object.Destroy(target);
             else UnityEngine.Object.DestroyImmediate(target);
+        }
+
+        private static StepPoseEntry FindStepPoseInline(PartPreviewPlacement pp, string stepId)
+        {
+            if (pp?.stepPoses == null || string.IsNullOrEmpty(stepId)) return null;
+            for (int i = 0; i < pp.stepPoses.Length; i++)
+            {
+                if (string.Equals(pp.stepPoses[i].stepId, stepId, System.StringComparison.OrdinalIgnoreCase))
+                    return pp.stepPoses[i];
+            }
+            return null;
         }
     }
 }

@@ -94,11 +94,35 @@ namespace OSE.Content
         public SceneFloat3    assembledScale;
 
         /// <summary>
+        /// Optional step-scoped intermediate poses. After completing step X,
+        /// a part with a matching entry moves to that pose instead of assembledPosition.
+        /// Null/empty = legacy two-pose behavior (start → assembled).
+        /// The sequence is: start → stepPoses[0] → stepPoses[1] → ... → assembled.
+        /// </summary>
+        public StepPoseEntry[] stepPoses;
+
+        /// <summary>
         /// Optional spline path data. When present, the spawner creates a tube mesh
         /// via SplineContainer + SplineExtrude instead of loading a GLB asset.
         /// Used for hoses, cables, and other tubular parts.
         /// </summary>
         public SplinePathDefinition splinePath;
+    }
+
+    /// <summary>
+    /// Step-scoped pose for a part. After the referenced step completes,
+    /// the part occupies this pose instead of assembledPosition.
+    /// </summary>
+    [Serializable]
+    public sealed class StepPoseEntry
+    {
+        /// <summary>Step ID this pose applies to.</summary>
+        public string stepId;
+        /// <summary>Optional display label for the editor UI.</summary>
+        public string label;
+        public SceneFloat3 position;
+        public SceneQuaternion rotation;
+        public SceneFloat3 scale;
     }
 
     /// <summary>

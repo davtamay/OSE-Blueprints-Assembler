@@ -19,6 +19,9 @@ namespace OSE.Core
         // Cached shader — resolved on first use. Unity clears this on domain reload.
         private static Shader _urpLitShader;
 
+        // Cached ghost overlay material loaded from Resources/GhostOverlay.mat.
+        private static Material _ghostOverlayBase;
+
         // Shared tint materials keyed by (materialName + Color32). Avoids allocating
         // a new Material on every Apply / ApplyTint call.
         //
@@ -215,13 +218,52 @@ namespace OSE.Core
         /// </summary>
         public static void ApplyPreviewMaterial(GameObject target, Color previewColor)
         {
-            Material previewMat = CreateUrpMaterial("Preview Material");
-            if (previewMat == null) return;
+            // Load ghost overlay material from Resources — Shader.Find is unreliable
+            // for custom shaders not referenced by any scene material.
+            if (_ghostOverlayBase == null)
+                _ghostOverlayBase = Resources.Load<Material>("GhostOverlay");
 
-            ConfigureTransparent(previewMat, TransparentRenderQueue);
-            SetBaseColor(previewMat, previewColor);
+            if (_ghostOverlayBase == null)
+            {
+                Debug.LogWarning("[MaterialHelper] Resources/GhostOverlay.mat not found — falling back to URP Lit.");
+                Material fallback = CreateUrpMaterial("Preview Material");
+                if (fallback == null) return;
+                ConfigureTransparent(fallback, TransparentRenderQueue);
+                SetBaseColor(fallback, previewColor);
+                ApplyToAllSlots(target, fallback, skipOutline: true);
+                return;
+            }
 
-            ApplyToAllSlots(target, previewMat, skipOutline: true);
+            // Instantiate so each ghost can have its own color.
+            Material previewMat = new Material(_ghostOverlayBase) { name = "Ghost Overlay" };
+            previewMat.SetColor("_BaseColor", new Color(
+                previewColor.r, previewColor.g, previewColor.b,
+                Mathf.Max(previewColor.a, 0.35f)));
+            previewMat.SetColor("_EmissionColor", previewColor * 0.15f);
+
+            // Invalidate stale RendererCache (cloned objects carry cached arrays from the source).
+            var staleCache = target.GetComponent<RendererCache>();
+            if (staleCache != null) staleCache.Invalidate();
+
+            // Apply directly to all child renderers (bypass ApplyToAllSlots to avoid
+            // any stale-cache issues on cloned GameObjects).
+            var renderers = target.GetComponentsInChildren<Renderer>(true);
+            if (renderers == null || renderers.Length == 0)
+            {
+                Debug.LogWarning($"[MaterialHelper] No renderers found on '{target.name}' or its children.");
+                return;
+            }
+
+            foreach (var renderer in renderers)
+            {
+                if (renderer.gameObject.name == OutlineChildName) continue;
+                int slotCount = renderer.sharedMaterials.Length;
+                if (slotCount <= 0) slotCount = 1;
+                Material[] mats = new Material[slotCount];
+                for (int i = 0; i < slotCount; i++)
+                    mats[i] = previewMat;
+                renderer.sharedMaterials = mats;
+            }
         }
 
         /// <summary>
@@ -293,18 +335,29 @@ namespace OSE.Core
             var renderers = GetRenderers(target);
             if (renderers == null || renderers.Length == 0) return;
 
-            var shader = UrpLitShader;
-            if (shader == null) return;
+            if (_ghostOverlayBase == null)
+                _ghostOverlayBase = Resources.Load<Material>("GhostOverlay");
+
+            if (_ghostOverlayBase == null)
+            {
+                // Fallback to URP Lit without x-ray.
+                var shader = UrpLitShader;
+                if (shader == null) return;
+                foreach (var renderer in renderers)
+                {
+                    Material toolMat = new Material(shader) { name = "Tool Cursor Material" };
+                    ConfigureTransparent(toolMat, OverlayRenderQueue);
+                    SetBaseColor(toolMat, toolColor);
+                    renderer.sharedMaterial = toolMat;
+                }
+                return;
+            }
 
             foreach (var renderer in renderers)
             {
-                Material toolMat = new Material(shader) { name = "Tool Cursor Material" };
-                ConfigureTransparent(toolMat, OverlayRenderQueue);
-                toolMat.SetInt("_ZTest", (int)CompareFunction.Always);
-                SetBaseColor(toolMat, toolColor);
-                if (toolMat.HasProperty("_EmissionColor"))
-                    toolMat.SetColor("_EmissionColor", toolColor * 0.35f);
-
+                Material toolMat = new Material(_ghostOverlayBase) { name = "Tool Cursor Material" };
+                toolMat.SetColor("_BaseColor", toolColor);
+                toolMat.SetColor("_EmissionColor", toolColor * 0.35f);
                 renderer.sharedMaterial = toolMat;
             }
         }

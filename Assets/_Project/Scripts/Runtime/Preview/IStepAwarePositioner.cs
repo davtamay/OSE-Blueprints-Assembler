@@ -10,5 +10,6 @@ namespace OSE.Runtime.Preview
     public interface IStepAwarePositioner
     {
         void ApplyStepAwarePositions(int targetSequenceIndex, MachinePackageDefinition pkg);
+        void ClearGhosts();
     }
 }

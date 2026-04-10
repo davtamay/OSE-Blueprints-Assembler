@@ -42,6 +42,14 @@ namespace OSE.Interaction
         // ── Tool spatial metadata (grip, tip, action axis) ──
         public ToolPoseConfig ToolPose;
 
+        // ── Part effect ──
+        /// <summary>
+        /// Optional effect that drives part transform changes synchronized with action progress.
+        /// Resolved at the bridge layer from TargetDefinition.associatedPartId + stepPose data.
+        /// Null when the target has no associated part or no pose interpolation is needed.
+        /// </summary>
+        public IPartEffect PartEffect;
+
         /// <summary>
         /// When true, <see cref="ToolActionRotation"/> is already a direct mesh rotation —
         /// no <c>Inverse(gripRotation)</c> correction should be applied.

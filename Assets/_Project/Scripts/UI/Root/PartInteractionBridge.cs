@@ -151,6 +151,8 @@ namespace OSE.UI.Root
             // Re-apply integrated cube positions every frame until all member GLBs have
             // loaded — controller removes a subassembly from pending once all parts confirmed.
             _mgr?.SubassemblyController?.TickPendingIntegration();
+            _mgr?.SubassemblyController?.TickOrientationAnimation(Time.deltaTime);
+            _mgr?.AnimationCues?.Update(Time.deltaTime);
 
             // Block all interaction while the intro overlay is displayed
             if (SessionDriver.IsIntroActive)
@@ -550,6 +552,7 @@ namespace OSE.UI.Root
         ToolCursorManager ISiblingAccessContext.CursorManager => CursorManager;
         ToolActionExecutor ISiblingAccessContext.ToolAction => _mgr?.ToolAction;
         StepFocusComputer ISiblingAccessContext.FocusComputer => _mgr?.FocusComputer;
+        AnimationCueCoordinator ISiblingAccessContext.AnimationCues => _mgr?.AnimationCues;
         void ISiblingAccessContext.ClearHintHighlight() => ClearHintHighlight();
         void ISiblingAccessContext.RestorePartVisual(GameObject part) => RestorePartVisual(part);
 

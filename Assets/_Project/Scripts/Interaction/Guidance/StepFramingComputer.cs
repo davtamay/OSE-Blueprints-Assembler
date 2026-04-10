@@ -80,11 +80,12 @@ namespace OSE.Interaction
                 return FallbackResult();
 
             bounds.Expand(0.25f);
+            float extent = bounds.extents.magnitude;
 
             return new FramingResult
             {
                 Pivot = bounds.center,
-                Distance = Mathf.Max(bounds.extents.magnitude * 3.5f, 1.0f),
+                Distance = Mathf.Max(extent * 3.5f, Mathf.Max(extent * 2f, 0.3f)),
                 UseBounds = true,
                 Bounds = bounds
             };
@@ -99,11 +100,12 @@ namespace OSE.Interaction
                 return FallbackResult();
 
             bounds.Expand(0.1f);
+            float pairExtent = bounds.extents.magnitude;
 
             return new FramingResult
             {
                 Pivot = bounds.center,
-                Distance = Mathf.Max(bounds.extents.magnitude * 2.8f, 0.5f),
+                Distance = Mathf.Max(pairExtent * 2.8f, Mathf.Max(pairExtent * 2f, 0.2f)),
                 UseBounds = true,
                 Bounds = bounds
             };
@@ -121,7 +123,9 @@ namespace OSE.Interaction
 
             bounds.Expand(closeUp ? 0.08f : 0.12f);
             float distanceMultiplier = closeUp ? 2.0f : (pathView ? 3.0f : 2.6f);
-            float distance = Mathf.Max(bounds.extents.magnitude * distanceMultiplier, closeUp ? 0.6f : 0.9f);
+            float extent = bounds.extents.magnitude;
+            float minDist = closeUp ? Mathf.Max(extent * 1.5f, 0.15f) : Mathf.Max(extent * 2f, 0.25f);
+            float distance = Mathf.Max(extent * distanceMultiplier, minDist);
 
             return new FramingResult
             {

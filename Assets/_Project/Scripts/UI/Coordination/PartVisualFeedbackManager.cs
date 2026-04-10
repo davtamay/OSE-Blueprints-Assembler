@@ -450,7 +450,7 @@ namespace OSE.UI.Root
                         continue;
                     if (!string.Equals(allSteps[s].subassemblyId, subassemblyId, StringComparison.OrdinalIgnoreCase))
                         continue;
-                    string[] rp = allSteps[s].GetEffectiveRequiredPartIds();
+                    string[] rp = GetStepPartIds(allSteps[s], package);
                     if (rp == null) continue;
                     for (int p = 0; p < rp.Length; p++)
                     {
@@ -462,7 +462,7 @@ namespace OSE.UI.Root
             else
             {
                 // No subassembly — fall back to just this step's parts
-                string[] rp = step.GetEffectiveRequiredPartIds();
+                string[] rp = GetStepPartIds(step, package);
                 if (rp != null)
                 {
                     for (int p = 0; p < rp.Length; p++)
@@ -626,17 +626,56 @@ namespace OSE.UI.Root
         // Step completion: move parts to assembled position
         // ════════════════════════════════════════════════════════════════════
 
+        /// <summary>
+        /// Returns part IDs for a step. For Use-family steps that have no
+        /// requiredPartIds, derives parts from requiredToolActions → associatedPartId.
+        /// </summary>
+        private static string[] GetStepPartIds(StepDefinition step, MachinePackageDefinition package)
+        {
+            string[] partIds = step.GetEffectiveRequiredPartIds();
+            if (partIds != null && partIds.Length > 0)
+                return partIds;
+
+            if (step.requiredToolActions == null || step.requiredToolActions.Length == 0)
+                return null;
+
+            var derived = new List<string>();
+            for (int a = 0; a < step.requiredToolActions.Length; a++)
+            {
+                string tid = step.requiredToolActions[a].targetId;
+                if (string.IsNullOrEmpty(tid)) continue;
+                if (!package.TryGetTarget(tid, out var targetDef)) continue;
+                if (!string.IsNullOrEmpty(targetDef.associatedPartId) &&
+                    !derived.Contains(targetDef.associatedPartId))
+                    derived.Add(targetDef.associatedPartId);
+            }
+
+            return derived.Count > 0 ? derived.ToArray() : null;
+        }
+
         public void MoveStepPartsToPlayPosition(string stepId)
         {
             var package = _ctx.Spawner.CurrentPackage;
             if (package == null || !package.TryGetStep(stepId, out var step))
                 return;
 
-            string[] partIds = step.GetEffectiveRequiredPartIds();
+            string[] partIds = GetStepPartIds(step, package);
             if (partIds == null || partIds.Length == 0) return;
 
             foreach (string partId in partIds)
-                MovePartToPlayPosition(partId);
+            {
+                MovePartToStepPose(partId, stepId);
+
+                GameObject partGo = _ctx.FindSpawnedPart(partId);
+                if (partGo != null)
+                {
+                    partGo.SetActive(true);
+                    _ctx.PartStates[partId] = PartPlacementState.Completed;
+                    SyncPartGrabInteractivity(partGo, partId);
+                    ApplyPartVisualForState(partGo, partId, PartPlacementState.Completed);
+                    _revealedPartIds.Add(partId);
+                }
+            }
         }
 
         public void RestoreCompletedStepParts(StepDefinition[] steps)
@@ -646,7 +685,8 @@ namespace OSE.UI.Root
 
             for (int s = 0; s < steps.Length; s++)
             {
-                string[] partIds = steps[s].GetEffectiveRequiredPartIds();
+                var step = steps[s];
+                string[] partIds = GetStepPartIds(step, package);
                 if (partIds == null || partIds.Length == 0) continue;
 
                 for (int p = 0; p < partIds.Length; p++)
@@ -654,7 +694,7 @@ namespace OSE.UI.Root
                     string partId = partIds[p];
                     if (string.IsNullOrEmpty(partId)) continue;
 
-                    MovePartToPlayPosition(partId);
+                    MovePartToStepPose(partId, step.id);
 
                     GameObject partGo = _ctx.FindSpawnedPart(partId);
                     if (partGo != null)
@@ -690,6 +730,34 @@ namespace OSE.UI.Root
 
             partGo.transform.SetLocalPositionAndRotation(pPos, pRot);
             partGo.transform.localScale = pScale;
+        }
+
+        /// <summary>
+        /// Moves a part to its step-scoped pose after the given step completes.
+        /// Falls back to assembledPosition when no stepPose exists.
+        /// </summary>
+        private void MovePartToStepPose(string partId, string completedStepId)
+        {
+            if (string.IsNullOrEmpty(partId)) return;
+
+            StepPoseEntry stepPose = _ctx.Spawner.FindPartStepPose(partId, completedStepId);
+            if (stepPose != null)
+            {
+                GameObject partGo = _ctx.FindSpawnedPart(partId);
+                if (partGo == null) return;
+
+                Vector3 pos = new Vector3(stepPose.position.x, stepPose.position.y, stepPose.position.z);
+                Quaternion rot = !stepPose.rotation.IsIdentity
+                    ? new Quaternion(stepPose.rotation.x, stepPose.rotation.y, stepPose.rotation.z, stepPose.rotation.w)
+                    : Quaternion.identity;
+                Vector3 scl = new Vector3(stepPose.scale.x, stepPose.scale.y, stepPose.scale.z);
+
+                partGo.transform.SetLocalPositionAndRotation(pos, rot);
+                partGo.transform.localScale = scl;
+                return;
+            }
+
+            MovePartToPlayPosition(partId);
         }
 
         /// <summary>

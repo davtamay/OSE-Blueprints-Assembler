@@ -128,9 +128,27 @@ namespace OSE.UI.Root
                         }
                     }
 
-                    _ctx.PreviewManager?.SpawnPreviewsForStep(evt.StepId);
-                    if (TryBuildHandlerContext(out var activatedCtx))
-                        _ctx.Router?.OnStepActivated(in activatedCtx);
+                    // Check if animation cues want to defer preview spawning
+                    float previewDelay = GetPreviewDelay(evt.StepId);
+                    if (previewDelay > 0f && _ctx.AnimationCues != null)
+                    {
+                        // Previews deferred — coordinator will spawn them after delay
+                        string capturedStepId = evt.StepId;
+                        _ctx.AnimationCues.OnStepActivated(evt.StepId, () =>
+                        {
+                            _ctx.PreviewManager?.SpawnPreviewsForStep(capturedStepId);
+                            _ctx.AnimationCues?.TransformDeferredPreviews();
+                            if (TryBuildHandlerContext(out var deferredCtx))
+                                _ctx.Router?.OnStepActivated(in deferredCtx);
+                        });
+                    }
+                    else
+                    {
+                        _ctx.PreviewManager?.SpawnPreviewsForStep(evt.StepId);
+                        if (TryBuildHandlerContext(out var activatedCtx))
+                            _ctx.Router?.OnStepActivated(in activatedCtx);
+                        _ctx.AnimationCues?.OnStepActivated(evt.StepId);
+                    }
                     ApplyFinalAssemblyOverviewIfLastStep(evt.StepId);
                     _ctx.FocusComputer?.FocusCameraOnStepArea(evt.StepId);
 
@@ -141,6 +159,7 @@ namespace OSE.UI.Root
             }
             else if (evt.Current == StepState.Completed)
             {
+                _ctx.AnimationCues?.Cleanup();
                 if (ServiceRegistry.TryGet<IAudioFeedbackService>(out var audio))
                     audio.PlayStepCompleted();
 
@@ -186,6 +205,7 @@ namespace OSE.UI.Root
             StepDefinition[] orderedSteps = package.GetOrderedSteps();
             int targetGlobalIndex = Mathf.Clamp(evt.TargetStepIndex, 0, Mathf.Max(orderedSteps.Length - 1, 0));
 
+            _ctx.AnimationCues?.Cleanup();
             _ctx.Router?.CleanupAll();
             _ctx.PreviewManager?.ClearPreviews();
             _ctx.ToolAction?.ClearToolActionTargets();
@@ -425,6 +445,14 @@ namespace OSE.UI.Root
             return true;
         }
 
+        private float GetPreviewDelay(string stepId)
+        {
+            var package = _ctx.Spawner?.CurrentPackage;
+            if (package != null && package.TryGetStep(stepId, out var step) && step?.animationCues != null)
+                return step.animationCues.previewDelaySeconds;
+            return 0f;
+        }
+
         // ── Private ───────────────────────────────────────────────────────
 
         private void RebuildVisualStateForActiveStep(
@@ -435,6 +463,7 @@ namespace OSE.UI.Root
             if (string.IsNullOrWhiteSpace(activeStepId))
                 return;
 
+            _ctx.AnimationCues?.Cleanup();
             _ctx.Router?.CleanupAll();
             _ctx.PreviewManager?.ClearPreviews();
             _ctx.ToolAction?.ClearToolActionTargets();
@@ -466,9 +495,25 @@ namespace OSE.UI.Root
             if (completedSteps != null && completedSteps.Length > 0)
                 _ctx.SubassemblyController?.EnforceIntegratedPositions(completedSteps);
 
-            _ctx.PreviewManager?.SpawnPreviewsForStep(activeStepId);
-            if (TryBuildHandlerContext(out var rebuildCtx))
-                _ctx.Router?.OnStepActivated(in rebuildCtx);
+            float rebuildPreviewDelay = GetPreviewDelay(activeStepId);
+            if (rebuildPreviewDelay > 0f && _ctx.AnimationCues != null)
+            {
+                string capturedId = activeStepId;
+                _ctx.AnimationCues.OnStepActivated(activeStepId, () =>
+                {
+                    _ctx.PreviewManager?.SpawnPreviewsForStep(capturedId);
+                    _ctx.AnimationCues?.TransformDeferredPreviews();
+                    if (TryBuildHandlerContext(out var deferredRebuildCtx))
+                        _ctx.Router?.OnStepActivated(in deferredRebuildCtx);
+                });
+            }
+            else
+            {
+                _ctx.PreviewManager?.SpawnPreviewsForStep(activeStepId);
+                if (TryBuildHandlerContext(out var rebuildCtx))
+                    _ctx.Router?.OnStepActivated(in rebuildCtx);
+                _ctx.AnimationCues?.OnStepActivated(activeStepId);
+            }
 
             ApplyFinalAssemblyOverviewIfLastStep(activeStepId, completedSteps);
 

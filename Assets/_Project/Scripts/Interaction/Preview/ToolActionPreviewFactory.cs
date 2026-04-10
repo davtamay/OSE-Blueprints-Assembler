@@ -17,6 +17,7 @@ namespace OSE.Interaction
                 [PreviewStyle.Weld]        = () => new WeldPreview(),
                 [PreviewStyle.Cut]         = () => new CutPreview(),
                 [PreviewStyle.SquareCheck] = () => new SquareCheckPreview(),
+                [PreviewStyle.Drill]       = () => new DrillPreview(),
             };
 
         /// <summary>

@@ -116,6 +116,19 @@ namespace OSE.Content
         public StepWireConnectPayload wireConnect;
 
         /// <summary>
+        /// Optional working orientation that temporarily transforms the subassembly
+        /// for this step (e.g., flip 180° to access underside). Reverts automatically
+        /// on step transition.
+        /// </summary>
+        public StepWorkingOrientationPayload workingOrientation;
+
+        /// <summary>
+        /// Optional animation cues played when this step activates.
+        /// Content authors specify animation type, targets, timing, and parameters.
+        /// </summary>
+        public StepAnimationCuePayload animationCues;
+
+        /// <summary>
         /// Explicit cross-section task sequence. Defines the order in which parts,
         /// tool actions, and wire/cable connections should be performed within this step.
         /// Null or empty = no explicit order (sections displayed independently).
@@ -298,6 +311,15 @@ namespace OSE.Content
             {
                 instruction += Environment.NewLine + Environment.NewLine +
                     "Adjust the completed axis as one unit while the anchored side stays fixed. Drag along the fit direction until the gap closes and the axis seats fully.";
+            }
+
+            if (workingOrientation != null)
+            {
+                string orientationText = !string.IsNullOrEmpty(workingOrientation.hint)
+                    ? workingOrientation.hint
+                    : "The assembly has been rotated to expose the work area for this step. " +
+                      "It will return to its normal orientation when you move to the next step.";
+                instruction += Environment.NewLine + Environment.NewLine + orientationText;
             }
 
             string resolvedWhyItMatters = ResolvedWhyItMattersText;

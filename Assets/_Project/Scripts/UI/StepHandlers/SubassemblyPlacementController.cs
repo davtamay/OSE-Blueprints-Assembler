@@ -27,6 +27,15 @@ namespace OSE.UI.Root
 
         private string _activeSubassemblyId;
 
+        // ── Working orientation animation state ──
+        private ProxyRecord _orientAnimRecord;
+        private Vector3 _orientAnimFromPos;
+        private Quaternion _orientAnimFromRot;
+        private Vector3 _orientAnimToPos;
+        private Quaternion _orientAnimToRot;
+        private float _orientAnimT = -1f;
+        private const float OrientAnimDuration = 0.6f;
+
         private sealed class ProxyRecord
         {
             public string SubassemblyId;
@@ -140,6 +149,31 @@ namespace OSE.UI.Root
 
             if (!MoveProxyToParkingPlacement(record))
                 MoveProxyToAuthoredFrame(record);
+
+            if (step.workingOrientation != null)
+            {
+                // Snapshot the pre-orientation pose, apply orientation, snapshot target, then revert
+                // to pre-orientation so the animation can lerp from authored → oriented.
+                Vector3 fromPos = record.Root.transform.localPosition;
+                Quaternion fromRot = record.Root.transform.localRotation;
+
+                ApplyWorkingOrientation(record, step.workingOrientation);
+
+                Vector3 toPos = record.Root.transform.localPosition;
+                Quaternion toRot = record.Root.transform.localRotation;
+
+                // Revert to start pose for animation
+                record.Root.transform.localPosition = fromPos;
+                record.Root.transform.localRotation = fromRot;
+
+                _orientAnimRecord = record;
+                _orientAnimFromPos = fromPos;
+                _orientAnimFromRot = fromRot;
+                _orientAnimToPos = toPos;
+                _orientAnimToRot = toRot;
+                _orientAnimT = 0f;
+            }
+
             ApplyProxyTransform(record);
             record.Root.SetActive(true);
             _activeSubassemblyId = record.SubassemblyId;
@@ -768,6 +802,10 @@ namespace OSE.UI.Root
 
         private void ResetActiveProxyOnly()
         {
+            // Cancel any in-flight orientation animation
+            _orientAnimT = -1f;
+            _orientAnimRecord = null;
+
             if (string.IsNullOrWhiteSpace(_activeSubassemblyId))
                 return;
 
@@ -921,6 +959,77 @@ namespace OSE.UI.Root
             record.TransformDirty = true;
             return true;
         }
+
+        private void ApplyWorkingOrientation(ProxyRecord record, StepWorkingOrientationPayload wo)
+        {
+            Transform root = record.Root.transform;
+
+            if (wo.subassemblyRotation.x != 0f || wo.subassemblyRotation.y != 0f || wo.subassemblyRotation.z != 0f)
+            {
+                Quaternion delta = Quaternion.Euler(wo.subassemblyRotation.x, wo.subassemblyRotation.y, wo.subassemblyRotation.z);
+                root.localRotation = delta * root.localRotation;
+            }
+
+            if (wo.subassemblyPositionOffset.x != 0f || wo.subassemblyPositionOffset.y != 0f || wo.subassemblyPositionOffset.z != 0f)
+            {
+                root.localPosition += new Vector3(
+                    wo.subassemblyPositionOffset.x,
+                    wo.subassemblyPositionOffset.y,
+                    wo.subassemblyPositionOffset.z);
+            }
+
+            if (wo.partOverrides != null)
+            {
+                for (int i = 0; i < wo.partOverrides.Length; i++)
+                {
+                    StepPartPoseOverride ov = wo.partOverrides[i];
+                    if (ov == null || string.IsNullOrWhiteSpace(ov.partId))
+                        continue;
+
+                    GameObject partGo = _ctx.FindSpawnedPart(ov.partId);
+                    if (partGo == null)
+                        continue;
+
+                    partGo.transform.localPosition += new Vector3(ov.positionOffset.x, ov.positionOffset.y, ov.positionOffset.z);
+
+                    if (ov.rotationOverride.x != 0f || ov.rotationOverride.y != 0f || ov.rotationOverride.z != 0f)
+                        partGo.transform.localRotation = Quaternion.Euler(ov.rotationOverride.x, ov.rotationOverride.y, ov.rotationOverride.z);
+                }
+            }
+
+            record.TransformDirty = true;
+        }
+
+        /// <summary>
+        /// Drives the animated working-orientation transition. Call once per frame.
+        /// Returns true while the animation is still running.
+        /// </summary>
+        public bool TickOrientationAnimation(float deltaTime)
+        {
+            if (_orientAnimT < 0f || _orientAnimRecord == null || _orientAnimRecord.Root == null)
+                return false;
+
+            _orientAnimT += deltaTime / OrientAnimDuration;
+            float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(_orientAnimT));
+
+            Transform root = _orientAnimRecord.Root.transform;
+            root.localPosition = Vector3.Lerp(_orientAnimFromPos, _orientAnimToPos, t);
+            root.localRotation = Quaternion.Slerp(_orientAnimFromRot, _orientAnimToRot, t);
+            _orientAnimRecord.TransformDirty = true;
+            ApplyProxyTransform(_orientAnimRecord);
+
+            if (_orientAnimT >= 1f)
+            {
+                _orientAnimT = -1f;
+                _orientAnimRecord = null;
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>True while an orientation animation is in flight.</summary>
+        public bool IsOrientationAnimating => _orientAnimT >= 0f && _orientAnimT < 1f;
 
         private void ApplyProxyTransform(ProxyRecord record)
         {

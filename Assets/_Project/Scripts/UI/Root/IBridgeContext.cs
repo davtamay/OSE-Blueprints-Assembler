@@ -68,6 +68,7 @@ namespace OSE.UI.Root
         ToolCursorManager CursorManager { get; }
         ToolActionExecutor ToolAction { get; }
         StepFocusComputer FocusComputer { get; }
+        AnimationCueCoordinator AnimationCues { get; }
         void ClearHintHighlight();
         void RestorePartVisual(GameObject part);
     }

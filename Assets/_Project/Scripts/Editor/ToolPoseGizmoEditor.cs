@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using OSE.Content;
+using OSE.Core;
 using OSE.Interaction;
 using UnityEditor;
 using UnityEngine;
@@ -29,6 +30,7 @@ namespace OSE.Editor
 
         private enum EditorTab { Tools, Parts }
         private enum PreviewMode { Embedded, SceneView }
+        private enum PreviewContent { Hand, Cursor }
 
         [MenuItem(MenuPath)]
         public static void Open()
@@ -63,11 +65,13 @@ namespace OSE.Editor
         private float _orbX = 20f, _orbY = -30f, _dist = 0.8f;
         private Vector3 _pivot;
 
-        // Hand
+        // Hand / Cursor toggle
+        private PreviewContent _previewContent = PreviewContent.Hand;
         private GameObject _hand;
         private bool _showHand = true;
         private Transform[] _fingers;
         private Transform _thumbTip;
+        private Material[][] _cursorOriginalMats; // stashed to restore when switching back to Hand
 
         // Scale
         private float _scale = 1f;
@@ -427,6 +431,15 @@ namespace OSE.Editor
         {
             if (IsEmbedded || _model == null || !_loaded) return;
 
+            bool cursorMode = _previewContent == PreviewContent.Cursor && IsTool;
+
+            // ── Cursor mode: tool tracks the SceneView mouse like play mode ──
+            if (cursorMode)
+            {
+                DrawCursorModeSceneGUI(sceneView);
+                return;
+            }
+
             Transform root = _model.transform;
             Vector3 handW = HandRefPos;
             float baseSize = HandleUtility.GetHandleSize(handW) * 0.06f;
@@ -564,6 +577,104 @@ namespace OSE.Editor
                 }
             }
         }
+
+        /// <summary>
+        /// In cursor mode the tool tracks the SceneView mouse exactly like
+        /// <see cref="ToolCursorManager.UpdatePosition"/> does at runtime.
+        /// The tool is parented to the scene camera and positioned at a fixed
+        /// depth so it floats in front of the viewport.
+        /// </summary>
+        private void DrawCursorModeSceneGUI(SceneView sceneView)
+        {
+            Camera cam = sceneView.camera;
+            if (cam == null) return;
+
+            if (Event.current.type == EventType.MouseMove)
+                sceneView.Repaint();
+
+            // ── Resolve rotation from live editor fields ──
+            // Mirrors ToolPoseResolver.ResolvePreviewRotation tiers but uses
+            // the unsaved editor values so changes are visible immediately.
+            //   Tier 1: explicit cursorRotation (_cursorRot field)
+            //   Tier 2: Inverse(gripRotation) — derived from _toolRotEuler
+            //   Tier 3+: fall through to resolver for orientationEuler / auto-detect
+            Quaternion previewRot;
+            if (_cursorRot.sqrMagnitude > 0.001f)
+                previewRot = Quaternion.Euler(_cursorRot);
+            else
+            {
+                Vector3 gripRotEuler = DeriveGripRotation();
+                if (gripRotEuler.sqrMagnitude > 0.001f)
+                    previewRot = Quaternion.Inverse(Quaternion.Euler(gripRotEuler));
+                else
+                    previewRot = ToolPoseResolver.ResolvePreviewRotation(_tool, _model);
+            }
+
+            // ── Grip offset from live editor field ──
+            // _cursorLocal = gripPoint + cursorOffset, updated live as the user
+            // drags handles or types in the fields. This is the same value that
+            // ToolPoseResolver.ResolveCursorOffset() returns after saving.
+            Vector3 gripOffset = _cursorLocal;
+
+            // The runtime parents the tool to the camera and sets localRotation.
+            // In editor we set world rotation = sceneCamera.rotation * localRotation.
+            _model.transform.rotation = cam.transform.rotation * previewRot;
+            _model.transform.localScale = Vector3.one * _scale;
+
+            // ── Position — mirrors ToolCursorManager.UpdatePosition() exactly ──
+            Vector2 guiMouse = Event.current.mousePosition;
+            Vector3 vp = new Vector3(
+                guiMouse.x / cam.pixelWidth,
+                1f - guiMouse.y / cam.pixelHeight, 0f);
+            float halfH = CursorRayDistance * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
+            float halfW = halfH * cam.aspect;
+            float localX = (vp.x - 0.5f) * 2f * halfW;
+
+            bool hasGrip = gripOffset.sqrMagnitude > 0.001f;
+            float yOffset = hasGrip ? 0f : CursorVerticalOffset;
+            float localY = (vp.y - 0.5f) * 2f * halfH + yOffset;
+            Vector3 localPos = new Vector3(localX, localY, CursorRayDistance);
+
+            // Runtime (line 210): adjustedPos = localPos - previewRot * (gripOffset * s)
+            float s = _scale;
+            Vector3 adjustedPos = localPos - previewRot * (gripOffset * s);
+
+            _model.transform.position = cam.transform.TransformPoint(adjustedPos);
+
+            // ── Tip contact marker ──
+            if (_tip.sqrMagnitude > 0.001f)
+            {
+                Vector3 tipWorld = _model.transform.TransformPoint(_tip);
+                float baseSize = HandleUtility.GetHandleSize(tipWorld) * 0.06f;
+                Handles.color = ColTip;
+                Handles.SphereHandleCap(0, tipWorld, Quaternion.identity, baseSize * 2f, EventType.Repaint);
+                if (_showLabels)
+                {
+                    var st = new GUIStyle(EditorStyles.boldLabel) { normal = { textColor = ColTip } };
+                    Handles.Label(tipWorld + Vector3.up * baseSize * 2f, "TIP", st);
+                }
+            }
+
+            // ── Cursor Offset handle ──
+            // When the user drags the cursor offset handle, only the tool's screen
+            // position changes — the tip stays fixed relative to the tool mesh.
+            Vector3 cursorAnchorW = _model.transform.TransformPoint(_cursorLocal);
+            float dotSize = HandleUtility.GetHandleSize(cursorAnchorW) * 0.04f;
+            Handles.color = ColCursor;
+            Handles.SphereHandleCap(0, cursorAnchorW, Quaternion.identity, dotSize, EventType.Repaint);
+            if (_showLabels)
+            {
+                var ls = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = ColCursor } };
+                Handles.Label(cursorAnchorW + cam.transform.up * dotSize * 3f, "cursor anchor", ls);
+            }
+
+            // Force continuous repaint while in cursor mode so the tool tracks smoothly.
+            if (Event.current.type == EventType.Repaint)
+                sceneView.Repaint();
+        }
+
+        private const float CursorRayDistance    = 0.75f;  // matches ToolCursorManager
+        private const float CursorVerticalOffset = 0.15f;  // matches ToolCursorManager
 
         // ── Shared marker drawing (embedded mode, read-only) ─────────────────────
 
@@ -703,6 +814,11 @@ namespace OSE.Editor
         private void ApplyToolTransform()
         {
             if (_model == null) return;
+            if (_previewContent == PreviewContent.Cursor && IsTool)
+            {
+                ApplyCursorTransform();
+                return;
+            }
             Quaternion rot = Quaternion.Euler(_toolRotEuler);
             _model.transform.rotation = rot;
             _model.transform.localScale = Vector3.one * _scale;
@@ -787,6 +903,31 @@ namespace OSE.Editor
 
         private void DrawHandUI()
         {
+            // ── Preview content toggle: Hand vs Cursor ──
+            if (IsTool)
+            {
+                EditorGUILayout.LabelField("Preview Content", EditorStyles.boldLabel);
+                EditorGUI.BeginChangeCheck();
+                _previewContent = (PreviewContent)GUILayout.Toolbar((int)_previewContent,
+                    new[] { "Hand (XR Grab)", "Cursor (Desktop)" });
+                if (EditorGUI.EndChangeCheck())
+                {
+                    ApplyPreviewContent();
+                    Repaint();
+                    if (!IsEmbedded) SceneView.RepaintAll();
+                }
+                EditorGUILayout.Space(4);
+            }
+
+            if (_previewContent == PreviewContent.Cursor && IsTool)
+            {
+                EditorGUILayout.HelpBox(
+                    "Showing the tool as it appears on the desktop cursor.\n" +
+                    "Cursor Rotation and Cursor Offset are applied.",
+                    MessageType.Info);
+                return; // hide hand settings in cursor mode
+            }
+
             EditorGUILayout.LabelField("XR Hand", EditorStyles.boldLabel);
 
             int hi = System.Array.IndexOf(Hands, _handedness);
@@ -804,6 +945,83 @@ namespace OSE.Editor
                 if (_showHand) SpawnHand(); else KillHand();
                 Repaint();
             }
+        }
+
+        /// <summary>
+        /// Switches the preview between hand-grip and desktop-cursor views.
+        /// In cursor mode the hand is hidden and the tool is repositioned/scaled
+        /// to match <see cref="ToolCursorManager"/> at runtime.
+        /// </summary>
+        private void ApplyPreviewContent()
+        {
+            if (_model == null) return;
+
+            if (_previewContent == PreviewContent.Cursor)
+            {
+                KillHand();
+
+                // Stash original materials and apply semi-transparent cursor look
+                _cursorOriginalMats = StashMaterials(_model);
+                MaterialHelper.MakeTransparent(_model, 0.55f);
+
+                ApplyCursorTransform();
+            }
+            else
+            {
+                // Restore original materials
+                if (_cursorOriginalMats != null)
+                {
+                    RestoreStashedMaterials(_model, _cursorOriginalMats);
+                    _cursorOriginalMats = null;
+                }
+
+                ApplyToolTransform();
+                if (_showHand) SpawnHand();
+            }
+        }
+
+        /// <summary>
+        /// Positions the tool model as the desktop cursor would show it at runtime.
+        /// Uses the same tiered rotation from <see cref="ToolPoseResolver"/>.
+        /// </summary>
+        private void ApplyCursorTransform()
+        {
+            if (_model == null) return;
+
+            // Use live editor fields so unsaved edits are reflected immediately.
+            Quaternion previewRot;
+            if (_cursorRot.sqrMagnitude > 0.001f)
+                previewRot = Quaternion.Euler(_cursorRot);
+            else
+            {
+                Vector3 gripRotEuler = DeriveGripRotation();
+                if (gripRotEuler.sqrMagnitude > 0.001f)
+                    previewRot = Quaternion.Inverse(Quaternion.Euler(gripRotEuler));
+                else if (_tool != null)
+                    previewRot = ToolPoseResolver.ResolvePreviewRotation(_tool, _model);
+                else
+                    previewRot = Quaternion.identity;
+            }
+
+            _model.transform.rotation = previewRot;
+            _model.transform.localScale = Vector3.one * _scale;
+            _model.transform.position = HandRefPos - previewRot * (_cursorLocal * _scale);
+        }
+
+        private static Material[][] StashMaterials(GameObject go)
+        {
+            var renderers = go.GetComponentsInChildren<Renderer>(true);
+            var stash = new Material[renderers.Length][];
+            for (int i = 0; i < renderers.Length; i++)
+                stash[i] = renderers[i].sharedMaterials;
+            return stash;
+        }
+
+        private static void RestoreStashedMaterials(GameObject go, Material[][] stash)
+        {
+            var renderers = go.GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < renderers.Length && i < stash.Length; i++)
+                renderers[i].sharedMaterials = stash[i];
         }
 
         private void SpawnHand()
@@ -1058,6 +1276,8 @@ namespace OSE.Editor
         private void PickTool(ToolDefinition t)
         {
             _tool = t; _part = null;
+            _previewContent = PreviewContent.Hand; // reset to hand mode
+            _cursorOriginalMats = null;
             _undoStack.Clear(); _redoStack.Clear();
 
             // Convert authored grip data → tool position (tool at identity rotation,

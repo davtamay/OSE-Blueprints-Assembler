@@ -132,10 +132,29 @@ namespace OSE.UI.Root
             }
             else if (pp != null)
             {
-                pos = new Vector3(pp.assembledPosition.x, pp.assembledPosition.y, pp.assembledPosition.z);
-                rot = !pp.assembledRotation.IsIdentity
-                    ? new Quaternion(pp.assembledRotation.x, pp.assembledRotation.y, pp.assembledRotation.z, pp.assembledRotation.w)
-                    : Quaternion.identity;
+                // Check for step-scoped pose override before falling back to assembledPosition
+                string activeStepId = null;
+                if (ServiceRegistry.TryGet<IMachineSessionController>(out var sess))
+                    activeStepId = sess.AssemblyController?.StepController?.CurrentStepState.StepId;
+
+                StepPoseEntry stepPose = !string.IsNullOrEmpty(activeStepId)
+                    ? _ctx.Spawner.FindPartStepPose(partId, activeStepId)
+                    : null;
+
+                if (stepPose != null)
+                {
+                    pos = new Vector3(stepPose.position.x, stepPose.position.y, stepPose.position.z);
+                    rot = !stepPose.rotation.IsIdentity
+                        ? new Quaternion(stepPose.rotation.x, stepPose.rotation.y, stepPose.rotation.z, stepPose.rotation.w)
+                        : Quaternion.identity;
+                }
+                else
+                {
+                    pos = new Vector3(pp.assembledPosition.x, pp.assembledPosition.y, pp.assembledPosition.z);
+                    rot = !pp.assembledRotation.IsIdentity
+                        ? new Quaternion(pp.assembledRotation.x, pp.assembledRotation.y, pp.assembledRotation.z, pp.assembledRotation.w)
+                        : Quaternion.identity;
+                }
             }
             else
             {
@@ -144,7 +163,17 @@ namespace OSE.UI.Root
             }
 
             if (pp != null)
-                scale = new Vector3(pp.assembledScale.x, pp.assembledScale.y, pp.assembledScale.z);
+            {
+                string scaleStepId = null;
+                if (ServiceRegistry.TryGet<IMachineSessionController>(out var scaleSess))
+                    scaleStepId = scaleSess.AssemblyController?.StepController?.CurrentStepState.StepId;
+                StepPoseEntry scalePose = !string.IsNullOrEmpty(scaleStepId)
+                    ? _ctx.Spawner.FindPartStepPose(partId, scaleStepId)
+                    : null;
+                scale = scalePose != null
+                    ? new Vector3(scalePose.scale.x, scalePose.scale.y, scalePose.scale.z)
+                    : new Vector3(pp.assembledScale.x, pp.assembledScale.y, pp.assembledScale.z);
+            }
             else if (tp != null)
                 scale = new Vector3(tp.scale.x, tp.scale.y, tp.scale.z);
             else

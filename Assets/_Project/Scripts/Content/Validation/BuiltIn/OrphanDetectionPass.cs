@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace OSE.Content.Validation
 {
     /// <summary>
-    /// Detects orphaned parts, targets, and steps (defined but not referenced),
+    /// Detects orphaned parts, targets, hints, and steps (defined but not referenced),
     /// and validates that step sequence indices are contiguous within each assembly.
     /// </summary>
     internal sealed class OrphanDetectionPass : IPackageValidationPass
@@ -13,6 +13,7 @@ namespace OSE.Content.Validation
         {
             DetectOrphanParts(ctx);
             DetectOrphanTargets(ctx);
+            DetectOrphanHints(ctx);
             DetectOrphanSteps(ctx);
             ValidateContiguousSequenceIndices(ctx);
         }
@@ -52,12 +53,45 @@ namespace OSE.Content.Validation
             {
                 string[] tIds = steps[i].targetIds;
                 if (tIds != null) for (int j = 0; j < tIds.Length; j++) referenced.Add(tIds[j]);
+
+                var toolActions = steps[i].requiredToolActions;
+                if (toolActions != null)
+                    for (int j = 0; j < toolActions.Length; j++)
+                        if (!string.IsNullOrEmpty(toolActions[j]?.targetId))
+                            referenced.Add(toolActions[j].targetId);
             }
 
             for (int i = 0; i < targets.Length; i++)
                 if (!string.IsNullOrEmpty(targets[i]?.id) && !referenced.Contains(targets[i].id))
                     ctx.Issues.Add(ValidationPassHelpers.Warning($"targets[{i}]",
                         $"Target '{targets[i].id}' is defined but never referenced by any step."));
+        }
+
+        private static void DetectOrphanHints(ValidationPassContext ctx)
+        {
+            HintDefinition[] hints = ctx.Package.GetHints();
+            StepDefinition[] steps = ctx.Package.GetSteps();
+            if (hints.Length == 0) return;
+
+            var referenced = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < steps.Length; i++)
+            {
+                string[] flat = steps[i].hintIds;
+                if (flat != null) for (int j = 0; j < flat.Length; j++) referenced.Add(flat[j]);
+
+                string[] resolved = steps[i].ResolvedHintIds;
+                if (resolved != null && resolved != flat)
+                    for (int j = 0; j < resolved.Length; j++) referenced.Add(resolved[j]);
+            }
+            // Hints referenced as correctionHintId on validation rules
+            foreach (var rule in ctx.Package.GetValidationRules())
+                if (!string.IsNullOrEmpty(rule?.correctionHintId))
+                    referenced.Add(rule.correctionHintId);
+
+            for (int i = 0; i < hints.Length; i++)
+                if (!string.IsNullOrEmpty(hints[i]?.id) && !referenced.Contains(hints[i].id))
+                    ctx.Issues.Add(ValidationPassHelpers.Warning($"hints[{i}]",
+                        $"Hint '{hints[i].id}' is defined but never referenced by any step or validation rule."));
         }
 
         private static void DetectOrphanSteps(ValidationPassContext ctx)

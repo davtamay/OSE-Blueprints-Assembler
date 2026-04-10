@@ -124,6 +124,16 @@ namespace OSE.UI.Root
             => _configLookup.FindPartPlacement(partId);
 
         /// <summary>
+        /// Returns the step-scoped pose override for a part at a specific step,
+        /// or null if no override exists (caller falls back to assembledPosition).
+        /// </summary>
+        public StepPoseEntry FindPartStepPose(string partId, string stepId)
+            => _configLookup.FindPartStepPose(partId, stepId);
+
+        /// <inheritdoc/>
+        public void ClearGhosts() => _ghostManager?.Clear();
+
+        /// <summary>
         /// Repositions existing spawned parts for step-aware preview in edit mode.
         /// Parts from steps before <paramref name="targetSequenceIndex"/> are shown
         /// at their assembledPosition; the current step's part at startPosition; future
@@ -290,6 +300,17 @@ namespace OSE.UI.Root
                             ? new Quaternion(imp.rotation.x, imp.rotation.y, imp.rotation.z, imp.rotation.w)
                             : Quaternion.identity;
                         scl = new Vector3(imp.scale.x, imp.scale.y, imp.scale.z);
+                    }
+                    else if (usePlay && !fullyAssembled &&
+                             _configLookup.TryResolvePartPoseAtStep(
+                                 partGo.name, orderedSteps, targetSequenceIndex,
+                                 out SceneFloat3 spPos, out SceneQuaternion spRot, out SceneFloat3 spScl))
+                    {
+                        pos = new Vector3(spPos.x, spPos.y, spPos.z);
+                        rot = !spRot.IsIdentity
+                            ? new Quaternion(spRot.x, spRot.y, spRot.z, spRot.w)
+                            : Quaternion.identity;
+                        scl = new Vector3(spScl.x, spScl.y, spScl.z);
                     }
                     else if (usePlay)
                     {

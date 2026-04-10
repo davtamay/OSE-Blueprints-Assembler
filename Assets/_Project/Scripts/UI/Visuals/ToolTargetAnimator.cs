@@ -21,9 +21,17 @@ namespace OSE.UI.Root
         // ── Tuning ──
         private const float ToolTargetPulseSpeed       = 3.6f;
         private const float ToolTargetScalePulse       = 0.12f;
-        private const float ToolTargetHeightPulse      = 0.05f;
         private const float ToolTargetFadeStartDistance = 3.0f;
         private const float ToolTargetFadeEndDistance   = 0.8f;
+
+        // ── Camera-adaptive scale ──
+        private const float DistanceClose          = 0.3f;   // at this distance → actual size
+        private const float DistanceFar            = 2.0f;   // at this distance → max scale-up
+        private const float DistantScaleMultiplier = 6f;     // how much bigger when far away
+
+        // ── Emission glow ──
+        private static readonly Color EmissionLow  = new Color(0f, 0.6f, 0.9f, 1f) * 0.4f;
+        private static readonly Color EmissionHigh = new Color(0f, 0.85f, 1f, 1f) * 1.5f;
 
         private readonly ISiblingAccessContext _siblings;
         private readonly ToolTargetDetector _detector;
@@ -101,13 +109,31 @@ namespace OSE.UI.Root
                 Vector3 baseScale = info != null && info.BaseScale.sqrMagnitude > 0f
                     ? info.BaseScale
                     : target.transform.localScale;
-                float scaleFactor = 1f + (ToolTargetScalePulse * pulse);
+
+                // Camera-adaptive scale: large when far, shrinks to actual size when close.
+                // At DistanceFar or beyond → DistantScaleMultiplier × base size.
+                // At DistanceClose or nearer → 1× base size (actual asset size).
+                float distScale = 1f;
+                if (cam != null)
+                {
+                    float dist = Vector3.Distance(cam.transform.position, target.transform.position);
+                    float t = Mathf.InverseLerp(DistanceClose, DistanceFar, dist);
+                    distScale = Mathf.Lerp(1f, DistantScaleMultiplier, t);
+                }
+
+                float scaleFactor = distScale * (1f + (ToolTargetScalePulse * pulse));
                 target.transform.localScale = baseScale * scaleFactor;
 
+                // Height pulse proportional to current marker size
+                float markerSize = Mathf.Max(baseScale.x, Mathf.Max(baseScale.y, baseScale.z)) * distScale;
+                float heightPulse = Mathf.Max(markerSize * 0.3f, 0.002f);
                 Vector3 baseLocalPosition = info != null
                     ? info.BaseLocalPosition
                     : target.transform.localPosition;
-                target.transform.localPosition = baseLocalPosition + (Vector3.up * (ToolTargetHeightPulse * (pulse - 0.5f)));
+                target.transform.localPosition = baseLocalPosition + (Vector3.up * (heightPulse * (pulse - 0.5f)));
+
+                // Emission glow so small targets remain visible
+                MaterialHelper.SetEmission(target, Color.Lerp(EmissionLow, EmissionHigh, pulse));
             }
         }
 

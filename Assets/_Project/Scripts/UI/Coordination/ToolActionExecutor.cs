@@ -142,6 +142,10 @@ namespace OSE.UI.Root
                 InstantPlacement = isPersistent,
                 AssemblyScale = _ctx.CursorManager.AssemblyScale,
             };
+
+            // Resolve optional part effect for progress-driven part movement
+            context.PartEffect = TryResolvePartEffect(context.TargetId);
+
             return !string.IsNullOrWhiteSpace(context.TargetId);
         }
 
@@ -384,6 +388,82 @@ namespace OSE.UI.Root
         {
             ServiceRegistry.TryGet<OSE.Interaction.XRRigModeSwitcher>(out var switcher);
             return switcher != null && switcher.UsingHands;
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        // Part effect resolution
+        // ════════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Resolves an <see cref="IPartEffect"/> for the target's associated part.
+        /// When present the tool action preview will drive the part from its current
+        /// local pose to the step-scoped or assembled end pose in sync with progress.
+        /// Returns null when no part is associated or no movement is needed.
+        /// </summary>
+        private IPartEffect TryResolvePartEffect(string targetId)
+        {
+            var spawner = _ctx.Spawner;
+            var package = spawner?.CurrentPackage;
+            if (package == null) return null;
+
+            if (!package.TryGetTarget(targetId, out var targetDef))
+                return null;
+
+            string partId = targetDef.associatedPartId;
+            if (string.IsNullOrEmpty(partId))
+                return null;
+
+            GameObject partGo = _ctx.FindSpawnedPart(partId);
+            if (partGo == null) return null;
+
+            // Resolve current step to determine the end pose
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
+                return null;
+            var stepCtrl = session.AssemblyController?.StepController;
+            if (stepCtrl == null || !stepCtrl.HasActiveStep)
+                return null;
+
+            string currentStepId = stepCtrl.CurrentStepDefinition.id;
+
+            // End pose: stepPose for this step if authored, else assembledPosition
+            Vector3 endPos;
+            Quaternion endRot;
+            Vector3 endScale;
+            StepPoseEntry stepPose = spawner.FindPartStepPose(partId, currentStepId);
+            if (stepPose != null)
+            {
+                endPos = new Vector3(stepPose.position.x, stepPose.position.y, stepPose.position.z);
+                endRot = !stepPose.rotation.IsIdentity
+                    ? new Quaternion(stepPose.rotation.x, stepPose.rotation.y, stepPose.rotation.z, stepPose.rotation.w)
+                    : Quaternion.identity;
+                endScale = new Vector3(stepPose.scale.x, stepPose.scale.y, stepPose.scale.z);
+            }
+            else
+            {
+                PartPreviewPlacement pp = spawner.FindPartPlacement(partId);
+                if (pp == null) return null;
+                endPos = new Vector3(pp.assembledPosition.x, pp.assembledPosition.y, pp.assembledPosition.z);
+                endRot = !pp.assembledRotation.IsIdentity
+                    ? new Quaternion(pp.assembledRotation.x, pp.assembledRotation.y, pp.assembledRotation.z, pp.assembledRotation.w)
+                    : Quaternion.identity;
+                endScale = new Vector3(pp.assembledScale.x, pp.assembledScale.y, pp.assembledScale.z);
+            }
+
+            // Start pose: part's current local transform
+            Vector3 startPos = partGo.transform.localPosition;
+            Quaternion startRot = partGo.transform.localRotation;
+            Vector3 startScale = partGo.transform.localScale;
+
+            // Skip if already at the end pose
+            if (Vector3.Distance(startPos, endPos) < 0.0001f &&
+                Quaternion.Angle(startRot, endRot) < 0.01f)
+                return null;
+
+            Transform previewRoot = _ctx.Setup?.PreviewRoot;
+            return new LerpPosePartEffect(
+                partGo.transform, previewRoot,
+                startPos, startRot, startScale,
+                endPos, endRot, endScale);
         }
     }
 }

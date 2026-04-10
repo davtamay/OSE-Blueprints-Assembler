@@ -52,7 +52,7 @@ namespace OSE.Interaction
                 FramingDistance = 1.0f,
                 WorkingDistance = 0.03f,
                 ApproachTiltDegrees = 0f,
-                PreviewStyle = PreviewStyle.Torque,
+                PreviewStyle = PreviewStyle.Drill,
                 SpawnClickEffect = true,
             });
 

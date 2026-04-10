@@ -11,5 +11,6 @@ namespace OSE.Interaction
         Weld = 2,
         Cut = 3,
         SquareCheck = 4,
+        Drill = 5,
     }
 }

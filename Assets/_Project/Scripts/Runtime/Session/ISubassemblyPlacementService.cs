@@ -54,5 +54,15 @@ namespace OSE.Runtime
         /// <see cref="ResetReplayState"/>.
         /// </summary>
         void TickPendingIntegration();
+
+        /// <summary>
+        /// Drives the animated working-orientation transition (Slerp/Lerp over ~0.6s).
+        /// Call once per frame from <see cref="PartInteractionBridge.Update"/>.
+        /// Returns true while the animation is still running.
+        /// </summary>
+        bool TickOrientationAnimation(float deltaTime);
+
+        /// <summary>True while an orientation animation is in flight.</summary>
+        bool IsOrientationAnimating { get; }
     }
 }

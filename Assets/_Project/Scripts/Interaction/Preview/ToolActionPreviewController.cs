@@ -40,6 +40,8 @@ namespace OSE.Interaction
         private Renderer _targetSphereRenderer;
         private bool _completed;
         private bool _instantPlacement;
+        private IPartEffect _partEffect;
+        private Vector3 _partEffectOffset;
         private float _startScale, _targetScale;
         private ToolActionVisualGuide _visualGuide;
 
@@ -85,6 +87,8 @@ namespace OSE.Interaction
             _onActionDone = onActionDone;
             _onCancel = onCancel;
             _instantPlacement = ctx.InstantPlacement;
+            _partEffect = ctx.PartEffect;
+            _partEffectOffset = Vector3.zero;
 
             // Snapshot current preview state and detach from camera
             _originalParent = toolPreview.transform.parent;
@@ -272,6 +276,7 @@ namespace OSE.Interaction
                     WeldLength = _weldLength
                 };
                 _preview.Begin(ctx);
+                _partEffect?.Begin();
 
                 // Activate visual guide now that the action phase is starting
                 Vector2 dragDir = _preview.GetExpectedDragDirection(ctx);
@@ -287,11 +292,24 @@ namespace OSE.Interaction
                 ? _preview.TickObserve(deltaTime * _speed)
                 : _preview.TickGuided(deltaTime, dragDelta, screenPos);
 
+            // Drive part transform and follow its displacement.
+            // Accumulate offset because the preview resets tool position each frame
+            // (e.g. DrillPreview sets position = _startPos + vibration).
+            // We re-apply the full cumulative offset after the preview's ApplyEffects.
+            if (_partEffect != null && _toolPreview != null)
+            {
+                Vector3 delta = _partEffect.Apply(progress);
+                _partEffectOffset += delta;
+                _toolPreview.transform.position += _partEffectOffset;
+            }
+
             _visualGuide?.SetProgress(progress);
 
             if (progress >= 1f)
             {
                 _completed = true;
+                _partEffect?.End();
+                _partEffect = null;
                 _preview?.End(true);
                 _preview = null;
 
@@ -389,6 +407,8 @@ namespace OSE.Interaction
 
         private void ExitDestroyed()
         {
+            _partEffect?.End();
+            _partEffect = null;
             if (_preview != null)
             {
                 _preview.End(false);
@@ -404,6 +424,7 @@ namespace OSE.Interaction
         {
             _phase = Phase.Inactive;
             _preview = null;
+            _partEffect = null;
 
             string targetId = _targetId;
             var onComplete = _onComplete;
@@ -495,7 +516,7 @@ namespace OSE.Interaction
             // target rotation. Position is derived from TargetWorldRotation alone so it fires
             // even when ToolPose hasn't loaded yet (first tool click after app start).
             // ComputeTorquePose (which needs ToolPose) is only called for rotation when ready.
-            else if (profileDesc.PreviewStyle == PreviewStyle.Torque)
+            else if (profileDesc.PreviewStyle == PreviewStyle.Torque || profileDesc.PreviewStyle == PreviewStyle.Drill)
             {
                 Vector3 desiredAxis = ctx.TargetWorldRotation * Vector3.right;
                 workingPos = surfacePos - desiredAxis.normalized * toolHalfLength;
