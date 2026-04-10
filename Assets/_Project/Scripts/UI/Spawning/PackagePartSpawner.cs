@@ -64,6 +64,46 @@ namespace OSE.UI.Root
 
         // ── Lifecycle ──
 
+#if UNITY_EDITOR
+        private void Awake()
+        {
+            UnityEditor.EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            UnityEditor.EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+        }
+
+        /// <summary>
+        /// Nukes all PreviewRoot children on play-mode transitions to guarantee a
+        /// clean slate. Without this, pooled (deactivated) parts and editor ghosts
+        /// can survive across the boundary and appear as lingering objects.
+        /// </summary>
+        private void OnPlayModeStateChanged(UnityEditor.PlayModeStateChange state)
+        {
+            // ExitingEditMode  → about to enter play: destroy editor parts so play starts clean
+            // ExitingPlayMode  → about to return to edit: destroy play parts so editor starts clean
+            if (state != UnityEditor.PlayModeStateChange.ExitingEditMode &&
+                state != UnityEditor.PlayModeStateChange.ExitingPlayMode)
+                return;
+
+            _spawnedParts.Clear();
+            _ghostManager?.Clear();
+
+            if (_setup == null) _setup = GetComponent<PreviewSceneSetup>();
+            if (_setup?.PreviewRoot == null) return;
+
+            // Destroy spawned children of PreviewRoot (parts, ghosts, tool targets,
+            // previews) but preserve the "UI Root" host — it holds the UIDocument
+            // with its PanelSettings asset reference that can't be recreated from code.
+            var root = _setup.PreviewRoot;
+            for (int i = root.childCount - 1; i >= 0; i--)
+            {
+                var child = root.GetChild(i);
+                if (child == null) continue;
+                if (child.name == "UI Root") continue;
+                DestroyImmediate(child.gameObject);
+            }
+        }
+#endif
+
         private void OnEnable()
         {
             _setup = GetComponent<PreviewSceneSetup>();
@@ -112,6 +152,9 @@ namespace OSE.UI.Root
             ServiceRegistry.Unregister<IStepAwarePositioner>();
             _ghostManager?.Clear(); // destroy ghost GOs before manager is orphaned
             DestroyPooledParts();
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+#endif
         }
 
         // ── Public API ──

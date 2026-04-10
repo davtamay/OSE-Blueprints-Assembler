@@ -450,7 +450,7 @@ namespace OSE.UI.Root
                         continue;
                     if (!string.Equals(allSteps[s].subassemblyId, subassemblyId, StringComparison.OrdinalIgnoreCase))
                         continue;
-                    string[] rp = GetStepPartIds(allSteps[s], package);
+                    string[] rp = allSteps[s].GetEffectiveRequiredPartIds();
                     if (rp == null) continue;
                     for (int p = 0; p < rp.Length; p++)
                     {
@@ -462,7 +462,7 @@ namespace OSE.UI.Root
             else
             {
                 // No subassembly — fall back to just this step's parts
-                string[] rp = GetStepPartIds(step, package);
+                string[] rp = step.GetEffectiveRequiredPartIds();
                 if (rp != null)
                 {
                     for (int p = 0; p < rp.Length; p++)
@@ -626,40 +626,13 @@ namespace OSE.UI.Root
         // Step completion: move parts to assembled position
         // ════════════════════════════════════════════════════════════════════
 
-        /// <summary>
-        /// Returns part IDs for a step. For Use-family steps that have no
-        /// requiredPartIds, derives parts from requiredToolActions → associatedPartId.
-        /// </summary>
-        private static string[] GetStepPartIds(StepDefinition step, MachinePackageDefinition package)
-        {
-            string[] partIds = step.GetEffectiveRequiredPartIds();
-            if (partIds != null && partIds.Length > 0)
-                return partIds;
-
-            if (step.requiredToolActions == null || step.requiredToolActions.Length == 0)
-                return null;
-
-            var derived = new List<string>();
-            for (int a = 0; a < step.requiredToolActions.Length; a++)
-            {
-                string tid = step.requiredToolActions[a].targetId;
-                if (string.IsNullOrEmpty(tid)) continue;
-                if (!package.TryGetTarget(tid, out var targetDef)) continue;
-                if (!string.IsNullOrEmpty(targetDef.associatedPartId) &&
-                    !derived.Contains(targetDef.associatedPartId))
-                    derived.Add(targetDef.associatedPartId);
-            }
-
-            return derived.Count > 0 ? derived.ToArray() : null;
-        }
-
         public void MoveStepPartsToPlayPosition(string stepId)
         {
             var package = _ctx.Spawner.CurrentPackage;
             if (package == null || !package.TryGetStep(stepId, out var step))
                 return;
 
-            string[] partIds = GetStepPartIds(step, package);
+            string[] partIds = step.GetEffectiveRequiredPartIds();
             if (partIds == null || partIds.Length == 0) return;
 
             foreach (string partId in partIds)
@@ -686,7 +659,7 @@ namespace OSE.UI.Root
             for (int s = 0; s < steps.Length; s++)
             {
                 var step = steps[s];
-                string[] partIds = GetStepPartIds(step, package);
+                string[] partIds = step.GetEffectiveRequiredPartIds();
                 if (partIds == null || partIds.Length == 0) continue;
 
                 for (int p = 0; p < partIds.Length; p++)

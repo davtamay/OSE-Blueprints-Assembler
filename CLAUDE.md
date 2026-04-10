@@ -34,3 +34,18 @@ After ANY machine.json edit, the agent MUST follow these rules:
 **Payload-first for new steps:** New steps should use `guidance`, `validation`, `feedback`, `reinforcement`, and `difficulty` payloads rather than flat fields (`instructionText`, `hintIds`, `validationRuleIds`, etc.). Flat fields are legacy — never add them to new content.
 
 **Validate after edits:** After bulk edits, tell the user to run `OSE > Validate All Packages` in Unity. The pre-play validator blocks Play mode on errors automatically.
+
+## Agent Rules for Bug Fixes
+
+When fixing any bug, the agent MUST also prevent that class of bug from recurring:
+
+**Eliminate the root cause, not just the symptom.** If the same mistake could be made in another call site, file, or future feature, fix the architecture so it can't happen. Examples:
+- If multiple callers need the same derived data → bake it at load time in `MachinePackageNormalizer` so every caller gets the right answer automatically.
+- If cleanup is missed during a lifecycle transition → add a centralized cleanup hook (e.g. `playModeStateChanged`) rather than patching individual call sites.
+- If a visual state isn't applied because a code path skips a step → ensure the authoritative method always runs, not just in some paths.
+
+**Never scatter the same derivation logic across callers.** If you find yourself writing the same resolution/fallback in multiple places, centralize it into a single method or normalizer pass. Then update all callers to use the single source of truth.
+
+**Add structural prevention, not just a point fix.** After fixing a bug, ask: "Could a developer adding a new feature hit this same issue?" If yes, make the fix structural — change the API, add a normalizer pass, or update a base method so the new feature would work correctly by default.
+
+**Learn from every error.** After fixing a bug, save the lesson to memory so the same mistake is never repeated in future conversations. Record what went wrong, why it was hard to find, and what pattern to follow going forward. Each bug is a signal — use it to permanently improve how you approach this codebase.

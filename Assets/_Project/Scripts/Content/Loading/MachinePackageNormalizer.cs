@@ -22,6 +22,7 @@ namespace OSE.Content.Loading
             InflatePartTemplates(package);
             InferStepParentIds(package);
             NormalizeToolActions(package);
+            ResolveToolActionPartIds(package);
         }
 
         // ── Part Templates ──
@@ -118,6 +119,60 @@ namespace OSE.Content.Loading
                         }
                     }
                 }
+            }
+        }
+
+        // ── Tool Action Defaults ──
+
+        // ── Tool Action → Part ID Resolution ──
+
+        /// <summary>
+        /// For steps that have requiredToolActions but no requiredPartIds (Use-family),
+        /// derives part IDs from each tool action's target → associatedPartId and bakes
+        /// them into requiredPartIds. This guarantees GetEffectiveRequiredPartIds() always
+        /// returns the complete set — no caller ever needs to manually derive parts from
+        /// tool actions.
+        /// </summary>
+        private static void ResolveToolActionPartIds(MachinePackageDefinition package)
+        {
+            StepDefinition[] steps = package.steps;
+            TargetDefinition[] targets = package.targets;
+            if (steps == null || targets == null || targets.Length == 0) return;
+
+            // Build target lookup once
+            var targetLookup = new Dictionary<string, TargetDefinition>(
+                targets.Length, StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < targets.Length; i++)
+            {
+                if (targets[i] != null && !string.IsNullOrWhiteSpace(targets[i].id))
+                    targetLookup[targets[i].id] = targets[i];
+            }
+
+            for (int s = 0; s < steps.Length; s++)
+            {
+                StepDefinition step = steps[s];
+                if (step == null) continue;
+
+                // Skip steps that already have explicit requiredPartIds
+                if (step.requiredPartIds != null && step.requiredPartIds.Length > 0)
+                    continue;
+
+                ToolActionDefinition[] actions = step.requiredToolActions;
+                if (actions == null || actions.Length == 0) continue;
+
+                var derived = new List<string>();
+                for (int a = 0; a < actions.Length; a++)
+                {
+                    string tid = actions[a]?.targetId;
+                    if (string.IsNullOrEmpty(tid)) continue;
+                    if (!targetLookup.TryGetValue(tid, out var target)) continue;
+                    if (!string.IsNullOrEmpty(target.associatedPartId) &&
+                        !derived.Contains(target.associatedPartId))
+                        derived.Add(target.associatedPartId);
+                }
+
+                if (derived.Count > 0)
+                    step.requiredPartIds = derived.ToArray();
             }
         }
 
