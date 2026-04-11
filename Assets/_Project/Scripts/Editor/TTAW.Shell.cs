@@ -436,6 +436,10 @@ namespace OSE.Editor
             // toolbar's step nav buttons.
             RebuildNavigatorIfStale();
             RefreshNavigatorSelection();
+
+            // Validation dashboard — re-paints from the cached _validationIssues
+            // buffer (cheap when nothing changed).
+            RefreshValidationDashboard();
         }
     }
 }

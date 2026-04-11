@@ -181,6 +181,9 @@ namespace OSE.Editor
             _navigatorListView.selectionChanged += OnNavigatorListSelectionChanged;
             _navigatorRoot.Add(_navigatorListView);
 
+            // ── Validation dashboard (collapsible strip below the tree) ───────
+            BuildValidationDashboard(_navigatorRoot);
+
             ApplyNavigatorViewMode();
             RebuildNavigatorData();
         }

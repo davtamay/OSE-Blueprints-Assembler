@@ -504,6 +504,10 @@ namespace OSE.Editor
                         _parts[i].isDirty = false;
             }
             _poseSwitchCooldownUntil = EditorApplication.timeSinceStartup + 0.5;
+
+            // Auto-run the validator after every save so the dashboard always
+            // reflects the on-disk state. (Phase 6 — TTAW.Validation.cs.)
+            RunValidation();
         }
 
         private void RevertFromBackup()

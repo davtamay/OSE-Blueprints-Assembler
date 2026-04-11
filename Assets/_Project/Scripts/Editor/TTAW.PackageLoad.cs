@@ -79,6 +79,11 @@ namespace OSE.Editor
             BuildPartList();
             RespawnScene();
             SyncAllPartMeshesToActivePose(); // must come AFTER RespawnScene
+
+            // Run the validation dashboard against the freshly-loaded package
+            // so authors see the current health snapshot the moment the window
+            // opens. (Phase 6 — see TTAW.Validation.cs.)
+            RunValidation();
         }
 
         private void BuildStepOptions()

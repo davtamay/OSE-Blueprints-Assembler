@@ -98,6 +98,10 @@ namespace OSE.Editor
                 DrawTaskInspectorBody(step, order);
             }
 
+            // ── SUBASSEMBLY (Phase 6 MVP) ─────────────────────────────────────
+            EditorGUILayout.Space(8);
+            DrawSubassemblySection(step);
+
             // ── ANIMATION CUES — step-level, always shown below task panels ───
             EditorGUILayout.Space(8);
             DrawAnimationCuesSection(step);
