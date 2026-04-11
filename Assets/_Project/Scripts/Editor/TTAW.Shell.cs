@@ -49,6 +49,14 @@ namespace OSE.Editor
         private Label                _toolbarStepTitleLabel;
         private Label                _toolbarDirtyLabel;
         private ToolbarButton        _toolbarNewStepBtn;
+        private ToolbarToggle        _toolbarInspectorBtn;
+
+        // ── Three-pane shell references ───────────────────────────────────────
+        private TwoPaneSplitView     _outerSplit;     // navigator | (canvas + inspector)
+        private TwoPaneSplitView     _innerSplit;     // canvas | inspector  (only when visible)
+        private VisualElement        _canvasPane;     // middle pane (IMGUI body)
+        private VisualElement        _inspectorPane;  // right pane  (IMGUI inspector)
+        private VisualElement        _rightSideHost;  // wrapper around inner split / lone canvas
 
         // ── UITK shell ────────────────────────────────────────────────────────
 
@@ -60,37 +68,64 @@ namespace OSE.Editor
 
             BuildToolbar(root);
 
-            // Horizontal split: left = navigator, right = existing IMGUI body.
-            // The navigator pane is "fixed" (resizable by the splitter) and the
-            // IMGUI pane grows to fill the remaining space.
-            var split = new TwoPaneSplitView(0, 240f, TwoPaneSplitViewOrientation.Horizontal);
-            split.style.flexGrow = 1;
+            // ── Three-pane shell ──────────────────────────────────────────────
+            // Outer split: NAVIGATOR | (CANVAS + INSPECTOR)
+            // Inner split: CANVAS | INSPECTOR (the inspector can be toggled
+            // off via the toolbar; when off the canvas takes the full width
+            // of the right side host).
+            _outerSplit = new TwoPaneSplitView(0, 240f, TwoPaneSplitViewOrientation.Horizontal);
+            _outerSplit.style.flexGrow = 1;
 
+            // Left — navigator pane
             var navPane = new VisualElement();
             navPane.style.flexGrow = 1;
             navPane.style.minWidth = 180;
             navPane.style.overflow = Overflow.Hidden;
             BuildNavigator(navPane);
-            split.Add(navPane);
+            _outerSplit.Add(navPane);
 
-            var imguiPane = new VisualElement();
-            imguiPane.style.flexGrow = 1;
-            imguiPane.style.minWidth = 320;
-            imguiPane.style.overflow = Overflow.Hidden;
+            // Right side host — owns the canvas and (optionally) the inspector
+            _rightSideHost = new VisualElement();
+            _rightSideHost.style.flexGrow      = 1;
+            _rightSideHost.style.flexDirection = FlexDirection.Row;
+            _rightSideHost.style.minWidth      = 320;
+            _rightSideHost.style.overflow      = Overflow.Hidden;
+            _outerSplit.Add(_rightSideHost);
+
+            // Canvas pane — the existing IMGUI body
+            _canvasPane = new VisualElement();
+            _canvasPane.style.flexGrow = 1;
+            _canvasPane.style.minWidth = 320;
+            _canvasPane.style.overflow = Overflow.Hidden;
             // Single IMGUIContainer that runs the existing OnGUI body (now
             // renamed DrawAuthoringIMGUI in TTAW.Layout.cs). All Event.current,
             // GUILayout, EditorGUILayout, position, and Repaint() calls work the
             // same inside an IMGUIContainer as they did when Unity called OnGUI
             // directly.
-            var imguiHost = new IMGUIContainer(DrawAuthoringIMGUI)
+            var canvasHost = new IMGUIContainer(DrawAuthoringIMGUI)
             {
-                name = "ttaw-imgui-host"
+                name = "ttaw-imgui-canvas"
             };
-            imguiHost.style.flexGrow = 1;
-            imguiPane.Add(imguiHost);
-            split.Add(imguiPane);
+            canvasHost.style.flexGrow = 1;
+            _canvasPane.Add(canvasHost);
 
-            root.Add(split);
+            // Inspector pane — IMGUIContainer that runs DrawInspectorIMGUI
+            _inspectorPane = new VisualElement();
+            _inspectorPane.style.flexGrow = 1;
+            _inspectorPane.style.minWidth = 240;
+            _inspectorPane.style.overflow = Overflow.Hidden;
+            _inspectorPane.style.borderLeftWidth = 1;
+            _inspectorPane.style.borderLeftColor = new Color(0f, 0f, 0f, 0.35f);
+            var inspectorHost = new IMGUIContainer(DrawInspectorIMGUI)
+            {
+                name = "ttaw-imgui-inspector"
+            };
+            inspectorHost.style.flexGrow = 1;
+            _inspectorPane.Add(inspectorHost);
+
+            ApplyInspectorVisibility();
+
+            root.Add(_outerSplit);
 
             // Poll IMGUI-side state changes (dirty flags, step changes from
             // SessionDriver, package reloads, etc.) and refresh the toolbar +
@@ -99,6 +134,40 @@ namespace OSE.Editor
             root.schedule.Execute(RefreshToolbar).Every(100);
 
             RefreshToolbar();
+        }
+
+        // ── Inspector visibility (toolbar toggle) ─────────────────────────────
+
+        /// <summary>
+        /// Rebuilds the right-side host to reflect <see cref="_inspectorVisible"/>.
+        /// When visible, host = inner TwoPaneSplitView(canvas | inspector).
+        /// When hidden, host = canvas only (full width of the right side).
+        /// Called from CreateGUI and from the toolbar toggle handler.
+        /// </summary>
+        private void ApplyInspectorVisibility()
+        {
+            if (_rightSideHost == null) return;
+
+            // Detach existing children — both panes are reusable VisualElements
+            // we created in CreateGUI, so they survive the swap intact.
+            _canvasPane?.RemoveFromHierarchy();
+            _inspectorPane?.RemoveFromHierarchy();
+            _innerSplit?.RemoveFromHierarchy();
+            _innerSplit = null;
+            _rightSideHost.Clear();
+
+            if (_inspectorVisible)
+            {
+                _innerSplit = new TwoPaneSplitView(1, 280f, TwoPaneSplitViewOrientation.Horizontal);
+                _innerSplit.style.flexGrow = 1;
+                _innerSplit.Add(_canvasPane);
+                _innerSplit.Add(_inspectorPane);
+                _rightSideHost.Add(_innerSplit);
+            }
+            else
+            {
+                _rightSideHost.Add(_canvasPane);
+            }
         }
 
         // ── Toolbar build ─────────────────────────────────────────────────────
@@ -145,6 +214,16 @@ namespace OSE.Editor
             _toolbarDirtyLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
             _toolbarDirtyLabel.tooltip = "Unsaved authoring changes";
             row1.Add(_toolbarDirtyLabel);
+
+            _toolbarInspectorBtn = new ToolbarToggle { text = "Inspector", value = _inspectorVisible };
+            _toolbarInspectorBtn.tooltip = "Show/hide the right-side inspector pane";
+            _toolbarInspectorBtn.RegisterValueChangedCallback(evt =>
+            {
+                _inspectorVisible = evt.newValue;
+                ApplyInspectorVisibility();
+                Repaint();
+            });
+            row1.Add(_toolbarInspectorBtn);
 
             _toolbarNewStepBtn = new ToolbarButton(OnToolbarNewStepClicked) { text = "+ New Step" };
             _toolbarNewStepBtn.tooltip = "Create a new step in the active assembly";
@@ -348,6 +427,9 @@ namespace OSE.Editor
             string dirtyText = dirtyCount > 0 ? $"● {dirtyCount} unsaved" : string.Empty;
             if (_toolbarDirtyLabel.text != dirtyText)
                 _toolbarDirtyLabel.text = dirtyText;
+
+            if (_toolbarInspectorBtn != null && _toolbarInspectorBtn.value != _inspectorVisible)
+                _toolbarInspectorBtn.SetValueWithoutNotify(_inspectorVisible);
 
             // Navigator — rebuild on package/size changes, and re-sync the
             // selection if the active step changed via the IMGUI side or the

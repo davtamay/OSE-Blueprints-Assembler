@@ -17,19 +17,21 @@ namespace OSE.Editor
 {
     public sealed partial class ToolTargetAuthoringWindow : EditorWindow
     {
-        // ── Main GUI ──────────────────────────────────────────────────────────
+        // ── Main GUI (canvas pane) ────────────────────────────────────────────
         //
-        // PHASE 2 of the UX redesign: this method runs inside an IMGUIContainer
-        // hosted in the UITK root built by CreateGUI() in TTAW.Shell.cs. The UITK
-        // toolbar above the container handles the package picker, step navigation,
-        // and dirty indicator. This method draws everything *below* the toolbar:
-        // the new-step form (when toggled), the step info card, the unified task
-        // list, and the pinned bottom bar with detail/batch panels and actions.
+        // PHASE 4 of the UX redesign: this method runs inside the canvas
+        // IMGUIContainer (the middle pane of the three-pane shell built by
+        // CreateGUI() in TTAW.Shell.cs). The toolbar above handles package
+        // picker / step nav / dirty indicator. The right pane runs
+        // DrawInspectorIMGUI() which renders the detail/batch context panels
+        // for the current selection. This method draws only the canvas: the
+        // new-step form (when toggled), the step info card, the unified task
+        // list (which fills the available height), and the pinned actions
+        // bar at the bottom.
         //
-        // All Event.current, GUILayout, EditorGUILayout, position, and Repaint()
-        // calls work the same inside an IMGUIContainer as they did when Unity
-        // called OnGUI directly. Future phases replace more pieces of this method
-        // with native UITK panels one at a time.
+        // The pre-Phase-4 pinned-bottom edit panel (DrawBottomEditPanel) and
+        // its taskDetailInScroll branching are gone — that detail content
+        // now lives in the inspector pane on the right.
 
         private void DrawAuthoringIMGUI()
         {
@@ -72,43 +74,48 @@ namespace OSE.Editor
             if (Event.current.type == EventType.Repaint)
                 _topContentHeight = GUILayoutUtility.GetLastRect().yMax + 4f;
 
-            // ── Layout constants ──────────────────────────────────────────────
-            // When a task is selected the context panel lives inside the scroll area,
-            // so the pinned bottom bar shrinks to just the action buttons.
-            bool taskDetailInScroll = _selectedTaskSeqIdx >= 0 && _stepFilterIdx > 0;
-            float kEditH      = taskDetailInScroll ? 0f : 230f;
-            const float kActionsH   =  54f;
-            float kBottomBarH = kEditH + kActionsH + 10f;
-
-            // List height: exact gap between measured top and pinned bottom bar
-            float listH = Mathf.Max(position.height - _topContentHeight - kBottomBarH - 4f, 60f);
+            // The canvas pane only owns the unified list and the actions bar.
+            // The detail/batch context panels moved to the inspector pane in
+            // Phase 4. The list height is the canvas height minus the measured
+            // top content and the actions bar.
+            const float kActionsH = 54f;
+            float listH = Mathf.Max(position.height - _topContentHeight - kActionsH - 14f, 60f);
             DrawUnifiedList(listH);
 
-            // ── Pinned bottom bar ─────────────────────────────────────────────
-            Rect bottomRect = new Rect(4f, position.height - kBottomBarH,
-                                       position.width - 8f, kBottomBarH);
-            GUILayout.BeginArea(bottomRect);
-
-            // Separator
-            EditorGUI.DrawRect(new Rect(0f, 0f, bottomRect.width, 1f),
+            // ── Pinned actions bar (at the bottom of the canvas pane) ─────────
+            EditorGUILayout.Space(4);
+            EditorGUI.DrawRect(GUILayoutUtility.GetRect(0f, 1f, GUILayout.ExpandWidth(true)),
                                new Color(0.13f, 0.13f, 0.13f));
             EditorGUILayout.Space(3);
+            DrawUnifiedActions();
+        }
 
-            // Edit fields — only shown when no task is driving the context panel
-            // (in that case, detail is rendered inline in the scroll area above).
-            if (!taskDetailInScroll)
+        // ── Inspector GUI (right pane) ────────────────────────────────────────
+        //
+        // Runs inside the inspector IMGUIContainer (right pane of the
+        // three-pane shell). Hosts the detail/batch context panels for the
+        // current selection — replaces the pre-Phase-4 pinned-bottom panel.
+        // The selection-driven dispatch logic still lives in DrawBottomEditPanel
+        // (in TTAW.UnifiedList.cs); this method just provides the scroll
+        // container and a no-package fallback.
+
+        private void DrawInspectorIMGUI()
+        {
+            if (_pkg == null)
             {
-                _detailScroll = EditorGUILayout.BeginScrollView(
-                    _detailScroll, GUILayout.Height(kEditH));
-                DrawBottomEditPanel();
-                EditorGUILayout.EndScrollView();
-                EditorGUILayout.Space(3);
+                EditorGUILayout.Space(8);
+                EditorGUILayout.LabelField("Inspector", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("(no package loaded)", EditorStyles.miniLabel);
+                return;
             }
 
-            // Action buttons (always visible)
-            DrawUnifiedActions();
+            EditorGUILayout.Space(4);
+            EditorGUILayout.LabelField("INSPECTOR", EditorStyles.boldLabel);
+            EditorGUILayout.Space(2);
 
-            GUILayout.EndArea();
+            _detailScroll = EditorGUILayout.BeginScrollView(_detailScroll);
+            DrawBottomEditPanel();
+            EditorGUILayout.EndScrollView();
         }
 
         // ── Package picker — removed in Phase 2; lives in the UITK toolbar (TTAW.Shell.cs).

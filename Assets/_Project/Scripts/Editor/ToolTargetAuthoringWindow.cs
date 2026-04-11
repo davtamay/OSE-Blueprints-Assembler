@@ -73,7 +73,8 @@ namespace OSE.Editor
         private string[]   _stepIds;            // null at index 0, then actual step ids
         private int[]      _stepSequenceIdxs;   // 0 at index 0, then step.sequenceIndex
         [SerializeField] private int        _stepFilterIdx;
-        [SerializeField] private int        _navigatorViewMode;  // 0 = tree, 1 = flat
+        [SerializeField] private int        _navigatorViewMode;     // 0 = tree, 1 = flat
+        [SerializeField] private bool       _inspectorVisible = true; // toolbar toggle for the right pane
         private bool       _suppressStepSync;   // prevent circular sync with SessionDriver
         private int        _lastPolledDriverStep = -1; // last SessionDriver step seen during poll
         // Note: the IMGUI scrub-drag fields (_stepNumRect, _stepDragging, _stepDragAccum,
@@ -335,7 +336,11 @@ namespace OSE.Editor
         private static void OpenWindow()
         {
             var w = GetWindow<ToolTargetAuthoringWindow>("Assembly Step Authoring");
-            w.minSize = new Vector2(440, 580);
+            // Phase 4 — three-pane layout (nav 240 + canvas 320 + inspector 280) needs ~880 wide.
+            // The inspector can be hidden via the toolbar to recover horizontal space.
+            w.minSize = new Vector2(720, 580);
+            if (w.position.width < 880f)
+                w.position = new Rect(w.position.x, w.position.y, 880f, Mathf.Max(w.position.height, 720f));
             w.Show();
         }
     }

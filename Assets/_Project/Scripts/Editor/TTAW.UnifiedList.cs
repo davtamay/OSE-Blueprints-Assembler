@@ -81,272 +81,21 @@ namespace OSE.Editor
             if (_addTaskPicker == AddTaskPicker.ToolTarget) DrawAddToolTargetPicker();
             if (_addTaskPicker == AddTaskPicker.Wire)       DrawAddWirePicker();
 
-            // ── Section for selected task kind (one section at a time) ─────────
-            if (_selectedTaskSeqIdx >= 0 && _selectedTaskSeqIdx < order.Count)
+            // ── Section for selected task kind (rich detail body) ─────────────
+            //
+            // PHASE 4: when the inspector pane is visible the canvas shows a
+            // hint pointing right; when hidden the canvas renders the rich
+            // body inline so authors who collapsed the inspector still get
+            // the full detail surface. Both paths share DrawTaskInspectorBody.
+            if (_inspectorVisible)
             {
-                var selEntry = order[_selectedTaskSeqIdx];
                 EditorGUILayout.Space(4);
-
-                // Multi-selection → batch panel (parts first, then targets, then
-                // fall through to the primary entry's single-item detail panel)
-                if (_multiSelectedTaskSeqIdxs.Count > 1 && _multiSelectedParts.Count > 1)
-                {
-                    DrawUnifiedSectionHeader($"BATCH — {_multiSelectedParts.Count} parts", 0);
-                    DrawPartPoseToggle();
-                    DrawPartBatchPanel();
-                }
-                else if (_multiSelectedTaskSeqIdxs.Count > 1 && _multiSelected.Count > 1)
-                {
-                    DrawUnifiedSectionHeader($"BATCH — {_multiSelected.Count} targets", 0);
-                    DrawBatchPanel();
-                }
-                else switch (selEntry.kind)
-                {
-                    case "part":
-                    {
-                        DrawUnifiedSectionHeader($"PART CONTEXT ({selEntry.id})", 0);
-                        if (IsTaskEntryDirty(selEntry, step))
-                        {
-                            EditorGUILayout.BeginHorizontal();
-                            var ds = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = ColDirty }, fontStyle = FontStyle.Bold };
-                            EditorGUILayout.LabelField("● Unsaved Changes", ds);
-                            if (GUILayout.Button("Save", EditorStyles.miniButton, GUILayout.Width(42)))
-                                SaveTaskEntry(selEntry, step);
-                            if (GUILayout.Button("Revert", EditorStyles.miniButton, GUILayout.Width(52)))
-                                RevertPartEntry(selEntry.id);
-                            EditorGUILayout.EndHorizontal();
-                        }
-                        DrawPartPoseToggle();
-                        if (_parts != null)
-                            for (int i = 0; i < _parts.Length; i++)
-                                if (_parts[i].def?.id == selEntry.id)
-                                { DrawPartDetailPanel(ref _parts[i]); break; }
-                        break;
-                    }
-                    case "wire":
-                    {
-                        DrawUnifiedSectionHeader($"WIRE CONTEXT ({selEntry.id})", 0);
-                        if (IsTaskEntryDirty(selEntry, step))
-                        {
-                            EditorGUILayout.BeginHorizontal();
-                            var ds = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = ColDirty }, fontStyle = FontStyle.Bold };
-                            EditorGUILayout.LabelField("● Unsaved Changes", ds);
-                            if (GUILayout.Button("Save", EditorStyles.miniButton, GUILayout.Width(42)))
-                                SaveTaskEntry(selEntry, step);
-                            if (GUILayout.Button("Revert", EditorStyles.miniButton, GUILayout.Width(52)))
-                                RevertTargetEntry(selEntry.id);
-                            EditorGUILayout.EndHorizontal();
-                        }
-
-                        // Polarity / connector fields for the selected wire entry
-                        if (step.wireConnect?.IsConfigured == true && step.wireConnect.wires != null)
-                        {
-                            WireConnectEntry wire = null;
-                            foreach (var w in step.wireConnect.wires)
-                                if (string.Equals(w.targetId, selEntry.id, StringComparison.Ordinal))
-                                { wire = w; break; }
-
-                            if (wire != null)
-                            {
-                                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-
-                                EditorGUI.BeginChangeCheck();
-                                EditorGUILayout.BeginHorizontal();
-                                EditorGUILayout.LabelField("Polarity A:", GUILayout.Width(74));
-                                wire.portAPolarityType = EditorGUILayout.TextField(wire.portAPolarityType ?? "", GUILayout.Width(80));
-                                EditorGUILayout.LabelField("Polarity B:", GUILayout.Width(74));
-                                wire.portBPolarityType = EditorGUILayout.TextField(wire.portBPolarityType ?? "");
-                                EditorGUILayout.EndHorizontal();
-
-                                EditorGUILayout.BeginHorizontal();
-                                EditorGUILayout.LabelField("Connector A:", GUILayout.Width(74));
-                                wire.portAConnectorType = EditorGUILayout.TextField(wire.portAConnectorType ?? "", GUILayout.Width(80));
-                                EditorGUILayout.LabelField("Connector B:", GUILayout.Width(74));
-                                wire.portBConnectorType = EditorGUILayout.TextField(wire.portBConnectorType ?? "");
-                                EditorGUILayout.EndHorizontal();
-                                if (EditorGUI.EndChangeCheck()) _dirtyStepIds.Add(step.id);
-
-                                EditorGUI.BeginChangeCheck();
-                                EditorGUILayout.BeginHorizontal();
-                                wire.polarityOrderMatters = EditorGUILayout.ToggleLeft(
-                                    "Polarity order matters", wire.polarityOrderMatters, EditorStyles.miniLabel,
-                                    GUILayout.Width(150));
-                                if (step.wireConnect != null)
-                                    step.wireConnect.enforcePortOrder = EditorGUILayout.ToggleLeft(
-                                        "Enforce port order (A first)", step.wireConnect.enforcePortOrder,
-                                        EditorStyles.miniLabel);
-                                EditorGUILayout.EndHorizontal();
-                                if (EditorGUI.EndChangeCheck()) _dirtyStepIds.Add(step.id);
-
-                                EditorGUILayout.EndVertical();
-
-                                // Port positions — read/write directly from wire entry
-                                EditorGUILayout.Space(2);
-                                {
-                                    EditorGUI.BeginChangeCheck();
-                                    Vector3 newA = Vector3FieldClip("Port A (local)", new Vector3(wire.portA.x, wire.portA.y, wire.portA.z));
-                                    Vector3 newB = Vector3FieldClip("Port B (local)", new Vector3(wire.portB.x, wire.portB.y, wire.portB.z));
-                                    if (EditorGUI.EndChangeCheck())
-                                    {
-                                        wire.portA = PackageJsonUtils.ToFloat3(newA);
-                                        wire.portB = PackageJsonUtils.ToFloat3(newB);
-                                        if (_targets != null)
-                                            for (int i = 0; i < _targets.Length; i++)
-                                                if (_targets[i].def?.id == selEntry.id)
-                                                { BeginEdit(); _targets[i].portA = newA; _targets[i].portB = newB; _targets[i].isDirty = true; EndEdit(); break; }
-                                        _dirtyStepIds.Add(step.id);
-                                        RefreshWirePreview(step);
-                                        SceneView.RepaintAll();
-                                    }
-                                }
-
-                                // Color + Radius + Subdivisions — wire appearance is self-contained
-                                EditorGUILayout.Space(2);
-                                EditorGUI.BeginChangeCheck();
-                                Color wc = wire.color.a > 0
-                                    ? new Color(wire.color.r, wire.color.g, wire.color.b, wire.color.a)
-                                    : new Color(0.15f, 0.15f, 0.15f, 1f);
-                                Color nc = EditorGUILayout.ColorField("Color", wc);
-                                wire.color = new SceneFloat4 { r = nc.r, g = nc.g, b = nc.b, a = nc.a };
-                                float nw = FloatFieldClip("Radius (m)", wire.radius > 0 ? wire.radius : 0.003f);
-                                wire.radius = Mathf.Max(0f, nw);
-                                wire.subdivisions = Mathf.Max(1, EditorGUILayout.IntField("Subdivisions", wire.subdivisions < 1 ? 1 : wire.subdivisions));
-                                float displaySag = wire.sag > 0f ? wire.sag : 1.0f;
-                                float newSag = EditorGUILayout.Slider("Sag", displaySag, 0.01f, 3.0f);
-                                wire.sag = newSag;
-                                bool isLinear = string.Equals(wire.interpolation, "linear", StringComparison.OrdinalIgnoreCase);
-                                int interpIdx = EditorGUILayout.Popup("Interpolation", isLinear ? 1 : 0, new[] { "Bezier", "Linear" });
-                                wire.interpolation = interpIdx == 1 ? "linear" : "bezier";
-                                if (EditorGUI.EndChangeCheck()) { _dirtyStepIds.Add(step.id); RefreshWirePreview(step); SceneView.RepaintAll(); }
-                            }
-                        }
-
-                        // Wire targets: position/rotation have no meaning — skip DrawDetailPanel.
-                        if (_targets != null && step.wireConnect?.IsConfigured != true)
-                            for (int i = 0; i < _targets.Length; i++)
-                                if (_targets[i].def?.id == selEntry.id)
-                                { DrawDetailPanel(ref _targets[i]); break; }
-                        break;
-                    }
-                    case "confirm_action":
-                    {
-                        DrawUnifiedSectionHeader("CONFIRM CONTEXT", 0);
-                        EditorGUILayout.LabelField(
-                            "  User presses the Confirm button to complete this step.",
-                            EditorStyles.miniLabel);
-                        break;
-                    }
-                    case "confirm":
-                    {
-                        // Confirm-family inspection points — no tool, just position reference
-                        DrawUnifiedSectionHeader($"OBSERVE CONTEXT ({selEntry.id})", 0);
-                        EditorGUILayout.LabelField(
-                            "  Camera must frame this location before Confirm unlocks. No tool required.",
-                            EditorStyles.miniLabel);
-                        EditorGUILayout.Space(4);
-                        if (_targets != null)
-                            for (int i = 0; i < _targets.Length; i++)
-                                if (_targets[i].def?.id == selEntry.id)
-                                { DrawDetailPanel(ref _targets[i]); break; }
-                        break;
-                    }
-                    default: // toolAction, target
-                    {
-                        DrawUnifiedSectionHeader($"TOOL CONTEXT ({selEntry.id})", 0);
-                        if (IsTaskEntryDirty(selEntry, step))
-                        {
-                            EditorGUILayout.BeginHorizontal();
-                            var ds = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = ColDirty }, fontStyle = FontStyle.Bold };
-                            EditorGUILayout.LabelField("● Unsaved Changes", ds);
-                            if (GUILayout.Button("Save", EditorStyles.miniButton, GUILayout.Width(42)))
-                                SaveTaskEntry(selEntry, step);
-                            if (GUILayout.Button("Revert", EditorStyles.miniButton, GUILayout.Width(52)))
-                                RevertTargetEntry(selEntry.id);
-                            EditorGUILayout.EndHorizontal();
-                        }
-
-                        // ── Tool picker ───────────────────────────────────────
-                        // Find the requiredToolAction entry for this target (may be null if not yet set)
-                        ToolActionDefinition taskAction = null;
-                        if (step.requiredToolActions != null)
-                            foreach (var a in step.requiredToolActions)
-                                if (a?.targetId == selEntry.id) { taskAction = a; break; }
-
-                        if (_pkg?.tools != null && _pkg.tools.Length > 0)
-                        {
-                            // Build parallel name/id arrays (index 0 = none)
-                            var toolDefs  = _pkg.tools;
-                            var toolNames = new string[toolDefs.Length + 1];
-                            var toolIds   = new string[toolDefs.Length + 1];
-                            toolNames[0] = "(none)";
-                            toolIds[0]   = "";
-                            int currentToolIdx = 0;
-                            for (int ti = 0; ti < toolDefs.Length; ti++)
-                            {
-                                toolNames[ti + 1] = toolDefs[ti]?.name ?? toolDefs[ti]?.id ?? "?";
-                                toolIds[ti + 1]   = toolDefs[ti]?.id ?? "";
-                                if (taskAction != null && toolIds[ti + 1] == taskAction.toolId)
-                                    currentToolIdx = ti + 1;
-                            }
-
-                            EditorGUI.BeginChangeCheck();
-                            EditorGUILayout.BeginHorizontal();
-                            EditorGUILayout.LabelField("Tool:", EditorStyles.miniLabel, GUILayout.Width(32));
-                            int newToolIdx = EditorGUILayout.Popup(currentToolIdx, toolNames);
-                            EditorGUILayout.EndHorizontal();
-                            if (EditorGUI.EndChangeCheck() && newToolIdx != currentToolIdx)
-                            {
-                                string pickedToolId = toolIds[newToolIdx];
-                                if (taskAction == null)
-                                {
-                                    // No action entry yet — create one
-                                    string actionId = $"action_{selEntry.id}";
-                                    taskAction = new ToolActionDefinition
-                                        { id = actionId, toolId = pickedToolId, targetId = selEntry.id };
-                                    var aList = new System.Collections.Generic.List<ToolActionDefinition>(
-                                        step.requiredToolActions ?? System.Array.Empty<ToolActionDefinition>());
-                                    aList.Add(taskAction);
-                                    step.requiredToolActions = aList.ToArray();
-                                }
-                                else
-                                {
-                                    taskAction.toolId = pickedToolId;
-                                }
-                                _dirtyStepIds.Add(step.id);
-                                BuildTargetToolMap();
-                                if (_targets != null)
-                                    for (int ti = 0; ti < _targets.Length; ti++)
-                                        if (_targets[ti].def?.id == selEntry.id)
-                                        { RefreshToolPreview(ref _targets[ti]); break; }
-                                Repaint();
-                            }
-
-                            // Show selected tool's category as context
-                            if (currentToolIdx > 0)
-                            {
-                                var selTool = toolDefs[currentToolIdx - 1];
-                                if (!string.IsNullOrEmpty(selTool?.category))
-                                    EditorGUILayout.LabelField($"Category: {selTool.category}", EditorStyles.miniLabel);
-                            }
-                        }
-
-                        DrawPersistentToolRemovalRows();
-
-                        // Target transform detail
-                        string toolTargetId = selEntry.id;
-                        if (_targets != null)
-                            for (int i = 0; i < _targets.Length; i++)
-                                if (_targets[i].def?.id == toolTargetId)
-                                { DrawDetailPanel(ref _targets[i]); break; }
-                        break;
-                    }
-                }
+                EditorGUILayout.LabelField("  Selection details are in the Inspector pane →",
+                    EditorStyles.centeredGreyMiniLabel);
             }
             else
             {
-                EditorGUILayout.Space(8);
-                EditorGUILayout.LabelField("  Click a task to view its details.",
-                    EditorStyles.centeredGreyMiniLabel);
+                DrawTaskInspectorBody(step, order);
             }
 
             // ── ANIMATION CUES — step-level, always shown below task panels ───
@@ -1559,42 +1308,305 @@ namespace OSE.Editor
             }
         }
 
+        // ── Inspector body (single source of truth, called from canvas + inspector) ──
+        //
+        // PHASE 4: this method renders the rich detail UI for the currently
+        // selected task or selection state. It is called from two sites:
+        //   • DrawUnifiedList (when the inspector is hidden via the toolbar)
+        //   • DrawBottomEditPanel → which is hosted in the inspector pane
+        // Both sites pass the same step + task order so behaviour is identical.
+
+        private void DrawTaskInspectorBody(StepDefinition step, List<TaskOrderEntry> order)
+        {
+            if (step == null || order == null) return;
+
+            if (_selectedTaskSeqIdx < 0 || _selectedTaskSeqIdx >= order.Count)
+            {
+                EditorGUILayout.Space(8);
+                EditorGUILayout.LabelField("  Click a task to view its details.",
+                    EditorStyles.centeredGreyMiniLabel);
+                return;
+            }
+
+            var selEntry = order[_selectedTaskSeqIdx];
+            EditorGUILayout.Space(4);
+
+            // Multi-selection → batch panel (parts first, then targets, then
+            // fall through to the primary entry's single-item detail panel)
+            if (_multiSelectedTaskSeqIdxs.Count > 1 && _multiSelectedParts.Count > 1)
+            {
+                DrawUnifiedSectionHeader($"BATCH — {_multiSelectedParts.Count} parts", 0);
+                DrawPartPoseToggle();
+                DrawPartBatchPanel();
+                return;
+            }
+            if (_multiSelectedTaskSeqIdxs.Count > 1 && _multiSelected.Count > 1)
+            {
+                DrawUnifiedSectionHeader($"BATCH — {_multiSelected.Count} targets", 0);
+                DrawBatchPanel();
+                return;
+            }
+
+            switch (selEntry.kind)
+            {
+                case "part":
+                {
+                    DrawUnifiedSectionHeader($"PART CONTEXT ({selEntry.id})", 0);
+                    if (IsTaskEntryDirty(selEntry, step))
+                    {
+                        EditorGUILayout.BeginHorizontal();
+                        var ds = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = ColDirty }, fontStyle = FontStyle.Bold };
+                        EditorGUILayout.LabelField("● Unsaved Changes", ds);
+                        if (GUILayout.Button("Save", EditorStyles.miniButton, GUILayout.Width(42)))
+                            SaveTaskEntry(selEntry, step);
+                        if (GUILayout.Button("Revert", EditorStyles.miniButton, GUILayout.Width(52)))
+                            RevertPartEntry(selEntry.id);
+                        EditorGUILayout.EndHorizontal();
+                    }
+                    DrawPartPoseToggle();
+                    if (_parts != null)
+                        for (int i = 0; i < _parts.Length; i++)
+                            if (_parts[i].def?.id == selEntry.id)
+                            { DrawPartDetailPanel(ref _parts[i]); break; }
+                    break;
+                }
+                case "wire":
+                {
+                    DrawUnifiedSectionHeader($"WIRE CONTEXT ({selEntry.id})", 0);
+                    if (IsTaskEntryDirty(selEntry, step))
+                    {
+                        EditorGUILayout.BeginHorizontal();
+                        var ds = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = ColDirty }, fontStyle = FontStyle.Bold };
+                        EditorGUILayout.LabelField("● Unsaved Changes", ds);
+                        if (GUILayout.Button("Save", EditorStyles.miniButton, GUILayout.Width(42)))
+                            SaveTaskEntry(selEntry, step);
+                        if (GUILayout.Button("Revert", EditorStyles.miniButton, GUILayout.Width(52)))
+                            RevertTargetEntry(selEntry.id);
+                        EditorGUILayout.EndHorizontal();
+                    }
+
+                    // Polarity / connector fields for the selected wire entry
+                    if (step.wireConnect?.IsConfigured == true && step.wireConnect.wires != null)
+                    {
+                        WireConnectEntry wire = null;
+                        foreach (var w in step.wireConnect.wires)
+                            if (string.Equals(w.targetId, selEntry.id, StringComparison.Ordinal))
+                            { wire = w; break; }
+
+                        if (wire != null)
+                        {
+                            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+
+                            EditorGUI.BeginChangeCheck();
+                            EditorGUILayout.BeginHorizontal();
+                            EditorGUILayout.LabelField("Polarity A:", GUILayout.Width(74));
+                            wire.portAPolarityType = EditorGUILayout.TextField(wire.portAPolarityType ?? "", GUILayout.Width(80));
+                            EditorGUILayout.LabelField("Polarity B:", GUILayout.Width(74));
+                            wire.portBPolarityType = EditorGUILayout.TextField(wire.portBPolarityType ?? "");
+                            EditorGUILayout.EndHorizontal();
+
+                            EditorGUILayout.BeginHorizontal();
+                            EditorGUILayout.LabelField("Connector A:", GUILayout.Width(74));
+                            wire.portAConnectorType = EditorGUILayout.TextField(wire.portAConnectorType ?? "", GUILayout.Width(80));
+                            EditorGUILayout.LabelField("Connector B:", GUILayout.Width(74));
+                            wire.portBConnectorType = EditorGUILayout.TextField(wire.portBConnectorType ?? "");
+                            EditorGUILayout.EndHorizontal();
+                            if (EditorGUI.EndChangeCheck()) _dirtyStepIds.Add(step.id);
+
+                            EditorGUI.BeginChangeCheck();
+                            EditorGUILayout.BeginHorizontal();
+                            wire.polarityOrderMatters = EditorGUILayout.ToggleLeft(
+                                "Polarity order matters", wire.polarityOrderMatters, EditorStyles.miniLabel,
+                                GUILayout.Width(150));
+                            if (step.wireConnect != null)
+                                step.wireConnect.enforcePortOrder = EditorGUILayout.ToggleLeft(
+                                    "Enforce port order (A first)", step.wireConnect.enforcePortOrder,
+                                    EditorStyles.miniLabel);
+                            EditorGUILayout.EndHorizontal();
+                            if (EditorGUI.EndChangeCheck()) _dirtyStepIds.Add(step.id);
+
+                            EditorGUILayout.EndVertical();
+
+                            // Port positions — read/write directly from wire entry
+                            EditorGUILayout.Space(2);
+                            {
+                                EditorGUI.BeginChangeCheck();
+                                Vector3 newA = Vector3FieldClip("Port A (local)", new Vector3(wire.portA.x, wire.portA.y, wire.portA.z));
+                                Vector3 newB = Vector3FieldClip("Port B (local)", new Vector3(wire.portB.x, wire.portB.y, wire.portB.z));
+                                if (EditorGUI.EndChangeCheck())
+                                {
+                                    wire.portA = PackageJsonUtils.ToFloat3(newA);
+                                    wire.portB = PackageJsonUtils.ToFloat3(newB);
+                                    if (_targets != null)
+                                        for (int i = 0; i < _targets.Length; i++)
+                                            if (_targets[i].def?.id == selEntry.id)
+                                            { BeginEdit(); _targets[i].portA = newA; _targets[i].portB = newB; _targets[i].isDirty = true; EndEdit(); break; }
+                                    _dirtyStepIds.Add(step.id);
+                                    RefreshWirePreview(step);
+                                    SceneView.RepaintAll();
+                                }
+                            }
+
+                            // Color + Radius + Subdivisions — wire appearance is self-contained
+                            EditorGUILayout.Space(2);
+                            EditorGUI.BeginChangeCheck();
+                            Color wc = wire.color.a > 0
+                                ? new Color(wire.color.r, wire.color.g, wire.color.b, wire.color.a)
+                                : new Color(0.15f, 0.15f, 0.15f, 1f);
+                            Color nc = EditorGUILayout.ColorField("Color", wc);
+                            wire.color = new SceneFloat4 { r = nc.r, g = nc.g, b = nc.b, a = nc.a };
+                            float nw = FloatFieldClip("Radius (m)", wire.radius > 0 ? wire.radius : 0.003f);
+                            wire.radius = Mathf.Max(0f, nw);
+                            wire.subdivisions = Mathf.Max(1, EditorGUILayout.IntField("Subdivisions", wire.subdivisions < 1 ? 1 : wire.subdivisions));
+                            float displaySag = wire.sag > 0f ? wire.sag : 1.0f;
+                            float newSag = EditorGUILayout.Slider("Sag", displaySag, 0.01f, 3.0f);
+                            wire.sag = newSag;
+                            bool isLinear = string.Equals(wire.interpolation, "linear", StringComparison.OrdinalIgnoreCase);
+                            int interpIdx = EditorGUILayout.Popup("Interpolation", isLinear ? 1 : 0, new[] { "Bezier", "Linear" });
+                            wire.interpolation = interpIdx == 1 ? "linear" : "bezier";
+                            if (EditorGUI.EndChangeCheck()) { _dirtyStepIds.Add(step.id); RefreshWirePreview(step); SceneView.RepaintAll(); }
+                        }
+                    }
+
+                    // Wire targets: position/rotation have no meaning — skip DrawDetailPanel.
+                    if (_targets != null && step.wireConnect?.IsConfigured != true)
+                        for (int i = 0; i < _targets.Length; i++)
+                            if (_targets[i].def?.id == selEntry.id)
+                            { DrawDetailPanel(ref _targets[i]); break; }
+                    break;
+                }
+                case "confirm_action":
+                {
+                    DrawUnifiedSectionHeader("CONFIRM CONTEXT", 0);
+                    EditorGUILayout.LabelField(
+                        "  User presses the Confirm button to complete this step.",
+                        EditorStyles.miniLabel);
+                    break;
+                }
+                case "confirm":
+                {
+                    // Confirm-family inspection points — no tool, just position reference
+                    DrawUnifiedSectionHeader($"OBSERVE CONTEXT ({selEntry.id})", 0);
+                    EditorGUILayout.LabelField(
+                        "  Camera must frame this location before Confirm unlocks. No tool required.",
+                        EditorStyles.miniLabel);
+                    EditorGUILayout.Space(4);
+                    if (_targets != null)
+                        for (int i = 0; i < _targets.Length; i++)
+                            if (_targets[i].def?.id == selEntry.id)
+                            { DrawDetailPanel(ref _targets[i]); break; }
+                    break;
+                }
+                default: // toolAction, target
+                {
+                    DrawUnifiedSectionHeader($"TOOL CONTEXT ({selEntry.id})", 0);
+                    if (IsTaskEntryDirty(selEntry, step))
+                    {
+                        EditorGUILayout.BeginHorizontal();
+                        var ds = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = ColDirty }, fontStyle = FontStyle.Bold };
+                        EditorGUILayout.LabelField("● Unsaved Changes", ds);
+                        if (GUILayout.Button("Save", EditorStyles.miniButton, GUILayout.Width(42)))
+                            SaveTaskEntry(selEntry, step);
+                        if (GUILayout.Button("Revert", EditorStyles.miniButton, GUILayout.Width(52)))
+                            RevertTargetEntry(selEntry.id);
+                        EditorGUILayout.EndHorizontal();
+                    }
+
+                    // ── Tool picker ───────────────────────────────────────
+                    // Find the requiredToolAction entry for this target (may be null if not yet set)
+                    ToolActionDefinition taskAction = null;
+                    if (step.requiredToolActions != null)
+                        foreach (var a in step.requiredToolActions)
+                            if (a?.targetId == selEntry.id) { taskAction = a; break; }
+
+                    if (_pkg?.tools != null && _pkg.tools.Length > 0)
+                    {
+                        // Build parallel name/id arrays (index 0 = none)
+                        var toolDefs  = _pkg.tools;
+                        var toolNames = new string[toolDefs.Length + 1];
+                        var toolIds   = new string[toolDefs.Length + 1];
+                        toolNames[0] = "(none)";
+                        toolIds[0]   = "";
+                        int currentToolIdx = 0;
+                        for (int ti = 0; ti < toolDefs.Length; ti++)
+                        {
+                            toolNames[ti + 1] = toolDefs[ti]?.name ?? toolDefs[ti]?.id ?? "?";
+                            toolIds[ti + 1]   = toolDefs[ti]?.id ?? "";
+                            if (taskAction != null && toolIds[ti + 1] == taskAction.toolId)
+                                currentToolIdx = ti + 1;
+                        }
+
+                        EditorGUI.BeginChangeCheck();
+                        EditorGUILayout.BeginHorizontal();
+                        EditorGUILayout.LabelField("Tool:", EditorStyles.miniLabel, GUILayout.Width(32));
+                        int newToolIdx = EditorGUILayout.Popup(currentToolIdx, toolNames);
+                        EditorGUILayout.EndHorizontal();
+                        if (EditorGUI.EndChangeCheck() && newToolIdx != currentToolIdx)
+                        {
+                            string pickedToolId = toolIds[newToolIdx];
+                            if (taskAction == null)
+                            {
+                                // No action entry yet — create one
+                                string actionId = $"action_{selEntry.id}";
+                                taskAction = new ToolActionDefinition
+                                    { id = actionId, toolId = pickedToolId, targetId = selEntry.id };
+                                var aList = new System.Collections.Generic.List<ToolActionDefinition>(
+                                    step.requiredToolActions ?? System.Array.Empty<ToolActionDefinition>());
+                                aList.Add(taskAction);
+                                step.requiredToolActions = aList.ToArray();
+                            }
+                            else
+                            {
+                                taskAction.toolId = pickedToolId;
+                            }
+                            _dirtyStepIds.Add(step.id);
+                            BuildTargetToolMap();
+                            if (_targets != null)
+                                for (int ti = 0; ti < _targets.Length; ti++)
+                                    if (_targets[ti].def?.id == selEntry.id)
+                                    { RefreshToolPreview(ref _targets[ti]); break; }
+                            Repaint();
+                        }
+
+                        // Show selected tool's category as context
+                        if (currentToolIdx > 0)
+                        {
+                            var selTool = toolDefs[currentToolIdx - 1];
+                            if (!string.IsNullOrEmpty(selTool?.category))
+                                EditorGUILayout.LabelField($"Category: {selTool.category}", EditorStyles.miniLabel);
+                        }
+                    }
+
+                    DrawPersistentToolRemovalRows();
+
+                    // Target transform detail
+                    string toolTargetId = selEntry.id;
+                    if (_targets != null)
+                        for (int i = 0; i < _targets.Length; i++)
+                            if (_targets[i].def?.id == toolTargetId)
+                            { DrawDetailPanel(ref _targets[i]); break; }
+                    break;
+                }
+            }
+        }
+
         // ── Bottom edit panel + unified actions ───────────────────────────────
 
         private void DrawBottomEditPanel()
         {
             // ── Task-sequence-driven (authoritative when a task is selected) ──────
+            // Both the canvas (when inspector is hidden) and the inspector pane
+            // route through DrawTaskInspectorBody so the rich detail UI has a
+            // single source of truth.
             if (_selectedTaskSeqIdx >= 0 && _stepFilterIdx > 0
                 && _stepIds != null && _stepFilterIdx < _stepIds.Length)
             {
                 var step  = FindStep(_stepIds[_stepFilterIdx]);
                 var order = step != null ? GetOrDeriveTaskOrder(step) : null;
-                if (order != null && _selectedTaskSeqIdx < order.Count)
+                if (step != null && order != null)
                 {
-                    var entry = order[_selectedTaskSeqIdx];
-                    switch (entry.kind)
-                    {
-                        case "part":
-                        {
-                            if (_parts != null)
-                                for (int i = 0; i < _parts.Length; i++)
-                                    if (_parts[i].def?.id == entry.id)
-                                    { DrawPartDetailPanel(ref _parts[i]); return; }
-                            break;
-                        }
-                        default: // wire, toolAction, target
-                        {
-                            string targetId = entry.id;
-                            if (entry.kind == "toolAction" && step?.requiredToolActions != null)
-                                foreach (var a in step.requiredToolActions)
-                                    if (a?.id == entry.id) { targetId = a.targetId; break; }
-                            if (_targets != null)
-                                for (int i = 0; i < _targets.Length; i++)
-                                    if (_targets[i].def?.id == targetId)
-                                    { DrawDetailPanel(ref _targets[i]); return; }
-                            break;
-                        }
-                    }
+                    DrawTaskInspectorBody(step, order);
+                    return;
                 }
             }
 
