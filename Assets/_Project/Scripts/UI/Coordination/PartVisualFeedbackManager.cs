@@ -632,7 +632,9 @@ namespace OSE.UI.Root
             if (package == null || !package.TryGetStep(stepId, out var step))
                 return;
 
-            string[] partIds = step.GetEffectiveRequiredPartIds();
+            // Use the merged set so Use-family steps (e.g. drill-tighten) can
+            // move the parts their tool actions operate on to the step's pose.
+            string[] partIds = step.GetAllTouchedPartIds();
             if (partIds == null || partIds.Length == 0) return;
 
             foreach (string partId in partIds)
@@ -656,10 +658,20 @@ namespace OSE.UI.Root
             var package = _ctx.Spawner?.CurrentPackage;
             if (package == null || steps == null) return;
 
+            // Parts are intentionally touched by multiple steps in sequence
+            // (place → snug → torque → final tighten), and stepPoses are
+            // applied in step order so the last write lands the part at its
+            // latest authored pose. That's the designed behavior, not a bug.
+            // The real ownership invariant — "only one Place step claims
+            // first-placement of a partId" — is enforced by the validator's
+            // PartOwnershipExclusivityPass at load/validation time.
+
             for (int s = 0; s < steps.Length; s++)
             {
                 var step = steps[s];
-                string[] partIds = step.GetEffectiveRequiredPartIds();
+                // Merged set: includes derived tool-action parts so Use-family
+                // steps restore the parts they touched on navigation.
+                string[] partIds = step.GetAllTouchedPartIds();
                 if (partIds == null || partIds.Length == 0) continue;
 
                 for (int p = 0; p < partIds.Length; p++)

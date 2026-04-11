@@ -41,6 +41,7 @@ namespace OSE.Content.Validation
             new TargetsPass(),
             new PreviewConfigPass(),
             new OrphanDetectionPass(),
+            new PartOwnershipExclusivityPass(),
         };
 
         /// <summary>

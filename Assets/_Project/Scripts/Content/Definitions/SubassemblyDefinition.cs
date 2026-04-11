@@ -13,6 +13,17 @@ namespace OSE.Content
         public string[] stepIds;
         public string milestoneMessage;
 
+        /// <summary>
+        /// True = this subassembly is a composite/aggregate of other child subassemblies
+        /// and its <see cref="partIds"/> list may intentionally overlap with child
+        /// subassemblies' partIds (e.g. a "complete axis unit" that contains parts
+        /// already owned by carriage/idler/motor subassemblies).
+        /// Aggregate subassemblies are exempt from the
+        /// PartOwnershipExclusivityPass sibling-collision check and are not indexed
+        /// by MachinePackageNormalizer.IndexPartOwnership.
+        /// </summary>
+        public bool isAggregate;
+
         public string GetDisplayName()
         {
             if (!string.IsNullOrWhiteSpace(name))

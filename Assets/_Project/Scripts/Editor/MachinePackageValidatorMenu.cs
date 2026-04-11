@@ -1,5 +1,6 @@
 using System.IO;
 using OSE.Content;
+using OSE.Content.Loading;
 using OSE.Content.Validation;
 using OSE.Interaction;
 using UnityEditor;
@@ -96,6 +97,10 @@ namespace OSE.Editor
                 errors = 1;
                 return;
             }
+
+            // Mirror the runtime loader: normalize before validating so template-based
+            // parts (and other inflated fields) are in the same shape the runtime sees.
+            MachinePackageNormalizer.Normalize(pkg);
 
             MachinePackageValidationResult result = MachinePackageValidator.Validate(pkg);
 

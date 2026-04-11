@@ -22,6 +22,36 @@ namespace OSE.Content
         public string whyItMattersText;
 
         public string[] requiredPartIds;
+
+        /// <summary>
+        /// Part IDs derived at load-time from <see cref="requiredToolActions"/> —
+        /// each action's targetId → target.associatedPartId. Populated by
+        /// <c>MachinePackageNormalizer.ResolveToolActionPartIds</c>. Never authored,
+        /// never serialized. Used by callers that need to know which parts a
+        /// Use-family step operates on (for step-completion repositioning,
+        /// completed-step restore, etc.) without conflating them with authored
+        /// <see cref="requiredPartIds"/> semantics.
+        /// </summary>
+        [NonSerialized]
+        public string[] derivedToolActionPartIds;
+
+        /// <summary>
+        /// Part IDs derived at load-time from direct <see cref="targetIds"/> —
+        /// each target's <c>associatedPartId</c>, minus any already in
+        /// <see cref="requiredPartIds"/> or <see cref="derivedToolActionPartIds"/>.
+        /// Populated by <c>MachinePackageNormalizer.ResolveDirectTargetPartIds</c>.
+        /// Never authored, never serialized.
+        ///
+        /// Captures the "touch but don't own" case: a step that repositions a
+        /// previously-placed part via its targets (e.g. anchor/mount/stage steps
+        /// that move pre-built bench units into their final printer position)
+        /// without claiming first-placement ownership. These parts count as
+        /// touched by the step (so Rule 3 passes) but the step is not their
+        /// owning Place step (so Rule 2 doesn't trigger).
+        /// </summary>
+        [NonSerialized]
+        public string[] derivedTargetPartIds;
+
         public string requiredSubassemblyId;
         public string[] optionalPartIds;
         public string[] relevantToolIds;
@@ -243,6 +273,64 @@ namespace OSE.Content
         /// </summary>
         public string[] GetEffectiveRequiredPartIds()
             => requiredPartIds ?? System.Array.Empty<string>();
+
+        /// <summary>
+        /// Returns the union of authored <see cref="requiredPartIds"/> and
+        /// derived tool-action part IDs. Use this when you need to know every
+        /// part this step touches (for completion repositioning, restore on
+        /// navigation, highlighting, etc.).
+        ///
+        /// For Place-family steps the result is identical to
+        /// <see cref="GetEffectiveRequiredPartIds"/> since they have no
+        /// tool-action derivations. For Use-family steps this returns the
+        /// parts their tool actions operate on — parts that were originally
+        /// placed in a prior step.
+        ///
+        /// Callers that care about "which parts is this step authoring"
+        /// (reveal, hide-on-navigation, owning-step lookup) should keep using
+        /// <see cref="GetEffectiveRequiredPartIds"/>.
+        /// </summary>
+        public string[] GetAllTouchedPartIds()
+        {
+            string[] authored  = requiredPartIds;
+            string[] fromTools = derivedToolActionPartIds;
+            string[] fromTargs = derivedTargetPartIds;
+
+            int authoredLen  = authored  != null ? authored.Length  : 0;
+            int fromToolsLen = fromTools != null ? fromTools.Length : 0;
+            int fromTargsLen = fromTargs != null ? fromTargs.Length : 0;
+            int total = authoredLen + fromToolsLen + fromTargsLen;
+            if (total == 0) return System.Array.Empty<string>();
+
+            // Fast paths when only one source has entries.
+            if (authoredLen  == total) return authored;
+            if (fromToolsLen == total) return fromTools;
+            if (fromTargsLen == total) return fromTargs;
+
+            // Merge without duplicates (ordinal ignore-case).
+            var merged = new List<string>(total);
+            MergeInto(merged, authored);
+            MergeInto(merged, fromTools);
+            MergeInto(merged, fromTargs);
+            return merged.ToArray();
+        }
+
+        private static void MergeInto(List<string> merged, string[] source)
+        {
+            if (source == null) return;
+            for (int i = 0; i < source.Length; i++)
+            {
+                string s = source[i];
+                if (string.IsNullOrEmpty(s)) continue;
+                bool dup = false;
+                for (int j = 0; j < merged.Count; j++)
+                {
+                    if (string.Equals(merged[j], s, StringComparison.OrdinalIgnoreCase))
+                    { dup = true; break; }
+                }
+                if (!dup) merged.Add(s);
+            }
+        }
 
         /// <summary>True when the resolved family is Confirm (alias for <see cref="IsConfirmation"/>).</summary>
         public bool IsConfirm => ResolvedFamily == StepFamily.Confirm;

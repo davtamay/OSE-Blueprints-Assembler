@@ -59,6 +59,7 @@ namespace OSE.UI.Root
                 { "poseTransition",       () => new PoseTransitionPlayer() },
                 { "pulse",                () => new PulsePlayer() },
                 { "orientSubassembly",    () => new OrientSubassemblyPlayer() },
+                { "shake",                () => new ShakePlayer() },
             };
         }
 
@@ -262,8 +263,41 @@ namespace OSE.UI.Root
 
             bool isGhostMode = string.Equals(entry.target, "ghost", StringComparison.OrdinalIgnoreCase);
 
-            // Resolve part targets
-            if (entry.targetPartIds != null)
+            // ── Resolve subassembly target FIRST ──────────────────────────────────
+            // This may create the fabrication group (_fabricationGroupRoot). When both
+            // targetSubassemblyId and targetPartIds are authored on the same cue, the
+            // extra parts are absorbed into the fabrication group so everything moves
+            // as one unit — no separate per-part targets are registered.
+            bool partsAbsorbedIntoGroup = false;
+            if (!string.IsNullOrEmpty(entry.targetSubassemblyId))
+            {
+                GameObject subassemblyRoot = ResolveSubassemblyTarget(entry.targetSubassemblyId, step);
+                if (subassemblyRoot != null)
+                {
+                    targets.Add(subassemblyRoot);
+                    var t = subassemblyRoot.transform;
+                    var pose = new AnimationCueResolvedPose
+                    {
+                        Position = t.localPosition,
+                        Rotation = t.localRotation,
+                        Scale = t.localScale,
+                    };
+                    startPoses.Add(pose);
+                    assembledPoses.Add(pose);
+
+                    // If a fabrication group was built and the cue also names extra parts,
+                    // absorb those parts into the group so the entire set animates as one.
+                    if (_fabricationGroupRoot != null && entry.targetPartIds != null && entry.targetPartIds.Length > 0)
+                    {
+                        AbsorbPartsIntoFabricationGroup(entry.targetPartIds);
+                        partsAbsorbedIntoGroup = true;
+                    }
+                }
+            }
+
+            // ── Resolve part targets (independent path) ───────────────────────────
+            // Skipped when parts were already absorbed into the fabrication group above.
+            if (!partsAbsorbedIntoGroup && entry.targetPartIds != null)
             {
                 for (int i = 0; i < entry.targetPartIds.Length; i++)
                 {
@@ -361,25 +395,6 @@ namespace OSE.UI.Root
                 }
             }
 
-            // Resolve subassembly target — proxy first, fabrication grouping fallback
-            if (!string.IsNullOrEmpty(entry.targetSubassemblyId))
-            {
-                GameObject subassemblyRoot = ResolveSubassemblyTarget(entry.targetSubassemblyId, step);
-                if (subassemblyRoot != null)
-                {
-                    targets.Add(subassemblyRoot);
-                    var t = subassemblyRoot.transform;
-                    var pose = new AnimationCueResolvedPose
-                    {
-                        Position = t.localPosition,
-                        Rotation = t.localRotation,
-                        Scale = t.localScale,
-                    };
-                    startPoses.Add(pose);
-                    assembledPoses.Add(pose);
-                }
-            }
-
             float duration = entry.durationSeconds > 0f ? entry.durationSeconds : GetDefaultDuration(entry.type);
 
             return new AnimationCueContext(entry, targets, startPoses, assembledPoses, duration, ghosts);
@@ -417,6 +432,7 @@ namespace OSE.UI.Root
 
             // Find spawned member parts that are NOT current-step parts (= completed from prior steps).
             // Also compute pivot from authored assembled positions for stability.
+            var completedPartIds = new List<string>();
             var completedMembers = new List<GameObject>();
             Vector3 pivotSum = Vector3.zero;
             int pivotCount = 0;
@@ -428,6 +444,7 @@ namespace OSE.UI.Root
                 GameObject go = _ctx.FindSpawnedPart(memberPartIds[i]);
                 if (go != null && go.activeInHierarchy)
                 {
+                    completedPartIds.Add(memberPartIds[i]);
                     completedMembers.Add(go);
 
                     // Use authored assembled position for pivot (stable regardless of runtime state)
@@ -453,7 +470,9 @@ namespace OSE.UI.Root
             _fabricationGroupRoot.transform.localPosition = pivot;
             _fabricationGroupRoot.transform.localRotation = Quaternion.identity;
 
-            // Reparent completed members (preserving world position).
+            // Reparent completed members into the fabrication group.
+            // Snap each member to its authored assembled position first so any unplaced
+            // parts (still at startPosition) appear correctly assembled during animation.
             // Store original local transforms so we can restore them exactly on cleanup.
             _fabricationGroupEntries.Clear();
             for (int i = 0; i < completedMembers.Count; i++)
@@ -467,6 +486,15 @@ namespace OSE.UI.Root
                     OriginalLocalRotation = ct.localRotation,
                     OriginalLocalScale = ct.localScale,
                 });
+
+                // Snap to authored assembled position before reparenting
+                var pp = _ctx.Spawner?.FindPartPlacement(completedPartIds[i]);
+                if (pp != null)
+                {
+                    ct.localPosition = new Vector3(pp.assembledPosition.x, pp.assembledPosition.y, pp.assembledPosition.z);
+                    ct.localRotation = new Quaternion(pp.assembledRotation.x, pp.assembledRotation.y, pp.assembledRotation.z, pp.assembledRotation.w);
+                }
+
                 ct.SetParent(_fabricationGroupRoot.transform, true);
             }
 
@@ -495,6 +523,51 @@ namespace OSE.UI.Root
             {
                 UnityEngine.Object.Destroy(_fabricationGroupRoot);
                 _fabricationGroupRoot = null;
+            }
+        }
+
+        /// <summary>
+        /// Reparents extra parts named in <paramref name="partIds"/> into the active
+        /// fabrication group so they animate as one unit with the subassembly.
+        /// Called when a cue authors both <c>targetSubassemblyId</c> AND <c>targetPartIds</c>.
+        /// Parts already in the group (subassembly members) are skipped.
+        /// </summary>
+        private void AbsorbPartsIntoFabricationGroup(string[] partIds)
+        {
+            if (_fabricationGroupRoot == null || partIds == null) return;
+
+            Transform groupTransform = _fabricationGroupRoot.transform;
+            for (int i = 0; i < partIds.Length; i++)
+            {
+                string partId = partIds[i];
+                if (string.IsNullOrEmpty(partId)) continue;
+
+                GameObject go = _ctx.FindSpawnedPart(partId);
+                if (go == null) continue;
+
+                Transform ct = go.transform;
+                // Skip if already a child of the fabrication group (subassembly member)
+                if (ct.parent == groupTransform) continue;
+
+                // Save original transform for cleanup restoration
+                _fabricationGroupEntries.Add(new FabricationGroupEntry
+                {
+                    Child = ct,
+                    OriginalParent = ct.parent,
+                    OriginalLocalPosition = ct.localPosition,
+                    OriginalLocalRotation = ct.localRotation,
+                    OriginalLocalScale = ct.localScale,
+                });
+
+                // Snap to authored assembled position so the part appears correctly placed
+                var pp = _ctx.Spawner?.FindPartPlacement(partId);
+                if (pp != null)
+                {
+                    ct.localPosition = new Vector3(pp.assembledPosition.x, pp.assembledPosition.y, pp.assembledPosition.z);
+                    ct.localRotation = new Quaternion(pp.assembledRotation.x, pp.assembledRotation.y, pp.assembledRotation.z, pp.assembledRotation.w);
+                }
+
+                ct.SetParent(groupTransform, true);
             }
         }
 

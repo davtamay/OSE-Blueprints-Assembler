@@ -809,6 +809,7 @@
       "id": "subassembly_cube_joining",
       "name": "Frame Cube Joining",
       "assemblyId": "assembly_d3d_frame",
+      "isAggregate": true,
       "description": "Uses the six completed frame-side panels as rigid learner-placeable units, positions them into the open printer cube, checks the stacked frame, attaches 8 printed PLA corner brackets with M6 bolts in a staged finger-tight then final-tighten sequence, verifies squareness between stages, and accepts the frame before later subsystems are mounted.",
       "partIds": [
         "d3d_frame_bottom_top_bar",
@@ -897,6 +898,7 @@
       "id": "subassembly_x_axis_frame_fit",
       "name": "X-Axis Frame Fit",
       "assemblyId": "assembly_d3d_axes_mount",
+      "isAggregate": true,
       "description": "Fits the completed bench-built X-axis module between the Y carriages using the five-step source-backed procedure: tighten idler screws, anchor idler to Y-right, loosen motor holder, span to Y-left, lock and tension.",
       "partIds": [
         "d3d_x_axis_idler_unit",
@@ -954,6 +956,7 @@
       "id": "subassembly_extruder_nozzle_module",
       "name": "Extruder Nozzle Module",
       "assemblyId": "assembly_d3d_extruder_stage_01",
+      "isAggregate": true,
       "description": "Owns the first Titan Aero nozzle, blower, sensor-holder, and 8 mm sensor sequence before later carriage integration.",
       "partIds": [
         "d3d_titan_aero_core",
@@ -997,6 +1000,7 @@
       "id": "subassembly_extruder_carriage_unit",
       "name": "Extruder Carriage Unit",
       "assemblyId": "assembly_d3d_extruder_stage_02",
+      "isAggregate": true,
       "description": "Combines the completed Titan Aero nozzle module with the carriage-side bracket and top-plate stack to create the first carriage-side extruder unit.",
       "partIds": [
         "d3d_extruder_simplified_carriage",
@@ -1023,6 +1027,7 @@
       "id": "subassembly_extruder_x_axis_mount",
       "name": "Extruder X-Axis Mount",
       "assemblyId": "assembly_d3d_extruder_stage_03",
+      "isAggregate": true,
       "description": "Stages the printer-side X-axis carriage interface and the half-carriage clamp used to close the extruder around the rod pair.",
       "partIds": [
         "d3d_x_axis_carriage_side",
@@ -1092,12 +1097,14 @@
       "id": "subassembly_y_left_idler_build",
       "name": "Y-Left Idler Assembly",
       "assemblyId": "assembly_d3d_y_left_bench",
-      "description": "Inserts M6x18 bolt through one idler half, seats two flanged bearings on the bolt with flanges facing out, aligns the two halves so rod holes line up, secures the bearing bolt fully, inserts M6x30 frame-mount bolt loosely (will attach to frame later), and tightens the remaining M6x18 bolt loosely.",
+      "description": "Inserts M6x18 bolt through one idler half, seats two flanged bearings on the bolt with flanges facing out, places the second idler half so rod holes line up, then installs the M6x30 frame-mount bolt in the belt-side hole to clamp the halves together.",
       "partIds": [
         "idler002",
+        "idler002_half_b",
         "y_left_625zz_a",
         "y_left_625zz_b",
-        "y_left_m6x18_b"
+        "y_left_m6x18_b",
+        "y_left_idler_m6x30_a"
       ],
       "stepIds": [
         "step_y_left_idler_insert_bolt",
@@ -1116,9 +1123,9 @@
         "motor002",
         "y_left_gt2_pulley",
         "y_left_gt2_belt",
-        "y_left_m6_nut_a",
-        "y_left_m6_nut_b",
-        "y_left_m6_nut_c",
+        "y_left_motor_m6_nut_a",
+        "y_left_motor_m6_nut_b",
+        "y_left_motor_m6_nut_c",
         "y_left_m3x25_a",
         "y_left_m3x25_b",
         "y_left_m3x25_c",
@@ -1162,10 +1169,12 @@
     {
       "id": "subassembly_y_left_belt_threading",
       "name": "Y-Left Belt Threading",
+      "isAggregate": true,
       "assemblyId": "assembly_d3d_y_left_bench",
       "description": "Inserts one belt end through the larger carriage belt hole, routes it around the idler bearing (slight curve helps), pulls through the smaller carriage belt hole. Threads through first peg (foot facing away from axis center), inserts belt end ~¾ inch and pushes peg into ribbed hole. Places second peg loosely — it will be tightened after frame mounting when the full belt length is confirmed.",
       "partIds": [
-        "idler002"
+        "idler002",
+        "idler002_half_b"
       ],
       "stepIds": [
         "step_y_left_belt_large_hole",
@@ -1290,6 +1299,7 @@
     {
       "id": "subassembly_y_right_belt_threading",
       "name": "Y-Right Belt Threading",
+      "isAggregate": true,
       "assemblyId": "assembly_d3d_y_right_bench",
       "description": "Routes belt through carriage large hole, around idler bearing via belt-catcher side (smaller hole with teeth), pulls through and threads onto first peg, locks peg. Second peg placed loosely. Label axis Y-Right.",
       "partIds": [
@@ -1406,6 +1416,7 @@
     {
       "id": "subassembly_x_axis_endstop_build",
       "name": "X-Axis Endstop Attachment",
+      "isAggregate": true,
       "assemblyId": "assembly_d3d_x_axis_bench",
       "description": "Slides X-axis endstop into holder crevice. Super glues holder to top-left and bottom-left motor-piece holes. Adds reinforcing glue along edges. Labels axis X-Axis. Verifies X and Y axes will fit together before setting aside.",
       "partIds": [
@@ -1615,6 +1626,7 @@
       "id": "subassembly_z_front_frame_mount",
       "name": "Z-Front Axis Frame Mount",
       "assemblyId": "assembly_d3d_axes_mount",
+      "isAggregate": true,
       "description": "Mounts the completed bench-built Z-front axis module to the front frame face. Idler attaches at bottom hole offset right for print area, motor holder at top hole. Belt tensioned after mounting.",
       "partIds": [
         "motor",
@@ -1638,6 +1650,7 @@
       "id": "subassembly_z_back_frame_mount",
       "name": "Z-Back Axis Frame Mount",
       "assemblyId": "assembly_d3d_axes_mount",
+      "isAggregate": true,
       "description": "Mounts the completed bench-built Z-back axis module to the back frame face directly behind Z-front. Both Z carriages must be at the same height before locking.",
       "partIds": [
         "motor001",
@@ -1742,10 +1755,12 @@
       "name": "Y Left Complete Axis Unit",
       "assemblyId": "assembly_d3d_y_left_bench",
       "description": "The fully assembled y left axis unit, ready for staging. Contains all bench-built components: carriage, idler, motor holder, rods, and belt.",
+      "isAggregate": true,
       "partIds": [
         "y_left_carriage_half_a",
         "y_left_carriage_half_b",
         "idler002",
+        "idler002_half_b",
         "motor002",
         "rod_005",
         "rod_006",
@@ -1763,6 +1778,7 @@
       "name": "Y Right Complete Axis Unit",
       "assemblyId": "assembly_d3d_y_right_bench",
       "description": "The fully assembled y right axis unit, ready for staging. Contains all bench-built components: carriage, idler, motor holder, rods, and belt.",
+      "isAggregate": true,
       "partIds": [
         "y_right_carriage_half_a",
         "y_right_carriage_half_b",
@@ -1781,6 +1797,7 @@
       "name": "X Axis Complete Axis Unit",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "description": "The fully assembled x axis axis unit, ready for staging. Contains all bench-built components: carriage, idler, motor holder, rods, and belt.",
+      "isAggregate": true,
       "partIds": [
         "d3d_x_axis_half_carriage",
         "d3d_x_axis_idler_unit",
@@ -1800,6 +1817,7 @@
       "name": "Z Front Complete Axis Unit",
       "assemblyId": "assembly_d3d_z_front_bench",
       "description": "The fully assembled z front axis unit, ready for staging. Contains all bench-built components: carriage, idler, motor holder, rods, and belt.",
+      "isAggregate": true,
       "partIds": [
         "z2_half_carriage",
         "idler",
@@ -1818,6 +1836,7 @@
       "name": "Z Back Complete Axis Unit",
       "assemblyId": "assembly_d3d_z_back_bench",
       "description": "The fully assembled z back axis unit, ready for staging. Contains all bench-built components: carriage, idler, motor holder, rods, and belt.",
+      "isAggregate": true,
       "partIds": [
         "z1_half_carriage",
         "idler001",
@@ -2325,6 +2344,16 @@
       "category": "custom",
       "material": "Belt idler pulley with bearing",
       "function": "Redirects the Y-right axis drive belt at the front end of travel.",
+      "quantity": 1
+    },
+    {
+      "id": "idler002_half_b",
+      "displayName": "Idler002 Half B",
+      "assetRef": "idler002_approved.glb",
+      "name": "Y-Left Belt Idler Clamping Half",
+      "category": "custom",
+      "material": "Printed idler half",
+      "function": "Mates with idler002 (half A) to capture the flanged bearings on the M6x18 bolt.",
       "quantity": 1
     },
     {
@@ -3179,6 +3208,46 @@
       "category": "fastener",
       "material": "M6 hex nut, zinc-plated",
       "function": "Pre-loaded into motor holder before motor blocks access.",
+      "quantity": 1
+    },
+    {
+      "id": "y_left_motor_m6_nut_a",
+      "displayName": "Y-Left Motor M6 Nut A",
+      "name": "Y-Left Motor Holder Hex Nut A",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "M6 hex nut, zinc-plated",
+      "function": "Pre-loaded into motor holder half before motor blocks access.",
+      "quantity": 1
+    },
+    {
+      "id": "y_left_motor_m6_nut_b",
+      "displayName": "Y-Left Motor M6 Nut B",
+      "name": "Y-Left Motor Holder Hex Nut B",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "M6 hex nut, zinc-plated",
+      "function": "Pre-loaded into motor holder half before motor blocks access.",
+      "quantity": 1
+    },
+    {
+      "id": "y_left_motor_m6_nut_c",
+      "displayName": "Y-Left Motor M6 Nut C",
+      "name": "Y-Left Motor Holder Hex Nut C",
+      "assetRef": "d3d_axis_m6_nut.glb",
+      "category": "fastener",
+      "material": "M6 hex nut, zinc-plated",
+      "function": "Pre-loaded into motor holder half before motor blocks access.",
+      "quantity": 1
+    },
+    {
+      "id": "y_left_idler_m6x30_a",
+      "displayName": "Y-Left Idler M6x30 Bolt",
+      "name": "Y-Left Idler Frame-Mount Bolt",
+      "assetRef": "d3d_axis_m6x18_bolt.glb",
+      "category": "fastener",
+      "material": "Steel",
+      "function": "Clamps the two idler halves together through the belt-side hole.",
       "quantity": 1
     },
     {
@@ -7108,9 +7177,6 @@
       "instructionText": "Place the X-axis idler side, rod pair, motor-holder side, and the two Y-right M6x30 bolts into their pre-fit positions so the idler side anchors on Y-right first.",
       "family": "Place",
       "requiredPartIds": [
-        "d3d_x_axis_idler_unit",
-        "d3d_x_axis_rod_pair",
-        "d3d_x_axis_motor_holder_unit",
         "fastener_x_axis_idler_mount_m6x30_a",
         "fastener_x_axis_idler_mount_m6x30_b"
       ],
@@ -7708,9 +7774,6 @@
       "sequenceIndex": 78,
       "instructionText": "Place the X-axis carriage-side interface onto the rod-pair work area so the completed extruder carriage unit has a real printer-side receiving body.",
       "family": "Place",
-      "requiredPartIds": [
-        "d3d_x_axis_carriage_side"
-      ],
       "targetIds": [
         "target_x_axis_carriage_side_stage"
       ],
@@ -7742,9 +7805,6 @@
       "sequenceIndex": 80,
       "instructionText": "Bring the half carriage in square to the mounted carriage side so the clamp-side body closes over the rod path and captures the mounted extruder unit.",
       "family": "Place",
-      "requiredPartIds": [
-        "d3d_x_axis_half_carriage"
-      ],
       "targetIds": [
         "target_x_axis_half_carriage_attach"
       ],
@@ -7930,16 +7990,64 @@
       "subassemblyId": "subassembly_y_left_carriage_build",
       "sequenceIndex": 91,
       "family": "Confirm",
-      "instructionText": "Add the second carriage half on top and compress the two halves firmly. Shake the closed carriage — bearings must not rattle. If they do, the fit is too loose; adjust or swap bearings until snug."
+      "guidance": {
+        "instructionText": "Hold both carriage halves firmly together and shake the assembly.",
+        "whyItMattersText": "Compress the two halves by hand until there is no gap. Shake side-to-side and up-down for 2–3 seconds. No tools needed — this is a hand-compression test only. Tip: grip a completed carriage from another axis as a tactile reference for correct feel."
+      },
+      "validation": {
+        "successCriteria": "No audible rattle or tactile movement from the bearings.",
+        "failureCriteria": "Bearings click, rattle, or shift inside the halves when shaken."
+      },
+      "feedback": {
+        "successMessage": "Bearings are snug. Proceed to the rod slide test.",
+        "failureMessage": "Bearing fit is too loose. Swap to a slightly larger LM8UU or try the next batch of bearings. Re-test before closing the carriage."
+      },
+      "difficulty": "beginner",
+      "animationCues": {
+        "cues": [
+          {
+            "type": "shake",
+            "targetSubassemblyId": "subassembly_y_left_carriage_build",
+            "shakeAmplitude": 0.008,
+            "shakeFrequency": 9,
+            "shakeAxis": { "x": 1, "y": 0, "z": 0 },
+            "loop": true
+          }
+        ]
+      }
     },
     {
       "id": "step_y_left_carriage_rod_slide_test",
-      "name": "Rod slide test: slight resistance only",
+      "name": "Rod slide test: slight resistance, not too free",
       "assemblyId": "assembly_d3d_y_left_bench",
       "subassemblyId": "subassembly_y_left_carriage_build",
       "sequenceIndex": 92,
       "family": "Confirm",
-      "instructionText": "Insert a guide rod through the carriage and hold it vertical. The rod should drop through with slight resistance, not freely. Too free: wrap each bearing in one layer of electrical tape and retest."
+      "guidance": {
+        "instructionText": "Insert a smooth guide rod through the carriage and hold it so the rod is vertical.",
+        "whyItMattersText": "The rod should slide or drop through as you hold the carriage, but there should be a little resistance — it's good if you have to shake the carriage for the rod to slide through. Motors pull 20 lbs of belt force on this carriage, so it should not slip through too fast with no resistance."
+      },
+      "validation": {
+        "successCriteria": "Rod slides or drops through with slight resistance. Shaking the carriage helps it move through.",
+        "failureCriteria": "Rod slides too quickly with zero resistance (too free), OR rod jams and requires force to push (too tight)."
+      },
+      "feedback": {
+        "successMessage": "Resistance feels correct. Both tests pass — proceed to close the carriage halves.",
+        "failureMessage": "Too free: wrap each bearing in one layer of electrical tape to tighten the fit and retest. Too tight: check that bearings are fully seated and carriage halves are not warped."
+      },
+      "difficulty": "beginner",
+      "animationCues": {
+        "cues": [
+          {
+            "type": "shake",
+            "targetSubassemblyId": "subassembly_y_left_carriage_build",
+            "shakeAmplitude": 0.015,
+            "shakeFrequency": 1,
+            "shakeAxis": { "x": 0, "y": 1, "z": 0 },
+            "loop": true
+          }
+        ]
+      }
     },
     {
       "id": "step_y_left_carriage_close_halves",
@@ -8095,21 +8203,27 @@
     },
     {
       "id": "step_y_left_idler_align_halves",
-      "name": "Align idler rod holes before closing",
+      "name": "Place second idler half and align rod holes",
       "assemblyId": "assembly_d3d_y_left_bench",
       "subassemblyId": "subassembly_y_left_idler_build",
       "sequenceIndex": 98,
-      "family": "Confirm",
-      "instructionText": "Hold the second idler half against the first and confirm the circular rod holes on both halves line up correctly before pressing them together."
+      "family": "Place",
+      "instructionText": "Place the second idler half against the first, flipping it so the magnet pockets face inward. Confirm the circular rod holes on both halves line up before pressing them together.",
+      "requiredPartIds": [
+        "idler002_half_b"
+      ]
     },
     {
       "id": "step_y_left_idler_bolt",
-      "name": "Bolt idler halves and secure bearing",
+      "name": "Install M6x30 belt-side bolt and tighten idler",
       "assemblyId": "assembly_d3d_y_left_bench",
       "subassemblyId": "subassembly_y_left_idler_build",
       "sequenceIndex": 99,
-      "family": "Use",
-      "instructionText": "Secure the idler with an M6x18 bolt through the top and one M6x30 bolt in the belt-side hole. Tighten until firm."
+      "family": "Place",
+      "instructionText": "Install the M6x30 frame-mount bolt through the belt-side hole to clamp the two idler halves together, then tighten the M6x18 bolt firm against the flanged bearings.",
+      "requiredPartIds": [
+        "y_left_idler_m6x30_a"
+      ]
     },
     {
       "id": "step_y_left_motor_pulley",
@@ -8142,9 +8256,9 @@
       "family": "Place",
       "instructionText": "Orient the motor holder half with the rectangular belt channel facing you. Insert one M6x30 bolt and three nuts into the holes now — the motor will cover them and block access later.",
       "requiredPartIds": [
-        "y_left_m6_nut_a",
-        "y_left_m6_nut_b",
-        "y_left_m6_nut_c"
+        "y_left_motor_m6_nut_a",
+        "y_left_motor_m6_nut_b",
+        "y_left_motor_m6_nut_c"
       ]
     },
     {
@@ -8471,16 +8585,40 @@
       "subassemblyId": "subassembly_y_right_carriage_build",
       "sequenceIndex": 132,
       "family": "Confirm",
-      "instructionText": "Add the second carriage half on top and compress the two halves firmly. Shake the closed carriage — bearings must not rattle. If they do, the fit is too loose; adjust or swap bearings until snug."
+      "guidance": {
+        "instructionText": "Hold both carriage halves firmly together and shake the assembly.",
+        "whyItMattersText": "Compress the two halves by hand until there is no gap. Shake side-to-side and up-down for 2–3 seconds. No tools needed — this is a hand-compression test only. Tip: grip a completed carriage from another axis as a tactile reference for correct feel."
+      },
+      "validation": {
+        "successCriteria": "No audible rattle or tactile movement from the bearings.",
+        "failureCriteria": "Bearings click, rattle, or shift inside the halves when shaken."
+      },
+      "feedback": {
+        "successMessage": "Bearings are snug. Proceed to the rod slide test.",
+        "failureMessage": "Bearing fit is too loose. Swap to a slightly larger LM8UU or try the next batch of bearings. Re-test before closing the carriage."
+      },
+      "difficulty": "beginner"
     },
     {
       "id": "step_y_right_carriage_rod_slide_test",
-      "name": "Rod slide test: slight resistance only",
+      "name": "Rod slide test: slight resistance, not too free",
       "assemblyId": "assembly_d3d_y_right_bench",
       "subassemblyId": "subassembly_y_right_carriage_build",
       "sequenceIndex": 133,
       "family": "Confirm",
-      "instructionText": "Insert a guide rod through the carriage and hold it vertical. The rod should drop through with slight resistance, not freely. Too free: wrap each bearing in one layer of electrical tape and retest."
+      "guidance": {
+        "instructionText": "Insert a smooth guide rod through the carriage and hold it so the rod is vertical.",
+        "whyItMattersText": "The rod should slide or drop through as you hold the carriage, but there should be a little resistance — it's good if you have to shake the carriage for the rod to slide through. Motors pull 20 lbs of belt force on this carriage, so it should not slip through too fast with no resistance."
+      },
+      "validation": {
+        "successCriteria": "Rod slides or drops through with slight resistance. Shaking the carriage helps it move through.",
+        "failureCriteria": "Rod slides too quickly with zero resistance (too free), OR rod jams and requires force to push (too tight)."
+      },
+      "feedback": {
+        "successMessage": "Resistance feels correct. Both tests pass — proceed to close the carriage halves.",
+        "failureMessage": "Too free: wrap each bearing in one layer of electrical tape to tighten the fit and retest. Too tight: check that bearings are fully seated and carriage halves are not warped."
+      },
+      "difficulty": "beginner"
     },
     {
       "id": "step_y_right_carriage_close_halves",
@@ -8842,16 +8980,40 @@
       "subassemblyId": "subassembly_x_axis_carriage_build",
       "sequenceIndex": 167,
       "family": "Confirm",
-      "instructionText": "Add the second carriage half on top and compress the two halves firmly. Shake the closed carriage — bearings must not rattle. If they do, the fit is too loose; adjust or swap bearings until snug."
+      "guidance": {
+        "instructionText": "Hold both carriage halves firmly together and shake the assembly.",
+        "whyItMattersText": "Compress the two halves by hand until there is no gap. Shake side-to-side and up-down for 2–3 seconds. No tools needed — this is a hand-compression test only. Tip: grip a completed carriage from another axis as a tactile reference for correct feel."
+      },
+      "validation": {
+        "successCriteria": "No audible rattle or tactile movement from the bearings.",
+        "failureCriteria": "Bearings click, rattle, or shift inside the halves when shaken."
+      },
+      "feedback": {
+        "successMessage": "Bearings are snug. Proceed to the rod slide test.",
+        "failureMessage": "Bearing fit is too loose. Swap to a slightly larger LM8UU or try the next batch of bearings. Re-test before closing the carriage."
+      },
+      "difficulty": "beginner"
     },
     {
       "id": "step_x_axis_carriage_rod_slide_test",
-      "name": "Rod slide test: slight resistance only",
+      "name": "Rod slide test: slight resistance, not too free",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "subassemblyId": "subassembly_x_axis_carriage_build",
       "sequenceIndex": 168,
       "family": "Confirm",
-      "instructionText": "Insert a guide rod through the carriage and hold it vertical. The rod should drop through with slight resistance, not freely. Too free: wrap each bearing in one layer of electrical tape and retest."
+      "guidance": {
+        "instructionText": "Insert a smooth guide rod through the carriage and hold it so the rod is vertical.",
+        "whyItMattersText": "The rod should slide or drop through as you hold the carriage, but there should be a little resistance — it's good if you have to shake the carriage for the rod to slide through. Motors pull 20 lbs of belt force on this carriage, so it should not slip through too fast with no resistance."
+      },
+      "validation": {
+        "successCriteria": "Rod slides or drops through with slight resistance. Shaking the carriage helps it move through.",
+        "failureCriteria": "Rod slides too quickly with zero resistance (too free), OR rod jams and requires force to push (too tight)."
+      },
+      "feedback": {
+        "successMessage": "Resistance feels correct. Both tests pass — proceed to close the carriage halves.",
+        "failureMessage": "Too free: wrap each bearing in one layer of electrical tape to tighten the fit and retest. Too tight: check that bearings are fully seated and carriage halves are not warped."
+      },
+      "difficulty": "beginner"
     },
     {
       "id": "step_x_axis_carriage_bolt",
@@ -9216,16 +9378,40 @@
       "subassemblyId": "subassembly_z_front_carriage_build",
       "sequenceIndex": 206,
       "family": "Confirm",
-      "instructionText": "Add the second carriage half on top and compress the two halves firmly. Shake the closed carriage — bearings must not rattle. If they do, the fit is too loose; adjust or swap bearings until snug."
+      "guidance": {
+        "instructionText": "Hold both carriage halves firmly together and shake the assembly.",
+        "whyItMattersText": "Compress the two halves by hand until there is no gap. Shake side-to-side and up-down for 2–3 seconds. No tools needed — this is a hand-compression test only. Tip: grip a completed carriage from another axis as a tactile reference for correct feel."
+      },
+      "validation": {
+        "successCriteria": "No audible rattle or tactile movement from the bearings.",
+        "failureCriteria": "Bearings click, rattle, or shift inside the halves when shaken."
+      },
+      "feedback": {
+        "successMessage": "Bearings are snug. Proceed to the rod slide test.",
+        "failureMessage": "Bearing fit is too loose. Swap to a slightly larger LM8UU or try the next batch of bearings. Re-test before closing the carriage."
+      },
+      "difficulty": "beginner"
     },
     {
       "id": "step_z_front_carriage_rod_slide_test",
-      "name": "Rod slide test: slight resistance only",
+      "name": "Rod slide test: slight resistance, not too free",
       "assemblyId": "assembly_d3d_z_front_bench",
       "subassemblyId": "subassembly_z_front_carriage_build",
       "sequenceIndex": 207,
       "family": "Confirm",
-      "instructionText": "Insert a guide rod through the carriage and hold it vertical. The rod should drop through with slight resistance, not freely. Too free: wrap each bearing in one layer of electrical tape and retest."
+      "guidance": {
+        "instructionText": "Insert a smooth guide rod through the carriage and hold it so the rod is vertical.",
+        "whyItMattersText": "The rod should slide or drop through as you hold the carriage, but there should be a little resistance — it's good if you have to shake the carriage for the rod to slide through. Motors pull 20 lbs of belt force on this carriage, so it should not slip through too fast with no resistance."
+      },
+      "validation": {
+        "successCriteria": "Rod slides or drops through with slight resistance. Shaking the carriage helps it move through.",
+        "failureCriteria": "Rod slides too quickly with zero resistance (too free), OR rod jams and requires force to push (too tight)."
+      },
+      "feedback": {
+        "successMessage": "Resistance feels correct. Both tests pass — proceed to close the carriage halves.",
+        "failureMessage": "Too free: wrap each bearing in one layer of electrical tape to tighten the fit and retest. Too tight: check that bearings are fully seated and carriage halves are not warped."
+      },
+      "difficulty": "beginner"
     },
     {
       "id": "step_z_front_carriage_bolt",
@@ -9532,16 +9718,40 @@
       "subassemblyId": "subassembly_z_back_carriage_build",
       "sequenceIndex": 239,
       "family": "Confirm",
-      "instructionText": "Add the second carriage half on top and compress the two halves firmly. Shake the closed carriage — bearings must not rattle. If they do, the fit is too loose; adjust or swap bearings until snug."
+      "guidance": {
+        "instructionText": "Hold both carriage halves firmly together and shake the assembly.",
+        "whyItMattersText": "Compress the two halves by hand until there is no gap. Shake side-to-side and up-down for 2–3 seconds. No tools needed — this is a hand-compression test only. Tip: grip a completed carriage from another axis as a tactile reference for correct feel."
+      },
+      "validation": {
+        "successCriteria": "No audible rattle or tactile movement from the bearings.",
+        "failureCriteria": "Bearings click, rattle, or shift inside the halves when shaken."
+      },
+      "feedback": {
+        "successMessage": "Bearings are snug. Proceed to the rod slide test.",
+        "failureMessage": "Bearing fit is too loose. Swap to a slightly larger LM8UU or try the next batch of bearings. Re-test before closing the carriage."
+      },
+      "difficulty": "beginner"
     },
     {
       "id": "step_z_back_carriage_rod_slide_test",
-      "name": "Rod slide test: slight resistance only",
+      "name": "Rod slide test: slight resistance, not too free",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_carriage_build",
       "sequenceIndex": 240,
       "family": "Confirm",
-      "instructionText": "Insert a guide rod through the carriage and hold it vertical. The rod should drop through with slight resistance, not freely. Too free: wrap each bearing in one layer of electrical tape and retest."
+      "guidance": {
+        "instructionText": "Insert a smooth guide rod through the carriage and hold it so the rod is vertical.",
+        "whyItMattersText": "The rod should slide or drop through as you hold the carriage, but there should be a little resistance — it's good if you have to shake the carriage for the rod to slide through. Motors pull 20 lbs of belt force on this carriage, so it should not slip through too fast with no resistance."
+      },
+      "validation": {
+        "successCriteria": "Rod slides or drops through with slight resistance. Shaking the carriage helps it move through.",
+        "failureCriteria": "Rod slides too quickly with zero resistance (too free), OR rod jams and requires force to push (too tight)."
+      },
+      "feedback": {
+        "successMessage": "Resistance feels correct. Both tests pass — proceed to close the carriage halves.",
+        "failureMessage": "Too free: wrap each bearing in one layer of electrical tape to tighten the fit and retest. Too tight: check that bearings are fully seated and carriage halves are not warped."
+      },
+      "difficulty": "beginner"
     },
     {
       "id": "step_z_back_carriage_bolt",
@@ -9992,12 +10202,6 @@
       "sequenceIndex": 279,
       "instructionText": "Pop the loose belt peg out and set aside. Tighten all 8 motor-piece bolts before mounting (they become inaccessible after). Lengthen the axis and fit the idler long bolt through the bottom hole of the front frame face; fit the motor long bolt through the top hole. Fasten both with nuts.",
       "requiredPartIds": [
-        "idler",
-        "z2_half_carriage",
-        "z2_spacer",
-        "z2_spacer_2",
-        "motor",
-        "motor_piece",
         "fastener_z_front_idler_frame_bolt",
         "fastener_z_front_motor_frame_bolt"
       ],
@@ -10157,12 +10361,6 @@
       "sequenceIndex": 285,
       "instructionText": "Tighten all 8 motor-piece bolts first. Lengthen the Z-back axis and fit the idler bolt through the bottom hole of the back frame face; fit the motor bolt through the top hole. Fasten both. Align directly behind Z-front.",
       "requiredPartIds": [
-        "idler001",
-        "z1_half_carriage",
-        "z1_spacer_1",
-        "z1_spacer_002",
-        "motor001",
-        "motor_piece001",
         "fastener_z_back_idler_frame_bolt",
         "fastener_z_back_motor_frame_bolt"
       ],
@@ -12814,8 +13012,10 @@
         "d3d",
         "frame",
         "bottom"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_bottom_right_bar",
       "name": "Bottom Frame Side Right Bar Target",
@@ -12826,8 +13026,10 @@
         "d3d",
         "frame",
         "bottom"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 90, "z": 0 }
+  },
     {
       "id": "target_bottom_bottom_bar",
       "name": "Bottom Frame Side Bottom Bar Target",
@@ -12838,8 +13040,10 @@
         "d3d",
         "frame",
         "bottom"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_bottom_left_bar",
       "name": "Bottom Frame Side Left Bar Target",
@@ -12850,8 +13054,10 @@
         "d3d",
         "frame",
         "bottom"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 90, "z": 0 }
+  },
     {
       "id": "target_bottom_square_check",
       "name": "Bottom Frame Side Square Check",
@@ -12869,12 +13075,8 @@
         "z": 0
       },
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 360.0,
-        "y": 180.0,
-        "z": 360.0
-      }
-    },
+      "toolActionRotation": { "x": 3.5124, "y": 182.3149, "z": 358.0872 }
+  },
     {
       "id": "target_top_top_bar",
       "name": "Top Frame Side Top Bar Target",
@@ -12885,8 +13087,10 @@
         "d3d",
         "frame",
         "top"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_top_right_bar",
       "name": "Top Frame Side Right Bar Target",
@@ -12897,8 +13101,10 @@
         "d3d",
         "frame",
         "top"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 90, "z": 0 }
+  },
     {
       "id": "target_top_bottom_bar",
       "name": "Top Frame Side Bottom Bar Target",
@@ -12909,8 +13115,10 @@
         "d3d",
         "frame",
         "top"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_top_left_bar",
       "name": "Top Frame Side Left Bar Target",
@@ -12921,8 +13129,10 @@
         "d3d",
         "frame",
         "top"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 90, "z": 0 }
+  },
     {
       "id": "target_top_square_check",
       "name": "Top Frame Side Square Check",
@@ -12940,12 +13150,8 @@
         "z": 0
       },
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 360.0,
-        "y": 180.0,
-        "z": 360.0
-      }
-    },
+      "toolActionRotation": { "x": 0, "y": 180, "z": 0 }
+  },
     {
       "id": "target_left_top_bar",
       "name": "Left Frame Side Top Bar Target",
@@ -12956,8 +13162,10 @@
         "d3d",
         "frame",
         "left"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_left_right_bar",
       "name": "Left Frame Side Right Bar Target",
@@ -12968,8 +13176,10 @@
         "d3d",
         "frame",
         "left"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 90, "z": 0 }
+  },
     {
       "id": "target_left_bottom_bar",
       "name": "Left Frame Side Bottom Bar Target",
@@ -12980,8 +13190,10 @@
         "d3d",
         "frame",
         "left"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_left_left_bar",
       "name": "Left Frame Side Left Bar Target",
@@ -12992,8 +13204,10 @@
         "d3d",
         "frame",
         "left"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 90, "z": 0 }
+  },
     {
       "id": "target_left_square_check",
       "name": "Left Frame Side Square Check",
@@ -13011,12 +13225,8 @@
         "z": 0
       },
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 360.0,
-        "y": 180.0,
-        "z": 360.0
-      }
-    },
+      "toolActionRotation": { "x": 0, "y": 180, "z": 0 }
+  },
     {
       "id": "target_right_top_bar",
       "name": "Right Frame Side Top Bar Target",
@@ -13027,8 +13237,10 @@
         "d3d",
         "frame",
         "right"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_right_right_bar",
       "name": "Right Frame Side Right Bar Target",
@@ -13039,8 +13251,10 @@
         "d3d",
         "frame",
         "right"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 90, "z": 0 }
+  },
     {
       "id": "target_right_bottom_bar",
       "name": "Right Frame Side Bottom Bar Target",
@@ -13051,8 +13265,10 @@
         "d3d",
         "frame",
         "right"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_right_left_bar",
       "name": "Right Frame Side Left Bar Target",
@@ -13063,8 +13279,10 @@
         "d3d",
         "frame",
         "right"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 90, "z": 0 }
+  },
     {
       "id": "target_right_square_check",
       "name": "Right Frame Side Square Check",
@@ -13082,12 +13300,8 @@
         "z": 0
       },
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 0.8938,
-        "y": 180.0,
-        "z": 360.0
-      }
-    },
+      "toolActionRotation": { "x": 0.8938, "y": 180, "z": 0 }
+  },
     {
       "id": "target_front_top_bar",
       "name": "Front Frame Side Top Bar Target",
@@ -13098,8 +13312,10 @@
         "d3d",
         "frame",
         "front"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_front_right_bar",
       "name": "Front Frame Side Right Bar Target",
@@ -13110,8 +13326,10 @@
         "d3d",
         "frame",
         "front"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 90, "z": 0 }
+  },
     {
       "id": "target_front_bottom_bar",
       "name": "Front Frame Side Bottom Bar Target",
@@ -13122,8 +13340,10 @@
         "d3d",
         "frame",
         "front"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_front_left_bar",
       "name": "Front Frame Side Left Bar Target",
@@ -13134,8 +13354,10 @@
         "d3d",
         "frame",
         "front"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 90, "z": 0 }
+  },
     {
       "id": "target_front_square_check",
       "name": "Front Frame Side Square Check",
@@ -13153,12 +13375,8 @@
         "z": 0
       },
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 0,
-        "y": 180,
-        "z": 0
-      }
-    },
+      "toolActionRotation": { "x": 0, "y": 180, "z": 0 }
+  },
     {
       "id": "target_rear_top_bar",
       "name": "Rear Frame Side Top Bar Target",
@@ -13169,8 +13387,10 @@
         "d3d",
         "frame",
         "rear"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_rear_right_bar",
       "name": "Rear Frame Side Right Bar Target",
@@ -13181,8 +13401,10 @@
         "d3d",
         "frame",
         "rear"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 90, "z": 0 }
+  },
     {
       "id": "target_rear_bottom_bar",
       "name": "Rear Frame Side Bottom Bar Target",
@@ -13193,8 +13415,10 @@
         "d3d",
         "frame",
         "rear"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_rear_left_bar",
       "name": "Rear Frame Side Left Bar Target",
@@ -13205,8 +13429,10 @@
         "d3d",
         "frame",
         "rear"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 90, "z": 0 }
+  },
     {
       "id": "target_rear_square_check",
       "name": "Rear Frame Side Square Check",
@@ -13224,12 +13450,8 @@
         "z": 0
       },
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 360.0,
-        "y": 180.0,
-        "z": 360.0
-      }
-    },
+      "toolActionRotation": { "x": 0, "y": 180, "z": 0 }
+  },
     {
       "id": "target_bottom_clamp_panel",
       "name": "Bottom Frame Side Clamp Target",
@@ -13247,12 +13469,8 @@
         "z": 0
       },
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 4.5566,
-        "y": 296.3781,
-        "z": 2.8303
-      }
-    },
+      "toolActionRotation": { "x": 1.8938, "y": 99.4574, "z": 89.1389 }
+  },
     {
       "id": "target_bottom_weld_upper_left",
       "name": "Bottom Frame Side Upper-Left Tack Target",
@@ -13272,12 +13490,8 @@
       },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 10.3335,
-        "y": 151.9751,
-        "z": 347.7102
-      }
-    },
+      "toolActionRotation": { "x": 0.2327, "y": 56.2688, "z": 170.0274 }
+  },
     {
       "id": "target_bottom_weld_lower_right",
       "name": "Bottom Frame Side Lower-Right Tack Target",
@@ -13297,12 +13511,8 @@
       },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 18.0459,
-        "y": 339.7352,
-        "z": 351.0933
-      }
-    },
+      "toolActionRotation": { "x": 2.6625, "y": 242.9827, "z": 162.0061 }
+  },
     {
       "id": "target_bottom_weld_upper_right",
       "name": "Bottom Frame Side Upper-Right Tack Target",
@@ -13322,12 +13532,8 @@
       },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 359.7671,
-        "y": 243.6304,
-        "z": 344.5001
-      }
-    },
+      "toolActionRotation": { "x": 358.0768, "y": 148.0428, "z": 180.8607 }
+  },
     {
       "id": "target_bottom_weld_lower_left",
       "name": "Bottom Frame Side Lower-Left Tack Target",
@@ -13347,12 +13553,8 @@
       },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 13.9168,
-        "y": 39.4196,
-        "z": 347.3896
-      }
-    },
+      "toolActionRotation": { "x": 359.5678, "y": 303.7881, "z": 166.4916 }
+  },
     {
       "id": "target_top_clamp_panel",
       "name": "Top Frame Side Clamp Target",
@@ -13370,12 +13572,8 @@
         "z": 0
       },
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 358.5393,
-        "y": 14.4486,
-        "z": 6.9388
-      }
-    },
+      "toolActionRotation": { "x": 6.4398, "y": 176.9955, "z": 83.4222 }
+  },
     {
       "id": "target_top_weld_upper_left",
       "name": "Top Frame Side Upper-Left Tack Target",
@@ -13395,12 +13593,8 @@
       },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 10.5373,
-        "y": 137.0438,
-        "z": 348.6502
-      }
-    },
+      "toolActionRotation": { "x": 1.1352, "y": 41.1569, "z": 169.737 }
+  },
     {
       "id": "target_top_weld_lower_right",
       "name": "Top Frame Side Lower-Right Tack Target",
@@ -13420,12 +13614,8 @@
       },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 26.3098,
-        "y": 309.4787,
-        "z": 354.256
-      }
-    },
+      "toolActionRotation": { "x": 4.4712, "y": 210.9976, "z": 153.4191 }
+  },
     {
       "id": "target_top_weld_upper_right",
       "name": "Top Frame Side Upper-Right Tack Target",
@@ -13445,12 +13635,8 @@
       },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 0.4015,
-        "y": 221.8254,
-        "z": 352.0075
-      }
-    },
+      "toolActionRotation": { "x": 5.4876, "y": 126.1785, "z": 179.4897 }
+  },
     {
       "id": "target_top_weld_lower_left",
       "name": "Top Frame Side Lower-Left Tack Target",
@@ -13470,12 +13656,8 @@
       },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 13.9168,
-        "y": 39.424,
-        "z": 347.3896
-      }
-    },
+      "toolActionRotation": { "x": 359.5678, "y": 303.7881, "z": 166.4916 }
+  },
     {
       "id": "target_left_clamp_panel",
       "name": "Left Frame Side Clamp Target",
@@ -13493,12 +13675,8 @@
         "z": 0
       },
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 5.3546,
-        "y": 199.8878,
-        "z": 6.5117
-      }
-    },
+      "toolActionRotation": { "x": 0.0527, "y": 2.5847, "z": 85.867 }
+  },
     {
       "id": "target_left_weld_upper_left",
       "name": "Left Frame Side Upper-Left Tack Target",
@@ -13518,12 +13696,8 @@
       },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 10.4625,
-        "y": 140.8454,
-        "z": 348.4164
-      }
-    },
+      "toolActionRotation": { "x": 0.9106, "y": 45.0003, "z": 169.8311 }
+  },
     {
       "id": "target_left_weld_lower_right",
       "name": "Left Frame Side Lower-Right Tack Target",
@@ -13543,12 +13717,8 @@
       },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 19.3264,
-        "y": 305.6643,
-        "z": 348.0951
-      }
-    },
+      "toolActionRotation": { "x": 359.7007, "y": 209.8582, "z": 161.0501 }
+  },
     {
       "id": "target_left_weld_upper_right",
       "name": "Left Frame Side Upper-Right Tack Target",
@@ -13568,12 +13738,8 @@
       },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 359.7671,
-        "y": 243.6304,
-        "z": 344.5001
-      }
-    },
+      "toolActionRotation": { "x": 358.0768, "y": 148.0428, "z": 180.8607 }
+  },
     {
       "id": "target_left_weld_lower_left",
       "name": "Left Frame Side Lower-Left Tack Target",
@@ -13593,12 +13759,8 @@
       },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 14.8189,
-        "y": 39.6571,
-        "z": 346.8584
-      }
-    },
+      "toolActionRotation": { "x": 358.9668, "y": 304.1638, "z": 165.6427 }
+  },
     {
       "id": "target_right_clamp_panel",
       "name": "Right Frame Side Clamp Target",
@@ -13616,12 +13778,8 @@
         "z": 0
       },
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 4.5598,
-        "y": 350.129,
-        "z": 2.825
-      }
-    },
+      "toolActionRotation": { "x": 1.8946, "y": 153.2087, "z": 89.1406 }
+  },
     {
       "id": "target_right_weld_upper_left",
       "name": "Right Frame Side Upper-Left Tack Target",
@@ -13641,12 +13799,8 @@
       },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 10.3335,
-        "y": 135.123,
-        "z": 347.7102
-      }
-    },
+      "toolActionRotation": { "x": 0.2329, "y": 39.4142, "z": 170.0285 }
+  },
     {
       "id": "target_right_weld_lower_right",
       "name": "Right Frame Side Lower-Right Tack Target",
@@ -13666,12 +13820,8 @@
       },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 18.0459,
-        "y": 339.7352,
-        "z": 351.0933
-      }
-    },
+      "toolActionRotation": { "x": 2.6625, "y": 242.9827, "z": 162.0061 }
+  },
     {
       "id": "target_right_weld_upper_right",
       "name": "Right Frame Side Upper-Right Tack Target",
@@ -13691,12 +13841,8 @@
       },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 359.7671,
-        "y": 243.6304,
-        "z": 344.5001
-      }
-    },
+      "toolActionRotation": { "x": 358.0768, "y": 148.0428, "z": 180.8607 }
+  },
     {
       "id": "target_right_weld_lower_left",
       "name": "Right Frame Side Lower-Left Tack Target",
@@ -13716,12 +13862,8 @@
       },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 13.9168,
-        "y": 39.424,
-        "z": 347.3896
-      }
-    },
+      "toolActionRotation": { "x": 359.5678, "y": 303.7881, "z": 166.4916 }
+  },
     {
       "id": "target_front_clamp_panel",
       "name": "Front Frame Side Clamp Target",
@@ -13739,12 +13881,8 @@
         "z": 0
       },
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 4.5598,
-        "y": 237.6567,
-        "z": 2.825
-      }
-    },
+      "toolActionRotation": { "x": 1.8902, "y": 40.7262, "z": 89.1457 }
+  },
     {
       "id": "target_front_weld_upper_left",
       "name": "Front Frame Side Upper-Left Tack Target",
@@ -13764,12 +13902,8 @@
       },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 10.3335,
-        "y": 151.9751,
-        "z": 347.7102
-      }
-    },
+      "toolActionRotation": { "x": 0.2327, "y": 56.2688, "z": 170.0274 }
+  },
     {
       "id": "target_front_weld_lower_right",
       "name": "Front Frame Side Lower-Right Tack Target",
@@ -13789,12 +13923,8 @@
       },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 17.9868,
-        "y": 343.96,
-        "z": 354.8662
-      }
-    },
+      "toolActionRotation": { "x": 6.2213, "y": 246.0109, "z": 161.6085 }
+  },
     {
       "id": "target_front_weld_upper_right",
       "name": "Front Frame Side Upper-Right Tack Target",
@@ -13814,12 +13944,8 @@
       },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 3.8998,
-        "y": 243.899,
-        "z": 352.8734
-      }
-    },
+      "toolActionRotation": { "x": 5.9967, "y": 147.8663, "z": 175.9071 }
+  },
     {
       "id": "target_front_weld_lower_left",
       "name": "Front Frame Side Lower-Left Tack Target",
@@ -13839,12 +13965,8 @@
       },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 13.9168,
-        "y": 39.424,
-        "z": 347.3896
-      }
-    },
+      "toolActionRotation": { "x": 359.5678, "y": 303.7881, "z": 166.4916 }
+  },
     {
       "id": "target_rear_clamp_panel",
       "name": "Rear Frame Side Clamp Target",
@@ -13862,12 +13984,8 @@
         "z": 0
       },
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 7.5042,
-        "y": 21.1847,
-        "z": 357.5796
-      }
-    },
+      "toolActionRotation": { "x": 0.5643, "y": 184.9413, "z": 94.9816 }
+  },
     {
       "id": "target_rear_weld_upper_left",
       "name": "Rear Frame Side Upper-Left Tack Target",
@@ -13887,12 +14005,8 @@
       },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 12.5971,
-        "y": 159.9129,
-        "z": 349.3267
-      }
-    },
+      "toolActionRotation": { "x": 1.5798, "y": 63.8418, "z": 167.615 }
+  },
     {
       "id": "target_rear_weld_lower_right",
       "name": "Rear Frame Side Lower-Right Tack Target",
@@ -13912,12 +14026,8 @@
       },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 6.6177,
-        "y": 338.9936,
-        "z": 350.9223
-      }
-    },
+      "toolActionRotation": { "x": 3.7807, "y": 242.925, "z": 173.4083 }
+  },
     {
       "id": "target_rear_weld_upper_right",
       "name": "Rear Frame Side Upper-Right Tack Target",
@@ -13937,12 +14047,8 @@
       },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 359.7671,
-        "y": 243.6304,
-        "z": 344.5001
-      }
-    },
+      "toolActionRotation": { "x": 358.0768, "y": 148.0428, "z": 180.8607 }
+  },
     {
       "id": "target_rear_weld_lower_left",
       "name": "Rear Frame Side Lower-Left Tack Target",
@@ -13962,12 +14068,8 @@
       },
       "weldLength": 0.001,
       "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 13.9168,
-        "y": 39.424,
-        "z": 347.3896
-      }
-    },
+      "toolActionRotation": { "x": 359.5678, "y": 303.7881, "z": 166.4916 }
+  },
     {
       "id": "target_cube_bottom_side",
       "name": "Cube Bottom Side",
@@ -13980,8 +14082,10 @@
         "frame",
         "cube",
         "stack"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_cube_left_side",
       "name": "Cube Left Side",
@@ -13994,8 +14098,10 @@
         "frame",
         "cube",
         "stack"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 90 }
+  },
     {
       "id": "target_cube_right_side",
       "name": "Cube Right Side",
@@ -14008,8 +14114,10 @@
         "frame",
         "cube",
         "stack"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 270 }
+  },
     {
       "id": "target_cube_front_side",
       "name": "Cube Front Side",
@@ -14022,8 +14130,10 @@
         "frame",
         "cube",
         "stack"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 270, "y": 0, "z": 0 }
+  },
     {
       "id": "target_cube_rear_side",
       "name": "Cube Rear Side",
@@ -14036,8 +14146,10 @@
         "frame",
         "cube",
         "stack"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 90, "y": 0, "z": 0 }
+  },
     {
       "id": "target_cube_top_side",
       "name": "Cube Top Side",
@@ -14050,8 +14162,10 @@
         "frame",
         "cube",
         "stack"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_cube_square_check_front_left",
       "name": "Cube Top-Front-Left Square Check Target",
@@ -14063,8 +14177,10 @@
         "cube",
         "measure",
         "square_check"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_cube_square_check_rear_right",
       "name": "Cube Top-Rear-Right Square Check Target",
@@ -14076,8 +14192,10 @@
         "cube",
         "measure",
         "square_check"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_cube_weld_lower_front_left",
       "name": "Cube Lower Front-Left Corner",
@@ -14096,15 +14214,11 @@
         "z": 0
       },
       "weldLength": 0.025,
-      "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 7.8577,
-        "y": 166.9718,
-        "z": 214.3126
-      },
       "associatedPartId": "compound007_lower_fl",
-      "completionToolId": null
-    },
+      "completionToolId": null,
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 284.6133, "z": 309.053 }
+  },
     {
       "id": "target_cube_weld_lower_rear_right",
       "name": "Cube Lower Rear-Right Corner",
@@ -14123,15 +14237,11 @@
         "z": 0
       },
       "weldLength": 0.025,
-      "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 7.8577,
-        "y": 357.9038,
-        "z": 214.3126
-      },
       "associatedPartId": "compound007_lower_rr",
-      "completionToolId": null
-    },
+      "completionToolId": null,
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1417, "y": 115.5495, "z": 309.0514 }
+  },
     {
       "id": "target_cube_weld_lower_front_right",
       "name": "Cube Lower Front-Right Corner",
@@ -14150,15 +14260,11 @@
         "z": 0
       },
       "weldLength": 0.025,
-      "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 7.8577,
-        "y": 166.9718,
-        "z": 214.3126
-      },
       "associatedPartId": "compound007_lower_fr",
-      "completionToolId": null
-    },
+      "completionToolId": null,
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 284.6133, "z": 309.053 }
+  },
     {
       "id": "target_cube_weld_lower_rear_left",
       "name": "Cube Lower Rear-Left Corner",
@@ -14177,15 +14283,11 @@
         "z": 0
       },
       "weldLength": 0.025,
-      "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 7.8577,
-        "y": 355.4999,
-        "z": 214.3126
-      },
       "associatedPartId": "compound007_lower_rl",
-      "completionToolId": null
-    },
+      "completionToolId": null,
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1369, "y": 113.1724, "z": 309.0781 }
+  },
     {
       "id": "target_cube_weld_upper_front_left",
       "name": "Cube Upper Front-Left Corner",
@@ -14204,15 +14306,11 @@
         "z": 0
       },
       "weldLength": 0.025,
-      "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 7.8577,
-        "y": 209.8121,
-        "z": 214.3126
-      },
       "associatedPartId": "compound007_upper_fl",
-      "completionToolId": null
-    },
+      "completionToolId": null,
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1368, "y": 327.4712, "z": 309.0698 }
+  },
     {
       "id": "target_cube_weld_upper_rear_right",
       "name": "Cube Upper Rear-Right Corner",
@@ -14231,15 +14329,11 @@
         "z": 0
       },
       "weldLength": 0.025,
-      "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 7.8577,
-        "y": 42.2874,
-        "z": 214.3126
-      },
       "associatedPartId": "compound007_upper_rr",
-      "completionToolId": null
-    },
+      "completionToolId": null,
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1323, "y": 159.9222, "z": 309.0422 }
+  },
     {
       "id": "target_cube_weld_upper_front_right",
       "name": "Cube Upper Front-Right Corner",
@@ -14258,15 +14352,11 @@
         "z": 0
       },
       "weldLength": 0.025,
-      "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 7.8577,
-        "y": 145.0924,
-        "z": 214.3126
-      },
       "associatedPartId": "compound007_upper_fr",
-      "completionToolId": null
-    },
+      "completionToolId": null,
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 262.7152, "z": 309.0344 }
+  },
     {
       "id": "target_cube_weld_upper_rear_left",
       "name": "Cube Upper Rear-Left Corner",
@@ -14285,15 +14375,11 @@
         "z": 0
       },
       "weldLength": 0.025,
-      "useToolActionRotation": true,
-      "toolActionRotation": {
-        "x": 2.4886,
-        "y": 245.9217,
-        "z": 201.9779
-      },
       "associatedPartId": "compound007_upper_rl",
-      "completionToolId": null
-    },
+      "completionToolId": null,
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 87.2824, "y": 160.8262, "z": 105.3073 }
+  },
     {
       "id": "target_cube_seam_lower_front_left",
       "name": "Cube Lower Front-Left Seam Target",
@@ -14307,8 +14393,10 @@
         "seam",
         "lower",
         "front_left"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 359.5605, "y": 264.4279, "z": 166.4989 }
+  },
     {
       "id": "target_cube_seam_lower_rear_right",
       "name": "Cube Lower Rear-Right Seam Target",
@@ -14322,8 +14410,10 @@
         "seam",
         "lower",
         "rear_right"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 359.5605, "y": 264.4279, "z": 166.4989 }
+  },
     {
       "id": "target_cube_seam_lower_front_right",
       "name": "Cube Lower Front-Right Seam Target",
@@ -14337,8 +14427,10 @@
         "seam",
         "lower",
         "front_right"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 359.5605, "y": 264.4279, "z": 166.4989 }
+  },
     {
       "id": "target_cube_seam_lower_rear_left",
       "name": "Cube Lower Rear-Left Seam Target",
@@ -14352,8 +14444,10 @@
         "seam",
         "lower",
         "rear_left"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 359.5605, "y": 264.4279, "z": 166.4989 }
+  },
     {
       "id": "target_cube_seam_upper_front_left",
       "name": "Cube Upper Front-Left Seam Target",
@@ -14367,8 +14461,10 @@
         "seam",
         "upper",
         "front_left"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 359.5605, "y": 264.4279, "z": 166.4989 }
+  },
     {
       "id": "target_cube_seam_upper_rear_right",
       "name": "Cube Upper Rear-Right Seam Target",
@@ -14382,8 +14478,10 @@
         "seam",
         "upper",
         "rear_right"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 359.5605, "y": 264.4279, "z": 166.4989 }
+  },
     {
       "id": "target_cube_seam_upper_front_right",
       "name": "Cube Upper Front-Right Seam Target",
@@ -14397,8 +14495,10 @@
         "seam",
         "upper",
         "front_right"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 359.5605, "y": 264.4279, "z": 166.4989 }
+  },
     {
       "id": "target_cube_seam_upper_rear_left",
       "name": "Cube Upper Rear-Left Seam Target",
@@ -14412,8 +14512,10 @@
         "seam",
         "upper",
         "rear_left"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 359.5605, "y": 264.4279, "z": 166.4989 }
+  },
     {
       "id": "target_cube_cleanup_upper_front_left",
       "name": "Cube Upper Front-Left Cleanup Target",
@@ -14425,8 +14527,10 @@
         "cube",
         "cleanup",
         "front_left"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_cube_cleanup_upper_rear_right",
       "name": "Cube Upper Rear-Right Cleanup Target",
@@ -14438,8 +14542,10 @@
         "cube",
         "cleanup",
         "rear_right"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_cube_cleanup_upper_front_right",
       "name": "Cube Upper Front-Right Cleanup Target",
@@ -14451,8 +14557,10 @@
         "cube",
         "cleanup",
         "front_right"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_cube_cleanup_upper_rear_left",
       "name": "Cube Upper Rear-Left Cleanup Target",
@@ -14464,382 +14572,514 @@
         "cube",
         "cleanup",
         "rear_left"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_left_axis_mount",
       "name": "Y-Left Axis Mount",
       "anchorRef": "anchors/d3d/axes/y_left/mount",
-      "associatedPartId": "d3d_y_left_axis_unit"
-    },
+      "associatedPartId": "d3d_y_left_axis_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_left_axis_qc",
       "name": "Y-Left Axis QC",
-      "anchorRef": "anchors/d3d/axes/y_left/qc"
-    },
+      "anchorRef": "anchors/d3d/axes/y_left/qc",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_right_axis_mount",
       "name": "Y-Right Axis Mount",
       "anchorRef": "anchors/d3d/axes/y_right/mount",
-      "associatedPartId": "d3d_y_right_axis_unit"
-    },
+      "associatedPartId": "d3d_y_right_axis_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_x_axis_idler_screw_1",
       "name": "X-Axis Idler Screw 1",
       "anchorRef": "anchors/d3d/axes/x_axis/idler_screw_1",
-      "associatedPartId": "d3d_x_axis_idler_unit"
-    },
+      "associatedPartId": "d3d_x_axis_idler_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 284.6133, "z": 309.053 }
+  },
     {
       "id": "target_x_axis_idler_screw_2",
       "name": "X-Axis Idler Screw 2",
       "anchorRef": "anchors/d3d/axes/x_axis/idler_screw_2",
-      "associatedPartId": "d3d_x_axis_idler_unit"
-    },
+      "associatedPartId": "d3d_x_axis_idler_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 284.6133, "z": 309.053 }
+  },
     {
       "id": "target_x_axis_idler_screw_3",
       "name": "X-Axis Idler Screw 3",
       "anchorRef": "anchors/d3d/axes/x_axis/idler_screw_3",
-      "associatedPartId": "d3d_x_axis_idler_unit"
-    },
+      "associatedPartId": "d3d_x_axis_idler_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 284.6133, "z": 309.053 }
+  },
     {
       "id": "target_x_axis_idler_anchor_prefit",
       "name": "X-Axis Idler Anchor Prefit",
       "anchorRef": "anchors/d3d/axes/x_axis/idler_anchor_prefit",
-      "associatedPartId": "d3d_x_axis_idler_unit"
-    },
+      "associatedPartId": "d3d_x_axis_idler_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_x_axis_rod_pair_prefit",
       "name": "X-Axis Rod Pair Prefit",
       "anchorRef": "anchors/d3d/axes/x_axis/rod_pair_prefit",
-      "associatedPartId": "d3d_x_axis_rod_pair"
-    },
+      "associatedPartId": "d3d_x_axis_rod_pair",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_x_axis_motor_holder_prefit",
       "name": "X-Axis Motor Holder Prefit",
       "anchorRef": "anchors/d3d/axes/x_axis/motor_holder_prefit",
-      "associatedPartId": "d3d_x_axis_motor_holder_unit"
-    },
+      "associatedPartId": "d3d_x_axis_motor_holder_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_x_axis_idler_mount_y_right_bolt_place_a",
       "name": "X-Axis Idler Mount Y-Right Bolt Place A",
       "anchorRef": "anchors/d3d/axes/x_axis/idler_mount_y_right_bolt_place_a",
-      "associatedPartId": "fastener_x_axis_idler_mount_m6x30_a"
-    },
+      "associatedPartId": "fastener_x_axis_idler_mount_m6x30_a",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 180, "z": 0 }
+  },
     {
       "id": "target_x_axis_idler_mount_y_right_bolt_place_b",
       "name": "X-Axis Idler Mount Y-Right Bolt Place B",
       "anchorRef": "anchors/d3d/axes/x_axis/idler_mount_y_right_bolt_place_b",
-      "associatedPartId": "fastener_x_axis_idler_mount_m6x30_b"
-    },
+      "associatedPartId": "fastener_x_axis_idler_mount_m6x30_b",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 180, "z": 0 }
+  },
     {
       "id": "target_x_axis_idler_mount_y_right_a",
       "name": "X-Axis Idler Mount Y-Right A",
       "anchorRef": "anchors/d3d/axes/x_axis/idler_mount_y_right_a",
-      "associatedPartId": "fastener_x_axis_idler_mount_m6x30_a"
-    },
+      "associatedPartId": "fastener_x_axis_idler_mount_m6x30_a",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 104.6133, "z": 309.053 }
+  },
     {
       "id": "target_x_axis_idler_mount_y_right_b",
       "name": "X-Axis Idler Mount Y-Right B",
       "anchorRef": "anchors/d3d/axes/x_axis/idler_mount_y_right_b",
-      "associatedPartId": "fastener_x_axis_idler_mount_m6x30_b"
-    },
+      "associatedPartId": "fastener_x_axis_idler_mount_m6x30_b",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 104.6133, "z": 309.053 }
+  },
     {
       "id": "target_x_axis_motor_mount_y_left_bolt_place_a",
       "name": "X-Axis Motor Mount Y-Left Bolt Place A",
       "anchorRef": "anchors/d3d/axes/x_axis/motor_mount_y_left_bolt_place_a",
-      "associatedPartId": "fastener_x_axis_motor_mount_m6x30_a"
-    },
+      "associatedPartId": "fastener_x_axis_motor_mount_m6x30_a",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_x_axis_motor_mount_y_left_bolt_place_b",
       "name": "X-Axis Motor Mount Y-Left Bolt Place B",
       "anchorRef": "anchors/d3d/axes/x_axis/motor_mount_y_left_bolt_place_b",
-      "associatedPartId": "fastener_x_axis_motor_mount_m6x30_b"
-    },
+      "associatedPartId": "fastener_x_axis_motor_mount_m6x30_b",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_x_axis_motor_mount_y_left_a",
       "name": "X-Axis Motor Mount Y-Left A",
       "anchorRef": "anchors/d3d/axes/x_axis/motor_mount_y_left_a",
-      "associatedPartId": "fastener_x_axis_motor_mount_m6x30_a"
-    },
+      "associatedPartId": "fastener_x_axis_motor_mount_m6x30_a",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 284.6133, "z": 309.053 }
+  },
     {
       "id": "target_x_axis_motor_mount_y_left_b",
       "name": "X-Axis Motor Mount Y-Left B",
       "anchorRef": "anchors/d3d/axes/x_axis/motor_mount_y_left_b",
-      "associatedPartId": "fastener_x_axis_motor_mount_m6x30_b"
-    },
+      "associatedPartId": "fastener_x_axis_motor_mount_m6x30_b",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 284.6133, "z": 309.053 }
+  },
     {
       "id": "target_x_axis_span_fit",
       "name": "X-Axis Span Fit",
       "anchorRef": "anchors/d3d/axes/x_axis/span_fit",
-      "associatedSubassemblyId": "subassembly_x_axis_frame_fit"
-    },
+      "associatedSubassemblyId": "subassembly_x_axis_frame_fit",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_x_axis_motor_holder_m6x18_1",
       "name": "X-Axis Motor Holder M6x18 1",
       "anchorRef": "anchors/d3d/axes/x_axis/m6x18_1",
-      "associatedPartId": "d3d_x_axis_motor_holder_unit"
-    },
+      "associatedPartId": "d3d_x_axis_motor_holder_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 284.6133, "z": 309.053 }
+  },
     {
       "id": "target_x_axis_motor_holder_m6x18_2",
       "name": "X-Axis Motor Holder M6x18 2",
       "anchorRef": "anchors/d3d/axes/x_axis/m6x18_2",
-      "associatedPartId": "d3d_x_axis_motor_holder_unit"
-    },
+      "associatedPartId": "d3d_x_axis_motor_holder_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 284.6133, "z": 309.053 }
+  },
     {
       "id": "target_x_axis_motor_holder_m6x18_3",
       "name": "X-Axis Motor Holder M6x18 3",
       "anchorRef": "anchors/d3d/axes/x_axis/m6x18_3",
-      "associatedPartId": "d3d_x_axis_motor_holder_unit"
-    },
+      "associatedPartId": "d3d_x_axis_motor_holder_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 284.6133, "z": 309.053 }
+  },
     {
       "id": "target_x_axis_motor_holder_m3_1",
       "name": "X-Axis Motor Holder M3 1",
       "anchorRef": "anchors/d3d/axes/x_axis/m3_1",
-      "associatedPartId": "d3d_x_axis_motor_holder_unit"
-    },
+      "associatedPartId": "d3d_x_axis_motor_holder_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 284.6133, "z": 309.053 }
+  },
     {
       "id": "target_x_axis_motor_holder_m3_2",
       "name": "X-Axis Motor Holder M3 2",
       "anchorRef": "anchors/d3d/axes/x_axis/m3_2",
-      "associatedPartId": "d3d_x_axis_motor_holder_unit"
-    },
+      "associatedPartId": "d3d_x_axis_motor_holder_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 284.6133, "z": 309.053 }
+  },
     {
       "id": "target_x_axis_motor_holder_m3_3",
       "name": "X-Axis Motor Holder M3 3",
       "anchorRef": "anchors/d3d/axes/x_axis/m3_3",
-      "associatedPartId": "d3d_x_axis_motor_holder_unit"
-    },
+      "associatedPartId": "d3d_x_axis_motor_holder_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 284.6133, "z": 309.053 }
+  },
     {
       "id": "target_x_axis_motor_holder_m3_4",
       "name": "X-Axis Motor Holder M3 4",
       "anchorRef": "anchors/d3d/axes/x_axis/m3_4",
-      "associatedPartId": "d3d_x_axis_motor_holder_unit"
-    },
+      "associatedPartId": "d3d_x_axis_motor_holder_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 284.6133, "z": 309.053 }
+  },
     {
       "id": "target_x_axis_belt_tension",
       "name": "X-Axis Belt Tension",
       "anchorRef": "anchors/d3d/axes/x_axis/belt_tension",
-      "associatedPartId": "d3d_x_axis_motor_holder_unit"
-    },
+      "associatedPartId": "d3d_x_axis_motor_holder_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_x_axis_belt_peg_insert",
       "name": "X-Axis Belt Peg Insert",
       "anchorRef": "anchors/d3d/axes/x_axis/belt_peg_insert",
-      "associatedPartId": "fastener_x_axis_belt_peg"
-    },
+      "associatedPartId": "fastener_x_axis_belt_peg",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 90, "z": 0 }
+  },
     {
       "id": "target_x_axis_qc_left_travel",
       "name": "X-Axis QC Left Travel",
-      "anchorRef": "anchors/d3d/axes/x_axis/qc_left_travel"
-    },
+      "anchorRef": "anchors/d3d/axes/x_axis/qc_left_travel",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_x_axis_qc_right_travel",
       "name": "X-Axis QC Right Travel",
-      "anchorRef": "anchors/d3d/axes/x_axis/qc_right_travel"
-    },
+      "anchorRef": "anchors/d3d/axes/x_axis/qc_right_travel",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_x_axis_qc_y_left_endstop",
       "name": "X-Axis QC Y-Left Endstop",
-      "anchorRef": "anchors/d3d/axes/x_axis/qc_y_left_endstop"
-    },
+      "anchorRef": "anchors/d3d/axes/x_axis/qc_y_left_endstop",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_titan_aero_core_stage",
       "name": "Titan Aero Core Stage",
       "anchorRef": "anchors/d3d/extruder/core/stage",
-      "associatedPartId": "d3d_titan_aero_core"
-    },
+      "associatedPartId": "d3d_titan_aero_core",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_extruder_nozzle_attach",
       "name": "Extruder Nozzle Attach",
       "anchorRef": "anchors/d3d/extruder/nozzle/attach",
-      "associatedPartId": "d3d_extruder_nozzle_assembly"
-    },
+      "associatedPartId": "d3d_extruder_nozzle_assembly",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_extruder_blower_attach",
       "name": "Extruder Blower Attach",
       "anchorRef": "anchors/d3d/extruder/blower/attach",
-      "associatedPartId": "d3d_extruder_5015_blower"
-    },
+      "associatedPartId": "d3d_extruder_5015_blower",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_extruder_blower_mount_a",
       "name": "Extruder Blower Mount A",
       "anchorRef": "anchors/d3d/extruder/blower/mount_a",
-      "associatedPartId": "d3d_extruder_5015_blower"
-    },
+      "associatedPartId": "d3d_extruder_5015_blower",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_extruder_blower_mount_b",
       "name": "Extruder Blower Mount B",
       "anchorRef": "anchors/d3d/extruder/blower/mount_b",
-      "associatedPartId": "d3d_extruder_5015_blower"
-    },
+      "associatedPartId": "d3d_extruder_5015_blower",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_extruder_sensor_holder_attach",
       "name": "Extruder Sensor Holder Attach",
       "anchorRef": "anchors/d3d/extruder/sensor_holder/attach",
-      "associatedPartId": "d3d_extruder_sensor_holder"
-    },
+      "associatedPartId": "d3d_extruder_sensor_holder",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_extruder_sensor_holder_fastener_a",
       "name": "Extruder Sensor Holder Fastener A",
       "anchorRef": "anchors/d3d/extruder/sensor_holder/fastener_a",
-      "associatedPartId": "d3d_extruder_sensor_holder"
-    },
+      "associatedPartId": "d3d_extruder_sensor_holder",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_extruder_sensor_holder_fastener_b",
       "name": "Extruder Sensor Holder Fastener B",
       "anchorRef": "anchors/d3d/extruder/sensor_holder/fastener_b",
-      "associatedPartId": "d3d_extruder_sensor_holder"
-    },
+      "associatedPartId": "d3d_extruder_sensor_holder",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_extruder_sensor_insert",
       "name": "Extruder Sensor Insert",
       "anchorRef": "anchors/d3d/extruder/sensor/insert",
-      "associatedPartId": "d3d_extruder_8mm_sensor"
-    },
+      "associatedPartId": "d3d_extruder_8mm_sensor",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_extruder_clearance_nozzle",
       "name": "Extruder Nozzle Clearance Check",
-      "anchorRef": "anchors/d3d/extruder/qc/nozzle"
-    },
+      "anchorRef": "anchors/d3d/extruder/qc/nozzle",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_extruder_clearance_fan",
       "name": "Extruder Fan Clearance Check",
-      "anchorRef": "anchors/d3d/extruder/qc/fan"
-    },
+      "anchorRef": "anchors/d3d/extruder/qc/fan",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_extruder_clearance_sensor",
       "name": "Extruder Sensor Clearance Check",
-      "anchorRef": "anchors/d3d/extruder/qc/sensor"
-    },
+      "anchorRef": "anchors/d3d/extruder/qc/sensor",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_extruder_simplified_carriage_stage",
       "name": "Extruder Simplified Carriage Stage",
       "anchorRef": "anchors/d3d/extruder/carriage/stage",
-      "associatedPartId": "d3d_extruder_simplified_carriage"
-    },
+      "associatedPartId": "d3d_extruder_simplified_carriage",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_extruder_mount_bracket_attach",
       "name": "Extruder Mount Bracket Attach",
       "anchorRef": "anchors/d3d/extruder/carriage/bracket/attach",
-      "associatedPartId": "d3d_extruder_mount_bracket"
-    },
+      "associatedPartId": "d3d_extruder_mount_bracket",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_extruder_mount_bracket_fastener_a",
       "name": "Extruder Mount Bracket Fastener A",
       "anchorRef": "anchors/d3d/extruder/carriage/bracket/fastener_a",
-      "associatedPartId": "d3d_extruder_mount_bracket"
-    },
+      "associatedPartId": "d3d_extruder_mount_bracket",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 284.6133, "z": 309.053 }
+  },
     {
       "id": "target_extruder_mount_bracket_fastener_b",
       "name": "Extruder Mount Bracket Fastener B",
       "anchorRef": "anchors/d3d/extruder/carriage/bracket/fastener_b",
-      "associatedPartId": "d3d_extruder_mount_bracket"
-    },
+      "associatedPartId": "d3d_extruder_mount_bracket",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 284.6133, "z": 309.053 }
+  },
     {
       "id": "target_extruder_mount_top_plate_attach",
       "name": "Extruder Mount Top Plate Attach",
       "anchorRef": "anchors/d3d/extruder/carriage/top_plate/attach",
-      "associatedPartId": "d3d_extruder_mount_top_plate"
-    },
+      "associatedPartId": "d3d_extruder_mount_top_plate",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_extruder_mount_top_plate_fastener_a",
       "name": "Extruder Mount Top Plate Fastener A",
       "anchorRef": "anchors/d3d/extruder/carriage/top_plate/fastener_a",
-      "associatedPartId": "d3d_extruder_mount_top_plate"
-    },
+      "associatedPartId": "d3d_extruder_mount_top_plate",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_extruder_mount_top_plate_fastener_b",
       "name": "Extruder Mount Top Plate Fastener B",
       "anchorRef": "anchors/d3d/extruder/carriage/top_plate/fastener_b",
-      "associatedPartId": "d3d_extruder_mount_top_plate"
-    },
+      "associatedPartId": "d3d_extruder_mount_top_plate",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_extruder_module_to_carriage_mount",
       "name": "Extruder Module To Carriage Mount",
       "anchorRef": "anchors/d3d/extruder/carriage/module/mount",
-      "associatedSubassemblyId": "subassembly_extruder_nozzle_module"
-    },
+      "associatedSubassemblyId": "subassembly_extruder_nozzle_module",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_extruder_mount_clearance_body",
       "name": "Extruder Mount Clearance Body",
-      "anchorRef": "anchors/d3d/extruder/carriage/qc/body"
-    },
+      "anchorRef": "anchors/d3d/extruder/carriage/qc/body",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_extruder_mount_clearance_nozzle",
       "name": "Extruder Mount Clearance Nozzle",
-      "anchorRef": "anchors/d3d/extruder/carriage/qc/nozzle"
-    },
+      "anchorRef": "anchors/d3d/extruder/carriage/qc/nozzle",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_extruder_mount_clearance_sensor",
       "name": "Extruder Mount Clearance Sensor",
-      "anchorRef": "anchors/d3d/extruder/carriage/qc/sensor"
-    },
+      "anchorRef": "anchors/d3d/extruder/carriage/qc/sensor",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_x_axis_carriage_side_stage",
       "name": "X-Axis Carriage Side Stage",
       "anchorRef": "anchors/d3d/extruder_stage03/x_axis/carriage_side/stage",
-      "associatedPartId": "d3d_x_axis_carriage_side"
-    },
+      "associatedPartId": "d3d_x_axis_carriage_side",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_extruder_carriage_unit_to_x_axis_mount",
       "name": "Extruder Carriage Unit To X-Axis Mount",
       "anchorRef": "anchors/d3d/extruder_stage03/x_axis/carriage_unit/mount",
-      "associatedSubassemblyId": "subassembly_extruder_carriage_unit"
-    },
+      "associatedSubassemblyId": "subassembly_extruder_carriage_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_x_axis_half_carriage_attach",
       "name": "X-Axis Half Carriage Attach",
       "anchorRef": "anchors/d3d/extruder_stage03/x_axis/half_carriage/attach",
-      "associatedPartId": "d3d_x_axis_half_carriage"
-    },
+      "associatedPartId": "d3d_x_axis_half_carriage",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_extruder_x_axis_travel_left",
       "name": "Extruder X-Axis Travel Left",
-      "anchorRef": "anchors/d3d/extruder_stage03/x_axis/travel/left"
-    },
+      "anchorRef": "anchors/d3d/extruder_stage03/x_axis/travel/left",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_extruder_x_axis_travel_right",
       "name": "Extruder X-Axis Travel Right",
-      "anchorRef": "anchors/d3d/extruder_stage03/x_axis/travel/right"
-    },
+      "anchorRef": "anchors/d3d/extruder_stage03/x_axis/travel/right",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_extruder_x_axis_nozzle_clearance",
       "name": "Extruder X-Axis Nozzle Clearance",
-      "anchorRef": "anchors/d3d/extruder_stage03/x_axis/nozzle/clearance"
-    },
+      "anchorRef": "anchors/d3d/extruder_stage03/x_axis/nozzle/clearance",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_heatbed_body_mount",
       "name": "Heatbed Body Mount",
       "anchorRef": "anchors/d3d/heatbed/body/mount",
-      "associatedPartId": "d3d_heatbed_body"
-    },
+      "associatedPartId": "d3d_heatbed_body",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_heatbed_snapbuckle_left",
       "name": "Heatbed Snapbuckle Left",
       "anchorRef": "anchors/d3d/heatbed/snapbuckle/left",
-      "associatedPartId": "d3d_heatbed_snapbuckle_left"
-    },
+      "associatedPartId": "d3d_heatbed_snapbuckle_left",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_heatbed_snapbuckle_right",
       "name": "Heatbed Snapbuckle Right",
       "anchorRef": "anchors/d3d/heatbed/snapbuckle/right",
-      "associatedPartId": "d3d_heatbed_snapbuckle_right"
-    },
+      "associatedPartId": "d3d_heatbed_snapbuckle_right",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_heatbed_clearance_left",
       "name": "Heatbed Clearance Left",
-      "anchorRef": "anchors/d3d/heatbed/qc/left"
-    },
+      "anchorRef": "anchors/d3d/heatbed/qc/left",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_heatbed_clearance_right",
       "name": "Heatbed Clearance Right",
-      "anchorRef": "anchors/d3d/heatbed/qc/right"
-    },
+      "anchorRef": "anchors/d3d/heatbed/qc/right",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_heatbed_nozzle_clearance",
       "name": "Heatbed Nozzle Clearance",
-      "anchorRef": "anchors/d3d/heatbed/qc/nozzle"
-    },
+      "anchorRef": "anchors/d3d/heatbed/qc/nozzle",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_cube_tack_front_left_edge",
       "name": "Cube Front-Left Edge (mid-height)",
@@ -14859,8 +15099,10 @@
         "y": 1,
         "z": 0
       },
-      "weldLength": 0.025
-    },
+      "weldLength": 0.025,
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 359.5605, "y": 264.4279, "z": 166.4989 }
+  },
     {
       "id": "target_cube_tack_front_right_edge",
       "name": "Cube Front-Right Edge (mid-height)",
@@ -14880,8 +15122,10 @@
         "y": 1,
         "z": 0
       },
-      "weldLength": 0.025
-    },
+      "weldLength": 0.025,
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 359.5605, "y": 264.4279, "z": 166.4989 }
+  },
     {
       "id": "target_cube_tack_rear_left_edge",
       "name": "Cube Rear-Left Edge (mid-height)",
@@ -14901,8 +15145,10 @@
         "y": 1,
         "z": 0
       },
-      "weldLength": 0.025
-    },
+      "weldLength": 0.025,
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 359.5605, "y": 264.4279, "z": 166.4989 }
+  },
     {
       "id": "target_cube_tack_rear_right_edge",
       "name": "Cube Rear-Right Edge (mid-height)",
@@ -14922,8 +15168,10 @@
         "y": 1,
         "z": 0
       },
-      "weldLength": 0.025
-    },
+      "weldLength": 0.025,
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 359.5605, "y": 264.4279, "z": 166.4989 }
+  },
     {
       "id": "target_z_front_idler_screw_1",
       "name": "Z-Front Idler Screw 1",
@@ -14933,8 +15181,10 @@
       "tags": [
         "screw",
         "z_front"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 284.6133, "z": 309.053 }
+  },
     {
       "id": "target_z_front_idler_screw_2",
       "name": "Z-Front Idler Screw 2",
@@ -14944,8 +15194,10 @@
       "tags": [
         "screw",
         "z_front"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 284.6133, "z": 309.053 }
+  },
     {
       "id": "target_z_front_axis_idler_bolt",
       "name": "Z-Front Axis Idler Frame Bolt",
@@ -14955,8 +15207,10 @@
       "tags": [
         "placement",
         "z_front"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_z_front_axis_motor_bolt",
       "name": "Z-Front Axis Motor Frame Bolt",
@@ -14966,8 +15220,10 @@
       "tags": [
         "placement",
         "z_front"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_z_front_motor_holder_bolt_1",
       "name": "Z-Front Motor Holder Bolt 1",
@@ -14977,8 +15233,10 @@
       "tags": [
         "screw",
         "z_front"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 284.6133, "z": 309.053 }
+  },
     {
       "id": "target_z_front_motor_holder_bolt_2",
       "name": "Z-Front Motor Holder Bolt 2",
@@ -14988,8 +15246,10 @@
       "tags": [
         "screw",
         "z_front"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 284.6133, "z": 309.053 }
+  },
     {
       "id": "target_z_front_belt_tension",
       "name": "Z-Front Belt Tension Point",
@@ -14999,8 +15259,10 @@
       "tags": [
         "belt",
         "z_front"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_z_front_belt_peg_insert",
       "name": "Z-Front Belt Peg Insert",
@@ -15010,8 +15272,10 @@
       "tags": [
         "placement",
         "z_front"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_z_front_carriage_travel_qc",
       "name": "Z-Front Carriage Travel QC",
@@ -15021,8 +15285,10 @@
       "tags": [
         "qc",
         "z_front"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_z_back_idler_screw_1",
       "name": "Z-Back Idler Screw 1",
@@ -15032,8 +15298,10 @@
       "tags": [
         "screw",
         "z_back"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 284.6133, "z": 309.053 }
+  },
     {
       "id": "target_z_back_idler_screw_2",
       "name": "Z-Back Idler Screw 2",
@@ -15043,8 +15311,10 @@
       "tags": [
         "screw",
         "z_back"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 284.6133, "z": 309.053 }
+  },
     {
       "id": "target_z_back_axis_idler_bolt",
       "name": "Z-Back Axis Idler Frame Bolt",
@@ -15054,8 +15324,10 @@
       "tags": [
         "placement",
         "z_back"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_z_back_axis_motor_bolt",
       "name": "Z-Back Axis Motor Frame Bolt",
@@ -15065,8 +15337,10 @@
       "tags": [
         "placement",
         "z_back"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_z_back_motor_holder_bolt_1",
       "name": "Z-Back Motor Holder Bolt 1",
@@ -15076,8 +15350,10 @@
       "tags": [
         "screw",
         "z_back"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 284.6133, "z": 309.053 }
+  },
     {
       "id": "target_z_back_motor_holder_bolt_2",
       "name": "Z-Back Motor Holder Bolt 2",
@@ -15087,8 +15363,10 @@
       "tags": [
         "screw",
         "z_back"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 79.1418, "y": 284.6133, "z": 309.053 }
+  },
     {
       "id": "target_z_back_belt_tension",
       "name": "Z-Back Belt Tension Point",
@@ -15098,8 +15376,10 @@
       "tags": [
         "belt",
         "z_back"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_z_back_belt_peg_insert",
       "name": "Z-Back Belt Peg Insert",
@@ -15109,8 +15389,10 @@
       "tags": [
         "placement",
         "z_back"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_z_back_carriage_travel_qc",
       "name": "Z-Back Carriage Travel QC",
@@ -15120,8 +15402,10 @@
       "tags": [
         "qc",
         "z_back"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_bench_y_left_qc",
       "name": "Y-Left Axis Bench QC Zone",
@@ -15131,8 +15415,10 @@
         "bench",
         "y_left_bench",
         "qc"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_bench_y_right_qc",
       "name": "Y-Right Axis Bench QC Zone",
@@ -15142,8 +15428,10 @@
         "bench",
         "y_right_bench",
         "qc"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_bench_x_qc",
       "name": "X-Axis Bench QC Zone",
@@ -15153,8 +15441,10 @@
         "bench",
         "x_axis_bench",
         "qc"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_bench_z_front_qc",
       "name": "Z-Front Axis Bench QC Zone",
@@ -15164,8 +15454,10 @@
         "bench",
         "z_front_bench",
         "qc"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_bench_z_back_qc",
       "name": "Z-Back Axis Bench QC Zone",
@@ -15175,8 +15467,10 @@
         "bench",
         "z_back_bench",
         "qc"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_bed_rod_a_mount",
       "name": "Bed Guide Rod A Mount",
@@ -15186,8 +15480,10 @@
       "tags": [
         "placement",
         "bed"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_bed_rod_b_mount",
       "name": "Bed Guide Rod B Mount",
@@ -15197,8 +15493,10 @@
       "tags": [
         "placement",
         "bed"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_bed_raisers_set",
       "name": "Bed Raiser Standoffs",
@@ -15208,8 +15506,10 @@
       "tags": [
         "placement",
         "bed"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_bed_platform_qc",
       "name": "Bed Platform QC",
@@ -15219,8 +15519,10 @@
       "tags": [
         "qc",
         "bed"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_control_panel_mount",
       "name": "Control Panel Mount",
@@ -15230,8 +15532,10 @@
       "tags": [
         "electronics",
         "wiring"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_ramps_board_slot",
       "name": "RAMPS Board Slot",
@@ -15241,8 +15545,10 @@
       "tags": [
         "electronics",
         "wiring"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_control_panel_fastener",
       "name": "Control Panel Fastener",
@@ -15252,8 +15558,10 @@
       "tags": [
         "electronics",
         "wiring"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_psu_connections_verify",
       "name": "PSU Connections Verify",
@@ -15263,8 +15571,10 @@
       "tags": [
         "electronics",
         "wiring"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_cable_chain_route",
       "name": "Cable Chain Route",
@@ -15274,8 +15584,10 @@
       "tags": [
         "electronics",
         "wiring"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_wire_psu_12v",
       "name": "+12V Wire Connection",
@@ -15284,8 +15596,10 @@
       "tags": [
         "electronics",
         "wiring"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_wire_psu_gnd",
       "name": "GND Wire Connection",
@@ -15294,8 +15608,10 @@
       "tags": [
         "electronics",
         "wiring"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_wire_psu_enable",
       "name": "ATX Enable Wire Connection",
@@ -15304,8 +15620,10 @@
       "tags": [
         "electronics",
         "wiring"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_wire_motor_x",
       "name": "X Motor Wire Connection",
@@ -15314,8 +15632,10 @@
       "tags": [
         "electronics",
         "wiring"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_wire_motor_y_left",
       "name": "Y-Left Motor Wire Connection",
@@ -15324,8 +15644,10 @@
       "tags": [
         "electronics",
         "wiring"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_wire_motor_y_right",
       "name": "Y-Right Motor Wire Connection",
@@ -15334,8 +15656,10 @@
       "tags": [
         "electronics",
         "wiring"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_wire_motor_z_front",
       "name": "Z-Front Motor Wire Connection",
@@ -15344,8 +15668,10 @@
       "tags": [
         "electronics",
         "wiring"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_wire_motor_z_back",
       "name": "Z-Back Motor Wire Connection",
@@ -15354,8 +15680,10 @@
       "tags": [
         "electronics",
         "wiring"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_wire_endstop_x",
       "name": "X Endstop Wire Connection",
@@ -15364,8 +15692,10 @@
       "tags": [
         "electronics",
         "wiring"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_wire_endstop_y",
       "name": "Y Endstop Wire Connection",
@@ -15374,8 +15704,10 @@
       "tags": [
         "electronics",
         "wiring"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_wire_endstop_z",
       "name": "Z Endstop Wire Connection",
@@ -15384,8 +15716,10 @@
       "tags": [
         "electronics",
         "wiring"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_wire_heater_cartridge",
       "name": "Heater Cartridge Connection",
@@ -15394,8 +15728,10 @@
       "tags": [
         "electronics",
         "wiring"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_wire_thermistor",
       "name": "Thermistor Connection",
@@ -15404,8 +15740,10 @@
       "tags": [
         "electronics",
         "wiring"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_wire_extruder_fan",
       "name": "Extruder Fan Connection",
@@ -15414,8 +15752,10 @@
       "tags": [
         "electronics",
         "wiring"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_bed_rod_a",
       "name": "Y-Axis Bed Rod A",
@@ -15423,8 +15763,10 @@
       "associatedPartId": "rod_2",
       "tags": [
         "placement"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_bed_rod_b",
       "name": "Y-Axis Bed Rod B",
@@ -15432,8 +15774,10 @@
       "associatedPartId": "rod_003",
       "tags": [
         "placement"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_bed_rod_c",
       "name": "Y-Axis Bed Rod C",
@@ -15441,8 +15785,10 @@
       "associatedPartId": "rod_004",
       "tags": [
         "placement"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_cable_chain_x",
       "name": "X-Axis Cable Chain",
@@ -15450,8 +15796,10 @@
       "associatedPartId": "cable_chain",
       "tags": [
         "placement"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_cable_chain_y",
       "name": "Y-Axis Cable Chain",
@@ -15459,8 +15807,10 @@
       "associatedPartId": "cable_chain_y",
       "tags": [
         "placement"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_cable_chain_bracket",
       "name": "Cable Chain Bracket",
@@ -15468,38 +15818,50 @@
       "associatedPartId": "cable_chain_bracket",
       "tags": [
         "placement"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_left_bench_staged",
       "name": "Y-Left Axis Staging Position",
       "anchorRef": "anchors/d3d/bench/y_left/staged",
-      "associatedSubassemblyId": "subassembly_y_left_bench_unit"
-    },
+      "associatedSubassemblyId": "subassembly_y_left_bench_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_right_bench_staged",
       "name": "Y-Right Axis Staging Position",
       "anchorRef": "anchors/d3d/bench/y_right/staged",
-      "associatedSubassemblyId": "subassembly_y_right_bench_unit"
-    },
+      "associatedSubassemblyId": "subassembly_y_right_bench_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_x_axis_bench_staged",
       "name": "X-Axis Staging Position",
       "anchorRef": "anchors/d3d/bench/x_axis/staged",
-      "associatedSubassemblyId": "subassembly_x_axis_bench_unit"
-    },
+      "associatedSubassemblyId": "subassembly_x_axis_bench_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_z_front_bench_staged",
       "name": "Z-Front Axis Staging Position",
       "anchorRef": "anchors/d3d/bench/z_front/staged",
-      "associatedSubassemblyId": "subassembly_z_front_bench_unit"
-    },
+      "associatedSubassemblyId": "subassembly_z_front_bench_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_z_back_bench_staged",
       "name": "Z-Back Axis Staging Position",
       "anchorRef": "anchors/d3d/bench/z_back/staged",
-      "associatedSubassemblyId": "subassembly_z_back_bench_unit"
-    },
+      "associatedSubassemblyId": "subassembly_z_back_bench_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_left_bearing_a",
       "name": "Y-Left Bearing Pocket A",
@@ -15511,8 +15873,10 @@
         "carriage",
         "bearing"
       ],
-      "anchorRef": "anchors/d3d/y_left/y_left_bearing_a"
-    },
+      "anchorRef": "anchors/d3d/y_left/y_left_bearing_a",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_left_bearing_b",
       "name": "Y-Left Bearing Pocket B",
@@ -15524,8 +15888,10 @@
         "carriage",
         "bearing"
       ],
-      "anchorRef": "anchors/d3d/y_left/y_left_bearing_b"
-    },
+      "anchorRef": "anchors/d3d/y_left/y_left_bearing_b",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_left_bearing_c",
       "name": "Y-Left Bearing Pocket C",
@@ -15537,8 +15903,10 @@
         "carriage",
         "bearing"
       ],
-      "anchorRef": "anchors/d3d/y_left/y_left_bearing_c"
-    },
+      "anchorRef": "anchors/d3d/y_left/y_left_bearing_c",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_left_bearing_d",
       "name": "Y-Left Bearing Pocket D",
@@ -15550,8 +15918,10 @@
         "carriage",
         "bearing"
       ],
-      "anchorRef": "anchors/d3d/y_left/y_left_bearing_d"
-    },
+      "anchorRef": "anchors/d3d/y_left/y_left_bearing_d",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_right_bearing_a",
       "name": "Y-Right Bearing Pocket A",
@@ -15563,8 +15933,10 @@
         "carriage",
         "bearing"
       ],
-      "anchorRef": "anchors/d3d/y_right/lm8uu_a"
-    },
+      "anchorRef": "anchors/d3d/y_right/lm8uu_a",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_right_bearing_b",
       "name": "Y-Right Bearing Pocket B",
@@ -15576,8 +15948,10 @@
         "carriage",
         "bearing"
       ],
-      "anchorRef": "anchors/d3d/y_right/lm8uu_b"
-    },
+      "anchorRef": "anchors/d3d/y_right/lm8uu_b",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_right_bearing_c",
       "name": "Y-Right Bearing Pocket C",
@@ -15589,8 +15963,10 @@
         "carriage",
         "bearing"
       ],
-      "anchorRef": "anchors/d3d/y_right/lm8uu_c"
-    },
+      "anchorRef": "anchors/d3d/y_right/lm8uu_c",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_right_bearing_d",
       "name": "Y-Right Bearing Pocket D",
@@ -15602,8 +15978,10 @@
         "carriage",
         "bearing"
       ],
-      "anchorRef": "anchors/d3d/y_right/lm8uu_d"
-    },
+      "anchorRef": "anchors/d3d/y_right/lm8uu_d",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_left_clean_holes",
       "name": "Y-Left Carriage Hole Cleaning",
@@ -15614,8 +15992,10 @@
         "y_left",
         "carriage",
         "tool_action"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_right_clean_holes",
       "name": "Y-Right Carriage Hole Cleaning",
@@ -15626,8 +16006,10 @@
         "y_right",
         "carriage",
         "tool_action"
-      ]
-    },
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_left_m6x18_a_hole",
       "name": "Hole for y_left_m6x18_a",
@@ -15639,8 +16021,10 @@
         "carriage",
         "fastener"
       ],
-      "anchorRef": "anchors/d3d/y_left_m6x18_a_hole"
-    },
+      "anchorRef": "anchors/d3d/y_left_m6x18_a_hole",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_left_nut_a_hole",
       "name": "Hole for y_left_m6_nut_a",
@@ -15652,21 +16036,25 @@
         "carriage",
         "fastener"
       ],
-      "anchorRef": "anchors/d3d/y_left_nut_a_hole"
-    },
+      "anchorRef": "anchors/d3d/y_left_nut_a_hole",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_left_m6x18_b_hole",
-      "name": "Hole for y_left_m6x18_b",
+      "name": "Hole for y_left_carriage_m6x18_b",
       "description": "Bolt/nut hole in Y-left carriage",
-      "associatedPartId": "y_left_m6x18_b",
+      "associatedPartId": "y_left_carriage_m6x18_b",
       "tags": [
         "d3d",
         "y_left",
         "carriage",
         "fastener"
       ],
-      "anchorRef": "anchors/d3d/y_left_m6x18_b_hole"
-    },
+      "anchorRef": "anchors/d3d/y_left_m6x18_b_hole",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_left_nut_b_hole",
       "name": "Hole for y_left_m6_nut_b",
@@ -15678,8 +16066,10 @@
         "carriage",
         "fastener"
       ],
-      "anchorRef": "anchors/d3d/y_left_nut_b_hole"
-    },
+      "anchorRef": "anchors/d3d/y_left_nut_b_hole",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_left_m6x30_a_hole",
       "name": "Hole for y_left_m6x30_a",
@@ -15691,8 +16081,10 @@
         "carriage",
         "fastener"
       ],
-      "anchorRef": "anchors/d3d/y_left_m6x30_a_hole"
-    },
+      "anchorRef": "anchors/d3d/y_left_m6x30_a_hole",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_left_nut_c_hole",
       "name": "Hole for y_left_m6_nut_c",
@@ -15704,8 +16096,10 @@
         "carriage",
         "fastener"
       ],
-      "anchorRef": "anchors/d3d/y_left_nut_c_hole"
-    },
+      "anchorRef": "anchors/d3d/y_left_nut_c_hole",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_left_m6x30_b_hole",
       "name": "Hole for y_left_m6x30_b",
@@ -15717,8 +16111,10 @@
         "carriage",
         "fastener"
       ],
-      "anchorRef": "anchors/d3d/y_left_m6x30_b_hole"
-    },
+      "anchorRef": "anchors/d3d/y_left_m6x30_b_hole",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_left_nut_d_hole",
       "name": "Hole for y_left_m6_nut_d",
@@ -15730,8 +16126,10 @@
         "carriage",
         "fastener"
       ],
-      "anchorRef": "anchors/d3d/y_left_nut_d_hole"
-    },
+      "anchorRef": "anchors/d3d/y_left_nut_d_hole",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_right_m6x18_a_hole",
       "name": "Hole for y_right_m6x18_a",
@@ -15743,8 +16141,10 @@
         "carriage",
         "fastener"
       ],
-      "anchorRef": "anchors/d3d/y_right_m6x18_a_hole"
-    },
+      "anchorRef": "anchors/d3d/y_right_m6x18_a_hole",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_right_nut_a_hole",
       "name": "Hole for y_right_m6_nut_a",
@@ -15756,8 +16156,10 @@
         "carriage",
         "fastener"
       ],
-      "anchorRef": "anchors/d3d/y_right_nut_a_hole"
-    },
+      "anchorRef": "anchors/d3d/y_right_nut_a_hole",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_right_m6x18_b_hole",
       "name": "Hole for y_right_m6x18_b",
@@ -15769,8 +16171,10 @@
         "carriage",
         "fastener"
       ],
-      "anchorRef": "anchors/d3d/y_right_m6x18_b_hole"
-    },
+      "anchorRef": "anchors/d3d/y_right_m6x18_b_hole",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_right_nut_b_hole",
       "name": "Hole for y_right_m6_nut_b",
@@ -15782,8 +16186,10 @@
         "carriage",
         "fastener"
       ],
-      "anchorRef": "anchors/d3d/y_right_nut_b_hole"
-    },
+      "anchorRef": "anchors/d3d/y_right_nut_b_hole",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_right_m6x30_a_hole",
       "name": "Hole for y_right_m6x30_a",
@@ -15795,8 +16201,10 @@
         "carriage",
         "fastener"
       ],
-      "anchorRef": "anchors/d3d/y_right_m6x30_a_hole"
-    },
+      "anchorRef": "anchors/d3d/y_right_m6x30_a_hole",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_right_nut_c_hole",
       "name": "Hole for y_right_m6_nut_c",
@@ -15808,8 +16216,10 @@
         "carriage",
         "fastener"
       ],
-      "anchorRef": "anchors/d3d/y_right_nut_c_hole"
-    },
+      "anchorRef": "anchors/d3d/y_right_nut_c_hole",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_right_m6x30_b_hole",
       "name": "Hole for y_right_m6x30_b",
@@ -15821,8 +16231,10 @@
         "carriage",
         "fastener"
       ],
-      "anchorRef": "anchors/d3d/y_right_m6x30_b_hole"
-    },
+      "anchorRef": "anchors/d3d/y_right_m6x30_b_hole",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_right_nut_d_hole",
       "name": "Hole for y_right_m6_nut_d",
@@ -15834,8 +16246,10 @@
         "carriage",
         "fastener"
       ],
-      "anchorRef": "anchors/d3d/y_right_nut_d_hole"
-    },
+      "anchorRef": "anchors/d3d/y_right_nut_d_hole",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 0, "z": 0 }
+  },
     {
       "id": "target_y_left_carriage_half_b_seat",
       "name": "Y-Left Carriage Half B Seat",
@@ -15846,8 +16260,10 @@
         "y_left",
         "carriage"
       ],
-      "anchorRef": "anchors/d3d/y_left/carriage_half_b_seat"
-    },
+      "anchorRef": "anchors/d3d/y_left/carriage_half_b_seat",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 90, "z": 270 }
+  },
     {
       "id": "target_y_right_carriage_half_b_seat",
       "name": "Y-Right Carriage Half B Seat",
@@ -15858,36 +16274,50 @@
         "y_right",
         "carriage"
       ],
-      "anchorRef": "anchors/d3d/y_right/carriage_half_b_seat"
-    },
+      "anchorRef": "anchors/d3d/y_right/carriage_half_b_seat",
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 90, "z": 270 }
+  },
     {
       "id": "target_y_left_m6x18_a_tighten",
       "name": "M6x18 bolt A tighten point",
       "associatedPartId": "y_left_m6x18_a",
       "description": "Drill target on M6x18 bolt A head",
-      "anchorRef": "y_left_m6x18_a"
-    },
+      "anchorRef": "y_left_m6x18_a",
+      "weldAxis": { "x": 0, "y": 0, "z": 0 },
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 90, "z": 270 }
+  },
     {
       "id": "target_y_left_m6x18_b_tighten",
       "name": "M6x18 bolt B tighten point",
       "associatedPartId": "y_left_carriage_m6x18_b",
       "description": "Drill target on M6x18 bolt B head",
-      "anchorRef": "y_left_carriage_m6x18_b"
-    },
+      "anchorRef": "y_left_carriage_m6x18_b",
+      "weldAxis": { "x": 0, "y": 0, "z": 0 },
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 90, "z": 270 }
+  },
     {
       "id": "target_y_left_m6x30_a_tighten",
       "name": "M6x30 bolt A tighten point",
       "associatedPartId": "y_left_m6x30_a",
       "description": "Drill target on M6x30 bolt A head",
-      "anchorRef": "y_left_m6x30_a"
-    },
+      "anchorRef": "y_left_m6x30_a",
+      "weldAxis": { "x": 0, "y": 0, "z": 0 },
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 90, "z": 270 }
+  },
     {
       "id": "target_y_left_m6x30_b_tighten",
       "name": "M6x30 bolt B tighten point",
       "associatedPartId": "y_left_m6x30_b",
       "description": "Drill target on M6x30 bolt B head",
-      "anchorRef": "y_left_m6x30_b"
-    }
+      "anchorRef": "y_left_m6x30_b",
+      "weldAxis": { "x": 0, "y": 0, "z": 0 },
+      "useToolActionRotation": true,
+      "toolActionRotation": { "x": 0, "y": 90, "z": 270 }
+  }
   ],
   "challengeConfig": {
     "enabled": false,
@@ -15988,7 +16418,7 @@
         {
             "partId": "bed_raiser001",
             "startPosition": {
-                "x": 0.0,
+                "x": 0.05,
                 "y": 0.5,
                 "z": -0.5
             },
@@ -16043,7 +16473,7 @@
         {
             "partId": "bed_raiser002",
             "startPosition": {
-                "x": 0.0,
+                "x": 0.1,
                 "y": 0.5,
                 "z": -0.5
             },
@@ -16098,7 +16528,7 @@
         {
             "partId": "bed_raiser003",
             "startPosition": {
-                "x": 0.0,
+                "x": -0.05,
                 "y": 0.5,
                 "z": -0.5
             },
@@ -16153,7 +16583,7 @@
         {
             "partId": "bed_raiser004",
             "startPosition": {
-                "x": 0.0,
+                "x": -0.1,
                 "y": 0.5,
                 "z": -0.5
             },
@@ -16208,7 +16638,7 @@
         {
             "partId": "bed_raiser005",
             "startPosition": {
-                "x": 0.0,
+                "x": 0.15,
                 "y": 0.5,
                 "z": -0.5
             },
@@ -16263,8 +16693,8 @@
         {
             "partId": "bed_rod_002",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
+                "x": 0.2,
+                "y": 0.55,
                 "z": -0.5
             },
             "startRotation": {
@@ -16318,8 +16748,8 @@
         {
             "partId": "bed_rod_1",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
+                "x": -0.2,
+                "y": 0.55,
                 "z": -0.5
             },
             "startRotation": {
@@ -16373,8 +16803,8 @@
         {
             "partId": "cable_chain",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
+                "x": -0.3,
+                "y": 0.45,
                 "z": -0.5
             },
             "startRotation": {
@@ -16428,8 +16858,8 @@
         {
             "partId": "cable_chain_bracket",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
+                "x": -0.3,
+                "y": 0.4,
                 "z": -0.5
             },
             "startRotation": {
@@ -16483,8 +16913,8 @@
         {
             "partId": "cable_chain_y",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
+                "x": -0.3,
+                "y": 0.35,
                 "z": -0.5
             },
             "startRotation": {
@@ -17583,9 +18013,9 @@
         {
             "partId": "idler002",
             "startPosition": {
-                "x": 0.85,
+                "x": 0.8132,
                 "y": 0.55,
-                "z": 0.0
+                "z": 0.1027
             },
             "startRotation": {
                 "x": 0.0,
@@ -17614,6 +18044,61 @@
                 "y": 0.0,
                 "z": 0.0,
                 "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 8,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "idler002_half_b",
+            "startPosition": {
+                "x": 0.85,
+                "y": 0.55,
+                "z": 0.15
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 1.0,
+                "z": 0.0,
+                "w": 0.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.7,
+                "g": 0.7,
+                "b": 0.7,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.1644,
+                "y": 0.8213,
+                "z": 0.1509
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 1.0,
+                "z": 0.0,
+                "w": 0.0
             },
             "assembledScale": {
                 "x": 1.0,
@@ -18188,8 +18673,8 @@
         {
             "partId": "rod_003",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
+                "x": 0.3,
+                "y": 0.4,
                 "z": -0.5
             },
             "startRotation": {
@@ -18243,8 +18728,8 @@
         {
             "partId": "rod_004",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
+                "x": 0.3,
+                "y": 0.35,
                 "z": -0.5
             },
             "startRotation": {
@@ -18628,8 +19113,8 @@
         {
             "partId": "rod_2",
             "startPosition": {
-                "x": 0.0,
-                "y": 0.5,
+                "x": 0.3,
+                "y": 0.45,
                 "z": -0.5
             },
             "startRotation": {
@@ -22412,7 +22897,7 @@
             },
             "assembledPosition": {
                 "x": 0.833,
-                "y": 0.5495,
+                "y": 0.5349,
                 "z": 0.018
             },
             "assembledRotation": {
@@ -22467,7 +22952,7 @@
             },
             "assembledPosition": {
                 "x": 0.833,
-                "y": 0.5468,
+                "y": 0.5354,
                 "z": -0.018
             },
             "assembledRotation": {
@@ -22499,7 +22984,7 @@
         {
             "partId": "y_left_m6_nut_c",
             "startPosition": {
-                "x": 0.96,
+                "x": 0.98,
                 "y": 0.55,
                 "z": 0.018
             },
@@ -22522,7 +23007,7 @@
             },
             "assembledPosition": {
                 "x": 0.807,
-                "y": 0.5468,
+                "y": 0.5354,
                 "z": 0.018
             },
             "assembledRotation": {
@@ -22530,6 +23015,226 @@
                 "y": 0.0,
                 "z": 0.0,
                 "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_left_motor_m6_nut_a",
+            "startPosition": {
+                "x": 1.2,
+                "y": 0.55,
+                "z": 0.1
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.16,
+                "y": 0.79,
+                "z": 0.14
+            },
+            "assembledRotation": {
+                "x": -0.7071,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_left_motor_m6_nut_b",
+            "startPosition": {
+                "x": 1.2,
+                "y": 0.55,
+                "z": 0.13
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.16,
+                "y": 0.79,
+                "z": 0.17
+            },
+            "assembledRotation": {
+                "x": -0.7071,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_left_motor_m6_nut_c",
+            "startPosition": {
+                "x": 1.2,
+                "y": 0.55,
+                "z": 0.16
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.6,
+                "g": 0.6,
+                "b": 0.65,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.16,
+                "y": 0.79,
+                "z": 0.2
+            },
+            "assembledRotation": {
+                "x": -0.7071,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.7071
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": [],
+            "splinePath": {
+                "radius": 0.0,
+                "segments": 0,
+                "metallic": 0.0,
+                "smoothness": 0.0,
+                "color": {
+                    "r": 0.0,
+                    "g": 0.0,
+                    "b": 0.0,
+                    "a": 0.0
+                },
+                "knots": []
+            }
+        },
+        {
+            "partId": "y_left_idler_m6x30_a",
+            "startPosition": {
+                "x": 1.1,
+                "y": 0.55,
+                "z": -0.1
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "color": {
+                "r": 0.35,
+                "g": 0.35,
+                "b": 0.38,
+                "a": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.42,
+                "y": 0.79,
+                "z": -0.05
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
             },
             "assembledScale": {
                 "x": 1.0,
@@ -23269,7 +23974,7 @@
         {
             "partId": "y_left_m6x30_a",
             "startPosition": {
-                "x": 0.92,
+                "x": 0.94,
                 "y": 0.6,
                 "z": 0.018
             },
@@ -23345,7 +24050,7 @@
         {
             "partId": "y_left_m6x30_b",
             "startPosition": {
-                "x": 0.92,
+                "x": 0.94,
                 "y": 0.6,
                 "z": -0.018
             },
@@ -23421,7 +24126,7 @@
         {
             "partId": "y_left_m6_nut_d",
             "startPosition": {
-                "x": 0.96,
+                "x": 0.98,
                 "y": 0.55,
                 "z": -0.018
             },
@@ -23444,7 +24149,7 @@
             },
             "assembledPosition": {
                 "x": 0.807,
-                "y": 0.5468,
+                "y": 0.5354,
                 "z": -0.018
             },
             "assembledRotation": {
@@ -23696,7 +24401,7 @@
         {
             "partId": "y_right_m6x30_a",
             "startPosition": {
-                "x": -0.92,
+                "x": -0.94,
                 "y": 0.6,
                 "z": 0.018
             },
@@ -23751,7 +24456,7 @@
         {
             "partId": "y_right_m6_nut_c",
             "startPosition": {
-                "x": -0.96,
+                "x": -0.98,
                 "y": 0.55,
                 "z": 0.018
             },
@@ -23806,7 +24511,7 @@
         {
             "partId": "y_right_m6x30_b",
             "startPosition": {
-                "x": -0.92,
+                "x": -0.94,
                 "y": 0.6,
                 "z": -0.018
             },
@@ -23861,7 +24566,7 @@
         {
             "partId": "y_right_m6_nut_d",
             "startPosition": {
-                "x": -0.96,
+                "x": -0.98,
                 "y": 0.55,
                 "z": -0.018
             },
@@ -32469,10 +33174,10 @@
                 "z": 0.0158
             },
             "rotation": {
-                "x": -0.7071,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 0.7071
+                "x": 0.5,
+                "y": -0.5,
+                "z": 0.5,
+                "w": -0.5
             },
             "scale": {
                 "x": 0.01,
@@ -32504,10 +33209,10 @@
                 "z": -0.0145
             },
             "rotation": {
-                "x": -0.7071,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 0.7071
+                "x": 0.5,
+                "y": -0.5,
+                "z": 0.5,
+                "w": -0.5
             },
             "scale": {
                 "x": 0.01,
@@ -32539,10 +33244,10 @@
                 "z": 0.015
             },
             "rotation": {
-                "x": -0.7071,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 0.7071
+                "x": -0.5,
+                "y": 0.5,
+                "z": -0.5,
+                "w": 0.5
             },
             "scale": {
                 "x": 0.01,
@@ -32574,10 +33279,10 @@
                 "z": -0.0149
             },
             "rotation": {
-                "x": -0.7071,
-                "y": 0.0,
-                "z": 0.0,
-                "w": 0.7071
+                "x": 0.5,
+                "y": -0.5,
+                "z": 0.5,
+                "w": -0.5
             },
             "scale": {
                 "x": 0.01,

@@ -18,6 +18,7 @@ def parse_args(argv):
         "--metallic": os.environ.get("BLENDER_METALLIC"),
         "--roughness": os.environ.get("BLENDER_ROUGHNESS"),
         "--center-mode": os.environ.get("BLENDER_CENTER_MODE"),
+        "--flat-shading": os.environ.get("BLENDER_FLAT_SHADING"),
     }
     index = 0
     while index < len(argv):
@@ -132,6 +133,31 @@ def build_default_material(name, base_color, metallic, roughness):
     return material
 
 
+def apply_flat_shading(objects):
+    """Force hard-edge flat shading in the exported glTF.
+
+    STL has no smoothing info, but glTF stores one normal per vertex. When
+    adjacent flat-shaded faces share a vertex, the exporter averages their
+    normals, which looks like a fake smoothing seam. Splitting every edge
+    duplicates vertices per face so each face keeps its own normal.
+    """
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in objects:
+        if obj.type != "MESH":
+            continue
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+        for poly in obj.data.polygons:
+            poly.use_smooth = False
+        if obj.data.has_custom_normals:
+            obj.data.free_normals_split()
+        modifier = obj.modifiers.new(name="EdgeSplitAll", type="EDGE_SPLIT")
+        modifier.split_angle = 0.0
+        modifier.use_edge_angle = True
+        modifier.use_edge_sharp = True
+        bpy.ops.object.modifier_apply(modifier=modifier.name)
+
+
 def ensure_materials(objects, material_name, base_color, metallic, roughness):
     shared_material = build_default_material(material_name, base_color, metallic, roughness)
     for obj in objects:
@@ -157,6 +183,8 @@ def main():
     metallic = parse_float(arguments["--metallic"], 0.0)
     roughness = parse_float(arguments["--roughness"], 0.55)
     center_mode = arguments["--center-mode"]
+    flat_shading_raw = (arguments["--flat-shading"] or "").strip().lower()
+    flat_shading = flat_shading_raw in ("1", "true", "yes", "on")
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     if report_path:
@@ -179,6 +207,9 @@ def main():
     recenter_objects(imported_objects, center_mode)
     bpy.ops.object.transform_apply(location=True, rotation=False, scale=False)
 
+    if flat_shading:
+        apply_flat_shading(imported_objects)
+
     ensure_materials(imported_objects, material_name, base_color, metallic, roughness)
 
     bounds = world_bounds(imported_objects)
@@ -199,6 +230,7 @@ def main():
         "metallic": metallic,
         "roughness": roughness,
         "center_mode": center_mode,
+        "flat_shading": flat_shading,
         "bound_box": bounds,
     }
     if report_path:

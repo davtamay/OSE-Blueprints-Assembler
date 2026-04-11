@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using OSE.Content;
+using OSE.Content.Loading;
 using OSE.Content.Validation;
 using UnityEditor;
 using UnityEngine;
@@ -103,6 +104,10 @@ namespace OSE.Editor
                         report.AddPackage(packageId, new[] { "Failed to parse JSON" }, Array.Empty<string>());
                         continue;
                     }
+
+                    // Mirror the runtime loader: normalize before validating so template-based
+                    // parts (and other inflated fields) are in the same shape the runtime sees.
+                    MachinePackageNormalizer.Normalize(pkg);
 
                     var result = MachinePackageValidator.Validate(pkg);
                     var errors   = new List<string>();

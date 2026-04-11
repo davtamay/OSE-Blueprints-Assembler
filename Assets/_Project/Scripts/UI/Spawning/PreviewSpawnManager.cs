@@ -146,6 +146,15 @@ namespace OSE.UI.Root
                 _ctx.DestroyObject(preview);
             }
             _ctx.SpawnedPreviews.Clear();
+
+            // Also nuke any edit-mode ghost silhouettes (EditGhost_*) that may
+            // have leaked into play mode. EditModeGhostManager spawns these in
+            // the editor; if "Reload Scene" is disabled in Enter Play Mode
+            // settings, the dynamically-instantiated ghosts survive into play
+            // mode and never get cleared because EditModeGhostManager.SpawnGhosts
+            // early-returns when isPlaying. Step navigation is the right hook
+            // because it's the cleanup point for everything else.
+            _ctx.Spawner?.ClearGhosts();
         }
 
         public void ResetSequentialState()

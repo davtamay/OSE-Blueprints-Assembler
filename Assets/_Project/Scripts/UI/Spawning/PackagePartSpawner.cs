@@ -133,6 +133,27 @@ namespace OSE.UI.Root
             ServiceRegistry.Register<Interaction.ISpawnerQueryService>(this);
             ServiceRegistry.Register<IStepAwarePositioner>(this);
             RuntimeEventBus.Subscribe<PackageLoaded>(OnPackageLoaded);
+
+            // Sweep any leaked EditGhost_* siblings under PreviewRoot. EditModeGhostManager
+            // owns these in edit mode, but if "Reload Scene" is disabled in Enter Play
+            // Mode settings, instantiated ghosts survive into play mode unowned because
+            // _ghostManager was just constructed fresh and its tracking list is empty.
+            // The EditModeGhostManager.SpawnGhosts early-return on isPlaying never gives
+            // us another chance to clean them up. Sweep PreviewRoot directly.
+            if (Application.isPlaying && _setup?.PreviewRoot != null)
+            {
+                Transform root = _setup.PreviewRoot;
+                for (int i = root.childCount - 1; i >= 0; i--)
+                {
+                    Transform child = root.GetChild(i);
+                    if (child != null && child.name != null &&
+                        child.name.StartsWith("EditGhost_", System.StringComparison.Ordinal))
+                    {
+                        Destroy(child.gameObject);
+                    }
+                }
+            }
+
             // Catch up if this component enabled after the latest package event.
             if (SessionDriver.CurrentPackage != null)
             {

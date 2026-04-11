@@ -61,6 +61,22 @@ namespace OSE.Content
         /// <summary>True when <see cref="grabConfig"/> carries any authored spatial data.</summary>
         public bool HasGrabConfig => grabConfig != null && grabConfig.HasGripPoint;
 
+        /// <summary>
+        /// The unique non-aggregate subassembly that owns this part, populated by
+        /// <c>MachinePackageNormalizer.IndexPartOwnership</c> after deserialization.
+        /// First-writer-wins during normalization; <c>PartOwnershipExclusivityPass</c>
+        /// guarantees uniqueness at validation time.
+        /// </summary>
+        [NonSerialized] public string owningSubassemblyId;
+
+        /// <summary>
+        /// The unique Place-family step whose <c>requiredPartIds</c> contains this part,
+        /// populated by <c>MachinePackageNormalizer.IndexPartOwnership</c> after
+        /// deserialization. First-writer-wins during normalization;
+        /// <c>PartOwnershipExclusivityPass</c> guarantees uniqueness at validation time.
+        /// </summary>
+        [NonSerialized] public string owningPlaceStepId;
+
         public string GetDisplayName()
         {
             if (!string.IsNullOrWhiteSpace(displayName))

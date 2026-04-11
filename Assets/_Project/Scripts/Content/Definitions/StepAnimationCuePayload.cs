@@ -96,6 +96,26 @@ namespace OSE.Content
         /// </summary>
         public SceneFloat3 spinAxis;
 
+        // ── Shake ──
+
+        /// <summary>
+        /// Peak displacement in metres for the "shake" animation type.
+        /// Default 0.01 (1 cm). Oscillation is centred on the target's
+        /// position at the moment <c>Start()</c> is called.
+        /// </summary>
+        public float shakeAmplitude;
+
+        /// <summary>
+        /// Oscillations per second for the "shake" type. Default 8 Hz.
+        /// </summary>
+        public float shakeFrequency;
+
+        /// <summary>
+        /// Local-space axis along which the shake oscillates.
+        /// Default (1, 0, 0) — side-to-side. Normalised at runtime.
+        /// </summary>
+        public SceneFloat3 shakeAxis;
+
         // ── Future: GLB-embedded animation support ──
 
         /// <summary>

@@ -23,6 +23,8 @@ namespace OSE.Content.Loading
             InferStepParentIds(package);
             NormalizeToolActions(package);
             ResolveToolActionPartIds(package);
+            ResolveDirectTargetPartIds(package);
+            IndexPartOwnership(package);
         }
 
         // ── Part Templates ──
@@ -127,11 +129,20 @@ namespace OSE.Content.Loading
         // ── Tool Action → Part ID Resolution ──
 
         /// <summary>
-        /// For steps that have requiredToolActions but no requiredPartIds (Use-family),
-        /// derives part IDs from each tool action's target → associatedPartId and bakes
-        /// them into requiredPartIds. This guarantees GetEffectiveRequiredPartIds() always
-        /// returns the complete set — no caller ever needs to manually derive parts from
-        /// tool actions.
+        /// For every step with <c>requiredToolActions</c>, derives the set of part IDs
+        /// those actions operate on (<c>targetId → target.associatedPartId</c>) and stores
+        /// them in <c>step.derivedToolActionPartIds</c>.
+        ///
+        /// Kept in a SEPARATE field (not merged into <c>requiredPartIds</c>) so that:
+        /// - <c>GetEffectiveRequiredPartIds()</c> / <c>requiredPartIds</c> keep their
+        ///   "authored, owning-step" semantics — used by RevealStepParts,
+        ///   RevertFutureStepParts, etc. to decide which parts belong to each step.
+        /// - Callers that need the full set of parts a step touches (completion
+        ///   repositioning, restore-on-navigation) call <c>GetAllTouchedPartIds()</c>.
+        ///
+        /// This prevents Use-family steps (e.g. drill-tighten) from being treated as
+        /// the owning step of parts that were actually placed in a prior Place-family
+        /// step.
         /// </summary>
         private static void ResolveToolActionPartIds(MachinePackageDefinition package)
         {
@@ -153,12 +164,19 @@ namespace OSE.Content.Loading
                 StepDefinition step = steps[s];
                 if (step == null) continue;
 
-                // Skip steps that already have explicit requiredPartIds
-                if (step.requiredPartIds != null && step.requiredPartIds.Length > 0)
-                    continue;
-
                 ToolActionDefinition[] actions = step.requiredToolActions;
                 if (actions == null || actions.Length == 0) continue;
+
+                // Build set of already-authored requiredPartIds so we skip duplicates.
+                var authored = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                if (step.requiredPartIds != null)
+                {
+                    for (int i = 0; i < step.requiredPartIds.Length; i++)
+                    {
+                        if (!string.IsNullOrEmpty(step.requiredPartIds[i]))
+                            authored.Add(step.requiredPartIds[i]);
+                    }
+                }
 
                 var derived = new List<string>();
                 for (int a = 0; a < actions.Length; a++)
@@ -166,13 +184,82 @@ namespace OSE.Content.Loading
                     string tid = actions[a]?.targetId;
                     if (string.IsNullOrEmpty(tid)) continue;
                     if (!targetLookup.TryGetValue(tid, out var target)) continue;
-                    if (!string.IsNullOrEmpty(target.associatedPartId) &&
-                        !derived.Contains(target.associatedPartId))
-                        derived.Add(target.associatedPartId);
+                    if (string.IsNullOrEmpty(target.associatedPartId)) continue;
+                    if (authored.Contains(target.associatedPartId)) continue;
+                    if (derived.Contains(target.associatedPartId)) continue;
+                    derived.Add(target.associatedPartId);
                 }
 
                 if (derived.Count > 0)
-                    step.requiredPartIds = derived.ToArray();
+                    step.derivedToolActionPartIds = derived.ToArray();
+            }
+        }
+
+        // ── Direct Target → Part ID Resolution ──
+
+        /// <summary>
+        /// For every step with direct <c>targetIds</c>, derives the set of part IDs
+        /// those targets reference (<c>targetId → target.associatedPartId</c>) minus
+        /// anything already in <c>requiredPartIds</c> or <c>derivedToolActionPartIds</c>,
+        /// and stores the remainder in <c>step.derivedTargetPartIds</c>.
+        ///
+        /// This captures the "touch but don't own" case: a Place step that
+        /// repositions a previously-placed part via its targets (anchor/stage/mount
+        /// steps that move pre-built bench units into their final printer position)
+        /// without claiming first-placement ownership. These parts then show up in
+        /// <c>GetAllTouchedPartIds()</c> so Rule 3 (target.associatedPartId must be
+        /// in owning step's touched set) passes, while Rule 2 (partId in &gt;1
+        /// Place-family <c>requiredPartIds</c>) doesn't trigger.
+        ///
+        /// Must run after <see cref="ResolveToolActionPartIds"/> so we can dedupe
+        /// against tool-action-derived parts.
+        /// </summary>
+        private static void ResolveDirectTargetPartIds(MachinePackageDefinition package)
+        {
+            StepDefinition[] steps = package.steps;
+            TargetDefinition[] targets = package.targets;
+            if (steps == null || targets == null || targets.Length == 0) return;
+
+            var targetLookup = new Dictionary<string, TargetDefinition>(
+                targets.Length, StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < targets.Length; i++)
+            {
+                if (targets[i] != null && !string.IsNullOrWhiteSpace(targets[i].id))
+                    targetLookup[targets[i].id] = targets[i];
+            }
+
+            for (int s = 0; s < steps.Length; s++)
+            {
+                StepDefinition step = steps[s];
+                if (step == null) continue;
+                if (step.targetIds == null || step.targetIds.Length == 0) continue;
+
+                // Skip ids already covered by requiredPartIds or derivedToolActionPartIds
+                // so the 'derived' field stays a strict "extra parts" set.
+                var covered = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                if (step.requiredPartIds != null)
+                    for (int i = 0; i < step.requiredPartIds.Length; i++)
+                        if (!string.IsNullOrEmpty(step.requiredPartIds[i]))
+                            covered.Add(step.requiredPartIds[i]);
+                if (step.derivedToolActionPartIds != null)
+                    for (int i = 0; i < step.derivedToolActionPartIds.Length; i++)
+                        if (!string.IsNullOrEmpty(step.derivedToolActionPartIds[i]))
+                            covered.Add(step.derivedToolActionPartIds[i]);
+
+                var derived = new List<string>();
+                for (int i = 0; i < step.targetIds.Length; i++)
+                {
+                    string tid = step.targetIds[i];
+                    if (string.IsNullOrEmpty(tid)) continue;
+                    if (!targetLookup.TryGetValue(tid, out var target)) continue;
+                    if (string.IsNullOrEmpty(target.associatedPartId)) continue;
+                    if (covered.Contains(target.associatedPartId)) continue;
+                    covered.Add(target.associatedPartId);
+                    derived.Add(target.associatedPartId);
+                }
+
+                if (derived.Count > 0)
+                    step.derivedTargetPartIds = derived.ToArray();
             }
         }
 
@@ -198,6 +285,82 @@ namespace OSE.Content.Loading
 
                     if (string.IsNullOrWhiteSpace(action.id))
                         action.id = $"{steps[s].id}_action_{a}";
+                }
+            }
+        }
+
+        // ── Part Ownership Index ──
+
+        /// <summary>
+        /// Bakes the authoritative "who owns this part" answers onto each
+        /// <see cref="PartDefinition"/> so runtime callers don't re-scan
+        /// subassemblies/steps every time.
+        ///
+        /// For every non-aggregate subassembly, sets <c>part.owningSubassemblyId</c>
+        /// to the subassembly id. For every Place-family step, sets
+        /// <c>part.owningPlaceStepId</c> to the step id. First-writer-wins —
+        /// <c>PartOwnershipExclusivityPass</c> guarantees no collisions at
+        /// validation time, so first-wins is equivalent to only-wins for
+        /// well-formed packages. Aggregate subassemblies are intentionally
+        /// skipped (they may contain child parts).
+        /// </summary>
+        private static void IndexPartOwnership(MachinePackageDefinition package)
+        {
+            PartDefinition[] parts = package.parts;
+            if (parts == null || parts.Length == 0) return;
+
+            var partById = new Dictionary<string, PartDefinition>(
+                parts.Length, StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < parts.Length; i++)
+            {
+                PartDefinition p = parts[i];
+                if (p == null || string.IsNullOrWhiteSpace(p.id)) continue;
+
+                // Clear any stale state from a prior Normalize call on the
+                // same in-memory package (editor reload path).
+                p.owningSubassemblyId = null;
+                p.owningPlaceStepId = null;
+                partById[p.id] = p;
+            }
+
+            SubassemblyDefinition[] subs = package.subassemblies;
+            if (subs != null)
+            {
+                for (int sa = 0; sa < subs.Length; sa++)
+                {
+                    SubassemblyDefinition sub = subs[sa];
+                    if (sub == null || sub.isAggregate) continue;
+                    if (sub.partIds == null || string.IsNullOrWhiteSpace(sub.id)) continue;
+
+                    for (int i = 0; i < sub.partIds.Length; i++)
+                    {
+                        string pid = sub.partIds[i];
+                        if (string.IsNullOrEmpty(pid)) continue;
+                        if (!partById.TryGetValue(pid, out PartDefinition part)) continue;
+                        if (string.IsNullOrEmpty(part.owningSubassemblyId))
+                            part.owningSubassemblyId = sub.id;
+                    }
+                }
+            }
+
+            StepDefinition[] steps = package.steps;
+            if (steps != null)
+            {
+                for (int s = 0; s < steps.Length; s++)
+                {
+                    StepDefinition step = steps[s];
+                    if (step == null || string.IsNullOrWhiteSpace(step.id)) continue;
+                    if (step.ResolvedFamily != StepFamily.Place) continue;
+                    if (step.requiredPartIds == null) continue;
+
+                    for (int i = 0; i < step.requiredPartIds.Length; i++)
+                    {
+                        string pid = step.requiredPartIds[i];
+                        if (string.IsNullOrEmpty(pid)) continue;
+                        if (!partById.TryGetValue(pid, out PartDefinition part)) continue;
+                        if (string.IsNullOrEmpty(part.owningPlaceStepId))
+                            part.owningPlaceStepId = step.id;
+                    }
                 }
             }
         }

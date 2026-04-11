@@ -1,0 +1,28 @@
+{
+  "input_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\axes_stage01\\exported\\stl\\Universal_Axis_Idler_Side_short_version_tip.stl",
+  "output_glb": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\axes_stage01\\exported\\glb_candidates\\Universal_Axis_Idler_Side_short_version_tip.glb",
+  "units": "m",
+  "object_count": 1,
+  "material_name": "D3D Axis Printed Grey",
+  "base_color": [
+    0.69,
+    0.73,
+    0.78,
+    1.0
+  ],
+  "metallic": 0.0,
+  "roughness": 0.58,
+  "center_mode": "center",
+  "flat_shading": true,
+  "bound_box": {
+    "xmin_m": -0.013000000268220901,
+    "xmax_m": 0.013000000268220901,
+    "ymin_m": -0.032999999821186066,
+    "ymax_m": 0.032999999821186066,
+    "zmin_m": -0.0060000005178153515,
+    "zmax_m": 0.006000000052154064,
+    "xlen_m": 0.026000000536441803,
+    "ylen_m": 0.06599999964237213,
+    "zlen_m": 0.012000000569969416
+  }
+}

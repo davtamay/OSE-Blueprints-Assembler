@@ -1,0 +1,274 @@
+{
+  "input_fcstd": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\axes_stage01\\raw\\Universal_Axis_Idler_Side_short_version.fcstd",
+  "output_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\axes_stage01\\exported\\stl\\Universal_Axis_Idler_Side_short_version_full.stl",
+  "source_mode": "archive_brep",
+  "units": "mm",
+  "object_count": 18,
+  "mesh_facets": 6352,
+  "mesh_points": 1432,
+  "combined_bound_box": {
+    "xmin_mm": -10000.0,
+    "xmax_mm": 15.0,
+    "ymin_mm": -33.0,
+    "ymax_mm": 33.0,
+    "zmin_mm": -9988.0,
+    "zmax_mm": 12.0,
+    "xlen_mm": 10015.0,
+    "ylen_mm": 66.0,
+    "zlen_mm": 10000.0
+  },
+  "objects": [
+    {
+      "name": "PartShape1.brp",
+      "bound_box": {
+        "xmin_mm": -26.0,
+        "xmax_mm": 0.0,
+        "ymin_mm": -33.0,
+        "ymax_mm": 33.0,
+        "zmin_mm": 0.0,
+        "zmax_mm": 12.0,
+        "xlen_mm": 26.0,
+        "ylen_mm": 66.0,
+        "zlen_mm": 12.0
+      }
+    },
+    {
+      "name": "PartShape2.brp",
+      "bound_box": {
+        "xmin_mm": -26.0,
+        "xmax_mm": 0.0,
+        "ymin_mm": -33.0,
+        "ymax_mm": 33.0,
+        "zmin_mm": 0.0,
+        "zmax_mm": 12.0,
+        "xlen_mm": 26.0,
+        "ylen_mm": 66.0,
+        "zlen_mm": 12.0
+      }
+    },
+    {
+      "name": "PartShape4.brp",
+      "bound_box": {
+        "xmin_mm": -26.0,
+        "xmax_mm": 0.0,
+        "ymin_mm": -33.0,
+        "ymax_mm": 33.0,
+        "zmin_mm": 0.0,
+        "zmax_mm": 12.0,
+        "xlen_mm": 26.0,
+        "ylen_mm": 66.0,
+        "zlen_mm": 12.0
+      }
+    },
+    {
+      "name": "PartShape5.brp",
+      "bound_box": {
+        "xmin_mm": -20.36935750346352,
+        "xmax_mm": -0.6306424965364794,
+        "ymin_mm": -21.2,
+        "ymax_mm": 21.2,
+        "zmin_mm": 6.0,
+        "zmax_mm": 12.0,
+        "xlen_mm": 19.738715006927038,
+        "ylen_mm": 42.4,
+        "zlen_mm": 6.0
+      }
+    },
+    {
+      "name": "PartShape7.brp",
+      "bound_box": {
+        "xmin_mm": -26.0,
+        "xmax_mm": 0.0,
+        "ymin_mm": -33.0,
+        "ymax_mm": 33.0,
+        "zmin_mm": 0.0,
+        "zmax_mm": 12.0,
+        "xlen_mm": 26.0,
+        "ylen_mm": 66.0,
+        "zlen_mm": 12.0
+      }
+    },
+    {
+      "name": "PartShape8.brp",
+      "bound_box": {
+        "xmin_mm": -18.3,
+        "xmax_mm": -2.7,
+        "ymin_mm": -18.3,
+        "ymax_mm": 18.3,
+        "zmin_mm": -9988.0,
+        "zmax_mm": 12.0,
+        "xlen_mm": 15.600000000000001,
+        "ylen_mm": 36.6,
+        "zlen_mm": 10000.0
+      }
+    },
+    {
+      "name": "PartShape10.brp",
+      "bound_box": {
+        "xmin_mm": -26.0,
+        "xmax_mm": 0.0,
+        "ymin_mm": -33.0,
+        "ymax_mm": 33.0,
+        "zmin_mm": 0.0,
+        "zmax_mm": 12.0,
+        "xlen_mm": 26.0,
+        "ylen_mm": 66.0,
+        "zlen_mm": 12.0
+      }
+    },
+    {
+      "name": "PartShape11.brp",
+      "bound_box": {
+        "xmin_mm": -10000.0,
+        "xmax_mm": 0.0,
+        "ymin_mm": -32.0,
+        "ymax_mm": 32.0,
+        "zmin_mm": -4.0,
+        "zmax_mm": 4.0,
+        "xlen_mm": 10000.0,
+        "ylen_mm": 64.0,
+        "zlen_mm": 8.0
+      }
+    },
+    {
+      "name": "PartShape13.brp",
+      "bound_box": {
+        "xmin_mm": -26.0,
+        "xmax_mm": 5.329070518200751e-15,
+        "ymin_mm": -33.0,
+        "ymax_mm": 33.0,
+        "zmin_mm": 0.0,
+        "zmax_mm": 12.0,
+        "xlen_mm": 26.000000000000007,
+        "ylen_mm": 66.0,
+        "zlen_mm": 12.0
+      }
+    },
+    {
+      "name": "PartShape14.brp",
+      "bound_box": {
+        "xmin_mm": -24.000007426894868,
+        "xmax_mm": 5.329070518200751e-15,
+        "ymin_mm": -9.000000000000002,
+        "ymax_mm": 8.999999999999998,
+        "zmin_mm": 0.0,
+        "zmax_mm": 4.5,
+        "xlen_mm": 24.000007426894875,
+        "ylen_mm": 18.0,
+        "zlen_mm": 4.5
+      }
+    },
+    {
+      "name": "PartShape16.brp",
+      "bound_box": {
+        "xmin_mm": -26.0,
+        "xmax_mm": 5.329070518200751e-15,
+        "ymin_mm": -33.0,
+        "ymax_mm": 33.0,
+        "zmin_mm": 0.0,
+        "zmax_mm": 12.0,
+        "xlen_mm": 26.000000000000007,
+        "ylen_mm": 66.0,
+        "zlen_mm": 12.0
+      }
+    },
+    {
+      "name": "PartShape17.brp",
+      "bound_box": {
+        "xmin_mm": -26.0,
+        "xmax_mm": -20.5,
+        "ymin_mm": -18.3,
+        "ymax_mm": 18.3,
+        "zmin_mm": -3.3,
+        "zmax_mm": 3.3,
+        "xlen_mm": 5.5,
+        "ylen_mm": 36.6,
+        "zlen_mm": 6.6
+      }
+    },
+    {
+      "name": "PartShape19.brp",
+      "bound_box": {
+        "xmin_mm": -26.0,
+        "xmax_mm": 5.329070518200751e-15,
+        "ymin_mm": -33.0,
+        "ymax_mm": 33.0,
+        "zmin_mm": 0.0,
+        "zmax_mm": 12.0,
+        "xlen_mm": 26.000000000000007,
+        "ylen_mm": 66.0,
+        "zlen_mm": 12.0
+      }
+    },
+    {
+      "name": "PartShape20.brp",
+      "bound_box": {
+        "xmin_mm": -20.5,
+        "xmax_mm": -15.0,
+        "ymin_mm": -20.369357503464,
+        "ymax_mm": 20.369357503464,
+        "zmin_mm": -6.200000000000003,
+        "zmax_mm": 6.200000000000003,
+        "xlen_mm": 5.5,
+        "ylen_mm": 40.738715006928,
+        "zlen_mm": 12.400000000000006
+      }
+    },
+    {
+      "name": "PartShape22.brp",
+      "bound_box": {
+        "xmin_mm": -11.0,
+        "xmax_mm": 15.000000000000005,
+        "ymin_mm": -33.0,
+        "ymax_mm": 33.0,
+        "zmin_mm": -9.500000000000005,
+        "zmax_mm": 2.500000000000004,
+        "xlen_mm": 26.000000000000007,
+        "ylen_mm": 66.0,
+        "zlen_mm": 12.000000000000009
+      }
+    },
+    {
+      "name": "PartShape23.brp",
+      "bound_box": {
+        "xmin_mm": -25.6,
+        "xmax_mm": -6.4,
+        "ymin_mm": -32.6,
+        "ymax_mm": 32.6,
+        "zmin_mm": 10.0,
+        "zmax_mm": 12.0,
+        "xlen_mm": 19.200000000000003,
+        "ylen_mm": 65.2,
+        "zlen_mm": 2.0
+      }
+    },
+    {
+      "name": "PartShape25.brp",
+      "bound_box": {
+        "xmin_mm": -11.000000000000007,
+        "xmax_mm": 15.000000000000005,
+        "ymin_mm": -33.0,
+        "ymax_mm": 33.0,
+        "zmin_mm": -9.500000000000004,
+        "zmax_mm": 2.5000000000000027,
+        "xlen_mm": 26.000000000000014,
+        "ylen_mm": 66.0,
+        "zlen_mm": 12.000000000000007
+      }
+    },
+    {
+      "name": "PartShape26.brp",
+      "bound_box": {
+        "xmin_mm": -26.27454,
+        "xmax_mm": -18.42853,
+        "ymin_mm": -8.281110000000002,
+        "ymax_mm": 8.320494000000002,
+        "zmin_mm": -1.7763568394002505e-15,
+        "zmax_mm": 4.500000000000002,
+        "xlen_mm": 7.84601,
+        "ylen_mm": 16.601604000000002,
+        "zlen_mm": 4.5000000000000036
+      }
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "input_fcstd": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\axes_stage01\\raw\\Universal_Axis_Idler_Side_short_version.fcstd",
+  "output_stl": "C:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\axes_stage01\\exported\\stl\\Universal_Axis_Idler_Side_short_version_tip.stl",
+  "target_object": "Pocket",
+  "target_label": "Pocket",
+  "target_type": "PartDesign::Pocket",
+  "face_count": 65,
+  "mesh_facets": 1100,
+  "mesh_points": 546,
+  "bound_box_mm": {
+    "xmin": -11.0,
+    "xmax": 15.0,
+    "xlen": 26.0,
+    "ymin": -33.0,
+    "ymax": 33.0,
+    "ylen": 66.0,
+    "zmin": -9.50000000000001,
+    "zmax": 2.50000000000001,
+    "zlen": 12.000000000000021
+  }
+}
