@@ -1558,5 +1558,81 @@ namespace OSE.Editor
                 }
             }
         }
+
+        // ── Bottom edit panel + unified actions ───────────────────────────────
+
+        private void DrawBottomEditPanel()
+        {
+            // ── Task-sequence-driven (authoritative when a task is selected) ──────
+            if (_selectedTaskSeqIdx >= 0 && _stepFilterIdx > 0
+                && _stepIds != null && _stepFilterIdx < _stepIds.Length)
+            {
+                var step  = FindStep(_stepIds[_stepFilterIdx]);
+                var order = step != null ? GetOrDeriveTaskOrder(step) : null;
+                if (order != null && _selectedTaskSeqIdx < order.Count)
+                {
+                    var entry = order[_selectedTaskSeqIdx];
+                    switch (entry.kind)
+                    {
+                        case "part":
+                        {
+                            if (_parts != null)
+                                for (int i = 0; i < _parts.Length; i++)
+                                    if (_parts[i].def?.id == entry.id)
+                                    { DrawPartDetailPanel(ref _parts[i]); return; }
+                            break;
+                        }
+                        default: // wire, toolAction, target
+                        {
+                            string targetId = entry.id;
+                            if (entry.kind == "toolAction" && step?.requiredToolActions != null)
+                                foreach (var a in step.requiredToolActions)
+                                    if (a?.id == entry.id) { targetId = a.targetId; break; }
+                            if (_targets != null)
+                                for (int i = 0; i < _targets.Length; i++)
+                                    if (_targets[i].def?.id == targetId)
+                                    { DrawDetailPanel(ref _targets[i]); return; }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // ── Fallback: direct selection state (no task sequence active) ────────
+            if (_multiSelectedParts.Count > 1)
+                DrawPartBatchPanel();
+            else if (_selectedPartIdx >= 0 && _parts != null && _selectedPartIdx < _parts.Length)
+                DrawPartDetailPanel(ref _parts[_selectedPartIdx]);
+            else if (_multiSelected.Count > 1)
+                DrawBatchPanel();
+            else if (_selectedIdx >= 0 && _targets != null && _selectedIdx < _targets.Length)
+                DrawDetailPanel(ref _targets[_selectedIdx]);
+            else
+                EditorGUILayout.LabelField("Select a part or target in the sequence above.",
+                    EditorStyles.centeredGreyMiniLabel);
+        }
+
+        private void DrawUnifiedActions()
+        {
+            bool anyDirty = AnyDirty();
+            EditorGUILayout.BeginHorizontal();
+            EditorGUI.BeginDisabledGroup(!anyDirty);
+            GUI.backgroundColor = anyDirty ? new Color(0.3f, 0.9f, 0.4f) : Color.white;
+            if (GUILayout.Button("Write to machine.json", GUILayout.Height(26))) WriteJson();
+            GUI.backgroundColor = Color.white;
+            EditorGUI.EndDisabledGroup();
+            if (GUILayout.Button("↺", EditorStyles.miniButton, GUILayout.Width(22), GUILayout.Height(26)))
+                RevertAllChanges();
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Extract from GLB", EditorStyles.miniButton)) ExtractFromGlbAnchors();
+            EditorGUI.BeginDisabledGroup(string.IsNullOrEmpty(_lastBackupPath) || !File.Exists(_lastBackupPath));
+            if (GUILayout.Button("Revert Last Write", EditorStyles.miniButton)) RevertFromBackup();
+            EditorGUI.EndDisabledGroup();
+            if (GUILayout.Button("Frame in Scene", EditorStyles.miniButton)) FrameInScene();
+            if (GUILayout.Button("Sync Rotations", EditorStyles.miniButton)) SyncAllToolRotationsFromPlacements();
+            EditorGUILayout.EndHorizontal();
+        }
     }
 }
