@@ -1380,6 +1380,9 @@ namespace OSE.Editor
                         for (int i = 0; i < _parts.Length; i++)
                             if (_parts[i].def?.id == selEntry.id)
                             { DrawPartDetailPanel(ref _parts[i]); break; }
+
+                    // Phase 7c — per-part animation-cue affordance
+                    DrawCuesForPart(step, selEntry.id);
                     break;
                 }
                 case "wire":
@@ -1597,6 +1600,11 @@ namespace OSE.Editor
                         for (int i = 0; i < _targets.Length; i++)
                             if (_targets[i].def?.id == toolTargetId)
                             { DrawDetailPanel(ref _targets[i]); break; }
+
+                    // Phase 7c — per-tool animation-cue affordance, only when
+                    // a tool is actually wired to this action.
+                    if (taskAction != null && !string.IsNullOrEmpty(taskAction.toolId))
+                        DrawCuesForTool(step, taskAction.toolId);
                     break;
                 }
             }
