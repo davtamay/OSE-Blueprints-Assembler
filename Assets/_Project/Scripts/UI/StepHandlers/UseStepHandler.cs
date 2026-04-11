@@ -224,7 +224,7 @@ namespace OSE.UI.Root
                 return false;
             }
 
-            ToolRuntimeController.ToolActionExecutionResult toolResult =
+            ToolActionExecutionResult toolResult =
                 session.ToolController.TryExecutePrimaryAction(interactedTargetId);
 
             handled = toolResult.Handled;

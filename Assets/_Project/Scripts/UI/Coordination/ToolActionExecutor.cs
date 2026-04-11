@@ -41,7 +41,7 @@ namespace OSE.UI.Root
             if (session?.ToolController == null)
                 return false;
 
-            if (!session.ToolController.TryGetPrimaryActionSnapshot(out ToolRuntimeController.ToolActionSnapshot snapshot))
+            if (!session.ToolController.TryGetPrimaryActionSnapshot(out ToolActionSnapshot snapshot))
                 return false;
 
             if (!snapshot.IsConfigured || snapshot.IsCompleted)

@@ -79,13 +79,13 @@ namespace OSE.UI.Root
                 string.Equals(session.ToolController.ActiveStepId, currentStep.id, StringComparison.OrdinalIgnoreCase);
 
             if (runtimeMatchesStep &&
-                TryGetActionSnapshots(out ToolRuntimeController.ToolActionSnapshot[] actionSnapshots, out session))
+                TryGetActionSnapshots(out ToolActionSnapshot[] actionSnapshots, out session))
             {
                 string sequentialTargetId = ResolveSequentialTargetId(currentStep, actionSnapshots);
 
                 for (int i = 0; i < actionSnapshots.Length; i++)
                 {
-                    ToolRuntimeController.ToolActionSnapshot action = actionSnapshots[i];
+                    ToolActionSnapshot action = actionSnapshots[i];
                     if (!action.IsConfigured || action.IsCompleted || string.IsNullOrWhiteSpace(action.TargetId))
                         continue;
 
@@ -181,7 +181,7 @@ namespace OSE.UI.Root
 
         public string ResolveSequentialTargetId(
             StepDefinition currentStep,
-            ToolRuntimeController.ToolActionSnapshot[] actionSnapshots = null)
+            ToolActionSnapshot[] actionSnapshots = null)
         {
             if (currentStep == null || !currentStep.IsSequential)
                 return null;
@@ -194,7 +194,7 @@ namespace OSE.UI.Root
             {
                 for (int i = 0; i < actionSnapshots.Length; i++)
                 {
-                    ToolRuntimeController.ToolActionSnapshot action = actionSnapshots[i];
+                    ToolActionSnapshot action = actionSnapshots[i];
                     if (!action.IsConfigured || action.IsCompleted || string.IsNullOrWhiteSpace(action.TargetId))
                         continue;
 
@@ -227,7 +227,7 @@ namespace OSE.UI.Root
                 return interactedTargetId;
 
             string sequentialTargetId = null;
-            if (TryGetActionSnapshots(out ToolRuntimeController.ToolActionSnapshot[] actionSnapshots, out _))
+            if (TryGetActionSnapshots(out ToolActionSnapshot[] actionSnapshots, out _))
                 sequentialTargetId = ResolveSequentialTargetId(currentStep, actionSnapshots);
 
             if (string.IsNullOrWhiteSpace(sequentialTargetId))
@@ -379,10 +379,10 @@ namespace OSE.UI.Root
         }
 
         public static bool TryGetActionSnapshots(
-            out ToolRuntimeController.ToolActionSnapshot[] snapshots,
+            out ToolActionSnapshot[] snapshots,
             out IMachineSessionController session)
         {
-            snapshots = Array.Empty<ToolRuntimeController.ToolActionSnapshot>();
+            snapshots = Array.Empty<ToolActionSnapshot>();
             session = null;
 
             if (!ServiceRegistry.TryGet<IMachineSessionController>(out session) ||

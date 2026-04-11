@@ -30,8 +30,8 @@ namespace OSE.Runtime
         bool EquipTool(string toolId);
         void UnequipTool();
 
-        ToolRuntimeController.ToolActionExecutionResult TryExecutePrimaryAction(string interactedTargetId = null);
-        bool TryGetPrimaryActionSnapshot(out ToolRuntimeController.ToolActionSnapshot snapshot);
-        bool TryGetActionSnapshots(out ToolRuntimeController.ToolActionSnapshot[] snapshots);
+        ToolActionExecutionResult TryExecutePrimaryAction(string interactedTargetId = null);
+        bool TryGetPrimaryActionSnapshot(out ToolActionSnapshot snapshot);
+        bool TryGetActionSnapshots(out ToolActionSnapshot[] snapshots);
     }
 }

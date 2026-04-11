@@ -166,7 +166,7 @@ namespace OSE.Interaction
             // after all required part placements are done. Mixed placement+tool steps
             // (e.g. "place 4 posts then clamp") must allow part interaction first.
             if (session.ToolController.TryGetPrimaryActionSnapshot(
-                    out ToolRuntimeController.ToolActionSnapshot snapshot))
+                    out ToolActionSnapshot snapshot))
             {
                 if (!snapshot.IsConfigured || snapshot.IsCompleted)
                     return false;

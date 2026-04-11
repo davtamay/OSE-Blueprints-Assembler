@@ -301,7 +301,7 @@ namespace OSE.UI.Controllers
                 if (step.IsPlacement)
                 {
                     bool toolActionPending = true;
-                    if (_toolRuntimeController.TryGetPrimaryActionSnapshot(out ToolRuntimeController.ToolActionSnapshot snapshot) &&
+                    if (_toolRuntimeController.TryGetPrimaryActionSnapshot(out ToolActionSnapshot snapshot) &&
                         snapshot.IsConfigured)
                     {
                         toolActionPending = !snapshot.IsCompleted;
@@ -354,7 +354,7 @@ namespace OSE.UI.Controllers
             if (ServiceRegistry.TryGet<IMachineSessionController>(out var navCheck) && navCheck.IsNavigating)
                 return;
 
-            if (!_toolRuntimeController.TryGetPrimaryActionSnapshot(out ToolRuntimeController.ToolActionSnapshot snapshot) ||
+            if (!_toolRuntimeController.TryGetPrimaryActionSnapshot(out ToolActionSnapshot snapshot) ||
                 !snapshot.IsConfigured ||
                 snapshot.IsCompleted ||
                 !string.IsNullOrWhiteSpace(snapshot.TargetId))
@@ -378,7 +378,7 @@ namespace OSE.UI.Controllers
             _autoCompletingTargetlessToolStep = true;
             try
             {
-                ToolRuntimeController.ToolActionExecutionResult toolResult =
+                ToolActionExecutionResult toolResult =
                     _toolRuntimeController.TryExecutePrimaryAction();
 
                 if (toolResult.Handled && toolResult.ShouldCompleteStep)
@@ -427,12 +427,12 @@ namespace OSE.UI.Controllers
             try
             {
                 // Prefer consuming the authored tool action to preserve tool action events.
-                if (_toolRuntimeController.TryGetPrimaryActionSnapshot(out ToolRuntimeController.ToolActionSnapshot snapshot) &&
+                if (_toolRuntimeController.TryGetPrimaryActionSnapshot(out ToolActionSnapshot snapshot) &&
                     snapshot.IsConfigured &&
                     !snapshot.IsCompleted &&
                     string.IsNullOrWhiteSpace(snapshot.TargetId))
                 {
-                    ToolRuntimeController.ToolActionExecutionResult toolResult =
+                    ToolActionExecutionResult toolResult =
                         _toolRuntimeController.TryExecutePrimaryAction();
 
                     if (toolResult.Handled && toolResult.ShouldCompleteStep)
@@ -501,7 +501,7 @@ namespace OSE.UI.Controllers
             if (_toolRuntimeController == null)
                 return null;
 
-            if (_toolRuntimeController.TryGetPrimaryActionSnapshot(out ToolRuntimeController.ToolActionSnapshot snapshot) &&
+            if (_toolRuntimeController.TryGetPrimaryActionSnapshot(out ToolActionSnapshot snapshot) &&
                 snapshot.IsConfigured &&
                 !string.IsNullOrWhiteSpace(snapshot.ToolId))
             {

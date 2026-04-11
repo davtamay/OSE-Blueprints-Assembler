@@ -18,15 +18,6 @@ namespace OSE.Runtime.Preview
     [DisallowMultipleComponent]
     public sealed class SessionDriver : MonoBehaviour
     {
-        /// <summary>
-        /// Published in both edit and play mode whenever a machine package finishes loading.
-        /// The scene harness subscribes to apply per-package visual configuration without
-        /// any ScriptableObject dependency — enabling the runtime package-runner model.
-        /// </summary>
-        /// <remarks>Prefer subscribing to <see cref="PackageLoaded"/> via <see cref="RuntimeEventBus"/>
-        /// over this static event.</remarks>
-        [Obsolete("Subscribe to RuntimeEventBus.Subscribe<PackageLoaded> instead.")]
-        public static event Action<MachinePackageDefinition> PackageChanged;
         public static MachinePackageDefinition CurrentPackage { get; private set; }
 
         /// <summary>
@@ -68,9 +59,8 @@ namespace OSE.Runtime.Preview
         [SerializeField] private int _hintsUsed;
 
         private IMachineSessionController _session;
+        private IntroOverlayCoordinator _intro;
         private bool _sessionStarted;
-        private bool _introActive;
-        private bool _introDismissed;
         private bool _pendingStepUiPush;
         private string _lastPlayModePackageId;
         private SessionMode _lastPlayModeSessionMode;
@@ -93,6 +83,9 @@ namespace OSE.Runtime.Preview
             // With Domain Reload disabled, OnDisable fires AFTER Application.isPlaying
             // becomes true during play mode entry. Unconditional reset ensures
             // _sessionStarted is cleared so StartSessionAsync can retry on re-enable.
+            _intro?.Dispose();
+            _intro = null;
+
             if (_session != null)
             {
                 _session.PackageReady -= HandlePackageReady;
@@ -103,14 +96,9 @@ namespace OSE.Runtime.Preview
                 RuntimeEventBus.Unsubscribe<ToolActionProgressed>(HandleToolActionProgressed);
                 RuntimeEventBus.Unsubscribe<ToolActionCompleted>(HandleToolActionCompleted);
                 RuntimeEventBus.Unsubscribe<ToolActionFailed>(HandleToolActionFailed);
-                RuntimeEventBus.Unsubscribe<MachineIntroDismissed>(HandleIntroDismissed);
                 RuntimeEventBus.Unsubscribe<MachineIntroReset>(HandleIntroReset);
-                RuntimeEventBus.Unsubscribe<AssemblyPickerRequested>(HandleAssemblyPickerRequested);
-                RuntimeEventBus.Unsubscribe<AssemblyPickerDismissed>(HandleAssemblyPickerDismissed);
             }
             _sessionStarted = false;
-            _introActive = false;
-            _introDismissed = false;
             _pendingStepUiPush = false;
             IsIntroActive = false;
             _session = null;
@@ -157,11 +145,11 @@ namespace OSE.Runtime.Preview
                 RuntimeEventBus.Unsubscribe<ToolActionProgressed>(HandleToolActionProgressed);
                 RuntimeEventBus.Unsubscribe<ToolActionCompleted>(HandleToolActionCompleted);
                 RuntimeEventBus.Unsubscribe<ToolActionFailed>(HandleToolActionFailed);
-                RuntimeEventBus.Unsubscribe<MachineIntroDismissed>(HandleIntroDismissed);
                 RuntimeEventBus.Unsubscribe<MachineIntroReset>(HandleIntroReset);
-                RuntimeEventBus.Unsubscribe<AssemblyPickerRequested>(HandleAssemblyPickerRequested);
-                RuntimeEventBus.Unsubscribe<AssemblyPickerDismissed>(HandleAssemblyPickerDismissed);
             }
+
+            _intro?.Dispose();
+            _intro = null;
         }
 
         // --------------------------------------------------------------------
@@ -184,9 +172,9 @@ namespace OSE.Runtime.Preview
 
             // Invariant: keep intro self-heal polling before step pushes. This recovers the
             // intro overlay when first-frame UI build order shifts.
-            EnsureMachineIntroVisible();
+            _intro?.EnsureVisible();
 
-            if (_pendingStepUiPush && !_introActive && PushStepToUI())
+            if (_pendingStepUiPush && !(_intro?.IsActive ?? false) && PushStepToUI())
             {
                 _pendingStepUiPush = false;
             }
@@ -250,6 +238,11 @@ namespace OSE.Runtime.Preview
         {
             if (!Application.isPlaying) return;
 
+            // Dispose the intro coordinator before ending the session so its event
+            // subscriptions are cleaned up before new ones are registered in StartSessionAsync.
+            _intro?.Dispose();
+            _intro = null;
+
             // End previous session
             if (_session != null)
             {
@@ -261,10 +254,7 @@ namespace OSE.Runtime.Preview
                 RuntimeEventBus.Unsubscribe<ToolActionProgressed>(HandleToolActionProgressed);
                 RuntimeEventBus.Unsubscribe<ToolActionCompleted>(HandleToolActionCompleted);
                 RuntimeEventBus.Unsubscribe<ToolActionFailed>(HandleToolActionFailed);
-                RuntimeEventBus.Unsubscribe<MachineIntroDismissed>(HandleIntroDismissed);
                 RuntimeEventBus.Unsubscribe<MachineIntroReset>(HandleIntroReset);
-                RuntimeEventBus.Unsubscribe<AssemblyPickerRequested>(HandleAssemblyPickerRequested);
-                RuntimeEventBus.Unsubscribe<AssemblyPickerDismissed>(HandleAssemblyPickerDismissed);
                 _session.EndSession();
                 _session = null;
             }
@@ -275,8 +265,6 @@ namespace OSE.Runtime.Preview
                 persistence.ClearSession(_packageId);
 
             _sessionStarted = false;
-            _introActive = false;
-            _introDismissed = false;
             _pendingStepUiPush = false;
             IsIntroActive = false;
             _savedCompletedSteps = 0;
@@ -353,16 +341,22 @@ namespace OSE.Runtime.Preview
             RuntimeEventBus.Subscribe<ToolActionProgressed>(HandleToolActionProgressed);
             RuntimeEventBus.Subscribe<ToolActionCompleted>(HandleToolActionCompleted);
             RuntimeEventBus.Subscribe<ToolActionFailed>(HandleToolActionFailed);
-            RuntimeEventBus.Subscribe<MachineIntroDismissed>(HandleIntroDismissed);
             RuntimeEventBus.Subscribe<MachineIntroReset>(HandleIntroReset);
-            RuntimeEventBus.Subscribe<AssemblyPickerRequested>(HandleAssemblyPickerRequested);
-            RuntimeEventBus.Subscribe<AssemblyPickerDismissed>(HandleAssemblyPickerDismissed);
+
+            // Intro overlay coordinator: subscribes MachineIntroDismissed, AssemblyPickerRequested,
+            // AssemblyPickerDismissed. HandleIntroReset stays here to avoid re-entrancy (it disposes
+            // the coordinator synchronously before RestartSession awaits).
+            _intro = new IntroOverlayCoordinator(
+                getSession: () => _session,
+                getSavedCompletedSteps: () => _savedCompletedSteps,
+                getSavedTotalSteps: () => _savedTotalSteps,
+                setIntroActive: v => IsIntroActive = v,
+                onGatePassed: () => { _pendingStepUiPush = true; if (PushStepToUI()) _pendingStepUiPush = false; });
 
             if (success)
             {
                 _lastPlayModePackageId = _packageId;
                 _lastPlayModeSessionMode = _sessionMode;
-                _introDismissed = false;
                 _pendingStepUiPush = false;
 
                 // Resolve total steps now that the package is loaded
@@ -402,7 +396,7 @@ namespace OSE.Runtime.Preview
                     }
                 }
 
-                TryShowMachineIntro();
+                _intro.Show();
 
                 // If the package has no machine definition (no intro possible), show step directly.
                 if (_session?.Package?.machine == null)
@@ -434,7 +428,7 @@ namespace OSE.Runtime.Preview
 
             if (evt.Current == StepState.Active)
             {
-                if (!_introActive)
+                if (!(_intro?.IsActive ?? false))
                 {
                     _pendingStepUiPush = !PushStepToUI();
                 }
@@ -529,48 +523,11 @@ namespace OSE.Runtime.Preview
             ui.ShowHintContent("Tool Check", message, "tool");
         }
 
-        private void TryShowMachineIntro()
-        {
-            if (_session?.Package?.machine == null)
-            {
-                OseLog.Warn("[SessionDriver] TryShowMachineIntro: no machine data.");
-                _introActive = false;
-                IsIntroActive = false;
-                return;
-            }
-
-            if (!ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
-            {
-                OseLog.Error("[SessionDriver] TryShowMachineIntro: IPresentationAdapter not registered.");
-                _introActive = false;
-                IsIntroActive = false;
-                return;
-            }
-
-            MachineDefinition machine = _session.Package.machine;
-
-            int totalSteps = _savedTotalSteps > 0
-                ? _savedTotalSteps
-                : (_session.Package?.GetOrderedSteps().Length ?? 0);
-
-            ui.ShowMachineIntro(
-                machine.GetDisplayName(),
-                machine.description ?? string.Empty,
-                machine.difficulty ?? string.Empty,
-                machine.estimatedBuildTimeMinutes,
-                machine.learningObjectives,
-                machine.introImageRef,
-                _savedCompletedSteps,
-                totalSteps);
-
-            _introActive = ui.IsMachineIntroVisible;
-            IsIntroActive = _introActive;
-        }
-
         private void HandleIntroReset(MachineIntroReset evt)
         {
-            _introActive = false;
-            _introDismissed = false;
+            // Reset saved progress before restarting so the new session starts clean.
+            // RestartSession disposes the intro coordinator synchronously before awaiting,
+            // so it is safe to call it here without re-entrancy concerns.
             IsIntroActive = false;
             _savedCompletedSteps = 0;
             _savedTotalSteps = 0;
@@ -579,68 +536,6 @@ namespace OSE.Runtime.Preview
 
             OseLog.Info("[SessionDriver] Progress reset. Restarting session.");
             _ = RestartSession(clearSavedProgress: true);
-        }
-
-        private void HandleAssemblyPickerRequested(AssemblyPickerRequested evt)
-        {
-            if (!ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
-                return;
-
-            ui.ShowAssemblyPicker();
-        }
-
-        private void HandleAssemblyPickerDismissed(AssemblyPickerDismissed evt)
-        {
-            if (ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
-                ui.DismissAssemblyPicker();
-
-            if (!string.IsNullOrEmpty(evt.SelectedAssemblyId) && evt.GlobalStepIndex >= 0 && _session != null)
-            {
-                OseLog.Info($"[SessionDriver] Assembly picker: jumping to '{evt.SelectedAssemblyId}' (global step {evt.GlobalStepIndex}).");
-                _session.NavigateToGlobalStep(evt.GlobalStepIndex);
-            }
-
-            // Ensure step UI is pushed after picker dismissal (handles the intro→picker→dismiss flow).
-            _introDismissed = true;
-            _introActive = false;
-            IsIntroActive = false;
-            _pendingStepUiPush = !PushStepToUI();
-        }
-
-        private void HandleIntroDismissed(MachineIntroDismissed evt)
-        {
-            _introActive = false;
-            _introDismissed = true;
-            _pendingStepUiPush = true;
-            IsIntroActive = false;
-
-            // Restore already happened during StartSessionAsync — the session
-            // controller skipped directly to the saved step boundary before any
-            // step was activated. No deferred RestoreToStep needed here.
-
-            OseLog.Info("[SessionDriver] Machine intro dismissed. Pushing step UI.");
-            if (PushStepToUI())
-            {
-                _pendingStepUiPush = false;
-            }
-        }
-
-        private void EnsureMachineIntroVisible()
-        {
-            if (_introDismissed || _session?.Package?.machine == null)
-                return;
-
-            if (!ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
-                return;
-
-            if (ui.IsMachineIntroVisible)
-            {
-                _introActive = true;
-                IsIntroActive = true;
-                return;
-            }
-
-            TryShowMachineIntro();
         }
 
         private bool PushStepToUI()
@@ -682,9 +577,6 @@ namespace OSE.Runtime.Preview
         internal static void PublishPackageChanged(MachinePackageDefinition package)
         {
             CurrentPackage = package;
-#pragma warning disable CS0618 // kept for any legacy subscribers still on the old event
-            PackageChanged?.Invoke(package);
-#pragma warning restore CS0618
             RuntimeEventBus.Publish(new PackageLoaded(package?.packageId));
         }
 

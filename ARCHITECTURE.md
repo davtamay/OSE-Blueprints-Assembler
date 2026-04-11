@@ -169,6 +169,42 @@ Affected files:
 
 ---
 
+## ADR 008 — ServiceRegistry Over DI Framework
+
+**Problem:** The project needs a lightweight dependency injection mechanism to connect services (session controller, tool controller, persistence) without hard-wiring concrete types across assemblies.
+
+**Decision:** Use a hand-rolled static `ServiceRegistry` (94 lines) instead of Zenject, VContainer, or Unity's built-in DI.
+
+**Why not Zenject/VContainer:**
+- Both require a `Container`/`VContainer` MonoBehaviour in every scene. Scene management in XR builds adds complexity when lifetimes must survive scene loads.
+- Reflection-based injection adds startup cost and complicates AOT/IL2CPP builds for Quest targets.
+- The project has a small, stable set of services (~6 at peak); a full DI framework's binding DSL is overhead for this scale.
+- `ServiceRegistry.TryGet<T>()` returns a bool — callers degrade gracefully when optional services are absent, which is the correct XR pattern (services register in `Awake`, resolve in `OnEnable`).
+
+**Rule:** Services must be registered in `AppBootstrap.Awake()` before any consumer's `OnEnable()` runs. Never call `ServiceRegistry.Get<T>()` from a constructor.
+
+---
+
+## ADR 009 — External Package Choices
+
+**Problem:** Selecting third-party packages for runtime GLB loading and procedural curve rendering.
+
+### glTFast (com.atteneder.gltfast)
+**Chosen over:** UnityGLTF, Piglet glTF Importer.
+- Official Khronos-spec compliant implementation; actively maintained by Unity and Atteneder.
+- Allocation-free import path — meshes streamed directly into Unity native mesh buffers.
+- No managed wrappers around vertex data: correct for Quest where GC pauses cause hitching.
+- Async API (`IGltfImport.LoadingDone`, `ImportGameObject`) integrates cleanly with `Task`-based loading.
+
+### Unity Splines (com.unity.splines)
+**Chosen over:** BezierSolution, custom Hermite splines.
+- Built-in Unity package — no additional dependency, zero licence risk.
+- `SplineContainer` + `SplineInstantiate` cover cable-routing use case with no custom tooling.
+- Editor tooling (spline handles in Scene view) lets content authors adjust cable paths without code.
+- Version-gated via `UNITY_SPLINES` define symbol in `OSE.UI.asmdef` so the package compiles without Splines on platforms where it's absent.
+
+---
+
 ## Key Files
 
 | File | Role |

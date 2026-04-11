@@ -189,10 +189,10 @@ namespace OSE.UI.Controllers
                 // Check if this step requires a tool action to complete.
                 // If it does, the Confirm button must NOT bypass it.
                 if (Session.ToolController.TryGetPrimaryActionSnapshot(
-                        out ToolRuntimeController.ToolActionSnapshot snapshot)
+                        out ToolActionSnapshot snapshot)
                     && snapshot.IsConfigured && !snapshot.IsCompleted)
                 {
-                    ToolRuntimeController.ToolActionExecutionResult toolResult =
+                    ToolActionExecutionResult toolResult =
                         Session.ToolController.TryExecutePrimaryAction();
 
                     // Block completion unless the tool action says the step is done.

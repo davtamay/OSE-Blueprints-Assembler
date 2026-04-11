@@ -378,7 +378,7 @@ namespace OSE.UI.Root
 
             var runtime = _getToolDock()?.RuntimeController;
             if (runtime == null ||
-                !runtime.TryGetPrimaryActionSnapshot(out ToolRuntimeController.ToolActionSnapshot snapshot))
+                !runtime.TryGetPrimaryActionSnapshot(out ToolActionSnapshot snapshot))
                 return null;
 
             if (!snapshot.IsConfigured || snapshot.RequiredCount <= 0)
