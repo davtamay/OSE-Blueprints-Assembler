@@ -42,6 +42,7 @@ namespace OSE.Content.Validation
             new PreviewConfigPass(),
             new OrphanDetectionPass(),
             new PartOwnershipExclusivityPass(),
+            new SpatialContractPass(),       // Layer 3: staging collision, ordering, Use tool coverage
         };
 
         /// <summary>

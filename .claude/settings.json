@@ -206,10 +206,24 @@
       "Bash(ls -la Assets/_Project/Data/Packages/d3d_v18_10/assets/parts/idler*.glb)",
       "Bash(grep -l \"#if UNITY_EDITOR\" Assets/_Project/Scripts/Runtime/*.cs Assets/_Project/Scripts/Core/*.cs)",
       "Bash(\"/c/Program Files/Blender Foundation/Blender 4.2/blender.exe\" -b -P \"c:/tmp/measure_glb.py\" -- \"Assets/_Project/Data/Packages/d3d_v18_10/assets/parts/idler002_approved.glb\" \"Assets/_Project/Data/Packages/d3d_v18_10/assets/parts/y_left_carriage_half_a.glb\" \"Assets/_Project/Data/Packages/d3d_v18_10/assets/parts/y_left_carriage_half_b.glb\")",
-      "Bash(grep -E '^\\\\s*\"id\":\\\\s*\"[^\"]*\",$' machine.json)"
+      "Bash(grep -E '^\\\\s*\"id\":\\\\s*\"[^\"]*\",$' machine.json)",
+      "Bash(powershell -Command ':*)",
+      "Bash(ls -la assembly_d3d_*.json)",
+      "Read(//c/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Data/Packages/d3d_v18_10/assemblies/**)",
+      "Read(//c/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Data/Packages/**)",
+      "Read(//c/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Data/Packages/d3d_v18_10/.migration_backups/**)",
+      "Bash(find \"c:\\\\Users\\\\davta\\\\Repos\\\\OSE Blueprints Assembler\" -name \"*.cs\" -type f -exec grep -l \"TaskOrderEntry\" {} \\\\;)",
+      "Bash(grep -n \"class StepDefinition\\\\|animationCues\\\\|StepAnimationCuePayload\\\\|AnimationCueEntry\\\\|public.*AnimationPose\" \"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Scripts/Content/\"*.cs)",
+      "Bash(grep -n \"MaterialHelper\\\\b\" \"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Scripts/\"*.cs \"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Scripts/UI/Visuals/\"*.cs)",
+      "Bash(sed -i 's/    internal sealed class ShakePlayer/    public sealed class ShakePlayer/' \"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Scripts/UI/Visuals/ShakePlayer.cs\")",
+      "Bash(sed -i 's/    internal sealed class PulsePlayer/    public sealed class PulsePlayer/' \"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Scripts/UI/Visuals/PulsePlayer.cs\")",
+      "Bash(sed -i 's/    internal sealed class DemonstratePlacementPlayer/    public sealed class DemonstratePlacementPlayer/' \"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Scripts/UI/Visuals/DemonstratePlacementPlayer.cs\")",
+      "Bash(sed -i 's/    internal sealed class PoseTransitionPlayer/    public sealed class PoseTransitionPlayer/' \"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Scripts/UI/Visuals/PoseTransitionPlayer.cs\")",
+      "Bash(sed -i 's/    internal sealed class OrientSubassemblyPlayer/    public sealed class OrientSubassemblyPlayer/' \"c:/Users/davta/Repos/OSE Blueprints Assembler/Assets/_Project/Scripts/UI/Visuals/OrientSubassemblyPlayer.cs\")"
     ],
     "additionalDirectories": [
-      "c:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\heatbed_stage01\\raw\\glb_centered"
+      "c:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\heatbed_stage01\\raw\\glb_centered",
+      "c:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\AgentAssistant"
     ]
   }
 }

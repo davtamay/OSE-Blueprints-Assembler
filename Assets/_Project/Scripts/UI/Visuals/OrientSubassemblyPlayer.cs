@@ -8,7 +8,7 @@ namespace OSE.UI.Root
     /// Uses Lerp/Slerp like the existing working orientation system but
     /// driven by the cue coordinator rather than step lifecycle.
     /// </summary>
-    internal sealed class OrientSubassemblyPlayer : IAnimationCuePlayer
+    public sealed class OrientSubassemblyPlayer : IAnimationCuePlayer
     {
         public string AnimationType => "orientSubassembly";
         public bool IsPlaying { get; private set; }

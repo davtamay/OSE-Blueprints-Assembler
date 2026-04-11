@@ -27,6 +27,7 @@
     "recommendedMode": "guided",
     "entryAssemblyIds": [
       "assembly_d3d_frame",
+      "assembly_d3d_batch_carriage_build",
       "assembly_d3d_y_left_bench",
       "assembly_d3d_y_right_bench",
       "assembly_d3d_x_axis_bench",

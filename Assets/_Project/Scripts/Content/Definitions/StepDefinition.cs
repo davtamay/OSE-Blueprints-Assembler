@@ -159,6 +159,12 @@ namespace OSE.Content
         public StepAnimationCuePayload animationCues;
 
         /// <summary>
+        /// Optional particle effects played when this step activates.
+        /// Each entry maps a preset to one or more target positions.
+        /// </summary>
+        public StepParticleEffectPayload particleEffects;
+
+        /// <summary>
         /// Explicit cross-section task sequence. Defines the order in which parts,
         /// tool actions, and wire/cable connections should be performed within this step.
         /// Null or empty = no explicit order (sections displayed independently).

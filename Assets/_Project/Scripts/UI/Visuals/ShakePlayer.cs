@@ -13,10 +13,10 @@ namespace OSE.UI.Root
     ///   durationSeconds  — 0 = run indefinitely until step navigates away
     ///   loop             — true = restart after durationSeconds
     /// </summary>
-    internal sealed class ShakePlayer : IAnimationCuePlayer
+    public sealed class ShakePlayer : IAnimationCuePlayer
     {
         private const float DefaultAmplitude = 0.01f;  // 1 cm
-        private const float DefaultFrequency = 8f;     // Hz
+        private const float DefaultFrequency = 3f;     // Hz — 8 was nauseating; 3 is perceptible but smooth
 
         public string AnimationType => "shake";
         public bool IsPlaying { get; private set; }

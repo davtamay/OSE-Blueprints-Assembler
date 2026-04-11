@@ -8,7 +8,7 @@ namespace OSE.UI.Root
     /// from the cue entry when present, otherwise falls back to start/assembled poses.
     /// Supports optional <c>spinRevolutions</c> for rotational effects.
     /// </summary>
-    internal sealed class PoseTransitionPlayer : IAnimationCuePlayer
+    public sealed class PoseTransitionPlayer : IAnimationCuePlayer
     {
         public string AnimationType => "poseTransition";
         public bool IsPlaying { get; private set; }

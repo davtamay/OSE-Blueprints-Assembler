@@ -6,20 +6,12 @@
       "description": "Assembles the Z-back axis module from individual parts. Z-Back uses the same plastic piece type as Y-Left. No endstop is attached to Z axes. Produces a complete Z-back axis module ready for mounting on the back frame face directly behind Z-front.",
       "machineId": "d3d_v18_10",
       "subassemblyIds": [
-        "subassembly_z_back_carriage_build",
         "subassembly_z_back_idler_build",
         "subassembly_z_back_motor_build",
         "subassembly_z_back_rod_assembly",
         "subassembly_z_back_belt_threading"
       ],
       "stepIds": [
-        "step_z_back_prep_layout",
-        "step_z_back_prep_clean_holes",
-        "step_z_back_prep_qc_plastic",
-        "step_z_back_carriage_place_bearings",
-        "step_z_back_carriage_shake_test",
-        "step_z_back_carriage_rod_slide_test",
-        "step_z_back_carriage_bolt",
         "step_z_back_idler_insert_bolt",
         "step_z_back_idler_insert_bearings",
         "step_z_back_idler_align_halves",
@@ -50,31 +42,13 @@
         "step_qc_z_back_axis_bench"
       ],
       "dependencyAssemblyIds": [
-        "assembly_d3d_frame"
+        "assembly_d3d_frame",
+        "assembly_d3d_batch_carriage_build"
       ],
-      "learningFocus": "Z-Back uses the same build procedure as Y-Left (same plastic piece type). No endstop. During frame mounting, Z-back must be aligned directly behind Z-front before motor-piece bolts are locked — verify both carriages are at equal height."
+      "learningFocus": "Z-Back uses the same build procedure as Y-Left (same plastic piece type). No endstop. During frame mounting, Z-back must be aligned directly behind Z-front before motor-piece bolts are locked \u2014 verify both carriages are at equal height."
     }
   ],
   "subassemblies": [
-    {
-      "id": "subassembly_z_back_carriage_build",
-      "name": "Z-Back Carriage Assembly",
-      "assemblyId": "assembly_d3d_z_back_bench",
-      "description": "Same carriage build as Y-Left (same piece type). Seat bearings, align belt holes, bolt halves. Run shake and rod-slide tests.",
-      "partIds": [
-        "z1_half_carriage"
-      ],
-      "stepIds": [
-        "step_z_back_prep_layout",
-        "step_z_back_prep_clean_holes",
-        "step_z_back_prep_qc_plastic",
-        "step_z_back_carriage_place_bearings",
-        "step_z_back_carriage_shake_test",
-        "step_z_back_carriage_rod_slide_test",
-        "step_z_back_carriage_bolt"
-      ],
-      "milestoneMessage": "Z-back carriage assembled and bearing fit verified."
-    },
     {
       "id": "subassembly_z_back_idler_build",
       "name": "Z-Back Idler Assembly",
@@ -95,7 +69,7 @@
       "id": "subassembly_z_back_motor_build",
       "name": "Z-Back Motor Holder Assembly",
       "assemblyId": "assembly_d3d_z_back_bench",
-      "description": "Same motor holder build as Y-Left. All 8 motor-piece bolts will be pre-tightened at bench — they become inaccessible after frame mounting.",
+      "description": "Same motor holder build as Y-Left. All 8 motor-piece bolts will be pre-tightened at bench \u2014 they become inaccessible after frame mounting.",
       "partIds": [
         "motor001"
       ],
@@ -285,9 +259,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": 0.0,
+          "x": 1.37,
           "y": 0.55,
-          "z": 3.6
+          "z": 0.0
         },
         "rotation": {
           "x": 0.0,
@@ -379,101 +353,11 @@
   ],
   "steps": [
     {
-      "id": "step_z_back_prep_layout",
-      "name": "Lay out axis pieces",
-      "assemblyId": "assembly_d3d_z_back_bench",
-      "subassemblyId": "subassembly_z_back_carriage_build",
-      "sequenceIndex": 235,
-      "family": "Confirm",
-      "instructionText": "Gather and lay out all axis pieces: two carriage half-pieces, two idler half-pieces, two motor holder half-pieces, the stepper motor, both guide rods, and all hardware (M3x25 screws, M6x18 and M6x30 bolts, nuts)."
-    },
-    {
-      "id": "step_z_back_prep_clean_holes",
-      "name": "Clean excess plastic from holes",
-      "assemblyId": "assembly_d3d_z_back_bench",
-      "subassemblyId": "subassembly_z_back_carriage_build",
-      "sequenceIndex": 236,
-      "family": "Use",
-      "instructionText": "Use a box cutter or cordless power drill to clear excess plastic from all semi-circle rod holes in the carriage, idler, and motor holder half-pieces. Holes must be smooth so rods insert freely and belts do not rub."
-    },
-    {
-      "id": "step_z_back_prep_qc_plastic",
-      "name": "QC: verify all plastic pieces are clean",
-      "assemblyId": "assembly_d3d_z_back_bench",
-      "subassemblyId": "subassembly_z_back_carriage_build",
-      "sequenceIndex": 237,
-      "family": "Confirm",
-      "instructionText": "Verify: each carriage half has 4 clean semi-circles, each motor holder half has 6, each idler half has 8. All M6 bolt holes and M3 screw holes are clear of extra plastic."
-    },
-    {
-      "id": "step_z_back_carriage_place_bearings",
-      "name": "Place 4 bearings in carriage half",
-      "assemblyId": "assembly_d3d_z_back_bench",
-      "subassemblyId": "subassembly_z_back_carriage_build",
-      "sequenceIndex": 238,
-      "family": "Place",
-      "instructionText": "Place four linear bearings into one carriage half-piece with the flanges facing outward (away from each other).",
-      "requiredPartIds": [
-        "z1_half_carriage"
-      ]
-    },
-    {
-      "id": "step_z_back_carriage_shake_test",
-      "name": "Shake test: bearings must not rattle",
-      "assemblyId": "assembly_d3d_z_back_bench",
-      "subassemblyId": "subassembly_z_back_carriage_build",
-      "sequenceIndex": 239,
-      "family": "Confirm",
-      "guidance": {
-        "instructionText": "Hold both carriage halves firmly together and shake the assembly.",
-        "whyItMattersText": "Compress the two halves by hand until there is no gap. Shake side-to-side and up-down for 2–3 seconds. No tools needed — this is a hand-compression test only. Tip: grip a completed carriage from another axis as a tactile reference for correct feel."
-      },
-      "validation": {
-        "successCriteria": "No audible rattle or tactile movement from the bearings.",
-        "failureCriteria": "Bearings click, rattle, or shift inside the halves when shaken."
-      },
-      "feedback": {
-        "successMessage": "Bearings are snug. Proceed to the rod slide test.",
-        "failureMessage": "Bearing fit is too loose. Swap to a slightly larger LM8UU or try the next batch of bearings. Re-test before closing the carriage."
-      },
-      "difficulty": "beginner"
-    },
-    {
-      "id": "step_z_back_carriage_rod_slide_test",
-      "name": "Rod slide test: slight resistance, not too free",
-      "assemblyId": "assembly_d3d_z_back_bench",
-      "subassemblyId": "subassembly_z_back_carriage_build",
-      "sequenceIndex": 240,
-      "family": "Confirm",
-      "guidance": {
-        "instructionText": "Insert a smooth guide rod through the carriage and hold it so the rod is vertical.",
-        "whyItMattersText": "The rod should slide or drop through as you hold the carriage, but there should be a little resistance — it's good if you have to shake the carriage for the rod to slide through. Motors pull 20 lbs of belt force on this carriage, so it should not slip through too fast with no resistance."
-      },
-      "validation": {
-        "successCriteria": "Rod slides or drops through with slight resistance. Shaking the carriage helps it move through.",
-        "failureCriteria": "Rod slides too quickly with zero resistance (too free), OR rod jams and requires force to push (too tight)."
-      },
-      "feedback": {
-        "successMessage": "Resistance feels correct. Both tests pass — proceed to close the carriage halves.",
-        "failureMessage": "Too free: wrap each bearing in one layer of electrical tape to tighten the fit and retest. Too tight: check that bearings are fully seated and carriage halves are not warped."
-      },
-      "difficulty": "beginner"
-    },
-    {
-      "id": "step_z_back_carriage_bolt",
-      "name": "Bolt carriage halves together",
-      "assemblyId": "assembly_d3d_z_back_bench",
-      "subassemblyId": "subassembly_z_back_carriage_build",
-      "sequenceIndex": 241,
-      "family": "Use",
-      "instructionText": "Secure both halves with M6x18 bolts on top and M6x30 bolts on bottom. Critical alignment: the small ribbed belt hole must sit directly beside the large smooth belt hole. Wrong alignment mismatches the peg holes."
-    },
-    {
       "id": "step_z_back_idler_insert_bolt",
       "name": "Insert M6x18 bolt into idler half",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_idler_build",
-      "sequenceIndex": 242,
+      "sequenceIndex": 233,
       "family": "Place",
       "instructionText": "Begin assembling the idler: place an M6x18 bolt through one idler half-piece from the outside.",
       "requiredPartIds": [
@@ -485,7 +369,7 @@
       "name": "Stack two flanged bearings onto bolt",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_idler_build",
-      "sequenceIndex": 243,
+      "sequenceIndex": 234,
       "family": "Place",
       "instructionText": "Insert two bearing pieces one on top of the other onto the bolt, flanges facing outward (away from each other)."
     },
@@ -494,7 +378,7 @@
       "name": "Align idler rod holes before closing",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_idler_build",
-      "sequenceIndex": 244,
+      "sequenceIndex": 235,
       "family": "Confirm",
       "instructionText": "Hold the second idler half against the first and confirm the circular rod holes on both halves line up correctly before pressing them together."
     },
@@ -503,7 +387,7 @@
       "name": "Bolt idler halves and secure bearing",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_idler_build",
-      "sequenceIndex": 245,
+      "sequenceIndex": 236,
       "family": "Use",
       "instructionText": "Secure the idler with an M6x18 bolt through the top and one M6x30 bolt in the belt-side hole. Tighten until firm."
     },
@@ -512,9 +396,9 @@
       "name": "Mount pulley on motor shaft with spacer",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_motor_build",
-      "sequenceIndex": 246,
+      "sequenceIndex": 237,
       "family": "Place",
-      "instructionText": "Rest the thin spacer on the motor housing, then seat the pulley on the shaft above it. Tighten the first set screw with an Allen key — the spacer keeps the pulley off the housing.",
+      "instructionText": "Rest the thin spacer on the motor housing, then seat the pulley on the shaft above it. Tighten the first set screw with an Allen key \u2014 the spacer keeps the pulley off the housing.",
       "requiredPartIds": [
         "motor001"
       ]
@@ -524,7 +408,7 @@
       "name": "Lock pulley set screw until it pops",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_motor_build",
-      "sequenceIndex": 247,
+      "sequenceIndex": 238,
       "family": "Use",
       "instructionText": "Remove the spacer. Tighten the second set screw as firmly as possible, pressing near the Allen key midpoint. A soft \"pop\" means fully seated. Whether or not you hear it, tighten as hard as you can."
     },
@@ -533,16 +417,16 @@
       "name": "Load motor holder half with nuts and M6x30 bolt",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_motor_build",
-      "sequenceIndex": 248,
+      "sequenceIndex": 239,
       "family": "Place",
-      "instructionText": "Orient the motor holder half with the rectangular belt channel facing you. Insert one M6x30 bolt and three nuts into the holes now — the motor will cover them and block access later."
+      "instructionText": "Orient the motor holder half with the rectangular belt channel facing you. Insert one M6x30 bolt and three nuts into the holes now \u2014 the motor will cover them and block access later."
     },
     {
       "id": "step_z_back_motor_belt_channel",
       "name": "Insert belt in motor holder channel",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_motor_build",
-      "sequenceIndex": 249,
+      "sequenceIndex": 240,
       "family": "Place",
       "instructionText": "Insert the belt into the channel in the motor holder half-piece with the toothed side facing inward toward where the pulley will sit."
     },
@@ -551,7 +435,7 @@
       "name": "Close motor holder halves together",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_motor_build",
-      "sequenceIndex": 250,
+      "sequenceIndex": 241,
       "family": "Place",
       "instructionText": "Press the two motor holder halves together with the belt seated in the channel."
     },
@@ -560,25 +444,25 @@
       "name": "Confirm belt runs smoothly on pulley",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_motor_build",
-      "sequenceIndex": 251,
+      "sequenceIndex": 242,
       "family": "Confirm",
-      "instructionText": "Hold the motor in position against the holder and give the belt a gentle pull — it should slide along the motor pulley. If it does not, reseat the belt in the channel."
+      "instructionText": "Hold the motor in position against the holder and give the belt a gentle pull \u2014 it should slide along the motor pulley. If it does not, reseat the belt in the channel."
     },
     {
       "id": "step_z_back_motor_screws",
       "name": "Attach motor with 4 M3x25 screws",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_motor_build",
-      "sequenceIndex": 252,
+      "sequenceIndex": 243,
       "family": "Use",
-      "instructionText": "Insert the first M3x25 motor screw and tighten 3/4 of the way. Insert the remaining three screws and tighten each the same way — leave slightly loose so the motor retains flex for belt tensioning later."
+      "instructionText": "Insert the first M3x25 motor screw and tighten 3/4 of the way. Insert the remaining three screws and tighten each the same way \u2014 leave slightly loose so the motor retains flex for belt tensioning later."
     },
     {
       "id": "step_z_back_motor_m6_bolts",
       "name": "Insert M6x18 bolts into motor holder",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_motor_build",
-      "sequenceIndex": 253,
+      "sequenceIndex": 244,
       "family": "Use",
       "instructionText": "Insert M6x18 bolts into the three remaining motor holder holes and tighten each into the nuts with an electric drill."
     },
@@ -587,7 +471,7 @@
       "name": "Dangle test: motor holder hangs securely",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_motor_build",
-      "sequenceIndex": 254,
+      "sequenceIndex": 245,
       "family": "Confirm",
       "instructionText": "Hold the complete motor assembly by one of its bolts. It should hang without wobble or separation. This confirms bolts are fully seated before rod insertion."
     },
@@ -596,7 +480,7 @@
       "name": "Insert rods into idler, ends flush",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_rod_assembly",
-      "sequenceIndex": 255,
+      "sequenceIndex": 246,
       "family": "Place",
       "instructionText": "Insert both guide rods into the completed idler piece. Rod ends must be flush against the bottom of the idler. If rods are hard to insert, loosen the idler bolts, slide rods in, then re-tighten.",
       "requiredPartIds": [
@@ -609,16 +493,16 @@
       "name": "Tighten short idler bolts onto rods",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_rod_assembly",
-      "sequenceIndex": 256,
+      "sequenceIndex": 247,
       "family": "Use",
-      "instructionText": "Tighten the two shorter idler bolts with an electric drill to grip the rods firmly. Leave the longer bolt loose — it will be used to attach the axis to the frame."
+      "instructionText": "Tighten the two shorter idler bolts with an electric drill to grip the rods firmly. Leave the longer bolt loose \u2014 it will be used to attach the axis to the frame."
     },
     {
       "id": "step_z_back_carriage_onto_rods",
       "name": "Slide carriage onto rods",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_rod_assembly",
-      "sequenceIndex": 257,
+      "sequenceIndex": 248,
       "family": "Place",
       "instructionText": "Slide the completed carriage onto the rods with the long bolt ends closer to the idler. This orientation maximizes the travel distance.",
       "requiredPartIds": [
@@ -630,7 +514,7 @@
       "name": "Push motor holder onto rods",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_rod_assembly",
-      "sequenceIndex": 258,
+      "sequenceIndex": 249,
       "family": "Place",
       "instructionText": "Push the motor holder piece onto the rods so the motor faces the carriage bolt heads. Loosen bolts if needed to slide on, then re-tighten."
     },
@@ -639,16 +523,16 @@
       "name": "QC: rods flush, carriage slides freely",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_rod_assembly",
-      "sequenceIndex": 259,
+      "sequenceIndex": 250,
       "family": "Confirm",
-      "instructionText": "Check that rod ends are still flush at the idler bottom. Slide the carriage the full rod length — it should move with only slight bearing resistance."
+      "instructionText": "Check that rod ends are still flush at the idler bottom. Slide the carriage the full rod length \u2014 it should move with only slight bearing resistance."
     },
     {
       "id": "step_z_back_belt_large_hole",
       "name": "Thread belt through large carriage hole",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_belt_threading",
-      "sequenceIndex": 260,
+      "sequenceIndex": 251,
       "family": "Place",
       "instructionText": "Inspect the carriage: one belt hole is large and smooth, the other small and ribbed. Insert one belt end through the large smooth hole with the toothed side facing inward."
     },
@@ -657,16 +541,16 @@
       "name": "Route belt around idler bearing",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_belt_threading",
-      "sequenceIndex": 261,
+      "sequenceIndex": 252,
       "family": "Place",
-      "instructionText": "Feed the belt around the bearing inside the idler. Tip: curve the belt slightly in the direction of travel first — it navigates around the bearing more easily."
+      "instructionText": "Feed the belt around the bearing inside the idler. Tip: curve the belt slightly in the direction of travel first \u2014 it navigates around the bearing more easily."
     },
     {
       "id": "step_z_back_belt_small_hole",
       "name": "Thread belt back through small carriage hole",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_belt_threading",
-      "sequenceIndex": 262,
+      "sequenceIndex": 253,
       "family": "Place",
       "instructionText": "Once the belt is around the idler bearing, pull it back through the smaller ribbed carriage hole."
     },
@@ -675,7 +559,7 @@
       "name": "Confirm belt peg orientation before locking",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_belt_threading",
-      "sequenceIndex": 263,
+      "sequenceIndex": 254,
       "family": "Confirm",
       "instructionText": "Thread the belt end through a belt peg. Confirm: the foot of the peg faces away from the toothed side of the belt and away from the axis center. Wrong orientation prevents the peg from locking correctly.",
       "requiredPartIds": [
@@ -687,7 +571,7 @@
       "name": "Lock first belt peg",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_belt_threading",
-      "sequenceIndex": 264,
+      "sequenceIndex": 255,
       "family": "Use",
       "instructionText": "Insert the belt end approximately 3/4 inch into the small ribbed belt hole, then simultaneously insert the peg into the same hole and press firmly until it locks."
     },
@@ -696,16 +580,16 @@
       "name": "Insert second peg loosely",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_belt_threading",
-      "sequenceIndex": 265,
+      "sequenceIndex": 256,
       "family": "Place",
-      "instructionText": "Insert the second peg directly across from the first. Hand-tighten the belt by pulling it through the first peg as much as you can easily. Leave the second peg loose — it will be fully tensioned after mounting to the frame."
+      "instructionText": "Insert the second peg directly across from the first. Hand-tighten the belt by pulling it through the first peg as much as you can easily. Leave the second peg loose \u2014 it will be fully tensioned after mounting to the frame."
     },
     {
       "id": "step_z_back_belt_travel_test",
       "name": "Travel test: carriage moves smoothly with belt",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_belt_threading",
-      "sequenceIndex": 266,
+      "sequenceIndex": 257,
       "family": "Confirm",
       "instructionText": "Slide the carriage along the full rod length with the belt installed. It should move smoothly without binding. If it binds, check the belt is not twisted and both carriage holes are correctly threaded."
     },
@@ -714,7 +598,7 @@
       "name": "Label completed Z-Back Axis and set aside",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_belt_threading",
-      "sequenceIndex": 267,
+      "sequenceIndex": 258,
       "family": "Confirm",
       "instructionText": "Use masking tape and a marker to label this assembly as \"Z-Back Axis\". Set it aside in a safe place. It is complete and ready for frame mounting."
     },
@@ -729,15 +613,15 @@
         "target_z_back_bench_staged"
       ],
       "instructionText": "Z-Back axis assembly is complete. Place the assembled axis unit at the staging position on your bench. It mounts to the back face of the frame.",
-      "sequenceIndex": 276
+      "sequenceIndex": 267
     },
     {
       "id": "step_qc_z_back_axis_bench",
       "name": "Z-back axis bench QC and label",
       "assemblyId": "assembly_d3d_z_back_bench",
       "subassemblyId": "subassembly_z_back_belt_threading",
-      "sequenceIndex": 277,
-      "instructionText": "QC checklist: belt smooth along full rod length; rods flush with idler bottom; idler and carriage bolt heads on same side; toothed side of belt inward. Label axis Z-Back. Set aside — it mounts directly behind Z-front during frame mount.",
+      "sequenceIndex": 268,
+      "instructionText": "QC checklist: belt smooth along full rod length; rods flush with idler bottom; idler and carriage bolt heads on same side; toothed side of belt inward. Label axis Z-Back. Set aside \u2014 it mounts directly behind Z-front during frame mount.",
       "family": "Confirm",
       "viewMode": "Inspect",
       "targetIds": [
@@ -784,7 +668,7 @@
       "id": "hint_qc_z_back_axis_bench",
       "type": "highlight",
       "title": "Four-point QC and label Z-Back",
-      "message": "Same four-point QC. Label Z-Back. Set aside — it mounts on the back frame face directly behind Z-front.",
+      "message": "Same four-point QC. Label Z-Back. Set aside \u2014 it mounts on the back frame face directly behind Z-front.",
       "targetId": "target_bench_z_back_qc",
       "priority": "medium"
     }

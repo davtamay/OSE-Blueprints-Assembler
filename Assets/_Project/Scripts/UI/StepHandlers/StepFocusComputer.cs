@@ -176,15 +176,15 @@ namespace OSE.UI.Root
                 }
             }
 
-            // Enforce a minimum bounds size so the camera gives enough surrounding
-            // context. Scale the floor relative to the content — small parts like bolts
-            // get a tighter frame, large assemblies get a wider overview.
+            // Enforce a minimum bounds size so tiny parts (single bolts, etc.)
+            // still get a readable frame rather than an extreme close-up.
+            // FrameBounds already applies a 1.35× FOV padding and the caller
+            // adds Expand(0.18, 0.12, 0.18) — so only a fixed floor is needed here.
+            // The previous contentExtent * 2f multiplier was triple-stacking margin
+            // and caused the camera to pull far back on multi-part subassemblies.
             if (hasBounds)
             {
-                float contentExtent = accumulatedBounds.extents.magnitude;
-                // Pad by at least 2× the content extent (so you see some surroundings)
-                // but clamp so tiny parts still get a reasonable minimum view (~20 cm).
-                float minSize = Mathf.Max(contentExtent * 2f, 0.2f);
+                const float minSize = 0.15f;
                 Vector3 size = accumulatedBounds.size;
                 size.x = Mathf.Max(size.x, minSize);
                 size.y = Mathf.Max(size.y, minSize);

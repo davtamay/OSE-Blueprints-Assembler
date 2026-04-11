@@ -7,7 +7,7 @@ namespace OSE.UI.Root
     /// Supports optional <c>spinRevolutions</c> for bolt screw effect:
     /// the target rotates around <c>spinAxis</c> while translating.
     /// </summary>
-    internal sealed class DemonstratePlacementPlayer : IAnimationCuePlayer
+    public sealed class DemonstratePlacementPlayer : IAnimationCuePlayer
     {
         public string AnimationType => "demonstratePlacement";
         public bool IsPlaying { get; private set; }

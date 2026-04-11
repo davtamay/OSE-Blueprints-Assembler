@@ -119,10 +119,21 @@ namespace OSE.UI.Root
                     continue;
                 }
 
-                bool isDelayed = string.Equals(entry.trigger, "afterDelay", StringComparison.OrdinalIgnoreCase)
-                                 && entry.delaySeconds > 0f;
+                bool isDelayed         = string.Equals(entry.trigger, "afterDelay", StringComparison.OrdinalIgnoreCase)
+                                         && entry.delaySeconds > 0f;
+                bool isAfterPartsShown = string.Equals(entry.trigger, "afterPartsShown", StringComparison.OrdinalIgnoreCase);
+                // Deferred-trigger cues (onStepComplete, onFirstInteraction, onTaskComplete) are
+                // fired by their dedicated public methods and must NOT start on step activation.
+                bool isDeferredTrigger = string.Equals(entry.trigger, "onStepComplete",      StringComparison.OrdinalIgnoreCase)
+                                      || string.Equals(entry.trigger, "onFirstInteraction",  StringComparison.OrdinalIgnoreCase)
+                                      || string.Equals(entry.trigger, "onTaskComplete",       StringComparison.OrdinalIgnoreCase);
 
-                if (isDelayed)
+                if (isDeferredTrigger)
+                {
+                    // Nothing to do now — the orchestrator calls OnStepCompleted /
+                    // OnFirstInteraction / OnTaskCompleted at the right moment.
+                }
+                else if (isDelayed)
                 {
                     _delayedCues.Add(new DelayedCue
                     {
@@ -130,6 +141,23 @@ namespace OSE.UI.Root
                         Context = context,
                         RemainingDelay = entry.delaySeconds,
                     });
+                }
+                else if (isAfterPartsShown)
+                {
+                    // Queue to fire when the deferred preview spawn callback fires.
+                    // We wrap the player start into a local closure captured per-entry.
+                    var capturedContext = context;
+                    var capturedFactory = factory;
+                    var previousDeferred = _deferredPreviewSpawn;
+                    _deferredPreviewSpawn = () =>
+                    {
+                        previousDeferred?.Invoke();
+                        var pl = capturedFactory();
+                        pl.Start(capturedContext);
+                        _activeCues.Add(new ActiveCue { Player = pl, Context = capturedContext });
+                    };
+                    // Ensure the delay countdown is running (use 0 if not already set by previewDelaySeconds)
+                    if (_previewDelayRemaining <= 0f) _previewDelayRemaining = 0.001f;
                 }
                 else
                 {
@@ -219,6 +247,73 @@ namespace OSE.UI.Root
                     UnityEngine.Object.Destroy(_ghostObjects[i]);
             }
             _ghostObjects.Clear();
+        }
+
+        /// <summary>
+        /// Fire all cues whose trigger is <c>"onStepComplete"</c>.
+        /// Call this when the player completes all tasks in the step.
+        /// </summary>
+        public void OnStepCompleted(string stepId)
+            => FireTriggerCues(stepId, "onStepComplete");
+
+        /// <summary>
+        /// Fire all cues whose trigger is <c>"onFirstInteraction"</c>.
+        /// Call this on the first validated tool-target interaction within the step.
+        /// </summary>
+        public void OnFirstInteraction(string stepId)
+            => FireTriggerCues(stepId, "onFirstInteraction");
+
+        /// <summary>
+        /// Fire all cues whose trigger is <c>"onTaskComplete"</c> and whose
+        /// <c>targetPartIds</c> or authored target ID matches <paramref name="taskId"/>.
+        /// </summary>
+        public void OnTaskCompleted(string stepId, string taskId)
+            => FireTriggerCues(stepId, "onTaskComplete", taskId);
+
+        /// <summary>
+        /// Common helper: instantiate and start all cues that match <paramref name="trigger"/>
+        /// (and optionally filter by <paramref name="matchId"/> when non-null).
+        /// Skips cues whose targets cannot be resolved.
+        /// </summary>
+        private void FireTriggerCues(string stepId, string trigger, string matchId = null)
+        {
+            var package = _ctx.Spawner?.CurrentPackage;
+            if (package == null || !package.TryGetStep(stepId, out var step)) return;
+
+            var cues = step.animationCues?.cues;
+            if (cues == null || cues.Length == 0) return;
+
+            for (int i = 0; i < cues.Length; i++)
+            {
+                var entry = cues[i];
+                if (!string.Equals(entry.trigger, trigger, StringComparison.OrdinalIgnoreCase)) continue;
+                if (string.IsNullOrEmpty(entry.type)) continue;
+
+                // Optional ID filter for onTaskComplete
+                if (matchId != null)
+                {
+                    bool idMatch = (entry.targetPartIds != null && System.Array.IndexOf(entry.targetPartIds, matchId) >= 0)
+                                || string.Equals(entry.targetSubassemblyId, matchId, StringComparison.Ordinal);
+                    if (!idMatch) continue;
+                }
+
+                if (!_factories.TryGetValue(entry.type, out var factory))
+                {
+                    OseLog.VerboseInfo($"[AnimCue] Unknown cue type '{entry.type}' on step '{stepId}', skipping.");
+                    continue;
+                }
+
+                var context = ResolveContext(entry, step);
+                if (context.Targets == null || context.Targets.Count == 0)
+                {
+                    OseLog.VerboseInfo($"[AnimCue] No targets for '{entry.type}' trigger '{trigger}' on step '{stepId}'.");
+                    continue;
+                }
+
+                var player = factory();
+                player.Start(context);
+                _activeCues.Add(new ActiveCue { Player = player, Context = context });
+            }
         }
 
         /// <summary>

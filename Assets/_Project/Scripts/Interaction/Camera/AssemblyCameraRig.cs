@@ -152,17 +152,24 @@ namespace OSE.Interaction
             if (!_initialized) return;
             _targetState.PivotPosition = bounds.center;
 
-            // Compute distance from camera FOV so the bounding sphere fits on screen
-            // with a comfortable margin. Uses the vertical half-angle of the camera.
+            // Compute distance from camera FOV so the bounding sphere fills the screen
+            // at a consistent fraction, regardless of content size. Small parts get a
+            // close-up; large assemblies get a wide view.
+            //
+            // formula: d = r / sin(halfFov) * padding
+            //   → content sphere occupies 1/padding ≈ 74% of the half-FOV angle.
+            //
+            // Minimum is a comfort floor (~25 cm) to prevent clipping into geometry,
+            // not an editorial decision about how far away the camera should be.
+            // The old 1.5 m floor was suppressing close-up framing for small parts.
             float radius = bounds.extents.magnitude;
             Camera cam = GetComponent<Camera>();
             float fov = cam != null ? cam.fieldOfView : 60f;
             float halfAngleRad = fov * 0.5f * Mathf.Deg2Rad;
-            // Distance = radius / sin(halfAngle) ensures the sphere fits vertically.
-            // Multiply by padding factor so targets aren't right at the screen edge.
             const float padding = 1.35f;
+            const float minDistance = 0.25f;
             float fovDistance = (radius / Mathf.Sin(halfAngleRad)) * padding;
-            _targetState.Distance = Mathf.Max(fovDistance, 1.5f);
+            _targetState.Distance = Mathf.Max(fovDistance, minDistance);
 
             // Ensure an elevated "third person" viewing angle so the user sees the
             // assembly from above rather than a flat first-person perspective.

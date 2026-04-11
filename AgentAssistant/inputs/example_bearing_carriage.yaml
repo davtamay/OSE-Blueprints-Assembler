@@ -1,0 +1,20 @@
+# Example Translator Input — BearingCarriage template
+# Run: python tools/generate_steps.py AgentAssistant/inputs/example_bearing_carriage.yaml
+
+assembly: assembly_d3d_y_left_bench
+subassembly: subassembly_y_left_carriage_build
+template: BearingCarriage
+start_seq: 87
+
+parts:
+  half_a: y_left_carriage_half_a   # first half, receives bearings
+  half_b: y_left_carriage_half_b   # closing half
+  bearings: [y_left_lm8uu_a, y_left_lm8uu_b, y_left_lm8uu_c, y_left_lm8uu_d]
+  bolts_top: [y_left_m6x18_a, y_left_carriage_m6x18_b]
+  bolts_bot: [y_left_m6x30_a, y_left_m6x30_b]
+  nuts: [y_left_m6_nut_a, y_left_m6_nut_b, y_left_m6_nut_c, y_left_m6_nut_d]
+
+tool: tool_power_drill
+torque_setting: lowest
+orientation_cue: "small ribbed belt hole beside large smooth belt hole"
+milestone: "Y-Left carriage complete — 1 of 4"

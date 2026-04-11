@@ -8,7 +8,7 @@ namespace OSE.UI.Root
     /// Interface for a single animation cue player implementation.
     /// Each player handles one animation type (e.g., demonstratePlacement, pulse).
     /// </summary>
-    internal interface IAnimationCuePlayer
+    public interface IAnimationCuePlayer
     {
         string AnimationType { get; }
         void Start(AnimationCueContext context);
@@ -22,7 +22,7 @@ namespace OSE.UI.Root
     /// Resolved runtime context passed to <see cref="IAnimationCuePlayer.Start"/>.
     /// Contains the cue entry, resolved target GameObjects, and pose data.
     /// </summary>
-    internal readonly struct AnimationCueContext
+    public readonly struct AnimationCueContext
     {
         /// <summary>The raw cue entry from machine.json.</summary>
         public readonly AnimationCueEntry Entry;
@@ -72,7 +72,7 @@ namespace OSE.UI.Root
     /// <summary>
     /// Resolved local-space pose for a single target.
     /// </summary>
-    internal struct AnimationCueResolvedPose
+    public struct AnimationCueResolvedPose
     {
         public Vector3 Position;
         public Quaternion Rotation;

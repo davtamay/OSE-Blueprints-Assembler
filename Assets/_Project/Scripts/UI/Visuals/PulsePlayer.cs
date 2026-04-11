@@ -8,7 +8,7 @@ namespace OSE.UI.Root
     /// Uses <see cref="MaterialHelper.SetEmission"/> for URP/glTF compatibility.
     /// Always targets the real part (ghost mode ignored for pulse).
     /// </summary>
-    internal sealed class PulsePlayer : IAnimationCuePlayer
+    public sealed class PulsePlayer : IAnimationCuePlayer
     {
         private static readonly Color DefaultColorA = new Color(0f, 0.6f, 1f, 1f);
         private static readonly Color DefaultColorB = new Color(1f, 0.85f, 0f, 1f);
@@ -45,7 +45,8 @@ namespace OSE.UI.Root
 
             _elapsed += deltaTime;
 
-            Color emission = ColorPulseHelper.Lerp(_colorA, _colorB, _speed);
+            // Use _elapsed (not Time.time) so the pulse animates correctly in edit mode too.
+            Color emission = ColorPulseHelper.Lerp(_colorA, _colorB, _speed, _elapsed);
             for (int i = 0; i < _ctx.Targets.Count; i++)
             {
                 if (_ctx.Targets[i] != null)

@@ -1,0 +1,155 @@
+# assembly_vocabulary.yaml
+# Machine-readable grammar for OSE XR assembly step authoring.
+# Prepend this as a system prompt for GPT-4o / Gemini when generating Translator Input YAMLs.
+# Updated: 2026-04-10
+
+families:
+  Place:
+    description: Physical placement of a part into or onto a target
+    trigger_verbs: [place, seat, insert, lay, set, close, press, push, route]
+    required_fields: [requiredPartIds]
+    optional_fields: [targetIds, stagingPose, workingOrientation]
+    never_add: [requiredToolActions]  # Place steps are hand operations
+    notes: >
+      Close-halves steps are Place (not Confirm). The agent must list the
+      second half in requiredPartIds. Belt-hole alignment cue goes in instructionText.
+
+  Confirm:
+    description: Observation or measurement — no part movement
+    trigger_verbs: [confirm, check, verify, test, inspect, align, shake, slide]
+    required_fields: [guidance.instructionText, validation.successCriteria, validation.failureCriteria, feedback.successMessage, feedback.failureMessage]
+    optional_fields: [guidance.whyItMattersText, targetIds]
+    notes: >
+      Every test keyword (shake-test, rod-slide-test, pop-check, dangle-test,
+      travel-test) produces a Confirm step with full validation + feedback blocks.
+
+  Use:
+    description: Tool-assisted operation (tighten, drill, cut, press)
+    trigger_verbs: [tighten, drill, cut, weld, press]
+    required_fields: [requiredToolActions]
+    optional_fields: [workingOrientation, profile]
+    notes: >
+      Always specify toolId and actionType. Torque operations add profile: Torque.
+
+test_keywords:
+  shake-test:
+    family: Confirm
+    instructionText_template: "Hold both halves compressed by hand. Shake for 2-3 seconds."
+    successCriteria: "No audible rattle, no felt movement from bearings."
+    failureCriteria: "Any rattle or clicking during the shake."
+    whyItMattersText: "A rattle means at least one bearing is not fully seated. Bolting before fixing causes play under load."
+    prerequisite: "Halves must be CLOSED before shake test — you cannot shake-test open halves."
+
+  rod-slide-test:
+    family: Confirm
+    instructionText_template: "While holding halves compressed, slide a smooth rod vertically through all bearings."
+    successCriteria: "Rod slides with slight, even resistance. No binding points."
+    failureCriteria: "Rod binds, sticks, or drops through freely."
+    whyItMattersText: "Uneven resistance means bearings are misaligned — axis will bind under load."
+    prerequisite: "Shake test must pass first. If bearings rattle, rod test is meaningless."
+
+  pop-check:
+    family: Confirm
+    instructionText_template: "Tighten set screw until you hear or feel a distinct click (pop)."
+    successCriteria: "Audible or tactile click when set screw seats."
+    failureCriteria: "No click after full insertion — screw may be cross-threaded or wrong size."
+
+  dangle-test:
+    family: Confirm
+    instructionText_template: "Hold motor holder by the belt only. Motor should hang freely."
+    successCriteria: "Motor hangs straight down with no lateral lean."
+    failureCriteria: "Motor tilts or belt slides — belt not properly seated."
+
+  travel-test:
+    family: Confirm
+    instructionText_template: "Move carriage through full rod length by hand. Belt should move smoothly."
+    successCriteria: "Belt moves full rod length with no rubbing or binding."
+    failureCriteria: "Belt rubs frame, skips, or bunches at any point."
+
+spatial_modifiers:
+  flanges-outward:
+    meaning: "Bearing flanges face away from each other, toward the outside of the pocket"
+    applies_to: Place steps seating flanged bearings
+    why: "Flanges prevent axial bearing migration under load"
+
+  flanges-facing-each-other:
+    meaning: "Bearing flanges face inward toward each other"
+    applies_to: Specific idler configurations — verify before use
+
+  flush-with-surface:
+    meaning: "Part end is exactly level with the reference surface, no protrusion"
+    applies_to: Rod placement into idler
+
+  small-ribbed-beside-large-smooth:
+    meaning: "Belt hole alignment cue: the small ribbed peg hole must be adjacent to the large smooth bolt hole"
+    applies_to: Carriage halves close step
+    why: "Misalignment causes peg holes to not line up — belt cannot thread"
+
+  cable-plug-facing:
+    meaning: "Motor connector orientation — affects cable routing clearance"
+    direction: bottom-right (standard for this machine)
+
+  toothed-side-inward:
+    meaning: "Belt teeth face the channel, not outward"
+    applies_to: Belt routing into motor holder channel
+
+  finger-tight:
+    meaning: "Threaded by hand only, no tool"
+    json_effect: "Place step — do NOT add requiredToolActions"
+
+  lowest-torque:
+    meaning: "Power drill set to lowest torque setting to avoid cracking printed parts"
+    json_effect: "Use step, requiredToolActions with profile: Torque"
+
+fastener_patterns:
+  carriage_bolts:
+    top: "M6×18 (shorter)"
+    bottom: "M6×30 (longer)"
+    reason: "Load distribution — top joint under less stress, bottom absorbs Y-axis forces"
+    rule: "Always short top, long bottom. Never swap."
+
+  motor_screws:
+    spec: "M3×25, 4 per motor"
+    tighten_order: "Motor screws FIRST (¾ tight), then M6 bolts. Never reversed."
+
+  idler_bolts:
+    frame_mount: "Stays LOOSE until axis mounts to frame — tensioned at frame step"
+
+ordering_rules:
+  - "Bearings must be seated BEFORE halves are closed"
+  - "Halves must be CLOSED (by hand) BEFORE shake test"
+  - "Shake test must PASS BEFORE rod-slide test"
+  - "All tests must pass BEFORE bolts are inserted"
+  - "Bolts finger-tight BEFORE power tightening"
+  - "Motor screws ¾ tight BEFORE M6 close bolts on motor holder"
+  - "Carriage bolts tight BEFORE rod assembly"
+
+templates:
+  BearingCarriage:
+    params: [half_a, half_b, bearings, bolts_top, bolts_bot, nuts]
+    bearing_count: 4
+    bolt_top_spec: M6x18
+    bolt_bot_spec: M6x30
+    step_count: 6
+    step_order: [place_bearings, close_halves, shake_test, rod_slide_test, place_bolts, tighten]
+
+  IdlerHalves:
+    params: [half_a, half_b, bearings, bolt_inner, bolt_frame_mount]
+    bearing_count: 2
+    step_count: 4
+    step_order: [insert_bolt_inner, stack_bearings, align_half_b, close_and_loose_bolt]
+
+  MotorHolder:
+    params: [motor, pulley, belt, half_nuts, belt_bolt, motor_screws, close_bolts]
+    step_count: 7
+    step_order: [seat_pulley_first_screw, pop_check_second_screw, prep_half_piece, lay_belt, close_halves, dangle_test, tighten_sequence]
+
+  RodAssembly:
+    params: [rod_a, rod_b, idler, carriage, motor_holder]
+    step_count: 5
+    step_order: [insert_rods_into_idler, tighten_idler_grip, slide_carriage, push_motor_holder, verify_flush]
+
+  BeltThread:
+    params: [belt, idler, peg_1, peg_2]
+    step_count: 7
+    step_order: [insert_through_large_hole, route_around_idler, pull_through_ribbed_hole, orient_peg_foot, insert_peg_1, place_peg_2_loose, travel_test]
