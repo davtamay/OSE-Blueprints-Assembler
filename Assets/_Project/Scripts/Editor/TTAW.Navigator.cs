@@ -331,14 +331,21 @@ namespace OSE.Editor
 
             bool filtering = !string.IsNullOrEmpty(_navigatorSearchText) || _navigatorFamilyFilters.Count > 0;
 
+            // ── Pass 1: bucket every step by its parent assembly so we can sort
+            //   - per-assembly steps by sequenceIndex
+            //   - assemblies themselves by their first step's sequenceIndex
+            // This makes the navigator order match the actual build order
+            // (D3D Frame first, etc.) instead of the JSON declaration order.
             var assignedToAssembly = new HashSet<string>(StringComparer.Ordinal);
+            var asmGroups          = new List<(AssemblyDefinition asm, List<StepDefinition> steps, int firstSeq)>();
+
             if (_pkg.assemblies != null)
             {
                 foreach (var asm in _pkg.assemblies)
                 {
                     if (asm == null) continue;
 
-                    var children = new List<TreeViewItemData<NavigatorItem>>();
+                    var asmSteps = new List<StepDefinition>();
                     if (asm.stepIds != null)
                     {
                         foreach (var stepId in asm.stepIds)
@@ -348,40 +355,65 @@ namespace OSE.Editor
                             var step = FindStep(stepId);
                             if (step == null) continue;
                             if (!MatchesNavigatorFilter(step)) continue;
-
-                            var navItem = MakeNavigatorItemForStep(step);
-                            int treeId  = idCounter++;
-                            children.Add(new TreeViewItemData<NavigatorItem>(treeId, navItem));
-                            _navigatorFlatItems.Add(navItem);
-                            _navStepIdToTreeId[step.id] = treeId;
+                            asmSteps.Add(step);
                         }
                     }
 
                     // Hide empty assemblies during search/filter; show all assemblies otherwise.
-                    if (children.Count == 0 && filtering) continue;
+                    if (asmSteps.Count == 0 && filtering) continue;
 
-                    string asmDisplay = string.IsNullOrEmpty(asm.name) ? asm.id : asm.name;
-                    var asmItem = new NavigatorItem
-                    {
-                        Id         = asm.id,
-                        Display    = $"{asmDisplay}  ({children.Count})",
-                        IsAssembly = true,
-                    };
-                    treeItems.Add(new TreeViewItemData<NavigatorItem>(idCounter++, asmItem, children));
+                    // Sort the assembly's own steps by sequence index
+                    asmSteps.Sort((a, b) => a.sequenceIndex.CompareTo(b.sequenceIndex));
+
+                    int firstSeq = asmSteps.Count > 0 ? asmSteps[0].sequenceIndex : int.MaxValue;
+                    asmGroups.Add((asm, asmSteps, firstSeq));
                 }
             }
 
-            // Orphan steps (not assigned to any assembly) — show in a synthetic group
+            // Sort the assemblies themselves by their first step's sequence index.
+            // Empty assemblies (firstSeq == int.MaxValue) sink to the bottom.
+            asmGroups.Sort((a, b) => a.firstSeq.CompareTo(b.firstSeq));
+
+            foreach (var (asm, asmSteps, _) in asmGroups)
+            {
+                var children = new List<TreeViewItemData<NavigatorItem>>();
+                foreach (var step in asmSteps)
+                {
+                    var navItem = MakeNavigatorItemForStep(step);
+                    int treeId  = idCounter++;
+                    children.Add(new TreeViewItemData<NavigatorItem>(treeId, navItem));
+                    _navigatorFlatItems.Add(navItem);
+                    _navStepIdToTreeId[step.id] = treeId;
+                }
+
+                string asmDisplay = string.IsNullOrEmpty(asm.name) ? asm.id : asm.name;
+                var asmItem = new NavigatorItem
+                {
+                    Id         = asm.id,
+                    Display    = $"{asmDisplay}  ({children.Count})",
+                    IsAssembly = true,
+                };
+                treeItems.Add(new TreeViewItemData<NavigatorItem>(idCounter++, asmItem, children));
+            }
+
+            // Orphan steps (not assigned to any assembly) — show in a synthetic
+            // group at the bottom, also sorted by sequence index.
             var orphans = new List<TreeViewItemData<NavigatorItem>>();
             var allSteps = _pkg.GetSteps();
             if (allSteps != null)
             {
+                var orphanSteps = new List<StepDefinition>();
                 foreach (var step in allSteps)
                 {
                     if (step == null || string.IsNullOrEmpty(step.id)) continue;
                     if (assignedToAssembly.Contains(step.id)) continue;
                     if (!MatchesNavigatorFilter(step)) continue;
+                    orphanSteps.Add(step);
+                }
+                orphanSteps.Sort((a, b) => a.sequenceIndex.CompareTo(b.sequenceIndex));
 
+                foreach (var step in orphanSteps)
+                {
                     var navItem = MakeNavigatorItemForStep(step);
                     int treeId  = idCounter++;
                     orphans.Add(new TreeViewItemData<NavigatorItem>(treeId, navItem));
