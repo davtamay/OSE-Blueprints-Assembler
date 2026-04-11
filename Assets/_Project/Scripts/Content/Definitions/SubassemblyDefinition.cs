@@ -24,6 +24,15 @@ namespace OSE.Content
         /// </summary>
         public bool isAggregate;
 
+        /// <summary>
+        /// Optional: IDs of sub-subassemblies that this subassembly is physically built FROM.
+        /// Enables hierarchical emergence beyond the flat partIds model:
+        /// sub-subassemblies → subassembly → assembly → machine.
+        /// Member subassembly steps play before the parent subassembly's own steps.
+        /// Resolved at load time by <c>MachinePackageNormalizer</c>.
+        /// </summary>
+        public string[] memberSubassemblyIds;
+
         public string GetDisplayName()
         {
             if (!string.IsNullOrWhiteSpace(name))

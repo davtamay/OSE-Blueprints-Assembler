@@ -1,0 +1,2156 @@
+{
+  "assemblies": [
+    {
+      "id": "assembly_d3d_axes_mount",
+      "name": "D3D Axes Frame Mount",
+      "description": "Mounts all five completed axis modules to the welded frame in sequence: Y-left and Y-right directly to frame side faces, X-axis fitted and tensioned between the Y carriages, then Z-front and Z-back to the front and back frame faces. All bench-built axis modules must be complete before this assembly begins.",
+      "machineId": "d3d_v18_10",
+      "subassemblyIds": [
+        "subassembly_y_left_frame_mount",
+        "subassembly_y_right_frame_mount",
+        "subassembly_x_axis_frame_fit",
+        "subassembly_z_front_frame_mount",
+        "subassembly_z_back_frame_mount"
+      ],
+      "stepIds": [
+        "step_mount_y_left_axis_to_frame",
+        "step_verify_y_left_axis_motion",
+        "step_mount_y_right_axis_to_frame",
+        "step_verify_y_axis_pair_alignment",
+        "step_tighten_x_axis_idler_screws",
+        "step_anchor_x_axis_idler_to_y_right",
+        "step_snug_x_axis_idler_mount_bolts",
+        "step_loosen_start_x_axis_motor_holder_bolts",
+        "step_fit_x_axis_span_between_y_axes",
+        "step_lock_x_axis_motor_holder_screws",
+        "step_tension_x_axis_belt",
+        "step_reinsert_x_axis_belt_peg",
+        "step_check_x_axis_tightness_and_travel",
+        "step_tighten_z_front_idler_screws",
+        "step_mount_z_front_axis_to_frame",
+        "step_lock_z_front_motor_holder",
+        "step_tension_z_front_belt",
+        "step_reinsert_z_front_belt_peg",
+        "step_check_z_front_axis_travel",
+        "step_tighten_z_back_idler_screws",
+        "step_mount_z_back_axis_to_frame",
+        "step_lock_z_back_motor_holder",
+        "step_tension_z_back_belt",
+        "step_reinsert_z_back_belt_peg",
+        "step_check_z_back_axis_travel"
+      ],
+      "dependencyAssemblyIds": [
+        "assembly_d3d_y_left_bench",
+        "assembly_d3d_y_right_bench",
+        "assembly_d3d_x_axis_bench",
+        "assembly_d3d_z_front_bench",
+        "assembly_d3d_z_back_bench"
+      ],
+      "learningFocus": "Y-left idler orientation through left-face hole, all 8 motor-holder bolts tightened before mounting (inaccessible after), Y-right mirroring Y-left with motors at back, five-step X-axis fitting procedure between Y carriages, Z-front idler at front-face bottom hole offset right for print area, Z-back aligned directly behind Z-front."
+    }
+  ],
+  "subassemblies": [
+    {
+      "id": "subassembly_y_left_frame_mount",
+      "name": "Y-Left Axis Frame Mount",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "description": "Mounts the completed bench-built Y-left axis unit onto the left face of the welded frame and verifies smooth travel.",
+      "partIds": [
+        "d3d_y_left_axis_unit"
+      ],
+      "stepIds": [
+        "step_mount_y_left_axis_to_frame",
+        "step_verify_y_left_axis_motion"
+      ],
+      "milestoneMessage": "Y-left axis mounted and motion verified."
+    },
+    {
+      "id": "subassembly_y_right_frame_mount",
+      "name": "Y-Right Axis Frame Mount",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "description": "Mounts the completed bench-built Y-right axis unit onto the right face of the welded frame and confirms the Y-axis pair establishes the X-axis span.",
+      "partIds": [
+        "d3d_y_right_axis_unit"
+      ],
+      "stepIds": [
+        "step_mount_y_right_axis_to_frame",
+        "step_verify_y_axis_pair_alignment"
+      ],
+      "milestoneMessage": "Y-right axis mounted. Both Y axes are parallel with motors at back."
+    },
+    {
+      "id": "subassembly_x_axis_frame_fit",
+      "name": "X-Axis Frame Fit",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "isAggregate": true,
+      "description": "Fits the completed bench-built X-axis module between the Y carriages using the five-step source-backed procedure: tighten idler screws, anchor idler to Y-right, loosen motor holder, span to Y-left, lock and tension.",
+      "partIds": [
+        "d3d_x_axis_idler_unit",
+        "d3d_x_axis_rod_pair",
+        "d3d_x_axis_motor_holder_unit"
+      ],
+      "stepIds": [
+        "step_tighten_x_axis_idler_screws",
+        "step_anchor_x_axis_idler_to_y_right",
+        "step_snug_x_axis_idler_mount_bolts",
+        "step_loosen_start_x_axis_motor_holder_bolts",
+        "step_fit_x_axis_span_between_y_axes",
+        "step_lock_x_axis_motor_holder_screws",
+        "step_tension_x_axis_belt",
+        "step_reinsert_x_axis_belt_peg",
+        "step_check_x_axis_tightness_and_travel"
+      ],
+      "milestoneMessage": "X-axis fitted tightly between Y axes, belt tensioned, and travel checked."
+    },
+    {
+      "id": "subassembly_z_front_frame_mount",
+      "name": "Z-Front Axis Frame Mount",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "isAggregate": true,
+      "description": "Mounts the completed bench-built Z-front axis module to the front frame face. Idler attaches at bottom hole offset right for print area, motor holder at top hole. Belt tensioned after mounting.",
+      "partIds": [
+        "motor",
+        "motor_piece",
+        "idler",
+        "z2_half_carriage",
+        "z2_spacer",
+        "z2_spacer_2"
+      ],
+      "stepIds": [
+        "step_tighten_z_front_idler_screws",
+        "step_mount_z_front_axis_to_frame",
+        "step_lock_z_front_motor_holder",
+        "step_tension_z_front_belt",
+        "step_reinsert_z_front_belt_peg",
+        "step_check_z_front_axis_travel"
+      ],
+      "milestoneMessage": "Z-front axis mounted, sized, belt tensioned and checked."
+    },
+    {
+      "id": "subassembly_z_back_frame_mount",
+      "name": "Z-Back Axis Frame Mount",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "isAggregate": true,
+      "description": "Mounts the completed bench-built Z-back axis module to the back frame face directly behind Z-front. Both Z carriages must be at the same height before locking.",
+      "partIds": [
+        "motor001",
+        "motor_piece001",
+        "idler001",
+        "z1_half_carriage",
+        "z1_spacer_1",
+        "z1_spacer_002"
+      ],
+      "stepIds": [
+        "step_tighten_z_back_idler_screws",
+        "step_mount_z_back_axis_to_frame",
+        "step_lock_z_back_motor_holder",
+        "step_tension_z_back_belt",
+        "step_reinsert_z_back_belt_peg",
+        "step_check_z_back_axis_travel"
+      ],
+      "milestoneMessage": "Z-back axis mounted, aligned with Z-front, belt tensioned and checked."
+    }
+  ],
+  "parts": [
+    {
+      "id": "d3d_y_left_axis_unit",
+      "name": "Y-Left Axis Unit",
+      "function": "Left-side mounted axis for the first X-axis fitting stage.",
+      "templateId": "template_d3d_y_left_axis_unit",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.42,
+          "y": 0.69,
+          "z": -0.28
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.7,
+          "b": 0.78,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "d3d_y_right_axis_unit",
+      "name": "Y-Right Axis Unit",
+      "function": "Right-side mounted axis that anchors the X-axis idler side first.",
+      "templateId": "template_d3d_y_right_axis_unit",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.42,
+          "y": 0.69,
+          "z": -0.28
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.6,
+          "g": 0.7,
+          "b": 0.78,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "fastener_x_axis_belt_peg",
+      "displayName": "Fastener X Axis Belt Peg",
+      "templateId": "template_d3d_axis_belt_peg",
+      "name": "D3D Axis Belt Peg",
+      "function": "CAD-derived belt peg reinserted after tension is set.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.02,
+          "y": 0.68,
+          "z": -0.23
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.7071,
+          "z": 0.0,
+          "w": 0.7071
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.95,
+          "g": 0.7,
+          "b": 0.22,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "fastener_x_axis_idler_mount_m6x30_a",
+      "displayName": "Fastener X Axis Idler Mount M6X30 A",
+      "templateId": "template_d3d_axis_mount_m6x30_bolt",
+      "name": "Axis Mount M6x30 Socket-Head Bolt",
+      "function": "Represents the external M6x30 socket-head bolts used to mount the X-axis between the Y carriages, including a 5 mm internal hex socket for the Allen key path.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.26,
+          "y": 0.77,
+          "z": -0.22
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 1.0,
+          "z": 0.0,
+          "w": 0.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.72,
+          "g": 0.74,
+          "b": 0.78,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "fastener_x_axis_idler_mount_m6x30_b",
+      "displayName": "Fastener X Axis Idler Mount M6X30 B",
+      "templateId": "template_d3d_axis_mount_m6x30_bolt",
+      "name": "Axis Mount M6x30 Socket-Head Bolt",
+      "function": "Represents the external M6x30 socket-head bolts used to mount the X-axis between the Y carriages, including a 5 mm internal hex socket for the Allen key path.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.26,
+          "y": 0.74,
+          "z": -0.19
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 1.0,
+          "z": 0.0,
+          "w": 0.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.72,
+          "g": 0.74,
+          "b": 0.78,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "fastener_x_axis_motor_mount_m6x30_a",
+      "displayName": "Fastener X Axis Motor Mount M6X30 A",
+      "templateId": "template_d3d_axis_mount_m6x30_bolt",
+      "name": "Axis Mount M6x30 Socket-Head Bolt",
+      "function": "Represents the external M6x30 socket-head bolts used to mount the X-axis between the Y carriages, including a 5 mm internal hex socket for the Allen key path.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.26,
+          "y": 0.77,
+          "z": -0.22
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.72,
+          "g": 0.74,
+          "b": 0.78,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "fastener_x_axis_motor_mount_m6x30_b",
+      "displayName": "Fastener X Axis Motor Mount M6X30 B",
+      "templateId": "template_d3d_axis_mount_m6x30_bolt",
+      "name": "Axis Mount M6x30 Socket-Head Bolt",
+      "function": "Represents the external M6x30 socket-head bolts used to mount the X-axis between the Y carriages, including a 5 mm internal hex socket for the Allen key path.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.26,
+          "y": 0.74,
+          "z": -0.19
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.72,
+          "g": 0.74,
+          "b": 0.78,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "fastener_z_front_idler_frame_bolt",
+      "displayName": "Z-Front Idler Frame Bolt",
+      "templateId": "template_d3d_axis_mount_m6x30_bolt",
+      "name": "Axis Mount M6x30 Socket-Head Bolt",
+      "function": "Represents the external M6x30 socket-head bolts used to mount the X-axis between the Y carriages, including a 5 mm internal hex socket for the Allen key path.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.005,
+          "y": 0.35,
+          "z": -0.22
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.72,
+          "g": 0.74,
+          "b": 0.78,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "fastener_z_front_motor_frame_bolt",
+      "displayName": "Z-Front Motor Frame Bolt",
+      "templateId": "template_d3d_axis_mount_m6x30_bolt",
+      "name": "Axis Mount M6x30 Socket-Head Bolt",
+      "function": "Represents the external M6x30 socket-head bolts used to mount the X-axis between the Y carriages, including a 5 mm internal hex socket for the Allen key path.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.005,
+          "y": 0.45,
+          "z": -0.22
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.72,
+          "g": 0.74,
+          "b": 0.78,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "fastener_z_front_belt_peg",
+      "displayName": "Z-Front Belt Peg",
+      "templateId": "template_d3d_axis_belt_peg",
+      "name": "D3D Axis Belt Peg",
+      "function": "CAD-derived belt peg reinserted after tension is set.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.9,
+          "y": 0.55,
+          "z": 3.2
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.72,
+          "g": 0.74,
+          "b": 0.78,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "fastener_z_back_idler_frame_bolt",
+      "displayName": "Z-Back Idler Frame Bolt",
+      "templateId": "template_d3d_axis_mount_m6x30_bolt",
+      "name": "Axis Mount M6x30 Socket-Head Bolt",
+      "function": "Represents the external M6x30 socket-head bolts used to mount the X-axis between the Y carriages, including a 5 mm internal hex socket for the Allen key path.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.005,
+          "y": 0.35,
+          "z": 0.22
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.72,
+          "g": 0.74,
+          "b": 0.78,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "fastener_z_back_motor_frame_bolt",
+      "displayName": "Z-Back Motor Frame Bolt",
+      "templateId": "template_d3d_axis_mount_m6x30_bolt",
+      "name": "Axis Mount M6x30 Socket-Head Bolt",
+      "function": "Represents the external M6x30 socket-head bolts used to mount the X-axis between the Y carriages, including a 5 mm internal hex socket for the Allen key path.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.005,
+          "y": 0.45,
+          "z": 0.22
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.72,
+          "g": 0.74,
+          "b": 0.78,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "fastener_z_back_belt_peg",
+      "displayName": "Z-Back Belt Peg",
+      "templateId": "template_d3d_axis_belt_peg",
+      "name": "D3D Axis Belt Peg",
+      "function": "CAD-derived belt peg reinserted after tension is set.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.9,
+          "y": 0.55,
+          "z": 3.6
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.72,
+          "g": 0.74,
+          "b": 0.78,
+          "a": 1.0
+        }
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "step_mount_y_left_axis_to_frame",
+      "name": "Mount the Y-left axis to the frame",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "subassemblyId": "subassembly_y_left_frame_mount",
+      "sequenceIndex": 50,
+      "instructionText": "Place the completed Y-left axis unit onto the welded frame at the authored left-side mount.",
+      "family": "Place",
+      "requiredPartIds": [
+        "d3d_y_left_axis_unit"
+      ],
+      "targetIds": [
+        "target_y_left_axis_mount"
+      ],
+      "hintIds": [
+        "hint_mount_y_left_axis"
+      ]
+    },
+    {
+      "id": "step_verify_y_left_axis_motion",
+      "name": "Confirm the Y-left axis seats cleanly on the frame",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "subassemblyId": "subassembly_y_left_frame_mount",
+      "sequenceIndex": 51,
+      "instructionText": "Inspect the mounted Y-left axis and confirm its travel direction is clear and the unit sits flat on the frame-side mount.",
+      "family": "Confirm",
+      "viewMode": "Inspect",
+      "targetIds": [
+        "target_y_left_axis_mount",
+        "target_y_left_axis_qc"
+      ],
+      "hintIds": [
+        "hint_verify_y_left_axis_seating"
+      ]
+    },
+    {
+      "id": "step_mount_y_right_axis_to_frame",
+      "name": "Mount the Y-right axis to the frame",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "subassemblyId": "subassembly_y_right_frame_mount",
+      "sequenceIndex": 52,
+      "instructionText": "Place the completed Y-right axis unit onto the welded frame at the authored right-side mount.",
+      "family": "Place",
+      "requiredPartIds": [
+        "d3d_y_right_axis_unit"
+      ],
+      "targetIds": [
+        "target_y_right_axis_mount"
+      ],
+      "hintIds": [
+        "hint_mount_y_right_axis"
+      ]
+    },
+    {
+      "id": "step_verify_y_axis_pair_alignment",
+      "name": "Confirm the Y-axis pair establishes the X-axis span",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "subassemblyId": "subassembly_y_right_frame_mount",
+      "sequenceIndex": 53,
+      "instructionText": "Inspect the mounted Y-left and Y-right axes together and confirm they establish a clean span for the X-axis between them.",
+      "family": "Confirm",
+      "viewMode": "Inspect",
+      "targetIds": [
+        "target_y_left_axis_mount",
+        "target_y_right_axis_mount"
+      ],
+      "hintIds": [
+        "hint_verify_y_axis_pair"
+      ]
+    },
+    {
+      "id": "step_tighten_x_axis_idler_screws",
+      "name": "Tighten the X-axis idler screws",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "subassemblyId": "subassembly_x_axis_frame_fit",
+      "sequenceIndex": 54,
+      "instructionText": "Tighten the X-axis idler screws while the module is still staged in the work area.",
+      "family": "Use",
+      "profile": "Torque",
+      "relevantToolIds": [
+        "tool_allen_key_metric"
+      ],
+      "targetIds": [
+        "target_x_axis_idler_screw_1",
+        "target_x_axis_idler_screw_2",
+        "target_x_axis_idler_screw_3"
+      ],
+      "targetOrder": "sequential",
+      "requiredToolActions": [
+        {
+          "id": "action_x_axis_idler_screw_1",
+          "toolId": "tool_allen_key_metric",
+          "actionType": "tighten",
+          "targetId": "target_x_axis_idler_screw_1",
+          "requiredCount": 1
+        },
+        {
+          "id": "action_x_axis_idler_screw_2",
+          "toolId": "tool_allen_key_metric",
+          "actionType": "tighten",
+          "targetId": "target_x_axis_idler_screw_2",
+          "requiredCount": 1
+        },
+        {
+          "id": "action_x_axis_idler_screw_3",
+          "toolId": "tool_allen_key_metric",
+          "actionType": "tighten",
+          "targetId": "target_x_axis_idler_screw_3",
+          "requiredCount": 1
+        }
+      ],
+      "hintIds": [
+        "hint_tighten_x_axis_idler_screws"
+      ]
+    },
+    {
+      "id": "step_anchor_x_axis_idler_to_y_right",
+      "name": "Place the X-axis assembly with the idler side anchored on Y-right",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "subassemblyId": "subassembly_x_axis_frame_fit",
+      "sequenceIndex": 55,
+      "instructionText": "Place the X-axis idler side, rod pair, motor-holder side, and the two Y-right M6x30 bolts into their pre-fit positions so the idler side anchors on Y-right first.",
+      "family": "Place",
+      "requiredPartIds": [
+        "fastener_x_axis_idler_mount_m6x30_a",
+        "fastener_x_axis_idler_mount_m6x30_b"
+      ],
+      "targetIds": [
+        "target_x_axis_idler_anchor_prefit",
+        "target_x_axis_rod_pair_prefit",
+        "target_x_axis_motor_holder_prefit",
+        "target_x_axis_idler_mount_y_right_bolt_place_a",
+        "target_x_axis_idler_mount_y_right_bolt_place_b"
+      ],
+      "hintIds": [
+        "hint_anchor_x_axis_idler"
+      ]
+    },
+    {
+      "id": "step_snug_x_axis_idler_mount_bolts",
+      "name": "Snug the Y-right M6x30 anchor bolts",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "subassemblyId": "subassembly_x_axis_frame_fit",
+      "sequenceIndex": 56,
+      "instructionText": "Use the metric Allen key to snug the two Y-right M6x30 bolts so the idler side stays anchored while the motor-holder side still remains adjustable.",
+      "family": "Use",
+      "profile": "Torque",
+      "relevantToolIds": [
+        "tool_allen_key_metric"
+      ],
+      "targetIds": [
+        "target_x_axis_idler_mount_y_right_a",
+        "target_x_axis_idler_mount_y_right_b"
+      ],
+      "targetOrder": "sequential",
+      "requiredToolActions": [
+        {
+          "id": "action_x_axis_idler_mount_y_right_a",
+          "toolId": "tool_allen_key_metric",
+          "actionType": "tighten",
+          "targetId": "target_x_axis_idler_mount_y_right_a",
+          "requiredCount": 1
+        },
+        {
+          "id": "action_x_axis_idler_mount_y_right_b",
+          "toolId": "tool_allen_key_metric",
+          "actionType": "tighten",
+          "targetId": "target_x_axis_idler_mount_y_right_b",
+          "requiredCount": 1
+        }
+      ],
+      "hintIds": [
+        "hint_snug_x_axis_idler_bolts"
+      ]
+    },
+    {
+      "id": "step_loosen_start_x_axis_motor_holder_bolts",
+      "name": "Loosely start the X-axis motor-holder bolts on the Y-left carriage",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "subassemblyId": "subassembly_x_axis_frame_fit",
+      "sequenceIndex": 57,
+      "instructionText": "Place the two Y-left M6x30 motor-holder bolts by hand only loosely so the X-axis span can still be adjusted.",
+      "family": "Place",
+      "targetIds": [
+        "target_x_axis_motor_mount_y_left_bolt_place_a",
+        "target_x_axis_motor_mount_y_left_bolt_place_b"
+      ],
+      "requiredPartIds": [
+        "fastener_x_axis_motor_mount_m6x30_a",
+        "fastener_x_axis_motor_mount_m6x30_b"
+      ],
+      "hintIds": [
+        "hint_start_motor_holder_bolts_loose"
+      ]
+    },
+    {
+      "id": "step_fit_x_axis_span_between_y_axes",
+      "name": "Lengthen the X-axis to fit tightly between the Y axes",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "subassemblyId": "subassembly_x_axis_frame_fit",
+      "sequenceIndex": 58,
+      "instructionText": "Drag the yellow motor-holder side left along the fit guide until it reaches the green final-fit marker and seats against the Y-left side.",
+      "family": "Place",
+      "profile": "AxisFit",
+      "requiredSubassemblyId": "subassembly_x_axis_frame_fit",
+      "targetIds": [
+        "target_x_axis_span_fit"
+      ],
+      "hintIds": [
+        "hint_fit_x_axis_span"
+      ]
+    },
+    {
+      "id": "step_lock_x_axis_motor_holder_screws",
+      "name": "Lock the Y-left mount bolts and motor-holder screws",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "subassemblyId": "subassembly_x_axis_frame_fit",
+      "sequenceIndex": 59,
+      "instructionText": "After the X-axis span is seated tightly, tighten the two Y-left M6x30 mount bolts first, then lock the motor-holder-side internal screws.",
+      "family": "Use",
+      "profile": "Torque",
+      "relevantToolIds": [
+        "tool_allen_key_metric"
+      ],
+      "targetIds": [
+        "target_x_axis_motor_mount_y_left_a",
+        "target_x_axis_motor_mount_y_left_b",
+        "target_x_axis_motor_holder_m6x18_1",
+        "target_x_axis_motor_holder_m6x18_2",
+        "target_x_axis_motor_holder_m6x18_3",
+        "target_x_axis_motor_holder_m3_1",
+        "target_x_axis_motor_holder_m3_2",
+        "target_x_axis_motor_holder_m3_3",
+        "target_x_axis_motor_holder_m3_4"
+      ],
+      "targetOrder": "sequential",
+      "requiredToolActions": [
+        {
+          "id": "action_x_axis_motor_mount_y_left_a",
+          "toolId": "tool_allen_key_metric",
+          "actionType": "tighten",
+          "targetId": "target_x_axis_motor_mount_y_left_a",
+          "requiredCount": 1
+        },
+        {
+          "id": "action_x_axis_motor_mount_y_left_b",
+          "toolId": "tool_allen_key_metric",
+          "actionType": "tighten",
+          "targetId": "target_x_axis_motor_mount_y_left_b",
+          "requiredCount": 1
+        },
+        {
+          "id": "action_x_axis_motor_holder_m6x18_1",
+          "toolId": "tool_allen_key_metric",
+          "actionType": "tighten",
+          "targetId": "target_x_axis_motor_holder_m6x18_1",
+          "requiredCount": 1
+        },
+        {
+          "id": "action_x_axis_motor_holder_m6x18_2",
+          "toolId": "tool_allen_key_metric",
+          "actionType": "tighten",
+          "targetId": "target_x_axis_motor_holder_m6x18_2",
+          "requiredCount": 1
+        },
+        {
+          "id": "action_x_axis_motor_holder_m6x18_3",
+          "toolId": "tool_allen_key_metric",
+          "actionType": "tighten",
+          "targetId": "target_x_axis_motor_holder_m6x18_3",
+          "requiredCount": 1
+        },
+        {
+          "id": "action_x_axis_motor_holder_m3_1",
+          "toolId": "tool_allen_key_metric",
+          "actionType": "tighten",
+          "targetId": "target_x_axis_motor_holder_m3_1",
+          "requiredCount": 1
+        },
+        {
+          "id": "action_x_axis_motor_holder_m3_2",
+          "toolId": "tool_allen_key_metric",
+          "actionType": "tighten",
+          "targetId": "target_x_axis_motor_holder_m3_2",
+          "requiredCount": 1
+        },
+        {
+          "id": "action_x_axis_motor_holder_m3_3",
+          "toolId": "tool_allen_key_metric",
+          "actionType": "tighten",
+          "targetId": "target_x_axis_motor_holder_m3_3",
+          "requiredCount": 1
+        },
+        {
+          "id": "action_x_axis_motor_holder_m3_4",
+          "toolId": "tool_allen_key_metric",
+          "actionType": "tighten",
+          "targetId": "target_x_axis_motor_holder_m3_4",
+          "requiredCount": 1
+        }
+      ],
+      "hintIds": [
+        "hint_lock_x_axis_motor_holder"
+      ]
+    },
+    {
+      "id": "step_tension_x_axis_belt",
+      "name": "Tension the X-axis belt",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "subassemblyId": "subassembly_x_axis_frame_fit",
+      "sequenceIndex": 60,
+      "instructionText": "Pull the X-axis belt to final hand tension only after the span and fasteners are locked.",
+      "family": "Use",
+      "profile": "Torque",
+      "relevantToolIds": [
+        "tool_pliers"
+      ],
+      "targetIds": [
+        "target_x_axis_belt_tension"
+      ],
+      "targetOrder": "sequential",
+      "requiredToolActions": [
+        {
+          "id": "action_x_axis_belt_tension",
+          "toolId": "tool_pliers",
+          "actionType": "tighten",
+          "targetId": "target_x_axis_belt_tension",
+          "requiredCount": 1
+        }
+      ],
+      "hintIds": [
+        "hint_tension_x_axis_belt"
+      ]
+    },
+    {
+      "id": "step_reinsert_x_axis_belt_peg",
+      "name": "Reinsert the belt peg",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "sequenceIndex": 61,
+      "instructionText": "Place the belt peg back into the retainer once the belt is tensioned.",
+      "family": "Place",
+      "requiredPartIds": [
+        "fastener_x_axis_belt_peg"
+      ],
+      "targetIds": [
+        "target_x_axis_belt_peg_insert"
+      ],
+      "hintIds": [
+        "hint_reinsert_x_axis_belt_peg"
+      ]
+    },
+    {
+      "id": "step_check_x_axis_tightness_and_travel",
+      "name": "Check X-axis tightness and travel",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "subassemblyId": "subassembly_x_axis_frame_fit",
+      "sequenceIndex": 62,
+      "instructionText": "Inspect the fitted X-axis and confirm it can travel along the mounted Y axes without binding, without a visible gap at the left interface, and with the Y-left end-stop relationship preserved.",
+      "family": "Confirm",
+      "viewMode": "Inspect",
+      "targetIds": [
+        "target_x_axis_qc_left_travel",
+        "target_x_axis_qc_right_travel",
+        "target_x_axis_qc_y_left_endstop"
+      ],
+      "hintIds": [
+        "hint_check_x_axis_travel"
+      ]
+    },
+    {
+      "id": "step_tighten_z_front_idler_screws",
+      "name": "Tighten the Z-front idler screws",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "subassemblyId": "subassembly_z_front_frame_mount",
+      "sequenceIndex": 278,
+      "instructionText": "Tighten the two shorter M6x18 bolts on the Z-front idler using an electric drill on low torque. This locks the rods flush against the back of the idler. Leave the longer M6x30 bolt loose â€” it will attach to the frame.",
+      "profile": "Torque",
+      "targetIds": [
+        "target_z_front_idler_screw_1",
+        "target_z_front_idler_screw_2"
+      ],
+      "requiredToolActions": [
+        {
+          "id": "action_z_front_idler_screw_1",
+          "toolId": "tool_allen_key_metric",
+          "actionType": "tighten",
+          "targetId": "target_z_front_idler_screw_1",
+          "requiredCount": 1
+        },
+        {
+          "id": "action_z_front_idler_screw_2",
+          "toolId": "tool_allen_key_metric",
+          "actionType": "tighten",
+          "targetId": "target_z_front_idler_screw_2",
+          "requiredCount": 1
+        }
+      ],
+      "hintIds": [
+        "hint_tighten_z_front_idler_screws"
+      ],
+      "isOptional": false,
+      "relevantToolIds": [
+        "tool_allen_key_metric"
+      ],
+      "family": "Use"
+    },
+    {
+      "id": "step_mount_z_front_axis_to_frame",
+      "name": "Mount the Z-front axis to the front frame face",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "subassemblyId": "subassembly_z_front_frame_mount",
+      "sequenceIndex": 279,
+      "instructionText": "Pop the loose belt peg out and set aside. Tighten all 8 motor-piece bolts before mounting (they become inaccessible after). Lengthen the axis and fit the idler long bolt through the bottom hole of the front frame face; fit the motor long bolt through the top hole. Fasten both with nuts.",
+      "requiredPartIds": [
+        "fastener_z_front_idler_frame_bolt",
+        "fastener_z_front_motor_frame_bolt"
+      ],
+      "targetIds": [
+        "target_z_front_axis_idler_bolt",
+        "target_z_front_axis_motor_bolt"
+      ],
+      "hintIds": [
+        "hint_mount_z_front_axis"
+      ],
+      "isOptional": false,
+      "family": "Place"
+    },
+    {
+      "id": "step_lock_z_front_motor_holder",
+      "name": "Lock the Z-front motor holder bolts",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "subassemblyId": "subassembly_z_front_frame_mount",
+      "sequenceIndex": 280,
+      "instructionText": "With the Z-front axis at the correct frame length, tighten the two motor-piece bolts fully. This locks the rods in place so the belt can be properly tensioned.",
+      "profile": "Torque",
+      "targetIds": [
+        "target_z_front_motor_holder_bolt_1",
+        "target_z_front_motor_holder_bolt_2"
+      ],
+      "requiredToolActions": [
+        {
+          "id": "action_z_front_motor_holder_bolt_1",
+          "toolId": "tool_allen_key_metric",
+          "actionType": "tighten",
+          "targetId": "target_z_front_motor_holder_bolt_1",
+          "requiredCount": 1
+        },
+        {
+          "id": "action_z_front_motor_holder_bolt_2",
+          "toolId": "tool_allen_key_metric",
+          "actionType": "tighten",
+          "targetId": "target_z_front_motor_holder_bolt_2",
+          "requiredCount": 1
+        }
+      ],
+      "hintIds": [
+        "hint_lock_z_front_motor_holder"
+      ],
+      "isOptional": false,
+      "relevantToolIds": [
+        "tool_allen_key_metric"
+      ],
+      "family": "Use"
+    },
+    {
+      "id": "step_tension_z_front_belt",
+      "name": "Tension the Z-front axis belt",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "subassemblyId": "subassembly_z_front_frame_mount",
+      "sequenceIndex": 281,
+      "instructionText": "Grip the loose belt end with pliers and pull until the belt is taut enough to twang like a guitar string when plucked. Do not overtighten â€” the belt can snap. Hold tension and proceed to insert the belt peg.",
+      "profile": "Torque",
+      "targetIds": [
+        "target_z_front_belt_tension"
+      ],
+      "requiredToolActions": [
+        {
+          "id": "action_z_front_belt_tension",
+          "toolId": "tool_pliers",
+          "actionType": "tighten",
+          "targetId": "target_z_front_belt_tension",
+          "requiredCount": 1
+        }
+      ],
+      "hintIds": [
+        "hint_tension_z_front_belt"
+      ],
+      "isOptional": false,
+      "relevantToolIds": [
+        "tool_pliers"
+      ],
+      "family": "Use"
+    },
+    {
+      "id": "step_reinsert_z_front_belt_peg",
+      "name": "Reinsert the Z-front belt peg",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "subassemblyId": "subassembly_z_front_frame_mount",
+      "sequenceIndex": 282,
+      "instructionText": "Insert the belt end approximately Â¾ inch through the peg, foot facing away from the axis center. Push the peg firmly into the small ribbed belt-catcher hole to lock the belt tension.",
+      "requiredPartIds": [
+        "fastener_z_front_belt_peg"
+      ],
+      "targetIds": [
+        "target_z_front_belt_peg_insert"
+      ],
+      "hintIds": [
+        "hint_reinsert_z_front_belt_peg"
+      ],
+      "isOptional": false,
+      "family": "Place"
+    },
+    {
+      "id": "step_check_z_front_axis_travel",
+      "name": "Check Z-front axis travel and QC",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "subassemblyId": "subassembly_z_front_frame_mount",
+      "sequenceIndex": 283,
+      "instructionText": "Run the Z-front QC checklist: carriage moves smoothly along full travel; rods flush with idler bottom; idler and carriage bolt heads on the same side; toothed side of belt faces inward.",
+      "targetIds": [
+        "target_z_front_carriage_travel_qc"
+      ],
+      "hintIds": [
+        "hint_check_z_front_axis_travel"
+      ],
+      "isOptional": false,
+      "family": "Confirm"
+    },
+    {
+      "id": "step_tighten_z_back_idler_screws",
+      "name": "Tighten the Z-back idler screws",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "subassemblyId": "subassembly_z_back_frame_mount",
+      "sequenceIndex": 284,
+      "instructionText": "Tighten the two shorter M6x18 bolts on the Z-back idler using an electric drill on low torque. Leave the longer M6x30 bolt loose for frame attachment.",
+      "profile": "Torque",
+      "targetIds": [
+        "target_z_back_idler_screw_1",
+        "target_z_back_idler_screw_2"
+      ],
+      "requiredToolActions": [
+        {
+          "id": "action_z_back_idler_screw_1",
+          "toolId": "tool_allen_key_metric",
+          "actionType": "tighten",
+          "targetId": "target_z_back_idler_screw_1",
+          "requiredCount": 1
+        },
+        {
+          "id": "action_z_back_idler_screw_2",
+          "toolId": "tool_allen_key_metric",
+          "actionType": "tighten",
+          "targetId": "target_z_back_idler_screw_2",
+          "requiredCount": 1
+        }
+      ],
+      "hintIds": [
+        "hint_tighten_z_back_idler_screws"
+      ],
+      "isOptional": false,
+      "relevantToolIds": [
+        "tool_allen_key_metric"
+      ],
+      "family": "Use"
+    },
+    {
+      "id": "step_mount_z_back_axis_to_frame",
+      "name": "Mount the Z-back axis to the back frame face",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "subassemblyId": "subassembly_z_back_frame_mount",
+      "sequenceIndex": 285,
+      "instructionText": "Tighten all 8 motor-piece bolts first. Lengthen the Z-back axis and fit the idler bolt through the bottom hole of the back frame face; fit the motor bolt through the top hole. Fasten both. Align directly behind Z-front.",
+      "requiredPartIds": [
+        "fastener_z_back_idler_frame_bolt",
+        "fastener_z_back_motor_frame_bolt"
+      ],
+      "targetIds": [
+        "target_z_back_axis_idler_bolt",
+        "target_z_back_axis_motor_bolt"
+      ],
+      "hintIds": [
+        "hint_mount_z_back_axis"
+      ],
+      "isOptional": false,
+      "family": "Place"
+    },
+    {
+      "id": "step_lock_z_back_motor_holder",
+      "name": "Lock the Z-back motor holder bolts",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "subassemblyId": "subassembly_z_back_frame_mount",
+      "sequenceIndex": 286,
+      "instructionText": "Tighten the two motor-piece bolts on the Z-back axis. Verify both Z columns are aligned â€” Z-back carriage should be at the same height as Z-front carriage before locking.",
+      "profile": "Torque",
+      "targetIds": [
+        "target_z_back_motor_holder_bolt_1",
+        "target_z_back_motor_holder_bolt_2"
+      ],
+      "requiredToolActions": [
+        {
+          "id": "action_z_back_motor_holder_bolt_1",
+          "toolId": "tool_allen_key_metric",
+          "actionType": "tighten",
+          "targetId": "target_z_back_motor_holder_bolt_1",
+          "requiredCount": 1
+        },
+        {
+          "id": "action_z_back_motor_holder_bolt_2",
+          "toolId": "tool_allen_key_metric",
+          "actionType": "tighten",
+          "targetId": "target_z_back_motor_holder_bolt_2",
+          "requiredCount": 1
+        }
+      ],
+      "hintIds": [
+        "hint_lock_z_back_motor_holder"
+      ],
+      "isOptional": false,
+      "relevantToolIds": [
+        "tool_allen_key_metric"
+      ],
+      "family": "Use"
+    },
+    {
+      "id": "step_tension_z_back_belt",
+      "name": "Tension the Z-back axis belt",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "subassemblyId": "subassembly_z_back_frame_mount",
+      "sequenceIndex": 287,
+      "instructionText": "Tension the Z-back belt with pliers until it twangs like a guitar string. Hold tension and proceed to the belt peg step.",
+      "profile": "Torque",
+      "targetIds": [
+        "target_z_back_belt_tension"
+      ],
+      "requiredToolActions": [
+        {
+          "id": "action_z_back_belt_tension",
+          "toolId": "tool_pliers",
+          "actionType": "tighten",
+          "targetId": "target_z_back_belt_tension",
+          "requiredCount": 1
+        }
+      ],
+      "hintIds": [
+        "hint_tension_z_back_belt"
+      ],
+      "isOptional": false,
+      "relevantToolIds": [
+        "tool_pliers"
+      ],
+      "family": "Use"
+    },
+    {
+      "id": "step_reinsert_z_back_belt_peg",
+      "name": "Reinsert the Z-back belt peg",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "subassemblyId": "subassembly_z_back_frame_mount",
+      "sequenceIndex": 288,
+      "instructionText": "Insert belt end ~Â¾ inch through the peg, foot facing away from axis center. Push peg firmly into the ribbed belt-catcher hole.",
+      "requiredPartIds": [
+        "fastener_z_back_belt_peg"
+      ],
+      "targetIds": [
+        "target_z_back_belt_peg_insert"
+      ],
+      "hintIds": [
+        "hint_reinsert_z_back_belt_peg"
+      ],
+      "isOptional": false,
+      "family": "Place"
+    },
+    {
+      "id": "step_check_z_back_axis_travel",
+      "name": "Check Z-back axis travel and QC",
+      "assemblyId": "assembly_d3d_axes_mount",
+      "subassemblyId": "subassembly_z_back_frame_mount",
+      "sequenceIndex": 289,
+      "instructionText": "QC: carriage moves smoothly; rods flush; bolt heads same side; toothed belt faces inward; Z-back carriage level with Z-front carriage.",
+      "targetIds": [
+        "target_z_back_carriage_travel_qc"
+      ],
+      "hintIds": [
+        "hint_check_z_back_axis_travel"
+      ],
+      "isOptional": false,
+      "family": "Confirm"
+    }
+  ],
+  "targets": [
+    {
+      "id": "target_y_left_axis_mount",
+      "name": "Y-Left Axis Mount",
+      "anchorRef": "anchors/d3d/axes/y_left/mount",
+      "associatedPartId": "d3d_y_left_axis_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_y_left_axis_qc",
+      "name": "Y-Left Axis QC",
+      "anchorRef": "anchors/d3d/axes/y_left/qc",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_y_right_axis_mount",
+      "name": "Y-Right Axis Mount",
+      "anchorRef": "anchors/d3d/axes/y_right/mount",
+      "associatedPartId": "d3d_y_right_axis_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_x_axis_idler_screw_1",
+      "name": "X-Axis Idler Screw 1",
+      "anchorRef": "anchors/d3d/axes/x_axis/idler_screw_1",
+      "associatedPartId": "d3d_x_axis_idler_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 79.1418,
+        "y": 284.6133,
+        "z": 309.053
+      }
+    },
+    {
+      "id": "target_x_axis_idler_screw_2",
+      "name": "X-Axis Idler Screw 2",
+      "anchorRef": "anchors/d3d/axes/x_axis/idler_screw_2",
+      "associatedPartId": "d3d_x_axis_idler_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 79.1418,
+        "y": 284.6133,
+        "z": 309.053
+      }
+    },
+    {
+      "id": "target_x_axis_idler_screw_3",
+      "name": "X-Axis Idler Screw 3",
+      "anchorRef": "anchors/d3d/axes/x_axis/idler_screw_3",
+      "associatedPartId": "d3d_x_axis_idler_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 79.1418,
+        "y": 284.6133,
+        "z": 309.053
+      }
+    },
+    {
+      "id": "target_x_axis_idler_anchor_prefit",
+      "name": "X-Axis Idler Anchor Prefit",
+      "anchorRef": "anchors/d3d/axes/x_axis/idler_anchor_prefit",
+      "associatedPartId": "d3d_x_axis_idler_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_x_axis_rod_pair_prefit",
+      "name": "X-Axis Rod Pair Prefit",
+      "anchorRef": "anchors/d3d/axes/x_axis/rod_pair_prefit",
+      "associatedPartId": "d3d_x_axis_rod_pair",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_x_axis_motor_holder_prefit",
+      "name": "X-Axis Motor Holder Prefit",
+      "anchorRef": "anchors/d3d/axes/x_axis/motor_holder_prefit",
+      "associatedPartId": "d3d_x_axis_motor_holder_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_x_axis_idler_mount_y_right_bolt_place_a",
+      "name": "X-Axis Idler Mount Y-Right Bolt Place A",
+      "anchorRef": "anchors/d3d/axes/x_axis/idler_mount_y_right_bolt_place_a",
+      "associatedPartId": "fastener_x_axis_idler_mount_m6x30_a",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_x_axis_idler_mount_y_right_bolt_place_b",
+      "name": "X-Axis Idler Mount Y-Right Bolt Place B",
+      "anchorRef": "anchors/d3d/axes/x_axis/idler_mount_y_right_bolt_place_b",
+      "associatedPartId": "fastener_x_axis_idler_mount_m6x30_b",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 180,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_x_axis_idler_mount_y_right_a",
+      "name": "X-Axis Idler Mount Y-Right A",
+      "anchorRef": "anchors/d3d/axes/x_axis/idler_mount_y_right_a",
+      "associatedPartId": "fastener_x_axis_idler_mount_m6x30_a",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 79.1418,
+        "y": 104.6133,
+        "z": 309.053
+      }
+    },
+    {
+      "id": "target_x_axis_idler_mount_y_right_b",
+      "name": "X-Axis Idler Mount Y-Right B",
+      "anchorRef": "anchors/d3d/axes/x_axis/idler_mount_y_right_b",
+      "associatedPartId": "fastener_x_axis_idler_mount_m6x30_b",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 79.1418,
+        "y": 104.6133,
+        "z": 309.053
+      }
+    },
+    {
+      "id": "target_x_axis_motor_mount_y_left_bolt_place_a",
+      "name": "X-Axis Motor Mount Y-Left Bolt Place A",
+      "anchorRef": "anchors/d3d/axes/x_axis/motor_mount_y_left_bolt_place_a",
+      "associatedPartId": "fastener_x_axis_motor_mount_m6x30_a",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_x_axis_motor_mount_y_left_bolt_place_b",
+      "name": "X-Axis Motor Mount Y-Left Bolt Place B",
+      "anchorRef": "anchors/d3d/axes/x_axis/motor_mount_y_left_bolt_place_b",
+      "associatedPartId": "fastener_x_axis_motor_mount_m6x30_b",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_x_axis_motor_mount_y_left_a",
+      "name": "X-Axis Motor Mount Y-Left A",
+      "anchorRef": "anchors/d3d/axes/x_axis/motor_mount_y_left_a",
+      "associatedPartId": "fastener_x_axis_motor_mount_m6x30_a",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 79.1418,
+        "y": 284.6133,
+        "z": 309.053
+      }
+    },
+    {
+      "id": "target_x_axis_motor_mount_y_left_b",
+      "name": "X-Axis Motor Mount Y-Left B",
+      "anchorRef": "anchors/d3d/axes/x_axis/motor_mount_y_left_b",
+      "associatedPartId": "fastener_x_axis_motor_mount_m6x30_b",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 79.1418,
+        "y": 284.6133,
+        "z": 309.053
+      }
+    },
+    {
+      "id": "target_x_axis_span_fit",
+      "name": "X-Axis Span Fit",
+      "anchorRef": "anchors/d3d/axes/x_axis/span_fit",
+      "associatedSubassemblyId": "subassembly_x_axis_frame_fit",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_x_axis_motor_holder_m6x18_1",
+      "name": "X-Axis Motor Holder M6x18 1",
+      "anchorRef": "anchors/d3d/axes/x_axis/m6x18_1",
+      "associatedPartId": "d3d_x_axis_motor_holder_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 79.1418,
+        "y": 284.6133,
+        "z": 309.053
+      }
+    },
+    {
+      "id": "target_x_axis_motor_holder_m6x18_2",
+      "name": "X-Axis Motor Holder M6x18 2",
+      "anchorRef": "anchors/d3d/axes/x_axis/m6x18_2",
+      "associatedPartId": "d3d_x_axis_motor_holder_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 79.1418,
+        "y": 284.6133,
+        "z": 309.053
+      }
+    },
+    {
+      "id": "target_x_axis_motor_holder_m6x18_3",
+      "name": "X-Axis Motor Holder M6x18 3",
+      "anchorRef": "anchors/d3d/axes/x_axis/m6x18_3",
+      "associatedPartId": "d3d_x_axis_motor_holder_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 79.1418,
+        "y": 284.6133,
+        "z": 309.053
+      }
+    },
+    {
+      "id": "target_x_axis_motor_holder_m3_1",
+      "name": "X-Axis Motor Holder M3 1",
+      "anchorRef": "anchors/d3d/axes/x_axis/m3_1",
+      "associatedPartId": "d3d_x_axis_motor_holder_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 79.1418,
+        "y": 284.6133,
+        "z": 309.053
+      }
+    },
+    {
+      "id": "target_x_axis_motor_holder_m3_2",
+      "name": "X-Axis Motor Holder M3 2",
+      "anchorRef": "anchors/d3d/axes/x_axis/m3_2",
+      "associatedPartId": "d3d_x_axis_motor_holder_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 79.1418,
+        "y": 284.6133,
+        "z": 309.053
+      }
+    },
+    {
+      "id": "target_x_axis_motor_holder_m3_3",
+      "name": "X-Axis Motor Holder M3 3",
+      "anchorRef": "anchors/d3d/axes/x_axis/m3_3",
+      "associatedPartId": "d3d_x_axis_motor_holder_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 79.1418,
+        "y": 284.6133,
+        "z": 309.053
+      }
+    },
+    {
+      "id": "target_x_axis_motor_holder_m3_4",
+      "name": "X-Axis Motor Holder M3 4",
+      "anchorRef": "anchors/d3d/axes/x_axis/m3_4",
+      "associatedPartId": "d3d_x_axis_motor_holder_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 79.1418,
+        "y": 284.6133,
+        "z": 309.053
+      }
+    },
+    {
+      "id": "target_x_axis_belt_tension",
+      "name": "X-Axis Belt Tension",
+      "anchorRef": "anchors/d3d/axes/x_axis/belt_tension",
+      "associatedPartId": "d3d_x_axis_motor_holder_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_x_axis_belt_peg_insert",
+      "name": "X-Axis Belt Peg Insert",
+      "anchorRef": "anchors/d3d/axes/x_axis/belt_peg_insert",
+      "associatedPartId": "fastener_x_axis_belt_peg",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 90,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_x_axis_qc_left_travel",
+      "name": "X-Axis QC Left Travel",
+      "anchorRef": "anchors/d3d/axes/x_axis/qc_left_travel",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_x_axis_qc_right_travel",
+      "name": "X-Axis QC Right Travel",
+      "anchorRef": "anchors/d3d/axes/x_axis/qc_right_travel",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_x_axis_qc_y_left_endstop",
+      "name": "X-Axis QC Y-Left Endstop",
+      "anchorRef": "anchors/d3d/axes/x_axis/qc_y_left_endstop",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_z_front_idler_screw_1",
+      "name": "Z-Front Idler Screw 1",
+      "anchorRef": "anchors/d3d/z_axis_front/idler_screw_1",
+      "description": "Short M6x18 bolt on Z-front idler half-piece",
+      "associatedPartId": "idler",
+      "tags": [
+        "screw",
+        "z_front"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 79.1418,
+        "y": 284.6133,
+        "z": 309.053
+      }
+    },
+    {
+      "id": "target_z_front_idler_screw_2",
+      "name": "Z-Front Idler Screw 2",
+      "anchorRef": "anchors/d3d/z_axis_front/idler_screw_2",
+      "description": "Short M6x18 bolt on Z-front idler half-piece",
+      "associatedPartId": "idler",
+      "tags": [
+        "screw",
+        "z_front"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 79.1418,
+        "y": 284.6133,
+        "z": 309.053
+      }
+    },
+    {
+      "id": "target_z_front_axis_idler_bolt",
+      "name": "Z-Front Axis Idler Frame Bolt",
+      "anchorRef": "anchors/d3d/z_axis_front/axis_idler_bolt",
+      "description": "Long M6x30 bolt attaching Z-front idler to bottom of front frame face",
+      "associatedPartId": "fastener_z_front_idler_frame_bolt",
+      "tags": [
+        "placement",
+        "z_front"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_z_front_axis_motor_bolt",
+      "name": "Z-Front Axis Motor Frame Bolt",
+      "anchorRef": "anchors/d3d/z_axis_front/axis_motor_bolt",
+      "description": "Long M6x30 bolt attaching Z-front motor to top of front frame face",
+      "associatedPartId": "fastener_z_front_motor_frame_bolt",
+      "tags": [
+        "placement",
+        "z_front"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_z_front_motor_holder_bolt_1",
+      "name": "Z-Front Motor Holder Bolt 1",
+      "anchorRef": "anchors/d3d/z_axis_front/motor_holder_bolt_1",
+      "description": "Motor piece bolt on Z-front axis â€” lock after span is set",
+      "associatedPartId": "motor_piece",
+      "tags": [
+        "screw",
+        "z_front"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 79.1418,
+        "y": 284.6133,
+        "z": 309.053
+      }
+    },
+    {
+      "id": "target_z_front_motor_holder_bolt_2",
+      "name": "Z-Front Motor Holder Bolt 2",
+      "anchorRef": "anchors/d3d/z_axis_front/motor_holder_bolt_2",
+      "description": "Motor piece bolt on Z-front axis â€” lock after span is set",
+      "associatedPartId": "motor_piece",
+      "tags": [
+        "screw",
+        "z_front"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 79.1418,
+        "y": 284.6133,
+        "z": 309.053
+      }
+    },
+    {
+      "id": "target_z_front_belt_tension",
+      "name": "Z-Front Belt Tension Point",
+      "anchorRef": "anchors/d3d/z_axis_front/belt_tension",
+      "description": "Grip point for tensioning Z-front axis belt with pliers",
+      "associatedPartId": "",
+      "tags": [
+        "belt",
+        "z_front"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_z_front_belt_peg_insert",
+      "name": "Z-Front Belt Peg Insert",
+      "anchorRef": "anchors/d3d/z_axis_front/belt_peg_insert",
+      "description": "Belt peg insertion point on Z-front carriage",
+      "associatedPartId": "fastener_z_front_belt_peg",
+      "tags": [
+        "placement",
+        "z_front"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_z_front_carriage_travel_qc",
+      "name": "Z-Front Carriage Travel QC",
+      "anchorRef": "anchors/d3d/z_axis_front/carriage_travel_qc",
+      "description": "Carriage travel check point â€” Z-front axis",
+      "associatedPartId": "",
+      "tags": [
+        "qc",
+        "z_front"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_z_back_idler_screw_1",
+      "name": "Z-Back Idler Screw 1",
+      "anchorRef": "anchors/d3d/z_axis_back/idler_screw_1",
+      "description": "Short M6x18 bolt on Z-back idler half-piece",
+      "associatedPartId": "idler001",
+      "tags": [
+        "screw",
+        "z_back"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 79.1418,
+        "y": 284.6133,
+        "z": 309.053
+      }
+    },
+    {
+      "id": "target_z_back_idler_screw_2",
+      "name": "Z-Back Idler Screw 2",
+      "anchorRef": "anchors/d3d/z_axis_back/idler_screw_2",
+      "description": "Short M6x18 bolt on Z-back idler half-piece",
+      "associatedPartId": "idler001",
+      "tags": [
+        "screw",
+        "z_back"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 79.1418,
+        "y": 284.6133,
+        "z": 309.053
+      }
+    },
+    {
+      "id": "target_z_back_axis_idler_bolt",
+      "name": "Z-Back Axis Idler Frame Bolt",
+      "anchorRef": "anchors/d3d/z_axis_back/axis_idler_bolt",
+      "description": "Long M6x30 bolt attaching Z-back idler to bottom of back frame face",
+      "associatedPartId": "fastener_z_back_idler_frame_bolt",
+      "tags": [
+        "placement",
+        "z_back"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_z_back_axis_motor_bolt",
+      "name": "Z-Back Axis Motor Frame Bolt",
+      "anchorRef": "anchors/d3d/z_axis_back/axis_motor_bolt",
+      "description": "Long M6x30 bolt attaching Z-back motor to top of back frame face",
+      "associatedPartId": "fastener_z_back_motor_frame_bolt",
+      "tags": [
+        "placement",
+        "z_back"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_z_back_motor_holder_bolt_1",
+      "name": "Z-Back Motor Holder Bolt 1",
+      "anchorRef": "anchors/d3d/z_axis_back/motor_holder_bolt_1",
+      "description": "Motor piece bolt on Z-back axis",
+      "associatedPartId": "motor_piece001",
+      "tags": [
+        "screw",
+        "z_back"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 79.1418,
+        "y": 284.6133,
+        "z": 309.053
+      }
+    },
+    {
+      "id": "target_z_back_motor_holder_bolt_2",
+      "name": "Z-Back Motor Holder Bolt 2",
+      "anchorRef": "anchors/d3d/z_axis_back/motor_holder_bolt_2",
+      "description": "Motor piece bolt on Z-back axis",
+      "associatedPartId": "motor_piece001",
+      "tags": [
+        "screw",
+        "z_back"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 79.1418,
+        "y": 284.6133,
+        "z": 309.053
+      }
+    },
+    {
+      "id": "target_z_back_belt_tension",
+      "name": "Z-Back Belt Tension Point",
+      "anchorRef": "anchors/d3d/z_axis_back/belt_tension",
+      "description": "Grip point for tensioning Z-back axis belt with pliers",
+      "associatedPartId": "",
+      "tags": [
+        "belt",
+        "z_back"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_z_back_belt_peg_insert",
+      "name": "Z-Back Belt Peg Insert",
+      "anchorRef": "anchors/d3d/z_axis_back/belt_peg_insert",
+      "description": "Belt peg insertion point on Z-back carriage",
+      "associatedPartId": "fastener_z_back_belt_peg",
+      "tags": [
+        "placement",
+        "z_back"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_z_back_carriage_travel_qc",
+      "name": "Z-Back Carriage Travel QC",
+      "anchorRef": "anchors/d3d/z_axis_back/carriage_travel_qc",
+      "description": "Carriage travel check point â€” Z-back axis",
+      "associatedPartId": "",
+      "tags": [
+        "qc",
+        "z_back"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    }
+  ],
+  "hints": [
+    {
+      "id": "hint_mount_y_left_axis",
+      "type": "highlight",
+      "title": "Seat Y-left idler through top-right frame hole",
+      "message": "Loosen the long bolt on the idler piece first. Place the idler onto the left face of the frame so the long bolt goes through the top-right hole. Attach a nut to the back of that bolt and fasten with drill. Then push the motor holder outward to span the frame, tighten all 8 motor-holder bolts before anchoring (they become inaccessible once the axis is mounted). Fasten the motor-holder long bolt to the frame and tighten each nut with pliers.",
+      "targetId": "target_y_left_axis_mount",
+      "partId": "d3d_y_left_axis_unit",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_verify_y_left_axis_seating",
+      "type": "highlight",
+      "title": "Carriage shake test + rod-slide test",
+      "message": "Run both bearing fit tests before calling the axis good. Shake test: compress the carriage halves by hand and shake â€” bearings must not rattle inside. Rod-slide test: hold the carriage with a rod running vertically â€” the rod should slide through with slight resistance, not drop freely. If too loose, wrap each bearing in one layer of electrical tape; if too tight, remove tape. Also push the carriage along the full rod length â€” no binding.",
+      "targetId": "target_y_left_axis_qc",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_mount_y_right_axis",
+      "type": "highlight",
+      "title": "Seat Y-right idler and lock all 8 motor-holder bolts",
+      "message": "Mirror the Y-left procedure for the right face. Loosen the idler long bolt, fit it through the correct frame hole, and secure with a nut. Span the axis outward until the motor-holder long bolt reaches the opposite frame hole. Tighten all 8 motor-holder bolts (3 M6x18 + 4 M3 screws + long M6x30) before fastening to frame â€” they are inaccessible afterward. Anchor both ends with pliers.",
+      "targetId": "target_y_right_axis_mount",
+      "partId": "d3d_y_right_axis_unit",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_verify_y_axis_pair",
+      "type": "highlight",
+      "title": "Both Y axes: smooth motion, end stop, motors at back",
+      "message": "Check all four items: (1) Carriage slides smoothly along each Y axis without binding. (2) Each motor shaft spins freely when you turn the carriage by hand. (3) On Y-left, push the carriage into the end stop and confirm it clicks. (4) Both motors are at the back of the frame â€” the axes are mirror images of each other.",
+      "targetId": "target_y_left_axis_mount",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_tighten_x_axis_idler_screws",
+      "type": "tool_reminder",
+      "title": "Tighten the two shorter M6x18 idler bolts; leave M6x30 loose",
+      "message": "Use a drill on low torque to tighten the two shorter M6x18 bolts on the idler. These lock the rods flush against the back of the idler so they cannot be pushed out when the axis is extended. Leave the longer M6x30 bolt loose â€” it will attach the idler to the Y-right carriage in the next step.",
+      "toolId": "tool_allen_key_metric",
+      "targetId": "target_x_axis_idler_screw_1",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_anchor_x_axis_idler",
+      "type": "highlight",
+      "title": "Drop two M6x30 bolts through Y-right carriage into idler",
+      "message": "Insert two M6x30 bolts through the Y-right carriage from the outside. Move the X-axis so those bolts enter the idler nut catchers. Fasten with drill on low-torque setting â€” do not overtighten. The idler is now anchored; the motor-holder side remains free to slide outward for the span-fit step. Note: it does not matter yet whether the X-axis is perfectly vertical.",
+      "targetId": "target_x_axis_idler_anchor_prefit",
+      "priority": "high"
+    },
+    {
+      "id": "hint_snug_x_axis_idler_bolts",
+      "type": "tool_reminder",
+      "title": "Snug motor-holder bolts then back off half a turn each",
+      "message": "Before extending the X-axis to its final span, minimize play in the motor holder: tighten the 3 M6x18 bolts and 4 M3 motor screws by hand until snug, then loosen each by half a turn. The long M6x30 bolt stays completely loose at this stage. The holder must still slide freely along the rods for the span-fit step â€” but without excessive wobble.",
+      "toolId": "tool_allen_key_metric",
+      "targetId": "target_x_axis_idler_mount_y_right_a",
+      "priority": "high"
+    },
+    {
+      "id": "hint_start_motor_holder_bolts_loose",
+      "type": "highlight",
+      "title": "Finger-start motor-holder bolts only, no tightening",
+      "message": "Thread the two Y-left M6x30 bolts in by hand only, two to three turns each. Do not tighten. The motor-holder must still slide freely along the X rods for the span-fit step.",
+      "targetId": "target_x_axis_motor_mount_y_left_bolt_place_a",
+      "priority": "high"
+    },
+    {
+      "id": "hint_fit_x_axis_span",
+      "type": "highlight",
+      "title": "Push Y carriages to rod ends; extend X to Y-left face",
+      "message": "For the most accurate span fit, slide both Y-axis carriages toward the far ends of the Y rods where the rods are most constrained. Then push the X-axis motor holder outward until it butts flush against the Y-left carriage face. While extending, regularly check that both rods remain flush in the idler â€” if they start to protrude, push them back in.",
+      "targetId": "target_x_axis_span_fit",
+      "priority": "high"
+    },
+    {
+      "id": "hint_lock_x_axis_motor_holder",
+      "type": "tool_reminder",
+      "title": "Loose-attach Y-left bolts, adjust vertical, then fully lock",
+      "message": "Insert two M6x30 bolts through the Y-left carriage into the motor-holder nut catchers. Hand-tighten with allen key just enough to support the axis. Adjust the X-axis to vertical before the final tighten. Once vertical, use a drill to fasten both Y-left M6x30 bolts. Then tighten the 3 M6x18 and 4 M3 motor-holder screws fully. All 8 motor-holder fasteners must be locked before tensioning the belt.",
+      "toolId": "tool_allen_key_metric",
+      "targetId": "target_x_axis_motor_mount_y_left_a",
+      "priority": "high"
+    },
+    {
+      "id": "hint_tension_x_axis_belt",
+      "type": "tool_reminder",
+      "title": "Pull belt taut with pliers â€” twang test before inserting peg",
+      "message": "Grip the loose belt end with pliers and pull, or grip and twist, until the belt is taut. Pluck the belt â€” it should twang like a guitar string. Be firm but careful: excessive force can snap the belt. When the belt feels correct, hold tension and insert the belt peg in the next step without releasing.",
+      "toolId": "tool_pliers",
+      "targetId": "target_x_axis_belt_tension",
+      "priority": "high"
+    },
+    {
+      "id": "hint_reinsert_x_axis_belt_peg",
+      "type": "highlight",
+      "title": "Insert belt ~Â¾\" through peg foot; foot faces away from center",
+      "message": "Thread the belt end through the inside of the peg approximately Â¾ inch, with the peg foot turned away from the toothed side of the belt. Quick check: the foot faces away from the center of the axis assembly; the belt passes through the carriage before going through the foot. Insert the peg into the small, ribbed belt-catcher hole and push firmly. This peg locks the belt tail so tension is maintained.",
+      "targetId": "target_x_axis_belt_peg_insert",
+      "partId": "fastener_x_axis_belt_peg",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_check_x_axis_travel",
+      "type": "highlight",
+      "title": "Four-point X-axis QC: travel, flush rods, bolt sides, belt direction",
+      "message": "Run the full QC checklist before calling the X-axis complete: (1) Carriage moves smoothly along full X travel â€” no binding. Lubricate rods if tightness remains after checking rod alignment. (2) Rods are flush with the idler bottom â€” not protruding. (3) Idler and carriage bolt heads are on the same side. (4) Toothed side of belt faces inward. (5) X-axis butts tightly to both Y-axes with no visible gap. (6) Extruder carriage reaches and triggers the X-axis end stop.",
+      "targetId": "target_x_axis_qc_left_travel",
+      "priority": "high"
+    },
+    {
+      "id": "hint_tighten_z_front_idler_screws",
+      "type": "tool_reminder",
+      "title": "Tighten the two shorter M6x18 bolts; leave M6x30 loose",
+      "message": "Use a drill on low torque to tighten the two shorter M6x18 bolts on the Z-front idler. These lock the rods flush against the back of the idler. Leave the longer M6x30 bolt loose â€” it attaches to the bottom of the front frame face in the next step.",
+      "targetId": "target_z_front_idler_screw_1",
+      "partId": "",
+      "toolId": "tool_allen_key_metric",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_mount_z_front_axis",
+      "type": "highlight",
+      "title": "Idler to frame bottom; motor to frame top â€” tighten all 8 motor bolts first",
+      "message": "Pop out the belt peg that does NOT have a belt passing through it and set it aside. Tighten all 8 motor-piece bolts (3 M6x18 + 4 M3 screws + 1 M6x30) before mounting to frame â€” they become inaccessible once the axis is on the frame. Fit the long idler bolt through the bottom hole of the front frame face and fasten with a nut. Lengthen the axis until the motor-holder long bolt reaches the top frame hole and fasten. While extending, keep checking that rods stay flush in the idler.",
+      "targetId": "target_z_front_axis_idler_bolt",
+      "partId": "",
+      "toolId": "",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_lock_z_front_motor_holder",
+      "type": "tool_reminder",
+      "title": "Lock motor-piece bolts to set the span",
+      "message": "Tighten both motor-piece bolts fully once the axis is at the correct frame length. These prevent the rods from shifting during belt tensioning. Use the allen key to reach the bolts â€” they are on the face that was accessible before mounting.",
+      "targetId": "target_z_front_motor_holder_bolt_1",
+      "partId": "",
+      "toolId": "tool_allen_key_metric",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_tension_z_front_belt",
+      "type": "tool_reminder",
+      "title": "Pliers tension â€” belt should twang like a guitar string",
+      "message": "Grip the loose belt end with pliers and pull, or grip and twist, until the belt is taut. Pluck the belt â€” it should twang like a guitar string. Be firm but careful: excessive force can snap the belt. Hold tension while reinserting the belt peg in the next step.",
+      "targetId": "target_z_front_belt_tension",
+      "partId": "",
+      "toolId": "tool_pliers",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_reinsert_z_front_belt_peg",
+      "type": "highlight",
+      "title": "Insert belt ~Â¾\" through peg; foot faces away from axis center",
+      "message": "Thread the belt end approximately Â¾ inch through the peg, with the peg foot turned away from the toothed side of the belt. The foot faces away from the center of the axis assembly. Push the peg firmly into the small, ribbed belt-catcher hole to lock belt tension.",
+      "targetId": "target_z_front_belt_peg_insert",
+      "partId": "",
+      "toolId": "",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_check_z_front_axis_travel",
+      "type": "highlight",
+      "title": "Four-point Z-front QC: travel, rods flush, bolt sides, belt direction",
+      "message": "Run the full QC checklist: (1) Carriage moves smoothly along full Z travel â€” no binding; lubricate rods if tight. (2) Rods are flush with the idler bottom â€” not protruding. (3) Idler and carriage bolt heads are on the same side. (4) Toothed side of belt faces inward.",
+      "targetId": "target_z_front_carriage_travel_qc",
+      "partId": "",
+      "toolId": "",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_tighten_z_back_idler_screws",
+      "type": "tool_reminder",
+      "title": "Tighten the two shorter M6x18 bolts on Z-back; leave M6x30 loose",
+      "message": "Use a drill on low torque to tighten the two shorter M6x18 bolts on the Z-back idler. These lock the rods flush against the back of the idler. Leave the longer M6x30 bolt loose â€” it attaches to the bottom of the back frame face in the next step.",
+      "targetId": "target_z_back_idler_screw_1",
+      "partId": "",
+      "toolId": "tool_allen_key_metric",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_mount_z_back_axis",
+      "type": "highlight",
+      "title": "Z-back mirrors Z-front â€” idler to back-face bottom, motor to top",
+      "message": "This step is identical to Z-front but mounts onto the back face of the frame. Tighten all 8 motor-piece bolts before mounting. Fit idler long bolt to bottom back-face hole, motor long bolt to top back-face hole. Keep checking rods stay flush while lengthening. The Z-back axis should align directly behind the Z-front axis.",
+      "targetId": "target_z_back_axis_idler_bolt",
+      "partId": "",
+      "toolId": "",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_lock_z_back_motor_holder",
+      "type": "tool_reminder",
+      "title": "Lock Z-back motor-piece bolts",
+      "message": "Tighten both motor-piece bolts on the Z-back axis once it is at the correct frame length. The two Z columns must be aligned â€” check that the Z-back axis sits directly behind the Z-front axis before locking.",
+      "targetId": "target_z_back_motor_holder_bolt_1",
+      "partId": "",
+      "toolId": "tool_allen_key_metric",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_tension_z_back_belt",
+      "type": "tool_reminder",
+      "title": "Tension Z-back belt to guitar-string tautness",
+      "message": "Grip the loose belt end with pliers and pull until taut. Pluck the belt â€” guitar-string twang is the target. Hold tension and insert the belt peg in the next step without releasing.",
+      "targetId": "target_z_back_belt_tension",
+      "partId": "",
+      "toolId": "tool_pliers",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_reinsert_z_back_belt_peg",
+      "type": "highlight",
+      "title": "Insert Z-back belt peg ~Â¾\"; foot away from axis center",
+      "message": "Thread the belt end approximately Â¾ inch through the peg foot, with the foot turned away from the center of the axis assembly. Push the peg firmly into the small, ribbed belt-catcher hole.",
+      "targetId": "target_z_back_belt_peg_insert",
+      "partId": "",
+      "toolId": "",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_check_z_back_axis_travel",
+      "type": "highlight",
+      "title": "Z-back QC: travel, rods flush, bolt sides, belt direction",
+      "message": "QC checklist: (1) Carriage moves smoothly along full Z travel. (2) Rods flush with idler bottom. (3) Idler and carriage bolt heads on the same side. (4) Toothed side of belt faces inward. (5) Z-back carriage is at the same height as Z-front carriage â€” they must stay level to keep the bed flat.",
+      "targetId": "target_z_back_carriage_travel_qc",
+      "partId": "",
+      "toolId": "",
+      "priority": "medium"
+    }
+  ]
+}

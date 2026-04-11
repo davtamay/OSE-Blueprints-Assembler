@@ -1,0 +1,1279 @@
+{
+  "assemblies": [
+    {
+      "id": "assembly_d3d_electronics",
+      "name": "D3D Electronics and Wiring",
+      "description": "Control panel mounting, RAMPS wiring, motor connectors, endstops, and extruder electronics.",
+      "machineId": "d3d_v18_10",
+      "subassemblyIds": [
+        "subassembly_electronics_wiring"
+      ],
+      "stepIds": [
+        "step_mount_control_panel",
+        "step_install_ramps_board",
+        "step_secure_control_panel",
+        "step_connect_psu_12v",
+        "step_connect_psu_gnd",
+        "step_connect_psu_atx_enable",
+        "step_verify_psu_connections",
+        "step_connect_x_motor",
+        "step_connect_y_left_motor",
+        "step_connect_y_right_motor",
+        "step_connect_z_front_motor",
+        "step_connect_z_back_motor",
+        "step_connect_x_endstop",
+        "step_connect_y_endstop",
+        "step_connect_z_endstop",
+        "step_connect_heater_cartridge",
+        "step_connect_thermistor",
+        "step_connect_extruder_fan",
+        "step_route_cables_chain"
+      ],
+      "dependencyAssemblyIds": [
+        "assembly_d3d_axes_mount"
+      ],
+      "learningFocus": "Control panel mounting, RAMPS board installation, PSU power wiring with polarity validation, stepper motor connections, axis endstop wiring, and extruder heater/thermistor/fan connections."
+    }
+  ],
+  "subassemblies": [
+    {
+      "id": "subassembly_electronics_wiring",
+      "name": "Electronics and Wiring",
+      "assemblyId": "assembly_d3d_electronics",
+      "description": "Control panel, RAMPS board, PSU wiring, motor connectors, endstops, and extruder electronics.",
+      "partIds": [
+        "d3d_control_panel",
+        "d3d_ramps_14_board"
+      ],
+      "stepIds": [
+        "step_mount_control_panel",
+        "step_install_ramps_board",
+        "step_secure_control_panel",
+        "step_connect_psu_12v",
+        "step_connect_psu_gnd",
+        "step_connect_psu_atx_enable",
+        "step_verify_psu_connections",
+        "step_connect_x_motor",
+        "step_connect_y_left_motor",
+        "step_connect_y_right_motor",
+        "step_connect_z_front_motor",
+        "step_connect_z_back_motor",
+        "step_connect_x_endstop",
+        "step_connect_y_endstop",
+        "step_connect_z_endstop",
+        "step_connect_heater_cartridge",
+        "step_connect_thermistor",
+        "step_connect_extruder_fan",
+        "step_route_cables_chain"
+      ]
+    }
+  ],
+  "parts": [
+    {
+      "id": "d3d_ramps_14_board",
+      "displayName": "RAMPS 1.4 Controller Board",
+      "assetRef": "ramps_14_board_approved.glb",
+      "category": "custom",
+      "quantity": 1,
+      "name": "RAMPS 1.4 Controller Board",
+      "material": "PCB assembly â€” stepper driver shield for Arduino Mega",
+      "function": "Routes power and signals from PSU and firmware to stepper motors, endstops, heater, and thermistor.",
+      "stagingPose": {
+        "position": {
+          "x": 1.2796,
+          "y": 0.5682,
+          "z": -0.0762
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.05,
+          "g": 0.25,
+          "b": 0.1,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "d3d_control_panel",
+      "displayName": "Control Panel Enclosure",
+      "assetRef": "d3d_control_panel_approved.glb",
+      "category": "panel",
+      "quantity": 1,
+      "name": "Control Panel Enclosure",
+      "material": "Laser-cut acrylic or 3D-printed enclosure",
+      "function": "Mounts and protects the RAMPS board and Smart Controller on the printer frame.",
+      "stagingPose": {
+        "position": {
+          "x": 1.2796,
+          "y": 0.5532,
+          "z": -0.0762
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.15,
+          "g": 0.15,
+          "b": 0.18,
+          "a": 1.0
+        }
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "step_mount_control_panel",
+      "name": "Mount the control panel enclosure to the frame",
+      "assemblyId": "assembly_d3d_electronics",
+      "sequenceIndex": 295,
+      "instructionText": "Align the control panel enclosure to the front-left face of the frame. Press the mounting tabs flush against the frame bars.",
+      "targetIds": [
+        "target_control_panel_mount"
+      ],
+      "requiredPartIds": [
+        "d3d_control_panel"
+      ],
+      "hintIds": [
+        "hint_mount_control_panel"
+      ],
+      "family": "Place"
+    },
+    {
+      "id": "step_install_ramps_board",
+      "name": "Install the RAMPS 1.4 board in the control panel",
+      "assemblyId": "assembly_d3d_electronics",
+      "sequenceIndex": 296,
+      "instructionText": "Seat the RAMPS 1.4 board into the control panel. USB port and power terminals face outward. Press firmly until the board sits level.",
+      "targetIds": [
+        "target_ramps_board_slot"
+      ],
+      "requiredPartIds": [
+        "d3d_ramps_14_board"
+      ],
+      "hintIds": [
+        "hint_install_ramps_board"
+      ],
+      "family": "Place"
+    },
+    {
+      "id": "step_secure_control_panel",
+      "name": "Secure the control panel with M3 screws",
+      "assemblyId": "assembly_d3d_electronics",
+      "sequenceIndex": 297,
+      "instructionText": "Thread M3 screws through the panel mounting tabs. Snug finger-tight, then a quarter-turn â€” do not overtighten plastic tabs.",
+      "targetIds": [
+        "target_control_panel_fastener"
+      ],
+      "hintIds": [
+        "hint_secure_control_panel"
+      ],
+      "requiredToolActions": [
+        {
+          "id": "action_secure_control_panel",
+          "toolId": "tool_screwdriver_small",
+          "targetId": "target_control_panel_fastener",
+          "profile": "Torque",
+          "actionType": "tighten"
+        }
+      ],
+      "relevantToolIds": [
+        "tool_screwdriver_small"
+      ],
+      "family": "Use"
+    },
+    {
+      "id": "step_connect_psu_12v",
+      "name": "Connect +12V power wire from PSU to RAMPS",
+      "assemblyId": "assembly_d3d_electronics",
+      "sequenceIndex": 298,
+      "instructionText": "Connect the red +12V wire from the PSU V+ output to the V+ screw terminal on the RAMPS board. Click the red port sphere, then the RAMPS terminal sphere.",
+      "targetIds": [
+        "target_wire_psu_12v"
+      ],
+      "hintIds": [
+        "hint_connect_psu_12v"
+      ],
+      "family": "Connect",
+      "profile": "WireConnect",
+      "wireConnect": {
+        "enforcePortOrder": true,
+        "wires": [
+          {
+            "targetId": "target_wire_psu_12v",
+            "portAPolarityType": "+12V",
+            "portBPolarityType": "+12V",
+            "portAConnectorType": "bare_wire",
+            "portBConnectorType": "screw_terminal",
+            "polarityOrderMatters": true,
+            "color": {
+              "r": 1.0,
+              "g": 0.18,
+              "b": 0.18,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": -0.16,
+              "y": 0.09,
+              "z": 0.0
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.1,
+              "z": -0.14
+            },
+            "subdivisions": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "step_connect_psu_gnd",
+      "name": "Connect GND wire from PSU to RAMPS",
+      "assemblyId": "assembly_d3d_electronics",
+      "sequenceIndex": 299,
+      "instructionText": "Connect the black GND wire from the PSU GND output to the GND screw terminal on the RAMPS board. Polarity matters â€” do not swap with the +12V terminal.",
+      "targetIds": [
+        "target_wire_psu_gnd"
+      ],
+      "hintIds": [
+        "hint_connect_psu_gnd"
+      ],
+      "family": "Connect",
+      "profile": "WireConnect",
+      "wireConnect": {
+        "enforcePortOrder": true,
+        "wires": [
+          {
+            "targetId": "target_wire_psu_gnd",
+            "portAPolarityType": "GND",
+            "portBPolarityType": "GND",
+            "portAConnectorType": "bare_wire",
+            "portBConnectorType": "screw_terminal",
+            "polarityOrderMatters": true,
+            "color": {
+              "r": 0.08,
+              "g": 0.08,
+              "b": 0.08,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": -0.16,
+              "y": 0.08,
+              "z": 0.0
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.09,
+              "z": -0.14
+            },
+            "subdivisions": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "step_connect_psu_atx_enable",
+      "name": "Short ATX PS_ON to GND (enable jumper)",
+      "assemblyId": "assembly_d3d_electronics",
+      "sequenceIndex": 300,
+      "instructionText": "Connect a short wire from the ATX PS_ON pin (green, pin 16) to a GND pin to force the PSU on. Without this jumper the printer will not power up.",
+      "targetIds": [
+        "target_wire_psu_enable"
+      ],
+      "hintIds": [
+        "hint_connect_psu_atx_enable"
+      ],
+      "family": "Connect",
+      "profile": "WireConnect",
+      "wireConnect": {
+        "enforcePortOrder": false,
+        "wires": [
+          {
+            "targetId": "target_wire_psu_enable",
+            "portAPolarityType": "enable",
+            "portBPolarityType": "GND",
+            "portAConnectorType": "bare_wire",
+            "portBConnectorType": "bare_wire",
+            "polarityOrderMatters": false,
+            "color": {
+              "r": 0.1,
+              "g": 0.8,
+              "b": 0.1,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": -0.16,
+              "y": 0.07,
+              "z": 0.02
+            },
+            "portB": {
+              "x": -0.16,
+              "y": 0.07,
+              "z": -0.02
+            },
+            "subdivisions": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "step_verify_psu_connections",
+      "name": "Verify all PSU connections to RAMPS",
+      "assemblyId": "assembly_d3d_electronics",
+      "sequenceIndex": 301,
+      "instructionText": "Check all three PSU connections: V+ (red wire), GND (black wire), and the PS_ON enable jumper. Gently tug each â€” a properly seated terminal will not pull free.",
+      "targetIds": [
+        "target_psu_connections_verify"
+      ],
+      "hintIds": [
+        "hint_verify_psu_connections"
+      ],
+      "family": "Confirm"
+    },
+    {
+      "id": "step_connect_x_motor",
+      "name": "Connect X-axis stepper motor to RAMPS",
+      "assemblyId": "assembly_d3d_electronics",
+      "sequenceIndex": 302,
+      "instructionText": "Plug the X-axis stepper motor 4-pin dupont connector into the X-motor header on the RAMPS board. Click the motor-side sphere, then the RAMPS header sphere.",
+      "targetIds": [
+        "target_wire_motor_x"
+      ],
+      "hintIds": [
+        "hint_connect_motor"
+      ],
+      "family": "Connect",
+      "profile": "WireConnect",
+      "wireConnect": {
+        "enforcePortOrder": false,
+        "wires": [
+          {
+            "targetId": "target_wire_motor_x",
+            "portAPolarityType": "signal",
+            "portBPolarityType": "signal",
+            "portAConnectorType": "dupont_4pin",
+            "portBConnectorType": "dupont_4pin",
+            "polarityOrderMatters": false,
+            "color": {
+              "r": 1.0,
+              "g": 0.85,
+              "b": 0.0,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": 0.0,
+              "y": 0.15,
+              "z": -0.19
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.16,
+              "z": -0.14
+            },
+            "subdivisions": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "step_connect_y_left_motor",
+      "name": "Connect Y-left stepper motor to RAMPS",
+      "assemblyId": "assembly_d3d_electronics",
+      "sequenceIndex": 303,
+      "instructionText": "Plug the Y1 (left) stepper motor dupont connector into the Y-motor header on RAMPS.",
+      "targetIds": [
+        "target_wire_motor_y_left"
+      ],
+      "hintIds": [
+        "hint_connect_motor"
+      ],
+      "family": "Connect",
+      "profile": "WireConnect",
+      "wireConnect": {
+        "enforcePortOrder": false,
+        "wires": [
+          {
+            "targetId": "target_wire_motor_y_left",
+            "portAPolarityType": "signal",
+            "portBPolarityType": "signal",
+            "portAConnectorType": "dupont_4pin",
+            "portBConnectorType": "dupont_4pin",
+            "polarityOrderMatters": false,
+            "color": {
+              "r": 1.0,
+              "g": 0.85,
+              "b": 0.0,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": -0.16,
+              "y": 0.12,
+              "z": 0.0
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.15,
+              "z": -0.14
+            },
+            "subdivisions": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "step_connect_y_right_motor",
+      "name": "Connect Y-right stepper motor to RAMPS",
+      "assemblyId": "assembly_d3d_electronics",
+      "sequenceIndex": 304,
+      "instructionText": "Plug the Y2 (right) stepper motor dupont connector into the second Y-motor header on RAMPS. Both Y motors share the Y-driver or use a splitter cable.",
+      "targetIds": [
+        "target_wire_motor_y_right"
+      ],
+      "hintIds": [
+        "hint_connect_motor"
+      ],
+      "family": "Connect",
+      "profile": "WireConnect",
+      "wireConnect": {
+        "enforcePortOrder": false,
+        "wires": [
+          {
+            "targetId": "target_wire_motor_y_right",
+            "portAPolarityType": "signal",
+            "portBPolarityType": "signal",
+            "portAConnectorType": "dupont_4pin",
+            "portBConnectorType": "dupont_4pin",
+            "polarityOrderMatters": false,
+            "color": {
+              "r": 1.0,
+              "g": 0.85,
+              "b": 0.0,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": 0.15,
+              "y": 0.12,
+              "z": 0.0
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.14,
+              "z": -0.14
+            },
+            "subdivisions": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "step_connect_z_front_motor",
+      "name": "Connect Z-front stepper motor to RAMPS",
+      "assemblyId": "assembly_d3d_electronics",
+      "sequenceIndex": 305,
+      "instructionText": "Plug the Z-front motor dupont connector into the Z-motor header on RAMPS. Z uses a single driver; both Z motors are wired in series or parallel via a splitter.",
+      "targetIds": [
+        "target_wire_motor_z_front"
+      ],
+      "hintIds": [
+        "hint_connect_motor"
+      ],
+      "family": "Connect",
+      "profile": "WireConnect",
+      "wireConnect": {
+        "enforcePortOrder": false,
+        "wires": [
+          {
+            "targetId": "target_wire_motor_z_front",
+            "portAPolarityType": "signal",
+            "portBPolarityType": "signal",
+            "portAConnectorType": "dupont_4pin",
+            "portBConnectorType": "dupont_4pin",
+            "polarityOrderMatters": false,
+            "color": {
+              "r": 1.0,
+              "g": 0.85,
+              "b": 0.0,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": 0.0,
+              "y": 0.24,
+              "z": -0.19
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.13,
+              "z": -0.14
+            },
+            "subdivisions": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "step_connect_z_back_motor",
+      "name": "Connect Z-back stepper motor to RAMPS",
+      "assemblyId": "assembly_d3d_electronics",
+      "sequenceIndex": 306,
+      "instructionText": "Plug the Z-back motor dupont connector into the Z-motor splitter or second Z header. Both Z columns must be driven together for level bed movement.",
+      "targetIds": [
+        "target_wire_motor_z_back"
+      ],
+      "hintIds": [
+        "hint_connect_motor"
+      ],
+      "family": "Connect",
+      "profile": "WireConnect",
+      "wireConnect": {
+        "enforcePortOrder": false,
+        "wires": [
+          {
+            "targetId": "target_wire_motor_z_back",
+            "portAPolarityType": "signal",
+            "portBPolarityType": "signal",
+            "portAConnectorType": "dupont_4pin",
+            "portBConnectorType": "dupont_4pin",
+            "polarityOrderMatters": false,
+            "color": {
+              "r": 1.0,
+              "g": 0.85,
+              "b": 0.0,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": 0.0,
+              "y": 0.24,
+              "z": 0.19
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.12,
+              "z": -0.14
+            },
+            "subdivisions": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "step_connect_x_endstop",
+      "name": "Connect X-axis min endstop to RAMPS",
+      "assemblyId": "assembly_d3d_electronics",
+      "sequenceIndex": 307,
+      "instructionText": "Connect the X min endstop 2-pin dupont to the X-MIN header on RAMPS (S and GND pins). This is the home position limit for the X axis.",
+      "targetIds": [
+        "target_wire_endstop_x"
+      ],
+      "hintIds": [
+        "hint_connect_endstop"
+      ],
+      "family": "Connect",
+      "profile": "WireConnect",
+      "wireConnect": {
+        "enforcePortOrder": true,
+        "wires": [
+          {
+            "targetId": "target_wire_endstop_x",
+            "portAPolarityType": "endstop",
+            "portBPolarityType": "GND",
+            "portAConnectorType": "dupont_2pin",
+            "portBConnectorType": "dupont_2pin",
+            "polarityOrderMatters": true,
+            "color": {
+              "r": 0.1,
+              "g": 0.8,
+              "b": 0.1,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": -0.15,
+              "y": 0.01,
+              "z": -0.155
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.19,
+              "z": -0.14
+            },
+            "subdivisions": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "step_connect_y_endstop",
+      "name": "Connect Y-axis min endstop to RAMPS",
+      "assemblyId": "assembly_d3d_electronics",
+      "sequenceIndex": 308,
+      "instructionText": "Connect the Y min endstop to the Y-MIN header on RAMPS.",
+      "targetIds": [
+        "target_wire_endstop_y"
+      ],
+      "hintIds": [
+        "hint_connect_endstop"
+      ],
+      "family": "Connect",
+      "profile": "WireConnect",
+      "wireConnect": {
+        "enforcePortOrder": true,
+        "wires": [
+          {
+            "targetId": "target_wire_endstop_y",
+            "portAPolarityType": "endstop",
+            "portBPolarityType": "GND",
+            "portAConnectorType": "dupont_2pin",
+            "portBConnectorType": "dupont_2pin",
+            "polarityOrderMatters": true,
+            "color": {
+              "r": 0.1,
+              "g": 0.8,
+              "b": 0.1,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": -0.155,
+              "y": 0.01,
+              "z": 0.0
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.18,
+              "z": -0.14
+            },
+            "subdivisions": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "step_connect_z_endstop",
+      "name": "Connect Z-axis min endstop to RAMPS",
+      "assemblyId": "assembly_d3d_electronics",
+      "sequenceIndex": 309,
+      "instructionText": "Connect the Z min endstop to the Z-MIN header on RAMPS. This is triggered when the bed reaches the home position (nozzle at Z=0).",
+      "targetIds": [
+        "target_wire_endstop_z"
+      ],
+      "hintIds": [
+        "hint_connect_endstop"
+      ],
+      "family": "Connect",
+      "profile": "WireConnect",
+      "wireConnect": {
+        "enforcePortOrder": true,
+        "wires": [
+          {
+            "targetId": "target_wire_endstop_z",
+            "portAPolarityType": "endstop",
+            "portBPolarityType": "GND",
+            "portAConnectorType": "dupont_2pin",
+            "portBConnectorType": "dupont_2pin",
+            "polarityOrderMatters": true,
+            "color": {
+              "r": 0.1,
+              "g": 0.8,
+              "b": 0.1,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": -0.155
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.17,
+              "z": -0.14
+            },
+            "subdivisions": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "step_connect_heater_cartridge",
+      "name": "Connect extruder heater cartridge to RAMPS",
+      "assemblyId": "assembly_d3d_electronics",
+      "sequenceIndex": 310,
+      "instructionText": "Connect the heater cartridge wires to the E0 heater output (D10) on RAMPS. Polarity does not matter for the resistive heater element.",
+      "targetIds": [
+        "target_wire_heater_cartridge"
+      ],
+      "hintIds": [
+        "hint_connect_heater_cartridge"
+      ],
+      "family": "Connect",
+      "profile": "WireConnect",
+      "wireConnect": {
+        "enforcePortOrder": false,
+        "wires": [
+          {
+            "targetId": "target_wire_heater_cartridge",
+            "portAPolarityType": "+12V",
+            "portBPolarityType": "+12V",
+            "portAConnectorType": "bare_wire",
+            "portBConnectorType": "screw_terminal",
+            "polarityOrderMatters": false,
+            "color": {
+              "r": 1.0,
+              "g": 0.18,
+              "b": 0.18,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": 0.0,
+              "y": 0.22,
+              "z": -0.18
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.11,
+              "z": -0.14
+            },
+            "subdivisions": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "step_connect_thermistor",
+      "name": "Connect extruder thermistor to RAMPS",
+      "assemblyId": "assembly_d3d_electronics",
+      "sequenceIndex": 311,
+      "instructionText": "Connect the thermistor to the T0 2-pin header (signal + GND). Polarity matters â€” reversing causes false 300Â°C readings and thermal runaway shutdown.",
+      "targetIds": [
+        "target_wire_thermistor"
+      ],
+      "hintIds": [
+        "hint_connect_thermistor"
+      ],
+      "family": "Connect",
+      "profile": "WireConnect",
+      "wireConnect": {
+        "enforcePortOrder": true,
+        "wires": [
+          {
+            "targetId": "target_wire_thermistor",
+            "portAPolarityType": "thermistor",
+            "portBPolarityType": "GND",
+            "portAConnectorType": "dupont_2pin",
+            "portBConnectorType": "dupont_2pin",
+            "polarityOrderMatters": true,
+            "color": {
+              "r": 0.2,
+              "g": 0.6,
+              "b": 1.0,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": 0.0,
+              "y": 0.21,
+              "z": -0.18
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.1,
+              "z": -0.14
+            },
+            "subdivisions": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "step_connect_extruder_fan",
+      "name": "Connect extruder part-cooling fan to RAMPS",
+      "assemblyId": "assembly_d3d_electronics",
+      "sequenceIndex": 312,
+      "instructionText": "Connect the part-cooling fan to the FAN header (always-on 12V) or D9 for PWM speed control. Red wire to +12V, black to GND.",
+      "targetIds": [
+        "target_wire_extruder_fan"
+      ],
+      "hintIds": [
+        "hint_connect_extruder_fan"
+      ],
+      "family": "Connect",
+      "profile": "WireConnect",
+      "wireConnect": {
+        "enforcePortOrder": true,
+        "wires": [
+          {
+            "targetId": "target_wire_extruder_fan",
+            "portAPolarityType": "fan",
+            "portBPolarityType": "GND",
+            "portAConnectorType": "dupont_2pin",
+            "portBConnectorType": "dupont_2pin",
+            "polarityOrderMatters": true,
+            "color": {
+              "r": 0.2,
+              "g": 0.6,
+              "b": 1.0,
+              "a": 1.0
+            },
+            "radius": 0.003,
+            "portA": {
+              "x": 0.02,
+              "y": 0.2,
+              "z": -0.18
+            },
+            "portB": {
+              "x": -0.04,
+              "y": 0.09,
+              "z": -0.14
+            },
+            "subdivisions": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "step_route_cables_chain",
+      "name": "Route all axis cables through the cable chain",
+      "assemblyId": "assembly_d3d_electronics",
+      "sequenceIndex": 313,
+      "instructionText": "Route the X/Y motor cables and endstop wires through the cable chain. Leave 30mm of slack at each axis end for full travel. Snap the chain cover closed.",
+      "targetIds": [
+        "target_cable_chain_route"
+      ],
+      "hintIds": [
+        "hint_route_cables_chain"
+      ],
+      "family": "Use"
+    }
+  ],
+  "targets": [
+    {
+      "id": "target_control_panel_mount",
+      "name": "Control Panel Mount",
+      "anchorRef": "anchors/d3d/electronics/control_panel_mount",
+      "description": "Placement position for the control panel enclosure on the frame front-left face.",
+      "associatedPartId": "d3d_control_panel",
+      "tags": [
+        "electronics",
+        "wiring"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_ramps_board_slot",
+      "name": "RAMPS Board Slot",
+      "anchorRef": "anchors/d3d/electronics/ramps_board_slot",
+      "description": "Seated position for the RAMPS 1.4 board inside the control panel.",
+      "associatedPartId": "d3d_ramps_14_board",
+      "tags": [
+        "electronics",
+        "wiring"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_control_panel_fastener",
+      "name": "Control Panel Fastener",
+      "anchorRef": "anchors/d3d/electronics/control_panel_fastener",
+      "description": "M3 screw tightening point for the control panel mounting tabs.",
+      "associatedPartId": "",
+      "tags": [
+        "electronics",
+        "wiring"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_psu_connections_verify",
+      "name": "PSU Connections Verify",
+      "anchorRef": "anchors/d3d/electronics/psu_connections_verify",
+      "description": "Verification check point for PSU power connections to RAMPS.",
+      "associatedPartId": "",
+      "tags": [
+        "electronics",
+        "wiring"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_cable_chain_route",
+      "name": "Cable Chain Route",
+      "anchorRef": "anchors/d3d/electronics/cable_chain_route",
+      "description": "Confirmation point â€” axis cables routed through cable chain and cover snapped closed.",
+      "associatedPartId": "",
+      "tags": [
+        "electronics",
+        "wiring"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_wire_psu_12v",
+      "name": "+12V Wire Connection",
+      "anchorRef": "anchors/d3d/electronics/wire_psu_12v",
+      "description": "PSU +12V output to RAMPS V+ screw terminal.",
+      "tags": [
+        "electronics",
+        "wiring"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_wire_psu_gnd",
+      "name": "GND Wire Connection",
+      "anchorRef": "anchors/d3d/electronics/wire_psu_gnd",
+      "description": "PSU GND output to RAMPS GND screw terminal.",
+      "tags": [
+        "electronics",
+        "wiring"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_wire_psu_enable",
+      "name": "ATX Enable Wire Connection",
+      "anchorRef": "anchors/d3d/electronics/wire_psu_enable",
+      "description": "ATX PS_ON to GND jumper â€” forces PSU on.",
+      "tags": [
+        "electronics",
+        "wiring"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_wire_motor_x",
+      "name": "X Motor Wire Connection",
+      "anchorRef": "anchors/d3d/electronics/wire_motor_x",
+      "description": "X-axis stepper motor to RAMPS X-driver header.",
+      "tags": [
+        "electronics",
+        "wiring"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_wire_motor_y_left",
+      "name": "Y-Left Motor Wire Connection",
+      "anchorRef": "anchors/d3d/electronics/wire_motor_y_left",
+      "description": "Y-left stepper motor to RAMPS Y-driver header.",
+      "tags": [
+        "electronics",
+        "wiring"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_wire_motor_y_right",
+      "name": "Y-Right Motor Wire Connection",
+      "anchorRef": "anchors/d3d/electronics/wire_motor_y_right",
+      "description": "Y-right stepper motor to RAMPS Y-driver header.",
+      "tags": [
+        "electronics",
+        "wiring"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_wire_motor_z_front",
+      "name": "Z-Front Motor Wire Connection",
+      "anchorRef": "anchors/d3d/electronics/wire_motor_z_front",
+      "description": "Z-front stepper motor to RAMPS Z-driver header.",
+      "tags": [
+        "electronics",
+        "wiring"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_wire_motor_z_back",
+      "name": "Z-Back Motor Wire Connection",
+      "anchorRef": "anchors/d3d/electronics/wire_motor_z_back",
+      "description": "Z-back stepper motor to RAMPS Z-driver header.",
+      "tags": [
+        "electronics",
+        "wiring"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_wire_endstop_x",
+      "name": "X Endstop Wire Connection",
+      "anchorRef": "anchors/d3d/electronics/wire_endstop_x",
+      "description": "X-axis min endstop to RAMPS X-MIN header.",
+      "tags": [
+        "electronics",
+        "wiring"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_wire_endstop_y",
+      "name": "Y Endstop Wire Connection",
+      "anchorRef": "anchors/d3d/electronics/wire_endstop_y",
+      "description": "Y-axis min endstop to RAMPS Y-MIN header.",
+      "tags": [
+        "electronics",
+        "wiring"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_wire_endstop_z",
+      "name": "Z Endstop Wire Connection",
+      "anchorRef": "anchors/d3d/electronics/wire_endstop_z",
+      "description": "Z-axis min endstop to RAMPS Z-MIN header.",
+      "tags": [
+        "electronics",
+        "wiring"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_wire_heater_cartridge",
+      "name": "Heater Cartridge Connection",
+      "anchorRef": "anchors/d3d/electronics/wire_heater_cartridge",
+      "description": "Extruder heater cartridge to RAMPS E0 heater output.",
+      "tags": [
+        "electronics",
+        "wiring"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_wire_thermistor",
+      "name": "Thermistor Connection",
+      "anchorRef": "anchors/d3d/electronics/wire_thermistor",
+      "description": "Extruder NTC thermistor to RAMPS T0 input.",
+      "tags": [
+        "electronics",
+        "wiring"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_wire_extruder_fan",
+      "name": "Extruder Fan Connection",
+      "anchorRef": "anchors/d3d/electronics/wire_extruder_fan",
+      "description": "Part-cooling fan to RAMPS FAN or D9 PWM header.",
+      "tags": [
+        "electronics",
+        "wiring"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    }
+  ],
+  "hints": [
+    {
+      "id": "hint_mount_control_panel",
+      "message": "Align the control panel enclosure to the front-left face of the frame. The mounting tabs should sit flush against the frame bars before fastening.",
+      "targetId": null,
+      "partId": null,
+      "type": "text"
+    },
+    {
+      "id": "hint_install_ramps_board",
+      "message": "Seat the RAMPS 1.4 board firmly into the control panel. The USB port and power screw terminals should face outward. Ensure no pins are bent when pressing the board down.",
+      "targetId": null,
+      "partId": null,
+      "type": "text"
+    },
+    {
+      "id": "hint_secure_control_panel",
+      "message": "Thread M3 screws through the panel mounting tabs. Snug finger-tight first, then apply a quarter-turn with a screwdriver. Do not overtighten plastic tabs.",
+      "targetId": null,
+      "partId": null,
+      "type": "text"
+    },
+    {
+      "id": "hint_connect_psu_12v",
+      "message": "The +12V line (red wire) connects to the V+ screw terminal on RAMPS. Strip 6mm of insulation, insert the bare end, and tighten the terminal screw until the wire does not pull free.",
+      "targetId": null,
+      "partId": null,
+      "type": "text"
+    },
+    {
+      "id": "hint_connect_psu_gnd",
+      "message": "The ground line (black wire) connects to the GND screw terminal adjacent to V+. Polarity matters â€” reversing +12V and GND will damage the RAMPS board immediately.",
+      "targetId": null,
+      "partId": null,
+      "type": "text"
+    },
+    {
+      "id": "hint_connect_psu_atx_enable",
+      "message": "Short the PS_ON pin (green wire) to a GND pin on the ATX connector to force the PSU on. Without this jumper the PSU will not supply power when switched on.",
+      "targetId": null,
+      "partId": null,
+      "type": "text"
+    },
+    {
+      "id": "hint_verify_psu_connections",
+      "message": "Check all three PSU connections: V+ (red), GND (black), and the PS_ON enable jumper. Wiggle each wire gently â€” a properly seated terminal will not move.",
+      "targetId": null,
+      "partId": null,
+      "type": "text"
+    },
+    {
+      "id": "hint_connect_motor",
+      "message": "Stepper motor connectors are 4-pin dupont. Orientation matters for motor direction but not for damage â€” if the axis runs backwards in firmware, reverse the connector.",
+      "targetId": null,
+      "partId": null,
+      "type": "text"
+    },
+    {
+      "id": "hint_connect_endstop",
+      "message": "Endstop connectors are 2-pin dupont (signal + GND). Connect to the MIN port for the corresponding axis on RAMPS (X-MIN, Y-MIN, Z-MIN). Do not use the MAX ports for home endstops.",
+      "targetId": null,
+      "partId": null,
+      "type": "text"
+    },
+    {
+      "id": "hint_connect_heater_cartridge",
+      "message": "The heater cartridge wires (red/white pair) connect to the E0 heater output on RAMPS (D10 terminal). Polarity does not matter for a resistive heater element.",
+      "targetId": null,
+      "partId": null,
+      "type": "text"
+    },
+    {
+      "id": "hint_connect_thermistor",
+      "message": "The thermistor connects to the T0 pin header (2-pin, signal + GND). Polarity matters â€” reversing the thermistor will read ambient temperature as 300Â°C and trigger thermal runaway protection.",
+      "targetId": null,
+      "partId": null,
+      "type": "text"
+    },
+    {
+      "id": "hint_connect_extruder_fan",
+      "message": "The part-cooling fan connects to the always-on 12V fan header (pins labelled FAN). If using a controlled fan, use the D9 PWM output instead.",
+      "targetId": null,
+      "partId": null,
+      "type": "text"
+    },
+    {
+      "id": "hint_route_cables_chain",
+      "message": "Route all axis motor cables through the cable chain before securing the chain to the frame. Leave 30mm of slack at each axis end to allow full travel without tension.",
+      "targetId": null,
+      "partId": null,
+      "type": "text"
+    }
+  ]
+}

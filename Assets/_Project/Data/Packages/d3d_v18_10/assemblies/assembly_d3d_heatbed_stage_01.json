@@ -1,0 +1,346 @@
+{
+  "assemblies": [
+    {
+      "id": "assembly_d3d_heatbed_stage_01",
+      "name": "D3D Heated Bed Stage 01",
+      "description": "Stages the first mechanical heated-bed body into the printer, places the snapbuckle retainer pair, and checks first bed-envelope / nozzle clearance before heater wiring and control work are introduced.",
+      "machineId": "d3d_v18_10",
+      "subassemblyIds": [
+        "subassembly_heatbed_mechanical_stack"
+      ],
+      "stepIds": [
+        "step_stage_heatbed_body",
+        "step_place_heatbed_snapbuckle_left",
+        "step_place_heatbed_snapbuckle_right",
+        "step_check_heatbed_envelope_clearance",
+        "step_assembly_complete"
+      ],
+      "dependencyAssemblyIds": [
+        "assembly_d3d_extruder_stage_03"
+      ],
+      "learningFocus": "Mechanical bed-body placement, first retainer placement, and first bed-envelope / nozzle-clearance review before any heated-bed wiring is authored."
+    }
+  ],
+  "subassemblies": [
+    {
+      "id": "subassembly_heatbed_mechanical_stack",
+      "name": "Heated Bed Mechanical Stack",
+      "assemblyId": "assembly_d3d_heatbed_stage_01",
+      "description": "First-pass heated-bed mechanical stack made from the bed body and snapbuckle retainer pair.",
+      "partIds": [
+        "d3d_heatbed_body",
+        "d3d_heatbed_snapbuckle_left",
+        "d3d_heatbed_snapbuckle_right"
+      ],
+      "stepIds": [
+        "step_stage_heatbed_body",
+        "step_place_heatbed_snapbuckle_left",
+        "step_place_heatbed_snapbuckle_right",
+        "step_check_heatbed_envelope_clearance"
+      ],
+      "milestoneMessage": "The first mechanical heated-bed body and snapbuckle retainer pair are placed and checked for initial bed-envelope / nozzle clearance."
+    }
+  ],
+  "parts": [
+    {
+      "id": "d3d_heatbed_body",
+      "name": "Heatbed Body",
+      "function": "First mechanical heated-bed body staged into the printer before any heater wiring is introduced.",
+      "defaultOrientationHint": "Keep the bed body level and centered inside the frame so the square bed envelope sits directly under the nozzle travel zone.",
+      "templateId": "template_d3d_heatbed_body",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.3,
+          "y": 0.64,
+          "z": -0.24
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.45,
+          "g": 0.46,
+          "b": 0.48,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "d3d_heatbed_snapbuckle_left",
+      "name": "Heatbed Snapbuckle Left",
+      "function": "Left-side snapbuckle retainer for the first-pass heatbed mechanical mount path.",
+      "defaultOrientationHint": "Keep the left retainer square to the bed edge and seat it flush to the authored side contact point.",
+      "assetRef": "d3d_heatbed_snapbuckle_left_approved.glb",
+      "templateId": "template_d3d_heatbed_snapbuckle",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.24,
+          "y": 0.59,
+          "z": -0.23
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.16,
+          "g": 0.16,
+          "b": 0.17,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "d3d_heatbed_snapbuckle_right",
+      "name": "Heatbed Snapbuckle Right",
+      "function": "Right-side snapbuckle retainer for the first-pass heatbed mechanical mount path.",
+      "defaultOrientationHint": "Keep the right retainer square to the bed edge and seat it flush to the authored side contact point.",
+      "assetRef": "d3d_heatbed_snapbuckle_right_approved.glb",
+      "templateId": "template_d3d_heatbed_snapbuckle",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.24,
+          "y": 0.59,
+          "z": -0.23
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.16,
+          "g": 0.16,
+          "b": 0.17,
+          "a": 1.0
+        }
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "step_stage_heatbed_body",
+      "name": "Stage the heatbed body",
+      "assemblyId": "assembly_d3d_heatbed_stage_01",
+      "subassemblyId": "subassembly_heatbed_mechanical_stack",
+      "sequenceIndex": 82,
+      "instructionText": "Place the heatbed body into the printer so the first mechanical bed envelope is established before the retainers are added.",
+      "family": "Place",
+      "requiredPartIds": [
+        "d3d_heatbed_body"
+      ],
+      "targetIds": [
+        "target_heatbed_body_mount"
+      ],
+      "hintIds": [
+        "hint_stage_heatbed_body"
+      ]
+    },
+    {
+      "id": "step_place_heatbed_snapbuckle_left",
+      "name": "Place the left snapbuckle",
+      "assemblyId": "assembly_d3d_heatbed_stage_01",
+      "subassemblyId": "subassembly_heatbed_mechanical_stack",
+      "sequenceIndex": 83,
+      "instructionText": "Place the left snapbuckle retainer onto the left bed-side contact point after the heatbed body is seated.",
+      "family": "Place",
+      "requiredPartIds": [
+        "d3d_heatbed_snapbuckle_left"
+      ],
+      "targetIds": [
+        "target_heatbed_snapbuckle_left"
+      ],
+      "hintIds": [
+        "hint_place_snapbuckle_left"
+      ]
+    },
+    {
+      "id": "step_place_heatbed_snapbuckle_right",
+      "name": "Place the right snapbuckle",
+      "assemblyId": "assembly_d3d_heatbed_stage_01",
+      "subassemblyId": "subassembly_heatbed_mechanical_stack",
+      "sequenceIndex": 84,
+      "instructionText": "Place the right snapbuckle retainer onto the right bed-side contact point so the first mechanical bed path is held symmetrically.",
+      "family": "Place",
+      "requiredPartIds": [
+        "d3d_heatbed_snapbuckle_right"
+      ],
+      "targetIds": [
+        "target_heatbed_snapbuckle_right"
+      ],
+      "hintIds": [
+        "hint_place_snapbuckle_right"
+      ]
+    },
+    {
+      "id": "step_check_heatbed_envelope_clearance",
+      "name": "Check heated-bed envelope clearance",
+      "assemblyId": "assembly_d3d_heatbed_stage_01",
+      "subassemblyId": "subassembly_heatbed_mechanical_stack",
+      "sequenceIndex": 85,
+      "instructionText": "Inspect the staged heatbed body and retainer pair and confirm the bed envelope stays centered under the nozzle path with clear left and right margins.",
+      "family": "Confirm",
+      "viewMode": "Inspect",
+      "targetIds": [
+        "target_heatbed_clearance_left",
+        "target_heatbed_clearance_right",
+        "target_heatbed_nozzle_clearance"
+      ],
+      "hintIds": [
+        "hint_check_heatbed_clearance"
+      ]
+    },
+    {
+      "id": "step_assembly_complete",
+      "name": "Assembly complete",
+      "assemblyId": "assembly_d3d_heatbed_stage_01",
+      "subassemblyId": "subassembly_heatbed_mechanical_stack",
+      "sequenceIndex": 86,
+      "instructionText": "All parts are now in their final assembled positions. Rotate the view to inspect the completed D3D printer stage 1 assembly.",
+      "family": "Confirm",
+      "viewMode": "Overview",
+      "hintIds": [
+        "hint_assembly_complete_stage01"
+      ]
+    }
+  ],
+  "targets": [
+    {
+      "id": "target_heatbed_body_mount",
+      "name": "Heatbed Body Mount",
+      "anchorRef": "anchors/d3d/heatbed/body/mount",
+      "associatedPartId": "d3d_heatbed_body",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_heatbed_snapbuckle_left",
+      "name": "Heatbed Snapbuckle Left",
+      "anchorRef": "anchors/d3d/heatbed/snapbuckle/left",
+      "associatedPartId": "d3d_heatbed_snapbuckle_left",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_heatbed_snapbuckle_right",
+      "name": "Heatbed Snapbuckle Right",
+      "anchorRef": "anchors/d3d/heatbed/snapbuckle/right",
+      "associatedPartId": "d3d_heatbed_snapbuckle_right",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_heatbed_clearance_left",
+      "name": "Heatbed Clearance Left",
+      "anchorRef": "anchors/d3d/heatbed/qc/left",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_heatbed_clearance_right",
+      "name": "Heatbed Clearance Right",
+      "anchorRef": "anchors/d3d/heatbed/qc/right",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_heatbed_nozzle_clearance",
+      "name": "Heatbed Nozzle Clearance",
+      "anchorRef": "anchors/d3d/heatbed/qc/nozzle",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    }
+  ],
+  "hints": [
+    {
+      "id": "hint_stage_heatbed_body",
+      "type": "highlight",
+      "title": "Center bed body under nozzle travel path",
+      "message": "Place the heatbed body roughly centered under the nozzle travel area. The two snapbuckle retainers will hold it in position in the next two steps.",
+      "targetId": "target_heatbed_body_mount",
+      "partId": "d3d_heatbed_body",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_place_snapbuckle_left",
+      "type": "highlight",
+      "title": "Left snapbuckle clicks into left bed edge",
+      "message": "Press the left snapbuckle firmly onto the left side of the bed body until it clicks into the retainer channel. The fit should be firm with no visible gap.",
+      "targetId": "target_heatbed_snapbuckle_left",
+      "partId": "d3d_heatbed_snapbuckle_left",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_place_snapbuckle_right",
+      "type": "highlight",
+      "title": "Right snapbuckle mirrors the left",
+      "message": "Press the right snapbuckle onto the right side of the bed body until it clicks. The bed should now be retained symmetrically on both sides with equal pressure.",
+      "targetId": "target_heatbed_snapbuckle_right",
+      "partId": "d3d_heatbed_snapbuckle_right",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_check_heatbed_clearance",
+      "type": "highlight",
+      "title": "Check bed centering and nozzle-to-bed clearance",
+      "message": "Inspect both bed-to-frame margins. They should be roughly equal. Move the nozzle carriage across the full range and confirm the nozzle tip stays above the bed surface at every position.",
+      "targetId": "target_heatbed_nozzle_clearance",
+      "priority": "high"
+    },
+    {
+      "id": "hint_assembly_complete_stage01",
+      "type": "highlight",
+      "title": "Stage 1 mechanical assembly complete",
+      "message": "All mechanical components for the D3D Stage 1 assembly are in place. Rotate the view to inspect the full printer before advancing to the internal axis detail stages.",
+      "priority": "low"
+    }
+  ]
+}

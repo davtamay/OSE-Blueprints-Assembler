@@ -109,11 +109,8 @@ namespace OSE.Editor
             if (relLower.Contains("/assets/parts/") || relLower.Contains("/assets/tools/"))
                 return;
 
-            string jsonPath = Path.Combine(PackagesDataPath, packageId, "machine.json");
-            if (!File.Exists(jsonPath)) return;
-
-            string rawJson  = File.ReadAllText(jsonPath);
-            var    pkg      = JsonUtility.FromJson<MachinePackageDefinition>(rawJson);
+            // Load the full merged package (handles both split-layout and monolithic).
+            var pkg = PackageJsonUtils.LoadPackage(packageId);
             if (pkg?.previewConfig == null) return;
 
             bool modified = false;
@@ -154,8 +151,14 @@ namespace OSE.Editor
 
             if (modified)
             {
-                PackageJsonUtils.WritePreviewConfig(jsonPath, pkg.previewConfig);
-                OseLog.Info($"[PackageAssetPostprocessor] machine.json updated for package '{packageId}'.");
+                // For split-layout packages write to preview_config.json;
+                // for monolithic packages write inline to machine.json.
+                string previewConfigPath = PackageJsonUtils.GetPreviewConfigJsonPath(packageId);
+                if (previewConfigPath != null)
+                {
+                    PackageJsonUtils.WritePreviewConfig(previewConfigPath, pkg.previewConfig);
+                    OseLog.Info($"[PackageAssetPostprocessor] previewConfig updated for package '{packageId}'.");
+                }
             }
         }
 

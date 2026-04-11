@@ -985,6 +985,38 @@ Content data is declarative, not the live runtime itself.
 
 ---
 
+## 7.1 Machine Package File Authorship Map
+
+Within a machine package, each file has a distinct owner and purpose:
+
+| File | Owner | Agents may edit? | Purpose |
+|------|-------|-----------------|---------|
+| `machine.json` | Agent | Yes | Package metadata: name, version, `entryAssemblyIds`, `schemaVersion` |
+| `shared.json` | Agent | Yes | Tools (with `toolPose`), `partTemplates`, global hints (no specific `targetId`/`partId`), global `validationRules` |
+| `assemblies/{id}.json` | Agent | Yes — one file per assembly | Assembly def, subassemblies, steps, parts (with `stagingPose`), targets, local hints |
+| `preview_config.json` | TTAW / Blender pipeline | **Never** | Assembled poses, `stepPoses`, `targetPlacements`, `splinePath`, `constrainedFit` — all generated, never hand-authored |
+| `assets/parts/*.glb` | Blender export pipeline | **Never** | Mesh assets — resolver hardcodes this path |
+| `assets/tools/*.glb` | Blender export pipeline | **Never** | Tool mesh assets |
+
+**The single most important rule:** `preview_config.json` is 100% TTAW/Blender-generated. If an agent needs to set a part's staging (start) position, it edits `parts[].stagingPose` in the assembly file — never `previewConfig.partPlacements[].startPosition`, which is derived at load time.
+
+## 7.2 Cross-Assembly Part Ownership Rule
+
+Each part is **defined exactly once**, in the assembly file where it is **first physically assembled**.
+
+Later assemblies that reference the same part use the part's `id` only — they do not re-define it.
+The `MachinePackageLoader` merges all assembly files, making all part IDs globally visible.
+
+`shared.json` does **not** contain concrete parts — only abstract `partTemplates` (reusable field sets),
+tools, and global hints.
+
+Example:
+- `assemblies/x_axis.json` defines `part_x_axis_belt_peg` (first assembled here)
+- `assemblies/axes_mount.json` references `part_x_axis_belt_peg` by ID in its steps
+- `shared.json` does NOT contain `part_x_axis_belt_peg`
+
+---
+
 # 8. Change Escalation Rules
 
 If a change appears to affect multiple ownership boundaries, stop and review before implementing.

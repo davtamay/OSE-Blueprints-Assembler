@@ -20,11 +20,59 @@ namespace OSE.Content.Loading
             if (package == null) return;
 
             InflatePartTemplates(package);
+            BakeStagingPoses(package);
             InferStepParentIds(package);
             NormalizeToolActions(package);
             ResolveToolActionPartIds(package);
             ResolveDirectTargetPartIds(package);
             IndexPartOwnership(package);
+        }
+
+        // ── Staging Pose Bake ──
+
+        /// <summary>
+        /// Copies <see cref="StagingPose"/> data from each <see cref="PartDefinition"/>
+        /// into the matching <see cref="PartPreviewPlacement"/> start fields so that all
+        /// runtime code that reads <c>previewConfig.partPlacements[].startPosition</c>
+        /// automatically gets the agent-authored values without modification.
+        ///
+        /// This is a one-way bake: <c>part.stagingPose</c> is the source of truth;
+        /// <c>partPlacements.startPosition</c> is derived. Agents should only write
+        /// <c>stagingPose</c> in <c>parts[]</c> — never edit <c>startPosition</c> directly.
+        ///
+        /// Parts without a <see cref="StagingPose"/> are left untouched so the legacy
+        /// <c>previewConfig.partPlacements.startPosition</c> values (if present in an
+        /// un-migrated package) continue to work as the fallback.
+        /// </summary>
+        private static void BakeStagingPoses(MachinePackageDefinition package)
+        {
+            if (package.parts == null) return;
+            if (package.previewConfig?.partPlacements == null) return;
+
+            var placementById = new Dictionary<string, PartPreviewPlacement>(
+                package.previewConfig.partPlacements.Length, StringComparer.OrdinalIgnoreCase);
+            foreach (PartPreviewPlacement pp in package.previewConfig.partPlacements)
+            {
+                if (pp != null && !string.IsNullOrWhiteSpace(pp.partId))
+                    placementById[pp.partId] = pp;
+            }
+
+            foreach (PartDefinition part in package.parts)
+            {
+                if (part?.stagingPose == null) continue;
+                if (string.IsNullOrWhiteSpace(part.id)) continue;
+                if (!placementById.TryGetValue(part.id, out PartPreviewPlacement placement)) continue;
+
+                placement.startPosition = part.stagingPose.position;
+                placement.startRotation = part.stagingPose.rotation;
+
+                StagingPose sp = part.stagingPose;
+                if (sp.scale.x != 0f || sp.scale.y != 0f || sp.scale.z != 0f)
+                    placement.startScale = sp.scale;
+
+                if (sp.color.a > 0f)
+                    placement.color = sp.color;
+            }
         }
 
         // ── Part Templates ──

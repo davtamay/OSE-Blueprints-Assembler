@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using OSE.Content;
 using UnityEngine;
@@ -101,15 +103,140 @@ namespace OSE.Editor
         }
 
         /// <summary>
-        /// Deserializes a machine.json from the authoring folder.
+        /// Returns true if this package uses the split-layout architecture
+        /// (an <c>assemblies/</c> subfolder exists under the authoring folder).
+        /// </summary>
+        internal static bool IsSplitLayout(string packageId)
+        {
+            if (string.IsNullOrEmpty(packageId)) return false;
+            return Directory.Exists(Path.Combine(AuthoringRoot, packageId, "assemblies"));
+        }
+
+        /// <summary>
+        /// Returns the absolute path of the file that owns the <c>previewConfig</c> block.
+        /// For split-layout packages this is <c>preview_config.json</c>;
+        /// for monolithic packages it is <c>machine.json</c> (previewConfig is inline).
+        /// Returns null if the file does not exist.
+        /// </summary>
+        internal static string GetPreviewConfigJsonPath(string packageId)
+        {
+            if (string.IsNullOrEmpty(packageId)) return null;
+            if (IsSplitLayout(packageId))
+            {
+                string path = Path.Combine(AuthoringRoot, packageId, "preview_config.json");
+                return File.Exists(path) ? path : null;
+            }
+            return GetJsonPath(packageId);
+        }
+
+        /// <summary>
+        /// Returns the authoring file path that contains an entity with <paramref name="entityId"/>
+        /// (target, step, part, tool, hint, etc.) for the given split-layout package.
+        /// Checks assembly files first, then shared.json.
+        /// Returns null if not found or the package is not split-layout.
+        /// For monolithic packages use <see cref="GetJsonPath"/> instead.
+        /// </summary>
+        internal static string FindEntityFilePath(string packageId, string entityId)
+        {
+            if (string.IsNullOrEmpty(packageId) || string.IsNullOrEmpty(entityId)) return null;
+            string packageDir     = Path.Combine(AuthoringRoot, packageId);
+            string assemblyFolder = Path.Combine(packageDir, "assemblies");
+            if (!Directory.Exists(assemblyFolder)) return null;
+
+            string needle1 = $"\"id\": \"{entityId}\"";
+            string needle2 = $"\"id\":\"{entityId}\"";
+
+            foreach (string asmFile in Directory.GetFiles(assemblyFolder, "*.json"))
+            {
+                string text = File.ReadAllText(asmFile);
+                if (text.Contains(needle1, StringComparison.Ordinal) ||
+                    text.Contains(needle2, StringComparison.Ordinal))
+                    return asmFile;
+            }
+
+            string sharedPath = Path.Combine(packageDir, "shared.json");
+            if (File.Exists(sharedPath))
+            {
+                string text = File.ReadAllText(sharedPath);
+                if (text.Contains(needle1, StringComparison.Ordinal) ||
+                    text.Contains(needle2, StringComparison.Ordinal))
+                    return sharedPath;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Deserializes the fully-merged package definition, handling both monolithic
+        /// (machine.json) and split-layout (assemblies/ folder) packages.
         /// Returns null on any failure.
         /// </summary>
         internal static MachinePackageDefinition LoadPackage(string packageId)
         {
+            if (string.IsNullOrEmpty(packageId)) return null;
+            string packageDir     = Path.Combine(AuthoringRoot, packageId);
+            string assemblyFolder = Path.Combine(packageDir, "assemblies");
+            if (Directory.Exists(assemblyFolder))
+                return LoadSplitLayoutPackage(packageDir, assemblyFolder);
+
             string path = GetJsonPath(packageId);
             if (path == null) return null;
-            string text = File.ReadAllText(path);
-            return JsonUtility.FromJson<MachinePackageDefinition>(text);
+            return JsonUtility.FromJson<MachinePackageDefinition>(File.ReadAllText(path));
+        }
+
+        private static MachinePackageDefinition LoadSplitLayoutPackage(string packageDir, string assemblyFolder)
+        {
+            string machineJson = File.ReadAllText(Path.Combine(packageDir, "machine.json"));
+            var pkg = JsonUtility.FromJson<MachinePackageDefinition>(machineJson) ?? new MachinePackageDefinition();
+
+            string sharedPath = Path.Combine(packageDir, "shared.json");
+            if (File.Exists(sharedPath))
+            {
+                var shared = JsonUtility.FromJson<MachinePackageDefinition>(File.ReadAllText(sharedPath));
+                if (shared != null)
+                {
+                    pkg.tools           = shared.tools           ?? pkg.tools;
+                    pkg.partTemplates   = shared.partTemplates   ?? pkg.partTemplates;
+                    pkg.validationRules = MergeArrays(pkg.validationRules, shared.validationRules);
+                    pkg.effects         = MergeArrays(pkg.effects,         shared.effects);
+                    pkg.hints           = MergeArrays(pkg.hints,           shared.hints);
+                    if (pkg.challengeConfig == null && shared.challengeConfig != null)
+                        pkg.challengeConfig = shared.challengeConfig;
+                }
+            }
+
+            foreach (string asmFile in Directory.GetFiles(assemblyFolder, "*.json").OrderBy(f => f))
+            {
+                var chunk = JsonUtility.FromJson<MachinePackageDefinition>(File.ReadAllText(asmFile));
+                if (chunk == null) continue;
+                pkg.assemblies      = MergeArrays(pkg.assemblies,      chunk.assemblies);
+                pkg.subassemblies   = MergeArrays(pkg.subassemblies,   chunk.subassemblies);
+                pkg.parts           = MergeArrays(pkg.parts,           chunk.parts);
+                pkg.steps           = MergeArrays(pkg.steps,           chunk.steps);
+                pkg.targets         = MergeArrays(pkg.targets,         chunk.targets);
+                pkg.hints           = MergeArrays(pkg.hints,           chunk.hints);
+                pkg.validationRules = MergeArrays(pkg.validationRules, chunk.validationRules);
+            }
+
+            string previewPath = Path.Combine(packageDir, "preview_config.json");
+            if (File.Exists(previewPath))
+            {
+                var wrap = JsonUtility.FromJson<MachinePackageDefinition>(File.ReadAllText(previewPath));
+                if (wrap?.previewConfig != null)
+                    pkg.previewConfig = wrap.previewConfig;
+            }
+            return pkg;
+        }
+
+        private static T[] MergeArrays<T>(T[] a, T[] b)
+        {
+            bool aEmpty = a == null || a.Length == 0;
+            bool bEmpty = b == null || b.Length == 0;
+            if (aEmpty) return bEmpty ? Array.Empty<T>() : b;
+            if (bEmpty) return a;
+            var result = new T[a.Length + b.Length];
+            Array.Copy(a, 0, result, 0,        a.Length);
+            Array.Copy(b, 0, result, a.Length, b.Length);
+            return result;
         }
 
         /// <summary>

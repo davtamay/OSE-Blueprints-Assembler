@@ -279,3 +279,29 @@ When both a payload and its flat-field equivalent exist, the **payload always wi
 - [ ] `wireConnect` payload present for `Connect.WireConnect` steps
 - [ ] `measurement` payload present for `Use.Measure` steps
 - [ ] Float precision normalized (run `OSE / Package Builder / Normalize Float Precision`)
+
+---
+
+## Part Staging Positions (Agent Authoring Rule)
+
+Staging positions — where a part floats before the trainee places it — are **not authored in steps**.
+They live on the part definition itself:
+
+```json
+// parts[] in the assembly file or machine.json
+{
+  "id": "part_frame_rail_tl",
+  "templateId": "template_frame_rail",
+  "stagingPose": {
+    "position": { "x": -0.3, "y": 0.4, "z": 0.1 },
+    "rotation": { "x": 0, "y": 0, "z": 0, "w": 1 }
+  }
+}
+```
+
+**Rules:**
+- `parts[].stagingPose` is the agent-authored source of truth for start positions (PreviewRoot local space).
+- `previewConfig.partPlacements[].startPosition/startRotation/startScale/color` are **derived** — baked from `stagingPose` by `MachinePackageNormalizer.BakeStagingPoses()` at load time. **Do not edit them directly.**
+- `previewConfig.partPlacements[].assembledPosition/assembledRotation` and all `stepPoses[]` data inside previewConfig are **TTAW/Blender-generated** — never authored by agents.
+- `scale` in `stagingPose` may be omitted; zero means "use Vector3.one".
+- `color` in `stagingPose` may be omitted; zero alpha means "use the ColAuthored default set in TTAW".

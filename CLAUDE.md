@@ -35,6 +35,44 @@ After ANY machine.json edit, the agent MUST follow these rules:
 
 **Validate after edits:** After bulk edits, tell the user to run `OSE > Validate All Packages` in Unity. The pre-play validator blocks Play mode on errors automatically.
 
+**Staging positions go in `parts[].stagingPose`, not in `previewConfig`:** The agent-authored source of truth for where a part floats before the trainee places it is `parts[].stagingPose` (position, rotation, scale, color). `previewConfig.partPlacements[].startPosition` is derived — baked by `MachinePackageNormalizer.BakeStagingPoses()` at load time. Never edit `startPosition` in previewConfig directly.
+
+## Machine Package File Architecture (Phase 2)
+
+When the per-assembly file split is in place, each machine package has this layout:
+
+```
+Assets/_Project/Data/Packages/{packageId}/
+  machine.json          ← metadata only: name, version, entryAssemblyIds, schemaVersion
+  shared.json           ← tools, partTemplates, global hints (no targetId/partId), global validationRules
+  assemblies/           ← one JSON per assembly, self-contained
+    frame.json
+    y_left.json
+    x_axis.json
+    ...
+  preview_config.json   ← TTAW/Blender-generated ONLY — agents never open this
+  assets/
+    parts/*.glb
+    tools/*.glb
+```
+
+**Agent routing rules:**
+
+| What you need to do | File to read | File to write |
+|---------------------|-------------|--------------|
+| Edit steps for an assembly | `assemblies/{assemblyId}.json` | Same file |
+| Define a new part (or set `stagingPose`) | `assemblies/{firstUseAssemblyId}.json` | Same file |
+| Define a tool or partTemplate | `shared.json` | `shared.json` |
+| Edit a global hint (no `targetId`/`partId`) | `shared.json` | `shared.json` |
+| Read machine name/version | `machine.json` | `machine.json` |
+| Read assembled/step poses | `preview_config.json` (read-only) | **Never write** |
+
+**Never re-define a part in a second assembly file.** A part is defined once in the assembly where it is first physically assembled; later assemblies reference it by `id` only. The loader merges all files — all IDs are globally visible.
+
+**`preview_config.json` is 100% TTAW/Blender-generated.** If a part's start position needs changing, edit `parts[].stagingPose` in the assembly file. The normalizer bakes it into previewConfig at load time.
+
+**Backward-compatible:** If `assemblies/` is absent, the loader falls back to reading a single monolithic `machine.json`. No other system needs to change.
+
 ## Agent Rules for Bug Fixes
 
 When fixing any bug, the agent MUST also prevent that class of bug from recurring:

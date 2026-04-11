@@ -1,0 +1,909 @@
+{
+  "tools": [
+    {
+      "id": "tool_framing_square",
+      "name": "Framing Square",
+      "category": "measurement",
+      "purpose": "Confirms that each D3D frame side stays square before clamping and tack welding.",
+      "usageNotes": "Seat both legs of the square against adjacent flat bars before any tack weld is placed.",
+      "assetRef": "tool_framing_square.glb",
+      "defaultOrientationHint": "Hold the inside corner of the square against the bar intersection.",
+      "safetyNotes": "Keep the work surface clear so the square sits flat against both bars.",
+      "searchTerms": [
+        "framing square",
+        "carpenter square",
+        "layout square"
+      ],
+      "toolPose": {
+        "gripPoint": {
+          "x": -0.0006,
+          "y": 0.015,
+          "z": -1.0795
+        },
+        "gripRotation": {
+          "x": 65.0908,
+          "y": 95.98489,
+          "z": 4.36159
+        },
+        "tipPoint": {
+          "x": 0,
+          "y": -0.011,
+          "z": 0.0455
+        },
+        "tipAxis": {
+          "x": 0.00053,
+          "y": -0.0231,
+          "z": 0.99973
+        },
+        "cursorOffset": {
+          "x": 0.0006,
+          "y": -0.015,
+          "z": 1.0545
+        },
+        "handedness": "right",
+        "poseHint": "power_grip"
+      },
+      "scaleOverride": 1
+    },
+    {
+      "id": "tool_locking_clamp",
+      "name": "Locking Clamp",
+      "category": "hand_tool",
+      "persistent": true,
+      "purpose": "Pins a verified frame side flat so the overlapped bars cannot shift while tack welds are added.",
+      "usageNotes": "Clamp near the panel center after the square check passes, then keep the bars flat while you tack opposite corners.",
+      "safetyNotes": "Keep fingers clear of the jaws and release clamping force slowly.",
+      "searchTerms": [
+        "locking clamp",
+        "vise grip welding clamp",
+        "panel welding clamp"
+      ],
+      "assetRef": "tool_locking_clamp.glb",
+      "toolPose": {
+        "gripPoint": {
+          "x": 0.5445,
+          "y": 1.9765,
+          "z": -0.0714
+        },
+        "gripRotation": {
+          "x": 7.0756,
+          "y": 163.2964,
+          "z": 90.53
+        },
+        "tipPoint": {
+          "x": 0.1016,
+          "y": 0.7776,
+          "z": 0
+        },
+        "tipAxis": {
+          "x": -0.6337,
+          "y": -0.7723,
+          "z": 0.0437
+        },
+        "cursorOffset": {
+          "x": -1.1622,
+          "y": -0.1564,
+          "z": 0.0124
+        },
+        "handedness": "right",
+        "poseHint": "power_grip"
+      },
+      "scaleOverride": 0.8
+    },
+    {
+      "id": "tool_mig_torch",
+      "name": "MIG Torch",
+      "category": "power_tool",
+      "purpose": "Places short tack welds at the overlapped frame-side corners.",
+      "usageNotes": "Use brief tacks in the authored order so the panel stays square and heat input remains controlled.",
+      "safetyNotes": "Use welding PPE, protect nearby surfaces, and maintain ventilation before striking an arc.",
+      "searchTerms": [
+        "MIG torch",
+        "welding gun",
+        "wire feed welder torch"
+      ],
+      "assetRef": "tool_mig_torch.glb",
+      "useOrientationOverride": true,
+      "orientationEuler": {
+        "x": 180,
+        "y": 90,
+        "z": 0
+      },
+      "toolPose": {
+        "gripPoint": {
+          "x": -0.1315,
+          "y": 1.0461,
+          "z": -0.4309
+        },
+        "gripRotation": {
+          "x": 13.4809,
+          "y": 264.2644,
+          "z": 179.0959
+        },
+        "tipPoint": {
+          "x": -0.6287,
+          "y": 0.0244,
+          "z": 0.0135
+        },
+        "tipAxis": {
+          "x": -0.432,
+          "y": -0.8235,
+          "z": 0.3677
+        },
+        "cursorOffset": {
+          "x": 0.0106,
+          "y": 0.8458,
+          "z": 0.0014
+        },
+        "handedness": "right",
+        "poseHint": "power_grip"
+      }
+    },
+    {
+      "id": "tool_angle_grinder",
+      "name": "Angle Grinder",
+      "category": "power_tool",
+      "purpose": "Cleans proud weld metal and spatter from the frame faces that will later carry rail and bracket hardware.",
+      "usageNotes": "Use light cleanup passes on the authored upper joints so later mounting faces stay usable without removing structural material.",
+      "safetyNotes": "Use eye and face protection, keep the guard in place, and control sparks away from the work area.",
+      "searchTerms": [
+        "angle grinder",
+        "weld cleanup grinder",
+        "cutoff grinder"
+      ],
+      "assetRef": "tool_angle_grinder.glb"
+    },
+    {
+      "id": "tool_allen_key_metric",
+      "name": "5 mm Metric Allen Key",
+      "category": "hand_tool",
+      "purpose": "Starts and tightens the X-axis fitting fasteners.",
+      "assetRef": "tool_allen_key_metric.glb",
+      "toolPose": {
+        "gripPoint": {
+          "x": 0.0245,
+          "y": -0.0332,
+          "z": 0.072
+        },
+        "gripRotation": {
+          "x": 294.8315,
+          "y": 83.4921,
+          "z": 286.4313
+        },
+        "tipPoint": {
+          "x": -0.0007,
+          "y": 0.0339,
+          "z": -0.0006
+        },
+        "tipAxis": {
+          "x": 0,
+          "y": 0.8745,
+          "z": 0.485
+        },
+        "cursorOffset": {
+          "x": -0.004,
+          "y": 0.0345,
+          "z": 0.0069
+        },
+        "handedness": "either",
+        "poseHint": "precision"
+      },
+      "scaleOverride": 4.46
+    },
+    {
+      "id": "tool_pliers",
+      "name": "Pliers",
+      "category": "hand_tool",
+      "purpose": "Pulls the X-axis belt to final tension.",
+      "assetRef": "tool_pliers.glb"
+    },
+    {
+      "id": "tool_hex_driver_metric_small",
+      "name": "2.5 mm Metric Hex Key",
+      "category": "hand_tool",
+      "purpose": "Secures the small holder-side fasteners during the first Titan Aero module build.",
+      "assetRef": "tool_hex_driver_metric_small.glb",
+      "toolPose": {
+        "gripPoint": {
+          "x": 0,
+          "y": -0.0637,
+          "z": 0
+        },
+        "tipPoint": {
+          "x": 0,
+          "y": 0,
+          "z": 0.021
+        },
+        "tipAxis": {
+          "x": 0,
+          "y": 0.9497,
+          "z": 0.3131
+        },
+        "actionAxis": {
+          "x": 0,
+          "y": 0,
+          "z": 1
+        },
+        "handedness": "either",
+        "poseHint": "precision"
+      }
+    },
+    {
+      "id": "tool_screwdriver_small",
+      "name": "Small Screwdriver",
+      "category": "hand_tool",
+      "purpose": "Secures the blower attachment during the first Titan Aero module build.",
+      "assetRef": "tool_screwdriver_small.glb"
+    },
+    {
+      "id": "tool_power_drill",
+      "name": "Power Drill",
+      "category": "power_tool",
+      "purpose": "Drills pilot holes and drives screws during D3D frame and axis assembly.",
+      "usageNotes": "Use a 3 mm bit for pilot holes in flat stock. Switch to a driver bit for M3/M5 screws.",
+      "safetyNotes": "Wear eye protection. Secure the workpiece before drilling.",
+      "assetRef": "tool_power_drill.glb",
+      "defaultOrientationHint": "Hold grip with trigger facing down, bit pointing forward.",
+      "searchTerms": [
+        "drill",
+        "power drill",
+        "cordless drill"
+      ],
+      "toolPose": {
+        "gripPoint": {
+          "x": 0.10326,
+          "y": 0.90783,
+          "z": -0.51529
+        },
+        "gripRotation": {
+          "x": 4.4853,
+          "y": 90,
+          "z": 270
+        },
+        "tipPoint": {
+          "x": 0.12989,
+          "y": -0.00269,
+          "z": -0.15513
+        },
+        "tipAxis": {
+          "x": 0,
+          "y": 0,
+          "z": 1
+        },
+        "cursorOffset": {
+          "x": -0.10326,
+          "y": -0.90783,
+          "z": 0.46529
+        },
+        "handedness": "right",
+        "poseHint": "power_grip"
+      },
+      "scaleOverride": 7
+    },
+    {
+      "id": "tool_box_cutter",
+      "name": "Box Cutter",
+      "category": "hand_tool",
+      "purpose": "Cuts cable ties, opens packaging, and trims wire insulation during wiring steps.",
+      "usageNotes": "Extend the blade one notch only. Cut away from fingers.",
+      "safetyNotes": "Retract blade immediately after use. Keep fingers behind the blade guard.",
+      "assetRef": "tool_box_cutter.glb",
+      "defaultOrientationHint": "Hold handle with blade pointing forward along +Z.",
+      "searchTerms": [
+        "box cutter",
+        "utility knife",
+        "retractable knife"
+      ],
+      "toolPose": {
+        "gripPoint": {
+          "x": 0.0014,
+          "y": -0.2394,
+          "z": -0.3476
+        },
+        "gripRotation": {
+          "x": 70.927,
+          "y": 86.0669,
+          "z": 348.3125
+        },
+        "tipPoint": {
+          "x": 0.9409,
+          "y": -0.1435,
+          "z": -0.0132
+        },
+        "tipAxis": {
+          "x": 0,
+          "y": 0,
+          "z": 1
+        },
+        "cursorOffset": {
+          "x": -0.0014,
+          "y": 0.2306,
+          "z": 0.1771
+        },
+        "handedness": "right",
+        "poseHint": "power_grip"
+      },
+      "scaleOverride": 0.7
+    },
+    {
+      "id": "tool_sandpaper",
+      "name": "Sandpaper (220 Grit)",
+      "category": "hand_tool",
+      "purpose": "Smooths rough weld spatter and 3D-printed surfaces before assembly.",
+      "usageNotes": "Sand in one direction along the grain. Replace when the grit loads with metal dust.",
+      "safetyNotes": "Wear a dust mask when sanding metal or plastic. Keep away from weld sparks.",
+      "assetRef": "tool_sandpaper.glb",
+      "defaultOrientationHint": "Hold flat with abrasive side facing the work surface.",
+      "searchTerms": [
+        "sandpaper",
+        "220 grit",
+        "abrasive paper"
+      ],
+      "toolPose": {
+        "gripPoint": {
+          "x": 0.0,
+          "y": 0.02,
+          "z": 0.0
+        },
+        "gripRotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "tipPoint": {
+          "x": 0.0,
+          "y": -0.01,
+          "z": 0.0
+        },
+        "cursorOffset": {
+          "x": 0.0,
+          "y": 0.02,
+          "z": 0.0
+        },
+        "handedness": "right",
+        "poseHint": "flat_grip"
+      },
+      "scaleOverride": 1
+    },
+    {
+      "id": "tool_lubricant_spray",
+      "name": "Lubricant Spray",
+      "category": "specialty",
+      "purpose": "Lubricates smooth rod surfaces and linear bearing housings to reduce friction.",
+      "usageNotes": "Apply a thin coat to the rod surface. Wipe off excess before inserting bearings.",
+      "safetyNotes": "Use in a ventilated area. Avoid spraying near open flames or electronics.",
+      "assetRef": "tool_lubricant_spray.glb",
+      "defaultOrientationHint": "Hold upright with nozzle pointing toward the work area.",
+      "searchTerms": [
+        "lubricant",
+        "WD-40",
+        "spray oil",
+        "penetrating oil"
+      ],
+      "toolPose": {
+        "gripPoint": {
+          "x": -0.051,
+          "y": 0,
+          "z": 0.0052
+        },
+        "gripRotation": {
+          "x": 0,
+          "y": 99.675,
+          "z": 0
+        },
+        "tipPoint": {
+          "x": 0.5935,
+          "y": 0.8519,
+          "z": 0.0206
+        },
+        "tipAxis": {
+          "x": 0,
+          "y": 0.8137,
+          "z": 0.5812
+        },
+        "cursorOffset": {
+          "x": 0.051,
+          "y": 0,
+          "z": -0.0052
+        },
+        "handedness": "right",
+        "poseHint": "power_grip"
+      },
+      "scaleOverride": 1
+    },
+    {
+      "id": "tool_drill_bits",
+      "name": "Drill Bits (3 mm + 6 mm)",
+      "category": "specialty",
+      "purpose": "3 mm bit for pilot holes in flat stock; 6 mm bit for larger clearance holes.",
+      "usageNotes": "Insert bit fully into the chuck and tighten before drilling. Use cutting fluid on metal.",
+      "safetyNotes": "Discard bent or dull bits. Never touch a spinning bit.",
+      "assetRef": "tool_drill_bits.glb",
+      "defaultOrientationHint": "Bits pointing forward along +Z, shank end at the back.",
+      "searchTerms": [
+        "drill bit",
+        "twist drill",
+        "3mm drill",
+        "6mm drill"
+      ],
+      "toolPose": {
+        "gripPoint": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": -0.04
+        },
+        "gripRotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "tipPoint": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.04
+        },
+        "cursorOffset": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.04
+        },
+        "handedness": "right",
+        "poseHint": "pinch_grip"
+      },
+      "scaleOverride": 1
+    }
+  ],
+  "partTemplates": [
+    {
+      "id": "template_d3d_frame_flat_bar",
+      "name": "D3D Frame Flat Bar",
+      "displayName": "D3D Frame Flat Bar",
+      "category": "plate",
+      "material": "Mild steel flat bar, hot-rolled mill finish",
+      "function": "Forms one edge of a D3D frame side.",
+      "structuralRole": "Frame side member",
+      "quantity": 1,
+      "toolIds": [
+        "tool_framing_square",
+        "tool_locking_clamp",
+        "tool_mig_torch",
+        "tool_angle_grinder"
+      ],
+      "assetRef": "d3d_frame_flat_bar_approved.glb",
+      "searchTerms": [
+        "d3d frame flat bar",
+        "13 inch x 1 inch flat bar",
+        "mild steel frame strip"
+      ],
+      "allowPhysicalSubstitution": false,
+      "defaultOrientationHint": "Lay flat with the 1 inch face horizontal.",
+      "tags": [
+        "d3d",
+        "frame",
+        "steel"
+      ]
+    },
+    {
+      "id": "template_d3d_y_left_axis_unit",
+      "name": "D3D Y-Left Axis Unit",
+      "category": "custom",
+      "material": "Composite universal-axis left side unit",
+      "function": "Composite CAD-derived Y-left unit built from the universal-axis motor-side block, carriage, rods, and left endstop holder.",
+      "quantity": 1,
+      "assetRef": "d3d_y_left_axis_unit_approved.glb"
+    },
+    {
+      "id": "template_d3d_y_right_axis_unit",
+      "name": "D3D Y-Right Axis Unit",
+      "category": "custom",
+      "material": "Composite universal-axis right side unit",
+      "function": "Composite CAD-derived Y-right unit built from the universal-axis idler-side block, carriage, and rods.",
+      "quantity": 1,
+      "assetRef": "d3d_y_right_axis_unit_approved.glb"
+    },
+    {
+      "id": "template_d3d_axis_block",
+      "name": "D3D Axis Block",
+      "category": "custom",
+      "material": "Axis block placeholder",
+      "function": "Rigid block within the preassembled X-axis module.",
+      "quantity": 1,
+      "assetRef": "d3d_axis_block_placeholder.glb"
+    },
+    {
+      "id": "template_d3d_x_axis_idler_unit",
+      "name": "D3D X-Axis Idler Unit",
+      "category": "custom",
+      "material": "Printed idler-side axis block",
+      "function": "CAD-derived short idler-side block used to anchor the X-axis on Y-right.",
+      "quantity": 1,
+      "assetRef": "d3d_x_axis_idler_unit_approved.glb"
+    },
+    {
+      "id": "template_d3d_x_axis_motor_holder_unit",
+      "name": "D3D X-Axis Motor Holder Unit",
+      "category": "custom",
+      "material": "Printed motor-side axis block",
+      "function": "CAD-derived motor-side block used to set X-axis span and retain the drive-side hardware.",
+      "quantity": 1,
+      "assetRef": "d3d_x_axis_motor_holder_unit_approved.glb"
+    },
+    {
+      "id": "template_d3d_axis_rod_pair",
+      "name": "D3D Axis Rod Pair",
+      "category": "shaft",
+      "material": "Steel guide rods",
+      "function": "CAD-derived paired rods that define the X-axis span during fit.",
+      "quantity": 1,
+      "assetRef": "d3d_x_axis_rod_pair_approved.glb"
+    },
+    {
+      "id": "template_d3d_axis_belt_peg",
+      "name": "D3D Axis Belt Peg",
+      "category": "fastener",
+      "material": "Printed belt peg",
+      "function": "CAD-derived belt peg reinserted after tension is set.",
+      "quantity": 1,
+      "assetRef": "d3d_x_axis_belt_peg_approved.glb"
+    },
+    {
+      "id": "template_d3d_axis_mount_m6x30_bolt",
+      "name": "Axis Mount M6x30 Socket-Head Bolt",
+      "category": "custom",
+      "material": "Dimension-authored ISO 4762 / DIN 912 style M6x30 socket-head cap screw",
+      "function": "Represents the external M6x30 socket-head bolts used to mount the X-axis between the Y carriages, including a 5 mm internal hex socket for the Allen key path.",
+      "quantity": 1,
+      "assetRef": "d3d_axis_mount_m6x30_bolt_approved.glb"
+    },
+    {
+      "id": "template_d3d_titan_aero_core",
+      "name": "Titan Aero Core",
+      "category": "custom",
+      "material": "Extruder core CAD-derived",
+      "function": "Represents the staged Titan Aero body and motor assembly before carriage mounting.",
+      "quantity": 1,
+      "assetRef": "d3d_titan_aero_core_approved.glb"
+    },
+    {
+      "id": "template_d3d_extruder_nozzle_assembly",
+      "name": "Extruder Nozzle Assembly",
+      "category": "custom",
+      "material": "Nozzle assembly CAD-derived",
+      "function": "Represents the nozzle-side assembly attached to the Titan Aero core.",
+      "quantity": 1,
+      "assetRef": "d3d_extruder_nozzle_assembly_approved.glb"
+    },
+    {
+      "id": "template_d3d_extruder_blower",
+      "name": "Extruder 5015 Blower",
+      "category": "custom",
+      "material": "Fan attachment placeholder",
+      "function": "Represents the print-cooling blower added during the first extruder slice.",
+      "quantity": 1,
+      "assetRef": "d3d_extruder_blower_approved.glb"
+    },
+    {
+      "id": "template_d3d_sensor_holder",
+      "name": "Extruder Sensor Holder",
+      "category": "custom",
+      "material": "Sensor holder CAD-derived",
+      "function": "Represents the printed holder that positions the 8 mm sensor near the nozzle-side module.",
+      "quantity": 1,
+      "assetRef": "d3d_extruder_sensor_holder_approved.glb"
+    },
+    {
+      "id": "template_d3d_8mm_sensor",
+      "name": "8 mm Sensor",
+      "category": "custom",
+      "material": "Sensor placeholder",
+      "function": "Represents the 8 mm sensor inserted into the holder during the first extruder slice.",
+      "quantity": 1,
+      "assetRef": "d3d_8mm_sensor_approved.glb"
+    },
+    {
+      "id": "template_d3d_extruder_mount_bracket",
+      "name": "Titan Aero Mount Bracket",
+      "category": "custom",
+      "material": "Carriage-mount bracket CAD-derived",
+      "function": "Represents the printed carriage-side Titan Aero mount bracket used in the second extruder slice.",
+      "quantity": 1,
+      "assetRef": "d3d_extruder_mount_bracket_approved.glb"
+    },
+    {
+      "id": "template_d3d_extruder_mount_top_plate",
+      "name": "Titan Aero Mount Top Plate",
+      "category": "custom",
+      "material": "Top-plate CAD-derived",
+      "function": "Represents the top plate that captures the bracket stack on the simplified carriage.",
+      "quantity": 1,
+      "assetRef": "d3d_extruder_mount_top_plate_approved.glb"
+    },
+    {
+      "id": "template_d3d_extruder_simplified_carriage",
+      "name": "Simplified Carriage",
+      "category": "custom",
+      "material": "Simplified carriage placeholder",
+      "function": "Represents the carriage-side printed body that receives the Titan Aero bracket stack before later X-axis integration.",
+      "quantity": 1,
+      "assetRef": "d3d_extruder_simplified_carriage_approved.glb"
+    },
+    {
+      "id": "template_d3d_x_axis_carriage_side",
+      "name": "X-Axis Carriage Side",
+      "category": "custom",
+      "material": "Carriage-side CAD-derived",
+      "function": "Represents the printer-side X-axis carriage-side interface that receives the completed extruder carriage unit in Stage 03.",
+      "quantity": 1,
+      "assetRef": "d3d_x_axis_carriage_side_approved.glb"
+    },
+    {
+      "id": "template_d3d_x_axis_half_carriage",
+      "name": "X-Axis Half Carriage",
+      "category": "custom",
+      "material": "Half-carriage CAD-derived",
+      "function": "Represents the clamp-side half carriage that closes over the mounted extruder carriage unit in Stage 03.",
+      "quantity": 1,
+      "assetRef": "d3d_x_axis_half_carriage_approved.glb"
+    },
+    {
+      "id": "template_d3d_heatbed_body",
+      "name": "Heatbed Body",
+      "category": "custom",
+      "material": "Heatbed body CAD-derived",
+      "function": "Represents the first mechanical heated-bed body used in the initial bed-mount slice.",
+      "quantity": 1,
+      "assetRef": "d3d_heatbed_body_approved.glb"
+    },
+    {
+      "id": "template_d3d_heatbed_snapbuckle",
+      "name": "Heatbed Snapbuckle",
+      "category": "custom",
+      "material": "Snapbuckle CAD-derived",
+      "function": "Represents the first printed snapbuckle retainer used to hold the heatbed body in the initial mechanical bed slice.",
+      "quantity": 1,
+      "assetRef": "d3d_heatbed_snapbuckle_approved.glb"
+    }
+  ],
+  "validationRules": [
+    {
+      "id": "validation_bottom_top_bar",
+      "type": "placement",
+      "targetId": "target_bottom_top_bar",
+      "expectedPartId": "d3d_frame_bottom_top_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the bottom frame side top bar flat and align it to the highlighted top edge.",
+      "correctionHintId": "hint_bottom_top_bar"
+    },
+    {
+      "id": "validation_bottom_right_bar",
+      "type": "placement",
+      "targetId": "target_bottom_right_bar",
+      "expectedPartId": "d3d_frame_bottom_right_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the bottom frame side right bar flat and align it to the highlighted right edge.",
+      "correctionHintId": "hint_bottom_right_bar"
+    },
+    {
+      "id": "validation_bottom_bottom_bar",
+      "type": "placement",
+      "targetId": "target_bottom_bottom_bar",
+      "expectedPartId": "d3d_frame_bottom_bottom_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the bottom frame side bottom bar flat and align it to the highlighted bottom edge.",
+      "correctionHintId": "hint_bottom_bottom_bar"
+    },
+    {
+      "id": "validation_bottom_left_bar",
+      "type": "placement",
+      "targetId": "target_bottom_left_bar",
+      "expectedPartId": "d3d_frame_bottom_left_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the bottom frame side left bar flat and align it to the highlighted left edge.",
+      "correctionHintId": "hint_bottom_left_bar"
+    },
+    {
+      "id": "validation_top_top_bar",
+      "type": "placement",
+      "targetId": "target_top_top_bar",
+      "expectedPartId": "d3d_frame_top_top_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the top frame side top bar flat and align it to the highlighted top edge.",
+      "correctionHintId": "hint_top_top_bar"
+    },
+    {
+      "id": "validation_top_right_bar",
+      "type": "placement",
+      "targetId": "target_top_right_bar",
+      "expectedPartId": "d3d_frame_top_right_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the top frame side right bar flat and align it to the highlighted right edge.",
+      "correctionHintId": "hint_top_right_bar"
+    },
+    {
+      "id": "validation_top_bottom_bar",
+      "type": "placement",
+      "targetId": "target_top_bottom_bar",
+      "expectedPartId": "d3d_frame_top_bottom_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the top frame side bottom bar flat and align it to the highlighted bottom edge.",
+      "correctionHintId": "hint_top_bottom_bar"
+    },
+    {
+      "id": "validation_top_left_bar",
+      "type": "placement",
+      "targetId": "target_top_left_bar",
+      "expectedPartId": "d3d_frame_top_left_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the top frame side left bar flat and align it to the highlighted left edge.",
+      "correctionHintId": "hint_top_left_bar"
+    },
+    {
+      "id": "validation_left_top_bar",
+      "type": "placement",
+      "targetId": "target_left_top_bar",
+      "expectedPartId": "d3d_frame_left_top_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the left frame side top bar flat and align it to the highlighted top edge.",
+      "correctionHintId": "hint_left_top_bar"
+    },
+    {
+      "id": "validation_left_right_bar",
+      "type": "placement",
+      "targetId": "target_left_right_bar",
+      "expectedPartId": "d3d_frame_left_right_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the left frame side right bar flat and align it to the highlighted right edge.",
+      "correctionHintId": "hint_left_right_bar"
+    },
+    {
+      "id": "validation_left_bottom_bar",
+      "type": "placement",
+      "targetId": "target_left_bottom_bar",
+      "expectedPartId": "d3d_frame_left_bottom_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the left frame side bottom bar flat and align it to the highlighted bottom edge.",
+      "correctionHintId": "hint_left_bottom_bar"
+    },
+    {
+      "id": "validation_left_left_bar",
+      "type": "placement",
+      "targetId": "target_left_left_bar",
+      "expectedPartId": "d3d_frame_left_left_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the left frame side left bar flat and align it to the highlighted left edge.",
+      "correctionHintId": "hint_left_left_bar"
+    },
+    {
+      "id": "validation_right_top_bar",
+      "type": "placement",
+      "targetId": "target_right_top_bar",
+      "expectedPartId": "d3d_frame_right_top_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the right frame side top bar flat and align it to the highlighted top edge.",
+      "correctionHintId": "hint_right_top_bar"
+    },
+    {
+      "id": "validation_right_right_bar",
+      "type": "placement",
+      "targetId": "target_right_right_bar",
+      "expectedPartId": "d3d_frame_right_right_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the right frame side right bar flat and align it to the highlighted right edge.",
+      "correctionHintId": "hint_right_right_bar"
+    },
+    {
+      "id": "validation_right_bottom_bar",
+      "type": "placement",
+      "targetId": "target_right_bottom_bar",
+      "expectedPartId": "d3d_frame_right_bottom_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the right frame side bottom bar flat and align it to the highlighted bottom edge.",
+      "correctionHintId": "hint_right_bottom_bar"
+    },
+    {
+      "id": "validation_right_left_bar",
+      "type": "placement",
+      "targetId": "target_right_left_bar",
+      "expectedPartId": "d3d_frame_right_left_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the right frame side left bar flat and align it to the highlighted left edge.",
+      "correctionHintId": "hint_right_left_bar"
+    },
+    {
+      "id": "validation_front_top_bar",
+      "type": "placement",
+      "targetId": "target_front_top_bar",
+      "expectedPartId": "d3d_frame_front_top_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the front frame side top bar flat and align it to the highlighted top edge.",
+      "correctionHintId": "hint_front_top_bar"
+    },
+    {
+      "id": "validation_front_right_bar",
+      "type": "placement",
+      "targetId": "target_front_right_bar",
+      "expectedPartId": "d3d_frame_front_right_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the front frame side right bar flat and align it to the highlighted right edge.",
+      "correctionHintId": "hint_front_right_bar"
+    },
+    {
+      "id": "validation_front_bottom_bar",
+      "type": "placement",
+      "targetId": "target_front_bottom_bar",
+      "expectedPartId": "d3d_frame_front_bottom_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the front frame side bottom bar flat and align it to the highlighted bottom edge.",
+      "correctionHintId": "hint_front_bottom_bar"
+    },
+    {
+      "id": "validation_front_left_bar",
+      "type": "placement",
+      "targetId": "target_front_left_bar",
+      "expectedPartId": "d3d_frame_front_left_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the front frame side left bar flat and align it to the highlighted left edge.",
+      "correctionHintId": "hint_front_left_bar"
+    },
+    {
+      "id": "validation_rear_top_bar",
+      "type": "placement",
+      "targetId": "target_rear_top_bar",
+      "expectedPartId": "d3d_frame_rear_top_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the rear frame side top bar flat and align it to the highlighted top edge.",
+      "correctionHintId": "hint_rear_top_bar"
+    },
+    {
+      "id": "validation_rear_right_bar",
+      "type": "placement",
+      "targetId": "target_rear_right_bar",
+      "expectedPartId": "d3d_frame_rear_right_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the rear frame side right bar flat and align it to the highlighted right edge.",
+      "correctionHintId": "hint_rear_right_bar"
+    },
+    {
+      "id": "validation_rear_bottom_bar",
+      "type": "placement",
+      "targetId": "target_rear_bottom_bar",
+      "expectedPartId": "d3d_frame_rear_bottom_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the rear frame side bottom bar flat and align it to the highlighted bottom edge.",
+      "correctionHintId": "hint_rear_bottom_bar"
+    },
+    {
+      "id": "validation_rear_left_bar",
+      "type": "placement",
+      "targetId": "target_rear_left_bar",
+      "expectedPartId": "d3d_frame_rear_left_bar",
+      "positionToleranceMm": 6,
+      "rotationToleranceDeg": 4,
+      "failureMessage": "Lay the rear frame side left bar flat and align it to the highlighted left edge.",
+      "correctionHintId": "hint_rear_left_bar"
+    }
+  ]
+}

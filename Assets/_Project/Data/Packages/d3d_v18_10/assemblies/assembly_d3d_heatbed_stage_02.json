@@ -1,0 +1,668 @@
+{
+  "assemblies": [
+    {
+      "id": "assembly_d3d_heatbed_stage_02",
+      "name": "D3D Heated Bed Stage 02 (Bed Platform)",
+      "machineId": "d3d_v18_10",
+      "description": "Bed platform assembly: six standoff raisers, two bed guide rods, and three Y-axis bed travel rods. The platform rides on the Y carriages and supports the heated bed at the correct height.",
+      "subassemblyIds": [
+        "subassembly_bed_platform",
+        "subassembly_y_bed_rods"
+      ],
+      "stepIds": [
+        "step_mount_bed_guide_rods",
+        "step_place_bed_raisers",
+        "step_check_bed_platform_alignment",
+        "step_place_y_bed_rods"
+      ]
+    }
+  ],
+  "subassemblies": [
+    {
+      "id": "subassembly_bed_platform",
+      "name": "Heated Bed Platform",
+      "assemblyId": "assembly_d3d_heatbed_stage_02",
+      "description": "Bed standoff raisers and guide rods that support the heated bed above the Z carriages.",
+      "partIds": [
+        "bed_raiser",
+        "bed_raiser001",
+        "bed_raiser002",
+        "bed_raiser003",
+        "bed_raiser004",
+        "bed_raiser005",
+        "bed_rod_1",
+        "bed_rod_002"
+      ],
+      "stepIds": [
+        "step_mount_bed_guide_rods",
+        "step_place_bed_raisers",
+        "step_check_bed_platform_alignment"
+      ]
+    },
+    {
+      "id": "subassembly_y_bed_rods",
+      "name": "Y-Axis Bed Guide Rods",
+      "assemblyId": "assembly_d3d_heatbed_stage_02",
+      "description": "Guide rods for Y-axis bed travel, connecting front and back Z carriages.",
+      "partIds": [
+        "rod_2",
+        "rod_003",
+        "rod_004"
+      ],
+      "stepIds": [
+        "step_place_y_bed_rods"
+      ]
+    }
+  ],
+  "parts": [
+    {
+      "id": "bed_raiser",
+      "displayName": "Bed Raiser",
+      "assetRef": "heatbed_raisers_combined.glb",
+      "name": "Bed Raiser Standoff 1",
+      "category": "custom",
+      "material": "Printed bed standoff",
+      "function": "Raises the heated bed to the correct height above the Z carriages.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.0,
+          "y": 0.5,
+          "z": -0.5
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "bed_raiser001",
+      "displayName": "Bed Raiser001",
+      "assetRef": "heatbed_raisers_combined.glb",
+      "name": "Bed Raiser Standoff 2",
+      "category": "custom",
+      "material": "Printed bed standoff",
+      "function": "Raises the heated bed to the correct height above the Z carriages.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.05,
+          "y": 0.5,
+          "z": -0.5
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "bed_raiser002",
+      "displayName": "Bed Raiser002",
+      "assetRef": "heatbed_raisers_combined.glb",
+      "name": "Bed Raiser Standoff 3",
+      "category": "custom",
+      "material": "Printed bed standoff",
+      "function": "Raises the heated bed to the correct height above the Z carriages.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.1,
+          "y": 0.5,
+          "z": -0.5
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "bed_raiser003",
+      "displayName": "Bed Raiser003",
+      "assetRef": "heatbed_raisers_combined.glb",
+      "name": "Bed Raiser Standoff 4",
+      "category": "custom",
+      "material": "Printed bed standoff",
+      "function": "Raises the heated bed to the correct height above the Z carriages.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.05,
+          "y": 0.5,
+          "z": -0.5
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "bed_raiser004",
+      "displayName": "Bed Raiser004",
+      "assetRef": "heatbed_raisers_combined.glb",
+      "name": "Bed Raiser Standoff 5",
+      "category": "custom",
+      "material": "Printed bed standoff",
+      "function": "Raises the heated bed to the correct height above the Z carriages.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.1,
+          "y": 0.5,
+          "z": -0.5
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "bed_raiser005",
+      "displayName": "Bed Raiser005",
+      "assetRef": "heatbed_raisers_combined.glb",
+      "name": "Bed Raiser Standoff 6",
+      "category": "custom",
+      "material": "Printed bed standoff",
+      "function": "Raises the heated bed to the correct height above the Z carriages.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.15,
+          "y": 0.5,
+          "z": -0.5
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "bed_rod_002",
+      "displayName": "Bed Rod 002",
+      "assetRef": "bed_rod_002_approved.glb",
+      "name": "Bed Guide Rod B",
+      "category": "shaft",
+      "material": "Hardened steel guide rod",
+      "function": "Guides the heated bed platform along the Y axis.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.2,
+          "y": 0.55,
+          "z": -0.5
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "bed_rod_1",
+      "displayName": "Bed Rod 1",
+      "assetRef": "bed_rod_1_approved.glb",
+      "name": "Bed Guide Rod A",
+      "category": "shaft",
+      "material": "Hardened steel guide rod",
+      "function": "Guides the heated bed platform along the Y axis.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.2,
+          "y": 0.55,
+          "z": -0.5
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "rod_003",
+      "displayName": "Rod 003",
+      "assetRef": "rod_003_approved.glb",
+      "name": "Y-Bed Back Guide Rod A",
+      "category": "shaft",
+      "material": "Hardened steel guide rod",
+      "function": "Back guide rod for Y-axis bed travel between Z carriages.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.3,
+          "y": 0.4,
+          "z": -0.5
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "rod_004",
+      "displayName": "Rod 004",
+      "assetRef": "rod_004_approved.glb",
+      "name": "Y-Bed Back Guide Rod B",
+      "category": "shaft",
+      "material": "Hardened steel guide rod",
+      "function": "Back guide rod for Y-axis bed travel between Z carriages.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.3,
+          "y": 0.35,
+          "z": -0.5
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "rod_2",
+      "displayName": "Rod 2",
+      "assetRef": "rod_2_approved.glb",
+      "name": "Y-Bed Front Guide Rod",
+      "category": "shaft",
+      "material": "Hardened steel guide rod",
+      "function": "Front guide rod for Y-axis bed travel between Z carriages.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": 0.3,
+          "y": 0.45,
+          "z": -0.5
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "step_mount_bed_guide_rods",
+      "name": "Mount the bed guide rods through the Z carriages",
+      "assemblyId": "assembly_d3d_heatbed_stage_02",
+      "sequenceIndex": 290,
+      "instructionText": "Thread two nuts onto each bed guide rod. Slide each rod through the matching hole in the Z-front carriage and the Z-back carriage. Push rod ends flush with the outer edges of both carriages.",
+      "requiredPartIds": [
+        "bed_rod_1",
+        "bed_rod_002"
+      ],
+      "targetIds": [
+        "target_bed_rod_a_mount",
+        "target_bed_rod_b_mount"
+      ],
+      "hintIds": [
+        "hint_mount_bed_guide_rods"
+      ],
+      "isOptional": false,
+      "family": "Place"
+    },
+    {
+      "id": "step_place_bed_raisers",
+      "name": "Thread the bed raiser standoffs onto the guide rods",
+      "assemblyId": "assembly_d3d_heatbed_stage_02",
+      "sequenceIndex": 291,
+      "instructionText": "Thread three bed raiser standoffs onto each of the two guide rods. Space them evenly. The raisers create the flat support surface that the heated bed rests on and maintain the correct bed height above the carriages.",
+      "requiredPartIds": [
+        "bed_raiser",
+        "bed_raiser001",
+        "bed_raiser002",
+        "bed_raiser003",
+        "bed_raiser004",
+        "bed_raiser005"
+      ],
+      "targetIds": [
+        "target_bed_raisers_set"
+      ],
+      "hintIds": [
+        "hint_place_bed_raisers"
+      ],
+      "isOptional": false,
+      "family": "Place"
+    },
+    {
+      "id": "step_check_bed_platform_alignment",
+      "name": "Check bed platform alignment and rod seating",
+      "assemblyId": "assembly_d3d_heatbed_stage_02",
+      "sequenceIndex": 292,
+      "instructionText": "Verify: rod ends are flush with idler outer edges; two nuts per rod; bolts tightened without deforming plastic; platform does not rock laterally when pressed.",
+      "targetIds": [
+        "target_bed_platform_qc"
+      ],
+      "hintIds": [
+        "hint_check_bed_platform_alignment"
+      ],
+      "isOptional": false,
+      "family": "Confirm"
+    },
+    {
+      "id": "step_place_y_bed_rods",
+      "name": "Place Y-Axis Bed Rods",
+      "assemblyId": "assembly_d3d_heatbed_stage_02",
+      "instructionText": "Position the Y-axis bed guide rods connecting the front and back Z carriages. These rods enable the bed platform to travel smoothly along the Y axis.",
+      "family": "Place",
+      "sequenceIndex": 293,
+      "requiredPartIds": [
+        "rod_2",
+        "rod_003",
+        "rod_004"
+      ],
+      "hintIds": [
+        "hint_y_bed_rods"
+      ],
+      "targetIds": [
+        "target_y_bed_rod_a",
+        "target_y_bed_rod_b",
+        "target_y_bed_rod_c"
+      ]
+    }
+  ],
+  "targets": [
+    {
+      "id": "target_bed_rod_a_mount",
+      "name": "Bed Guide Rod A Mount",
+      "anchorRef": "anchors/d3d/bed/rod_a_mount",
+      "description": "Insertion point for bed guide rod A through Z carriages",
+      "associatedPartId": "bed_rod_1",
+      "tags": [
+        "placement",
+        "bed"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_bed_rod_b_mount",
+      "name": "Bed Guide Rod B Mount",
+      "anchorRef": "anchors/d3d/bed/rod_b_mount",
+      "description": "Insertion point for bed guide rod B through Z carriages",
+      "associatedPartId": "bed_rod_002",
+      "tags": [
+        "placement",
+        "bed"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_bed_raisers_set",
+      "name": "Bed Raiser Standoffs",
+      "anchorRef": "anchors/d3d/bed/raisers_set",
+      "description": "Position for all 6 bed raiser standoffs on guide rods",
+      "associatedPartId": "",
+      "tags": [
+        "placement",
+        "bed"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_bed_platform_qc",
+      "name": "Bed Platform QC",
+      "anchorRef": "anchors/d3d/bed/platform_qc",
+      "description": "Check point â€” bed platform level and rods flush",
+      "associatedPartId": "",
+      "tags": [
+        "qc",
+        "bed"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_y_bed_rod_a",
+      "name": "Y-Axis Bed Rod A",
+      "anchorRef": "anchors/d3d/heatbed/bed_rod_a",
+      "associatedPartId": "rod_2",
+      "tags": [
+        "placement"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_y_bed_rod_b",
+      "name": "Y-Axis Bed Rod B",
+      "anchorRef": "anchors/d3d/heatbed/bed_rod_b",
+      "associatedPartId": "rod_003",
+      "tags": [
+        "placement"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_y_bed_rod_c",
+      "name": "Y-Axis Bed Rod C",
+      "anchorRef": "anchors/d3d/heatbed/bed_rod_c",
+      "associatedPartId": "rod_004",
+      "tags": [
+        "placement"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    }
+  ],
+  "hints": [
+    {
+      "id": "hint_y_bed_rods",
+      "type": "highlight",
+      "title": "Y-axis bed guide rods",
+      "message": "Three rods run front-to-back connecting the front and back Z carriages. The bed platform slides along these rods as the printer moves the bed on the Y axis during a print.",
+      "priority": "low"
+    },
+    {
+      "id": "hint_mount_bed_guide_rods",
+      "type": "highlight",
+      "title": "Slide both bed rods through front and back Z carriages",
+      "message": "Each bed guide rod threads through the hole in the Z-front carriage and the matching hole in the Z-back carriage. Thread two nuts onto each rod before inserting â€” the nuts sit on either side of the carriage to provide a flat support surface for the heated bed and to minimize heat transfer to the plastic. Push the rod ends flush with the outer edges of both carriages.",
+      "targetId": "target_bed_rod_a_mount",
+      "partId": "",
+      "toolId": "",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_place_bed_raisers",
+      "type": "highlight",
+      "title": "Thread 3 standoff raisers onto each rod; space them evenly",
+      "message": "Thread the 6 bed raiser standoffs onto the two guide rods â€” 3 per rod. Space them evenly along the rod length so the heated bed will sit flat. The raisers provide the correct height gap between the Z carriage and the heated bed and allow wiring to pass freely beneath the bed surface.",
+      "targetId": "target_bed_raisers_set",
+      "partId": "",
+      "toolId": "",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_check_bed_platform_alignment",
+      "type": "highlight",
+      "title": "Confirm rods are flush, raisers level, and no side-to-side rock",
+      "message": "QC checklist: (1) Rod ends are flush with the outer edges of both idler pieces â€” not protruding. (2) Two nuts are present on each rod. (3) Bolts are tightened enough to hold the rods but not so tight they deform the plastic. (4) The platform does not rock side to side when you apply light lateral pressure.",
+      "targetId": "target_bed_platform_qc",
+      "partId": "",
+      "toolId": "",
+      "priority": "medium"
+    }
+  ]
+}

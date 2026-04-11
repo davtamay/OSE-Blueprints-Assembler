@@ -166,6 +166,18 @@ Complete keyword reference for `machine.json` — the single data file that defi
 | `defaultOrientationHint` | `string` | Orientation hint text. |
 | `tags` | `string[]` | Freeform tags. |
 | `grabConfig` | `PartGrabConfig` | XR grab metadata. |
+| `stagingPose` | `StagingPose` | **Agent-authored.** Where this part floats before the trainee places it. Source of truth for staging position. Baked into `previewConfig.partPlacements[].startPosition` at load time by the normalizer. Edit here — never edit `startPosition` in previewConfig directly. |
+
+### StagingPose
+
+Agent-authored staging position for a part. Lives in `parts[].stagingPose`, not in `previewConfig`.
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `position` | `SceneFloat3` | Floating position in PreviewRoot local space. |
+| `rotation` | `SceneQuaternion` | Floating rotation. Zero-w quaternion treated as identity. |
+| `scale` | `SceneFloat3` | Floating scale. Zero vector means "use Vector3.one". |
+| `color` | `SceneFloat4` | RGBA tint. Zero alpha means "use default coloring". |
 
 ### PartGrabConfig
 
@@ -433,17 +445,21 @@ Per-step challenge tuning (used in `difficulty.challengeFlags`).
 
 ### PartPreviewPlacement
 
+**TTAW/Blender-generated.** Do not author `startPosition`, `startRotation`, `startScale`, or `color` here.
+Author them in `parts[].stagingPose` instead — the normalizer bakes them here at load time.
+
 | Key | Type | Description |
 |-----|------|-------------|
 | `partId` | `string` | Part ID. Must match `parts[].id`. |
-| `startPosition` | `SceneFloat3` | Position before step (floating). |
-| `startRotation` | `SceneQuaternion` | Rotation before step. |
-| `startScale` | `SceneFloat3` | Scale before step. |
-| `color` | `SceneFloat4` | Representative RGBA color. |
-| `assembledPosition` | `SceneFloat3` | Final assembled position. |
-| `assembledRotation` | `SceneQuaternion` | Final assembled rotation. |
-| `assembledScale` | `SceneFloat3` | Final assembled scale. |
-| `splinePath` | `SplinePathDefinition` | Optional spline data for tubular parts (hoses, cables). |
+| `startPosition` | `SceneFloat3` | **Derived.** Baked from `parts[].stagingPose.position` by normalizer. Do not edit. |
+| `startRotation` | `SceneQuaternion` | **Derived.** Baked from `parts[].stagingPose.rotation` by normalizer. Do not edit. |
+| `startScale` | `SceneFloat3` | **Derived.** Baked from `parts[].stagingPose.scale` by normalizer. Do not edit. |
+| `color` | `SceneFloat4` | **Derived.** Baked from `parts[].stagingPose.color` by normalizer. Do not edit. |
+| `assembledPosition` | `SceneFloat3` | Final assembled position. Set by Blender GLB import pipeline. |
+| `assembledRotation` | `SceneQuaternion` | Final assembled rotation. Set by Blender GLB import pipeline. |
+| `assembledScale` | `SceneFloat3` | Final assembled scale. Set by Blender GLB import pipeline. |
+| `stepPoses` | `StepPoseEntry[]` | Intermediate poses between steps. TTAW-authored only. |
+| `splinePath` | `SplinePathDefinition` | Optional spline data for tubular parts (hoses, cables). TTAW-authored only. |
 
 ### SplinePathDefinition
 

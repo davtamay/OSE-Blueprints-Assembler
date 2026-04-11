@@ -3,6 +3,31 @@ using System;
 namespace OSE.Content
 {
     /// <summary>
+    /// Where a part floats in the preview scene before the trainee grabs and places it.
+    /// This is the agent-authored source of truth for staging positions.
+    ///
+    /// Lives in <see cref="PartDefinition.stagingPose"/> so staging data is co-located with
+    /// the part definition — agents write here, not in previewConfig.
+    ///
+    /// <see cref="MachinePackageNormalizer"/> bakes these values into
+    /// <see cref="PartPreviewPlacement.startPosition/startRotation/startScale/color"/>
+    /// at load time so all existing runtime code continues to work unchanged.
+    ///
+    /// All values are in PreviewRoot local space (same coordinate system as assembledPosition).
+    /// </summary>
+    [Serializable]
+    public sealed class StagingPose
+    {
+        public SceneFloat3    position;
+        public SceneQuaternion rotation;
+        /// <summary>Zero means "use Vector3.one". Leave unset to inherit the default scale.</summary>
+        public SceneFloat3    scale;
+        /// <summary>RGBA. Zero alpha means "use the default ColAuthored color in TTAW".</summary>
+        public SceneFloat4    color;
+    }
+
+
+    /// <summary>
     /// Reusable template for parts that share the same model, material, and tools.
     /// Parts reference a template via <see cref="PartDefinition.templateId"/> and
     /// only override fields that differ (id, displayName, function, etc.).
@@ -50,6 +75,13 @@ namespace OSE.Content
         /// When set, any null/empty field on this part is filled from the template.
         /// </summary>
         public string templateId;
+
+        /// <summary>
+        /// Where this part floats in the preview scene before the trainee places it.
+        /// Agent-authored source of truth — edit here, not in previewConfig.
+        /// Null means use the legacy startPosition from previewConfig.partPlacements (or fallback row).
+        /// </summary>
+        public StagingPose stagingPose;
 
         /// <summary>
         /// XR grab metadata: where the hand grabs this part and how it's oriented when held.

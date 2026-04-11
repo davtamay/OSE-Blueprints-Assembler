@@ -1,0 +1,215 @@
+{
+  "assemblies": [
+    {
+      "id": "assembly_d3d_cable_stage_01",
+      "name": "D3D Cable Management",
+      "machineId": "d3d_v18_10",
+      "description": "Cable chain routing for X-axis and Y-axis wiring. Protects wiring from motion-induced wear and keeps cables organized during printer operation.",
+      "subassemblyIds": [
+        "subassembly_cable_routing"
+      ],
+      "stepIds": [
+        "step_place_cable_management"
+      ]
+    }
+  ],
+  "subassemblies": [
+    {
+      "id": "subassembly_cable_routing",
+      "name": "Cable Routing",
+      "assemblyId": "assembly_d3d_cable_stage_01",
+      "description": "Cable chain assemblies for X-axis and Y-axis wiring routes.",
+      "partIds": [
+        "cable_chain",
+        "cable_chain_y",
+        "cable_chain_bracket"
+      ],
+      "stepIds": [
+        "step_place_cable_management"
+      ]
+    }
+  ],
+  "parts": [
+    {
+      "id": "cable_chain",
+      "displayName": "Cable Chain",
+      "assetRef": "cable_chain_approved.glb",
+      "name": "X-Axis Cable Chain",
+      "category": "custom",
+      "material": "Plastic cable chain",
+      "function": "Protects X-axis wiring from motion-induced wear along the gantry.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.3,
+          "y": 0.45,
+          "z": -0.5
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "cable_chain_bracket",
+      "displayName": "Cable chain  bracket",
+      "assetRef": "cable_chain_bracket_approved.glb",
+      "name": "Cable Chain Bracket",
+      "category": "bracket",
+      "material": "Printed cable chain bracket",
+      "function": "Anchors the Y-axis cable chain to the Y-left carriage area.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.3,
+          "y": 0.4,
+          "z": -0.5
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      }
+    },
+    {
+      "id": "cable_chain_y",
+      "displayName": "Cable Chain Y",
+      "assetRef": "cable_chain_y_approved.glb",
+      "name": "Y-Axis Cable Chain",
+      "category": "custom",
+      "material": "Plastic cable chain",
+      "function": "Protects Y-axis wiring from motion-induced wear along the bed travel.",
+      "quantity": 1,
+      "stagingPose": {
+        "position": {
+          "x": -0.3,
+          "y": 0.35,
+          "z": -0.5
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        }
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "step_place_cable_management",
+      "name": "Place Cable Management",
+      "assemblyId": "assembly_d3d_cable_stage_01",
+      "instructionText": "Position the cable chain assemblies: X-axis cable chain at the top of the gantry, Y-axis cable chain along the left side, and the cable chain bracket that anchors the Y chain to the Y-left carriage.",
+      "family": "Place",
+      "sequenceIndex": 294,
+      "requiredPartIds": [
+        "cable_chain",
+        "cable_chain_y",
+        "cable_chain_bracket"
+      ],
+      "hintIds": [
+        "hint_cable_management"
+      ],
+      "targetIds": [
+        "target_cable_chain_x",
+        "target_cable_chain_y",
+        "target_cable_chain_bracket"
+      ]
+    }
+  ],
+  "targets": [
+    {
+      "id": "target_cable_chain_x",
+      "name": "X-Axis Cable Chain",
+      "anchorRef": "anchors/d3d/cable/cable_chain_x",
+      "associatedPartId": "cable_chain",
+      "tags": [
+        "placement"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_cable_chain_y",
+      "name": "Y-Axis Cable Chain",
+      "anchorRef": "anchors/d3d/cable/cable_chain_y",
+      "associatedPartId": "cable_chain_y",
+      "tags": [
+        "placement"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_cable_chain_bracket",
+      "name": "Cable Chain Bracket",
+      "anchorRef": "anchors/d3d/cable/cable_chain_bracket",
+      "associatedPartId": "cable_chain_bracket",
+      "tags": [
+        "placement"
+      ],
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    }
+  ],
+  "hints": [
+    {
+      "id": "hint_cable_management",
+      "type": "highlight",
+      "title": "Cable chain routing and bracket",
+      "message": "The X-axis cable chain protects carriage wiring as it moves left and right. The Y-axis cable chain protects bed wiring as it moves front and back. The bracket mounts the X chain origin to the frame.",
+      "priority": "low"
+    }
+  ]
+}

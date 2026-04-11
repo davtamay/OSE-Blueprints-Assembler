@@ -1,0 +1,216 @@
+{
+  "assemblies": [
+    {
+      "id": "assembly_d3d_extruder_stage_03",
+      "name": "D3D Extruder Stage 03",
+      "description": "Stages the X-axis carriage-side interface, mounts the completed extruder carriage unit onto it, closes the half-carriage clamp, and checks X-axis travel clearance before later heated-bed and wiring work.",
+      "machineId": "d3d_v18_10",
+      "subassemblyIds": [
+        "subassembly_extruder_x_axis_mount"
+      ],
+      "stepIds": [
+        "step_stage_x_axis_carriage_side",
+        "step_mount_extruder_carriage_unit_to_x_axis_interface",
+        "step_place_x_axis_half_carriage",
+        "step_check_extruder_x_axis_travel_clearance"
+      ],
+      "dependencyAssemblyIds": [
+        "assembly_d3d_extruder_stage_02"
+      ],
+      "learningFocus": "Printer-side extruder integration, carriage-side closure with the half carriage, and first-pass X-travel/nozzle-clearance verification."
+    }
+  ],
+  "subassemblies": [
+    {
+      "id": "subassembly_extruder_x_axis_mount",
+      "name": "Extruder X-Axis Mount",
+      "assemblyId": "assembly_d3d_extruder_stage_03",
+      "isAggregate": true,
+      "description": "Stages the printer-side X-axis carriage interface and the half-carriage clamp used to close the extruder around the rod pair.",
+      "partIds": [
+        "d3d_x_axis_carriage_side",
+        "d3d_x_axis_half_carriage"
+      ],
+      "stepIds": [
+        "step_stage_x_axis_carriage_side",
+        "step_mount_extruder_carriage_unit_to_x_axis_interface",
+        "step_place_x_axis_half_carriage",
+        "step_check_extruder_x_axis_travel_clearance"
+      ],
+      "milestoneMessage": "The completed extruder carriage unit is mounted on the X-axis carriage side, closed with the half carriage, and checked for first-pass travel clearance."
+    }
+  ],
+  "steps": [
+    {
+      "id": "step_stage_x_axis_carriage_side",
+      "name": "Stage the X-axis carriage side",
+      "assemblyId": "assembly_d3d_extruder_stage_03",
+      "subassemblyId": "subassembly_extruder_x_axis_mount",
+      "sequenceIndex": 78,
+      "instructionText": "Place the X-axis carriage-side interface onto the rod-pair work area so the completed extruder carriage unit has a real printer-side receiving body.",
+      "family": "Place",
+      "targetIds": [
+        "target_x_axis_carriage_side_stage"
+      ],
+      "hintIds": [
+        "hint_stage_x_axis_carriage_side"
+      ]
+    },
+    {
+      "id": "step_mount_extruder_carriage_unit_to_x_axis_interface",
+      "name": "Mount the completed extruder carriage unit onto the X-axis interface",
+      "assemblyId": "assembly_d3d_extruder_stage_03",
+      "subassemblyId": "subassembly_extruder_x_axis_mount",
+      "sequenceIndex": 79,
+      "instructionText": "Move the completed extruder carriage unit onto the X-axis carriage-side interface and let the rigid mount target guide the first seated printer-side position.",
+      "family": "Place",
+      "requiredSubassemblyId": "subassembly_extruder_carriage_unit",
+      "targetIds": [
+        "target_extruder_carriage_unit_to_x_axis_mount"
+      ],
+      "hintIds": [
+        "hint_mount_extruder_to_x_axis"
+      ]
+    },
+    {
+      "id": "step_place_x_axis_half_carriage",
+      "name": "Close the half carriage over the mounted extruder unit",
+      "assemblyId": "assembly_d3d_extruder_stage_03",
+      "subassemblyId": "subassembly_extruder_x_axis_mount",
+      "sequenceIndex": 80,
+      "instructionText": "Bring the half carriage in square to the mounted carriage side so the clamp-side body closes over the rod path and captures the mounted extruder unit.",
+      "family": "Place",
+      "targetIds": [
+        "target_x_axis_half_carriage_attach"
+      ],
+      "hintIds": [
+        "hint_close_half_carriage"
+      ]
+    },
+    {
+      "id": "step_check_extruder_x_axis_travel_clearance",
+      "name": "Check extruder X-axis travel clearance",
+      "assemblyId": "assembly_d3d_extruder_stage_03",
+      "subassemblyId": "subassembly_extruder_x_axis_mount",
+      "sequenceIndex": 81,
+      "instructionText": "Inspect the mounted extruder carriage and confirm it can move along the X-axis without visible interference at the left and right travel limits and with nozzle-side clearance preserved.",
+      "family": "Confirm",
+      "viewMode": "Inspect",
+      "targetIds": [
+        "target_extruder_x_axis_travel_left",
+        "target_extruder_x_axis_travel_right",
+        "target_extruder_x_axis_nozzle_clearance"
+      ],
+      "hintIds": [
+        "hint_check_extruder_x_travel"
+      ]
+    }
+  ],
+  "targets": [
+    {
+      "id": "target_x_axis_carriage_side_stage",
+      "name": "X-Axis Carriage Side Stage",
+      "anchorRef": "anchors/d3d/extruder_stage03/x_axis/carriage_side/stage",
+      "associatedPartId": "d3d_x_axis_carriage_side",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_extruder_carriage_unit_to_x_axis_mount",
+      "name": "Extruder Carriage Unit To X-Axis Mount",
+      "anchorRef": "anchors/d3d/extruder_stage03/x_axis/carriage_unit/mount",
+      "associatedSubassemblyId": "subassembly_extruder_carriage_unit",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_x_axis_half_carriage_attach",
+      "name": "X-Axis Half Carriage Attach",
+      "anchorRef": "anchors/d3d/extruder_stage03/x_axis/half_carriage/attach",
+      "associatedPartId": "d3d_x_axis_half_carriage",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_extruder_x_axis_travel_left",
+      "name": "Extruder X-Axis Travel Left",
+      "anchorRef": "anchors/d3d/extruder_stage03/x_axis/travel/left",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_extruder_x_axis_travel_right",
+      "name": "Extruder X-Axis Travel Right",
+      "anchorRef": "anchors/d3d/extruder_stage03/x_axis/travel/right",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "id": "target_extruder_x_axis_nozzle_clearance",
+      "name": "Extruder X-Axis Nozzle Clearance",
+      "anchorRef": "anchors/d3d/extruder_stage03/x_axis/nozzle/clearance",
+      "useToolActionRotation": true,
+      "toolActionRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    }
+  ],
+  "hints": [
+    {
+      "id": "hint_stage_x_axis_carriage_side",
+      "type": "highlight",
+      "title": "Carriage side in work zone with rod axis horizontal",
+      "message": "Place the X-axis carriage-side interface with its rod-hole axis running horizontally. The completed extruder carriage unit will mount onto the front face in the next step.",
+      "targetId": "target_x_axis_carriage_side_stage",
+      "partId": "d3d_x_axis_carriage_side",
+      "priority": "medium"
+    },
+    {
+      "id": "hint_mount_extruder_to_x_axis",
+      "type": "highlight",
+      "title": "Lower extruder carriage unit onto interface face",
+      "message": "Lower the completed extruder carriage unit onto the X-axis carriage-side interface. The two bodies align through the bracket mount face. If it does not seat cleanly, check orientation before applying force.",
+      "targetId": "target_extruder_carriage_unit_to_x_axis_mount",
+      "priority": "high"
+    },
+    {
+      "id": "hint_close_half_carriage",
+      "type": "highlight",
+      "title": "Half carriage clamps from the opposite side",
+      "message": "Bring the half carriage in square against the rod path on the back side of the interface. The two body halves should close together around the X rods with no gap on either side.",
+      "targetId": "target_x_axis_half_carriage_attach",
+      "partId": "d3d_x_axis_half_carriage",
+      "priority": "high"
+    },
+    {
+      "id": "hint_check_extruder_x_travel",
+      "type": "highlight",
+      "title": "Check both travel limits and nozzle tip clearance",
+      "message": "Move the extruder carriage to the left limit and right limit by hand with no interference. Then confirm the nozzle tip clears the frame rails and future bed area at all positions.",
+      "targetId": "target_extruder_x_axis_travel_left",
+      "priority": "high"
+    }
+  ]
+}

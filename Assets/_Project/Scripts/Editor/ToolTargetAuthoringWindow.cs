@@ -622,16 +622,29 @@ namespace OSE.Editor
                 sequenceIndex = _newStepSeqIdx,
             };
 
-            string jsonPath = PackageJsonUtils.GetJsonPath(_pkgId);
-            if (string.IsNullOrEmpty(jsonPath) || !System.IO.File.Exists(jsonPath))
+            // For split-layout packages insert the step into the correct assembly file.
+            // For monolithic packages insert into machine.json.
+            string targetJsonPath;
+            if (PackageJsonUtils.IsSplitLayout(_pkgId) && !string.IsNullOrEmpty(assemblyId))
             {
-                UnityEditor.EditorUtility.DisplayDialog("Error", "Could not locate machine.json.", "OK");
+                string asmFile = System.IO.Path.Combine(
+                    PackageJsonUtils.AuthoringRoot, _pkgId, "assemblies", $"{assemblyId}.json");
+                targetJsonPath = System.IO.File.Exists(asmFile) ? asmFile : null;
+            }
+            else
+            {
+                targetJsonPath = PackageJsonUtils.GetJsonPath(_pkgId);
+            }
+
+            if (string.IsNullOrEmpty(targetJsonPath) || !System.IO.File.Exists(targetJsonPath))
+            {
+                UnityEditor.EditorUtility.DisplayDialog("Error", "Could not locate the target JSON file.", "OK");
                 return;
             }
 
             try
             {
-                PackageJsonUtils.InsertStep(jsonPath, newStep);
+                PackageJsonUtils.InsertStep(targetJsonPath, newStep);
             }
             catch (System.Exception ex)
             {
@@ -2078,15 +2091,26 @@ namespace OSE.Editor
                 foreach (var p in fresh.previewConfig.partPlacements)
                     if (p?.partId == partId) { pp = p; break; }
 
+            PartDefinition freshDef = null;
+            if (fresh.parts != null)
+                foreach (var pd in fresh.parts)
+                    if (pd?.id == partId) { freshDef = pd; break; }
+
             bool hasP = pp != null;
+            StagingPose sp = freshDef?.stagingPose;
+
             for (int i = 0; i < _parts.Length; i++)
             {
                 if (_parts[i].def?.id != partId) continue;
                 _parts[i].placement     = pp;
                 _parts[i].hasPlacement  = hasP;
-                _parts[i].startPosition = hasP ? PackageJsonUtils.ToVector3(pp.startPosition) : Vector3.zero;
-                _parts[i].startRotation = hasP ? PackageJsonUtils.ToUnityQuaternion(pp.startRotation) : Quaternion.identity;
-                _parts[i].startScale    = hasP ? PackageJsonUtils.ToVector3(pp.startScale)    : Vector3.one;
+                _parts[i].startPosition = sp != null ? PackageJsonUtils.ToVector3(sp.position)
+                                        : hasP ? PackageJsonUtils.ToVector3(pp.startPosition) : Vector3.zero;
+                _parts[i].startRotation = sp != null ? PackageJsonUtils.ToUnityQuaternion(sp.rotation)
+                                        : hasP ? PackageJsonUtils.ToUnityQuaternion(pp.startRotation) : Quaternion.identity;
+                _parts[i].startScale    = sp != null && (sp.scale.x != 0f || sp.scale.y != 0f || sp.scale.z != 0f)
+                                        ? PackageJsonUtils.ToVector3(sp.scale)
+                                        : hasP ? PackageJsonUtils.ToVector3(pp.startScale) : Vector3.one;
                 _parts[i].assembledPosition  = hasP ? PackageJsonUtils.ToVector3(pp.assembledPosition)  : Vector3.zero;
                 _parts[i].assembledRotation  = hasP ? PackageJsonUtils.ToUnityQuaternion(pp.assembledRotation) : Quaternion.identity;
                 _parts[i].assembledScale     = hasP ? PackageJsonUtils.ToVector3(pp.assembledScale)     : Vector3.one;
@@ -3574,18 +3598,32 @@ namespace OSE.Editor
                 PartPreviewPlacement pp = FindPartPlacement(def.id);
                 bool hasP = pp != null;
 
+                // Prefer stagingPose from parts[] (agent-authored source of truth).
+                // Fall back to previewConfig.partPlacements.startPosition for un-migrated packages.
+                StagingPose sp = def.stagingPose;
+                Vector3    initPos = sp != null ? PackageJsonUtils.ToVector3(sp.position)
+                                   : hasP ? PackageJsonUtils.ToVector3(pp.startPosition) : Vector3.zero;
+                Quaternion initRot = sp != null ? PackageJsonUtils.ToUnityQuaternion(sp.rotation)
+                                   : hasP ? PackageJsonUtils.ToUnityQuaternion(pp.startRotation) : Quaternion.identity;
+                Vector3    initScl = sp != null && (sp.scale.x != 0f || sp.scale.y != 0f || sp.scale.z != 0f)
+                                   ? PackageJsonUtils.ToVector3(sp.scale)
+                                   : hasP ? PackageJsonUtils.ToVector3(pp.startScale) : Vector3.one;
+                Color      initCol = sp != null && sp.color.a > 0f
+                                   ? new Color(sp.color.r, sp.color.g, sp.color.b, sp.color.a)
+                                   : hasP ? new Color(pp.color.r, pp.color.g, pp.color.b, pp.color.a) : ColAuthored;
+
                 var state = new PartEditState
                 {
                     def           = def,
                     placement     = pp,
                     hasPlacement  = hasP,
-                    startPosition = hasP ? PackageJsonUtils.ToVector3(pp.startPosition) : Vector3.zero,
-                    startRotation = hasP ? PackageJsonUtils.ToUnityQuaternion(pp.startRotation) : Quaternion.identity,
-                    startScale    = hasP ? PackageJsonUtils.ToVector3(pp.startScale)    : Vector3.one,
+                    startPosition = initPos,
+                    startRotation = initRot,
+                    startScale    = initScl,
                     assembledPosition  = hasP ? PackageJsonUtils.ToVector3(pp.assembledPosition)  : Vector3.zero,
                     assembledRotation  = hasP ? PackageJsonUtils.ToUnityQuaternion(pp.assembledRotation) : Quaternion.identity,
                     assembledScale     = hasP ? PackageJsonUtils.ToVector3(pp.assembledScale)     : Vector3.one,
-                    color         = hasP ? new Color(pp.color.r, pp.color.g, pp.color.b, pp.color.a) : ColAuthored,
+                    color         = initCol,
                     isDirty       = false,
                     stepPoses     = hasP && pp.stepPoses != null ? DeepCopyStepPoses(pp.stepPoses) : null,
                 };
@@ -5406,7 +5444,20 @@ namespace OSE.Editor
             string jsonPath = PackageJsonUtils.GetJsonPath(_pkgId);
             if (jsonPath == null) { Debug.LogError($"[ToolTargetAuthoring] machine.json not found for '{_pkgId}'"); return; }
 
-            string json = File.ReadAllText(jsonPath);
+            bool   isSplit2     = PackageJsonUtils.IsSplitLayout(_pkgId);
+            var    rotContents  = new Dictionary<string, string>(StringComparer.Ordinal);
+            if (!isSplit2) rotContents[jsonPath] = File.ReadAllText(jsonPath);
+
+            void InjectRot(string entityId, string field, string value)
+            {
+                string fp = isSplit2 ? PackageJsonUtils.FindEntityFilePath(_pkgId, entityId) : jsonPath;
+                if (fp == null) return;
+                if (!rotContents.TryGetValue(fp, out string cnt))
+                    rotContents[fp] = cnt = File.ReadAllText(fp);
+                TryInjectBlock(ref cnt, entityId, field, value);
+                rotContents[fp] = cnt;
+            }
+
             Transform pr = GetPreviewRoot();
             Quaternion rootRot = pr != null ? pr.rotation : Quaternion.identity;
             var inv = System.Globalization.CultureInfo.InvariantCulture;
@@ -5418,30 +5469,39 @@ namespace OSE.Editor
                 var sq = p.rotation;
                 Quaternion localRot = new Quaternion(sq.x, sq.y, sq.z, sq.w);
                 Vector3 worldEuler = (rootRot * localRot).eulerAngles;
-                TryInjectBlock(ref json, p.targetId, "useToolActionRotation", "true");
+                InjectRot(p.targetId, "useToolActionRotation", "true");
                 string tarJson = $"{{ \"x\": {R(worldEuler.x).ToString(inv)}, \"y\": {R(worldEuler.y).ToString(inv)}, \"z\": {R(worldEuler.z).ToString(inv)} }}";
-                TryInjectBlock(ref json, p.targetId, "toolActionRotation", tarJson);
+                InjectRot(p.targetId, "toolActionRotation", tarJson);
                 count++;
             }
 
-            try { JsonUtility.FromJson<MachinePackageDefinition>(json); }
-            catch (Exception ex)
+            if (!isSplit2 && rotContents.TryGetValue(jsonPath, out string rotResult))
             {
-                Debug.LogError($"[ToolTargetAuthoring] SyncAllToolRotations: result would be invalid JSON, aborting.\n{ex.Message}");
-                return;
+                try { JsonUtility.FromJson<MachinePackageDefinition>(rotResult); }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[ToolTargetAuthoring] SyncAllToolRotations: result would be invalid JSON, aborting.\n{ex.Message}");
+                    return;
+                }
             }
 
-            string backupDir = Path.Combine(Path.GetDirectoryName(jsonPath)!, ".pose_backups");
-            if (!Directory.Exists(backupDir)) Directory.CreateDirectory(backupDir);
-            string ts = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            string backupPath = Path.Combine(backupDir, $"machine_syncrot_{ts}.json");
-            File.Copy(jsonPath, backupPath, true);
-            _lastBackupPath = backupPath;
+            string ts2 = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            string firstRotBackup = null;
+            foreach (var kv in rotContents)
+            {
+                string fp = kv.Key; string content = kv.Value;
+                string backupDir2 = Path.Combine(Path.GetDirectoryName(fp)!, ".pose_backups");
+                Directory.CreateDirectory(backupDir2);
+                string bak2 = Path.Combine(backupDir2, $"{Path.GetFileNameWithoutExtension(fp)}_syncrot_{ts2}.json");
+                File.Copy(fp, bak2, true);
+                if (firstRotBackup == null) firstRotBackup = bak2;
+                File.WriteAllText(fp, content);
+            }
+            _lastBackupPath = firstRotBackup;
 
-            File.WriteAllText(jsonPath, json);
             AssetDatabase.Refresh();
             PackageSyncTool.Sync();
-            Debug.Log($"[ToolTargetAuthoring] SyncAllToolRotations: updated toolActionRotation for {count} targets (backup: {backupPath}).");
+            Debug.Log($"[ToolTargetAuthoring] SyncAllToolRotations: updated toolActionRotation for {count} targets (backup: {firstRotBackup}).");
 
             _pkg = PackageJsonUtils.LoadPackage(_pkgId);
             BuildTargetList();
@@ -5516,20 +5576,66 @@ namespace OSE.Editor
                 _pkg.previewConfig.partPlacements = pp.ToArray();
             }
 
-            // Step 2: Validate original JSON
-            string json = File.ReadAllText(jsonPath);
-            try { JsonUtility.FromJson<MachinePackageDefinition>(json); }
-            catch (Exception ex)
+            // Determine whether this package uses split-layout (assemblies/ folder).
+            // For split-layout: previewConfig lives in preview_config.json;
+            //                   entity definitions live in assemblies/*.json and shared.json.
+            // For monolithic:   all data lives in machine.json (legacy behaviour unchanged).
+            bool   isSplit          = PackageJsonUtils.IsSplitLayout(_pkgId);
+            string previewCfgPath   = isSplit ? PackageJsonUtils.GetPreviewConfigJsonPath(_pkgId) : jsonPath;
+
+            // Step 2: Validate original JSON (monolithic only — split files are always self-consistent)
+            if (!isSplit)
             {
-                Debug.LogError($"[ToolTargetAuthoring] machine.json is already invalid, aborting.\n{ex.Message}");
-                return;
+                string orig = File.ReadAllText(jsonPath);
+                try { JsonUtility.FromJson<MachinePackageDefinition>(orig); }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[ToolTargetAuthoring] machine.json is already invalid, aborting.\n{ex.Message}");
+                    return;
+                }
             }
 
-            // Step 3: Write previewConfig block
-            // Mark as mesh-rotation format so runtime skips the legacy grip correction.
+            // Step 3: Write previewConfig block to the correct file.
+            // For split-layout: writes to preview_config.json (separate from entity definitions).
+            // For monolithic:   writes inline to machine.json.
             _pkg.previewConfig.targetRotationFormat = "mesh";
-            PackageJsonUtils.WritePreviewConfig(jsonPath, _pkg.previewConfig);
-            json = File.ReadAllText(jsonPath);
+            if (previewCfgPath != null)
+                PackageJsonUtils.WritePreviewConfig(previewCfgPath, _pkg.previewConfig);
+
+            // ── Per-file content cache ───────────────────────────────────────────
+            // Entity field patches are accumulated in memory (keyed by file path)
+            // then written atomically.  For monolithic packages every entity routes
+            // to machine.json; for split-layout each entity routes to its owning file.
+            var fileContents = new Dictionary<string, string>(StringComparer.Ordinal);
+
+            // Seed monolithic path with the post-step-3 machine.json content.
+            // For split-layout we load files on demand via ResolveEntityFile.
+            if (!isSplit)
+                fileContents[jsonPath] = File.ReadAllText(jsonPath);
+
+            string ResolveEntityFile(string entityId) =>
+                isSplit ? PackageJsonUtils.FindEntityFilePath(_pkgId, entityId) : jsonPath;
+
+            void InjectField(string entityId, string field, string value)
+            {
+                string fp = ResolveEntityFile(entityId);
+                if (fp == null) return;
+                if (!fileContents.TryGetValue(fp, out string cnt))
+                    fileContents[fp] = cnt = File.ReadAllText(fp);
+                TryInjectBlock(ref cnt, entityId, field, value);
+                fileContents[fp] = cnt;
+            }
+
+            void RemoveField(string entityId, string field)
+            {
+                string fp = ResolveEntityFile(entityId);
+                if (fp == null) return;
+                if (!fileContents.TryGetValue(fp, out string cnt))
+                    fileContents[fp] = cnt = File.ReadAllText(fp);
+                TryRemoveBlock(ref cnt, entityId, field);
+                fileContents[fp] = cnt;
+            }
+
 
             // Step 4: Inject TargetDefinition fields for dirty targets
             var inv = System.Globalization.CultureInfo.InvariantCulture;
@@ -5538,10 +5644,10 @@ namespace OSE.Editor
                 if (!t.isDirty) continue;
 
                 string axisJson = $"{{ \"x\": {R(t.weldAxis.x).ToString(inv)}, \"y\": {R(t.weldAxis.y).ToString(inv)}, \"z\": {R(t.weldAxis.z).ToString(inv)} }}";
-                TryInjectBlock(ref json, t.def.id, "weldAxis", axisJson);
+                InjectField(t.def.id, "weldAxis", axisJson);
 
                 if (t.weldLength > 0.0001f)
-                    TryInjectBlock(ref json, t.def.id, "weldLength", R(t.weldLength).ToString(inv));
+                    InjectField(t.def.id, "weldLength", R(t.weldLength).ToString(inv));
 
                 // Placement rotation IS the tool action rotation — always enable it so play mode
                 // respects whatever the author sets via the gizmo or euler field.
@@ -5549,9 +5655,9 @@ namespace OSE.Editor
                     ? wr.rotation * t.rotation
                     : t.rotation;
                 Vector3 worldEuler    = worldRot.eulerAngles;
-                TryInjectBlock(ref json, t.def.id, "useToolActionRotation", "true");
+                InjectField(t.def.id, "useToolActionRotation", "true");
                 string tarJson = $"{{ \"x\": {R(worldEuler.x).ToString(inv)}, \"y\": {R(worldEuler.y).ToString(inv)}, \"z\": {R(worldEuler.z).ToString(inv)} }}";
-                TryInjectBlock(ref json, t.def.id, "toolActionRotation", tarJson);
+                InjectField(t.def.id, "toolActionRotation", tarJson);
             }
 
             // Step 5a: Inject ToolDefinition.persistent for dirty tools
@@ -5562,7 +5668,7 @@ namespace OSE.Editor
                     foreach (var td in _pkg.tools)
                         if (td != null && td.id == toolId) { toolDef = td; break; }
                 if (toolDef != null)
-                    TryInjectBlock(ref json, toolId, "persistent", toolDef.persistent ? "true" : "false");
+                    InjectField(toolId, "persistent", toolDef.persistent ? "true" : "false");
             }
             _dirtyToolIds.Clear();
 
@@ -5576,14 +5682,14 @@ namespace OSE.Editor
                 string idsJson = step.removePersistentToolIds == null || step.removePersistentToolIds.Length == 0
                     ? "[]"
                     : "[ " + string.Join(", ", Array.ConvertAll(step.removePersistentToolIds, id => $"\"{id}\"")) + " ]";
-                TryInjectBlock(ref json, stepId, "removePersistentToolIds", idsJson);
+                InjectField(stepId, "removePersistentToolIds", idsJson);
 
                 // targetIds
                 if (step.targetIds != null)
                 {
                     string tJson = step.targetIds.Length == 0 ? "[]"
                         : "[ " + string.Join(", ", Array.ConvertAll(step.targetIds, id => $"\"{id}\"")) + " ]";
-                    TryInjectBlock(ref json, stepId, "targetIds", tJson);
+                    InjectField(stepId, "targetIds", tJson);
                 }
 
                 // requiredPartIds
@@ -5591,7 +5697,7 @@ namespace OSE.Editor
                 {
                     string pJson = step.requiredPartIds.Length == 0 ? "[]"
                         : "[ " + string.Join(", ", Array.ConvertAll(step.requiredPartIds, id => $"\"{id}\"")) + " ]";
-                    TryInjectBlock(ref json, stepId, "requiredPartIds", pJson);
+                    InjectField(stepId, "requiredPartIds", pJson);
                 }
 
                 // requiredToolActions
@@ -5617,7 +5723,7 @@ namespace OSE.Editor
                         });
                         aJson = "[ " + string.Join(", ", rows) + " ]";
                     }
-                    TryInjectBlock(ref json, stepId, "requiredToolActions", aJson);
+                    InjectField(stepId, "requiredToolActions", aJson);
                 }
 
                 // wireConnect
@@ -5661,12 +5767,12 @@ namespace OSE.Editor
                         return sb.ToString();
                     });
                     string wcJson = $"{{\"enforcePortOrder\":{(wc.enforcePortOrder ? "true" : "false")},\"wires\":[ {string.Join(", ", wRows)} ]}}";
-                    TryInjectBlock(ref json, stepId, "wireConnect", wcJson);
+                    InjectField(stepId, "wireConnect", wcJson);
                 }
 
                 // taskOrder
                 if (step.taskOrder != null && step.taskOrder.Length > 0)
-                    TryInjectBlock(ref json, stepId, "taskOrder", BuildTaskOrderJson(new List<TaskOrderEntry>(step.taskOrder)));
+                    InjectField(stepId, "taskOrder", BuildTaskOrderJson(new List<TaskOrderEntry>(step.taskOrder)));
 
                 // workingOrientation
                 if (step.workingOrientation != null)
@@ -5678,12 +5784,12 @@ namespace OSE.Editor
                     if (!string.IsNullOrEmpty(wo2.hint))
                         sb.Append($",\"hint\":\"{wo2.hint.Replace("\"", "\\\"")}\"");
                     sb.Append("}");
-                    TryInjectBlock(ref json, stepId, "workingOrientation", sb.ToString());
+                    InjectField(stepId, "workingOrientation", sb.ToString());
                 }
                 else
                 {
                     // Remove workingOrientation if cleared
-                    TryRemoveBlock(ref json, stepId, "workingOrientation");
+                    RemoveField(stepId, "workingOrientation");
                 }
             }
             _dirtyStepIds.Clear();
@@ -5697,32 +5803,70 @@ namespace OSE.Editor
                 {
                     if (p.def?.id != partId) continue;
                     if (!string.IsNullOrEmpty(p.def.assetRef))
-                        TryInjectBlock(ref json, partId, "assetRef", $"\"{p.def.assetRef}\"");
+                        InjectField(partId, "assetRef", $"\"{p.def.assetRef}\"");
                     break;
                 }
             }
             _dirtyPartAssetRefIds.Clear();
 
-            // Step 5e: Validate result
-            try { JsonUtility.FromJson<MachinePackageDefinition>(json); }
-            catch (Exception ex)
+            // Step 5d: Write stagingPose to parts[] for dirty parts.
+            // parts[].stagingPose is the canonical source of truth for staging positions.
+            // previewConfig.partPlacements.startPosition is baked from this at load time
+            // by MachinePackageNormalizer.BakeStagingPoses — do not edit startPosition directly.
+            if (_parts != null)
             {
-                Debug.LogError($"[ToolTargetAuthoring] Write would produce invalid JSON, aborting.\n{ex.Message}");
-                return;
+                foreach (ref PartEditState p in _parts.AsSpan())
+                {
+                    if (!p.isDirty || p.def == null) continue;
+
+                    var staging = new StagingPose
+                    {
+                        position = PackageJsonUtils.ToFloat3(p.startPosition),
+                        rotation = PackageJsonUtils.ToQuaternion(p.startRotation),
+                        scale    = PackageJsonUtils.ToFloat3(p.startScale),
+                        color    = new SceneFloat4
+                        {
+                            r = p.color.r,
+                            g = p.color.g,
+                            b = p.color.b,
+                            a = p.color.a,
+                        },
+                    };
+                    string stagingJson = PackageJsonUtils.RoundFloatsInJson(UnityEngine.JsonUtility.ToJson(staging));
+                    InjectField(p.def.id, "stagingPose", stagingJson);
+                }
             }
 
-            // Step 6: Backup + write
-            string backupDir = Path.Combine(Path.GetDirectoryName(jsonPath)!, ".pose_backups");
-            if (!Directory.Exists(backupDir)) Directory.CreateDirectory(backupDir);
-            string ts         = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            string backupPath = Path.Combine(backupDir, $"machine_{ts}.json");
-            File.Copy(jsonPath, backupPath, true);
-            _lastBackupPath = backupPath;
+            // Step 5e: Validate result (monolithic only — per-file contents are individually valid)
+            if (!isSplit && fileContents.TryGetValue(jsonPath, out string monoJson))
+            {
+                try { JsonUtility.FromJson<MachinePackageDefinition>(monoJson); }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[ToolTargetAuthoring] Write would produce invalid JSON, aborting.\n{ex.Message}");
+                    return;
+                }
+            }
 
-            File.WriteAllText(jsonPath, json);
+            // Step 6: Backup + write all modified files
+            string ts = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            string firstBackup = null;
+            foreach (var kv in fileContents)
+            {
+                string fp      = kv.Key;
+                string content = kv.Value;
+                string backupDir = Path.Combine(Path.GetDirectoryName(fp)!, ".pose_backups");
+                Directory.CreateDirectory(backupDir);
+                string bak = Path.Combine(backupDir, $"{Path.GetFileNameWithoutExtension(fp)}_{ts}.json");
+                File.Copy(fp, bak, true);
+                if (firstBackup == null) firstBackup = bak;
+                File.WriteAllText(fp, content);
+            }
+            _lastBackupPath = firstBackup;
+
             AssetDatabase.Refresh();
             PackageSyncTool.Sync();
-            Debug.Log($"[ToolTargetAuthoring] Written {_pkgId} (backup: {backupPath})");
+            Debug.Log($"[ToolTargetAuthoring] Written {_pkgId} (backup: {firstBackup})");
 
             if (reloadAfter)
             {
@@ -5759,11 +5903,35 @@ namespace OSE.Editor
 
         private void RevertFromBackup()
         {
-            string jsonPath = PackageJsonUtils.GetJsonPath(_pkgId);
-            if (jsonPath == null || !File.Exists(_lastBackupPath)) return;
-            File.Copy(_lastBackupPath, jsonPath, true);
+            if (!File.Exists(_lastBackupPath)) return;
+            // For split-layout packages, _lastBackupPath is a backup of an individual assembly
+            // file, so we restore it to its source file (derived from backup name).
+            // For monolithic packages, the source is always machine.json.
+            string backupName = Path.GetFileNameWithoutExtension(_lastBackupPath); // e.g. "assembly_d3d_frame_20250410_123456"
+            string sourceFile;
+            if (PackageJsonUtils.IsSplitLayout(_pkgId))
+            {
+                // Strip trailing timestamp (format: _yyyyMMdd_HHmmss)
+                int lastUnderscore2 = backupName.LastIndexOf('_');
+                int lastUnderscore1 = lastUnderscore2 > 0 ? backupName.LastIndexOf('_', lastUnderscore2 - 1) : -1;
+                string baseName = lastUnderscore1 > 0 ? backupName.Substring(0, lastUnderscore1) : backupName;
+                // Remove any verb suffix (e.g. "_syncrot") — look for file in package dir or assemblies/
+                string packageDir = Path.Combine(PackageJsonUtils.AuthoringRoot, _pkgId);
+                string asmFile    = Path.Combine(packageDir, "assemblies", $"{baseName}.json");
+                string rootFile   = Path.Combine(packageDir, $"{baseName}.json");
+                if (File.Exists(asmFile))       sourceFile = asmFile;
+                else if (File.Exists(rootFile)) sourceFile = rootFile;
+                else { Debug.LogWarning($"[ToolTargetAuthoring] RevertFromBackup: cannot locate source for backup '{_lastBackupPath}'."); return; }
+            }
+            else
+            {
+                sourceFile = PackageJsonUtils.GetJsonPath(_pkgId);
+                if (sourceFile == null) return;
+            }
+
+            File.Copy(_lastBackupPath, sourceFile, true);
             AssetDatabase.Refresh();
-            Debug.Log($"[ToolTargetAuthoring] Reverted to backup: {_lastBackupPath}");
+            Debug.Log($"[ToolTargetAuthoring] Reverted {Path.GetFileName(sourceFile)} to backup: {_lastBackupPath}");
             _lastBackupPath = null;
             _pkg = PackageJsonUtils.LoadPackage(_pkgId);
             BuildTargetList();

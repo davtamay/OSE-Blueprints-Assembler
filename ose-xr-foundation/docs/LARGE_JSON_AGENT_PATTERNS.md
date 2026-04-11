@@ -2,9 +2,11 @@
 
 ## Why This Doc Exists
 
-`machine.json` for D3D v18.10 is **582 KB / ~21,000 lines**. Early versions of
-`ose-procedure-audit` instructed the agent to read the entire file, then mentally
-perform set-intersection across 94 steps × 159 targets to find missing placements.
+`machine.json` for D3D v18.10 is **~1 MB / ~34,000 lines** (of which ~52% is
+TTAW/Blender-generated `previewConfig` data that agents never need to touch).
+Early versions of `ose-procedure-audit` instructed the agent to read the entire
+file, then mentally perform set-intersection across 313 steps × 150 parts to find
+missing placements.
 
 **This approach fails in two ways:**
 1. The file consumes ~half the agent's context window, leaving little room for
@@ -85,14 +87,20 @@ needs to audit the file.
 **Solution:** Read only the line ranges containing the relevant sections, not the
 full file.
 
-**For machine.json specifically:**
-| Section | Line range |
-|---------|-----------|
-| steps[] | 2072–6837 |
-| previewConfig.targetPlacements | 10230–20997 |
+**For machine.json specifically (d3d_v18_10, single-file layout):**
+| Section | Approximate line range |
+|---------|----------------------|
+| `parts[]` | 2–1,400 |
+| `steps[]` | 1,400–8,800 |
+| `previewConfig.partPlacements[]` | 8,800–14,000 |
+| `previewConfig.targetPlacements[]` | 14,000–34,000 |
+
+> Note: Once the Phase 2 assembly-file split is applied, agents read `assemblies/{id}.json`
+> (~2,500 lines) + `shared.json` (~1,000 lines) instead of the 34,000-line monolith.
+> After Phase 2 is complete, Pattern 2 line-range reads of the full file are obsolete.
 
 **Always note in the report** when using this fallback — set-intersection accuracy
-is reduced because the agent may miss IDs when scanning manually across 15,000+ lines.
+is reduced because the agent may miss IDs when scanning manually across thousands of lines.
 
 **When NOT to use:** Do not use this as the primary strategy. It still requires the
 agent to do set-membership mentally. Use Pattern 1 whenever possible.
@@ -166,12 +174,39 @@ it when building audit or analysis skills for other machine packages.
 
 ---
 
+## Pattern 5 — Assembly-File Routing (Phase 2 Architecture)
+
+Once the per-assembly file split is in place (`assemblies/{id}.json` + `shared.json`),
+agents should use this routing table instead of reading the monolithic file:
+
+| Task | File(s) to read | File(s) to write |
+|------|----------------|-----------------|
+| Author or edit steps for an assembly | `assemblies/{assemblyId}.json` | Same file |
+| Define a new part | `assemblies/{firstUseAssemblyId}.json` | Same file |
+| Set staging position (`stagingPose`) | `assemblies/{assemblyId}.json` on the part | Same file |
+| Define a tool or partTemplate | `shared.json` | `shared.json` |
+| Edit global hints (no specific targetId/partId) | `shared.json` | `shared.json` |
+| Cross-reference a part from another assembly | `assemblies/{definingAssembly}.json` (read only) | Do not re-define |
+| Read machine metadata (name, version) | `machine.json` | `machine.json` |
+| Read assembled/step poses (TTAW-generated) | `preview_config.json` | Never — TTAW-only |
+
+**Agent routing rule:** Determine the assembly for a step or part using `assemblyId`.
+Map `assemblyId` → `assemblies/{assemblyId}.json`. All IDs are globally unique across files;
+the loader merges all files into one `MachinePackageDefinition` before normalization.
+
+**Never read `preview_config.json` during content authoring tasks.** It contains only
+TTAW/Blender-generated spatial data (assembled poses, step poses, spline paths). The agent
+authoring portion (staging start positions) lives in `parts[].stagingPose` in the assembly file.
+
+---
+
 ## What NOT to Do
 
 | Anti-pattern | Why it fails |
 |---|---|
-| `"Read machine.json fully — do not sample"` | Consumes ~50% of context; forces LLM set-intersection |
-| Reading both steps and previewConfig sections separately | Still 15,000+ lines; same problem |
-| Grepping for all `targetId` occurrences | Returns 432 matches across both sections; agent can't reliably separate them |
+| `"Read machine.json fully — do not sample"` | Consumes context window; forces LLM set-intersection |
+| Reading both steps and previewConfig sections separately | Still tens of thousands of lines; same problem |
+| Grepping for all `targetId` occurrences | Returns hundreds of matches across both sections; agent can't reliably separate them |
 | Caching the full audit report as a file | Report includes wiki content which changes independently of the JSON |
 | Using line-range reads as the primary strategy | Fragile if file is edited; line numbers shift |
+| Reading `preview_config.json` to find staging positions | Stale data — normalizer bakes from `parts[].stagingPose` at load; edit the assembly file instead |

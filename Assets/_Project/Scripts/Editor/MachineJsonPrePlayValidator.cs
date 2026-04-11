@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using OSE.Content;
 using OSE.Content.Loading;
@@ -97,8 +97,9 @@ namespace OSE.Editor
                 string packageId = Path.GetFileName(dir);
                 try
                 {
-                    string json = File.ReadAllText(jsonPath, Encoding.UTF8);
-                    var pkg = JsonUtility.FromJson<MachinePackageDefinition>(json);
+                    // Use split-aware loading so split-layout packages (assemblies/ folder)
+                    // are merged the same way the runtime loader does before validating.
+                    var pkg = LoadPackageForValidation(dir);
                     if (pkg == null)
                     {
                         report.AddPackage(packageId, new[] { "Failed to parse JSON" }, Array.Empty<string>());
@@ -166,6 +167,86 @@ namespace OSE.Editor
             }
 
             return sb.ToString();
+        }
+
+        // ── Split-layout loading (mirrors MachinePackageLoader.LoadSplitLayoutAsync) ──
+
+        /// <summary>
+        /// Loads a package for validation. Handles both single-file (legacy machine.json)
+        /// and split-layout (assemblies/ folder) packages, merging all files the same way
+        /// the runtime loader does so the validator sees the complete merged definition.
+        /// </summary>
+        private static MachinePackageDefinition LoadPackageForValidation(string packageDir)
+        {
+            string assemblyFolder = Path.Combine(packageDir, "assemblies");
+            if (Directory.Exists(assemblyFolder))
+                return LoadSplitLayoutSync(packageDir, assemblyFolder);
+
+            string json = File.ReadAllText(Path.Combine(packageDir, "machine.json"), Encoding.UTF8);
+            return JsonUtility.FromJson<MachinePackageDefinition>(json);
+        }
+
+        private static MachinePackageDefinition LoadSplitLayoutSync(string packageDir, string assemblyFolder)
+        {
+            // machine.json — metadata only
+            string json = File.ReadAllText(Path.Combine(packageDir, "machine.json"), Encoding.UTF8);
+            var pkg = JsonUtility.FromJson<MachinePackageDefinition>(json) ?? new MachinePackageDefinition();
+
+            // shared.json — tools, partTemplates, global hints, validationRules, effects
+            string sharedPath = Path.Combine(packageDir, "shared.json");
+            if (File.Exists(sharedPath))
+            {
+                var shared = JsonUtility.FromJson<MachinePackageDefinition>(
+                    File.ReadAllText(sharedPath, Encoding.UTF8));
+                if (shared != null)
+                {
+                    pkg.tools           = shared.tools           ?? pkg.tools;
+                    pkg.partTemplates   = shared.partTemplates   ?? pkg.partTemplates;
+                    pkg.validationRules = MergeArrays(pkg.validationRules, shared.validationRules);
+                    pkg.effects         = MergeArrays(pkg.effects,         shared.effects);
+                    pkg.hints           = MergeArrays(pkg.hints,           shared.hints);
+                    if (pkg.challengeConfig == null && shared.challengeConfig != null)
+                        pkg.challengeConfig = shared.challengeConfig;
+                }
+            }
+
+            // assemblies/*.json — per-assembly content
+            foreach (string asmFile in Directory.GetFiles(assemblyFolder, "*.json").OrderBy(f => f))
+            {
+                var asmChunk = JsonUtility.FromJson<MachinePackageDefinition>(
+                    File.ReadAllText(asmFile, Encoding.UTF8));
+                if (asmChunk == null) continue;
+
+                pkg.assemblies      = MergeArrays(pkg.assemblies,      asmChunk.assemblies);
+                pkg.subassemblies   = MergeArrays(pkg.subassemblies,   asmChunk.subassemblies);
+                pkg.parts           = MergeArrays(pkg.parts,           asmChunk.parts);
+                pkg.steps           = MergeArrays(pkg.steps,           asmChunk.steps);
+                pkg.targets         = MergeArrays(pkg.targets,         asmChunk.targets);
+                pkg.hints           = MergeArrays(pkg.hints,           asmChunk.hints);
+                pkg.validationRules = MergeArrays(pkg.validationRules, asmChunk.validationRules);
+            }
+
+            // preview_config.json — TTAW-generated positional data
+            string previewPath = Path.Combine(packageDir, "preview_config.json");
+            if (File.Exists(previewPath))
+            {
+                var previewWrap = JsonUtility.FromJson<MachinePackageDefinition>(
+                    File.ReadAllText(previewPath, Encoding.UTF8));
+                if (previewWrap?.previewConfig != null)
+                    pkg.previewConfig = previewWrap.previewConfig;
+            }
+
+            return pkg;
+        }
+
+        private static T[] MergeArrays<T>(T[] a, T[] b)
+        {
+            if (a == null || a.Length == 0) return b ?? Array.Empty<T>();
+            if (b == null || b.Length == 0) return a;
+            var result = new T[a.Length + b.Length];
+            Array.Copy(a, 0, result, 0,        a.Length);
+            Array.Copy(b, 0, result, a.Length, b.Length);
+            return result;
         }
 
         // ── Data ─────────────────────────────────────────────────────────────

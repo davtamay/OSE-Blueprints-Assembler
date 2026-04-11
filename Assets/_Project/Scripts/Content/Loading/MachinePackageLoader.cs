@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using OSE.Content.Validation;
@@ -12,7 +13,10 @@ namespace OSE.Content.Loading
     public sealed class MachinePackageLoader : IMachinePackageLoader
     {
         private const string MachinePackagesFolderName = "MachinePackages";
-        private const string MachineJsonFileName = "machine.json";
+        private const string MachineJsonFileName        = "machine.json";
+        private const string SharedJsonFileName         = "shared.json";
+        private const string PreviewConfigFileName      = "preview_config.json";
+        private const string AssembliesFolderName       = "assemblies";
 
         public async Task<MachinePackageLoadResult> LoadFromStreamingAssetsAsync(
             string packageId,
@@ -33,13 +37,31 @@ namespace OSE.Content.Loading
 
             try
             {
+                MachinePackageDefinition package;
+
+#if UNITY_EDITOR
+                // ── Split-layout detection (editor only) ─────────────────────────
+                // If the package has an assemblies/ subfolder it uses the A+++ split
+                // layout. Load machine.json (metadata) + shared.json + assemblies/*.json
+                // + preview_config.json and merge them.  Packages without the folder
+                // fall through to the single-file path below.
+                string authoringFolder = BuildAuthoringPackageFolderPath(sanitizedPackageId);
+                string assemblyFolder  = Path.Combine(authoringFolder, AssembliesFolderName);
+                if (Directory.Exists(assemblyFolder))
+                {
+                    using (OseLog.Timed($"ReadJson({sanitizedPackageId})"))
+                        package = await LoadSplitLayoutAsync(
+                            sanitizedPackageId, authoringFolder, assemblyFolder, cancellationToken);
+                }
+                else
+                {
+#endif
+                // ── Single-file layout (legacy, or packages not yet split) ────────
                 string json;
                 using (OseLog.Timed($"ReadJson({sanitizedPackageId})"))
                     json = await ReadTextAsync(packagePath, cancellationToken);
                 if (string.IsNullOrWhiteSpace(json))
-                {
                     return Failure(sanitizedPackageId, packagePath, "Package JSON was empty.");
-                }
 
                 // Apply schema migrations before deserialization so structural
                 // changes from older formats are handled transparently.
@@ -48,7 +70,6 @@ namespace OSE.Content.Loading
                     migration = PackageSchemaMigrator.Migrate(json);
                 json = migration.Json;
 
-                MachinePackageDefinition package;
                 try
                 {
                     using (OseLog.Timed($"Deserialize({sanitizedPackageId})"))
@@ -60,6 +81,9 @@ namespace OSE.Content.Loading
                     OseLog.Error(OseErrorCode.PackageLoadFailed, $"[Content] {parseError}");
                     return Failure(sanitizedPackageId, packagePath, parseError);
                 }
+#if UNITY_EDITOR
+                } // end single-file block
+#endif
 
                 if (package == null || package.machine == null)
                 {
@@ -141,6 +165,103 @@ namespace OSE.Content.Loading
                 Application.streamingAssetsPath,
                 MachinePackagesFolderName, packageId, MachineJsonFileName);
         }
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// Returns the authoring folder root for the package
+        /// (Assets/_Project/Data/Packages/{packageId}/).
+        /// Editor only — in builds the merged machine.json in StreamingAssets is used.
+        /// </summary>
+        private static string BuildAuthoringPackageFolderPath(string packageId) =>
+            Path.Combine(Application.dataPath, "_Project", "Data", "Packages", packageId);
+
+        /// <summary>
+        /// Loads a package that uses the split-layout (A+++ architecture):
+        ///   machine.json        — metadata (machine, version, challengeConfig, assetManifest)
+        ///   shared.json         — tools, partTemplates, global hints, global validationRules, effects
+        ///   assemblies/*.json   — per-assembly content (assemblies, subassemblies, parts, steps, targets, hints)
+        ///   preview_config.json — TTAW/Blender-generated positional data (previewConfig)
+        ///
+        /// All files are merged into a single <see cref="MachinePackageDefinition"/> before
+        /// normalization and validation. The normalizer and validator remain file-agnostic.
+        /// </summary>
+        private static async Task<MachinePackageDefinition> LoadSplitLayoutAsync(
+            string packageId,
+            string packageFolder,
+            string assemblyFolder,
+            CancellationToken cancellationToken)
+        {
+            // ── 1. machine.json — metadata ────────────────────────────────────
+            string machineJsonPath = Path.Combine(packageFolder, MachineJsonFileName);
+            string machineJson     = await File.ReadAllTextAsync(machineJsonPath, cancellationToken);
+            var package            = JsonUtility.FromJson<MachinePackageDefinition>(machineJson);
+            if (package == null)
+                throw new InvalidOperationException($"Failed to parse machine.json in split-layout package '{packageId}'.");
+
+            // ── 2. shared.json — tools, partTemplates, global hints, etc. ─────
+            string sharedJsonPath = Path.Combine(packageFolder, SharedJsonFileName);
+            if (File.Exists(sharedJsonPath))
+            {
+                string sharedJson = await File.ReadAllTextAsync(sharedJsonPath, cancellationToken);
+                var shared        = JsonUtility.FromJson<MachinePackageDefinition>(sharedJson);
+                if (shared != null)
+                {
+                    package.tools          = shared.tools          ?? package.tools;
+                    package.partTemplates  = shared.partTemplates  ?? package.partTemplates;
+                    package.validationRules= MergeArrays(package.validationRules, shared.validationRules);
+                    package.effects        = MergeArrays(package.effects,         shared.effects);
+                    package.hints          = MergeArrays(package.hints,           shared.hints);
+                    if (package.challengeConfig == null && shared.challengeConfig != null)
+                        package.challengeConfig = shared.challengeConfig;
+                }
+            }
+
+            // ── 3. assemblies/*.json — per-assembly content ───────────────────
+            string[] assemblyFiles = Directory.GetFiles(assemblyFolder, "*.json")
+                                              .OrderBy(f => f)
+                                              .ToArray();
+            foreach (string asmFile in assemblyFiles)
+            {
+                string asmJson   = await File.ReadAllTextAsync(asmFile, cancellationToken);
+                var    asmChunk  = JsonUtility.FromJson<MachinePackageDefinition>(asmJson);
+                if (asmChunk == null) continue;
+
+                package.assemblies    = MergeArrays(package.assemblies,    asmChunk.assemblies);
+                package.subassemblies = MergeArrays(package.subassemblies, asmChunk.subassemblies);
+                package.parts         = MergeArrays(package.parts,         asmChunk.parts);
+                package.steps         = MergeArrays(package.steps,         asmChunk.steps);
+                package.targets       = MergeArrays(package.targets,       asmChunk.targets);
+                package.hints         = MergeArrays(package.hints,         asmChunk.hints);
+                package.validationRules = MergeArrays(package.validationRules, asmChunk.validationRules);
+            }
+
+            // ── 4. preview_config.json — TTAW/Blender-generated positional data
+            string previewConfigPath = Path.Combine(packageFolder, PreviewConfigFileName);
+            if (File.Exists(previewConfigPath))
+            {
+                // preview_config.json is wrapped: { "previewConfig": { ... } }
+                string previewJson  = await File.ReadAllTextAsync(previewConfigPath, cancellationToken);
+                var    previewWrap  = JsonUtility.FromJson<MachinePackageDefinition>(previewJson);
+                if (previewWrap?.previewConfig != null)
+                    package.previewConfig = previewWrap.previewConfig;
+            }
+
+            return package;
+        }
+
+        /// <summary>Concatenates two nullable arrays, returning a non-null result.</summary>
+        private static T[] MergeArrays<T>(T[] a, T[] b)
+        {
+            bool aEmpty = a == null || a.Length == 0;
+            bool bEmpty = b == null || b.Length == 0;
+            if (aEmpty) return bEmpty ? Array.Empty<T>() : b;
+            if (bEmpty) return a;
+            var result = new T[a.Length + b.Length];
+            Array.Copy(a, 0, result, 0,        a.Length);
+            Array.Copy(b, 0, result, a.Length, b.Length);
+            return result;
+        }
+#endif
 
         private static async Task<string> ReadTextAsync(
             string path,

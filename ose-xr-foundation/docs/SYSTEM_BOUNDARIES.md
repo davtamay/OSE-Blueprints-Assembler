@@ -137,6 +137,38 @@ Content must remain **engine-agnostic structured data**.
 
 ---
 
+## Loader Merge Boundary
+
+`MachinePackageLoader` is the **only** entry point for loading machine content. It merges
+all source files into a single `MachinePackageDefinition` before any other system touches the data:
+
+```
+machine.json          ─┐
+shared.json           ─┤→ MachinePackageLoader.Load()
+assemblies/*.json     ─┤      ↓
+preview_config.json   ─┘  MachinePackageDefinition (merged)
+                               ↓
+                      MachinePackageNormalizer.Normalize()
+                               ↓
+                      MachinePackageValidator.Validate()
+                               ↓
+                      Runtime systems (read-only after this point)
+```
+
+**Key rules:**
+- `MachinePackageNormalizer` and `MachinePackageValidator` are **file-agnostic** — they
+  operate on the merged definition and have no knowledge of which file contributed which entity.
+- No runtime system may read individual package files directly. All content access goes through
+  the loader's merged result.
+- Backward-compatible fallback: if `assemblies/` is absent, the loader reads a single
+  `machine.json` containing all content inline. The normalizer and validator are unchanged.
+- `preview_config.json` contributes TTAW/Blender-generated positional data (assembled poses,
+  step poses, target placements). The normalizer's `BakeStagingPoses` pass then overwrites
+  `partPlacements[].startPosition/Rotation/Scale/color` from `parts[].stagingPose` so that
+  agent-authored staging positions always take precedence.
+
+---
+
 # Module Dependency Map
 
 Allowed module directions:

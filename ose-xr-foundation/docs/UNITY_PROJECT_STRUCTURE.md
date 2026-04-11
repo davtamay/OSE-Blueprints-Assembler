@@ -901,25 +901,53 @@ Effects should have low-end fallbacks for web delivery.
 
 ---
 
-# 12. StreamingAssets and Machine Packages
+# 12. Machine Packages — Authoring vs. Runtime
 
-For machine packages intended for runtime loading:
+Machine packages have two locations with distinct roles:
+
+## 12.1 Authoring Folder (Editor reads this — always edit here)
 
 ```text
-Assets/StreamingAssets/
-  MachinePackages/
-    onboarding_tutorial/
-    power_cube/
+Assets/_Project/Data/Packages/{packageId}/
+  machine.json          ← package metadata: name, version, entryAssemblyIds, schemaVersion
+  shared.json           ← tools (with toolPose), partTemplates, global hints, global validationRules
+  assemblies/           ← one file per assembly (self-contained: steps, parts, targets, hints)
+    frame.json
+    y_left.json
+    x_axis.json
+    extruder_stage_01.json
+    ...
+  preview_config.json   ← TTAW/Blender-generated ONLY (assembled poses, stepPoses, targetPlacements)
+                           Agents NEVER open or edit this file.
+  assets/
+    parts/*.glb         ← part mesh assets (resolver hardcodes this path)
+    tools/*.glb         ← tool mesh assets
+  source_cad/           ← FreeCAD source files and export scripts
 ```
 
-Each package can include:
+**Agent authoring rule:** Always edit files under `Assets/_Project/Data/Packages/`. Never touch `preview_config.json` — it is overwritten by TTAW on every save. Staging start positions (`stagingPose`) live in the assembly file alongside the part definition, not in `preview_config.json`.
 
-- manifest JSON
-- assembly definitions
-- part metadata
-- tool metadata
-- optional challenge config
-- optional effect definitions
+**Backward-compatible fallback:** If the `assemblies/` folder is absent, the loader falls back to reading a single `machine.json` that contains all content inline (legacy layout).
+
+## 12.2 StreamingAssets Folder (Runtime/build only — do not edit directly)
+
+```text
+Assets/StreamingAssets/MachinePackages/{packageId}/
+  machine.json          ← full merged package, synced from authoring folder by build pipeline
+  assets/
+    parts/*.glb
+    tools/*.glb
+```
+
+This is the copy the runtime loads at play/build time. The build pipeline merges and syncs all authoring files here automatically. Do not manually copy or edit this copy.
+
+See `MachinePackageLoader.BuildMachineJsonPath()` for the resolution logic that selects between editor and runtime paths.
+
+Each package supports:
+
+- data-driven steps, parts, tools, targets, hints, validation rules
+- challenge config
+- effect definitions
 - asset references
 
 This supports web-friendly dynamic content loading and future package updates.
