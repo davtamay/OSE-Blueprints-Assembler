@@ -106,6 +106,10 @@ namespace OSE.Editor
             EditorGUILayout.Space(8);
             DrawSubassemblySection(step);
 
+            // ── PART × TOOL AFFINITY (Phase 7b) ───────────────────────────────
+            EditorGUILayout.Space(8);
+            DrawToolAffinitySection(step);
+
             // ── ANIMATION CUES — step-level, always shown below task panels ───
             EditorGUILayout.Space(8);
             DrawAnimationCuesSection(step);

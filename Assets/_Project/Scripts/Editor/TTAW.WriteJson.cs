@@ -29,6 +29,9 @@ namespace OSE.Editor
         private bool AnyDirty()
         {
             if (_dirtyToolIds.Count > 0 || _dirtyStepIds.Count > 0) return true;
+            if (_dirtyTaskOrderStepIds.Count > 0) return true;
+            if (_dirtyPartAssetRefIds.Count > 0)  return true;
+            if (_dirtyPartToolIds.Count > 0)      return true;
             if (_targets != null) foreach (var t in _targets) if (t.isDirty) return true;
             if (_parts   != null) foreach (var p in _parts)   if (p.isDirty) return true;
             return false;
@@ -433,6 +436,31 @@ namespace OSE.Editor
                 }
             }
             _dirtyPartAssetRefIds.Clear();
+
+            // Step 5c-bis: Inject toolIds for parts whose tool affinity changed (Phase 7b).
+            // Empty arrays are removed (omitted) so legacy parts don't grow a
+            // zero-length field after a save.
+            foreach (string partId in _dirtyPartToolIds)
+            {
+                if (_pkg?.parts == null) break;
+                PartDefinition part = null;
+                for (int pi = 0; pi < _pkg.parts.Length; pi++)
+                {
+                    if (_pkg.parts[pi]?.id == partId) { part = _pkg.parts[pi]; break; }
+                }
+                if (part == null) continue;
+                if (part.toolIds != null && part.toolIds.Length > 0)
+                {
+                    string tJson = "[ " + string.Join(", ",
+                        Array.ConvertAll(part.toolIds, id => $"\"{id}\"")) + " ]";
+                    InjectField(partId, "toolIds", tJson);
+                }
+                else
+                {
+                    RemoveField(partId, "toolIds");
+                }
+            }
+            _dirtyPartToolIds.Clear();
 
             // Step 5d: Write stagingPose to parts[] for dirty parts.
             if (_parts != null)

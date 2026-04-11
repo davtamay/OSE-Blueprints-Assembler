@@ -419,11 +419,12 @@ namespace OSE.Editor
             if (_toolbarStepTitleLabel.text != title)
                 _toolbarStepTitleLabel.text = title;
 
-            // Dirty indicator — sum across all four dirty sets
+            // Dirty indicator — sum across every dirty set the editor tracks
             int dirtyCount = (_dirtyToolIds?.Count          ?? 0)
                            + (_dirtyStepIds?.Count          ?? 0)
                            + (_dirtyTaskOrderStepIds?.Count ?? 0)
-                           + (_dirtyPartAssetRefIds?.Count  ?? 0);
+                           + (_dirtyPartAssetRefIds?.Count  ?? 0)
+                           + (_dirtyPartToolIds?.Count      ?? 0);
             string dirtyText = dirtyCount > 0 ? $"● {dirtyCount} unsaved" : string.Empty;
             if (_toolbarDirtyLabel.text != dirtyText)
                 _toolbarDirtyLabel.text = dirtyText;

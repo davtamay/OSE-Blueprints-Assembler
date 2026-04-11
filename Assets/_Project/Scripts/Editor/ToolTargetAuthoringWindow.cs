@@ -116,6 +116,7 @@ namespace OSE.Editor
         private readonly HashSet<string> _dirtyToolIds         = new HashSet<string>(StringComparer.Ordinal);
         private readonly HashSet<string> _dirtyStepIds         = new HashSet<string>(StringComparer.Ordinal);
         private readonly HashSet<string> _dirtyPartAssetRefIds = new HashSet<string>(StringComparer.Ordinal);
+        private readonly HashSet<string> _dirtyPartToolIds     = new HashSet<string>(StringComparer.Ordinal); // Phase 7b — Part × Tool affinity
         private readonly PackageAssetResolver _assetResolver = new PackageAssetResolver();
 
         // SceneView part-count summary updated by RespawnScene
