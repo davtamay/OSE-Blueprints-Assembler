@@ -1,31 +1,63 @@
-// TTAW.Shell.cs — UITK shell that hosts the existing IMGUI authoring UI.
+// TTAW.Shell.cs — UITK shell + native toolbar that hosts the existing IMGUI.
 // ──────────────────────────────────────────────────────────────────────────────
-// Phase 1 of the UX redesign. The window is now structurally a UI Toolkit
+// Phase 2 of the UX redesign. The window is structurally a UI Toolkit
 // EditorWindow: Unity calls CreateGUI() once after OnEnable, we build a
-// VisualElement root, and we host the existing IMGUI UI inside a single
-// full-window IMGUIContainer that calls DrawAuthoringIMGUI() each frame.
+// VisualElement root, and the body of the window is a single full-width
+// IMGUIContainer that calls DrawAuthoringIMGUI() each frame.
 //
-// Visually and functionally identical to the previous OnGUI-only window.
-// This file exists so future phases can incrementally replace pieces of the
-// IMGUI tree with native UITK panels (toolbar, navigator, inspector, etc.)
-// without ever breaking the working IMGUI logic in the other partial files.
+// Phase 2 adds a real UITK toolbar above that container with:
+//   • Package dropdown (replaces DrawPkgPicker)
+//   • Step nav buttons + step number field + step count label (replaces the
+//     navigation row of DrawStepFilter)
+//   • Step title label (truncates with ellipsis on resize)
+//   • Dirty indicator showing total unsaved item count across all dirty sets
+//   • + New Step toggle (still opens the IMGUI new-step form below)
+//
+// The toolbar polls IMGUI-side state every 100 ms via VisualElement.schedule
+// so it stays in sync with mutations from anywhere (SessionDriver step
+// changes, dirty marks set inside IMGUI panels, undo, etc.) without each
+// mutation site needing to know about the toolbar.
 //
 // Part of the ToolTargetAuthoringWindow partial class split.
 // See ToolTargetAuthoringWindow.cs for fields, constants, and nested types.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using OSE.Content;
+using OSE.Runtime.Preview;
 using UnityEditor;
+using UnityEditor.UIElements;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace OSE.Editor
 {
     public sealed partial class ToolTargetAuthoringWindow : EditorWindow
     {
+        // ── UITK toolbar widget references ────────────────────────────────────
+
+        private Toolbar              _toolbar;
+        private PopupField<string>   _toolbarPackageField;
+        private ToolbarButton        _toolbarPackageRefreshBtn;
+        private ToolbarButton        _toolbarFirstStepBtn;
+        private ToolbarButton        _toolbarPrevStepBtn;
+        private IntegerField         _toolbarStepField;
+        private Label                _toolbarStepCountLabel;
+        private ToolbarButton        _toolbarNextStepBtn;
+        private ToolbarButton        _toolbarLastStepBtn;
+        private Label                _toolbarStepTitleLabel;
+        private Label                _toolbarDirtyLabel;
+        private ToolbarButton        _toolbarNewStepBtn;
+
         // ── UITK shell ────────────────────────────────────────────────────────
 
         private void CreateGUI()
         {
             var root = rootVisualElement;
             root.style.flexGrow = 1;
+
+            BuildToolbar(root);
 
             // Single full-window IMGUIContainer that runs the existing OnGUI body
             // (now renamed DrawAuthoringIMGUI in TTAW.Layout.cs). All Event.current,
@@ -38,6 +70,243 @@ namespace OSE.Editor
             };
             imguiHost.style.flexGrow = 1;
             root.Add(imguiHost);
+
+            // Poll IMGUI-side state changes (dirty flags, step changes from
+            // SessionDriver, package reloads, etc.) and refresh the toolbar so
+            // it stays in sync without each mutation site needing to know about
+            // the toolbar.
+            root.schedule.Execute(RefreshToolbar).Every(100);
+
+            RefreshToolbar();
+        }
+
+        // ── Toolbar build ─────────────────────────────────────────────────────
+
+        private void BuildToolbar(VisualElement root)
+        {
+            var toolbar = new Toolbar();
+            toolbar.style.flexShrink = 0;
+
+            // Package dropdown
+            _toolbarPackageField = new PopupField<string>(new List<string> { "(no packages)" }, 0);
+            _toolbarPackageField.style.minWidth = 140;
+            _toolbarPackageField.style.marginLeft = 4;
+            _toolbarPackageField.style.marginRight = 2;
+            _toolbarPackageField.tooltip = "Active machine package";
+            _toolbarPackageField.RegisterValueChangedCallback(OnToolbarPackageChanged);
+            toolbar.Add(_toolbarPackageField);
+
+            _toolbarPackageRefreshBtn = new ToolbarButton(RefreshPackageList) { text = "↺" };
+            _toolbarPackageRefreshBtn.tooltip = "Refresh package list from disk";
+            _toolbarPackageRefreshBtn.style.width = 22;
+            toolbar.Add(_toolbarPackageRefreshBtn);
+
+            toolbar.Add(MakeSpacer(8));
+
+            // Step navigation
+            _toolbarFirstStepBtn = new ToolbarButton(() => { ApplyStepFilter(1); Repaint(); }) { text = "◄|" };
+            _toolbarFirstStepBtn.tooltip = "Jump to first step";
+            _toolbarFirstStepBtn.style.width = 28;
+            toolbar.Add(_toolbarFirstStepBtn);
+
+            _toolbarPrevStepBtn = new ToolbarButton(() => { ApplyStepFilter(_stepFilterIdx - 1); Repaint(); }) { text = "◄" };
+            _toolbarPrevStepBtn.tooltip = "Previous step";
+            _toolbarPrevStepBtn.style.width = 24;
+            toolbar.Add(_toolbarPrevStepBtn);
+
+            _toolbarStepField = new IntegerField { isDelayed = true };
+            _toolbarStepField.style.width = 44;
+            _toolbarStepField.tooltip = "Step number — type to jump, scroll-wheel to scrub";
+            _toolbarStepField.RegisterValueChangedCallback(OnToolbarStepFieldChanged);
+            _toolbarStepField.RegisterCallback<WheelEvent>(OnToolbarStepFieldWheel);
+            toolbar.Add(_toolbarStepField);
+
+            _toolbarStepCountLabel = new Label("/0");
+            _toolbarStepCountLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+            _toolbarStepCountLabel.style.unityTextAlign = TextAnchor.MiddleLeft;
+            _toolbarStepCountLabel.style.marginLeft = 2;
+            _toolbarStepCountLabel.style.marginRight = 4;
+            toolbar.Add(_toolbarStepCountLabel);
+
+            _toolbarNextStepBtn = new ToolbarButton(() => { ApplyStepFilter(_stepFilterIdx + 1); Repaint(); }) { text = "►" };
+            _toolbarNextStepBtn.tooltip = "Next step";
+            _toolbarNextStepBtn.style.width = 24;
+            toolbar.Add(_toolbarNextStepBtn);
+
+            _toolbarLastStepBtn = new ToolbarButton(() =>
+            {
+                int last = (_stepOptions?.Length ?? 1) - 1;
+                if (last >= 1) { ApplyStepFilter(last); Repaint(); }
+            }) { text = "|►" };
+            _toolbarLastStepBtn.tooltip = "Jump to last step";
+            _toolbarLastStepBtn.style.width = 28;
+            toolbar.Add(_toolbarLastStepBtn);
+
+            toolbar.Add(MakeSpacer(6));
+
+            // Step title — fills remaining space, ellipses on overflow
+            _toolbarStepTitleLabel = new Label(string.Empty);
+            _toolbarStepTitleLabel.style.flexGrow = 1;
+            _toolbarStepTitleLabel.style.flexShrink = 1;
+            _toolbarStepTitleLabel.style.minWidth = 0;
+            _toolbarStepTitleLabel.style.unityTextAlign = TextAnchor.MiddleLeft;
+            _toolbarStepTitleLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+            _toolbarStepTitleLabel.style.overflow = Overflow.Hidden;
+            _toolbarStepTitleLabel.style.textOverflow = TextOverflow.Ellipsis;
+            _toolbarStepTitleLabel.style.whiteSpace = WhiteSpace.NoWrap;
+            _toolbarStepTitleLabel.style.marginLeft = 2;
+            toolbar.Add(_toolbarStepTitleLabel);
+
+            // Dirty indicator (right-aligned, hidden when nothing dirty)
+            _toolbarDirtyLabel = new Label(string.Empty);
+            _toolbarDirtyLabel.style.unityTextAlign = TextAnchor.MiddleRight;
+            _toolbarDirtyLabel.style.marginLeft = 4;
+            _toolbarDirtyLabel.style.marginRight = 4;
+            _toolbarDirtyLabel.style.color = new Color(0.95f, 0.65f, 0.15f);
+            _toolbarDirtyLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+            _toolbarDirtyLabel.tooltip = "Unsaved authoring changes";
+            toolbar.Add(_toolbarDirtyLabel);
+
+            // + New Step
+            _toolbarNewStepBtn = new ToolbarButton(OnToolbarNewStepClicked) { text = "+ New Step" };
+            _toolbarNewStepBtn.tooltip = "Create a new step in the active assembly";
+            toolbar.Add(_toolbarNewStepBtn);
+
+            root.Add(toolbar);
+            _toolbar = toolbar;
+        }
+
+        private static VisualElement MakeSpacer(float width)
+        {
+            var s = new VisualElement();
+            s.style.width = width;
+            s.style.flexShrink = 0;
+            return s;
+        }
+
+        // ── Toolbar event handlers ────────────────────────────────────────────
+
+        private void OnToolbarPackageChanged(ChangeEvent<string> evt)
+        {
+            if (_packageIds == null || _packageIds.Length == 0) return;
+            int idx = Array.IndexOf(_packageIds, evt.newValue);
+            if (idx < 0 || idx == _pkgIdx) return;
+
+            _pkgIdx = idx;
+            LoadPkg(_packageIds[idx]);
+
+            // Sync EditModePreviewDriver so spawned parts match the new package.
+            var driver = UnityEngine.Object.FindFirstObjectByType<EditModePreviewDriver>();
+            if (driver != null) driver.SetPackage(_packageIds[idx]);
+
+            Repaint();
+            RefreshToolbar();
+        }
+
+        private void OnToolbarStepFieldChanged(ChangeEvent<int> evt)
+        {
+            if (_stepOptions == null || _stepOptions.Length == 0) return;
+            int max = _stepOptions.Length - 1;
+            int v   = Mathf.Clamp(evt.newValue, 0, max);
+            if (v != _stepFilterIdx)
+            {
+                ApplyStepFilter(v);
+                Repaint();
+            }
+        }
+
+        private void OnToolbarStepFieldWheel(WheelEvent evt)
+        {
+            if (_stepOptions == null || _stepOptions.Length == 0) return;
+            int max   = _stepOptions.Length - 1;
+            int delta = evt.delta.y > 0f ? -1 : 1; // wheel down = previous
+            int v     = Mathf.Clamp(_stepFilterIdx + delta, 0, max);
+            if (v != _stepFilterIdx)
+            {
+                ApplyStepFilter(v);
+                Repaint();
+                evt.StopPropagation();
+            }
+        }
+
+        private void OnToolbarNewStepClicked()
+        {
+            _showNewStepForm    = !_showNewStepForm;
+            _newStepId          = string.Empty;
+            _newStepName        = string.Empty;
+            _newStepFamilyIdx   = 0;
+            _newStepProfileIdx  = 0;
+            _newStepAssemblyIdx = 0;
+
+            int afterSeq = _stepFilterIdx > 0 && _stepSequenceIdxs != null
+                ? _stepSequenceIdxs[_stepFilterIdx] + 1
+                : (_pkg?.GetSteps()?.Max(s => s?.sequenceIndex ?? 0) ?? 0) + 1;
+            _newStepSeqIdx = afterSeq;
+
+            Repaint();
+        }
+
+        // ── Toolbar refresh (called periodically + after explicit mutations) ──
+
+        private void RefreshToolbar()
+        {
+            if (_toolbar == null) return;
+
+            // Package dropdown
+            var pkgChoices = (_packageIds != null && _packageIds.Length > 0)
+                ? new List<string>(_packageIds)
+                : new List<string> { "(no packages)" };
+
+            if (_toolbarPackageField.choices == null
+                || _toolbarPackageField.choices.Count != pkgChoices.Count
+                || !_toolbarPackageField.choices.SequenceEqual(pkgChoices))
+            {
+                _toolbarPackageField.choices = pkgChoices;
+            }
+
+            int pkgIdx     = Mathf.Clamp(_pkgIdx, 0, pkgChoices.Count - 1);
+            string pkgVal  = pkgChoices[pkgIdx];
+            if (_toolbarPackageField.value != pkgVal)
+                _toolbarPackageField.SetValueWithoutNotify(pkgVal);
+
+            bool hasPkg = _packageIds != null && _packageIds.Length > 0 && _pkg != null;
+
+            // Step nav
+            int stepCount = (_stepOptions?.Length ?? 1) - 1;
+            if (_toolbarStepField.value != _stepFilterIdx)
+                _toolbarStepField.SetValueWithoutNotify(_stepFilterIdx);
+            string countText = $"/{stepCount}";
+            if (_toolbarStepCountLabel.text != countText)
+                _toolbarStepCountLabel.text = countText;
+
+            bool canPrev = hasPkg && _stepFilterIdx > 1;
+            bool canNext = hasPkg && _stepFilterIdx < stepCount;
+            _toolbarFirstStepBtn.SetEnabled(canPrev);
+            _toolbarPrevStepBtn .SetEnabled(canPrev);
+            _toolbarNextStepBtn .SetEnabled(canNext);
+            _toolbarLastStepBtn .SetEnabled(canNext);
+            _toolbarStepField   .SetEnabled(hasPkg && stepCount > 0);
+            _toolbarNewStepBtn  .SetEnabled(hasPkg);
+
+            // Step title
+            string title;
+            if (!hasPkg)                           title = string.Empty;
+            else if (_stepFilterIdx == 0)          title = "All Steps";
+            else if (_stepIds != null && _stepFilterIdx < _stepIds.Length)
+                title = FindStep(_stepIds[_stepFilterIdx])?.GetDisplayName() ?? string.Empty;
+            else                                   title = string.Empty;
+
+            if (_toolbarStepTitleLabel.text != title)
+                _toolbarStepTitleLabel.text = title;
+
+            // Dirty indicator — sum across all four dirty sets
+            int dirtyCount = (_dirtyToolIds?.Count          ?? 0)
+                           + (_dirtyStepIds?.Count          ?? 0)
+                           + (_dirtyTaskOrderStepIds?.Count ?? 0)
+                           + (_dirtyPartAssetRefIds?.Count  ?? 0);
+            string dirtyText = dirtyCount > 0 ? $"● {dirtyCount} unsaved" : string.Empty;
+            if (_toolbarDirtyLabel.text != dirtyText)
+                _toolbarDirtyLabel.text = dirtyText;
         }
     }
 }

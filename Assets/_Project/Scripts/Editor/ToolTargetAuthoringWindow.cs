@@ -75,11 +75,10 @@ namespace OSE.Editor
         [SerializeField] private int        _stepFilterIdx;
         private bool       _suppressStepSync;   // prevent circular sync with SessionDriver
         private int        _lastPolledDriverStep = -1; // last SessionDriver step seen during poll
-        private Rect       _stepNumRect;        // cached rect of the step-number field for scroll/drag detection
-        private bool       _stepDragging;           // true while mouse-dragging the step number field
-        private float      _stepDragAccum;          // sub-step drag accumulator
-        private int        _stepDragStartVal = -1;  // step index at drag start (-1 = not dragging)
-        private double     _lastDriverSyncTime;     // EditorApplication.timeSinceStartup at last SyncSessionDriverStep
+        // Note: the IMGUI scrub-drag fields (_stepNumRect, _stepDragging, _stepDragAccum,
+        // _stepDragStartVal, _lastDriverSyncTime) were removed in Phase 2 — the toolbar's
+        // UITK IntegerField uses isDelayed and discrete prev/next buttons, so per-pixel
+        // throttling is no longer needed.
 
         // Cached step-scene context, written by RespawnScene, read by SyncAllPartMeshesToActivePose.
         // Allows sync to apply the same past/current/future logic as RespawnScene without rebuilding.

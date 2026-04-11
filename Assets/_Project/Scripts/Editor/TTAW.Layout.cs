@@ -19,30 +19,53 @@ namespace OSE.Editor
     {
         // ── Main GUI ──────────────────────────────────────────────────────────
         //
-        // PHASE 1 of the UX redesign: this method is no longer called directly by
-        // Unity. Instead it runs inside an IMGUIContainer hosted in the UITK root
-        // built by CreateGUI() in TTAW.Shell.cs. The window's behaviour is identical
-        // to before — Event.current, GUILayout, EditorGUILayout, position, Repaint
-        // all work the same inside an IMGUIContainer. Future phases replace pieces
-        // of this method with native UITK panels one at a time.
+        // PHASE 2 of the UX redesign: this method runs inside an IMGUIContainer
+        // hosted in the UITK root built by CreateGUI() in TTAW.Shell.cs. The UITK
+        // toolbar above the container handles the package picker, step navigation,
+        // and dirty indicator. This method draws everything *below* the toolbar:
+        // the new-step form (when toggled), the step info card, the unified task
+        // list, and the pinned bottom bar with detail/batch panels and actions.
+        //
+        // All Event.current, GUILayout, EditorGUILayout, position, and Repaint()
+        // calls work the same inside an IMGUIContainer as they did when Unity
+        // called OnGUI directly. Future phases replace more pieces of this method
+        // with native UITK panels one at a time.
 
         private void DrawAuthoringIMGUI()
         {
             // Restore after domain reload: _pkgId survives via [SerializeField] but
-            // _pkg (not serializable) is lost.  By the time OnGUI runs the
-            // AssetDatabase is ready, so scene meshes and tool previews load correctly.
+            // _pkg (not serializable) is lost. By the time the IMGUIContainer first
+            // ticks the AssetDatabase is ready, so scene meshes and tool previews
+            // load correctly.
             if (_pkg == null && !string.IsNullOrEmpty(_pkgId))
             {
                 LoadPkg(_pkgId, restoring: true);
-                // If load failed, clear _pkgId to avoid retrying every frame
                 if (_pkg == null) _pkgId = null;
             }
 
-            EditorGUILayout.Space(4);
-            DrawPkgPicker();
-            if (_pkg == null) return;
+            // Empty / no-package state — toolbar handles the package picker now,
+            // so the body just shows a friendly hint.
+            if (_pkg == null)
+            {
+                EditorGUILayout.Space(8);
+                if (_packageIds == null || _packageIds.Length == 0)
+                {
+                    EditorGUILayout.HelpBox(
+                        "No packages found in Assets/_Project/Data/Packages/.\n" +
+                        "Use the ↺ button in the toolbar to refresh after creating one.",
+                        MessageType.Warning);
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox(
+                        "Select a package in the toolbar above to begin authoring.",
+                        MessageType.Info);
+                }
+                return;
+            }
 
-            DrawStepFilter();
+            EditorGUILayout.Space(4);
+            DrawStepHeaderIMGUI();
             EditorGUILayout.Space(2);
 
             // Measure where top content ends (only accurate during Repaint, cached for other events)
@@ -88,30 +111,7 @@ namespace OSE.Editor
             GUILayout.EndArea();
         }
 
-        // ── Package picker ────────────────────────────────────────────────────
-
-        private void DrawPkgPicker()
-        {
-            if (_packageIds == null || _packageIds.Length == 0)
-            {
-                EditorGUILayout.HelpBox("No packages found in Assets/_Project/Data/Packages/", MessageType.Warning);
-                if (GUILayout.Button("Refresh")) RefreshPackageList();
-                return;
-            }
-            EditorGUILayout.BeginHorizontal();
-            int i = EditorGUILayout.Popup("Package", _pkgIdx, _packageIds);
-            if (GUILayout.Button("↺", GUILayout.Width(24))) RefreshPackageList();
-            EditorGUILayout.EndHorizontal();
-            if (i != _pkgIdx)
-            {
-                _pkgIdx = i;
-                LoadPkg(_packageIds[i]);
-                // Sync EditModePreviewDriver so spawned parts match the new package.
-                var driver = UnityEngine.Object.FindFirstObjectByType<EditModePreviewDriver>();
-                if (driver != null) driver.SetPackage(_packageIds[i]);
-            }
-            if (_pkg == null && GUILayout.Button("Load")) LoadPkg(_packageIds[_pkgIdx]);
-        }
+        // ── Package picker — removed in Phase 2; lives in the UITK toolbar (TTAW.Shell.cs).
 
         // ── New step form ─────────────────────────────────────────────────────
 
@@ -219,9 +219,15 @@ namespace OSE.Editor
                     if (_stepIds[i] == newStep.id) { ApplyStepFilter(i); break; }
         }
 
-        // ── Step filter ───────────────────────────────────────────────────────
+        // ── Step header (form + info card) ────────────────────────────────────
+        // The navigation row (prev/next buttons, step number scrubber, title)
+        // moved to the UITK toolbar in Phase 2 (TTAW.Shell.cs). This method only
+        // renders the parts that still live in IMGUI: the inline new-step form
+        // (when toggled) and the per-step info card. It also performs the
+        // SessionDriver poll that used to live in DrawStepFilter so external
+        // step changes still reflect into the window.
 
-        private void DrawStepFilter()
+        private void DrawStepHeaderIMGUI()
         {
             if (_stepOptions == null || _stepOptions.Length == 0) return;
 
@@ -246,111 +252,11 @@ namespace OSE.Editor
                 }
             }
 
-            int stepCount = _stepOptions.Length - 1;
-
-            // ── Navigation row: Prev · [Step N/M ▼] · Next ──────────────────
-            EditorGUILayout.BeginHorizontal();
-
-            EditorGUI.BeginDisabledGroup(_stepFilterIdx <= 1);
-            if (GUILayout.Button("◄|", GUILayout.Width(28)))
-                ApplyStepFilter(1);
-            if (GUILayout.Button("◄", GUILayout.Width(28)))
-                ApplyStepFilter(_stepFilterIdx - 1);
-            EditorGUI.EndDisabledGroup();
-
-            // Step number: drag left/right to scrub, click to type
-            _stepNumRect = EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight, GUILayout.Width(46));
-            EditorGUIUtility.AddCursorRect(_stepNumRect, MouseCursor.SlideArrow);
-
-            var ev = Event.current;
-            // Mouse-down on the field — start potential drag, don't consume (let IntField handle click-to-edit)
-            if (ev.type == EventType.MouseDown && ev.button == 0 && _stepNumRect.Contains(ev.mousePosition))
-            {
-                _stepDragging    = false;
-                _stepDragAccum   = 0f;
-                _stepDragStartVal = _stepFilterIdx;
-            }
-            // Mouse-drag — scrub the step index; consume so the text field doesn't see it
-            if (ev.type == EventType.MouseDrag && ev.button == 0 && _stepDragStartVal >= 0)
-            {
-                if (!_stepDragging)
-                    GUIUtility.keyboardControl = 0; // release text focus so the field shows the live value
-                _stepDragging  = true;
-                _stepDragAccum += ev.delta.x;
-                int scrubbed = Mathf.Clamp(_stepDragStartVal + Mathf.RoundToInt(_stepDragAccum / 4f), 0, stepCount);
-                if (scrubbed != _stepFilterIdx) { ApplyStepFilter(scrubbed); Repaint(); }
-                ev.Use();
-            }
-            if (ev.type == EventType.MouseUp && ev.button == 0)
-            {
-                bool wasDragging = _stepDragging;
-                _stepDragging    = false;
-                _stepDragStartVal = -1;
-                // Force a final sync to the SessionDriver on drag release so the scene
-                // always lands on the correct step regardless of throttling.
-                if (wasDragging && !_suppressStepSync)
-                    SyncSessionDriverStep();
-            }
-
-            var numStyle = new GUIStyle(EditorStyles.numberField) { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
-            int typedVal = EditorGUI.IntField(_stepNumRect, _stepFilterIdx, numStyle);
-            if (!_stepDragging)
-            {
-                typedVal = Mathf.Clamp(typedVal, 0, stepCount);
-                if (typedVal != _stepFilterIdx) ApplyStepFilter(typedVal);
-            }
-
-            // Scroll-wheel also scrubs (delta.y > 0 = scroll down = previous step)
-            if (_stepNumRect.Contains(Event.current.mousePosition) && Event.current.type == EventType.ScrollWheel)
-            {
-                int delta    = Event.current.delta.y > 0f ? -1 : 1;
-                int scrolled = Mathf.Clamp(_stepFilterIdx + delta, 0, stepCount);
-                if (scrolled != _stepFilterIdx) ApplyStepFilter(scrolled);
-                Event.current.Use();
-                Repaint();
-            }
-
-            GUILayout.Label($"/{stepCount}", EditorStyles.boldLabel, GUILayout.ExpandWidth(false));
-            GUILayout.Space(6);
-
-            // Step title — fills remaining space, clips if window is narrow
-            string stepTitle = _stepFilterIdx == 0
-                ? "All Steps"
-                : ((_stepIds != null && _stepFilterIdx < _stepIds.Length)
-                    ? (FindStep(_stepIds[_stepFilterIdx])?.GetDisplayName() ?? "")
-                    : "");
-            var titleStyle = new GUIStyle(EditorStyles.boldLabel) { clipping = TextClipping.Clip };
-            GUILayout.Label(stepTitle, titleStyle);
-
-            EditorGUI.BeginDisabledGroup(_stepFilterIdx >= stepCount);
-            if (GUILayout.Button("►", GUILayout.Width(28)))
-                ApplyStepFilter(_stepFilterIdx + 1);
-            if (GUILayout.Button("|►", GUILayout.Width(28)))
-                ApplyStepFilter(stepCount);
-            EditorGUI.EndDisabledGroup();
-
-            GUILayout.Space(4);
-            if (GUILayout.Button("+ New Step", GUILayout.Width(82)))
-            {
-                _showNewStepForm   = !_showNewStepForm;
-                _newStepId         = "";
-                _newStepName       = "";
-                _newStepFamilyIdx  = 0;
-                _newStepProfileIdx = 0;
-                _newStepAssemblyIdx = 0;
-                int afterSeq = _stepFilterIdx > 0 && _stepSequenceIdxs != null
-                    ? _stepSequenceIdxs[_stepFilterIdx] + 1
-                    : (_pkg?.GetSteps()?.Max(s => s?.sequenceIndex ?? 0) ?? 0) + 1;
-                _newStepSeqIdx = afterSeq;
-            }
-
-            EditorGUILayout.EndHorizontal();
-
-            // ── New step form ─────────────────────────────────────────────────
+            // ── New step form (toggled by the toolbar's "+ New Step" button) ──
             if (_showNewStepForm) DrawNewStepForm();
 
             // ── Step info card (hidden in All Steps mode) ─────────────────────
-            if (_stepFilterIdx > 0 && _stepFilterIdx < _stepIds.Length)
+            if (_stepFilterIdx > 0 && _stepIds != null && _stepFilterIdx < _stepIds.Length)
             {
                 var step = FindStep(_stepIds[_stepFilterIdx]);
                 if (step != null)
@@ -364,9 +270,6 @@ namespace OSE.Editor
                     int    tCount     = step.targetIds?.Length ?? 0;
 
                     EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-                    string stepDisplayName = step.GetDisplayName();
-                    if (!string.IsNullOrEmpty(stepDisplayName))
-                        EditorGUILayout.LabelField(stepDisplayName, EditorStyles.boldLabel);
                     EditorGUILayout.LabelField(
                         $"Tool: {toolName}{profileStr}  ·  {tCount} target{(tCount == 1 ? "" : "s")}",
                         EditorStyles.miniLabel);
@@ -432,11 +335,6 @@ namespace OSE.Editor
             ApplyTaskEntrySelection(step, order[0]);
         }
 
-        // Minimum seconds between SessionDriver pushes while dragging the step scrubber.
-        // Prevents hammering ApplyStepAwarePositions (and any async loaders) on every
-        // pixel of mouse movement. Value chosen to allow ~10 updates/sec during drag.
-        private const double DriverSyncMinIntervalSec = 0.1;
-
         /// <summary>
         /// Directly tells the spawner to reposition parts for the current step filter,
         /// bypassing the SessionDriver round-trip. Called unconditionally in ApplyStepFilter
@@ -462,20 +360,6 @@ namespace OSE.Editor
             if (driver == null) return;
             if (_stepFilterIdx <= 0 || _stepSequenceIdxs == null || _stepFilterIdx >= _stepSequenceIdxs.Length)
                 return;
-
-            // Throttle during drag so the scene spawner isn't driven for every
-            // intermediate step the mouse passes through.
-            if (_stepDragging)
-            {
-                double now = EditorApplication.timeSinceStartup;
-                if (now - _lastDriverSyncTime < DriverSyncMinIntervalSec)
-                    return;
-                _lastDriverSyncTime = now;
-            }
-            else
-            {
-                _lastDriverSyncTime = EditorApplication.timeSinceStartup;
-            }
 
             int sequenceIndex = _stepSequenceIdxs[_stepFilterIdx];
             _suppressStepSync     = true;
