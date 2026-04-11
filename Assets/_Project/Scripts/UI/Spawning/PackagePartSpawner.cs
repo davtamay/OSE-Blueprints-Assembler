@@ -237,6 +237,18 @@ namespace OSE.UI.Root
                     if (!partStepSeq.ContainsKey(pid) || step.sequenceIndex < partStepSeq[pid])
                         partStepSeq[pid] = step.sequenceIndex;
                 }
+                // visualPartIds — parts that should be visible in this step but
+                // are not required for completion. Treated identically to
+                // requiredPartIds for visibility timing purposes.
+                if (step.visualPartIds != null)
+                {
+                    foreach (string pid in step.visualPartIds)
+                    {
+                        if (string.IsNullOrEmpty(pid)) continue;
+                        if (!partStepSeq.ContainsKey(pid) || step.sequenceIndex < partStepSeq[pid])
+                            partStepSeq[pid] = step.sequenceIndex;
+                    }
+                }
                 if (!string.IsNullOrEmpty(step.requiredSubassemblyId) &&
                     pkg.TryGetSubassembly(step.requiredSubassemblyId, out var subDef) &&
                     subDef?.partIds != null)

@@ -31,6 +31,10 @@ namespace OSE.Content.Validation
                 if (required != null) for (int j = 0; j < required.Length; j++) referenced.Add(required[j]);
                 string[] optional = steps[i].optionalPartIds;
                 if (optional != null) for (int j = 0; j < optional.Length; j++) referenced.Add(optional[j]);
+                // visualPartIds — show-without-require references count too,
+                // otherwise visual-only parts get flagged as orphans.
+                string[] visual = steps[i].visualPartIds;
+                if (visual != null) for (int j = 0; j < visual.Length; j++) referenced.Add(visual[j]);
             }
             foreach (var t in ctx.Package.GetTargets())
                 if (!string.IsNullOrEmpty(t?.associatedPartId))

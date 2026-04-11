@@ -294,6 +294,17 @@ namespace OSE.Editor
                     InjectField(stepId, "requiredPartIds", pJson);
                 }
 
+                // visualPartIds — show-without-require (Phase 7)
+                if (step.visualPartIds != null && step.visualPartIds.Length > 0)
+                {
+                    string vJson = "[ " + string.Join(", ", Array.ConvertAll(step.visualPartIds, id => $"\"{id}\"")) + " ]";
+                    InjectField(stepId, "visualPartIds", vJson);
+                }
+                else
+                {
+                    RemoveField(stepId, "visualPartIds");
+                }
+
                 // requiredToolActions
                 if (step.requiredToolActions != null)
                 {

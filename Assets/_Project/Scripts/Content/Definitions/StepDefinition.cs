@@ -54,6 +54,25 @@ namespace OSE.Content
 
         public string requiredSubassemblyId;
         public string[] optionalPartIds;
+
+        /// <summary>
+        /// Part IDs that should be VISIBLE in the scene during this step but are
+        /// NOT required for completion. These parts spawn at their assembled pose
+        /// (or current step pose) like any normal part, but they don't count
+        /// toward the step's task / validation surface.
+        ///
+        /// Use case: an author wants to "show this carriage so the user has
+        /// context" while the step is actually about a different part. Adding
+        /// to <see cref="requiredPartIds"/> would force the user to interact
+        /// with the carriage to advance the step; <c>visualPartIds</c> spawns
+        /// it without that side-effect.
+        ///
+        /// The runtime spawner reads this list when building its part-to-step
+        /// visibility map (alongside <see cref="requiredPartIds"/> and the
+        /// step's required subassembly), so a part referenced here will appear
+        /// in this step and every later step.
+        /// </summary>
+        public string[] visualPartIds;
         public string[] relevantToolIds;
         public string[] targetIds;
         /// <summary>

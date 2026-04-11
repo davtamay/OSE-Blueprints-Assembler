@@ -451,6 +451,19 @@ namespace OSE.Editor
                         }
                     }
 
+                    // visualPartIds — same visibility timing as requiredPartIds
+                    // but the editor's WHAT'S SHOWING section labels them
+                    // separately so authors know they're not gating completion.
+                    if (step?.visualPartIds != null)
+                    {
+                        foreach (string pid in step.visualPartIds)
+                        {
+                            if (string.IsNullOrEmpty(pid)) continue;
+                            if (!partStepSeq.ContainsKey(pid) || step.sequenceIndex < partStepSeq[pid])
+                                partStepSeq[pid] = step.sequenceIndex;
+                        }
+                    }
+
                     if (!string.IsNullOrEmpty(step?.requiredSubassemblyId)
                         && _pkg.TryGetSubassembly(step.requiredSubassemblyId, out SubassemblyDefinition subDef)
                         && subDef?.partIds != null)
