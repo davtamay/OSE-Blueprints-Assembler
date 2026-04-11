@@ -98,7 +98,11 @@ namespace OSE.Editor
                 DrawTaskInspectorBody(step, order);
             }
 
-            // ── SUBASSEMBLY (Phase 6 MVP) ─────────────────────────────────────
+            // ── WHAT'S SHOWING (Phase 6 follow-up) ────────────────────────────
+            EditorGUILayout.Space(8);
+            DrawVisibilitySection(step);
+
+            // ── SUBASSEMBLY (Phase 6 MVP, simplified) ─────────────────────────
             EditorGUILayout.Space(8);
             DrawSubassemblySection(step);
 

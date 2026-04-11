@@ -36,10 +36,19 @@ namespace OSE.Editor
     {
         // ── State ─────────────────────────────────────────────────────────────
 
+        private bool _subassemblyShowExplainer;
         private bool _subassemblyAllFoldout;
+        private bool _subassemblyShowAdvanced;
         private readonly HashSet<string> _subassemblyOpenIds = new(StringComparer.Ordinal);
 
         // ── Section drawer (called from DrawUnifiedList) ──────────────────────
+        //
+        // Plain-English rewrite of the Phase 6 MVP. Goals:
+        //   • Lead with a one-line explainer that anyone can read
+        //   • Use everyday labels: "Group of parts" not "partIds[]"
+        //   • Hide the technical fields (isAggregate, member subassemblies,
+        //     internal id) behind a single "Show advanced" foldout
+        //   • Make it obvious what the *current step* is part of (or not)
 
         private void DrawSubassemblySection(StepDefinition step)
         {
@@ -48,25 +57,39 @@ namespace OSE.Editor
             var allSubs = _pkg.GetSubassemblies();
             int count   = allSubs?.Length ?? 0;
 
-            // Resolve the active subassembly for this step (subassemblyId is the
-            // primary author-facing field; requiredSubassemblyId is the runtime
-            // gate). Either field is enough to call the step "scoped".
+            // Resolve the subassembly the current step belongs to. The data
+            // model has two fields for historical reasons (subassemblyId is the
+            // author-facing label; requiredSubassemblyId is the runtime gate)
+            // — either one is enough to consider the step "scoped".
             string activeId = !string.IsNullOrWhiteSpace(step?.subassemblyId)
                 ? step.subassemblyId
                 : step?.requiredSubassemblyId;
 
-            DrawUnifiedSectionHeader($"SUBASSEMBLY ({count})", count);
+            DrawUnifiedSectionHeader($"SUBASSEMBLY GROUPS ({count})", count);
 
-            if (count == 0)
+            // ── Plain-English explainer (collapsed by default) ────────────────
+            EditorGUILayout.BeginHorizontal();
+            string helpLabel = _subassemblyShowExplainer
+                ? "▼ What is a subassembly?"
+                : "▶ What is a subassembly?";
+            if (GUILayout.Button(helpLabel, EditorStyles.miniLabel, GUILayout.ExpandWidth(true)))
+                _subassemblyShowExplainer = !_subassemblyShowExplainer;
+            EditorGUILayout.EndHorizontal();
+            if (_subassemblyShowExplainer)
             {
-                EditorGUILayout.LabelField(
-                    "  No subassemblies authored yet. Click \"+ New Stub\" below to start.",
-                    EditorStyles.miniLabel);
-                DrawNewSubassemblyStubButton(step);
-                return;
+                EditorGUILayout.HelpBox(
+                    "A subassembly is a group of parts you build into a single unit "
+                    + "before adding it to the bigger machine. Example: a 'carriage' "
+                    + "subassembly is bolted together first, then dropped onto the "
+                    + "rails as one piece.\n\n"
+                    + "Each subassembly is owned by exactly one assembly file. The "
+                    + "steps that build the subassembly run together; once it's done, "
+                    + "the runtime treats all its parts as one moving unit.",
+                    MessageType.Info);
             }
 
-            // ── Active subassembly card ──────────────────────────────────────
+            // ── This step's group ─────────────────────────────────────────────
+            EditorGUILayout.LabelField("This step belongs to:", EditorStyles.miniLabel);
             SubassemblyDefinition active = null;
             if (!string.IsNullOrEmpty(activeId))
             {
@@ -77,41 +100,42 @@ namespace OSE.Editor
                 }
             }
 
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             if (active != null)
             {
-                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-                EditorGUILayout.LabelField($"Active: {active.GetDisplayName()}", EditorStyles.boldLabel);
-                if (!string.IsNullOrEmpty(active.assemblyId))
-                    EditorGUILayout.LabelField($"  Assembly: {active.assemblyId}", EditorStyles.miniLabel);
-                int memberCount = active.partIds?.Length ?? 0;
-                int stepCount   = active.stepIds?.Length ?? 0;
-                EditorGUILayout.LabelField($"  Parts: {memberCount}   Steps: {stepCount}", EditorStyles.miniLabel);
-                if (active.isAggregate)
-                    EditorGUILayout.LabelField("  ⚙ Aggregate (composes other subassemblies)", EditorStyles.miniLabel);
+                int parts = active.partIds?.Length ?? 0;
+                int steps = active.stepIds?.Length ?? 0;
+                EditorGUILayout.LabelField($"  {active.GetDisplayName()}", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField(
+                    $"  {parts} part{(parts == 1 ? "" : "s")}   ·   {steps} build step{(steps == 1 ? "" : "s")}",
+                    EditorStyles.miniLabel);
                 if (!string.IsNullOrEmpty(active.description))
                     EditorGUILayout.LabelField("  " + active.description, EditorStyles.wordWrappedMiniLabel);
-
-                EditorGUILayout.BeginHorizontal();
-                if (GUILayout.Button("Copy stub JSON", EditorStyles.miniButton, GUILayout.Width(110)))
+                if (active.isAggregate)
+                    EditorGUILayout.LabelField(
+                        "  Composite group  —  bundles other subassemblies together.",
+                        EditorStyles.miniLabel);
+                if (GUILayout.Button("Copy this group as a JSON template", EditorStyles.miniButton))
                     CopySubassemblyStubToClipboard(active);
-                if (GUILayout.Button("New stub for this assembly", EditorStyles.miniButton))
-                    CopyNewSubassemblyStubToClipboard(step);
-                EditorGUILayout.EndHorizontal();
-                EditorGUILayout.EndVertical();
             }
             else
             {
                 EditorGUILayout.LabelField(
-                    "  This step is not scoped to a subassembly.  (Set step.subassemblyId in JSON.)",
+                    "  Not part of any group.  This is a standalone step.",
                     EditorStyles.miniLabel);
-                DrawNewSubassemblyStubButton(step);
+                if (GUILayout.Button("Create a JSON template for a new group",
+                                     EditorStyles.miniButton))
+                    CopyNewSubassemblyStubToClipboard(step);
             }
+            EditorGUILayout.EndVertical();
 
-            // ── All subassemblies foldout ────────────────────────────────────
+            // ── Browse all groups in this package (collapsed by default) ─────
+            if (count == 0) return;
+
             EditorGUILayout.Space(2);
             _subassemblyAllFoldout = EditorGUILayout.Foldout(
                 _subassemblyAllFoldout,
-                $"All subassemblies in package ({count})",
+                $"Browse all {count} group{(count == 1 ? "" : "s")} in this package",
                 true);
             if (!_subassemblyAllFoldout) return;
 
@@ -121,11 +145,13 @@ namespace OSE.Editor
                 var sub = allSubs[i];
                 if (sub == null) continue;
 
+                int parts = sub.partIds?.Length ?? 0;
+                int steps = sub.stepIds?.Length ?? 0;
+
                 bool open = _subassemblyOpenIds.Contains(sub.id);
                 bool newOpen = EditorGUILayout.Foldout(
                     open,
-                    $"{sub.GetDisplayName()}  ·  {(sub.partIds?.Length ?? 0)} parts" +
-                    (sub.isAggregate ? "  (aggregate)" : ""),
+                    $"{sub.GetDisplayName()}  ·  {parts} part{(parts == 1 ? "" : "s")}",
                     true);
                 if (newOpen != open)
                 {
@@ -135,14 +161,15 @@ namespace OSE.Editor
                 if (!newOpen) continue;
 
                 EditorGUI.indentLevel++;
-                if (!string.IsNullOrEmpty(sub.assemblyId))
-                    EditorGUILayout.LabelField($"Assembly: {sub.assemblyId}", EditorStyles.miniLabel);
                 if (!string.IsNullOrEmpty(sub.description))
                     EditorGUILayout.LabelField(sub.description, EditorStyles.wordWrappedMiniLabel);
+                EditorGUILayout.LabelField(
+                    $"{parts} part{(parts == 1 ? "" : "s")}   ·   {steps} build step{(steps == 1 ? "" : "s")}",
+                    EditorStyles.miniLabel);
 
                 if (sub.partIds != null && sub.partIds.Length > 0)
                 {
-                    EditorGUILayout.LabelField("Parts:", EditorStyles.miniLabel);
+                    EditorGUILayout.LabelField("Parts in this group:", EditorStyles.miniLabel);
                     EditorGUI.indentLevel++;
                     foreach (var pid in sub.partIds)
                         EditorGUILayout.LabelField("• " + pid, EditorStyles.miniLabel);
@@ -151,29 +178,47 @@ namespace OSE.Editor
 
                 if (sub.stepIds != null && sub.stepIds.Length > 0)
                 {
-                    EditorGUILayout.LabelField("Steps:", EditorStyles.miniLabel);
+                    EditorGUILayout.LabelField("Build steps:", EditorStyles.miniLabel);
                     EditorGUI.indentLevel++;
                     foreach (var sid in sub.stepIds)
                         EditorGUILayout.LabelField("• " + sid, EditorStyles.miniLabel);
                     EditorGUI.indentLevel--;
                 }
 
-                if (GUILayout.Button("Copy stub JSON", EditorStyles.miniButton, GUILayout.Width(110)))
+                if (GUILayout.Button("Copy as JSON template", EditorStyles.miniButton, GUILayout.Width(160)))
                     CopySubassemblyStubToClipboard(sub);
 
                 EditorGUI.indentLevel--;
                 EditorGUILayout.Space(2);
             }
             EditorGUI.indentLevel--;
-        }
 
-        private void DrawNewSubassemblyStubButton(StepDefinition step)
-        {
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button("+ New subassembly stub", EditorStyles.miniButton, GUILayout.Width(180)))
-                CopyNewSubassemblyStubToClipboard(step);
-            EditorGUILayout.EndHorizontal();
+            // ── Advanced foldout — only the technical fields live here ────────
+            EditorGUILayout.Space(2);
+            _subassemblyShowAdvanced = EditorGUILayout.Foldout(
+                _subassemblyShowAdvanced,
+                "Show advanced subassembly fields",
+                true);
+            if (_subassemblyShowAdvanced && active != null)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.LabelField($"Internal id:  {active.id}", EditorStyles.miniLabel);
+                EditorGUILayout.LabelField($"Owning assembly:  {active.assemblyId}", EditorStyles.miniLabel);
+                if (!string.IsNullOrEmpty(active.milestoneMessage))
+                    EditorGUILayout.LabelField($"Milestone message:  \"{active.milestoneMessage}\"",
+                                               EditorStyles.miniLabel);
+                EditorGUILayout.LabelField($"Composite (isAggregate): {active.isAggregate}",
+                                           EditorStyles.miniLabel);
+                if (active.memberSubassemblyIds != null && active.memberSubassemblyIds.Length > 0)
+                {
+                    EditorGUILayout.LabelField("Built from these sub-groups:", EditorStyles.miniLabel);
+                    EditorGUI.indentLevel++;
+                    foreach (var mid in active.memberSubassemblyIds)
+                        EditorGUILayout.LabelField("• " + mid, EditorStyles.miniLabel);
+                    EditorGUI.indentLevel--;
+                }
+                EditorGUI.indentLevel--;
+            }
         }
 
         // ── Stub generation (clipboard, no JSON writes in MVP) ────────────────
