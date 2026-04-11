@@ -18,8 +18,15 @@ namespace OSE.Editor
     public sealed partial class ToolTargetAuthoringWindow : EditorWindow
     {
         // ── Main GUI ──────────────────────────────────────────────────────────
+        //
+        // PHASE 1 of the UX redesign: this method is no longer called directly by
+        // Unity. Instead it runs inside an IMGUIContainer hosted in the UITK root
+        // built by CreateGUI() in TTAW.Shell.cs. The window's behaviour is identical
+        // to before — Event.current, GUILayout, EditorGUILayout, position, Repaint
+        // all work the same inside an IMGUIContainer. Future phases replace pieces
+        // of this method with native UITK panels one at a time.
 
-        private void OnGUI()
+        private void DrawAuthoringIMGUI()
         {
             // Restore after domain reload: _pkgId survives via [SerializeField] but
             // _pkg (not serializable) is lost.  By the time OnGUI runs the
