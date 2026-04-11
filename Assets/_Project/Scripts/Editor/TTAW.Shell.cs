@@ -55,12 +55,30 @@ namespace OSE.Editor
         private void CreateGUI()
         {
             var root = rootVisualElement;
-            root.style.flexGrow = 1;
+            root.style.flexGrow      = 1;
+            root.style.flexDirection = FlexDirection.Column;
 
             BuildToolbar(root);
 
-            // Single full-window IMGUIContainer that runs the existing OnGUI body
-            // (now renamed DrawAuthoringIMGUI in TTAW.Layout.cs). All Event.current,
+            // Horizontal split: left = navigator, right = existing IMGUI body.
+            // The navigator pane is "fixed" (resizable by the splitter) and the
+            // IMGUI pane grows to fill the remaining space.
+            var split = new TwoPaneSplitView(0, 240f, TwoPaneSplitViewOrientation.Horizontal);
+            split.style.flexGrow = 1;
+
+            var navPane = new VisualElement();
+            navPane.style.flexGrow = 1;
+            navPane.style.minWidth = 180;
+            navPane.style.overflow = Overflow.Hidden;
+            BuildNavigator(navPane);
+            split.Add(navPane);
+
+            var imguiPane = new VisualElement();
+            imguiPane.style.flexGrow = 1;
+            imguiPane.style.minWidth = 320;
+            imguiPane.style.overflow = Overflow.Hidden;
+            // Single IMGUIContainer that runs the existing OnGUI body (now
+            // renamed DrawAuthoringIMGUI in TTAW.Layout.cs). All Event.current,
             // GUILayout, EditorGUILayout, position, and Repaint() calls work the
             // same inside an IMGUIContainer as they did when Unity called OnGUI
             // directly.
@@ -69,12 +87,15 @@ namespace OSE.Editor
                 name = "ttaw-imgui-host"
             };
             imguiHost.style.flexGrow = 1;
-            root.Add(imguiHost);
+            imguiPane.Add(imguiHost);
+            split.Add(imguiPane);
+
+            root.Add(split);
 
             // Poll IMGUI-side state changes (dirty flags, step changes from
-            // SessionDriver, package reloads, etc.) and refresh the toolbar so
-            // it stays in sync without each mutation site needing to know about
-            // the toolbar.
+            // SessionDriver, package reloads, etc.) and refresh the toolbar +
+            // navigator so they stay in sync without each mutation site needing
+            // to know about the UITK widgets.
             root.schedule.Execute(RefreshToolbar).Every(100);
 
             RefreshToolbar();
@@ -327,6 +348,12 @@ namespace OSE.Editor
             string dirtyText = dirtyCount > 0 ? $"● {dirtyCount} unsaved" : string.Empty;
             if (_toolbarDirtyLabel.text != dirtyText)
                 _toolbarDirtyLabel.text = dirtyText;
+
+            // Navigator — rebuild on package/size changes, and re-sync the
+            // selection if the active step changed via the IMGUI side or the
+            // toolbar's step nav buttons.
+            RebuildNavigatorIfStale();
+            RefreshNavigatorSelection();
         }
     }
 }

@@ -73,6 +73,7 @@ namespace OSE.Editor
         private string[]   _stepIds;            // null at index 0, then actual step ids
         private int[]      _stepSequenceIdxs;   // 0 at index 0, then step.sequenceIndex
         [SerializeField] private int        _stepFilterIdx;
+        [SerializeField] private int        _navigatorViewMode;  // 0 = tree, 1 = flat
         private bool       _suppressStepSync;   // prevent circular sync with SessionDriver
         private int        _lastPolledDriverStep = -1; // last SessionDriver step seen during poll
         // Note: the IMGUI scrub-drag fields (_stepNumRect, _stepDragging, _stepDragAccum,
