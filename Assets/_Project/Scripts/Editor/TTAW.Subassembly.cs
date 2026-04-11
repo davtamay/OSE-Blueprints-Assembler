@@ -36,19 +36,19 @@ namespace OSE.Editor
     {
         // ── State ─────────────────────────────────────────────────────────────
 
-        private bool _subassemblyShowExplainer;
         private bool _subassemblyAllFoldout;
         private bool _subassemblyShowAdvanced;
         private readonly HashSet<string> _subassemblyOpenIds = new(StringComparer.Ordinal);
 
+        // Section accent — same blue as the "FROM THIS STEP'S GROUP" bucket in
+        // TTAW.Visibility.cs so the eye learns "blue = subassembly".
+        private static readonly Color SubAccent = new(0.20f, 0.62f, 0.95f);
+
         // ── Section drawer (called from DrawUnifiedList) ──────────────────────
         //
-        // Plain-English rewrite of the Phase 6 MVP. Goals:
-        //   • Lead with a one-line explainer that anyone can read
-        //   • Use everyday labels: "Group of parts" not "partIds[]"
-        //   • Hide the technical fields (isAggregate, member subassemblies,
-        //     internal id) behind a single "Show advanced" foldout
-        //   • Make it obvious what the *current step* is part of (or not)
+        // Visual rewrite: cards instead of bullet lists, colours instead of
+        // labels, no walls of help text. The author can read the structure
+        // (this step is part of X, X has N parts, N steps) at a glance.
 
         private void DrawSubassemblySection(StepDefinition step)
         {
@@ -64,32 +64,6 @@ namespace OSE.Editor
             string activeId = !string.IsNullOrWhiteSpace(step?.subassemblyId)
                 ? step.subassemblyId
                 : step?.requiredSubassemblyId;
-
-            DrawUnifiedSectionHeader($"SUBASSEMBLY GROUPS ({count})", count);
-
-            // ── Plain-English explainer (collapsed by default) ────────────────
-            EditorGUILayout.BeginHorizontal();
-            string helpLabel = _subassemblyShowExplainer
-                ? "▼ What is a subassembly?"
-                : "▶ What is a subassembly?";
-            if (GUILayout.Button(helpLabel, EditorStyles.miniLabel, GUILayout.ExpandWidth(true)))
-                _subassemblyShowExplainer = !_subassemblyShowExplainer;
-            EditorGUILayout.EndHorizontal();
-            if (_subassemblyShowExplainer)
-            {
-                EditorGUILayout.HelpBox(
-                    "A subassembly is a group of parts you build into a single unit "
-                    + "before adding it to the bigger machine. Example: a 'carriage' "
-                    + "subassembly is bolted together first, then dropped onto the "
-                    + "rails as one piece.\n\n"
-                    + "Each subassembly is owned by exactly one assembly file. The "
-                    + "steps that build the subassembly run together; once it's done, "
-                    + "the runtime treats all its parts as one moving unit.",
-                    MessageType.Info);
-            }
-
-            // ── This step's group ─────────────────────────────────────────────
-            EditorGUILayout.LabelField("This step belongs to:", EditorStyles.miniLabel);
             SubassemblyDefinition active = null;
             if (!string.IsNullOrEmpty(activeId))
             {
@@ -100,46 +74,145 @@ namespace OSE.Editor
                 }
             }
 
-            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            // ── Section header — title + tooltip + count pill ────────────────
+            EditorGUILayout.BeginHorizontal();
+            var titleStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 11 };
+            GUILayout.Label(new GUIContent("GROUPS",
+                "A subassembly is a small kit of parts (e.g. a carriage) that "
+                + "you build as one unit and drop into the larger machine. Each "
+                + "step belongs to at most one group; the runtime treats every "
+                + "part in the group as one moving piece once the group is built."),
+                titleStyle);
+            GUILayout.FlexibleSpace();
+            DrawSubCountPill(SubAccent, count, "in package");
+            EditorGUILayout.EndHorizontal();
+
+            // ── "This step belongs to" card ──────────────────────────────────
+            if (active != null)
+                DrawActiveSubassemblyCard(active);
+            else
+                DrawStandaloneStepCard(step);
+
+            // ── Browse foldout ────────────────────────────────────────────────
+            if (count > 0)
+            {
+                EditorGUILayout.Space(3);
+                _subassemblyAllFoldout = EditorGUILayout.Foldout(
+                    _subassemblyAllFoldout,
+                    $"Browse all {count} group{(count == 1 ? "" : "s")}",
+                    true);
+                if (_subassemblyAllFoldout)
+                    DrawSubassemblyBrowseList(allSubs, activeId);
+            }
+
+            // ── Advanced foldout (only when there's an active group) ─────────
             if (active != null)
             {
-                int parts = active.partIds?.Length ?? 0;
-                int steps = active.stepIds?.Length ?? 0;
-                EditorGUILayout.LabelField($"  {active.GetDisplayName()}", EditorStyles.boldLabel);
-                EditorGUILayout.LabelField(
-                    $"  {parts} part{(parts == 1 ? "" : "s")}   ·   {steps} build step{(steps == 1 ? "" : "s")}",
-                    EditorStyles.miniLabel);
-                if (!string.IsNullOrEmpty(active.description))
-                    EditorGUILayout.LabelField("  " + active.description, EditorStyles.wordWrappedMiniLabel);
-                if (active.isAggregate)
-                    EditorGUILayout.LabelField(
-                        "  Composite group  —  bundles other subassemblies together.",
-                        EditorStyles.miniLabel);
-                if (GUILayout.Button("Copy this group as a JSON template", EditorStyles.miniButton))
-                    CopySubassemblyStubToClipboard(active);
+                EditorGUILayout.Space(2);
+                _subassemblyShowAdvanced = EditorGUILayout.Foldout(
+                    _subassemblyShowAdvanced,
+                    "Advanced fields",
+                    true);
+                if (_subassemblyShowAdvanced)
+                    DrawSubassemblyAdvancedFields(active);
             }
-            else
+        }
+
+        // ── Active group card — visual hero, no walls of text ────────────────
+
+        private void DrawActiveSubassemblyCard(SubassemblyDefinition sub)
+        {
+            int parts = sub.partIds?.Length ?? 0;
+            int steps = sub.stepIds?.Length ?? 0;
+
+            // Tinted header bar with accent edge
+            var headerRect = GUILayoutUtility.GetRect(0, 22f, GUILayout.ExpandWidth(true));
+            var bgColor    = new Color(SubAccent.r * 0.20f + 0.06f,
+                                       SubAccent.g * 0.20f + 0.06f,
+                                       SubAccent.b * 0.20f + 0.06f, 1f);
+            EditorGUI.DrawRect(headerRect, bgColor);
+            EditorGUI.DrawRect(new Rect(headerRect.x, headerRect.y, 4f, headerRect.height), SubAccent);
+
+            var nameStyle = new GUIStyle(EditorStyles.boldLabel)
             {
-                EditorGUILayout.LabelField(
-                    "  Not part of any group.  This is a standalone step.",
-                    EditorStyles.miniLabel);
-                if (GUILayout.Button("Create a JSON template for a new group",
-                                     EditorStyles.miniButton))
-                    CopyNewSubassemblyStubToClipboard(step);
+                normal    = { textColor = SubAccent },
+                fontSize  = 11,
+                alignment = TextAnchor.MiddleLeft,
+            };
+            var nameRect = new Rect(headerRect.x + 10f, headerRect.y, headerRect.width - 20f, headerRect.height);
+            GUI.Label(nameRect, $"THIS STEP IS PART OF:  {sub.GetDisplayName()}", nameStyle);
+
+            // Body row — counts + copy button
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(4);
+            DrawSubCountPill(SubAccent, parts, parts == 1 ? "part" : "parts");
+            DrawSubCountPill(SubAccent, steps, steps == 1 ? "build step" : "build steps");
+            if (sub.isAggregate)
+            {
+                var compStyle = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    normal    = { textColor = new Color(0.7f, 0.7f, 0.75f) },
+                    fontStyle = FontStyle.Italic,
+                };
+                GUILayout.Label("(composite — bundles other groups)", compStyle);
+            }
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button(
+                    new GUIContent("Copy JSON",
+                        "Copy this group's definition as a JSON template you can paste into another assembly file."),
+                    EditorStyles.miniButton, GUILayout.Width(80)))
+                CopySubassemblyStubToClipboard(sub);
+            EditorGUILayout.EndHorizontal();
+
+            if (!string.IsNullOrEmpty(sub.description))
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(4);
+                var descStyle = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    normal = { textColor = new Color(0.7f, 0.72f, 0.78f) },
+                    wordWrap = true,
+                };
+                EditorGUILayout.LabelField(sub.description, descStyle);
+                EditorGUILayout.EndHorizontal();
             }
             EditorGUILayout.EndVertical();
+        }
 
-            // ── Browse all groups in this package (collapsed by default) ─────
-            if (count == 0) return;
+        private void DrawStandaloneStepCard(StepDefinition step)
+        {
+            var headerRect = GUILayoutUtility.GetRect(0, 22f, GUILayout.ExpandWidth(true));
+            var muted      = new Color(0.45f, 0.45f, 0.50f);
+            var bgColor    = new Color(0.16f, 0.16f, 0.18f, 1f);
+            EditorGUI.DrawRect(headerRect, bgColor);
+            EditorGUI.DrawRect(new Rect(headerRect.x, headerRect.y, 4f, headerRect.height), muted);
 
-            EditorGUILayout.Space(2);
-            _subassemblyAllFoldout = EditorGUILayout.Foldout(
-                _subassemblyAllFoldout,
-                $"Browse all {count} group{(count == 1 ? "" : "s")} in this package",
-                true);
-            if (!_subassemblyAllFoldout) return;
+            var labelStyle = new GUIStyle(EditorStyles.boldLabel)
+            {
+                normal    = { textColor = muted },
+                fontSize  = 11,
+                alignment = TextAnchor.MiddleLeft,
+            };
+            GUI.Label(new Rect(headerRect.x + 10f, headerRect.y, headerRect.width - 20f, headerRect.height),
+                "STANDALONE STEP — not in any group", labelStyle);
 
-            EditorGUI.indentLevel++;
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button(
+                    new GUIContent("Copy new-group JSON",
+                        "Copy a fresh subassembly stub keyed to this step's assembly so you can paste it into the assembly file."),
+                    EditorStyles.miniButton, GUILayout.Width(150)))
+                CopyNewSubassemblyStubToClipboard(step);
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
+        }
+
+        // ── Browse list (compact rows, accent dot per group) ─────────────────
+
+        private void DrawSubassemblyBrowseList(SubassemblyDefinition[] allSubs, string activeId)
+        {
             for (int i = 0; i < allSubs.Length; i++)
             {
                 var sub = allSubs[i];
@@ -148,77 +221,123 @@ namespace OSE.Editor
                 int parts = sub.partIds?.Length ?? 0;
                 int steps = sub.stepIds?.Length ?? 0;
 
-                bool open = _subassemblyOpenIds.Contains(sub.id);
-                bool newOpen = EditorGUILayout.Foldout(
-                    open,
-                    $"{sub.GetDisplayName()}  ·  {parts} part{(parts == 1 ? "" : "s")}",
-                    true);
-                if (newOpen != open)
-                {
-                    if (newOpen) _subassemblyOpenIds.Add(sub.id);
-                    else         _subassemblyOpenIds.Remove(sub.id);
-                }
-                if (!newOpen) continue;
+                bool isActive = !string.IsNullOrEmpty(activeId)
+                                && string.Equals(sub.id, activeId, StringComparison.Ordinal);
 
+                // Compact row — accent dot, name, counts, foldout chevron
+                var rowRect = GUILayoutUtility.GetRect(0, 18f, GUILayout.ExpandWidth(true));
+                if (isActive)
+                    EditorGUI.DrawRect(rowRect, new Color(SubAccent.r, SubAccent.g, SubAccent.b, 0.10f));
+                else if ((i & 1) == 0)
+                    EditorGUI.DrawRect(rowRect, new Color(1f, 1f, 1f, 0.025f));
+
+                EditorGUI.DrawRect(new Rect(rowRect.x + 6f, rowRect.y + 7f, 5f, 5f), SubAccent);
+
+                bool open = _subassemblyOpenIds.Contains(sub.id);
+                var nameStyle = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    fontStyle = isActive ? FontStyle.Bold : FontStyle.Normal,
+                    alignment = TextAnchor.MiddleLeft,
+                };
+                var nameRect = new Rect(rowRect.x + 18f, rowRect.y, rowRect.width - 110f, rowRect.height);
+                if (GUI.Button(nameRect, sub.GetDisplayName(), nameStyle))
+                {
+                    if (open) _subassemblyOpenIds.Remove(sub.id);
+                    else      _subassemblyOpenIds.Add(sub.id);
+                }
+
+                var countsStyle = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    normal    = { textColor = new Color(0.55f, 0.58f, 0.62f) },
+                    alignment = TextAnchor.MiddleRight,
+                };
+                var countsRect = new Rect(rowRect.xMax - 110f, rowRect.y, 100f, rowRect.height);
+                GUI.Label(countsRect, $"{parts}p · {steps}s", countsStyle);
+
+                if (!open) continue;
+
+                // Expanded body — indented, compact
                 EditorGUI.indentLevel++;
                 if (!string.IsNullOrEmpty(sub.description))
-                    EditorGUILayout.LabelField(sub.description, EditorStyles.wordWrappedMiniLabel);
-                EditorGUILayout.LabelField(
-                    $"{parts} part{(parts == 1 ? "" : "s")}   ·   {steps} build step{(steps == 1 ? "" : "s")}",
-                    EditorStyles.miniLabel);
-
+                {
+                    var descStyle = new GUIStyle(EditorStyles.miniLabel)
+                    {
+                        normal = { textColor = new Color(0.65f, 0.68f, 0.72f) },
+                        wordWrap = true,
+                    };
+                    EditorGUILayout.LabelField(sub.description, descStyle);
+                }
                 if (sub.partIds != null && sub.partIds.Length > 0)
                 {
-                    EditorGUILayout.LabelField("Parts in this group:", EditorStyles.miniLabel);
-                    EditorGUI.indentLevel++;
+                    var partsHeader = new GUIStyle(EditorStyles.miniBoldLabel)
+                    {
+                        normal = { textColor = SubAccent },
+                    };
+                    EditorGUILayout.LabelField($"PARTS  ({parts})", partsHeader);
                     foreach (var pid in sub.partIds)
-                        EditorGUILayout.LabelField("• " + pid, EditorStyles.miniLabel);
-                    EditorGUI.indentLevel--;
+                        EditorGUILayout.LabelField("    " + pid, EditorStyles.miniLabel);
                 }
-
                 if (sub.stepIds != null && sub.stepIds.Length > 0)
                 {
-                    EditorGUILayout.LabelField("Build steps:", EditorStyles.miniLabel);
-                    EditorGUI.indentLevel++;
+                    var stepsHeader = new GUIStyle(EditorStyles.miniBoldLabel)
+                    {
+                        normal = { textColor = SubAccent },
+                    };
+                    EditorGUILayout.LabelField($"BUILD STEPS  ({steps})", stepsHeader);
                     foreach (var sid in sub.stepIds)
-                        EditorGUILayout.LabelField("• " + sid, EditorStyles.miniLabel);
-                    EditorGUI.indentLevel--;
+                        EditorGUILayout.LabelField("    " + sid, EditorStyles.miniLabel);
                 }
-
-                if (GUILayout.Button("Copy as JSON template", EditorStyles.miniButton, GUILayout.Width(160)))
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("Copy JSON", EditorStyles.miniButton, GUILayout.Width(80)))
                     CopySubassemblyStubToClipboard(sub);
-
+                EditorGUILayout.EndHorizontal();
                 EditorGUI.indentLevel--;
-                EditorGUILayout.Space(2);
+            }
+        }
+
+        // ── Advanced fields (technical, only on demand) ───────────────────────
+
+        private void DrawSubassemblyAdvancedFields(SubassemblyDefinition active)
+        {
+            EditorGUI.indentLevel++;
+            EditorGUILayout.LabelField($"id:  {active.id}", EditorStyles.miniLabel);
+            EditorGUILayout.LabelField($"assemblyId:  {active.assemblyId}", EditorStyles.miniLabel);
+            if (!string.IsNullOrEmpty(active.milestoneMessage))
+                EditorGUILayout.LabelField($"milestoneMessage:  \"{active.milestoneMessage}\"",
+                                           EditorStyles.miniLabel);
+            EditorGUILayout.LabelField($"isAggregate:  {active.isAggregate}",
+                                       EditorStyles.miniLabel);
+            if (active.memberSubassemblyIds != null && active.memberSubassemblyIds.Length > 0)
+            {
+                EditorGUILayout.LabelField("memberSubassemblyIds:", EditorStyles.miniLabel);
+                EditorGUI.indentLevel++;
+                foreach (var mid in active.memberSubassemblyIds)
+                    EditorGUILayout.LabelField("• " + mid, EditorStyles.miniLabel);
+                EditorGUI.indentLevel--;
             }
             EditorGUI.indentLevel--;
+        }
 
-            // ── Advanced foldout — only the technical fields live here ────────
-            EditorGUILayout.Space(2);
-            _subassemblyShowAdvanced = EditorGUILayout.Foldout(
-                _subassemblyShowAdvanced,
-                "Show advanced subassembly fields",
-                true);
-            if (_subassemblyShowAdvanced && active != null)
+        // ── Local count pill (matches DrawCountPill in TTAW.Visibility.cs) ────
+
+        private static void DrawSubCountPill(Color color, int count, string label)
+        {
+            string text  = $"{count} {label}";
+            var style    = new GUIStyle(EditorStyles.miniLabel)
             {
-                EditorGUI.indentLevel++;
-                EditorGUILayout.LabelField($"Internal id:  {active.id}", EditorStyles.miniLabel);
-                EditorGUILayout.LabelField($"Owning assembly:  {active.assemblyId}", EditorStyles.miniLabel);
-                if (!string.IsNullOrEmpty(active.milestoneMessage))
-                    EditorGUILayout.LabelField($"Milestone message:  \"{active.milestoneMessage}\"",
-                                               EditorStyles.miniLabel);
-                EditorGUILayout.LabelField($"Composite (isAggregate): {active.isAggregate}",
-                                           EditorStyles.miniLabel);
-                if (active.memberSubassemblyIds != null && active.memberSubassemblyIds.Length > 0)
-                {
-                    EditorGUILayout.LabelField("Built from these sub-groups:", EditorStyles.miniLabel);
-                    EditorGUI.indentLevel++;
-                    foreach (var mid in active.memberSubassemblyIds)
-                        EditorGUILayout.LabelField("• " + mid, EditorStyles.miniLabel);
-                    EditorGUI.indentLevel--;
-                }
-                EditorGUI.indentLevel--;
-            }
+                normal    = { textColor = Color.white },
+                alignment = TextAnchor.MiddleCenter,
+                fontStyle = FontStyle.Bold,
+            };
+            var content  = new GUIContent(text);
+            var size     = style.CalcSize(content);
+            var rect     = GUILayoutUtility.GetRect(size.x + 12f, 16f,
+                              GUILayout.Width(size.x + 12f), GUILayout.Height(16f));
+            var bgColor  = count > 0 ? color : new Color(color.r, color.g, color.b, 0.30f);
+            EditorGUI.DrawRect(rect, bgColor);
+            GUI.Label(rect, content, style);
+            GUILayout.Space(3);
         }
 
         // ── Stub generation (clipboard, no JSON writes in MVP) ────────────────

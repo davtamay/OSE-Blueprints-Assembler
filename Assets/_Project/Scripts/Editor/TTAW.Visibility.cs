@@ -35,12 +35,17 @@ namespace OSE.Editor
     {
         // ── State ─────────────────────────────────────────────────────────────
 
-        private bool _visibilityShowHelp;
-        private int  _visibilityAddPartIdx;
+        private int _visibilityAddPartIdx;
 
         private readonly List<string> _visScratchOwnedHere       = new();
         private readonly List<string> _visScratchOwnedSubHere    = new();
         private readonly List<string> _visScratchInheritedEarlier = new();
+
+        // Bucket accent colours — communicate the *source* of visibility
+        // through hue so the author doesn't have to read labels.
+        private static readonly Color VisColorOwned   = new(0.30f, 0.78f, 0.36f); // green
+        private static readonly Color VisColorSub     = new(0.20f, 0.62f, 0.95f); // blue
+        private static readonly Color VisColorEarlier = new(0.62f, 0.62f, 0.66f); // grey
 
         // ── Section drawer (called from DrawUnifiedList) ──────────────────────
 
@@ -56,85 +61,166 @@ namespace OSE.Editor
                                      out int totalVisible,
                                      out HashSet<string> ownedSubPartIds);
 
-            int unique = totalVisible;
-            DrawUnifiedSectionHeader($"WHAT'S SHOWING ({unique})", unique);
-
-            // ── Help blurb (collapsed by default) ─────────────────────────────
+            // ── Section header with inline count pills ───────────────────────
             EditorGUILayout.BeginHorizontal();
-            string helpLabel = _visibilityShowHelp ? "▼ Why am I seeing what I see?" : "▶ Why am I seeing what I see?";
-            if (GUILayout.Button(helpLabel, EditorStyles.miniLabel, GUILayout.ExpandWidth(true)))
-                _visibilityShowHelp = !_visibilityShowHelp;
+            var titleStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 11 };
+            GUILayout.Label("WHAT'S SHOWING", titleStyle);
+            GUILayout.FlexibleSpace();
+            DrawCountPill(VisColorOwned,   _visScratchOwnedHere.Count,        "here");
+            DrawCountPill(VisColorSub,     _visScratchOwnedSubHere.Count,     "group");
+            DrawCountPill(VisColorEarlier, _visScratchInheritedEarlier.Count, "earlier");
             EditorGUILayout.EndHorizontal();
-            if (_visibilityShowHelp)
-            {
-                EditorGUILayout.HelpBox(
-                    "A part is visible in a step when an earlier or current step "
-                    + "claims it via 'required parts' or via the step's required "
-                    + "subassembly. There is no separate 'show only' field today — "
-                    + "adding a part to the visible list also marks it as required "
-                    + "for task completion in this step.",
-                    MessageType.Info);
-            }
 
-            // ── Bucket: parts owned by this step ──────────────────────────────
+            // Compact one-line legend (no big blob of text)
+            var legendStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                normal = { textColor = new Color(0.55f, 0.55f, 0.58f) },
+                fontStyle = FontStyle.Italic,
+            };
+            EditorGUILayout.LabelField(
+                "  green = added in this step    blue = from this step's group    grey = built earlier",
+                legendStyle);
+
+            // ── Three visual buckets ──────────────────────────────────────────
             if (_visScratchOwnedHere.Count > 0)
             {
-                EditorGUILayout.LabelField($"Owned by this step  ({_visScratchOwnedHere.Count})", EditorStyles.boldLabel);
-                EditorGUI.indentLevel++;
-                int removeIdx = -1;
-                for (int i = 0; i < _visScratchOwnedHere.Count; i++)
-                {
-                    EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField("• " + _visScratchOwnedHere[i], EditorStyles.miniLabel);
-                    if (GUILayout.Button("×", EditorStyles.miniButton, GUILayout.Width(22)))
-                        removeIdx = i;
-                    EditorGUILayout.EndHorizontal();
-                }
-                EditorGUI.indentLevel--;
-                if (removeIdx >= 0)
-                    RemoveRequiredPartFromStep(step, _visScratchOwnedHere[removeIdx]);
-                EditorGUILayout.Space(2);
+                DrawVisibilityBucket(
+                    "ADDED IN THIS STEP",
+                    VisColorOwned,
+                    _visScratchOwnedHere,
+                    allowRemove: true,
+                    step: step);
             }
 
-            // ── Bucket: parts visible because of this step's subassembly ──────
             if (_visScratchOwnedSubHere.Count > 0)
             {
-                EditorGUILayout.LabelField(
-                    $"Inherited from this step's subassembly  ({_visScratchOwnedSubHere.Count})",
-                    EditorStyles.boldLabel);
-                EditorGUI.indentLevel++;
-                foreach (var pid in _visScratchOwnedSubHere)
-                    EditorGUILayout.LabelField("• " + pid + "   (read-only)", EditorStyles.miniLabel);
-                EditorGUI.indentLevel--;
-                EditorGUILayout.Space(2);
+                DrawVisibilityBucket(
+                    "FROM THIS STEP'S GROUP",
+                    VisColorSub,
+                    _visScratchOwnedSubHere,
+                    allowRemove: false,
+                    step: null);
             }
 
-            // ── Bucket: parts visible because an earlier step placed them ─────
             if (_visScratchInheritedEarlier.Count > 0)
             {
-                EditorGUILayout.LabelField(
-                    $"Already placed in earlier steps  ({_visScratchInheritedEarlier.Count})",
-                    EditorStyles.boldLabel);
-                EditorGUI.indentLevel++;
-                int shown = 0;
-                const int kMaxShown = 24;
-                foreach (var pid in _visScratchInheritedEarlier)
-                {
-                    if (shown++ >= kMaxShown)
-                    {
-                        EditorGUILayout.LabelField(
-                            $"  …and {_visScratchInheritedEarlier.Count - kMaxShown} more",
-                            EditorStyles.miniLabel);
-                        break;
-                    }
-                    EditorGUILayout.LabelField("• " + pid + "   (assembled)", EditorStyles.miniLabel);
-                }
-                EditorGUI.indentLevel--;
-                EditorGUILayout.Space(2);
+                DrawVisibilityBucket(
+                    "BUILT IN EARLIER STEPS",
+                    VisColorEarlier,
+                    _visScratchInheritedEarlier,
+                    allowRemove: false,
+                    step: null,
+                    maxRows: 12);
             }
 
-            // ── Add picker — pick any unused part to show in this step ────────
+            // ── Add picker ────────────────────────────────────────────────────
             DrawAddPartToVisibility(step, ownedSubPartIds);
+        }
+
+        // ── Visual helpers ────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Draws an inline rounded count badge: a small coloured rectangle with
+        /// a number + label centred inside. Used in the section header so the
+        /// author can read "5 here · 3 group · 12 earlier" at a glance.
+        /// </summary>
+        private static void DrawCountPill(Color color, int count, string label)
+        {
+            string text = $"{count} {label}";
+            var style = new GUIStyle(EditorStyles.miniLabel)
+            {
+                normal    = { textColor = Color.white },
+                alignment = TextAnchor.MiddleCenter,
+                fontStyle = FontStyle.Bold,
+            };
+            var content = new GUIContent(text);
+            var size    = style.CalcSize(content);
+            var rect    = GUILayoutUtility.GetRect(size.x + 12f, 16f,
+                              GUILayout.Width(size.x + 12f), GUILayout.Height(16f));
+            // Faded background when the bucket is empty so empty pills don't shout
+            var bgColor = count > 0 ? color : new Color(color.r, color.g, color.b, 0.30f);
+            EditorGUI.DrawRect(rect, bgColor);
+            GUI.Label(rect, content, style);
+            GUILayout.Space(3);
+        }
+
+        /// <summary>
+        /// Draws a visually-grouped bucket: a coloured 4-px left edge bar +
+        /// tinted background header strip with the bucket title in coloured
+        /// bold text + an indented list of items. Each item gets a tiny dot
+        /// in the bucket colour so the eye groups by colour, not by label.
+        /// </summary>
+        private void DrawVisibilityBucket(
+            string title,
+            Color accent,
+            List<string> items,
+            bool allowRemove,
+            StepDefinition step,
+            int maxRows = 0)
+        {
+            EditorGUILayout.Space(3);
+
+            // Header strip — accent bar on the left, tinted background, bold colour title
+            var headerRect = GUILayoutUtility.GetRect(0, 18f, GUILayout.ExpandWidth(true));
+            var bgColor    = new Color(accent.r * 0.20f + 0.06f,
+                                       accent.g * 0.20f + 0.06f,
+                                       accent.b * 0.20f + 0.06f,
+                                       1f);
+            EditorGUI.DrawRect(headerRect, bgColor);
+            EditorGUI.DrawRect(new Rect(headerRect.x, headerRect.y, 3f, headerRect.height), accent);
+
+            var titleStyle = new GUIStyle(EditorStyles.miniBoldLabel)
+            {
+                normal    = { textColor = accent },
+                alignment = TextAnchor.MiddleLeft,
+            };
+            var labelRect = new Rect(headerRect.x + 8f, headerRect.y,
+                                     headerRect.width - 60f, headerRect.height);
+            GUI.Label(labelRect, $"{title}   {items.Count}", titleStyle);
+
+            // Item rows — tiny dot + part id, optionally a × button
+            int  removeIdx = -1;
+            int  shown     = 0;
+            int  cap       = maxRows > 0 ? Math.Min(items.Count, maxRows) : items.Count;
+
+            for (int i = 0; i < cap; i++)
+            {
+                var rowRect = GUILayoutUtility.GetRect(0, 16f, GUILayout.ExpandWidth(true));
+                // Subtle alternating row tint to distinguish entries on a dark background
+                if ((i & 1) == 0)
+                    EditorGUI.DrawRect(rowRect, new Color(1f, 1f, 1f, 0.025f));
+
+                // Coloured dot at the left edge
+                var dotRect = new Rect(rowRect.x + 8f, rowRect.y + 6f, 4f, 4f);
+                EditorGUI.DrawRect(dotRect, accent);
+
+                // Part id label
+                var textRect = new Rect(rowRect.x + 18f, rowRect.y,
+                                        rowRect.width - 26f, rowRect.height);
+                GUI.Label(textRect, items[i], EditorStyles.miniLabel);
+
+                // Remove button (only the "added in this step" bucket gets it)
+                if (allowRemove)
+                {
+                    var btnRect = new Rect(rowRect.xMax - 22f, rowRect.y + 1f, 20f, 14f);
+                    if (GUI.Button(btnRect, "×", EditorStyles.miniButton))
+                        removeIdx = i;
+                }
+                shown++;
+            }
+
+            if (maxRows > 0 && items.Count > maxRows)
+            {
+                var moreStyle = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    normal = { textColor = new Color(0.5f, 0.5f, 0.55f) },
+                    fontStyle = FontStyle.Italic,
+                };
+                EditorGUILayout.LabelField($"     +{items.Count - maxRows} more", moreStyle);
+            }
+
+            if (removeIdx >= 0 && step != null)
+                RemoveRequiredPartFromStep(step, items[removeIdx]);
         }
 
         // ── Compute / categorise ──────────────────────────────────────────────
@@ -236,29 +322,41 @@ namespace OSE.Editor
                 candidates.Add(p.id);
             }
 
-            EditorGUILayout.Space(4);
+            EditorGUILayout.Space(6);
+
             if (candidates.Count == 0)
             {
-                EditorGUILayout.LabelField(
-                    "  All package parts are already showing here.",
-                    EditorStyles.miniLabel);
+                var allInStyle = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    normal    = { textColor = new Color(0.55f, 0.55f, 0.58f) },
+                    fontStyle = FontStyle.Italic,
+                    alignment = TextAnchor.MiddleCenter,
+                };
+                EditorGUILayout.LabelField("Every package part is already on screen.", allInStyle);
                 return;
             }
 
+            // Compact action row: "+ ADD" pill button on the left, popup taking
+            // the rest of the width. Reads like a single control.
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Add part to show:", GUILayout.Width(110));
             _visibilityAddPartIdx = Mathf.Clamp(_visibilityAddPartIdx, 0, candidates.Count - 1);
-            _visibilityAddPartIdx = EditorGUILayout.Popup(_visibilityAddPartIdx, candidates.ToArray());
 
-            var addBtn = new GUIContent("+ Show",
+            var addBtn = new GUIContent("+ ADD",
                 "Adds the selected part to this step's required parts so the spawner "
                 + "renders it. Note: this also marks it required for task completion — "
-                + "there is no 'visual only' field today.");
-            if (GUILayout.Button(addBtn, EditorStyles.miniButton, GUILayout.Width(70)))
+                + "there is no 'visual only' field in the data model today.");
+            var addStyle = new GUIStyle(EditorStyles.miniButton)
+            {
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = VisColorOwned },
+            };
+            if (GUILayout.Button(addBtn, addStyle, GUILayout.Width(54), GUILayout.Height(18)))
             {
                 AddRequiredPartToStep(step, candidates[_visibilityAddPartIdx]);
                 _visibilityAddPartIdx = 0;
             }
+            _visibilityAddPartIdx = EditorGUILayout.Popup(_visibilityAddPartIdx, candidates.ToArray(),
+                GUILayout.Height(18));
             EditorGUILayout.EndHorizontal();
         }
 
