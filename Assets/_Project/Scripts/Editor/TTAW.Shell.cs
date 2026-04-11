@@ -37,7 +37,7 @@ namespace OSE.Editor
     {
         // ── UITK toolbar widget references ────────────────────────────────────
 
-        private Toolbar              _toolbar;
+        private VisualElement        _toolbar;                  // root container holding both rows
         private PopupField<string>   _toolbarPackageField;
         private ToolbarButton        _toolbarPackageRefreshBtn;
         private ToolbarButton        _toolbarFirstStepBtn;
@@ -84,104 +84,124 @@ namespace OSE.Editor
 
         private void BuildToolbar(VisualElement root)
         {
-            var toolbar = new Toolbar();
-            toolbar.style.flexShrink = 0;
+            // Two-row toolbar so a narrow window doesn't squish controls onto a
+            // single line. Row 1 = package + global status/actions. Row 2 = step
+            // navigation + full-width step title. Each row is its own Toolbar so
+            // it picks up Unity's native toolbar styling (background, separator).
+            var toolbarRoot = new VisualElement();
+            toolbarRoot.style.flexDirection = FlexDirection.Column;
+            toolbarRoot.style.flexShrink    = 0;
 
-            // Package dropdown
+            // ── Row 1 — package · dirty · + New Step ──────────────────────────
+            var row1 = new Toolbar();
+            row1.style.flexShrink = 0;
+
             _toolbarPackageField = new PopupField<string>(new List<string> { "(no packages)" }, 0);
-            _toolbarPackageField.style.minWidth = 140;
+            _toolbarPackageField.style.minWidth   = 160;
+            _toolbarPackageField.style.flexGrow   = 0;
             _toolbarPackageField.style.marginLeft = 4;
             _toolbarPackageField.style.marginRight = 2;
             _toolbarPackageField.tooltip = "Active machine package";
             _toolbarPackageField.RegisterValueChangedCallback(OnToolbarPackageChanged);
-            toolbar.Add(_toolbarPackageField);
+            row1.Add(_toolbarPackageField);
 
             _toolbarPackageRefreshBtn = new ToolbarButton(RefreshPackageList) { text = "↺" };
             _toolbarPackageRefreshBtn.tooltip = "Refresh package list from disk";
-            _toolbarPackageRefreshBtn.style.width = 22;
-            toolbar.Add(_toolbarPackageRefreshBtn);
+            _toolbarPackageRefreshBtn.style.width = 24;
+            row1.Add(_toolbarPackageRefreshBtn);
 
-            toolbar.Add(MakeSpacer(8));
+            // Flex spacer pushes the right-side widgets to the far edge
+            var row1Spacer = new VisualElement();
+            row1Spacer.style.flexGrow = 1;
+            row1.Add(row1Spacer);
 
-            // Step navigation
-            _toolbarFirstStepBtn = new ToolbarButton(() => { ApplyStepFilter(1); Repaint(); }) { text = "◄|" };
+            // Dirty indicator (right-aligned, blank when nothing dirty)
+            _toolbarDirtyLabel = new Label(string.Empty);
+            _toolbarDirtyLabel.style.unityTextAlign = TextAnchor.MiddleRight;
+            _toolbarDirtyLabel.style.marginLeft  = 4;
+            _toolbarDirtyLabel.style.marginRight = 6;
+            _toolbarDirtyLabel.style.color = new Color(0.95f, 0.65f, 0.15f);
+            _toolbarDirtyLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+            _toolbarDirtyLabel.tooltip = "Unsaved authoring changes";
+            row1.Add(_toolbarDirtyLabel);
+
+            _toolbarNewStepBtn = new ToolbarButton(OnToolbarNewStepClicked) { text = "+ New Step" };
+            _toolbarNewStepBtn.tooltip = "Create a new step in the active assembly";
+            row1.Add(_toolbarNewStepBtn);
+
+            toolbarRoot.Add(row1);
+
+            // ── Row 2 — step navigation + step title ──────────────────────────
+            var row2 = new Toolbar();
+            row2.style.flexShrink = 0;
+
+            _toolbarFirstStepBtn = new ToolbarButton(() => { ApplyStepFilter(1); Repaint(); }) { text = "◄◄" };
             _toolbarFirstStepBtn.tooltip = "Jump to first step";
-            _toolbarFirstStepBtn.style.width = 28;
-            toolbar.Add(_toolbarFirstStepBtn);
+            _toolbarFirstStepBtn.style.width = 30;
+            _toolbarFirstStepBtn.style.marginLeft = 4;
+            row2.Add(_toolbarFirstStepBtn);
 
             _toolbarPrevStepBtn = new ToolbarButton(() => { ApplyStepFilter(_stepFilterIdx - 1); Repaint(); }) { text = "◄" };
             _toolbarPrevStepBtn.tooltip = "Previous step";
-            _toolbarPrevStepBtn.style.width = 24;
-            toolbar.Add(_toolbarPrevStepBtn);
+            _toolbarPrevStepBtn.style.width = 26;
+            row2.Add(_toolbarPrevStepBtn);
 
             _toolbarStepField = new IntegerField { isDelayed = true };
-            _toolbarStepField.style.width = 44;
+            _toolbarStepField.style.width = 48;
+            _toolbarStepField.style.marginLeft  = 2;
+            _toolbarStepField.style.marginRight = 0;
             _toolbarStepField.tooltip = "Step number — type to jump, scroll-wheel to scrub";
             _toolbarStepField.RegisterValueChangedCallback(OnToolbarStepFieldChanged);
             _toolbarStepField.RegisterCallback<WheelEvent>(OnToolbarStepFieldWheel);
-            toolbar.Add(_toolbarStepField);
+            row2.Add(_toolbarStepField);
 
             _toolbarStepCountLabel = new Label("/0");
             _toolbarStepCountLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
             _toolbarStepCountLabel.style.unityTextAlign = TextAnchor.MiddleLeft;
-            _toolbarStepCountLabel.style.marginLeft = 2;
+            _toolbarStepCountLabel.style.marginLeft  = 2;
             _toolbarStepCountLabel.style.marginRight = 4;
-            toolbar.Add(_toolbarStepCountLabel);
+            row2.Add(_toolbarStepCountLabel);
 
             _toolbarNextStepBtn = new ToolbarButton(() => { ApplyStepFilter(_stepFilterIdx + 1); Repaint(); }) { text = "►" };
             _toolbarNextStepBtn.tooltip = "Next step";
-            _toolbarNextStepBtn.style.width = 24;
-            toolbar.Add(_toolbarNextStepBtn);
+            _toolbarNextStepBtn.style.width = 26;
+            row2.Add(_toolbarNextStepBtn);
 
             _toolbarLastStepBtn = new ToolbarButton(() =>
             {
                 int last = (_stepOptions?.Length ?? 1) - 1;
                 if (last >= 1) { ApplyStepFilter(last); Repaint(); }
-            }) { text = "|►" };
+            }) { text = "►►" };
             _toolbarLastStepBtn.tooltip = "Jump to last step";
-            _toolbarLastStepBtn.style.width = 28;
-            toolbar.Add(_toolbarLastStepBtn);
+            _toolbarLastStepBtn.style.width = 30;
+            row2.Add(_toolbarLastStepBtn);
 
-            toolbar.Add(MakeSpacer(6));
+            // Visual divider between nav cluster and title
+            var divider = new VisualElement();
+            divider.style.width = 1;
+            divider.style.marginLeft  = 8;
+            divider.style.marginRight = 8;
+            divider.style.marginTop    = 3;
+            divider.style.marginBottom = 3;
+            divider.style.backgroundColor = new Color(0f, 0f, 0f, 0.35f);
+            row2.Add(divider);
 
             // Step title — fills remaining space, ellipses on overflow
             _toolbarStepTitleLabel = new Label(string.Empty);
-            _toolbarStepTitleLabel.style.flexGrow = 1;
+            _toolbarStepTitleLabel.style.flexGrow  = 1;
             _toolbarStepTitleLabel.style.flexShrink = 1;
-            _toolbarStepTitleLabel.style.minWidth = 0;
+            _toolbarStepTitleLabel.style.minWidth   = 0;
             _toolbarStepTitleLabel.style.unityTextAlign = TextAnchor.MiddleLeft;
             _toolbarStepTitleLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
             _toolbarStepTitleLabel.style.overflow = Overflow.Hidden;
             _toolbarStepTitleLabel.style.textOverflow = TextOverflow.Ellipsis;
             _toolbarStepTitleLabel.style.whiteSpace = WhiteSpace.NoWrap;
-            _toolbarStepTitleLabel.style.marginLeft = 2;
-            toolbar.Add(_toolbarStepTitleLabel);
+            row2.Add(_toolbarStepTitleLabel);
 
-            // Dirty indicator (right-aligned, hidden when nothing dirty)
-            _toolbarDirtyLabel = new Label(string.Empty);
-            _toolbarDirtyLabel.style.unityTextAlign = TextAnchor.MiddleRight;
-            _toolbarDirtyLabel.style.marginLeft = 4;
-            _toolbarDirtyLabel.style.marginRight = 4;
-            _toolbarDirtyLabel.style.color = new Color(0.95f, 0.65f, 0.15f);
-            _toolbarDirtyLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
-            _toolbarDirtyLabel.tooltip = "Unsaved authoring changes";
-            toolbar.Add(_toolbarDirtyLabel);
+            toolbarRoot.Add(row2);
 
-            // + New Step
-            _toolbarNewStepBtn = new ToolbarButton(OnToolbarNewStepClicked) { text = "+ New Step" };
-            _toolbarNewStepBtn.tooltip = "Create a new step in the active assembly";
-            toolbar.Add(_toolbarNewStepBtn);
-
-            root.Add(toolbar);
-            _toolbar = toolbar;
-        }
-
-        private static VisualElement MakeSpacer(float width)
-        {
-            var s = new VisualElement();
-            s.style.width = width;
-            s.style.flexShrink = 0;
-            return s;
+            root.Add(toolbarRoot);
+            _toolbar = toolbarRoot;
         }
 
         // ── Toolbar event handlers ────────────────────────────────────────────
