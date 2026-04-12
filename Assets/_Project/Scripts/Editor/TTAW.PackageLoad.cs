@@ -722,11 +722,40 @@ namespace OSE.Editor
             Transform previewRoot,
             HashSet<string> memberPartIds)
         {
-            if (!ServiceRegistry.TryGet<ISpawnerQueryService>(out var spawner)
-                || spawner?.SpawnedParts == null)
-                return;
+            // Try the spawner service first; fall back to walking the scene
+            // (same fallback pattern as FindLivePartGO).
+            List<GameObject> parts = null;
+            if (ServiceRegistry.TryGet<ISpawnerQueryService>(out var spawner)
+                && spawner?.SpawnedParts != null)
+            {
+                parts = spawner.SpawnedParts;
+            }
 
-            foreach (var go in spawner.SpawnedParts)
+            if (parts == null || parts.Count == 0)
+            {
+                // Fallback: collect all children of PreviewRoot + all group roots
+                parts = new List<GameObject>();
+                if (previewRoot != null)
+                {
+                    for (int i = 0; i < previewRoot.childCount; i++)
+                    {
+                        var child = previewRoot.GetChild(i);
+                        if (child == null) continue;
+                        // Direct children of PreviewRoot (ungrouped parts)
+                        if (!child.name.StartsWith("Group_"))
+                            parts.Add(child.gameObject);
+                        // Children of group roots (already-grouped parts)
+                        for (int j = 0; j < child.childCount; j++)
+                        {
+                            var grandchild = child.GetChild(j);
+                            if (grandchild != null && !grandchild.name.StartsWith("Group_"))
+                                parts.Add(grandchild.gameObject);
+                        }
+                    }
+                }
+            }
+
+            foreach (var go in parts)
             {
                 if (go == null) continue;
                 bool isMember = memberPartIds.Contains(go.name);

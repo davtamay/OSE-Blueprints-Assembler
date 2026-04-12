@@ -265,7 +265,21 @@ namespace OSE.Editor
                 {
                     EditorGUILayout.BeginHorizontal();
                     GUILayout.Space(12);
-                    EditorGUILayout.LabelField(sub.partIds[i], EditorStyles.miniLabel);
+                    // Clickable part name — click to select + ping in Hierarchy
+                    var partLabelStyle = new GUIStyle(EditorStyles.miniLabel)
+                    {
+                        normal = { textColor = new Color(0.60f, 0.78f, 0.95f) },
+                    };
+                    if (GUILayout.Button(sub.partIds[i], partLabelStyle))
+                    {
+                        var liveGO = FindLivePartGO(sub.partIds[i]);
+                        if (liveGO != null)
+                        {
+                            Selection.activeGameObject = liveGO;
+                            EditorGUIUtility.PingObject(liveGO);
+                            SceneView.RepaintAll();
+                        }
+                    }
                     if (GUILayout.Button("×", EditorStyles.miniButton, GUILayout.Width(20)))
                         removePartIdx = i;
                     EditorGUILayout.EndHorizontal();
@@ -1093,7 +1107,10 @@ namespace OSE.Editor
                         // Select the group's root GO in the Hierarchy so the
                         // author can see all children at a glance.
                         if (_subassemblyRootGOs.TryGetValue(sub.id, out var rootGO) && rootGO != null)
+                        {
                             Selection.activeGameObject = rootGO;
+                            EditorGUIUtility.PingObject(rootGO);
+                        }
 
                         // Highlight the group's member parts in the task sequence
                         // by multi-selecting their rows.
