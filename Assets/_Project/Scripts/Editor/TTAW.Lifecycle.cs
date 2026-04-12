@@ -210,6 +210,11 @@ namespace OSE.Editor
             _selectedPartIdx = -1;
             _multiSelectedParts.Clear();
             _multiSelectedTaskSeqIdxs.Clear();
+            // Invalidate the task-sequence cache so stale order entries from
+            // in-memory mutations (e.g. drag-drop adds) don't survive a revert.
+            _taskSeqReorderList          = null;
+            _taskSeqReorderListForStepId = null;
+            InvalidateTaskOrderCache();
             // Discard unsaved dirty tracking so stale bits don't bleed into the next package load.
             _dirtyToolIds.Clear();
             _dirtyStepIds.Clear();
