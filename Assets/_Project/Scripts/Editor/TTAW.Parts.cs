@@ -324,6 +324,26 @@ namespace OSE.Editor
                 SetPoseInPreviewSpace(liveGO.transform, GetPreviewRoot(), pos, rot, scl);
         }
 
+        /// <summary>
+        /// Returns true if this part is a member of a group whose pose is being
+        /// actively managed (Assembled Pose or custom step pose). In that case,
+        /// the group root handles positioning and individual sync should be skipped.
+        /// </summary>
+        private bool IsPartManagedByGroupPose(string partId)
+        {
+            if (_editingGroupPoseMode == PoseModeStart) return false; // Start = parts at individual positions
+            if (_groups == null || _selectedGroupIdx < 0 || _selectedGroupIdx >= _groups.Length) return false;
+
+            ref GroupEditState g = ref _groups[_selectedGroupIdx];
+            if (g.def?.partIds == null) return false;
+            if (!g.isDirty && !g.hasPlacement) return false; // no authored pose, root at origin anyway
+
+            foreach (var pid in g.def.partIds)
+                if (string.Equals(pid, partId, StringComparison.Ordinal))
+                    return true;
+            return false;
+        }
+
         private void SyncAllPartMeshesToActivePose()
         {
             if (_parts == null) return;
@@ -343,6 +363,13 @@ namespace OSE.Editor
                 var liveGO = FindLivePartGO(_parts[i].def.id);
                 if (liveGO != null && !liveGO.activeSelf)
                     liveGO.SetActive(true);
+
+                // Skip world-position sync for parts whose group root is handling
+                // their position (Assembled Pose mode). The parts' localPositions
+                // are already set relative to the root from when they were parented
+                // — moving the root moves all parts together.
+                if (_parts[i].def != null && IsPartManagedByGroupPose(_parts[i].def.id))
+                    continue;
 
                 SyncPartMeshToActivePose(ref _parts[i]);
             }
