@@ -524,6 +524,156 @@ namespace OSE.Editor
                 _taskSeqReorderList.list = order;
 
             _taskSeqReorderList.DoLayoutList();
+
+            // ── Drop zone — Phase 7d ──────────────────────────────────────────
+            // Drag a spawned part GameObject (or any GO whose name matches a
+            // package part / target id) from the Hierarchy into this strip
+            // and the editor adds it to the task sequence in one motion.
+            DrawTaskSequenceDropZone(step, order);
+        }
+
+        // ── Drag-drop entry for the task sequence (Phase 7d) ──────────────────
+
+        /// <summary>
+        /// Renders a drop target below the reorderable list. Accepts
+        /// GameObjects via DragAndDrop.objectReferences and resolves their
+        /// names against the active package's parts → adds as a part task,
+        /// or targets → adds as a toolAction task with the first wired tool
+        /// (or no tool if none is available). Multi-drop is supported.
+        /// </summary>
+        private void DrawTaskSequenceDropZone(StepDefinition step, List<TaskOrderEntry> order)
+        {
+            EditorGUILayout.Space(2);
+
+            var dropRect = GUILayoutUtility.GetRect(0, 28f, GUILayout.ExpandWidth(true));
+            var ev       = Event.current;
+            bool isHover = dropRect.Contains(ev.mousePosition);
+            bool isDrag  = (ev.type == EventType.DragUpdated || ev.type == EventType.DragPerform)
+                           && DragAndDrop.objectReferences != null
+                           && DragAndDrop.objectReferences.Length > 0;
+
+            // Visual: dashed-feel rectangle. Tinted accent when hovering during a drag.
+            var accent  = isHover && isDrag
+                ? new Color(0.30f, 0.78f, 0.36f)               // green when ready to accept
+                : new Color(0.45f, 0.45f, 0.50f);              // muted otherwise
+            var bgColor = isHover && isDrag
+                ? new Color(0.30f, 0.78f, 0.36f, 0.18f)
+                : new Color(0f, 0f, 0f, 0.18f);
+            EditorGUI.DrawRect(dropRect, bgColor);
+            // 1-px borders on all four edges
+            EditorGUI.DrawRect(new Rect(dropRect.x, dropRect.y, dropRect.width, 1f), accent);
+            EditorGUI.DrawRect(new Rect(dropRect.x, dropRect.yMax - 1f, dropRect.width, 1f), accent);
+            EditorGUI.DrawRect(new Rect(dropRect.x, dropRect.y, 1f, dropRect.height), accent);
+            EditorGUI.DrawRect(new Rect(dropRect.xMax - 1f, dropRect.y, 1f, dropRect.height), accent);
+
+            var labelStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                normal    = { textColor = accent },
+                alignment = TextAnchor.MiddleCenter,
+                fontStyle = isHover && isDrag ? FontStyle.Bold : FontStyle.Italic,
+            };
+            string label = isHover && isDrag
+                ? $"Drop {DragAndDrop.objectReferences.Length} item{(DragAndDrop.objectReferences.Length == 1 ? "" : "s")} here to add to the task sequence"
+                : "Drag part / target GameObjects here to add them as tasks";
+            GUI.Label(dropRect, label, labelStyle);
+
+            // ── Event handling ────────────────────────────────────────────────
+            if (!isHover) return;
+
+            if (ev.type == EventType.DragUpdated)
+            {
+                DragAndDrop.visualMode = isDrag ? DragAndDropVisualMode.Copy : DragAndDropVisualMode.Rejected;
+                ev.Use();
+                return;
+            }
+
+            if (ev.type == EventType.DragPerform && isDrag)
+            {
+                DragAndDrop.AcceptDrag();
+
+                int added = 0;
+                foreach (var obj in DragAndDrop.objectReferences)
+                {
+                    if (obj == null) continue;
+                    string name = obj.name;
+                    if (string.IsNullOrEmpty(name)) continue;
+                    if (TryDropResolveAndAdd(step, name)) added++;
+                }
+
+                if (added > 0)
+                {
+                    ShowNotification(new GUIContent($"Added {added} task{(added == 1 ? "" : "s")} from drop"));
+                    _taskSeqReorderListForStepId = null; // force list rebuild
+                    Repaint();
+                }
+                else
+                {
+                    ShowNotification(new GUIContent("No drop items matched a package part or target id"));
+                }
+                ev.Use();
+            }
+        }
+
+        /// <summary>
+        /// Resolves a dropped GameObject's name against the package's parts
+        /// (then targets) and routes to the matching commit helper.
+        /// Returns true on success.
+        /// </summary>
+        private bool TryDropResolveAndAdd(StepDefinition step, string name)
+        {
+            if (step == null || _pkg == null || string.IsNullOrEmpty(name)) return false;
+
+            // Skip duplicates: don't re-add a part already required by the step
+            if (_pkg.parts != null)
+            {
+                for (int i = 0; i < _pkg.parts.Length; i++)
+                {
+                    var p = _pkg.parts[i];
+                    if (p == null || !string.Equals(p.id, name, StringComparison.Ordinal)) continue;
+
+                    bool already = step.requiredPartIds != null
+                                   && Array.IndexOf(step.requiredPartIds, p.id) >= 0;
+                    if (already) return false;
+                    CommitAddPart(step, p.id);
+                    return true;
+                }
+            }
+
+            // Targets — drop creates a tool action with the first wired tool
+            // available on the package. If no tools exist, add the target id
+            // directly to step.targetIds without an action so the author can
+            // wire a tool from the inspector.
+            if (_pkg.GetTargets() != null)
+            {
+                foreach (var t in _pkg.GetTargets())
+                {
+                    if (t == null || !string.Equals(t.id, name, StringComparison.Ordinal)) continue;
+
+                    bool already = step.targetIds != null
+                                   && Array.IndexOf(step.targetIds, t.id) >= 0;
+                    if (already) return false;
+
+                    var firstTool = _pkg.GetTools()?.FirstOrDefault(td => td != null && !string.IsNullOrEmpty(td.id));
+                    if (firstTool != null)
+                    {
+                        CommitAddToolTarget(step, t.id, firstTool.id);
+                    }
+                    else
+                    {
+                        var tList = new List<string>(step.targetIds ?? System.Array.Empty<string>()) { t.id };
+                        step.targetIds = tList.ToArray();
+                        var orderLocal = GetOrDeriveTaskOrder(step);
+                        orderLocal.Add(new TaskOrderEntry { kind = "target", id = t.id });
+                        step.taskOrder = orderLocal.ToArray();
+                        InvalidateTaskOrderCache();
+                        UpdateActiveStep();
+                        _dirtyStepIds.Add(step.id);
+                        BuildTargetList();
+                    }
+                    return true;
+                }
+            }
+            return false;
         }
 
         // ── Context panel ─────────────────────────────────────────────────────
