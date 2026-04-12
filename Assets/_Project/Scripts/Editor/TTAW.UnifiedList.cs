@@ -1525,8 +1525,7 @@ namespace OSE.Editor
                             if (_parts[i].def?.id == selEntry.id)
                             { DrawPartDetailPanel(ref _parts[i]); break; }
 
-                    // Phase 7c — per-part animation-cue affordance
-                    DrawCuesForPart(step, selEntry.id);
+                    // Phase 7c cue affordance moved to DrawInspectorContextualSections
                     break;
                 }
                 case "wire":
@@ -1745,10 +1744,7 @@ namespace OSE.Editor
                             if (_targets[i].def?.id == toolTargetId)
                             { DrawDetailPanel(ref _targets[i]); break; }
 
-                    // Phase 7c — per-tool animation-cue affordance, only when
-                    // a tool is actually wired to this action.
-                    if (taskAction != null && !string.IsNullOrEmpty(taskAction.toolId))
-                        DrawCuesForTool(step, taskAction.toolId);
+                    // Phase 7c cue affordance moved to DrawInspectorContextualSections
                     break;
                 }
             }
