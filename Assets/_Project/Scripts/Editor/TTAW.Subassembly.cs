@@ -293,7 +293,7 @@ namespace OSE.Editor
                 _dirtySubassemblyIds.Add(sub.id);
             }
 
-            // + Add part picker
+            // + Add part picker + Add from Selection + drop zone
             {
                 var currentSet = new HashSet<string>(sub.partIds ?? Array.Empty<string>(), StringComparer.Ordinal);
                 var candidates = new List<string>();
@@ -301,6 +301,7 @@ namespace OSE.Editor
                     if (p != null && !string.IsNullOrEmpty(p.id) && !currentSet.Contains(p.id))
                         candidates.Add(p.id);
 
+                // Row 1: dropdown + Add button
                 if (candidates.Count > 0)
                 {
                     EditorGUILayout.BeginHorizontal();
@@ -320,6 +321,92 @@ namespace OSE.Editor
                         _subAddPartIdx = 0;
                     }
                     EditorGUILayout.EndHorizontal();
+                }
+
+                // Row 2: "Add from Selection" button — grabs currently selected GOs in the Hierarchy
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(12);
+                if (GUILayout.Button(
+                        new GUIContent("+ Add from Selection",
+                            "Add any GameObjects currently selected in the Hierarchy that match a package part ID."),
+                        EditorStyles.miniButton, GUILayout.Height(16)))
+                {
+                    int added = 0;
+                    foreach (var selGO in Selection.gameObjects)
+                    {
+                        if (selGO == null) continue;
+                        string pid = selGO.name;
+                        if (string.IsNullOrEmpty(pid)) continue;
+                        // Verify it's a real package part
+                        bool isPart = false;
+                        foreach (var p in _pkg.GetParts())
+                            if (p != null && string.Equals(p.id, pid, StringComparison.Ordinal))
+                            { isPart = true; break; }
+                        if (isPart && currentSet.Add(pid)) added++;
+                    }
+                    if (added > 0)
+                    {
+                        sub.partIds = currentSet.ToArray();
+                        _dirtySubassemblyIds.Add(sub.id);
+                        ShowNotification(new GUIContent($"Added {added} part(s) from selection"));
+                    }
+                    else
+                    {
+                        ShowNotification(new GUIContent("No new parts in selection"));
+                    }
+                }
+                EditorGUILayout.EndHorizontal();
+
+                // Row 3: compact drop zone — drag parts from Hierarchy
+                var dropRect = GUILayoutUtility.GetRect(0, 20f, GUILayout.ExpandWidth(true));
+                var ev = Event.current;
+                bool isHover = dropRect.Contains(ev.mousePosition);
+                bool isDrag = (ev.type == EventType.DragUpdated || ev.type == EventType.DragPerform)
+                              && DragAndDrop.objectReferences != null
+                              && DragAndDrop.objectReferences.Length > 0;
+
+                var accent = isHover && isDrag ? SubAccent : new Color(0.40f, 0.40f, 0.45f);
+                EditorGUI.DrawRect(dropRect, isHover && isDrag
+                    ? new Color(SubAccent.r, SubAccent.g, SubAccent.b, 0.12f)
+                    : new Color(0f, 0f, 0f, 0.08f));
+                EditorGUI.DrawRect(new Rect(dropRect.x + 12f, dropRect.y, dropRect.width - 12f, 1f), accent);
+                EditorGUI.DrawRect(new Rect(dropRect.x + 12f, dropRect.yMax - 1f, dropRect.width - 12f, 1f), accent);
+                var dropLabel = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    normal = { textColor = accent },
+                    alignment = TextAnchor.MiddleCenter,
+                    fontStyle = isHover && isDrag ? FontStyle.Bold : FontStyle.Italic,
+                };
+                GUI.Label(dropRect, isHover && isDrag ? "Drop to add parts" : "Drag parts here", dropLabel);
+
+                if (isHover && ev.type == EventType.DragUpdated)
+                {
+                    DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+                    ev.Use();
+                }
+                else if (isHover && ev.type == EventType.DragPerform && isDrag)
+                {
+                    DragAndDrop.AcceptDrag();
+                    int added = 0;
+                    foreach (var obj in DragAndDrop.objectReferences)
+                    {
+                        if (obj == null) continue;
+                        string pid = obj.name;
+                        if (string.IsNullOrEmpty(pid)) continue;
+                        bool isPart = false;
+                        foreach (var p in _pkg.GetParts())
+                            if (p != null && string.Equals(p.id, pid, StringComparison.Ordinal))
+                            { isPart = true; break; }
+                        if (isPart && currentSet.Add(pid)) added++;
+                    }
+                    if (added > 0)
+                    {
+                        sub.partIds = currentSet.ToArray();
+                        _dirtySubassemblyIds.Add(sub.id);
+                        ShowNotification(new GUIContent($"Added {added} part(s)"));
+                    }
+                    ev.Use();
+                    Repaint();
                 }
             }
 

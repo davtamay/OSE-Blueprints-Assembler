@@ -724,11 +724,12 @@ namespace OSE.Editor
         {
             // Try the spawner service first; fall back to walking the scene
             // (same fallback pattern as FindLivePartGO).
+            var spawnedParts = ServiceRegistry.TryGet<ISpawnerQueryService>(out var spawner)
+                ? spawner?.SpawnedParts : null;
             List<GameObject> parts = null;
-            if (ServiceRegistry.TryGet<ISpawnerQueryService>(out var spawner)
-                && spawner?.SpawnedParts != null)
+            if (spawnedParts != null && spawnedParts.Count > 0)
             {
-                parts = spawner.SpawnedParts;
+                parts = new List<GameObject>(spawnedParts);
             }
 
             if (parts == null || parts.Count == 0)
