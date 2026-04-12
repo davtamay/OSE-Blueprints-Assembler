@@ -319,24 +319,21 @@ namespace OSE.Editor
                     continue;
                 if (placedAt > currentSeq) continue; // future — hidden
 
-                if (placedAt == currentSeq)
-                {
-                    if (ownedSubPartIds.Contains(part.id))
-                        _visScratchOwnedSubHere.Add(part.id);
-                    else if (visualOnlyHere.Contains(part.id))
-                        _visScratchOptionalHere.Add(part.id);
-                    else if (ownedHere.Contains(part.id))
-                        _visScratchOwnedHere.Add(part.id);
-                    else
-                        // Edge case — part is owned by another step that shares
-                        // this sequence index. Bucket as "owned here" so it's
-                        // visible to the author.
-                        _visScratchOwnedHere.Add(part.id);
-                }
-                else // placedAt < currentSeq
-                {
+                // Classify by the part's relationship to THIS step, not just
+                // when it first appeared. A part can be placed in an earlier
+                // step but still be required/optional in the current step
+                // (e.g. a Use step that operates on parts placed in a prior
+                // Place step).
+                if (ownedSubPartIds.Contains(part.id))
+                    _visScratchOwnedSubHere.Add(part.id);
+                else if (ownedHere.Contains(part.id))
+                    _visScratchOwnedHere.Add(part.id);
+                else if (visualOnlyHere.Contains(part.id))
+                    _visScratchOptionalHere.Add(part.id);
+                else if (placedAt < currentSeq)
                     _visScratchInheritedEarlier.Add(part.id);
-                }
+                else
+                    _visScratchOwnedHere.Add(part.id);
                 totalVisible++;
             }
 
