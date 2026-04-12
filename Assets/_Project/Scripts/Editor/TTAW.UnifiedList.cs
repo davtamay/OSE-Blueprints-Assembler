@@ -94,8 +94,8 @@ namespace OSE.Editor
                 DrawTaskInspectorBody(step, order);
             }
 
-            // ── SUBASSEMBLIES (Phase A4) ─────────────────────────────────────
-            // Clickable list of subassemblies visible in this step. Clicking
+            // ── GROUPS (Phase A4) ──────────────────────────────────────────────
+            // Clickable list of groups (subassemblies) in this step. Clicking
             // one selects it — the inspector shows its properties and the
             // SceneView shows the rotation/position gizmo on its root GO.
             EditorGUILayout.Space(4);

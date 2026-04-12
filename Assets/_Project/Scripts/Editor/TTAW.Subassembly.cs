@@ -224,6 +224,9 @@ namespace OSE.Editor
 
         // ── Inline editor for a subassembly's fields (name, partIds, stepIds) ─
 
+        private int _subAddPartIdx;
+        private int _subAddStepIdx;
+
         private void DrawSubassemblyInlineEditor(SubassemblyDefinition sub, StepDefinition step)
         {
             if (sub == null || _pkg == null) return;
@@ -248,77 +251,129 @@ namespace OSE.Editor
                 _dirtySubassemblyIds.Add(sub.id);
             }
 
-            // ── Part membership (checkbox list) ───────────────────────────────
-            EditorGUILayout.LabelField("Parts in this group:", EditorStyles.miniBoldLabel);
-            EditorGUI.indentLevel++;
-            var currentParts = sub.partIds != null
-                ? new HashSet<string>(sub.partIds, StringComparer.Ordinal)
-                : new HashSet<string>(StringComparer.Ordinal);
-            bool partsDirty = false;
-
-            // Show all package parts as toggles (checked = member of this subassembly)
-            var allParts = _pkg.GetParts();
-            int maxShown = 30;
-            int shown    = 0;
-            for (int i = 0; i < allParts.Length && shown < maxShown; i++)
+            // ── Parts in this group — listed with × to remove ────────────────
+            var partHeaderStyle = new GUIStyle(EditorStyles.miniBoldLabel)
             {
-                var p = allParts[i];
-                if (p == null || string.IsNullOrEmpty(p.id)) continue;
-                bool was = currentParts.Contains(p.id);
-                bool now = EditorGUILayout.Toggle(p.id, was);
-                if (now != was)
+                normal = { textColor = SubAccent },
+            };
+            EditorGUILayout.LabelField($"PARTS  ({sub.partIds?.Length ?? 0})", partHeaderStyle);
+
+            int removePartIdx = -1;
+            if (sub.partIds != null)
+            {
+                for (int i = 0; i < sub.partIds.Length; i++)
                 {
-                    if (now) currentParts.Add(p.id); else currentParts.Remove(p.id);
-                    partsDirty = true;
+                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.Space(12);
+                    EditorGUILayout.LabelField(sub.partIds[i], EditorStyles.miniLabel);
+                    if (GUILayout.Button("×", EditorStyles.miniButton, GUILayout.Width(20)))
+                        removePartIdx = i;
+                    EditorGUILayout.EndHorizontal();
                 }
-                shown++;
             }
-            if (allParts.Length > maxShown)
-                EditorGUILayout.LabelField($"  +{allParts.Length - maxShown} more (expand 'ALL PARTS' in Tool Matrix to see all)",
-                    EditorStyles.miniLabel);
-            EditorGUI.indentLevel--;
-
-            if (partsDirty)
+            if (removePartIdx >= 0)
             {
-                sub.partIds = currentParts.Count > 0 ? currentParts.ToArray() : Array.Empty<string>();
+                var list = new List<string>(sub.partIds);
+                list.RemoveAt(removePartIdx);
+                sub.partIds = list.Count > 0 ? list.ToArray() : Array.Empty<string>();
                 _dirtySubassemblyIds.Add(sub.id);
             }
 
-            // ── Step membership (checkbox list) ───────────────────────────────
-            EditorGUILayout.LabelField("Build steps in this group:", EditorStyles.miniBoldLabel);
-            EditorGUI.indentLevel++;
-            var currentSteps = sub.stepIds != null
-                ? new HashSet<string>(sub.stepIds, StringComparer.Ordinal)
-                : new HashSet<string>(StringComparer.Ordinal);
-            bool stepsDirty = false;
-
-            // Show steps from the same assembly only (or all steps if assemblyId is unknown)
-            var pkgSteps = _pkg.GetSteps();
-            for (int i = 0; i < pkgSteps.Length; i++)
+            // + Add part picker
             {
-                var s = pkgSteps[i];
-                if (s == null || string.IsNullOrEmpty(s.id)) continue;
-                // Filter to same assembly if possible
-                if (!string.IsNullOrEmpty(sub.assemblyId)
-                    && !string.IsNullOrEmpty(s.assemblyId)
-                    && !string.Equals(s.assemblyId, sub.assemblyId, StringComparison.Ordinal))
-                    continue;
+                var currentSet = new HashSet<string>(sub.partIds ?? Array.Empty<string>(), StringComparer.Ordinal);
+                var candidates = new List<string>();
+                foreach (var p in _pkg.GetParts())
+                    if (p != null && !string.IsNullOrEmpty(p.id) && !currentSet.Contains(p.id))
+                        candidates.Add(p.id);
 
-                bool was = currentSteps.Contains(s.id);
-                string label = $"[{s.sequenceIndex}] {s.GetDisplayName()}";
-                bool now = EditorGUILayout.Toggle(label, was);
-                if (now != was)
+                if (candidates.Count > 0)
                 {
-                    if (now) currentSteps.Add(s.id); else currentSteps.Remove(s.id);
-                    stepsDirty = true;
+                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.Space(12);
+                    _subAddPartIdx = Mathf.Clamp(_subAddPartIdx, 0, candidates.Count - 1);
+                    _subAddPartIdx = EditorGUILayout.Popup(_subAddPartIdx, candidates.ToArray(), GUILayout.Height(16));
+                    var addStyle = new GUIStyle(EditorStyles.miniButton)
+                    {
+                        fontStyle = FontStyle.Bold,
+                        normal = { textColor = SubAccent },
+                    };
+                    if (GUILayout.Button("+ Add", addStyle, GUILayout.Width(50), GUILayout.Height(16)))
+                    {
+                        var list = new List<string>(sub.partIds ?? Array.Empty<string>()) { candidates[_subAddPartIdx] };
+                        sub.partIds = list.ToArray();
+                        _dirtySubassemblyIds.Add(sub.id);
+                        _subAddPartIdx = 0;
+                    }
+                    EditorGUILayout.EndHorizontal();
                 }
             }
-            EditorGUI.indentLevel--;
 
-            if (stepsDirty)
+            EditorGUILayout.Space(4);
+
+            // ── Build steps — listed with × to remove ────────────────────────
+            EditorGUILayout.LabelField($"BUILD STEPS  ({sub.stepIds?.Length ?? 0})", partHeaderStyle);
+
+            int removeStepIdx = -1;
+            if (sub.stepIds != null)
             {
-                sub.stepIds = currentSteps.Count > 0 ? currentSteps.ToArray() : Array.Empty<string>();
+                for (int i = 0; i < sub.stepIds.Length; i++)
+                {
+                    string sid = sub.stepIds[i];
+                    var s = FindStep(sid);
+                    string label = s != null ? $"[{s.sequenceIndex}] {s.GetDisplayName()}" : sid;
+                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.Space(12);
+                    EditorGUILayout.LabelField(label, EditorStyles.miniLabel);
+                    if (GUILayout.Button("×", EditorStyles.miniButton, GUILayout.Width(20)))
+                        removeStepIdx = i;
+                    EditorGUILayout.EndHorizontal();
+                }
+            }
+            if (removeStepIdx >= 0)
+            {
+                var list = new List<string>(sub.stepIds);
+                list.RemoveAt(removeStepIdx);
+                sub.stepIds = list.Count > 0 ? list.ToArray() : Array.Empty<string>();
                 _dirtySubassemblyIds.Add(sub.id);
+            }
+
+            // + Add step picker
+            {
+                var currentSet = new HashSet<string>(sub.stepIds ?? Array.Empty<string>(), StringComparer.Ordinal);
+                var candidates = new List<(string id, string label)>();
+                foreach (var s in _pkg.GetSteps())
+                {
+                    if (s == null || string.IsNullOrEmpty(s.id)) continue;
+                    if (currentSet.Contains(s.id)) continue;
+                    if (!string.IsNullOrEmpty(sub.assemblyId)
+                        && !string.IsNullOrEmpty(s.assemblyId)
+                        && !string.Equals(s.assemblyId, sub.assemblyId, StringComparison.Ordinal))
+                        continue;
+                    candidates.Add((s.id, $"[{s.sequenceIndex}] {s.GetDisplayName()}"));
+                }
+
+                if (candidates.Count > 0)
+                {
+                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.Space(12);
+                    _subAddStepIdx = Mathf.Clamp(_subAddStepIdx, 0, candidates.Count - 1);
+                    _subAddStepIdx = EditorGUILayout.Popup(_subAddStepIdx,
+                        candidates.ConvertAll(c => c.label).ToArray(), GUILayout.Height(16));
+                    var addStyle = new GUIStyle(EditorStyles.miniButton)
+                    {
+                        fontStyle = FontStyle.Bold,
+                        normal = { textColor = SubAccent },
+                    };
+                    if (GUILayout.Button("+ Add", addStyle, GUILayout.Width(50), GUILayout.Height(16)))
+                    {
+                        var list = new List<string>(sub.stepIds ?? Array.Empty<string>()) { candidates[_subAddStepIdx].id };
+                        sub.stepIds = list.ToArray();
+                        _dirtySubassemblyIds.Add(sub.id);
+                        _subAddStepIdx = 0;
+                    }
+                    EditorGUILayout.EndHorizontal();
+                }
             }
         }
 
@@ -580,6 +635,80 @@ namespace OSE.Editor
             ShowNotification(new GUIContent("Copied new subassembly stub to clipboard"));
         }
 
+        // ── Group drop zone (drag part GOs to add to selected group) ──────────
+
+        private void DrawGroupDropZone(string subId)
+        {
+            if (string.IsNullOrEmpty(subId) || _pkg == null) return;
+            if (!_pkg.TryGetSubassembly(subId, out SubassemblyDefinition sub) || sub == null)
+                return;
+
+            var dropRect = GUILayoutUtility.GetRect(0, 22f, GUILayout.ExpandWidth(true));
+            var ev       = Event.current;
+            bool isHover = dropRect.Contains(ev.mousePosition);
+            bool isDrag  = (ev.type == EventType.DragUpdated || ev.type == EventType.DragPerform)
+                           && DragAndDrop.objectReferences != null
+                           && DragAndDrop.objectReferences.Length > 0;
+
+            var accent = isHover && isDrag ? SubAccent : new Color(0.45f, 0.45f, 0.50f);
+            var bg     = isHover && isDrag
+                ? new Color(SubAccent.r, SubAccent.g, SubAccent.b, 0.15f)
+                : new Color(0f, 0f, 0f, 0.12f);
+            EditorGUI.DrawRect(dropRect, bg);
+            EditorGUI.DrawRect(new Rect(dropRect.x, dropRect.y, dropRect.width, 1f), accent);
+            EditorGUI.DrawRect(new Rect(dropRect.x, dropRect.yMax - 1f, dropRect.width, 1f), accent);
+
+            var labelStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                normal    = { textColor = accent },
+                alignment = TextAnchor.MiddleCenter,
+                fontStyle = isHover && isDrag ? FontStyle.Bold : FontStyle.Italic,
+            };
+            GUI.Label(dropRect, isHover && isDrag
+                ? "Drop to add parts to this group"
+                : "Drag parts here to add to group", labelStyle);
+
+            if (!isHover) return;
+
+            if (ev.type == EventType.DragUpdated)
+            {
+                DragAndDrop.visualMode = isDrag ? DragAndDropVisualMode.Copy : DragAndDropVisualMode.Rejected;
+                ev.Use();
+                return;
+            }
+
+            if (ev.type == EventType.DragPerform && isDrag)
+            {
+                DragAndDrop.AcceptDrag();
+                var currentSet = new HashSet<string>(sub.partIds ?? Array.Empty<string>(), StringComparer.Ordinal);
+                int added = 0;
+                foreach (var obj in DragAndDrop.objectReferences)
+                {
+                    if (obj == null) continue;
+                    string name = obj.name;
+                    if (string.IsNullOrEmpty(name)) continue;
+                    // Check if name matches a package part
+                    bool isPart = false;
+                    foreach (var p in _pkg.GetParts())
+                        if (p != null && string.Equals(p.id, name, StringComparison.Ordinal))
+                        { isPart = true; break; }
+                    if (isPart && currentSet.Add(name)) added++;
+                }
+                if (added > 0)
+                {
+                    sub.partIds = currentSet.ToArray();
+                    _dirtySubassemblyIds.Add(sub.id);
+                    ShowNotification(new GUIContent($"Added {added} part{(added == 1 ? "" : "s")} to group"));
+                }
+                else
+                {
+                    ShowNotification(new GUIContent("No new parts matched"));
+                }
+                ev.Use();
+                Repaint();
+            }
+        }
+
         // ── Phase A4: canvas subassembly list ─────────────────────────────────
 
         // Which subassembly row is "selected" in the canvas list — clicking it
@@ -628,9 +757,9 @@ namespace OSE.Editor
             // Header
             EditorGUILayout.BeginHorizontal();
             var titleStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 11 };
-            GUILayout.Label(new GUIContent($"SUBASSEMBLIES ({relevant.Count})",
-                "Groups that this step belongs to. Click to inspect. " +
-                "Rotate/move via the gizmo in the SceneView."),
+            GUILayout.Label(new GUIContent($"GROUPS ({relevant.Count})",
+                "Part groups (subassemblies) that this step belongs to. " +
+                "Click to inspect. Rotate/move via the gizmo in the SceneView."),
                 titleStyle);
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
@@ -694,7 +823,7 @@ namespace OSE.Editor
                 }
             }
 
-            // Gizmo hint
+            // Gizmo hint + drop zone
             if (!string.IsNullOrEmpty(_canvasSelectedSubId))
             {
                 var hintStyle = new GUIStyle(EditorStyles.miniLabel)
@@ -703,7 +832,10 @@ namespace OSE.Editor
                     fontStyle = FontStyle.Italic,
                     alignment = TextAnchor.MiddleCenter,
                 };
-                EditorGUILayout.LabelField("Use the gizmo in SceneView to rotate/move this group", hintStyle);
+                EditorGUILayout.LabelField("Rotate/move via the gizmo in SceneView", hintStyle);
+
+                // Drop zone — drag part GOs here to add them to the selected group
+                DrawGroupDropZone(_canvasSelectedSubId);
             }
         }
     }

@@ -270,7 +270,7 @@ namespace OSE.Editor
                 normal = { textColor = new Color(0.20f, 0.62f, 0.95f) },
                 fontSize = 12,
             };
-            EditorGUILayout.LabelField($"GROUP: {sub.GetDisplayName()}", headerStyle);
+            EditorGUILayout.LabelField($"Group: {sub.GetDisplayName()}", headerStyle);
             EditorGUILayout.Space(4);
 
             // Orientation readout (from the gizmo — read-only display)
