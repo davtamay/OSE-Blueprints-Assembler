@@ -944,17 +944,40 @@ namespace OSE.Editor
                     _selectedIdx = -1;
                     _multiSelected.Clear();
                     _multiSelectedParts.Clear();
-                    if (_parts != null)
+
+                    // Check if this "part" entry is actually a group (subassembly)
+                    bool isGroupEntry = _pkg != null && _pkg.TryGetSubassembly(entry.id, out _);
+                    if (isGroupEntry)
                     {
-                        // Find the exact part; fall back to first if not matched
-                        int pick = 0;
+                        // Group task — select the group in the canvas, not a part
+                        _selectedPartIdx = -1;
+                        _selectedPartId  = null;
+                        _canvasSelectedSubId = entry.id;
+                        if (_subassemblyRootGOs.TryGetValue(entry.id, out var rootGO) && rootGO != null)
+                        {
+                            Selection.activeGameObject = rootGO;
+                            EditorGUIUtility.PingObject(rootGO);
+                        }
+                    }
+                    else if (_parts != null && _parts.Length > 0)
+                    {
+                        // Individual part — find it in _parts[]
+                        int pick = -1;
                         for (int i = 0; i < _parts.Length; i++)
                             if (_parts[i].def?.id == entry.id) { pick = i; break; }
-                        _selectedPartIdx = pick;
-                        _selectedPartId  = _parts[pick].def?.id;
-                        SyncAllPartMeshesToActivePose();
-                        var liveGO = FindLivePartGO(_selectedPartId);
-                        if (liveGO != null) UnityEditor.Selection.activeGameObject = liveGO;
+                        if (pick >= 0)
+                        {
+                            _selectedPartIdx = pick;
+                            _selectedPartId  = _parts[pick].def?.id;
+                            SyncAllPartMeshesToActivePose();
+                            var liveGO = FindLivePartGO(_selectedPartId);
+                            if (liveGO != null) UnityEditor.Selection.activeGameObject = liveGO;
+                        }
+                        else
+                        {
+                            _selectedPartIdx = -1;
+                            _selectedPartId  = null;
+                        }
                     }
                     break;
 
