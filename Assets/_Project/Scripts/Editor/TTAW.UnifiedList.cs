@@ -484,42 +484,74 @@ namespace OSE.Editor
                     if (Event.current.type == EventType.ContextClick
                         && rowClickRect.Contains(Event.current.mousePosition))
                     {
-                        var menu = new GenericMenu();
-
-                        // "Create group from selected parts" — only when multi-selected
-                        // and at least one part is in the selection.
+                        // Collect the part IDs from the selection (multi or single)
+                        var contextPartIds = new List<string>();
                         if (_multiSelectedTaskSeqIdxs.Count > 1)
                         {
-                            var selectedPartIds = new List<string>();
                             foreach (int tidx in _multiSelectedTaskSeqIdxs)
                             {
                                 if (tidx < 0 || tidx >= order.Count) continue;
                                 if (order[tidx].kind == "part")
-                                    selectedPartIds.Add(order[tidx].id);
-                            }
-                            if (selectedPartIds.Count > 0)
-                            {
-                                var capturedParts = selectedPartIds;
-                                var capturedStep  = step;
-                                menu.AddItem(
-                                    new GUIContent($"Create group from {capturedParts.Count} selected parts"),
-                                    false,
-                                    () => CreateGroupFromSelection(capturedStep, capturedParts));
+                                    contextPartIds.Add(order[tidx].id);
                             }
                         }
                         else if (index >= 0 && index < order.Count && order[index].kind == "part")
                         {
-                            // Single part selected — offer to create a group with just this one
-                            string capturedId   = order[index].id;
-                            var capturedStep2 = step;
-                            menu.AddItem(
-                                new GUIContent($"Create group from '{capturedId}'"),
-                                false,
-                                () => CreateGroupFromSelection(capturedStep2, new List<string> { capturedId }));
+                            contextPartIds.Add(order[index].id);
                         }
 
-                        if (menu.GetItemCount() > 0)
+                        if (contextPartIds.Count > 0)
                         {
+                            var menu = new GenericMenu();
+                            var capturedParts = contextPartIds;
+                            var capturedStep  = step;
+                            string countLabel = capturedParts.Count == 1
+                                ? $"'{capturedParts[0]}'"
+                                : $"{capturedParts.Count} selected parts";
+
+                            // "Create new group from..."
+                            menu.AddItem(
+                                new GUIContent($"Create new group from {countLabel}"),
+                                false,
+                                () => CreateGroupFromSelection(capturedStep, capturedParts));
+
+                            // "Add to [existing group]" — one entry per group in the package
+                            var allSubs = _pkg?.GetSubassemblies();
+                            if (allSubs != null && allSubs.Length > 0)
+                            {
+                                menu.AddSeparator("");
+                                foreach (var sub in allSubs)
+                                {
+                                    if (sub == null || string.IsNullOrEmpty(sub.id)) continue;
+                                    var capturedSub = sub;
+                                    int existing    = sub.partIds?.Length ?? 0;
+                                    menu.AddItem(
+                                        new GUIContent($"Add to group/{capturedSub.GetDisplayName()}  ({existing}p)"),
+                                        false,
+                                        () =>
+                                        {
+                                            var currentSet = new HashSet<string>(
+                                                capturedSub.partIds ?? Array.Empty<string>(),
+                                                StringComparer.Ordinal);
+                                            int added = 0;
+                                            foreach (var pid in capturedParts)
+                                                if (currentSet.Add(pid)) added++;
+                                            if (added > 0)
+                                            {
+                                                capturedSub.partIds = currentSet.ToArray();
+                                                _dirtySubassemblyIds.Add(capturedSub.id);
+                                                ShowNotification(new GUIContent(
+                                                    $"Added {added} part(s) to {capturedSub.GetDisplayName()}"));
+                                                Repaint();
+                                            }
+                                            else
+                                            {
+                                                ShowNotification(new GUIContent("All parts already in group"));
+                                            }
+                                        });
+                                }
+                            }
+
                             menu.ShowAsContext();
                             Event.current.Use();
                         }
