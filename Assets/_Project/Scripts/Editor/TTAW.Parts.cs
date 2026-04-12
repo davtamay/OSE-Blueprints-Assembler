@@ -188,6 +188,26 @@ namespace OSE.Editor
                     && !_sceneBuildCurrentSubassembly.Contains(pid)
                     && _editingPoseMode != PoseModeAssembled;
 
+                // Group pose override: if this part is a member of the selected
+                // group and the group is in Start Pose mode, show the part at
+                // its startPosition (the staging layout from when it was individually
+                // placed). This overrides the normal "earlier parts → assembled"
+                // rule so the group toggle actually shows a visual difference.
+                if (!useStart && _selectedGroupIdx >= 0 && _groups != null
+                    && _selectedGroupIdx < _groups.Length
+                    && _editingGroupPoseMode == PoseModeStart)
+                {
+                    ref GroupEditState sg = ref _groups[_selectedGroupIdx];
+                    if (sg.def?.partIds != null)
+                    {
+                        foreach (var gpid in sg.def.partIds)
+                        {
+                            if (string.Equals(gpid, pid, StringComparison.Ordinal))
+                            { useStart = true; break; }
+                        }
+                    }
+                }
+
                 pos = useStart ? p.startPosition : p.assembledPosition;
                 rot = useStart ? p.startRotation  : p.assembledRotation;
                 scl = useStart ? p.startScale     : p.assembledScale;
