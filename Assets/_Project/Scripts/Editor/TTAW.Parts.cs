@@ -253,6 +253,47 @@ namespace OSE.Editor
             ApplyRotationToPart(ref p, rot);
         }
 
+        // ── PreviewRoot-space transform helpers (Phase A1) ────────────────────
+        //
+        // All authored positions are in PreviewRoot local space. These helpers
+        // convert between PreviewRoot space and world space so part transforms
+        // work correctly regardless of whether the part is a direct child of
+        // PreviewRoot or nested under a subassembly root GO.
+        //
+        // Phase A1: with parts still flat under PreviewRoot, these are identity
+        // transforms (PreviewRoot.TransformPoint of a local pos = the child's
+        // localPosition). Phase A2 reparents parts under subassembly roots and
+        // these helpers become load-bearing.
+
+        private static void SetPoseInPreviewSpace(Transform part, Transform previewRoot,
+            Vector3 pos, Quaternion rot, Vector3 scale)
+        {
+            if (previewRoot != null)
+            {
+                part.position = previewRoot.TransformPoint(pos);
+                part.rotation = previewRoot.rotation * rot;
+            }
+            else
+            {
+                part.localPosition = pos;
+                part.localRotation = rot;
+            }
+            if (scale.sqrMagnitude > 0.00001f) part.localScale = scale;
+        }
+
+        private static (Vector3 pos, Quaternion rot) GetPoseInPreviewSpace(
+            Transform part, Transform previewRoot)
+        {
+            if (previewRoot != null)
+            {
+                return (
+                    previewRoot.InverseTransformPoint(part.position),
+                    Quaternion.Inverse(previewRoot.rotation) * part.rotation
+                );
+            }
+            return (part.localPosition, part.localRotation);
+        }
+
         private void SyncPartMeshToActivePose(ref PartEditState p)
         {
             if (!TryGetStepAwarePose(ref p, out Vector3 pos, out Quaternion rot, out Vector3 scl))
@@ -260,11 +301,7 @@ namespace OSE.Editor
 
             var liveGO = FindLivePartGO(p.def.id);
             if (liveGO != null)
-            {
-                liveGO.transform.localPosition = pos;
-                liveGO.transform.localRotation = rot;
-                if (scl.sqrMagnitude > 0.00001f) liveGO.transform.localScale = scl;
-            }
+                SetPoseInPreviewSpace(liveGO.transform, GetPreviewRoot(), pos, rot, scl);
         }
 
         private void SyncAllPartMeshesToActivePose()
@@ -499,8 +536,7 @@ namespace OSE.Editor
                     var pollGO = FindLivePartGO(pp.def.id);
                     if (pollGO != null)
                     {
-                        Vector3    goPos = pollGO.transform.localPosition;
-                        Quaternion goRot = pollGO.transform.localRotation;
+                        var (goPos, goRot) = GetPoseInPreviewSpace(pollGO.transform, root);
                         bool posChg = (goPos - expectedPos).sqrMagnitude > 1e-5f;
                         bool rotChg = Quaternion.Angle(goRot, expectedRot) > 0.05f;
                         if (posChg || rotChg)
@@ -510,8 +546,7 @@ namespace OSE.Editor
                             if (GUIUtility.hotControl == 0)
                             {
                                 // No active handle drag — snap GO back to expected pose
-                                pollGO.transform.localPosition = expectedPos;
-                                pollGO.transform.localRotation = expectedRot;
+                                SetPoseInPreviewSpace(pollGO.transform, root, expectedPos, expectedRot, pollGO.transform.localScale);
                             }
                             else
                             {
@@ -547,16 +582,16 @@ namespace OSE.Editor
             if (EditorGUI.EndChangeCheck() && !poseCooldownActive && (newWorldPos - selWorldPos).sqrMagnitude > 1e-10f)
             {
                 BeginPartEdit(_selectedPartIdx);
-                Vector3 oldLocalPos = GetActivePosePosition(ref sel);
+                Vector3 oldPreviewPos = GetActivePosePosition(ref sel);
                 selectedGO.transform.position = newWorldPos;
-                Vector3 newLocalPos = selectedGO.transform.localPosition;
-                ApplyPositionToPart(ref sel, newLocalPos);
+                var (newPreviewPos, _) = GetPoseInPreviewSpace(selectedGO.transform, root);
+                ApplyPositionToPart(ref sel, newPreviewPos);
                 sel.isDirty = true;
 
                 // Move group as a unit — apply the same delta so offsets are preserved
                 if (_multiSelectedParts.Count > 1)
                 {
-                    Vector3 delta = newLocalPos - oldLocalPos;
+                    Vector3 delta = newPreviewPos - oldPreviewPos;
                     foreach (int midx in _multiSelectedParts)
                     {
                         if (midx == _selectedPartIdx || midx < 0 || midx >= _parts.Length) continue;
@@ -566,7 +601,7 @@ namespace OSE.Editor
                         ApplyPositionToPart(ref mp, cur);
                         mp.isDirty = true;
                         var otherGO = FindLivePartGO(mp.def.id);
-                        if (otherGO != null) otherGO.transform.localPosition = cur;
+                        if (otherGO != null) SetPoseInPreviewSpace(otherGO.transform, root, cur, otherGO.transform.localRotation, otherGO.transform.localScale);
                     }
                 }
                 Repaint();
@@ -589,7 +624,10 @@ namespace OSE.Editor
                 Quaternion worldDelta  = newWorldRot * Quaternion.Inverse(_rotDragStartHandlePart);
                 Quaternion newLocalRot = Quaternion.Inverse(rootRot) * (worldDelta * (rootRot * _rotDragStartLocalPart));
 
-                selectedGO.transform.localRotation = newLocalRot;
+                // newLocalRot is in PreviewRoot space (rootRot = previewRoot.rotation)
+                SetPoseInPreviewSpace(selectedGO.transform, root,
+                    GetPoseInPreviewSpace(selectedGO.transform, root).pos,
+                    newLocalRot, selectedGO.transform.localScale);
                 ApplyRotationToPart(ref sel, newLocalRot);
                 sel.isDirty = true;
 
@@ -602,7 +640,11 @@ namespace OSE.Editor
                         ApplyRotationToPart(ref mp, newLocalRot);
                         mp.isDirty = true;
                         var otherGO = FindLivePartGO(mp.def.id);
-                        if (otherGO != null) otherGO.transform.localRotation = newLocalRot;
+                        if (otherGO != null)
+                        {
+                            var (otherPos, _) = GetPoseInPreviewSpace(otherGO.transform, root);
+                            SetPoseInPreviewSpace(otherGO.transform, root, otherPos, newLocalRot, otherGO.transform.localScale);
+                        }
                     }
                 Repaint();
             }
