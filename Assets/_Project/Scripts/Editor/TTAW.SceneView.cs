@@ -54,6 +54,9 @@ namespace OSE.Editor
 
             DrawPartSceneHandles(sv);
 
+            // ── Phase A3: subassembly root rotation gizmo ─────────────────────
+            DrawSubassemblyRootGizmo();
+
             // confirm_action = terminal button-press — no targets, skip all target gizmos.
             if (isConfirmAction) return;
 
@@ -374,6 +377,136 @@ namespace OSE.Editor
             Handles.SphereHandleCap(0, wA, Quaternion.identity, sz, EventType.Repaint);
             Handles.SphereHandleCap(0, wB, Quaternion.identity, sz, EventType.Repaint);
             Handles.DrawDottedLine(wA, wB, 4f);
+        }
+
+        // ── Phase A3: subassembly root rotation gizmo ───────────────────────
+
+        /// <summary>
+        /// When a subassembly root GO exists (Phase A2 created it), draws a
+        /// rotation handle on it. Rotating the handle updates the step's
+        /// workingOrientation.subassemblyRotation and marks dirty. The author
+        /// sees all member parts rotate in real-time via Unity parenting.
+        /// </summary>
+        private void DrawSubassemblyRootGizmo()
+        {
+            if (_subassemblyRootGO == null) return;
+
+            var rootT = _subassemblyRootGO.transform;
+            Vector3 worldPos = rootT.position;
+
+            // Visual indicator: wire sphere around the subassembly center
+            float gizmoSize = HandleUtility.GetHandleSize(worldPos);
+            Handles.color = new Color(0.20f, 0.62f, 0.95f, 0.35f); // blue accent
+            Handles.DrawWireDisc(worldPos, SceneView.lastActiveSceneView?.camera?.transform.forward ?? Vector3.forward,
+                gizmoSize * 0.5f);
+
+            // Label
+            var labelStyle = new GUIStyle(EditorStyles.boldLabel)
+            {
+                normal = { textColor = new Color(0.20f, 0.62f, 0.95f) },
+                fontSize = 10,
+                alignment = TextAnchor.MiddleCenter,
+            };
+            Handles.Label(worldPos + Vector3.up * gizmoSize * 0.55f,
+                $"Subassembly: {_subassemblyRootForSubId}", labelStyle);
+
+            // Rotation handle
+            EditorGUI.BeginChangeCheck();
+            Quaternion currentRot = rootT.rotation;
+            Handles.color = new Color(0.20f, 0.62f, 0.95f, 0.85f);
+            Quaternion newRot = Handles.RotationHandle(currentRot, worldPos);
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(_subassemblyRootGO.transform, "Rotate Subassembly");
+                rootT.rotation = newRot;
+
+                // Write back the new rotation to the step's workingOrientation
+                // so it persists on Write to JSON.
+                WriteBackSubassemblyRotation(newRot);
+
+                SceneView.RepaintAll();
+                Repaint();
+            }
+
+            // Position handle (for the offset)
+            EditorGUI.BeginChangeCheck();
+            Handles.color = new Color(0.20f, 0.62f, 0.95f, 0.65f);
+            Vector3 newWorldPos = Handles.PositionHandle(worldPos, currentRot);
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(_subassemblyRootGO.transform, "Move Subassembly");
+                rootT.position = newWorldPos;
+
+                WriteBackSubassemblyOffset(newWorldPos);
+
+                SceneView.RepaintAll();
+                Repaint();
+            }
+        }
+
+        /// <summary>
+        /// Converts the subassembly root's world rotation back to euler angles
+        /// and writes them to step.workingOrientation.subassemblyRotation.
+        /// </summary>
+        private void WriteBackSubassemblyRotation(Quaternion worldRot)
+        {
+            if (_stepFilterIdx <= 0 || _stepIds == null || _stepFilterIdx >= _stepIds.Length) return;
+            var step = FindStep(_stepIds[_stepFilterIdx]);
+            if (step == null) return;
+
+            // Convert world rotation to PreviewRoot-local, then to euler
+            var root = GetPreviewRoot();
+            Quaternion localRot = root != null
+                ? Quaternion.Inverse(root.rotation) * worldRot
+                : worldRot;
+            Vector3 euler = localRot.eulerAngles;
+
+            // Normalize angles to [-180, 180] for readability
+            if (euler.x > 180f) euler.x -= 360f;
+            if (euler.y > 180f) euler.y -= 360f;
+            if (euler.z > 180f) euler.z -= 360f;
+
+            // Round to 2 decimal places
+            euler.x = Mathf.Round(euler.x * 100f) / 100f;
+            euler.y = Mathf.Round(euler.y * 100f) / 100f;
+            euler.z = Mathf.Round(euler.z * 100f) / 100f;
+
+            step.workingOrientation ??= new StepWorkingOrientationPayload();
+            step.workingOrientation.subassemblyRotation = new SceneFloat3
+            {
+                x = euler.x, y = euler.y, z = euler.z
+            };
+            _dirtyStepIds.Add(step.id);
+        }
+
+        /// <summary>
+        /// Converts the subassembly root's world position back to the offset
+        /// field on step.workingOrientation.subassemblyPositionOffset.
+        /// </summary>
+        private void WriteBackSubassemblyOffset(Vector3 worldPos)
+        {
+            if (_stepFilterIdx <= 0 || _stepIds == null || _stepFilterIdx >= _stepIds.Length) return;
+            var step = FindStep(_stepIds[_stepFilterIdx]);
+            if (step == null) return;
+
+            var root = GetPreviewRoot();
+            Vector3 localPos = root != null ? root.InverseTransformPoint(worldPos) : worldPos;
+
+            // The offset is relative to the subassembly frame center
+            Vector3 offset = localPos - _sceneBuildSubassemblyFramePos;
+
+            offset.x = Mathf.Round(offset.x * 10000f) / 10000f;
+            offset.y = Mathf.Round(offset.y * 10000f) / 10000f;
+            offset.z = Mathf.Round(offset.z * 10000f) / 10000f;
+
+            step.workingOrientation ??= new StepWorkingOrientationPayload();
+            step.workingOrientation.subassemblyPositionOffset = new SceneFloat3
+            {
+                x = offset.x, y = offset.y, z = offset.z
+            };
+            _dirtyStepIds.Add(step.id);
         }
 
         private void HandleClickToSnap()
