@@ -47,7 +47,10 @@ namespace OSE.Content.Loading
         private static void BakeStagingPoses(MachinePackageDefinition package)
         {
             if (package.parts == null) return;
-            if (package.previewConfig?.partPlacements == null) return;
+            if (package.previewConfig == null)
+                package.previewConfig = new PackagePreviewConfig();
+            if (package.previewConfig.partPlacements == null)
+                package.previewConfig.partPlacements = System.Array.Empty<PartPreviewPlacement>();
 
             var placementById = new Dictionary<string, PartPreviewPlacement>(
                 package.previewConfig.partPlacements.Length, StringComparer.OrdinalIgnoreCase);
@@ -57,22 +60,52 @@ namespace OSE.Content.Loading
                     placementById[pp.partId] = pp;
             }
 
+            bool addedNew = false;
             foreach (PartDefinition part in package.parts)
             {
                 if (part?.stagingPose == null) continue;
                 if (string.IsNullOrWhiteSpace(part.id)) continue;
-                if (!placementById.TryGetValue(part.id, out PartPreviewPlacement placement)) continue;
+
+                // If no placement entry exists, create one so the part has a
+                // real position in the system (prevents fallback to 0,0,0).
+                if (!placementById.TryGetValue(part.id, out PartPreviewPlacement placement))
+                {
+                    placement = new PartPreviewPlacement { partId = part.id };
+                    placementById[part.id] = placement;
+                    addedNew = true;
+                }
 
                 placement.startPosition = part.stagingPose.position;
                 placement.startRotation = part.stagingPose.rotation;
 
+                // Default assembledPosition to startPosition if not set —
+                // part stays in place until explicitly moved by authoring.
+                if (placement.assembledPosition.x == 0f
+                    && placement.assembledPosition.y == 0f
+                    && placement.assembledPosition.z == 0f)
+                {
+                    placement.assembledPosition = part.stagingPose.position;
+                    placement.assembledRotation = part.stagingPose.rotation;
+                }
+
                 StagingPose sp = part.stagingPose;
                 if (sp.scale.x != 0f || sp.scale.y != 0f || sp.scale.z != 0f)
+                {
                     placement.startScale = sp.scale;
+                    if (placement.assembledScale.x == 0f
+                        && placement.assembledScale.y == 0f
+                        && placement.assembledScale.z == 0f)
+                        placement.assembledScale = sp.scale;
+                }
 
                 if (sp.color.a > 0f)
                     placement.color = sp.color;
             }
+
+            // Merge any newly created placements back into the array
+            if (addedNew)
+                package.previewConfig.partPlacements = new System.Collections.Generic.List<PartPreviewPlacement>(
+                    placementById.Values).ToArray();
         }
 
         // ── Part Templates ──

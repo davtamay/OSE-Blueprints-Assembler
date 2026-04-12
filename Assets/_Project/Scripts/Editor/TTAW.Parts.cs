@@ -64,6 +64,33 @@ namespace OSE.Editor
                                    ? new Color(sp.color.r, sp.color.g, sp.color.b, sp.color.a)
                                    : hasP ? new Color(pp.color.r, pp.color.g, pp.color.b, pp.color.a) : ColAuthored;
 
+                // When no placement AND no stagingPose, capture the live GO's
+                // current position from the spawner as fallback. This ensures
+                // parts that the spawner positioned via its grid fallback get
+                // real positions in the editor — they persist correctly when
+                // navigating to the next step (assembledPosition won't be 0,0,0).
+                if (!hasP && sp == null)
+                {
+                    var liveGO = FindLivePartGO(def.id);
+                    if (liveGO != null)
+                    {
+                        var root = GetPreviewRoot();
+                        if (root != null)
+                        {
+                            initPos = root.InverseTransformPoint(liveGO.transform.position);
+                            initRot = Quaternion.Inverse(root.rotation) * liveGO.transform.rotation;
+                            initScl = liveGO.transform.localScale;
+                        }
+                        else
+                        {
+                            initPos = liveGO.transform.localPosition;
+                            initRot = liveGO.transform.localRotation;
+                            initScl = liveGO.transform.localScale;
+                        }
+                        hasP = true; // treat as having a placement so the editor renders it
+                    }
+                }
+
                 var state = new PartEditState
                 {
                     def           = def,
@@ -72,12 +99,15 @@ namespace OSE.Editor
                     startPosition = initPos,
                     startRotation = initRot,
                     startScale    = initScl,
-                    assembledPosition  = hasP ? PackageJsonUtils.ToVector3(pp.assembledPosition)  : Vector3.zero,
-                    assembledRotation  = hasP ? PackageJsonUtils.ToUnityQuaternion(pp.assembledRotation) : Quaternion.identity,
-                    assembledScale     = hasP ? PackageJsonUtils.ToVector3(pp.assembledScale)     : Vector3.one,
+                    // For assembledPosition: use placement if available, otherwise
+                    // default to the same position as start (part stays where it is
+                    // until explicitly moved by a future step).
+                    assembledPosition  = pp != null ? PackageJsonUtils.ToVector3(pp.assembledPosition)  : initPos,
+                    assembledRotation  = pp != null ? PackageJsonUtils.ToUnityQuaternion(pp.assembledRotation) : initRot,
+                    assembledScale     = pp != null ? PackageJsonUtils.ToVector3(pp.assembledScale)     : initScl,
                     color         = initCol,
                     isDirty       = false,
-                    stepPoses     = hasP && pp.stepPoses != null ? DeepCopyStepPoses(pp.stepPoses) : null,
+                    stepPoses     = pp != null && pp.stepPoses != null ? DeepCopyStepPoses(pp.stepPoses) : null,
                 };
                 if (state.startScale.sqrMagnitude < 0.00001f) state.startScale = Vector3.one;
                 if (state.assembledScale.sqrMagnitude  < 0.00001f) state.assembledScale  = Vector3.one;
