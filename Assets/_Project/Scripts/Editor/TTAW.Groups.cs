@@ -112,6 +112,11 @@ namespace OSE.Editor
                 if (!_subassemblyRootGOs.TryGetValue(g.def.id, out var rootGO) || rootGO == null)
                     continue;
 
+                // Only move the root if the group has explicitly authored pose data.
+                // Unplaced groups stay at origin — their member parts are already
+                // positioned in PreviewRoot space by SyncAllPartMeshesToActivePose.
+                if (!g.hasPlacement && !g.isDirty) continue;
+
                 Vector3 pos;
                 Quaternion rot;
                 Vector3 scl;

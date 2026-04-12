@@ -1193,11 +1193,11 @@ namespace OSE.Editor
 
                         // Select the group's root GO in the Hierarchy so the
                         // author can see all children at a glance.
+                        // Ping the group root in Hierarchy but don't select it
+                        // (HideFlags.DontSave causes Inspector NullReferenceException).
                         if (_subassemblyRootGOs.TryGetValue(sub.id, out var rootGO) && rootGO != null)
-                        {
-                            Selection.activeGameObject = rootGO;
                             EditorGUIUtility.PingObject(rootGO);
-                        }
+                        Selection.activeGameObject = null;
 
                         // Highlight the group's member parts in the task sequence
                         // by multi-selecting their rows.

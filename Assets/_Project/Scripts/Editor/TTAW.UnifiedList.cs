@@ -953,11 +953,12 @@ namespace OSE.Editor
                         _selectedPartIdx = -1;
                         _selectedPartId  = null;
                         _canvasSelectedSubId = entry.id;
+                        // Don't select the group root GO — it has HideFlags.DontSave
+                        // which causes Unity's Inspector to throw NullReferenceException.
+                        // Just ping it so the Hierarchy scrolls to it.
                         if (_subassemblyRootGOs.TryGetValue(entry.id, out var rootGO) && rootGO != null)
-                        {
-                            Selection.activeGameObject = rootGO;
                             EditorGUIUtility.PingObject(rootGO);
-                        }
+                        Selection.activeGameObject = null;
                     }
                     else if (_parts != null && _parts.Length > 0)
                     {
