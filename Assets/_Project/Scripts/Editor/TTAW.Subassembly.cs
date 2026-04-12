@@ -753,6 +753,34 @@ namespace OSE.Editor
             Repaint();
         }
 
+        /// <summary>
+        /// Multi-selects task sequence rows whose part IDs are members of the
+        /// given group. This visually highlights which tasks belong to the group
+        /// the author just clicked.
+        /// </summary>
+        private void SelectGroupMembersInTaskSequence(SubassemblyDefinition sub, StepDefinition step)
+        {
+            _multiSelectedTaskSeqIdxs.Clear();
+            if (sub?.partIds == null || step == null) return;
+
+            var memberSet = new HashSet<string>(sub.partIds, StringComparer.Ordinal);
+            // Also include stepIds as task matches (for non-part tasks)
+            var stepSet = sub.stepIds != null
+                ? new HashSet<string>(sub.stepIds, StringComparer.Ordinal)
+                : new HashSet<string>(StringComparer.Ordinal);
+
+            var order = GetOrDeriveTaskOrder(step);
+            for (int i = 0; i < order.Count; i++)
+            {
+                var entry = order[i];
+                if (entry.kind == "part" && memberSet.Contains(entry.id))
+                    _multiSelectedTaskSeqIdxs.Add(i);
+                // Also highlight tool actions / confirms whose step is in the group
+                else if (stepSet.Contains(step.id))
+                    _multiSelectedTaskSeqIdxs.Add(i);
+            }
+        }
+
         // ── Smart drop zone (one strip: add-to-group OR create-new-group) ────
 
         /// <summary>
@@ -1051,18 +1079,34 @@ namespace OSE.Editor
                     && rowRect.Contains(Event.current.mousePosition))
                 {
                     _canvasSelectedSubId = isSelected ? null : sub.id;
-                    // Deselect any task-sequence selection so the inspector
-                    // switches to the subassembly view.
                     if (!isSelected)
                     {
+                        // Clear task-sequence selection so the inspector
+                        // switches to the subassembly view.
                         _selectedTaskSeqIdx = -1;
                         _multiSelectedTaskSeqIdxs.Clear();
                         _selectedPartIdx = -1;
                         _selectedIdx     = -1;
                         _multiSelectedParts.Clear();
                         _multiSelected.Clear();
+
+                        // Select the group's root GO in the Hierarchy so the
+                        // author can see all children at a glance.
+                        if (_subassemblyRootGOs.TryGetValue(sub.id, out var rootGO) && rootGO != null)
+                            Selection.activeGameObject = rootGO;
+
+                        // Highlight the group's member parts in the task sequence
+                        // by multi-selecting their rows.
+                        SelectGroupMembersInTaskSequence(sub, step);
+                    }
+                    else
+                    {
+                        // Deselecting — clear highlights
+                        _multiSelectedTaskSeqIdxs.Clear();
+                        Selection.activeGameObject = null;
                     }
                     Event.current.Use();
+                    SceneView.RepaintAll();
                     Repaint();
                 }
             }

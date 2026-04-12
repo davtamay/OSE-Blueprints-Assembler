@@ -600,15 +600,13 @@ namespace OSE.Editor
             // Track which roots we need this frame
             var neededIds = new HashSet<string>(StringComparer.Ordinal);
 
-            // Pass 1: create root GOs for every group that has visible parts.
-            // Aggregates get roots too (they become parents of child group roots).
+            // Pass 1: create root GOs for groups that have ANY visible member
+            // parts in this step — matching what the runtime spawner shows.
+            // This keeps 1:1 consistency between editor and play mode.
             foreach (var sub in allSubs)
             {
                 if (sub == null) continue;
 
-                // For non-aggregates: check if any direct part is visible
-                // For aggregates: check if any child group is visible (we'll know after this pass)
-                // So create roots optimistically for all groups that have partIds with visible members.
                 bool hasVisibleMember = false;
                 if (sub.partIds != null)
                 {
@@ -618,7 +616,6 @@ namespace OSE.Editor
                         { hasVisibleMember = true; break; }
                     }
                 }
-                // Aggregates with memberSubassemblyIds: check if any child sub has visible parts
                 if (!hasVisibleMember && sub.isAggregate && sub.memberSubassemblyIds != null)
                 {
                     foreach (var childId in sub.memberSubassemblyIds)

@@ -57,6 +57,10 @@ namespace OSE.Editor
             // ── Phase A3: subassembly root rotation gizmo ─────────────────────
             DrawSubassemblyRootGizmo();
 
+            // Detect if the author rearranged parts between group roots in the
+            // Hierarchy and update partIds[] accordingly.
+            PollHierarchyGroupChanges();
+
             // confirm_action = terminal button-press — no targets, skip all target gizmos.
             if (isConfirmAction) return;
 
@@ -542,6 +546,91 @@ namespace OSE.Editor
                 x = offset.x, y = offset.y, z = offset.z
             };
             _dirtyStepIds.Add(step.id);
+        }
+
+        // ── Hierarchy → authoring sync ─────────────────────────────────────
+
+        /// <summary>
+        /// Detects when the author drags a part from one group root to another
+        /// in the Unity Hierarchy and updates the subassembly partIds[]
+        /// accordingly. Called every OnSceneGUI frame (cheap — just checks
+        /// parent references against the root GO dictionary).
+        /// </summary>
+        private void PollHierarchyGroupChanges()
+        {
+            if (_subassemblyRootGOs == null || _subassemblyRootGOs.Count == 0 || _pkg == null)
+                return;
+
+            if (!ServiceRegistry.TryGet<ISpawnerQueryService>(out var spawner)
+                || spawner?.SpawnedParts == null)
+                return;
+
+            // Build reverse lookup: root GO instance ID → subassembly id
+            var rootToSubId = new Dictionary<int, string>();
+            foreach (var kvp in _subassemblyRootGOs)
+            {
+                if (kvp.Value != null)
+                    rootToSubId[kvp.Value.GetInstanceID()] = kvp.Key;
+            }
+
+            foreach (var partGO in spawner.SpawnedParts)
+            {
+                if (partGO == null) continue;
+                string partId = partGO.name;
+                if (string.IsNullOrEmpty(partId)) continue;
+
+                // What group root is this part currently parented under?
+                Transform parent = partGO.transform.parent;
+                string currentParentSubId = null;
+                if (parent != null && rootToSubId.TryGetValue(parent.gameObject.GetInstanceID(), out var sid))
+                    currentParentSubId = sid;
+
+                // What group does the data model say this part belongs to?
+                string authoredSubId = null;
+                foreach (var sub in _pkg.GetSubassemblies())
+                {
+                    if (sub == null || sub.isAggregate || sub.partIds == null) continue;
+                    foreach (var pid in sub.partIds)
+                    {
+                        if (string.Equals(pid, partId, StringComparison.Ordinal))
+                        { authoredSubId = sub.id; break; }
+                    }
+                    if (authoredSubId != null) break;
+                }
+
+                // If they differ, the author rearranged in the Hierarchy
+                if (string.Equals(currentParentSubId, authoredSubId, StringComparison.Ordinal))
+                    continue;
+
+                // Remove from old group
+                if (!string.IsNullOrEmpty(authoredSubId)
+                    && _pkg.TryGetSubassembly(authoredSubId, out var oldSub)
+                    && oldSub?.partIds != null)
+                {
+                    var list = new List<string>(oldSub.partIds);
+                    if (list.Remove(partId))
+                    {
+                        oldSub.partIds = list.Count > 0 ? list.ToArray() : Array.Empty<string>();
+                        _dirtySubassemblyIds.Add(oldSub.id);
+                    }
+                }
+
+                // Add to new group
+                if (!string.IsNullOrEmpty(currentParentSubId)
+                    && _pkg.TryGetSubassembly(currentParentSubId, out var newSub)
+                    && newSub != null)
+                {
+                    var set = new HashSet<string>(newSub.partIds ?? Array.Empty<string>(), StringComparer.Ordinal);
+                    if (set.Add(partId))
+                    {
+                        newSub.partIds = set.ToArray();
+                        _dirtySubassemblyIds.Add(newSub.id);
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(currentParentSubId) || !string.IsNullOrEmpty(authoredSubId))
+                    Repaint();
+            }
         }
 
         private void HandleClickToSnap()
