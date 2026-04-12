@@ -414,17 +414,7 @@
       "family": "Use",
       "instructionText": "Use a box cutter or cordless power drill to clear excess plastic from all semi-circle rod holes in each carriage half-piece. Work through all 8 halves before moving on. Holes must be smooth so bearings seat fully and rods insert freely.",
       "removePersistentToolIds": [],
-      "requiredPartIds": [
-        "y_left_carriage_half_a",
-        "y_left_carriage_half_b",
-        "y_right_carriage_half_a",
-        "y_right_carriage_half_b",
-        "z_back_carriage_half_a",
-        "z_back_carriage_half_b",
-        "z_front_carriage_half_a",
-        "z_front_carriage_half_b"
-      ],
-      "visualPartIds": [],
+      "requiredPartIds": [],
       "taskOrder": [
         {
           "kind": "confirm_action",
@@ -452,17 +442,7 @@
       "sequenceIndex": 52,
       "family": "Confirm",
       "instructionText": "Check every carriage half: each half should have 4 clean semi-circle rod holes, and the M6 bolt holes must be clear of excess plastic. Run a bolt through each hole by hand to confirm clearance before starting the bearing assembly.",
-      "requiredPartIds": [
-        "y_left_carriage_half_a",
-        "y_left_carriage_half_b",
-        "y_right_carriage_half_a",
-        "y_right_carriage_half_b",
-        "z_back_carriage_half_a",
-        "z_back_carriage_half_b",
-        "z_front_carriage_half_a",
-        "z_front_carriage_half_b"
-      ],
-      "visualPartIds": []
+      "requiredPartIds": []
     },
     {
       "id": "step_batch_c1_place_bearings",
