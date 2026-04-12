@@ -342,7 +342,7 @@ namespace OSE.Editor
                     foreach (var pid in src) if (seen.Add(pid)) _toolMatrixScratchParts.Add(pid);
                 }
                 AddRange(_visScratchOwnedHere);
-                AddRange(_visScratchVisualOnlyHere);
+                AddRange(_visScratchOptionalHere);
                 AddRange(_visScratchOwnedSubHere);
                 AddRange(_visScratchInheritedEarlier);
             }
