@@ -64,6 +64,9 @@ namespace OSE.Editor
                     menu.AddItem(new GUIContent("Part"),           false, () => { _addTaskPicker = AddTaskPicker.Part;       _addPickerPartIdx = 0; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
                     menu.AddItem(new GUIContent("Tool Target"),    false, () => { _addTaskPicker = AddTaskPicker.ToolTarget; _addPickerTargetIdx = 0; _addPickerToolIdx = 0; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
                     menu.AddItem(new GUIContent("Wire Connection"),false, () => { _addTaskPicker = AddTaskPicker.Wire;       _addPickerTargetIdx = 0; _addPickerWireColor = new Color(0.15f, 0.15f, 0.15f, 1f); _addPickerWireRadius = 0.003f; _addPickerPolarityA = ""; _addPickerPolarityB = ""; _addPickerConnectorA = ""; _addPickerConnectorB = ""; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
+                    menu.AddSeparator("");
+                    menu.AddItem(new GUIContent("Confirm (button press)"), false, () => { CommitAddConfirmAction(step); _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
+                    menu.AddItem(new GUIContent("Observe (target position)"), false, () => { _addTaskPicker = AddTaskPicker.ToolTarget; _addPickerTargetIdx = 0; _addPickerToolIdx = 0; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
                     menu.ShowAsContext();
                 });
 
@@ -1276,6 +1279,22 @@ namespace OSE.Editor
             if (GUILayout.Button("Cancel", GUILayout.Width(60))) _addTaskPicker = AddTaskPicker.None;
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.EndVertical();
+        }
+
+        private void CommitAddConfirmAction(StepDefinition step)
+        {
+            if (step == null) return;
+            var order = GetOrDeriveTaskOrder(step);
+            // Only add one confirm_action per step
+            foreach (var e in order)
+                if (e.kind == "confirm_action") return;
+            order.Add(new TaskOrderEntry { kind = "confirm_action", id = "confirm" });
+            step.taskOrder = order.ToArray();
+            InvalidateTaskOrderCache();
+            _dirtyStepIds.Add(step.id);
+            _dirtyTaskOrderStepIds.Add(step.id);
+            _taskSeqReorderListForStepId = null; // force rebuild
+            Repaint();
         }
 
         // ── Required/Optional toggle for part tasks ──────────────────────────
