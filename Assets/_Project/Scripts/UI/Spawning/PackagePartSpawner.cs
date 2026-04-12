@@ -249,6 +249,17 @@ namespace OSE.UI.Root
                             partStepSeq[pid] = step.sequenceIndex;
                     }
                 }
+                // optionalPartIds — same visibility as requiredPartIds but
+                // the runtime doesn't gate step completion on them.
+                if (step.optionalPartIds != null)
+                {
+                    foreach (string pid in step.optionalPartIds)
+                    {
+                        if (string.IsNullOrEmpty(pid)) continue;
+                        if (!partStepSeq.ContainsKey(pid) || step.sequenceIndex < partStepSeq[pid])
+                            partStepSeq[pid] = step.sequenceIndex;
+                    }
+                }
                 if (!string.IsNullOrEmpty(step.requiredSubassemblyId) &&
                     pkg.TryGetSubassembly(step.requiredSubassemblyId, out var subDef) &&
                     subDef?.partIds != null)

@@ -298,7 +298,7 @@ namespace OSE.Editor
                     InjectField(stepId, "requiredPartIds", pJson);
                 }
 
-                // visualPartIds — show-without-require (Phase 7)
+                // visualPartIds — show-without-require (Phase 7, legacy)
                 if (step.visualPartIds != null && step.visualPartIds.Length > 0)
                 {
                     string vJson = "[ " + string.Join(", ", Array.ConvertAll(step.visualPartIds, id => $"\"{id}\"")) + " ]";
@@ -307,6 +307,17 @@ namespace OSE.Editor
                 else
                 {
                     RemoveField(stepId, "visualPartIds");
+                }
+
+                // optionalPartIds — visible but not required for completion
+                if (step.optionalPartIds != null && step.optionalPartIds.Length > 0)
+                {
+                    string oJson = "[ " + string.Join(", ", Array.ConvertAll(step.optionalPartIds, id => $"\"{id}\"")) + " ]";
+                    InjectField(stepId, "optionalPartIds", oJson);
+                }
+                else
+                {
+                    RemoveField(stepId, "optionalPartIds");
                 }
 
                 // requiredToolActions

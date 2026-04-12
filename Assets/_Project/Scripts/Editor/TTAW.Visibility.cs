@@ -36,18 +36,18 @@ namespace OSE.Editor
         // ── State ─────────────────────────────────────────────────────────────
 
         private int  _visibilityAddPartIdx;
-        private bool _visibilityAddAsVisualOnly; // Phase 7 — toggle on the add picker
+        private bool _visibilityAddAsOptional; // Phase 7 — toggle on the add picker
         private bool _visibilityBucketsExpanded; // collapsed by default — just count pills
 
         private readonly List<string> _visScratchOwnedHere       = new();
-        private readonly List<string> _visScratchVisualOnlyHere  = new();
+        private readonly List<string> _visScratchOptionalHere  = new();
         private readonly List<string> _visScratchOwnedSubHere    = new();
         private readonly List<string> _visScratchInheritedEarlier = new();
 
         // Bucket accent colours — communicate the *source* of visibility
         // through hue so the author doesn't have to read labels.
         private static readonly Color VisColorOwned    = new(0.30f, 0.78f, 0.36f); // green
-        private static readonly Color VisColorVisOnly  = new(0.95f, 0.70f, 0.20f); // amber
+        private static readonly Color VisColorOptional  = new(0.95f, 0.70f, 0.20f); // amber
         private static readonly Color VisColorSub      = new(0.20f, 0.62f, 0.95f); // blue
         private static readonly Color VisColorEarlier  = new(0.62f, 0.62f, 0.66f); // grey
 
@@ -76,7 +76,7 @@ namespace OSE.Editor
                 _visibilityBucketsExpanded = !_visibilityBucketsExpanded;
             GUILayout.FlexibleSpace();
             DrawCountPill(VisColorOwned,   _visScratchOwnedHere.Count,        "here");
-            DrawCountPill(VisColorVisOnly, _visScratchVisualOnlyHere.Count,   "view");
+            DrawCountPill(VisColorOptional, _visScratchOptionalHere.Count,   "optional");
             DrawCountPill(VisColorSub,     _visScratchOwnedSubHere.Count,     "group");
             DrawCountPill(VisColorEarlier, _visScratchInheritedEarlier.Count, "earlier");
             EditorGUILayout.EndHorizontal();
@@ -90,7 +90,7 @@ namespace OSE.Editor
                 fontStyle = FontStyle.Italic,
             };
             EditorGUILayout.LabelField(
-                "  green = required here    amber = view only    blue = from group    grey = built earlier",
+                "  green = required here    amber = optional    blue = from group    grey = built earlier",
                 legendStyle);
 
             // ── Four visual buckets ───────────────────────────────────────────
@@ -105,15 +105,15 @@ namespace OSE.Editor
                     removeKind: VisibilityRemoveKind.Required);
             }
 
-            if (_visScratchVisualOnlyHere.Count > 0)
+            if (_visScratchOptionalHere.Count > 0)
             {
                 DrawVisibilityBucket(
-                    "VISIBLE ONLY  (not required)",
-                    VisColorVisOnly,
-                    _visScratchVisualOnlyHere,
+                    "OPTIONAL",
+                    VisColorOptional,
+                    _visScratchOptionalHere,
                     allowRemove: true,
                     step: step,
-                    removeKind: VisibilityRemoveKind.VisualOnly);
+                    removeKind: VisibilityRemoveKind.Optional);
             }
 
             if (_visScratchOwnedSubHere.Count > 0)
@@ -249,7 +249,7 @@ namespace OSE.Editor
                 if (removeKind == VisibilityRemoveKind.Required)
                     RemoveRequiredPartFromStep(step, items[removeIdx]);
                 else
-                    RemoveVisualOnlyPartFromStep(step, items[removeIdx]);
+                    RemoveOptionalPartFromStep(step, items[removeIdx]);
             }
         }
 
@@ -261,7 +261,7 @@ namespace OSE.Editor
             out HashSet<string> ownedSubPartIds)
         {
             _visScratchOwnedHere.Clear();
-            _visScratchVisualOnlyHere.Clear();
+            _visScratchOptionalHere.Clear();
             _visScratchOwnedSubHere.Clear();
             _visScratchInheritedEarlier.Clear();
             ownedSubPartIds = new HashSet<string>(StringComparer.Ordinal);
@@ -293,9 +293,9 @@ namespace OSE.Editor
 
             // Visual-only parts authored on this step (Phase 7).
             var visualOnlyHere = new HashSet<string>(StringComparer.Ordinal);
-            if (step.visualPartIds != null)
+            if (step.optionalPartIds != null)
             {
-                foreach (var pid in step.visualPartIds)
+                foreach (var pid in step.optionalPartIds)
                 {
                     if (string.IsNullOrEmpty(pid)) continue;
                     if (ownedSubPartIds.Contains(pid)) continue;
@@ -326,7 +326,7 @@ namespace OSE.Editor
                     if (ownedSubPartIds.Contains(part.id))
                         _visScratchOwnedSubHere.Add(part.id);
                     else if (visualOnlyHere.Contains(part.id))
-                        _visScratchVisualOnlyHere.Add(part.id);
+                        _visScratchOptionalHere.Add(part.id);
                     else if (ownedHere.Contains(part.id))
                         _visScratchOwnedHere.Add(part.id);
                     else
@@ -343,7 +343,7 @@ namespace OSE.Editor
             }
 
             _visScratchOwnedHere.Sort(StringComparer.Ordinal);
-            _visScratchVisualOnlyHere.Sort(StringComparer.Ordinal);
+            _visScratchOptionalHere.Sort(StringComparer.Ordinal);
             _visScratchOwnedSubHere.Sort(StringComparer.Ordinal);
             _visScratchInheritedEarlier.Sort(StringComparer.Ordinal);
         }
@@ -357,7 +357,7 @@ namespace OSE.Editor
             var candidates = new List<string>();
             var alreadyVisible = new HashSet<string>(StringComparer.Ordinal);
             alreadyVisible.UnionWith(_visScratchOwnedHere);
-            alreadyVisible.UnionWith(_visScratchVisualOnlyHere);
+            alreadyVisible.UnionWith(_visScratchOptionalHere);
             alreadyVisible.UnionWith(_visScratchOwnedSubHere);
             alreadyVisible.UnionWith(_visScratchInheritedEarlier);
 
@@ -389,43 +389,43 @@ namespace OSE.Editor
             var modeRequiredStyle = new GUIStyle(EditorStyles.miniButtonLeft)
             {
                 fontStyle = FontStyle.Bold,
-                normal = { textColor = !_visibilityAddAsVisualOnly ? VisColorOwned   : new Color(0.55f, 0.55f, 0.58f) },
+                normal = { textColor = !_visibilityAddAsOptional ? VisColorOwned   : new Color(0.55f, 0.55f, 0.58f) },
             };
             var modeVisualStyle = new GUIStyle(EditorStyles.miniButtonRight)
             {
                 fontStyle = FontStyle.Bold,
-                normal = { textColor = _visibilityAddAsVisualOnly ? VisColorVisOnly : new Color(0.55f, 0.55f, 0.58f) },
+                normal = { textColor = _visibilityAddAsOptional ? VisColorOptional : new Color(0.55f, 0.55f, 0.58f) },
             };
-            if (GUILayout.Toggle(!_visibilityAddAsVisualOnly,
+            if (GUILayout.Toggle(!_visibilityAddAsOptional,
                     new GUIContent("REQUIRED",
                         "Add the part as a required step part — the user must interact with it to advance the step."),
                     modeRequiredStyle, GUILayout.Width(80), GUILayout.Height(18)))
-                _visibilityAddAsVisualOnly = false;
-            if (GUILayout.Toggle(_visibilityAddAsVisualOnly,
-                    new GUIContent("VIEW ONLY",
-                        "Add the part as visible context only — the spawner renders it but it is not required for task completion."),
+                _visibilityAddAsOptional = false;
+            if (GUILayout.Toggle(_visibilityAddAsOptional,
+                    new GUIContent("OPTIONAL",
+                        "Add the part as optional — the spawner renders it but it is not required for task completion."),
                     modeVisualStyle, GUILayout.Width(80), GUILayout.Height(18)))
-                _visibilityAddAsVisualOnly = true;
+                _visibilityAddAsOptional = true;
             GUILayout.Space(4);
 
             _visibilityAddPartIdx = Mathf.Clamp(_visibilityAddPartIdx, 0, candidates.Count - 1);
             _visibilityAddPartIdx = EditorGUILayout.Popup(_visibilityAddPartIdx, candidates.ToArray(),
                 GUILayout.Height(18));
 
-            var accent = _visibilityAddAsVisualOnly ? VisColorVisOnly : VisColorOwned;
+            var accent = _visibilityAddAsOptional ? VisColorOptional : VisColorOwned;
             var addStyle = new GUIStyle(EditorStyles.miniButton)
             {
                 fontStyle = FontStyle.Bold,
                 normal = { textColor = accent },
             };
             if (GUILayout.Button(new GUIContent("+ ADD",
-                    _visibilityAddAsVisualOnly
-                        ? "Adds the selected part to this step's visualPartIds — visible in the scene but not required for task completion."
+                    _visibilityAddAsOptional
+                        ? "Adds the selected part to this step's optionalPartIds — visible in the scene but not required for task completion."
                         : "Adds the selected part to this step's requiredPartIds — visible in the scene AND required for task completion."),
                 addStyle, GUILayout.Width(54), GUILayout.Height(18)))
             {
-                if (_visibilityAddAsVisualOnly)
-                    AddVisualOnlyPartToStep(step, candidates[_visibilityAddPartIdx]);
+                if (_visibilityAddAsOptional)
+                    AddOptionalPartToStep(step, candidates[_visibilityAddPartIdx]);
                 else
                     AddRequiredPartToStep(step, candidates[_visibilityAddPartIdx]);
                 _visibilityAddPartIdx = 0;
@@ -470,15 +470,15 @@ namespace OSE.Editor
 
         // ── Visual-only mutators (Phase 7) ────────────────────────────────────
 
-        private void AddVisualOnlyPartToStep(StepDefinition step, string partId)
+        private void AddOptionalPartToStep(StepDefinition step, string partId)
         {
             if (step == null || string.IsNullOrEmpty(partId)) return;
-            var list = step.visualPartIds != null
-                ? new List<string>(step.visualPartIds)
+            var list = step.optionalPartIds != null
+                ? new List<string>(step.optionalPartIds)
                 : new List<string>();
             if (list.Contains(partId)) return;
             list.Add(partId);
-            step.visualPartIds = list.ToArray();
+            step.optionalPartIds = list.ToArray();
             _dirtyStepIds.Add(step.id);
             // No task-order cache invalidation needed — visual-only parts do
             // not affect the task sequence. We still rebuild the part list and
@@ -489,12 +489,12 @@ namespace OSE.Editor
             Repaint();
         }
 
-        private void RemoveVisualOnlyPartFromStep(StepDefinition step, string partId)
+        private void RemoveOptionalPartFromStep(StepDefinition step, string partId)
         {
             if (step?.visualPartIds == null || string.IsNullOrEmpty(partId)) return;
-            var list = new List<string>(step.visualPartIds);
+            var list = new List<string>(step.optionalPartIds);
             if (!list.Remove(partId)) return;
-            step.visualPartIds = list.Count > 0 ? list.ToArray() : Array.Empty<string>();
+            step.optionalPartIds = list.Count > 0 ? list.ToArray() : Array.Empty<string>();
             _dirtyStepIds.Add(step.id);
             BuildPartList();
             RespawnScene();
