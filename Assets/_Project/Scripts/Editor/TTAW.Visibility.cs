@@ -93,16 +93,15 @@ namespace OSE.Editor
                 "  green = required here    amber = optional    blue = from group    grey = built earlier",
                 legendStyle);
 
-            // ── Four visual buckets ───────────────────────────────────────────
+            // ── Four visual buckets (read-only — editing happens on task rows) ─
             if (_visScratchOwnedHere.Count > 0)
             {
                 DrawVisibilityBucket(
                     "REQUIRED IN THIS STEP",
                     VisColorOwned,
                     _visScratchOwnedHere,
-                    allowRemove: true,
-                    step: step,
-                    removeKind: VisibilityRemoveKind.Required);
+                    allowRemove: false,
+                    step: null);
             }
 
             if (_visScratchOptionalHere.Count > 0)
@@ -111,9 +110,8 @@ namespace OSE.Editor
                     "OPTIONAL",
                     VisColorOptional,
                     _visScratchOptionalHere,
-                    allowRemove: true,
-                    step: step,
-                    removeKind: VisibilityRemoveKind.Optional);
+                    allowRemove: false,
+                    step: null);
             }
 
             if (_visScratchOwnedSubHere.Count > 0)
@@ -137,8 +135,8 @@ namespace OSE.Editor
                     maxRows: 12);
             }
 
-            // ── Add picker ────────────────────────────────────────────────────
-            DrawAddPartToVisibility(step, ownedSubPartIds);
+            // Add picker removed — parts are added via the task sequence [+]
+            // button. Required/Optional is toggled on each task row directly.
         }
 
         private enum VisibilityRemoveKind { Required, VisualOnly }

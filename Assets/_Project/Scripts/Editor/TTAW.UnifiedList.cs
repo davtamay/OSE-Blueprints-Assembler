@@ -432,6 +432,33 @@ namespace OSE.Editor
                     var badgeRect = new Rect(rect.x + 24f, rect.y + 1f, 52f, rect.height - 2f);
                     EditorGUI.LabelField(badgeRect, badge, badgeStyle);
 
+                    // Required/Optional indicator (part tasks only) — click to toggle
+                    float reqOptW = 0f;
+                    if (entry.kind == "part")
+                    {
+                        bool isOptional = step.optionalPartIds != null
+                            && System.Array.IndexOf(step.optionalPartIds, entry.id) >= 0;
+                        string roLabel = isOptional ? "O" : "R";
+                        Color roColor  = isOptional
+                            ? new Color(0.95f, 0.70f, 0.20f)  // amber
+                            : new Color(0.30f, 0.78f, 0.36f); // green
+                        var roStyle = new GUIStyle(EditorStyles.miniButton)
+                        {
+                            fontSize  = 8,
+                            fontStyle = FontStyle.Bold,
+                            alignment = TextAnchor.MiddleCenter,
+                            normal    = { textColor = roColor },
+                        };
+                        reqOptW = 18f;
+                        var roRect = new Rect(rect.x + 78f, rect.y + 2f, 16f, rect.height - 4f);
+                        if (GUI.Button(roRect, new GUIContent(roLabel,
+                            isOptional ? "Optional — click to make Required" : "Required — click to make Optional"),
+                            roStyle))
+                        {
+                            TogglePartRequiredOptional(step, entry.id, isOptional);
+                        }
+                    }
+
                     // ID label + group tag + per-task dirty dot
                     bool entryDirty = IsTaskEntryDirty(entry, step);
 
@@ -447,8 +474,9 @@ namespace OSE.Editor
                     }
 
                     float dirtyW = entryDirty ? 14f : 0f;
-                    float idW    = rect.width - 110f - tagW - dirtyW;
-                    var idRect   = new Rect(rect.x + 80f, rect.y + 1f, idW, rect.height);
+                    float idX    = rect.x + 80f + reqOptW;
+                    float idW    = rect.width - 110f - tagW - dirtyW - reqOptW;
+                    var idRect   = new Rect(idX, rect.y + 1f, idW, rect.height);
                     EditorGUI.LabelField(idRect, entry.id ?? "—", EditorStyles.miniLabel);
 
                     // Group tag badge
@@ -1248,6 +1276,43 @@ namespace OSE.Editor
             if (GUILayout.Button("Cancel", GUILayout.Width(60))) _addTaskPicker = AddTaskPicker.None;
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.EndVertical();
+        }
+
+        // ── Required/Optional toggle for part tasks ──────────────────────────
+
+        /// <summary>
+        /// Toggles a part between requiredPartIds and optionalPartIds.
+        /// If currently optional → move to required. If required → move to optional.
+        /// </summary>
+        private void TogglePartRequiredOptional(StepDefinition step, string partId, bool isCurrentlyOptional)
+        {
+            if (step == null || string.IsNullOrEmpty(partId)) return;
+
+            if (isCurrentlyOptional)
+            {
+                // Move from optional → required
+                var optList = new List<string>(step.optionalPartIds ?? Array.Empty<string>());
+                optList.Remove(partId);
+                step.optionalPartIds = optList.Count > 0 ? optList.ToArray() : Array.Empty<string>();
+
+                var reqList = new List<string>(step.requiredPartIds ?? Array.Empty<string>());
+                if (!reqList.Contains(partId)) reqList.Add(partId);
+                step.requiredPartIds = reqList.ToArray();
+            }
+            else
+            {
+                // Move from required → optional
+                var reqList = new List<string>(step.requiredPartIds ?? Array.Empty<string>());
+                reqList.Remove(partId);
+                step.requiredPartIds = reqList.Count > 0 ? reqList.ToArray() : Array.Empty<string>();
+
+                var optList = new List<string>(step.optionalPartIds ?? Array.Empty<string>());
+                if (!optList.Contains(partId)) optList.Add(partId);
+                step.optionalPartIds = optList.ToArray();
+            }
+
+            _dirtyStepIds.Add(step.id);
+            Repaint();
         }
 
         // ── Commit helpers (modify in-memory step data + mark dirty) ──────────
