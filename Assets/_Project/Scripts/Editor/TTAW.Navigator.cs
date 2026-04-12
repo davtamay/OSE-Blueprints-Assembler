@@ -127,6 +127,21 @@ namespace OSE.Editor
             });
             modeRow.Add(_navigatorFlatModeBtn);
 
+            // Collapse / Expand buttons
+            var colExpBtn = new ToolbarButton(() =>
+            {
+                if (_navigatorTreeView != null) _navigatorTreeView.CollapseAll();
+            }) { text = "−", tooltip = "Collapse all assemblies" };
+            colExpBtn.style.width = 24;
+            modeRow.Add(colExpBtn);
+
+            var expAllBtn = new ToolbarButton(() =>
+            {
+                if (_navigatorTreeView != null) _navigatorTreeView.ExpandAll();
+            }) { text = "+", tooltip = "Expand all assemblies" };
+            expAllBtn.style.width = 24;
+            modeRow.Add(expAllBtn);
+
             _navigatorRoot.Add(modeRow);
 
             // ── Family filter chips row ───────────────────────────────────────
@@ -168,6 +183,16 @@ namespace OSE.Editor
             _navigatorTreeView.bindItem        = BindNavigatorTreeRow;
             _navigatorTreeView.selectionType   = SelectionType.Single;
             _navigatorTreeView.selectionChanged += OnNavigatorTreeSelectionChanged;
+
+            // Keyboard: Enter/Return on the focused tree item jumps to the step.
+            // Arrow keys already work natively for expand/collapse/up/down.
+            _navigatorTreeView.RegisterCallback<KeyDownEvent>(OnNavigatorKeyDown);
+
+            // Right-click context menu (Jump to step, Copy step ID, Delete step)
+            _navigatorTreeView.AddManipulator(new ContextualMenuManipulator(evt =>
+            {
+                BuildNavigatorContextMenu(evt, isTree: true);
+            }));
             _navigatorRoot.Add(_navigatorTreeView);
 
             // ── Flat list view ────────────────────────────────────────────────
@@ -179,6 +204,12 @@ namespace OSE.Editor
             _navigatorListView.selectionType   = SelectionType.Single;
             _navigatorListView.itemsSource     = _navigatorFlatItems;
             _navigatorListView.selectionChanged += OnNavigatorListSelectionChanged;
+
+            _navigatorListView.RegisterCallback<KeyDownEvent>(OnNavigatorKeyDown);
+            _navigatorListView.AddManipulator(new ContextualMenuManipulator(evt =>
+            {
+                BuildNavigatorContextMenu(evt, isTree: false);
+            }));
             _navigatorRoot.Add(_navigatorListView);
 
             // ── Validation dashboard (collapsible strip below the tree) ───────
@@ -594,6 +625,101 @@ namespace OSE.Editor
                 ApplyStepFilter(idx);
                 Repaint();
             }
+        }
+
+        // ── Keyboard nav ──────────────────────────────────────────────────────
+
+        private void OnNavigatorKeyDown(KeyDownEvent evt)
+        {
+            if (evt.keyCode != KeyCode.Return && evt.keyCode != KeyCode.KeypadEnter)
+                return;
+
+            // Get the currently selected item from whichever view is active
+            NavigatorItem item = null;
+            if (_navigatorViewMode == 0 && _navigatorTreeView?.selectedIndex >= 0)
+                item = _navigatorTreeView.GetItemDataForIndex<NavigatorItem>(_navigatorTreeView.selectedIndex);
+            else if (_navigatorViewMode == 1 && _navigatorListView?.selectedIndex >= 0)
+            {
+                int si = _navigatorListView.selectedIndex;
+                if (si >= 0 && si < _navigatorFlatItems.Count)
+                    item = _navigatorFlatItems[si];
+            }
+
+            if (item != null)
+            {
+                JumpToNavigatorItem(item);
+                evt.StopPropagation();
+            }
+        }
+
+        // ── Right-click context menu ──────────────────────────────────────────
+
+        private void BuildNavigatorContextMenu(ContextualMenuPopulateEvent evt, bool isTree)
+        {
+            NavigatorItem item = GetNavigatorItemUnderMouse(isTree);
+            if (item == null) return;
+
+            if (!item.IsAssembly && !item.IsAllSteps && !string.IsNullOrEmpty(item.Id))
+            {
+                string capturedId = item.Id;
+
+                evt.menu.AppendAction("Jump to step", _ =>
+                {
+                    int idx = Array.IndexOf(_stepIds, capturedId);
+                    if (idx > 0 && idx != _stepFilterIdx) { ApplyStepFilter(idx); Repaint(); }
+                });
+
+                evt.menu.AppendAction("Copy step ID", _ =>
+                {
+                    EditorGUIUtility.systemCopyBuffer = capturedId;
+                    ShowNotification(new GUIContent($"Copied: {capturedId}"));
+                });
+
+                evt.menu.AppendSeparator("");
+
+                evt.menu.AppendAction("Reveal in assembly file", _ =>
+                {
+                    string path = PackageJsonUtils.FindEntityFilePath(_pkgId, capturedId);
+                    if (!string.IsNullOrEmpty(path))
+                    {
+                        var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
+                        if (asset != null) EditorGUIUtility.PingObject(asset);
+                    }
+                });
+            }
+            else if (item.IsAssembly && !string.IsNullOrEmpty(item.Id))
+            {
+                string capturedId = item.Id;
+                evt.menu.AppendAction("Copy assembly ID", _ =>
+                {
+                    EditorGUIUtility.systemCopyBuffer = capturedId;
+                    ShowNotification(new GUIContent($"Copied: {capturedId}"));
+                });
+            }
+            else if (item.IsAllSteps)
+            {
+                evt.menu.AppendAction("Jump to All Steps", _ =>
+                {
+                    if (_stepFilterIdx != 0) { ApplyStepFilter(0); Repaint(); }
+                });
+            }
+        }
+
+        private NavigatorItem GetNavigatorItemUnderMouse(bool isTree)
+        {
+            if (isTree)
+            {
+                int idx = _navigatorTreeView?.selectedIndex ?? -1;
+                if (idx >= 0)
+                    return _navigatorTreeView.GetItemDataForIndex<NavigatorItem>(idx);
+            }
+            else
+            {
+                int idx = _navigatorListView?.selectedIndex ?? -1;
+                if (idx >= 0 && idx < _navigatorFlatItems.Count)
+                    return _navigatorFlatItems[idx];
+            }
+            return null;
         }
     }
 }
