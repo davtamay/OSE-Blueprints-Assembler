@@ -389,9 +389,44 @@ namespace OSE.Editor
         /// </summary>
         private void DrawSubassemblyRootGizmo()
         {
-            if (_subassemblyRootGO == null) return;
+            if (_subassemblyRootGOs == null || _subassemblyRootGOs.Count == 0) return;
 
-            var rootT = _subassemblyRootGO.transform;
+            // Only draw the full gizmo (rotation + position handles) on the
+            // selected group. Other groups get a compact wire disc + label.
+            foreach (var kvp in _subassemblyRootGOs)
+            {
+                if (kvp.Value == null) continue;
+                bool isSelected = string.Equals(_canvasSelectedSubId, kvp.Key, System.StringComparison.Ordinal);
+                if (isSelected)
+                    DrawSubassemblyRootGizmoFull(kvp.Value, kvp.Key);
+                else
+                    DrawSubassemblyRootGizmoCompact(kvp.Value, kvp.Key);
+            }
+        }
+
+        private void DrawSubassemblyRootGizmoCompact(GameObject rootGO, string subId)
+        {
+            var rootT = rootGO.transform;
+            Vector3 worldPos = rootT.position;
+            float gizmoSize = HandleUtility.GetHandleSize(worldPos);
+
+            Handles.color = new Color(0.20f, 0.62f, 0.95f, 0.15f);
+            Handles.DrawWireDisc(worldPos,
+                SceneView.lastActiveSceneView?.camera?.transform.forward ?? Vector3.forward,
+                gizmoSize * 0.3f);
+
+            var labelStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                normal = { textColor = new Color(0.20f, 0.62f, 0.95f, 0.5f) },
+                fontSize = 9,
+                alignment = TextAnchor.MiddleCenter,
+            };
+            Handles.Label(worldPos + Vector3.up * gizmoSize * 0.35f, subId, labelStyle);
+        }
+
+        private void DrawSubassemblyRootGizmoFull(GameObject rootGO, string subId)
+        {
+            var rootT = rootGO.transform;
             Vector3 worldPos = rootT.position;
 
             // Visual indicator: wire sphere around the subassembly center
@@ -408,7 +443,7 @@ namespace OSE.Editor
                 alignment = TextAnchor.MiddleCenter,
             };
             Handles.Label(worldPos + Vector3.up * gizmoSize * 0.55f,
-                $"Subassembly: {_subassemblyRootForSubId}", labelStyle);
+                $"Group: {subId}", labelStyle);
 
             // Rotation handle
             EditorGUI.BeginChangeCheck();
@@ -418,7 +453,7 @@ namespace OSE.Editor
 
             if (EditorGUI.EndChangeCheck())
             {
-                Undo.RecordObject(_subassemblyRootGO.transform, "Rotate Subassembly");
+                Undo.RecordObject(rootGO.transform, "Rotate Subassembly");
                 rootT.rotation = newRot;
 
                 // Write back the new rotation to the step's workingOrientation
@@ -436,7 +471,7 @@ namespace OSE.Editor
 
             if (EditorGUI.EndChangeCheck())
             {
-                Undo.RecordObject(_subassemblyRootGO.transform, "Move Subassembly");
+                Undo.RecordObject(rootGO.transform, "Move Subassembly");
                 rootT.position = newWorldPos;
 
                 WriteBackSubassemblyOffset(newWorldPos);

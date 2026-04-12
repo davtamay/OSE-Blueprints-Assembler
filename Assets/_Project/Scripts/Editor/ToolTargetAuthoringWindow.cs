@@ -164,12 +164,11 @@ namespace OSE.Editor
         // Working orientation foldout
         private bool _showWorkingOrientation;
 
-        // Phase A2 — subassembly root GO that member parts are parented under.
-        // Created in RespawnScene when a subassembly step is active; destroyed on
-        // step change or cleanup. The root's localRotation IS the working
-        // orientation — no separate euler recomputation needed.
-        private GameObject _subassemblyRootGO;
-        private string     _subassemblyRootForSubId; // tracks which sub this root serves
+        // Phase A2 — subassembly root GOs that member parts are parented under.
+        // One root per group that has visible members in the current step.
+        // Created in RespawnScene; destroyed on step change or cleanup.
+        // The root's localRotation IS the working orientation.
+        private readonly Dictionary<string, GameObject> _subassemblyRootGOs = new(StringComparer.Ordinal);
 
         // ── Parts tab ─────────────────────────────────────────────────────────
         // Part model preview panel

@@ -518,12 +518,11 @@ namespace OSE.Editor
             _sceneBuildSubassemblyFramePos     = subFramePos;
             _sceneBuildWorkingOrientationParts = woParts;
 
-            // ── Phase A2: subassembly root GO + reparenting ───────────────────
-            // If the current step belongs to a subassembly, create (or reuse) a
-            // root GO under PreviewRoot, parent all member parts under it, and
-            // apply the stored working orientation as the root's localRotation.
-            // This replaces the manual euler recomputation in TryGetStepAwarePose.
-            EnsureSubassemblyRoot(stepSelected ? FindStep(_stepIds[_stepFilterIdx]) : null, woParts, wo, subFramePos);
+            // ── Phase A2: subassembly root GOs + reparenting ──────────────────
+            // Create a root GO for EVERY group that has visible members in this
+            // step — not just the step's own subassemblyId. This means the
+            // Hierarchy shows all groups and their member parts as children.
+            EnsureAllSubassemblyRoots(stepSelected ? FindStep(_stepIds[_stepFilterIdx]) : null);
 
             // Position and show/hide live parts based on step-aware context.
             SyncAllPartMeshesToActivePose();
@@ -573,61 +572,152 @@ namespace OSE.Editor
         // ── Phase A2: subassembly root GO lifecycle ───────────────────────────
 
         /// <summary>
-        /// Creates or reuses a subassembly root GO under PreviewRoot. Parents all
-        /// member parts under it. Applies the stored working orientation as the
-        /// root's localRotation. If the step has no subassembly, destroys any
-        /// existing root and unparents parts back to PreviewRoot.
+        /// Creates a root GO for every group (subassembly) that has at least one
+        /// visible member part in the current step. Each visible part is parented
+        /// under its group's root. Parts not in any group stay under PreviewRoot.
         /// </summary>
-        private void EnsureSubassemblyRoot(
-            StepDefinition step,
-            HashSet<string> memberPartIds,
-            StepWorkingOrientationPayload wo,
-            Vector3 subFramePos)
+        private void EnsureAllSubassemblyRoots(StepDefinition step)
         {
-            string subId = step != null && !string.IsNullOrWhiteSpace(step.subassemblyId)
-                ? step.subassemblyId
-                : null;
-
-            // If no subassembly on this step, tear down any existing root.
-            if (string.IsNullOrEmpty(subId) || memberPartIds == null || memberPartIds.Count == 0)
-            {
-                DestroySubassemblyRoot();
-                return;
-            }
-
             var previewRoot = GetPreviewRoot();
-            if (previewRoot == null)
+            if (previewRoot == null || _pkg == null)
             {
-                DestroySubassemblyRoot();
+                DestroyAllSubassemblyRoots();
                 return;
             }
 
-            // Reuse existing root if it matches the same subassembly; otherwise rebuild.
-            if (_subassemblyRootGO != null && _subassemblyRootForSubId == subId)
+            var allSubs = _pkg.GetSubassemblies();
+            if (allSubs == null || allSubs.Length == 0)
             {
-                // Just update orientation + reparent any new members
-                ApplySubassemblyRootOrientation(_subassemblyRootGO.transform, wo, subFramePos);
-                ReparentMembersUnderRoot(_subassemblyRootGO.transform, previewRoot, memberPartIds);
+                DestroyAllSubassemblyRoots();
                 return;
             }
 
-            // Tear down old root if switching subassemblies
-            DestroySubassemblyRoot();
+            // Collect all visible part IDs (from the scene-build cache)
+            var visibleParts = _sceneBuildPartStepSeq != null
+                ? new HashSet<string>(_sceneBuildPartStepSeq.Keys, StringComparer.Ordinal)
+                : new HashSet<string>(StringComparer.Ordinal);
 
-            // Create new root GO under PreviewRoot at the frame center
-            _subassemblyRootGO = new GameObject($"SubassemblyRoot_{subId}");
-            _subassemblyRootGO.hideFlags = HideFlags.DontSave;
-            _subassemblyRootGO.transform.SetParent(previewRoot, false);
-            _subassemblyRootGO.transform.localPosition = subFramePos;
-            _subassemblyRootGO.transform.localRotation = Quaternion.identity;
-            _subassemblyRootGO.transform.localScale    = Vector3.one;
-            _subassemblyRootForSubId = subId;
+            // Track which roots we need this frame
+            var neededIds = new HashSet<string>(StringComparer.Ordinal);
 
-            // Apply working orientation as root's rotation
-            ApplySubassemblyRootOrientation(_subassemblyRootGO.transform, wo, subFramePos);
+            // Pass 1: create root GOs for every group that has visible parts.
+            // Aggregates get roots too (they become parents of child group roots).
+            foreach (var sub in allSubs)
+            {
+                if (sub == null) continue;
 
-            // Parent member parts under the root
-            ReparentMembersUnderRoot(_subassemblyRootGO.transform, previewRoot, memberPartIds);
+                // For non-aggregates: check if any direct part is visible
+                // For aggregates: check if any child group is visible (we'll know after this pass)
+                // So create roots optimistically for all groups that have partIds with visible members.
+                bool hasVisibleMember = false;
+                if (sub.partIds != null)
+                {
+                    foreach (var pid in sub.partIds)
+                    {
+                        if (!string.IsNullOrEmpty(pid) && visibleParts.Contains(pid))
+                        { hasVisibleMember = true; break; }
+                    }
+                }
+                // Aggregates with memberSubassemblyIds: check if any child sub has visible parts
+                if (!hasVisibleMember && sub.isAggregate && sub.memberSubassemblyIds != null)
+                {
+                    foreach (var childId in sub.memberSubassemblyIds)
+                    {
+                        if (string.IsNullOrEmpty(childId)) continue;
+                        if (!_pkg.TryGetSubassembly(childId, out var childSub) || childSub?.partIds == null) continue;
+                        foreach (var pid in childSub.partIds)
+                        {
+                            if (!string.IsNullOrEmpty(pid) && visibleParts.Contains(pid))
+                            { hasVisibleMember = true; break; }
+                        }
+                        if (hasVisibleMember) break;
+                    }
+                }
+
+                if (!hasVisibleMember) continue;
+
+                neededIds.Add(sub.id);
+
+                // Create or reuse root GO
+                if (!_subassemblyRootGOs.TryGetValue(sub.id, out var rootGO) || rootGO == null)
+                {
+                    rootGO = new GameObject($"Group_{sub.GetDisplayName()}");
+                    rootGO.hideFlags = HideFlags.DontSave;
+                    rootGO.transform.SetParent(previewRoot, false);
+                    rootGO.transform.localPosition = Vector3.zero;
+                    rootGO.transform.localRotation = Quaternion.identity;
+                    rootGO.transform.localScale    = Vector3.one;
+                    _subassemblyRootGOs[sub.id] = rootGO;
+                }
+
+                // Apply working orientation if this is the active step's subassembly
+                if (step != null && string.Equals(step.subassemblyId, sub.id, System.StringComparison.Ordinal)
+                    && step.workingOrientation != null)
+                {
+                    ApplySubassemblyRootOrientation(rootGO.transform, step.workingOrientation, GetSubassemblyFramePos(sub.id));
+                }
+                else
+                {
+                    rootGO.transform.localPosition = GetSubassemblyFramePos(sub.id);
+                    rootGO.transform.localRotation = Quaternion.identity;
+                }
+
+                // Parent visible member parts under this root (non-aggregates only —
+                // aggregates own parts indirectly through child groups).
+                if (!sub.isAggregate && sub.partIds != null)
+                {
+                    var memberSet = new HashSet<string>(sub.partIds, StringComparer.Ordinal);
+                    ReparentMembersUnderRoot(rootGO.transform, previewRoot, memberSet);
+                }
+            }
+
+            // Pass 2: nest child group roots under their parent aggregate roots.
+            // This gives the real hierarchy: rotating a parent group rotates all
+            // child groups and their parts (free via Unity parenting).
+            foreach (var sub in allSubs)
+            {
+                if (sub == null || !sub.isAggregate || sub.memberSubassemblyIds == null) continue;
+                if (!_subassemblyRootGOs.TryGetValue(sub.id, out var parentGO) || parentGO == null) continue;
+
+                foreach (var childId in sub.memberSubassemblyIds)
+                {
+                    if (string.IsNullOrEmpty(childId)) continue;
+                    if (!_subassemblyRootGOs.TryGetValue(childId, out var childGO) || childGO == null) continue;
+                    if (childGO.transform.parent != parentGO.transform)
+                        childGO.transform.SetParent(parentGO.transform, worldPositionStays: true);
+                }
+            }
+
+            // Destroy roots that are no longer needed
+            var toRemove = new List<string>();
+            foreach (var kvp in _subassemblyRootGOs)
+            {
+                if (!neededIds.Contains(kvp.Key))
+                    toRemove.Add(kvp.Key);
+            }
+            foreach (var id in toRemove)
+            {
+                if (_subassemblyRootGOs.TryGetValue(id, out var go) && go != null)
+                {
+                    for (int i = go.transform.childCount - 1; i >= 0; i--)
+                        go.transform.GetChild(i).SetParent(previewRoot, worldPositionStays: true);
+                    DestroyImmediate(go);
+                }
+                _subassemblyRootGOs.Remove(id);
+            }
+        }
+
+        private Vector3 GetSubassemblyFramePos(string subId)
+        {
+            if (_pkg?.previewConfig?.subassemblyPlacements != null)
+            {
+                foreach (var sp in _pkg.previewConfig.subassemblyPlacements)
+                {
+                    if (sp != null && string.Equals(sp.subassemblyId, subId, System.StringComparison.OrdinalIgnoreCase))
+                        return new Vector3(sp.position.x, sp.position.y, sp.position.z);
+                }
+            }
+            return Vector3.zero;
         }
 
         private void ReparentMembersUnderRoot(
@@ -644,15 +734,9 @@ namespace OSE.Editor
                 if (go == null) continue;
                 bool isMember = memberPartIds.Contains(go.name);
                 if (isMember && go.transform.parent != rootTransform)
-                {
-                    // Preserve world position during reparent
                     go.transform.SetParent(rootTransform, worldPositionStays: true);
-                }
                 else if (!isMember && go.transform.parent == rootTransform)
-                {
-                    // Unparent non-members that got parented in a prior step
                     go.transform.SetParent(previewRoot, worldPositionStays: true);
-                }
             }
         }
 
@@ -686,24 +770,28 @@ namespace OSE.Editor
         }
 
         /// <summary>
-        /// Unparents all member parts back to PreviewRoot and destroys the root GO.
-        /// Safe to call when no root exists.
+        /// Unparents all member parts and destroys all root GOs. Safe to call
+        /// when no roots exist.
         /// </summary>
-        private void DestroySubassemblyRoot()
+        private void DestroyAllSubassemblyRoots()
         {
-            if (_subassemblyRootGO != null)
+            var previewRoot = GetPreviewRoot();
+            // Unparent all spawned parts back to PreviewRoot first (regardless of
+            // nesting depth), then destroy all root GOs.
+            if (ServiceRegistry.TryGet<ISpawnerQueryService>(out var spawner) && spawner?.SpawnedParts != null)
             {
-                var previewRoot = GetPreviewRoot();
-                // Unparent all children back to PreviewRoot before destroying the root
-                for (int i = _subassemblyRootGO.transform.childCount - 1; i >= 0; i--)
+                foreach (var go in spawner.SpawnedParts)
                 {
-                    var child = _subassemblyRootGO.transform.GetChild(i);
-                    child.SetParent(previewRoot, worldPositionStays: true);
+                    if (go != null && go.transform.parent != previewRoot)
+                        go.transform.SetParent(previewRoot, worldPositionStays: true);
                 }
-                DestroyImmediate(_subassemblyRootGO);
             }
-            _subassemblyRootGO       = null;
-            _subassemblyRootForSubId = null;
+            foreach (var kvp in _subassemblyRootGOs)
+            {
+                if (kvp.Value != null)
+                    DestroyImmediate(kvp.Value);
+            }
+            _subassemblyRootGOs.Clear();
         }
     }
 }

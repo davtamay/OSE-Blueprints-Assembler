@@ -358,11 +358,29 @@ namespace OSE.Editor
         private static readonly Color _seqColorObserve = new Color(0.8f, 0.5f, 1.0f, 1f);  // purple — observe/inspect
         private static readonly Color _seqColorConfirm = new Color(1.0f, 0.85f, 0.2f, 1f); // gold — confirm button press
 
+        // Cached part→group name lookup, rebuilt when the list rebuilds.
+        private Dictionary<string, string> _partToGroupName;
+
         private void DrawTaskSequenceDragList(StepDefinition step, List<TaskOrderEntry> order)
         {
             // Rebuild the ReorderableList whenever the step changes or the list is null
             if (_taskSeqReorderList == null || _taskSeqReorderListForStepId != step.id)
             {
+                // Build part→first-group-name lookup for group tags on rows
+                _partToGroupName = new Dictionary<string, string>(StringComparer.Ordinal);
+                var allSubs = _pkg?.GetSubassemblies();
+                if (allSubs != null)
+                {
+                    foreach (var sub in allSubs)
+                    {
+                        if (sub?.partIds == null) continue;
+                        foreach (var pid in sub.partIds)
+                        {
+                            if (!string.IsNullOrEmpty(pid) && !_partToGroupName.ContainsKey(pid))
+                                _partToGroupName[pid] = sub.GetDisplayName();
+                        }
+                    }
+                }
                 _taskSeqReorderList = new ReorderableList(order, typeof(TaskOrderEntry),
                     draggable: true, displayHeader: false, displayAddButton: false, displayRemoveButton: false);
 
@@ -414,11 +432,39 @@ namespace OSE.Editor
                     var badgeRect = new Rect(rect.x + 24f, rect.y + 1f, 52f, rect.height - 2f);
                     EditorGUI.LabelField(badgeRect, badge, badgeStyle);
 
-                    // ID label + per-task dirty dot
+                    // ID label + group tag + per-task dirty dot
                     bool entryDirty = IsTaskEntryDirty(entry, step);
-                    float idW = entryDirty ? rect.width - 124f : rect.width - 110f;
-                    var idRect = new Rect(rect.x + 80f, rect.y + 1f, idW, rect.height);
+
+                    // Group tag — show which group this part belongs to (blue, right-aligned)
+                    string groupTag = null;
+                    float tagW = 0f;
+                    if (entry.kind == "part" && _partToGroupName != null
+                        && _partToGroupName.TryGetValue(entry.id, out string gName))
+                    {
+                        // Truncate long names to fit
+                        groupTag = gName.Length > 16 ? gName.Substring(0, 14) + "…" : gName;
+                        tagW = 8f + groupTag.Length * 5.5f; // rough char-width estimate
+                    }
+
+                    float dirtyW = entryDirty ? 14f : 0f;
+                    float idW    = rect.width - 110f - tagW - dirtyW;
+                    var idRect   = new Rect(rect.x + 80f, rect.y + 1f, idW, rect.height);
                     EditorGUI.LabelField(idRect, entry.id ?? "—", EditorStyles.miniLabel);
+
+                    // Group tag badge
+                    if (groupTag != null)
+                    {
+                        var tagRect = new Rect(idRect.xMax + 2f, rect.y + 3f, tagW, rect.height - 4f);
+                        EditorGUI.DrawRect(tagRect, new Color(0.20f, 0.62f, 0.95f, 0.25f));
+                        var tagStyle = new GUIStyle(EditorStyles.miniLabel)
+                        {
+                            normal    = { textColor = new Color(0.45f, 0.75f, 0.95f) },
+                            fontSize  = 8,
+                            alignment = TextAnchor.MiddleCenter,
+                        };
+                        GUI.Label(tagRect, groupTag, tagStyle);
+                    }
+
                     if (entryDirty)
                     {
                         var dotStyle = new GUIStyle(EditorStyles.miniLabel)
@@ -427,7 +473,8 @@ namespace OSE.Editor
                             fontStyle = FontStyle.Bold,
                             alignment = TextAnchor.MiddleLeft,
                         };
-                        EditorGUI.LabelField(new Rect(idRect.xMax + 2f, rect.y + 1f, 14f, rect.height), "●", dotStyle);
+                        float dotX = groupTag != null ? idRect.xMax + tagW + 4f : idRect.xMax + 2f;
+                        EditorGUI.LabelField(new Rect(dotX, rect.y + 1f, 14f, rect.height), "●", dotStyle);
                     }
 
                     // Whole-row click (excluding × button) — MouseDown so it fires before
@@ -515,18 +562,34 @@ namespace OSE.Editor
                                 false,
                                 () => CreateGroupFromSelection(capturedStep, capturedParts));
 
-                            // "Add to [existing group]" — one entry per group in the package
+                            // "Add to [existing group]" — split into relevant (top) + rest (submenu)
                             var allSubs = _pkg?.GetSubassemblies();
                             if (allSubs != null && allSubs.Length > 0)
                             {
-                                menu.AddSeparator("");
+                                // Relevant = same assembly OR already contains a selected part
+                                var partSet = new HashSet<string>(capturedParts, StringComparer.Ordinal);
+                                string stepAsm = capturedStep.assemblyId ?? "";
+                                var relevant = new List<SubassemblyDefinition>();
+                                var others   = new List<SubassemblyDefinition>();
+
                                 foreach (var sub in allSubs)
                                 {
                                     if (sub == null || string.IsNullOrEmpty(sub.id)) continue;
-                                    var capturedSub = sub;
-                                    int existing    = sub.partIds?.Length ?? 0;
+                                    bool sameAsm = !string.IsNullOrEmpty(stepAsm)
+                                                   && string.Equals(sub.assemblyId, stepAsm, StringComparison.Ordinal);
+                                    bool hasPart = false;
+                                    if (sub.partIds != null)
+                                        foreach (var pid in sub.partIds)
+                                            if (partSet.Contains(pid)) { hasPart = true; break; }
+                                    if (sameAsm || hasPart) relevant.Add(sub);
+                                    else                    others.Add(sub);
+                                }
+
+                                System.Action<SubassemblyDefinition, string> addMenuItem = (capturedSub, path) =>
+                                {
+                                    int existing = capturedSub.partIds?.Length ?? 0;
                                     menu.AddItem(
-                                        new GUIContent($"Add to group/{capturedSub.GetDisplayName()}  ({existing}p)"),
+                                        new GUIContent($"{path}{capturedSub.GetDisplayName()}  ({existing}p)"),
                                         false,
                                         () =>
                                         {
@@ -549,6 +612,21 @@ namespace OSE.Editor
                                                 ShowNotification(new GUIContent("All parts already in group"));
                                             }
                                         });
+                                };
+
+                                if (relevant.Count > 0)
+                                {
+                                    menu.AddSeparator("");
+                                    foreach (var sub in relevant)
+                                        addMenuItem(sub, "Add to group/");
+                                }
+
+                                if (others.Count > 0)
+                                {
+                                    if (relevant.Count > 0)
+                                        menu.AddSeparator("Add to group/");
+                                    foreach (var sub in others)
+                                        addMenuItem(sub, "Add to group/Other/");
                                 }
                             }
 

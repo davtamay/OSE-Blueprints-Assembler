@@ -211,7 +211,7 @@ namespace OSE.Editor
             _multiSelectedParts.Clear();
             _multiSelectedTaskSeqIdxs.Clear();
             // Destroy the subassembly root GO so parts unparent back to PreviewRoot.
-            DestroySubassemblyRoot();
+            DestroyAllSubassemblyRoots();
             // Invalidate the task-sequence cache so stale order entries from
             // in-memory mutations (e.g. drag-drop adds) don't survive a revert.
             _taskSeqReorderList          = null;
