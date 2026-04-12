@@ -63,6 +63,40 @@ namespace OSE.Editor
                 Vector3    asmScl = hasP && (sp.assembledScale.x != 0f || sp.assembledScale.y != 0f || sp.assembledScale.z != 0f)
                     ? PackageJsonUtils.ToVector3(sp.assembledScale) : initScl;
 
+                // If no authored placement, derive start pose from member parts'
+                // assembled positions — the group's "start" is where its parts
+                // sit after being individually assembled in earlier steps.
+                if (!hasP && sub.partIds != null && sub.partIds.Length > 0 && _pkg.previewConfig?.partPlacements != null)
+                {
+                    Vector3 centroid = Vector3.zero;
+                    int found = 0;
+                    foreach (var pid in sub.partIds)
+                    {
+                        foreach (var pp2 in _pkg.previewConfig.partPlacements)
+                        {
+                            if (pp2 != null && string.Equals(pp2.partId, pid, StringComparison.Ordinal))
+                            {
+                                var aPos = pp2.assembledPosition;
+                                if (aPos.x != 0f || aPos.y != 0f || aPos.z != 0f)
+                                {
+                                    centroid += new Vector3(aPos.x, aPos.y, aPos.z);
+                                    found++;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    if (found > 0)
+                    {
+                        // Don't move the start pose to the centroid — leave at origin.
+                        // The parts are already positioned at their assembled locations.
+                        // The group root at (0,0,0) means the parts stay where they are.
+                        // The "assembled pose" for the GROUP is where it goes AFTER
+                        // being placed into the next-level assembly (e.g., the cube).
+                        // That's what the author needs to set via the gizmo.
+                    }
+                }
+
                 var state = new GroupEditState
                 {
                     def              = sub,
@@ -112,34 +146,35 @@ namespace OSE.Editor
                 if (!_subassemblyRootGOs.TryGetValue(g.def.id, out var rootGO) || rootGO == null)
                     continue;
 
-                // Only move the root if the group has explicitly authored pose data.
-                // Unplaced groups stay at origin — their member parts are already
-                // positioned in PreviewRoot space by SyncAllPartMeshesToActivePose.
-                if (!g.hasPlacement && !g.isDirty) continue;
+                // Start Pose: root stays at (0,0,0) — member parts are already
+                // at their individual assembled positions from earlier steps.
+                // That IS the start pose for the group.
+                //
+                // Assembled Pose: root moves to the group's assembledPosition —
+                // all member parts shift together (via Unity parenting) to where
+                // the group goes in the next-level assembly (e.g., the cube).
+                //
+                // Only apply non-origin poses when dirty or hasPlacement AND
+                // the pose mode is not Start.
+                Vector3 pos = Vector3.zero;
+                Quaternion rot = Quaternion.identity;
+                Vector3 scl = Vector3.one;
 
-                Vector3 pos;
-                Quaternion rot;
-                Vector3 scl;
-
-                if (_editingGroupPoseMode == PoseModeAssembled)
+                if (_editingGroupPoseMode == PoseModeAssembled && (g.isDirty || g.hasPlacement))
                 {
                     pos = g.assembledPosition;
                     rot = g.assembledRotation;
                     scl = g.assembledScale;
                 }
-                else if (_editingGroupPoseMode >= 0 && g.stepPoses != null && _editingGroupPoseMode < g.stepPoses.Count)
+                else if (_editingGroupPoseMode >= 0 && g.stepPoses != null
+                    && _editingGroupPoseMode < g.stepPoses.Count && (g.isDirty || g.hasPlacement))
                 {
                     var sp = g.stepPoses[_editingGroupPoseMode];
                     pos = PackageJsonUtils.ToVector3(sp.position);
                     rot = PackageJsonUtils.ToUnityQuaternion(sp.rotation);
                     scl = PackageJsonUtils.ToVector3(sp.scale);
                 }
-                else
-                {
-                    pos = g.startPosition;
-                    rot = g.startRotation;
-                    scl = g.startScale;
-                }
+                // else: Start Pose mode → pos stays (0,0,0), parts at their individual positions
 
                 if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
 

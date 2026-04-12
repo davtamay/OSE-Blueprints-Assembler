@@ -400,7 +400,12 @@ namespace OSE.Editor
             foreach (var kvp in _subassemblyRootGOs)
             {
                 if (kvp.Value == null) continue;
+                // Full gizmo shows when the group is selected via either:
+                // - Canvas GROUPS section click (_canvasSelectedSubId), OR
+                // - Task sequence PART [G] row click (_selectedGroupIdx)
                 bool isSelected = string.Equals(_canvasSelectedSubId, kvp.Key, System.StringComparison.Ordinal);
+                if (!isSelected && _selectedGroupIdx >= 0 && _groups != null && _selectedGroupIdx < _groups.Length)
+                    isSelected = string.Equals(_groups[_selectedGroupIdx].def?.id, kvp.Key, System.StringComparison.Ordinal);
                 if (isSelected)
                     DrawSubassemblyRootGizmoFull(kvp.Value, kvp.Key);
                 else
@@ -460,15 +465,26 @@ namespace OSE.Editor
                 Undo.RecordObject(rootGO.transform, "Rotate Subassembly");
                 rootT.rotation = newRot;
 
-                // Write back the new rotation to the step's workingOrientation
-                // so it persists on Write to JSON.
-                WriteBackSubassemblyRotation(newRot);
+                // Write to GroupEditState if a group is selected via task sequence
+                if (_selectedGroupIdx >= 0 && _groups != null && _selectedGroupIdx < _groups.Length
+                    && string.Equals(_groups[_selectedGroupIdx].def?.id, subId, StringComparison.Ordinal))
+                {
+                    var root = GetPreviewRoot();
+                    Quaternion localRot = root != null ? Quaternion.Inverse(root.rotation) * newRot : newRot;
+                    ApplyRotationToGroup(ref _groups[_selectedGroupIdx], localRot);
+                    _groups[_selectedGroupIdx].isDirty = true;
+                    _dirtySubassemblyIds.Add(subId);
+                }
+                else
+                {
+                    WriteBackSubassemblyRotation(newRot);
+                }
 
                 SceneView.RepaintAll();
                 Repaint();
             }
 
-            // Position handle (for the offset)
+            // Position handle
             EditorGUI.BeginChangeCheck();
             Handles.color = new Color(0.20f, 0.62f, 0.95f, 0.65f);
             Vector3 newWorldPos = Handles.PositionHandle(worldPos, currentRot);
@@ -478,7 +494,19 @@ namespace OSE.Editor
                 Undo.RecordObject(rootGO.transform, "Move Subassembly");
                 rootT.position = newWorldPos;
 
-                WriteBackSubassemblyOffset(newWorldPos);
+                if (_selectedGroupIdx >= 0 && _groups != null && _selectedGroupIdx < _groups.Length
+                    && string.Equals(_groups[_selectedGroupIdx].def?.id, subId, StringComparison.Ordinal))
+                {
+                    var root = GetPreviewRoot();
+                    Vector3 localPos = root != null ? root.InverseTransformPoint(newWorldPos) : newWorldPos;
+                    ApplyPositionToGroup(ref _groups[_selectedGroupIdx], localPos);
+                    _groups[_selectedGroupIdx].isDirty = true;
+                    _dirtySubassemblyIds.Add(subId);
+                }
+                else
+                {
+                    WriteBackSubassemblyOffset(newWorldPos);
+                }
 
                 SceneView.RepaintAll();
                 Repaint();
