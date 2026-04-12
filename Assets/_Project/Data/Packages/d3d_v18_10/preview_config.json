@@ -2976,9 +2976,9 @@
       {
         "partId": "z1_half_carriage",
         "startPosition": {
-          "x": 0.0,
+          "x": 1.37,
           "y": 0.55,
-          "z": 3.6
+          "z": 0.0
         },
         "startRotation": {
           "x": 0.0,
@@ -3141,9 +3141,9 @@
       {
         "partId": "z2_half_carriage",
         "startPosition": {
-          "x": 0.0,
+          "x": 1.55,
           "y": 0.55,
-          "z": 3.2
+          "z": 0.0
         },
         "startRotation": {
           "x": 0.0,
@@ -7177,7 +7177,7 @@
       {
         "partId": "y_left_carriage_half_a",
         "startPosition": {
-          "x": 0.82,
+          "x": 0.65,
           "y": 0.55,
           "z": 0.0
         },
@@ -7232,15 +7232,15 @@
       {
         "partId": "y_left_carriage_half_b",
         "startPosition": {
-          "x": 0.8843,
-          "y": 0.5616,
+          "x": 0.8,
+          "y": 0.55,
           "z": 0.0
         },
         "startRotation": {
-          "x": 4.3477e-08,
+          "x": 0.0,
           "y": 0.7071,
           "z": -0.7071,
-          "w": -4.3477e-08
+          "w": 0.0
         },
         "startScale": {
           "x": 1.0,
@@ -7287,7 +7287,7 @@
       {
         "partId": "y_right_carriage_half_a",
         "startPosition": {
-          "x": -0.82,
+          "x": 0.95,
           "y": 0.55,
           "z": 0.0
         },
@@ -7342,15 +7342,15 @@
       {
         "partId": "y_right_carriage_half_b",
         "startPosition": {
-          "x": -0.82,
+          "x": 1.1,
           "y": 0.55,
           "z": 0.0
         },
         "startRotation": {
-          "x": -0.5,
-          "y": 0.5,
-          "z": -0.5,
-          "w": 0.5
+          "x": 0.0,
+          "y": 0.7071,
+          "z": -0.7071,
+          "w": 0.0
         },
         "startScale": {
           "x": 1.0,
@@ -8323,6 +8323,226 @@
             }
           }
         ],
+        "splinePath": {
+          "radius": 0.0,
+          "segments": 0,
+          "metallic": 0.0,
+          "smoothness": 0.0,
+          "color": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "knots": []
+        }
+      },
+      {
+        "partId": "z_back_carriage_half_a",
+        "startPosition": {
+          "x": 1.294,
+          "y": 0.55,
+          "z": 0.0
+        },
+        "startRotation": {
+          "x": -0.5,
+          "y": 0.5,
+          "z": -0.5,
+          "w": 0.5
+        },
+        "startScale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        },
+        "assembledPosition": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "assembledRotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "assembledScale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "stepPoses": [],
+        "splinePath": {
+          "radius": 0.0,
+          "segments": 0,
+          "metallic": 0.0,
+          "smoothness": 0.0,
+          "color": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "knots": []
+        }
+      },
+      {
+        "partId": "z_back_carriage_half_b",
+        "startPosition": {
+          "x": 1.374,
+          "y": 0.55,
+          "z": 0.0
+        },
+        "startRotation": {
+          "x": 0.0,
+          "y": 0.7071,
+          "z": -0.7071,
+          "w": 0.0
+        },
+        "startScale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        },
+        "assembledPosition": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "assembledRotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "assembledScale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "stepPoses": [],
+        "splinePath": {
+          "radius": 0.0,
+          "segments": 0,
+          "metallic": 0.0,
+          "smoothness": 0.0,
+          "color": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "knots": []
+        }
+      },
+      {
+        "partId": "z_front_carriage_half_a",
+        "startPosition": {
+          "x": 1.454,
+          "y": 0.55,
+          "z": 0.0
+        },
+        "startRotation": {
+          "x": -0.5,
+          "y": 0.5,
+          "z": -0.5,
+          "w": 0.5
+        },
+        "startScale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        },
+        "assembledPosition": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "assembledRotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "assembledScale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "stepPoses": [],
+        "splinePath": {
+          "radius": 0.0,
+          "segments": 0,
+          "metallic": 0.0,
+          "smoothness": 0.0,
+          "color": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "knots": []
+        }
+      },
+      {
+        "partId": "z_front_carriage_half_b",
+        "startPosition": {
+          "x": 1.534,
+          "y": 0.55,
+          "z": 0.0
+        },
+        "startRotation": {
+          "x": 0.0,
+          "y": 0.7071,
+          "z": -0.7071,
+          "w": 0.0
+        },
+        "startScale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "color": {
+          "r": 0.7,
+          "g": 0.7,
+          "b": 0.7,
+          "a": 1.0
+        },
+        "assembledPosition": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "assembledRotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "assembledScale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "stepPoses": [],
         "splinePath": {
           "radius": 0.0,
           "segments": 0,
@@ -17889,5 +18109,991 @@
         ]
       }
     ]
-  }
+  },
+  "partPlacements": [
+    {
+      "partId": "d3d_frame_bottom_top_bar",
+      "startPosition": {
+        "x": -0.6,
+        "y": 0.5516,
+        "z": 0.1524
+      },
+      "startRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "startScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "assembledPosition": {
+        "x": 0.0,
+        "y": 0.5516,
+        "z": 0.1524
+      },
+      "assembledRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "assembledScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "color": {
+        "r": 0.4,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.3
+      }
+    },
+    {
+      "partId": "d3d_frame_bottom_bottom_bar",
+      "startPosition": {
+        "x": -0.6,
+        "y": 0.5516,
+        "z": -0.1524
+      },
+      "startRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "startScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "assembledPosition": {
+        "x": 0.0,
+        "y": 0.5516,
+        "z": -0.1524
+      },
+      "assembledRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "assembledScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "color": {
+        "r": 0.4,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.3
+      }
+    },
+    {
+      "partId": "d3d_frame_bottom_left_bar",
+      "startPosition": {
+        "x": -0.7524,
+        "y": 0.5516,
+        "z": 0.0
+      },
+      "startRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "startScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "assembledPosition": {
+        "x": -0.1524,
+        "y": 0.5516,
+        "z": 0.0
+      },
+      "assembledRotation": {
+        "x": 0,
+        "y": 0.7071,
+        "z": 0,
+        "w": 0.7071
+      },
+      "assembledScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "color": {
+        "r": 0.4,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.3
+      }
+    },
+    {
+      "partId": "d3d_frame_bottom_right_bar",
+      "startPosition": {
+        "x": -0.4476,
+        "y": 0.5516,
+        "z": 0.0
+      },
+      "startRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "startScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "assembledPosition": {
+        "x": 0.1524,
+        "y": 0.5516,
+        "z": 0.0
+      },
+      "assembledRotation": {
+        "x": 0,
+        "y": 0.7071,
+        "z": 0,
+        "w": 0.7071
+      },
+      "assembledScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "color": {
+        "r": 0.4,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.3
+      }
+    },
+    {
+      "partId": "d3d_frame_top_top_bar",
+      "startPosition": {
+        "x": -0.6,
+        "y": 0.5516,
+        "z": 0.0024
+      },
+      "startRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "startScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "assembledPosition": {
+        "x": 0.0,
+        "y": 0.5516,
+        "z": 0.0024
+      },
+      "assembledRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "assembledScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "color": {
+        "r": 0.4,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.3
+      }
+    },
+    {
+      "partId": "d3d_frame_top_bottom_bar",
+      "startPosition": {
+        "x": -0.6,
+        "y": 0.5516,
+        "z": -0.3024
+      },
+      "startRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "startScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "assembledPosition": {
+        "x": 0.0,
+        "y": 0.5516,
+        "z": -0.3024
+      },
+      "assembledRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "assembledScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "color": {
+        "r": 0.4,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.3
+      }
+    },
+    {
+      "partId": "d3d_frame_top_left_bar",
+      "startPosition": {
+        "x": -0.7524,
+        "y": 0.5516,
+        "z": -0.15
+      },
+      "startRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "startScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "assembledPosition": {
+        "x": -0.1524,
+        "y": 0.5516,
+        "z": -0.15
+      },
+      "assembledRotation": {
+        "x": 0,
+        "y": 0.7071,
+        "z": 0,
+        "w": 0.7071
+      },
+      "assembledScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "color": {
+        "r": 0.4,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.3
+      }
+    },
+    {
+      "partId": "d3d_frame_top_right_bar",
+      "startPosition": {
+        "x": -0.4476,
+        "y": 0.5516,
+        "z": -0.15
+      },
+      "startRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "startScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "assembledPosition": {
+        "x": 0.1524,
+        "y": 0.5516,
+        "z": -0.15
+      },
+      "assembledRotation": {
+        "x": 0,
+        "y": 0.7071,
+        "z": 0,
+        "w": 0.7071
+      },
+      "assembledScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "color": {
+        "r": 0.4,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.3
+      }
+    },
+    {
+      "partId": "d3d_frame_left_top_bar",
+      "startPosition": {
+        "x": -0.98,
+        "y": 0.5516,
+        "z": 0.2274
+      },
+      "startRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "startScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "assembledPosition": {
+        "x": -0.38,
+        "y": 0.5516,
+        "z": 0.2274
+      },
+      "assembledRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "assembledScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "color": {
+        "r": 0.4,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.3
+      }
+    },
+    {
+      "partId": "d3d_frame_left_bottom_bar",
+      "startPosition": {
+        "x": -0.98,
+        "y": 0.5516,
+        "z": -0.0774
+      },
+      "startRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "startScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "assembledPosition": {
+        "x": -0.38,
+        "y": 0.5516,
+        "z": -0.0774
+      },
+      "assembledRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "assembledScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "color": {
+        "r": 0.4,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.3
+      }
+    },
+    {
+      "partId": "d3d_frame_left_left_bar",
+      "startPosition": {
+        "x": -1.1324,
+        "y": 0.5516,
+        "z": 0.075
+      },
+      "startRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "startScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "assembledPosition": {
+        "x": -0.5324,
+        "y": 0.5516,
+        "z": 0.075
+      },
+      "assembledRotation": {
+        "x": 0,
+        "y": 0.7071,
+        "z": 0,
+        "w": 0.7071
+      },
+      "assembledScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "color": {
+        "r": 0.4,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.3
+      }
+    },
+    {
+      "partId": "d3d_frame_left_right_bar",
+      "startPosition": {
+        "x": -0.8276,
+        "y": 0.5516,
+        "z": 0.075
+      },
+      "startRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "startScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "assembledPosition": {
+        "x": -0.2276,
+        "y": 0.5516,
+        "z": 0.075
+      },
+      "assembledRotation": {
+        "x": 0,
+        "y": 0.7071,
+        "z": 0,
+        "w": 0.7071
+      },
+      "assembledScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "color": {
+        "r": 0.4,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.3
+      }
+    },
+    {
+      "partId": "d3d_frame_right_top_bar",
+      "startPosition": {
+        "x": -0.22,
+        "y": 0.5516,
+        "z": 0.2274
+      },
+      "startRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "startScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "assembledPosition": {
+        "x": 0.38,
+        "y": 0.5516,
+        "z": 0.2274
+      },
+      "assembledRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "assembledScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "color": {
+        "r": 0.4,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.3
+      }
+    },
+    {
+      "partId": "d3d_frame_right_bottom_bar",
+      "startPosition": {
+        "x": -0.22,
+        "y": 0.5516,
+        "z": -0.0774
+      },
+      "startRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "startScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "assembledPosition": {
+        "x": 0.38,
+        "y": 0.5516,
+        "z": -0.0774
+      },
+      "assembledRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "assembledScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "color": {
+        "r": 0.4,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.3
+      }
+    },
+    {
+      "partId": "d3d_frame_right_left_bar",
+      "startPosition": {
+        "x": -0.3724,
+        "y": 0.5516,
+        "z": 0.075
+      },
+      "startRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "startScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "assembledPosition": {
+        "x": 0.2276,
+        "y": 0.5516,
+        "z": 0.075
+      },
+      "assembledRotation": {
+        "x": 0,
+        "y": 0.7071,
+        "z": 0,
+        "w": 0.7071
+      },
+      "assembledScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "color": {
+        "r": 0.4,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.3
+      }
+    },
+    {
+      "partId": "d3d_frame_right_right_bar",
+      "startPosition": {
+        "x": -0.0676,
+        "y": 0.5516,
+        "z": 0.075
+      },
+      "startRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "startScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "assembledPosition": {
+        "x": 0.5324,
+        "y": 0.5516,
+        "z": 0.075
+      },
+      "assembledRotation": {
+        "x": 0,
+        "y": 0.7071,
+        "z": 0,
+        "w": 0.7071
+      },
+      "assembledScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "color": {
+        "r": 0.4,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.3
+      }
+    },
+    {
+      "partId": "d3d_frame_front_top_bar",
+      "startPosition": {
+        "x": -0.6,
+        "y": 0.5516,
+        "z": 0.4974
+      },
+      "startRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "startScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "assembledPosition": {
+        "x": 0.0,
+        "y": 0.5516,
+        "z": 0.4974
+      },
+      "assembledRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "assembledScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "color": {
+        "r": 0.4,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.3
+      }
+    },
+    {
+      "partId": "d3d_frame_front_bottom_bar",
+      "startPosition": {
+        "x": -0.6,
+        "y": 0.5516,
+        "z": 0.1926
+      },
+      "startRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "startScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "assembledPosition": {
+        "x": 0.0,
+        "y": 0.5516,
+        "z": 0.1926
+      },
+      "assembledRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "assembledScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "color": {
+        "r": 0.4,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.3
+      }
+    },
+    {
+      "partId": "d3d_frame_front_left_bar",
+      "startPosition": {
+        "x": -0.7524,
+        "y": 0.5516,
+        "z": 0.345
+      },
+      "startRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "startScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "assembledPosition": {
+        "x": -0.1524,
+        "y": 0.5516,
+        "z": 0.345
+      },
+      "assembledRotation": {
+        "x": 0,
+        "y": 0.7071,
+        "z": 0,
+        "w": 0.7071
+      },
+      "assembledScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "color": {
+        "r": 0.4,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.3
+      }
+    },
+    {
+      "partId": "d3d_frame_front_right_bar",
+      "startPosition": {
+        "x": -0.4476,
+        "y": 0.5516,
+        "z": 0.345
+      },
+      "startRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "startScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "assembledPosition": {
+        "x": 0.1524,
+        "y": 0.5516,
+        "z": 0.345
+      },
+      "assembledRotation": {
+        "x": 0,
+        "y": 0.7071,
+        "z": 0,
+        "w": 0.7071
+      },
+      "assembledScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "color": {
+        "r": 0.4,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.3
+      }
+    },
+    {
+      "partId": "d3d_frame_rear_top_bar",
+      "startPosition": {
+        "x": -0.6,
+        "y": 0.5516,
+        "z": -0.0426
+      },
+      "startRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "startScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "assembledPosition": {
+        "x": 0.0,
+        "y": 0.5516,
+        "z": -0.0426
+      },
+      "assembledRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "assembledScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "color": {
+        "r": 0.4,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.3
+      }
+    },
+    {
+      "partId": "d3d_frame_rear_bottom_bar",
+      "startPosition": {
+        "x": -0.6,
+        "y": 0.5516,
+        "z": -0.3474
+      },
+      "startRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "startScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "assembledPosition": {
+        "x": 0.0,
+        "y": 0.5516,
+        "z": -0.3474
+      },
+      "assembledRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "assembledScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "color": {
+        "r": 0.4,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.3
+      }
+    },
+    {
+      "partId": "d3d_frame_rear_left_bar",
+      "startPosition": {
+        "x": -0.7524,
+        "y": 0.5516,
+        "z": -0.195
+      },
+      "startRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "startScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "assembledPosition": {
+        "x": -0.1524,
+        "y": 0.5516,
+        "z": -0.195
+      },
+      "assembledRotation": {
+        "x": 0,
+        "y": 0.7071,
+        "z": 0,
+        "w": 0.7071
+      },
+      "assembledScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "color": {
+        "r": 0.4,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.3
+      }
+    },
+    {
+      "partId": "d3d_frame_rear_right_bar",
+      "startPosition": {
+        "x": -0.4476,
+        "y": 0.5516,
+        "z": -0.195
+      },
+      "startRotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "w": 1
+      },
+      "startScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "assembledPosition": {
+        "x": 0.1524,
+        "y": 0.5516,
+        "z": -0.195
+      },
+      "assembledRotation": {
+        "x": 0,
+        "y": 0.7071,
+        "z": 0,
+        "w": 0.7071
+      },
+      "assembledScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "color": {
+        "r": 0.4,
+        "g": 0.8,
+        "b": 1.0,
+        "a": 0.3
+      }
+    }
+  ]
 }
