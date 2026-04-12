@@ -870,17 +870,23 @@ namespace OSE.Editor
                     relevant.Add(sub);
             }
 
-            if (relevant.Count == 0) return;
-
-            // Header
+            // Header — always show, even when 0 groups (so the create-drop-zone is reachable)
             EditorGUILayout.BeginHorizontal();
             var titleStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 11 };
             GUILayout.Label(new GUIContent($"GROUPS ({relevant.Count})",
                 "Part groups (subassemblies) that this step belongs to. " +
-                "Click to inspect. Rotate/move via the gizmo in the SceneView."),
+                "Click to inspect. Rotate/move via the gizmo in the SceneView.\n" +
+                "Drag parts from the Hierarchy onto the drop zone below to create a new group."),
                 titleStyle);
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
+
+            if (relevant.Count == 0)
+            {
+                // No groups yet — just show the create drop zone
+                DrawCreateGroupDropZone(step);
+                return;
+            }
 
             // Rows
             for (int i = 0; i < relevant.Count; i++)
@@ -954,6 +960,85 @@ namespace OSE.Editor
 
                 // Drop zone — drag part GOs here to add them to the selected group
                 DrawGroupDropZone(_canvasSelectedSubId);
+            }
+
+            // ── "Create new group" drop zone — always visible ─────────────────
+            // Drag any GameObjects from the Hierarchy here to create a brand new
+            // group from them. Works even when no groups exist yet on this step.
+            DrawCreateGroupDropZone(step);
+        }
+
+        /// <summary>
+        /// Drop zone that creates a NEW group from dragged GameObjects.
+        /// Resolves GO names to part IDs, auto-finds related steps, writes to disk.
+        /// </summary>
+        private void DrawCreateGroupDropZone(StepDefinition step)
+        {
+            if (step == null || _pkg == null) return;
+
+            EditorGUILayout.Space(2);
+            var dropRect = GUILayoutUtility.GetRect(0, 24f, GUILayout.ExpandWidth(true));
+            var ev       = Event.current;
+            bool isHover = dropRect.Contains(ev.mousePosition);
+            bool isDrag  = (ev.type == EventType.DragUpdated || ev.type == EventType.DragPerform)
+                           && DragAndDrop.objectReferences != null
+                           && DragAndDrop.objectReferences.Length > 0;
+
+            var accent = isHover && isDrag
+                ? new Color(0.30f, 0.85f, 0.40f)  // green = create
+                : new Color(0.45f, 0.45f, 0.50f);
+            var bg = isHover && isDrag
+                ? new Color(0.30f, 0.85f, 0.40f, 0.15f)
+                : new Color(0f, 0f, 0f, 0.12f);
+            EditorGUI.DrawRect(dropRect, bg);
+            EditorGUI.DrawRect(new Rect(dropRect.x, dropRect.y, dropRect.width, 1f), accent);
+            EditorGUI.DrawRect(new Rect(dropRect.x, dropRect.yMax - 1f, dropRect.width, 1f), accent);
+
+            var labelStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                normal    = { textColor = accent },
+                alignment = TextAnchor.MiddleCenter,
+                fontStyle = isHover && isDrag ? FontStyle.Bold : FontStyle.Italic,
+            };
+            GUI.Label(dropRect, isHover && isDrag
+                ? $"Drop {DragAndDrop.objectReferences.Length} item(s) to create a new group"
+                : "Drag parts here to create a new group", labelStyle);
+
+            if (!isHover) return;
+
+            if (ev.type == EventType.DragUpdated)
+            {
+                DragAndDrop.visualMode = isDrag ? DragAndDropVisualMode.Copy : DragAndDropVisualMode.Rejected;
+                ev.Use();
+                return;
+            }
+
+            if (ev.type == EventType.DragPerform && isDrag)
+            {
+                DragAndDrop.AcceptDrag();
+
+                // Resolve GO names to part IDs
+                var partIds = new List<string>();
+                var allParts = _pkg.GetParts();
+                foreach (var obj in DragAndDrop.objectReferences)
+                {
+                    if (obj == null) continue;
+                    string name = obj.name;
+                    if (string.IsNullOrEmpty(name)) continue;
+                    foreach (var p in allParts)
+                    {
+                        if (p != null && string.Equals(p.id, name, StringComparison.Ordinal))
+                        { partIds.Add(p.id); break; }
+                    }
+                }
+
+                if (partIds.Count > 0)
+                    CreateGroupFromSelection(step, partIds);
+                else
+                    ShowNotification(new GUIContent("No dropped items matched a package part ID"));
+
+                ev.Use();
+                Repaint();
             }
         }
     }

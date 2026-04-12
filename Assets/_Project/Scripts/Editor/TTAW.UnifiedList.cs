@@ -434,6 +434,7 @@ namespace OSE.Editor
                     // onMouseUpCallback and can call Event.current.Use() to block it.
                     var rowClickRect = new Rect(rect.x, rect.y, rect.width - 26f, rect.height);
                     if (Event.current.type == EventType.MouseDown
+                        && Event.current.button == 0 // left-click only; right-click → context menu
                         && rowClickRect.Contains(Event.current.mousePosition))
                     {
                         bool ctrl  = Event.current.control;
