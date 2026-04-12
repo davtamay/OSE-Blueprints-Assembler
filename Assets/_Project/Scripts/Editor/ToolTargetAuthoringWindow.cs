@@ -211,7 +211,8 @@ namespace OSE.Editor
         private readonly HashSet<int> _multiSelectedTaskSeqIdxs = new HashSet<int>();
 
         // Add-task inline picker (shown below task sequence)
-        private enum AddTaskPicker { None, Part, ToolTarget, Wire }
+        private enum AddTaskPicker { None, Part, ToolTarget, Wire, Group }
+        private int _addPickerGroupIdx;
         private AddTaskPicker _addTaskPicker = AddTaskPicker.None;
         private int    _addPickerPartIdx;
         private int    _addPickerTargetIdx;

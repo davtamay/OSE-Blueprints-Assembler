@@ -298,6 +298,12 @@ namespace OSE.Editor
                     InjectField(stepId, "requiredPartIds", pJson);
                 }
 
+                // requiredSubassemblyId — group placement
+                if (!string.IsNullOrEmpty(step.requiredSubassemblyId))
+                    InjectField(stepId, "requiredSubassemblyId", $"\"{step.requiredSubassemblyId}\"");
+                else
+                    RemoveField(stepId, "requiredSubassemblyId");
+
                 // visualPartIds — show-without-require (Phase 7, legacy)
                 if (step.visualPartIds != null && step.visualPartIds.Length > 0)
                 {

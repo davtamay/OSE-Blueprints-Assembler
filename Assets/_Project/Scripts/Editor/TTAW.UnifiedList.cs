@@ -64,6 +64,7 @@ namespace OSE.Editor
                     menu.AddItem(new GUIContent("Part"),           false, () => { _addTaskPicker = AddTaskPicker.Part;       _addPickerPartIdx = 0; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
                     menu.AddItem(new GUIContent("Tool Target"),    false, () => { _addTaskPicker = AddTaskPicker.ToolTarget; _addPickerTargetIdx = 0; _addPickerToolIdx = 0; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
                     menu.AddItem(new GUIContent("Wire Connection"),false, () => { _addTaskPicker = AddTaskPicker.Wire;       _addPickerTargetIdx = 0; _addPickerWireColor = new Color(0.15f, 0.15f, 0.15f, 1f); _addPickerWireRadius = 0.003f; _addPickerPolarityA = ""; _addPickerPolarityB = ""; _addPickerConnectorA = ""; _addPickerConnectorB = ""; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
+                    menu.AddItem(new GUIContent("Part (Group)"), false, () => { _addTaskPicker = AddTaskPicker.Group; _addPickerGroupIdx = 0; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
                     menu.AddSeparator("");
                     menu.AddItem(new GUIContent("Confirm (button press)"), false, () => { CommitAddConfirmAction(step); _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
                     menu.AddItem(new GUIContent("Observe (target position)"), false, () => { _addTaskPicker = AddTaskPicker.ToolTarget; _addPickerTargetIdx = 0; _addPickerToolIdx = 0; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
@@ -79,6 +80,7 @@ namespace OSE.Editor
             if (_addTaskPicker == AddTaskPicker.Part)       DrawAddPartPicker();
             if (_addTaskPicker == AddTaskPicker.ToolTarget) DrawAddToolTargetPicker();
             if (_addTaskPicker == AddTaskPicker.Wire)       DrawAddWirePicker();
+            if (_addTaskPicker == AddTaskPicker.Group)      DrawAddGroupPicker(step);
 
             // ── Section for selected task kind (rich detail body) ─────────────
             //
@@ -164,6 +166,20 @@ namespace OSE.Editor
                     foreach (var a in step.requiredToolActions)
                         if (!string.IsNullOrEmpty(a?.id) && !coveredTargetIds.Contains(a.targetId ?? ""))
                             order.Add(new TaskOrderEntry { kind = "toolAction", id = a.id });
+            }
+
+            // Auto-derive a group task entry from requiredSubassemblyId if not
+            // already present in the order. This ensures the [G] row shows up
+            // for steps that have a group placement but no explicit taskOrder.
+            if (!string.IsNullOrEmpty(step.requiredSubassemblyId))
+            {
+                string subId = step.requiredSubassemblyId;
+                bool found = false;
+                foreach (var e in order)
+                    if (e.kind == "part" && string.Equals(e.id, subId, StringComparison.Ordinal))
+                    { found = true; break; }
+                if (!found)
+                    order.Insert(0, new TaskOrderEntry { kind = "part", id = subId });
             }
 
             // Confirm-family steps always end with a button press — always append as display-only terminal task
@@ -435,6 +451,11 @@ namespace OSE.Editor
                         "confirm_action" => _seqColorConfirm,
                         _                => _seqColorTool,
                     };
+                    // Detect group-type part tasks
+                    bool isGroup = entry.kind == "part"
+                        && _pkg != null
+                        && _pkg.TryGetSubassembly(entry.id, out _);
+
                     string badge = entry.kind switch
                     {
                         "wire"           => "WIRE",
@@ -445,13 +466,28 @@ namespace OSE.Editor
                     };
                     var badgeStyle = new GUIStyle(EditorStyles.miniLabel)
                     {
-                        normal    = { textColor = badgeCol },
+                        normal    = { textColor = badgeCol }, // always the kind's own colour
                         fontStyle = FontStyle.Bold,
                         fontSize  = 9,
                         alignment = TextAnchor.MiddleCenter,
                     };
-                    var badgeRect = new Rect(rect.x + 24f, rect.y + 1f, 52f, rect.height - 2f);
+                    float badgeW = isGroup ? 36f : 52f; // narrower to make room for [G]
+                    var badgeRect = new Rect(rect.x + 24f, rect.y + 1f, badgeW, rect.height - 2f);
                     EditorGUI.LabelField(badgeRect, badge, badgeStyle);
+
+                    // [G] indicator in blue, right after the green PART badge
+                    if (isGroup)
+                    {
+                        var gStyle = new GUIStyle(EditorStyles.miniLabel)
+                        {
+                            normal    = { textColor = new Color(0.20f, 0.62f, 0.95f) },
+                            fontStyle = FontStyle.Bold,
+                            fontSize  = 9,
+                            alignment = TextAnchor.MiddleLeft,
+                        };
+                        var gRect = new Rect(badgeRect.xMax, rect.y + 1f, 16f, rect.height - 2f);
+                        GUI.Label(gRect, "[G]", gStyle);
+                    }
 
                     // Required/Optional indicator — ALL task kinds are toggleable.
                     // Reads from entry.isOptional (persisted in taskOrder[]).
@@ -508,7 +544,11 @@ namespace OSE.Editor
                     float idX    = rect.x + 80f + reqOptW;
                     float idW    = rect.width - 110f - tagW - dirtyW - reqOptW;
                     var idRect   = new Rect(idX, rect.y + 1f, idW, rect.height);
-                    EditorGUI.LabelField(idRect, entry.id ?? "—", EditorStyles.miniLabel);
+                    // Show group display name for [G] tasks, raw id for everything else
+                    string displayId = entry.id ?? "—";
+                    if (isGroup && _pkg != null && _pkg.TryGetSubassembly(entry.id, out var dispSub) && dispSub != null)
+                        displayId = dispSub.GetDisplayName();
+                    EditorGUI.LabelField(idRect, displayId, EditorStyles.miniLabel);
 
                     // Group tag badge — shows nesting chain, hover for full path
                     if (groupTag != null)
@@ -1309,6 +1349,65 @@ namespace OSE.Editor
             EditorGUILayout.EndVertical();
         }
 
+        private void DrawAddGroupPicker(StepDefinition step)
+        {
+            if (_pkg == null) return;
+            var allSubs = _pkg.GetSubassemblies();
+            if (allSubs == null || allSubs.Length == 0) { _addTaskPicker = AddTaskPicker.None; return; }
+
+            // Filter: non-aggregate groups only, not already set as requiredSubassemblyId
+            var candidates = new List<SubassemblyDefinition>();
+            foreach (var sub in allSubs)
+            {
+                if (sub == null || sub.isAggregate || string.IsNullOrEmpty(sub.id)) continue;
+                candidates.Add(sub);
+            }
+
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField("Add Group to Step", EditorStyles.boldLabel);
+            if (candidates.Count == 0)
+            {
+                EditorGUILayout.LabelField("  No groups available.", EditorStyles.miniLabel);
+            }
+            else
+            {
+                string[] opts = candidates.ConvertAll(s => $"{s.GetDisplayName()}  ({s.partIds?.Length ?? 0}p)").ToArray();
+                _addPickerGroupIdx = Mathf.Clamp(_addPickerGroupIdx, 0, opts.Length - 1);
+                _addPickerGroupIdx = EditorGUILayout.Popup("Group", _addPickerGroupIdx, opts);
+            }
+            EditorGUILayout.BeginHorizontal();
+            EditorGUI.BeginDisabledGroup(candidates.Count == 0);
+            if (GUILayout.Button("Add", GUILayout.Width(60)))
+            {
+                CommitAddGroup(step, candidates[_addPickerGroupIdx].id);
+                _addTaskPicker = AddTaskPicker.None;
+            }
+            EditorGUI.EndDisabledGroup();
+            if (GUILayout.Button("Cancel", GUILayout.Width(60))) _addTaskPicker = AddTaskPicker.None;
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
+        }
+
+        private void CommitAddGroup(StepDefinition step, string subId)
+        {
+            if (step == null || string.IsNullOrEmpty(subId)) return;
+            step.requiredSubassemblyId = subId;
+            var order = GetOrDeriveTaskOrder(step);
+            // Only add if not already present
+            bool exists = false;
+            foreach (var e in order)
+                if (e.kind == "part" && e.id == subId) { exists = true; break; }
+            if (!exists)
+            {
+                order.Add(new TaskOrderEntry { kind = "part", id = subId });
+                step.taskOrder = order.ToArray();
+            }
+            InvalidateTaskOrderCache();
+            _dirtyStepIds.Add(step.id);
+            _taskSeqReorderListForStepId = null;
+            Repaint();
+        }
+
         private void CommitAddConfirmAction(StepDefinition step)
         {
             if (step == null) return;
@@ -1776,23 +1875,38 @@ namespace OSE.Editor
             {
                 case "part":
                 {
-                    DrawUnifiedSectionHeader($"PART CONTEXT ({selEntry.id})", 0);
-                    if (IsTaskEntryDirty(selEntry, step))
+                    // Detect if this "part" task is actually a group (subassembly)
+                    SubassemblyDefinition groupDef = null;
+                    bool isGroupTask = _pkg != null
+                        && _pkg.TryGetSubassembly(selEntry.id, out groupDef)
+                        && groupDef != null;
+
+                    if (isGroupTask)
                     {
-                        EditorGUILayout.BeginHorizontal();
-                        var ds = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = ColDirty }, fontStyle = FontStyle.Bold };
-                        EditorGUILayout.LabelField("● Unsaved Changes", ds);
-                        if (GUILayout.Button("Save", EditorStyles.miniButton, GUILayout.Width(42)))
-                            SaveTaskEntry(selEntry, step);
-                        if (GUILayout.Button("Revert", EditorStyles.miniButton, GUILayout.Width(52)))
-                            RevertPartEntry(selEntry.id);
-                        EditorGUILayout.EndHorizontal();
+                        // Show group detail instead of individual part detail
+                        DrawUnifiedSectionHeader($"GROUP: {groupDef.GetDisplayName()}", 0);
+                        DrawSubassemblyInlineEditor(groupDef, step);
                     }
-                    DrawPartPoseToggle();
-                    if (_parts != null)
-                        for (int i = 0; i < _parts.Length; i++)
-                            if (_parts[i].def?.id == selEntry.id)
-                            { DrawPartDetailPanel(ref _parts[i]); break; }
+                    else
+                    {
+                        DrawUnifiedSectionHeader($"PART CONTEXT ({selEntry.id})", 0);
+                        if (IsTaskEntryDirty(selEntry, step))
+                        {
+                            EditorGUILayout.BeginHorizontal();
+                            var ds = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = ColDirty }, fontStyle = FontStyle.Bold };
+                            EditorGUILayout.LabelField("● Unsaved Changes", ds);
+                            if (GUILayout.Button("Save", EditorStyles.miniButton, GUILayout.Width(42)))
+                                SaveTaskEntry(selEntry, step);
+                            if (GUILayout.Button("Revert", EditorStyles.miniButton, GUILayout.Width(52)))
+                                RevertPartEntry(selEntry.id);
+                            EditorGUILayout.EndHorizontal();
+                        }
+                        DrawPartPoseToggle();
+                        if (_parts != null)
+                            for (int i = 0; i < _parts.Length; i++)
+                                if (_parts[i].def?.id == selEntry.id)
+                                { DrawPartDetailPanel(ref _parts[i]); break; }
+                    }
 
                     // Phase 7c cue affordance moved to DrawInspectorContextualSections
                     break;
