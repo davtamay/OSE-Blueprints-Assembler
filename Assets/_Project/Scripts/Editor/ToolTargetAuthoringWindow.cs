@@ -388,6 +388,25 @@ namespace OSE.Editor
             public List<StepPoseEntry> stepPoses; // deep-copied for undo
         }
 
+        // ── Group pose state (Phase G1) ──────────────────────────────────────
+        // Mirrors PartEditState but for subassembly/group root GOs.
+        // Populated by BuildGroupList from SubassemblyPreviewPlacement.
+
+        private struct GroupEditState
+        {
+            public SubassemblyDefinition    def;
+            public SubassemblyPreviewPlacement placement;
+            public bool      hasPlacement, isDirty;
+            public Vector3    startPosition,    assembledPosition;
+            public Quaternion startRotation,    assembledRotation;
+            public Vector3    startScale,       assembledScale;
+            public List<StepPoseEntry> stepPoses;
+        }
+
+        private GroupEditState[]       _groups;
+        private int                    _selectedGroupIdx = -1;
+        private int                    _editingGroupPoseMode = PoseModeStart;
+
         // ── MenuItem ──────────────────────────────────────────────────────────
 
         [MenuItem(MenuPath)]

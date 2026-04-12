@@ -176,9 +176,27 @@ namespace OSE.Content
     public sealed class SubassemblyPreviewPlacement
     {
         public string subassemblyId;
+
+        /// <summary>Legacy single-position field. Prefer startPosition for new content.</summary>
         public SceneFloat3 position;
         public SceneQuaternion rotation;
         public SceneFloat3 scale;
+
+        // ── Pose fields (mirrors PartPreviewPlacement) ────────────────────
+        // Start state — where the group floats before placement
+        public SceneFloat3     startPosition;
+        public SceneQuaternion startRotation;
+        public SceneFloat3     startScale;
+
+        // Assembled state — where the group lands after placement
+        public SceneFloat3     assembledPosition;
+        public SceneQuaternion assembledRotation;
+        public SceneFloat3     assembledScale;
+
+        /// <summary>
+        /// Optional step-scoped intermediate poses (same pattern as parts).
+        /// </summary>
+        public StepPoseEntry[] stepPoses;
     }
 
     /// <summary>

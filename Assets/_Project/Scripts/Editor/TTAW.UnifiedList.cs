@@ -1906,8 +1906,17 @@ namespace OSE.Editor
 
                     if (isGroupTask)
                     {
-                        // Show group detail instead of individual part detail
+                        // Show group pose fields + group detail
                         DrawUnifiedSectionHeader($"GROUP: {groupDef.GetDisplayName()}", 0);
+
+                        // Find the GroupEditState for this subassembly
+                        int gIdx = FindGroupIdx(selEntry.id);
+                        if (gIdx >= 0 && _groups != null && gIdx < _groups.Length)
+                        {
+                            DrawGroupPoseFields(ref _groups[gIdx], step);
+                        }
+
+                        // Group membership editor (parts, steps, name, description)
                         DrawSubassemblyInlineEditor(groupDef, step);
                     }
                     else

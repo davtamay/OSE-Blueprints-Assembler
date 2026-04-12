@@ -208,6 +208,8 @@ namespace OSE.Editor
             _multiSelected.Clear();
             _parts = null;
             _selectedPartIdx = -1;
+            _groups = null;
+            _selectedGroupIdx = -1;
             _multiSelectedParts.Clear();
             _multiSelectedTaskSeqIdxs.Clear();
             // Destroy the subassembly root GO so parts unparent back to PreviewRoot.

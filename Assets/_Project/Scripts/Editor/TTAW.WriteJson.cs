@@ -187,6 +187,34 @@ namespace OSE.Editor
                 _pkg.previewConfig.partPlacements = pp.ToArray();
             }
 
+            // Step 1c: Merge dirty _groups into previewConfig.subassemblyPlacements
+            if (_groups != null)
+            {
+                var gp = _pkg.previewConfig.subassemblyPlacements != null
+                    ? new List<SubassemblyPreviewPlacement>(_pkg.previewConfig.subassemblyPlacements)
+                    : new List<SubassemblyPreviewPlacement>();
+                foreach (ref GroupEditState g in _groups.AsSpan())
+                {
+                    if (!g.isDirty || g.def == null) continue;
+                    string gid = g.def.id;
+                    int gidx = gp.FindIndex(e => e != null && e.subassemblyId == gid);
+                    var entry = gidx >= 0 ? gp[gidx] : new SubassemblyPreviewPlacement { subassemblyId = gid };
+                    entry.startPosition     = PackageJsonUtils.ToFloat3(g.startPosition);
+                    entry.startRotation     = PackageJsonUtils.ToQuaternion(g.startRotation);
+                    entry.startScale        = PackageJsonUtils.ToFloat3(g.startScale);
+                    entry.assembledPosition = PackageJsonUtils.ToFloat3(g.assembledPosition);
+                    entry.assembledRotation = PackageJsonUtils.ToQuaternion(g.assembledRotation);
+                    entry.assembledScale    = PackageJsonUtils.ToFloat3(g.assembledScale);
+                    entry.stepPoses         = g.stepPoses?.Count > 0 ? g.stepPoses.ToArray() : null;
+                    // Also update legacy position field for backward compat
+                    entry.position = entry.startPosition;
+                    entry.rotation = entry.startRotation;
+                    entry.scale    = entry.startScale;
+                    if (gidx >= 0) gp[gidx] = entry; else gp.Add(entry);
+                }
+                _pkg.previewConfig.subassemblyPlacements = gp.ToArray();
+            }
+
             // Determine whether this package uses split-layout (assemblies/ folder).
             bool   isSplit          = PackageJsonUtils.IsSplitLayout(_pkgId);
             string previewCfgPath   = isSplit ? PackageJsonUtils.GetPreviewConfigJsonPath(_pkgId) : jsonPath;

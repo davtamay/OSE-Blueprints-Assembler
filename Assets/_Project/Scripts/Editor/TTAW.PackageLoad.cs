@@ -77,6 +77,7 @@ namespace OSE.Editor
             UpdateActiveStep();
             BuildTargetList();
             BuildPartList();
+            BuildGroupList();
             RespawnScene();
             SyncAllPartMeshesToActivePose(); // must come AFTER RespawnScene
 
@@ -295,6 +296,7 @@ namespace OSE.Editor
             {
                 // Rebuild part states so the new assetRefs take effect in the scene
                 BuildPartList();
+            BuildGroupList();
                 RespawnScene();
                 SyncAllPartMeshesToActivePose();
                 WriteJson();
@@ -540,6 +542,9 @@ namespace OSE.Editor
             // positions captured from the spawner's live GO. This ensures they
             // persist correctly when navigating to the next step.
             CaptureUnplacedPartPositions();
+
+            // Sync group root GOs to their active poses (start/assembled/custom)
+            SyncAllGroupRootsToActivePose();
 
             // Add MeshColliders to live parts so click-to-snap works on their surfaces.
             AddMeshCollidersToLiveParts();
