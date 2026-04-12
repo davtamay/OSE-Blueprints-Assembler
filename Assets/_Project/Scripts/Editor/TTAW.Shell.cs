@@ -50,6 +50,7 @@ namespace OSE.Editor
         private Label                _toolbarDirtyLabel;
         private ToolbarButton        _toolbarNewStepBtn;
         private ToolbarToggle        _toolbarInspectorBtn;
+        private Label                _toolbarSelectionLabel;
 
         // ── Three-pane shell references ───────────────────────────────────────
         private TwoPaneSplitView     _outerSplit;     // navigator | (canvas + inspector)
@@ -204,6 +205,20 @@ namespace OSE.Editor
             var row1Spacer = new VisualElement();
             row1Spacer.style.flexGrow = 1;
             row1.Add(row1Spacer);
+
+            // Selection label (right-aligned, shows what's currently selected)
+            _toolbarSelectionLabel = new Label(string.Empty);
+            _toolbarSelectionLabel.style.unityTextAlign = TextAnchor.MiddleRight;
+            _toolbarSelectionLabel.style.marginLeft  = 4;
+            _toolbarSelectionLabel.style.marginRight = 4;
+            _toolbarSelectionLabel.style.color = new Color(0.65f, 0.80f, 0.95f);
+            _toolbarSelectionLabel.style.overflow = Overflow.Hidden;
+            _toolbarSelectionLabel.style.textOverflow = TextOverflow.Ellipsis;
+            _toolbarSelectionLabel.style.whiteSpace = WhiteSpace.NoWrap;
+            _toolbarSelectionLabel.style.flexShrink = 1;
+            _toolbarSelectionLabel.style.minWidth = 0;
+            _toolbarSelectionLabel.tooltip = "Currently selected entity in the authoring window";
+            row1.Add(_toolbarSelectionLabel);
 
             // Dirty indicator (right-aligned, blank when nothing dirty)
             _toolbarDirtyLabel = new Label(string.Empty);
@@ -433,6 +448,13 @@ namespace OSE.Editor
             if (_toolbarInspectorBtn != null && _toolbarInspectorBtn.value != _inspectorVisible)
                 _toolbarInspectorBtn.SetValueWithoutNotify(_inspectorVisible);
 
+            // Unified selection — derive from legacy fields so new code (and
+            // the toolbar label) can read a single struct.
+            SyncEditorSelection();
+            string selLabel = _selection.DisplayLabel;
+            if (_toolbarSelectionLabel != null && _toolbarSelectionLabel.text != selLabel)
+                _toolbarSelectionLabel.text = selLabel;
+
             // Navigator — rebuild on package/size changes, and re-sync the
             // selection if the active step changed via the IMGUI side or the
             // toolbar's step nav buttons.
@@ -442,6 +464,67 @@ namespace OSE.Editor
             // Validation dashboard — re-paints from the cached _validationIssues
             // buffer (cheap when nothing changed).
             RefreshValidationDashboard();
+        }
+
+        // ── Unified selection sync (Phase 5) ──────────────────────────────────
+        //
+        // Reads the 5 legacy selection fields and derives a single
+        // EditorSelection struct. Called every 100 ms from RefreshToolbar.
+        // Cheap (no allocations, no lookups) so the cost is negligible.
+
+        private void SyncEditorSelection()
+        {
+            string stepId = (_stepFilterIdx > 0 && _stepIds != null && _stepFilterIdx < _stepIds.Length)
+                ? _stepIds[_stepFilterIdx]
+                : null;
+
+            int multiCount = _multiSelectedParts.Count + _multiSelected.Count;
+            if (_multiSelectedTaskSeqIdxs.Count > 1)
+                multiCount = Math.Max(multiCount, _multiSelectedTaskSeqIdxs.Count);
+
+            if (multiCount > 1)
+            {
+                _selection = new EditorSelection(
+                    EditorSelection.Kind.None, null, stepId, _editingPoseMode, multiCount);
+                return;
+            }
+
+            // Task sequence selection takes precedence
+            if (_selectedTaskSeqIdx >= 0)
+            {
+                var order = _cachedTaskOrder;
+                if (order != null && _selectedTaskSeqIdx < order.Count)
+                {
+                    var entry = order[_selectedTaskSeqIdx];
+                    var kind  = entry.kind == "part"
+                        ? EditorSelection.Kind.Part
+                        : EditorSelection.Kind.Task;
+                    _selection = new EditorSelection(kind, entry.id, stepId, _editingPoseMode, 0);
+                    return;
+                }
+            }
+
+            // Direct part selection
+            if (_selectedPartIdx >= 0 && _parts != null && _selectedPartIdx < _parts.Length)
+            {
+                _selection = new EditorSelection(
+                    EditorSelection.Kind.Part,
+                    _parts[_selectedPartIdx].def?.id,
+                    stepId, _editingPoseMode, 0);
+                return;
+            }
+
+            // Direct target selection
+            if (_selectedIdx >= 0 && _targets != null && _selectedIdx < _targets.Length)
+            {
+                _selection = new EditorSelection(
+                    EditorSelection.Kind.Target,
+                    _targets[_selectedIdx].def?.id,
+                    stepId, _editingPoseMode, 0);
+                return;
+            }
+
+            _selection = EditorSelection.Empty;
         }
     }
 }

@@ -281,7 +281,58 @@ namespace OSE.Editor
             new[] { "(none)" },                                          // Confirm
         };
 
+        // ── Unified selection (Phase 5) ───────────────────────────────────────
+        //
+        // Derived from the 5 legacy selection fields every 100 ms by
+        // SyncEditorSelection(). New code can read from _selection instead
+        // of juggling the 5 fields directly. Legacy write sites still mutate
+        // the fields directly — SyncEditorSelection picks up changes the
+        // next tick. A future pass can migrate writes to SetSelection() one
+        // at a time without risk.
+        private EditorSelection _selection;
+
         // ── Nested types ──────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Immutable snapshot of what the author currently has selected.
+        /// Built every 100 ms from the legacy fields by SyncEditorSelection.
+        /// </summary>
+        public readonly struct EditorSelection
+        {
+            public enum Kind { None, Part, Target, Task }
+
+            public readonly Kind   SelectionKind;
+            public readonly string Id;           // partId, targetId, or taskOrderEntry id
+            public readonly string StepId;       // id of the step that owns this selection
+            public readonly int    PoseMode;     // PoseModeStart, PoseModeAssembled, or step-pose index
+            public readonly int    MultiCount;   // total multi-selected count (parts + targets)
+
+            public EditorSelection(Kind kind, string id, string stepId, int poseMode, int multiCount)
+            {
+                SelectionKind = kind;
+                Id            = id;
+                StepId        = stepId;
+                PoseMode      = poseMode;
+                MultiCount    = multiCount;
+            }
+
+            public static readonly EditorSelection Empty = new(Kind.None, null, null, -1, 0);
+
+            public string DisplayLabel
+            {
+                get
+                {
+                    if (MultiCount > 1) return $"{MultiCount} selected";
+                    return SelectionKind switch
+                    {
+                        Kind.Part   => $"Part: {Id ?? "?"}",
+                        Kind.Target => $"Target: {Id ?? "?"}",
+                        Kind.Task   => $"Task: {Id ?? "?"}",
+                        _           => string.Empty,
+                    };
+                }
+            }
+        }
 
         private struct TargetEditState
         {
