@@ -196,20 +196,12 @@ namespace OSE.Editor
                 scl = _editAssembledPose ? p.assembledScale     : p.startScale;
             }
 
-            // Apply working orientation in editor preview for subassembly members
-            if (_sceneBuildWorkingOrientation != null && _sceneBuildWorkingOrientationParts.Contains(pid))
-            {
-                var wo = _sceneBuildWorkingOrientation;
-                if (wo.subassemblyRotation.x != 0f || wo.subassemblyRotation.y != 0f || wo.subassemblyRotation.z != 0f)
-                {
-                    Quaternion delta = Quaternion.Euler(wo.subassemblyRotation.x, wo.subassemblyRotation.y, wo.subassemblyRotation.z);
-                    // Rotate position around the subassembly frame center
-                    pos = _sceneBuildSubassemblyFramePos + delta * (pos - _sceneBuildSubassemblyFramePos);
-                    rot = delta * rot;
-                }
-                if (wo.subassemblyPositionOffset.x != 0f || wo.subassemblyPositionOffset.y != 0f || wo.subassemblyPositionOffset.z != 0f)
-                    pos += new Vector3(wo.subassemblyPositionOffset.x, wo.subassemblyPositionOffset.y, wo.subassemblyPositionOffset.z);
-            }
+            // Phase A2: working orientation is now applied via the subassembly
+            // root GO's localRotation (set in EnsureSubassemblyRoot). Parts
+            // parented under the root inherit the rotation automatically via
+            // Unity's transform hierarchy — no manual recomputation needed.
+            // The SetPoseInPreviewSpace helper converts PreviewRoot-space pos/rot
+            // to world space, and the parent GO applies the delta.
 
             if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
             return true;
