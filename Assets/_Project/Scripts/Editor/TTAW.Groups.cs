@@ -156,17 +156,22 @@ namespace OSE.Editor
                 //
                 // Only apply non-origin poses when dirty or hasPlacement AND
                 // the pose mode is not Start.
+                // Only the SELECTED group responds to the pose mode toggle.
+                // All other groups always stay at origin so their member parts
+                // display at their individual PreviewRoot-space positions.
+                bool isThisGroupSelected = _selectedGroupIdx == i;
                 Vector3 pos = Vector3.zero;
                 Quaternion rot = Quaternion.identity;
                 Vector3 scl = Vector3.one;
 
-                if (_editingGroupPoseMode == PoseModeAssembled && (g.isDirty || g.hasPlacement))
+                if (isThisGroupSelected && _editingGroupPoseMode == PoseModeAssembled
+                    && (g.isDirty || g.hasPlacement))
                 {
                     pos = g.assembledPosition;
                     rot = g.assembledRotation;
                     scl = g.assembledScale;
                 }
-                else if (_editingGroupPoseMode >= 0 && g.stepPoses != null
+                else if (isThisGroupSelected && _editingGroupPoseMode >= 0 && g.stepPoses != null
                     && _editingGroupPoseMode < g.stepPoses.Count && (g.isDirty || g.hasPlacement))
                 {
                     var sp = g.stepPoses[_editingGroupPoseMode];
@@ -174,7 +179,7 @@ namespace OSE.Editor
                     rot = PackageJsonUtils.ToUnityQuaternion(sp.rotation);
                     scl = PackageJsonUtils.ToVector3(sp.scale);
                 }
-                // else: Start Pose mode → pos stays (0,0,0), parts at their individual positions
+                // else: Start Pose mode OR non-selected group → origin
 
                 if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
 

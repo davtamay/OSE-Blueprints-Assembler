@@ -331,13 +331,16 @@ namespace OSE.Editor
         /// </summary>
         private bool IsPartManagedByGroupPose(string partId)
         {
-            if (_editingGroupPoseMode == PoseModeStart) return false; // Start = parts at individual positions
+            // Only the SELECTED group's parts are managed — other groups'
+            // parts continue to sync normally regardless of pose mode.
+            if (_editingGroupPoseMode == PoseModeStart) return false;
             if (_groups == null || _selectedGroupIdx < 0 || _selectedGroupIdx >= _groups.Length) return false;
 
             ref GroupEditState g = ref _groups[_selectedGroupIdx];
             if (g.def?.partIds == null) return false;
-            if (!g.isDirty && !g.hasPlacement) return false; // no authored pose, root at origin anyway
+            if (!g.isDirty && !g.hasPlacement) return false;
 
+            // Only match the SELECTED group's member parts, not all groups
             foreach (var pid in g.def.partIds)
                 if (string.Equals(pid, partId, StringComparison.Ordinal))
                     return true;
