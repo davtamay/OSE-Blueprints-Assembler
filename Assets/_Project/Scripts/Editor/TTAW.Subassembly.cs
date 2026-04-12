@@ -753,7 +753,120 @@ namespace OSE.Editor
             Repaint();
         }
 
-        // ── Group drop zone (drag part GOs to add to selected group) ──────────
+        // ── Smart drop zone (one strip: add-to-group OR create-new-group) ────
+
+        /// <summary>
+        /// Single drop zone that adapts its behavior:
+        ///   • Group selected → adds dropped parts to that group (blue accent)
+        ///   • No group selected → creates a new group from the drop (green accent)
+        /// </summary>
+        private void DrawSmartGroupDropZone(StepDefinition step)
+        {
+            if (step == null || _pkg == null) return;
+
+            bool hasSelectedGroup = !string.IsNullOrEmpty(_canvasSelectedSubId);
+            SubassemblyDefinition selectedSub = null;
+            if (hasSelectedGroup)
+                _pkg.TryGetSubassembly(_canvasSelectedSubId, out selectedSub);
+
+            EditorGUILayout.Space(2);
+            var dropRect = GUILayoutUtility.GetRect(0, 24f, GUILayout.ExpandWidth(true));
+            var ev       = Event.current;
+            bool isHover = dropRect.Contains(ev.mousePosition);
+            bool isDrag  = (ev.type == EventType.DragUpdated || ev.type == EventType.DragPerform)
+                           && DragAndDrop.objectReferences != null
+                           && DragAndDrop.objectReferences.Length > 0;
+
+            // Blue = add to existing group, Green = create new group
+            var accentIdle   = hasSelectedGroup ? SubAccent : new Color(0.45f, 0.45f, 0.50f);
+            var accentActive = hasSelectedGroup
+                ? SubAccent
+                : new Color(0.30f, 0.85f, 0.40f);
+
+            var accent = isHover && isDrag ? accentActive : accentIdle;
+            var bg = isHover && isDrag
+                ? new Color(accent.r, accent.g, accent.b, 0.15f)
+                : new Color(0f, 0f, 0f, 0.12f);
+            EditorGUI.DrawRect(dropRect, bg);
+            EditorGUI.DrawRect(new Rect(dropRect.x, dropRect.y, dropRect.width, 1f), accent);
+            EditorGUI.DrawRect(new Rect(dropRect.x, dropRect.yMax - 1f, dropRect.width, 1f), accent);
+
+            var labelStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                normal    = { textColor = accent },
+                alignment = TextAnchor.MiddleCenter,
+                fontStyle = isHover && isDrag ? FontStyle.Bold : FontStyle.Italic,
+            };
+
+            string idleLabel = hasSelectedGroup
+                ? $"Drag parts here to add to \"{selectedSub?.GetDisplayName() ?? _canvasSelectedSubId}\""
+                : "Drag parts here to create a new group";
+            string activeLabel = hasSelectedGroup
+                ? $"Drop to add to \"{selectedSub?.GetDisplayName() ?? _canvasSelectedSubId}\""
+                : $"Drop to create a new group from {DragAndDrop.objectReferences?.Length ?? 0} item(s)";
+            GUI.Label(dropRect, isHover && isDrag ? activeLabel : idleLabel, labelStyle);
+
+            if (!isHover) return;
+
+            if (ev.type == EventType.DragUpdated)
+            {
+                DragAndDrop.visualMode = isDrag ? DragAndDropVisualMode.Copy : DragAndDropVisualMode.Rejected;
+                ev.Use();
+                return;
+            }
+
+            if (ev.type == EventType.DragPerform && isDrag)
+            {
+                DragAndDrop.AcceptDrag();
+
+                var partIds = new List<string>();
+                var allParts = _pkg.GetParts();
+                foreach (var obj in DragAndDrop.objectReferences)
+                {
+                    if (obj == null) continue;
+                    string name = obj.name;
+                    if (string.IsNullOrEmpty(name)) continue;
+                    foreach (var p in allParts)
+                    {
+                        if (p != null && string.Equals(p.id, name, StringComparison.Ordinal))
+                        { partIds.Add(p.id); break; }
+                    }
+                }
+
+                if (partIds.Count == 0)
+                {
+                    ShowNotification(new GUIContent("No dropped items matched a package part ID"));
+                }
+                else if (hasSelectedGroup && selectedSub != null)
+                {
+                    // Add to existing group
+                    var currentSet = new HashSet<string>(selectedSub.partIds ?? Array.Empty<string>(), StringComparer.Ordinal);
+                    int added = 0;
+                    foreach (var pid in partIds)
+                        if (currentSet.Add(pid)) added++;
+                    if (added > 0)
+                    {
+                        selectedSub.partIds = currentSet.ToArray();
+                        _dirtySubassemblyIds.Add(selectedSub.id);
+                        ShowNotification(new GUIContent($"Added {added} part(s) to {selectedSub.GetDisplayName()}"));
+                    }
+                    else
+                    {
+                        ShowNotification(new GUIContent("All parts already in group"));
+                    }
+                }
+                else
+                {
+                    // Create new group
+                    CreateGroupFromSelection(step, partIds);
+                }
+
+                ev.Use();
+                Repaint();
+            }
+        }
+
+        // ── Legacy drop zones (kept for reference, no longer called) ──────────
 
         private void DrawGroupDropZone(string subId)
         {
@@ -874,17 +987,24 @@ namespace OSE.Editor
             EditorGUILayout.BeginHorizontal();
             var titleStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 11 };
             GUILayout.Label(new GUIContent($"GROUPS ({relevant.Count})",
-                "Part groups (subassemblies) that this step belongs to. " +
-                "Click to inspect. Rotate/move via the gizmo in the SceneView.\n" +
-                "Drag parts from the Hierarchy onto the drop zone below to create a new group."),
+                "Part groups that this step belongs to. Click to inspect. " +
+                "Drag parts from the Hierarchy onto the drop zone to create/add."),
                 titleStyle);
             GUILayout.FlexibleSpace();
+            // [+] manual create button
+            var addBtnStyle = new GUIStyle(EditorStyles.miniButton)
+            {
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = SubAccent },
+            };
+            if (GUILayout.Button(new GUIContent("+", "Create an empty group for this step"),
+                    addBtnStyle, GUILayout.Width(22), GUILayout.Height(16)))
+                CreateGroupFromSelection(step, new List<string>(step.requiredPartIds ?? Array.Empty<string>()));
             EditorGUILayout.EndHorizontal();
 
             if (relevant.Count == 0)
             {
-                // No groups yet — just show the create drop zone
-                DrawCreateGroupDropZone(step);
+                DrawSmartGroupDropZone(step);
                 return;
             }
 
@@ -947,7 +1067,7 @@ namespace OSE.Editor
                 }
             }
 
-            // Gizmo hint + drop zone
+            // Gizmo hint (when a group is selected)
             if (!string.IsNullOrEmpty(_canvasSelectedSubId))
             {
                 var hintStyle = new GUIStyle(EditorStyles.miniLabel)
@@ -957,15 +1077,13 @@ namespace OSE.Editor
                     alignment = TextAnchor.MiddleCenter,
                 };
                 EditorGUILayout.LabelField("Rotate/move via the gizmo in SceneView", hintStyle);
-
-                // Drop zone — drag part GOs here to add them to the selected group
-                DrawGroupDropZone(_canvasSelectedSubId);
             }
 
-            // ── "Create new group" drop zone — always visible ─────────────────
-            // Drag any GameObjects from the Hierarchy here to create a brand new
-            // group from them. Works even when no groups exist yet on this step.
-            DrawCreateGroupDropZone(step);
+            // ── Single smart drop zone ────────────────────────────────────────
+            // If a group is selected → dropping adds parts to that group.
+            // If no group is selected → dropping creates a new group.
+            // One strip, zero ambiguity.
+            DrawSmartGroupDropZone(step);
         }
 
         /// <summary>
