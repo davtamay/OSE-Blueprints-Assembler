@@ -32,6 +32,7 @@ namespace OSE.Editor
             if (_dirtyTaskOrderStepIds.Count > 0) return true;
             if (_dirtyPartAssetRefIds.Count > 0)  return true;
             if (_dirtyPartToolIds.Count > 0)      return true;
+            if (_dirtySubassemblyIds.Count > 0)   return true;
             if (_targets != null) foreach (var t in _targets) if (t.isDirty) return true;
             if (_parts   != null) foreach (var p in _parts)   if (p.isDirty) return true;
             return false;
@@ -461,6 +462,66 @@ namespace OSE.Editor
                 }
             }
             _dirtyPartToolIds.Clear();
+
+            // Step 5c-ter: Inject fields for dirty subassemblies (Phase 7e).
+            // The subassembly object already exists in the file (inserted by
+            // InsertSubassembly or loaded from disk); we just update its fields.
+            foreach (string subId in _dirtySubassemblyIds)
+            {
+                if (!_pkg.TryGetSubassembly(subId, out SubassemblyDefinition sub) || sub == null)
+                    continue;
+
+                // name
+                if (!string.IsNullOrEmpty(sub.name))
+                    InjectField(subId, "name", $"\"{sub.name}\"");
+
+                // partIds
+                if (sub.partIds != null && sub.partIds.Length > 0)
+                {
+                    string pJson = "[ " + string.Join(", ",
+                        Array.ConvertAll(sub.partIds, id => $"\"{id}\"")) + " ]";
+                    InjectField(subId, "partIds", pJson);
+                }
+                else
+                {
+                    RemoveField(subId, "partIds");
+                }
+
+                // stepIds
+                if (sub.stepIds != null && sub.stepIds.Length > 0)
+                {
+                    string sJson = "[ " + string.Join(", ",
+                        Array.ConvertAll(sub.stepIds, id => $"\"{id}\"")) + " ]";
+                    InjectField(subId, "stepIds", sJson);
+                }
+                else
+                {
+                    RemoveField(subId, "stepIds");
+                }
+
+                // assemblyId
+                if (!string.IsNullOrEmpty(sub.assemblyId))
+                    InjectField(subId, "assemblyId", $"\"{sub.assemblyId}\"");
+
+                // description
+                if (!string.IsNullOrEmpty(sub.description))
+                    InjectField(subId, "description", $"\"{sub.description}\"");
+                else
+                    RemoveField(subId, "description");
+
+                // isAggregate (only inject when true; remove when false to keep JSON clean)
+                if (sub.isAggregate)
+                    InjectField(subId, "isAggregate", "true");
+                else
+                    RemoveField(subId, "isAggregate");
+
+                // milestoneMessage
+                if (!string.IsNullOrEmpty(sub.milestoneMessage))
+                    InjectField(subId, "milestoneMessage", $"\"{sub.milestoneMessage}\"");
+                else
+                    RemoveField(subId, "milestoneMessage");
+            }
+            _dirtySubassemblyIds.Clear();
 
             // Step 5d: Write stagingPose to parts[] for dirty parts.
             if (_parts != null)

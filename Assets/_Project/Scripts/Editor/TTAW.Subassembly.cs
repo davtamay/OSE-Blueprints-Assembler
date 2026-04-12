@@ -89,7 +89,7 @@ namespace OSE.Editor
 
             // ── "This step belongs to" card ──────────────────────────────────
             if (active != null)
-                DrawActiveSubassemblyCard(active);
+                DrawActiveSubassemblyCard(active, step);
             else
                 DrawStandaloneStepCard(step);
 
@@ -120,7 +120,7 @@ namespace OSE.Editor
 
         // ── Active group card — visual hero, no walls of text ────────────────
 
-        private void DrawActiveSubassemblyCard(SubassemblyDefinition sub)
+        private void DrawActiveSubassemblyCard(SubassemblyDefinition sub, StepDefinition step)
         {
             int parts = sub.partIds?.Length ?? 0;
             int steps = sub.stepIds?.Length ?? 0;
@@ -177,6 +177,10 @@ namespace OSE.Editor
                 EditorGUILayout.LabelField(sub.description, descStyle);
                 EditorGUILayout.EndHorizontal();
             }
+
+            // Phase 7e — inline editor for name, parts, steps
+            DrawSubassemblyInlineEditor(sub, step);
+
             EditorGUILayout.EndVertical();
         }
 
@@ -199,14 +203,192 @@ namespace OSE.Editor
 
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             EditorGUILayout.BeginHorizontal();
+            // Direct-create: writes a new subassembly to the assembly file now.
+            if (GUILayout.Button(
+                    new GUIContent("+ Create group here",
+                        "Create a new subassembly in this step's assembly file, "
+                        + "assigned to this step. You can add parts and build steps "
+                        + "inline afterwards."),
+                    EditorStyles.miniButton, GUILayout.Width(140)))
+                CreateSubassemblyForStep(step);
             GUILayout.FlexibleSpace();
             if (GUILayout.Button(
-                    new GUIContent("Copy new-group JSON",
-                        "Copy a fresh subassembly stub keyed to this step's assembly so you can paste it into the assembly file."),
-                    EditorStyles.miniButton, GUILayout.Width(150)))
+                    new GUIContent("Copy stub JSON",
+                        "Copy a fresh subassembly stub to the clipboard for hand-editing."),
+                    EditorStyles.miniButton, GUILayout.Width(100)))
                 CopyNewSubassemblyStubToClipboard(step);
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.EndVertical();
+        }
+
+        // ── Inline editor for a subassembly's fields (name, partIds, stepIds) ─
+
+        private void DrawSubassemblyInlineEditor(SubassemblyDefinition sub, StepDefinition step)
+        {
+            if (sub == null || _pkg == null) return;
+
+            EditorGUILayout.Space(4);
+
+            // ── Name ──────────────────────────────────────────────────────────
+            EditorGUI.BeginChangeCheck();
+            string newName = EditorGUILayout.TextField("Name", sub.name ?? "");
+            if (EditorGUI.EndChangeCheck() && newName != sub.name)
+            {
+                sub.name = newName;
+                _dirtySubassemblyIds.Add(sub.id);
+            }
+
+            // ── Description ───────────────────────────────────────────────────
+            EditorGUI.BeginChangeCheck();
+            string newDesc = EditorGUILayout.TextField("Description", sub.description ?? "");
+            if (EditorGUI.EndChangeCheck() && newDesc != sub.description)
+            {
+                sub.description = string.IsNullOrWhiteSpace(newDesc) ? null : newDesc;
+                _dirtySubassemblyIds.Add(sub.id);
+            }
+
+            // ── Part membership (checkbox list) ───────────────────────────────
+            EditorGUILayout.LabelField("Parts in this group:", EditorStyles.miniBoldLabel);
+            EditorGUI.indentLevel++;
+            var currentParts = sub.partIds != null
+                ? new HashSet<string>(sub.partIds, StringComparer.Ordinal)
+                : new HashSet<string>(StringComparer.Ordinal);
+            bool partsDirty = false;
+
+            // Show all package parts as toggles (checked = member of this subassembly)
+            var allParts = _pkg.GetParts();
+            int maxShown = 30;
+            int shown    = 0;
+            for (int i = 0; i < allParts.Length && shown < maxShown; i++)
+            {
+                var p = allParts[i];
+                if (p == null || string.IsNullOrEmpty(p.id)) continue;
+                bool was = currentParts.Contains(p.id);
+                bool now = EditorGUILayout.Toggle(p.id, was);
+                if (now != was)
+                {
+                    if (now) currentParts.Add(p.id); else currentParts.Remove(p.id);
+                    partsDirty = true;
+                }
+                shown++;
+            }
+            if (allParts.Length > maxShown)
+                EditorGUILayout.LabelField($"  +{allParts.Length - maxShown} more (expand 'ALL PARTS' in Tool Matrix to see all)",
+                    EditorStyles.miniLabel);
+            EditorGUI.indentLevel--;
+
+            if (partsDirty)
+            {
+                sub.partIds = currentParts.Count > 0 ? currentParts.ToArray() : Array.Empty<string>();
+                _dirtySubassemblyIds.Add(sub.id);
+            }
+
+            // ── Step membership (checkbox list) ───────────────────────────────
+            EditorGUILayout.LabelField("Build steps in this group:", EditorStyles.miniBoldLabel);
+            EditorGUI.indentLevel++;
+            var currentSteps = sub.stepIds != null
+                ? new HashSet<string>(sub.stepIds, StringComparer.Ordinal)
+                : new HashSet<string>(StringComparer.Ordinal);
+            bool stepsDirty = false;
+
+            // Show steps from the same assembly only (or all steps if assemblyId is unknown)
+            var pkgSteps = _pkg.GetSteps();
+            for (int i = 0; i < pkgSteps.Length; i++)
+            {
+                var s = pkgSteps[i];
+                if (s == null || string.IsNullOrEmpty(s.id)) continue;
+                // Filter to same assembly if possible
+                if (!string.IsNullOrEmpty(sub.assemblyId)
+                    && !string.IsNullOrEmpty(s.assemblyId)
+                    && !string.Equals(s.assemblyId, sub.assemblyId, StringComparison.Ordinal))
+                    continue;
+
+                bool was = currentSteps.Contains(s.id);
+                string label = $"[{s.sequenceIndex}] {s.GetDisplayName()}";
+                bool now = EditorGUILayout.Toggle(label, was);
+                if (now != was)
+                {
+                    if (now) currentSteps.Add(s.id); else currentSteps.Remove(s.id);
+                    stepsDirty = true;
+                }
+            }
+            EditorGUI.indentLevel--;
+
+            if (stepsDirty)
+            {
+                sub.stepIds = currentSteps.Count > 0 ? currentSteps.ToArray() : Array.Empty<string>();
+                _dirtySubassemblyIds.Add(sub.id);
+            }
+        }
+
+        // ── Create ────────────────────────────────────────────────────────────
+
+        private void CreateSubassemblyForStep(StepDefinition step)
+        {
+            if (step == null || _pkg == null || string.IsNullOrEmpty(_pkgId)) return;
+
+            string assemblyId = step.assemblyId ?? "";
+            string subId = string.IsNullOrEmpty(assemblyId)
+                ? $"sub_{step.id}"
+                : $"{assemblyId}_sub_{step.id}";
+
+            // Ensure unique
+            int suffix = 1;
+            string candidate = subId;
+            while (_pkg.TryGetSubassembly(candidate, out _)) candidate = $"{subId}_{suffix++}";
+            subId = candidate;
+
+            var newSub = new SubassemblyDefinition
+            {
+                id         = subId,
+                name       = "New Group",
+                assemblyId = assemblyId,
+                partIds    = step.requiredPartIds ?? Array.Empty<string>(),
+                stepIds    = new[] { step.id },
+            };
+
+            // Find the target file
+            string targetFile;
+            if (PackageJsonUtils.IsSplitLayout(_pkgId) && !string.IsNullOrEmpty(assemblyId))
+            {
+                targetFile = System.IO.Path.Combine(
+                    PackageJsonUtils.AuthoringRoot, _pkgId, "assemblies", $"{assemblyId}.json");
+                if (!System.IO.File.Exists(targetFile))
+                    targetFile = PackageJsonUtils.GetJsonPath(_pkgId);
+            }
+            else
+            {
+                targetFile = PackageJsonUtils.GetJsonPath(_pkgId);
+            }
+
+            if (string.IsNullOrEmpty(targetFile) || !System.IO.File.Exists(targetFile))
+            {
+                EditorUtility.DisplayDialog("Error", "Could not locate the target JSON file.", "OK");
+                return;
+            }
+
+            try
+            {
+                PackageJsonUtils.InsertSubassembly(targetFile, newSub);
+            }
+            catch (System.Exception ex)
+            {
+                EditorUtility.DisplayDialog("Error", $"Failed to insert subassembly:\n{ex.Message}", "OK");
+                return;
+            }
+
+            // Reload and wire the step to the new subassembly
+            LoadPkg(_pkgId);
+            // Set the step's subassemblyId to the newly created one so the UI
+            // shows the active card immediately.
+            var reloadedStep = FindStep(step.id);
+            if (reloadedStep != null && string.IsNullOrEmpty(reloadedStep.subassemblyId))
+            {
+                reloadedStep.subassemblyId = subId;
+                _dirtyStepIds.Add(reloadedStep.id);
+            }
+            ShowNotification(new GUIContent($"Created subassembly '{subId}'"));
+            Repaint();
         }
 
         // ── Browse list (compact rows, accent dot per group) ─────────────────

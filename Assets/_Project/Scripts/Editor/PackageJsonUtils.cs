@@ -380,5 +380,90 @@ namespace OSE.Editor
             File.WriteAllText(jsonPath, modified);
             UnityEditor.AssetDatabase.Refresh();
         }
+        /// <summary>
+        /// Inserts a new <see cref="SubassemblyDefinition"/> into the <c>"subassemblies"</c>
+        /// array of the given JSON file. If the file has no <c>"subassemblies"</c> key yet,
+        /// one is created at the top-level object.
+        /// </summary>
+        internal static void InsertSubassembly(string jsonPath, SubassemblyDefinition sub)
+        {
+            string original = File.ReadAllText(jsonPath);
+            string subJson  = RoundFloatsInJson(JsonUtility.ToJson(sub));
+
+            const string label = "\"subassemblies\"";
+            int labelIdx = original.IndexOf(label, System.StringComparison.Ordinal);
+
+            string modified;
+            if (labelIdx >= 0)
+            {
+                // Array exists — append to it (same algorithm as InsertStep).
+                int arrayOpen = original.IndexOf('[', labelIdx);
+                if (arrayOpen < 0)
+                    throw new System.Exception("Found \"subassemblies\" but no opening '['.");
+
+                int depth = 0, arrayClose = -1;
+                for (int i = arrayOpen; i < original.Length; i++)
+                {
+                    char c = original[i];
+                    if (c == '[' || c == '{') depth++;
+                    else if (c == ']' || c == '}')
+                    {
+                        depth--;
+                        if (depth == 0) { arrayClose = i; break; }
+                    }
+                }
+                if (arrayClose < 0)
+                    throw new System.Exception("Could not find closing ']' of subassemblies array.");
+
+                int insertAfter = -1;
+                {
+                    int d = 0;
+                    for (int i = arrayOpen + 1; i < arrayClose; i++)
+                    {
+                        char c = original[i];
+                        if (c == '{') d++;
+                        else if (c == '}') { d--; if (d == 0) insertAfter = i; }
+                    }
+                }
+
+                if (insertAfter < 0)
+                    modified = original.Substring(0, arrayOpen + 1)
+                             + "\n    " + subJson
+                             + original.Substring(arrayOpen + 1);
+                else
+                    modified = original.Substring(0, insertAfter + 1)
+                             + ",\n    " + subJson
+                             + original.Substring(insertAfter + 1);
+            }
+            else
+            {
+                // No "subassemblies" key yet — create one before the file's
+                // closing '}'. Find the last '}' in the file.
+                int lastBrace = original.LastIndexOf('}');
+                if (lastBrace < 0)
+                    throw new System.Exception("JSON file has no closing '}'.");
+
+                // Insert a comma after the last field + the new array.
+                // Walk back from lastBrace to find the nearest non-whitespace
+                // character. If it's not a comma, insert one.
+                int beforeBrace = lastBrace - 1;
+                while (beforeBrace >= 0 && char.IsWhiteSpace(original[beforeBrace])) beforeBrace--;
+                bool needComma = beforeBrace >= 0 && original[beforeBrace] != ',';
+
+                string prefix = needComma ? ",\n  " : "\n  ";
+                modified = original.Substring(0, lastBrace)
+                         + prefix + "\"subassemblies\": [\n    " + subJson + "\n  ]\n}"
+                         + (lastBrace + 1 < original.Length ? original.Substring(lastBrace + 1) : "");
+            }
+
+            // Backup + write
+            string dir    = Path.GetDirectoryName(jsonPath);
+            string backup = Path.Combine(dir, ".pose_backups",
+                $"{Path.GetFileNameWithoutExtension(jsonPath)}_{System.DateTime.Now:yyyyMMdd_HHmmss}_before_new_sub.json");
+            Directory.CreateDirectory(Path.GetDirectoryName(backup));
+            File.WriteAllText(backup, original);
+            File.WriteAllText(jsonPath, modified);
+            AssetDatabase.Refresh();
+        }
     }
 }

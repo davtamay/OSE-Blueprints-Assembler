@@ -221,6 +221,7 @@ namespace OSE.Editor
             _dirtyTaskOrderStepIds.Clear();
             _dirtyPartAssetRefIds.Clear();
             _dirtyPartToolIds.Clear();
+            _dirtySubassemblyIds.Clear();
         }
     }
 }
