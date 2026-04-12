@@ -479,6 +479,51 @@ namespace OSE.Editor
                         Repaint();
                     }
 
+                    // Right-click context menu on task sequence rows
+                    if (Event.current.type == EventType.ContextClick
+                        && rowClickRect.Contains(Event.current.mousePosition))
+                    {
+                        var menu = new GenericMenu();
+
+                        // "Create group from selected parts" — only when multi-selected
+                        // and at least one part is in the selection.
+                        if (_multiSelectedTaskSeqIdxs.Count > 1)
+                        {
+                            var selectedPartIds = new List<string>();
+                            foreach (int tidx in _multiSelectedTaskSeqIdxs)
+                            {
+                                if (tidx < 0 || tidx >= order.Count) continue;
+                                if (order[tidx].kind == "part")
+                                    selectedPartIds.Add(order[tidx].id);
+                            }
+                            if (selectedPartIds.Count > 0)
+                            {
+                                var capturedParts = selectedPartIds;
+                                var capturedStep  = step;
+                                menu.AddItem(
+                                    new GUIContent($"Create group from {capturedParts.Count} selected parts"),
+                                    false,
+                                    () => CreateGroupFromSelection(capturedStep, capturedParts));
+                            }
+                        }
+                        else if (index >= 0 && index < order.Count && order[index].kind == "part")
+                        {
+                            // Single part selected — offer to create a group with just this one
+                            string capturedId   = order[index].id;
+                            var capturedStep2 = step;
+                            menu.AddItem(
+                                new GUIContent($"Create group from '{capturedId}'"),
+                                false,
+                                () => CreateGroupFromSelection(capturedStep2, new List<string> { capturedId }));
+                        }
+
+                        if (menu.GetItemCount() > 0)
+                        {
+                            menu.ShowAsContext();
+                            Event.current.Use();
+                        }
+                    }
+
                     var removeRect = new Rect(rect.xMax - 22f, rect.y + 1f, 22f, rect.height - 2f);
                     if (GUI.Button(removeRect, "×", EditorStyles.miniButton))
                     {

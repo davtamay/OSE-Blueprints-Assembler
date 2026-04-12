@@ -635,6 +635,124 @@ namespace OSE.Editor
             ShowNotification(new GUIContent("Copied new subassembly stub to clipboard"));
         }
 
+        // ── Create group from selection (right-click in task sequence) ──────
+
+        /// <summary>
+        /// Creates a new subassembly from a set of selected part IDs.
+        /// Auto-populates: partIds from the selection, stepIds from every step
+        /// that references any of these parts (via requiredPartIds). Writes to
+        /// disk immediately, reloads, and wires the current step's subassemblyId.
+        /// </summary>
+        private void CreateGroupFromSelection(StepDefinition step, List<string> partIds)
+        {
+            if (step == null || _pkg == null || partIds == null || partIds.Count == 0) return;
+
+            string assemblyId = step.assemblyId ?? "";
+
+            // Generate a readable id from the first part's prefix
+            string seed = partIds[0];
+            int underscoreCount = 0;
+            int cutAt = seed.Length;
+            for (int i = 0; i < seed.Length; i++)
+            {
+                if (seed[i] == '_') underscoreCount++;
+                if (underscoreCount >= 2) { cutAt = i; break; }
+            }
+            string prefix = seed.Substring(0, cutAt);
+            string subId = $"subassembly_{prefix}_group";
+
+            // Ensure unique
+            int suffix = 1;
+            string candidate = subId;
+            while (_pkg.TryGetSubassembly(candidate, out _)) candidate = $"{subId}_{suffix++}";
+            subId = candidate;
+
+            // Auto-find steps that reference any of these parts
+            var partSet = new HashSet<string>(partIds, StringComparer.Ordinal);
+            var autoStepIds = new List<string>();
+            foreach (var s in _pkg.GetSteps())
+            {
+                if (s == null || string.IsNullOrEmpty(s.id)) continue;
+                // Filter to same assembly
+                if (!string.IsNullOrEmpty(assemblyId) && !string.IsNullOrEmpty(s.assemblyId)
+                    && !string.Equals(s.assemblyId, assemblyId, StringComparison.Ordinal))
+                    continue;
+
+                bool touches = false;
+                if (s.requiredPartIds != null)
+                    foreach (var pid in s.requiredPartIds)
+                        if (partSet.Contains(pid)) { touches = true; break; }
+                if (!touches && s.visualPartIds != null)
+                    foreach (var pid in s.visualPartIds)
+                        if (partSet.Contains(pid)) { touches = true; break; }
+                if (touches)
+                    autoStepIds.Add(s.id);
+            }
+
+            var newSub = new SubassemblyDefinition
+            {
+                id         = subId,
+                name       = $"{prefix} group",
+                assemblyId = assemblyId,
+                partIds    = partIds.ToArray(),
+                stepIds    = autoStepIds.ToArray(),
+            };
+
+            // Find target file
+            string targetFile;
+            if (PackageJsonUtils.IsSplitLayout(_pkgId) && !string.IsNullOrEmpty(assemblyId))
+            {
+                targetFile = System.IO.Path.Combine(
+                    PackageJsonUtils.AuthoringRoot, _pkgId, "assemblies", $"{assemblyId}.json");
+                if (!System.IO.File.Exists(targetFile))
+                    targetFile = PackageJsonUtils.GetJsonPath(_pkgId);
+            }
+            else
+            {
+                targetFile = PackageJsonUtils.GetJsonPath(_pkgId);
+            }
+
+            if (string.IsNullOrEmpty(targetFile) || !System.IO.File.Exists(targetFile))
+            {
+                EditorUtility.DisplayDialog("Error", "Could not locate the target JSON file.", "OK");
+                return;
+            }
+
+            try
+            {
+                PackageJsonUtils.InsertSubassembly(targetFile, newSub);
+            }
+            catch (System.Exception ex)
+            {
+                EditorUtility.DisplayDialog("Error", $"Failed to create group:\n{ex.Message}", "OK");
+                return;
+            }
+
+            // Reload and wire the current step
+            LoadPkg(_pkgId);
+            var reloadedStep = FindStep(step.id);
+            if (reloadedStep != null && string.IsNullOrEmpty(reloadedStep.subassemblyId))
+            {
+                reloadedStep.subassemblyId = subId;
+                _dirtyStepIds.Add(reloadedStep.id);
+            }
+
+            // Also set subassemblyId on all auto-found steps
+            foreach (var sid in autoStepIds)
+            {
+                var s = FindStep(sid);
+                if (s != null && string.IsNullOrEmpty(s.subassemblyId))
+                {
+                    s.subassemblyId = subId;
+                    _dirtyStepIds.Add(s.id);
+                }
+            }
+
+            _canvasSelectedSubId = subId;
+            ShowNotification(new GUIContent($"Created group '{newSub.name}' with {partIds.Count} parts, {autoStepIds.Count} steps"));
+            Repaint();
+        }
+
         // ── Group drop zone (drag part GOs to add to selected group) ──────────
 
         private void DrawGroupDropZone(string subId)
