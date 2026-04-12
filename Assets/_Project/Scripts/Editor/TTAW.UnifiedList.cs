@@ -949,13 +949,14 @@ namespace OSE.Editor
                     bool isGroupEntry = _pkg != null && _pkg.TryGetSubassembly(entry.id, out _);
                     if (isGroupEntry)
                     {
-                        // Group task — select the group in the canvas, not a part
+                        // Group task — keep _selectedTaskSeqIdx active (set by caller)
+                        // so DrawTaskInspectorBody shows the group pose fields.
+                        // Do NOT set _canvasSelectedSubId — that's for the canvas
+                        // GROUPS section click, not for task sequence selection.
                         _selectedPartIdx = -1;
                         _selectedPartId  = null;
-                        _canvasSelectedSubId = entry.id;
-                        // Don't select the group root GO — it has HideFlags.DontSave
-                        // which causes Unity's Inspector to throw NullReferenceException.
-                        // Just ping it so the Hierarchy scrolls to it.
+                        _selectedGroupIdx = FindGroupIdx(entry.id);
+                        // Ping the root in Hierarchy without selecting it
                         if (_subassemblyRootGOs.TryGetValue(entry.id, out var rootGO) && rootGO != null)
                             EditorGUIUtility.PingObject(rootGO);
                         Selection.activeGameObject = null;
