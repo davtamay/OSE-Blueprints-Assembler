@@ -37,6 +37,7 @@ namespace OSE.Editor
 
         private int  _visibilityAddPartIdx;
         private bool _visibilityAddAsVisualOnly; // Phase 7 — toggle on the add picker
+        private bool _visibilityBucketsExpanded; // collapsed by default — just count pills
 
         private readonly List<string> _visScratchOwnedHere       = new();
         private readonly List<string> _visScratchVisualOnlyHere  = new();
@@ -64,10 +65,15 @@ namespace OSE.Editor
                                      out int totalVisible,
                                      out HashSet<string> ownedSubPartIds);
 
-            // ── Section header with inline count pills ───────────────────────
+            // ── Section header — count pills are always visible (1 line) ─────
+            // The full bucket detail is collapsed by default. Click the
+            // header to expand. This keeps the canvas compact on most steps
+            // while still showing "yes, 12 parts are on screen" at a glance.
             EditorGUILayout.BeginHorizontal();
+            string chevron = _visibilityBucketsExpanded ? "▼" : "▶";
             var titleStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 11 };
-            GUILayout.Label("WHAT'S SHOWING", titleStyle);
+            if (GUILayout.Button($"{chevron} WHAT'S SHOWING", titleStyle, GUILayout.ExpandWidth(false)))
+                _visibilityBucketsExpanded = !_visibilityBucketsExpanded;
             GUILayout.FlexibleSpace();
             DrawCountPill(VisColorOwned,   _visScratchOwnedHere.Count,        "here");
             DrawCountPill(VisColorVisOnly, _visScratchVisualOnlyHere.Count,   "view");
@@ -75,7 +81,9 @@ namespace OSE.Editor
             DrawCountPill(VisColorEarlier, _visScratchInheritedEarlier.Count, "earlier");
             EditorGUILayout.EndHorizontal();
 
-            // Compact one-line legend (no big blob of text)
+            if (!_visibilityBucketsExpanded) return;
+
+            // Compact one-line legend
             var legendStyle = new GUIStyle(EditorStyles.miniLabel)
             {
                 normal = { textColor = new Color(0.55f, 0.55f, 0.58f) },

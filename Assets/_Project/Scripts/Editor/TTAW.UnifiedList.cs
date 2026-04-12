@@ -51,7 +51,10 @@ namespace OSE.Editor
             var step = FindStep(_stepIds[_stepFilterIdx]);
             if (step == null) { EditorGUILayout.EndScrollView(); return; }
 
-            // ── WORKING ORIENTATION (subassembly steps only) ──────────────────
+            // ── WORKING ORIENTATION — compact 1-line display ────────────────
+            // Full editor moved to inspector (shown when nothing is selected).
+            // The canvas shows only a compact foldout so authors can see/set
+            // orientation without the full card taking vertical space.
             if (!string.IsNullOrWhiteSpace(step.subassemblyId) || !string.IsNullOrWhiteSpace(step.requiredSubassemblyId))
                 DrawWorkingOrientationUI(step);
 
@@ -98,25 +101,16 @@ namespace OSE.Editor
                 DrawTaskInspectorBody(step, order);
             }
 
-            // ── WHAT'S SHOWING (Phase 6 follow-up) ────────────────────────────
-            EditorGUILayout.Space(8);
+            // ── WHAT'S SHOWING — collapsed by default, just count pills ─────
+            // Full bucket detail + add picker open on click. Most authors
+            // only need the pills to confirm "yes, 12 parts are on screen."
+            EditorGUILayout.Space(4);
             DrawVisibilitySection(step);
 
-            // ── SUBASSEMBLY (Phase 6 MVP, simplified) ─────────────────────────
-            EditorGUILayout.Space(8);
-            DrawSubassemblySection(step);
-
-            // ── PART × TOOL AFFINITY (Phase 7b) ───────────────────────────────
-            EditorGUILayout.Space(8);
-            DrawToolAffinitySection(step);
-
-            // ── ANIMATION CUES — step-level, always shown below task panels ───
-            EditorGUILayout.Space(8);
-            DrawAnimationCuesSection(step);
-
-            // ── PARTICLE EFFECTS ─────────────────────────────────────────────
-            EditorGUILayout.Space(8);
-            DrawParticleEffectsSection(step);
+            // Groups, Part×Tool, Animation Cues, and Particle Effects moved
+            // to the inspector pane (right side) as of the canvas redesign.
+            // The inspector dispatches them by selection kind so they appear
+            // only when relevant to what the author is currently editing.
 
             EditorGUILayout.EndScrollView();
         }

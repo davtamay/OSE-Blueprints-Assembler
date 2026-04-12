@@ -114,8 +114,185 @@ namespace OSE.Editor
             EditorGUILayout.Space(2);
 
             _detailScroll = EditorGUILayout.BeginScrollView(_detailScroll);
+
+            // Entity-level detail (part transform, target transform, wire, batch)
             DrawBottomEditPanel();
+
+            // ── Contextual sections (moved from canvas in the redesign) ───────
+            // These appear BELOW the entity detail so the primary authoring
+            // surface (position/rotation/scale) is always visible without
+            // scrolling. The sections that appear depend on what's selected.
+            DrawInspectorContextualSections();
+
             EditorGUILayout.EndScrollView();
+        }
+
+        /// <summary>
+        /// Draws the sections that moved from the canvas to the inspector:
+        /// tool toggles, group membership, animation cues, particle effects.
+        /// Dispatches by selection kind so only relevant sections appear.
+        /// </summary>
+        private void DrawInspectorContextualSections()
+        {
+            // Resolve the current step
+            StepDefinition step = null;
+            if (_stepFilterIdx > 0 && _stepIds != null && _stepFilterIdx < _stepIds.Length)
+                step = FindStep(_stepIds[_stepFilterIdx]);
+
+            // ── Per-selection sections ────────────────────────────────────────
+            if (_selectedTaskSeqIdx >= 0 && step != null)
+            {
+                var order = GetOrDeriveTaskOrder(step);
+                if (order != null && _selectedTaskSeqIdx < order.Count)
+                {
+                    var entry = order[_selectedTaskSeqIdx];
+                    switch (entry.kind)
+                    {
+                        case "part":
+                        {
+                            // Inline tool toggles (replaces the Part×Tool matrix)
+                            DrawInlineToolToggles(entry.id);
+
+                            // Group membership
+                            DrawInspectorGroupLabel(entry.id);
+
+                            // Animation cues for this part
+                            DrawCuesForPart(step, entry.id);
+
+                            // Particle effects (step-level, shown here for convenience)
+                            EditorGUILayout.Space(6);
+                            DrawParticleEffectsSection(step);
+                            break;
+                        }
+                        default: // toolAction, target, wire, confirm
+                        {
+                            // Animation cues for the tool (if wired)
+                            if (step.requiredToolActions != null)
+                            {
+                                foreach (var a in step.requiredToolActions)
+                                {
+                                    if (a?.targetId == entry.id && !string.IsNullOrEmpty(a.toolId))
+                                    { DrawCuesForTool(step, a.toolId); break; }
+                                }
+                            }
+
+                            // Particle effects
+                            EditorGUILayout.Space(6);
+                            DrawParticleEffectsSection(step);
+                            break;
+                        }
+                    }
+                }
+            }
+            else if (step != null)
+            {
+                // Nothing selected — step-level view
+                // Working orientation (subassembly steps only)
+                if (!string.IsNullOrWhiteSpace(step.subassemblyId)
+                    || !string.IsNullOrWhiteSpace(step.requiredSubassemblyId))
+                    DrawWorkingOrientationUI(step);
+
+                // All step-level animation cues
+                EditorGUILayout.Space(6);
+                DrawAnimationCuesSection(step);
+
+                // All step-level particle effects
+                EditorGUILayout.Space(6);
+                DrawParticleEffectsSection(step);
+            }
+        }
+
+        /// <summary>
+        /// Draws inline tool toggles for a part: one toggle per package tool.
+        /// Replaces the canvas-level Part×Tool matrix with a simple,
+        /// zero-cognitive-overhead set of checkboxes.
+        /// </summary>
+        private void DrawInlineToolToggles(string partId)
+        {
+            if (_pkg?.tools == null || _pkg.tools.Length == 0 || string.IsNullOrEmpty(partId))
+                return;
+
+            var part = FindPartById(partId);
+            if (part == null) return;
+
+            EditorGUILayout.Space(6);
+            EditorGUILayout.LabelField("Tools for this part:", EditorStyles.miniBoldLabel);
+
+            var currentToolIds = part.toolIds != null
+                ? new HashSet<string>(part.toolIds, System.StringComparer.Ordinal)
+                : new HashSet<string>(System.StringComparer.Ordinal);
+
+            EditorGUILayout.BeginHorizontal();
+            int col = 0;
+            foreach (var tool in _pkg.tools)
+            {
+                if (tool == null || string.IsNullOrEmpty(tool.id)) continue;
+
+                bool isOn  = currentToolIds.Contains(tool.id);
+                var style  = new GUIStyle(EditorStyles.miniButton)
+                {
+                    fontStyle = FontStyle.Bold,
+                    normal    = { textColor = isOn
+                        ? new Color(0.20f, 0.62f, 0.95f)  // blue accent
+                        : new Color(0.50f, 0.50f, 0.55f) },
+                };
+                string label = (isOn ? "▣ " : "☐ ") + tool.GetDisplayName();
+                if (GUILayout.Button(label, style, GUILayout.Height(18)))
+                    ToggleToolForPart(part, tool.id, !isOn);
+
+                col++;
+                // Wrap to next row after every 2 tools to fit narrow inspector
+                if (col % 2 == 0)
+                {
+                    EditorGUILayout.EndHorizontal();
+                    EditorGUILayout.BeginHorizontal();
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+        }
+
+        /// <summary>
+        /// Shows a compact "Group: X" label with the part's subassembly
+        /// membership. Expandable on click to show the full group detail.
+        /// </summary>
+        private void DrawInspectorGroupLabel(string partId)
+        {
+            if (_pkg == null || string.IsNullOrEmpty(partId)) return;
+
+            var allSubs = _pkg.GetSubassemblies();
+            if (allSubs == null || allSubs.Length == 0) return;
+
+            // Find which subassembly contains this part
+            SubassemblyDefinition ownerSub = null;
+            foreach (var sub in allSubs)
+            {
+                if (sub?.partIds == null) continue;
+                foreach (var pid in sub.partIds)
+                {
+                    if (string.Equals(pid, partId, System.StringComparison.Ordinal))
+                    { ownerSub = sub; break; }
+                }
+                if (ownerSub != null) break;
+            }
+
+            EditorGUILayout.Space(4);
+            if (ownerSub == null)
+            {
+                EditorGUILayout.LabelField("Group: (none — standalone part)",
+                    EditorStyles.miniLabel);
+                return;
+            }
+
+            int parts = ownerSub.partIds?.Length ?? 0;
+            int steps = ownerSub.stepIds?.Length ?? 0;
+            var groupStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                normal = { textColor = new Color(0.20f, 0.62f, 0.95f) }, // blue
+                fontStyle = FontStyle.Bold,
+            };
+            EditorGUILayout.LabelField(
+                $"Group: {ownerSub.GetDisplayName()}  ·  {parts}p · {steps}s",
+                groupStyle);
         }
 
         // ── Package picker — removed in Phase 2; lives in the UITK toolbar (TTAW.Shell.cs).
