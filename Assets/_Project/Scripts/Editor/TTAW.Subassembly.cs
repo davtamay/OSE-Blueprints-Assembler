@@ -579,5 +579,132 @@ namespace OSE.Editor
             EditorGUIUtility.systemCopyBuffer = sb.ToString();
             ShowNotification(new GUIContent("Copied new subassembly stub to clipboard"));
         }
+
+        // ── Phase A4: canvas subassembly list ─────────────────────────────────
+
+        // Which subassembly row is "selected" in the canvas list — clicking it
+        // shows its properties in the inspector (orientation gizmo, membership).
+        private string _canvasSelectedSubId;
+
+        /// <summary>
+        /// Compact subassembly list in the canvas. Shows subassemblies that are
+        /// relevant to this step (the step's own subassembly + any aggregates
+        /// that include it). Clicking a row selects it — the inspector shows
+        /// its detail and the SceneView shows the gizmo.
+        /// </summary>
+        private void DrawCanvasSubassemblyList(StepDefinition step)
+        {
+            if (_pkg == null) return;
+
+            var allSubs = _pkg.GetSubassemblies();
+            if (allSubs == null || allSubs.Length == 0) return;
+
+            // Collect subassemblies relevant to this step
+            string stepSubId = !string.IsNullOrWhiteSpace(step?.subassemblyId)
+                ? step.subassemblyId
+                : step?.requiredSubassemblyId;
+
+            var relevant = new List<SubassemblyDefinition>();
+            for (int i = 0; i < allSubs.Length; i++)
+            {
+                var sub = allSubs[i];
+                if (sub == null) continue;
+                // Include: the step's own subassembly, or any sub whose steps include this step
+                bool isStepOwner = !string.IsNullOrEmpty(stepSubId)
+                                   && string.Equals(sub.id, stepSubId, StringComparison.Ordinal);
+                bool containsStep = false;
+                if (!isStepOwner && sub.stepIds != null && step != null)
+                {
+                    foreach (var sid in sub.stepIds)
+                        if (string.Equals(sid, step.id, StringComparison.Ordinal))
+                        { containsStep = true; break; }
+                }
+                if (isStepOwner || containsStep)
+                    relevant.Add(sub);
+            }
+
+            if (relevant.Count == 0) return;
+
+            // Header
+            EditorGUILayout.BeginHorizontal();
+            var titleStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 11 };
+            GUILayout.Label(new GUIContent($"SUBASSEMBLIES ({relevant.Count})",
+                "Groups that this step belongs to. Click to inspect. " +
+                "Rotate/move via the gizmo in the SceneView."),
+                titleStyle);
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+
+            // Rows
+            for (int i = 0; i < relevant.Count; i++)
+            {
+                var sub = relevant[i];
+                int parts = sub.partIds?.Length ?? 0;
+                int steps = sub.stepIds?.Length ?? 0;
+                bool isSelected = string.Equals(_canvasSelectedSubId, sub.id, StringComparison.Ordinal);
+
+                var rowRect = GUILayoutUtility.GetRect(0, 22f, GUILayout.ExpandWidth(true));
+
+                // Background — highlight selected
+                if (isSelected)
+                    EditorGUI.DrawRect(rowRect, new Color(SubAccent.r, SubAccent.g, SubAccent.b, 0.20f));
+                else if ((i & 1) == 0)
+                    EditorGUI.DrawRect(rowRect, new Color(1f, 1f, 1f, 0.025f));
+
+                // Accent dot
+                EditorGUI.DrawRect(new Rect(rowRect.x + 6f, rowRect.y + 9f, 5f, 5f), SubAccent);
+
+                // Name + counts
+                var nameStyle = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    fontStyle = isSelected ? FontStyle.Bold : FontStyle.Normal,
+                    normal    = { textColor = isSelected ? SubAccent : new Color(0.78f, 0.78f, 0.78f) },
+                    alignment = TextAnchor.MiddleLeft,
+                };
+                var nameRect = new Rect(rowRect.x + 18f, rowRect.y, rowRect.width - 100f, rowRect.height);
+                GUI.Label(nameRect, sub.GetDisplayName(), nameStyle);
+
+                var countStyle = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    normal    = { textColor = new Color(0.55f, 0.58f, 0.62f) },
+                    alignment = TextAnchor.MiddleRight,
+                };
+                var countRect = new Rect(rowRect.xMax - 80f, rowRect.y, 74f, rowRect.height);
+                GUI.Label(countRect, $"{parts}p · {steps}s", countStyle);
+
+                // Click to select/deselect
+                if (Event.current.type == EventType.MouseDown
+                    && Event.current.button == 0
+                    && rowRect.Contains(Event.current.mousePosition))
+                {
+                    _canvasSelectedSubId = isSelected ? null : sub.id;
+                    // Deselect any task-sequence selection so the inspector
+                    // switches to the subassembly view.
+                    if (!isSelected)
+                    {
+                        _selectedTaskSeqIdx = -1;
+                        _multiSelectedTaskSeqIdxs.Clear();
+                        _selectedPartIdx = -1;
+                        _selectedIdx     = -1;
+                        _multiSelectedParts.Clear();
+                        _multiSelected.Clear();
+                    }
+                    Event.current.Use();
+                    Repaint();
+                }
+            }
+
+            // Gizmo hint
+            if (!string.IsNullOrEmpty(_canvasSelectedSubId))
+            {
+                var hintStyle = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    normal    = { textColor = SubAccent },
+                    fontStyle = FontStyle.Italic,
+                    alignment = TextAnchor.MiddleCenter,
+                };
+                EditorGUILayout.LabelField("Use the gizmo in SceneView to rotate/move this group", hintStyle);
+            }
+        }
     }
 }

@@ -51,13 +51,6 @@ namespace OSE.Editor
             var step = FindStep(_stepIds[_stepFilterIdx]);
             if (step == null) { EditorGUILayout.EndScrollView(); return; }
 
-            // ── WORKING ORIENTATION — compact 1-line display ────────────────
-            // Full editor moved to inspector (shown when nothing is selected).
-            // The canvas shows only a compact foldout so authors can see/set
-            // orientation without the full card taking vertical space.
-            if (!string.IsNullOrWhiteSpace(step.subassemblyId) || !string.IsNullOrWhiteSpace(step.requiredSubassemblyId))
-                DrawWorkingOrientationUI(step);
-
             var order = GetOrDeriveTaskOrder(step);
 
             // ── TASK SEQUENCE ──────────────────────────────────────────────────
@@ -100,6 +93,13 @@ namespace OSE.Editor
             {
                 DrawTaskInspectorBody(step, order);
             }
+
+            // ── SUBASSEMBLIES (Phase A4) ─────────────────────────────────────
+            // Clickable list of subassemblies visible in this step. Clicking
+            // one selects it — the inspector shows its properties and the
+            // SceneView shows the rotation/position gizmo on its root GO.
+            EditorGUILayout.Space(4);
+            DrawCanvasSubassemblyList(step);
 
             // ── WHAT'S SHOWING — collapsed by default, just count pills ─────
             // Full bucket detail + add picker open on click. Most authors
@@ -681,6 +681,7 @@ namespace OSE.Editor
         {
             if (entry == null) return;
             _activeTaskKind = entry.kind;
+            _canvasSelectedSubId = null; // clear subassembly selection when a task is clicked
             _poseSwitchCooldownUntil = EditorApplication.timeSinceStartup + 0.5; // suppress false dirty from handle re-init after selection change
             switch (entry.kind)
             {

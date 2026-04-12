@@ -184,14 +184,14 @@ namespace OSE.Editor
                     }
                 }
             }
+            else if (!string.IsNullOrEmpty(_canvasSelectedSubId) && step != null)
+            {
+                // A subassembly is selected in the canvas list
+                DrawInspectorForSubassembly(step, _canvasSelectedSubId);
+            }
             else if (step != null)
             {
                 // Nothing selected — step-level view
-                // Working orientation (subassembly steps only)
-                if (!string.IsNullOrWhiteSpace(step.subassemblyId)
-                    || !string.IsNullOrWhiteSpace(step.requiredSubassemblyId))
-                    DrawWorkingOrientationUI(step);
-
                 // All step-level animation cues
                 EditorGUILayout.Space(6);
                 DrawAnimationCuesSection(step);
@@ -249,6 +249,62 @@ namespace OSE.Editor
                 }
             }
             EditorGUILayout.EndHorizontal();
+        }
+
+        /// <summary>
+        /// Full inspector panel for a selected subassembly from the canvas list.
+        /// Shows: name, orientation (read-only values from the gizmo), part
+        /// membership, step membership, and inline editor for name/description.
+        /// </summary>
+        private void DrawInspectorForSubassembly(StepDefinition step, string subId)
+        {
+            if (!_pkg.TryGetSubassembly(subId, out SubassemblyDefinition sub) || sub == null)
+            {
+                EditorGUILayout.LabelField($"Subassembly '{subId}' not found.", EditorStyles.miniLabel);
+                return;
+            }
+
+            // Header
+            var headerStyle = new GUIStyle(EditorStyles.boldLabel)
+            {
+                normal = { textColor = new Color(0.20f, 0.62f, 0.95f) },
+                fontSize = 12,
+            };
+            EditorGUILayout.LabelField($"GROUP: {sub.GetDisplayName()}", headerStyle);
+            EditorGUILayout.Space(4);
+
+            // Orientation readout (from the gizmo — read-only display)
+            if (step.workingOrientation != null)
+            {
+                var wo = step.workingOrientation;
+                var rotStyle = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    normal = { textColor = new Color(0.65f, 0.70f, 0.80f) },
+                };
+                string rotText = $"Orientation: ({wo.subassemblyRotation.x:F1}°, {wo.subassemblyRotation.y:F1}°, {wo.subassemblyRotation.z:F1}°)";
+                string ofsText = $"Offset: ({wo.subassemblyPositionOffset.x:F3}, {wo.subassemblyPositionOffset.y:F3}, {wo.subassemblyPositionOffset.z:F3})";
+                EditorGUILayout.LabelField(rotText, rotStyle);
+                EditorGUILayout.LabelField(ofsText, rotStyle);
+                EditorGUILayout.LabelField("Use the gizmo in the SceneView to adjust.",
+                    new GUIStyle(EditorStyles.miniLabel) { fontStyle = FontStyle.Italic,
+                        normal = { textColor = new Color(0.55f, 0.55f, 0.60f) } });
+            }
+            else
+            {
+                EditorGUILayout.LabelField("No working orientation on this step.",
+                    EditorStyles.miniLabel);
+            }
+
+            EditorGUILayout.Space(4);
+
+            // Inline editor (name, description, parts, steps)
+            DrawSubassemblyInlineEditor(sub, step);
+
+            // Step-level cues + particles
+            EditorGUILayout.Space(6);
+            DrawAnimationCuesSection(step);
+            EditorGUILayout.Space(6);
+            DrawParticleEffectsSection(step);
         }
 
         /// <summary>
