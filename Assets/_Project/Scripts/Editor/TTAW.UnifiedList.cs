@@ -369,18 +369,36 @@ namespace OSE.Editor
             // Rebuild the ReorderableList whenever the step changes or the list is null
             if (_taskSeqReorderList == null || _taskSeqReorderListForStepId != step.id)
             {
-                // Build part→first-group-name lookup for group tags on rows
+                // Build part→group-chain lookup for group tags on rows.
+                // Shows the full nesting path: "Parent > Child" so the author
+                // can see which groups a part belongs to at a glance.
                 _partToGroupName = new Dictionary<string, string>(StringComparer.Ordinal);
                 var allSubs = _pkg?.GetSubassemblies();
                 if (allSubs != null)
                 {
+                    // Build child→parent map from memberSubassemblyIds
+                    var childToParent = new Dictionary<string, SubassemblyDefinition>(StringComparer.Ordinal);
                     foreach (var sub in allSubs)
                     {
-                        if (sub?.partIds == null) continue;
+                        if (sub?.memberSubassemblyIds == null) continue;
+                        foreach (var childId in sub.memberSubassemblyIds)
+                        {
+                            if (!string.IsNullOrEmpty(childId) && !childToParent.ContainsKey(childId))
+                                childToParent[childId] = sub;
+                        }
+                    }
+
+                    foreach (var sub in allSubs)
+                    {
+                        if (sub?.partIds == null || sub.isAggregate) continue;
+                        // Build the chain: walk up parent links
+                        string chain = sub.GetDisplayName();
+                        if (childToParent.TryGetValue(sub.id, out var parent))
+                            chain = parent.GetDisplayName() + " > " + chain;
                         foreach (var pid in sub.partIds)
                         {
                             if (!string.IsNullOrEmpty(pid) && !_partToGroupName.ContainsKey(pid))
-                                _partToGroupName[pid] = sub.GetDisplayName();
+                                _partToGroupName[pid] = chain;
                         }
                     }
                 }
@@ -435,12 +453,12 @@ namespace OSE.Editor
                     var badgeRect = new Rect(rect.x + 24f, rect.y + 1f, 52f, rect.height - 2f);
                     EditorGUI.LabelField(badgeRect, badge, badgeStyle);
 
-                    // Required/Optional indicator (part tasks only) — click to toggle
-                    float reqOptW = 0f;
-                    if (entry.kind == "part")
+                    // Required/Optional indicator — ALL task kinds are toggleable.
+                    // Reads from entry.isOptional (persisted in taskOrder[]).
+                    // For part tasks, also syncs to requiredPartIds/optionalPartIds.
+                    float reqOptW = 18f;
+                    bool isOptional = entry.isOptional;
                     {
-                        bool isOptional = step.optionalPartIds != null
-                            && System.Array.IndexOf(step.optionalPartIds, entry.id) >= 0;
                         string roLabel = isOptional ? "O" : "R";
                         Color roColor  = isOptional
                             ? new Color(0.95f, 0.70f, 0.20f)  // amber
@@ -452,28 +470,38 @@ namespace OSE.Editor
                             alignment = TextAnchor.MiddleCenter,
                             normal    = { textColor = roColor },
                         };
-                        reqOptW = 18f;
                         var roRect = new Rect(rect.x + 78f, rect.y + 2f, 16f, rect.height - 4f);
                         if (GUI.Button(roRect, new GUIContent(roLabel,
                             isOptional ? "Optional — click to make Required" : "Required — click to make Optional"),
                             roStyle))
                         {
-                            TogglePartRequiredOptional(step, entry.id, isOptional);
+                            entry.isOptional = !isOptional;
+                            // For parts, also sync to the step-level arrays
+                            if (entry.kind == "part")
+                                TogglePartRequiredOptional(step, entry.id, isOptional);
+                            // Persist the taskOrder change
+                            step.taskOrder = order.ToArray();
+                            _dirtyStepIds.Add(step.id);
+                            _dirtyTaskOrderStepIds.Add(step.id);
+                            Repaint();
                         }
                     }
 
                     // ID label + group tag + per-task dirty dot
                     bool entryDirty = IsTaskEntryDirty(entry, step);
 
-                    // Group tag — show which group this part belongs to (blue, right-aligned)
+                    // Group tag — show the full nesting chain (blue, right-aligned)
+                    // e.g. "D3D Frame > Bottom Frame Side"
                     string groupTag = null;
+                    string groupTagFull = null; // full text for tooltip
                     float tagW = 0f;
                     if (entry.kind == "part" && _partToGroupName != null
                         && _partToGroupName.TryGetValue(entry.id, out string gName))
                     {
-                        // Truncate long names to fit
-                        groupTag = gName.Length > 16 ? gName.Substring(0, 14) + "…" : gName;
-                        tagW = 8f + groupTag.Length * 5.5f; // rough char-width estimate
+                        groupTagFull = gName;
+                        // Truncate display to fit the row, but keep full text in tooltip
+                        groupTag = gName.Length > 28 ? gName.Substring(0, 26) + "…" : gName;
+                        tagW = 8f + groupTag.Length * 5.2f;
                     }
 
                     float dirtyW = entryDirty ? 14f : 0f;
@@ -482,18 +510,18 @@ namespace OSE.Editor
                     var idRect   = new Rect(idX, rect.y + 1f, idW, rect.height);
                     EditorGUI.LabelField(idRect, entry.id ?? "—", EditorStyles.miniLabel);
 
-                    // Group tag badge
+                    // Group tag badge — shows nesting chain, hover for full path
                     if (groupTag != null)
                     {
                         var tagRect = new Rect(idRect.xMax + 2f, rect.y + 3f, tagW, rect.height - 4f);
-                        EditorGUI.DrawRect(tagRect, new Color(0.20f, 0.62f, 0.95f, 0.25f));
+                        EditorGUI.DrawRect(tagRect, new Color(0.20f, 0.62f, 0.95f, 0.20f));
                         var tagStyle = new GUIStyle(EditorStyles.miniLabel)
                         {
                             normal    = { textColor = new Color(0.45f, 0.75f, 0.95f) },
                             fontSize  = 8,
                             alignment = TextAnchor.MiddleCenter,
                         };
-                        GUI.Label(tagRect, groupTag, tagStyle);
+                        GUI.Label(tagRect, new GUIContent(groupTag, groupTagFull), tagStyle);
                     }
 
                     if (entryDirty)

@@ -1295,12 +1295,7 @@
       "sequenceIndex": 2,
       "instructionText": "Equip the framing square and check the upper-left corner marker on the bottom frame side before any clamp load or heat is introduced.",
       "whyItMattersText": "Verifying the bottom frame side before welding catches layout error while the bars can still be shifted freely.",
-      "optionalPartIds": [
-        "d3d_frame_bottom_top_bar",
-        "d3d_frame_bottom_right_bar",
-        "d3d_frame_bottom_bottom_bar",
-        "d3d_frame_bottom_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_framing_square"
       ],
@@ -1353,12 +1348,7 @@
       "sequenceIndex": 3,
       "instructionText": "Equip the locking clamp and pin the verified bottom frame side at the center hold-down marker so the bars stay flat while the corner tacks go in.",
       "whyItMattersText": "Stable hold-down prevents the overlapped bars from walking out of square once tack weld heat is added.",
-      "optionalPartIds": [
-        "d3d_frame_bottom_top_bar",
-        "d3d_frame_bottom_right_bar",
-        "d3d_frame_bottom_bottom_bar",
-        "d3d_frame_bottom_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_locking_clamp"
       ],
@@ -1412,12 +1402,7 @@
       "sequenceIndex": 4,
       "instructionText": "Equip the MIG torch and place four short tack welds on the bottom frame side in this order: upper-left, lower-right, upper-right, then lower-left. Keep the panel flat and avoid a long heat soak.",
       "whyItMattersText": "Short tacks lock the overlap geometry in place while limiting distortion before the full frame cube is assembled.",
-      "optionalPartIds": [
-        "d3d_frame_bottom_top_bar",
-        "d3d_frame_bottom_right_bar",
-        "d3d_frame_bottom_bottom_bar",
-        "d3d_frame_bottom_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_mig_torch"
       ],
@@ -1515,7 +1500,7 @@
       "subassemblyId": "subassembly_top_frame_side",
       "sequenceIndex": 5,
       "instructionText": "Place the four top frame bars. Same 1-inch overlap, same 14-inch square.",
-      "whyItMattersText": "Same geometry rules apply \u00e2\u20ac\u201d keep the 14-inch outer square consistent across every side.",
+      "whyItMattersText": "Same geometry rules apply â€” keep the 14-inch outer square consistent across every side.",
       "requiredPartIds": [
         "d3d_frame_top_top_bar",
         "d3d_frame_top_right_bar",
@@ -1564,7 +1549,7 @@
       },
       "guidance": {
         "instructionText": "Place the four top frame bars. Same 1-inch overlap, same 14-inch square.",
-        "whyItMattersText": "Same geometry rules apply \u00e2\u20ac\u201d keep the 14-inch outer square consistent across every side."
+        "whyItMattersText": "Same geometry rules apply â€” keep the 14-inch outer square consistent across every side."
       }
     },
     {
@@ -1575,12 +1560,7 @@
       "sequenceIndex": 6,
       "instructionText": "Check the corner with the framing square before clamping.",
       "whyItMattersText": "Catching errors before clamping saves time.",
-      "optionalPartIds": [
-        "d3d_frame_top_top_bar",
-        "d3d_frame_top_right_bar",
-        "d3d_frame_top_bottom_bar",
-        "d3d_frame_top_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_framing_square"
       ],
@@ -1633,12 +1613,7 @@
       "sequenceIndex": 7,
       "instructionText": "Pin the panel flat at the center hold-down.",
       "whyItMattersText": "Hold-down keeps the bars from shifting during welding.",
-      "optionalPartIds": [
-        "d3d_frame_top_top_bar",
-        "d3d_frame_top_right_bar",
-        "d3d_frame_top_bottom_bar",
-        "d3d_frame_top_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_locking_clamp"
       ],
@@ -1692,12 +1667,7 @@
       "sequenceIndex": 8,
       "instructionText": "Tack the four corners: upper-left, lower-right, upper-right, lower-left.",
       "whyItMattersText": "Diagonal order balances heat and prevents warping.",
-      "optionalPartIds": [
-        "d3d_frame_top_top_bar",
-        "d3d_frame_top_right_bar",
-        "d3d_frame_top_bottom_bar",
-        "d3d_frame_top_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_mig_torch"
       ],
@@ -1852,12 +1822,7 @@
       "subassemblyId": "subassembly_left_frame_side",
       "sequenceIndex": 10,
       "instructionText": "Verify square.",
-      "optionalPartIds": [
-        "d3d_frame_left_top_bar",
-        "d3d_frame_left_right_bar",
-        "d3d_frame_left_bottom_bar",
-        "d3d_frame_left_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_framing_square"
       ],
@@ -1909,12 +1874,7 @@
       "subassemblyId": "subassembly_left_frame_side",
       "sequenceIndex": 11,
       "instructionText": "Clamp the panel.",
-      "optionalPartIds": [
-        "d3d_frame_left_top_bar",
-        "d3d_frame_left_right_bar",
-        "d3d_frame_left_bottom_bar",
-        "d3d_frame_left_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_locking_clamp"
       ],
@@ -1967,12 +1927,7 @@
       "subassemblyId": "subassembly_left_frame_side",
       "sequenceIndex": 12,
       "instructionText": "Tack-weld all four corners in diagonal order.",
-      "optionalPartIds": [
-        "d3d_frame_left_top_bar",
-        "d3d_frame_left_right_bar",
-        "d3d_frame_left_bottom_bar",
-        "d3d_frame_left_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_mig_torch"
       ],
@@ -2058,7 +2013,7 @@
         "whyItMattersText": null
       },
       "reinforcement": {
-        "milestoneMessage": "Three sides complete \u00e2\u20ac\u201d you did this one on your own.",
+        "milestoneMessage": "Three sides complete â€” you did this one on your own.",
         "safetyNote": "Keep the MIG torch tip clean between tacks. A dirty tip causes spatter and weak penetration."
       }
     },
@@ -2127,12 +2082,7 @@
       "subassemblyId": "subassembly_right_frame_side",
       "sequenceIndex": 14,
       "instructionText": "Check square.",
-      "optionalPartIds": [
-        "d3d_frame_right_top_bar",
-        "d3d_frame_right_right_bar",
-        "d3d_frame_right_bottom_bar",
-        "d3d_frame_right_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_framing_square"
       ],
@@ -2184,12 +2134,7 @@
       "subassemblyId": "subassembly_right_frame_side",
       "sequenceIndex": 15,
       "instructionText": "Clamp.",
-      "optionalPartIds": [
-        "d3d_frame_right_top_bar",
-        "d3d_frame_right_right_bar",
-        "d3d_frame_right_bottom_bar",
-        "d3d_frame_right_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_locking_clamp"
       ],
@@ -2242,12 +2187,7 @@
       "subassemblyId": "subassembly_right_frame_side",
       "sequenceIndex": 16,
       "instructionText": "Tack-weld corners.",
-      "optionalPartIds": [
-        "d3d_frame_right_top_bar",
-        "d3d_frame_right_right_bar",
-        "d3d_frame_right_bottom_bar",
-        "d3d_frame_right_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_mig_torch"
       ],
@@ -2402,12 +2342,7 @@
       "subassemblyId": "subassembly_front_frame_side",
       "sequenceIndex": 18,
       "instructionText": "Check square.",
-      "optionalPartIds": [
-        "d3d_frame_front_top_bar",
-        "d3d_frame_front_right_bar",
-        "d3d_frame_front_bottom_bar",
-        "d3d_frame_front_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_framing_square"
       ],
@@ -2459,12 +2394,7 @@
       "subassemblyId": "subassembly_front_frame_side",
       "sequenceIndex": 19,
       "instructionText": "Clamp.",
-      "optionalPartIds": [
-        "d3d_frame_front_top_bar",
-        "d3d_frame_front_right_bar",
-        "d3d_frame_front_bottom_bar",
-        "d3d_frame_front_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_locking_clamp"
       ],
@@ -2517,12 +2447,7 @@
       "subassemblyId": "subassembly_front_frame_side",
       "sequenceIndex": 20,
       "instructionText": "Tack-weld corners.",
-      "optionalPartIds": [
-        "d3d_frame_front_top_bar",
-        "d3d_frame_front_right_bar",
-        "d3d_frame_front_bottom_bar",
-        "d3d_frame_front_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_mig_torch"
       ],
@@ -2677,12 +2602,7 @@
       "subassemblyId": "subassembly_rear_frame_side",
       "sequenceIndex": 22,
       "instructionText": "Check square.",
-      "optionalPartIds": [
-        "d3d_frame_rear_top_bar",
-        "d3d_frame_rear_right_bar",
-        "d3d_frame_rear_bottom_bar",
-        "d3d_frame_rear_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_framing_square"
       ],
@@ -2734,12 +2654,7 @@
       "subassemblyId": "subassembly_rear_frame_side",
       "sequenceIndex": 23,
       "instructionText": "Clamp.",
-      "optionalPartIds": [
-        "d3d_frame_rear_top_bar",
-        "d3d_frame_rear_right_bar",
-        "d3d_frame_rear_bottom_bar",
-        "d3d_frame_rear_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_locking_clamp"
       ],
@@ -2792,12 +2707,7 @@
       "subassemblyId": "subassembly_rear_frame_side",
       "sequenceIndex": 24,
       "instructionText": "Tack-weld corners.",
-      "optionalPartIds": [
-        "d3d_frame_rear_top_bar",
-        "d3d_frame_rear_right_bar",
-        "d3d_frame_rear_bottom_bar",
-        "d3d_frame_rear_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_mig_torch"
       ],
@@ -3311,34 +3221,9 @@
       "assemblyId": "assembly_d3d_frame",
       "subassemblyId": "subassembly_cube_joining",
       "sequenceIndex": 36,
-      "instructionText": "Equip the framing square and check the top-front-left cube corner. All six panels are now tacked in place \u00e2\u20ac\u201d verify the cube is square before running the seam welds.",
+      "instructionText": "Equip the framing square and check the top-front-left cube corner. All six panels are now tacked in place â€” verify the cube is square before running the seam welds.",
       "whyItMattersText": "This catches accumulated twist or panel drift before the seam welds permanently lock the cube geometry.",
-      "optionalPartIds": [
-        "d3d_frame_bottom_top_bar",
-        "d3d_frame_bottom_right_bar",
-        "d3d_frame_bottom_bottom_bar",
-        "d3d_frame_bottom_left_bar",
-        "d3d_frame_top_top_bar",
-        "d3d_frame_top_right_bar",
-        "d3d_frame_top_bottom_bar",
-        "d3d_frame_top_left_bar",
-        "d3d_frame_left_top_bar",
-        "d3d_frame_left_right_bar",
-        "d3d_frame_left_bottom_bar",
-        "d3d_frame_left_left_bar",
-        "d3d_frame_right_top_bar",
-        "d3d_frame_right_right_bar",
-        "d3d_frame_right_bottom_bar",
-        "d3d_frame_right_left_bar",
-        "d3d_frame_front_top_bar",
-        "d3d_frame_front_right_bar",
-        "d3d_frame_front_bottom_bar",
-        "d3d_frame_front_left_bar",
-        "d3d_frame_rear_top_bar",
-        "d3d_frame_rear_right_bar",
-        "d3d_frame_rear_bottom_bar",
-        "d3d_frame_rear_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_framing_square"
       ],
@@ -3668,7 +3553,7 @@
       "assemblyId": "assembly_d3d_frame",
       "subassemblyId": "subassembly_cube_joining",
       "sequenceIndex": 41,
-      "instructionText": "Slide a 3D-printed corner bracket onto each of the four lower cube corners \u00e2\u20ac\u201d the three bracket arms wrap around the outside faces of the three frame tubes meeting at that corner. Push each bracket flush until it seats against the frame. Thread two M6x18 bolts per bracket in by hand until finger-tight \u00e2\u20ac\u201d do not use the allen key yet. Work in this order: front-left, rear-right, front-right, rear-left.",
+      "instructionText": "Slide a 3D-printed corner bracket onto each of the four lower cube corners â€” the three bracket arms wrap around the outside faces of the three frame tubes meeting at that corner. Push each bracket flush until it seats against the frame. Thread two M6x18 bolts per bracket in by hand until finger-tight â€” do not use the allen key yet. Work in this order: front-left, rear-right, front-right, rear-left.",
       "whyItMattersText": "Starting with the lower corners establishes the base geometry of the cube before the upper corners are locked in.",
       "requiredPartIds": [
         "compound007_lower_fl",
@@ -3676,32 +3561,7 @@
         "compound007_lower_rl",
         "compound007_lower_rr"
       ],
-      "optionalPartIds": [
-        "d3d_frame_bottom_top_bar",
-        "d3d_frame_bottom_right_bar",
-        "d3d_frame_bottom_bottom_bar",
-        "d3d_frame_bottom_left_bar",
-        "d3d_frame_top_top_bar",
-        "d3d_frame_top_right_bar",
-        "d3d_frame_top_bottom_bar",
-        "d3d_frame_top_left_bar",
-        "d3d_frame_left_top_bar",
-        "d3d_frame_left_right_bar",
-        "d3d_frame_left_bottom_bar",
-        "d3d_frame_left_left_bar",
-        "d3d_frame_right_top_bar",
-        "d3d_frame_right_right_bar",
-        "d3d_frame_right_bottom_bar",
-        "d3d_frame_right_left_bar",
-        "d3d_frame_front_top_bar",
-        "d3d_frame_front_right_bar",
-        "d3d_frame_front_bottom_bar",
-        "d3d_frame_front_left_bar",
-        "d3d_frame_rear_top_bar",
-        "d3d_frame_rear_right_bar",
-        "d3d_frame_rear_bottom_bar",
-        "d3d_frame_rear_left_bar"
-      ],
+      "optionalPartIds": [],
       "targetIds": [
         "target_cube_weld_lower_front_left",
         "target_cube_weld_lower_rear_right",
@@ -3734,34 +3594,9 @@
       "assemblyId": "assembly_d3d_frame",
       "subassemblyId": "subassembly_cube_joining",
       "sequenceIndex": 42,
-      "instructionText": "Use the M5 allen key to snug all 8 bolts across the four lower brackets. Snug means the bolt is fully seated and the bracket cannot rock on the frame \u00e2\u20ac\u201d not final torque. Keep the frame slightly adjustable for the upper brackets to align.",
+      "instructionText": "Use the M5 allen key to snug all 8 bolts across the four lower brackets. Snug means the bolt is fully seated and the bracket cannot rock on the frame â€” not final torque. Keep the frame slightly adjustable for the upper brackets to align.",
       "whyItMattersText": "Leaving bolts finger-tight allows minor adjustments when the upper brackets are added, ensuring the cube stays square.",
-      "optionalPartIds": [
-        "d3d_frame_bottom_top_bar",
-        "d3d_frame_bottom_right_bar",
-        "d3d_frame_bottom_bottom_bar",
-        "d3d_frame_bottom_left_bar",
-        "d3d_frame_top_top_bar",
-        "d3d_frame_top_right_bar",
-        "d3d_frame_top_bottom_bar",
-        "d3d_frame_top_left_bar",
-        "d3d_frame_left_top_bar",
-        "d3d_frame_left_right_bar",
-        "d3d_frame_left_bottom_bar",
-        "d3d_frame_left_left_bar",
-        "d3d_frame_right_top_bar",
-        "d3d_frame_right_right_bar",
-        "d3d_frame_right_bottom_bar",
-        "d3d_frame_right_left_bar",
-        "d3d_frame_front_top_bar",
-        "d3d_frame_front_right_bar",
-        "d3d_frame_front_bottom_bar",
-        "d3d_frame_front_left_bar",
-        "d3d_frame_rear_top_bar",
-        "d3d_frame_rear_right_bar",
-        "d3d_frame_rear_bottom_bar",
-        "d3d_frame_rear_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_allen_key_metric"
       ],
@@ -3845,32 +3680,7 @@
         "compound007_upper_rl",
         "compound007_upper_rr"
       ],
-      "optionalPartIds": [
-        "d3d_frame_bottom_top_bar",
-        "d3d_frame_bottom_right_bar",
-        "d3d_frame_bottom_bottom_bar",
-        "d3d_frame_bottom_left_bar",
-        "d3d_frame_top_top_bar",
-        "d3d_frame_top_right_bar",
-        "d3d_frame_top_bottom_bar",
-        "d3d_frame_top_left_bar",
-        "d3d_frame_left_top_bar",
-        "d3d_frame_left_right_bar",
-        "d3d_frame_left_bottom_bar",
-        "d3d_frame_left_left_bar",
-        "d3d_frame_right_top_bar",
-        "d3d_frame_right_right_bar",
-        "d3d_frame_right_bottom_bar",
-        "d3d_frame_right_left_bar",
-        "d3d_frame_front_top_bar",
-        "d3d_frame_front_right_bar",
-        "d3d_frame_front_bottom_bar",
-        "d3d_frame_front_left_bar",
-        "d3d_frame_rear_top_bar",
-        "d3d_frame_rear_right_bar",
-        "d3d_frame_rear_bottom_bar",
-        "d3d_frame_rear_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_allen_key_metric"
       ],
@@ -3945,34 +3755,9 @@
       "assemblyId": "assembly_d3d_frame",
       "subassemblyId": "subassembly_cube_joining",
       "sequenceIndex": 44,
-      "instructionText": "Use the allen key to snug all 8 bolts on the four upper brackets. All 8 brackets should now hold the cube shape loosely \u00e2\u20ac\u201d bolts seated but frame still adjustable for squaring.",
+      "instructionText": "Use the allen key to snug all 8 bolts on the four upper brackets. All 8 brackets should now hold the cube shape loosely â€” bolts seated but frame still adjustable for squaring.",
       "whyItMattersText": "With all brackets finger-tight the cube can still be nudged square before the final tightening pass.",
-      "optionalPartIds": [
-        "d3d_frame_bottom_top_bar",
-        "d3d_frame_bottom_right_bar",
-        "d3d_frame_bottom_bottom_bar",
-        "d3d_frame_bottom_left_bar",
-        "d3d_frame_top_top_bar",
-        "d3d_frame_top_right_bar",
-        "d3d_frame_top_bottom_bar",
-        "d3d_frame_top_left_bar",
-        "d3d_frame_left_top_bar",
-        "d3d_frame_left_right_bar",
-        "d3d_frame_left_bottom_bar",
-        "d3d_frame_left_left_bar",
-        "d3d_frame_right_top_bar",
-        "d3d_frame_right_right_bar",
-        "d3d_frame_right_bottom_bar",
-        "d3d_frame_right_left_bar",
-        "d3d_frame_front_top_bar",
-        "d3d_frame_front_right_bar",
-        "d3d_frame_front_bottom_bar",
-        "d3d_frame_front_left_bar",
-        "d3d_frame_rear_top_bar",
-        "d3d_frame_rear_right_bar",
-        "d3d_frame_rear_bottom_bar",
-        "d3d_frame_rear_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_allen_key_metric"
       ],
@@ -4050,32 +3835,7 @@
       "sequenceIndex": 45,
       "instructionText": "Equip the framing square and check the top-front-left cube corner. Tap any out-of-square sides into alignment while the bolts are still finger-tight.",
       "whyItMattersText": "This is the last chance to adjust the cube geometry before the bolts are fully tightened.",
-      "optionalPartIds": [
-        "d3d_frame_bottom_top_bar",
-        "d3d_frame_bottom_right_bar",
-        "d3d_frame_bottom_bottom_bar",
-        "d3d_frame_bottom_left_bar",
-        "d3d_frame_top_top_bar",
-        "d3d_frame_top_right_bar",
-        "d3d_frame_top_bottom_bar",
-        "d3d_frame_top_left_bar",
-        "d3d_frame_left_top_bar",
-        "d3d_frame_left_right_bar",
-        "d3d_frame_left_bottom_bar",
-        "d3d_frame_left_left_bar",
-        "d3d_frame_right_top_bar",
-        "d3d_frame_right_right_bar",
-        "d3d_frame_right_bottom_bar",
-        "d3d_frame_right_left_bar",
-        "d3d_frame_front_top_bar",
-        "d3d_frame_front_right_bar",
-        "d3d_frame_front_bottom_bar",
-        "d3d_frame_front_left_bar",
-        "d3d_frame_rear_top_bar",
-        "d3d_frame_rear_right_bar",
-        "d3d_frame_rear_bottom_bar",
-        "d3d_frame_rear_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_framing_square"
       ],
@@ -4121,32 +3881,7 @@
       "sequenceIndex": 46,
       "instructionText": "Use the allen key to fully tighten all 16 bracket bolts across all 8 corners. Work in alternating diagonal pairs (lower front-left then upper rear-right, etc.) to distribute clamping force evenly.",
       "whyItMattersText": "Even tightening prevents one corner from pulling the frame out of square while the opposite corner is still loose.",
-      "optionalPartIds": [
-        "d3d_frame_bottom_top_bar",
-        "d3d_frame_bottom_right_bar",
-        "d3d_frame_bottom_bottom_bar",
-        "d3d_frame_bottom_left_bar",
-        "d3d_frame_top_top_bar",
-        "d3d_frame_top_right_bar",
-        "d3d_frame_top_bottom_bar",
-        "d3d_frame_top_left_bar",
-        "d3d_frame_left_top_bar",
-        "d3d_frame_left_right_bar",
-        "d3d_frame_left_bottom_bar",
-        "d3d_frame_left_left_bar",
-        "d3d_frame_right_top_bar",
-        "d3d_frame_right_right_bar",
-        "d3d_frame_right_bottom_bar",
-        "d3d_frame_right_left_bar",
-        "d3d_frame_front_top_bar",
-        "d3d_frame_front_right_bar",
-        "d3d_frame_front_bottom_bar",
-        "d3d_frame_front_left_bar",
-        "d3d_frame_rear_top_bar",
-        "d3d_frame_rear_right_bar",
-        "d3d_frame_rear_bottom_bar",
-        "d3d_frame_rear_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_allen_key_metric"
       ],
@@ -4263,32 +3998,7 @@
       "sequenceIndex": 47,
       "instructionText": "Equip the framing square and recheck the top-front-left cube corner after all bolts are fully tightened. Confirm the frame stayed true through the tightening sequence.",
       "whyItMattersText": "A post-tightening square check catches any shift introduced by bolt clamping forces.",
-      "optionalPartIds": [
-        "d3d_frame_bottom_top_bar",
-        "d3d_frame_bottom_right_bar",
-        "d3d_frame_bottom_bottom_bar",
-        "d3d_frame_bottom_left_bar",
-        "d3d_frame_top_top_bar",
-        "d3d_frame_top_right_bar",
-        "d3d_frame_top_bottom_bar",
-        "d3d_frame_top_left_bar",
-        "d3d_frame_left_top_bar",
-        "d3d_frame_left_right_bar",
-        "d3d_frame_left_bottom_bar",
-        "d3d_frame_left_left_bar",
-        "d3d_frame_right_top_bar",
-        "d3d_frame_right_right_bar",
-        "d3d_frame_right_bottom_bar",
-        "d3d_frame_right_left_bar",
-        "d3d_frame_front_top_bar",
-        "d3d_frame_front_right_bar",
-        "d3d_frame_front_bottom_bar",
-        "d3d_frame_front_left_bar",
-        "d3d_frame_rear_top_bar",
-        "d3d_frame_rear_right_bar",
-        "d3d_frame_rear_bottom_bar",
-        "d3d_frame_rear_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_framing_square"
       ],
@@ -4334,32 +4044,7 @@
       "sequenceIndex": 48,
       "instructionText": "Equip the framing square and verify both the top-front-left and top-rear-right cube corners. This cross-check confirms the cube is true on opposite diagonals.",
       "whyItMattersText": "Checking opposite corners catches twist that a single-corner check might miss.",
-      "optionalPartIds": [
-        "d3d_frame_bottom_top_bar",
-        "d3d_frame_bottom_right_bar",
-        "d3d_frame_bottom_bottom_bar",
-        "d3d_frame_bottom_left_bar",
-        "d3d_frame_top_top_bar",
-        "d3d_frame_top_right_bar",
-        "d3d_frame_top_bottom_bar",
-        "d3d_frame_top_left_bar",
-        "d3d_frame_left_top_bar",
-        "d3d_frame_left_right_bar",
-        "d3d_frame_left_bottom_bar",
-        "d3d_frame_left_left_bar",
-        "d3d_frame_right_top_bar",
-        "d3d_frame_right_right_bar",
-        "d3d_frame_right_bottom_bar",
-        "d3d_frame_right_left_bar",
-        "d3d_frame_front_top_bar",
-        "d3d_frame_front_right_bar",
-        "d3d_frame_front_bottom_bar",
-        "d3d_frame_front_left_bar",
-        "d3d_frame_rear_top_bar",
-        "d3d_frame_rear_right_bar",
-        "d3d_frame_rear_bottom_bar",
-        "d3d_frame_rear_left_bar"
-      ],
+      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_framing_square"
       ],

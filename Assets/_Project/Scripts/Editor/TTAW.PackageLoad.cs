@@ -535,6 +535,12 @@ namespace OSE.Editor
             // Position and show/hide live parts based on step-aware context.
             SyncAllPartMeshesToActivePose();
 
+            // Capture fallback positions: parts that have no placement data
+            // (hasPlacement == false) but are visible in the scene get their
+            // positions captured from the spawner's live GO. This ensures they
+            // persist correctly when navigating to the next step.
+            CaptureUnplacedPartPositions();
+
             // Add MeshColliders to live parts so click-to-snap works on their surfaces.
             AddMeshCollidersToLiveParts();
 
@@ -655,17 +661,13 @@ namespace OSE.Editor
                     _subassemblyRootGOs[sub.id] = rootGO;
                 }
 
-                // Apply working orientation if this is the active step's subassembly
-                if (step != null && string.Equals(step.subassemblyId, sub.id, System.StringComparison.Ordinal)
-                    && step.workingOrientation != null)
-                {
-                    ApplySubassemblyRootOrientation(rootGO.transform, step.workingOrientation, GetSubassemblyFramePos(sub.id));
-                }
-                else
-                {
-                    rootGO.transform.localPosition = GetSubassemblyFramePos(sub.id);
-                    rootGO.transform.localRotation = Quaternion.identity;
-                }
+                // Group roots always sit at the PreviewRoot origin with identity
+                // rotation. Authored part positions are already in PreviewRoot
+                // space, so any non-zero root position would cause a double-offset.
+                // Working orientation is the ONLY thing that should set a non-identity
+                // transform on the root, and it's applied via the gizmo (Phase A3).
+                rootGO.transform.localPosition = Vector3.zero;
+                rootGO.transform.localRotation = Quaternion.identity;
 
                 // Parent visible member parts under this root (non-aggregates only —
                 // aggregates own parts indirectly through child groups).

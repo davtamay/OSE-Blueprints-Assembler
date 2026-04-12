@@ -64,33 +64,6 @@ namespace OSE.Editor
                                    ? new Color(sp.color.r, sp.color.g, sp.color.b, sp.color.a)
                                    : hasP ? new Color(pp.color.r, pp.color.g, pp.color.b, pp.color.a) : ColAuthored;
 
-                // When no placement AND no stagingPose, capture the live GO's
-                // current position from the spawner as fallback. This ensures
-                // parts that the spawner positioned via its grid fallback get
-                // real positions in the editor — they persist correctly when
-                // navigating to the next step (assembledPosition won't be 0,0,0).
-                if (!hasP && sp == null)
-                {
-                    var liveGO = FindLivePartGO(def.id);
-                    if (liveGO != null)
-                    {
-                        var root = GetPreviewRoot();
-                        if (root != null)
-                        {
-                            initPos = root.InverseTransformPoint(liveGO.transform.position);
-                            initRot = Quaternion.Inverse(root.rotation) * liveGO.transform.rotation;
-                            initScl = liveGO.transform.localScale;
-                        }
-                        else
-                        {
-                            initPos = liveGO.transform.localPosition;
-                            initRot = liveGO.transform.localRotation;
-                            initScl = liveGO.transform.localScale;
-                        }
-                        hasP = true; // treat as having a placement so the editor renders it
-                    }
-                }
-
                 var state = new PartEditState
                 {
                     def           = def,
@@ -287,11 +260,33 @@ namespace OSE.Editor
         // localPosition). Phase A2 reparents parts under subassembly roots and
         // these helpers become load-bearing.
 
+        /// <summary>
+        /// Sets a part's transform from PreviewRoot-local authored data.
+        /// If the part is directly under PreviewRoot, localPosition/Rotation
+        /// are set directly. If the part is under a group root (subassembly
+        /// hierarchy), the position is set relative to PreviewRoot so the
+        /// group root's transform (working orientation) can apply on top.
+        /// </summary>
         private static void SetPoseInPreviewSpace(Transform part, Transform previewRoot,
             Vector3 pos, Quaternion rot, Vector3 scale)
         {
             if (previewRoot != null)
             {
+                // Check if the part's parent IS PreviewRoot (direct child)
+                // or a group root (nested child). In either case, we need the
+                // part at the authored PreviewRoot-local position. Setting
+                // world position via TransformPoint ensures this regardless
+                // of the parent hierarchy — Unity auto-computes localPosition.
+                //
+                // BUT: if the parent has a working orientation rotation, we
+                // want the part's local position to be the offset from the
+                // group center, not the world position. The group root's
+                // rotation then naturally rotates the part.
+                //
+                // Strategy: always set via world position. This is correct
+                // because the authored pos IS in PreviewRoot space, and
+                // TransformPoint converts it to world space. The parent
+                // hierarchy (if any) is transparent.
                 part.position = previewRoot.TransformPoint(pos);
                 part.rotation = previewRoot.rotation * rot;
             }
@@ -303,6 +298,9 @@ namespace OSE.Editor
             if (scale.sqrMagnitude > 0.00001f) part.localScale = scale;
         }
 
+        /// <summary>
+        /// Reads a part's current transform back into PreviewRoot-local space.
+        /// </summary>
         private static (Vector3 pos, Quaternion rot) GetPoseInPreviewSpace(
             Transform part, Transform previewRoot)
         {
@@ -347,6 +345,52 @@ namespace OSE.Editor
                     liveGO.SetActive(true);
 
                 SyncPartMeshToActivePose(ref _parts[i]);
+            }
+        }
+
+        /// <summary>
+        /// For parts with hasPlacement == false that are visible in the scene,
+        /// captures their live GO position into the editor state so they persist
+        /// when navigating to the next step. Called AFTER SyncAllPartMeshesToActivePose
+        /// so the spawner has already positioned them via its fallback layout.
+        /// </summary>
+        private void CaptureUnplacedPartPositions()
+        {
+            if (_parts == null) return;
+            var root = GetPreviewRoot();
+
+            for (int i = 0; i < _parts.Length; i++)
+            {
+                if (_parts[i].hasPlacement) continue;
+                if (_parts[i].def == null) continue;
+
+                var liveGO = FindLivePartGO(_parts[i].def.id);
+                if (liveGO == null || !liveGO.activeSelf) continue;
+
+                Vector3 capturedPos;
+                Quaternion capturedRot;
+                Vector3 capturedScl = liveGO.transform.localScale;
+
+                if (root != null)
+                {
+                    capturedPos = root.InverseTransformPoint(liveGO.transform.position);
+                    capturedRot = Quaternion.Inverse(root.rotation) * liveGO.transform.rotation;
+                }
+                else
+                {
+                    capturedPos = liveGO.transform.localPosition;
+                    capturedRot = liveGO.transform.localRotation;
+                }
+
+                _parts[i].hasPlacement     = true;
+                _parts[i].startPosition    = capturedPos;
+                _parts[i].startRotation    = capturedRot;
+                _parts[i].startScale       = capturedScl;
+                // assembledPosition defaults to the same as startPosition
+                // so the part stays in place on the next step.
+                _parts[i].assembledPosition = capturedPos;
+                _parts[i].assembledRotation = capturedRot;
+                _parts[i].assembledScale    = capturedScl;
             }
         }
 

@@ -75,10 +75,15 @@ namespace OSE.Editor
             if (GUILayout.Button($"{chevron} WHAT'S SHOWING", titleStyle, GUILayout.ExpandWidth(false)))
                 _visibilityBucketsExpanded = !_visibilityBucketsExpanded;
             GUILayout.FlexibleSpace();
-            DrawCountPill(VisColorOwned,   _visScratchOwnedHere.Count,        "here");
-            DrawCountPill(VisColorOptional, _visScratchOptionalHere.Count,   "optional");
-            DrawCountPill(VisColorSub,     _visScratchOwnedSubHere.Count,     "group");
-            DrawCountPill(VisColorEarlier, _visScratchInheritedEarlier.Count, "earlier");
+            int toolCount = step.requiredToolActions?.Length ?? 0;
+            int wireCount = string.Equals(step.ResolvedFamily.ToString(), "Connect", StringComparison.Ordinal)
+                ? (step.targetIds?.Length ?? 0) : 0;
+            DrawCountPill(VisColorOwned,                    _visScratchOwnedHere.Count,  "parts");
+            DrawCountPill(new Color(0.80f, 0.55f, 0.95f),  toolCount,                   "tools");
+            DrawCountPill(new Color(0.95f, 0.55f, 0.35f),  wireCount,                   "wires");
+            DrawCountPill(VisColorOptional,                 _visScratchOptionalHere.Count,"optional");
+            DrawCountPill(VisColorSub,                      _visScratchOwnedSubHere.Count,"group");
+            DrawCountPill(VisColorEarlier,                  _visScratchInheritedEarlier.Count, "earlier");
             EditorGUILayout.EndHorizontal();
 
             if (!_visibilityBucketsExpanded) return;
@@ -90,7 +95,7 @@ namespace OSE.Editor
                 fontStyle = FontStyle.Italic,
             };
             EditorGUILayout.LabelField(
-                "  green = required here    amber = optional    blue = from group    grey = built earlier",
+                "  green = parts    purple = tools    orange = wires    amber = optional    blue = group    grey = earlier",
                 legendStyle);
 
             // ── Four visual buckets (read-only — editing happens on task rows) ─
@@ -133,6 +138,31 @@ namespace OSE.Editor
                     allowRemove: false,
                     step: null,
                     maxRows: 12);
+            }
+
+            // ── Tool actions bucket ───────────────────────────────────────────
+            if (toolCount > 0)
+            {
+                var toolItems = new List<string>();
+                foreach (var a in step.requiredToolActions)
+                {
+                    if (a == null) continue;
+                    string toolName = a.toolId ?? "?";
+                    if (_pkg?.tools != null)
+                        foreach (var t in _pkg.tools)
+                            if (t != null && t.id == a.toolId) { toolName = t.GetDisplayName(); break; }
+                    toolItems.Add($"{a.id}  ({toolName})");
+                }
+                DrawVisibilityBucket("TOOL ACTIONS", new Color(0.80f, 0.55f, 0.95f),
+                    toolItems, allowRemove: false, step: null);
+            }
+
+            // ── Wire connections bucket ───────────────────────────────────────
+            if (wireCount > 0 && step.targetIds != null)
+            {
+                var wireItems = new List<string>(step.targetIds);
+                DrawVisibilityBucket("WIRE CONNECTIONS", new Color(0.95f, 0.55f, 0.35f),
+                    wireItems, allowRemove: false, step: null);
             }
 
             // Add picker removed — parts are added via the task sequence [+]

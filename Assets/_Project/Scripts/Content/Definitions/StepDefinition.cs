@@ -473,5 +473,12 @@ namespace OSE.Content
         /// The identifier of the referenced part, action, or target.
         /// </summary>
         public string id;
+
+        /// <summary>
+        /// When true, this task is optional — the trainee can skip it and
+        /// the step still completes. Default false (required). Applies to
+        /// all task kinds (part, toolAction, wire, target, confirm).
+        /// </summary>
+        public bool isOptional;
     }
 }
