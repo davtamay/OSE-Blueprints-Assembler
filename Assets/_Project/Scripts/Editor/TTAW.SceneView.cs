@@ -438,11 +438,15 @@ namespace OSE.Editor
             var rootT = rootGO.transform;
             Vector3 worldPos = rootT.position;
 
-            // Visual indicator: wire sphere around the subassembly center
+            // Visual indicator: solid dot + wire ring at the subassembly centroid.
+            // Marks the group currently being edited — this is the "● in the
+            // center of the gizmo" that mirrors the task-row modifiable indicator.
             float gizmoSize = HandleUtility.GetHandleSize(worldPos);
-            Handles.color = new Color(0.20f, 0.62f, 0.95f, 0.35f); // blue accent
-            Handles.DrawWireDisc(worldPos, SceneView.lastActiveSceneView?.camera?.transform.forward ?? Vector3.forward,
-                gizmoSize * 0.5f);
+            Vector3 camForward = SceneView.lastActiveSceneView?.camera?.transform.forward ?? Vector3.forward;
+            Handles.color = new Color(0.20f, 0.62f, 0.95f, 0.95f);
+            Handles.DrawSolidDisc(worldPos, camForward, gizmoSize * 0.10f);
+            Handles.color = new Color(0.20f, 0.62f, 0.95f, 0.35f);
+            Handles.DrawWireDisc(worldPos, camForward, gizmoSize * 0.5f);
 
             // Label
             var labelStyle = new GUIStyle(EditorStyles.boldLabel)

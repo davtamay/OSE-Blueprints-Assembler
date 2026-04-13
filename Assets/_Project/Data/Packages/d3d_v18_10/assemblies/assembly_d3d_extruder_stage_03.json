@@ -25,7 +25,6 @@
       "id": "subassembly_extruder_x_axis_mount",
       "name": "Extruder X-Axis Mount",
       "assemblyId": "assembly_d3d_extruder_stage_03",
-      "isAggregate": true,
       "description": "Stages the printer-side X-axis carriage interface and the half-carriage clamp used to close the extruder around the rod pair.",
       "partIds": [
         "d3d_x_axis_carriage_side",
@@ -37,7 +36,8 @@
         "step_place_x_axis_half_carriage",
         "step_check_extruder_x_axis_travel_clearance"
       ],
-      "milestoneMessage": "The completed extruder carriage unit is mounted on the X-axis carriage side, closed with the half carriage, and checked for first-pass travel clearance."
+      "milestoneMessage": "The completed extruder carriage unit is mounted on the X-axis carriage side, closed with the half carriage, and checked for first-pass travel clearance.",
+      "isAggregate": true
     }
   ],
   "steps": [

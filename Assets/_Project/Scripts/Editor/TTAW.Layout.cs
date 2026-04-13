@@ -10,6 +10,7 @@ using OSE.Interaction;
 using OSE.Runtime.Preview;
 using OSE.UI.Root;
 using UnityEditor;
+using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
 using UnityEngine;
 
@@ -537,6 +538,12 @@ namespace OSE.Editor
             _activeTaskKind         = null;
             _taskSeqReorderList     = null;
             _taskSeqReorderListForStepId = null;
+            // Clear group selection on step change — a stale selection from
+            // an earlier step can drive the first pose-sync pass before the
+            // current step's context settles, producing "Start pose on jump,
+            // corrects on re-click." The author re-selects when needed.
+            _selectedGroupIdx     = -1;
+            _canvasSelectedSubId  = null;
             InvalidateTaskOrderCache();
             UpdateActiveStep();
             BuildTargetList();
@@ -1147,6 +1154,27 @@ namespace OSE.Editor
             if (hasPart) poses = _parts[_selectedPartIdx].stepPoses;
             int poseCount = poses?.Count ?? 0;
 
+            // NO TASK detection — if the part's id lives in visualPartIds for
+            // the current step, render the dedicated single-pose block. It
+            // shows a NO TASK header + transform fields + propagation row.
+            // We set a flag instead of returning so the transform fields
+            // further down always render regardless of role (Required /
+            // Optional / No Task all reach the same unified transform block).
+            bool noTaskForCurrentStep = false;
+            StepDefinition noTaskStep = null;
+            if (hasPart && !string.IsNullOrEmpty(currentStepId))
+            {
+                var curStep = FindStep(currentStepId);
+                if (curStep != null && curStep.visualPartIds != null
+                    && Array.IndexOf(curStep.visualPartIds, _parts[_selectedPartIdx].def?.id) >= 0)
+                {
+                    noTaskForCurrentStep = true;
+                    noTaskStep = curStep;
+                    DrawNoTaskPoseInline(curStep);
+                    return;
+                }
+            }
+
             EditorGUILayout.BeginHorizontal();
 
             // [Start Pose]
@@ -1177,6 +1205,580 @@ namespace OSE.Editor
             }
 
             EditorGUILayout.EndHorizontal();
+
+            // Propagation row — two searchable step pickers that define the
+            // span (From / Through). For Start / Assembled, picking either
+            // materializes a stepPose entry at the current step capturing the
+            // live pose values; subsequent picks update that same entry.
+            // For a Custom pose, picks update its span directly.
+            if (hasPart && !string.IsNullOrEmpty(currentStepId))
+                DrawPartPropagationRow(currentStepId, poses);
+
+            // Expanded controls for the selected stepPose — anchor, span preset,
+            // resolved range display, and remove. Only visible when a custom
+            // pose is active (negative modes are Start/Assembled, no extras).
+            if (hasPart && _editingPoseMode >= 0 && poseCount > 0 && _editingPoseMode < poseCount)
+                DrawStepPoseDetailRow(ref _parts[_selectedPartIdx], _editingPoseMode);
+
+            // Inline transform fields — Position / Rotation / Scale for the
+            // ACTIVE pose (Start, Assembled, or a Custom entry). Exposing
+            // these inline means the inspector always shows the transform
+            // regardless of the part's role (Required, Optional, or No Task).
+            // Without this, Optional rows had no transform UI because the
+            // detail panel wasn't always drawn. Keeping the block compact so
+            // it's useful without scrolling.
+            if (hasPart)
+                DrawActivePoseTransformFieldsForPart(ref _parts[_selectedPartIdx]);
+        }
+
+        private void DrawActivePoseTransformFieldsForPart(ref PartEditState p)
+        {
+            EditorGUILayout.Space(2);
+
+            // Choose the backing fields based on active pose mode.
+            Vector3 pos; Quaternion rot; Vector3 scl;
+            string labelPrefix;
+
+            if (_editingPoseMode >= 0 && p.stepPoses != null && _editingPoseMode < p.stepPoses.Count)
+            {
+                var sp = p.stepPoses[_editingPoseMode];
+                pos = PackageJsonUtils.ToVector3(sp.position);
+                rot = PackageJsonUtils.ToUnityQuaternion(sp.rotation);
+                scl = PackageJsonUtils.ToVector3(sp.scale);
+                labelPrefix = string.IsNullOrEmpty(sp.label) ? $"Custom {_editingPoseMode + 1}" : sp.label;
+            }
+            else if (_editingPoseMode == PoseModeAssembled)
+            {
+                pos = p.assembledPosition; rot = p.assembledRotation; scl = p.assembledScale;
+                labelPrefix = "Assembled";
+            }
+            else
+            {
+                pos = p.startPosition; rot = p.startRotation; scl = p.startScale;
+                labelPrefix = "Start";
+            }
+            if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
+
+            EditorGUI.BeginChangeCheck();
+            Vector3 newPos   = Vector3FieldClip($"{labelPrefix} Position", pos);
+            Vector3 newEuler = Vector3FieldClip($"{labelPrefix} Rotation", rot.eulerAngles);
+            Vector3 newScl   = Vector3FieldClip($"{labelPrefix} Scale",    scl);
+            if (EditorGUI.EndChangeCheck())
+            {
+                BeginPartEdit(_selectedPartIdx);
+                Quaternion newRot = Quaternion.Euler(newEuler);
+                if (_editingPoseMode >= 0 && p.stepPoses != null && _editingPoseMode < p.stepPoses.Count)
+                {
+                    var sp = p.stepPoses[_editingPoseMode];
+                    sp.position = PackageJsonUtils.ToFloat3(newPos);
+                    sp.rotation = PackageJsonUtils.ToQuaternion(newRot);
+                    sp.scale    = PackageJsonUtils.ToFloat3(newScl);
+                }
+                else if (_editingPoseMode == PoseModeAssembled)
+                {
+                    p.assembledPosition = newPos;
+                    p.assembledRotation = newRot;
+                    p.assembledScale    = newScl;
+                }
+                else
+                {
+                    p.startPosition = newPos;
+                    p.startRotation = newRot;
+                    p.startScale    = newScl;
+                }
+                p.isDirty = true;
+                EndPartEdit();
+                SyncPartMeshToActivePose(ref p);
+                SceneView.RepaintAll();
+                Repaint();
+            }
+        }
+
+        /// <summary>
+        /// Compact strip beneath the pose-toggle row: shows the selected
+        /// stepPose's anchor step, a preset dropdown that writes
+        /// <c>propagateFromStep</c>/<c>propagateThroughStep</c> in one click,
+        /// a resolved-range chip (e.g. "steps 5–11"), and a remove button.
+        /// Mirrors the same data on groups via <see cref="DrawGroupStepPoseDetailRow"/>.
+        /// </summary>
+        private void DrawStepPoseDetailRow(ref PartEditState p, int poseIdx)
+        {
+            if (p.stepPoses == null || poseIdx < 0 || poseIdx >= p.stepPoses.Count) return;
+            var pose = p.stepPoses[poseIdx];
+
+            EditorGUILayout.BeginHorizontal();
+            var smallLabel = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleLeft };
+            GUILayout.Label("Anchor", smallLabel, GUILayout.Width(46));
+            string anchorLabel = string.IsNullOrEmpty(pose.stepId) ? "(none)" : StepShortLabel(pose.stepId);
+            if (GUILayout.Button(anchorLabel, EditorStyles.miniButton, GUILayout.MinWidth(80)))
+                ShowStepIdPickerMenu(_selectedPartIdx, poseIdx);
+
+            GUILayout.Label("Apply to", smallLabel, GUILayout.Width(52));
+            string applyLabel = DescribeSpan(pose);
+            if (GUILayout.Button(applyLabel, EditorStyles.popup, GUILayout.MinWidth(130)))
+                ShowStepPoseSpanMenuForPart(_selectedPartIdx, poseIdx);
+
+            GUILayout.FlexibleSpace();
+
+            // Resolved range chip
+            string rangeTxt = ResolveSpanChip(pose);
+            if (!string.IsNullOrEmpty(rangeTxt))
+            {
+                var chipStyle = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    normal    = { textColor = new Color(0.55f, 0.78f, 0.95f) },
+                    alignment = TextAnchor.MiddleRight,
+                };
+                GUILayout.Label(rangeTxt, chipStyle, GUILayout.MinWidth(80));
+            }
+
+            if (GUILayout.Button("×", EditorStyles.miniButton, GUILayout.Width(22)))
+                RemoveStepPose(_selectedPartIdx, poseIdx);
+            EditorGUILayout.EndHorizontal();
+        }
+
+        /// <summary>Short human-friendly label for a step id (sequence # + display name trimmed).</summary>
+        private string StepShortLabel(string stepId)
+        {
+            if (string.IsNullOrEmpty(stepId) || _pkg?.steps == null) return stepId ?? "";
+            foreach (var s in _pkg.steps)
+            {
+                if (s == null) continue;
+                if (!string.Equals(s.id, stepId, StringComparison.Ordinal)) continue;
+                string name = s.GetDisplayName() ?? s.id;
+                return $"[{s.sequenceIndex}] {name}";
+            }
+            return stepId;
+        }
+
+        /// <summary>Label for the "Apply to" dropdown — describes the current span.</summary>
+        private string DescribeSpan(StepPoseEntry pose)
+        {
+            bool fromEmpty    = string.IsNullOrEmpty(pose.propagateFromStep);
+            bool throughEmpty = string.IsNullOrEmpty(pose.propagateThroughStep);
+            if (fromEmpty && throughEmpty) return "This step → end (default)";
+
+            string first  = FirstStepId();
+            string last   = LastStepId();
+            bool fromIsAnchor    = !fromEmpty    && string.Equals(pose.propagateFromStep,    pose.stepId, StringComparison.Ordinal);
+            bool throughIsAnchor = !throughEmpty && string.Equals(pose.propagateThroughStep, pose.stepId, StringComparison.Ordinal);
+            bool fromIsFirst     = !fromEmpty    && !string.IsNullOrEmpty(first) && string.Equals(pose.propagateFromStep,    first, StringComparison.Ordinal);
+            bool throughIsLast   = !throughEmpty && !string.IsNullOrEmpty(last)  && string.Equals(pose.propagateThroughStep, last,  StringComparison.Ordinal);
+
+            if (fromIsAnchor && throughIsAnchor) return "Just this step";
+            if (fromIsFirst && throughIsAnchor)  return "From start → this step";
+            if (fromIsAnchor && throughIsLast)   return "This step → end";
+            if (fromIsFirst && throughIsLast)    return "All steps";
+            return "Fixed range…";
+        }
+
+        /// <summary>Visible chip showing the resolved span as sequence numbers.</summary>
+        private string ResolveSpanChip(StepPoseEntry pose)
+        {
+            if (_pkg?.steps == null || _pkg.steps.Length == 0) return "";
+            int fromSeq = SeqIndexOf(pose.propagateFromStep, pose.stepId, useAnchorIfMissing: true);
+            int throughSeq = SeqIndexOf(pose.propagateThroughStep, pose.stepId, useAnchorIfMissing: false);
+            if (fromSeq < 0 && throughSeq < 0) return "";
+            string fromTxt    = fromSeq    >= 0 ? fromSeq.ToString()    : "start";
+            string throughTxt = throughSeq >= 0 ? throughSeq.ToString() : "end";
+            return $"steps {fromTxt}–{throughTxt}";
+        }
+
+        private int SeqIndexOf(string stepId, string anchorFallback, bool useAnchorIfMissing)
+        {
+            string id = string.IsNullOrEmpty(stepId) && useAnchorIfMissing ? anchorFallback : stepId;
+            if (string.IsNullOrEmpty(id) || _pkg?.steps == null) return -1;
+            foreach (var s in _pkg.steps)
+                if (s != null && string.Equals(s.id, id, StringComparison.Ordinal))
+                    return s.sequenceIndex;
+            return -1;
+        }
+
+        // Authoring preference: when picking propagation span, show only the
+        // steps that reference the currently-selected part by default. The
+        // author flips this off to pick from every step in the package.
+        private bool _propagationFilterSamePart = true;
+
+        /// <summary>
+        /// Inline "From / Through" picker row. Replaces the old "Apply to range…"
+        /// preset menu with two searchable step pickers — the author picks the
+        /// two endpoints directly. Same-part filtering defaults ON so the pickers
+        /// show only the relevant slice of a 300+ step package.
+        /// </summary>
+        private void DrawPartPropagationRow(string currentStepId, List<StepPoseEntry> poses)
+        {
+            ref PartEditState p = ref _parts[_selectedPartIdx];
+
+            // Live "from" / "through" string values come from the active entry
+            // if one exists for the current step; otherwise blanks (we'll
+            // materialize on first pick).
+            int activeIdx = _editingPoseMode >= 0 && poses != null && _editingPoseMode < poses.Count
+                ? _editingPoseMode : -1;
+            string fromId    = activeIdx >= 0 ? poses[activeIdx].propagateFromStep    : "";
+            string throughId = activeIdx >= 0 ? poses[activeIdx].propagateThroughStep : "";
+
+            var header = new GUIStyle(EditorStyles.miniLabel) { fontStyle = FontStyle.Bold };
+            string poseName = _editingPoseMode == PoseModeStart     ? "Start pose"
+                            : _editingPoseMode == PoseModeAssembled ? "Assembled pose"
+                            : (activeIdx >= 0
+                                ? (string.IsNullOrEmpty(poses[activeIdx].label) ? $"Custom {activeIdx + 1}" : poses[activeIdx].label)
+                                : "Pose");
+
+            EditorGUILayout.LabelField($"Propagate {poseName}", header);
+
+            // Filter toggle
+            string partId = p.def?.id;
+            _propagationFilterSamePart = EditorGUILayout.ToggleLeft(
+                new GUIContent("Only steps using this part",
+                    "When on, the From/Through pickers list only steps whose requiredPartIds, visualPartIds, optionalPartIds, or requiredSubassemblyId reference this part. Flip off to pick from every step."),
+                _propagationFilterSamePart, EditorStyles.miniLabel);
+
+            // From / Through buttons — each opens a searchable StepPickerDropdown.
+            EditorGUILayout.BeginHorizontal();
+            var smallLabel = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleLeft };
+            GUILayout.Label("From", smallLabel, GUILayout.Width(40));
+            if (GUILayout.Button(FormatStepButtonLabel(fromId, emptyFallback: "(start of package)"),
+                    EditorStyles.popup, GUILayout.MinWidth(150)))
+            {
+                Func<StepDefinition, bool> filter = _propagationFilterSamePart ? (Func<StepDefinition, bool>)(s => StepTouchesPart(s, partId)) : null;
+                EditorApplication.delayCall += () =>
+                    StepPickerDropdown.Open(_pkg?.steps, filter, currentStepId,
+                        sid => SetPartPropagationEndpoint(currentStepId, fromEndpoint: true, stepId: sid));
+            }
+
+            GUILayout.Label("Through", smallLabel, GUILayout.Width(58));
+            if (GUILayout.Button(FormatStepButtonLabel(throughId, emptyFallback: "(end of package)"),
+                    EditorStyles.popup, GUILayout.MinWidth(150)))
+            {
+                Func<StepDefinition, bool> filter = _propagationFilterSamePart ? (Func<StepDefinition, bool>)(s => StepTouchesPart(s, partId)) : null;
+                EditorApplication.delayCall += () =>
+                    StepPickerDropdown.Open(_pkg?.steps, filter, currentStepId,
+                        sid => SetPartPropagationEndpoint(currentStepId, fromEndpoint: false, stepId: sid));
+            }
+            EditorGUILayout.EndHorizontal();
+        }
+
+        /// <summary>
+        /// True when <paramref name="step"/> references <paramref name="partId"/>
+        /// through any of its part-touching fields — drives the "same part"
+        /// filter in the propagation pickers.
+        /// </summary>
+        private bool StepTouchesPart(StepDefinition step, string partId)
+        {
+            if (step == null || string.IsNullOrEmpty(partId)) return false;
+            if (step.requiredPartIds != null)  foreach (var pid in step.requiredPartIds)  if (string.Equals(pid, partId, StringComparison.Ordinal)) return true;
+            if (step.visualPartIds != null)    foreach (var pid in step.visualPartIds)    if (string.Equals(pid, partId, StringComparison.Ordinal)) return true;
+            if (step.optionalPartIds != null)  foreach (var pid in step.optionalPartIds)  if (string.Equals(pid, partId, StringComparison.Ordinal)) return true;
+            // Subassembly-member reach: a step placing a group covers every member part.
+            if (!string.IsNullOrEmpty(step.requiredSubassemblyId) && _pkg != null
+                && _pkg.TryGetSubassembly(step.requiredSubassemblyId, out var sub) && sub?.partIds != null)
+            {
+                foreach (var pid in sub.partIds)
+                    if (string.Equals(pid, partId, StringComparison.Ordinal)) return true;
+            }
+            return false;
+        }
+
+        /// <summary>Compact label like "[27] Place frame bar" or the fallback when empty.</summary>
+        private string FormatStepButtonLabel(string stepId, string emptyFallback)
+        {
+            if (string.IsNullOrEmpty(stepId)) return emptyFallback;
+            if (_pkg?.steps != null)
+                foreach (var s in _pkg.steps)
+                    if (s != null && string.Equals(s.id, stepId, StringComparison.Ordinal))
+                        return $"[{s.sequenceIndex}] {s.GetDisplayName()}";
+            return stepId;
+        }
+
+        /// <summary>
+        /// Writes one endpoint of the propagation span. If the current pose is
+        /// Start/Assembled, materializes a new stepPose anchored to the current
+        /// step before writing the endpoint — so the author never has to click
+        /// "+" first. Leaves the other endpoint unchanged.
+        /// </summary>
+        private void SetPartPropagationEndpoint(string anchorStepId, bool fromEndpoint, string stepId)
+        {
+            if (_selectedPartIdx < 0 || _parts == null || _selectedPartIdx >= _parts.Length) return;
+            ref PartEditState p = ref _parts[_selectedPartIdx];
+
+            BeginPartEdit(_selectedPartIdx);
+
+            StepPoseEntry target;
+            if (_editingPoseMode >= 0 && p.stepPoses != null && _editingPoseMode < p.stepPoses.Count)
+            {
+                target = p.stepPoses[_editingPoseMode];
+            }
+            else
+            {
+                Vector3 capPos; Quaternion capRot; Vector3 capScl;
+                if (_editingPoseMode == PoseModeAssembled)
+                {
+                    capPos = p.assembledPosition; capRot = p.assembledRotation; capScl = p.assembledScale;
+                }
+                else
+                {
+                    capPos = p.startPosition; capRot = p.startRotation; capScl = p.startScale;
+                }
+                if (p.stepPoses == null) p.stepPoses = new List<StepPoseEntry>();
+                target = new StepPoseEntry
+                {
+                    stepId   = anchorStepId,
+                    position = PackageJsonUtils.ToFloat3(capPos),
+                    rotation = PackageJsonUtils.ToQuaternion(capRot),
+                    scale    = PackageJsonUtils.ToFloat3(capScl),
+                };
+                p.stepPoses.Add(target);
+                _editingPoseMode = p.stepPoses.Count - 1;
+            }
+
+            if (fromEndpoint) target.propagateFromStep    = stepId;
+            else              target.propagateThroughStep = stepId;
+
+            p.isDirty = true;
+            EndPartEdit();
+            SyncAllPartMeshesToActivePose();
+            Repaint();
+            SceneView.RepaintAll();
+        }
+
+        /// <summary>
+        /// One-click "Apply to range" menu that works for any pose mode. When
+        /// Start/Assembled is active, this materializes a new stepPose entry
+        /// at the current step using those field values as the captured pose,
+        /// then writes the chosen span. When a Custom entry is active, it
+        /// just rewrites the active entry's span.
+        /// </summary>
+        private void ShowPartPosePropagationMenu(int partIdx, string anchorStepId)
+        {
+            var menu = new GenericMenu();
+            menu.AddItem(new GUIContent("From start → this step"),   false, () => PropagatePartPose(partIdx, anchorStepId, SpanPreset.StartToAnchor, null));
+            menu.AddItem(new GUIContent("This step → end"),          false, () => PropagatePartPose(partIdx, anchorStepId, SpanPreset.AnchorToEnd, null));
+            menu.AddItem(new GUIContent("All steps"),                false, () => PropagatePartPose(partIdx, anchorStepId, SpanPreset.AllSteps, null));
+            menu.AddSeparator("");
+            menu.AddItem(new GUIContent("Through step… (search)"),  false, () =>
+            {
+                // Deferred to the next editor frame so the GenericMenu has
+                // time to dismiss before the searchable popup appears.
+                EditorApplication.delayCall += () =>
+                    StepPickerDropdown.Open(_pkg?.steps, sid => PropagatePartPose(partIdx, anchorStepId, SpanPreset.FixedThrough, sid));
+            });
+            menu.ShowAsContext();
+        }
+
+        /// <summary>
+        /// Captures the currently-active pose (Start / Assembled / selected
+        /// Custom) and either edits the active Custom entry's span OR creates
+        /// a new stepPose at <paramref name="anchorStepId"/> with that pose.
+        /// </summary>
+        private void PropagatePartPose(int partIdx, string anchorStepId, SpanPreset preset, string throughStepIdOpt)
+        {
+            if (partIdx < 0 || _parts == null || partIdx >= _parts.Length) return;
+            ref PartEditState p = ref _parts[partIdx];
+
+            BeginPartEdit(partIdx);
+
+            StepPoseEntry target;
+            if (_editingPoseMode >= 0 && p.stepPoses != null && _editingPoseMode < p.stepPoses.Count)
+            {
+                target = p.stepPoses[_editingPoseMode];
+            }
+            else
+            {
+                // Materialize Start/Assembled as a new stepPose entry.
+                Vector3 capPos; Quaternion capRot; Vector3 capScl;
+                if (_editingPoseMode == PoseModeAssembled)
+                {
+                    capPos = p.assembledPosition;
+                    capRot = p.assembledRotation;
+                    capScl = p.assembledScale;
+                }
+                else // PoseModeStart (or unset)
+                {
+                    capPos = p.startPosition;
+                    capRot = p.startRotation;
+                    capScl = p.startScale;
+                }
+                if (p.stepPoses == null) p.stepPoses = new List<StepPoseEntry>();
+                target = new StepPoseEntry
+                {
+                    stepId   = anchorStepId,
+                    position = PackageJsonUtils.ToFloat3(capPos),
+                    rotation = PackageJsonUtils.ToQuaternion(capRot),
+                    scale    = PackageJsonUtils.ToFloat3(capScl),
+                };
+                p.stepPoses.Add(target);
+                _editingPoseMode = p.stepPoses.Count - 1;
+            }
+
+            ApplyPreset(target, preset, throughStepIdOpt);
+            p.isDirty = true;
+            EndPartEdit();
+            SyncAllPartMeshesToActivePose();
+            Repaint();
+            SceneView.RepaintAll();
+        }
+
+        /// <summary>Preset menu for the span dropdown — one-click authoring.</summary>
+        private void ShowStepPoseSpanMenuForPart(int partIdx, int poseIdx)
+        {
+            var menu = new GenericMenu();
+            menu.AddItem(new GUIContent("From start → this step"),   false, () => SetPartSpan(partIdx, poseIdx, SpanPreset.StartToAnchor, null));
+            menu.AddItem(new GUIContent("This step → end"),          false, () => SetPartSpan(partIdx, poseIdx, SpanPreset.AnchorToEnd, null));
+            menu.AddItem(new GUIContent("All steps"),                false, () => SetPartSpan(partIdx, poseIdx, SpanPreset.AllSteps, null));
+            menu.AddSeparator("");
+            menu.AddItem(new GUIContent("Through step… (search)"),  false, () =>
+            {
+                EditorApplication.delayCall += () =>
+                    StepPickerDropdown.Open(_pkg?.steps, sid => SetPartSpan(partIdx, poseIdx, SpanPreset.FixedThrough, sid));
+            });
+            menu.ShowAsContext();
+        }
+
+        private enum SpanPreset { JustThisStep, StartToAnchor, AnchorToEnd, AllSteps, FixedThrough }
+
+        private void SetPartSpan(int partIdx, int poseIdx, SpanPreset preset, string throughStepIdOpt)
+        {
+            if (partIdx < 0 || _parts == null || partIdx >= _parts.Length) return;
+            ref PartEditState p = ref _parts[partIdx];
+            if (p.stepPoses == null || poseIdx < 0 || poseIdx >= p.stepPoses.Count) return;
+            BeginPartEdit(partIdx);
+            var e = p.stepPoses[poseIdx];
+            ApplyPreset(e, preset, throughStepIdOpt);
+            p.isDirty = true;
+            EndPartEdit();
+            SyncAllPartMeshesToActivePose();
+            Repaint();
+            SceneView.RepaintAll();
+        }
+
+        private void ApplyPreset(StepPoseEntry e, SpanPreset preset, string throughStepIdOpt)
+        {
+            // Use EXPLICIT step IDs for the boundary presets so they don't
+            // collide with legacy "empty = anchor forward" semantics the
+            // runtime must preserve for pre-existing content.
+            string firstStepId = FirstStepId();
+            string lastStepId  = LastStepId();
+            switch (preset)
+            {
+                case SpanPreset.JustThisStep:
+                    e.propagateFromStep    = e.stepId;
+                    e.propagateThroughStep = e.stepId;
+                    break;
+                case SpanPreset.StartToAnchor:
+                    e.propagateFromStep    = firstStepId ?? "";
+                    e.propagateThroughStep = e.stepId;
+                    break;
+                case SpanPreset.AnchorToEnd:
+                    e.propagateFromStep    = e.stepId;
+                    e.propagateThroughStep = lastStepId ?? "";
+                    break;
+                case SpanPreset.AllSteps:
+                    e.propagateFromStep    = firstStepId ?? "";
+                    e.propagateThroughStep = lastStepId ?? "";
+                    break;
+                case SpanPreset.FixedThrough:
+                    e.propagateFromStep    = e.stepId;
+                    e.propagateThroughStep = throughStepIdOpt ?? "";
+                    break;
+            }
+        }
+
+        private string FirstStepId()
+        {
+            if (_pkg?.steps == null || _pkg.steps.Length == 0) return null;
+            StepDefinition earliest = null;
+            foreach (var s in _pkg.steps)
+                if (s != null && (earliest == null || s.sequenceIndex < earliest.sequenceIndex))
+                    earliest = s;
+            return earliest?.id;
+        }
+
+        private string LastStepId()
+        {
+            if (_pkg?.steps == null || _pkg.steps.Length == 0) return null;
+            StepDefinition latest = null;
+            foreach (var s in _pkg.steps)
+                if (s != null && (latest == null || s.sequenceIndex > latest.sequenceIndex))
+                    latest = s;
+            return latest?.id;
+        }
+
+        /// <summary>
+        /// Single-pose authoring block for parts marked NO TASK at the current
+        /// step. Reads/writes the stepPose entry keyed by (partId, stepId) —
+        /// one captured when the author toggled to N. Exposes position,
+        /// rotation (Euler), and scale fields directly, plus the From/Through
+        /// propagation pickers so the same pose can span other steps.
+        /// </summary>
+        private void DrawNoTaskPoseInline(StepDefinition curStep)
+        {
+            if (_selectedPartIdx < 0 || _parts == null || _selectedPartIdx >= _parts.Length) return;
+            ref PartEditState p = ref _parts[_selectedPartIdx];
+            string partId = p.def?.id;
+            if (string.IsNullOrEmpty(partId)) return;
+
+            // Find (or lazily create) the backing stepPose entry.
+            if (p.stepPoses == null) p.stepPoses = new List<StepPoseEntry>();
+            StepPoseEntry entry = null;
+            int entryIdx = -1;
+            for (int i = 0; i < p.stepPoses.Count; i++)
+            {
+                var e = p.stepPoses[i];
+                if (e != null && string.Equals(e.stepId, curStep.id, StringComparison.Ordinal))
+                { entry = e; entryIdx = i; break; }
+            }
+            if (entry == null)
+            {
+                entry = new StepPoseEntry
+                {
+                    stepId               = curStep.id,
+                    position             = PackageJsonUtils.ToFloat3(p.assembledPosition),
+                    rotation             = PackageJsonUtils.ToQuaternion(p.assembledRotation),
+                    scale                = PackageJsonUtils.ToFloat3(p.assembledScale),
+                    propagateFromStep    = curStep.id,
+                    propagateThroughStep = "",
+                };
+                p.stepPoses.Add(entry);
+                entryIdx = p.stepPoses.Count - 1;
+                p.isDirty = true;
+            }
+
+            // Select this entry as the active editing mode so SceneView
+            // gizmos and sync helpers target it.
+            _editingPoseMode = entryIdx;
+
+            EditorGUILayout.Space(2);
+            var header = new GUIStyle(EditorStyles.boldLabel)
+            {
+                fontSize = 11,
+                normal   = { textColor = new Color(0.70f, 0.88f, 1f) },
+            };
+            EditorGUILayout.LabelField("NO TASK pose", header);
+
+            // Live values from the entry — editable inline.
+            Vector3    pos   = PackageJsonUtils.ToVector3(entry.position);
+            Quaternion rot   = PackageJsonUtils.ToUnityQuaternion(entry.rotation);
+            Vector3    scl   = PackageJsonUtils.ToVector3(entry.scale);
+            if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
+
+            EditorGUI.BeginChangeCheck();
+            Vector3 newPos   = Vector3FieldClip("Position", pos);
+            Vector3 newEuler = Vector3FieldClip("Rotation", rot.eulerAngles);
+            Vector3 newScl   = Vector3FieldClip("Scale",    scl);
+            if (EditorGUI.EndChangeCheck())
+            {
+                entry.position = PackageJsonUtils.ToFloat3(newPos);
+                entry.rotation = PackageJsonUtils.ToQuaternion(Quaternion.Euler(newEuler));
+                entry.scale    = PackageJsonUtils.ToFloat3(newScl);
+                p.isDirty      = true;
+                SyncAllPartMeshesToActivePose();
+                SceneView.RepaintAll();
+                Repaint();
+            }
+
+            // Reuse the existing From/Through propagation pickers so this
+            // single pose can span other steps with one click.
+            DrawPartPropagationRow(curStep.id, p.stepPoses);
         }
 
         private void ApplyPoseMode(int newMode)
@@ -1428,6 +2030,61 @@ namespace OSE.Editor
             }
 
             DrawPartModelPreview(ref p);
+
+            // NO TASK auto-selection: when the current step classifies this
+            // part as NO TASK (id lives in visualPartIds) and the selected
+            // pose mode is the generic Start/Assembled default, pivot the
+            // inspector to the step-scoped NO TASK pose entry so the author
+            // sees the transform fields directly without toggling anything.
+            string __curStepIdForNoTask = GetCurrentStepId();
+            if (!string.IsNullOrEmpty(__curStepIdForNoTask)
+                && p.def != null
+                && p.stepPoses != null)
+            {
+                var __curStep = FindStep(__curStepIdForNoTask);
+                bool __isNoTask = __curStep != null
+                                   && __curStep.visualPartIds != null
+                                   && Array.IndexOf(__curStep.visualPartIds, p.def.id) >= 0;
+                if (__isNoTask)
+                {
+                    int __foundIdx = -1;
+                    for (int __i = 0; __i < p.stepPoses.Count; __i++)
+                    {
+                        var __e = p.stepPoses[__i];
+                        if (__e != null && string.Equals(__e.stepId, __curStepIdForNoTask, StringComparison.Ordinal))
+                        { __foundIdx = __i; break; }
+                    }
+                    // Lazy-create the entry when the part is in visualPartIds
+                    // but nothing has materialized yet (e.g. authored directly
+                    // in JSON). Seed with the current displayed pose so the
+                    // inspector's fields start at a meaningful value.
+                    if (__foundIdx < 0)
+                    {
+                        var __seeded = new StepPoseEntry
+                        {
+                            stepId               = __curStepIdForNoTask,
+                            position             = PackageJsonUtils.ToFloat3(p.assembledPosition),
+                            rotation             = PackageJsonUtils.ToQuaternion(p.assembledRotation),
+                            scale                = PackageJsonUtils.ToFloat3(p.assembledScale),
+                            propagateFromStep    = __curStepIdForNoTask,
+                            propagateThroughStep = "",
+                        };
+                        p.stepPoses.Add(__seeded);
+                        __foundIdx = p.stepPoses.Count - 1;
+                        p.isDirty = true;
+                    }
+                    if (_editingPoseMode != __foundIdx) _editingPoseMode = __foundIdx;
+
+                    // NO TASK header so the author knows which pose they're
+                    // editing in this panel.
+                    var __h = new GUIStyle(EditorStyles.boldLabel)
+                    {
+                        fontSize = 11,
+                        normal   = { textColor = new Color(0.70f, 0.88f, 1f) },
+                    };
+                    EditorGUILayout.LabelField("NO TASK pose", __h);
+                }
+            }
 
             if (_editingPoseMode >= 0 && p.stepPoses != null && _editingPoseMode < p.stepPoses.Count)
             {

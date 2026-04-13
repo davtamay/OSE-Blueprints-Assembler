@@ -3,139 +3,47 @@
     {
       "id": "z_back_carriage_half_a",
       "name": "Z-Back Carriage Half A (bearing side)",
-      "function": "Open carriage half with bearing pockets \u00e2\u20ac\u201d receives 4 LM8UU bearings. Z-Back axis.",
+      "function": "Open carriage half with bearing pockets â€” receives 4 LM8UU bearings. Z-Back axis.",
       "category": "custom",
       "material": "Printed carriage half",
       "quantity": 1,
       "assetRef": "y_left_carriage_half_a.glb",
-      "stagingPose": {
-        "position": {
-          "x": 1.294,
-          "y": 0.55,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": -0.5,
-          "y": 0.5,
-          "z": -0.5,
-          "w": 0.5
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      }
-    },
+      "stagingPose": {"position":{"x":0.3784,"y":0.55,"z":0.1544},"rotation":{"x":-0.5,"y":0.5,"z":-0.5,"w":0.5},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.7,"g":0.7,"b":0.7,"a":1.0}}
+  },
     {
       "id": "z_back_carriage_half_b",
       "name": "Z-Back Carriage Half B (clamping side)",
-      "function": "Clamping carriage half \u00e2\u20ac\u201d bolts onto half A to capture bearings. Z-Back axis.",
+      "function": "Clamping carriage half â€” bolts onto half A to capture bearings. Z-Back axis.",
       "category": "custom",
       "material": "Printed carriage half",
       "quantity": 1,
       "assetRef": "y_left_carriage_half_b.glb",
-      "stagingPose": {
-        "position": {
-          "x": 1.374,
-          "y": 0.55,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.7071,
-          "z": -0.7071,
-          "w": 0.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      }
-    },
+      "stagingPose": {"position":{"x":0.5199,"y":0.55,"z":0.1544},"rotation":{"x":0.5,"y":0.5,"z":-0.5,"w":-0.5},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.7,"g":0.7,"b":0.7,"a":1.0}}
+  },
     {
       "id": "z_front_carriage_half_a",
       "name": "Z-Front Carriage Half A (bearing side)",
-      "function": "Open carriage half with bearing pockets \u00e2\u20ac\u201d receives 4 LM8UU bearings. Z-Front axis.",
+      "function": "Open carriage half with bearing pockets â€” receives 4 LM8UU bearings. Z-Front axis.",
       "category": "custom",
       "material": "Printed carriage half",
       "quantity": 1,
       "assetRef": "y_left_carriage_half_a.glb",
-      "stagingPose": {
-        "position": {
-          "x": 1.454,
-          "y": 0.55,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": -0.5,
-          "y": 0.5,
-          "z": -0.5,
-          "w": 0.5
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      }
-    },
+      "stagingPose": {"position":{"x":0.6736,"y":0.55,"z":0.1544},"rotation":{"x":-0.5,"y":0.5,"z":-0.5,"w":0.5},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.7,"g":0.7,"b":0.7,"a":1.0}}
+  },
     {
       "id": "z_front_carriage_half_b",
       "name": "Z-Front Carriage Half B (clamping side)",
-      "function": "Clamping carriage half \u00e2\u20ac\u201d bolts onto half A to capture bearings. Z-Front axis.",
+      "function": "Clamping carriage half â€” bolts onto half A to capture bearings. Z-Front axis.",
       "category": "custom",
       "material": "Printed carriage half",
       "quantity": 1,
       "assetRef": "y_left_carriage_half_b.glb",
-      "stagingPose": {
-        "position": {
-          "x": 1.534,
-          "y": 0.55,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.7071,
-          "z": -0.7071,
-          "w": 0.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      }
-    },
+      "stagingPose": {"position":{"x":0.8214,"y":0.55,"z":0.1544},"rotation":{"x":0.5,"y":0.5,"z":-0.5,"w":-0.5},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.7,"g":0.7,"b":0.7,"a":1.0}}
+  },
     {
       "id": "batch_test_rod",
       "name": "8mm Smooth Test Rod",
-      "function": "Smooth 8mm steel rod used to test bearing alignment \u00e2\u20ac\u201d slide vertically through seated bearings to check for even resistance.",
+      "function": "Smooth 8mm steel rod used to test bearing alignment â€” slide vertically through seated bearings to check for even resistance.",
       "category": "shaft",
       "material": "Steel rod",
       "quantity": 1,
@@ -169,8 +77,8 @@
   "assemblies": [
     {
       "id": "assembly_d3d_batch_carriage_build",
-      "name": "Batch Carriage Build \u00e2\u20ac\u201d All 4 Axes",
-      "description": "Builds all four axis carriages in one production-line session before individual axis bench work begins. Lays out all eight carriage halves at once, then assembles each carriage sequentially: seat bearings, run shake and rod-slide tests, close halves, bolt and tighten. Produces four completed carriages \u00e2\u20ac\u201d Y-Left, Y-Right, Z-Back, and Z-Front \u00e2\u20ac\u201d ready to be threaded onto guide rods during per-axis bench builds.",
+      "name": "Batch Carriage Build â€” All 4 Axes",
+      "description": "Builds all four axis carriages in one production-line session before individual axis bench work begins. Lays out all eight carriage halves at once, then assembles each carriage sequentially: seat bearings, run shake and rod-slide tests, close halves, bolt and tighten. Produces four completed carriages â€” Y-Left, Y-Right, Z-Back, and Z-Front â€” ready to be threaded onto guide rods during per-axis bench builds.",
       "machineId": "d3d_v18_10",
       "subassemblyIds": [
         "subassembly_carriage_batch_all"
@@ -209,7 +117,7 @@
   "subassemblies": [
     {
       "id": "subassembly_carriage_batch_all",
-      "name": "All Axis Carriages \u00e2\u20ac\u201d Batch Build",
+      "name": "All Axis Carriages â€” Batch Build",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "description": "Batch assembly of all four axis carriages: Y-Left, Y-Right, Z-Back, and Z-Front. All eight carriage halves are laid out together. Each carriage is built sequentially using the same procedure: seat four LM8UU bearings with flanges facing out, shake test, rod-slide test, close halves, insert M6x18 (top) and M6x30 (bottom) bolts, tighten with power drill. Z-Back and Z-Front use a combined-half carriage model.",
       "partIds": [
@@ -273,13 +181,13 @@
         "step_batch_c4_bolt"
       ],
       "milestoneMessage": "All four axis carriages assembled: bearings seated, belt holes aligned, halves bolted. Ready for individual axis bench builds.",
-      "isAggregate": true,
       "memberSubassemblyIds": [
         "subassembly_carriage_y_left",
         "subassembly_carriage_y_right",
         "subassembly_carriage_z_back",
         "subassembly_carriage_z_front"
-      ]
+      ],
+      "isAggregate": true
     },
     {
       "id": "subassembly_carriage_y_left",
@@ -391,20 +299,25 @@
       "sequenceIndex": 50,
       "family": "Confirm",
       "guidance": {
-        "instructionText": "Gather and lay out all six carriage pieces on the workbench: Y-Left half A, Y-Left half B, Y-Right half A, Y-Right half B, Z-Back carriage (single piece), Z-Front carriage (single piece). Also set out the hardware for each Y-axis carriage: M6\u00c3\u201418 bolts (top holes), M6\u00c3\u201430 bolts (bottom holes), and M6 nuts.",
+        "instructionText": "Gather and lay out all six carriage pieces on the workbench: Y-Left half A, Y-Left half B, Y-Right half A, Y-Right half B, Z-Back carriage (single piece), Z-Front carriage (single piece). Also set out the hardware for each Y-axis carriage: M6Ã—18 bolts (top holes), M6Ã—30 bolts (bottom holes), and M6 nuts.",
         "whyItMattersText": "Building all four carriages in one session creates muscle memory for the bearing-seating technique before moving to individual axis builds. Laying everything out first lets you spot missing parts before work begins."
       },
-      "requiredPartIds": [
-        "y_left_carriage_half_a",
-        "y_left_carriage_half_b",
-        "y_right_carriage_half_a",
-        "y_right_carriage_half_b",
-        "z_back_carriage_half_a",
-        "z_back_carriage_half_b",
-        "z_front_carriage_half_a",
-        "z_front_carriage_half_b"
-      ]
-    },
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "visualPartIds": [ "y_left_carriage_half_a", "y_left_carriage_half_b", "y_right_carriage_half_a", "y_right_carriage_half_b", "z_back_carriage_half_a", "z_back_carriage_half_b", "z_front_carriage_half_a", "z_front_carriage_half_b" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"y_left_carriage_half_a"},
+        {"kind":"part","id":"y_left_carriage_half_b"},
+        {"kind":"part","id":"y_right_carriage_half_a"},
+        {"kind":"part","id":"y_right_carriage_half_b"},
+        {"kind":"part","id":"z_back_carriage_half_a"},
+        {"kind":"part","id":"z_back_carriage_half_b"},
+        {"kind":"part","id":"z_front_carriage_half_a"},
+        {"kind":"part","id":"z_front_carriage_half_b"},
+        {"kind":"confirm_action","id":"confirm"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_batch_carriage_clean_holes",
       "name": "Clean excess plastic from all carriage holes",
@@ -451,7 +364,7 @@
       "subassemblyId": "subassembly_carriage_y_left",
       "sequenceIndex": 53,
       "family": "Place",
-      "instructionText": "Place four LM8UU linear bearings into one Y-Left carriage half-piece. Flanges must face outward \u00e2\u20ac\u201d away from each other \u00e2\u20ac\u201d so they sit flush in the lip of each pocket.",
+      "instructionText": "Place four LM8UU linear bearings into one Y-Left carriage half-piece. Flanges must face outward â€” away from each other â€” so they sit flush in the lip of each pocket.",
       "requiredPartIds": [
         "y_left_carriage_half_a",
         "y_left_lm8uu_a",
@@ -481,7 +394,7 @@
       "family": "Confirm",
       "guidance": {
         "instructionText": "Hold both Y-Left carriage halves firmly together and shake the assembly.",
-        "whyItMattersText": "Compress the two halves by hand until there is no gap. Shake side-to-side and up-down for 2\u00e2\u20ac\u201c3 seconds. No tools needed \u00e2\u20ac\u201d this is a hand-compression test only."
+        "whyItMattersText": "Compress the two halves by hand until there is no gap. Shake side-to-side and up-down for 2â€“3 seconds. No tools needed â€” this is a hand-compression test only."
       },
       "validation": {
         "successCriteria": "No audible rattle or tactile movement from the bearings.",
@@ -525,7 +438,7 @@
       "family": "Confirm",
       "guidance": {
         "instructionText": "Insert a smooth guide rod through the Y-Left carriage and hold it so the rod is vertical.",
-        "whyItMattersText": "The rod should slide or drop through with slight resistance \u00e2\u20ac\u201d if you have to shake the carriage for the rod to move through, that's correct. Motors pull 20 lbs of belt force; the carriage must not slip too freely."
+        "whyItMattersText": "The rod should slide or drop through with slight resistance â€” if you have to shake the carriage for the rod to move through, that's correct. Motors pull 20 lbs of belt force; the carriage must not slip too freely."
       },
       "validation": {
         "successCriteria": "Rod slides or drops through with slight resistance. Shaking the carriage helps it move through.",
@@ -549,7 +462,7 @@
       "subassemblyId": "subassembly_carriage_y_left",
       "sequenceIndex": 57,
       "family": "Place",
-      "instructionText": "Insert 2\u00c3\u2014 M6x18 bolts into the two top holes and 2\u00c3\u2014 M6x30 bolts into the two bottom holes. Thread one M6 nut onto each bolt finger-tight.",
+      "instructionText": "Insert 2Ã— M6x18 bolts into the two top holes and 2Ã— M6x30 bolts into the two bottom holes. Thread one M6 nut onto each bolt finger-tight.",
       "requiredPartIds": [
         "y_left_m6x18_a",
         "y_left_carriage_m6x18_b",
@@ -563,12 +476,12 @@
     },
     {
       "id": "step_batch_c1_tighten",
-      "name": "Carriage 1: tighten \u00e2\u20ac\u201d 1 of 4 complete",
+      "name": "Carriage 1: tighten â€” 1 of 4 complete",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "subassemblyId": "subassembly_carriage_y_left",
       "sequenceIndex": 58,
       "family": "Use",
-      "instructionText": "Use the power drill on the lowest torque setting to tighten all 4 bolts on the Y-Left carriage. Set it aside \u00e2\u20ac\u201d carriage 1 of 4 is complete.",
+      "instructionText": "Use the power drill on the lowest torque setting to tighten all 4 bolts on the Y-Left carriage. Set it aside â€” carriage 1 of 4 is complete.",
       "requiredPartIds": [
         "y_left_carriage_half_a",
         "y_left_carriage_half_b",
@@ -589,7 +502,7 @@
       "subassemblyId": "subassembly_carriage_y_right",
       "sequenceIndex": 59,
       "family": "Place",
-      "instructionText": "Pick up the Y-Right carriage halves. Place four LM8UU bearings into half A with flanges facing outward \u00e2\u20ac\u201d same technique as carriage 1.",
+      "instructionText": "Pick up the Y-Right carriage halves. Place four LM8UU bearings into half A with flanges facing outward â€” same technique as carriage 1.",
       "requiredPartIds": [
         "y_right_carriage_half_a",
         "y_right_lm8uu_a",
@@ -619,7 +532,7 @@
       "family": "Confirm",
       "guidance": {
         "instructionText": "Hold both Y-Right carriage halves firmly together and shake the assembly.",
-        "whyItMattersText": "Compress the two halves by hand until there is no gap. Shake side-to-side and up-down for 2\u00e2\u20ac\u201c3 seconds."
+        "whyItMattersText": "Compress the two halves by hand until there is no gap. Shake side-to-side and up-down for 2â€“3 seconds."
       },
       "validation": {
         "successCriteria": "No audible rattle or tactile movement from the bearings.",
@@ -663,7 +576,7 @@
       "family": "Confirm",
       "guidance": {
         "instructionText": "Insert a smooth guide rod through the Y-Right carriage and hold it vertical.",
-        "whyItMattersText": "Slight resistance is correct \u00e2\u20ac\u201d the rod should slide or drop through with a little drag. Too free means the carriage will slip under belt tension."
+        "whyItMattersText": "Slight resistance is correct â€” the rod should slide or drop through with a little drag. Too free means the carriage will slip under belt tension."
       },
       "validation": {
         "successCriteria": "Rod slides or drops through with slight resistance.",
@@ -687,7 +600,7 @@
       "subassemblyId": "subassembly_carriage_y_right",
       "sequenceIndex": 63,
       "family": "Place",
-      "instructionText": "Insert 2\u00c3\u2014 M6x18 bolts into the two top holes and 2\u00c3\u2014 M6x30 bolts into the two bottom holes. Thread one M6 nut onto each bolt finger-tight.",
+      "instructionText": "Insert 2Ã— M6x18 bolts into the two top holes and 2Ã— M6x30 bolts into the two bottom holes. Thread one M6 nut onto each bolt finger-tight.",
       "requiredPartIds": [
         "y_right_m6x18_a",
         "y_right_m6x18_b",
@@ -701,12 +614,12 @@
     },
     {
       "id": "step_batch_c2_tighten",
-      "name": "Carriage 2: tighten \u00e2\u20ac\u201d 2 of 4 complete",
+      "name": "Carriage 2: tighten â€” 2 of 4 complete",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "subassemblyId": "subassembly_carriage_y_right",
       "sequenceIndex": 64,
       "family": "Use",
-      "instructionText": "Tighten all 4 bolts on the Y-Right carriage with the power drill on lowest torque. Set it beside carriage 1 \u00e2\u20ac\u201d carriage 2 of 4 is complete.",
+      "instructionText": "Tighten all 4 bolts on the Y-Right carriage with the power drill on lowest torque. Set it beside carriage 1 â€” carriage 2 of 4 is complete.",
       "requiredPartIds": [
         "y_right_carriage_half_a",
         "y_right_carriage_half_b",
@@ -741,7 +654,7 @@
       "family": "Confirm",
       "guidance": {
         "instructionText": "Hold both Z-Back carriage halves firmly together and shake the assembly.",
-        "whyItMattersText": "Compress the halves by hand. Shake side-to-side and up-down for 2\u00e2\u20ac\u201c3 seconds. Tip: use one of the completed Y-axis carriages as a tactile reference for correct feel."
+        "whyItMattersText": "Compress the halves by hand. Shake side-to-side and up-down for 2â€“3 seconds. Tip: use one of the completed Y-axis carriages as a tactile reference for correct feel."
       },
       "validation": {
         "successCriteria": "No audible rattle or tactile movement from the bearings.",
@@ -804,12 +717,12 @@
     },
     {
       "id": "step_batch_c3_bolt",
-      "name": "Carriage 3: close halves, bolt and tighten \u00e2\u20ac\u201d 3 of 4 complete",
+      "name": "Carriage 3: close halves, bolt and tighten â€” 3 of 4 complete",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "subassemblyId": "subassembly_carriage_z_back",
       "sequenceIndex": 68,
       "family": "Use",
-      "instructionText": "Press Z-Back carriage half B onto half A to trap the bearings. Align so the small ribbed belt hole sits beside the large smooth belt hole. Secure with M6x18 bolts on top and M6x30 bolts on bottom. Tighten with the power drill on lowest torque. Set it aside \u00e2\u20ac\u201d carriage 3 of 4 is complete.",
+      "instructionText": "Press Z-Back carriage half B onto half A to trap the bearings. Align so the small ribbed belt hole sits beside the large smooth belt hole. Secure with M6x18 bolts on top and M6x30 bolts on bottom. Tighten with the power drill on lowest torque. Set it aside â€” carriage 3 of 4 is complete.",
       "requiredPartIds": [
         "z_back_carriage_half_a",
         "z_back_carriage_half_b"
@@ -836,7 +749,7 @@
       "family": "Confirm",
       "guidance": {
         "instructionText": "Hold both Z-Front carriage halves firmly together and shake the assembly.",
-        "whyItMattersText": "Compress the halves by hand. Shake side-to-side and up-down for 2\u00e2\u20ac\u201c3 seconds."
+        "whyItMattersText": "Compress the halves by hand. Shake side-to-side and up-down for 2â€“3 seconds."
       },
       "validation": {
         "successCriteria": "No audible rattle or tactile movement from the bearings.",
@@ -899,12 +812,12 @@
     },
     {
       "id": "step_batch_c4_bolt",
-      "name": "Carriage 4: close halves, bolt and tighten \u00e2\u20ac\u201d 4 of 4 complete",
+      "name": "Carriage 4: close halves, bolt and tighten â€” 4 of 4 complete",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "subassemblyId": "subassembly_carriage_z_front",
       "sequenceIndex": 72,
       "family": "Use",
-      "instructionText": "Press Z-Front carriage half B onto half A to trap the bearings. Align the small ribbed belt hole directly beside the large smooth belt hole. Secure with M6x18 bolts on top and M6x30 bolts on bottom. Tighten with the power drill on lowest torque. All four axis carriages are now complete \u00e2\u20ac\u201d set the Z-Front carriage with the others.",
+      "instructionText": "Press Z-Front carriage half B onto half A to trap the bearings. Align the small ribbed belt hole directly beside the large smooth belt hole. Secure with M6x18 bolts on top and M6x30 bolts on bottom. Tighten with the power drill on lowest torque. All four axis carriages are now complete â€” set the Z-Front carriage with the others.",
       "requiredPartIds": [
         "z_front_carriage_half_a",
         "z_front_carriage_half_b"

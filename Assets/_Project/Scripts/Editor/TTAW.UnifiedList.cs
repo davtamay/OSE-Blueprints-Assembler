@@ -133,7 +133,22 @@ namespace OSE.Editor
             List<TaskOrderEntry> order;
             if (step.taskOrder != null && step.taskOrder.Length > 0)
             {
-                order = new List<TaskOrderEntry>(step.taskOrder);
+                // Dedup accidentally-accumulated confirm_action entries from
+                // older versions of the toggle-persist path. Keep the first
+                // occurrence; drop the rest.
+                order = new List<TaskOrderEntry>(step.taskOrder.Length);
+                bool seenConfirmAction = false;
+                for (int k = 0; k < step.taskOrder.Length; k++)
+                {
+                    var e = step.taskOrder[k];
+                    if (e == null) continue;
+                    if (e.kind == "confirm_action")
+                    {
+                        if (seenConfirmAction) continue;
+                        seenConfirmAction = true;
+                    }
+                    order.Add(e);
+                }
             }
             else
             {
@@ -144,6 +159,21 @@ namespace OSE.Editor
                 if (step.requiredPartIds != null)
                 {
                     foreach (var pid in step.requiredPartIds)
+                        if (!string.IsNullOrEmpty(pid))
+                            order.Add(new TaskOrderEntry { kind = "part", id = pid });
+                }
+                if (step.optionalPartIds != null)
+                {
+                    foreach (var pid in step.optionalPartIds)
+                        if (!string.IsNullOrEmpty(pid))
+                            order.Add(new TaskOrderEntry { kind = "part", id = pid, isOptional = true });
+                }
+                // visualPartIds → no-task PART rows (rendered with the NO TASK
+                // tag). Kept in the same sequence so the author sees context
+                // inline with real tasks.
+                if (step.visualPartIds != null)
+                {
+                    foreach (var pid in step.visualPartIds)
                         if (!string.IsNullOrEmpty(pid))
                             order.Add(new TaskOrderEntry { kind = "part", id = pid });
                 }
@@ -182,9 +212,20 @@ namespace OSE.Editor
                     order.Insert(0, new TaskOrderEntry { kind = "part", id = subId });
             }
 
-            // Confirm-family steps always end with a button press — always append as display-only terminal task
+            // Confirm-family steps always end with a button press — append a
+            // single terminal confirm_action. Guard against duplicates: the
+            // row's toggle persists step.taskOrder on every click, which on
+            // the next derivation pass would re-trigger this append and grow
+            // the confirm tail every edit. Only append when no confirm_action
+            // already exists in the order.
             if (isConfirm2)
-                order.Add(new TaskOrderEntry { kind = "confirm_action", id = "confirm" });
+            {
+                bool hasConfirmAction = false;
+                for (int k = 0; k < order.Count; k++)
+                    if (order[k] != null && order[k].kind == "confirm_action") { hasConfirmAction = true; break; }
+                if (!hasConfirmAction)
+                    order.Add(new TaskOrderEntry { kind = "confirm_action", id = "confirm" });
+            }
 
             _cachedTaskOrderForStepId = step.id;
             _cachedTaskOrder = order;
@@ -379,6 +420,9 @@ namespace OSE.Editor
 
         // Cached part→group name lookup, rebuilt when the list rebuilds.
         private Dictionary<string, string> _partToGroupName;
+        // Parallel cache: partId → owning LEAF subassembly id. Used to flag
+        // task rows whose part belongs to the currently-selected group.
+        private Dictionary<string, string> _partToLeafGroupId;
 
         private void DrawTaskSequenceDragList(StepDefinition step, List<TaskOrderEntry> order)
         {
@@ -389,6 +433,7 @@ namespace OSE.Editor
                 // Shows the full nesting path: "Parent > Child" so the author
                 // can see which groups a part belongs to at a glance.
                 _partToGroupName = new Dictionary<string, string>(StringComparer.Ordinal);
+                _partToLeafGroupId = new Dictionary<string, string>(StringComparer.Ordinal);
                 var allSubs = _pkg?.GetSubassemblies();
                 if (allSubs != null)
                 {
@@ -414,7 +459,10 @@ namespace OSE.Editor
                         foreach (var pid in sub.partIds)
                         {
                             if (!string.IsNullOrEmpty(pid) && !_partToGroupName.ContainsKey(pid))
+                            {
                                 _partToGroupName[pid] = chain;
+                                _partToLeafGroupId[pid] = sub.id;
+                            }
                         }
                     }
                 }
@@ -438,9 +486,37 @@ namespace OSE.Editor
                     if (index >= order.Count) return;
                     var entry = order[index];
 
-                    // Sequence number
+                    // No-task detection — a PART row whose id lives in
+                    // visualPartIds. Not a task; numbered column gets a "·".
+                    bool isNoTask = entry.kind == "part"
+                                     && step.visualPartIds != null
+                                     && Array.IndexOf(step.visualPartIds, entry.id) >= 0;
+
+                    // Sequence number — computed from task rows only so
+                    // "N." counts real tasks and "·" marks a no-task row.
+                    int taskSeq = 0;
+                    for (int ri = 0; ri <= index && ri < order.Count; ri++)
+                    {
+                        var other = order[ri];
+                        bool otherNoTask = other.kind == "part"
+                                            && step.visualPartIds != null
+                                            && Array.IndexOf(step.visualPartIds, other.id) >= 0;
+                        if (!otherNoTask) taskSeq++;
+                    }
                     var numRect = new Rect(rect.x, rect.y + 1f, 22f, rect.height);
-                    EditorGUI.LabelField(numRect, $"{index + 1}", EditorStyles.miniLabel);
+                    if (isNoTask)
+                    {
+                        var dotStyle = new GUIStyle(EditorStyles.miniLabel)
+                        {
+                            alignment = TextAnchor.MiddleCenter,
+                            normal    = { textColor = new Color(0.55f, 0.55f, 0.58f) },
+                        };
+                        EditorGUI.LabelField(numRect, "·", dotStyle);
+                    }
+                    else
+                    {
+                        EditorGUI.LabelField(numRect, $"{taskSeq}", EditorStyles.miniLabel);
+                    }
 
                     // Type badge — colored label (not a button; whole row is the click target)
                     Color badgeCol = entry.kind switch
@@ -489,16 +565,19 @@ namespace OSE.Editor
                         GUI.Label(gRect, "[G]", gStyle);
                     }
 
-                    // Required/Optional indicator — ALL task kinds are toggleable.
-                    // Reads from entry.isOptional (persisted in taskOrder[]).
-                    // For part tasks, also syncs to requiredPartIds/optionalPartIds.
+                    // Tri-state role indicator — cycles R → O → I → R on click.
+                    // For part rows, this is the fast way to move the partId
+                    // between requiredPartIds / optionalPartIds / visualPartIds.
+                    // Non-part kinds still use the legacy R↔O boolean toggle.
                     float reqOptW = 18f;
                     bool isOptional = entry.isOptional;
                     {
-                        string roLabel = isOptional ? "O" : "R";
-                        Color roColor  = isOptional
-                            ? new Color(0.95f, 0.70f, 0.20f)  // amber
-                            : new Color(0.30f, 0.78f, 0.36f); // green
+                        string roLabel = isNoTask ? "N" : (isOptional ? "O" : "R");
+                        Color roColor  = isNoTask
+                            ? new Color(0.55f, 0.78f, 0.95f)  // pale cyan (No Task)
+                            : isOptional
+                                ? new Color(0.95f, 0.70f, 0.20f)  // amber (Optional)
+                                : new Color(0.30f, 0.78f, 0.36f); // green  (Required)
                         var roStyle = new GUIStyle(EditorStyles.miniButton)
                         {
                             fontSize  = 8,
@@ -507,21 +586,36 @@ namespace OSE.Editor
                             normal    = { textColor = roColor },
                         };
                         var roRect = new Rect(rect.x + 78f, rect.y + 2f, 16f, rect.height - 4f);
-                        if (GUI.Button(roRect, new GUIContent(roLabel,
-                            isOptional ? "Optional — click to make Required" : "Required — click to make Optional"),
-                            roStyle))
+                        string tooltip = isNoTask
+                            ? "No Task — click to cycle back to Required (R → O → N → R)"
+                            : (isOptional
+                                ? "Optional — click to cycle to No Task"
+                                : "Required — click to cycle to Optional");
+                        if (GUI.Button(roRect, new GUIContent(roLabel, tooltip), roStyle))
                         {
-                            entry.isOptional = !isOptional;
-                            // For parts, also sync to the step-level arrays
                             if (entry.kind == "part")
-                                TogglePartRequiredOptional(step, entry.id, isOptional);
-                            // Persist the taskOrder change
+                            {
+                                // Cycle R → O → I → R. State is implied by
+                                // which step array the partId lives in.
+                                PartRole next;
+                                if      (isNoTask)   next = PartRole.Required;
+                                else if (isOptional) next = PartRole.NoTask;
+                                else                 next = PartRole.Optional;
+                                SetPartRoleForStep(step, entry.id, next);
+                                entry.isOptional = (next == PartRole.Optional);
+                            }
+                            else
+                            {
+                                // Non-part kinds keep the legacy R↔O toggle.
+                                entry.isOptional = !isOptional;
+                            }
                             step.taskOrder = order.ToArray();
                             _dirtyStepIds.Add(step.id);
                             _dirtyTaskOrderStepIds.Add(step.id);
                             Repaint();
                         }
                     }
+
 
                     // ID label + group tag + per-task dirty dot
                     bool entryDirty = IsTaskEntryDirty(entry, step);
@@ -541,8 +635,32 @@ namespace OSE.Editor
                     }
 
                     float dirtyW = entryDirty ? 14f : 0f;
-                    float idX    = rect.x + 80f + reqOptW;
-                    float idW    = rect.width - 110f - tagW - dirtyW - reqOptW;
+
+                    // Reserve a dedicated slot for the "NO TASK" pill so it
+                    // never overlaps the ID label. Drawn in the gap between
+                    // the R|O|N toggle and the part-id text.
+                    const float noTaskW = 58f;
+                    float leadPad = isNoTask ? (noTaskW + 4f) : 0f;
+                    if (isNoTask)
+                    {
+                        float ntX = rect.x + 80f + reqOptW - 18f; // sits right after the toggle
+                        var ntRect = new Rect(ntX, rect.y + 3f, noTaskW, rect.height - 6f);
+                        EditorGUI.DrawRect(ntRect, new Color(0.55f, 0.78f, 0.95f, 0.28f));
+                        var ntStyle = new GUIStyle(EditorStyles.miniLabel)
+                        {
+                            normal    = { textColor = new Color(0.70f, 0.88f, 1f) },
+                            fontSize  = 8,
+                            alignment = TextAnchor.MiddleCenter,
+                            fontStyle = FontStyle.Bold,
+                        };
+                        GUI.Label(ntRect,
+                            new GUIContent("NO TASK",
+                                "Introduced here — no task attached. This part becomes visible at this step but the trainee is not required to interact with it."),
+                            ntStyle);
+                    }
+
+                    float idX    = rect.x + 80f + reqOptW + leadPad;
+                    float idW    = rect.width - 110f - tagW - dirtyW - reqOptW - leadPad;
                     var idRect   = new Rect(idX, rect.y + 1f, idW, rect.height);
                     // Show group display name for [G] tasks, raw id for everything else
                     string displayId = entry.id ?? "—";
@@ -550,19 +668,38 @@ namespace OSE.Editor
                         displayId = dispSub.GetDisplayName();
                     EditorGUI.LabelField(idRect, displayId, EditorStyles.miniLabel);
 
+                    // "Editing this group" membership indicator — a solid dot
+                    // that appears when the task's part belongs to the group
+                    // currently selected for pose editing. Mirrors the per-task
+                    // modifiable dot elsewhere in the row, but signals group
+                    // membership rather than row dirtiness.
+                    bool inEditedGroup = entry.kind == "part"
+                        && !string.IsNullOrEmpty(_canvasSelectedSubId)
+                        && _partToLeafGroupId != null
+                        && _partToLeafGroupId.TryGetValue(entry.id, out string leafId)
+                        && string.Equals(leafId, _canvasSelectedSubId, StringComparison.Ordinal);
+
                     // Group tag badge — shows nesting chain, hover for full path
                     if (groupTag != null)
                     {
                         var tagRect = new Rect(idRect.xMax + 2f, rect.y + 3f, tagW, rect.height - 4f);
-                        EditorGUI.DrawRect(tagRect, new Color(0.20f, 0.62f, 0.95f, 0.20f));
+                        // Brighter background + accent border when this row is
+                        // in the group being edited — visually links task rows
+                        // to the selected group in the GROUPS panel.
+                        Color tagBg = inEditedGroup
+                            ? new Color(SubAccent.r, SubAccent.g, SubAccent.b, 0.42f)
+                            : new Color(0.20f, 0.62f, 0.95f, 0.20f);
+                        EditorGUI.DrawRect(tagRect, tagBg);
                         var tagStyle = new GUIStyle(EditorStyles.miniLabel)
                         {
-                            normal    = { textColor = new Color(0.45f, 0.75f, 0.95f) },
+                            normal    = { textColor = inEditedGroup ? Color.white : new Color(0.45f, 0.75f, 0.95f) },
                             fontSize  = 8,
                             alignment = TextAnchor.MiddleCenter,
+                            fontStyle = inEditedGroup ? FontStyle.Bold : FontStyle.Normal,
                         };
-                        GUI.Label(tagRect, new GUIContent(groupTag, groupTagFull), tagStyle);
+                        GUI.Label(tagRect, new GUIContent(groupTag, inEditedGroup ? groupTagFull + "  (editing)" : groupTagFull), tagStyle);
                     }
+
 
                     if (entryDirty)
                     {
@@ -1090,6 +1227,17 @@ namespace OSE.Editor
                 {
                     if (_parts[i].def?.id == partId)
                     {
+                        // Align _selectedPartIdx with the part we're actually
+                        // rendering so DrawPartPoseToggle's NO TASK detection
+                        // (which reads _selectedPartIdx) resolves against the
+                        // correct part. Without this, the inspector showed
+                        // Start/Assembled buttons for parts that should
+                        // display the NO TASK transform block.
+                        if (_selectedPartIdx != i)
+                        {
+                            _selectedPartIdx = i;
+                            _selectedPartId  = _parts[i].def?.id;
+                        }
                         DrawPartPoseToggle();
                         ServiceRegistry.TryGet<ISpawnerQueryService>(out var chkSpawner);
                         if (chkSpawner == null)

@@ -103,6 +103,19 @@ namespace OSE.UI.Root
             if (targetIds == null || targetIds.Length == 0)
                 return;
 
+            // Build the set of subassembly IDs that were already committed in
+            // prior steps. Later steps (Confirm / tacking / acceptance) often
+            // reuse those same targets for framing/hints, but the ghost
+            // silhouette should NOT re-appear — the real parts are already
+            // there. Matches PackagePartSpawner.stackedSubassemblyIds.
+            var alreadyPlacedSubassemblyIds = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+            foreach (var s in orderedSteps)
+            {
+                if (s == null || string.IsNullOrEmpty(s.requiredSubassemblyId)) continue;
+                if (s.sequenceIndex < targetSequenceIndex)
+                    alreadyPlacedSubassemblyIds.Add(s.requiredSubassemblyId);
+            }
+
             // Build the set of part IDs that this step is actively placing.
             var currentStepPartIds = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
             string[] currentStepReqParts = currentStep.GetEffectiveRequiredPartIds();
@@ -117,9 +130,14 @@ namespace OSE.UI.Root
                 if (string.IsNullOrEmpty(targetId)) continue;
                 if (!pkg.TryGetTarget(targetId, out var target)) continue;
 
-                // Subassembly target — spawn composite ghost with all member parts
+                // Subassembly target — spawn composite ghost with all member parts,
+                // but skip when the subassembly was already committed earlier
+                // (avoids phantom ghosts on Confirm/tack/acceptance steps that
+                // reuse the target for framing but not placement).
                 if (!string.IsNullOrWhiteSpace(target.associatedSubassemblyId))
                 {
+                    if (alreadyPlacedSubassemblyIds.Contains(target.associatedSubassemblyId))
+                        continue;
                     SpawnSubassemblyGhost(pkg, targetId, target, previewRoot);
                     continue;
                 }

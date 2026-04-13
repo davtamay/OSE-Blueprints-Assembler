@@ -134,32 +134,110 @@ namespace OSE.UI.Root
                 return false;
             }
 
-            if (pp.stepPoses != null && pp.stepPoses.Length > 0)
+            if (pp.stepPoses != null && pp.stepPoses.Length > 0
+                && TryPickStepPose(pp.stepPoses, orderedSteps, viewingStepIndex, out StepPoseEntry picked))
             {
-                // Walk backward from the last completed step to find the most recent stepPose
-                for (int s = viewingStepIndex - 1; s >= 0; s--)
-                {
-                    if (s >= orderedSteps.Length) continue;
-                    string sid = orderedSteps[s]?.id;
-                    if (string.IsNullOrEmpty(sid)) continue;
-
-                    for (int p = 0; p < pp.stepPoses.Length; p++)
-                    {
-                        if (string.Equals(pp.stepPoses[p].stepId, sid, StringComparison.OrdinalIgnoreCase))
-                        {
-                            position = pp.stepPoses[p].position;
-                            rotation = pp.stepPoses[p].rotation;
-                            scale = pp.stepPoses[p].scale;
-                            return true;
-                        }
-                    }
-                }
+                position = picked.position;
+                rotation = picked.rotation;
+                scale    = picked.scale;
+                return true;
             }
 
             // Fallback: assembledPosition
             position = pp.assembledPosition;
             rotation = pp.assembledRotation;
             scale = pp.assembledScale;
+            return true;
+        }
+
+        /// <summary>
+        /// Picks the stepPose whose authored span (<c>propagateFromStep</c>…
+        /// <c>propagateThroughStep</c>) covers <paramref name="viewingStepIndex"/>.
+        /// When a span bound is empty it's treated as open-ended on that side.
+        /// Among multiple covering entries, prefers the one whose anchor
+        /// (<c>stepId</c>) is closest to the viewing step with preference for
+        /// anchors at or before it — preserves the "backward-looking" feel of
+        /// the previous walk. Legacy entries (no span fields) behave identically
+        /// to before: they cover <c>stepId</c> forward until another entry wins.
+        /// </summary>
+        private bool TryPickStepPose(
+            StepPoseEntry[] poses,
+            StepDefinition[] orderedSteps,
+            int viewingStepIndex,
+            out StepPoseEntry picked)
+        {
+            picked = null;
+            int bestDist = int.MaxValue;
+            int bestAnchor = int.MinValue;
+
+            for (int p = 0; p < poses.Length; p++)
+            {
+                var pose = poses[p];
+                if (pose == null) continue;
+
+                int anchorIdx    = IndexOfStep(orderedSteps, pose.stepId);
+                int fromRaw      = string.IsNullOrEmpty(pose.propagateFromStep)
+                                   ? int.MinValue
+                                   : IndexOfStep(orderedSteps, pose.propagateFromStep);
+                int fromIdx      = fromRaw == -1 ? int.MinValue : fromRaw;  // unresolved id → open-ended
+                int throughRaw   = string.IsNullOrEmpty(pose.propagateThroughStep)
+                                   ? int.MaxValue
+                                   : IndexOfStep(orderedSteps, pose.propagateThroughStep);
+                int throughIdx   = throughRaw == -1 ? int.MaxValue : throughRaw;  // unresolved id → open-ended
+
+                // Anchor-only (legacy) entries need a lower bound so they don't
+                // accidentally apply to steps before the anchor.
+                int effectiveFrom = fromIdx != int.MinValue
+                    ? fromIdx
+                    : (anchorIdx >= 0 ? anchorIdx : int.MinValue);
+
+                if (viewingStepIndex < effectiveFrom) continue;
+                if (viewingStepIndex > throughIdx)    continue;
+
+                int dist = anchorIdx >= 0
+                    ? Math.Abs(viewingStepIndex - anchorIdx)
+                    : int.MaxValue / 2;
+                bool betterDist  = dist < bestDist;
+                bool sameDistButBehind = dist == bestDist && anchorIdx <= viewingStepIndex && bestAnchor > viewingStepIndex;
+                if (betterDist || sameDistButBehind)
+                {
+                    bestDist   = dist;
+                    bestAnchor = anchorIdx;
+                    picked     = pose;
+                }
+            }
+            return picked != null;
+        }
+
+        private static int IndexOfStep(StepDefinition[] orderedSteps, string stepId)
+        {
+            if (string.IsNullOrEmpty(stepId) || orderedSteps == null) return -1;
+            for (int i = 0; i < orderedSteps.Length; i++)
+                if (orderedSteps[i] != null && string.Equals(orderedSteps[i].id, stepId, StringComparison.OrdinalIgnoreCase))
+                    return i;
+            return -1;
+        }
+
+        /// <summary>
+        /// Same range-covering resolution as <see cref="TryResolvePartPoseAtStep"/>
+        /// but for a subassembly's authored <c>stepPoses</c>. Returns false when
+        /// no group-level span covers the viewing step.
+        /// </summary>
+        internal bool TryResolveGroupPoseAtStep(
+            string subassemblyId,
+            StepDefinition[] orderedSteps,
+            int viewingStepIndex,
+            out SceneFloat3 position,
+            out SceneQuaternion rotation,
+            out SceneFloat3 scale)
+        {
+            position = default; rotation = default; scale = default;
+            SubassemblyPreviewPlacement sp = FindSubassemblyPlacement(subassemblyId);
+            if (sp?.stepPoses == null || sp.stepPoses.Length == 0) return false;
+            if (!TryPickStepPose(sp.stepPoses, orderedSteps, viewingStepIndex, out StepPoseEntry picked)) return false;
+            position = picked.position;
+            rotation = picked.rotation;
+            scale    = picked.scale;
             return true;
         }
 

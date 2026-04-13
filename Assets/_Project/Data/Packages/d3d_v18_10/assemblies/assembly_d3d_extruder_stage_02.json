@@ -48,7 +48,6 @@
       "id": "subassembly_extruder_carriage_unit",
       "name": "Extruder Carriage Unit",
       "assemblyId": "assembly_d3d_extruder_stage_02",
-      "isAggregate": true,
       "description": "Combines the completed Titan Aero nozzle module with the carriage-side bracket and top-plate stack to create the first carriage-side extruder unit.",
       "partIds": [
         "d3d_extruder_simplified_carriage",
@@ -69,7 +68,8 @@
         "step_mount_extruder_module_to_carriage_stack",
         "step_check_extruder_carriage_mount_clearance"
       ],
-      "milestoneMessage": "Titan Aero nozzle module mounted to the carriage-side bracket stack and checked for first-pass service clearance."
+      "milestoneMessage": "Titan Aero nozzle module mounted to the carriage-side bracket stack and checked for first-pass service clearance.",
+      "isAggregate": true
     }
   ],
   "parts": [

@@ -855,6 +855,79 @@ namespace OSE.Editor
         }
 
         /// <summary>
+        /// Creates a new empty SCOPE (aggregate subassembly) so the author can
+        /// immediately drag child groups into it. The aggregate flag is
+        /// auto-derived once <c>memberSubassemblyIds</c> is populated, so this
+        /// helper only needs to seed an empty <c>memberSubassemblyIds</c> array
+        /// for the normalizer to promote it. The new scope is tied to the
+        /// current step via <c>subassemblyId</c>.
+        /// </summary>
+        private void CreateEmptyScopeForStep(StepDefinition step)
+        {
+            if (step == null || _pkg == null) return;
+
+            string assemblyId = step.assemblyId ?? "";
+            string baseId     = string.IsNullOrEmpty(assemblyId) ? "scope" : $"{assemblyId}_scope";
+            string subId      = $"subassembly_{baseId}";
+            int suffix = 1;
+            string candidate = subId;
+            while (_pkg.TryGetSubassembly(candidate, out _)) candidate = $"{subId}_{suffix++}";
+            subId = candidate;
+
+            var newSub = new SubassemblyDefinition
+            {
+                id                   = subId,
+                name                 = "New Scope",
+                assemblyId           = assemblyId,
+                partIds              = Array.Empty<string>(),
+                stepIds              = new[] { step.id },
+                memberSubassemblyIds = Array.Empty<string>(),
+                isAggregate          = true,   // explicit — normalizer would re-derive anyway
+            };
+
+            string targetFile;
+            if (PackageJsonUtils.IsSplitLayout(_pkgId) && !string.IsNullOrEmpty(assemblyId))
+            {
+                targetFile = System.IO.Path.Combine(
+                    PackageJsonUtils.AuthoringRoot, _pkgId, "assemblies", $"{assemblyId}.json");
+                if (!System.IO.File.Exists(targetFile))
+                    targetFile = PackageJsonUtils.GetJsonPath(_pkgId);
+            }
+            else
+            {
+                targetFile = PackageJsonUtils.GetJsonPath(_pkgId);
+            }
+
+            if (string.IsNullOrEmpty(targetFile) || !System.IO.File.Exists(targetFile))
+            {
+                EditorUtility.DisplayDialog("Error", "Could not locate the target JSON file.", "OK");
+                return;
+            }
+
+            try
+            {
+                PackageJsonUtils.InsertSubassembly(targetFile, newSub);
+            }
+            catch (System.Exception ex)
+            {
+                EditorUtility.DisplayDialog("Error", $"Failed to create scope:\n{ex.Message}", "OK");
+                return;
+            }
+
+            LoadPkg(_pkgId);
+            var reloadedStep = FindStep(step.id);
+            if (reloadedStep != null && string.IsNullOrEmpty(reloadedStep.subassemblyId))
+            {
+                reloadedStep.subassemblyId = subId;
+                _dirtyStepIds.Add(reloadedStep.id);
+            }
+
+            _canvasSelectedSubId = subId;
+            ShowNotification(new GUIContent($"Created empty scope '{newSub.name}' — drag group root GOs into its drop zone to populate."));
+            Repaint();
+        }
+
+        /// <summary>
         /// Multi-selects task sequence rows whose part IDs are members of the
         /// given group. This visually highlights which tasks belong to the group
         /// the author just clicked.
@@ -927,11 +1000,19 @@ namespace OSE.Editor
                 fontStyle = isHover && isDrag ? FontStyle.Bold : FontStyle.Italic,
             };
 
+            // Aggregates (isAggregate=true OR already has memberSubassemblyIds)
+            // accept GROUPS — [G] suffix on labels so the author knows group
+            // drops are legal here. Leaf subassemblies accept parts only.
+            bool targetAcceptsGroups = selectedSub != null
+                && (selectedSub.isAggregate
+                    || (selectedSub.memberSubassemblyIds != null && selectedSub.memberSubassemblyIds.Length > 0));
+            string acceptsSuffix = targetAcceptsGroups ? "  (parts or [G] groups)" : "";
+
             string idleLabel = hasSelectedGroup
-                ? $"Drag parts here to add to \"{selectedSub?.GetDisplayName() ?? _canvasSelectedSubId}\""
+                ? $"Drag parts here to add to \"{selectedSub?.GetDisplayName() ?? _canvasSelectedSubId}\"{acceptsSuffix}"
                 : "Drag parts here to create a new group";
             string activeLabel = hasSelectedGroup
-                ? $"Drop to add to \"{selectedSub?.GetDisplayName() ?? _canvasSelectedSubId}\""
+                ? $"Drop to add to \"{selectedSub?.GetDisplayName() ?? _canvasSelectedSubId}\"{acceptsSuffix}"
                 : $"Drop to create a new group from {DragAndDrop.objectReferences?.Length ?? 0} item(s)";
             GUI.Label(dropRect, isHover && isDrag ? activeLabel : idleLabel, labelStyle);
 
@@ -949,45 +1030,93 @@ namespace OSE.Editor
                 DragAndDrop.AcceptDrag();
 
                 var partIds = new List<string>();
+                var groupIds = new List<string>();
                 var allParts = _pkg.GetParts();
+                var allSubs  = _pkg.GetSubassemblies();
                 foreach (var obj in DragAndDrop.objectReferences)
                 {
                     if (obj == null) continue;
                     string name = obj.name;
                     if (string.IsNullOrEmpty(name)) continue;
+
+                    bool matched = false;
                     foreach (var p in allParts)
                     {
                         if (p != null && string.Equals(p.id, name, StringComparison.Ordinal))
-                        { partIds.Add(p.id); break; }
+                        { partIds.Add(p.id); matched = true; break; }
+                    }
+                    if (matched) continue;
+
+                    // Subassembly match — either the raw id, or the scene root
+                    // naming convention "Group_<DisplayName>" from
+                    // EnsureAllSubassemblyRoots. Lets the author drag group
+                    // root GOs from the Hierarchy straight into an aggregate.
+                    string candidateDisplay = name.StartsWith("Group_", StringComparison.Ordinal)
+                        ? name.Substring("Group_".Length)
+                        : null;
+                    if (allSubs != null)
+                    {
+                        foreach (var s in allSubs)
+                        {
+                            if (s == null) continue;
+                            if (string.Equals(s.id, name, StringComparison.Ordinal)
+                                || (candidateDisplay != null && string.Equals(s.GetDisplayName(), candidateDisplay, StringComparison.Ordinal)))
+                            { groupIds.Add(s.id); break; }
+                        }
                     }
                 }
 
-                if (partIds.Count == 0)
+                if (partIds.Count == 0 && groupIds.Count == 0)
                 {
-                    ShowNotification(new GUIContent("No dropped items matched a package part ID"));
+                    ShowNotification(new GUIContent("No dropped items matched a package part or group"));
                 }
                 else if (hasSelectedGroup && selectedSub != null)
                 {
-                    // Add to existing group
-                    var currentSet = new HashSet<string>(selectedSub.partIds ?? Array.Empty<string>(), StringComparer.Ordinal);
-                    int added = 0;
-                    foreach (var pid in partIds)
-                        if (currentSet.Add(pid)) added++;
-                    if (added > 0)
+                    int partsAdded  = 0;
+                    int groupsAdded = 0;
+
+                    if (partIds.Count > 0)
                     {
-                        selectedSub.partIds = currentSet.ToArray();
+                        var currentSet = new HashSet<string>(selectedSub.partIds ?? Array.Empty<string>(), StringComparer.Ordinal);
+                        foreach (var pid in partIds)
+                            if (currentSet.Add(pid)) partsAdded++;
+                        if (partsAdded > 0)
+                            selectedSub.partIds = currentSet.ToArray();
+                    }
+
+                    if (groupIds.Count > 0)
+                    {
+                        // Route group drops into memberSubassemblyIds. The
+                        // aggregate flag is auto-derived by the normalizer
+                        // from memberSubassemblyIds, so no manual flag set.
+                        var currentSet = new HashSet<string>(selectedSub.memberSubassemblyIds ?? Array.Empty<string>(), StringComparer.Ordinal);
+                        foreach (var gid in groupIds)
+                            if (!string.Equals(gid, selectedSub.id, StringComparison.Ordinal) && currentSet.Add(gid))
+                                groupsAdded++;
+                        if (groupsAdded > 0)
+                            selectedSub.memberSubassemblyIds = currentSet.ToArray();
+                    }
+
+                    if (partsAdded + groupsAdded > 0)
+                    {
                         _dirtySubassemblyIds.Add(selectedSub.id);
-                        ShowNotification(new GUIContent($"Added {added} part(s) to {selectedSub.GetDisplayName()}"));
+                        string gLabel = groupsAdded > 0 ? $"{groupsAdded} [G] group(s)" : "";
+                        string pLabel = partsAdded  > 0 ? $"{partsAdded} part(s)"      : "";
+                        string joined = string.Join(" + ", new[] { pLabel, gLabel }.Where(s => !string.IsNullOrEmpty(s)));
+                        ShowNotification(new GUIContent($"Added {joined} to {selectedSub.GetDisplayName()}"));
                     }
                     else
                     {
-                        ShowNotification(new GUIContent("All parts already in group"));
+                        ShowNotification(new GUIContent("All items already in group"));
                     }
                 }
                 else
                 {
-                    // Create new group
-                    CreateGroupFromSelection(step, partIds);
+                    // Create new group from parts only (groups can't seed a new group)
+                    if (partIds.Count > 0)
+                        CreateGroupFromSelection(step, partIds);
+                    else
+                        ShowNotification(new GUIContent("Select an aggregate group first to add [G] groups"));
                 }
 
                 ev.Use();
@@ -1117,8 +1246,8 @@ namespace OSE.Editor
                     relevant.Add(sub);
             }
 
-            // Put leaf groups (the thing actually being placed/posed) ahead of
-            // aggregates so the author clicks the authorable one by default.
+            // Leaves first, aggregates (phase scopes) last — authorable things
+            // should be the default click target.
             relevant.Sort((a, b) =>
             {
                 int aScore = a.isAggregate ? 1 : 0;
@@ -1143,6 +1272,15 @@ namespace OSE.Editor
             if (GUILayout.Button(new GUIContent("+", "Create an empty group for this step"),
                     addBtnStyle, GUILayout.Width(22), GUILayout.Height(16)))
                 CreateGroupFromSelection(step, new List<string>(step.requiredPartIds ?? Array.Empty<string>()));
+
+            // Create an empty SCOPE (aggregate) so the author can immediately
+            // drag other groups into it. Without this, there's a chicken-and-egg
+            // bootstrap: drop zones only accept groups once the target is
+            // already an aggregate.
+            if (GUILayout.Button(new GUIContent("+S", "Create a new SCOPE (aggregate — contains other groups). Drag group root GOs into its drop zone afterward."),
+                    addBtnStyle, GUILayout.Width(28), GUILayout.Height(16)))
+                CreateEmptyScopeForStep(step);
+
             EditorGUILayout.EndHorizontal();
 
             if (relevant.Count == 0)
@@ -1177,8 +1315,26 @@ namespace OSE.Editor
                     normal    = { textColor = isSelected ? SubAccent : new Color(0.78f, 0.78f, 0.78f) },
                     alignment = TextAnchor.MiddleLeft,
                 };
-                var nameRect = new Rect(rowRect.x + 18f, rowRect.y, rowRect.width - 100f, rowRect.height);
+                var nameRect = new Rect(rowRect.x + 18f, rowRect.y, rowRect.width - 140f, rowRect.height);
                 GUI.Label(nameRect, sub.GetDisplayName(), nameStyle);
+
+                // Aggregate/phase flag badge — same row, just a tag.
+                // Hovering explains: "a group whose members are other groups."
+                if (sub.isAggregate)
+                {
+                    var badgeRect = new Rect(nameRect.xMax + 4f, rowRect.y + 4f, 40f, rowRect.height - 8f);
+                    EditorGUI.DrawRect(badgeRect, new Color(SubAccent.r, SubAccent.g, SubAccent.b, 0.28f));
+                    var badgeStyle = new GUIStyle(EditorStyles.miniLabel)
+                    {
+                        normal    = { textColor = new Color(0.70f, 0.85f, 1f) },
+                        fontSize  = 8,
+                        alignment = TextAnchor.MiddleCenter,
+                        fontStyle = FontStyle.Bold,
+                    };
+                    GUI.Label(badgeRect,
+                        new GUIContent("SCOPE", "This group is an aggregate — its members are other groups. Select to move the whole scope (e.g. the entire frame cube) as one unit."),
+                        badgeStyle);
+                }
 
                 var countStyle = new GUIStyle(EditorStyles.miniLabel)
                 {
@@ -1186,7 +1342,11 @@ namespace OSE.Editor
                     alignment = TextAnchor.MiddleRight,
                 };
                 var countRect = new Rect(rowRect.xMax - 80f, rowRect.y, 74f, rowRect.height);
-                GUI.Label(countRect, $"{parts}p · {steps}s", countStyle);
+                int groupChildren = sub.memberSubassemblyIds?.Length ?? 0;
+                string countText = sub.isAggregate && groupChildren > 0
+                    ? $"{groupChildren}g · {steps}s"
+                    : $"{parts}p · {steps}s";
+                GUI.Label(countRect, countText, countStyle);
 
                 // Click to select/deselect
                 if (Event.current.type == EventType.MouseDown

@@ -876,15 +876,25 @@ namespace OSE.UI.Root
             // MissingReferenceException / SerializedObjectNotCreatableException.
             if (!Application.isPlaying && UnityEditor.Selection.activeGameObject != null)
             {
+                bool needsClear = false;
                 foreach (var go in _spawnedParts)
                 {
                     if (go == null) continue;
                     if (UnityEditor.Selection.activeGameObject == go ||
                         UnityEditor.Selection.activeGameObject.transform.IsChildOf(go.transform))
-                    {
-                        UnityEditor.Selection.activeGameObject = null;
-                        break;
-                    }
+                    { needsClear = true; break; }
+                }
+                if (needsClear)
+                {
+                    // Wipe the full selection array (Selection.objects rather
+                    // than activeGameObject alone — Unity's tracker inspects
+                    // the whole array) AND force a synchronous rebuild so the
+                    // cached m_Targets references are released before the
+                    // GOs are destroyed below. Without this, the inspector's
+                    // OnEnable fires after destroy with a dead target and
+                    // throws MissingReferenceException.
+                    UnityEditor.Selection.objects = System.Array.Empty<UnityEngine.Object>();
+                    UnityEditor.ActiveEditorTracker.sharedTracker.ForceRebuild();
                 }
             }
 #endif

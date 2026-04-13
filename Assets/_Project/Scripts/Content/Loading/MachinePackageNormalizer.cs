@@ -20,6 +20,7 @@ namespace OSE.Content.Loading
         {
             if (package == null) return;
 
+            InferAggregateFlag(package);
             InflatePartTemplates(package);
             BakeStagingPoses(package);
             InferStepParentIds(package);
@@ -28,6 +29,28 @@ namespace OSE.Content.Loading
             ResolveDirectTargetPartIds(package);
             IndexPartOwnership(package);
             BakeGroupRigidBody(package);
+        }
+
+        /// <summary>
+        /// Auto-derives <see cref="SubassemblyDefinition.isAggregate"/> from the
+        /// presence of <c>memberSubassemblyIds</c>. The flag is redundant with
+        /// the data — if a subassembly's members are other subassemblies, it IS
+        /// an aggregate by definition. Authors no longer need to set the flag
+        /// manually; existing JSON with explicit <c>isAggregate: true</c> still
+        /// works unchanged. Must run BEFORE any pass that branches on the flag
+        /// (template inflation, ownership indexing, rigid-body bake).
+        /// </summary>
+        private static void InferAggregateFlag(MachinePackageDefinition package)
+        {
+            var subs = package.GetSubassemblies();
+            if (subs == null) return;
+            for (int i = 0; i < subs.Length; i++)
+            {
+                var sub = subs[i];
+                if (sub == null) continue;
+                if (!sub.isAggregate && sub.memberSubassemblyIds != null && sub.memberSubassemblyIds.Length > 0)
+                    sub.isAggregate = true;
+            }
         }
 
         /// <summary>
@@ -96,6 +119,52 @@ namespace OSE.Content.Loading
                         rb.memberScales[pid]          = scaleByPart.TryGetValue(pid, out var ms) ? ms : Vector3.one;
                     }
                     sub.startRigidBody = rb;
+                }
+
+                // ── Aggregate start pose: centroid of member leaves' centers ──
+                // An aggregate's "start pose" is the geometric center of the
+                // child-subassembly group centers, with each child treated as
+                // a rigid offset. Enables moving the whole phase (e.g. the
+                // Frame Cube) as a single rigid unit for integration into
+                // larger assemblies.
+                for (int i = 0; i < subs.Length; i++)
+                {
+                    var agg = subs[i];
+                    if (agg == null || !agg.isAggregate || agg.memberSubassemblyIds == null || agg.memberSubassemblyIds.Length == 0) continue;
+
+                    Vector3 aggSum = Vector3.zero;
+                    int aggN = 0;
+                    var childCenters = new Dictionary<string, Vector3>(StringComparer.Ordinal);
+                    for (int k = 0; k < agg.memberSubassemblyIds.Length; k++)
+                    {
+                        string cid = agg.memberSubassemblyIds[k];
+                        if (string.IsNullOrEmpty(cid)) continue;
+                        SubassemblyDefinition child = null;
+                        for (int j = 0; j < subs.Length; j++)
+                            if (subs[j] != null && string.Equals(subs[j].id, cid, StringComparison.Ordinal))
+                            { child = subs[j]; break; }
+                        if (child?.startRigidBody == null) continue;
+                        childCenters[cid] = child.startRigidBody.groupCenter;
+                        aggSum += child.startRigidBody.groupCenter;
+                        aggN++;
+                    }
+                    if (aggN == 0) continue;
+                    Vector3 aggCenter = aggSum / aggN;
+
+                    var aggRb = new GroupRigidBody
+                    {
+                        targetId              = null,
+                        groupCenter           = aggCenter,
+                        groupRotation         = Quaternion.identity,
+                        memberPositionOffsets = new Dictionary<string, Vector3>(StringComparer.Ordinal),
+                        memberRotationOffsets = new Dictionary<string, Quaternion>(StringComparer.Ordinal),
+                        memberScales          = new Dictionary<string, Vector3>(StringComparer.Ordinal),
+                    };
+                    // Member offsets are per child-subassembly-id (not partId),
+                    // marking where each child's root sits relative to the aggregate.
+                    foreach (var kvp in childCenters)
+                        aggRb.memberPositionOffsets[kvp.Key] = kvp.Value - aggCenter;
+                    agg.startRigidBody = aggRb;
                 }
             }
 

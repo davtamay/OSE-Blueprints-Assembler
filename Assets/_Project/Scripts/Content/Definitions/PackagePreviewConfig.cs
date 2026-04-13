@@ -116,13 +116,26 @@ namespace OSE.Content
     [Serializable]
     public sealed class StepPoseEntry
     {
-        /// <summary>Step ID this pose applies to.</summary>
+        /// <summary>Step ID this pose applies to (the anchor).</summary>
         public string stepId;
         /// <summary>Optional display label for the editor UI.</summary>
         public string label;
         public SceneFloat3 position;
         public SceneQuaternion rotation;
         public SceneFloat3 scale;
+        /// <summary>
+        /// Optional earliest step ID this pose covers (inclusive). Empty = open-ended
+        /// backward (the pose applies to every step from the start of the package
+        /// up to <see cref="propagateThroughStep"/> or the next-winning entry).
+        /// </summary>
+        public string propagateFromStep;
+        /// <summary>
+        /// Optional latest step ID this pose covers (inclusive). Empty = open-ended
+        /// forward (the pose applies until another entry wins or assembledPosition
+        /// takes over). With both bounds empty, behaves exactly like pre-propagation
+        /// content: anchored to <see cref="stepId"/> with forward fall-through.
+        /// </summary>
+        public string propagateThroughStep;
     }
 
     /// <summary>

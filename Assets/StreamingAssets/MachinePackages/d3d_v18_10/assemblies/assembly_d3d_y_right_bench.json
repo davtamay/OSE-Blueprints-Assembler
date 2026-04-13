@@ -3,7 +3,7 @@
     {
       "id": "assembly_d3d_y_right_bench",
       "name": "Y-Right Axis Bench Build",
-      "description": "Assembles the Y-right axis module from individual parts using the same procedure as Y-left. Y-right and Z-Front share the same plastic piece type \u2014 build instructions are identical. Note the slight orientation differences in motor cable direction and long-bolt position. Produces a labeled Y-right axis module ready for frame mounting.",
+      "description": "Assembles the Y-right axis module from individual parts using the same procedure as Y-left. Y-right and Z-Front share the same plastic piece type — build instructions are identical. Note the slight orientation differences in motor cable direction and long-bolt position. Produces a labeled Y-right axis module ready for frame mounting.",
       "machineId": "d3d_v18_10",
       "subassemblyIds": [
         "subassembly_y_right_idler_build",
@@ -108,7 +108,6 @@
     {
       "id": "subassembly_y_right_belt_threading",
       "name": "Y-Right Belt Threading",
-      "isAggregate": true,
       "assemblyId": "assembly_d3d_y_right_bench",
       "description": "Routes belt through carriage large hole, around idler bearing via belt-catcher side (smaller hole with teeth), pulls through and threads onto first peg, locks peg. Second peg placed loosely. Label axis Y-Right.",
       "partIds": [
@@ -124,14 +123,14 @@
         "step_y_right_belt_travel_test",
         "step_y_right_label_axis"
       ],
-      "milestoneMessage": "Y-right axis complete: belt routed, first peg locked, axis labeled and QC checked."
+      "milestoneMessage": "Y-right axis complete: belt routed, first peg locked, axis labeled and QC checked.",
+      "isAggregate": true
     },
     {
       "id": "subassembly_y_right_bench_unit",
       "name": "Y Right Complete Axis Unit",
       "assemblyId": "assembly_d3d_y_right_bench",
       "description": "The fully assembled y right axis unit, ready for staging. Contains all bench-built components: carriage, idler, motor holder, rods, and belt.",
-      "isAggregate": true,
       "partIds": [
         "y_right_carriage_half_a",
         "y_right_carriage_half_b",
@@ -143,7 +142,8 @@
       ],
       "stepIds": [
         "step_y_right_compose_axis"
-      ]
+      ],
+      "isAggregate": true
     }
   ],
   "parts": [
@@ -320,69 +320,23 @@
     {
       "id": "y_right_carriage_half_a",
       "name": "Y-Right Carriage Half A (bearing side)",
-      "function": "Open carriage half with bearing pockets \u2014 receives 4 LM8UU bearings.",
+      "function": "Open carriage half with bearing pockets — receives 4 LM8UU bearings.",
       "category": "custom",
       "material": "Printed carriage half",
       "quantity": 1,
       "assetRef": "y_left_carriage_half_a.glb",
-      "stagingPose": {
-        "position": {
-          "x": -0.82,
-          "y": 0.55,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": -0.5,
-          "y": 0.5,
-          "z": -0.5,
-          "w": 0.5
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      }
-    },
+      "stagingPose": {"position":{"x":0.6728,"y":0.55,"z":-1.3411e-7},"rotation":{"x":-0.5,"y":0.5,"z":-0.5,"w":0.5},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.7,"g":0.7,"b":0.7,"a":1.0}}
+  },
     {
       "id": "y_right_carriage_half_b",
       "name": "Y-Right Carriage Half B (clamping side)",
-      "function": "Clamping carriage half \u2014 bolts onto half A to capture bearings.",
+      "function": "Clamping carriage half — bolts onto half A to capture bearings.",
       "category": "custom",
       "material": "Printed carriage half",
       "quantity": 1,
       "assetRef": "y_left_carriage_half_b.glb",
-      "stagingPose": {
-        "position": {
-          "x": -0.82,
-          "y": 0.55,
-          "z": 0.0
-        },
-        "rotation": {
-          "x": -0.5,
-          "y": 0.5,
-          "z": -0.5,
-          "w": 0.5
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.7,
-          "g": 0.7,
-          "b": 0.7,
-          "a": 1.0
-        }
-      }
-    },
+      "stagingPose": {"position":{"x":0.8228,"y":0.55,"z":-1.3411e-7},"rotation":{"x":0.5,"y":0.5,"z":-0.5,"w":-0.5},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.7,"g":0.7,"b":0.7,"a":1.0}}
+  },
     {
       "id": "y_right_lm8uu_a",
       "name": "Y-Right LM8UU Bearing A",
@@ -827,7 +781,7 @@
       "subassemblyId": "subassembly_y_right_motor_build",
       "sequenceIndex": 146,
       "family": "Place",
-      "instructionText": "Rest the thin spacer on the motor housing, then seat the pulley on the shaft above it. Tighten the first set screw with an Allen key \u2014 the spacer keeps the pulley off the housing.",
+      "instructionText": "Rest the thin spacer on the motor housing, then seat the pulley on the shaft above it. Tighten the first set screw with an Allen key — the spacer keeps the pulley off the housing.",
       "requiredPartIds": [
         "motor003"
       ]
@@ -848,7 +802,7 @@
       "subassemblyId": "subassembly_y_right_motor_build",
       "sequenceIndex": 148,
       "family": "Place",
-      "instructionText": "Orient the motor holder half with the rectangular belt channel facing you. Insert one M6x30 bolt and three nuts into the holes now \u2014 the motor will cover them and block access later."
+      "instructionText": "Orient the motor holder half with the rectangular belt channel facing you. Insert one M6x30 bolt and three nuts into the holes now — the motor will cover them and block access later."
     },
     {
       "id": "step_y_right_motor_belt_channel",
@@ -875,7 +829,7 @@
       "subassemblyId": "subassembly_y_right_motor_build",
       "sequenceIndex": 151,
       "family": "Confirm",
-      "instructionText": "Hold the motor in position against the holder and give the belt a gentle pull \u2014 it should slide along the motor pulley. If it does not, reseat the belt in the channel."
+      "instructionText": "Hold the motor in position against the holder and give the belt a gentle pull — it should slide along the motor pulley. If it does not, reseat the belt in the channel."
     },
     {
       "id": "step_y_right_motor_screws",
@@ -884,7 +838,7 @@
       "subassemblyId": "subassembly_y_right_motor_build",
       "sequenceIndex": 152,
       "family": "Use",
-      "instructionText": "Insert the first M3x25 motor screw and tighten 3/4 of the way. Insert the remaining three screws and tighten each the same way \u2014 leave slightly loose so the motor retains flex for belt tensioning later."
+      "instructionText": "Insert the first M3x25 motor screw and tighten 3/4 of the way. Insert the remaining three screws and tighten each the same way — leave slightly loose so the motor retains flex for belt tensioning later."
     },
     {
       "id": "step_y_right_motor_m6_bolts",
@@ -924,7 +878,7 @@
       "subassemblyId": "subassembly_y_right_rod_assembly",
       "sequenceIndex": 156,
       "family": "Use",
-      "instructionText": "Tighten the two shorter idler bolts with an electric drill to grip the rods firmly. Leave the longer bolt loose \u2014 it will be used to attach the axis to the frame."
+      "instructionText": "Tighten the two shorter idler bolts with an electric drill to grip the rods firmly. Leave the longer bolt loose — it will be used to attach the axis to the frame."
     },
     {
       "id": "step_y_right_carriage_onto_rods",
@@ -954,7 +908,7 @@
       "subassemblyId": "subassembly_y_right_rod_assembly",
       "sequenceIndex": 159,
       "family": "Confirm",
-      "instructionText": "Check that rod ends are still flush at the idler bottom. Slide the carriage the full rod length \u2014 it should move with only slight bearing resistance."
+      "instructionText": "Check that rod ends are still flush at the idler bottom. Slide the carriage the full rod length — it should move with only slight bearing resistance."
     },
     {
       "id": "step_y_right_belt_large_hole",
@@ -972,7 +926,7 @@
       "subassemblyId": "subassembly_y_right_belt_threading",
       "sequenceIndex": 161,
       "family": "Place",
-      "instructionText": "Feed the belt around the bearing inside the idler. Tip: curve the belt slightly in the direction of travel first \u2014 it navigates around the bearing more easily."
+      "instructionText": "Feed the belt around the bearing inside the idler. Tip: curve the belt slightly in the direction of travel first — it navigates around the bearing more easily."
     },
     {
       "id": "step_y_right_belt_small_hole",
@@ -1008,7 +962,7 @@
       "subassemblyId": "subassembly_y_right_belt_threading",
       "sequenceIndex": 165,
       "family": "Place",
-      "instructionText": "Insert the second peg directly across from the first. Hand-tighten the belt by pulling it through the first peg as much as you can easily. Leave the second peg loose \u2014 it will be fully tensioned after mounting to the frame."
+      "instructionText": "Insert the second peg directly across from the first. Hand-tighten the belt by pulling it through the first peg as much as you can easily. Leave the second peg loose — it will be fully tensioned after mounting to the frame."
     },
     {
       "id": "step_y_right_belt_travel_test",
@@ -1094,7 +1048,7 @@
       "id": "hint_qc_y_right_axis_bench",
       "type": "highlight",
       "title": "Four-point bench QC and label Y-Right",
-      "message": "Same four-point QC as Y-left. Label axis Y-Right. The two Y axes should be mirror images of each other when placed side by side \u2014 motors at back, carriages toward center.",
+      "message": "Same four-point QC as Y-left. Label axis Y-Right. The two Y axes should be mirror images of each other when placed side by side — motors at back, carriages toward center.",
       "targetId": "target_bench_y_right_qc",
       "priority": "medium"
     }

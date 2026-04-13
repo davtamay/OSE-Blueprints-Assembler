@@ -187,7 +187,6 @@
       "id": "subassembly_cube_joining",
       "name": "Frame Cube Joining",
       "assemblyId": "assembly_d3d_frame",
-      "isAggregate": true,
       "description": "Uses the six completed frame-side panels as rigid learner-placeable units, positions them into the open printer cube, checks the stacked frame, attaches 8 printed PLA corner brackets with M6 bolts in a staged finger-tight then final-tighten sequence, verifies squareness between stages, and accepts the frame before later subsystems are mounted.",
       "partIds": [
         "d3d_frame_bottom_top_bar",
@@ -242,7 +241,8 @@
         "step_recheck_cube_corners",
         "step_accept_frame_for_motion_hardware"
       ],
-      "milestoneMessage": "The printer cube is stacked, bracketed at all eight corners, bolt-tightened, verified for square, and accepted for later motion hardware."
+      "milestoneMessage": "The printer cube is stacked, bracketed at all eight corners, bolt-tightened, verified for square, and accepted for later motion hardware.",
+      "isAggregate": true
     }
   ],
   "parts": [

@@ -65,7 +65,6 @@
       "id": "subassembly_extruder_nozzle_module",
       "name": "Extruder Nozzle Module",
       "assemblyId": "assembly_d3d_extruder_stage_01",
-      "isAggregate": true,
       "description": "Owns the first Titan Aero nozzle, blower, sensor-holder, and 8 mm sensor sequence before later carriage integration.",
       "partIds": [
         "d3d_titan_aero_core",
@@ -84,7 +83,8 @@
         "step_place_extruder_8mm_sensor",
         "step_check_extruder_nozzle_module_clearance"
       ],
-      "milestoneMessage": "Titan Aero nozzle module built and checked for first-pass clearance."
+      "milestoneMessage": "Titan Aero nozzle module built and checked for first-pass clearance.",
+      "isAggregate": true
     }
   ],
   "parts": [

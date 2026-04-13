@@ -449,10 +449,22 @@ namespace OSE.Editor
                         : "Adds the selected part to this step's requiredPartIds — visible in the scene AND required for task completion."),
                 addStyle, GUILayout.Width(54), GUILayout.Height(18)))
             {
+                string chosen = candidates[_visibilityAddPartIdx];
                 if (_visibilityAddAsOptional)
-                    AddOptionalPartToStep(step, candidates[_visibilityAddPartIdx]);
+                {
+                    AddOptionalPartToStep(step, chosen);
+                }
                 else
-                    AddRequiredPartToStep(step, candidates[_visibilityAddPartIdx]);
+                {
+                    // Auto-route: on Confirm-family steps that have no targets
+                    // and no tool actions, default new parts to NoTask so the
+                    // author doesn't accidentally turn a no-action step into
+                    // a task-laden one. Place/Use/Connect families still land
+                    // in requiredPartIds.
+                    PartRole role = ResolveDefaultPartRole(step);
+                    if (role == PartRole.NoTask) AddVisualPartToStep(step, chosen);
+                    else                         AddRequiredPartToStep(step, chosen);
+                }
                 _visibilityAddPartIdx = 0;
             }
             EditorGUILayout.EndHorizontal();
@@ -526,5 +538,226 @@ namespace OSE.Editor
             SyncAllPartMeshesToActivePose();
             Repaint();
         }
+
+        // ── No-Task (visualPartIds) mutators ──────────────────────────────────
+
+        /// <summary>
+        /// Adds <paramref name="partId"/> to <see cref="StepDefinition.visualPartIds"/>
+        /// so the part is visible at the step but attached to no task. Mirrors
+        /// <see cref="AddRequiredPartToStep"/> / <see cref="AddOptionalPartToStep"/>.
+        /// </summary>
+        private void AddVisualPartToStep(StepDefinition step, string partId)
+        {
+            if (step == null || string.IsNullOrEmpty(partId)) return;
+            var list = step.visualPartIds != null
+                ? new List<string>(step.visualPartIds)
+                : new List<string>();
+            if (list.Contains(partId)) return;
+            list.Add(partId);
+            step.visualPartIds = list.ToArray();
+            _dirtyStepIds.Add(step.id);
+            InvalidateTaskOrderCache();
+            BuildPartList();
+            RespawnScene();
+            SyncAllPartMeshesToActivePose();
+            Repaint();
+        }
+
+        /// <summary>
+        /// Removes <paramref name="partId"/> from <see cref="StepDefinition.requiredPartIds"/>
+        /// and <see cref="StepDefinition.optionalPartIds"/> and appends it to
+        /// <see cref="StepDefinition.visualPartIds"/>. Primary retroactive-fix
+        /// affordance behind the row's "Mark as No Task" right-click action.
+        /// </summary>
+        private void MarkPartAsNoTask(StepDefinition step, string partId)
+        {
+            if (step == null || string.IsNullOrEmpty(partId)) return;
+
+            if (step.requiredPartIds != null)
+            {
+                var req = new List<string>(step.requiredPartIds);
+                if (req.Remove(partId)) step.requiredPartIds = req.Count > 0 ? req.ToArray() : Array.Empty<string>();
+            }
+            if (step.optionalPartIds != null)
+            {
+                var opt = new List<string>(step.optionalPartIds);
+                if (opt.Remove(partId)) step.optionalPartIds = opt.Count > 0 ? opt.ToArray() : Array.Empty<string>();
+            }
+
+            var vis = step.visualPartIds != null
+                ? new List<string>(step.visualPartIds)
+                : new List<string>();
+            if (!vis.Contains(partId)) vis.Add(partId);
+            step.visualPartIds = vis.ToArray();
+
+            _dirtyStepIds.Add(step.id);
+            InvalidateTaskOrderCache();
+            BuildPartList();
+            BuildTargetList();
+            RespawnScene();
+            SyncAllPartMeshesToActivePose();
+            Repaint();
+        }
+
+        /// <summary>
+        /// Inverse of <see cref="MarkPartAsNoTask"/> — used by the `R|O` toggle
+        /// when the author clicks it on a no-task row, promoting the part into
+        /// <paramref name="requiredNotOptional"/> == true ? required : optional.
+        /// </summary>
+        private void SetPartRoleForStep(StepDefinition step, string partId, PartRole role)
+        {
+            if (step == null || string.IsNullOrEmpty(partId)) return;
+
+            if (step.requiredPartIds != null)
+            {
+                var req = new List<string>(step.requiredPartIds);
+                if (req.Remove(partId)) step.requiredPartIds = req.Count > 0 ? req.ToArray() : Array.Empty<string>();
+            }
+            if (step.optionalPartIds != null)
+            {
+                var opt = new List<string>(step.optionalPartIds);
+                if (opt.Remove(partId)) step.optionalPartIds = opt.Count > 0 ? opt.ToArray() : Array.Empty<string>();
+            }
+            if (step.visualPartIds != null)
+            {
+                var vis = new List<string>(step.visualPartIds);
+                if (vis.Remove(partId)) step.visualPartIds = vis.Count > 0 ? vis.ToArray() : Array.Empty<string>();
+            }
+
+            switch (role)
+            {
+                case PartRole.Required:
+                {
+                    var list = step.requiredPartIds != null ? new List<string>(step.requiredPartIds) : new List<string>();
+                    list.Add(partId);
+                    step.requiredPartIds = list.ToArray();
+                    break;
+                }
+                case PartRole.Optional:
+                {
+                    var list = step.optionalPartIds != null ? new List<string>(step.optionalPartIds) : new List<string>();
+                    list.Add(partId);
+                    step.optionalPartIds = list.ToArray();
+                    break;
+                }
+                case PartRole.NoTask:
+                {
+                    var list = step.visualPartIds != null ? new List<string>(step.visualPartIds) : new List<string>();
+                    list.Add(partId);
+                    step.visualPartIds = list.ToArray();
+                    // When marking as NO TASK, capture the current displayed
+                    // pose as a stepPose on this step so the part "sticks"
+                    // where the author sees it and propagates forward by
+                    // default. Without this, authoring NO TASK would require
+                    // a second manual pose step.
+                    CaptureCurrentPoseAsStepPose(step, partId);
+                    break;
+                }
+            }
+
+            _dirtyStepIds.Add(step.id);
+            InvalidateTaskOrderCache();
+            BuildPartList();
+            BuildTargetList();
+            RespawnScene();
+            SyncAllPartMeshesToActivePose();
+            Repaint();
+        }
+
+        /// <summary>
+        /// Materialises a <see cref="StepPoseEntry"/> on the part's
+        /// <c>stepPoses</c> list at <paramref name="step"/>, using the pose
+        /// the editor is currently displaying for the part. Defaults the span
+        /// to "this step → end" (empty <c>propagateThroughStep</c>, forward
+        /// fallthrough) so the pose automatically carries into subsequent
+        /// steps — author doesn't have to touch the pose UI separately.
+        /// </summary>
+        private void CaptureCurrentPoseAsStepPose(StepDefinition step, string partId)
+        {
+            if (step == null || string.IsNullOrEmpty(partId) || _parts == null) return;
+
+            int partIdx = -1;
+            for (int i = 0; i < _parts.Length; i++)
+                if (_parts[i].def != null && string.Equals(_parts[i].def.id, partId, StringComparison.Ordinal))
+                { partIdx = i; break; }
+            if (partIdx < 0) return;
+
+            ref PartEditState p = ref _parts[partIdx];
+
+            // Prefer the live GO's current world pose so whatever the author
+            // sees on-screen is exactly what gets captured. Fall back to
+            // assembledPosition when the live GO isn't available.
+            Vector3 pos; Quaternion rot; Vector3 scl;
+            var liveGO = FindLivePartGO(partId);
+            var previewRoot = GetPreviewRoot();
+            if (liveGO != null && previewRoot != null)
+            {
+                pos = previewRoot.InverseTransformPoint(liveGO.transform.position);
+                rot = Quaternion.Inverse(previewRoot.rotation) * liveGO.transform.rotation;
+                scl = liveGO.transform.localScale;
+            }
+            else if (liveGO != null)
+            {
+                pos = liveGO.transform.localPosition;
+                rot = liveGO.transform.localRotation;
+                scl = liveGO.transform.localScale;
+            }
+            else
+            {
+                pos = p.assembledPosition;
+                rot = p.assembledRotation;
+                scl = p.assembledScale;
+            }
+            if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
+
+            if (p.stepPoses == null) p.stepPoses = new List<StepPoseEntry>();
+
+            // If an entry already exists for this step, update it instead
+            // of adding a duplicate so repeated toggling doesn't stack poses.
+            StepPoseEntry target = null;
+            for (int i = 0; i < p.stepPoses.Count; i++)
+                if (p.stepPoses[i] != null && string.Equals(p.stepPoses[i].stepId, step.id, StringComparison.Ordinal))
+                { target = p.stepPoses[i]; break; }
+
+            if (target == null)
+            {
+                target = new StepPoseEntry { stepId = step.id };
+                p.stepPoses.Add(target);
+            }
+            target.position = PackageJsonUtils.ToFloat3(pos);
+            target.rotation = PackageJsonUtils.ToQuaternion(rot);
+            target.scale    = PackageJsonUtils.ToFloat3(scl);
+            // Default span: this step → end (forward fallthrough). Author
+            // can narrow via the propagation row if they want.
+            target.propagateFromStep    = step.id;
+            target.propagateThroughStep = "";
+            // Mark the part as placed so SyncAllPartMeshesToActivePose no
+            // longer skips it (the loop early-returns on !hasPlacement).
+            // Also seed assembled* fields with the captured pose so any
+            // fallback code path (editor or runtime) at least lands close
+            // to the right spot until the stepPose span resolver picks up.
+            p.hasPlacement       = true;
+            p.assembledPosition  = pos;
+            p.assembledRotation  = rot;
+            p.assembledScale     = scl;
+            p.isDirty            = true;
+        }
+
+        /// <summary>
+        /// Which role a newly-added part should land in. Confirm-family steps
+        /// with no targets or tool-actions default to NoTask — parts added
+        /// there are for introduction / demo / context and shouldn't pretend
+        /// to be tasks. Every other step family keeps Required as the default.
+        /// </summary>
+        private PartRole ResolveDefaultPartRole(StepDefinition step)
+        {
+            if (step == null) return PartRole.Required;
+            if (!step.IsConfirm) return PartRole.Required;
+            bool hasTargets     = step.targetIds          != null && step.targetIds.Length          > 0;
+            bool hasToolActions = step.requiredToolActions != null && step.requiredToolActions.Length > 0;
+            return (!hasTargets && !hasToolActions) ? PartRole.NoTask : PartRole.Required;
+        }
+
+        private enum PartRole { Required, Optional, NoTask }
     }
 }

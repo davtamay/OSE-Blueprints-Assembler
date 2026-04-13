@@ -45,7 +45,7 @@
         "assembly_d3d_frame",
         "assembly_d3d_batch_carriage_build"
       ],
-      "learningFocus": "Z-Front uses the same build procedure as Y-Right (same plastic piece type). No endstop. The spacer pieces go between the carriage and the half-carriage during rod threading. The second belt peg is left loose \u2014 it is tensioned after the axis is mounted and sized to the front frame face."
+      "learningFocus": "Z-Front uses the same build procedure as Y-Right (same plastic piece type). No endstop. The spacer pieces go between the carriage and the half-carriage during rod threading. The second belt peg is left loose — it is tensioned after the axis is mounted and sized to the front frame face."
     }
   ],
   "subassemblies": [
@@ -53,7 +53,7 @@
       "id": "subassembly_z_front_idler_build",
       "name": "Z-Front Idler Assembly",
       "assemblyId": "assembly_d3d_z_front_bench",
-      "description": "Same idler build as Y-Right. Long M6x30 frame-mount bolt placed loosely \u2014 it will size to the front frame face bottom hole. No bearing in the middle of Z idler (Z uses the same idler piece as Y-Right).",
+      "description": "Same idler build as Y-Right. Long M6x30 frame-mount bolt placed loosely — it will size to the front frame face bottom hole. No bearing in the middle of Z idler (Z uses the same idler piece as Y-Right).",
       "partIds": [
         "idler"
       ],
@@ -130,7 +130,6 @@
       "name": "Z Front Complete Axis Unit",
       "assemblyId": "assembly_d3d_z_front_bench",
       "description": "The fully assembled z front axis unit, ready for staging. Contains all bench-built components: carriage, idler, motor holder, rods, and belt.",
-      "isAggregate": true,
       "partIds": [
         "z2_half_carriage",
         "idler",
@@ -142,7 +141,8 @@
       ],
       "stepIds": [
         "step_z_front_compose_axis"
-      ]
+      ],
+      "isAggregate": true
     }
   ],
   "parts": [
@@ -259,9 +259,9 @@
       "quantity": 1,
       "stagingPose": {
         "position": {
-          "x": 0.0,
+          "x": 1.55,
           "y": 0.55,
-          "z": 3.2
+          "z": 0.0
         },
         "rotation": {
           "x": 0.0,
@@ -398,7 +398,7 @@
       "subassemblyId": "subassembly_z_front_motor_build",
       "sequenceIndex": 211,
       "family": "Place",
-      "instructionText": "Rest the thin spacer on the motor housing, then seat the pulley on the shaft above it. Tighten the first set screw with an Allen key \u2014 the spacer keeps the pulley off the housing.",
+      "instructionText": "Rest the thin spacer on the motor housing, then seat the pulley on the shaft above it. Tighten the first set screw with an Allen key — the spacer keeps the pulley off the housing.",
       "requiredPartIds": [
         "motor"
       ]
@@ -419,7 +419,7 @@
       "subassemblyId": "subassembly_z_front_motor_build",
       "sequenceIndex": 213,
       "family": "Place",
-      "instructionText": "Orient the motor holder half with the rectangular belt channel facing you. Insert one M6x30 bolt and three nuts into the holes now \u2014 the motor will cover them and block access later."
+      "instructionText": "Orient the motor holder half with the rectangular belt channel facing you. Insert one M6x30 bolt and three nuts into the holes now — the motor will cover them and block access later."
     },
     {
       "id": "step_z_front_motor_belt_channel",
@@ -446,7 +446,7 @@
       "subassemblyId": "subassembly_z_front_motor_build",
       "sequenceIndex": 216,
       "family": "Confirm",
-      "instructionText": "Hold the motor in position against the holder and give the belt a gentle pull \u2014 it should slide along the motor pulley. If it does not, reseat the belt in the channel."
+      "instructionText": "Hold the motor in position against the holder and give the belt a gentle pull — it should slide along the motor pulley. If it does not, reseat the belt in the channel."
     },
     {
       "id": "step_z_front_motor_screws",
@@ -455,7 +455,7 @@
       "subassemblyId": "subassembly_z_front_motor_build",
       "sequenceIndex": 217,
       "family": "Use",
-      "instructionText": "Insert the first M3x25 motor screw and tighten 3/4 of the way. Insert the remaining three screws and tighten each the same way \u2014 leave slightly loose so the motor retains flex for belt tensioning later."
+      "instructionText": "Insert the first M3x25 motor screw and tighten 3/4 of the way. Insert the remaining three screws and tighten each the same way — leave slightly loose so the motor retains flex for belt tensioning later."
     },
     {
       "id": "step_z_front_motor_m6_bolts",
@@ -495,7 +495,7 @@
       "subassemblyId": "subassembly_z_front_rod_assembly",
       "sequenceIndex": 221,
       "family": "Use",
-      "instructionText": "Tighten the two shorter idler bolts with an electric drill to grip the rods firmly. Leave the longer bolt loose \u2014 it will be used to attach the axis to the frame."
+      "instructionText": "Tighten the two shorter idler bolts with an electric drill to grip the rods firmly. Leave the longer bolt loose — it will be used to attach the axis to the frame."
     },
     {
       "id": "step_z_front_carriage_onto_rods",
@@ -525,7 +525,7 @@
       "subassemblyId": "subassembly_z_front_rod_assembly",
       "sequenceIndex": 224,
       "family": "Confirm",
-      "instructionText": "Check that rod ends are still flush at the idler bottom. Slide the carriage the full rod length \u2014 it should move with only slight bearing resistance."
+      "instructionText": "Check that rod ends are still flush at the idler bottom. Slide the carriage the full rod length — it should move with only slight bearing resistance."
     },
     {
       "id": "step_z_front_belt_large_hole",
@@ -543,7 +543,7 @@
       "subassemblyId": "subassembly_z_front_belt_threading",
       "sequenceIndex": 226,
       "family": "Place",
-      "instructionText": "Feed the belt around the bearing inside the idler. Tip: curve the belt slightly in the direction of travel first \u2014 it navigates around the bearing more easily."
+      "instructionText": "Feed the belt around the bearing inside the idler. Tip: curve the belt slightly in the direction of travel first — it navigates around the bearing more easily."
     },
     {
       "id": "step_z_front_belt_small_hole",
@@ -582,7 +582,7 @@
       "subassemblyId": "subassembly_z_front_belt_threading",
       "sequenceIndex": 230,
       "family": "Place",
-      "instructionText": "Insert the second peg directly across from the first. Hand-tighten the belt by pulling it through the first peg as much as you can easily. Leave the second peg loose \u2014 it will be fully tensioned after mounting to the frame."
+      "instructionText": "Insert the second peg directly across from the first. Hand-tighten the belt by pulling it through the first peg as much as you can easily. Leave the second peg loose — it will be fully tensioned after mounting to the frame."
     },
     {
       "id": "step_z_front_belt_travel_test",
@@ -668,7 +668,7 @@
       "id": "hint_qc_z_front_axis_bench",
       "type": "highlight",
       "title": "Four-point QC and label Z-Front",
-      "message": "Same four-point QC as Y axes. Label Z-Front. Set aside \u2014 it mounts on the front frame face.",
+      "message": "Same four-point QC as Y axes. Label Z-Front. Set aside — it mounts on the front frame face.",
       "targetId": "target_bench_z_front_qc",
       "priority": "medium"
     }

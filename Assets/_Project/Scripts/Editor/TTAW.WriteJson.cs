@@ -554,11 +554,33 @@ namespace OSE.Editor
                 else
                     RemoveField(subId, "description");
 
-                // isAggregate (only inject when true; remove when false to keep JSON clean)
-                if (sub.isAggregate)
+                // isAggregate is redundant ONLY when memberSubassemblyIds is
+                // populated (InferAggregateFlag can re-derive it on load). For
+                // partId-overlap aggregates with no memberSubassemblyIds, the
+                // explicit flag remains the only structural signal — keep it.
+                bool hasMembers = sub.memberSubassemblyIds != null && sub.memberSubassemblyIds.Length > 0;
+                if (sub.isAggregate && !hasMembers)
                     InjectField(subId, "isAggregate", "true");
                 else
                     RemoveField(subId, "isAggregate");
+
+                // memberSubassemblyIds — persist the aggregate's child groups
+                // so drag-and-drop additions survive save/reload.
+                if (hasMembers)
+                {
+                    var msb = new System.Text.StringBuilder("[");
+                    for (int m = 0; m < sub.memberSubassemblyIds.Length; m++)
+                    {
+                        if (m > 0) msb.Append(", ");
+                        msb.Append('"').Append(sub.memberSubassemblyIds[m]).Append('"');
+                    }
+                    msb.Append("]");
+                    InjectField(subId, "memberSubassemblyIds", msb.ToString());
+                }
+                else
+                {
+                    RemoveField(subId, "memberSubassemblyIds");
+                }
 
                 // milestoneMessage
                 if (!string.IsNullOrEmpty(sub.milestoneMessage))
@@ -620,8 +642,16 @@ namespace OSE.Editor
             }
             _lastBackupPath = firstBackup;
 
-            AssetDatabase.Refresh();
-            PackageSyncTool.Sync();
+            // Targeted import instead of full AssetDatabase.Refresh — only the
+            // files we actually wrote need to tell Unity about their change.
+            // Full-tree Refresh was typically 1-3s; per-file is ~instant.
+            foreach (var kv in fileContents)
+            {
+                string projRel = ToProjectRelative(kv.Key);
+                if (projRel != null)
+                    AssetDatabase.ImportAsset(projRel, ImportAssetOptions.ForceUpdate);
+            }
+
             Debug.Log($"[ToolTargetAuthoring] Written {_pkgId} (backup: {firstBackup})");
 
             if (reloadAfter)
@@ -650,9 +680,25 @@ namespace OSE.Editor
             }
             _poseSwitchCooldownUntil = EditorApplication.timeSinceStartup + 0.5;
 
-            // Auto-run the validator after every save so the dashboard always
-            // reflects the on-disk state. (Phase 6 — TTAW.Validation.cs.)
-            RunValidation();
+            // StreamingAssets sync is NOT needed on every save — the editor
+            // reads authoring JSON directly, and PackageSyncPreprocessor syncs
+            // automatically before every build via IPreprocessBuildWithReport.
+            // Only the validation dashboard needs to refresh post-save.
+            EditorApplication.delayCall += () =>
+            {
+                if (this == null) return;
+                RunValidation();
+                Repaint();
+            };
+        }
+
+        private static string ToProjectRelative(string absolutePath)
+        {
+            if (string.IsNullOrEmpty(absolutePath)) return null;
+            string full = Path.GetFullPath(absolutePath).Replace('\\', '/');
+            string root = Path.GetFullPath(Application.dataPath).Replace('\\', '/');
+            if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase)) return null;
+            return "Assets" + full.Substring(root.Length);
         }
 
         private void RevertFromBackup()
