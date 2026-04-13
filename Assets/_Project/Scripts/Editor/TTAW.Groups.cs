@@ -164,12 +164,35 @@ namespace OSE.Editor
                 Quaternion rot = Quaternion.identity;
                 Vector3 scl = Vector3.one;
 
-                if (isThisGroupSelected && _editingGroupPoseMode == PoseModeAssembled
-                    && (g.isDirty || g.hasPlacement))
+                if (isThisGroupSelected && _editingGroupPoseMode == PoseModeAssembled)
                 {
-                    pos = g.assembledPosition;
-                    rot = g.assembledRotation;
-                    scl = g.assembledScale;
+                    // Phase 1 rigid-body: pull from the baked (subId, targetId)
+                    // rigid body so the group pose mirrors a single part's pose.
+                    // Order matters: set the root FIRST (plain, not preserving
+                    // children — we're about to overwrite their locals), then
+                    // write each member's fixed offset in local space.
+                    if (TryGetSelectedGroupRigidBody(g, out var rb))
+                    {
+                        if (previewRoot != null)
+                        {
+                            rootGO.transform.position = previewRoot.TransformPoint(rb.groupCenter);
+                            rootGO.transform.rotation = previewRoot.rotation * rb.groupRotation;
+                        }
+                        else
+                        {
+                            rootGO.transform.localPosition = rb.groupCenter;
+                            rootGO.transform.localRotation = rb.groupRotation;
+                        }
+                        rootGO.transform.localScale = Vector3.one;
+                        ApplyRigidBodyOffsetsToMembers(rootGO.transform, rb);
+                        continue;   // skip the preserve-children fallthrough
+                    }
+                    if (g.isDirty || g.hasPlacement)
+                    {
+                        pos = g.assembledPosition;
+                        rot = g.assembledRotation;
+                        scl = g.assembledScale;
+                    }
                 }
                 else if (isThisGroupSelected && _editingGroupPoseMode >= 0 && g.stepPoses != null
                     && _editingGroupPoseMode < g.stepPoses.Count && (g.isDirty || g.hasPlacement))
@@ -183,18 +206,172 @@ namespace OSE.Editor
 
                 if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
 
-                // Set the root GO's transform in PreviewRoot space
-                if (previewRoot != null)
+                // Start Pose centering: ONLY for the currently selected group,
+                // so the gizmo sits inside the frame. Non-selected groups must
+                // stay at origin — the spawner writes member localPositions
+                // assuming PreviewRoot is the parent, so a non-zero root offset
+                // would shift their visuals on the next spawner pass.
+                bool startPoseMode = !(isThisGroupSelected && _editingGroupPoseMode == PoseModeAssembled
+                                       && (g.isDirty || g.hasPlacement))
+                                  && !(isThisGroupSelected && _editingGroupPoseMode >= 0 && g.stepPoses != null
+                                       && _editingGroupPoseMode < g.stepPoses.Count && (g.isDirty || g.hasPlacement));
+
+                if (startPoseMode && isThisGroupSelected)
                 {
-                    rootGO.transform.position = previewRoot.TransformPoint(pos);
-                    rootGO.transform.rotation = previewRoot.rotation * rot;
+                    // Start Pose: prefer the baked fabrication-layout rigid body
+                    // so the gizmo sits at the constructed-panel centroid and
+                    // members snap back to their fabrication offsets — identical
+                    // behavior to Assembled Pose but anchored to panel layout.
+                    var startRb = g.def?.startRigidBody;
+                    if (startRb != null)
+                    {
+                        if (previewRoot != null)
+                        {
+                            rootGO.transform.position = previewRoot.TransformPoint(startRb.groupCenter);
+                            rootGO.transform.rotation = previewRoot.rotation * startRb.groupRotation;
+                        }
+                        else
+                        {
+                            rootGO.transform.localPosition = startRb.groupCenter;
+                            rootGO.transform.localRotation = startRb.groupRotation;
+                        }
+                        rootGO.transform.localScale = Vector3.one;
+                        ApplyRigidBodyOffsetsToMembers(rootGO.transform, startRb);
+                        continue;
+                    }
+                    SetRootToChildCentroidPreservingWorld(rootGO.transform, rot, scl);
+                    continue;
                 }
-                else
-                {
-                    rootGO.transform.localPosition = pos;
-                    rootGO.transform.localRotation = rot;
-                }
-                rootGO.transform.localScale = scl;
+
+                // Non-selected group OR non-start authored pose. We must move
+                // the root WITHOUT dragging children — the previous iteration
+                // may have centered this root on its centroid (while it was
+                // selected), and a naive position write would shift the
+                // members out of place on deselect.
+                Vector3 targetWorldPos = previewRoot != null
+                    ? previewRoot.TransformPoint(pos)
+                    : pos;
+                Quaternion targetWorldRot = previewRoot != null
+                    ? previewRoot.rotation * rot
+                    : rot;
+                SetRootWorldTransformPreservingChildren(rootGO.transform, targetWorldPos, targetWorldRot, scl);
+            }
+        }
+
+        /// <summary>
+        /// Snaps every live group root back to PreviewRoot-local origin
+        /// (localPos=0, identity rot, unit scale) while preserving each active
+        /// child's world pose. Call this BEFORE any code path that writes
+        /// member localPositions (e.g. PackagePartSpawner.ApplyStepAwarePositions)
+        /// — those writers assume PreviewRoot is the direct parent, and a
+        /// non-origin root would shift visuals.
+        /// </summary>
+        private void ResetAllGroupRootsToOriginPreservingChildren()
+        {
+            if (_subassemblyRootGOs == null || _subassemblyRootGOs.Count == 0) return;
+            var previewRoot = GetPreviewRoot();
+            foreach (var kvp in _subassemblyRootGOs)
+            {
+                var rootGO = kvp.Value;
+                if (rootGO == null) continue;
+                Vector3 worldPos = previewRoot != null ? previewRoot.TransformPoint(Vector3.zero) : Vector3.zero;
+                Quaternion worldRot = previewRoot != null ? previewRoot.rotation : Quaternion.identity;
+                SetRootWorldTransformPreservingChildren(rootGO.transform, worldPos, worldRot, Vector3.one);
+            }
+        }
+
+        /// <summary>
+        /// Sets a root's world transform without disturbing any active child's
+        /// world pose. Used whenever the root's world position changes while
+        /// members are already parented under it.
+        /// </summary>
+        private static void SetRootWorldTransformPreservingChildren(
+            Transform root, Vector3 worldPos, Quaternion worldRot, Vector3 scl)
+        {
+            if (root == null) return;
+
+            int n = root.childCount;
+            if (n == 0)
+            {
+                root.SetPositionAndRotation(worldPos, worldRot);
+                root.localScale = scl;
+                return;
+            }
+
+            var children = new Transform[n];
+            var savedPos = new Vector3[n];
+            var savedRot = new Quaternion[n];
+            for (int c = 0; c < n; c++)
+            {
+                var child = root.GetChild(c);
+                if (child == null || !child.gameObject.activeSelf) continue;
+                children[c] = child;
+                savedPos[c] = child.position;
+                savedRot[c] = child.rotation;
+            }
+
+            root.SetPositionAndRotation(worldPos, worldRot);
+            root.localScale = scl;
+
+            for (int c = 0; c < n; c++)
+            {
+                if (children[c] == null) continue;
+                children[c].SetPositionAndRotation(savedPos[c], savedRot[c]);
+            }
+        }
+
+        /// <summary>
+        /// Moves <paramref name="root"/> to the centroid of its active children's
+        /// world positions while leaving each child's world position unchanged.
+        /// Applies the supplied rotation/scale to the root after the shift.
+        /// </summary>
+        private static void SetRootToChildCentroidPreservingWorld(Transform root, Quaternion rot, Vector3 scl)
+        {
+            if (root == null) return;
+
+            int n = root.childCount;
+            if (n == 0)
+            {
+                root.localPosition = Vector3.zero;
+                root.localRotation = rot;
+                root.localScale    = scl;
+                return;
+            }
+
+            // Capture each active child's world TRS before we disturb the root.
+            var children = new Transform[n];
+            var savedPos = new Vector3[n];
+            var savedRot = new Quaternion[n];
+            int active = 0;
+            Vector3 sum = Vector3.zero;
+            for (int c = 0; c < n; c++)
+            {
+                var child = root.GetChild(c);
+                if (child == null || !child.gameObject.activeSelf) continue;
+                children[c] = child;
+                savedPos[c] = child.position;
+                savedRot[c] = child.rotation;
+                sum += child.position;
+                active++;
+            }
+
+            if (active == 0)
+            {
+                root.localPosition = Vector3.zero;
+                root.localRotation = rot;
+                root.localScale    = scl;
+                return;
+            }
+
+            Vector3 centroid = sum / active;
+            root.SetPositionAndRotation(centroid, root.parent != null ? root.parent.rotation * rot : rot);
+            root.localScale = scl;
+
+            // Restore children to their original world transforms.
+            for (int c = 0; c < n; c++)
+            {
+                if (children[c] == null) continue;
+                children[c].SetPositionAndRotation(savedPos[c], savedRot[c]);
             }
         }
 
@@ -251,7 +428,7 @@ namespace OSE.Editor
             };
             if (GUILayout.Toggle(isStart, "Start Pose", startStyle, GUILayout.Height(18)))
             {
-                if (!isStart) { _editingGroupPoseMode = PoseModeStart; SyncAllGroupRootsToActivePose(); SceneView.RepaintAll(); }
+                if (!isStart) { _editingGroupPoseMode = PoseModeStart; SyncAllPartMeshesToActivePose(); SyncAllGroupRootsToActivePose(); ActivateAllVisibleGroupMembers(); SceneView.RepaintAll(); }
             }
 
             var asmStyle = new GUIStyle(toggleStyle)
@@ -260,7 +437,7 @@ namespace OSE.Editor
             };
             if (GUILayout.Toggle(isAssembled, "Assembled Pose", asmStyle, GUILayout.Height(18)))
             {
-                if (!isAssembled) { _editingGroupPoseMode = PoseModeAssembled; SyncAllGroupRootsToActivePose(); SceneView.RepaintAll(); }
+                if (!isAssembled) { _editingGroupPoseMode = PoseModeAssembled; SyncAllPartMeshesToActivePose(); SyncAllGroupRootsToActivePose(); ActivateAllVisibleGroupMembers(); SceneView.RepaintAll(); }
             }
             EditorGUILayout.EndHorizontal();
 
@@ -295,6 +472,55 @@ namespace OSE.Editor
             }
 
             EditorGUILayout.Space(4);
+        }
+
+        // ── Rigid-body helpers (Phase 1) ─────────────────────────────────────
+
+        /// <summary>
+        /// Looks up the baked rigid body for the currently selected group at
+        /// the current step's primary targetId. Returns false when the step
+        /// has no targetId or the group has no baked entry for that target.
+        /// </summary>
+        private bool TryGetSelectedGroupRigidBody(in GroupEditState g, out GroupRigidBody rb)
+        {
+            rb = null;
+            if (g.def == null || g.def.rigidBodyByTargetId == null) return false;
+            StepDefinition step = _sceneBuildStepActive && _stepIds != null
+                                   && _stepFilterIdx > 0 && _stepFilterIdx < _stepIds.Length
+                ? FindStep(_stepIds[_stepFilterIdx]) : null;
+            // The rigid body only applies when THIS step is actually committing
+            // THIS group to an integrated target (e.g. stacking the frame side
+            // onto the cube). Fabrication steps — which lay out the same group's
+            // members at their individual assembled positions — must fall back
+            // to the legacy per-part assembled fields.
+            if (step == null) return false;
+            if (!string.Equals(step.requiredSubassemblyId, g.def.id, StringComparison.Ordinal)) return false;
+            string targetId = step.targetIds != null && step.targetIds.Length > 0 ? step.targetIds[0] : null;
+            if (string.IsNullOrEmpty(targetId)) return false;
+            return g.def.rigidBodyByTargetId.TryGetValue(targetId, out rb) && rb != null;
+        }
+
+        /// <summary>
+        /// Writes each member's localPosition/localRotation/localScale from the
+        /// rigid body's fixed offsets. Members thereafter follow the root as a
+        /// rigid unit — moving the root moves them all, which is the whole
+        /// point of the Phase 1 simplification.
+        /// </summary>
+        private void ApplyRigidBodyOffsetsToMembers(Transform root, GroupRigidBody rb)
+        {
+            if (root == null || rb == null || rb.memberPositionOffsets == null) return;
+            for (int c = 0; c < root.childCount; c++)
+            {
+                var child = root.GetChild(c);
+                if (child == null) continue;
+                string pid = child.name;
+                if (!rb.memberPositionOffsets.TryGetValue(pid, out var off)) continue;
+                child.localPosition = off;
+                if (rb.memberRotationOffsets != null && rb.memberRotationOffsets.TryGetValue(pid, out var r))
+                    child.localRotation = r;
+                if (rb.memberScales != null && rb.memberScales.TryGetValue(pid, out var s) && s.sqrMagnitude > 0.00001f)
+                    child.localScale = s;
+            }
         }
 
         // ── Find group index by subassembly ID ───────────────────────────────

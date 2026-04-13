@@ -170,6 +170,13 @@ namespace OSE.Editor
         // The root's localRotation IS the working orientation.
         private readonly Dictionary<string, GameObject> _subassemblyRootGOs = new(StringComparer.Ordinal);
 
+        // Set during EnsureAllSubassemblyRoots if a visible group member had no
+        // live GO yet (spawner hadn't registered it). RespawnScene schedules a
+        // delayed second pass so the first step click populates correctly
+        // without the user having to click away and back.
+        private bool _pendingRespawnForMissingMembers;
+        private bool _respawnRetryScheduled;
+
         // ── Parts tab ─────────────────────────────────────────────────────────
         // Part model preview panel
         private PartModelPreviewRenderer _partPreview;

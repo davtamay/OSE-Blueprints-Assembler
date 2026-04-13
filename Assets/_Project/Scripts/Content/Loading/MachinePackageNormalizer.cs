@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace OSE.Content.Loading
 {
@@ -26,6 +27,137 @@ namespace OSE.Content.Loading
             ResolveToolActionPartIds(package);
             ResolveDirectTargetPartIds(package);
             IndexPartOwnership(package);
+            BakeGroupRigidBody(package);
+        }
+
+        /// <summary>
+        /// Derives per-(subassembly, target) rigid-body representations from
+        /// <see cref="PackagePreviewConfig.integratedSubassemblyPlacements"/>.
+        /// For each placement, computes the centroid of member positions and
+        /// each member's offset from that centroid. The editor consumes this
+        /// so a group pose is ONE transform (center + fixed offsets), parallel
+        /// to how individual parts work. JSON stays in per-member format;
+        /// this derived data is never persisted.
+        /// </summary>
+        private static void BakeGroupRigidBody(MachinePackageDefinition package)
+        {
+            var subs = package.GetSubassemblies();
+            if (subs == null || subs.Length == 0) return;
+
+            // ── Start pose: fabrication centroid from partPlacements[].assembledPosition ──
+            var partPlacements = package.previewConfig?.partPlacements;
+            if (partPlacements != null && partPlacements.Length > 0)
+            {
+                var posByPart   = new Dictionary<string, Vector3>(StringComparer.Ordinal);
+                var rotByPart   = new Dictionary<string, Quaternion>(StringComparer.Ordinal);
+                var scaleByPart = new Dictionary<string, Vector3>(StringComparer.Ordinal);
+                for (int i = 0; i < partPlacements.Length; i++)
+                {
+                    var pp = partPlacements[i];
+                    if (pp == null || string.IsNullOrEmpty(pp.partId)) continue;
+                    posByPart[pp.partId]   = new Vector3(pp.assembledPosition.x, pp.assembledPosition.y, pp.assembledPosition.z);
+                    rotByPart[pp.partId]   = pp.assembledRotation.IsIdentity
+                        ? Quaternion.identity
+                        : new Quaternion(pp.assembledRotation.x, pp.assembledRotation.y, pp.assembledRotation.z, pp.assembledRotation.w);
+                    Vector3 s              = new Vector3(pp.assembledScale.x, pp.assembledScale.y, pp.assembledScale.z);
+                    scaleByPart[pp.partId] = s.sqrMagnitude < 0.00001f ? Vector3.one : s;
+                }
+
+                for (int i = 0; i < subs.Length; i++)
+                {
+                    var sub = subs[i];
+                    if (sub == null || sub.isAggregate || sub.partIds == null || sub.partIds.Length == 0) continue;
+
+                    Vector3 sum = Vector3.zero;
+                    int n = 0;
+                    for (int k = 0; k < sub.partIds.Length; k++)
+                    {
+                        if (!string.IsNullOrEmpty(sub.partIds[k]) && posByPart.TryGetValue(sub.partIds[k], out var mpos))
+                        { sum += mpos; n++; }
+                    }
+                    if (n == 0) continue;
+                    Vector3 center = sum / n;
+
+                    var rb = new GroupRigidBody
+                    {
+                        targetId              = null,
+                        groupCenter           = center,
+                        groupRotation         = Quaternion.identity,
+                        memberPositionOffsets = new Dictionary<string, Vector3>(StringComparer.Ordinal),
+                        memberRotationOffsets = new Dictionary<string, Quaternion>(StringComparer.Ordinal),
+                        memberScales          = new Dictionary<string, Vector3>(StringComparer.Ordinal),
+                    };
+                    for (int k = 0; k < sub.partIds.Length; k++)
+                    {
+                        string pid = sub.partIds[k];
+                        if (string.IsNullOrEmpty(pid) || !posByPart.TryGetValue(pid, out var mpos)) continue;
+                        rb.memberPositionOffsets[pid] = mpos - center;
+                        rb.memberRotationOffsets[pid] = rotByPart.TryGetValue(pid, out var mr) ? mr : Quaternion.identity;
+                        rb.memberScales[pid]          = scaleByPart.TryGetValue(pid, out var ms) ? ms : Vector3.one;
+                    }
+                    sub.startRigidBody = rb;
+                }
+            }
+
+            // ── Assembled pose: integrated-target centroid per (subId, targetId) ──
+            var placements = package.previewConfig?.integratedSubassemblyPlacements;
+            if (placements == null || placements.Length == 0) return;
+
+            for (int p = 0; p < placements.Length; p++)
+            {
+                var pl = placements[p];
+                if (pl == null || pl.memberPlacements == null || pl.memberPlacements.Length == 0) continue;
+                if (string.IsNullOrEmpty(pl.subassemblyId) || string.IsNullOrEmpty(pl.targetId)) continue;
+
+                SubassemblyDefinition sub = null;
+                for (int i = 0; i < subs.Length; i++)
+                    if (subs[i] != null && string.Equals(subs[i].id, pl.subassemblyId, StringComparison.Ordinal))
+                    { sub = subs[i]; break; }
+                if (sub == null) continue;
+
+                // Centroid of member positions in PreviewRoot space.
+                Vector3 sum = Vector3.zero;
+                int n = 0;
+                for (int m = 0; m < pl.memberPlacements.Length; m++)
+                {
+                    var mp = pl.memberPlacements[m];
+                    if (mp == null || string.IsNullOrEmpty(mp.partId)) continue;
+                    sum += new Vector3(mp.position.x, mp.position.y, mp.position.z);
+                    n++;
+                }
+                if (n == 0) continue;
+                Vector3 center = sum / n;
+
+                var rb = new GroupRigidBody
+                {
+                    targetId             = pl.targetId,
+                    groupCenter          = center,
+                    groupRotation        = Quaternion.identity,
+                    memberPositionOffsets = new Dictionary<string, Vector3>(StringComparer.Ordinal),
+                    memberRotationOffsets = new Dictionary<string, Quaternion>(StringComparer.Ordinal),
+                    memberScales          = new Dictionary<string, Vector3>(StringComparer.Ordinal),
+                };
+
+                for (int m = 0; m < pl.memberPlacements.Length; m++)
+                {
+                    var mp = pl.memberPlacements[m];
+                    if (mp == null || string.IsNullOrEmpty(mp.partId)) continue;
+                    Vector3 mPos = new Vector3(mp.position.x, mp.position.y, mp.position.z);
+                    Quaternion mRot = mp.rotation.IsIdentity
+                        ? Quaternion.identity
+                        : new Quaternion(mp.rotation.x, mp.rotation.y, mp.rotation.z, mp.rotation.w);
+                    Vector3 mScl = new Vector3(mp.scale.x, mp.scale.y, mp.scale.z);
+                    if (mScl.sqrMagnitude < 0.00001f) mScl = Vector3.one;
+
+                    rb.memberPositionOffsets[mp.partId] = mPos - center;
+                    rb.memberRotationOffsets[mp.partId] = mRot;
+                    rb.memberScales[mp.partId]          = mScl;
+                }
+
+                if (sub.rigidBodyByTargetId == null)
+                    sub.rigidBodyByTargetId = new Dictionary<string, GroupRigidBody>(StringComparer.Ordinal);
+                sub.rigidBodyByTargetId[pl.targetId] = rb;
+            }
         }
 
         // ── Staging Pose Bake ──

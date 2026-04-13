@@ -1088,29 +1088,43 @@ namespace OSE.Editor
             var allSubs = _pkg.GetSubassemblies();
             if (allSubs == null || allSubs.Length == 0) return;
 
-            // Collect subassemblies relevant to this step
-            string stepSubId = !string.IsNullOrWhiteSpace(step?.subassemblyId)
-                ? step.subassemblyId
-                : step?.requiredSubassemblyId;
+            // Collect subassemblies relevant to this step. A step can reference
+            // TWO groups simultaneously: its owning aggregate (step.subassemblyId,
+            // e.g. "cube joining") and the leaf being placed in this step
+            // (step.requiredSubassemblyId, e.g. "left frame side"). Both must
+            // surface in GROUPS so the author can edit the leaf's pose while
+            // seeing its parent aggregate context.
+            string ownerSubId     = step?.subassemblyId;
+            string requiredSubId  = step?.requiredSubassemblyId;
 
             var relevant = new List<SubassemblyDefinition>();
             for (int i = 0; i < allSubs.Length; i++)
             {
                 var sub = allSubs[i];
                 if (sub == null) continue;
-                // Include: the step's own subassembly, or any sub whose steps include this step
-                bool isStepOwner = !string.IsNullOrEmpty(stepSubId)
-                                   && string.Equals(sub.id, stepSubId, StringComparison.Ordinal);
+                bool isOwner    = !string.IsNullOrEmpty(ownerSubId)
+                                  && string.Equals(sub.id, ownerSubId, StringComparison.Ordinal);
+                bool isRequired = !string.IsNullOrEmpty(requiredSubId)
+                                  && string.Equals(sub.id, requiredSubId, StringComparison.Ordinal);
                 bool containsStep = false;
-                if (!isStepOwner && sub.stepIds != null && step != null)
+                if (!isOwner && !isRequired && sub.stepIds != null && step != null)
                 {
                     foreach (var sid in sub.stepIds)
                         if (string.Equals(sid, step.id, StringComparison.Ordinal))
                         { containsStep = true; break; }
                 }
-                if (isStepOwner || containsStep)
+                if (isOwner || isRequired || containsStep)
                     relevant.Add(sub);
             }
+
+            // Put leaf groups (the thing actually being placed/posed) ahead of
+            // aggregates so the author clicks the authorable one by default.
+            relevant.Sort((a, b) =>
+            {
+                int aScore = a.isAggregate ? 1 : 0;
+                int bScore = b.isAggregate ? 1 : 0;
+                return aScore.CompareTo(bScore);
+            });
 
             // Header — always show, even when 0 groups (so the create-drop-zone is reachable)
             EditorGUILayout.BeginHorizontal();

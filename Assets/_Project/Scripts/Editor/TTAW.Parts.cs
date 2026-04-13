@@ -208,15 +208,29 @@ namespace OSE.Editor
                     }
                 }
 
-                pos = useStart ? p.startPosition : p.assembledPosition;
-                rot = useStart ? p.startRotation  : p.assembledRotation;
-                scl = useStart ? p.startScale     : p.assembledScale;
+                if (!useStart && TryGetIntegratedMemberPose(pid, out Vector3 iPos, out Quaternion iRot, out Vector3 iScl))
+                {
+                    pos = iPos; rot = iRot; scl = iScl;
+                }
+                else
+                {
+                    pos = useStart ? p.startPosition : p.assembledPosition;
+                    rot = useStart ? p.startRotation  : p.assembledRotation;
+                    scl = useStart ? p.startScale     : p.assembledScale;
+                }
             }
             else
             {
-                pos = _editAssembledPose ? p.assembledPosition : p.startPosition;
-                rot = _editAssembledPose ? p.assembledRotation  : p.startRotation;
-                scl = _editAssembledPose ? p.assembledScale     : p.startScale;
+                if (_editAssembledPose && TryGetIntegratedMemberPose(pid, out Vector3 iPos2, out Quaternion iRot2, out Vector3 iScl2))
+                {
+                    pos = iPos2; rot = iRot2; scl = iScl2;
+                }
+                else
+                {
+                    pos = _editAssembledPose ? p.assembledPosition : p.startPosition;
+                    rot = _editAssembledPose ? p.assembledRotation  : p.startRotation;
+                    scl = _editAssembledPose ? p.assembledScale     : p.startScale;
+                }
             }
 
             // Phase A2: working orientation is now applied via the subassembly
@@ -228,6 +242,65 @@ namespace OSE.Editor
 
             if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
             return true;
+        }
+
+        /// <summary>
+        /// Looks up a part's canonical integrated pose — the same data
+        /// <see cref="OSE.UI.StepHandlers.SubassemblyPlacementController.TryApplyIntegratedPlacement"/>
+        /// consumes at runtime when a subassembly is committed to its target.
+        /// When the current step has (requiredSubassemblyId, targetId), prefers
+        /// that exact pair (Pass 1). Falls back to a partId-only lookup (Pass 2),
+        /// matching the runtime controller's fallback semantics.
+        /// </summary>
+        private bool TryGetIntegratedMemberPose(string partId, out Vector3 pos, out Quaternion rot, out Vector3 scl)
+        {
+            pos = Vector3.zero; rot = Quaternion.identity; scl = Vector3.one;
+            var placements = _pkg?.previewConfig?.integratedSubassemblyPlacements;
+            if (placements == null || placements.Length == 0 || string.IsNullOrEmpty(partId)) return false;
+
+            // Pass 1: match by current step's (requiredSubassemblyId, targetId)
+            StepDefinition step = _sceneBuildStepActive && _stepIds != null
+                                   && _stepFilterIdx > 0 && _stepFilterIdx < _stepIds.Length
+                ? FindStep(_stepIds[_stepFilterIdx]) : null;
+            string subId    = step?.requiredSubassemblyId;
+            string targetId = step?.targetIds != null && step.targetIds.Length > 0 ? step.targetIds[0] : null;
+            if (!string.IsNullOrEmpty(subId) && !string.IsNullOrEmpty(targetId))
+            {
+                for (int i = 0; i < placements.Length; i++)
+                {
+                    var pl = placements[i];
+                    if (pl == null || pl.memberPlacements == null) continue;
+                    if (!string.Equals(pl.subassemblyId, subId, StringComparison.Ordinal)) continue;
+                    if (!string.Equals(pl.targetId, targetId, StringComparison.Ordinal)) continue;
+                    if (TryFindMember(pl.memberPlacements, partId, out pos, out rot, out scl)) return true;
+                    break;
+                }
+            }
+
+            // No Pass 2 fallback here — the editor must not pull a part's
+            // integrated (cube-target) pose during fabrication steps, or a
+            // bar at step 1's Assembled Pose would jump to its cube position
+            // instead of its fabrication position.
+            return false;
+        }
+
+        private static bool TryFindMember(IntegratedMemberPreviewPlacement[] members, string partId,
+            out Vector3 pos, out Quaternion rot, out Vector3 scl)
+        {
+            pos = Vector3.zero; rot = Quaternion.identity; scl = Vector3.one;
+            for (int i = 0; i < members.Length; i++)
+            {
+                var m = members[i];
+                if (m == null || !string.Equals(m.partId, partId, StringComparison.Ordinal)) continue;
+                pos = PackageJsonUtils.ToVector3(m.position);
+                rot = m.rotation.IsIdentity
+                    ? Quaternion.identity
+                    : PackageJsonUtils.ToUnityQuaternion(m.rotation);
+                scl = PackageJsonUtils.ToVector3(m.scale);
+                if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
+                return true;
+            }
+            return false;
         }
 
         // ── Pose read/write helpers for current _editingPoseMode ──────────────

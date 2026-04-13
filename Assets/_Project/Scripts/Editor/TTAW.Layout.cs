@@ -544,6 +544,10 @@ namespace OSE.Editor
             _editingPoseMode = PoseModeStart;           // always land on Start Pose when switching steps
             RespawnScene();                  // uses _editAssembledPose — must come AFTER the reset
             SyncAllPartMeshesToActivePose(); // second pass: ensures live GOs match after RespawnScene
+            // Spawner writes member localPositions against PreviewRoot. Snap
+            // group roots back to origin (preserving children's world pose) so
+            // the spawner's local writes don't compound with a centroid offset.
+            ResetAllGroupRootsToOriginPreservingChildren();
             ApplySpawnerStepPositions();     // first pass: push step-aware positions before driver sync
             AutoSelectFirstTaskEntry();      // default-select first badge so a section is visible
             if (!_suppressStepSync)
@@ -551,8 +555,16 @@ namespace OSE.Editor
             // Final pass: re-apply after SyncSessionDriverStep, because SetEditModeStep →
             // ApplyStepAwarePartPositions uses _editModePackage (StreamingAssets) which may
             // override the authoritative _pkg positions set above.
+            ResetAllGroupRootsToOriginPreservingChildren();
             ApplySpawnerStepPositions();
             SyncAllPartMeshesToActivePose();
+            // Final authoring override: re-activate & reparent group members
+            // that the spawner may have hidden as ghost-replaced. Must run AFTER
+            // every spawner/driver positioning pass above.
+            ActivateAllVisibleGroupMembers();
+            // Re-apply centroid centering for the selected group now that all
+            // spawner passes are complete and safe from local-position compounding.
+            SyncAllGroupRootsToActivePose();
             var currentStep = _stepFilterIdx > 0 && _stepIds != null && _stepFilterIdx < _stepIds.Length
                 ? FindStep(_stepIds[_stepFilterIdx]) : null;
             RefreshWirePreview(currentStep);

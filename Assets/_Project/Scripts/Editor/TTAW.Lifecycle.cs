@@ -96,9 +96,11 @@ namespace OSE.Editor
             // Re-apply authoritative _pkg positions after the spawn cycle.
             // The spawn itself calls ApplyStepAwarePositions(_editModePackage) which may
             // override positions using stale StreamingAssets data — overwrite with _pkg.
+            ResetAllGroupRootsToOriginPreservingChildren();
             ApplySpawnerStepPositions();
             SyncAllPartMeshesToActivePose();
             AddMeshCollidersToLiveParts();
+            SyncAllGroupRootsToActivePose();
             // Suppress native Move-tool polling for a few frames so the position
             // corrections above settle before the change-detection loop runs.
             _poseSwitchCooldownUntil = EditorApplication.timeSinceStartup + 0.5;

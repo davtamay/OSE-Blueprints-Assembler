@@ -532,7 +532,23 @@ namespace OSE.Editor
             // Create a root GO for EVERY group that has visible members in this
             // step — not just the step's own subassemblyId. This means the
             // Hierarchy shows all groups and their member parts as children.
+            _pendingRespawnForMissingMembers = false;
             EnsureAllSubassemblyRoots(stepSelected ? FindStep(_stepIds[_stepFilterIdx]) : null);
+
+            // If any expected group member wasn't live yet, schedule a delayed
+            // second pass so the Hierarchy self-heals on the first click.
+            if (_pendingRespawnForMissingMembers && !_respawnRetryScheduled)
+            {
+                _respawnRetryScheduled = true;
+                UnityEditor.EditorApplication.delayCall += () =>
+                {
+                    _respawnRetryScheduled = false;
+                    if (this == null) return;
+                    RespawnScene();
+                    Repaint();
+                    UnityEditor.EditorApplication.RepaintHierarchyWindow();
+                };
+            }
 
             // Position and show/hide live parts based on step-aware context.
             SyncAllPartMeshesToActivePose();
@@ -545,6 +561,10 @@ namespace OSE.Editor
 
             // Sync group root GOs to their active poses (start/assembled/custom)
             SyncAllGroupRootsToActivePose();
+
+            // Ensure every visible group member is active + parented under its
+            // group root. Covers paths where an earlier spawner pass hid them.
+            ActivateAllVisibleGroupMembers();
 
             // Add MeshColliders to live parts so click-to-snap works on their surfaces.
             AddMeshCollidersToLiveParts();
@@ -680,6 +700,14 @@ namespace OSE.Editor
                 {
                     var memberSet = new HashSet<string>(sub.partIds, StringComparer.Ordinal);
                     ReparentMembersUnderRoot(rootGO.transform, previewRoot, memberSet);
+
+                    // Detect expected members the spawner hasn't registered yet
+                    // so we can schedule a delayed retry (self-healing first click).
+                    foreach (var pid in sub.partIds)
+                    {
+                        if (string.IsNullOrEmpty(pid) || !IsPartVisibleAtCurrentStep(pid)) continue;
+                        if (FindLivePartGO(pid) == null) _pendingRespawnForMissingMembers = true;
+                    }
                 }
             }
 
@@ -717,6 +745,53 @@ namespace OSE.Editor
                 }
                 _subassemblyRootGOs.Remove(id);
             }
+        }
+
+        /// <summary>
+        /// Authoring-time override: force every visible member of every live group
+        /// root to be active AND reparented under the root. The spawner's
+        /// ApplyStepAwarePositions hides subassembly members that are ghost-
+        /// replaced (so play mode shows only the ghost silhouette), but the
+        /// authoring window needs those same parts visible as group children so
+        /// the author can edit group poses. Call this AFTER any path that may
+        /// run spawner positioning (ApplySpawnerStepPositions, driver sync).
+        /// </summary>
+        private void ActivateAllVisibleGroupMembers()
+        {
+            if (_subassemblyRootGOs == null || _subassemblyRootGOs.Count == 0) return;
+            if (_pkg == null) return;
+
+            foreach (var kvp in _subassemblyRootGOs)
+            {
+                var rootGO = kvp.Value;
+                if (rootGO == null) continue;
+                if (!_pkg.TryGetSubassembly(kvp.Key, out var sub) || sub == null || sub.isAggregate) continue;
+                if (sub.partIds == null) continue;
+
+                foreach (var pid in sub.partIds)
+                {
+                    if (string.IsNullOrEmpty(pid) || !IsPartVisibleAtCurrentStep(pid)) continue;
+                    var memberGO = FindLivePartGO(pid);
+                    if (memberGO == null) { _pendingRespawnForMissingMembers = true; continue; }
+                    if (memberGO.transform.parent != rootGO.transform)
+                        memberGO.transform.SetParent(rootGO.transform, worldPositionStays: true);
+                    if (!memberGO.activeSelf) memberGO.SetActive(true);
+                }
+            }
+        }
+
+        /// <summary>
+        /// True when a part should be visible at the currently selected step —
+        /// i.e. its earliest placement sequence is &lt;= the current step's seq.
+        /// When no step is selected, all parts with placement data are visible.
+        /// </summary>
+        private bool IsPartVisibleAtCurrentStep(string partId)
+        {
+            if (string.IsNullOrEmpty(partId)) return false;
+            if (!_sceneBuildStepActive) return _sceneBuildPartStepSeq != null && _sceneBuildPartStepSeq.ContainsKey(partId);
+            return _sceneBuildPartStepSeq != null
+                && _sceneBuildPartStepSeq.TryGetValue(partId, out int placedAt)
+                && placedAt <= _sceneBuildCurrentSeq;
         }
 
         private Vector3 GetSubassemblyFramePos(string subId)
