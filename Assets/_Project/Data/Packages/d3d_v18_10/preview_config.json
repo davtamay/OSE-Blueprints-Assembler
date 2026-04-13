@@ -18114,20 +18114,20 @@
     {
       "partId": "d3d_frame_bottom_top_bar",
       "startPosition": {
-        "x": -0.6,
+        "x": -1.0,
         "y": 0.5516,
-        "z": 0.1524
+        "z": 0.495
       },
       "startRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
       },
       "startScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.3048,
+        "y": 0.0032,
+        "z": 0.0254
       },
       "assembledPosition": {
         "x": 0.0,
@@ -18155,20 +18155,20 @@
     {
       "partId": "d3d_frame_bottom_bottom_bar",
       "startPosition": {
-        "x": -0.6,
+        "x": -1.0,
         "y": 0.5516,
-        "z": -0.1524
+        "z": 0.395
       },
       "startRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
       },
       "startScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.3048,
+        "y": 0.0032,
+        "z": 0.0254
       },
       "assembledPosition": {
         "x": 0.0,
@@ -18196,20 +18196,20 @@
     {
       "partId": "d3d_frame_bottom_left_bar",
       "startPosition": {
-        "x": -0.7524,
+        "x": -1.0,
         "y": 0.5516,
-        "z": 0.0
+        "z": 0.345
       },
       "startRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
       },
       "startScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.3048,
+        "y": 0.0032,
+        "z": 0.0254
       },
       "assembledPosition": {
         "x": -0.1524,
@@ -18237,20 +18237,20 @@
     {
       "partId": "d3d_frame_bottom_right_bar",
       "startPosition": {
-        "x": -0.4476,
+        "x": -1.0,
         "y": 0.5516,
-        "z": 0.0
+        "z": 0.445
       },
       "startRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
       },
       "startScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.3048,
+        "y": 0.0032,
+        "z": 0.0254
       },
       "assembledPosition": {
         "x": 0.1524,
@@ -18278,20 +18278,20 @@
     {
       "partId": "d3d_frame_top_top_bar",
       "startPosition": {
-        "x": -0.6,
+        "x": 1.0,
         "y": 0.5516,
-        "z": 0.0024
+        "z": 0.495
       },
       "startRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
       },
       "startScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.3048,
+        "y": 0.0032,
+        "z": 0.0254
       },
       "assembledPosition": {
         "x": 0.0,
@@ -18319,20 +18319,20 @@
     {
       "partId": "d3d_frame_top_bottom_bar",
       "startPosition": {
-        "x": -0.6,
+        "x": 1.0,
         "y": 0.5516,
-        "z": -0.3024
+        "z": 0.395
       },
       "startRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
       },
       "startScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.3048,
+        "y": 0.0032,
+        "z": 0.0254
       },
       "assembledPosition": {
         "x": 0.0,
@@ -18360,20 +18360,20 @@
     {
       "partId": "d3d_frame_top_left_bar",
       "startPosition": {
-        "x": -0.7524,
+        "x": 1.0,
         "y": 0.5516,
-        "z": -0.15
+        "z": 0.345
       },
       "startRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
       },
       "startScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.3048,
+        "y": 0.0032,
+        "z": 0.0254
       },
       "assembledPosition": {
         "x": -0.1524,
@@ -18401,20 +18401,20 @@
     {
       "partId": "d3d_frame_top_right_bar",
       "startPosition": {
-        "x": -0.4476,
+        "x": 1.0,
         "y": 0.5516,
-        "z": -0.15
+        "z": 0.445
       },
       "startRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
       },
       "startScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.3048,
+        "y": 0.0032,
+        "z": 0.0254
       },
       "assembledPosition": {
         "x": 0.1524,
@@ -18442,20 +18442,20 @@
     {
       "partId": "d3d_frame_left_top_bar",
       "startPosition": {
-        "x": -0.98,
+        "x": -1.0,
         "y": 0.5516,
-        "z": 0.2274
+        "z": 0.075
       },
       "startRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
       },
       "startScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.3048,
+        "y": 0.0032,
+        "z": 0.0254
       },
       "assembledPosition": {
         "x": -0.38,
@@ -18483,20 +18483,20 @@
     {
       "partId": "d3d_frame_left_bottom_bar",
       "startPosition": {
-        "x": -0.98,
+        "x": -1.0,
         "y": 0.5516,
-        "z": -0.0774
+        "z": -0.025
       },
       "startRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
       },
       "startScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.3048,
+        "y": 0.0032,
+        "z": 0.0254
       },
       "assembledPosition": {
         "x": -0.38,
@@ -18524,20 +18524,20 @@
     {
       "partId": "d3d_frame_left_left_bar",
       "startPosition": {
-        "x": -1.1324,
+        "x": -1.0,
         "y": 0.5516,
-        "z": 0.075
+        "z": -0.075
       },
       "startRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
       },
       "startScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.3048,
+        "y": 0.0032,
+        "z": 0.0254
       },
       "assembledPosition": {
         "x": -0.5324,
@@ -18565,20 +18565,20 @@
     {
       "partId": "d3d_frame_left_right_bar",
       "startPosition": {
-        "x": -0.8276,
+        "x": -1.0,
         "y": 0.5516,
-        "z": 0.075
+        "z": 0.025
       },
       "startRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
       },
       "startScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.3048,
+        "y": 0.0032,
+        "z": 0.0254
       },
       "assembledPosition": {
         "x": -0.2276,
@@ -18606,20 +18606,20 @@
     {
       "partId": "d3d_frame_right_top_bar",
       "startPosition": {
-        "x": -0.22,
+        "x": 1.0,
         "y": 0.5516,
-        "z": 0.2274
+        "z": 0.075
       },
       "startRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
       },
       "startScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.3048,
+        "y": 0.0032,
+        "z": 0.0254
       },
       "assembledPosition": {
         "x": 0.38,
@@ -18647,20 +18647,20 @@
     {
       "partId": "d3d_frame_right_bottom_bar",
       "startPosition": {
-        "x": -0.22,
+        "x": 1.0,
         "y": 0.5516,
-        "z": -0.0774
+        "z": -0.025
       },
       "startRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
       },
       "startScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.3048,
+        "y": 0.0032,
+        "z": 0.0254
       },
       "assembledPosition": {
         "x": 0.38,
@@ -18688,20 +18688,20 @@
     {
       "partId": "d3d_frame_right_left_bar",
       "startPosition": {
-        "x": -0.3724,
+        "x": 1.0,
         "y": 0.5516,
-        "z": 0.075
+        "z": -0.075
       },
       "startRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
       },
       "startScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.3048,
+        "y": 0.0032,
+        "z": 0.0254
       },
       "assembledPosition": {
         "x": 0.2276,
@@ -18729,20 +18729,20 @@
     {
       "partId": "d3d_frame_right_right_bar",
       "startPosition": {
-        "x": -0.0676,
+        "x": 1.0,
         "y": 0.5516,
-        "z": 0.075
+        "z": 0.025
       },
       "startRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
       },
       "startScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.3048,
+        "y": 0.0032,
+        "z": 0.0254
       },
       "assembledPosition": {
         "x": 0.5324,
@@ -18770,20 +18770,20 @@
     {
       "partId": "d3d_frame_front_top_bar",
       "startPosition": {
-        "x": -0.6,
+        "x": -1.0,
         "y": 0.5516,
-        "z": 0.4974
+        "z": -0.345
       },
       "startRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
       },
       "startScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.3048,
+        "y": 0.0032,
+        "z": 0.0254
       },
       "assembledPosition": {
         "x": 0.0,
@@ -18811,20 +18811,20 @@
     {
       "partId": "d3d_frame_front_bottom_bar",
       "startPosition": {
-        "x": -0.6,
+        "x": -1.0,
         "y": 0.5516,
-        "z": 0.1926
+        "z": -0.445
       },
       "startRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
       },
       "startScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.3048,
+        "y": 0.0032,
+        "z": 0.0254
       },
       "assembledPosition": {
         "x": 0.0,
@@ -18852,20 +18852,20 @@
     {
       "partId": "d3d_frame_front_left_bar",
       "startPosition": {
-        "x": -0.7524,
+        "x": -1.0,
         "y": 0.5516,
-        "z": 0.345
+        "z": -0.495
       },
       "startRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
       },
       "startScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.3048,
+        "y": 0.0032,
+        "z": 0.0254
       },
       "assembledPosition": {
         "x": -0.1524,
@@ -18893,20 +18893,20 @@
     {
       "partId": "d3d_frame_front_right_bar",
       "startPosition": {
-        "x": -0.4476,
+        "x": -1.0,
         "y": 0.5516,
-        "z": 0.345
+        "z": -0.395
       },
       "startRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
       },
       "startScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.3048,
+        "y": 0.0032,
+        "z": 0.0254
       },
       "assembledPosition": {
         "x": 0.1524,
@@ -18934,20 +18934,20 @@
     {
       "partId": "d3d_frame_rear_top_bar",
       "startPosition": {
-        "x": -0.6,
+        "x": 1.0,
         "y": 0.5516,
-        "z": -0.0426
+        "z": -0.345
       },
       "startRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
       },
       "startScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.3048,
+        "y": 0.0032,
+        "z": 0.0254
       },
       "assembledPosition": {
         "x": 0.0,
@@ -18975,20 +18975,20 @@
     {
       "partId": "d3d_frame_rear_bottom_bar",
       "startPosition": {
-        "x": -0.6,
+        "x": 1.0,
         "y": 0.5516,
-        "z": -0.3474
+        "z": -0.445
       },
       "startRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
       },
       "startScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.3048,
+        "y": 0.0032,
+        "z": 0.0254
       },
       "assembledPosition": {
         "x": 0.0,
@@ -19016,20 +19016,20 @@
     {
       "partId": "d3d_frame_rear_left_bar",
       "startPosition": {
-        "x": -0.7524,
+        "x": 1.0,
         "y": 0.5516,
-        "z": -0.195
+        "z": -0.495
       },
       "startRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
       },
       "startScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.3048,
+        "y": 0.0032,
+        "z": 0.0254
       },
       "assembledPosition": {
         "x": -0.1524,
@@ -19057,20 +19057,20 @@
     {
       "partId": "d3d_frame_rear_right_bar",
       "startPosition": {
-        "x": -0.4476,
+        "x": 1.0,
         "y": 0.5516,
-        "z": -0.195
+        "z": -0.395
       },
       "startRotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0,
-        "w": 1
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "w": 1.0
       },
       "startScale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
+        "x": 0.3048,
+        "y": 0.0032,
+        "z": 0.0254
       },
       "assembledPosition": {
         "x": 0.1524,
