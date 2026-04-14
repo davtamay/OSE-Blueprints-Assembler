@@ -29,7 +29,63 @@ namespace OSE.Content.Loading
             ResolveDirectTargetPartIds(package);
             IndexPartOwnership(package);
             BakeGroupRigidBody(package);
+            BakePoseTable(package);
         }
+
+        /// <summary>
+        /// Final Normalize pass: runs <see cref="PoseResolver.Resolve"/> once
+        /// for every visible (partId, seqIndex) pair and stores the answers in
+        /// <see cref="MachinePackageDefinition.poseTable"/>. Editor and runtime
+        /// read from this table instead of re-running resolution logic — the
+        /// single-source-of-truth that eliminates the editor/runtime
+        /// divergence bugs that prompted the rewrite.
+        ///
+        /// Complexity: O(parts × steps) — ~10k entries for a typical 200-step
+        /// 50-part package. Runs once per load.
+        /// </summary>
+        private static void BakePoseTable(MachinePackageDefinition package)
+        {
+            var idx = new PoseResolverIndex(package);
+            var map = new Dictionary<PoseKey, PoseResolution>(capacity: idx.firstVisibleSeqByPart.Count * 8);
+
+            foreach (var kvp in idx.firstVisibleSeqByPart)
+            {
+                string partId = kvp.Key;
+                int firstSeq = kvp.Value;
+
+                // Populate from firstVisible through the end of the step list.
+                // Past-task parts stay at assembledPosition in steady state,
+                // so every forward seq is a valid (non-hidden) entry — that
+                // guarantees the table covers any seq the editor or runtime
+                // might look up.
+                foreach (var s in idx.orderedSteps)
+                {
+                    int seq = s.sequenceIndex;
+                    if (seq < firstSeq) continue;
+                    var resolution = PoseResolver.Resolve(partId, seq, package, idx, PoseMode.Committed);
+                    if (resolution.IsHidden) continue;
+                    map[new PoseKey(partId, seq)] = resolution;
+                }
+            }
+
+            package.poseTable = new PoseTable(map, idx.firstVisibleSeqByPart, idx.lastVisibleSeqByPart, package, idx);
+
+            // Structural checks — WARN-only in this phase. Any violation is a
+            // bug in either the authored data or the resolver/index; Step 6
+            // of the rewrite flips these to throw. See PoseTableInvariants.
+            PoseTableInvariants.Validate(package, idx, package.poseTable);
+        }
+
+        /// <summary>
+        /// Label marker previously attached to synthetic NO-TASK stepPose
+        /// entries baked into memory by <c>BakeNoTaskWaypoints</c>. The
+        /// synthetic bake is gone (NO-TASK is now a first-class source
+        /// resolved by <see cref="PoseResolver"/>), but the constant remains
+        /// so <see cref="PoseResolverIndex"/> and the save-path filter can
+        /// still recognise and skip legacy entries that may exist in old
+        /// preview_config.json files.
+        /// </summary>
+        public const string AutoNoTaskLabel = "__notask_auto";
 
         /// <summary>
         /// Auto-derives <see cref="SubassemblyDefinition.isAggregate"/> from the
@@ -579,12 +635,14 @@ namespace OSE.Content.Loading
         /// subassemblies/steps every time.
         ///
         /// For every non-aggregate subassembly, sets <c>part.owningSubassemblyId</c>
-        /// to the subassembly id. For every Place-family step, sets
-        /// <c>part.owningPlaceStepId</c> to the step id. First-writer-wins —
-        /// <c>PartOwnershipExclusivityPass</c> guarantees no collisions at
-        /// validation time, so first-wins is equivalent to only-wins for
-        /// well-formed packages. Aggregate subassemblies are intentionally
-        /// skipped (they may contain child parts).
+        /// to the subassembly id. For every Place-family step, appends the
+        /// step id to <see cref="PartDefinition.owningPlaceStepIds"/> and (on
+        /// first write) also sets the scalar <see cref="PartDefinition.owningPlaceStepId"/>
+        /// as the canonical "first placement" for legacy callers. Multi-Place
+        /// is now supported: a part can be Required by several Place steps
+        /// representing distinct physical placements (e.g. loose alignment
+        /// followed by final placement). Aggregate subassemblies are
+        /// intentionally skipped (they may contain child parts).
         /// </summary>
         private static void IndexPartOwnership(MachinePackageDefinition package)
         {
@@ -593,6 +651,7 @@ namespace OSE.Content.Loading
 
             var partById = new Dictionary<string, PartDefinition>(
                 parts.Length, StringComparer.OrdinalIgnoreCase);
+            var ownerListsByPart = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
             for (int i = 0; i < parts.Length; i++)
             {
                 PartDefinition p = parts[i];
@@ -601,7 +660,8 @@ namespace OSE.Content.Loading
                 // Clear any stale state from a prior Normalize call on the
                 // same in-memory package (editor reload path).
                 p.owningSubassemblyId = null;
-                p.owningPlaceStepId = null;
+                p.owningPlaceStepId   = null;
+                p.owningPlaceStepIds  = null;
                 partById[p.id] = p;
             }
 
@@ -628,9 +688,16 @@ namespace OSE.Content.Loading
             StepDefinition[] steps = package.steps;
             if (steps != null)
             {
-                for (int s = 0; s < steps.Length; s++)
+                // Walk steps in ascending sequenceIndex so the first-append
+                // also becomes owningPlaceStepId (canonical "first placement")
+                // and owningPlaceStepIds is naturally sorted.
+                var ordered = new List<StepDefinition>(steps.Length);
+                for (int s = 0; s < steps.Length; s++) if (steps[s] != null) ordered.Add(steps[s]);
+                ordered.Sort((a, b) => a.sequenceIndex.CompareTo(b.sequenceIndex));
+
+                for (int s = 0; s < ordered.Count; s++)
                 {
-                    StepDefinition step = steps[s];
+                    StepDefinition step = ordered[s];
                     if (step == null || string.IsNullOrWhiteSpace(step.id)) continue;
                     if (step.ResolvedFamily != StepFamily.Place) continue;
                     if (step.requiredPartIds == null) continue;
@@ -640,9 +707,20 @@ namespace OSE.Content.Loading
                         string pid = step.requiredPartIds[i];
                         if (string.IsNullOrEmpty(pid)) continue;
                         if (!partById.TryGetValue(pid, out PartDefinition part)) continue;
+
+                        if (!ownerListsByPart.TryGetValue(part.id, out var list))
+                            ownerListsByPart[part.id] = list = new List<string>();
+                        if (list.Contains(step.id)) continue; // dedupe if a step lists the part twice
+                        list.Add(step.id);
                         if (string.IsNullOrEmpty(part.owningPlaceStepId))
                             part.owningPlaceStepId = step.id;
                     }
+                }
+
+                foreach (var kvp in ownerListsByPart)
+                {
+                    if (!partById.TryGetValue(kvp.Key, out var part)) continue;
+                    part.owningPlaceStepIds = kvp.Value.ToArray();
                 }
             }
         }

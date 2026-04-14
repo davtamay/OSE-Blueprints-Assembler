@@ -360,10 +360,13 @@
       "sequenceIndex": 233,
       "family": "Place",
       "instructionText": "Begin assembling the idler: place an M6x18 bolt through one idler half-piece from the outside.",
-      "requiredPartIds": [
-        "idler001"
-      ]
-    },
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [ "idler001" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"idler001"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_z_back_idler_insert_bearings",
       "name": "Stack two flanged bearings onto bolt",
@@ -399,10 +402,13 @@
       "sequenceIndex": 237,
       "family": "Place",
       "instructionText": "Rest the thin spacer on the motor housing, then seat the pulley on the shaft above it. Tighten the first set screw with an Allen key — the spacer keeps the pulley off the housing.",
-      "requiredPartIds": [
-        "motor001"
-      ]
-    },
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [ "motor001" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"motor001"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_z_back_motor_pulley_pop",
       "name": "Lock pulley set screw until it pops",
@@ -483,11 +489,14 @@
       "sequenceIndex": 246,
       "family": "Place",
       "instructionText": "Insert both guide rods into the completed idler piece. Rod ends must be flush against the bottom of the idler. If rods are hard to insert, loosen the idler bolts, slide rods in, then re-tighten.",
-      "requiredPartIds": [
-        "z1_spacer_1",
-        "z1_spacer_002"
-      ]
-    },
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [ "z1_spacer_1", "z1_spacer_002" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"z1_spacer_1"},
+        {"kind":"part","id":"z1_spacer_002"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_z_back_idler_tighten_rods",
       "name": "Tighten short idler bolts onto rods",
@@ -505,10 +514,13 @@
       "sequenceIndex": 248,
       "family": "Place",
       "instructionText": "Slide the completed carriage onto the rods with the long bolt ends closer to the idler. This orientation maximizes the travel distance.",
-      "requiredPartIds": [
-        "motor_piece001"
-      ]
-    },
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [ "motor_piece001" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"motor_piece001"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_z_back_motor_onto_rods",
       "name": "Push motor holder onto rods",
@@ -562,10 +574,13 @@
       "sequenceIndex": 254,
       "family": "Confirm",
       "instructionText": "Thread the belt end through a belt peg. Confirm: the foot of the peg faces away from the toothed side of the belt and away from the axis center. Wrong orientation prevents the peg from locking correctly.",
-      "requiredPartIds": [
-        "fastener_z_back_belt_peg"
-      ]
-    },
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [ "fastener_z_back_belt_peg" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"fastener_z_back_belt_peg"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_z_back_belt_first_peg",
       "name": "Lock first belt peg",

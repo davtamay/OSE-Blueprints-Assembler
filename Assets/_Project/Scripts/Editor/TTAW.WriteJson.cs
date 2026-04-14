@@ -26,6 +26,89 @@ namespace OSE.Editor
     {
         // ── Write to JSON ─────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Mirrors the runtime validator's "single Place owner per partId"
+        /// rule but runs at save-time so the author never persists a
+        /// conflicting state. Returns true when at least one part appears
+        /// in <c>requiredPartIds</c> of two or more <c>Place</c>-family steps;
+        /// <paramref name="message"/> describes the first offending part.
+        /// </summary>
+        /// <summary>
+        /// Resolves every Place-family-ownership collision by keeping the
+        /// part in the step with the lowest <c>sequenceIndex</c> and removing
+        /// it from every later Place step's <c>requiredPartIds</c>. Those
+        /// later steps get marked dirty so the removal persists. Returns the
+        /// number of (partId, step) entries removed.
+        ///
+        /// Rule: the physically-first Place step wins. If the author authored
+        /// an out-of-order conflict they can still hand-edit after the fix.
+        /// </summary>
+        private int AutoResolvePlaceOwnershipConflicts()
+        {
+            if (_pkg?.steps == null) return 0;
+            var owners = new Dictionary<string, List<StepDefinition>>(StringComparer.Ordinal);
+            foreach (var s in _pkg.steps)
+            {
+                if (s == null || s.requiredPartIds == null) continue;
+                if (s.ResolvedFamily != StepFamily.Place) continue;
+                foreach (var pid in s.requiredPartIds)
+                {
+                    if (string.IsNullOrEmpty(pid)) continue;
+                    if (!owners.TryGetValue(pid, out var list))
+                        owners[pid] = list = new List<StepDefinition>();
+                    list.Add(s);
+                }
+            }
+
+            int removals = 0;
+            foreach (var kvp in owners)
+            {
+                if (kvp.Value.Count <= 1) continue;
+                kvp.Value.Sort((a, b) => a.sequenceIndex.CompareTo(b.sequenceIndex));
+                // First (lowest seq) keeps the part; strip from the rest.
+                for (int i = 1; i < kvp.Value.Count; i++)
+                {
+                    var later = kvp.Value[i];
+                    if (later.requiredPartIds == null) continue;
+                    var rem = new List<string>(later.requiredPartIds);
+                    if (rem.Remove(kvp.Key))
+                    {
+                        later.requiredPartIds = rem.Count > 0 ? rem.ToArray() : Array.Empty<string>();
+                        _dirtyStepIds.Add(later.id);
+                        removals++;
+                        Debug.LogWarning($"[TTAW] Auto-fix: removed '{kvp.Key}' from requiredPartIds of Place step '{later.id}' (kept in earlier step '{kvp.Value[0].id}').");
+                    }
+                }
+            }
+            return removals;
+        }
+
+        private bool TryFindPlaceOwnershipConflict(out string message)
+        {
+            message = null;
+            if (_pkg?.steps == null) return false;
+            var owners = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+            foreach (var s in _pkg.steps)
+            {
+                if (s == null || s.requiredPartIds == null) continue;
+                if (s.ResolvedFamily != StepFamily.Place) continue;
+                foreach (var pid in s.requiredPartIds)
+                {
+                    if (string.IsNullOrEmpty(pid)) continue;
+                    if (!owners.TryGetValue(pid, out var list))
+                        owners[pid] = list = new List<string>();
+                    list.Add(s.id);
+                }
+            }
+            foreach (var kvp in owners)
+            {
+                if (kvp.Value.Count <= 1) continue;
+                message = $"partId '{kvp.Key}' is in requiredPartIds of multiple Place-family steps:\n  • " + string.Join("\n  • ", kvp.Value);
+                return true;
+            }
+            return false;
+        }
+
         private bool AnyDirty()
         {
             if (_dirtyToolIds.Count > 0 || _dirtyStepIds.Count > 0) return true;
@@ -132,6 +215,24 @@ namespace OSE.Editor
             string jsonPath = PackageJsonUtils.GetJsonPath(_pkgId);
             if (jsonPath == null) { Debug.LogError($"[ToolTargetAuthoring] machine.json not found for '{_pkgId}'"); return; }
 
+            // Guarantee the drift-free invariant at write time: every step's
+            // taskOrder is a projection of its role arrays. Mutators already
+            // reconcile as they write, but this pass catches any path that
+            // touches step data without going through the reconciler (e.g.
+            // external editors, batch edits, or future code). Cheap — only
+            // mutates steps that actually drifted.
+            ReconcileAllStepTaskOrders();
+
+            // Multi-Place is supported — no save-time block. The runtime
+            // validator still reports multi-owner partIds but as a Warning
+            // (see PartOwnershipExclusivityPass.CheckMultiPlaceStepCollisions).
+            // Log an info line for discoverability so the author can verify
+            // they meant to author multiple placements.
+            if (TryFindPlaceOwnershipConflict(out string multiPlaceSummary))
+            {
+                Debug.Log($"[TTAW] {multiPlaceSummary}\nMulti-placement is supported; saving.");
+            }
+
             // Step 1: Update working pkg.previewConfig.targetPlacements
             if (_pkg.previewConfig == null) _pkg.previewConfig = new PackagePreviewConfig();
             var placements = _pkg.previewConfig.targetPlacements != null
@@ -179,9 +280,49 @@ namespace OSE.Editor
                     entry.assembledRotation  = PackageJsonUtils.ToQuaternion(p.assembledRotation);
                     entry.assembledScale     = PackageJsonUtils.ToFloat3(p.assembledScale);
                     entry.color = new SceneFloat4 { r = p.color.r, g = p.color.g, b = p.color.b, a = p.color.a };
-                    entry.stepPoses = p.stepPoses != null && p.stepPoses.Count > 0
-                        ? p.stepPoses.ToArray()
-                        : null;
+
+                    // Mirror startPosition edits into the authoritative
+                    // PartDefinition.stagingPose. BakeStagingPoses runs on
+                    // every load and unconditionally overwrites
+                    // placement.startPosition from part.stagingPose.position,
+                    // so without this mirror a gizmo-edited start pose
+                    // vanishes on reload — "goes back to where we first
+                    // grabbed it". CLAUDE.md explicitly says stagingPose is
+                    // the source of truth; this is the authoring surface that
+                    // writes it.
+                    if (p.def != null)
+                    {
+                        if (p.def.stagingPose == null) p.def.stagingPose = new StagingPose();
+                        p.def.stagingPose.position = entry.startPosition;
+                        p.def.stagingPose.rotation = entry.startRotation;
+                        p.def.stagingPose.scale    = entry.startScale;
+                        // color stays untouched — not part of gizmo edits.
+                    }
+                    // Filter out synthetic NO-TASK waypoints (baked by
+                    // MachinePackageNormalizer.BakeNoTaskWaypoints). They're
+                    // recomputed on every load from visualPartIds + startPosition
+                    // and must never round-trip to JSON.
+                    entry.stepPoses = null;
+                    if (p.stepPoses != null && p.stepPoses.Count > 0)
+                    {
+                        var authored = new List<StepPoseEntry>(p.stepPoses.Count);
+                        foreach (var spEntry in p.stepPoses)
+                        {
+                            if (spEntry == null) continue;
+                            if (!string.IsNullOrEmpty(spEntry.label)
+                                && spEntry.label.StartsWith(MachinePackageNormalizer.AutoNoTaskLabel, StringComparison.Ordinal))
+                                continue;
+                            // Auto-heal: entries with empty propagateFromStep
+                            // would be saved as "unbounded from anchor" —
+                            // resolver treats that as "this step → end" so
+                            // set explicitly to match for JSON transparency.
+                            if (string.IsNullOrEmpty(spEntry.propagateFromStep)
+                                && !string.IsNullOrEmpty(spEntry.stepId))
+                                spEntry.propagateFromStep = spEntry.stepId;
+                            authored.Add(spEntry);
+                        }
+                        if (authored.Count > 0) entry.stepPoses = authored.ToArray();
+                    }
                     if (pidx >= 0) pp[pidx] = entry; else pp.Add(entry);
                 }
                 _pkg.previewConfig.partPlacements = pp.ToArray();

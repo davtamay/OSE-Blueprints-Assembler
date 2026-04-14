@@ -112,6 +112,9 @@ namespace OSE.Editor
             EditorGUILayout.Space(4);
             DrawVisibilitySection(step);
 
+            // ── WHAT'S CHANGING — diagnostic delta vs the previous step ─────
+            DrawWhatsChangingSection(step);
+
             // Groups, Part×Tool, Animation Cues, and Particle Effects moved
             // to the inspector pane (right side) as of the canvas redesign.
             // The inspector dispatches them by selection kind so they appear
@@ -227,12 +230,230 @@ namespace OSE.Editor
                     order.Add(new TaskOrderEntry { kind = "confirm_action", id = "confirm" });
             }
 
+            // ── Orphan reconciliation ─────────────────────────────────────
+            // If step.taskOrder was authored but a role list (required /
+            // optional / visual) got a partId added without a matching
+            // taskOrder row, the part becomes "invisibly Required" — it
+            // drives the PoseTable and the runtime, but the authoring UI
+            // never shows it. Append those missing partIds as orphan rows
+            // so the author sees them and can reorder, remove, or reconcile.
+            _cachedOrphanTaskIds.Clear();
+            var presentPartIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var e in order)
+                if (e != null && e.kind == "part" && !string.IsNullOrEmpty(e.id))
+                    presentPartIds.Add(e.id);
+
+            void AppendOrphans(string[] ids, bool optional)
+            {
+                if (ids == null) return;
+                foreach (var pid in ids)
+                {
+                    if (string.IsNullOrEmpty(pid) || presentPartIds.Contains(pid)) continue;
+                    order.Add(new TaskOrderEntry { kind = "part", id = pid, isOptional = optional });
+                    presentPartIds.Add(pid);
+                    _cachedOrphanTaskIds.Add(pid);
+                }
+            }
+            AppendOrphans(step.requiredPartIds, optional: false);
+            AppendOrphans(step.optionalPartIds, optional: true);
+            AppendOrphans(step.visualPartIds,   optional: false);
+
             _cachedTaskOrderForStepId = step.id;
             _cachedTaskOrder = order;
             return order;
         }
 
-        private void InvalidateTaskOrderCache() { _cachedTaskOrder = null; _cachedTaskOrderForStepId = null; }
+        private void InvalidateTaskOrderCache()
+        {
+            _cachedTaskOrder = null;
+            _cachedTaskOrderForStepId = null;
+            _cachedOrphanTaskIds.Clear();
+        }
+
+        /// <summary>
+        /// Forces <c>step.taskOrder</c> to stay a faithful projection of
+        /// <c>requiredPartIds</c> / <c>optionalPartIds</c> / <c>visualPartIds</c>:
+        /// <list type="bullet">
+        ///   <item>Every partId present in a role list is in taskOrder exactly once.</item>
+        ///   <item>No taskOrder part entry references a partId absent from every role list.</item>
+        ///   <item>Each kept entry's <c>isOptional</c> flag matches its current role.</item>
+        ///   <item>Non-part entries (targets, toolAction, wire, confirm_action) pass through.</item>
+        /// </list>
+        /// Existing author-chosen ordering is preserved for partIds that were
+        /// already in taskOrder; newly-added partIds append at the end. Call
+        /// this from every mutator that touches the role arrays so the "invisibly
+        /// Required" bug (requiredPartIds updated, taskOrder forgotten) can't
+        /// happen — it's also the guarantee the save/load paths rely on.
+        /// </summary>
+        private void ReconcileStepTaskOrder(StepDefinition step) => ReconcileStepTaskOrder(step, markDirty: true);
+
+        /// <param name="markDirty">
+        /// When true (the default), flags the step as dirty so Save picks it
+        /// up — appropriate for every mutator path. Set false at load time:
+        /// healing historical drift between taskOrder and the role arrays
+        /// is a baseline correction, not an author change, and dirtying on
+        /// load makes "Revert All" loop forever (Revert → Load → Reconcile →
+        /// Dirty → Revert button stays active).
+        /// </param>
+        private void ReconcileStepTaskOrder(StepDefinition step, bool markDirty)
+        {
+            if (step == null) return;
+
+            var required = new HashSet<string>(step.requiredPartIds ?? System.Array.Empty<string>(), StringComparer.Ordinal);
+            var optional = new HashSet<string>(step.optionalPartIds ?? System.Array.Empty<string>(), StringComparer.Ordinal);
+            var visual   = new HashSet<string>(step.visualPartIds   ?? System.Array.Empty<string>(), StringComparer.Ordinal);
+
+            var newOrder = new List<TaskOrderEntry>();
+            var seenParts = new HashSet<string>(StringComparer.Ordinal);
+            bool changed = false;
+            int originalCount = step.taskOrder?.Length ?? 0;
+
+            if (step.taskOrder != null)
+            {
+                foreach (var e in step.taskOrder)
+                {
+                    if (e == null) continue;
+                    if (e.kind != "part") { newOrder.Add(e); continue; }
+                    if (string.IsNullOrEmpty(e.id)) { changed = true; continue; }
+                    if (!seenParts.Add(e.id)) { changed = true; continue; } // drop duplicate
+
+                    if (required.Contains(e.id))
+                    {
+                        if (e.isOptional) { e.isOptional = false; changed = true; }
+                        newOrder.Add(e);
+                    }
+                    else if (optional.Contains(e.id))
+                    {
+                        if (!e.isOptional) { e.isOptional = true; changed = true; }
+                        newOrder.Add(e);
+                    }
+                    else if (visual.Contains(e.id))
+                    {
+                        if (e.isOptional) { e.isOptional = false; changed = true; }
+                        newOrder.Add(e);
+                    }
+                    else
+                    {
+                        // partId removed from every role list → drop the stale row.
+                        changed = true;
+                    }
+                }
+            }
+
+            // Append parts that are in a role list but weren't in taskOrder.
+            // Order matches the role lists so re-adds have a deterministic home;
+            // the author can reorder afterwards.
+            void AppendMissing(string[] ids, bool isOptional)
+            {
+                if (ids == null) return;
+                foreach (var pid in ids)
+                {
+                    if (string.IsNullOrEmpty(pid)) continue;
+                    if (!seenParts.Add(pid)) continue;
+                    newOrder.Add(new TaskOrderEntry { kind = "part", id = pid, isOptional = isOptional });
+                    changed = true;
+                }
+            }
+            AppendMissing(step.requiredPartIds, false);
+            AppendMissing(step.optionalPartIds, true);
+            AppendMissing(step.visualPartIds,   false);
+
+            if (changed || newOrder.Count != originalCount)
+            {
+                step.taskOrder = newOrder.ToArray();
+                if (markDirty) _dirtyStepIds.Add(step.id);
+                InvalidateTaskOrderCache();
+            }
+        }
+
+        /// <summary>
+        /// Runs <see cref="ReconcileStepTaskOrder"/> on every step in the
+        /// currently-loaded package. Pass <paramref name="markDirty"/>=false
+        /// at load time so historical-drift healing doesn't leave every step
+        /// in a dirty state (which would permanently disable Revert).
+        /// </summary>
+        private void ReconcileAllStepTaskOrders(bool markDirty = true)
+        {
+            if (_pkg?.steps == null) return;
+            foreach (var s in _pkg.steps)
+                ReconcileStepTaskOrder(s, markDirty);
+        }
+
+        /// <summary>
+        /// Strips legacy empty-label stepPose entries from every part's
+        /// <c>previewConfig.partPlacements[].stepPoses</c>. Empty-label
+        /// entries are artifacts from the old AutoPromoteAlien flow that
+        /// silently created per-step poses on gizmo drag; they persist in
+        /// <c>preview_config.json</c> until explicitly removed.
+        ///
+        /// Author-created Customs now carry <c>label="Custom"</c> (see
+        /// <see cref="AddStepPoseForCurrentStep"/>), so an empty label is
+        /// unambiguously "legacy / not author-intended". Called silently at
+        /// load time — no dirty marking, no save until the author makes a
+        /// real change (mirrors the taskOrder reconciler's contract).
+        /// </summary>
+        private void StripEmptyLabelStepPoses()
+        {
+            var placements = _pkg?.previewConfig?.partPlacements;
+            if (placements == null) return;
+            foreach (var pp in placements)
+            {
+                if (pp == null || pp.stepPoses == null || pp.stepPoses.Length == 0) continue;
+                var keep = new List<StepPoseEntry>(pp.stepPoses.Length);
+                foreach (var sp in pp.stepPoses)
+                {
+                    if (sp == null) continue;
+                    // Keep if label is non-empty (author-created) — legacy
+                    // empty-label entries get dropped.
+                    if (!string.IsNullOrEmpty(sp.label)) keep.Add(sp);
+                }
+                if (keep.Count != pp.stepPoses.Length)
+                    pp.stepPoses = keep.ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Removes <paramref name="partId"/> from every role array on
+        /// <paramref name="step"/> (requiredPartIds, optionalPartIds,
+        /// visualPartIds). Used by the task-row × button so deleting a row
+        /// genuinely removes the part from the step — not just the authored
+        /// ordering — and therefore can't be resurrected by the reconciler.
+        /// Returns true if any array was modified.
+        /// </summary>
+        private bool RemovePartFromStepRoleArrays(StepDefinition step, string partId)
+        {
+            if (step == null || string.IsNullOrEmpty(partId)) return false;
+            bool changed = false;
+            if (step.requiredPartIds != null)
+            {
+                var list = new List<string>(step.requiredPartIds);
+                if (list.Remove(partId))
+                {
+                    step.requiredPartIds = list.Count > 0 ? list.ToArray() : Array.Empty<string>();
+                    changed = true;
+                }
+            }
+            if (step.optionalPartIds != null)
+            {
+                var list = new List<string>(step.optionalPartIds);
+                if (list.Remove(partId))
+                {
+                    step.optionalPartIds = list.Count > 0 ? list.ToArray() : Array.Empty<string>();
+                    changed = true;
+                }
+            }
+            if (step.visualPartIds != null)
+            {
+                var list = new List<string>(step.visualPartIds);
+                if (list.Remove(partId))
+                {
+                    step.visualPartIds = list.Count > 0 ? list.ToArray() : Array.Empty<string>();
+                    changed = true;
+                }
+            }
+            if (changed) _dirtyStepIds.Add(step.id);
+            return changed;
+        }
 
         /// <summary>Returns true when the item backing this task entry has in-memory unsaved edits.</summary>
         private bool IsTaskEntryDirty(TaskOrderEntry entry, StepDefinition step)
@@ -418,11 +639,26 @@ namespace OSE.Editor
         private static readonly Color _seqColorObserve = new Color(0.8f, 0.5f, 1.0f, 1f);  // purple — observe/inspect
         private static readonly Color _seqColorConfirm = new Color(1.0f, 0.85f, 0.2f, 1f); // gold — confirm button press
 
-        // Cached part→group name lookup, rebuilt when the list rebuilds.
+        // Cached per-part group lookups, rebuilt when the list rebuilds.
+        // _partToGroupName — first group's display chain (kept for callers that
+        // only need one line of context, e.g. step 3's dirty map).
+        // _partToLeafGroupId — first leaf group id, used for the "currently
+        // editing this group" indicator.
+        // _partToGroupsAll — every leaf group the part belongs to, in the order
+        // groups are enumerated. Enables the multi-pill row rendering so an
+        // author can see at a glance when a part is shared across groups.
         private Dictionary<string, string> _partToGroupName;
-        // Parallel cache: partId → owning LEAF subassembly id. Used to flag
-        // task rows whose part belongs to the currently-selected group.
         private Dictionary<string, string> _partToLeafGroupId;
+        private Dictionary<string, List<PartGroupRef>> _partToGroupsAll;
+
+        internal readonly struct PartGroupRef
+        {
+            public readonly string GroupId;
+            public readonly string DisplayName;
+            public readonly string Chain;    // parent > leaf when nested
+            public PartGroupRef(string id, string name, string chain)
+            { GroupId = id; DisplayName = name; Chain = chain; }
+        }
 
         private void DrawTaskSequenceDragList(StepDefinition step, List<TaskOrderEntry> order)
         {
@@ -432,8 +668,9 @@ namespace OSE.Editor
                 // Build part→group-chain lookup for group tags on rows.
                 // Shows the full nesting path: "Parent > Child" so the author
                 // can see which groups a part belongs to at a glance.
-                _partToGroupName = new Dictionary<string, string>(StringComparer.Ordinal);
+                _partToGroupName   = new Dictionary<string, string>(StringComparer.Ordinal);
                 _partToLeafGroupId = new Dictionary<string, string>(StringComparer.Ordinal);
+                _partToGroupsAll   = new Dictionary<string, List<PartGroupRef>>(StringComparer.Ordinal);
                 var allSubs = _pkg?.GetSubassemblies();
                 if (allSubs != null)
                 {
@@ -458,11 +695,25 @@ namespace OSE.Editor
                             chain = parent.GetDisplayName() + " > " + chain;
                         foreach (var pid in sub.partIds)
                         {
-                            if (!string.IsNullOrEmpty(pid) && !_partToGroupName.ContainsKey(pid))
+                            if (string.IsNullOrEmpty(pid)) continue;
+                            // First group wins for the single-value caches that
+                            // only need a representative (step-3 dirty map, etc.)
+                            if (!_partToGroupName.ContainsKey(pid))
                             {
-                                _partToGroupName[pid] = chain;
+                                _partToGroupName[pid]   = chain;
                                 _partToLeafGroupId[pid] = sub.id;
                             }
+                            // Multi-value cache collects EVERY leaf group for
+                            // the part so the row renderer can show one pill
+                            // per membership.
+                            if (!_partToGroupsAll.TryGetValue(pid, out var list))
+                                _partToGroupsAll[pid] = list = new List<PartGroupRef>();
+                            bool already = false;
+                            foreach (var r in list)
+                                if (string.Equals(r.GroupId, sub.id, StringComparison.Ordinal))
+                                { already = true; break; }
+                            if (!already)
+                                list.Add(new PartGroupRef(sub.id, sub.GetDisplayName(), chain));
                         }
                     }
                 }
@@ -620,18 +871,44 @@ namespace OSE.Editor
                     // ID label + group tag + per-task dirty dot
                     bool entryDirty = IsTaskEntryDirty(entry, step);
 
-                    // Group tag — show the full nesting chain (blue, right-aligned)
-                    // e.g. "D3D Frame > Bottom Frame Side"
-                    string groupTag = null;
-                    string groupTagFull = null; // full text for tooltip
+                    // Group tags — every leaf group the part belongs to renders
+                    // as its own compact pill, so shared-across-groups parts are
+                    // visible at a glance. First two pills render; the rest
+                    // collapse into a "+N" overflow with the full list in the
+                    // tooltip. Total strip width tracked for layout.
+                    List<PartGroupRef> partGroups = null;
+                    if (entry.kind == "part" && _partToGroupsAll != null)
+                        _partToGroupsAll.TryGetValue(entry.id, out partGroups);
+                    int totalGroups = partGroups?.Count ?? 0;
+                    int visiblePills = Mathf.Min(totalGroups, 2);
+                    int overflow     = totalGroups - visiblePills;
+
                     float tagW = 0f;
-                    if (entry.kind == "part" && _partToGroupName != null
-                        && _partToGroupName.TryGetValue(entry.id, out string gName))
+                    const int pillMaxChars = 16;
+                    string[] pillLabels = visiblePills > 0 ? new string[visiblePills] : System.Array.Empty<string>();
+                    float[]  pillWidths = visiblePills > 0 ? new float[visiblePills]  : System.Array.Empty<float>();
+                    for (int p2 = 0; p2 < visiblePills; p2++)
                     {
-                        groupTagFull = gName;
-                        // Truncate display to fit the row, but keep full text in tooltip
-                        groupTag = gName.Length > 28 ? gName.Substring(0, 26) + "…" : gName;
-                        tagW = 8f + groupTag.Length * 5.2f;
+                        string nm = partGroups[p2].DisplayName ?? "";
+                        pillLabels[p2] = nm.Length > pillMaxChars ? nm.Substring(0, pillMaxChars - 1) + "…" : nm;
+                        pillWidths[p2] = 8f + pillLabels[p2].Length * 5.2f;
+                        tagW += pillWidths[p2] + (p2 > 0 ? 2f : 0f);
+                    }
+                    float overflowW = 0f;
+                    string overflowLabel = null;
+                    string overflowTip = null;
+                    if (overflow > 0)
+                    {
+                        overflowLabel = $"+{overflow}";
+                        overflowW = 8f + overflowLabel.Length * 5.5f;
+                        var extras = new System.Text.StringBuilder();
+                        for (int p2 = visiblePills; p2 < totalGroups; p2++)
+                        {
+                            if (p2 > visiblePills) extras.Append('\n');
+                            extras.Append("• ").Append(partGroups[p2].Chain ?? partGroups[p2].DisplayName);
+                        }
+                        overflowTip = extras.ToString();
+                        tagW += overflowW + (visiblePills > 0 ? 2f : 0f);
                     }
 
                     float dirtyW = entryDirty ? 14f : 0f;
@@ -668,36 +945,122 @@ namespace OSE.Editor
                         displayId = dispSub.GetDisplayName();
                     EditorGUI.LabelField(idRect, displayId, EditorStyles.miniLabel);
 
-                    // "Editing this group" membership indicator — a solid dot
-                    // that appears when the task's part belongs to the group
-                    // currently selected for pose editing. Mirrors the per-task
-                    // modifiable dot elsewhere in the row, but signals group
-                    // membership rather than row dirtiness.
-                    bool inEditedGroup = entry.kind == "part"
-                        && !string.IsNullOrEmpty(_canvasSelectedSubId)
-                        && _partToLeafGroupId != null
-                        && _partToLeafGroupId.TryGetValue(entry.id, out string leafId)
-                        && string.Equals(leafId, _canvasSelectedSubId, StringComparison.Ordinal);
-
-                    // Group tag badge — shows nesting chain, hover for full path
-                    if (groupTag != null)
+                    // ── Ownership-conflict / orphan badge (quiet when clean) ──
+                    // Three possible states, one badge slot:
+                    //   • red ⚠ — Rule-2 Place-family ownership conflict
+                    //   • amber ⚠ — Rule-1 subassembly conflict
+                    //   • blue ↺ — "orphan": part is Required/Optional/Visual
+                    //     but not in step.taskOrder (shown because taskOrder
+                    //     drifted out of sync with role arrays; author needs
+                    //     to reorder or remove to commit)
+                    float ownBadgeW = 0f;
+                    float ownBadgeX = idRect.xMax + 2f;
+                    bool isOrphanRow = entry.kind == "part"
+                                       && _cachedOrphanTaskIds.Contains(entry.id);
+                    if (entry.kind == "part" && !isGroup)
                     {
-                        var tagRect = new Rect(idRect.xMax + 2f, rect.y + 3f, tagW, rect.height - 4f);
-                        // Brighter background + accent border when this row is
-                        // in the group being edited — visually links task rows
-                        // to the selected group in the GROUPS panel.
-                        Color tagBg = inEditedGroup
-                            ? new Color(SubAccent.r, SubAccent.g, SubAccent.b, 0.42f)
-                            : new Color(0.20f, 0.62f, 0.95f, 0.20f);
-                        EditorGUI.DrawRect(tagRect, tagBg);
-                        var tagStyle = new GUIStyle(EditorStyles.miniLabel)
+                        Color badgeFg = default;
+                        Color badgeBg = default;
+                        string badgeText = null;
+                        string badgeTip  = null;
+                        if (_ownership != null)
                         {
-                            normal    = { textColor = inEditedGroup ? Color.white : new Color(0.45f, 0.75f, 0.95f) },
-                            fontSize  = 8,
-                            alignment = TextAnchor.MiddleCenter,
-                            fontStyle = inEditedGroup ? FontStyle.Bold : FontStyle.Normal,
-                        };
-                        GUI.Label(tagRect, new GUIContent(groupTag, inEditedGroup ? groupTagFull + "  (editing)" : groupTagFull), tagStyle);
+                            var own = _ownership.ForPart(entry.id);
+                            if (own.HasMultiplePlaces)
+                            {
+                                // Info, not error — multi-placement is
+                                // supported. Blue ↺ signals "this part is
+                                // placed across multiple steps" so authors
+                                // can verify intent.
+                                badgeFg   = new Color(0.55f, 0.78f, 0.95f);
+                                badgeBg   = new Color(0.55f, 0.78f, 0.95f, 0.28f);
+                                badgeText = "↺";
+                                badgeTip  = "Multi-placed: Required by Place step(s) "
+                                          + string.Join(", ", own.placeStepIds)
+                                          + " — runtime uses the most recent placement ≤ current step.";
+                            }
+                            else if (own.HasSubConflict)
+                            {
+                                badgeFg   = new Color(0.90f, 0.68f, 0.25f);
+                                badgeBg   = new Color(0.90f, 0.68f, 0.25f, 0.28f);
+                                badgeText = "⚠";
+                                badgeTip  = "Subassembly conflict: also claimed by "
+                                          + string.Join(", ", own.conflictingSubassemblyIds);
+                            }
+                        }
+                        if (badgeText == null && isOrphanRow)
+                        {
+                            badgeFg   = new Color(0.55f, 0.78f, 0.95f);
+                            badgeBg   = new Color(0.55f, 0.78f, 0.95f, 0.28f);
+                            badgeText = "↺";
+                            badgeTip  = "Orphan task row — this part is in the step's Required/"
+                                      + "Optional/Visual list but missing from taskOrder. Drag to "
+                                      + "position or remove; saving will commit the row.";
+                        }
+                        if (badgeText != null)
+                        {
+                            ownBadgeW = 18f;
+                            var badgeBgRect = new Rect(ownBadgeX, rect.y + 3f, ownBadgeW, rect.height - 4f);
+                            EditorGUI.DrawRect(badgeBgRect, badgeBg);
+                            var warnStyle = new GUIStyle(EditorStyles.miniLabel)
+                            {
+                                normal    = { textColor = badgeFg },
+                                fontStyle = FontStyle.Bold,
+                                alignment = TextAnchor.MiddleCenter,
+                                fontSize  = 10,
+                            };
+                            GUI.Label(badgeBgRect, new GUIContent(badgeText, badgeTip), warnStyle);
+                        }
+                    }
+
+                    // "Editing this group" membership is handled per-pill
+                    // below: each pill computes its own isSelected against
+                    // _canvasSelectedSubId, so no row-level flag is needed.
+                    // Draw each visible group pill. Pill for the currently-
+                    // selected group pops brighter + bolded so the author sees
+                    // which membership the GROUPS-panel selection refers to.
+                    if (totalGroups > 0)
+                    {
+                        float cursorX = idRect.xMax + 2f + ownBadgeW + (ownBadgeW > 0 ? 2f : 0f);
+                        for (int p2 = 0; p2 < visiblePills; p2++)
+                        {
+                            var g = partGroups[p2];
+                            bool isSelected = !string.IsNullOrEmpty(_canvasSelectedSubId)
+                                              && string.Equals(g.GroupId, _canvasSelectedSubId, StringComparison.Ordinal);
+                            var pillRect = new Rect(cursorX, rect.y + 3f, pillWidths[p2], rect.height - 4f);
+                            Color pillBg = isSelected
+                                ? new Color(SubAccent.r, SubAccent.g, SubAccent.b, 0.45f)
+                                : new Color(0.20f, 0.62f, 0.95f, 0.18f);
+                            EditorGUI.DrawRect(pillRect, pillBg);
+                            var pillStyle = new GUIStyle(EditorStyles.miniLabel)
+                            {
+                                normal    = { textColor = isSelected ? Color.white : new Color(0.50f, 0.78f, 0.98f) },
+                                fontSize  = 8,
+                                alignment = TextAnchor.MiddleCenter,
+                                fontStyle = isSelected ? FontStyle.Bold : FontStyle.Normal,
+                            };
+                            GUI.Label(pillRect,
+                                new GUIContent(pillLabels[p2], isSelected ? g.Chain + "  (editing)" : g.Chain),
+                                pillStyle);
+                            cursorX += pillWidths[p2] + 2f;
+                        }
+
+                        if (overflow > 0)
+                        {
+                            var ovRect = new Rect(cursorX, rect.y + 3f, overflowW, rect.height - 4f);
+                            EditorGUI.DrawRect(ovRect, new Color(0.35f, 0.55f, 0.80f, 0.22f));
+                            var ovStyle = new GUIStyle(EditorStyles.miniLabel)
+                            {
+                                normal    = { textColor = new Color(0.70f, 0.82f, 0.95f) },
+                                fontSize  = 8,
+                                alignment = TextAnchor.MiddleCenter,
+                                fontStyle = FontStyle.Bold,
+                            };
+                            GUI.Label(ovRect,
+                                new GUIContent(overflowLabel,
+                                    $"Also in:\n{overflowTip}"),
+                                ovStyle);
+                        }
                     }
 
 
@@ -709,7 +1072,7 @@ namespace OSE.Editor
                             fontStyle = FontStyle.Bold,
                             alignment = TextAnchor.MiddleLeft,
                         };
-                        float dotX = groupTag != null ? idRect.xMax + tagW + 4f : idRect.xMax + 2f;
+                        float dotX = totalGroups > 0 ? idRect.xMax + tagW + 4f : idRect.xMax + 2f;
                         EditorGUI.LabelField(new Rect(dotX, rect.y + 1f, 14f, rect.height), "●", dotStyle);
                     }
 
@@ -874,12 +1237,27 @@ namespace OSE.Editor
                     var removeRect = new Rect(rect.xMax - 22f, rect.y + 1f, 22f, rect.height - 2f);
                     if (GUI.Button(removeRect, "×", EditorStyles.miniButton))
                     {
+                        // For part rows, the × must also evict the partId from
+                        // the underlying role array (required/optional/visual).
+                        // Otherwise the reconciler (which treats role arrays as
+                        // the source of truth) re-appends the row on the next
+                        // pass — the "I deleted it but it came back on save"
+                        // symptom. Non-part rows (target/wire/tool) keep the
+                        // legacy behaviour: taskOrder-only removal.
+                        var doomed = order[index];
+                        if (doomed != null && doomed.kind == "part" && !string.IsNullOrEmpty(doomed.id))
+                        {
+                            RemovePartFromStepRoleArrays(step, doomed.id);
+                        }
                         order.RemoveAt(index);
                         if (_selectedTaskSeqIdx >= order.Count) _selectedTaskSeqIdx = order.Count - 1;
                         step.taskOrder = order.ToArray();
                         _cachedTaskOrder = order;
                         _dirtyTaskOrderStepIds.Add(step.id);
                         _dirtyStepIds.Add(step.id);
+                        // Reconcile to pick up the role removal AND any
+                        // downstream effects (e.g. dropping stale isOptional).
+                        ReconcileStepTaskOrder(step);
                         // Force list rebuild next frame
                         _taskSeqReorderListForStepId = null;
                         Repaint();
@@ -938,13 +1316,79 @@ namespace OSE.Editor
                            && DragAndDrop.objectReferences != null
                            && DragAndDrop.objectReferences.Length > 0;
 
-            // Visual: dashed-feel rectangle. Tinted accent when hovering during a drag.
-            var accent  = isHover && isDrag
-                ? new Color(0.30f, 0.78f, 0.36f)               // green when ready to accept
-                : new Color(0.45f, 0.45f, 0.50f);              // muted otherwise
-            var bgColor = isHover && isDrag
-                ? new Color(0.30f, 0.78f, 0.36f, 0.18f)
-                : new Color(0f, 0f, 0f, 0.18f);
+            // ── Pre-drag probe ────────────────────────────────────────────────
+            // Peek at every dragged object's acceptance WITHOUT mutating state
+            // so the drop zone can warn pre-release. Outcomes:
+            //   • Added + no reason → clean, green
+            //   • Added + reason    → warning (Place-ownership collision that
+            //                         the save-time dialog will auto-fix) —
+            //                         amber, show reason, drop STILL succeeds
+            //   • MatchedRejected   → hard "already required in THIS step"
+            //                         duplicate — red, drop succeeds but toasts
+            //   • Unmatched         → GO doesn't map to any partId/targetId
+            bool probeAnyRejected = false;
+            bool probeAnyUnmatched = false;
+            bool probeAnyAccepted  = false;
+            bool probeAnyWarning   = false;
+            string probeFirstRejectReason = null;
+            string probeFirstWarningReason = null;
+            if (isHover && isDrag)
+            {
+                foreach (var obj in DragAndDrop.objectReferences)
+                {
+                    if (obj == null) continue;
+                    string nm = obj.name;
+                    if (string.IsNullOrEmpty(nm)) continue;
+                    switch (ProbeDropOutcome(step, nm, out string why))
+                    {
+                        case DropOutcome.Added:
+                            probeAnyAccepted = true;
+                            if (!string.IsNullOrEmpty(why))
+                            {
+                                probeAnyWarning = true;
+                                if (probeFirstWarningReason == null) probeFirstWarningReason = why;
+                            }
+                            break;
+                        case DropOutcome.MatchedRejected:
+                            probeAnyRejected = true;
+                            if (probeFirstRejectReason == null) probeFirstRejectReason = why;
+                            break;
+                        case DropOutcome.Unmatched:
+                            probeAnyUnmatched = true;
+                            break;
+                    }
+                }
+            }
+
+            // Visual: green when drop will succeed for every item, red when
+            // at least one item would be rejected, amber when nothing matches
+            // the package at all, muted when no drag is active.
+            Color accent, bgColor;
+            if (isHover && isDrag && probeAnyRejected)
+            {
+                accent  = new Color(0.95f, 0.45f, 0.35f);       // red — hard reject (duplicate in this step)
+                bgColor = new Color(0.95f, 0.45f, 0.35f, 0.18f);
+            }
+            else if (isHover && isDrag && probeAnyWarning)
+            {
+                accent  = new Color(0.90f, 0.68f, 0.25f);       // amber — accepted with warning (resolve at save)
+                bgColor = new Color(0.90f, 0.68f, 0.25f, 0.18f);
+            }
+            else if (isHover && isDrag && !probeAnyAccepted && probeAnyUnmatched)
+            {
+                accent  = new Color(0.90f, 0.68f, 0.25f);       // amber — unmatched
+                bgColor = new Color(0.90f, 0.68f, 0.25f, 0.18f);
+            }
+            else if (isHover && isDrag)
+            {
+                accent  = new Color(0.30f, 0.78f, 0.36f);       // green — accept
+                bgColor = new Color(0.30f, 0.78f, 0.36f, 0.18f);
+            }
+            else
+            {
+                accent  = new Color(0.45f, 0.45f, 0.50f);       // muted — idle
+                bgColor = new Color(0f, 0f, 0f, 0.18f);
+            }
             EditorGUI.DrawRect(dropRect, bgColor);
             // 1-px borders on all four edges
             EditorGUI.DrawRect(new Rect(dropRect.x, dropRect.y, dropRect.width, 1f), accent);
@@ -957,10 +1401,19 @@ namespace OSE.Editor
                 normal    = { textColor = accent },
                 alignment = TextAnchor.MiddleCenter,
                 fontStyle = isHover && isDrag ? FontStyle.Bold : FontStyle.Italic,
+                wordWrap  = true,
             };
-            string label = isHover && isDrag
-                ? $"Drop {DragAndDrop.objectReferences.Length} item{(DragAndDrop.objectReferences.Length == 1 ? "" : "s")} here to add to the task sequence"
-                : "Drag part / target GameObjects here to add them as tasks";
+            string label;
+            if (isHover && isDrag && probeAnyRejected)
+                label = "✖ " + (probeFirstRejectReason ?? "One or more items rejected.");
+            else if (isHover && isDrag && probeAnyWarning)
+                label = "⚠ " + (probeFirstWarningReason ?? "Will add; resolve at save.");
+            else if (isHover && isDrag && !probeAnyAccepted && probeAnyUnmatched)
+                label = "? No dropped item matches a package part or target.";
+            else if (isHover && isDrag)
+                label = $"Drop {DragAndDrop.objectReferences.Length} item{(DragAndDrop.objectReferences.Length == 1 ? "" : "s")} here to add to the task sequence";
+            else
+                label = "Drag part / target GameObjects here to add them as tasks";
             GUI.Label(dropRect, label, labelStyle);
 
             // ── Event handling ────────────────────────────────────────────────
@@ -968,7 +1421,17 @@ namespace OSE.Editor
 
             if (ev.type == EventType.DragUpdated)
             {
-                DragAndDrop.visualMode = isDrag ? DragAndDropVisualMode.Copy : DragAndDropVisualMode.Rejected;
+                // We WANT the red border + specific reason label to warn the
+                // author pre-release, but we must NOT set visualMode=Rejected
+                // on a mere Place-conflict: that disables the OS drag-drop
+                // handshake entirely, and the author loses every other path
+                // (e.g. drop anyway to confirm with a toast). Only refuse the
+                // cursor when nothing matched the package at all — at that
+                // point there's nothing to commit even if the author insists.
+                bool nothingActionable = !probeAnyAccepted && !probeAnyRejected && probeAnyUnmatched;
+                DragAndDrop.visualMode = (isDrag && !nothingActionable)
+                    ? DragAndDropVisualMode.Copy
+                    : DragAndDropVisualMode.Rejected;
                 ev.Use();
                 return;
             }
@@ -978,12 +1441,20 @@ namespace OSE.Editor
                 DragAndDrop.AcceptDrag();
 
                 int added = 0;
+                int matchedButRejected = 0;   // e.g. duplicate or Place-family conflict
+                int unmatched = 0;            // name didn't resolve to any partId/targetId
                 foreach (var obj in DragAndDrop.objectReferences)
                 {
                     if (obj == null) continue;
                     string name = obj.name;
                     if (string.IsNullOrEmpty(name)) continue;
-                    if (TryDropResolveAndAdd(step, name)) added++;
+                    var outcome = TryDropResolveAndAddDetailed(step, name);
+                    switch (outcome)
+                    {
+                        case DropOutcome.Added:            added++;              break;
+                        case DropOutcome.MatchedRejected:  matchedButRejected++; break;
+                        case DropOutcome.Unmatched:        unmatched++;          break;
+                    }
                 }
 
                 if (added > 0)
@@ -992,7 +1463,14 @@ namespace OSE.Editor
                     _taskSeqReorderListForStepId = null; // force list rebuild
                     Repaint();
                 }
-                else
+                else if (matchedButRejected > 0)
+                {
+                    // The matching path already surfaced a specific reason
+                    // (duplicate / Place conflict / etc.) via ShowNotification.
+                    // Don't overwrite it with a generic "no match" — that was
+                    // the drag-drop bug that inspired this refactor.
+                }
+                else if (unmatched > 0)
                 {
                     ShowNotification(new GUIContent("No drop items matched a package part or target id"));
                 }
@@ -1001,15 +1479,25 @@ namespace OSE.Editor
         }
 
         /// <summary>
-        /// Resolves a dropped GameObject's name against the package's parts
-        /// (then targets) and routes to the matching commit helper.
-        /// Returns true on success.
+        /// Outcome of a drag-drop resolution attempt. Callers use this to
+        /// distinguish "added", "matched but rejected" (duplicate / Place
+        /// conflict — the specific reason is shown via <see cref="ShowNotification"/>),
+        /// and "unmatched" (the dragged GO's name doesn't correspond to any
+        /// partId or targetId in the package).
         /// </summary>
-        private bool TryDropResolveAndAdd(StepDefinition step, string name)
-        {
-            if (step == null || _pkg == null || string.IsNullOrEmpty(name)) return false;
+        private enum DropOutcome { Added, MatchedRejected, Unmatched }
 
-            // Skip duplicates: don't re-add a part already required by the step
+        /// <summary>
+        /// Detailed version of the drop resolver so the caller can tell a
+        /// "didn't match anything" from a "matched but refused" — the
+        /// latter needs no extra toast because the rejection path already
+        /// surfaced one. Without this split the generic "No drop items
+        /// matched..." message overwrote the specific Place-conflict toast.
+        /// </summary>
+        private DropOutcome TryDropResolveAndAddDetailed(StepDefinition step, string name)
+        {
+            if (step == null || _pkg == null || string.IsNullOrEmpty(name)) return DropOutcome.Unmatched;
+
             if (_pkg.parts != null)
             {
                 for (int i = 0; i < _pkg.parts.Length; i++)
@@ -1019,16 +1507,15 @@ namespace OSE.Editor
 
                     bool already = step.requiredPartIds != null
                                    && Array.IndexOf(step.requiredPartIds, p.id) >= 0;
-                    if (already) return false;
-                    CommitAddPart(step, p.id);
-                    return true;
+                    if (already)
+                    {
+                        ShowNotification(new GUIContent($"'{p.id}' is already required by this step."));
+                        return DropOutcome.MatchedRejected;
+                    }
+                    return CommitAddPart(step, p.id) ? DropOutcome.Added : DropOutcome.MatchedRejected;
                 }
             }
 
-            // Targets — drop creates a tool action with the first wired tool
-            // available on the package. If no tools exist, add the target id
-            // directly to step.targetIds without an action so the author can
-            // wire a tool from the inspector.
             if (_pkg.GetTargets() != null)
             {
                 foreach (var t in _pkg.GetTargets())
@@ -1037,7 +1524,11 @@ namespace OSE.Editor
 
                     bool already = step.targetIds != null
                                    && Array.IndexOf(step.targetIds, t.id) >= 0;
-                    if (already) return false;
+                    if (already)
+                    {
+                        ShowNotification(new GUIContent($"'{t.id}' is already a target of this step."));
+                        return DropOutcome.MatchedRejected;
+                    }
 
                     var firstTool = _pkg.GetTools()?.FirstOrDefault(td => td != null && !string.IsNullOrEmpty(td.id));
                     if (firstTool != null)
@@ -1056,10 +1547,74 @@ namespace OSE.Editor
                         _dirtyStepIds.Add(step.id);
                         BuildTargetList();
                     }
-                    return true;
+                    return DropOutcome.Added;
                 }
             }
-            return false;
+            return DropOutcome.Unmatched;
+        }
+
+        /// <summary>Legacy wrapper for callers that only want a success bool.</summary>
+        private bool TryDropResolveAndAdd(StepDefinition step, string name)
+            => TryDropResolveAndAddDetailed(step, name) == DropOutcome.Added;
+
+        /// <summary>
+        /// Pure probe: runs the same acceptance logic as
+        /// <see cref="TryDropResolveAndAddDetailed"/> without mutating state
+        /// or firing notifications. Called from the DragUpdated handler so
+        /// the drop zone can paint its rejection reason inline BEFORE the
+        /// author commits the drop. <paramref name="reason"/> is populated on
+        /// <see cref="DropOutcome.MatchedRejected"/> with a short, specific
+        /// explanation the drop zone can echo.
+        /// </summary>
+        private DropOutcome ProbeDropOutcome(StepDefinition step, string name, out string reason)
+        {
+            reason = null;
+            if (step == null || _pkg == null || string.IsNullOrEmpty(name)) return DropOutcome.Unmatched;
+
+            if (_pkg.parts != null)
+            {
+                for (int i = 0; i < _pkg.parts.Length; i++)
+                {
+                    var p = _pkg.parts[i];
+                    if (p == null || !string.Equals(p.id, name, StringComparison.Ordinal)) continue;
+
+                    if (step.requiredPartIds != null && Array.IndexOf(step.requiredPartIds, p.id) >= 0)
+                    {
+                        reason = $"'{p.id}' is already required by this step.";
+                        return DropOutcome.MatchedRejected;
+                    }
+                    if (step.ResolvedFamily == StepFamily.Place)
+                    {
+                        // Pre-surface the Place-owner collision so the author
+                        // sees it in the drop-zone label before release, but
+                        // return Added so the drop commits. The commit path
+                        // will warn again; the save-time dialog is the final
+                        // enforcer with an auto-fix button.
+                        var o = _ownership.ForPart(p.id);
+                        if (o.HasPlaceOwner
+                            && !string.Equals(o.placeStepId, step.id, StringComparison.Ordinal))
+                        {
+                            reason = $"'{p.id}' is also placed by {o.placeStepId} (#{o.placeStepSeq}). Add anyway — resolve at save.";
+                        }
+                    }
+                    return DropOutcome.Added;
+                }
+            }
+
+            if (_pkg.GetTargets() != null)
+            {
+                foreach (var t in _pkg.GetTargets())
+                {
+                    if (t == null || !string.Equals(t.id, name, StringComparison.Ordinal)) continue;
+                    if (step.targetIds != null && Array.IndexOf(step.targetIds, t.id) >= 0)
+                    {
+                        reason = $"'{t.id}' is already a target of this step.";
+                        return DropOutcome.MatchedRejected;
+                    }
+                    return DropOutcome.Added;
+                }
+            }
+            return DropOutcome.Unmatched;
         }
 
         // ── Context panel ─────────────────────────────────────────────────────
@@ -1636,9 +2191,46 @@ namespace OSE.Editor
 
         // ── Commit helpers (modify in-memory step data + mark dirty) ──────────
 
-        private void CommitAddPart(StepDefinition step, string partId)
+        /// <summary>
+        /// Adds <paramref name="partId"/> to <paramref name="step"/>'s
+        /// requiredPartIds. Returns true if the add happened; false if
+        /// rejected (e.g. Place-family ownership conflict). Callers that
+        /// surface a "Part added" toast MUST check the return value —
+        /// showing the toast on false was the "said added but not in list"
+        /// bug from the pose rewrite.
+        /// </summary>
+        private bool CommitAddPart(StepDefinition step, string partId)
         {
-            if (step == null) return;
+            if (step == null || string.IsNullOrEmpty(partId)) return false;
+
+            // Warn (don't block) when another Place-family step also requires
+            // this partId. The runtime rule still says "one Place owner per
+            // partId" (PartOwnershipExclusivityPass) and the save-time dialog
+            // offers auto-fix, but blocking at input time was too aggressive
+            // for authoring — the user may be moving ownership from one step
+            // to another and needs the add to land first. Rule-1 multi-
+            // subassembly already behaves this way (warn-only at input, fire
+            // at save); this brings Rule 2 in line.
+            if (step.ResolvedFamily == StepFamily.Place && _pkg?.steps != null)
+            {
+                foreach (var other in _pkg.steps)
+                {
+                    if (other == null || other == step) continue;
+                    if (other.ResolvedFamily != StepFamily.Place) continue;
+                    if (other.requiredPartIds == null) continue;
+                    foreach (var op in other.requiredPartIds)
+                    {
+                        if (string.Equals(op, partId, StringComparison.Ordinal))
+                        {
+                            ShowNotification(new GUIContent(
+                                $"⚠ '{partId}' is also Required in Place step '{other.id}'. Runtime expects one Place owner — resolve at save time (auto-fix) or remove from the other step."));
+                            goto PlaceConflictHandled;
+                        }
+                    }
+                }
+            }
+            PlaceConflictHandled:
+
             var list = new List<string>(step.requiredPartIds ?? System.Array.Empty<string>()) { partId };
             step.requiredPartIds = list.ToArray();
             var order = GetOrDeriveTaskOrder(step);
@@ -1648,6 +2240,7 @@ namespace OSE.Editor
             _dirtyStepIds.Add(step.id);
             BuildPartList();
             Repaint();
+            return true;
         }
 
         private void CommitAddToolTarget(StepDefinition step, string targetId, string toolId)
@@ -2084,6 +2677,7 @@ namespace OSE.Editor
                             EditorGUILayout.EndHorizontal();
                         }
                         DrawPartPoseToggle();
+                        DrawPartOwnershipSection(selEntry.id);
                         if (_parts != null)
                             for (int i = 0; i < _parts.Length; i++)
                                 if (_parts[i].def?.id == selEntry.id)

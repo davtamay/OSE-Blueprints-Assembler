@@ -141,20 +141,18 @@
       "instructionText": "Position the cable chain assemblies: X-axis cable chain at the top of the gantry, Y-axis cable chain along the left side, and the cable chain bracket that anchors the Y chain to the Y-left carriage.",
       "family": "Place",
       "sequenceIndex": 285,
-      "requiredPartIds": [
-        "cable_chain",
-        "cable_chain_y",
-        "cable_chain_bracket"
-      ],
       "hintIds": [
         "hint_cable_management"
       ],
-      "targetIds": [
-        "target_cable_chain_x",
-        "target_cable_chain_y",
-        "target_cable_chain_bracket"
-      ]
-    }
+      "removePersistentToolIds": [],
+      "targetIds": [ "target_cable_chain_x", "target_cable_chain_y", "target_cable_chain_bracket" ],
+      "requiredPartIds": [ "cable_chain", "cable_chain_y", "cable_chain_bracket" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"cable_chain"},
+        {"kind":"part","id":"cable_chain_y"},
+        {"kind":"part","id":"cable_chain_bracket"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  }
   ],
   "targets": [
     {

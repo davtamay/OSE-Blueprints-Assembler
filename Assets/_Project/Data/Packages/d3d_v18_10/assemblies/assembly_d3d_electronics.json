@@ -145,34 +145,34 @@
       "assemblyId": "assembly_d3d_electronics",
       "sequenceIndex": 286,
       "instructionText": "Align the control panel enclosure to the front-left face of the frame. Press the mounting tabs flush against the frame bars.",
-      "targetIds": [
-        "target_control_panel_mount"
-      ],
-      "requiredPartIds": [
-        "d3d_control_panel"
-      ],
       "hintIds": [
         "hint_mount_control_panel"
       ],
-      "family": "Place"
-    },
+      "family": "Place",
+      "removePersistentToolIds": [],
+      "targetIds": [ "target_control_panel_mount" ],
+      "requiredPartIds": [ "d3d_control_panel" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"d3d_control_panel"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_install_ramps_board",
       "name": "Install the RAMPS 1.4 board in the control panel",
       "assemblyId": "assembly_d3d_electronics",
       "sequenceIndex": 287,
       "instructionText": "Seat the RAMPS 1.4 board into the control panel. USB port and power terminals face outward. Press firmly until the board sits level.",
-      "targetIds": [
-        "target_ramps_board_slot"
-      ],
-      "requiredPartIds": [
-        "d3d_ramps_14_board"
-      ],
       "hintIds": [
         "hint_install_ramps_board"
       ],
-      "family": "Place"
-    },
+      "family": "Place",
+      "removePersistentToolIds": [],
+      "targetIds": [ "target_ramps_board_slot" ],
+      "requiredPartIds": [ "d3d_ramps_14_board" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"d3d_ramps_14_board"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_secure_control_panel",
       "name": "Secure the control panel with M3 screws",

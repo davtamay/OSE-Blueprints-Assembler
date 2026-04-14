@@ -44,6 +44,20 @@ namespace OSE.Editor
             _pkg   = PackageJsonUtils.LoadPackage(id);
             _pkgId = id;
             if (_pkg == null) return;
+            // Normalize builds the PoseTable that both this window and the
+            // runtime spawner read — without it pkg.poseTable stays null and
+            // TryGetStepAwarePose falls through to the "All Steps" path.
+            OSE.Content.Loading.MachinePackageNormalizer.Normalize(_pkg);
+            // Heal any legacy taskOrder drift from older sessions.
+            ReconcileAllStepTaskOrders(markDirty: false);
+            // Strip empty-label stepPose entries — these are legacy artifacts
+            // from the old AutoPromoteAlienPartToNoTaskWaypoint path. Author-
+            // created Customs (via the [+] button) now carry label="Custom",
+            // so this cleanup is safe: anything with an empty label was never
+            // explicitly authored and is the "why is there a Custom 1 on this
+            // part I never created" symptom. Silent — no dirty marking, same
+            // reason as the reconcile above (Revert must reach clean state).
+            StripEmptyLabelStepPoses();
             _assetResolver.BuildCatalog(_pkgId, _pkg.parts ?? System.Array.Empty<PartDefinition>());
 
             // When restoring after domain reload, keep the serialized _stepFilterIdx.
@@ -773,7 +787,11 @@ namespace OSE.Editor
                     if (string.IsNullOrEmpty(pid) || !IsPartVisibleAtCurrentStep(pid)) continue;
                     var memberGO = FindLivePartGO(pid);
                     if (memberGO == null) { _pendingRespawnForMissingMembers = true; continue; }
-                    if (memberGO.transform.parent != rootGO.transform)
+                    // Skip prefab-instance children (Unity forbids reparenting
+                    // transforms inside a prefab instance at edit time).
+                    bool canReparent = !(PrefabUtility.IsPartOfPrefabInstance(memberGO)
+                                         && !PrefabUtility.IsOutermostPrefabInstanceRoot(memberGO));
+                    if (canReparent && memberGO.transform.parent != rootGO.transform)
                         memberGO.transform.SetParent(rootGO.transform, worldPositionStays: true);
                     if (!memberGO.activeSelf) memberGO.SetActive(true);
                 }
@@ -849,6 +867,14 @@ namespace OSE.Editor
             foreach (var go in parts)
             {
                 if (go == null) continue;
+                // Prefab-instance children can't be reparented in-editor —
+                // Unity raises "Setting the parent of a transform which
+                // resides in a Prefab instance is not possible." Skip
+                // silently; these GOs stay under their prefab hierarchy
+                // and the group's rigid-body gizmo simply won't corral them.
+                if (PrefabUtility.IsPartOfPrefabInstance(go)
+                    && !PrefabUtility.IsOutermostPrefabInstanceRoot(go))
+                    continue;
                 bool isMember = memberPartIds.Contains(go.name);
                 if (isMember && go.transform.parent != rootTransform)
                     go.transform.SetParent(rootTransform, worldPositionStays: true);

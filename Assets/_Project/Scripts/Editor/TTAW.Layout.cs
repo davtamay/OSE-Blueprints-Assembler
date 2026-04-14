@@ -511,9 +511,63 @@ namespace OSE.Editor
                     int    tCount     = step.targetIds?.Length ?? 0;
 
                     EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                    // Family row — always visible so the author can see at a
+                    // glance whether this step is "Place" (placement-owning)
+                    // vs "Use / Confirm / Connect". Matches the Rule-2
+                    // constraint surfaced by PartOwnershipExclusivityPass.
+                    var familyStyle = new GUIStyle(EditorStyles.miniBoldLabel)
+                    {
+                        normal = { textColor = step.ResolvedFamily == StepFamily.Place
+                            ? new Color(0.30f, 0.78f, 0.36f) : new Color(0.72f, 0.72f, 0.78f) },
+                    };
+                    EditorGUILayout.LabelField($"Family: {step.ResolvedFamily}", familyStyle);
                     EditorGUILayout.LabelField(
                         $"Tool: {toolName}{profileStr}  ·  {tCount} target{(tCount == 1 ? "" : "s")}",
                         EditorStyles.miniLabel);
+                    // "Owns" row — only on Place-family steps, lists the parts
+                    // this step is the Place owner of, with an inline red chip
+                    // for any part that also appears in another Place step
+                    // (Rule-2 collision caught live).
+                    if (step.ResolvedFamily == StepFamily.Place && _ownership != null
+                        && step.requiredPartIds != null && step.requiredPartIds.Length > 0)
+                    {
+                        EditorGUILayout.BeginHorizontal();
+                        GUILayout.Label("Owns:", EditorStyles.miniLabel, GUILayout.Width(40));
+                        bool any = false;
+                        foreach (var pid in step.requiredPartIds)
+                        {
+                            if (string.IsNullOrEmpty(pid)) continue;
+                            var o = _ownership.ForPart(pid);
+                            // List the part under every Place step that
+                            // requires it — multi-placement is supported, so
+                            // this step may be one of several owners.
+                            bool isOwnedHere = false;
+                            if (o.placeStepIds != null)
+                                foreach (var sid in o.placeStepIds)
+                                    if (string.Equals(sid, step.id, StringComparison.Ordinal)) { isOwnedHere = true; break; }
+                            if (!isOwnedHere) continue;
+                            var chipStyle = new GUIStyle(EditorStyles.miniLabel);
+                            if (o.HasMultiplePlaces)
+                            {
+                                // Info styling (blue), not error — multiple
+                                // placements of the same part is a supported
+                                // authoring pattern.
+                                chipStyle.normal.textColor = new Color(0.55f, 0.78f, 0.95f);
+                                GUILayout.Label(new GUIContent("↺ " + pid,
+                                    "Multi-placed in Place steps: " + string.Join(", ", o.placeStepIds)),
+                                    chipStyle);
+                            }
+                            else
+                            {
+                                GUILayout.Label(pid, chipStyle);
+                            }
+                            GUILayout.Space(6);
+                            any = true;
+                        }
+                        if (!any) GUILayout.Label("(none)", new GUIStyle(EditorStyles.miniLabel) { fontStyle = FontStyle.Italic });
+                        GUILayout.FlexibleSpace();
+                        EditorGUILayout.EndHorizontal();
+                    }
                     if (_previewAssembled + _previewCurrent + _previewHidden > 0)
                         EditorGUILayout.LabelField(
                             $"{_previewAssembled} assembled  ·  {_previewCurrent} at start pos  ·  {_previewHidden} hidden",
@@ -1146,6 +1200,149 @@ namespace OSE.Editor
             return null;
         }
 
+        /// <summary>
+        /// Ownership summary for the Part Context inspector. Answers
+        /// "where does this part live?" at a glance: which Place-family
+        /// step physically places it, which subassembly owns it, and every
+        /// step that Requires / makes Optional / renders it as a visual.
+        /// Each seq chip is clickable and jumps the step filter.
+        ///
+        /// Conflict banners (Rule 1 / Rule 2 from
+        /// <see cref="OSE.Content.Validation.PartOwnershipExclusivityPass"/>)
+        /// only appear when a violation is actually present — clean data
+        /// renders a tidy summary and nothing else, per the "quiet when
+        /// clean" directive.
+        /// </summary>
+        private void DrawPartOwnershipSection(string partId)
+        {
+            if (string.IsNullOrEmpty(partId) || _ownership == null) return;
+            var own = _ownership.ForPart(partId);
+            if (!own.IsReferenced && !own.HasAnyConflict && string.IsNullOrEmpty(own.subassemblyId))
+                return; // nothing to show — part authored but unused.
+
+            EditorGUILayout.Space(4);
+            var hdr = new GUIStyle(EditorStyles.miniBoldLabel);
+            EditorGUILayout.LabelField("Ownership", hdr);
+
+            var lblStyle = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleLeft };
+            var valStyle = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleLeft };
+
+            // Subassembly
+            if (!string.IsNullOrEmpty(own.subassemblyId))
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Label("  Subassembly:", lblStyle, GUILayout.Width(110));
+                GUILayout.Label(own.subassemblyId, valStyle);
+                EditorGUILayout.EndHorizontal();
+            }
+
+            // Place owner
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label("  Place owner:", lblStyle, GUILayout.Width(110));
+            if (own.HasPlaceOwner)
+                DrawStepChip(own.placeStepSeq, own.placeStepId);
+            else
+                GUILayout.Label("  (not yet placed)", new GUIStyle(EditorStyles.miniLabel) { fontStyle = FontStyle.Italic });
+            EditorGUILayout.EndHorizontal();
+
+            // Required / Optional / Visual step lists — each rendered on its own row.
+            DrawOwnershipSeqList("Required in:",  own.requiredAtSeqs);
+            DrawOwnershipSeqList("Optional in:",  own.optionalAtSeqs);
+            DrawOwnershipSeqList("Visual in:",    own.visualAtSeqs);
+
+            // Informational "multi-placement" notice — not a conflict. The
+            // runtime handles multiple Place owners by walking the seq-sorted
+            // list and using the most recent one ≤ current step. Shown so
+            // the author can verify the content is intentional.
+            if (own.HasMultiplePlaces)
+            {
+                var info = new GUIStyle(EditorStyles.helpBox)
+                {
+                    normal    = { textColor = new Color(0.55f, 0.78f, 0.95f) },
+                    wordWrap  = true,
+                };
+                EditorGUILayout.LabelField(
+                    "  ↺ Multi-placement — Required in " + own.placeStepSeqs.Length +
+                    " Place steps: " + string.Join(", ", own.placeStepIds) +
+                    ". The runtime picks the most recent placement ≤ current step.",
+                    info);
+            }
+            if (own.HasSubConflict)
+            {
+                var warn = new GUIStyle(EditorStyles.helpBox)
+                {
+                    normal    = { textColor = new Color(0.90f, 0.68f, 0.25f) },
+                    fontStyle = FontStyle.Bold,
+                    wordWrap  = true,
+                };
+                EditorGUILayout.LabelField(
+                    "  ⚠ Subassembly conflict: claimed by " +
+                    string.Join(", ", own.conflictingSubassemblyIds) +
+                    ". Each partId must belong to exactly one non-aggregate subassembly.",
+                    warn);
+            }
+        }
+
+        /// <summary>
+        /// Row showing "Label: [#seq] [#seq] ... +N" with clickable chips.
+        /// Caps visible chips so the inspector's narrow width doesn't get
+        /// blown out by parts that appear in 10+ steps; overflow goes into
+        /// a tooltip on the "+N" badge.
+        /// </summary>
+        private void DrawOwnershipSeqList(string label, int[] seqs)
+        {
+            if (seqs == null || seqs.Length == 0) return;
+            const int MaxVisibleChips = 6;
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label($"  {label}", new GUIStyle(EditorStyles.miniLabel), GUILayout.Width(90));
+            int visible = Mathf.Min(seqs.Length, MaxVisibleChips);
+            for (int i = 0; i < visible; i++)
+                DrawStepChip(seqs[i], _ownership?.StepIdForSeq(seqs[i]));
+            if (seqs.Length > MaxVisibleChips)
+            {
+                var extra = new System.Text.StringBuilder();
+                for (int i = MaxVisibleChips; i < seqs.Length; i++)
+                {
+                    if (i > MaxVisibleChips) extra.Append(", ");
+                    string sid = _ownership?.StepIdForSeq(seqs[i]);
+                    extra.Append(string.IsNullOrEmpty(sid) ? $"#{seqs[i]}" : $"#{seqs[i]} {sid}");
+                }
+                GUILayout.Label(new GUIContent($"+{seqs.Length - MaxVisibleChips}",
+                    "Also in: " + extra),
+                    EditorStyles.miniLabel, GUILayout.Width(28f));
+            }
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+        }
+
+        /// <summary>
+        /// A compact clickable step chip (just "#seq") with the full stepId
+        /// in the hover tooltip. Narrow by design so many chips fit in the
+        /// inspector's cramped width without squishing the pose toggle row
+        /// or overflowing the Part Context panel.
+        /// </summary>
+        private void DrawStepChip(int seq, string stepId)
+        {
+            string tip = !string.IsNullOrEmpty(stepId)
+                ? $"Jump to step {stepId} (#{seq})"
+                : $"Jump to step #{seq}";
+            if (GUILayout.Button(new GUIContent($"#{seq}", tip),
+                    EditorStyles.miniButton, GUILayout.Width(36f)))
+                JumpStepFilterToSeq(seq);
+        }
+
+        /// <summary>Route a click on a step chip through the shared step-filter hook.</summary>
+        private void JumpStepFilterToSeq(int seq)
+        {
+            if (_stepSequenceIdxs == null) return;
+            for (int i = 0; i < _stepSequenceIdxs.Length; i++)
+            {
+                if (_stepSequenceIdxs[i] != seq) continue;
+                ApplyStepFilter(i);
+                return;
+            }
+        }
+
         private void DrawPartPoseToggle()
         {
             string currentStepId = GetCurrentStepId();
@@ -1154,48 +1351,97 @@ namespace OSE.Editor
             if (hasPart) poses = _parts[_selectedPartIdx].stepPoses;
             int poseCount = poses?.Count ?? 0;
 
-            // NO TASK detection — if the part's id lives in visualPartIds for
-            // the current step, render the dedicated single-pose block. It
-            // shows a NO TASK header + transform fields + propagation row.
-            // We set a flag instead of returning so the transform fields
-            // further down always render regardless of role (Required /
-            // Optional / No Task all reach the same unified transform block).
-            bool noTaskForCurrentStep = false;
-            StepDefinition noTaskStep = null;
+            // Detect NO TASK on current step — used to surface a dedicated
+            // "NO TASK pose" toggle alongside Start / Assembled / Custom so
+            // the author can switch between every relevant pose mode in one
+            // place.
+            int noTaskAutoIdx = -1;
             if (hasPart && !string.IsNullOrEmpty(currentStepId))
             {
                 var curStep = FindStep(currentStepId);
                 if (curStep != null && curStep.visualPartIds != null
-                    && Array.IndexOf(curStep.visualPartIds, _parts[_selectedPartIdx].def?.id) >= 0)
+                    && Array.IndexOf(curStep.visualPartIds, _parts[_selectedPartIdx].def?.id) >= 0
+                    && poses != null)
                 {
-                    noTaskForCurrentStep = true;
-                    noTaskStep = curStep;
-                    DrawNoTaskPoseInline(curStep);
-                    return;
+                    for (int i = 0; i < poses.Count; i++)
+                    {
+                        var e = poses[i];
+                        if (e == null) continue;
+                        if (string.Equals(e.stepId, currentStepId, StringComparison.Ordinal)) { noTaskAutoIdx = i; break; }
+                    }
                 }
             }
 
+            // For NO TASK parts the Start/Assembled toggles are irrelevant
+            // (NO TASK pose IS startPosition; assembledPosition has no role
+            // here). Only show NO TASK + Custom toggles. For Required/
+            // Optional parts, the full Start/Custom/Assembled set is shown.
+            bool isNoTaskRow = noTaskAutoIdx >= 0;
+
             EditorGUILayout.BeginHorizontal();
 
-            // [Start Pose]
-            bool isStart = _editingPoseMode == PoseModeStart;
-            if (GUILayout.Toggle(isStart, "Start Pose", EditorStyles.miniButtonLeft) && !isStart)
-                ApplyPoseMode(PoseModeStart);
+            if (!isNoTaskRow)
+            {
+                // [Start Pose]
+                bool isStart = _editingPoseMode == PoseModeStart;
+                if (GUILayout.Toggle(isStart, "Start Pose", EditorStyles.miniButtonLeft) && !isStart)
+                    ApplyPoseMode(PoseModeStart);
+            }
+            else
+            {
+                // [NO TASK pose] — anchor toggle for NO TASK rows.
+                bool isNoTask = _editingPoseMode == noTaskAutoIdx;
+                if (GUILayout.Toggle(isNoTask, "NO TASK pose", EditorStyles.miniButtonLeft) && !isNoTask)
+                    ApplyPoseMode(noTaskAutoIdx);
+            }
 
-            // [Custom 1] [Custom 2] … — all intermediate poses
+            // [Custom 1] [×] [Custom 2] [×] … — author-authored intermediate
+            // poses with an inline delete button. Synthetic NO-TASK waypoints
+            // (label starts with AutoNoTaskLabel) are computed every load and
+            // never persist; they shouldn't surface as toggleable Custom
+            // entries. The × renders alongside its toggle so removal is one
+            // click — no need to select-then-scroll-to-Remove-Pose.
+            int customCounter = 0;
+            int pendingRemoveIdx = -1;
+            var xStyle = new GUIStyle(EditorStyles.miniButton)
+            {
+                fontSize  = 9,
+                normal    = { textColor = new Color(0.95f, 0.55f, 0.55f) },
+                fontStyle = FontStyle.Bold,
+                padding   = new RectOffset(0, 0, 0, 0),
+            };
             for (int i = 0; i < poseCount; i++)
             {
-                string btnLabel = !string.IsNullOrEmpty(poses[i].label) ? poses[i].label : $"Custom {i + 1}";
+                var entry = poses[i];
+                if (entry == null) continue;
+                if (i == noTaskAutoIdx) continue; // already surfaced as NO TASK toggle
+                if (!string.IsNullOrEmpty(entry.label)
+                    && entry.label.StartsWith(OSE.Content.Loading.MachinePackageNormalizer.AutoNoTaskLabel, StringComparison.Ordinal))
+                    continue;
+                customCounter++;
+                string btnLabel = !string.IsNullOrEmpty(entry.label) ? entry.label : $"Custom {customCounter}";
                 bool isSel = _editingPoseMode == i;
                 if (GUILayout.Toggle(isSel, btnLabel, EditorStyles.miniButtonMid) && !isSel)
                     ApplyPoseMode(i);
+                if (GUILayout.Button(new GUIContent("×", $"Delete '{btnLabel}'"),
+                        xStyle, GUILayout.Width(16)))
+                    pendingRemoveIdx = i;
+            }
+            if (pendingRemoveIdx >= 0)
+            {
+                RemoveStepPose(_selectedPartIdx, pendingRemoveIdx);
+                EditorGUILayout.EndHorizontal();
+                return;
             }
 
-            // [Assembled Pose]
-            bool isAssembled = _editingPoseMode == PoseModeAssembled;
-            GUIStyle assembledStyle = (poseCount > 0 || hasPart) ? EditorStyles.miniButtonMid : EditorStyles.miniButtonRight;
-            if (GUILayout.Toggle(isAssembled, "Assembled Pose", assembledStyle) && !isAssembled)
-                ApplyPoseMode(PoseModeAssembled);
+            if (!isNoTaskRow)
+            {
+                // [Assembled Pose] — task parts only.
+                bool isAssembled = _editingPoseMode == PoseModeAssembled;
+                GUIStyle assembledStyle = (poseCount > 0 || hasPart) ? EditorStyles.miniButtonMid : EditorStyles.miniButtonRight;
+                if (GUILayout.Toggle(isAssembled, "Assembled Pose", assembledStyle) && !isAssembled)
+                    ApplyPoseMode(PoseModeAssembled);
+            }
 
             // [+] add new custom pose
             if (hasPart)
@@ -1206,92 +1452,14 @@ namespace OSE.Editor
 
             EditorGUILayout.EndHorizontal();
 
-            // Propagation row — two searchable step pickers that define the
-            // span (From / Through). For Start / Assembled, picking either
-            // materializes a stepPose entry at the current step capturing the
-            // live pose values; subsequent picks update that same entry.
-            // For a Custom pose, picks update its span directly.
-            if (hasPart && !string.IsNullOrEmpty(currentStepId))
-                DrawPartPropagationRow(currentStepId, poses);
-
-            // Expanded controls for the selected stepPose — anchor, span preset,
-            // resolved range display, and remove. Only visible when a custom
-            // pose is active (negative modes are Start/Assembled, no extras).
-            if (hasPart && _editingPoseMode >= 0 && poseCount > 0 && _editingPoseMode < poseCount)
-                DrawStepPoseDetailRow(ref _parts[_selectedPartIdx], _editingPoseMode);
-
-            // Inline transform fields — Position / Rotation / Scale for the
-            // ACTIVE pose (Start, Assembled, or a Custom entry). Exposing
-            // these inline means the inspector always shows the transform
-            // regardless of the part's role (Required, Optional, or No Task).
-            // Without this, Optional rows had no transform UI because the
-            // detail panel wasn't always drawn. Keeping the block compact so
-            // it's useful without scrolling.
-            if (hasPart)
-                DrawActivePoseTransformFieldsForPart(ref _parts[_selectedPartIdx]);
-        }
-
-        private void DrawActivePoseTransformFieldsForPart(ref PartEditState p)
-        {
-            EditorGUILayout.Space(2);
-
-            // Choose the backing fields based on active pose mode.
-            Vector3 pos; Quaternion rot; Vector3 scl;
-            string labelPrefix;
-
-            if (_editingPoseMode >= 0 && p.stepPoses != null && _editingPoseMode < p.stepPoses.Count)
-            {
-                var sp = p.stepPoses[_editingPoseMode];
-                pos = PackageJsonUtils.ToVector3(sp.position);
-                rot = PackageJsonUtils.ToUnityQuaternion(sp.rotation);
-                scl = PackageJsonUtils.ToVector3(sp.scale);
-                labelPrefix = string.IsNullOrEmpty(sp.label) ? $"Custom {_editingPoseMode + 1}" : sp.label;
-            }
-            else if (_editingPoseMode == PoseModeAssembled)
-            {
-                pos = p.assembledPosition; rot = p.assembledRotation; scl = p.assembledScale;
-                labelPrefix = "Assembled";
-            }
-            else
-            {
-                pos = p.startPosition; rot = p.startRotation; scl = p.startScale;
-                labelPrefix = "Start";
-            }
-            if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
-
-            EditorGUI.BeginChangeCheck();
-            Vector3 newPos   = Vector3FieldClip($"{labelPrefix} Position", pos);
-            Vector3 newEuler = Vector3FieldClip($"{labelPrefix} Rotation", rot.eulerAngles);
-            Vector3 newScl   = Vector3FieldClip($"{labelPrefix} Scale",    scl);
-            if (EditorGUI.EndChangeCheck())
-            {
-                BeginPartEdit(_selectedPartIdx);
-                Quaternion newRot = Quaternion.Euler(newEuler);
-                if (_editingPoseMode >= 0 && p.stepPoses != null && _editingPoseMode < p.stepPoses.Count)
-                {
-                    var sp = p.stepPoses[_editingPoseMode];
-                    sp.position = PackageJsonUtils.ToFloat3(newPos);
-                    sp.rotation = PackageJsonUtils.ToQuaternion(newRot);
-                    sp.scale    = PackageJsonUtils.ToFloat3(newScl);
-                }
-                else if (_editingPoseMode == PoseModeAssembled)
-                {
-                    p.assembledPosition = newPos;
-                    p.assembledRotation = newRot;
-                    p.assembledScale    = newScl;
-                }
-                else
-                {
-                    p.startPosition = newPos;
-                    p.startRotation = newRot;
-                    p.startScale    = newScl;
-                }
-                p.isDirty = true;
-                EndPartEdit();
-                SyncPartMeshToActivePose(ref p);
-                SceneView.RepaintAll();
-                Repaint();
-            }
+            // Propagation UI removed — confusing and rarely needed. The
+            // underlying span fields remain in the data so the synthetic NO
+            // TASK auto-bake can bound itself before the part's first task
+            // step. Authors interact only with Start / Assembled / Custom /
+            // NO TASK toggles + Position/Rotation/Scale fields.
+            // Transform fields for Required / Optional / Custom poses are
+            // rendered by DrawPartDetailPanel below — don't duplicate them
+            // up here or the inspector shows two identical blocks.
         }
 
         /// <summary>
@@ -1717,68 +1885,38 @@ namespace OSE.Editor
             string partId = p.def?.id;
             if (string.IsNullOrEmpty(partId)) return;
 
-            // Find (or lazily create) the backing stepPose entry.
-            if (p.stepPoses == null) p.stepPoses = new List<StepPoseEntry>();
-            StepPoseEntry entry = null;
+            // Find an existing backing stepPose entry without lazy-creating.
+            // Creating on every redraw would dirty the part after Revert.
+            // The R→N toggle's CaptureCurrentPoseAsStepPose is the only path
+            // that should materialise the entry.
             int entryIdx = -1;
-            for (int i = 0; i < p.stepPoses.Count; i++)
+            if (p.stepPoses != null)
             {
-                var e = p.stepPoses[i];
-                if (e != null && string.Equals(e.stepId, curStep.id, StringComparison.Ordinal))
-                { entry = e; entryIdx = i; break; }
-            }
-            if (entry == null)
-            {
-                entry = new StepPoseEntry
+                for (int i = 0; i < p.stepPoses.Count; i++)
                 {
-                    stepId               = curStep.id,
-                    position             = PackageJsonUtils.ToFloat3(p.assembledPosition),
-                    rotation             = PackageJsonUtils.ToQuaternion(p.assembledRotation),
-                    scale                = PackageJsonUtils.ToFloat3(p.assembledScale),
-                    propagateFromStep    = curStep.id,
-                    propagateThroughStep = "",
+                    var e = p.stepPoses[i];
+                    if (e != null && string.Equals(e.stepId, curStep.id, StringComparison.Ordinal))
+                    { entryIdx = i; break; }
+                }
+            }
+
+            if (entryIdx >= 0)
+            {
+                _editingPoseMode = entryIdx;
+                DrawPartPropagationRow(curStep.id, p.stepPoses);
+            }
+            else
+            {
+                // No entry yet — render a hint instead of quietly mutating
+                // state. This happens after Revert if the N toggle's changes
+                // were never saved.
+                var hint = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    fontStyle = FontStyle.Italic,
+                    normal    = { textColor = new Color(0.55f, 0.78f, 0.95f) },
                 };
-                p.stepPoses.Add(entry);
-                entryIdx = p.stepPoses.Count - 1;
-                p.isDirty = true;
+                EditorGUILayout.LabelField("  Cycle R → O → N on this row to capture the current pose.", hint);
             }
-
-            // Select this entry as the active editing mode so SceneView
-            // gizmos and sync helpers target it.
-            _editingPoseMode = entryIdx;
-
-            EditorGUILayout.Space(2);
-            var header = new GUIStyle(EditorStyles.boldLabel)
-            {
-                fontSize = 11,
-                normal   = { textColor = new Color(0.70f, 0.88f, 1f) },
-            };
-            EditorGUILayout.LabelField("NO TASK pose", header);
-
-            // Live values from the entry — editable inline.
-            Vector3    pos   = PackageJsonUtils.ToVector3(entry.position);
-            Quaternion rot   = PackageJsonUtils.ToUnityQuaternion(entry.rotation);
-            Vector3    scl   = PackageJsonUtils.ToVector3(entry.scale);
-            if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
-
-            EditorGUI.BeginChangeCheck();
-            Vector3 newPos   = Vector3FieldClip("Position", pos);
-            Vector3 newEuler = Vector3FieldClip("Rotation", rot.eulerAngles);
-            Vector3 newScl   = Vector3FieldClip("Scale",    scl);
-            if (EditorGUI.EndChangeCheck())
-            {
-                entry.position = PackageJsonUtils.ToFloat3(newPos);
-                entry.rotation = PackageJsonUtils.ToQuaternion(Quaternion.Euler(newEuler));
-                entry.scale    = PackageJsonUtils.ToFloat3(newScl);
-                p.isDirty      = true;
-                SyncAllPartMeshesToActivePose();
-                SceneView.RepaintAll();
-                Repaint();
-            }
-
-            // Reuse the existing From/Through propagation pickers so this
-            // single pose can span other steps with one click.
-            DrawPartPropagationRow(curStep.id, p.stepPoses);
         }
 
         private void ApplyPoseMode(int newMode)
@@ -1824,12 +1962,18 @@ namespace OSE.Editor
 
             BeginPartEdit(partIdx);
             if (p.stepPoses == null) p.stepPoses = new List<StepPoseEntry>();
+            // Default label = "Custom" so legitimate author-created entries are
+            // distinguishable from legacy auto-promote artifacts (which have
+            // empty label). The load-time cleanup strips empty-label entries
+            // silently; labelled entries are preserved.
             p.stepPoses.Add(new StepPoseEntry
             {
-                stepId   = stepId,
-                position = PackageJsonUtils.ToFloat3(initPos),
-                rotation = PackageJsonUtils.ToQuaternion(initRot),
-                scale    = PackageJsonUtils.ToFloat3(initScl),
+                stepId            = stepId,
+                label             = "Custom",
+                position          = PackageJsonUtils.ToFloat3(initPos),
+                rotation          = PackageJsonUtils.ToQuaternion(initRot),
+                scale             = PackageJsonUtils.ToFloat3(initScl),
+                propagateFromStep = stepId, // default span: this step → end
             });
             p.isDirty = true;
             EndPartEdit();
@@ -1873,6 +2017,7 @@ namespace OSE.Editor
             BeginPartEdit(partIdx);
             p.stepPoses.RemoveAt(poseIndex);
             p.isDirty = true;
+            MirrorStepPosesToPreviewConfig(p);
             EndPartEdit();
             _editingPoseMode = PoseModeAssembled;
             SyncAllPartMeshesToActivePose();
@@ -1929,8 +2074,56 @@ namespace OSE.Editor
                 Repaint();
             }
 
-            bool needsRepaint = _partPreview.Draw(previewRect, useMm);
+            // EditorPrefs-backed toggles for the bounding box + grid ticks
+            // overlays. Default ON so authors discover the feature; persisted
+            // per-user so the choice survives domain reloads and restarts.
+            const string PrefShowBounds    = "OSE.PartPreview.ShowBounds";
+            const string PrefShowGridTicks = "OSE.PartPreview.ShowGridTicks";
+            bool showBounds    = EditorPrefs.GetBool(PrefShowBounds,    true);
+            bool showGridTicks = EditorPrefs.GetBool(PrefShowGridTicks, true);
+
+            var drawOpts = new PartModelPreviewRenderer.DrawOptions
+            {
+                useMm         = useMm,
+                showBounds    = showBounds,
+                showGridTicks = showGridTicks,
+            };
+            bool needsRepaint = _partPreview.Draw(previewRect, drawOpts);
             if (needsRepaint) Repaint();
+
+            // Floating toolbar overlay (top-right of the preview rect) —
+            // compact toggle buttons for the new annotations. Drawn AFTER
+            // Draw() so the buttons sit above the rendered texture.
+            var toolbarStyle = new GUIStyle(EditorStyles.miniButton)
+            {
+                fontSize  = 10,
+                alignment = TextAnchor.MiddleCenter,
+                padding   = new RectOffset(4, 4, 2, 2),
+            };
+            float btnW = 62f, btnH = 18f, pad = 4f;
+            var boundsRect = new Rect(previewRect.xMax - btnW - pad, previewRect.y + pad, btnW, btnH);
+            var ticksRect  = new Rect(previewRect.xMax - btnW - pad, boundsRect.yMax + 2f, btnW, btnH);
+
+            bool newShowBounds = GUI.Toggle(boundsRect,
+                showBounds,
+                new GUIContent(showBounds ? "⧉ Bounds" : "⧉ Bounds",
+                    "Show/hide the wireframe bounding box and L×W×H edge labels."),
+                toolbarStyle);
+            if (newShowBounds != showBounds)
+            {
+                EditorPrefs.SetBool(PrefShowBounds, newShowBounds);
+                Repaint();
+            }
+            bool newShowTicks = GUI.Toggle(ticksRect,
+                showGridTicks,
+                new GUIContent(showGridTicks ? "⌗ Ticks" : "⌗ Ticks",
+                    "Show/hide distance labels on the major grid lines."),
+                toolbarStyle);
+            if (newShowTicks != showGridTicks)
+            {
+                EditorPrefs.SetBool(PrefShowGridTicks, newShowTicks);
+                Repaint();
+            }
 
             // ── Euler rotation fields ─────────────────────────────────────────
             EditorGUILayout.Space(2);
@@ -2031,6 +2224,13 @@ namespace OSE.Editor
 
             DrawPartModelPreview(ref p);
 
+            // Always-on waypoint audit — renders directly under the preview
+            // whenever the part has any stepPose entries, regardless of
+            // role (Required / Optional / No Task). This is the single
+            // prominent diagnostic for "why does the transform differ on
+            // step N?" questions.
+            DrawAllStepPosesAuditStrip(ref p);
+
             // NO TASK auto-selection: when the current step classifies this
             // part as NO TASK (id lives in visualPartIds) and the selected
             // pose mode is the generic Start/Assembled default, pivot the
@@ -2054,35 +2254,26 @@ namespace OSE.Editor
                         if (__e != null && string.Equals(__e.stepId, __curStepIdForNoTask, StringComparison.Ordinal))
                         { __foundIdx = __i; break; }
                     }
-                    // Lazy-create the entry when the part is in visualPartIds
-                    // but nothing has materialized yet (e.g. authored directly
-                    // in JSON). Seed with the current displayed pose so the
-                    // inspector's fields start at a meaningful value.
-                    if (__foundIdx < 0)
+                    // Do NOT lazy-create a stepPose entry here — that would
+                    // mark the part dirty on every inspector redraw, which
+                    // breaks the Revert button (the "Write to machine.json"
+                    // button lights green again the instant the inspector
+                    // redraws after revert). The R→N toggle in the task
+                    // sequence already materialises the entry via
+                    // CaptureCurrentPoseAsStepPose. If nothing exists yet,
+                    // fall through to the Start/Assembled fields until the
+                    // author explicitly creates one.
+                    if (__foundIdx >= 0)
                     {
-                        var __seeded = new StepPoseEntry
-                        {
-                            stepId               = __curStepIdForNoTask,
-                            position             = PackageJsonUtils.ToFloat3(p.assembledPosition),
-                            rotation             = PackageJsonUtils.ToQuaternion(p.assembledRotation),
-                            scale                = PackageJsonUtils.ToFloat3(p.assembledScale),
-                            propagateFromStep    = __curStepIdForNoTask,
-                            propagateThroughStep = "",
-                        };
-                        p.stepPoses.Add(__seeded);
-                        __foundIdx = p.stepPoses.Count - 1;
-                        p.isDirty = true;
-                    }
-                    if (_editingPoseMode != __foundIdx) _editingPoseMode = __foundIdx;
+                        if (_editingPoseMode != __foundIdx) _editingPoseMode = __foundIdx;
 
-                    // NO TASK header so the author knows which pose they're
-                    // editing in this panel.
-                    var __h = new GUIStyle(EditorStyles.boldLabel)
-                    {
-                        fontSize = 11,
-                        normal   = { textColor = new Color(0.70f, 0.88f, 1f) },
-                    };
-                    EditorGUILayout.LabelField("NO TASK pose", __h);
+                        var __h = new GUIStyle(EditorStyles.boldLabel)
+                        {
+                            fontSize = 11,
+                            normal   = { textColor = new Color(0.70f, 0.88f, 1f) },
+                        };
+                        EditorGUILayout.LabelField("NO TASK pose", __h);
+                    }
                 }
             }
 
@@ -2094,28 +2285,28 @@ namespace OSE.Editor
                 // Label (display name)
                 EditorGUI.BeginChangeCheck();
                 string newLabel = EditorGUILayout.TextField("Name", sp.label ?? "");
-                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); sp.label = newLabel; p.isDirty = true; EndPartEdit(); Repaint(); }
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); sp.label = newLabel; p.isDirty = true; MirrorStepPosesToPreviewConfig(p); EndPartEdit(); Repaint(); }
 
                 // Step ID — which step activates this pose
                 EditorGUILayout.BeginHorizontal();
                 EditorGUI.BeginChangeCheck();
                 string newStepId = EditorGUILayout.TextField("Step ID", sp.stepId ?? "");
-                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); sp.stepId = newStepId; p.isDirty = true; EndPartEdit(); }
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); sp.stepId = newStepId; p.isDirty = true; MirrorStepPosesToPreviewConfig(p); EndPartEdit(); }
                 if (GUILayout.Button("Pick", EditorStyles.miniButton, GUILayout.Width(40)))
                     ShowStepIdPickerMenu(_selectedPartIdx, _editingPoseMode);
                 EditorGUILayout.EndHorizontal();
 
                 EditorGUI.BeginChangeCheck();
                 Vector3 spPos = Vector3FieldClip("Position", PackageJsonUtils.ToVector3(sp.position));
-                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); sp.position = PackageJsonUtils.ToFloat3(spPos); p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); sp.position = PackageJsonUtils.ToFloat3(spPos); p.isDirty = true; MirrorStepPosesToPreviewConfig(p); EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
 
                 EditorGUI.BeginChangeCheck();
                 Vector3 spEuler = Vector3FieldClip("Rotation", PackageJsonUtils.ToUnityQuaternion(sp.rotation).eulerAngles);
-                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); sp.rotation = PackageJsonUtils.ToQuaternion(Quaternion.Euler(spEuler)); p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); sp.rotation = PackageJsonUtils.ToQuaternion(Quaternion.Euler(spEuler)); p.isDirty = true; MirrorStepPosesToPreviewConfig(p); EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
 
                 EditorGUI.BeginChangeCheck();
                 Vector3 spScl = Vector3FieldClip("Scale", PackageJsonUtils.ToVector3(sp.scale));
-                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); sp.scale = PackageJsonUtils.ToFloat3(spScl); p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); sp.scale = PackageJsonUtils.ToFloat3(spScl); p.isDirty = true; MirrorStepPosesToPreviewConfig(p); EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
 
                 EditorGUILayout.Space(2);
                 EditorGUILayout.BeginHorizontal();
@@ -2128,29 +2319,29 @@ namespace OSE.Editor
             {
                 EditorGUI.BeginChangeCheck();
                 Vector3 newPlayPos = Vector3FieldClip("Play Position", p.assembledPosition);
-                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.assembledPosition = newPlayPos; p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.assembledPosition = newPlayPos; if (p.placement != null) p.placement.assembledPosition = PackageJsonUtils.ToFloat3(newPlayPos); p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
 
                 EditorGUI.BeginChangeCheck();
                 Vector3 playEuler = Vector3FieldClip("Play Rotation", p.assembledRotation.eulerAngles);
-                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.assembledRotation = Quaternion.Euler(playEuler); p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.assembledRotation = Quaternion.Euler(playEuler); if (p.placement != null) p.placement.assembledRotation = PackageJsonUtils.ToQuaternion(p.assembledRotation); p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
 
                 EditorGUI.BeginChangeCheck();
                 Vector3 newPlayScale = Vector3FieldClip("Play Scale", p.assembledScale);
-                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.assembledScale = newPlayScale; p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.assembledScale = newPlayScale; if (p.placement != null) p.placement.assembledScale = PackageJsonUtils.ToFloat3(newPlayScale); p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
             }
             else
             {
                 EditorGUI.BeginChangeCheck();
                 Vector3 newStartPos = Vector3FieldClip("Start Position", p.startPosition);
-                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.startPosition = newStartPos; p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.startPosition = newStartPos; if (p.placement != null) p.placement.startPosition = PackageJsonUtils.ToFloat3(newStartPos); p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
 
                 EditorGUI.BeginChangeCheck();
                 Vector3 startEuler = Vector3FieldClip("Start Rotation", p.startRotation.eulerAngles);
-                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.startRotation = Quaternion.Euler(startEuler); p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.startRotation = Quaternion.Euler(startEuler); if (p.placement != null) p.placement.startRotation = PackageJsonUtils.ToQuaternion(p.startRotation); p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
 
                 EditorGUI.BeginChangeCheck();
                 Vector3 newStartScale = Vector3FieldClip("Start Scale", p.startScale);
-                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.startScale = newStartScale; p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
+                if (EditorGUI.EndChangeCheck()) { BeginPartEdit(_selectedPartIdx); p.startScale = newStartScale; if (p.placement != null) p.placement.startScale = PackageJsonUtils.ToFloat3(newStartScale); p.isDirty = true; EndPartEdit(); SyncPartMeshToActivePose(ref p); SceneView.RepaintAll(); }
             }
 
             EditorGUILayout.Space(4);
@@ -2162,6 +2353,281 @@ namespace OSE.Editor
             if (GUILayout.Button("Redo", EditorStyles.miniButtonRight, GUILayout.Width(60))) RedoPartPose();
             EditorGUI.EndDisabledGroup();
             EditorGUILayout.EndHorizontal();
+        }
+
+        /// <summary>
+        /// Finds the subassembly that owns this part (first match in
+        /// <c>sub.partIds</c>). Prefers non-aggregate groups so stripping
+        /// affects the actual integrated-placement subassembly rather than a
+        /// phase scope. Returns null if the part isn't in any group.
+        /// </summary>
+        private string ResolveOwningSubassemblyId(PartEditState p)
+        {
+            if (p.def == null || _pkg == null) return null;
+            var subs = _pkg.GetSubassemblies();
+            if (subs == null) return null;
+            string aggregateMatch = null;
+            foreach (var s in subs)
+            {
+                if (s?.partIds == null) continue;
+                foreach (var pid in s.partIds)
+                {
+                    if (!string.Equals(pid, p.def.id, StringComparison.Ordinal)) continue;
+                    if (!s.isAggregate) return s.id;
+                    if (aggregateMatch == null) aggregateMatch = s.id;
+                }
+            }
+            return aggregateMatch;
+        }
+
+        private int CountIntegratedPlacementsForSubassembly(string subId)
+        {
+            if (string.IsNullOrEmpty(subId)) return 0;
+            var placements = _pkg?.previewConfig?.integratedSubassemblyPlacements;
+            if (placements == null) return 0;
+            int n = 0;
+            foreach (var pl in placements)
+                if (pl != null && string.Equals(pl.subassemblyId, subId, StringComparison.Ordinal))
+                    n++;
+            return n;
+        }
+
+        /// <summary>
+        /// Removes every <c>integratedSubassemblyPlacements</c> entry whose
+        /// <c>subassemblyId</c> matches <paramref name="subId"/>. Dirties the
+        /// package so Write-to-JSON persists the removal. The runtime spawner
+        /// will then skip the integrated lookup and fall through to
+        /// startPosition / assembledPosition for the group's members.
+        /// </summary>
+        private void StripIntegratedPlacementsForSubassembly(string subId)
+        {
+            if (string.IsNullOrEmpty(subId)) return;
+            var pc = _pkg?.previewConfig;
+            if (pc?.integratedSubassemblyPlacements == null) return;
+            var kept = new List<IntegratedSubassemblyPreviewPlacement>();
+            int removed = 0;
+            foreach (var pl in pc.integratedSubassemblyPlacements)
+            {
+                if (pl != null && string.Equals(pl.subassemblyId, subId, StringComparison.Ordinal))
+                { removed++; continue; }
+                kept.Add(pl);
+            }
+            if (removed == 0) return;
+
+            pc.integratedSubassemblyPlacements = kept.ToArray();
+            _dirtySubassemblyIds.Add(subId);
+            // Also mark any step that referenced this group for re-serialisation.
+            if (_pkg?.steps != null)
+            {
+                foreach (var s in _pkg.steps)
+                {
+                    if (s == null) continue;
+                    if (string.Equals(s.requiredSubassemblyId, subId, StringComparison.Ordinal)
+                        || string.Equals(s.subassemblyId, subId, StringComparison.Ordinal))
+                        _dirtyStepIds.Add(s.id);
+                }
+            }
+            ShowNotification(new GUIContent($"Stripped {removed} integrated placement(s) for '{subId}'."));
+            SyncAllPartMeshesToActivePose();
+            Repaint();
+            SceneView.RepaintAll();
+        }
+
+        /// <summary>
+        /// Removes every stepPose on the part except the one anchored to
+        /// <paramref name="keepStepId"/>. Also mirrors the change into the
+        /// backing <c>PartPreviewPlacement.stepPoses</c> so a subsequent
+        /// <see cref="BuildPartList"/> doesn't resurrect them.
+        /// </summary>
+        private void RemoveStepPosesExcept(int partIdx, string keepStepId)
+        {
+            if (partIdx < 0 || _parts == null || partIdx >= _parts.Length) return;
+            if (_parts[partIdx].stepPoses == null || _parts[partIdx].stepPoses.Count == 0) return;
+            BeginPartEdit(partIdx);
+            var list = _parts[partIdx].stepPoses;
+            for (int i = list.Count - 1; i >= 0; i--)
+            {
+                var e = list[i];
+                if (e == null || !string.Equals(e.stepId, keepStepId, StringComparison.Ordinal))
+                    list.RemoveAt(i);
+            }
+            _parts[partIdx].isDirty = true;
+            MirrorStepPosesToPreviewConfig(_parts[partIdx]);
+            EndPartEdit();
+            _editingPoseMode = _parts[partIdx].stepPoses.Count > 0 ? 0 : PoseModeStart;
+            SyncAllPartMeshesToActivePose();
+            Repaint();
+            SceneView.RepaintAll();
+        }
+
+        /// <summary>
+        /// Removes every stepPose on the part whose anchor step's
+        /// sequenceIndex is strictly greater than <paramref name="afterSeq"/>.
+        /// </summary>
+        private void RemoveStepPosesAfter(int partIdx, int afterSeq)
+        {
+            if (partIdx < 0 || _parts == null || partIdx >= _parts.Length) return;
+            if (_parts[partIdx].stepPoses == null || _parts[partIdx].stepPoses.Count == 0) return;
+            BeginPartEdit(partIdx);
+            var list = _parts[partIdx].stepPoses;
+            for (int i = list.Count - 1; i >= 0; i--)
+            {
+                var e = list[i];
+                if (e == null) { list.RemoveAt(i); continue; }
+                int s = SeqIndexForStepId(e.stepId);
+                if (s > afterSeq) list.RemoveAt(i);
+            }
+            _parts[partIdx].isDirty = true;
+            MirrorStepPosesToPreviewConfig(_parts[partIdx]);
+            EndPartEdit();
+            SyncAllPartMeshesToActivePose();
+            Repaint();
+            SceneView.RepaintAll();
+        }
+
+        /// <summary>
+        /// Copies the in-memory <c>stepPoses</c> list to the underlying
+        /// <c>PartPreviewPlacement.stepPoses</c> array so future
+        /// <see cref="BuildPartList"/> rebuilds pick it up and the save
+        /// path serialises the pruned list.
+        /// </summary>
+        private void MirrorStepPosesToPreviewConfig(PartEditState p)
+        {
+            if (p.def == null) return;
+            var ppRef = FindPartPlacement(p.def.id);
+            if (ppRef == null) return;
+            ppRef.stepPoses = p.stepPoses != null && p.stepPoses.Count > 0
+                ? p.stepPoses.ToArray()
+                : null;
+        }
+
+        private void DrawAllStepPosesAuditStrip(ref PartEditState p)
+        {
+            // ALWAYS render the header so the author can tell the panel is
+            // reachable even when no waypoints exist yet. Early-returning on
+            // empty hid the affordance so the author couldn't tell whether
+            // the absence meant "zero waypoints" or "the panel isn't drawing."
+            // Count author-authored entries only — synthetic NO-TASK
+            // waypoints aren't surfaced in the audit list.
+            int count = 0;
+            if (p.stepPoses != null)
+            {
+                foreach (var spe in p.stepPoses)
+                {
+                    if (spe == null) continue;
+                    if (!string.IsNullOrEmpty(spe.label)
+                        && spe.label.StartsWith(OSE.Content.Loading.MachinePackageNormalizer.AutoNoTaskLabel, StringComparison.Ordinal))
+                        continue;
+                    count++;
+                }
+            }
+            EditorGUILayout.Space(6);
+            EditorGUILayout.BeginHorizontal();
+            var hdrStyleTop = new GUIStyle(EditorStyles.miniBoldLabel);
+            EditorGUILayout.LabelField($"Waypoints on this part ({count})", hdrStyleTop);
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+            if (count == 0)
+            {
+                var emptyStyle = new GUIStyle(EditorStyles.miniLabel) { fontStyle = FontStyle.Italic };
+                EditorGUILayout.LabelField("  (none — transforms come from startPosition / assembledPosition)", emptyStyle);
+                return;
+            }
+
+            // Prune buttons removed alongside the propagation UI. Per-row
+            // × buttons below are sufficient for one-off cleanup.
+
+            // Strip integrated placements for this part's owning subassembly.
+            // Lets the author remove the per-target integrated poses that
+            // otherwise override NO TASK's startPosition on later steps.
+            string ownerSubId = ResolveOwningSubassemblyId(p);
+            int integratedCount = CountIntegratedPlacementsForSubassembly(ownerSubId);
+            if (integratedCount > 0)
+            {
+                EditorGUILayout.BeginHorizontal();
+                var warnStyle = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    normal    = { textColor = new Color(0.95f, 0.65f, 0.30f) },
+                    fontStyle = FontStyle.Italic,
+                };
+                GUILayout.Label($"  {integratedCount} integrated placement(s) on group '{ownerSubId}' can override later steps", warnStyle);
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button(new GUIContent("Strip integrated",
+                        "Removes every integratedSubassemblyPlacements entry for this part's owning subassembly. The spawner will then fall back to startPosition / assembledPosition, letting NO TASK pose dominate."),
+                    EditorStyles.miniButton, GUILayout.Width(112)))
+                {
+                    StripIntegratedPlacementsForSubassembly(ownerSubId);
+                    return;
+                }
+                EditorGUILayout.EndHorizontal();
+            }
+
+            // Sort indices by the anchor step's sequenceIndex so the list
+            // reads front-to-back in the package. Bad entries (unknown
+            // stepId) sort last. Capture the list into a local so the sort
+            // lambda doesn't close over the ref parameter (C# disallows).
+            var posesLocal = p.stepPoses;
+            var order = new List<int>();
+            for (int i = 0; i < posesLocal.Count; i++) order.Add(i);
+            order.Sort((a, b) =>
+            {
+                int sa = SeqIndexForStepId(posesLocal[a]?.stepId ?? "");
+                int sb = SeqIndexForStepId(posesLocal[b]?.stepId ?? "");
+                if (sa < 0) sa = int.MaxValue;
+                if (sb < 0) sb = int.MaxValue;
+                return sa.CompareTo(sb);
+            });
+
+            string currentStepId = GetCurrentStepId();
+            foreach (int idx in order)
+            {
+                var e = p.stepPoses[idx];
+                if (e == null) continue;
+                // Hide synthetic NO-TASK waypoints from the audit list —
+                // they're recomputed on every load and never persisted, so
+                // there's nothing the author needs to see or prune.
+                if (!string.IsNullOrEmpty(e.label)
+                    && e.label.StartsWith(OSE.Content.Loading.MachinePackageNormalizer.AutoNoTaskLabel, StringComparison.Ordinal))
+                    continue;
+
+                bool isCurrent = !string.IsNullOrEmpty(currentStepId)
+                                  && string.Equals(e.stepId, currentStepId, StringComparison.Ordinal);
+                int anchorSeq = SeqIndexForStepId(e.stepId);
+                string anchorLabel = anchorSeq >= 0
+                    ? $"[{anchorSeq}] {StepShortLabel(e.stepId)}"
+                    : $"(unknown: {e.stepId ?? "∅"})";
+                string span = ResolveSpanChip(e);
+
+                EditorGUILayout.BeginHorizontal();
+                var labelStyle = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    fontStyle = isCurrent ? FontStyle.Bold : FontStyle.Normal,
+                    normal    = { textColor = isCurrent ? new Color(0.70f, 0.88f, 1f) : new Color(0.78f, 0.78f, 0.80f) },
+                };
+                GUILayout.Label(anchorLabel, labelStyle, GUILayout.MinWidth(140));
+                var spanStyle = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    normal    = { textColor = new Color(0.55f, 0.78f, 0.95f) },
+                    alignment = TextAnchor.MiddleLeft,
+                };
+                GUILayout.Label(string.IsNullOrEmpty(span) ? "" : span, spanStyle, GUILayout.MinWidth(90));
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("Go", EditorStyles.miniButtonLeft, GUILayout.Width(28)) && anchorSeq >= 0)
+                {
+                    // Jump the step filter to this pose's anchor step so the
+                    // author can inspect it in context.
+                    if (_stepIds != null)
+                        for (int k = 0; k < _stepIds.Length; k++)
+                            if (string.Equals(_stepIds[k], e.stepId, StringComparison.Ordinal))
+                            { ApplyStepFilter(k); break; }
+                }
+                if (GUILayout.Button("×", EditorStyles.miniButtonRight, GUILayout.Width(22)))
+                {
+                    RemoveStepPose(_selectedPartIdx, idx);
+                    break; // indices shifted; re-render next frame
+                }
+                EditorGUILayout.EndHorizontal();
+            }
         }
 
         private void DrawPartBatchPanel()
@@ -2190,7 +2656,9 @@ namespace OSE.Editor
                     ref PartEditState p2 = ref _parts[idx];
                     if (_editAssembledPose) p2.assembledPosition.x  = batchX;
                     else               p2.startPosition.x = batchX;
-                    p2.isDirty = true; SyncPartMeshToActivePose(ref p2);
+                    p2.isDirty = true;
+                    MirrorPartStateToPlacement(ref p2); // keep PoseResolver in sync with the cached edit
+                    SyncPartMeshToActivePose(ref p2);
                 }
                 SceneView.RepaintAll(); Repaint();
             }
@@ -2204,7 +2672,9 @@ namespace OSE.Editor
                     ref PartEditState p2 = ref _parts[idx];
                     if (_editAssembledPose) p2.assembledPosition.y  = batchY;
                     else               p2.startPosition.y = batchY;
-                    p2.isDirty = true; SyncPartMeshToActivePose(ref p2);
+                    p2.isDirty = true;
+                    MirrorPartStateToPlacement(ref p2); // keep PoseResolver in sync with the cached edit
+                    SyncPartMeshToActivePose(ref p2);
                 }
                 SceneView.RepaintAll(); Repaint();
             }
@@ -2218,7 +2688,9 @@ namespace OSE.Editor
                     ref PartEditState p2 = ref _parts[idx];
                     if (_editAssembledPose) p2.assembledPosition.z  = batchZ;
                     else               p2.startPosition.z = batchZ;
-                    p2.isDirty = true; SyncPartMeshToActivePose(ref p2);
+                    p2.isDirty = true;
+                    MirrorPartStateToPlacement(ref p2); // keep PoseResolver in sync with the cached edit
+                    SyncPartMeshToActivePose(ref p2);
                 }
                 SceneView.RepaintAll(); Repaint();
             }
@@ -2237,7 +2709,9 @@ namespace OSE.Editor
                     ref PartEditState p2 = ref _parts[idx];
                     if (_editAssembledPose) p2.assembledRotation  = batchRot;
                     else               p2.startRotation = batchRot;
-                    p2.isDirty = true; SyncPartMeshToActivePose(ref p2);
+                    p2.isDirty = true;
+                    MirrorPartStateToPlacement(ref p2); // keep PoseResolver in sync with the cached edit
+                    SyncPartMeshToActivePose(ref p2);
                 }
                 SceneView.RepaintAll(); Repaint();
             }
@@ -2255,7 +2729,9 @@ namespace OSE.Editor
                     ref PartEditState p2 = ref _parts[idx];
                     if (_editAssembledPose) p2.assembledScale  = batchScale;
                     else               p2.startScale = batchScale;
-                    p2.isDirty = true; SyncPartMeshToActivePose(ref p2);
+                    p2.isDirty = true;
+                    MirrorPartStateToPlacement(ref p2); // keep PoseResolver in sync with the cached edit
+                    SyncPartMeshToActivePose(ref p2);
                 }
                 SceneView.RepaintAll(); Repaint();
             }
@@ -2272,7 +2748,9 @@ namespace OSE.Editor
                     ref PartEditState p2 = ref _parts[idx];
                     if (_editAssembledPose) p2.assembledPosition.x  += dx;
                     else               p2.startPosition.x += dx;
-                    p2.isDirty = true; SyncPartMeshToActivePose(ref p2);
+                    p2.isDirty = true;
+                    MirrorPartStateToPlacement(ref p2); // keep PoseResolver in sync with the cached edit
+                    SyncPartMeshToActivePose(ref p2);
                 }
                 SceneView.RepaintAll(); Repaint();
             }
@@ -2286,7 +2764,9 @@ namespace OSE.Editor
                     ref PartEditState p2 = ref _parts[idx];
                     if (_editAssembledPose) p2.assembledPosition.y  += dy;
                     else               p2.startPosition.y += dy;
-                    p2.isDirty = true; SyncPartMeshToActivePose(ref p2);
+                    p2.isDirty = true;
+                    MirrorPartStateToPlacement(ref p2); // keep PoseResolver in sync with the cached edit
+                    SyncPartMeshToActivePose(ref p2);
                 }
                 SceneView.RepaintAll(); Repaint();
             }
@@ -2300,7 +2780,9 @@ namespace OSE.Editor
                     ref PartEditState p2 = ref _parts[idx];
                     if (_editAssembledPose) p2.assembledPosition.z  += dz;
                     else               p2.startPosition.z += dz;
-                    p2.isDirty = true; SyncPartMeshToActivePose(ref p2);
+                    p2.isDirty = true;
+                    MirrorPartStateToPlacement(ref p2); // keep PoseResolver in sync with the cached edit
+                    SyncPartMeshToActivePose(ref p2);
                 }
                 SceneView.RepaintAll(); Repaint();
             }

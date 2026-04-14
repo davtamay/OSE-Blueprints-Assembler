@@ -136,6 +136,16 @@ namespace OSE.Content
         /// content: anchored to <see cref="stepId"/> with forward fall-through.
         /// </summary>
         public string propagateThroughStep;
+
+        /// <summary>
+        /// Shallow copy. Uses <see cref="object.MemberwiseClone"/> so every
+        /// serialized field is preserved automatically — adding a new field
+        /// to this class never risks a silent drop in copies, the bug class
+        /// that produced the "Custom 1 re-appears on every drag" symptom in
+        /// the pose rewrite. The SceneFloat3 / SceneQuaternion fields are
+        /// structs, so shallow-cloning them is equivalent to a deep copy.
+        /// </summary>
+        public StepPoseEntry Clone() => (StepPoseEntry)MemberwiseClone();
     }
 
     /// <summary>

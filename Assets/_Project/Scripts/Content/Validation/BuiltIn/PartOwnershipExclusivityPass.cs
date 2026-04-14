@@ -110,11 +110,18 @@ namespace OSE.Content.Validation
             {
                 if (kvp.Value.Count < 2) continue;
 
-                ctx.Issues.Add(ValidationPassHelpers.Error(
+                // Multi-Place is now a supported authoring pattern (e.g. loose
+                // alignment followed by final placement, or repositioning into
+                // a new pose). The runtime's navigation/pose code is list-
+                // aware; the only thing we want to surface is the fact that
+                // the author has declared multiple placements — a diagnostic,
+                // not a blocker. Downgraded from Error → Warning.
+                ctx.Issues.Add(ValidationPassHelpers.Warning(
                     "steps[*].requiredPartIds",
                     $"partId '{kvp.Key}' is placed by multiple Place-family steps: " +
-                    $"{string.Join(", ", kvp.Value)}. Each physical part can only be 'placed' " +
-                    "once; rename to distinct partIds."));
+                    $"{string.Join(", ", kvp.Value)}. Multi-placement is supported — " +
+                    "this is informational. If unintended, remove the partId from " +
+                    "all but one step."));
             }
         }
 

@@ -41,6 +41,14 @@ namespace OSE.Content
         [NonSerialized] private Dictionary<string, StepDefinition[]> _stepsBySubassemblyId;
         [NonSerialized] private string _stepStructureHash;
 
+        /// <summary>
+        /// Pre-baked pose lookup table (partId × seqIndex → <see cref="Loading.PoseResolution"/>).
+        /// Populated by <see cref="Loading.MachinePackageNormalizer.Normalize"/>.
+        /// Editor and runtime both read from this; nobody re-runs pose
+        /// resolution at render time. Never persisted.
+        /// </summary>
+        [NonSerialized] public OSE.Content.Loading.PoseTable poseTable;
+
         public AssemblyDefinition[] GetAssemblies() => assemblies ?? Array.Empty<AssemblyDefinition>();
 
         public SubassemblyDefinition[] GetSubassemblies() => subassemblies ?? Array.Empty<SubassemblyDefinition>();

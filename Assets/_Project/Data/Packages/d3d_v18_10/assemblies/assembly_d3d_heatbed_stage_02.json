@@ -437,43 +437,42 @@
       "assemblyId": "assembly_d3d_heatbed_stage_02",
       "sequenceIndex": 281,
       "instructionText": "Thread two nuts onto each bed guide rod. Slide each rod through the matching hole in the Z-front carriage and the Z-back carriage. Push rod ends flush with the outer edges of both carriages.",
-      "requiredPartIds": [
-        "bed_rod_1",
-        "bed_rod_002"
-      ],
-      "targetIds": [
-        "target_bed_rod_a_mount",
-        "target_bed_rod_b_mount"
-      ],
       "hintIds": [
         "hint_mount_bed_guide_rods"
       ],
       "isOptional": false,
-      "family": "Place"
-    },
+      "family": "Place",
+      "removePersistentToolIds": [],
+      "targetIds": [ "target_bed_rod_a_mount", "target_bed_rod_b_mount" ],
+      "requiredPartIds": [ "bed_rod_1", "bed_rod_002" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"bed_rod_1"},
+        {"kind":"part","id":"bed_rod_002"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_place_bed_raisers",
       "name": "Thread the bed raiser standoffs onto the guide rods",
       "assemblyId": "assembly_d3d_heatbed_stage_02",
       "sequenceIndex": 282,
       "instructionText": "Thread three bed raiser standoffs onto each of the two guide rods. Space them evenly. The raisers create the flat support surface that the heated bed rests on and maintain the correct bed height above the carriages.",
-      "requiredPartIds": [
-        "bed_raiser",
-        "bed_raiser001",
-        "bed_raiser002",
-        "bed_raiser003",
-        "bed_raiser004",
-        "bed_raiser005"
-      ],
-      "targetIds": [
-        "target_bed_raisers_set"
-      ],
       "hintIds": [
         "hint_place_bed_raisers"
       ],
       "isOptional": false,
-      "family": "Place"
-    },
+      "family": "Place",
+      "removePersistentToolIds": [],
+      "targetIds": [ "target_bed_raisers_set" ],
+      "requiredPartIds": [ "bed_raiser", "bed_raiser001", "bed_raiser002", "bed_raiser003", "bed_raiser004", "bed_raiser005" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"bed_raiser"},
+        {"kind":"part","id":"bed_raiser001"},
+        {"kind":"part","id":"bed_raiser002"},
+        {"kind":"part","id":"bed_raiser003"},
+        {"kind":"part","id":"bed_raiser004"},
+        {"kind":"part","id":"bed_raiser005"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_check_bed_platform_alignment",
       "name": "Check bed platform alignment and rod seating",
@@ -496,20 +495,18 @@
       "instructionText": "Position the Y-axis bed guide rods connecting the front and back Z carriages. These rods enable the bed platform to travel smoothly along the Y axis.",
       "family": "Place",
       "sequenceIndex": 284,
-      "requiredPartIds": [
-        "rod_2",
-        "rod_003",
-        "rod_004"
-      ],
       "hintIds": [
         "hint_y_bed_rods"
       ],
-      "targetIds": [
-        "target_y_bed_rod_a",
-        "target_y_bed_rod_b",
-        "target_y_bed_rod_c"
-      ]
-    }
+      "removePersistentToolIds": [],
+      "targetIds": [ "target_y_bed_rod_a", "target_y_bed_rod_b", "target_y_bed_rod_c" ],
+      "requiredPartIds": [ "rod_2", "rod_003", "rod_004" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"rod_2"},
+        {"kind":"part","id":"rod_003"},
+        {"kind":"part","id":"rod_004"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  }
   ],
   "targets": [
     {

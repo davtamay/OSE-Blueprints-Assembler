@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "ose-assembly": {
+      "command": "python",
+      "args": ["tools/ose_mcp_server.py"],
+      "cwd": "c:\\Users\\davta\\Repos\\OSE Blueprints Assembler"
+    }
+  }
+}

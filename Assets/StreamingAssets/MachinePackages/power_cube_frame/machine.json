@@ -401,6 +401,7 @@
       "name": "Base Long Tube 1",
       "displayName": "Base Long Tube (Front)",
       "function": "Front rail of the base frame rectangle.",
+      "stagingPose": {"position": {"x": -0.375, "y": 0.0, "z": 1.5}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}, "scale": {"x": 1.0, "y": 1.0, "z": 1.0}},
       "searchTerms": [
         "base tube",
         "long tube",
@@ -415,6 +416,7 @@
       "name": "Base Long Tube 2",
       "displayName": "Base Long Tube (Back)",
       "function": "Back rail of the base frame rectangle.",
+      "stagingPose": {"position": {"x": -0.125, "y": 0.0, "z": 1.5}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}, "scale": {"x": 1.0, "y": 1.0, "z": 1.0}},
       "searchTerms": [
         "base tube",
         "long tube",
@@ -429,6 +431,7 @@
       "name": "Base Short Tube 1",
       "displayName": "Base Short Tube (Left)",
       "function": "Left side of the base frame rectangle.",
+      "stagingPose": {"position": {"x": 0.125, "y": 0.0, "z": 1.5}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}, "scale": {"x": 1.0, "y": 1.0, "z": 1.0}},
       "searchTerms": [
         "base tube",
         "short tube",
@@ -443,6 +446,7 @@
       "name": "Base Short Tube 2",
       "displayName": "Base Short Tube (Right)",
       "function": "Right side of the base frame rectangle.",
+      "stagingPose": {"position": {"x": 0.375, "y": 0.0, "z": 1.5}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}, "scale": {"x": 1.0, "y": 1.0, "z": 1.0}},
       "searchTerms": [
         "base tube",
         "short tube",
@@ -457,6 +461,7 @@
       "name": "Vertical Post 1",
       "displayName": "Vertical Post (Front-Left)",
       "function": "Front-left vertical corner post.",
+      "stagingPose": {"position": {"x": -0.375, "y": 0.0, "z": 1.8}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}, "scale": {"x": 1.0, "y": 1.0, "z": 1.0}},
       "searchTerms": [
         "vertical post",
         "corner post",
@@ -469,21 +474,24 @@
       "templateId": "template_vertical_post",
       "name": "Vertical Post 2",
       "displayName": "Vertical Post (Front-Right)",
-      "function": "Front-right vertical corner post."
+      "function": "Front-right vertical corner post.",
+      "stagingPose": {"position": {"x": -0.125, "y": 0.0, "z": 1.8}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}, "scale": {"x": 1.0, "y": 1.0, "z": 1.0}}
     },
     {
       "id": "vertical_post_3",
       "templateId": "template_vertical_post",
       "name": "Vertical Post 3",
       "displayName": "Vertical Post (Back-Left)",
-      "function": "Back-left vertical corner post."
+      "function": "Back-left vertical corner post.",
+      "stagingPose": {"position": {"x": 0.125, "y": 0.0, "z": 1.8}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}, "scale": {"x": 1.0, "y": 1.0, "z": 1.0}}
     },
     {
       "id": "vertical_post_4",
       "templateId": "template_vertical_post",
       "name": "Vertical Post 4",
       "displayName": "Vertical Post (Back-Right)",
-      "function": "Back-right vertical corner post."
+      "function": "Back-right vertical corner post.",
+      "stagingPose": {"position": {"x": 0.375, "y": 0.0, "z": 1.8}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}, "scale": {"x": 1.0, "y": 1.0, "z": 1.0}}
     },
     {
       "id": "top_tube_long_1",
@@ -491,6 +499,7 @@
       "name": "Top Long Tube 1",
       "displayName": "Top Long Tube (Front)",
       "function": "Front rail of the top ring.",
+      "stagingPose": {"position": {"x": -0.375, "y": 0.0, "z": 2.1}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}, "scale": {"x": 1.0, "y": 1.0, "z": 1.0}},
       "searchTerms": [
         "top tube",
         "long tube",
@@ -504,6 +513,7 @@
       "name": "Top Long Tube 2",
       "displayName": "Top Long Tube (Back)",
       "function": "Back rail of the top ring.",
+      "stagingPose": {"position": {"x": -0.125, "y": 0.0, "z": 2.1}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}, "scale": {"x": 1.0, "y": 1.0, "z": 1.0}},
       "searchTerms": [
         "top tube",
         "long tube",
@@ -517,6 +527,7 @@
       "name": "Top Short Tube 1",
       "displayName": "Top Short Tube (Left)",
       "function": "Left side of the top ring.",
+      "stagingPose": {"position": {"x": 0.125, "y": 0.0, "z": 2.1}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}, "scale": {"x": 1.0, "y": 1.0, "z": 1.0}},
       "searchTerms": [
         "top tube",
         "short tube",
@@ -530,6 +541,7 @@
       "name": "Top Short Tube 2",
       "displayName": "Top Short Tube (Right)",
       "function": "Right side of the top ring.",
+      "stagingPose": {"position": {"x": 0.375, "y": 0.0, "z": 2.1}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}, "scale": {"x": 1.0, "y": 1.0, "z": 1.0}},
       "searchTerms": [
         "top tube",
         "short tube",

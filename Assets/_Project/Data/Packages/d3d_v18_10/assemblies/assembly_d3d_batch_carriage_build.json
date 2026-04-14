@@ -305,11 +305,13 @@
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [],
-      "visualPartIds": [ "y_left_carriage_half_a", "y_left_carriage_half_b", "y_right_carriage_half_a", "y_right_carriage_half_b", "z_back_carriage_half_a", "z_back_carriage_half_b", "z_front_carriage_half_a", "z_front_carriage_half_b" ],
+      "visualPartIds": [ "y_left_carriage_half_a", "y_right_carriage_half_a", "y_right_carriage_half_b", "z_back_carriage_half_a", "z_back_carriage_half_b", "z_front_carriage_half_a", "z_front_carriage_half_b", "y_left_carriage_half_b" ],
       "requiredToolActions": [],
       "taskOrder": [{"kind":"part","id":"y_left_carriage_half_a"},
         {"kind":"part","id":"y_left_carriage_half_b"},
-        {"kind":"part","id":"y_right_carriage_half_a"},
+        {"kind":"part","id":"y_right_carriage_half_a",
+        "stagingPose": {"position":{"x":0.6728,"y":0.55,"z":-1.3411e-7},"rotation":{"x":-0.5,"y":0.5,"z":-0.5,"w":0.5},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.7,"g":0.7,"b":0.7,"a":1.0}}
+    },
         {"kind":"part","id":"y_right_carriage_half_b"},
         {"kind":"part","id":"z_back_carriage_half_a"},
         {"kind":"part","id":"z_back_carriage_half_b"},
@@ -365,14 +367,24 @@
       "sequenceIndex": 53,
       "family": "Place",
       "instructionText": "Place four LM8UU linear bearings into one Y-Left carriage half-piece. Flanges must face outward â€” away from each other â€” so they sit flush in the lip of each pocket.",
-      "requiredPartIds": [
-        "y_left_carriage_half_a",
-        "y_left_lm8uu_a",
-        "y_left_lm8uu_b",
-        "y_left_lm8uu_c",
-        "y_left_lm8uu_d"
-      ]
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [ "y_left_lm8uu_a", "y_left_lm8uu_b", "y_left_lm8uu_c", "y_left_lm8uu_d" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"y_left_lm8uu_a",
+      "stagingPose": {"position":{"x":0.5761,"y":0.56,"z":0.015},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.6,"g":0.6,"b":0.65,"a":1.0}}
+  },
+        {"kind":"part","id":"y_left_lm8uu_b",
+        "stagingPose": {"position":{"x":0.6021,"y":0.56,"z":0.015},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.6,"g":0.6,"b":0.65,"a":1.0}}
     },
+        {"kind":"part","id":"y_left_lm8uu_c",
+        "stagingPose": {"position":{"x":0.887,"y":0.56,"z":-0.015},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.6,"g":0.6,"b":0.65,"a":1.0}}
+    },
+        {"kind":"part","id":"y_left_lm8uu_d",
+        "stagingPose": {"position":{"x":0.6021,"y":0.56,"z":-0.015},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.6,"g":0.6,"b":0.65,"a":1.0}}
+    }],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_batch_c1_close_halves",
       "name": "Carriage 1: close the second carriage half",
@@ -381,10 +393,13 @@
       "sequenceIndex": 54,
       "family": "Place",
       "instructionText": "Place the second Y-Left carriage half onto the first, trapping the 4 bearings in their pockets. The small ribbed belt hole should sit directly beside the large smooth belt hole.",
-      "requiredPartIds": [
-        "y_left_carriage_half_b"
-      ]
-    },
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [ "y_right_carriage_half_a" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"y_right_carriage_half_a"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_batch_c1_shake_test",
       "name": "Carriage 1: shake test",
@@ -405,30 +420,14 @@
         "failureMessage": "Bearing fit is too loose. Swap to a slightly larger LM8UU or try the next batch of bearings. Re-test before closing the carriage."
       },
       "difficulty": "beginner",
-      "requiredPartIds": [
-        "y_left_carriage_half_a",
-        "y_left_carriage_half_b"
-      ],
-      "animationCues": {
-        "cues": [
-          {
-            "type": "shake",
-            "targetPartIds": [
-              "y_left_carriage_half_a",
-              "y_left_carriage_half_b"
-            ],
-            "shakeAmplitude": 0.006,
-            "shakeFrequency": 8,
-            "shakeAxis": {
-              "x": 1,
-              "y": 0,
-              "z": 0
-            },
-            "loop": true
-          }
-        ]
-      }
-    },
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"confirm_action","id":"confirm"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}},
+      "animationCues": {"cues":[{"type":"shake","targetPartIds":["y_left_carriage_half_a","y_left_carriage_half_b"],"targetToolIds":[],"targetSubassemblyId":"","trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":true,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.006,"shakeFrequency":8.0,"shakeAxis":{"x":1.0,"y":0.0,"z":0.0},"animationClipName":""}],"previewDelaySeconds":0.0}
+  },
     {
       "id": "step_batch_c1_rod_slide_test",
       "name": "Carriage 1: rod slide test",
@@ -449,12 +448,15 @@
         "failureMessage": "Too free: wrap each bearing in one layer of electrical tape and retest. Too tight: check bearings are fully seated and halves are not warped."
       },
       "difficulty": "beginner",
-      "requiredPartIds": [
-        "y_left_carriage_half_a",
-        "y_left_carriage_half_b",
-        "batch_test_rod"
-      ]
-    },
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [ "y_left_carriage_half_a", "y_left_carriage_half_b", "batch_test_rod" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"y_left_carriage_half_a"},
+        {"kind":"part","id":"y_left_carriage_half_b"},
+        {"kind":"part","id":"batch_test_rod"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_batch_c1_place_bolts",
       "name": "Carriage 1: place bolts and thread nuts",
@@ -463,17 +465,20 @@
       "sequenceIndex": 57,
       "family": "Place",
       "instructionText": "Insert 2Ã— M6x18 bolts into the two top holes and 2Ã— M6x30 bolts into the two bottom holes. Thread one M6 nut onto each bolt finger-tight.",
-      "requiredPartIds": [
-        "y_left_m6x18_a",
-        "y_left_carriage_m6x18_b",
-        "y_left_m6x30_a",
-        "y_left_m6x30_b",
-        "y_left_m6_nut_a",
-        "y_left_m6_nut_b",
-        "y_left_m6_nut_c",
-        "y_left_m6_nut_d"
-      ]
-    },
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [ "y_left_m6x18_a", "y_left_carriage_m6x18_b", "y_left_m6x30_a", "y_left_m6x30_b", "y_left_m6_nut_a", "y_left_m6_nut_b", "y_left_m6_nut_c", "y_left_m6_nut_d" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"y_left_m6x18_a"},
+        {"kind":"part","id":"y_left_carriage_m6x18_b"},
+        {"kind":"part","id":"y_left_m6x30_a"},
+        {"kind":"part","id":"y_left_m6x30_b"},
+        {"kind":"part","id":"y_left_m6_nut_a"},
+        {"kind":"part","id":"y_left_m6_nut_b"},
+        {"kind":"part","id":"y_left_m6_nut_c"},
+        {"kind":"part","id":"y_left_m6_nut_d"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_batch_c1_tighten",
       "name": "Carriage 1: tighten â€” 1 of 4 complete",
@@ -482,19 +487,22 @@
       "sequenceIndex": 58,
       "family": "Use",
       "instructionText": "Use the power drill on the lowest torque setting to tighten all 4 bolts on the Y-Left carriage. Set it aside â€” carriage 1 of 4 is complete.",
-      "requiredPartIds": [
-        "y_left_carriage_half_a",
-        "y_left_carriage_half_b",
-        "y_left_m6x18_a",
-        "y_left_carriage_m6x18_b",
-        "y_left_m6x30_a",
-        "y_left_m6x30_b",
-        "y_left_m6_nut_a",
-        "y_left_m6_nut_b",
-        "y_left_m6_nut_c",
-        "y_left_m6_nut_d"
-      ]
-    },
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [ "y_left_carriage_half_a", "y_left_carriage_half_b", "y_left_m6x18_a", "y_left_carriage_m6x18_b", "y_left_m6x30_a", "y_left_m6x30_b", "y_left_m6_nut_a", "y_left_m6_nut_b", "y_left_m6_nut_c", "y_left_m6_nut_d" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"y_left_carriage_half_a"},
+        {"kind":"part","id":"y_left_carriage_half_b"},
+        {"kind":"part","id":"y_left_m6x18_a"},
+        {"kind":"part","id":"y_left_carriage_m6x18_b"},
+        {"kind":"part","id":"y_left_m6x30_a"},
+        {"kind":"part","id":"y_left_m6x30_b"},
+        {"kind":"part","id":"y_left_m6_nut_a"},
+        {"kind":"part","id":"y_left_m6_nut_b"},
+        {"kind":"part","id":"y_left_m6_nut_c"},
+        {"kind":"part","id":"y_left_m6_nut_d"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_batch_c2_place_bearings",
       "name": "Carriage 2 (Y-Right): place 4 LM8UU bearings",
@@ -503,14 +511,17 @@
       "sequenceIndex": 59,
       "family": "Place",
       "instructionText": "Pick up the Y-Right carriage halves. Place four LM8UU bearings into half A with flanges facing outward â€” same technique as carriage 1.",
-      "requiredPartIds": [
-        "y_right_carriage_half_a",
-        "y_right_lm8uu_a",
-        "y_right_lm8uu_b",
-        "y_right_lm8uu_c",
-        "y_right_lm8uu_d"
-      ]
-    },
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [ "y_right_carriage_half_a", "y_right_lm8uu_a", "y_right_lm8uu_b", "y_right_lm8uu_c", "y_right_lm8uu_d" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"y_right_lm8uu_a"},
+        {"kind":"part","id":"y_right_lm8uu_b"},
+        {"kind":"part","id":"y_right_lm8uu_c"},
+        {"kind":"part","id":"y_right_lm8uu_d"},
+        {"kind":"part","id":"y_right_carriage_half_a"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_batch_c2_close_halves",
       "name": "Carriage 2: close the second carriage half",
@@ -519,10 +530,13 @@
       "sequenceIndex": 60,
       "family": "Place",
       "instructionText": "Place the second Y-Right carriage half onto the first, trapping the 4 bearings. The small ribbed belt hole must sit directly beside the large smooth belt hole.",
-      "requiredPartIds": [
-        "y_right_carriage_half_b"
-      ]
-    },
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [ "y_right_carriage_half_b" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"y_right_carriage_half_b"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_batch_c2_shake_test",
       "name": "Carriage 2: shake test",
@@ -543,30 +557,15 @@
         "failureMessage": "Bearing fit is too loose. Swap to a slightly larger LM8UU or try the next batch of bearings."
       },
       "difficulty": "beginner",
-      "requiredPartIds": [
-        "y_right_carriage_half_a",
-        "y_right_carriage_half_b"
-      ],
-      "animationCues": {
-        "cues": [
-          {
-            "type": "shake",
-            "targetPartIds": [
-              "y_right_carriage_half_a",
-              "y_right_carriage_half_b"
-            ],
-            "shakeAmplitude": 0.006,
-            "shakeFrequency": 8,
-            "shakeAxis": {
-              "x": 1,
-              "y": 0,
-              "z": 0
-            },
-            "loop": true
-          }
-        ]
-      }
-    },
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [ "y_right_carriage_half_a", "y_right_carriage_half_b" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"y_right_carriage_half_a"},
+        {"kind":"part","id":"y_right_carriage_half_b"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}},
+      "animationCues": {"cues":[{"type":"shake","targetPartIds":["y_right_carriage_half_a","y_right_carriage_half_b"],"targetToolIds":[],"targetSubassemblyId":"","trigger":"","delaySeconds":0.0,"durationSeconds":0.0,"loop":true,"easing":"","target":"","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.006,"shakeFrequency":8.0,"shakeAxis":{"x":1.0,"y":0.0,"z":0.0},"animationClipName":""}],"previewDelaySeconds":0.0}
+  },
     {
       "id": "step_batch_c2_rod_slide_test",
       "name": "Carriage 2: rod slide test",
@@ -587,12 +586,15 @@
         "failureMessage": "Too free: wrap each bearing in one layer of electrical tape and retest. Too tight: check bearings are fully seated."
       },
       "difficulty": "beginner",
-      "requiredPartIds": [
-        "y_right_carriage_half_a",
-        "y_right_carriage_half_b",
-        "batch_test_rod"
-      ]
-    },
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [ "y_right_carriage_half_a", "y_right_carriage_half_b", "batch_test_rod" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"y_right_carriage_half_a"},
+        {"kind":"part","id":"y_right_carriage_half_b"},
+        {"kind":"part","id":"batch_test_rod"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_batch_c2_place_bolts",
       "name": "Carriage 2: place bolts and thread nuts",
@@ -601,17 +603,20 @@
       "sequenceIndex": 63,
       "family": "Place",
       "instructionText": "Insert 2Ã— M6x18 bolts into the two top holes and 2Ã— M6x30 bolts into the two bottom holes. Thread one M6 nut onto each bolt finger-tight.",
-      "requiredPartIds": [
-        "y_right_m6x18_a",
-        "y_right_m6x18_b",
-        "y_right_m6x30_a",
-        "y_right_m6x30_b",
-        "y_right_m6_nut_a",
-        "y_right_m6_nut_b",
-        "y_right_m6_nut_c",
-        "y_right_m6_nut_d"
-      ]
-    },
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [ "y_right_m6x18_a", "y_right_m6x18_b", "y_right_m6x30_a", "y_right_m6x30_b", "y_right_m6_nut_a", "y_right_m6_nut_b", "y_right_m6_nut_c", "y_right_m6_nut_d" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"y_right_m6x18_a"},
+        {"kind":"part","id":"y_right_m6x18_b"},
+        {"kind":"part","id":"y_right_m6x30_a"},
+        {"kind":"part","id":"y_right_m6x30_b"},
+        {"kind":"part","id":"y_right_m6_nut_a"},
+        {"kind":"part","id":"y_right_m6_nut_b"},
+        {"kind":"part","id":"y_right_m6_nut_c"},
+        {"kind":"part","id":"y_right_m6_nut_d"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_batch_c2_tighten",
       "name": "Carriage 2: tighten â€” 2 of 4 complete",
@@ -620,19 +625,22 @@
       "sequenceIndex": 64,
       "family": "Use",
       "instructionText": "Tighten all 4 bolts on the Y-Right carriage with the power drill on lowest torque. Set it beside carriage 1 â€” carriage 2 of 4 is complete.",
-      "requiredPartIds": [
-        "y_right_carriage_half_a",
-        "y_right_carriage_half_b",
-        "y_right_m6x18_a",
-        "y_right_m6x18_b",
-        "y_right_m6x30_a",
-        "y_right_m6x30_b",
-        "y_right_m6_nut_a",
-        "y_right_m6_nut_b",
-        "y_right_m6_nut_c",
-        "y_right_m6_nut_d"
-      ]
-    },
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [ "y_right_carriage_half_a", "y_right_carriage_half_b", "y_right_m6x18_a", "y_right_m6x18_b", "y_right_m6x30_a", "y_right_m6x30_b", "y_right_m6_nut_a", "y_right_m6_nut_b", "y_right_m6_nut_c", "y_right_m6_nut_d" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"y_right_carriage_half_a"},
+        {"kind":"part","id":"y_right_carriage_half_b"},
+        {"kind":"part","id":"y_right_m6x18_a"},
+        {"kind":"part","id":"y_right_m6x18_b"},
+        {"kind":"part","id":"y_right_m6x30_a"},
+        {"kind":"part","id":"y_right_m6x30_b"},
+        {"kind":"part","id":"y_right_m6_nut_a"},
+        {"kind":"part","id":"y_right_m6_nut_b"},
+        {"kind":"part","id":"y_right_m6_nut_c"},
+        {"kind":"part","id":"y_right_m6_nut_d"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_batch_c3_place_bearings",
       "name": "Carriage 3 (Z-Back): place 4 LM8UU bearings in half A",
@@ -641,10 +649,13 @@
       "sequenceIndex": 65,
       "family": "Place",
       "instructionText": "Pick up the Z-Back carriage half A. Place four LM8UU bearings into the bearing pockets with flanges facing outward. Same technique as the Y-axis carriages.",
-      "requiredPartIds": [
-        "z_back_carriage_half_a"
-      ]
-    },
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [ "z_back_carriage_half_a" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"z_back_carriage_half_a"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_batch_c3_shake_test",
       "name": "Carriage 3: shake test",
@@ -665,30 +676,15 @@
         "failureMessage": "Bearing fit is too loose. Swap to a slightly larger LM8UU and re-test before closing."
       },
       "difficulty": "beginner",
-      "requiredPartIds": [
-        "z_back_carriage_half_a",
-        "z_back_carriage_half_b"
-      ],
-      "animationCues": {
-        "cues": [
-          {
-            "type": "shake",
-            "targetPartIds": [
-              "z_back_carriage_half_a",
-              "z_back_carriage_half_b"
-            ],
-            "shakeAmplitude": 0.006,
-            "shakeFrequency": 8,
-            "shakeAxis": {
-              "x": 1,
-              "y": 0,
-              "z": 0
-            },
-            "loop": true
-          }
-        ]
-      }
-    },
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [ "z_back_carriage_half_a", "z_back_carriage_half_b" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"z_back_carriage_half_a"},
+        {"kind":"part","id":"z_back_carriage_half_b"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}},
+      "animationCues": {"cues":[{"type":"shake","targetPartIds":["z_back_carriage_half_a","z_back_carriage_half_b"],"targetToolIds":[],"targetSubassemblyId":"","trigger":"","delaySeconds":0.0,"durationSeconds":0.0,"loop":true,"easing":"","target":"","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.006,"shakeFrequency":8.0,"shakeAxis":{"x":1.0,"y":0.0,"z":0.0},"animationClipName":""}],"previewDelaySeconds":0.0}
+  },
     {
       "id": "step_batch_c3_rod_slide_test",
       "name": "Carriage 3: rod slide test",
@@ -709,12 +705,15 @@
         "failureMessage": "Too free: wrap each bearing in one layer of electrical tape and retest. Too tight: check bearings are fully seated."
       },
       "difficulty": "beginner",
-      "requiredPartIds": [
-        "z_back_carriage_half_a",
-        "z_back_carriage_half_b",
-        "batch_test_rod"
-      ]
-    },
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [ "z_back_carriage_half_a", "z_back_carriage_half_b", "batch_test_rod" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"z_back_carriage_half_a"},
+        {"kind":"part","id":"z_back_carriage_half_b"},
+        {"kind":"part","id":"batch_test_rod"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_batch_c3_bolt",
       "name": "Carriage 3: close halves, bolt and tighten â€” 3 of 4 complete",
@@ -723,11 +722,14 @@
       "sequenceIndex": 68,
       "family": "Use",
       "instructionText": "Press Z-Back carriage half B onto half A to trap the bearings. Align so the small ribbed belt hole sits beside the large smooth belt hole. Secure with M6x18 bolts on top and M6x30 bolts on bottom. Tighten with the power drill on lowest torque. Set it aside â€” carriage 3 of 4 is complete.",
-      "requiredPartIds": [
-        "z_back_carriage_half_a",
-        "z_back_carriage_half_b"
-      ]
-    },
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [ "z_back_carriage_half_a", "z_back_carriage_half_b" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"z_back_carriage_half_a"},
+        {"kind":"part","id":"z_back_carriage_half_b"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_batch_c4_place_bearings",
       "name": "Carriage 4 (Z-Front): place 4 LM8UU bearings in half A",
@@ -736,10 +738,13 @@
       "sequenceIndex": 69,
       "family": "Place",
       "instructionText": "Pick up the Z-Front carriage half A. Place four LM8UU bearings into the bearing pockets with flanges facing outward.",
-      "requiredPartIds": [
-        "z_front_carriage_half_a"
-      ]
-    },
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [ "z_front_carriage_half_a" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"z_front_carriage_half_a"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_batch_c4_shake_test",
       "name": "Carriage 4: shake test",
@@ -760,30 +765,15 @@
         "failureMessage": "Bearing fit is too loose. Swap to a slightly larger LM8UU and re-test."
       },
       "difficulty": "beginner",
-      "requiredPartIds": [
-        "z_front_carriage_half_a",
-        "z_front_carriage_half_b"
-      ],
-      "animationCues": {
-        "cues": [
-          {
-            "type": "shake",
-            "targetPartIds": [
-              "z_front_carriage_half_a",
-              "z_front_carriage_half_b"
-            ],
-            "shakeAmplitude": 0.006,
-            "shakeFrequency": 8,
-            "shakeAxis": {
-              "x": 1,
-              "y": 0,
-              "z": 0
-            },
-            "loop": true
-          }
-        ]
-      }
-    },
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [ "z_front_carriage_half_a", "z_front_carriage_half_b" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"z_front_carriage_half_a"},
+        {"kind":"part","id":"z_front_carriage_half_b"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}},
+      "animationCues": {"cues":[{"type":"shake","targetPartIds":["z_front_carriage_half_a","z_front_carriage_half_b"],"targetToolIds":[],"targetSubassemblyId":"","trigger":"","delaySeconds":0.0,"durationSeconds":0.0,"loop":true,"easing":"","target":"","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.006,"shakeFrequency":8.0,"shakeAxis":{"x":1.0,"y":0.0,"z":0.0},"animationClipName":""}],"previewDelaySeconds":0.0}
+  },
     {
       "id": "step_batch_c4_rod_slide_test",
       "name": "Carriage 4: rod slide test",
@@ -804,12 +794,15 @@
         "failureMessage": "Too free: wrap each bearing in one layer of electrical tape and retest. Too tight: check bearings are fully seated."
       },
       "difficulty": "beginner",
-      "requiredPartIds": [
-        "z_front_carriage_half_a",
-        "z_front_carriage_half_b",
-        "batch_test_rod"
-      ]
-    },
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [ "z_front_carriage_half_a", "z_front_carriage_half_b", "batch_test_rod" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"z_front_carriage_half_a"},
+        {"kind":"part","id":"z_front_carriage_half_b"},
+        {"kind":"part","id":"batch_test_rod"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_batch_c4_bolt",
       "name": "Carriage 4: close halves, bolt and tighten â€” 4 of 4 complete",
@@ -818,10 +811,13 @@
       "sequenceIndex": 72,
       "family": "Use",
       "instructionText": "Press Z-Front carriage half B onto half A to trap the bearings. Align the small ribbed belt hole directly beside the large smooth belt hole. Secure with M6x18 bolts on top and M6x30 bolts on bottom. Tighten with the power drill on lowest torque. All four axis carriages are now complete â€” set the Z-Front carriage with the others.",
-      "requiredPartIds": [
-        "z_front_carriage_half_a",
-        "z_front_carriage_half_b"
-      ]
-    }
+      "removePersistentToolIds": [],
+      "targetIds": [],
+      "requiredPartIds": [ "z_front_carriage_half_a", "z_front_carriage_half_b" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"z_front_carriage_half_a"},
+        {"kind":"part","id":"z_front_carriage_half_b"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  }
   ]
 }

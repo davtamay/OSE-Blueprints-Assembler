@@ -110,6 +110,12 @@ namespace OSE.Editor
                     { _selectedPartIdx = i; break; }
             }
             _multiSelectedParts.Clear();
+
+            // Rebuild the ownership cache consumed by the proactive-guidance
+            // surfaces (drop-zone pre-check, part inspector, step header, task
+            // rows). Pinned to BuildPartList so every mutation path that
+            // already refreshes parts also refreshes ownership.
+            _ownership = PartOwnershipIndex.Build(_pkg);
         }
 
         // ── Live spawner GO helpers (mirrors PPAW) ────────────────────────────
@@ -169,173 +175,87 @@ namespace OSE.Editor
             out Vector3 pos, out Quaternion rot, out Vector3 scl)
         {
             string pid = p.def.id;
+            bool isSelectedPart = _selectedPartIdx >= 0
+                && _selectedPartIdx < (_parts?.Length ?? 0)
+                && _parts[_selectedPartIdx].def?.id == pid;
 
-            // Intermediate step pose editing — if editing this part's stepPose, use it directly
-            if (_editingPoseMode >= 0 && p.stepPoses != null && _editingPoseMode < p.stepPoses.Count
-                && _selectedPartIdx >= 0 && _selectedPartIdx < (_parts?.Length ?? 0)
-                && _parts[_selectedPartIdx].def.id == pid)
+            // [A] Author is editing a Custom (author-written) intermediate
+            // pose on the selected part — read directly from the in-memory
+            // edit state because un-saved changes aren't in the baked
+            // PoseTable yet.
+            if (isSelectedPart
+                && _editingPoseMode >= 0
+                && p.stepPoses != null && _editingPoseMode < p.stepPoses.Count)
             {
                 var sp = p.stepPoses[_editingPoseMode];
                 pos = PackageJsonUtils.ToVector3(sp.position);
                 rot = PackageJsonUtils.ToUnityQuaternion(sp.rotation);
                 scl = PackageJsonUtils.ToVector3(sp.scale);
+                if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
+                return true;
             }
-            else if (_sceneBuildStepActive)
+
+            // [B] Step-aware rendering. The Start/Assembled toggle applies
+            // GLOBALLY to every part the current step acts on (Required or
+            // Optional), not just the selected one — clicking "Assembled"
+            // moves all of step N's task parts to their assembled poses, and
+            // Start moves them all back. Other parts (past-placed visuals,
+            // NO-TASK intros from earlier steps) read from the baked
+            // PoseTable so they stay where they should be regardless of the
+            // toggle.
+            if (_sceneBuildStepActive)
             {
-                bool inMap = _sceneBuildPartStepSeq.TryGetValue(pid, out int placedAt);
-
-                if (inMap && placedAt > _sceneBuildCurrentSeq)
+                var poseTable = _pkg?.poseTable;
+                if (poseTable != null)
                 {
-                    // Future part — must not be shown in the scene
-                    pos = Vector3.zero; rot = Quaternion.identity; scl = Vector3.one;
-                    return false;
-                }
-
-                // Non-selected parts stay at start when viewing Start or any Custom pose;
-                // only jump to assembled when explicitly viewing Assembled Pose.
-                bool useStart = inMap
-                    && placedAt == _sceneBuildCurrentSeq
-                    && !_sceneBuildCurrentSubassembly.Contains(pid)
-                    && _editingPoseMode != PoseModeAssembled;
-
-                // Group pose override: only applies when the CURRENT step is
-                // the one actively placing this group (step.requiredSubassemblyId
-                // matches the selected group). For past-placed groups, the
-                // Start-mode toggle must NOT force fabrication positions —
-                // members should stay at their cube-integrated poses from the
-                // step that committed them. Without this guard, toggling Start
-                // Pose once would "stick" and revert past groups to fabrication
-                // on every subsequent step change.
-                if (!useStart && _selectedGroupIdx >= 0 && _groups != null
-                    && _selectedGroupIdx < _groups.Length
-                    && _editingGroupPoseMode == PoseModeStart)
-                {
-                    ref GroupEditState sg = ref _groups[_selectedGroupIdx];
-                    StepDefinition curStep = _stepIds != null && _stepFilterIdx > 0 && _stepFilterIdx < _stepIds.Length
-                        ? FindStep(_stepIds[_stepFilterIdx]) : null;
-                    bool currentStepPlacesThisGroup = curStep != null
-                        && sg.def != null
-                        && string.Equals(curStep.requiredSubassemblyId, sg.def.id, StringComparison.Ordinal);
-
-                    if (currentStepPlacesThisGroup && sg.def?.partIds != null)
+                    bool currentStepActsOnPart = false;
+                    if (_stepFilterIdx > 0 && _stepIds != null && _stepFilterIdx < _stepIds.Length)
                     {
-                        foreach (var gpid in sg.def.partIds)
+                        var curStep = FindStep(_stepIds[_stepFilterIdx]);
+                        if (curStep != null)
                         {
-                            if (string.Equals(gpid, pid, StringComparison.Ordinal))
-                            { useStart = true; break; }
+                            if (curStep.requiredPartIds != null)
+                                foreach (var x in curStep.requiredPartIds)
+                                    if (string.Equals(x, pid, StringComparison.Ordinal)) { currentStepActsOnPart = true; break; }
+                            if (!currentStepActsOnPart && curStep.optionalPartIds != null)
+                                foreach (var x in curStep.optionalPartIds)
+                                    if (string.Equals(x, pid, StringComparison.Ordinal)) { currentStepActsOnPart = true; break; }
                         }
                     }
+
+                    if (currentStepActsOnPart
+                        && (_editingPoseMode == PoseModeStart || _editingPoseMode == PoseModeAssembled))
+                    {
+                        var overrideMode = _editingPoseMode == PoseModeStart
+                            ? OSE.Content.Loading.PoseMode.StartPreview
+                            : OSE.Content.Loading.PoseMode.AssembledPreview;
+                        var r = poseTable.Resolve(pid, _sceneBuildCurrentSeq, overrideMode);
+                        if (r.IsHidden) { pos = Vector3.zero; rot = Quaternion.identity; scl = Vector3.one; return false; }
+                        pos = r.pos; rot = r.rot; scl = r.scl;
+                        if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
+                        return true;
+                    }
+
+                    if (!poseTable.TryGet(pid, _sceneBuildCurrentSeq, out var cr))
+                    {
+                        pos = Vector3.zero; rot = Quaternion.identity; scl = Vector3.one;
+                        return false;
+                    }
+                    pos = cr.pos; rot = cr.rot; scl = cr.scl;
+                    if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
+                    return true;
                 }
 
-                if (!useStart && TryPickStepPoseForPart(ref p, out Vector3 spPos, out Quaternion spRot, out Vector3 spScl))
-                {
-                    // Author-authored stepPose covers this viewing step (a NO TASK
-                    // waypoint or any other custom pose whose span includes it).
-                    // Wins over the generic assembledPosition fallback so a
-                    // waypoint set at step 50 persists through 51, 52, … until
-                    // a later waypoint takes over — mirrors the runtime resolver.
-                    pos = spPos; rot = spRot; scl = spScl;
-                }
-                else if (!useStart && TryGetIntegratedMemberPose(pid, out Vector3 iPos, out Quaternion iRot, out Vector3 iScl))
-                {
-                    pos = iPos; rot = iRot; scl = iScl;
-                }
-                else
-                {
-                    pos = useStart ? p.startPosition : p.assembledPosition;
-                    rot = useStart ? p.startRotation  : p.assembledRotation;
-                    scl = useStart ? p.startScale     : p.assembledScale;
-                }
-            }
-            else
-            {
-                if (_editAssembledPose && TryGetIntegratedMemberPose(pid, out Vector3 iPos2, out Quaternion iRot2, out Vector3 iScl2))
-                {
-                    pos = iPos2; rot = iRot2; scl = iScl2;
-                }
-                else
-                {
-                    pos = _editAssembledPose ? p.assembledPosition : p.startPosition;
-                    rot = _editAssembledPose ? p.assembledRotation  : p.startRotation;
-                    scl = _editAssembledPose ? p.assembledScale     : p.startScale;
-                }
+                // No PoseTable (package not normalized yet) — transient load
+                // state. Fall through to the "All Steps" code path so the
+                // window doesn't flash empty.
             }
 
-            // Phase A2: working orientation is now applied via the subassembly
-            // root GO's localRotation (set in EnsureSubassemblyRoot). Parts
-            // parented under the root inherit the rotation automatically via
-            // Unity's transform hierarchy — no manual recomputation needed.
-            // The SetPoseInPreviewSpace helper converts PreviewRoot-space pos/rot
-            // to world space, and the parent GO applies the delta.
-
-            if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
-            return true;
-        }
-
-        /// <summary>
-        /// Editor-side mirror of <see cref="OSE.UI.Spawning.PreviewConfigLookup.TryPickStepPose"/>.
-        /// Picks the author's stepPose whose span covers the current viewing
-        /// step, preferring the anchor closest to the viewing step. This
-        /// lets NO TASK waypoints (and any other stepPose) persist between
-        /// steps without the author having to copy the pose forward.
-        /// </summary>
-        private bool TryPickStepPoseForPart(ref PartEditState p,
-            out Vector3 pos, out Quaternion rot, out Vector3 scl)
-        {
-            pos = Vector3.zero; rot = Quaternion.identity; scl = Vector3.one;
-            if (p.stepPoses == null || p.stepPoses.Count == 0) return false;
-            if (_pkg?.steps == null || _pkg.steps.Length == 0) return false;
-
-            int viewingSeq = _sceneBuildCurrentSeq;
-
-            StepPoseEntry picked = null;
-            int bestDist = int.MaxValue;
-
-            for (int k = 0; k < p.stepPoses.Count; k++)
-            {
-                var pose = p.stepPoses[k];
-                if (pose == null) continue;
-
-                int anchorSeq = SeqIndexForStepId(pose.stepId);
-                int fromSeq;
-                if (string.IsNullOrEmpty(pose.propagateFromStep))
-                {
-                    fromSeq = anchorSeq >= 0 ? anchorSeq : int.MinValue;
-                }
-                else
-                {
-                    int fsRaw = SeqIndexForStepId(pose.propagateFromStep);
-                    fromSeq = fsRaw >= 0 ? fsRaw : int.MinValue;
-                }
-                int throughSeq;
-                if (string.IsNullOrEmpty(pose.propagateThroughStep))
-                {
-                    throughSeq = int.MaxValue;
-                }
-                else
-                {
-                    int tsRaw = SeqIndexForStepId(pose.propagateThroughStep);
-                    throughSeq = tsRaw >= 0 ? tsRaw : int.MaxValue;
-                }
-
-                if (viewingSeq < fromSeq)    continue;
-                if (viewingSeq > throughSeq) continue;
-
-                int dist = anchorSeq >= 0 ? Math.Abs(viewingSeq - anchorSeq) : int.MaxValue / 2;
-                bool prefer = dist < bestDist
-                              || (dist == bestDist && picked != null && anchorSeq <= viewingSeq
-                                  && SeqIndexForStepId(picked.stepId) > viewingSeq);
-                if (prefer)
-                {
-                    bestDist = dist;
-                    picked   = pose;
-                }
-            }
-
-            if (picked == null) return false;
-            pos = PackageJsonUtils.ToVector3(picked.position);
-            rot = PackageJsonUtils.ToUnityQuaternion(picked.rotation);
-            scl = PackageJsonUtils.ToVector3(picked.scale);
+            // [C] "All Steps" mode — no step filter active. Respect the
+            // global Start/Assembled toggle on the raw part placement.
+            pos = _editAssembledPose ? p.assembledPosition : p.startPosition;
+            rot = _editAssembledPose ? p.assembledRotation  : p.startRotation;
+            scl = _editAssembledPose ? p.assembledScale     : p.startScale;
             if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
             return true;
         }
@@ -350,95 +270,280 @@ namespace OSE.Editor
         }
 
         /// <summary>
-        /// Looks up a part's canonical integrated pose — the same data
-        /// <see cref="OSE.UI.StepHandlers.SubassemblyPlacementController.TryApplyIntegratedPlacement"/>
-        /// consumes at runtime when a subassembly is committed to its target.
-        /// When the current step has (requiredSubassemblyId, targetId), prefers
-        /// that exact pair (Pass 1). Falls back to a partId-only lookup (Pass 2),
-        /// matching the runtime controller's fallback semantics.
+        /// When the author drags a part in the SceneView and the part is not
+        /// referenced by the current step's <c>requiredPartIds</c>,
+        /// <c>optionalPartIds</c>, <c>visualPartIds</c>, or
+        /// <c>requiredSubassemblyId</c> members, automatically:
+        ///  1. add it to <c>step.visualPartIds</c> (NO TASK),
+        ///  2. create (or reuse) an author-authored <see cref="StepPoseEntry"/>
+        ///     anchored at this step with span "from this step → end" so the
+        ///     subsequent <see cref="ApplyPositionToPart"/> / <see cref="ApplyRotationToPart"/>
+        ///     write lands in the right slot,
+        ///  3. point <c>_editingPoseMode</c> at that entry so the next
+        ///     <c>ApplyPositionToPart</c> mutates it.
+        /// Result: an alien drag becomes a clean NO TASK + waypoint authoring
+        /// gesture without any extra clicks. If the part is already part of
+        /// the step's tasks, this is a no-op.
         /// </summary>
-        private bool TryGetIntegratedMemberPose(string partId, out Vector3 pos, out Quaternion rot, out Vector3 scl)
+        private void AutoPromoteAlienPartToNoTaskWaypoint(int partIdx)
         {
-            pos = Vector3.zero; rot = Quaternion.identity; scl = Vector3.one;
-            var placements = _pkg?.previewConfig?.integratedSubassemblyPlacements;
-            if (placements == null || placements.Length == 0 || string.IsNullOrEmpty(partId)) return false;
-
-            // Pass 1: match by current step's (requiredSubassemblyId, targetId)
-            StepDefinition step = _sceneBuildStepActive && _stepIds != null
-                                   && _stepFilterIdx > 0 && _stepFilterIdx < _stepIds.Length
+            if (partIdx < 0 || _parts == null || partIdx >= _parts.Length) return;
+            var step = _stepFilterIdx > 0 && _stepIds != null && _stepFilterIdx < _stepIds.Length
                 ? FindStep(_stepIds[_stepFilterIdx]) : null;
-            string subId    = step?.requiredSubassemblyId;
-            string targetId = step?.targetIds != null && step.targetIds.Length > 0 ? step.targetIds[0] : null;
-            if (!string.IsNullOrEmpty(subId) && !string.IsNullOrEmpty(targetId))
+            if (step == null) return;
+
+            ref PartEditState p = ref _parts[partIdx];
+            string partId = p.def?.id;
+            if (string.IsNullOrEmpty(partId)) return;
+
+            // Auto-promote is OFF. Two reasons:
+            //   (1) alien-drag silently mutated step.visualPartIds AND added
+            //       a phantom "Custom N" stepPose without the author asking —
+            //       exactly the "why did Custom 1 appear?" surprise.
+            //   (2) editing the canonical startPosition / assembledPosition
+            //       via the gizmo is almost always what the author actually
+            //       wants when nudging a part that isn't in this step's task
+            //       list. The subsequent ApplyPositionToPart handles that.
+            //
+            // If the author wants a step-specific pose for an alien part they
+            // can (a) add it as NO TASK via the R/O/N toggle, or
+            // (b) drop the part onto the drop zone, then edit.
+            // StepTouchesPart is unused here now; kept for any future caller.
+            return;
+        }
+
+        // ── Pose source trace (diagnostic) ────────────────────────────────────
+
+        internal enum PoseSourceKind
+        {
+            Hidden,
+            StartPosition,
+            AssembledPosition,
+            StepPose,
+            NoTaskDefault,
+            Integrated,
+        }
+
+        /// <summary>
+        /// Records which branch of the pose-resolution decision tree a part
+        /// took at a specific step. Used by the "WHAT'S CHANGING" panel to
+        /// explain why a part moved (or didn't) between two steps.
+        /// </summary>
+        internal readonly struct PoseSourceTag
+        {
+            public readonly PoseSourceKind kind;
+            public readonly string anchorStepId;   // StepPose
+            public readonly string subassemblyId;  // Integrated
+            public readonly string targetId;       // Integrated
+
+            public PoseSourceTag(PoseSourceKind k, string anchor = null, string sub = null, string tgt = null)
+            { kind = k; anchorStepId = anchor; subassemblyId = sub; targetId = tgt; }
+
+            public string PrettyLabel()
             {
-                for (int i = 0; i < placements.Length; i++)
+                switch (kind)
                 {
-                    var pl = placements[i];
-                    if (pl == null || pl.memberPlacements == null) continue;
-                    if (!string.Equals(pl.subassemblyId, subId, StringComparison.Ordinal)) continue;
-                    if (!string.Equals(pl.targetId, targetId, StringComparison.Ordinal)) continue;
-                    if (TryFindMember(pl.memberPlacements, partId, out pos, out rot, out scl)) return true;
-                    break;
+                    case PoseSourceKind.Hidden:             return "hidden";
+                    case PoseSourceKind.StartPosition:      return "startPosition";
+                    case PoseSourceKind.AssembledPosition:  return "assembledPosition";
+                    case PoseSourceKind.NoTaskDefault:      return "noTaskDefault(startPosition)";
+                    case PoseSourceKind.StepPose:           return $"stepPose[{anchorStepId ?? "?"}]";
+                    case PoseSourceKind.Integrated:         return $"integrated[{subassemblyId ?? "?"},{targetId ?? "?"}]";
                 }
+                return "?";
             }
 
-            // Pass 2: past-step fallback. If any earlier step placed this
-            // part's subassembly onto a target (step.requiredSubassemblyId +
-            // step.targetIds[0]) AND an integrated placement exists for that
-            // pair, use it. Mirrors the runtime's "stackedSubassemblyIds"
-            // logic in PackagePartSpawner.ApplyStepAwarePositions so past
-            // subassembly members stay at their cube-integrated positions
-            // on subsequent steps instead of reverting to fabrication layout.
-            if (_pkg?.steps != null && _sceneBuildStepActive)
+            public bool ValueEquals(PoseSourceTag other)
+                => kind == other.kind
+                && string.Equals(anchorStepId,  other.anchorStepId,  StringComparison.Ordinal)
+                && string.Equals(subassemblyId, other.subassemblyId, StringComparison.Ordinal)
+                && string.Equals(targetId,      other.targetId,      StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Stand-alone pose resolver that mirrors <see cref="TryGetStepAwarePose"/>'s
+        /// decision tree but accepts any viewing sequenceIndex (not just the
+        /// currently-selected one) and returns a <see cref="PoseSourceTag"/>
+        /// describing which branch won. Used by the WHAT'S CHANGING panel to
+        /// compare two steps without mutating the scene-build caches.
+        /// </summary>
+        private bool TracePartPoseAtStep(string partId, int viewingSeq,
+            out Vector3 pos, out Quaternion rot, out Vector3 scl,
+            out PoseSourceTag tag)
+        {
+            pos = Vector3.zero; rot = Quaternion.identity; scl = Vector3.one;
+            tag = new PoseSourceTag(PoseSourceKind.Hidden);
+
+            if (_pkg?.steps == null || string.IsNullOrEmpty(partId)) return false;
+
+            // 1) First-appearance sequenceIndex across requiredPartIds /
+            //    optionalPartIds / visualPartIds / requiredSubassemblyId.
+            int placedAt = ResolvePartFirstAppearance(partId);
+            if (placedAt < 0) { tag = new PoseSourceTag(PoseSourceKind.Hidden); return false; }
+            if (placedAt > viewingSeq) { tag = new PoseSourceTag(PoseSourceKind.Hidden); return false; }
+
+            // 2) Find the part-edit state so we can read startPosition etc.
+            PartEditState p = default;
+            bool havePart = false;
+            if (_parts != null)
             {
-                int currentSeq = _sceneBuildCurrentSeq;
-                for (int i = 0; i < _pkg.steps.Length; i++)
+                for (int i = 0; i < _parts.Length; i++)
                 {
-                    var past = _pkg.steps[i];
-                    if (past == null) continue;
-                    if (past.sequenceIndex >= currentSeq) continue;
-                    if (string.IsNullOrEmpty(past.requiredSubassemblyId)) continue;
-                    if (!_pkg.TryGetSubassembly(past.requiredSubassemblyId, out var pastSub) || pastSub == null) continue;
-                    if (pastSub.partIds == null) continue;
-                    bool partIsMember = false;
-                    for (int k = 0; k < pastSub.partIds.Length; k++)
-                        if (string.Equals(pastSub.partIds[k], partId, StringComparison.Ordinal))
-                        { partIsMember = true; break; }
-                    if (!partIsMember) continue;
+                    if (_parts[i].def != null && string.Equals(_parts[i].def.id, partId, StringComparison.Ordinal))
+                    { p = _parts[i]; havePart = true; break; }
+                }
+            }
+            if (!havePart) return false;
 
-                    string pastTargetId = past.targetIds != null && past.targetIds.Length > 0 ? past.targetIds[0] : null;
-                    if (string.IsNullOrEmpty(pastTargetId)) continue;
+            // Decision tree mirrors the RUNTIME SPAWNER
+            // (PackagePartSpawner.ApplyStepAwarePositions) so the panel
+            // reports what the author actually sees in the SceneView. This is
+            // deliberately NOT identical to TTAW's editor-side
+            // TryGetStepAwarePose — the spawner does not apply TTAW's NO TASK
+            // override, so the visual reality follows the spawner's branch
+            // order: integrated > stepPose > assembled (past) / start (current).
 
-                    for (int p = 0; p < placements.Length; p++)
+            bool usePlay = placedAt < viewingSeq;
+
+            // "Current step" (placedAt == viewingSeq): spawner writes the
+            // part's startPosition (fabrication layout).
+            if (!usePlay)
+            {
+                pos = p.startPosition; rot = p.startRotation; scl = p.startScale;
+                tag = new PoseSourceTag(PoseSourceKind.StartPosition);
+                return true;
+            }
+
+            // Past step — spawner checks integrated first, then stepPose,
+            // then assembledPosition.
+            if (TryFindIntegratedForPart(partId, viewingSeq, out Vector3 iPos, out Quaternion iRot, out Vector3 iScl,
+                out string iSubId, out string iTargetId))
+            {
+                pos = iPos; rot = iRot; scl = iScl;
+                tag = new PoseSourceTag(PoseSourceKind.Integrated, sub: iSubId, tgt: iTargetId);
+                return true;
+            }
+
+            if (p.stepPoses != null && p.stepPoses.Count > 0
+                && TryPickStepPoseAt(p, viewingSeq, out StepPoseEntry picked))
+            {
+                pos = PackageJsonUtils.ToVector3(picked.position);
+                rot = PackageJsonUtils.ToUnityQuaternion(picked.rotation);
+                scl = PackageJsonUtils.ToVector3(picked.scale);
+                if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
+                tag = new PoseSourceTag(PoseSourceKind.StepPose, anchor: picked.stepId);
+                return true;
+            }
+
+            pos = p.assembledPosition; rot = p.assembledRotation; scl = p.assembledScale;
+            tag = new PoseSourceTag(PoseSourceKind.AssembledPosition);
+            return true;
+        }
+
+        private int ResolvePartFirstAppearance(string partId)
+        {
+            int best = int.MaxValue;
+            foreach (var s in _pkg.steps)
+            {
+                if (s == null) continue;
+                bool hit = false;
+                if (s.requiredPartIds != null) foreach (var x in s.requiredPartIds) if (string.Equals(x, partId, StringComparison.Ordinal)) { hit = true; break; }
+                if (!hit && s.optionalPartIds != null) foreach (var x in s.optionalPartIds) if (string.Equals(x, partId, StringComparison.Ordinal)) { hit = true; break; }
+                if (!hit && s.visualPartIds != null)   foreach (var x in s.visualPartIds)   if (string.Equals(x, partId, StringComparison.Ordinal)) { hit = true; break; }
+                if (!hit && !string.IsNullOrEmpty(s.requiredSubassemblyId)
+                    && _pkg.TryGetSubassembly(s.requiredSubassemblyId, out var sub)
+                    && sub?.partIds != null)
+                {
+                    foreach (var x in sub.partIds) if (string.Equals(x, partId, StringComparison.Ordinal)) { hit = true; break; }
+                }
+                if (hit && s.sequenceIndex < best) best = s.sequenceIndex;
+            }
+            return best == int.MaxValue ? -1 : best;
+        }
+
+        private bool TryPickStepPoseAt(PartEditState p, int viewingSeq, out StepPoseEntry picked)
+        {
+            picked = null;
+            if (p.stepPoses == null) return false;
+            int bestDist = int.MaxValue;
+            foreach (var pose in p.stepPoses)
+            {
+                if (pose == null) continue;
+                // Skip legacy synthetic NO-TASK waypoints left behind in old
+                // preview_config.json from before Step 8 of the pose rewrite
+                // deleted BakeNoTaskWaypoints. They shouldn't influence the
+                // WHAT'S CHANGING diagnostic either — the resolver already
+                // ignores them, so surfacing them here would just confuse
+                // the author with "ghost" pose sources that don't exist.
+                if (!string.IsNullOrEmpty(pose.label)
+                    && pose.label.StartsWith(OSE.Content.Loading.MachinePackageNormalizer.AutoNoTaskLabel, StringComparison.Ordinal))
+                    continue;
+                int anchorSeq = SeqIndexForStepId(pose.stepId);
+                int fromSeq;
+                if (string.IsNullOrEmpty(pose.propagateFromStep))
+                    fromSeq = anchorSeq >= 0 ? anchorSeq : int.MinValue;
+                else
+                {
+                    int f = SeqIndexForStepId(pose.propagateFromStep);
+                    fromSeq = f >= 0 ? f : int.MinValue;
+                }
+                int throughSeq;
+                if (string.IsNullOrEmpty(pose.propagateThroughStep))
+                    throughSeq = int.MaxValue;
+                else
+                {
+                    int t = SeqIndexForStepId(pose.propagateThroughStep);
+                    throughSeq = t >= 0 ? t : int.MaxValue;
+                }
+                if (viewingSeq < fromSeq || viewingSeq > throughSeq) continue;
+                int dist = anchorSeq >= 0 ? Math.Abs(viewingSeq - anchorSeq) : int.MaxValue / 2;
+                if (dist < bestDist) { bestDist = dist; picked = pose; }
+            }
+            return picked != null;
+        }
+
+        private bool TryFindIntegratedForPart(string partId, int viewingSeq,
+            out Vector3 pos, out Quaternion rot, out Vector3 scl,
+            out string subId, out string targetId)
+        {
+            pos = Vector3.zero; rot = Quaternion.identity; scl = Vector3.one;
+            subId = null; targetId = null;
+            var placements = _pkg?.previewConfig?.integratedSubassemblyPlacements;
+            if (placements == null || placements.Length == 0) return false;
+
+            // Walk steps whose sequenceIndex ≤ viewingSeq and have a
+            // requiredSubassemblyId, find the LATEST one whose integrated
+            // placement includes this part. Latest-wins mirrors the runtime
+            // closest-anchor semantics for stacking.
+            int bestSeq = int.MinValue;
+            foreach (var step in _pkg.steps)
+            {
+                if (step == null || step.sequenceIndex > viewingSeq) continue;
+                if (string.IsNullOrEmpty(step.requiredSubassemblyId)) continue;
+                string tgt = step.targetIds != null && step.targetIds.Length > 0 ? step.targetIds[0] : null;
+                if (string.IsNullOrEmpty(tgt)) continue;
+                foreach (var pl in placements)
+                {
+                    if (pl == null || pl.memberPlacements == null) continue;
+                    if (!string.Equals(pl.subassemblyId, step.requiredSubassemblyId, StringComparison.Ordinal)) continue;
+                    if (!string.Equals(pl.targetId, tgt, StringComparison.Ordinal)) continue;
+                    foreach (var m in pl.memberPlacements)
                     {
-                        var pl = placements[p];
-                        if (pl == null || pl.memberPlacements == null) continue;
-                        if (!string.Equals(pl.subassemblyId, past.requiredSubassemblyId, StringComparison.Ordinal)) continue;
-                        if (!string.Equals(pl.targetId, pastTargetId, StringComparison.Ordinal)) continue;
-                        if (TryFindMember(pl.memberPlacements, partId, out pos, out rot, out scl)) return true;
+                        if (m == null || !string.Equals(m.partId, partId, StringComparison.Ordinal)) continue;
+                        if (step.sequenceIndex < bestSeq) continue;
+                        bestSeq = step.sequenceIndex;
+                        pos = PackageJsonUtils.ToVector3(m.position);
+                        rot = m.rotation.IsIdentity
+                            ? Quaternion.identity
+                            : PackageJsonUtils.ToUnityQuaternion(m.rotation);
+                        scl = PackageJsonUtils.ToVector3(m.scale);
+                        if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
+                        subId = pl.subassemblyId;
+                        targetId = pl.targetId;
                     }
                 }
             }
-            return false;
-        }
-
-        private static bool TryFindMember(IntegratedMemberPreviewPlacement[] members, string partId,
-            out Vector3 pos, out Quaternion rot, out Vector3 scl)
-        {
-            pos = Vector3.zero; rot = Quaternion.identity; scl = Vector3.one;
-            for (int i = 0; i < members.Length; i++)
-            {
-                var m = members[i];
-                if (m == null || !string.Equals(m.partId, partId, StringComparison.Ordinal)) continue;
-                pos = PackageJsonUtils.ToVector3(m.position);
-                rot = m.rotation.IsIdentity
-                    ? Quaternion.identity
-                    : PackageJsonUtils.ToUnityQuaternion(m.rotation);
-                scl = PackageJsonUtils.ToVector3(m.scale);
-                if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
-                return true;
-            }
-            return false;
+            return bestSeq != int.MinValue;
         }
 
         // ── Pose read/write helpers for current _editingPoseMode ──────────────
@@ -460,23 +565,67 @@ namespace OSE.Editor
         private void ApplyPositionToPart(ref PartEditState p, Vector3 pos)
         {
             if (_editingPoseMode >= 0 && p.stepPoses != null && _editingPoseMode < p.stepPoses.Count)
+            {
                 p.stepPoses[_editingPoseMode].position = PackageJsonUtils.ToFloat3(pos);
-            else if (_editAssembledPose) p.assembledPosition = pos;
-            else p.startPosition = pos;
+            }
+            else if (_editAssembledPose)
+            {
+                p.assembledPosition = pos;
+                // Mirror to the PartPreviewPlacement the PoseResolver reads,
+                // otherwise the resolver returns the stale previewConfig value
+                // on the next SyncAllPartMeshesToActivePose tick and snaps the
+                // part back to where it was — "can't edit" symptom.
+                if (p.placement != null) p.placement.assembledPosition = PackageJsonUtils.ToFloat3(pos);
+            }
+            else
+            {
+                p.startPosition = pos;
+                if (p.placement != null) p.placement.startPosition = PackageJsonUtils.ToFloat3(pos);
+            }
         }
 
         private void ApplyRotationToPart(ref PartEditState p, Quaternion rot)
         {
             if (_editingPoseMode >= 0 && p.stepPoses != null && _editingPoseMode < p.stepPoses.Count)
+            {
                 p.stepPoses[_editingPoseMode].rotation = PackageJsonUtils.ToQuaternion(rot);
-            else if (_editAssembledPose) p.assembledRotation = rot;
-            else p.startRotation = rot;
+            }
+            else if (_editAssembledPose)
+            {
+                p.assembledRotation = rot;
+                if (p.placement != null) p.placement.assembledRotation = PackageJsonUtils.ToQuaternion(rot);
+            }
+            else
+            {
+                p.startRotation = rot;
+                if (p.placement != null) p.placement.startRotation = PackageJsonUtils.ToQuaternion(rot);
+            }
         }
 
         private void ApplyPoseToPart(ref PartEditState p, Vector3 pos, Quaternion rot)
         {
             ApplyPositionToPart(ref p, pos);
             ApplyRotationToPart(ref p, rot);
+        }
+
+        /// <summary>
+        /// Copies the PartEditState's start/assembled pose fields into the
+        /// referenced PartPreviewPlacement so the PoseResolver (which reads
+        /// from the placement) sees fresh values without waiting for a save
+        /// round-trip. Call after any mutation that writes to
+        /// <c>p.startPosition</c> / <c>p.assembledPosition</c> / etc. directly
+        /// instead of going through <see cref="ApplyPositionToPart"/> — most
+        /// notably the <c>DrawPartBatchPanel</c> multi-select edits.
+        /// </summary>
+        private static void MirrorPartStateToPlacement(ref PartEditState p)
+        {
+            if (p.placement == null) return;
+            p.placement.startPosition     = PackageJsonUtils.ToFloat3(p.startPosition);
+            p.placement.startRotation     = PackageJsonUtils.ToQuaternion(p.startRotation);
+            p.placement.startScale        = PackageJsonUtils.ToFloat3(p.startScale);
+            p.placement.assembledPosition = PackageJsonUtils.ToFloat3(p.assembledPosition);
+            p.placement.assembledRotation = PackageJsonUtils.ToQuaternion(p.assembledRotation);
+            p.placement.assembledScale    = PackageJsonUtils.ToFloat3(p.assembledScale);
         }
 
         // ── PreviewRoot-space transform helpers (Phase A1) ────────────────────
@@ -571,6 +720,19 @@ namespace OSE.Editor
             if (g.def?.partIds == null) return false;
             if (!g.isDirty && !g.hasPlacement) return false;
 
+            // Only cede positioning to the group root when the current step
+            // is actually stacking this group (requiredSubassemblyId matches).
+            // During mid-group fabrication steps (e.g. bearing place, close
+            // halves), each member part's own Start/Assembled toggle must
+            // drive its pose — ceding to the root would blank out the part
+            // toggle because Sync skips the part entirely.
+            StepDefinition curStep = _stepIds != null && _stepFilterIdx > 0 && _stepFilterIdx < _stepIds.Length
+                ? FindStep(_stepIds[_stepFilterIdx]) : null;
+            bool currentStepStacksThisGroup = curStep != null
+                && g.def != null
+                && string.Equals(curStep.requiredSubassemblyId, g.def.id, StringComparison.Ordinal);
+            if (!currentStepStacksThisGroup) return false;
+
             // Only match the SELECTED group's member parts, not all groups
             foreach (var pid in g.def.partIds)
                 if (string.Equals(pid, partId, StringComparison.Ordinal))
@@ -583,7 +745,13 @@ namespace OSE.Editor
             if (_parts == null) return;
             for (int i = 0; i < _parts.Length; i++)
             {
-                if (!_parts[i].hasPlacement) continue;
+                // Parts with no placement and no author stepPoses have
+                // nothing to resolve — skip. The PoseTable already excludes
+                // parts that lack placements, so TryGetStepAwarePose would
+                // return false for them anyway; this is just a fast path.
+                if (!_parts[i].hasPlacement
+                    && (_parts[i].stepPoses == null || _parts[i].stepPoses.Count == 0))
+                    continue;
 
                 // Compute step-aware pose; hide future parts that don't belong to this step.
                 if (!TryGetStepAwarePose(ref _parts[i], out Vector3 pos, out Quaternion rot, out Vector3 scl))
@@ -720,20 +888,16 @@ namespace OSE.Editor
             SceneView.RepaintAll();
         }
 
-        private static StepPoseEntry CloneStepPoseEntry(StepPoseEntry e) => new StepPoseEntry
-        {
-            stepId   = e.stepId,
-            label    = e.label,
-            position = new SceneFloat3 { x = e.position.x, y = e.position.y, z = e.position.z },
-            rotation = new SceneQuaternion { x = e.rotation.x, y = e.rotation.y, z = e.rotation.z, w = e.rotation.w },
-            scale    = new SceneFloat3 { x = e.scale.x, y = e.scale.y, z = e.scale.z },
-        };
+        // Hand-rolled CloneStepPoseEntry was deleted — it repeatedly dropped
+        // fields when the type gained propagateFromStep/propagateThroughStep.
+        // Callers now use StepPoseEntry.Clone() (MemberwiseClone) so every
+        // serialized field is preserved automatically.
 
         private static List<StepPoseEntry> DeepCopyStepPoseList(List<StepPoseEntry> src)
         {
             if (src == null) return null;
             var dst = new List<StepPoseEntry>(src.Count);
-            foreach (var e in src) dst.Add(CloneStepPoseEntry(e));
+            foreach (var e in src) if (e != null) dst.Add(e.Clone());
             return dst;
         }
 
@@ -741,7 +905,7 @@ namespace OSE.Editor
         {
             if (src == null) return null;
             var dst = new List<StepPoseEntry>(src.Length);
-            foreach (var e in src) dst.Add(CloneStepPoseEntry(e));
+            foreach (var e in src) if (e != null) dst.Add(e.Clone());
             return dst;
         }
 
@@ -837,8 +1001,15 @@ namespace OSE.Editor
                 }
             }
 
-            // Hide Unity's native transform gizmo when multi-selecting parts so only
-            // our custom Handles.PositionHandle / RotationHandle is visible.
+            // For single-part selection, defer to Unity's native transform
+            // gizmo (Move/Rotate/Transform tool) — it's familiar and more
+            // capable than our custom one. The polling block below detects
+            // the resulting transform drift and writes it into the active
+            // pose mode (after auto-promoting alien parts to NO TASK).
+            //
+            // For multi-part batch edits we still need our own gizmo so the
+            // delta applies uniformly to every selected part, so hide
+            // Unity's gizmo only in that case.
             bool isMultiPart = _multiSelectedParts.Count > 1;
             if (Tools.hidden != isMultiPart) Tools.hidden = isMultiPart;
 
@@ -854,7 +1025,7 @@ namespace OSE.Editor
             // pose (not just a resync artifact).
             if (!poseCooldownActive && !isMultiPart &&
                 _selectedPartIdx >= 0 && _selectedPartIdx < _parts.Length &&
-                (Tools.current == Tool.Move || Tools.current == Tool.Transform) &&
+                (Tools.current == Tool.Move || Tools.current == Tool.Rotate || Tools.current == Tool.Transform) &&
                 (Event.current.type == EventType.Repaint || Event.current.type == EventType.Layout))
             {
                 ref PartEditState pp = ref _parts[_selectedPartIdx];
@@ -877,9 +1048,15 @@ namespace OSE.Editor
                             }
                             else
                             {
+                                // Unity-native gizmo drag in progress. If the
+                                // part isn't part of this step's tasks, auto-
+                                // promote it to NO TASK + waypoint so the
+                                // captured drag has somewhere to land.
+                                AutoPromoteAlienPartToNoTaskWaypoint(_selectedPartIdx);
                                 BeginPartEdit(_selectedPartIdx);
                                 ApplyPoseToPart(ref pp, goPos, goRot);
                                 pp.isDirty = true;
+                                MirrorStepPosesToPreviewConfig(pp);
                                 EndPartEdit();
                                 Repaint();
                             }
@@ -902,12 +1079,24 @@ namespace OSE.Editor
             Handles.DrawWireDisc(selWorldPos, sv.camera.transform.forward,
                 HandleUtility.GetHandleSize(selWorldPos) * 0.14f);
 
+            // Custom Position / Rotation handles only render in BATCH (multi-
+            // part) edit mode. Single-part selection uses Unity's native
+            // Move/Rotate gizmo (visible because Tools.hidden = false above);
+            // the polling block earlier in this method captures its drags.
             // Position handle
+            if (isMultiPart)
+            {
             EditorGUI.BeginChangeCheck();
             Quaternion posHandleRot = Tools.pivotRotation == PivotRotation.Local ? selWorldRot : Quaternion.identity;
             Vector3    newWorldPos  = Handles.PositionHandle(selWorldPos, posHandleRot);
             if (EditorGUI.EndChangeCheck() && !poseCooldownActive && (newWorldPos - selWorldPos).sqrMagnitude > 1e-10f)
             {
+                // Author moved a part that isn't part of the current step's
+                // tasks — automatically register it as a NO TASK row + waypoint
+                // so the move is captured against this step and not silently
+                // pushed into the part's startPosition or another mode.
+                AutoPromoteAlienPartToNoTaskWaypoint(_selectedPartIdx);
+
                 BeginPartEdit(_selectedPartIdx);
                 Vector3 oldPreviewPos = GetActivePosePosition(ref sel);
                 selectedGO.transform.position = newWorldPos;
@@ -940,6 +1129,8 @@ namespace OSE.Editor
             Quaternion newWorldRot    = Handles.RotationHandle(rotOrientation, selWorldPos);
             if (EditorGUI.EndChangeCheck() && !poseCooldownActive && Quaternion.Angle(newWorldRot, rotOrientation) > 0.01f)
             {
+                AutoPromoteAlienPartToNoTaskWaypoint(_selectedPartIdx);
+
                 BeginPartEdit(_selectedPartIdx);
                 if (!_rotDragActivePart)
                 {
@@ -976,6 +1167,7 @@ namespace OSE.Editor
                 Repaint();
             }
             else if (_rotDragActivePart) _rotDragActivePart = false;
+            } // end if (isMultiPart) — close batch-only gizmo block
 
             // Selected part indicator — drawn AFTER gizmo handles so it's visible on top.
             if (root != null && hasStep)

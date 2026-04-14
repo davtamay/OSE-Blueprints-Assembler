@@ -51,6 +51,22 @@ namespace OSE.Editor
         private static readonly Color VisColorSub      = new(0.20f, 0.62f, 0.95f); // blue
         private static readonly Color VisColorEarlier  = new(0.62f, 0.62f, 0.66f); // grey
 
+        // Cached delta between (N-1, N). Recomputed only when currentSeq
+        // or the package's dirty fingerprint changes — redraws inside the
+        // same step reuse the cache.
+        private sealed class WhatsChangingRow
+        {
+            public string partId;
+            public string kindTag;                     // "ENTERED" / "LEFT" / "SOURCE" / "STACKED" / "VALUE"
+            public string transitionLabel;              // "A → B" for display
+            public string gotoStepId;                   // step to jump to when Go is clicked
+            public string tooltip;                      // full tag details
+        }
+        private List<WhatsChangingRow> _whatsChangingCache;
+        private int _whatsChangingCachedSeq = int.MinValue;
+
+        private const string PrefWhatsChangingOpen = "OSE.TTAW.WhatsChangingOpen";
+
         // ── Section drawer (called from DrawUnifiedList) ──────────────────────
 
         private void DrawVisibilitySection(StepDefinition step)
@@ -196,6 +212,220 @@ namespace OSE.Editor
             EditorGUI.DrawRect(rect, bgColor);
             GUI.Label(rect, content, style);
             GUILayout.Space(3);
+        }
+
+        /// <summary>
+        /// Diagnostic panel: for the currently-selected step, lists every
+        /// part whose pose source or visibility changed versus the previous
+        /// step. Surfaces "why did this part move" at a glance — the source
+        /// tag identifies which field in previewConfig drove the pose.
+        /// </summary>
+        private void DrawWhatsChangingSection(StepDefinition step)
+        {
+            if (_pkg == null || step == null) return;
+            int currentSeq = step.sequenceIndex;
+
+            // Refresh the delta cache when the step changes. We keep it per
+            // step so redraws inside the same step are cheap.
+            if (_whatsChangingCachedSeq != currentSeq || _whatsChangingCache == null)
+            {
+                _whatsChangingCache = BuildWhatsChangingRows(currentSeq);
+                _whatsChangingCachedSeq = currentSeq;
+            }
+            var rows = _whatsChangingCache;
+
+            int total = rows.Count;
+            int cSource = 0, cEntered = 0, cLeft = 0, cStacked = 0, cValue = 0;
+            for (int i = 0; i < rows.Count; i++)
+            {
+                switch (rows[i].kindTag)
+                {
+                    case "ENTERED": cEntered++; break;
+                    case "LEFT":    cLeft++;    break;
+                    case "STACKED": cStacked++; break;
+                    case "VALUE":   cValue++;   break;
+                    default:        cSource++;  break;
+                }
+            }
+
+            // Header row with count pill + foldout toggle.
+            EditorGUILayout.Space(4);
+            bool open = EditorPrefs.GetBool(PrefWhatsChangingOpen, false);
+
+            EditorGUILayout.BeginHorizontal();
+            var arrow = open ? "▼" : "▶";
+            var hdrStyle = new GUIStyle(EditorStyles.miniBoldLabel)
+            {
+                normal = { textColor = total > 0 ? new Color(0.95f, 0.70f, 0.30f) : new Color(0.62f, 0.62f, 0.66f) },
+            };
+            if (GUILayout.Button($"{arrow} WHAT'S CHANGING ({total})", hdrStyle, GUILayout.ExpandWidth(false)))
+            {
+                open = !open;
+                EditorPrefs.SetBool(PrefWhatsChangingOpen, open);
+            }
+            var summaryStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                normal    = { textColor = new Color(0.68f, 0.68f, 0.72f) },
+                alignment = TextAnchor.MiddleLeft,
+            };
+            string summary = $"  {cSource} source · {cEntered} entered · {cLeft} left · {cStacked} stacked · {cValue} value";
+            GUILayout.Label(summary, summaryStyle);
+            EditorGUILayout.EndHorizontal();
+
+            if (!open || total == 0) return;
+
+            // Rows.
+            for (int i = 0; i < rows.Count; i++)
+            {
+                var r = rows[i];
+                EditorGUILayout.BeginHorizontal();
+
+                // Kind pill.
+                Color pillCol = r.kindTag switch
+                {
+                    "ENTERED" => new Color(0.30f, 0.78f, 0.36f, 0.30f),
+                    "LEFT"    => new Color(0.85f, 0.40f, 0.40f, 0.30f),
+                    "STACKED" => new Color(0.95f, 0.65f, 0.30f, 0.30f),
+                    "VALUE"   => new Color(0.95f, 0.95f, 0.45f, 0.30f),
+                    _         => new Color(0.55f, 0.78f, 0.95f, 0.30f), // SOURCE
+                };
+                Color pillTxt = r.kindTag switch
+                {
+                    "ENTERED" => new Color(0.55f, 0.95f, 0.55f),
+                    "LEFT"    => new Color(1.00f, 0.60f, 0.60f),
+                    "STACKED" => new Color(1.00f, 0.80f, 0.45f),
+                    "VALUE"   => new Color(1.00f, 1.00f, 0.55f),
+                    _         => new Color(0.70f, 0.88f, 1.00f),
+                };
+                var pillRect = GUILayoutUtility.GetRect(62f, 16f, GUILayout.Width(62f), GUILayout.Height(16f));
+                EditorGUI.DrawRect(pillRect, pillCol);
+                var pillStyle = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    normal    = { textColor = pillTxt },
+                    fontSize  = 8,
+                    alignment = TextAnchor.MiddleCenter,
+                    fontStyle = FontStyle.Bold,
+                };
+                GUI.Label(pillRect, r.kindTag, pillStyle);
+
+                // Part id (narrow column), transition label (wide column).
+                var idStyle = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleLeft };
+                GUILayout.Label(r.partId, idStyle, GUILayout.MinWidth(160));
+
+                var traceStyle = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    normal    = { textColor = new Color(0.80f, 0.82f, 0.85f) },
+                    alignment = TextAnchor.MiddleLeft,
+                };
+                GUILayout.Label(new GUIContent(r.transitionLabel, r.tooltip), traceStyle, GUILayout.ExpandWidth(true));
+
+                EditorGUI.BeginDisabledGroup(string.IsNullOrEmpty(r.gotoStepId));
+                if (GUILayout.Button("Go", EditorStyles.miniButton, GUILayout.Width(28)))
+                {
+                    if (_stepIds != null)
+                    {
+                        for (int k = 0; k < _stepIds.Length; k++)
+                            if (string.Equals(_stepIds[k], r.gotoStepId, StringComparison.Ordinal))
+                            { ApplyStepFilter(k); break; }
+                    }
+                }
+                EditorGUI.EndDisabledGroup();
+                EditorGUILayout.EndHorizontal();
+            }
+        }
+
+        private List<WhatsChangingRow> BuildWhatsChangingRows(int currentSeq)
+        {
+            var result = new List<WhatsChangingRow>();
+            if (_pkg?.steps == null) return result;
+
+            int prevSeq = currentSeq - 1;
+
+            // Collect every partId that could be visible in the package
+            // window around currentSeq. Iterate over _parts so the list
+            // mirrors what BuildPartList already includes (Req / Opt / Vis).
+            if (_parts == null) return result;
+            for (int i = 0; i < _parts.Length; i++)
+            {
+                var def = _parts[i].def;
+                if (def == null || string.IsNullOrEmpty(def.id)) continue;
+                string pid = def.id;
+
+                TracePartPoseAtStep(pid, currentSeq, out Vector3 posN, out Quaternion rotN, out Vector3 _, out PoseSourceTag tagN);
+                Vector3 posP = Vector3.zero;
+                Quaternion rotP = Quaternion.identity;
+                PoseSourceTag tagP = new PoseSourceTag(PoseSourceKind.Hidden);
+                if (prevSeq >= 0)
+                    TracePartPoseAtStep(pid, prevSeq, out posP, out rotP, out Vector3 _ps, out tagP);
+
+                bool nVisible = tagN.kind != PoseSourceKind.Hidden;
+                bool pVisible = prevSeq >= 0 && tagP.kind != PoseSourceKind.Hidden;
+                if (!nVisible && !pVisible) continue;
+
+                var row = new WhatsChangingRow { partId = pid };
+
+                if (!pVisible && nVisible)
+                {
+                    row.kindTag = "ENTERED";
+                    row.transitionLabel = $"— → {tagN.PrettyLabel()}";
+                    row.gotoStepId = FindStepIdBySeq(currentSeq);
+                    row.tooltip = $"First appearance at step [{currentSeq}]";
+                    result.Add(row);
+                    continue;
+                }
+                if (pVisible && !nVisible)
+                {
+                    row.kindTag = "LEFT";
+                    row.transitionLabel = $"{tagP.PrettyLabel()} → hidden";
+                    row.gotoStepId = FindStepIdBySeq(currentSeq);
+                    row.tooltip = $"No longer visible at step [{currentSeq}]";
+                    result.Add(row);
+                    continue;
+                }
+
+                // Both visible: source-change vs value-change.
+                if (!tagN.ValueEquals(tagP))
+                {
+                    bool isStacked =
+                        (tagP.kind == PoseSourceKind.AssembledPosition || tagP.kind == PoseSourceKind.StartPosition)
+                        && tagN.kind == PoseSourceKind.Integrated;
+                    row.kindTag = isStacked ? "STACKED" : "SOURCE";
+                    row.transitionLabel = $"{tagP.PrettyLabel()} → {tagN.PrettyLabel()}";
+                    row.gotoStepId = tagN.kind == PoseSourceKind.StepPose
+                        ? tagN.anchorStepId
+                        : FindStepIdBySeq(currentSeq);
+                    row.tooltip = $"Pose source changed between steps [{prevSeq}] → [{currentSeq}]";
+                    result.Add(row);
+                    continue;
+                }
+
+                // Same source, check value drift.
+                float posDelta = (posN - posP).magnitude;
+                float rotDelta = Quaternion.Angle(rotN, rotP);
+                if (posDelta > 0.0005f || rotDelta > 0.01f)
+                {
+                    row.kindTag = "VALUE";
+                    row.transitionLabel = $"{tagN.PrettyLabel()}   Δpos={posDelta:0.0000}m  Δrot={rotDelta:0.00}°";
+                    row.gotoStepId = tagN.kind == PoseSourceKind.StepPose
+                        ? tagN.anchorStepId
+                        : FindStepIdBySeq(currentSeq);
+                    row.tooltip = $"Same source, numeric drift between steps [{prevSeq}] → [{currentSeq}]";
+                    result.Add(row);
+                }
+            }
+
+            // Order: STACKED, SOURCE, ENTERED, LEFT, VALUE — severity-first.
+            int Rank(string k) => k switch { "STACKED" => 0, "SOURCE" => 1, "ENTERED" => 2, "LEFT" => 3, "VALUE" => 4, _ => 99 };
+            result.Sort((a, b) => Rank(a.kindTag).CompareTo(Rank(b.kindTag)));
+            return result;
+        }
+
+        private string FindStepIdBySeq(int seq)
+        {
+            if (_pkg?.steps == null) return null;
+            foreach (var s in _pkg.steps)
+                if (s != null && s.sequenceIndex == seq) return s.id;
+            return null;
         }
 
         /// <summary>
@@ -608,6 +838,31 @@ namespace OSE.Editor
         {
             if (step == null || string.IsNullOrEmpty(partId)) return;
 
+            // Warn (don't block) when another Place-family step already
+            // requires this partId. Matches CommitAddPart — authoring should
+            // never refuse a mutation the author explicitly asked for; the
+            // save-time dialog offers auto-fix when the runtime rule needs
+            // enforcing.
+            if (role == PartRole.Required && step.ResolvedFamily == StepFamily.Place && _pkg?.steps != null)
+            {
+                foreach (var other in _pkg.steps)
+                {
+                    if (other == null || other == step) continue;
+                    if (other.ResolvedFamily != StepFamily.Place) continue;
+                    if (other.requiredPartIds == null) continue;
+                    foreach (var op in other.requiredPartIds)
+                    {
+                        if (string.Equals(op, partId, StringComparison.Ordinal))
+                        {
+                            ShowNotification(new GUIContent(
+                                $"⚠ '{partId}' is also Required in Place step '{other.id}'. Resolve at save time (auto-fix) or demote the other step."));
+                            goto PromoteConflictHandled;
+                        }
+                    }
+                }
+            }
+            PromoteConflictHandled:
+
             if (step.requiredPartIds != null)
             {
                 var req = new List<string>(step.requiredPartIds);
@@ -656,6 +911,11 @@ namespace OSE.Editor
             }
 
             _dirtyStepIds.Add(step.id);
+            // Keep taskOrder in sync with the role arrays we just mutated so
+            // the part we promoted/demoted also appears (or disappears) in
+            // the authoring task sequence — no more "invisibly Required"
+            // drift between taskOrder and requiredPartIds.
+            ReconcileStepTaskOrder(step);
             InvalidateTaskOrderCache();
             BuildPartList();
             BuildTargetList();
@@ -741,6 +1001,26 @@ namespace OSE.Editor
             p.assembledRotation  = rot;
             p.assembledScale     = scl;
             p.isDirty            = true;
+
+            // Mirror the entry into the backing PartPreviewPlacement so a
+            // subsequent BuildPartList() rebuild (which re-reads stepPoses
+            // from previewConfig) picks the entry up instead of discarding
+            // the unsaved in-memory edit. Without this, NO TASK-captured
+            // poses vanished on the next UI tick, making later steps fall
+            // back to assembledPosition.
+            var ppRef = FindPartPlacement(partId);
+            if (ppRef != null)
+            {
+                var existing = ppRef.stepPoses != null ? new List<StepPoseEntry>(ppRef.stepPoses) : new List<StepPoseEntry>();
+                bool replaced = false;
+                for (int i = 0; i < existing.Count; i++)
+                {
+                    if (existing[i] != null && string.Equals(existing[i].stepId, step.id, StringComparison.Ordinal))
+                    { existing[i] = target; replaced = true; break; }
+                }
+                if (!replaced) existing.Add(target);
+                ppRef.stepPoses = existing.ToArray();
+            }
         }
 
         /// <summary>

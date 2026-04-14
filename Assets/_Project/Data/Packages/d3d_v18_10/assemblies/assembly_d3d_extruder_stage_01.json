@@ -256,16 +256,16 @@
       "sequenceIndex": 86,
       "instructionText": "Place the Titan Aero core into the extruder work zone so the nozzle, fan, and sensor-side parts can be added in sequence.",
       "family": "Place",
-      "requiredPartIds": [
-        "d3d_titan_aero_core"
-      ],
-      "targetIds": [
-        "target_titan_aero_core_stage"
-      ],
       "hintIds": [
         "hint_stage_titan_aero_core"
-      ]
-    },
+      ],
+      "removePersistentToolIds": [],
+      "targetIds": [ "target_titan_aero_core_stage" ],
+      "requiredPartIds": [ "d3d_titan_aero_core" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"d3d_titan_aero_core"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_attach_extruder_nozzle_assembly",
       "name": "Attach the nozzle assembly",
@@ -274,16 +274,16 @@
       "sequenceIndex": 87,
       "instructionText": "Place the nozzle assembly onto the staged Titan Aero core before any cooling or sensor-side hardware is added.",
       "family": "Place",
-      "requiredPartIds": [
-        "d3d_extruder_nozzle_assembly"
-      ],
-      "targetIds": [
-        "target_extruder_nozzle_attach"
-      ],
       "hintIds": [
         "hint_attach_extruder_nozzle"
-      ]
-    },
+      ],
+      "removePersistentToolIds": [],
+      "targetIds": [ "target_extruder_nozzle_attach" ],
+      "requiredPartIds": [ "d3d_extruder_nozzle_assembly" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"d3d_extruder_nozzle_assembly"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_place_extruder_blower_attachment",
       "name": "Place the print-cooling blower",
@@ -292,16 +292,16 @@
       "sequenceIndex": 88,
       "instructionText": "Place the 5015 blower on the fan side of the nozzle module before securing its mount points.",
       "family": "Place",
-      "requiredPartIds": [
-        "d3d_extruder_5015_blower"
-      ],
-      "targetIds": [
-        "target_extruder_blower_attach"
-      ],
       "hintIds": [
         "hint_place_extruder_blower"
-      ]
-    },
+      ],
+      "removePersistentToolIds": [],
+      "targetIds": [ "target_extruder_blower_attach" ],
+      "requiredPartIds": [ "d3d_extruder_5015_blower" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"d3d_extruder_5015_blower"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_secure_extruder_blower_attachment",
       "name": "Secure the blower attachment",
@@ -347,16 +347,16 @@
       "sequenceIndex": 90,
       "instructionText": "Place the sensor holder on the nozzle module after the blower side is established.",
       "family": "Place",
-      "requiredPartIds": [
-        "d3d_extruder_sensor_holder"
-      ],
-      "targetIds": [
-        "target_extruder_sensor_holder_attach"
-      ],
       "hintIds": [
         "hint_place_sensor_holder"
-      ]
-    },
+      ],
+      "removePersistentToolIds": [],
+      "targetIds": [ "target_extruder_sensor_holder_attach" ],
+      "requiredPartIds": [ "d3d_extruder_sensor_holder" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"d3d_extruder_sensor_holder"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_secure_extruder_sensor_holder",
       "name": "Secure the sensor holder",
@@ -402,16 +402,16 @@
       "sequenceIndex": 92,
       "instructionText": "Place the 8 mm sensor into the holder after the holder is secured.",
       "family": "Place",
-      "requiredPartIds": [
-        "d3d_extruder_8mm_sensor"
-      ],
-      "targetIds": [
-        "target_extruder_sensor_insert"
-      ],
       "hintIds": [
         "hint_place_8mm_sensor"
-      ]
-    },
+      ],
+      "removePersistentToolIds": [],
+      "targetIds": [ "target_extruder_sensor_insert" ],
+      "requiredPartIds": [ "d3d_extruder_8mm_sensor" ],
+      "requiredToolActions": [],
+      "taskOrder": [{"kind":"part","id":"d3d_extruder_8mm_sensor"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_check_extruder_nozzle_module_clearance",
       "name": "Check nozzle-module clearance",

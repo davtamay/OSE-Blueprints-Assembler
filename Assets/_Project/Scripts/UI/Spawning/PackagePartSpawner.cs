@@ -221,98 +221,48 @@ namespace OSE.UI.Root
                 return;
             }
 
-            // Build partId → earliest sequenceIndex map from step definitions.
-            // Also track which parts belong to any subassembly — they are pre-assembled
-            // before their step and always use assembledPosition regardless of current step.
-            var partStepSeq      = new Dictionary<string, int>(System.StringComparer.Ordinal);
-            var subassemblyParts = new HashSet<string>(System.StringComparer.Ordinal);
-            var orderedSteps     = pkg.GetOrderedSteps();
-            foreach (var step in orderedSteps)
-            {
-                if (step == null) continue;
-                string[] stepParts = step.GetEffectiveRequiredPartIds();
-                foreach (string pid in stepParts)
-                {
-                    if (string.IsNullOrEmpty(pid)) continue;
-                    if (!partStepSeq.ContainsKey(pid) || step.sequenceIndex < partStepSeq[pid])
-                        partStepSeq[pid] = step.sequenceIndex;
-                }
-                // visualPartIds — parts that should be visible in this step but
-                // are not required for completion. Treated identically to
-                // requiredPartIds for visibility timing purposes.
-                if (step.visualPartIds != null)
-                {
-                    foreach (string pid in step.visualPartIds)
-                    {
-                        if (string.IsNullOrEmpty(pid)) continue;
-                        if (!partStepSeq.ContainsKey(pid) || step.sequenceIndex < partStepSeq[pid])
-                            partStepSeq[pid] = step.sequenceIndex;
-                    }
-                }
-                // optionalPartIds — same visibility as requiredPartIds but
-                // the runtime doesn't gate step completion on them.
-                if (step.optionalPartIds != null)
-                {
-                    foreach (string pid in step.optionalPartIds)
-                    {
-                        if (string.IsNullOrEmpty(pid)) continue;
-                        if (!partStepSeq.ContainsKey(pid) || step.sequenceIndex < partStepSeq[pid])
-                            partStepSeq[pid] = step.sequenceIndex;
-                    }
-                }
-                if (!string.IsNullOrEmpty(step.requiredSubassemblyId) &&
-                    pkg.TryGetSubassembly(step.requiredSubassemblyId, out var subDef) &&
-                    subDef?.partIds != null)
-                {
-                    foreach (string pid in subDef.partIds)
-                    {
-                        if (string.IsNullOrEmpty(pid)) continue;
-                        if (!partStepSeq.ContainsKey(pid) || step.sequenceIndex < partStepSeq[pid])
-                            partStepSeq[pid] = step.sequenceIndex;
-                        subassemblyParts.Add(pid);
-                    }
-                }
-            }
-
-            // "Fully Assembled" mode: targetSequenceIndex past the last step means
-            // show every assigned part at its assembledPosition (same as runtime final view).
-            int lastStepSeq = orderedSteps.Length > 0
-                ? orderedSteps[orderedSteps.Length - 1].sequenceIndex
-                : 0;
+            // All the visibility / stacking / integrated-member / "which pose
+            // fires" questions we used to answer here are now baked into
+            // pkg.poseTable by MachinePackageNormalizer. This method does two
+            // things: look up the baked pose per part, and compute editor-only
+            // visual state (ghosting + emission tint). Everything else was
+            // deleted with Step 4 of the pose-system rewrite.
+            var orderedSteps = pkg.GetOrderedSteps();
+            int lastStepSeq  = orderedSteps.Length > 0 ? orderedSteps[orderedSteps.Length - 1].sequenceIndex : 0;
             bool fullyAssembled = targetSequenceIndex > lastStepSeq;
 
-            // Build the set of subassembly IDs whose stacking step is completed
-            // (sequenceIndex < targetSequenceIndex).  Only these subassemblies have
-            // their members placed at integrated (cube) positions; members whose
-            // stacking step hasn't happened yet stay at their fabrication assembledPosition.
-            var stackedSubassemblyIds = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
-            foreach (var step in orderedSteps)
+            // For fully-assembled view, read each part's pose at the last
+            // ordered step — that's the committed post-build state.
+            int lookupSeq = fullyAssembled ? lastStepSeq : targetSequenceIndex;
+
+            // currentStepTaskParts drives the emission glow only. The pose
+            // decision itself is PoseTable's problem.
+            StepDefinition currentStepDef = null;
+            for (int si = 0; si < orderedSteps.Length; si++)
             {
-                if (step == null || string.IsNullOrEmpty(step.requiredSubassemblyId)) continue;
-                if (fullyAssembled || step.sequenceIndex < targetSequenceIndex)
-                    stackedSubassemblyIds.Add(step.requiredSubassemblyId);
+                if (orderedSteps[si] != null && orderedSteps[si].sequenceIndex == targetSequenceIndex)
+                { currentStepDef = orderedSteps[si]; break; }
+            }
+            var currentStepTaskParts = new HashSet<string>(System.StringComparer.Ordinal);
+            if (currentStepDef != null)
+            {
+                if (currentStepDef.requiredPartIds != null)
+                    foreach (string pid in currentStepDef.requiredPartIds)
+                        if (!string.IsNullOrEmpty(pid)) currentStepTaskParts.Add(pid);
+                if (currentStepDef.optionalPartIds != null)
+                    foreach (string pid in currentStepDef.optionalPartIds)
+                        if (!string.IsNullOrEmpty(pid)) currentStepTaskParts.Add(pid);
             }
 
-            // Build partId → IntegratedMemberPreviewPlacement map ONLY for subassemblies
-            // whose stacking step is completed.  This ensures bars stay at fabrication
-            // positions during their fabrication steps and move to cube positions only
-            // after their stacking step completes.
-            var integratedMemberMap = new Dictionary<string, IntegratedMemberPreviewPlacement>(System.StringComparer.Ordinal);
-            IntegratedSubassemblyPreviewPlacement[] intPlacements = _currentPreviewConfig?.integratedSubassemblyPlacements;
-            if (intPlacements != null)
+            var poseTable = pkg.poseTable;
+            if (poseTable == null)
             {
-                for (int ip = 0; ip < intPlacements.Length; ip++)
-                {
-                    IntegratedSubassemblyPreviewPlacement intPlacement = intPlacements[ip];
-                    if (intPlacement?.memberPlacements == null) continue;
-                    if (!stackedSubassemblyIds.Contains(intPlacement.subassemblyId ?? "")) continue;
-                    for (int mp = 0; mp < intPlacement.memberPlacements.Length; mp++)
-                    {
-                        IntegratedMemberPreviewPlacement member = intPlacement.memberPlacements[mp];
-                        if (member != null && !string.IsNullOrEmpty(member.partId))
-                            integratedMemberMap[member.partId] = member;
-                    }
-                }
+                // Package wasn't run through MachinePackageNormalizer.Normalize;
+                // nothing to render. Not an error — legit during intermediate
+                // load states. Only log once per call chain, not once per part.
+                foreach (var partGo in _spawnedParts)
+                    if (partGo != null) partGo.SetActive(false);
+                return;
             }
 
             // ── Pre-compute which part IDs will be covered by subassembly ghosts ──
@@ -356,82 +306,28 @@ namespace OSE.UI.Root
                 if (pp == null) continue;
                 if (SplinePartFactory.HasSplineData(pp)) continue;
 
-                bool assigned = partStepSeq.TryGetValue(partGo.name, out int partSeq);
-                if (!assigned || (!fullyAssembled && partSeq > targetSequenceIndex))
+                // Hidden: either the table has no entry (part not yet visible
+                // at lookupSeq) or the step's ghost replaces this real part.
+                if (!poseTable.TryGet(partGo.name, lookupSeq, out var resolution)
+                    || ghostedSubassemblyPartIds.Contains(partGo.name))
                 {
                     partGo.SetActive(false);
+                    continue;
                 }
-                // Hide real parts whose subassembly ghost replaces them
-                else if (ghostedSubassemblyPartIds.Contains(partGo.name))
+
+                partGo.SetActive(true);
+                partGo.transform.SetLocalPositionAndRotation(resolution.pos, resolution.rot);
+                partGo.transform.localScale = resolution.scl;
+
+                if (!Application.isPlaying)
                 {
-                    partGo.SetActive(false);
-                }
-                else
-                {
-                    partGo.SetActive(true);
-                    // Subassembly members are pre-assembled before their step — no
-                    // meaningful individual startPosition, always use assembledPosition.
-                    bool usePlay = fullyAssembled || partSeq < targetSequenceIndex || subassemblyParts.Contains(partGo.name);
-
-                    Vector3 pos;
-                    Quaternion rot;
-                    Vector3 scl;
-
-                    // Prefer integrated member placement when available — these are
-                    // the canonical assembled poses that play mode commits via
-                    // SubassemblyPlacementController.TryApplyIntegratedPlacement().
-                    if (usePlay && integratedMemberMap.TryGetValue(partGo.name, out IntegratedMemberPreviewPlacement imp))
-                    {
-                        pos = new Vector3(imp.position.x, imp.position.y, imp.position.z);
-                        rot = !imp.rotation.IsIdentity
-                            ? new Quaternion(imp.rotation.x, imp.rotation.y, imp.rotation.z, imp.rotation.w)
-                            : Quaternion.identity;
-                        scl = new Vector3(imp.scale.x, imp.scale.y, imp.scale.z);
-                    }
-                    else if (usePlay && !fullyAssembled &&
-                             _configLookup.TryResolvePartPoseAtStep(
-                                 partGo.name, orderedSteps, targetSequenceIndex,
-                                 out SceneFloat3 spPos, out SceneQuaternion spRot, out SceneFloat3 spScl))
-                    {
-                        pos = new Vector3(spPos.x, spPos.y, spPos.z);
-                        rot = !spRot.IsIdentity
-                            ? new Quaternion(spRot.x, spRot.y, spRot.z, spRot.w)
-                            : Quaternion.identity;
-                        scl = new Vector3(spScl.x, spScl.y, spScl.z);
-                    }
-                    else if (usePlay)
-                    {
-                        pos = new Vector3(pp.assembledPosition.x, pp.assembledPosition.y, pp.assembledPosition.z);
-                        rot = !pp.assembledRotation.IsIdentity
-                            ? new Quaternion(pp.assembledRotation.x, pp.assembledRotation.y, pp.assembledRotation.z, pp.assembledRotation.w)
-                            : Quaternion.identity;
-                        scl = new Vector3(pp.assembledScale.x, pp.assembledScale.y, pp.assembledScale.z);
-                    }
-                    else
-                    {
-                        pos = new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z);
-                        rot = !pp.startRotation.IsIdentity
-                            ? new Quaternion(pp.startRotation.x, pp.startRotation.y, pp.startRotation.z, pp.startRotation.w)
-                            : Quaternion.identity;
-                        scl = new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z);
-                    }
-
-                    // Fall back to assembledScale when startScale is zero
-                    if (!usePlay && scl.sqrMagnitude < 0.00001f)
-                        scl = new Vector3(pp.assembledScale.x, pp.assembledScale.y, pp.assembledScale.z);
-                    partGo.transform.SetLocalPositionAndRotation(pos, rot);
-                    partGo.transform.localScale = scl;
-
-                    // ── Visual feedback (edit-mode only) ──
-                    // Keep original materials on all parts. Active step parts get an
-                    // emission glow; prior-step parts keep their textures with no glow.
-                    if (!Application.isPlaying)
-                    {
-                        MaterialHelper.ClearTint(partGo);
-                        MaterialHelper.SetEmission(partGo, !usePlay
-                            ? InteractionVisualConstants.ActiveStepEmission
-                            : Color.black);
-                    }
+                    // Emission glow on the parts the current step acts on —
+                    // the same "this is the live task" cue as before.
+                    bool isCurrentTask = currentStepTaskParts.Contains(partGo.name);
+                    MaterialHelper.ClearTint(partGo);
+                    MaterialHelper.SetEmission(partGo, isCurrentTask
+                        ? InteractionVisualConstants.ActiveStepEmission
+                        : Color.black);
                 }
             }
 
@@ -449,7 +345,33 @@ namespace OSE.UI.Root
             // Show translucent ghosts at the play (target) position for parts that
             // are currently at their start position (i.e. the parts being placed in
             // the active step). This mirrors what PreviewSpawnManager does at runtime.
-            _ghostManager?.SpawnGhosts(pkg, orderedSteps, targetSequenceIndex, fullyAssembled, partStepSeq, subassemblyParts);
+            //
+            // EditModeGhostManager still expects the legacy partStepSeq +
+            // subassemblyParts maps (it uses them for ghost visibility timing,
+            // not pose resolution). We rebuild small versions here; when the
+            // ghost manager migrates to PoseTable these can go away.
+            var ghostPartStepSeq   = new Dictionary<string, int>(System.StringComparer.Ordinal);
+            var ghostSubassemblyParts = new HashSet<string>(System.StringComparer.Ordinal);
+            foreach (var step in orderedSteps)
+            {
+                if (step == null) continue;
+                int seq = step.sequenceIndex;
+                void Note(string pid)
+                {
+                    if (string.IsNullOrEmpty(pid)) return;
+                    if (!ghostPartStepSeq.TryGetValue(pid, out int cur) || seq < cur) ghostPartStepSeq[pid] = seq;
+                }
+                if (step.requiredPartIds != null) foreach (var p in step.requiredPartIds) Note(p);
+                if (step.optionalPartIds != null) foreach (var p in step.optionalPartIds) Note(p);
+                if (step.visualPartIds   != null) foreach (var p in step.visualPartIds)   Note(p);
+                if (!string.IsNullOrEmpty(step.requiredSubassemblyId)
+                    && pkg.TryGetSubassembly(step.requiredSubassemblyId, out var subDef)
+                    && subDef?.partIds != null)
+                {
+                    foreach (var p in subDef.partIds) { Note(p); if (!string.IsNullOrEmpty(p)) ghostSubassemblyParts.Add(p); }
+                }
+            }
+            _ghostManager?.SpawnGhosts(pkg, orderedSteps, targetSequenceIndex, fullyAssembled, ghostPartStepSeq, ghostSubassemblyParts);
         }
 
         // ── Edit-mode visual helpers ────────────────────────────────────

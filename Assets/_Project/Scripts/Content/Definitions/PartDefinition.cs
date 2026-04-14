@@ -102,12 +102,25 @@ namespace OSE.Content
         [NonSerialized] public string owningSubassemblyId;
 
         /// <summary>
-        /// The unique Place-family step whose <c>requiredPartIds</c> contains this part,
-        /// populated by <c>MachinePackageNormalizer.IndexPartOwnership</c> after
-        /// deserialization. First-writer-wins during normalization;
-        /// <c>PartOwnershipExclusivityPass</c> guarantees uniqueness at validation time.
+        /// First (lowest-sequenceIndex) Place-family step that requires this
+        /// part. Retained as the canonical "first placement" for legacy
+        /// callers that still expect a scalar owner. Multi-placement is now
+        /// supported — see <see cref="owningPlaceStepIds"/> for the full set.
         /// </summary>
         [NonSerialized] public string owningPlaceStepId;
+
+        /// <summary>
+        /// All Place-family step ids that require this part, sorted by each
+        /// step's <c>sequenceIndex</c>. Populated by
+        /// <see cref="Loading.MachinePackageNormalizer.IndexPartOwnership"/>.
+        /// A part may be Required by multiple Place steps to represent distinct
+        /// physical placements (e.g. loose alignment followed by final
+        /// placement). Consumers that care about "which step placed this part
+        /// at the currently-viewed seq" should walk this array and pick the
+        /// most recent entry ≤ view seq — same pattern the
+        /// <see cref="PoseResolver"/> already uses for subassembly stacking.
+        /// </summary>
+        [NonSerialized] public string[] owningPlaceStepIds;
 
         public string GetDisplayName()
         {

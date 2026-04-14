@@ -478,19 +478,11 @@ namespace OSE.Editor
 
             EditorGUILayout.EndHorizontal();
 
-            // Inline From/Through propagation row — mirrors the part UI.
-            // Same-group filter defaults ON so the pickers only list steps
-            // referencing this group or any of its members.
-            string curStepId = _stepFilterIdx > 0 && _stepIds != null && _stepFilterIdx < _stepIds.Length
-                ? _stepIds[_stepFilterIdx] : null;
-            if (!string.IsNullOrEmpty(curStepId) && g.def != null)
-                DrawGroupPropagationRow(ref g, curStepId);
+            // Group propagation UI removed — same simplification as on the
+            // part side. Authors edit Start / Assembled / Custom group
+            // poses directly without span pickers.
 
-            // Span-control row mirrors the part UI — author picks "Just this
-            // step / Start → this step / This step → end / All / Fixed range"
-            // in one click. Only visible when a custom group pose is active.
-            if (_editingGroupPoseMode >= 0 && gPoseCount > 0 && _editingGroupPoseMode < gPoseCount)
-                DrawGroupStepPoseDetailRow(ref g, _editingGroupPoseMode);
+            // Per-entry span row removed alongside propagation UI.
 
             EditorGUILayout.Space(4);
 
@@ -520,6 +512,35 @@ namespace OSE.Editor
                     fontStyle = FontStyle.Bold,
                 };
                 EditorGUILayout.LabelField("● Unsaved group pose changes", dirtyStyle);
+            }
+
+            // Group-level "strip integrated" affordance — always visible so
+            // the author can see the count even when it's 0 (which tells
+            // them integrated placements aren't the source of pose drift
+            // for this group).
+            if (g.def != null)
+            {
+                int integratedCount = CountIntegratedPlacementsForSubassembly(g.def.id);
+                EditorGUILayout.BeginHorizontal();
+                var labelStyle = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    normal    = { textColor = integratedCount > 0 ? new Color(0.95f, 0.65f, 0.30f) : new Color(0.55f, 0.58f, 0.62f) },
+                    fontStyle = integratedCount > 0 ? FontStyle.Italic : FontStyle.Normal,
+                };
+                string txt = integratedCount > 0
+                    ? $"  {integratedCount} integrated placement(s) on this group"
+                    : "  0 integrated placements on this group";
+                GUILayout.Label(txt, labelStyle);
+                GUILayout.FlexibleSpace();
+                EditorGUI.BeginDisabledGroup(integratedCount == 0);
+                if (GUILayout.Button(new GUIContent("Strip integrated",
+                        "Removes every integratedSubassemblyPlacements entry for this group. Members fall back to startPosition / assembledPosition so NO TASK poses dominate."),
+                    EditorStyles.miniButton, GUILayout.Width(112)))
+                {
+                    StripIntegratedPlacementsForSubassembly(g.def.id);
+                }
+                EditorGUI.EndDisabledGroup();
+                EditorGUILayout.EndHorizontal();
             }
 
             EditorGUILayout.Space(4);

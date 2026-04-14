@@ -209,12 +209,18 @@ namespace OSE.UI.Root
             return picked != null;
         }
 
+        // Returns the step's sequenceIndex (not the orderedSteps array
+        // position). Callers pass viewingStepIndex = sequenceIndex, so every
+        // bound must be resolved into the same space — earlier this method
+        // returned the array index, which silently mismatched when
+        // sequenceIndex != arrayIndex+1 (gaps, 1-based numbering, etc.) and
+        // caused stepPoses to stop applying one step early.
         private static int IndexOfStep(StepDefinition[] orderedSteps, string stepId)
         {
             if (string.IsNullOrEmpty(stepId) || orderedSteps == null) return -1;
             for (int i = 0; i < orderedSteps.Length; i++)
                 if (orderedSteps[i] != null && string.Equals(orderedSteps[i].id, stepId, StringComparison.OrdinalIgnoreCase))
-                    return i;
+                    return orderedSteps[i].sequenceIndex;
             return -1;
         }
 

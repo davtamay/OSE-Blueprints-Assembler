@@ -187,6 +187,15 @@ namespace OSE.Editor
         [SerializeField] private int    _selectedPartIdx = -1;
         [SerializeField] private string _selectedPartId;
         private readonly HashSet<int>   _multiSelectedParts = new HashSet<int>();
+
+        /// <summary>
+        /// Cache of per-partId ownership data (Place-owner, Required/Optional/
+        /// Visual step lists, subassembly, conflicts). Built once per
+        /// <c>BuildPartList</c> rebuild; consumed by the four proactive-
+        /// guidance surfaces so every scan runs off this single answer
+        /// instead of walking <c>_pkg.steps</c> on every repaint.
+        /// </summary>
+        private PartOwnershipIndex       _ownership = PartOwnershipIndex.Empty;
         // Pose-mode selector: PoseModeStart = start pose, PoseModeAssembled = assembled pose,
         // 0..N = stepPose index (intermediate poses).
         private const int PoseModeStart     = -1;
@@ -210,6 +219,15 @@ namespace OSE.Editor
         // Cached derived task order for the currently selected step
         private List<TaskOrderEntry> _cachedTaskOrder;
         private string               _cachedTaskOrderForStepId;
+        /// <summary>
+        /// Ids in the cached taskOrder that were NOT in the persisted
+        /// <c>step.taskOrder</c> — i.e. reconstructed from
+        /// requiredPartIds / optionalPartIds / visualPartIds because the
+        /// persisted order was missing them. The row renderer flags these so
+        /// the author sees "this part is Required by the step but isn't in
+        /// the authored task order" instead of the part being invisible.
+        /// </summary>
+        private readonly HashSet<string> _cachedOrphanTaskIds = new HashSet<string>(StringComparer.Ordinal);
 
         // Drag-and-drop reorderable list for TASK SEQUENCE
         private ReorderableList _taskSeqReorderList;
