@@ -28,8 +28,80 @@ namespace OSE.Content.Loading
             ResolveToolActionPartIds(package);
             ResolveDirectTargetPartIds(package);
             IndexPartOwnership(package);
+            DeriveSubassemblyPartIds(package);
             BakeGroupRigidBody(package);
             BakePoseTable(package);
+        }
+
+        /// <summary>
+        /// Derives each non-aggregate subassembly's <c>partIds</c> list from
+        /// the canonical <see cref="PartDefinition.subassemblyIds"/> claims on
+        /// each part. Parts are the single source of truth for group
+        /// membership — authors set membership per part, and every subassembly
+        /// recomputes its roster at load time. If a subassembly's legacy
+        /// authored <c>partIds</c> array is present (older packages), it is
+        /// merged in as a fallback so the migration is non-breaking; new
+        /// authoring tools should stop writing <c>subassembly.partIds</c>.
+        /// Aggregates are left alone here — their <c>partIds</c>/
+        /// <c>memberSubassemblyIds</c> composition is curated, not derived.
+        /// Order: runs AFTER <see cref="IndexPartOwnership"/> (so parts are
+        /// known) and BEFORE <see cref="BakeGroupRigidBody"/> /
+        /// <see cref="BakePoseTable"/> (which query <c>sub.partIds</c>).
+        /// </summary>
+        private static void DeriveSubassemblyPartIds(MachinePackageDefinition package)
+        {
+            var subs = package.GetSubassemblies();
+            if (subs == null || subs.Length == 0) return;
+            var parts = package.parts;
+            if (parts == null || parts.Length == 0) return;
+
+            var rosterBySub = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+            var seenBySub   = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+
+            for (int i = 0; i < parts.Length; i++)
+            {
+                var p = parts[i];
+                if (p == null || string.IsNullOrEmpty(p.id) || p.subassemblyIds == null) continue;
+                for (int k = 0; k < p.subassemblyIds.Length; k++)
+                {
+                    string subId = p.subassemblyIds[k];
+                    if (string.IsNullOrEmpty(subId)) continue;
+                    if (!rosterBySub.TryGetValue(subId, out var list))
+                    {
+                        rosterBySub[subId] = list = new List<string>();
+                        seenBySub[subId]   = new HashSet<string>(StringComparer.Ordinal);
+                    }
+                    if (seenBySub[subId].Add(p.id)) list.Add(p.id);
+                }
+            }
+
+            for (int i = 0; i < subs.Length; i++)
+            {
+                var sub = subs[i];
+                if (sub == null || string.IsNullOrEmpty(sub.id) || sub.isAggregate) continue;
+
+                // Legacy fallback: merge any authored partIds that don't already
+                // appear via part.subassemblyIds. Lets old packages load until
+                // migration populates the canonical claims.
+                if (sub.partIds != null && sub.partIds.Length > 0)
+                {
+                    if (!rosterBySub.TryGetValue(sub.id, out var list))
+                    {
+                        rosterBySub[sub.id] = list = new List<string>();
+                        seenBySub[sub.id]   = new HashSet<string>(StringComparer.Ordinal);
+                    }
+                    for (int k = 0; k < sub.partIds.Length; k++)
+                    {
+                        string pid = sub.partIds[k];
+                        if (string.IsNullOrEmpty(pid)) continue;
+                        if (seenBySub[sub.id].Add(pid)) list.Add(pid);
+                    }
+                }
+
+                sub.partIds = rosterBySub.TryGetValue(sub.id, out var roster)
+                    ? roster.ToArray()
+                    : System.Array.Empty<string>();
+            }
         }
 
         /// <summary>

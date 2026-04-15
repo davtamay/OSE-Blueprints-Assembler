@@ -346,6 +346,108 @@ namespace OSE.Editor
             Repaint();
         }
 
+        /// <summary>
+        /// Preview a host-owned cue (selection-scoped inspector). The
+        /// currently-selected part or group is the host: for a part,
+        /// targets = [that part's live GO]; for a group, targets = its
+        /// Group_* root (single target — shake/pulse/particle just move
+        /// the root, OrientSubassembly computes centroid-pivot math).
+        /// Reuses the existing preview update loop.
+        /// </summary>
+        private void StartHostCuePreview(AnimationCueEntry entry, int cueIdx, StepDefinition step, string hostKind, string hostId)
+        {
+            StopAllPreviews();
+            if (entry == null || string.IsNullOrEmpty(entry.type) || string.IsNullOrEmpty(hostId)) return;
+
+            var targets    = new List<GameObject>();
+            var startPoses = new List<OSE.UI.Root.AnimationCueResolvedPose>();
+            var asmPoses   = new List<OSE.UI.Root.AnimationCueResolvedPose>();
+
+            if (string.Equals(hostKind, "subassembly", StringComparison.Ordinal))
+            {
+                if (_subassemblyRootGOs != null
+                    && _subassemblyRootGOs.TryGetValue(hostId, out var root)
+                    && root != null)
+                {
+                    targets.Add(root);
+                    var t = root.transform;
+                    var pose = new OSE.UI.Root.AnimationCueResolvedPose { Position = t.localPosition, Rotation = t.localRotation, Scale = t.localScale };
+                    startPoses.Add(pose);
+                    asmPoses.Add(pose);
+                }
+            }
+            else if (string.Equals(hostKind, "part", StringComparison.Ordinal))
+            {
+                GameObject go = FindLivePartGO(hostId);
+                if (go != null)
+                {
+                    targets.Add(go);
+                    // Find matching PartEditState for pose context (best effort).
+                    if (_parts != null)
+                    {
+                        for (int pi = 0; pi < _parts.Length; pi++)
+                        {
+                            if (!string.Equals(_parts[pi].def?.id, hostId, StringComparison.Ordinal)) continue;
+                            ref PartEditState p = ref _parts[pi];
+                            startPoses.Add(new OSE.UI.Root.AnimationCueResolvedPose { Position = p.startPosition,     Rotation = p.startRotation,     Scale = p.startScale });
+                            asmPoses.Add(new OSE.UI.Root.AnimationCueResolvedPose   { Position = p.assembledPosition, Rotation = p.assembledRotation, Scale = p.assembledScale });
+                            break;
+                        }
+                    }
+                    if (startPoses.Count == 0)
+                    {
+                        var t = go.transform;
+                        var pose = new OSE.UI.Root.AnimationCueResolvedPose { Position = t.localPosition, Rotation = t.localRotation, Scale = t.localScale };
+                        startPoses.Add(pose);
+                        asmPoses.Add(pose);
+                    }
+                }
+            }
+
+            if (targets.Count == 0)
+            {
+                Debug.LogWarning($"[AnimCuePreview] No host target resolved. selectedGroupIdx={_selectedGroupIdx}, selectedPartIdx={_selectedPartIdx}, groups.Length={_groups?.Length ?? 0}, parts.Length={_parts?.Length ?? 0}, subassemblyRootGOs.Count={_subassemblyRootGOs?.Count ?? 0}");
+                return;
+            }
+
+            Debug.Log($"[AnimCuePreview] Starting '{entry.type}' on {targets.Count} target(s): {string.Join(", ", targets.ConvertAll(t => t ? t.name : "<null>"))}");
+
+            OSE.UI.Root.IAnimationCuePlayer player = entry.type switch
+            {
+                "shake"                => new OSE.UI.Root.ShakePlayer(),
+                "pulse"                => new OSE.UI.Root.PulsePlayer(),
+                "particle"             => new OSE.UI.Root.ParticlePlayer(),
+                "demonstratePlacement" => new OSE.UI.Root.DemonstratePlacementPlayer(),
+                "poseTransition"       => new OSE.UI.Root.PoseTransitionPlayer(),
+                "orientSubassembly"    => new OSE.UI.Root.OrientSubassemblyPlayer(),
+                _                      => null,
+            };
+            if (player == null)
+            {
+                Debug.LogWarning($"[AnimCuePreview] Unknown cue type '{entry.type}'.");
+                return;
+            }
+
+            float duration = entry.durationSeconds > 0f ? entry.durationSeconds : 0f;
+            var ctx = new OSE.UI.Root.AnimationCueContext(entry, targets, startPoses, asmPoses, duration);
+            player.Start(ctx);
+
+            _previewPlayer       = player;
+            _previewingCueIdx    = cueIdx;
+            _previewingForStepId = step?.id;
+            _previewStartTime    = EditorApplication.timeSinceStartup;
+            _previewLastTickTime = EditorApplication.timeSinceStartup;
+
+            if (!_previewUpdateRegistered)
+            {
+                EditorApplication.update += OnPreviewUpdate;
+                _previewUpdateRegistered  = true;
+            }
+
+            SceneView.RepaintAll();
+            Repaint();
+        }
+
         private void StartCuePreview(StepDefinition step, int cueIdx)
         {
             StopAllPreviews();
@@ -500,7 +602,267 @@ namespace OSE.Editor
             Repaint();
         }
 
-        // ── Animation Cue section drawing ─────────────────────────────────────
+        // ── Host-owned (selection-scoped) animation cue editor ───────────────
+
+        /// <summary>
+        /// Renders the "Animations & Effects" section for the selected
+        /// subassembly. Cues live on <see cref="SubassemblyDefinition.animationCues"/>;
+        /// each cue may scope to specific stepIds (defaults to current step
+        /// when added). Step-level cue authoring has been removed —
+        /// authors set animations on the host they should follow.
+        /// </summary>
+        private void DrawSubassemblyAnimationCuesSection(SubassemblyDefinition sub, StepDefinition step)
+        {
+            if (sub == null) return;
+            int count = sub.animationCues?.Length ?? 0;
+            // Header is just a title bar — no onAdd lambda (that's the
+            // "+" callback, NOT the body). The body renders inline below.
+            DrawUnifiedSectionHeader($"ANIMATIONS & EFFECTS  ({count})", count);
+            DrawHostCueList(
+                title: $"Cues hosted on '{sub.GetDisplayName()}'",
+                cues: sub.animationCues,
+                step: step,
+                hostKind: "subassembly",
+                hostId: sub.id,
+                setCues: arr => { sub.animationCues = arr; _dirtySubassemblyIds.Add(sub.id); });
+        }
+
+        /// <summary>
+        /// Same UX for a selected part — cues live on
+        /// <see cref="PartDefinition.animationCues"/>.
+        /// </summary>
+        private void DrawPartAnimationCuesSection(PartDefinition part, StepDefinition step)
+        {
+            if (part == null) return;
+            int count = part.animationCues?.Length ?? 0;
+            DrawUnifiedSectionHeader($"ANIMATIONS & EFFECTS  ({count})", count);
+            DrawHostCueList(
+                title: $"Cues hosted on '{part.GetDisplayName()}'",
+                cues: part.animationCues,
+                step: step,
+                hostKind: "part",
+                hostId: part.id,
+                setCues: arr => { part.animationCues = arr; _dirtyPartIds.Add(part.id); });
+        }
+
+        private static readonly string[] HostCueTypes = { "shake", "rotate", "pulse", "particle", "demonstratePlacement", "orientSubassembly", "poseTransition" };
+        private static readonly string[] HostCueTriggers = { "onStepActivate", "onStepComplete", "always" };
+
+        private void DrawHostCueList(string title, AnimationCueEntry[] cues, StepDefinition step, string hostKind, string hostId, System.Action<AnimationCueEntry[]> setCues)
+        {
+            EditorGUILayout.LabelField(title, EditorStyles.miniBoldLabel);
+
+            var working = new List<AnimationCueEntry>(cues ?? Array.Empty<AnimationCueEntry>());
+            int removeAt = -1;
+            int moveUpAt = -1;
+            int moveDownAt = -1;
+            EditorGUI.BeginChangeCheck();
+
+            // Group by trigger ("panel"), then within each panel sort by
+            // panelOrder so the author sees the execution plan: cues in the
+            // same panel fire on the same event; within a panel they play in
+            // parallel (∥) or wait for the previous row (⇣) per row flag.
+            // Canonicalize legacy trigger alias so migrated cues collapse
+            // into the same panel as new ones. "onActivate" was the
+            // step-level JSON name; "onStepActivate" is the host-cue name.
+            // They mean the same thing to the runtime — merge in the UI
+            // and rewrite on the cue itself so next save normalizes it.
+            static string CanonicalTrigger(string t)
+            {
+                if (string.IsNullOrEmpty(t)) return "onStepActivate";
+                if (string.Equals(t, "onActivate", StringComparison.Ordinal)) return "onStepActivate";
+                return t;
+            }
+            var panelIndices = new Dictionary<string, List<int>>(StringComparer.Ordinal);
+            bool canonicalizedAny = false;
+            for (int i = 0; i < working.Count; i++)
+            {
+                string canon = CanonicalTrigger(working[i].trigger);
+                if (!string.Equals(canon, working[i].trigger, StringComparison.Ordinal))
+                {
+                    working[i].trigger = canon; // persist canonical value
+                    canonicalizedAny = true;
+                }
+                if (!panelIndices.TryGetValue(canon, out var list))
+                    panelIndices[canon] = list = new List<int>();
+                list.Add(i);
+            }
+            foreach (var kv in panelIndices)
+                kv.Value.Sort((a, b) => working[a].panelOrder.CompareTo(working[b].panelOrder));
+
+            foreach (var kv in panelIndices)
+            {
+                EditorGUILayout.Space(2);
+                EditorGUILayout.LabelField($"◆ {kv.Key}  (×{kv.Value.Count})", EditorStyles.boldLabel);
+                var rows = kv.Value;
+                for (int rowIdx = 0; rowIdx < rows.Count; rowIdx++)
+                {
+                    int i = rows[rowIdx];
+                    var c = working[i];
+                    using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                    {
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            // Run order: parallel (runs alongside previous
+                            // row) vs sequential (waits for previous row to
+                            // finish). Always rendered so the toggle is
+                            // discoverable even when there's only one cue —
+                            // row 0 of a panel has no predecessor so the
+                            // control is disabled (shows "parallel").
+                            bool seq  = c.sequenceAfterPrevious && rowIdx > 0;
+                            string lbl = seq ? "sequential" : "parallel";
+                            string tip = rowIdx == 0
+                                ? "First row of a panel has no previous row to sequence after."
+                                : (seq ? "Waits for the previous row to finish. Click to switch to parallel."
+                                       : "Runs alongside the previous row. Click to run sequentially.");
+                            GUI.enabled = rowIdx > 0;
+                            if (GUILayout.Button(new GUIContent(lbl, tip), EditorStyles.miniButton, GUILayout.Width(80)))
+                                c.sequenceAfterPrevious = !c.sequenceAfterPrevious;
+                            GUI.enabled = true;
+                            if (rowIdx == 0) c.sequenceAfterPrevious = false;
+
+                            // Reorder within panel
+                            GUI.enabled = rowIdx > 0;
+                            if (GUILayout.Button("▲", EditorStyles.miniButtonLeft, GUILayout.Width(22))) moveUpAt = i;
+                            GUI.enabled = rowIdx < rows.Count - 1;
+                            if (GUILayout.Button("▼", EditorStyles.miniButtonRight, GUILayout.Width(22))) moveDownAt = i;
+                            GUI.enabled = true;
+
+                            int typeIdx = Mathf.Max(0, Array.IndexOf(HostCueTypes, c.type ?? ""));
+                            int newType = EditorGUILayout.Popup(typeIdx, HostCueTypes, GUILayout.Width(160));
+                            if (newType != typeIdx) c.type = HostCueTypes[newType];
+
+                            int trgIdx = Mathf.Max(0, Array.IndexOf(HostCueTriggers, c.trigger ?? "onStepActivate"));
+                            int newTrg = EditorGUILayout.Popup(trgIdx, HostCueTriggers, GUILayout.Width(140));
+                            if (newTrg != trgIdx) c.trigger = HostCueTriggers[newTrg];
+
+                            GUILayout.FlexibleSpace();
+                            if (GUILayout.Button("×", GUILayout.Width(22))) removeAt = i;
+                        }
+
+                    // Scope (read-only). Cues are auto-scoped to the step
+                    // they're added in; multi-step / always-on scopes stay
+                    // editable via JSON (advanced case).
+                    string scopeText = (c.stepIds == null || c.stepIds.Length == 0)
+                        ? "Scope: Always"
+                        : "Scope: " + string.Join(", ", c.stepIds);
+                    EditorGUILayout.LabelField(scopeText, EditorStyles.miniLabel);
+
+                    // ▶ Play / ■ Stop — preview this cue in the Scene view.
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        bool isPreviewing = _previewPlayer != null && _previewPlayer.IsPlaying && _previewingCueIdx == i;
+                        if (isPreviewing)
+                        {
+                            if (GUILayout.Button("■ Stop", GUILayout.Width(80)))
+                                StopAllPreviews();
+                        }
+                        else
+                        {
+                            if (GUILayout.Button("▶ Play", GUILayout.Width(80)))
+                                StartHostCuePreview(c, i, step, hostKind, hostId);
+                        }
+                    }
+
+                    // Duration + loop are common to all cue types. 0s = run
+                    // indefinitely until step navigates away; any positive
+                    // value stops the player (and clears particle instances)
+                    // after that many seconds. Loop restarts the clip on
+                    // completion — meaningful alongside a non-zero duration.
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        c.durationSeconds = EditorGUILayout.FloatField(
+                            new GUIContent("duration (s)", "0 = run until step ends"),
+                            Mathf.Max(0f, c.durationSeconds),
+                            GUILayout.Width(180));
+                        c.loop = EditorGUILayout.ToggleLeft("loop", c.loop, GUILayout.Width(60));
+                    }
+
+                    // Type-specific minimal payload editing — fuller editor still in JSON.
+                    switch (c.type)
+                    {
+                        case "shake":
+                            c.shakeAmplitude = EditorGUILayout.FloatField("amplitude (m)", c.shakeAmplitude);
+                            c.shakeFrequency = EditorGUILayout.FloatField("frequency (Hz)", c.shakeFrequency);
+                            break;
+                        case "particle":
+                            c.particlePrefabRef = EditorGUILayout.TextField("prefab (Resources path)", c.particlePrefabRef ?? "");
+                            break;
+                    }
+                }
+                }
+            }
+            bool fieldChanged = EditorGUI.EndChangeCheck();
+            bool structuralChanged = canonicalizedAny;
+
+            // Apply reorder within panel: swap panelOrder values so the
+            // saved JSON encodes the new sequence. Cues in adjacent rows
+            // swap their panelOrder (using the rowIdx position), which
+            // means authors see the expected up/down effect on next
+            // repaint. panelOrder may be 0 for freshly-added rows —
+            // normalize to the current row index first if so.
+            if (moveUpAt >= 0 || moveDownAt >= 0)
+            {
+                // Normalize panelOrder to current ordinal within each panel
+                // (first-run housekeeping).
+                foreach (var kv in panelIndices)
+                {
+                    var rows = kv.Value;
+                    for (int r = 0; r < rows.Count; r++) working[rows[r]].panelOrder = r;
+                }
+
+                int moveAt = moveUpAt >= 0 ? moveUpAt : moveDownAt;
+                int dir    = moveUpAt >= 0 ? -1 : 1;
+                string trg = string.IsNullOrEmpty(working[moveAt].trigger) ? "onStepActivate" : working[moveAt].trigger;
+                if (panelIndices.TryGetValue(trg, out var siblings))
+                {
+                    int pos = siblings.IndexOf(moveAt);
+                    int swap = pos + dir;
+                    if (swap >= 0 && swap < siblings.Count)
+                    {
+                        int a = siblings[pos], b = siblings[swap];
+                        int oa = working[a].panelOrder, ob = working[b].panelOrder;
+                        working[a].panelOrder = ob;
+                        working[b].panelOrder = oa;
+                        structuralChanged = true;
+                    }
+                }
+            }
+
+            if (removeAt >= 0) { working.RemoveAt(removeAt); structuralChanged = true; }
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("+ Add cue", GUILayout.Width(120)))
+                {
+                    working.Add(new AnimationCueEntry
+                    {
+                        type    = "shake",
+                        trigger = "onStepActivate",
+                        stepIds = step != null ? new[] { step.id } : Array.Empty<string>(),
+                        shakeAmplitude = 0.01f,
+                        shakeFrequency = 8f,
+                        shakeAxis = new SceneFloat3 { x = 1f, y = 0f, z = 0f },
+                    });
+                    structuralChanged = true;
+                }
+            }
+            bool changed = fieldChanged || structuralChanged;
+
+            // Persist only when the array actually changed — and force a
+            // repaint so the new row appears immediately. Without these, the
+            // host gets a fresh array reference every frame (no-op writes
+            // marking everything dirty) and the freshly-added row only shows
+            // on the next mouse event.
+            if (changed)
+            {
+                setCues(working.ToArray());
+                Repaint();
+                GUI.changed = true;
+            }
+        }
+
+        // ── Legacy step-level cue editor (kept for fallback rendering only) ──
 
         private void DrawAnimationCuesSection(StepDefinition step)
         {
@@ -720,6 +1082,20 @@ namespace OSE.Editor
             int modeIdx    = string.Equals(cue.target, "ghost", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
             int newModeIdx = EditorGUILayout.Popup("Target Mode", modeIdx, _cueTargetModes);
             cue.target     = _cueTargetModes[newModeIdx];
+
+            cue.sequenceAfterPrevious = EditorGUILayout.Toggle(
+                new GUIContent("Wait for Previous",
+                    "When checked, this row waits for the previous row in its timing panel " +
+                    "to finish before starting (⇣). When unchecked, it runs in parallel (∥)."),
+                cue.sequenceAfterPrevious);
+
+            if (string.Equals(cue.type, "animationClip", StringComparison.Ordinal))
+            {
+                cue.animationClipAssetPath = EditorGUILayout.TextField(
+                    new GUIContent("Clip Asset Path",
+                        "Project-relative path to a custom animation asset (reserved for future playback)."),
+                    cue.animationClipAssetPath ?? "");
+            }
 
             if (EditorGUI.EndChangeCheck()) { cues[idx] = cue; _dirtyStepIds.Add(step.id); }
 

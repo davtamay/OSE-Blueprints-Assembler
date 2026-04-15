@@ -145,6 +145,17 @@ namespace OSE.Core
         {
             if (target == null) return;
             var cache = target.GetComponent<OriginalMaterialCache>();
+
+            // Guarantee originals are captured BEFORE replacing slots. If
+            // MarkAsImported ran before glTFast finished applying materials,
+            // the cache's Save() bailed and _saved stayed false; hover-exit
+            // then finds no saved materials, falls through to the preview-
+            // material fallback, and the part switches to a lighter solid
+            // color permanently. ForceSave on hover-in captures the current
+            // (now-applied) materials so RestoreOriginals can put them back.
+            if (cache != null && !cache.HasSavedMaterials)
+                cache.ForceSave();
+
             if (cache != null)
                 cache.ShowOutline(tint);
 

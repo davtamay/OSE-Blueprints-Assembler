@@ -33,7 +33,13 @@ namespace OSE.Content
         /// </summary>
         public string type;
 
-        /// <summary>Part IDs to animate (resolved via FindSpawnedPart).</summary>
+        /// <summary>
+        /// Part IDs to animate. Legacy / step-scoped authoring only — new
+        /// authoring puts cues on the host (<see cref="PartDefinition.animationCues"/>
+        /// or <see cref="SubassemblyDefinition.animationCues"/>) where the
+        /// host is the implicit target. Runtime still reads this as a
+        /// fallback so unmigrated JSON keeps working.
+        /// </summary>
         public string[] targetPartIds;
 
         /// <summary>Tool IDs to animate (resolved via ToolCursorManager / PersistentToolController).</summary>
@@ -42,7 +48,31 @@ namespace OSE.Content
         /// <summary>Subassembly ID to animate (resolved via SubassemblyPlacementController proxy).</summary>
         public string targetSubassemblyId;
 
-        /// <summary>"onActivate" (default) or "afterDelay".</summary>
+        /// <summary>
+        /// Step ids at which this cue fires. Empty / null = every step where
+        /// the host is visible. Only meaningful when the cue is authored on
+        /// a host (part / subassembly / aggregate); step-owned legacy cues
+        /// implicitly scope to their owning step.
+        /// </summary>
+        public string[] stepIds;
+
+        /// <summary>
+        /// When true, the player restarts its loop on every qualifying step
+        /// instead of running once. Equivalent to authoring the cue once
+        /// with <see cref="stepIds"/> empty plus <see cref="loop"/> true —
+        /// a shorthand for "always-on while host visible".
+        /// </summary>
+        public bool always;
+
+        /// <summary>
+        /// Package-relative prefab path for <see cref="type"/> = "particle".
+        /// Coordinator instantiates the prefab at the host's world pose on
+        /// trigger, destroys it when the step ends (or on loop restart).
+        /// Ignored for non-particle cue types.
+        /// </summary>
+        public string particlePrefabRef;
+
+        /// <summary>"onActivate" (default), "afterDelay", "onStepComplete", or "always".</summary>
         public string trigger;
 
         /// <summary>Delay in seconds when trigger is "afterDelay".</summary>
@@ -124,6 +154,25 @@ namespace OSE.Content
         /// Not implemented in Phase 1 — data field reserved for forward compatibility.
         /// </summary>
         public string animationClipName;
+
+        // ── Timing-panel authoring (parallel/sequenced rows grouped by trigger) ──
+
+        /// <summary>Order within this cue's (scope, trigger) timing panel.</summary>
+        public int panelOrder;
+
+        /// <summary>
+        /// When true, this row waits for the previous row in the same panel to
+        /// finish before starting. When false, it runs in parallel with prior
+        /// rows. Runtime wiring lands in Phase 2 — authored/persisted now.
+        /// </summary>
+        public bool sequenceAfterPrevious;
+
+        /// <summary>
+        /// Optional asset path for a custom animation clip/asset, paired with
+        /// <c>type = "animationClip"</c>. Distinct from <c>animationClipName</c>
+        /// (which targets a GLB-embedded clip).
+        /// </summary>
+        public string animationClipAssetPath;
     }
 
     /// <summary>

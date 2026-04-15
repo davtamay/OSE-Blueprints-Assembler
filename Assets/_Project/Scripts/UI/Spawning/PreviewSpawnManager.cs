@@ -53,22 +53,61 @@ namespace OSE.UI.Root
                 return;
 
             string[] targetIds = step.targetIds;
-            if (targetIds == null || targetIds.Length == 0)
-                return;
+            bool hasTargets = targetIds != null && targetIds.Length > 0;
 
             _isSequentialStep = step.IsSequential;
             _sequentialTargetIndex = 0;
 
-            if (_isSequentialStep)
+            if (hasTargets)
             {
-                // Sequential: spawn only the first target's preview.
-                SpawnPreviewForTarget(package, targetIds[0]);
+                if (_isSequentialStep)
+                {
+                    // Sequential: spawn only the first target's preview.
+                    SpawnPreviewForTarget(package, targetIds[0]);
+                }
+                else
+                {
+                    // Parallel (default): spawn all previews at once.
+                    foreach (string targetId in targetIds)
+                        SpawnPreviewForTarget(package, targetId);
+                }
+                return;
             }
-            else
+
+            // Target-less ghost fallback: when a step declares
+            // requiredPartIds or requiredSubassemblyId but no explicit
+            // targetIds, spawn a ghost per part at its assembledPose.
+            // Matches author intent "put this thing here" without
+            // requiring a manually wired target — the assembled placement
+            // IS the target. Ghost still uses the standard preview
+            // material / click-to-place logic via a virtual target key.
+            SpawnTargetlessGhostsFromRequiredParts(package, step);
+        }
+
+        /// <summary>
+        /// Ghost fallback when a step has no <c>targetIds</c>. Enumerates
+        /// the parts the step requires (<c>requiredPartIds</c> plus every
+        /// member of <c>requiredSubassemblyId</c>) and spawns a ghost at
+        /// each part's <c>assembledPose</c>. Idempotent re-use of
+        /// <see cref="SpawnPreviewForAssembledPart"/> so visual + material
+        /// + click-to-place behaviour match the targeted path.
+        /// </summary>
+        private void SpawnTargetlessGhostsFromRequiredParts(MachinePackageDefinition package, StepDefinition step)
+        {
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            if (step.requiredPartIds != null)
             {
-                // Parallel (default): spawn all previews at once.
-                foreach (string targetId in targetIds)
-                    SpawnPreviewForTarget(package, targetId);
+                foreach (var pid in step.requiredPartIds)
+                    if (!string.IsNullOrEmpty(pid) && seen.Add(pid))
+                        SpawnPreviewForAssembledPart(package, pid);
+            }
+            if (!string.IsNullOrEmpty(step.requiredSubassemblyId)
+                && package.TryGetSubassembly(step.requiredSubassemblyId, out var sub)
+                && sub?.partIds != null)
+            {
+                foreach (var pid in sub.partIds)
+                    if (!string.IsNullOrEmpty(pid) && seen.Add(pid))
+                        SpawnPreviewForAssembledPart(package, pid);
             }
         }
 
@@ -329,6 +368,117 @@ namespace OSE.UI.Root
             MaterialHelper.ApplyPreviewMaterial(preview);
             _ctx.SpawnedPreviews.Add(preview);
             OseLog.Info($"[PartInteraction] Preview spawned for '{associatedPartId}' at target '{targetId}' pos={previewPos} scale={previewScale}. Total previews: {_ctx.SpawnedPreviews.Count}");
+        }
+
+        /// <summary>
+        /// Target-less ghost: spawns a preview at <paramref name="partId"/>'s
+        /// <c>assembledPose</c> without needing a <see cref="TargetDefinition"/>.
+        /// Used when a step declares <c>requiredPartIds</c> or
+        /// <c>requiredSubassemblyId</c> but no <c>targetIds</c> — the
+        /// assembled placement IS the target visually. Click-to-place
+        /// against this ghost uses the synthetic target key
+        /// <c>__auto_{partId}</c> so existing placement handlers can key off
+        /// the PlacementPreviewInfo.PartId field directly.
+        /// </summary>
+        private void SpawnPreviewForAssembledPart(MachinePackageDefinition package, string partId)
+        {
+            if (string.IsNullOrEmpty(partId)) return;
+            if (!package.TryGetPart(partId, out var part) || part == null) return;
+
+            // Skip if already placed / completed.
+            if (ServiceRegistry.TryGet<IPartRuntimeController>(out var partController))
+            {
+                var state = partController.GetPartState(partId);
+                if (state == PartPlacementState.Completed ||
+                    state == PartPlacementState.PlacedVirtually)
+                    return;
+            }
+
+            PartPreviewPlacement pp = _ctx.Spawner.FindPartPlacement(partId);
+            if (pp == null) return;
+
+            Transform previewRoot = GetPreviewRoot();
+
+            // Spline parts: reuse the procedural preview path if applicable.
+            if (SplinePartFactory.HasSplineData(pp))
+            {
+                GameObject splinePreview = SplinePartFactory.CreatePreview(partId, pp.splinePath, previewRoot);
+                if (splinePreview == null) return;
+                var splineInfo = splinePreview.AddComponent<PlacementPreviewInfo>();
+                splineInfo.TargetId = $"__auto_{partId}";
+                splineInfo.PartId = partId;
+                splinePreview.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+                splinePreview.transform.localScale = Vector3.one;
+                foreach (var col in splinePreview.GetComponentsInChildren<Collider>(true))
+                    col.isTrigger = true;
+                MaterialHelper.ApplyPreviewMaterial(splinePreview);
+                _ctx.SpawnedPreviews.Add(splinePreview);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(part.assetRef)) return;
+
+            // Prefer step-scoped pose, then assembledPose.
+            Vector3 previewPos;
+            Quaternion previewRot;
+            StepPoseEntry stepPose = _ctx.Spawner.FindPartStepPose(partId, _activeStepId);
+            if (stepPose != null)
+            {
+                previewPos = new Vector3(stepPose.position.x, stepPose.position.y, stepPose.position.z);
+                previewRot = !stepPose.rotation.IsIdentity
+                    ? new Quaternion(stepPose.rotation.x, stepPose.rotation.y, stepPose.rotation.z, stepPose.rotation.w)
+                    : Quaternion.identity;
+            }
+            else
+            {
+                previewPos = new Vector3(pp.assembledPosition.x, pp.assembledPosition.y, pp.assembledPosition.z);
+                previewRot = !pp.assembledRotation.IsIdentity
+                    ? new Quaternion(pp.assembledRotation.x, pp.assembledRotation.y, pp.assembledRotation.z, pp.assembledRotation.w)
+                    : Quaternion.identity;
+            }
+
+            GameObject sourcePart = _ctx.FindSpawnedPart(partId);
+            Vector3 previewScale = sourcePart != null
+                ? sourcePart.transform.localScale
+                : new Vector3(pp.assembledScale.x, pp.assembledScale.y, pp.assembledScale.z);
+            if (previewScale.sqrMagnitude < 0.00001f) previewScale = Vector3.one;
+
+            GameObject preview = _ctx.Spawner.TryLoadPackageAsset(part.assetRef);
+            if (preview == null)
+            {
+                preview = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                if (previewRoot != null) preview.transform.SetParent(previewRoot, false);
+            }
+
+            preview.name = $"Preview_{partId}";
+            PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>() ?? preview.AddComponent<PlacementPreviewInfo>();
+            info.TargetId = $"__auto_{partId}";
+            info.PartId = partId;
+            preview.transform.SetLocalPositionAndRotation(previewPos, previewRot);
+            preview.transform.localScale = previewScale;
+
+            foreach (var col in preview.GetComponentsInChildren<Collider>(true))
+                _ctx.DestroyObject(col);
+
+            var previewRenderers = MaterialHelper.GetRenderers(preview);
+            var clickCollider = preview.AddComponent<BoxCollider>();
+            clickCollider.isTrigger = true;
+            if (previewRenderers.Length > 0)
+            {
+                Bounds combined = previewRenderers[0].bounds;
+                for (int ri = 1; ri < previewRenderers.Length; ri++)
+                    combined.Encapsulate(previewRenderers[ri].bounds);
+                Vector3 lossyScale = preview.transform.lossyScale;
+                clickCollider.center = preview.transform.InverseTransformPoint(combined.center);
+                clickCollider.size = new Vector3(
+                    lossyScale.x != 0f ? combined.size.x / lossyScale.x : 1f,
+                    lossyScale.y != 0f ? combined.size.y / lossyScale.y : 1f,
+                    lossyScale.z != 0f ? combined.size.z / lossyScale.z : 1f);
+            }
+
+            MaterialHelper.ApplyPreviewMaterial(preview);
+            _ctx.SpawnedPreviews.Add(preview);
+            OseLog.Info($"[PartInteraction] Target-less ghost spawned for '{partId}' at assembledPose. Total previews: {_ctx.SpawnedPreviews.Count}");
         }
 
         private void SpawnPreviewForSubassemblyTarget(MachinePackageDefinition package, string targetId, TargetDefinition target)

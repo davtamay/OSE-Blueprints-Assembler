@@ -53,29 +53,23 @@
     {
       "id": "subassembly_y_left_frame_mount",
       "name": "Y-Left Axis Frame Mount",
-      "assemblyId": "assembly_d3d_axes_mount",
-      "description": "Mounts the completed bench-built Y-left axis unit onto the left face of the welded frame and verifies smooth travel.",
-      "partIds": [
-        "d3d_y_left_axis_unit"
-      ],
       "stepIds": [
         "step_mount_y_left_axis_to_frame",
         "step_verify_y_left_axis_motion"
       ],
+      "assemblyId": "assembly_d3d_axes_mount",
+      "description": "Mounts the completed bench-built Y-left axis unit onto the left face of the welded frame and verifies smooth travel.",
       "milestoneMessage": "Y-left axis mounted and motion verified."
     },
     {
       "id": "subassembly_y_right_frame_mount",
       "name": "Y-Right Axis Frame Mount",
-      "assemblyId": "assembly_d3d_axes_mount",
-      "description": "Mounts the completed bench-built Y-right axis unit onto the right face of the welded frame and confirms the Y-axis pair establishes the X-axis span.",
-      "partIds": [
-        "d3d_y_right_axis_unit"
-      ],
       "stepIds": [
         "step_mount_y_right_axis_to_frame",
         "step_verify_y_axis_pair_alignment"
       ],
+      "assemblyId": "assembly_d3d_axes_mount",
+      "description": "Mounts the completed bench-built Y-right axis unit onto the right face of the welded frame and confirms the Y-axis pair establishes the X-axis span.",
       "milestoneMessage": "Y-right axis mounted. Both Y axes are parallel with motors at back."
     },
     {
@@ -181,7 +175,10 @@
           "b": 0.78,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_y_left_frame_mount"
+      ]
     },
     {
       "id": "d3d_y_right_axis_unit",
@@ -212,7 +209,10 @@
           "b": 0.78,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_y_right_frame_mount"
+      ]
     },
     {
       "id": "fastener_x_axis_belt_peg",
@@ -244,7 +244,10 @@
           "b": 0.22,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_x_axis_belt_threading"
+      ]
     },
     {
       "id": "fastener_x_axis_idler_mount_m6x30_a",
@@ -468,7 +471,10 @@
           "b": 0.78,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_z_front_belt_threading"
+      ]
     },
     {
       "id": "fastener_z_back_idler_frame_bolt",
@@ -564,7 +570,10 @@
           "b": 0.78,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_z_back_belt_threading"
+      ]
     }
   ],
   "steps": [
@@ -580,12 +589,32 @@
         "hint_mount_y_left_axis"
       ],
       "removePersistentToolIds": [],
-      "targetIds": [ "target_y_left_axis_mount" ],
-      "requiredPartIds": [ "d3d_y_left_axis_unit" ],
+      "targetIds": [
+        "target_y_left_axis_mount"
+      ],
+      "requiredPartIds": [
+        "d3d_y_left_axis_unit"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"d3d_y_left_axis_unit"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "d3d_y_left_axis_unit"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
     {
       "id": "step_verify_y_left_axis_motion",
       "name": "Confirm the Y-left axis seats cleanly on the frame",
@@ -615,12 +644,32 @@
         "hint_mount_y_right_axis"
       ],
       "removePersistentToolIds": [],
-      "targetIds": [ "target_y_right_axis_mount" ],
-      "requiredPartIds": [ "d3d_y_right_axis_unit" ],
+      "targetIds": [
+        "target_y_right_axis_mount"
+      ],
+      "requiredPartIds": [
+        "d3d_y_right_axis_unit"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"d3d_y_right_axis_unit"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "d3d_y_right_axis_unit"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
     {
       "id": "step_verify_y_axis_pair_alignment",
       "name": "Confirm the Y-axis pair establishes the X-axis span",
@@ -695,13 +744,41 @@
         "hint_anchor_x_axis_idler"
       ],
       "removePersistentToolIds": [],
-      "targetIds": [ "target_x_axis_idler_anchor_prefit", "target_x_axis_rod_pair_prefit", "target_x_axis_motor_holder_prefit", "target_x_axis_idler_mount_y_right_bolt_place_a", "target_x_axis_idler_mount_y_right_bolt_place_b" ],
-      "requiredPartIds": [ "fastener_x_axis_idler_mount_m6x30_a", "fastener_x_axis_idler_mount_m6x30_b" ],
+      "targetIds": [
+        "target_x_axis_idler_anchor_prefit",
+        "target_x_axis_rod_pair_prefit",
+        "target_x_axis_motor_holder_prefit",
+        "target_x_axis_idler_mount_y_right_bolt_place_a",
+        "target_x_axis_idler_mount_y_right_bolt_place_b"
+      ],
+      "requiredPartIds": [
+        "fastener_x_axis_idler_mount_m6x30_a",
+        "fastener_x_axis_idler_mount_m6x30_b"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"fastener_x_axis_idler_mount_m6x30_a"},
-        {"kind":"part","id":"fastener_x_axis_idler_mount_m6x30_b"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "fastener_x_axis_idler_mount_m6x30_a"
+        },
+        {
+          "kind": "part",
+          "id": "fastener_x_axis_idler_mount_m6x30_b"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
     {
       "id": "step_snug_x_axis_idler_mount_bolts",
       "name": "Snug the Y-right M6x30 anchor bolts",
@@ -751,13 +828,38 @@
         "hint_start_motor_holder_bolts_loose"
       ],
       "removePersistentToolIds": [],
-      "targetIds": [ "target_x_axis_motor_mount_y_left_bolt_place_a", "target_x_axis_motor_mount_y_left_bolt_place_b" ],
-      "requiredPartIds": [ "fastener_x_axis_motor_mount_m6x30_a", "fastener_x_axis_motor_mount_m6x30_b" ],
+      "targetIds": [
+        "target_x_axis_motor_mount_y_left_bolt_place_a",
+        "target_x_axis_motor_mount_y_left_bolt_place_b"
+      ],
+      "requiredPartIds": [
+        "fastener_x_axis_motor_mount_m6x30_a",
+        "fastener_x_axis_motor_mount_m6x30_b"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"fastener_x_axis_motor_mount_m6x30_a"},
-        {"kind":"part","id":"fastener_x_axis_motor_mount_m6x30_b"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "fastener_x_axis_motor_mount_m6x30_a"
+        },
+        {
+          "kind": "part",
+          "id": "fastener_x_axis_motor_mount_m6x30_b"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
     {
       "id": "step_fit_x_axis_span_between_y_axes",
       "name": "Lengthen the X-axis to fit tightly between the Y axes",
@@ -908,12 +1010,32 @@
         "hint_reinsert_x_axis_belt_peg"
       ],
       "removePersistentToolIds": [],
-      "targetIds": [ "target_x_axis_belt_peg_insert" ],
-      "requiredPartIds": [ "fastener_x_axis_belt_peg" ],
+      "targetIds": [
+        "target_x_axis_belt_peg_insert"
+      ],
+      "requiredPartIds": [
+        "fastener_x_axis_belt_peg"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"fastener_x_axis_belt_peg"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "fastener_x_axis_belt_peg"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
     {
       "id": "step_check_x_axis_tightness_and_travel",
       "name": "Check X-axis tightness and travel",
@@ -982,13 +1104,38 @@
       "isOptional": false,
       "family": "Place",
       "removePersistentToolIds": [],
-      "targetIds": [ "target_z_front_axis_idler_bolt", "target_z_front_axis_motor_bolt" ],
-      "requiredPartIds": [ "fastener_z_front_idler_frame_bolt", "fastener_z_front_motor_frame_bolt" ],
+      "targetIds": [
+        "target_z_front_axis_idler_bolt",
+        "target_z_front_axis_motor_bolt"
+      ],
+      "requiredPartIds": [
+        "fastener_z_front_idler_frame_bolt",
+        "fastener_z_front_motor_frame_bolt"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"fastener_z_front_idler_frame_bolt"},
-        {"kind":"part","id":"fastener_z_front_motor_frame_bolt"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "fastener_z_front_idler_frame_bolt"
+        },
+        {
+          "kind": "part",
+          "id": "fastener_z_front_motor_frame_bolt"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
     {
       "id": "step_lock_z_front_motor_holder",
       "name": "Lock the Z-front motor holder bolts",
@@ -1068,12 +1215,32 @@
       "isOptional": false,
       "family": "Place",
       "removePersistentToolIds": [],
-      "targetIds": [ "target_z_front_belt_peg_insert" ],
-      "requiredPartIds": [ "fastener_z_front_belt_peg" ],
+      "targetIds": [
+        "target_z_front_belt_peg_insert"
+      ],
+      "requiredPartIds": [
+        "fastener_z_front_belt_peg"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"fastener_z_front_belt_peg"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "fastener_z_front_belt_peg"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
     {
       "id": "step_check_z_front_axis_travel",
       "name": "Check Z-front axis travel and QC",
@@ -1140,13 +1307,38 @@
       "isOptional": false,
       "family": "Place",
       "removePersistentToolIds": [],
-      "targetIds": [ "target_z_back_axis_idler_bolt", "target_z_back_axis_motor_bolt" ],
-      "requiredPartIds": [ "fastener_z_back_idler_frame_bolt", "fastener_z_back_motor_frame_bolt" ],
+      "targetIds": [
+        "target_z_back_axis_idler_bolt",
+        "target_z_back_axis_motor_bolt"
+      ],
+      "requiredPartIds": [
+        "fastener_z_back_idler_frame_bolt",
+        "fastener_z_back_motor_frame_bolt"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"fastener_z_back_idler_frame_bolt"},
-        {"kind":"part","id":"fastener_z_back_motor_frame_bolt"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "fastener_z_back_idler_frame_bolt"
+        },
+        {
+          "kind": "part",
+          "id": "fastener_z_back_motor_frame_bolt"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
     {
       "id": "step_lock_z_back_motor_holder",
       "name": "Lock the Z-back motor holder bolts",
@@ -1226,12 +1418,32 @@
       "isOptional": false,
       "family": "Place",
       "removePersistentToolIds": [],
-      "targetIds": [ "target_z_back_belt_peg_insert" ],
-      "requiredPartIds": [ "fastener_z_back_belt_peg" ],
+      "targetIds": [
+        "target_z_back_belt_peg_insert"
+      ],
+      "requiredPartIds": [
+        "fastener_z_back_belt_peg"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"fastener_z_back_belt_peg"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "fastener_z_back_belt_peg"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
     {
       "id": "step_check_z_back_axis_travel",
       "name": "Check Z-back axis travel and QC",

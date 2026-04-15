@@ -72,9 +72,18 @@ namespace OSE.Editor
                 });
 
             if (order.Count == 0)
-                EditorGUILayout.LabelField("  No tasks yet. Press + to add.", EditorStyles.miniLabel);
+            {
+                EditorGUILayout.LabelField("  No tasks yet. Press + to add or drag a part below.",
+                    EditorStyles.miniLabel);
+                // Always render the drop zone — otherwise an empty sequence
+                // becomes un-droppable and the only way to add is via the +
+                // menu.
+                DrawTaskSequenceDropZone(step, order);
+            }
             else
+            {
                 DrawTaskSequenceDragList(step, order);
+            }
 
             // ── Add-task picker (shown below sequence list) ────────────────────
             if (_addTaskPicker == AddTaskPicker.Part)       DrawAddPartPicker();
@@ -239,9 +248,22 @@ namespace OSE.Editor
             // so the author sees them and can reorder, remove, or reconcile.
             _cachedOrphanTaskIds.Clear();
             var presentPartIds = new HashSet<string>(StringComparer.Ordinal);
+            // Members of any group [G] entry already in taskOrder are
+            // suppressed — the [G] row IS the representation. Without this,
+            // dragging a group spawned a [G] row PLUS one orphan row per
+            // member (14 rows for a carriage); the author wants ONE row.
+            var suppressedByGroup = new HashSet<string>(StringComparer.Ordinal);
             foreach (var e in order)
-                if (e != null && e.kind == "part" && !string.IsNullOrEmpty(e.id))
-                    presentPartIds.Add(e.id);
+            {
+                if (e == null) continue;
+                if (e.kind == "part" && !string.IsNullOrEmpty(e.id)) presentPartIds.Add(e.id);
+                if (e.kind == "part" && _pkg != null
+                    && _pkg.TryGetSubassembly(e.id, out var subDef) && subDef?.partIds != null)
+                {
+                    foreach (var mpid in subDef.partIds)
+                        if (!string.IsNullOrEmpty(mpid)) suppressedByGroup.Add(mpid);
+                }
+            }
 
             void AppendOrphans(string[] ids, bool optional)
             {
@@ -249,6 +271,7 @@ namespace OSE.Editor
                 foreach (var pid in ids)
                 {
                     if (string.IsNullOrEmpty(pid) || presentPartIds.Contains(pid)) continue;
+                    if (suppressedByGroup.Contains(pid)) continue; // member shown via [G] row
                     order.Add(new TaskOrderEntry { kind = "part", id = pid, isOptional = optional });
                     presentPartIds.Add(pid);
                     _cachedOrphanTaskIds.Add(pid);
@@ -305,6 +328,22 @@ namespace OSE.Editor
 
             var newOrder = new List<TaskOrderEntry>();
             var seenParts = new HashSet<string>(StringComparer.Ordinal);
+            // Members of any group [G] entry already in taskOrder are
+            // suppressed from the appended-orphans pass — the [G] row
+            // represents them. Without this, AppendMissing would emit one
+            // row per visualPartIds member and the author would see a [G]
+            // row PLUS 14 individual member rows.
+            var suppressedByGroup = new HashSet<string>(StringComparer.Ordinal);
+            if (step.taskOrder != null && _pkg != null)
+            {
+                foreach (var e in step.taskOrder)
+                {
+                    if (e == null || e.kind != "part" || string.IsNullOrEmpty(e.id)) continue;
+                    if (_pkg.TryGetSubassembly(e.id, out var subDef) && subDef?.partIds != null)
+                        foreach (var mpid in subDef.partIds)
+                            if (!string.IsNullOrEmpty(mpid)) suppressedByGroup.Add(mpid);
+                }
+            }
             bool changed = false;
             int originalCount = step.taskOrder?.Length ?? 0;
 
@@ -332,6 +371,13 @@ namespace OSE.Editor
                         if (e.isOptional) { e.isOptional = false; changed = true; }
                         newOrder.Add(e);
                     }
+                    else if (_pkg != null && _pkg.TryGetSubassembly(e.id, out _))
+                    {
+                        // Group [G] entries: id is a subassemblyId, not a
+                        // partId, so it never lives in the role arrays. Keep
+                        // the row — it's how NO TASK group drag-drops surface.
+                        newOrder.Add(e);
+                    }
                     else
                     {
                         // partId removed from every role list → drop the stale row.
@@ -349,6 +395,7 @@ namespace OSE.Editor
                 foreach (var pid in ids)
                 {
                     if (string.IsNullOrEmpty(pid)) continue;
+                    if (suppressedByGroup.Contains(pid)) continue; // member shown via [G] row
                     if (!seenParts.Add(pid)) continue;
                     newOrder.Add(new TaskOrderEntry { kind = "part", id = pid, isOptional = isOptional });
                     changed = true;
@@ -453,6 +500,24 @@ namespace OSE.Editor
             }
             if (changed) _dirtyStepIds.Add(step.id);
             return changed;
+        }
+
+        /// <summary>
+        /// Strips <paramref name="partId"/> from <c>visualPartIds</c> only.
+        /// Used when a group [G] row is deleted: members were added by
+        /// <c>CommitAddGroupAsNoTask</c> as NO TASK visuals, so undoing the
+        /// group should only remove them from that array — not from
+        /// requiredPartIds / optionalPartIds (where they may live as
+        /// explicit, author-intended Task rows).
+        /// </summary>
+        private bool RemovePartFromVisualOnly(StepDefinition step, string partId)
+        {
+            if (step == null || string.IsNullOrEmpty(partId) || step.visualPartIds == null) return false;
+            var list = new List<string>(step.visualPartIds);
+            if (!list.Remove(partId)) return false;
+            step.visualPartIds = list.Count > 0 ? list.ToArray() : Array.Empty<string>();
+            _dirtyStepIds.Add(step.id);
+            return true;
         }
 
         /// <summary>Returns true when the item backing this task entry has in-memory unsaved edits.</summary>
@@ -939,10 +1004,17 @@ namespace OSE.Editor
                     float idX    = rect.x + 80f + reqOptW + leadPad;
                     float idW    = rect.width - 110f - tagW - dirtyW - reqOptW - leadPad;
                     var idRect   = new Rect(idX, rect.y + 1f, idW, rect.height);
-                    // Show group display name for [G] tasks, raw id for everything else
+                    // Show group display name + member count for [G] tasks, raw id for everything else.
+                    // The count badge ("14 parts") makes group scope visible at a glance so authors
+                    // don't need to expand members individually to know what the group contains.
                     string displayId = entry.id ?? "—";
                     if (isGroup && _pkg != null && _pkg.TryGetSubassembly(entry.id, out var dispSub) && dispSub != null)
-                        displayId = dispSub.GetDisplayName();
+                    {
+                        int memberCount = dispSub.partIds?.Length ?? 0;
+                        displayId = memberCount > 0
+                            ? $"{dispSub.GetDisplayName()}  ({memberCount} part{(memberCount == 1 ? "" : "s")})"
+                            : dispSub.GetDisplayName();
+                    }
                     EditorGUI.LabelField(idRect, displayId, EditorStyles.miniLabel);
 
                     // ── Ownership-conflict / orphan badge (quiet when clean) ──
@@ -1130,25 +1202,67 @@ namespace OSE.Editor
                     if (Event.current.type == EventType.ContextClick
                         && rowClickRect.Contains(Event.current.mousePosition))
                     {
-                        // Collect the part IDs from the selection (multi or single)
-                        var contextPartIds = new List<string>();
-                        if (_multiSelectedTaskSeqIdxs.Count > 1)
+                        // Resolve the row indices the menu should act on:
+                        // multi-selection if the right-clicked row is part of it,
+                        // otherwise just the single right-clicked row.
+                        var contextRowIdxs = new List<int>();
+                        if (_multiSelectedTaskSeqIdxs.Count > 1
+                            && _multiSelectedTaskSeqIdxs.Contains(index))
                         {
                             foreach (int tidx in _multiSelectedTaskSeqIdxs)
-                            {
-                                if (tidx < 0 || tidx >= order.Count) continue;
-                                if (order[tidx].kind == "part")
-                                    contextPartIds.Add(order[tidx].id);
-                            }
+                                if (tidx >= 0 && tidx < order.Count) contextRowIdxs.Add(tidx);
+                            contextRowIdxs.Sort();
                         }
-                        else if (index >= 0 && index < order.Count && order[index].kind == "part")
+                        else
                         {
-                            contextPartIds.Add(order[index].id);
+                            contextRowIdxs.Add(index);
                         }
 
-                        if (contextPartIds.Count > 0)
+                        // Part-only subset for group/membership actions (only
+                        // those make sense for non-part rows).
+                        var contextPartIds = new List<string>();
+                        foreach (int tidx in contextRowIdxs)
+                            if (order[tidx].kind == "part")
+                                contextPartIds.Add(order[tidx].id);
+
                         {
                             var menu = new GenericMenu();
+
+                            // ── Delete row(s) — works for any kind ────────────
+                            var capturedOrder    = order;
+                            var capturedRowIdxs  = new List<int>(contextRowIdxs);
+                            var capturedDelStep  = step;
+
+                            // Label distinguishes task vs no-task for clarity.
+                            string delLabel;
+                            if (capturedRowIdxs.Count == 1)
+                            {
+                                var e = order[capturedRowIdxs[0]];
+                                bool isNoTaskRow = e.kind == "part"
+                                    && step.visualPartIds != null
+                                    && Array.IndexOf(step.visualPartIds, e.id) >= 0;
+                                delLabel = isNoTaskRow ? $"Delete no-task '{e.id}'"
+                                                       : $"Delete task '{e.id}'";
+                            }
+                            else
+                            {
+                                delLabel = $"Delete {capturedRowIdxs.Count} rows";
+                            }
+
+                            menu.AddItem(new GUIContent(delLabel), false,
+                                () => RemoveTaskRowsAt(capturedDelStep, capturedOrder, capturedRowIdxs));
+
+                            // The remaining items are part-scoped (group ops).
+                            // Bail out of the menu early if no part rows were
+                            // selected — but still show Delete above.
+                            if (contextPartIds.Count == 0)
+                            {
+                                menu.ShowAsContext();
+                                Event.current.Use();
+                                return;
+                            }
+
+                            menu.AddSeparator("");
                             var capturedParts = contextPartIds;
                             var capturedStep  = step;
                             string countLabel = capturedParts.Count == 1
@@ -1237,30 +1351,7 @@ namespace OSE.Editor
                     var removeRect = new Rect(rect.xMax - 22f, rect.y + 1f, 22f, rect.height - 2f);
                     if (GUI.Button(removeRect, "×", EditorStyles.miniButton))
                     {
-                        // For part rows, the × must also evict the partId from
-                        // the underlying role array (required/optional/visual).
-                        // Otherwise the reconciler (which treats role arrays as
-                        // the source of truth) re-appends the row on the next
-                        // pass — the "I deleted it but it came back on save"
-                        // symptom. Non-part rows (target/wire/tool) keep the
-                        // legacy behaviour: taskOrder-only removal.
-                        var doomed = order[index];
-                        if (doomed != null && doomed.kind == "part" && !string.IsNullOrEmpty(doomed.id))
-                        {
-                            RemovePartFromStepRoleArrays(step, doomed.id);
-                        }
-                        order.RemoveAt(index);
-                        if (_selectedTaskSeqIdx >= order.Count) _selectedTaskSeqIdx = order.Count - 1;
-                        step.taskOrder = order.ToArray();
-                        _cachedTaskOrder = order;
-                        _dirtyTaskOrderStepIds.Add(step.id);
-                        _dirtyStepIds.Add(step.id);
-                        // Reconcile to pick up the role removal AND any
-                        // downstream effects (e.g. dropping stale isOptional).
-                        ReconcileStepTaskOrder(step);
-                        // Force list rebuild next frame
-                        _taskSeqReorderListForStepId = null;
-                        Repaint();
+                        RemoveTaskRowsAt(step, order, new List<int> { index });
                     }
                 };
 
@@ -1294,6 +1385,51 @@ namespace OSE.Editor
             // package part / target id) from the Hierarchy into this strip
             // and the editor adds it to the task sequence in one motion.
             DrawTaskSequenceDropZone(step, order);
+        }
+
+        /// <summary>
+        /// Removes one or more rows from a step's task sequence. For part rows,
+        /// also evicts the partId from the step's role arrays
+        /// (required/optional/visual) so the reconciler doesn't re-add the
+        /// row on the next pass. Group [G] rows additionally strip member
+        /// partIds. Used by both the row's × button and the right-click
+        /// "Delete row(s)" context menu item.
+        /// </summary>
+        private void RemoveTaskRowsAt(StepDefinition step, List<TaskOrderEntry> order, List<int> indices)
+        {
+            if (step == null || order == null || indices == null || indices.Count == 0) return;
+
+            // Remove highest first so earlier indices stay valid.
+            var sorted = new List<int>(indices);
+            sorted.Sort();
+            sorted.Reverse();
+
+            foreach (int idx in sorted)
+            {
+                if (idx < 0 || idx >= order.Count) continue;
+                var doomed = order[idx];
+                if (doomed != null && doomed.kind == "part" && !string.IsNullOrEmpty(doomed.id))
+                {
+                    // Group [G] rows no longer own any member visualPartIds
+                    // (CommitAddGroupAsNoTask stopped adding them), so
+                    // deleting a group just removes the [G] row. Individual
+                    // member rows the author added separately stay
+                    // untouched. Plain part rows still evict from role
+                    // arrays so the reconciler doesn't re-add them.
+                    RemovePartFromStepRoleArrays(step, doomed.id);
+                }
+                order.RemoveAt(idx);
+            }
+
+            if (_selectedTaskSeqIdx >= order.Count) _selectedTaskSeqIdx = order.Count - 1;
+            _multiSelectedTaskSeqIdxs.Clear();
+            step.taskOrder = order.ToArray();
+            _cachedTaskOrder = order;
+            _dirtyTaskOrderStepIds.Add(step.id);
+            _dirtyStepIds.Add(step.id);
+            ReconcileStepTaskOrder(step);
+            _taskSeqReorderListForStepId = null;
+            Repaint();
         }
 
         // ── Drag-drop entry for the task sequence (Phase 7d) ──────────────────
@@ -1550,7 +1686,94 @@ namespace OSE.Editor
                     return DropOutcome.Added;
                 }
             }
+
+            // Subassembly (group) drop — adds a [G] task row + introduces every
+            // member as NO TASK (visualPartIds) so the runtime renders them at
+            // this step. Group GOs are named "Group_{displayName}", not the
+            // subassembly id; resolve via the live root-GO dictionary first,
+            // then by display name as a fallback.
+            var subResolved = ResolveDroppedSubassembly(name);
+            if (subResolved != null)
+            {
+                bool already = false;
+                if (step.taskOrder != null)
+                    foreach (var e in step.taskOrder)
+                        if (e != null && e.kind == "part" && string.Equals(e.id, subResolved.id, StringComparison.Ordinal))
+                        { already = true; break; }
+                if (already)
+                {
+                    ShowNotification(new GUIContent($"'{subResolved.GetDisplayName()}' group is already in this step's task sequence."));
+                    return DropOutcome.MatchedRejected;
+                }
+                CommitAddGroupAsNoTask(step, subResolved);
+                return DropOutcome.Added;
+            }
+
             return DropOutcome.Unmatched;
+        }
+
+        /// <summary>
+        /// Resolves a dragged GameObject's name to a <see cref="SubassemblyDefinition"/>.
+        /// Tries the live group-root-GO dictionary first (where keys are
+        /// subassembly ids and values are the spawned GO that the user
+        /// actually dragged), then falls back to matching by id and finally
+        /// by display name. Returns null when nothing matches.
+        /// </summary>
+        private SubassemblyDefinition ResolveDroppedSubassembly(string droppedName)
+        {
+            if (string.IsNullOrEmpty(droppedName) || _pkg?.subassemblies == null) return null;
+
+            // Reverse-lookup: which subassembly id has a root GO with this name?
+            if (_subassemblyRootGOs != null)
+            {
+                foreach (var kvp in _subassemblyRootGOs)
+                {
+                    if (kvp.Value == null) continue;
+                    if (!string.Equals(kvp.Value.name, droppedName, StringComparison.Ordinal)) continue;
+                    if (_pkg.TryGetSubassembly(kvp.Key, out var found) && found != null) return found;
+                }
+            }
+
+            foreach (var sub in _pkg.subassemblies)
+            {
+                if (sub == null) continue;
+                if (string.Equals(sub.id, droppedName, StringComparison.Ordinal)) return sub;
+                // "Group_{displayName}" naming convention from EnsureAllSubassemblyRoots
+                if (string.Equals("Group_" + sub.GetDisplayName(), droppedName, StringComparison.Ordinal)) return sub;
+                if (string.Equals(sub.GetDisplayName(), droppedName, StringComparison.Ordinal)) return sub;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Adds <paramref name="sub"/> to <paramref name="step"/> as a NO TASK
+        /// group: every member partId joins <c>step.visualPartIds</c> (so the
+        /// runtime shows them at this step without a placement task) and a
+        /// task-order entry with the subassembly id is appended so the [G]
+        /// row renders in authoring. Does NOT set
+        /// <c>step.requiredSubassemblyId</c> — that field means "this step
+        /// stacks the group onto a target", which is a placement action, not
+        /// a NO TASK display.
+        /// </summary>
+        private void CommitAddGroupAsNoTask(StepDefinition step, SubassemblyDefinition sub)
+        {
+            if (step == null || sub == null || string.IsNullOrEmpty(sub.id)) return;
+
+            // Group is a TASK HANDLE, not a visibility expander. Dropping a
+            // group adds ONLY the [G] row — members are NOT auto-added to
+            // visualPartIds. Authors introduce individual parts by dragging
+            // them in directly (Q2 design: "individual parts in steps mark
+            // visibility; groups don't define it"). Animation cues targeting
+            // this group still operate over all live members at runtime via
+            // the transient-anim-group promotion path.
+            var order = GetOrDeriveTaskOrder(step);
+            order.Add(new TaskOrderEntry { kind = "part", id = sub.id });
+            step.taskOrder = order.ToArray();
+            InvalidateTaskOrderCache();
+            _dirtyStepIds.Add(step.id);
+            ReconcileStepTaskOrder(step);
+            BuildPartList();
+            Repaint();
         }
 
         /// <summary>Legacy wrapper for callers that only want a success bool.</summary>
@@ -1614,6 +1837,22 @@ namespace OSE.Editor
                     return DropOutcome.Added;
                 }
             }
+
+            // Subassembly (group) drop probe — same resolution as the commit
+            // path so the drop zone shows the right colour pre-release.
+            var subResolved = ResolveDroppedSubassembly(name);
+            if (subResolved != null)
+            {
+                if (step.taskOrder != null)
+                    foreach (var e in step.taskOrder)
+                        if (e != null && e.kind == "part" && string.Equals(e.id, subResolved.id, StringComparison.Ordinal))
+                        {
+                            reason = $"'{subResolved.GetDisplayName()}' group is already in this step's task sequence.";
+                            return DropOutcome.MatchedRejected;
+                        }
+                return DropOutcome.Added;
+            }
+
             return DropOutcome.Unmatched;
         }
 
@@ -2661,6 +2900,12 @@ namespace OSE.Editor
 
                         // Group membership editor (parts, steps, name, description)
                         DrawSubassemblyInlineEditor(groupDef, step);
+
+                        // Per-group cue authoring strip — adds the "+ Add cue"
+                        // affordance with a Rotate / Shake picker, and lists
+                        // existing cues whose targetSubassemblyId matches this
+                        // group. Mirrors the part/tool patterns in TTAW.CueContext.cs.
+                        DrawCuesForSubassembly(step, selEntry.id);
                     }
                     else
                     {

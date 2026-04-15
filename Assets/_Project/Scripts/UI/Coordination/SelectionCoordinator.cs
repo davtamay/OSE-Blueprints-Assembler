@@ -354,6 +354,20 @@ namespace OSE.UI.Root
                     return;
                 }
 
+                // NO-TASK parts (revealed via visualPartIds at the current
+                // step but not a task target) must not be draggable — they're
+                // scene context, not interaction targets. The VisualFeedback's
+                // SyncPartGrabInteractivity already disables the XRI grab,
+                // but the custom DragController pointer path has its own
+                // tracking gate, so refuse here too.
+                if (_ctx.VisualFeedback != null
+                    && !_ctx.VisualFeedback.IsPartGrabbableAtCurrentStep(selectionId))
+                {
+                    OseLog.VerboseInfo($"[PartInteraction] Drag tracking blocked for non-task part '{selectionId}'.");
+                    _ctx.Drag.PendingSelectPart = null;
+                    return;
+                }
+
                 _ctx.Drag.BeginDragTracking(target, selectionId);
             }
         }

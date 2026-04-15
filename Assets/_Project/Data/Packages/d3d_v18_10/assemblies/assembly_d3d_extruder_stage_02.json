@@ -28,13 +28,6 @@
     {
       "id": "subassembly_extruder_carriage_mount_stack",
       "name": "Extruder Carriage Mount Stack",
-      "assemblyId": "assembly_d3d_extruder_stage_02",
-      "description": "Stages the simplified carriage and assembles the first carriage-side Titan Aero bracket and top-plate stack before the nozzle module is mounted.",
-      "partIds": [
-        "d3d_extruder_simplified_carriage",
-        "d3d_extruder_mount_bracket",
-        "d3d_extruder_mount_top_plate"
-      ],
       "stepIds": [
         "step_stage_extruder_simplified_carriage",
         "step_place_titan_aero_mount_bracket",
@@ -42,6 +35,8 @@
         "step_place_titan_aero_mount_top_plate",
         "step_secure_titan_aero_mount_top_plate"
       ],
+      "assemblyId": "assembly_d3d_extruder_stage_02",
+      "description": "Stages the simplified carriage and assembles the first carriage-side Titan Aero bracket and top-plate stack before the nozzle module is mounted.",
       "milestoneMessage": "Simplified carriage, bracket, and top plate assembled into the first carriage-side Titan Aero mount stack."
     },
     {
@@ -102,7 +97,10 @@
           "b": 0.5,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_extruder_carriage_mount_stack"
+      ]
     },
     {
       "id": "d3d_extruder_simplified_carriage",
@@ -133,7 +131,10 @@
           "b": 0.48,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_extruder_carriage_mount_stack"
+      ]
     },
     {
       "id": "d3d_extruder_mount_top_plate",
@@ -165,7 +166,10 @@
           "b": 0.6,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_extruder_carriage_mount_stack"
+      ]
     }
   ],
   "steps": [
@@ -181,12 +185,32 @@
         "hint_stage_simplified_carriage"
       ],
       "removePersistentToolIds": [],
-      "targetIds": [ "target_extruder_simplified_carriage_stage" ],
-      "requiredPartIds": [ "d3d_extruder_simplified_carriage" ],
+      "targetIds": [
+        "target_extruder_simplified_carriage_stage"
+      ],
+      "requiredPartIds": [
+        "d3d_extruder_simplified_carriage"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"d3d_extruder_simplified_carriage"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "d3d_extruder_simplified_carriage"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
     {
       "id": "step_place_titan_aero_mount_bracket",
       "name": "Place the Titan Aero mount bracket",
@@ -199,12 +223,32 @@
         "hint_place_mount_bracket"
       ],
       "removePersistentToolIds": [],
-      "targetIds": [ "target_extruder_mount_bracket_attach" ],
-      "requiredPartIds": [ "d3d_extruder_mount_bracket" ],
+      "targetIds": [
+        "target_extruder_mount_bracket_attach"
+      ],
+      "requiredPartIds": [
+        "d3d_extruder_mount_bracket"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"d3d_extruder_mount_bracket"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "d3d_extruder_mount_bracket"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
     {
       "id": "step_secure_titan_aero_mount_bracket",
       "name": "Secure the mount bracket",
@@ -254,12 +298,32 @@
         "hint_place_mount_top_plate"
       ],
       "removePersistentToolIds": [],
-      "targetIds": [ "target_extruder_mount_top_plate_attach" ],
-      "requiredPartIds": [ "d3d_extruder_mount_top_plate" ],
+      "targetIds": [
+        "target_extruder_mount_top_plate_attach"
+      ],
+      "requiredPartIds": [
+        "d3d_extruder_mount_top_plate"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"d3d_extruder_mount_top_plate"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "d3d_extruder_mount_top_plate"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
     {
       "id": "step_secure_titan_aero_mount_top_plate",
       "name": "Secure the mount top plate",

@@ -113,26 +113,14 @@ namespace OSE.Core
                 }
             }
 
-            // Clear any emission residue via per-renderer MaterialPropertyBlock overrides.
-            // DO NOT mutate material objects directly — entry.Materials stores shared
-            // references, so mat.SetColor would bleed across all parts using the same
-            // material asset (e.g. parts extracted from the same combined GLB), causing
-            // the "whack-a-mole" where restoring part A wipes emission from part B.
-            // A zero-emission property block is per-renderer and avoids cross-part mutation.
-            if (_isImportedModel)
-            {
-                var block = new MaterialPropertyBlock();
-                block.SetColor("emissiveFactor", Color.black);
-                block.SetColor("_EmissionColor", Color.black);
-
-                foreach (var entry in _entries)
-                {
-                    if (entry.Renderer == null) continue;
-                    // Apply a minimal property block that only suppresses emission.
-                    // This is cleared on the next interaction that calls SetPropertyBlock(null).
-                    entry.Renderer.SetPropertyBlock(block);
-                }
-            }
+            // The previous implementation set a per-renderer property block
+            // with emissiveFactor/_EmissionColor=black to scrub selection-
+            // glow residue. But that forced every GLB material to render
+            // with zero emission even when the authored material had its own
+            // emission (causing "hover+exit → part looks different" on
+            // parts that were never selected). ClearRendererPropertyBlocks
+            // is enough to wipe any selection-glow block; the material's
+            // native emission can then render normally.
         }
 
         // ── Outline API ─────────────────────────────────────────────────

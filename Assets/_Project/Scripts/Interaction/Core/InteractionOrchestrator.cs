@@ -783,6 +783,17 @@ namespace OSE.Interaction
                 OseLog.VerboseInfo($"[Orchestrator] Drag blocked for locked part '{dragTarget.name}'.");
                 return;
             }
+            // NO-TASK parts — revealed for scene context but not a task of
+            // the current step — are not draggable. Keep selection (so hover
+            // hints still work) but refuse drag entry.
+            if (_partBridge != null && !_partBridge.IsPartTaskAtCurrentStep(dragTarget))
+            {
+                SelectedPart = dragTarget;
+                TransitionTo(InteractionState.PartSelected);
+                _actionBridge?.OnExternallyResolvedPartSelected(dragTarget);
+                OseLog.VerboseInfo($"[Orchestrator] Drag blocked for non-task part '{dragTarget.name}'.");
+                return;
+            }
 
             DraggedPart = dragTarget;
             SelectedPart = dragTarget;

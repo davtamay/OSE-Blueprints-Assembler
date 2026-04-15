@@ -308,8 +308,17 @@ namespace OSE.UI.Root
         /// </summary>
         public void HandlePartsReady()
         {
+            // Fallback: even if the session controller isn't registered yet
+            // (first play-press after compile can race the session-init),
+            // still hide non-introduced parts so the scene doesn't start
+            // with every part visible. Without this, the first play shows
+            // the full scene assembled and the user has to stop/play again.
             if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
+            {
+                _ctx.VisualFeedback?.ResetHiddenOnSpawnGuard();
+                _ctx.VisualFeedback?.HideNonIntroducedParts();
                 return;
+            }
 
             // Force-resave GLB originals now that all async loads are done.
             // MarkAsImported → Save() fires at swap time (during SpawnGlbPartsAsync),
@@ -461,7 +470,16 @@ namespace OSE.UI.Root
             bool resetToDefaultView)
         {
             if (string.IsNullOrWhiteSpace(activeStepId))
+            {
+                // No active step yet (can happen on the first SpawnerPartsReady
+                // after a fresh play-press before a step has activated).
+                // At minimum, hide non-introduced parts so the scene doesn't
+                // start with every part visible; the next OnStepActivated
+                // will do the full reveal pass.
+                _ctx.VisualFeedback?.ResetHiddenOnSpawnGuard();
+                _ctx.VisualFeedback?.HideNonIntroducedParts();
                 return;
+            }
 
             _ctx.AnimationCues?.Cleanup();
             _ctx.Router?.CleanupAll();

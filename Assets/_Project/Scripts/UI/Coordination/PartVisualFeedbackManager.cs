@@ -30,6 +30,7 @@ namespace OSE.UI.Root
         private bool _partsHiddenOnSpawn;
         private readonly HashSet<string> _revealedPartIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _activeStepPartIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private bool _stepHighlightingApplied;
 
         // ── Shorthand for constants ──
         private static Color SelectedPartColor => InteractionVisualConstants.SelectedPartColor;
@@ -281,8 +282,27 @@ namespace OSE.UI.Root
                 return;
             }
 
+            // Imported GLB path: hide the outline, restore originals, then
+            // re-apply the step's dim tint for parts that are NOT part of
+            // the active step (ApplyStepPartHighlighting tints those via
+            // DimmedPartColor so the active-step parts stand out). Without
+            // this the hover-exit would leave dimmed parts at their full
+            // GLB colour and they'd no longer look de-emphasised.
+            // Imported GLB: hide the outline + restore the real material.
+            // Non-active parts used to get re-tinted with DimmedPartColor
+            // here, but the user wants the native GLB material as default,
+            // so the restore suffices.
+            if (MaterialHelper.IsImportedModel(partGo))
+            {
+                MaterialHelper.ClearTint(partGo);
+                return;
+            }
+
             MaterialHelper.SetEmission(partGo, Color.black);
             ClearRendererPropertyBlocks(partGo);
+
+            // Drop any inverted-hull outline the hover-tint path added.
+            MaterialHelper.ClearTint(partGo);
 
             // Restore original textured materials if available
             if (MaterialHelper.RestoreOriginals(partGo))
@@ -335,11 +355,38 @@ namespace OSE.UI.Root
 
             // Delegate XRI-specific enable/disable to IXRGrabSetup so this class
             // has no direct dependency on XRGrabInteractable (ADR 005).
+            //
+            // Intentional: NO-TASK parts keep XRGrabInteractable enabled so
+            // XRI/mouse selection still fires (yellow outline, inspector
+            // panel, etc). Actual drag entry is blocked further up the stack
+            // by InteractionOrchestrator.HandleBeginDrag via
+            // IPartActionBridge.IsPartTaskAtCurrentStep and by
+            // SelectionCoordinator.BeginDragTracking — same pattern as
+            // already-placed parts, which stay selectable but not movable.
             if (ServiceRegistry.TryGet<IXRGrabSetup>(out var grabSetup))
                 grabSetup.SetGrabEnabled(partGo, shouldEnableGrab);
 
             if (!shouldEnableGrab && _ctx.Drag?.DraggedPart == partGo)
                 _ctx.ResetDragState();
+        }
+
+        /// <summary>
+        /// True when <paramref name="partId"/> is a task part of the current
+        /// step. Uses the <see cref="_activeStepPartIds"/> set populated by
+        /// <see cref="ApplyStepPartHighlighting"/> — that already includes
+        /// requiredPartIds and requiredSubassembly members. If no step is
+        /// active (set is empty) we don't restrict grab. NO-TASK visualPartIds
+        /// entries are never added to the set, so they're not grabbable.
+        /// </summary>
+        public bool IsPartGrabbableAtCurrentStep(string partId)
+        {
+            // If a step has been applied (even one with empty task parts —
+            // e.g. a Confirm-only step with only visualPartIds), restrict to
+            // that set. Empty-and-highlighted means "no part is a task here"
+            // — nothing should be grabbable. Only return permissive-true when
+            // no highlighting has run at all (pre-step-activation bootstrap).
+            if (!_stepHighlightingApplied) return true;
+            return _activeStepPartIds != null && _activeStepPartIds.Contains(partId);
         }
 
         // ════════════════════════════════════════════════════════════════════
@@ -398,13 +445,50 @@ namespace OSE.UI.Root
         // Part revelation / hiding (step-based visibility)
         // ════════════════════════════════════════════════════════════════════
 
+        /// <summary>
+        /// True when <paramref name="partId"/> is explicitly acted on by
+        /// <paramref name="step"/> — either via requiredPartIds/optionalPartIds
+        /// or via a target whose associatedPartId matches. Task parts need to
+        /// render at startPosition during the step so the trainee can pick
+        /// them up and drag to the ghost.
+        /// </summary>
+        private bool IsPartTaskOfStep(StepDefinition step, string partId)
+        {
+            if (step == null || string.IsNullOrEmpty(partId)) return false;
+            if (step.requiredPartIds != null)
+                foreach (var p in step.requiredPartIds)
+                    if (string.Equals(p, partId, StringComparison.Ordinal)) return true;
+            if (step.optionalPartIds != null)
+                foreach (var p in step.optionalPartIds)
+                    if (string.Equals(p, partId, StringComparison.Ordinal)) return true;
+            var pkg = _ctx.Spawner?.CurrentPackage;
+            if (pkg != null && step.targetIds != null)
+            {
+                foreach (var tid in step.targetIds)
+                {
+                    if (string.IsNullOrWhiteSpace(tid) || !pkg.TryGetTarget(tid, out var tgt) || tgt == null) continue;
+                    if (string.Equals(tgt.associatedPartId, partId, StringComparison.Ordinal)) return true;
+                }
+            }
+            return false;
+        }
+
         public void HideNonIntroducedParts()
         {
             if (_partsHiddenOnSpawn) return;
-            _partsHiddenOnSpawn = true;
 
             var parts = _ctx.Spawner?.SpawnedParts;
-            if (parts == null) return;
+            if (parts == null || parts.Count == 0)
+            {
+                // Async GLB load not done yet. Leave the one-shot guard open
+                // so the next call (typically from SpawnerPartsReady →
+                // HandlePartsReady → reveal) actually hides the parts. If we
+                // set the guard here with an empty list, the first play-press
+                // after reload ends up with every part active until a step
+                // change flushes it.
+                return;
+            }
+            _partsHiddenOnSpawn = true;
 
             for (int i = 0; i < parts.Count; i++)
             {
@@ -433,48 +517,82 @@ namespace OSE.UI.Root
             if (package == null || !package.TryGetStep(stepId, out var step))
                 return;
 
-            // Determine which subassembly we're in
+            int currentSeq    = step.sequenceIndex;
             string subassemblyId = step.subassemblyId;
 
-            // Collect part ids from steps in this subassembly up to and including
-            // the current step. Parts from future steps stay hidden until their
-            // step activates — prevents e.g. brackets appearing during panel placement.
-            int currentSeq = step.sequenceIndex;
+            // Reveal set = every part whose baked poseTable entry is
+            // non-Hidden at currentSeq. This is the *same* source the TTAW
+            // editor uses when scrubbing — if the author can see a part at
+            // step N in the editor, the trainee sees it at step N in play.
+            // Cumulative by construction: a part placed at step 50 stays
+            // visible at 51, 52, ... because the normalizer bakes Assembled
+            // entries forward. No more per-step field walking here — that
+            // logic caused editor/play divergence (step 50 carriages
+            // disappearing at step 51).
+            //
+            // Target-associated parts and step-scoped task parts are
+            // guaranteed to be in the visible set: PoseResolverIndex seeds
+            // firstVisibleSeqByPart from requiredPartIds / optionalPartIds /
+            // visualPartIds / requiredSubassemblyId members, and the
+            // "loose-placement" fallback pins anything with a placement to
+            // the first step's seq.
+            var poseTable = package.poseTable;
             var subassemblyPartIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            if (!string.IsNullOrWhiteSpace(subassemblyId))
+            if (poseTable != null)
             {
-                StepDefinition[] allSteps = package.GetOrderedSteps();
-                for (int s = 0; s < allSteps.Length; s++)
-                {
-                    if (allSteps[s].sequenceIndex > currentSeq)
-                        continue;
-                    if (!string.Equals(allSteps[s].subassemblyId, subassemblyId, StringComparison.OrdinalIgnoreCase))
-                        continue;
-                    string[] rp = allSteps[s].GetEffectiveRequiredPartIds();
-                    if (rp == null) continue;
-                    for (int p = 0; p < rp.Length; p++)
-                    {
-                        if (!string.IsNullOrWhiteSpace(rp[p]))
-                            subassemblyPartIds.Add(rp[p]);
-                    }
-                }
+                foreach (var pid in poseTable.EnumerateVisiblePartsAt(currentSeq))
+                    if (!string.IsNullOrWhiteSpace(pid)) subassemblyPartIds.Add(pid);
             }
             else
             {
-                // No subassembly — fall back to just this step's parts
-                string[] rp = step.GetEffectiveRequiredPartIds();
-                if (rp != null)
+                // Legacy fallback: package loaded without Normalize (no
+                // poseTable baked). Preserve the original step-scoped reveal
+                // so this code path still works.
+                if (step.requiredPartIds != null)
+                    foreach (var pid in step.requiredPartIds)
+                        if (!string.IsNullOrWhiteSpace(pid)) subassemblyPartIds.Add(pid);
+                if (step.optionalPartIds != null)
+                    foreach (var pid in step.optionalPartIds)
+                        if (!string.IsNullOrWhiteSpace(pid)) subassemblyPartIds.Add(pid);
+                if (step.visualPartIds != null)
+                    foreach (var pid in step.visualPartIds)
+                        if (!string.IsNullOrWhiteSpace(pid)) subassemblyPartIds.Add(pid);
+                if (!string.IsNullOrEmpty(step.requiredSubassemblyId)
+                    && package.TryGetSubassembly(step.requiredSubassemblyId, out var stepSubDef)
+                    && stepSubDef?.partIds != null)
                 {
-                    for (int p = 0; p < rp.Length; p++)
+                    foreach (var pid in stepSubDef.partIds)
+                        if (!string.IsNullOrWhiteSpace(pid)) subassemblyPartIds.Add(pid);
+                }
+                if (step.targetIds != null)
+                {
+                    foreach (var tid in step.targetIds)
                     {
-                        if (!string.IsNullOrWhiteSpace(rp[p]))
-                            subassemblyPartIds.Add(rp[p]);
+                        if (string.IsNullOrWhiteSpace(tid) || !package.TryGetTarget(tid, out var tgt) || tgt == null)
+                            continue;
+                        if (!string.IsNullOrWhiteSpace(tgt.associatedPartId))
+                            subassemblyPartIds.Add(tgt.associatedPartId);
+                        if (!string.IsNullOrWhiteSpace(tgt.associatedSubassemblyId)
+                            && package.TryGetSubassembly(tgt.associatedSubassemblyId, out var subDef)
+                            && subDef?.partIds != null)
+                        {
+                            foreach (var pid in subDef.partIds)
+                                if (!string.IsNullOrWhiteSpace(pid)) subassemblyPartIds.Add(pid);
+                        }
                     }
                 }
             }
 
             if (subassemblyPartIds.Count == 0)
                 return;
+
+            // Hierarchy sync FIRST — creates/updates Group_* roots (at
+            // identity) and reparents visible members. Doing this before
+            // positioning means SetLocalPositionAndRotation below sees roots
+            // at identity, so localPos == the authored PreviewRoot-space
+            // pose. If we positioned first and reparented afterward, the
+            // reparent would leave parts at stale world positions.
+            _ctx.Spawner?.SyncSubassemblyHierarchy(package, step);
 
             // Filter to parts not yet revealed
             var toReveal = new List<string>();
@@ -504,24 +622,67 @@ namespace OSE.UI.Root
                 if (partGo == null) continue;
 
                 PartPreviewPlacement pp = _ctx.Spawner.FindPartPlacement(partId);
-                Vector3 scale = pp != null
-                    ? new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z)
-                    : Vector3.one;
 
+                // Source of truth: the baked pose-resolver entry at this seq.
+                // Matches exactly what TTAW renders — past-task parts at
+                // assembledPosition, current-task parts at startPosition, etc.
+                // Fall back to placement.startPosition only if poseTable is
+                // absent (e.g. package loaded without Normalize).
+                bool hasAuthored = false;
+                Vector3 pos = Vector3.zero;
+                Quaternion rot = Quaternion.identity;
+                Vector3 scale = Vector3.one;
+
+                // When this step's *Place task* acts on the part and the trainee
+                // hasn't yet completed it, show startPosition — they need to
+                // pick it up and drag to the ghost. The poseTable was baked
+                // with PoseMode.Committed which returns assembledPosition for
+                // task-step parts (correct for post-completion), so we can't
+                // use its resolution here. Non-Place families (Confirm,
+                // Use, Connect) leave the part at its committed pose: a
+                // Confirm shake-test shouldn't teleport the part back to
+                // startPosition just because it's in requiredPartIds.
+                bool isPlaceTaskHere = step.ResolvedFamily == OSE.Content.StepFamily.Place
+                                       && IsPartTaskOfStep(step, partId);
+                bool notYetPlaced = !(_ctx.PartStates.TryGetValue(partId, out var s0)
+                                      && s0 is PartPlacementState.Completed or PartPlacementState.PlacedVirtually);
+
+                if (isPlaceTaskHere && notYetPlaced && pp != null)
+                {
+                    pos = new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z);
+                    rot = !pp.startRotation.IsIdentity
+                        ? new Quaternion(pp.startRotation.x, pp.startRotation.y, pp.startRotation.z, pp.startRotation.w)
+                        : Quaternion.identity;
+                    scale = new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z);
+                    hasAuthored = !Mathf.Approximately(pos.x, 0f)
+                                  || !Mathf.Approximately(pos.y, 0f)
+                                  || !Mathf.Approximately(pos.z, 0f);
+                }
+                else if (poseTable != null && poseTable.TryGet(partId, currentSeq, out var resolution))
+                {
+                    pos = resolution.pos;
+                    rot = resolution.rot;
+                    scale = resolution.scl;
+                    hasAuthored = true;
+                }
+                else if (pp != null)
+                {
+                    pos = new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z);
+                    rot = !pp.startRotation.IsIdentity
+                        ? new Quaternion(pp.startRotation.x, pp.startRotation.y, pp.startRotation.z, pp.startRotation.w)
+                        : Quaternion.identity;
+                    scale = new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z);
+                    hasAuthored = !Mathf.Approximately(pos.x, 0f)
+                                  || !Mathf.Approximately(pos.y, 0f)
+                                  || !Mathf.Approximately(pos.z, 0f);
+                }
+
+                if (scale.sqrMagnitude < 0.00001f) scale = Vector3.one;
                 partGo.transform.localScale = scale;
                 partGo.SetActive(true);
 
-                bool hasAuthored = pp != null &&
-                    (!Mathf.Approximately(pp.startPosition.x, 0f) ||
-                     !Mathf.Approximately(pp.startPosition.y, 0f) ||
-                     !Mathf.Approximately(pp.startPosition.z, 0f));
-
                 if (hasAuthored)
                 {
-                    Vector3 pos = new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z);
-                    Quaternion rot = !pp.startRotation.IsIdentity
-                        ? new Quaternion(pp.startRotation.x, pp.startRotation.y, pp.startRotation.z, pp.startRotation.w)
-                        : Quaternion.identity;
                     partGo.transform.SetLocalPositionAndRotation(pos, rot);
                 }
                 else
@@ -565,6 +726,34 @@ namespace OSE.UI.Root
                 }
             }
 
+            // Second hierarchy sync — catches any members that became active
+            // via the reveal loop but weren't at the first pass (spawner
+            // hadn't registered them yet). No-op for already-reparented ones.
+            _ctx.Spawner?.SyncSubassemblyHierarchy(package, step);
+
+            // Deactivation pass: any spawned part NOT in the visible set at
+            // currentSeq must be hidden, unless it's Completed/PlacedVirtually
+            // (those are authoritative state owners and must stay visible
+            // until explicit reversion). This keeps play in sync with the
+            // editor when a part's lastVisibleSeq is exceeded, and when
+            // jumping to an earlier step where future parts shouldn't show.
+            var spawnedParts = _ctx.Spawner?.SpawnedParts;
+            if (spawnedParts != null)
+            {
+                for (int i = 0; i < spawnedParts.Count; i++)
+                {
+                    var go = spawnedParts[i];
+                    if (go == null) continue;
+                    string pid = go.name;
+                    if (subassemblyPartIds.Contains(pid)) continue;
+                    if (_ctx.PartStates.TryGetValue(pid, out var st)
+                        && st is PartPlacementState.Completed or PartPlacementState.PlacedVirtually)
+                        continue;
+                    if (go.activeSelf) go.SetActive(false);
+                    _revealedPartIds.Remove(pid);
+                }
+            }
+
             OseLog.Info($"[PartInteraction] Revealed {toReveal.Count} part(s) for subassembly '{subassemblyId}'.");
         }
 
@@ -575,6 +764,7 @@ namespace OSE.UI.Root
                 return;
 
             _activeStepPartIds.Clear();
+            _stepHighlightingApplied = true;
             if (step.RequiresSubassemblyPlacement &&
                 package.TryGetSubassembly(step.requiredSubassemblyId, out var requiredSubassembly) &&
                 requiredSubassembly?.partIds != null)
@@ -595,7 +785,14 @@ namespace OSE.UI.Root
                 }
             }
 
-            // Walk all revealed parts: highlight active, dim the rest
+            // Walk all revealed parts: highlight active via emission glow,
+            // leave the rest at their native GLB material. Previous behaviour
+            // replaced non-active parts' materials with a dimmed tint
+            // (DimmedPartColor via ApplyTint → "OSE_Tint" instance) so active
+            // parts stood out, but the user wants the native material
+            // (carriage_half_material, etc.) as the default — matching the
+            // editor authoring view which doesn't dim. Active-step parts
+            // still get the emission glow so they remain obvious.
             foreach (string partId in _revealedPartIds)
             {
                 if (_ctx.PartStates.TryGetValue(partId, out var state) &&
@@ -613,12 +810,15 @@ namespace OSE.UI.Root
                 else
                 {
                     ClearRendererPropertyBlocks(partGo);
+                    MaterialHelper.ClearTint(partGo);
                     if (MaterialHelper.IsImportedModel(partGo))
-                        MaterialHelper.ApplyTint(partGo, DimmedPartColor);
-                    else
-                        MaterialHelper.Apply(partGo, "Preview Part Material", DimmedPartColor);
-                    MaterialHelper.SetEmission(partGo, Color.black);
+                        MaterialHelper.RestoreOriginals(partGo);
                 }
+                // Refresh grab state now that _activeStepPartIds is final —
+                // catches NO-TASK parts that were revealed before the
+                // active-set was populated (SyncPartGrabInteractivity at
+                // reveal time would have seen an empty set and left grab on).
+                SyncPartGrabInteractivity(partGo, partId);
             }
         }
 
@@ -672,27 +872,49 @@ namespace OSE.UI.Root
                 // Merged set: includes derived tool-action parts so Use-family
                 // steps restore the parts they touched on navigation.
                 string[] partIds = step.GetAllTouchedPartIds();
-                if (partIds == null || partIds.Length == 0) continue;
-
-                for (int p = 0; p < partIds.Length; p++)
+                if (partIds != null && partIds.Length > 0)
                 {
-                    string partId = partIds[p];
-                    if (string.IsNullOrEmpty(partId)) continue;
-
-                    MovePartToStepPose(partId, step.id);
-
-                    GameObject partGo = _ctx.FindSpawnedPart(partId);
-                    if (partGo != null)
+                    for (int p = 0; p < partIds.Length; p++)
                     {
-                        // Ensure the part is visible — HideNonIntroducedParts may
-                        // have hidden it before the restore path ran.
-                        partGo.SetActive(true);
-                    }
+                        string partId = partIds[p];
+                        if (string.IsNullOrEmpty(partId)) continue;
 
-                    _ctx.PartStates[partId] = PartPlacementState.Completed;
-                    SyncPartGrabInteractivity(partGo, partId);
-                    ApplyPartVisualForState(partGo, partId, PartPlacementState.Completed);
-                    _revealedPartIds.Add(partId);
+                        MovePartToStepPose(partId, step.id);
+
+                        GameObject partGo = _ctx.FindSpawnedPart(partId);
+                        if (partGo != null) partGo.SetActive(true);
+
+                        _ctx.PartStates[partId] = PartPlacementState.Completed;
+                        SyncPartGrabInteractivity(partGo, partId);
+                        ApplyPartVisualForState(partGo, partId, PartPlacementState.Completed);
+                        _revealedPartIds.Add(partId);
+                    }
+                }
+
+                // Also restore NO-TASK introductions: visualPartIds entries
+                // persist as scene context once introduced. Without this, a
+                // Confirm-only step (e.g. step 50's "lay out all 8 carriages")
+                // that puts every part in visualPartIds would let them vanish
+                // on the next step — editor shows them, play hides them.
+                if (step.visualPartIds != null)
+                {
+                    for (int p = 0; p < step.visualPartIds.Length; p++)
+                    {
+                        string partId = step.visualPartIds[p];
+                        if (string.IsNullOrEmpty(partId)) continue;
+                        // Skip if already handled above (part was also
+                        // required) — preserves Completed state set above.
+                        if (_revealedPartIds.Contains(partId)) continue;
+
+                        GameObject partGo = _ctx.FindSpawnedPart(partId);
+                        if (partGo != null) partGo.SetActive(true);
+
+                        if (!_ctx.PartStates.ContainsKey(partId))
+                            _ctx.PartStates[partId] = PartPlacementState.Available;
+                        SyncPartGrabInteractivity(partGo, partId);
+                        ApplyPartVisualForState(partGo, partId, _ctx.PartStates[partId]);
+                        _revealedPartIds.Add(partId);
+                    }
                 }
             }
         }

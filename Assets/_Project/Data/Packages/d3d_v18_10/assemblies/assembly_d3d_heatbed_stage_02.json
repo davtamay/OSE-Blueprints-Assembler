@@ -21,37 +21,22 @@
     {
       "id": "subassembly_bed_platform",
       "name": "Heated Bed Platform",
-      "assemblyId": "assembly_d3d_heatbed_stage_02",
-      "description": "Bed standoff raisers and guide rods that support the heated bed above the Z carriages.",
-      "partIds": [
-        "bed_raiser",
-        "bed_raiser001",
-        "bed_raiser002",
-        "bed_raiser003",
-        "bed_raiser004",
-        "bed_raiser005",
-        "bed_rod_1",
-        "bed_rod_002"
-      ],
       "stepIds": [
         "step_mount_bed_guide_rods",
         "step_place_bed_raisers",
         "step_check_bed_platform_alignment"
-      ]
+      ],
+      "assemblyId": "assembly_d3d_heatbed_stage_02",
+      "description": "Bed standoff raisers and guide rods that support the heated bed above the Z carriages."
     },
     {
       "id": "subassembly_y_bed_rods",
       "name": "Y-Axis Bed Guide Rods",
-      "assemblyId": "assembly_d3d_heatbed_stage_02",
-      "description": "Guide rods for Y-axis bed travel, connecting front and back Z carriages.",
-      "partIds": [
-        "rod_2",
-        "rod_003",
-        "rod_004"
-      ],
       "stepIds": [
         "step_place_y_bed_rods"
-      ]
+      ],
+      "assemblyId": "assembly_d3d_heatbed_stage_02",
+      "description": "Guide rods for Y-axis bed travel, connecting front and back Z carriages."
     }
   ],
   "parts": [
@@ -87,7 +72,10 @@
           "b": 0.7,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_bed_platform"
+      ]
     },
     {
       "id": "bed_raiser001",
@@ -121,7 +109,10 @@
           "b": 0.7,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_bed_platform"
+      ]
     },
     {
       "id": "bed_raiser002",
@@ -155,7 +146,10 @@
           "b": 0.7,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_bed_platform"
+      ]
     },
     {
       "id": "bed_raiser003",
@@ -189,7 +183,10 @@
           "b": 0.7,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_bed_platform"
+      ]
     },
     {
       "id": "bed_raiser004",
@@ -223,7 +220,10 @@
           "b": 0.7,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_bed_platform"
+      ]
     },
     {
       "id": "bed_raiser005",
@@ -257,7 +257,10 @@
           "b": 0.7,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_bed_platform"
+      ]
     },
     {
       "id": "bed_rod_002",
@@ -291,7 +294,10 @@
           "b": 0.7,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_bed_platform"
+      ]
     },
     {
       "id": "bed_rod_1",
@@ -325,7 +331,10 @@
           "b": 0.7,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_bed_platform"
+      ]
     },
     {
       "id": "rod_003",
@@ -359,7 +368,10 @@
           "b": 0.7,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_y_bed_rods"
+      ]
     },
     {
       "id": "rod_004",
@@ -393,7 +405,10 @@
           "b": 0.7,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_y_bed_rods"
+      ]
     },
     {
       "id": "rod_2",
@@ -427,7 +442,10 @@
           "b": 0.7,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_y_bed_rods"
+      ]
     }
   ],
   "steps": [
@@ -443,13 +461,38 @@
       "isOptional": false,
       "family": "Place",
       "removePersistentToolIds": [],
-      "targetIds": [ "target_bed_rod_a_mount", "target_bed_rod_b_mount" ],
-      "requiredPartIds": [ "bed_rod_1", "bed_rod_002" ],
+      "targetIds": [
+        "target_bed_rod_a_mount",
+        "target_bed_rod_b_mount"
+      ],
+      "requiredPartIds": [
+        "bed_rod_1",
+        "bed_rod_002"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"bed_rod_1"},
-        {"kind":"part","id":"bed_rod_002"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "bed_rod_1"
+        },
+        {
+          "kind": "part",
+          "id": "bed_rod_002"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
     {
       "id": "step_place_bed_raisers",
       "name": "Thread the bed raiser standoffs onto the guide rods",
@@ -462,17 +505,57 @@
       "isOptional": false,
       "family": "Place",
       "removePersistentToolIds": [],
-      "targetIds": [ "target_bed_raisers_set" ],
-      "requiredPartIds": [ "bed_raiser", "bed_raiser001", "bed_raiser002", "bed_raiser003", "bed_raiser004", "bed_raiser005" ],
+      "targetIds": [
+        "target_bed_raisers_set"
+      ],
+      "requiredPartIds": [
+        "bed_raiser",
+        "bed_raiser001",
+        "bed_raiser002",
+        "bed_raiser003",
+        "bed_raiser004",
+        "bed_raiser005"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"bed_raiser"},
-        {"kind":"part","id":"bed_raiser001"},
-        {"kind":"part","id":"bed_raiser002"},
-        {"kind":"part","id":"bed_raiser003"},
-        {"kind":"part","id":"bed_raiser004"},
-        {"kind":"part","id":"bed_raiser005"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "bed_raiser"
+        },
+        {
+          "kind": "part",
+          "id": "bed_raiser001"
+        },
+        {
+          "kind": "part",
+          "id": "bed_raiser002"
+        },
+        {
+          "kind": "part",
+          "id": "bed_raiser003"
+        },
+        {
+          "kind": "part",
+          "id": "bed_raiser004"
+        },
+        {
+          "kind": "part",
+          "id": "bed_raiser005"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
     {
       "id": "step_check_bed_platform_alignment",
       "name": "Check bed platform alignment and rod seating",
@@ -499,14 +582,44 @@
         "hint_y_bed_rods"
       ],
       "removePersistentToolIds": [],
-      "targetIds": [ "target_y_bed_rod_a", "target_y_bed_rod_b", "target_y_bed_rod_c" ],
-      "requiredPartIds": [ "rod_2", "rod_003", "rod_004" ],
+      "targetIds": [
+        "target_y_bed_rod_a",
+        "target_y_bed_rod_b",
+        "target_y_bed_rod_c"
+      ],
+      "requiredPartIds": [
+        "rod_2",
+        "rod_003",
+        "rod_004"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"rod_2"},
-        {"kind":"part","id":"rod_003"},
-        {"kind":"part","id":"rod_004"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  }
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "rod_2"
+        },
+        {
+          "kind": "part",
+          "id": "rod_003"
+        },
+        {
+          "kind": "part",
+          "id": "rod_004"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    }
   ],
   "targets": [
     {
@@ -564,7 +677,7 @@
       "id": "target_bed_platform_qc",
       "name": "Bed Platform QC",
       "anchorRef": "anchors/d3d/bed/platform_qc",
-      "description": "Check point \u00e2\u20ac\u201d bed platform level and rods flush",
+      "description": "Check point â€” bed platform level and rods flush",
       "associatedPartId": "",
       "tags": [
         "qc",
@@ -635,7 +748,7 @@
       "id": "hint_mount_bed_guide_rods",
       "type": "highlight",
       "title": "Slide both bed rods through front and back Z carriages",
-      "message": "Each bed guide rod threads through the hole in the Z-front carriage and the matching hole in the Z-back carriage. Thread two nuts onto each rod before inserting \u00e2\u20ac\u201d the nuts sit on either side of the carriage to provide a flat support surface for the heated bed and to minimize heat transfer to the plastic. Push the rod ends flush with the outer edges of both carriages.",
+      "message": "Each bed guide rod threads through the hole in the Z-front carriage and the matching hole in the Z-back carriage. Thread two nuts onto each rod before inserting â€” the nuts sit on either side of the carriage to provide a flat support surface for the heated bed and to minimize heat transfer to the plastic. Push the rod ends flush with the outer edges of both carriages.",
       "targetId": "target_bed_rod_a_mount",
       "partId": "",
       "toolId": "",
@@ -645,7 +758,7 @@
       "id": "hint_place_bed_raisers",
       "type": "highlight",
       "title": "Thread 3 standoff raisers onto each rod; space them evenly",
-      "message": "Thread the 6 bed raiser standoffs onto the two guide rods \u00e2\u20ac\u201d 3 per rod. Space them evenly along the rod length so the heated bed will sit flat. The raisers provide the correct height gap between the Z carriage and the heated bed and allow wiring to pass freely beneath the bed surface.",
+      "message": "Thread the 6 bed raiser standoffs onto the two guide rods â€” 3 per rod. Space them evenly along the rod length so the heated bed will sit flat. The raisers provide the correct height gap between the Z carriage and the heated bed and allow wiring to pass freely beneath the bed surface.",
       "targetId": "target_bed_raisers_set",
       "partId": "",
       "toolId": "",
@@ -655,7 +768,7 @@
       "id": "hint_check_bed_platform_alignment",
       "type": "highlight",
       "title": "Confirm rods are flush, raisers level, and no side-to-side rock",
-      "message": "QC checklist: (1) Rod ends are flush with the outer edges of both idler pieces \u00e2\u20ac\u201d not protruding. (2) Two nuts are present on each rod. (3) Bolts are tightened enough to hold the rods but not so tight they deform the plastic. (4) The platform does not rock side to side when you apply light lateral pressure.",
+      "message": "QC checklist: (1) Rod ends are flush with the outer edges of both idler pieces â€” not protruding. (2) Two nuts are present on each rod. (3) Bolts are tightened enough to hold the rods but not so tight they deform the plastic. (4) The platform does not rock side to side when you apply light lateral pressure.",
       "targetId": "target_bed_platform_qc",
       "partId": "",
       "toolId": "",

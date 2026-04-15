@@ -17,8 +17,8 @@ namespace OSE.UI.Root
         private float _elapsed;
         private Vector3 _fromPos;
         private Quaternion _fromRot;
-        private Vector3 _toPos;
-        private Quaternion _toRot;
+        private Quaternion _deltaRot;       // authored rotation delta (in target's local frame)
+        private Vector3 _pivotLocal;        // members' centroid in target's local frame; (0,0,0) when no children
 
         public void Start(AnimationCueContext context)
         {
@@ -36,14 +36,26 @@ namespace OSE.UI.Root
             _fromPos = root.localPosition;
             _fromRot = root.localRotation;
 
-            // Apply the authored rotation delta to the current rotation
+            // Authored delta — rotate by this much, around the members' centroid.
             var entry = context.Entry;
-            Quaternion delta = Quaternion.Euler(
+            _deltaRot = Quaternion.Euler(
                 entry.subassemblyRotation.x,
                 entry.subassemblyRotation.y,
                 entry.subassemblyRotation.z);
-            _toRot = delta * _fromRot;
-            _toPos = _fromPos; // position stays unless we add offset support later
+
+            // Compute the centroid of immediate active children in the
+            // target's local frame. The transform identity:
+            //   childWorld = root.position + root.rotation * child.localPosition
+            // implies that to rotate every child around centroid C (in
+            // root-local space) by R while leaving Group_'s authored
+            // baseline pose (_fromPos / _fromRot) intact, we set
+            //   root.position = _fromPos + (_fromRot * C) - (_fromRot * R * C)
+            //                 = _fromPos + _fromRot * (I - R) * C
+            //   root.rotation = _fromRot * R
+            // C falls out as (0,0,0) when the root has no children, which
+            // collapses to the legacy "rotate-in-place" behaviour for a
+            // single-part target.
+            _pivotLocal = ComputeChildrenCentroidLocal(root);
         }
 
         public bool Tick(float deltaTime)
@@ -55,9 +67,12 @@ namespace OSE.UI.Root
             float rawT = Mathf.Clamp01(_elapsed / _ctx.Duration);
             float easedT = EasingHelper.Apply(_ctx.Entry.easing, rawT);
 
+            Quaternion currentR = Quaternion.Slerp(Quaternion.identity, _deltaRot, easedT);
+            Vector3 counter = _pivotLocal - currentR * _pivotLocal; // (I - R) * C in local frame
+
             Transform root = _ctx.Targets[0].transform;
-            root.localPosition = Vector3.Lerp(_fromPos, _toPos, easedT);
-            root.localRotation = Quaternion.Slerp(_fromRot, _toRot, easedT);
+            root.localRotation = _fromRot * currentR;
+            root.localPosition = _fromPos + _fromRot * counter;
 
             if (rawT >= 1f)
             {
@@ -74,10 +89,29 @@ namespace OSE.UI.Root
 
             if (_ctx.Targets.Count > 0 && _ctx.Targets[0] != null)
             {
+                // Restore to baseline so the persistent Group_ root is
+                // ready for the next interaction / animation. Final
+                // post-rotation pose is achieved by step-pose data, not
+                // by leaving Group_ rotated.
                 Transform root = _ctx.Targets[0].transform;
-                root.localPosition = _toPos;
-                root.localRotation = _toRot;
+                root.localPosition = _fromPos;
+                root.localRotation = _fromRot;
             }
+        }
+
+        private static Vector3 ComputeChildrenCentroidLocal(Transform root)
+        {
+            if (root == null || root.childCount == 0) return Vector3.zero;
+            Vector3 sum = Vector3.zero;
+            int n = 0;
+            for (int i = 0; i < root.childCount; i++)
+            {
+                Transform c = root.GetChild(i);
+                if (c == null || !c.gameObject.activeInHierarchy) continue;
+                sum += c.localPosition;
+                n++;
+            }
+            return n > 0 ? sum / n : Vector3.zero;
         }
     }
 }

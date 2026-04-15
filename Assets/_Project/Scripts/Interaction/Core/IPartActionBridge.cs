@@ -33,6 +33,14 @@ namespace OSE.Interaction
         /// </summary>
         bool IsPartMovementLocked(GameObject target);
 
+        /// <summary>
+        /// Returns true when <paramref name="target"/> is a task part of the
+        /// current step — a Place/Use target the trainee is asked to act on.
+        /// NO-TASK parts (revealed via visualPartIds but not referenced by
+        /// the active step) return false and must not be drag-movable.
+        /// </summary>
+        bool IsPartTaskAtCurrentStep(GameObject target);
+
         // ── Placement ──
 
         bool TryClickToPlace(GameObject selectedPart, Vector2 screenPos);

@@ -481,6 +481,15 @@ namespace OSE.UI.Root
             return locked;
         }
 
+        bool IPartActionBridge.IsPartTaskAtCurrentStep(GameObject target)
+        {
+            if (target == null) return false;
+            target = NormalizeSelectablePlacementTarget(target);
+            string selectionId = ResolveSelectionId(target);
+            if (string.IsNullOrWhiteSpace(selectionId)) selectionId = target.name;
+            return _mgr?.VisualFeedback?.IsPartGrabbableAtCurrentStep(selectionId) ?? true;
+        }
+
         bool IPartActionBridge.TryClickToPlace(GameObject selectedPart, Vector2 screenPos)
             => TryExternalClickToPlace(selectedPart, screenPos);
 

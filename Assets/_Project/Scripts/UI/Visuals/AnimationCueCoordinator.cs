@@ -60,6 +60,7 @@ namespace OSE.UI.Root
                 { "pulse",                () => new PulsePlayer() },
                 { "orientSubassembly",    () => new OrientSubassemblyPlayer() },
                 { "shake",                () => new ShakePlayer() },
+                { "particle",             () => new ParticlePlayer() },
             };
         }
 
@@ -80,16 +81,31 @@ namespace OSE.UI.Root
                 return;
             }
 
-            var cuePayload = step.animationCues;
-            var cues = cuePayload?.cues;
-            if (cues == null || cues.Length == 0)
+            // Gather cues from every host (part / subassembly / aggregate)
+            // that is visible at this step, plus legacy step.animationCues
+            // as a fallback for unmigrated JSON. Each gathered entry carries
+            // its pre-resolved host so the coordinator doesn't re-walk the
+            // fields on every fire.
+            var gathered = new List<GatheredCue>();
+            GatherHostCues(package, step, gathered);
+
+            var legacyPayload = step.animationCues;
+            var legacyCues = legacyPayload?.cues;
+            if (legacyCues != null)
+            {
+                for (int i = 0; i < legacyCues.Length; i++)
+                    gathered.Add(new GatheredCue { Entry = legacyCues[i], HostKind = HostKind.Step });
+            }
+
+            if (gathered.Count == 0)
             {
                 deferredPreviewSpawn?.Invoke();
                 return;
             }
 
-            // Set up deferred preview spawning
-            float previewDelay = cuePayload.previewDelaySeconds;
+            // previewDelaySeconds still lives on the step payload wrapper
+            // for now (migration will move it onto the step directly).
+            float previewDelay = legacyPayload != null ? legacyPayload.previewDelaySeconds : 0f;
             if (previewDelay > 0f && deferredPreviewSpawn != null)
             {
                 _deferredPreviewSpawn = deferredPreviewSpawn;
@@ -100,10 +116,11 @@ namespace OSE.UI.Root
                 deferredPreviewSpawn?.Invoke();
             }
 
-            for (int i = 0; i < cues.Length; i++)
+            for (int i = 0; i < gathered.Count; i++)
             {
-                var entry = cues[i];
-                if (string.IsNullOrEmpty(entry.type))
+                var g = gathered[i];
+                var entry = g.Entry;
+                if (entry == null || string.IsNullOrEmpty(entry.type))
                     continue;
 
                 if (!_factories.TryGetValue(entry.type, out var factory))
@@ -112,7 +129,12 @@ namespace OSE.UI.Root
                     continue;
                 }
 
-                var context = ResolveContext(entry, step);
+                AnimationCueContext context = g.HostKind switch
+                {
+                    HostKind.Part        => ResolveHostedPartContext(g.HostId, entry, step),
+                    HostKind.Subassembly => ResolveHostedSubassemblyContext(g.HostId, entry, step),
+                    _                    => ResolveContext(entry, step),
+                };
                 if (context.Targets == null || context.Targets.Count == 0)
                 {
                     OseLog.VerboseInfo($"[AnimCue] No targets resolved for cue '{entry.type}' on step '{stepId}', skipping.");
@@ -280,20 +302,38 @@ namespace OSE.UI.Root
             var package = _ctx.Spawner?.CurrentPackage;
             if (package == null || !package.TryGetStep(stepId, out var step)) return;
 
-            var cues = step.animationCues?.cues;
-            if (cues == null || cues.Length == 0) return;
-
-            for (int i = 0; i < cues.Length; i++)
+            // Merge host-hosted cues with legacy step-owned cues so deferred
+            // triggers (onStepComplete / onFirstInteraction / onTaskComplete)
+            // work for relocated cues the same way they work for legacy ones.
+            var gathered = new List<GatheredCue>();
+            GatherHostCues(package, step, gathered);
+            var legacyCues = step.animationCues?.cues;
+            if (legacyCues != null)
             {
-                var entry = cues[i];
+                for (int i = 0; i < legacyCues.Length; i++)
+                    gathered.Add(new GatheredCue { Entry = legacyCues[i], HostKind = HostKind.Step });
+            }
+
+            for (int i = 0; i < gathered.Count; i++)
+            {
+                var g = gathered[i];
+                var entry = g.Entry;
+                if (entry == null) continue;
                 if (!string.Equals(entry.trigger, trigger, StringComparison.OrdinalIgnoreCase)) continue;
                 if (string.IsNullOrEmpty(entry.type)) continue;
 
-                // Optional ID filter for onTaskComplete
+                // Optional ID filter for onTaskComplete — match against the
+                // host (for hosted cues) OR the legacy authored target fields.
                 if (matchId != null)
                 {
-                    bool idMatch = (entry.targetPartIds != null && System.Array.IndexOf(entry.targetPartIds, matchId) >= 0)
-                                || string.Equals(entry.targetSubassemblyId, matchId, StringComparison.Ordinal);
+                    bool idMatch;
+                    if (g.HostKind == HostKind.Part)
+                        idMatch = string.Equals(g.HostId, matchId, StringComparison.Ordinal);
+                    else if (g.HostKind == HostKind.Subassembly)
+                        idMatch = string.Equals(g.HostId, matchId, StringComparison.Ordinal);
+                    else
+                        idMatch = (entry.targetPartIds != null && System.Array.IndexOf(entry.targetPartIds, matchId) >= 0)
+                               || string.Equals(entry.targetSubassemblyId, matchId, StringComparison.Ordinal);
                     if (!idMatch) continue;
                 }
 
@@ -303,7 +343,12 @@ namespace OSE.UI.Root
                     continue;
                 }
 
-                var context = ResolveContext(entry, step);
+                AnimationCueContext context = g.HostKind switch
+                {
+                    HostKind.Part        => ResolveHostedPartContext(g.HostId, entry, step),
+                    HostKind.Subassembly => ResolveHostedSubassemblyContext(g.HostId, entry, step),
+                    _                    => ResolveContext(entry, step),
+                };
                 if (context.Targets == null || context.Targets.Count == 0)
                 {
                     OseLog.VerboseInfo($"[AnimCue] No targets for '{entry.type}' trigger '{trigger}' on step '{stepId}'.");
@@ -347,6 +392,188 @@ namespace OSE.UI.Root
             }
         }
 
+        // ── Host-owned cue gather / fire ────────────────────────────────
+
+        private enum HostKind { Step, Part, Subassembly }
+
+        private struct GatheredCue
+        {
+            public AnimationCueEntry Entry;
+            public HostKind HostKind;
+            public string HostId;
+        }
+
+        /// <summary>
+        /// Walks every host that is visible at <paramref name="step"/> and
+        /// appends its <c>animationCues</c> entries to <paramref name="out_"/>
+        /// when the entry's <see cref="AnimationCueEntry.stepIds"/> is empty
+        /// (fire everywhere) or contains <c>step.id</c> (scoped match).
+        /// Part hosts: every part active at this seq. Subassembly hosts:
+        /// every subassembly with at least one visible member. Aggregates
+        /// inherit naturally — same check, descendants' visibility bubbles
+        /// up through shared partIds.
+        /// </summary>
+        private void GatherHostCues(MachinePackageDefinition package, StepDefinition step, List<GatheredCue> out_)
+        {
+            int seq = step.sequenceIndex;
+            var poseTable = package.poseTable;
+            var visible = new HashSet<string>(StringComparer.Ordinal);
+            if (poseTable != null)
+            {
+                foreach (var pid in poseTable.EnumerateVisiblePartsAt(seq))
+                    if (!string.IsNullOrEmpty(pid)) visible.Add(pid);
+            }
+
+            // Part-hosted cues
+            if (package.parts != null)
+            {
+                for (int i = 0; i < package.parts.Length; i++)
+                {
+                    var p = package.parts[i];
+                    if (p == null || string.IsNullOrEmpty(p.id) || p.animationCues == null || p.animationCues.Length == 0)
+                        continue;
+                    if (!visible.Contains(p.id)) continue;
+                    for (int k = 0; k < p.animationCues.Length; k++)
+                    {
+                        var e = p.animationCues[k];
+                        if (!MatchesStepScope(e, step.id)) continue;
+                        out_.Add(new GatheredCue { Entry = e, HostKind = HostKind.Part, HostId = p.id });
+                    }
+                }
+            }
+
+            // Subassembly / aggregate-hosted cues
+            var subs = package.GetSubassemblies();
+            if (subs != null)
+            {
+                for (int i = 0; i < subs.Length; i++)
+                {
+                    var sub = subs[i];
+                    if (sub == null || string.IsNullOrEmpty(sub.id) || sub.animationCues == null || sub.animationCues.Length == 0)
+                        continue;
+                    bool anyMemberVisible = false;
+                    if (sub.partIds != null)
+                    {
+                        for (int m = 0; m < sub.partIds.Length; m++)
+                        {
+                            if (visible.Contains(sub.partIds[m])) { anyMemberVisible = true; break; }
+                        }
+                    }
+                    if (!anyMemberVisible) continue;
+                    for (int k = 0; k < sub.animationCues.Length; k++)
+                    {
+                        var e = sub.animationCues[k];
+                        if (!MatchesStepScope(e, step.id)) continue;
+                        out_.Add(new GatheredCue { Entry = e, HostKind = HostKind.Subassembly, HostId = sub.id });
+                    }
+                }
+            }
+        }
+
+        private static bool MatchesStepScope(AnimationCueEntry entry, string stepId)
+        {
+            if (entry == null) return false;
+            if (entry.stepIds == null || entry.stepIds.Length == 0) return true; // always-on
+            for (int i = 0; i < entry.stepIds.Length; i++)
+                if (string.Equals(entry.stepIds[i], stepId, StringComparison.Ordinal)) return true;
+            return false;
+        }
+
+        /// <summary>
+        /// Build an <see cref="AnimationCueContext"/> where the sole target
+        /// is the spawned GameObject for <paramref name="partId"/>. Pose
+        /// snapshots come from the part's placement (start / step-scoped /
+        /// assembled). Used by part-hosted cues.
+        /// </summary>
+        private AnimationCueContext ResolveHostedPartContext(string partId, AnimationCueEntry entry, StepDefinition step)
+        {
+            var targets = new List<GameObject>();
+            var startPoses = new List<AnimationCueResolvedPose>();
+            var assembledPoses = new List<AnimationCueResolvedPose>();
+
+            GameObject go = _ctx.FindSpawnedPart(partId);
+            if (go == null)
+                return new AnimationCueContext(entry, targets, startPoses, assembledPoses, DurationOrDefault(entry), null);
+
+            targets.Add(go);
+            var placement = _ctx.Spawner?.FindPartPlacement(partId);
+            if (placement != null)
+            {
+                startPoses.Add(new AnimationCueResolvedPose
+                {
+                    Position = new Vector3(placement.startPosition.x, placement.startPosition.y, placement.startPosition.z),
+                    Rotation = new Quaternion(placement.startRotation.x, placement.startRotation.y, placement.startRotation.z, placement.startRotation.w),
+                    Scale    = new Vector3(placement.startScale.x, placement.startScale.y, placement.startScale.z),
+                });
+                StepPoseEntry stepPose = step != null ? _ctx.Spawner?.FindPartStepPose(partId, step.id) : null;
+                if (stepPose != null)
+                {
+                    assembledPoses.Add(new AnimationCueResolvedPose
+                    {
+                        Position = new Vector3(stepPose.position.x, stepPose.position.y, stepPose.position.z),
+                        Rotation = new Quaternion(stepPose.rotation.x, stepPose.rotation.y, stepPose.rotation.z, stepPose.rotation.w),
+                        Scale    = new Vector3(stepPose.scale.x, stepPose.scale.y, stepPose.scale.z),
+                    });
+                }
+                else
+                {
+                    assembledPoses.Add(new AnimationCueResolvedPose
+                    {
+                        Position = new Vector3(placement.assembledPosition.x, placement.assembledPosition.y, placement.assembledPosition.z),
+                        Rotation = new Quaternion(placement.assembledRotation.x, placement.assembledRotation.y, placement.assembledRotation.z, placement.assembledRotation.w),
+                        Scale    = new Vector3(placement.assembledScale.x, placement.assembledScale.y, placement.assembledScale.z),
+                    });
+                }
+            }
+            else
+            {
+                var t = go.transform;
+                var p = new AnimationCueResolvedPose { Position = t.localPosition, Rotation = t.localRotation, Scale = t.localScale };
+                startPoses.Add(p); assembledPoses.Add(p);
+            }
+
+            return new AnimationCueContext(entry, targets, startPoses, assembledPoses, DurationOrDefault(entry), null);
+        }
+
+        /// <summary>
+        /// Subassembly-hosted cue target: always the persistent
+        /// <c>Group_*</c> root — single target, no transient anim group,
+        /// no scene-graph duplication. Players that need to rotate around
+        /// the members' centroid (rotate / orientSubassembly /
+        /// poseTransition) compute a counter-translation themselves so
+        /// the visible pivot is the centroid even though Group_ sits at
+        /// PreviewRoot origin (see OrientSubassemblyPlayer for the math).
+        /// Players that translate (shake) just move Group_ — children
+        /// inherit. Particle cues parent the prefab to Group_, which
+        /// keeps it under one persistent parent. Particles handle their
+        /// own positioning via the prefab.
+        /// </summary>
+        private AnimationCueContext ResolveHostedSubassemblyContext(string subId, AnimationCueEntry entry, StepDefinition step)
+        {
+            var targets = new List<GameObject>();
+            var startPoses = new List<AnimationCueResolvedPose>();
+            var assembledPoses = new List<AnimationCueResolvedPose>();
+
+            var pkg = _ctx.Spawner?.CurrentPackage;
+            if (pkg == null || !pkg.TryGetSubassembly(subId, out var sub))
+                return new AnimationCueContext(entry, targets, startPoses, assembledPoses, DurationOrDefault(entry), null);
+
+            GameObject root = _ctx.Spawner?.GetSubassemblyRoot(subId);
+            if (root == null)
+                return new AnimationCueContext(entry, targets, startPoses, assembledPoses, DurationOrDefault(entry), null);
+
+            targets.Add(root);
+            var t = root.transform;
+            var pose = new AnimationCueResolvedPose { Position = t.localPosition, Rotation = t.localRotation, Scale = t.localScale };
+            startPoses.Add(pose);
+            assembledPoses.Add(pose);
+
+            return new AnimationCueContext(entry, targets, startPoses, assembledPoses, DurationOrDefault(entry), null);
+        }
+
+        private float DurationOrDefault(AnimationCueEntry entry)
+            => entry.durationSeconds > 0f ? entry.durationSeconds : GetDefaultDuration(entry.type);
+
         // ── Private ──────────────────────────────────────────────────────
 
         private AnimationCueContext ResolveContext(AnimationCueEntry entry, StepDefinition step)
@@ -386,6 +613,81 @@ namespace OSE.UI.Root
                     {
                         AbsorbPartsIntoFabricationGroup(entry.targetPartIds);
                         partsAbsorbedIntoGroup = true;
+                    }
+                }
+            }
+
+            // ── Step-scoped promotion (transient animation root) ─────────────────
+            // When a cue targets multiple partIds that all belong to the
+            // step's scoped subassembly, animate them as one rigid unit by
+            // wrapping them in a transient root at their world centroid —
+            // WITHOUT touching the persistent Group_* root (that one drives
+            // interactions/selection/drag/ghost and must stay at identity).
+            // The transient root lives only for the duration of the step's
+            // cues; Cleanup() / next OnStepActivated() restores children to
+            // their original parents via UngroupFabricationMembers().
+            //
+            // Conditions mirror the design doc: ≥2 partIds, no explicit
+            // targetSubassemblyId, not ghost mode, step has group scope,
+            // every partId is a member. Single-part cues and cross-group
+            // cues fall through to the per-part branch unchanged.
+            if (!partsAbsorbedIntoGroup
+                && !isGhostMode
+                && _fabricationGroupRoot == null
+                && string.IsNullOrEmpty(entry.targetSubassemblyId)
+                && entry.targetPartIds != null
+                && entry.targetPartIds.Length >= 2
+                && step != null)
+            {
+                string stepSubId = !string.IsNullOrEmpty(step.requiredSubassemblyId)
+                    ? step.requiredSubassemblyId
+                    : step.subassemblyId;
+                var pkg = _ctx.Spawner?.CurrentPackage;
+                if (!string.IsNullOrEmpty(stepSubId)
+                    && pkg != null
+                    && pkg.TryGetSubassembly(stepSubId, out var stepSub)
+                    && stepSub?.partIds != null
+                    && stepSub.partIds.Length > 0)
+                {
+                    bool allMembers = true;
+                    for (int i = 0; i < entry.targetPartIds.Length; i++)
+                    {
+                        string pid = entry.targetPartIds[i];
+                        if (string.IsNullOrEmpty(pid)) continue;
+                        bool found = false;
+                        for (int k = 0; k < stepSub.partIds.Length; k++)
+                        {
+                            if (string.Equals(stepSub.partIds[k], pid, StringComparison.Ordinal))
+                            { found = true; break; }
+                        }
+                        if (!found) { allMembers = false; break; }
+                    }
+
+                    if (allMembers)
+                    {
+                        // Use the FULL subassembly member list, not just the
+                        // partIds named in the cue. The cue's partIds act as
+                        // the "all parts belong to this group" trigger; the
+                        // animation should move the whole group (every
+                        // member, including bearings and other non-cue parts)
+                        // as a rigid unit. Matches the author's mental model
+                        // of "shake the carriage" = shake everything in the
+                        // carriage, not just the halves named in the cue.
+                        GameObject transientRoot = BuildTransientAnimGroupForParts(stepSub.partIds, stepSubId);
+                        if (transientRoot != null)
+                        {
+                            targets.Add(transientRoot);
+                            var t = transientRoot.transform;
+                            var pose = new AnimationCueResolvedPose
+                            {
+                                Position = t.localPosition,
+                                Rotation = t.localRotation,
+                                Scale = t.localScale,
+                            };
+                            startPoses.Add(pose);
+                            assembledPoses.Add(pose);
+                            partsAbsorbedIntoGroup = true;
+                        }
                     }
                 }
             }
@@ -508,6 +810,15 @@ namespace OSE.UI.Root
                 return proxyRoot;
             }
 
+            // Prefer the persistent Group_* root created by PackagePartSpawner —
+            // that's the scene-graph parent the trainee sees and grabs, so
+            // animations (rotate, shake) should play on it too. The root is
+            // at origin+identity so rotations pivot around origin, matching
+            // how the author authored poses in TTAW.
+            var groupRoot = _ctx.Spawner?.GetSubassemblyRoot(subassemblyId);
+            if (groupRoot != null)
+                return groupRoot;
+
             // Fabrication fallback: group completed member parts under a temp parent
             var package = _ctx.Spawner?.CurrentPackage;
             if (package == null || !package.TryGetSubassembly(subassemblyId, out var subassemblyDef))
@@ -594,6 +905,66 @@ namespace OSE.UI.Root
             }
 
             OseLog.VerboseInfo($"[AnimCue] Grouped {completedMembers.Count} fabrication members for '{subassemblyId}' under temp parent.");
+            return _fabricationGroupRoot;
+        }
+
+        /// <summary>
+        /// Builds a transient root at the world-space centroid of the named
+        /// parts and reparents them under it with <c>worldPositionStays=true</c>
+        /// so each child's visible pose is preserved — only the pivot changes.
+        /// Used by the step-scoped promotion path so multi-part cues pivot on
+        /// the group's geometric center without mutating the persistent
+        /// <c>Group_*</c> hierarchy (which drives interactions). The root is
+        /// registered in <see cref="_fabricationGroupRoot"/> and
+        /// <see cref="_fabricationGroupEntries"/> so the existing
+        /// <see cref="UngroupFabricationMembers"/> path releases it on Cleanup.
+        /// Returns null if fewer than two parts could be resolved — the caller
+        /// falls through to per-part animation.
+        /// </summary>
+        private GameObject BuildTransientAnimGroupForParts(string[] partIds, string stepSubId)
+        {
+            var members = new List<Transform>(partIds.Length);
+            Vector3 centroidSum = Vector3.zero;
+            for (int i = 0; i < partIds.Length; i++)
+            {
+                string pid = partIds[i];
+                if (string.IsNullOrEmpty(pid)) continue;
+                GameObject go = _ctx.FindSpawnedPart(pid);
+                if (go == null || !go.activeInHierarchy) continue;
+                members.Add(go.transform);
+                centroidSum += go.transform.position;
+            }
+            if (members.Count < 2) return null;
+
+            Vector3 centroid = centroidSum / members.Count;
+
+            _fabricationGroupRoot = new GameObject($"_AnimCue_AnimGroup_{stepSubId}");
+            var setup = _ctx.Setup;
+            if (setup != null && setup.PreviewRoot != null)
+                _fabricationGroupRoot.transform.SetParent(setup.PreviewRoot, false);
+            _fabricationGroupRoot.transform.position = centroid;
+            _fabricationGroupRoot.transform.rotation = Quaternion.identity;
+
+            _fabricationGroupEntries.Clear();
+            var rootT = _fabricationGroupRoot.transform;
+            for (int i = 0; i < members.Count; i++)
+            {
+                var ct = members[i];
+                _fabricationGroupEntries.Add(new FabricationGroupEntry
+                {
+                    Child = ct,
+                    OriginalParent = ct.parent,
+                    OriginalLocalPosition = ct.localPosition,
+                    OriginalLocalRotation = ct.localRotation,
+                    OriginalLocalScale = ct.localScale,
+                });
+                // worldPositionStays:true preserves each member's live world
+                // pose — no snap to assembled, no offset. Only the pivot
+                // moves to the centroid.
+                ct.SetParent(rootT, worldPositionStays: true);
+            }
+
+            OseLog.VerboseInfo($"[AnimCue] Built transient anim group at centroid for {members.Count} parts of '{stepSubId}'.");
             return _fabricationGroupRoot;
         }
 

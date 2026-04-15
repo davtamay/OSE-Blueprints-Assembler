@@ -71,6 +71,28 @@ namespace OSE.Content
         public string[] tags;
 
         /// <summary>
+        /// Ids of subassemblies this part is a member of. Canonical
+        /// authoring source for group membership — each part declares the
+        /// groups it belongs to. <see cref="SubassemblyDefinition.partIds"/>
+        /// is derived from these claims at load time by
+        /// <c>MachinePackageNormalizer.DeriveSubassemblyPartIds</c>; authors
+        /// should not write <c>subassembly.partIds</c> directly. A part may
+        /// belong to multiple groups (e.g. a bolt shared across a carriage
+        /// and the aggregate left-side assembly). Empty / null = loose part,
+        /// no group membership.
+        /// </summary>
+        public string[] subassemblyIds;
+
+        /// <summary>
+        /// Animation / particle cues hosted on this part. Each entry may
+        /// scope to specific <see cref="AnimationCueEntry.stepIds"/> or run
+        /// whenever the part is visible. Step-level animation authoring is
+        /// deprecated — new cues should live here (or on the owning
+        /// <see cref="SubassemblyDefinition"/>).
+        /// </summary>
+        public AnimationCueEntry[] animationCues;
+
+        /// <summary>
         /// Optional reference to a <see cref="PartTemplateDefinition"/>.
         /// When set, any null/empty field on this part is filled from the template.
         /// </summary>

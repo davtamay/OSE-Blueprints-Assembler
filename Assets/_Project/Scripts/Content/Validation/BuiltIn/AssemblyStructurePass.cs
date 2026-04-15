@@ -53,7 +53,16 @@ namespace OSE.Content.Validation
 
                 ValidationPassHelpers.ValidateRequiredText(s.name, $"{path}.name", issues);
                 ValidationPassHelpers.ValidateSingleReference(s.assemblyId, ctx.AssemblyIds, $"{path}.assemblyId", issues);
-                ValidationPassHelpers.ValidateRequiredReferences(s.partIds,  ctx.PartIds,    $"{path}.partIds",    issues);
+                // partIds on a subassembly is now derived from each
+                // PartDefinition.subassemblyIds claim at load time (see
+                // MachinePackageNormalizer.DeriveSubassemblyPartIds). A group
+                // with no parts claiming membership is a smell, not a
+                // blocker — warn instead of erroring so loading proceeds.
+                // Ids present must still resolve.
+                if (s.partIds == null || s.partIds.Length == 0)
+                    issues.Add(ValidationPassHelpers.Warning($"{path}.partIds", "No parts claim membership of this subassembly."));
+                else
+                    ValidationPassHelpers.ValidateOptionalReferences(s.partIds, ctx.PartIds, $"{path}.partIds", issues);
                 ValidationPassHelpers.ValidateRequiredReferences(s.stepIds,  ctx.StepIds,    $"{path}.stepIds",    issues);
             }
         }

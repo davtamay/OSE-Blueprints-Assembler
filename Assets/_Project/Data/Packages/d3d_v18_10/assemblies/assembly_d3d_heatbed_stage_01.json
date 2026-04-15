@@ -25,19 +25,14 @@
     {
       "id": "subassembly_heatbed_mechanical_stack",
       "name": "Heated Bed Mechanical Stack",
-      "assemblyId": "assembly_d3d_heatbed_stage_01",
-      "description": "First-pass heated-bed mechanical stack made from the bed body and snapbuckle retainer pair.",
-      "partIds": [
-        "d3d_heatbed_body",
-        "d3d_heatbed_snapbuckle_left",
-        "d3d_heatbed_snapbuckle_right"
-      ],
       "stepIds": [
         "step_stage_heatbed_body",
         "step_place_heatbed_snapbuckle_left",
         "step_place_heatbed_snapbuckle_right",
         "step_check_heatbed_envelope_clearance"
       ],
+      "assemblyId": "assembly_d3d_heatbed_stage_01",
+      "description": "First-pass heated-bed mechanical stack made from the bed body and snapbuckle retainer pair.",
       "milestoneMessage": "The first mechanical heated-bed body and snapbuckle retainer pair are placed and checked for initial bed-envelope / nozzle clearance."
     }
   ],
@@ -72,7 +67,10 @@
           "b": 0.48,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_heatbed_mechanical_stack"
+      ]
     },
     {
       "id": "d3d_heatbed_snapbuckle_left",
@@ -105,7 +103,10 @@
           "b": 0.17,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_heatbed_mechanical_stack"
+      ]
     },
     {
       "id": "d3d_heatbed_snapbuckle_right",
@@ -138,7 +139,10 @@
           "b": 0.17,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_heatbed_mechanical_stack"
+      ]
     }
   ],
   "steps": [
@@ -154,12 +158,32 @@
         "hint_stage_heatbed_body"
       ],
       "removePersistentToolIds": [],
-      "targetIds": [ "target_heatbed_body_mount" ],
-      "requiredPartIds": [ "d3d_heatbed_body" ],
+      "targetIds": [
+        "target_heatbed_body_mount"
+      ],
+      "requiredPartIds": [
+        "d3d_heatbed_body"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"d3d_heatbed_body"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "d3d_heatbed_body"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
     {
       "id": "step_place_heatbed_snapbuckle_left",
       "name": "Place the left snapbuckle",
@@ -172,12 +196,32 @@
         "hint_place_snapbuckle_left"
       ],
       "removePersistentToolIds": [],
-      "targetIds": [ "target_heatbed_snapbuckle_left" ],
-      "requiredPartIds": [ "d3d_heatbed_snapbuckle_left" ],
+      "targetIds": [
+        "target_heatbed_snapbuckle_left"
+      ],
+      "requiredPartIds": [
+        "d3d_heatbed_snapbuckle_left"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"d3d_heatbed_snapbuckle_left"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "d3d_heatbed_snapbuckle_left"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
     {
       "id": "step_place_heatbed_snapbuckle_right",
       "name": "Place the right snapbuckle",
@@ -190,12 +234,32 @@
         "hint_place_snapbuckle_right"
       ],
       "removePersistentToolIds": [],
-      "targetIds": [ "target_heatbed_snapbuckle_right" ],
-      "requiredPartIds": [ "d3d_heatbed_snapbuckle_right" ],
+      "targetIds": [
+        "target_heatbed_snapbuckle_right"
+      ],
+      "requiredPartIds": [
+        "d3d_heatbed_snapbuckle_right"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"d3d_heatbed_snapbuckle_right"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "d3d_heatbed_snapbuckle_right"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
     {
       "id": "step_check_heatbed_envelope_clearance",
       "name": "Check heated-bed envelope clearance",

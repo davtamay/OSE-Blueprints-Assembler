@@ -39,12 +39,6 @@
     {
       "id": "subassembly_electronics_wiring",
       "name": "Electronics and Wiring",
-      "assemblyId": "assembly_d3d_electronics",
-      "description": "Control panel, RAMPS board, PSU wiring, motor connectors, endstops, and extruder electronics.",
-      "partIds": [
-        "d3d_control_panel",
-        "d3d_ramps_14_board"
-      ],
       "stepIds": [
         "step_mount_control_panel",
         "step_install_ramps_board",
@@ -65,7 +59,9 @@
         "step_connect_thermistor",
         "step_connect_extruder_fan",
         "step_route_cables_chain"
-      ]
+      ],
+      "assemblyId": "assembly_d3d_electronics",
+      "description": "Control panel, RAMPS board, PSU wiring, motor connectors, endstops, and extruder electronics."
     }
   ],
   "parts": [
@@ -76,7 +72,7 @@
       "category": "custom",
       "quantity": 1,
       "name": "RAMPS 1.4 Controller Board",
-      "material": "PCB assembly \u00e2\u20ac\u201d stepper driver shield for Arduino Mega",
+      "material": "PCB assembly â€” stepper driver shield for Arduino Mega",
       "function": "Routes power and signals from PSU and firmware to stepper motors, endstops, heater, and thermistor.",
       "stagingPose": {
         "position": {
@@ -101,7 +97,10 @@
           "b": 0.1,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_electronics_wiring"
+      ]
     },
     {
       "id": "d3d_control_panel",
@@ -135,7 +134,10 @@
           "b": 0.18,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_electronics_wiring"
+      ]
     }
   ],
   "steps": [
@@ -150,12 +152,32 @@
       ],
       "family": "Place",
       "removePersistentToolIds": [],
-      "targetIds": [ "target_control_panel_mount" ],
-      "requiredPartIds": [ "d3d_control_panel" ],
+      "targetIds": [
+        "target_control_panel_mount"
+      ],
+      "requiredPartIds": [
+        "d3d_control_panel"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"d3d_control_panel"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "d3d_control_panel"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
     {
       "id": "step_install_ramps_board",
       "name": "Install the RAMPS 1.4 board in the control panel",
@@ -167,18 +189,38 @@
       ],
       "family": "Place",
       "removePersistentToolIds": [],
-      "targetIds": [ "target_ramps_board_slot" ],
-      "requiredPartIds": [ "d3d_ramps_14_board" ],
+      "targetIds": [
+        "target_ramps_board_slot"
+      ],
+      "requiredPartIds": [
+        "d3d_ramps_14_board"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"d3d_ramps_14_board"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "d3d_ramps_14_board"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
     {
       "id": "step_secure_control_panel",
       "name": "Secure the control panel with M3 screws",
       "assemblyId": "assembly_d3d_electronics",
       "sequenceIndex": 288,
-      "instructionText": "Thread M3 screws through the panel mounting tabs. Snug finger-tight, then a quarter-turn \u00e2\u20ac\u201d do not overtighten plastic tabs.",
+      "instructionText": "Thread M3 screws through the panel mounting tabs. Snug finger-tight, then a quarter-turn â€” do not overtighten plastic tabs.",
       "targetIds": [
         "target_control_panel_fastener"
       ],
@@ -250,7 +292,7 @@
       "name": "Connect GND wire from PSU to RAMPS",
       "assemblyId": "assembly_d3d_electronics",
       "sequenceIndex": 290,
-      "instructionText": "Connect the black GND wire from the PSU GND output to the GND screw terminal on the RAMPS board. Polarity matters \u00e2\u20ac\u201d do not swap with the +12V terminal.",
+      "instructionText": "Connect the black GND wire from the PSU GND output to the GND screw terminal on the RAMPS board. Polarity matters â€” do not swap with the +12V terminal.",
       "targetIds": [
         "target_wire_psu_gnd"
       ],
@@ -342,7 +384,7 @@
       "name": "Verify all PSU connections to RAMPS",
       "assemblyId": "assembly_d3d_electronics",
       "sequenceIndex": 292,
-      "instructionText": "Check all three PSU connections: V+ (red wire), GND (black wire), and the PS_ON enable jumper. Gently tug each \u00e2\u20ac\u201d a properly seated terminal will not pull free.",
+      "instructionText": "Check all three PSU connections: V+ (red wire), GND (black wire), and the PS_ON enable jumper. Gently tug each â€” a properly seated terminal will not pull free.",
       "targetIds": [
         "target_psu_connections_verify"
       ],
@@ -770,7 +812,7 @@
       "name": "Connect extruder thermistor to RAMPS",
       "assemblyId": "assembly_d3d_electronics",
       "sequenceIndex": 302,
-      "instructionText": "Connect the thermistor to the T0 2-pin header (signal + GND). Polarity matters \u00e2\u20ac\u201d reversing causes false 300\u00c2\u00b0C readings and thermal runaway shutdown.",
+      "instructionText": "Connect the thermistor to the T0 2-pin header (signal + GND). Polarity matters â€” reversing causes false 300Â°C readings and thermal runaway shutdown.",
       "targetIds": [
         "target_wire_thermistor"
       ],
@@ -945,7 +987,7 @@
       "id": "target_cable_chain_route",
       "name": "Cable Chain Route",
       "anchorRef": "anchors/d3d/electronics/cable_chain_route",
-      "description": "Confirmation point \u00e2\u20ac\u201d axis cables routed through cable chain and cover snapped closed.",
+      "description": "Confirmation point â€” axis cables routed through cable chain and cover snapped closed.",
       "associatedPartId": "",
       "tags": [
         "electronics",
@@ -994,7 +1036,7 @@
       "id": "target_wire_psu_enable",
       "name": "ATX Enable Wire Connection",
       "anchorRef": "anchors/d3d/electronics/wire_psu_enable",
-      "description": "ATX PS_ON to GND jumper \u00e2\u20ac\u201d forces PSU on.",
+      "description": "ATX PS_ON to GND jumper â€” forces PSU on.",
       "tags": [
         "electronics",
         "wiring"
@@ -1214,7 +1256,7 @@
     },
     {
       "id": "hint_connect_psu_gnd",
-      "message": "The ground line (black wire) connects to the GND screw terminal adjacent to V+. Polarity matters \u00e2\u20ac\u201d reversing +12V and GND will damage the RAMPS board immediately.",
+      "message": "The ground line (black wire) connects to the GND screw terminal adjacent to V+. Polarity matters â€” reversing +12V and GND will damage the RAMPS board immediately.",
       "targetId": null,
       "partId": null,
       "type": "text"
@@ -1228,14 +1270,14 @@
     },
     {
       "id": "hint_verify_psu_connections",
-      "message": "Check all three PSU connections: V+ (red), GND (black), and the PS_ON enable jumper. Wiggle each wire gently \u00e2\u20ac\u201d a properly seated terminal will not move.",
+      "message": "Check all three PSU connections: V+ (red), GND (black), and the PS_ON enable jumper. Wiggle each wire gently â€” a properly seated terminal will not move.",
       "targetId": null,
       "partId": null,
       "type": "text"
     },
     {
       "id": "hint_connect_motor",
-      "message": "Stepper motor connectors are 4-pin dupont. Orientation matters for motor direction but not for damage \u00e2\u20ac\u201d if the axis runs backwards in firmware, reverse the connector.",
+      "message": "Stepper motor connectors are 4-pin dupont. Orientation matters for motor direction but not for damage â€” if the axis runs backwards in firmware, reverse the connector.",
       "targetId": null,
       "partId": null,
       "type": "text"
@@ -1256,7 +1298,7 @@
     },
     {
       "id": "hint_connect_thermistor",
-      "message": "The thermistor connects to the T0 pin header (2-pin, signal + GND). Polarity matters \u00e2\u20ac\u201d reversing the thermistor will read ambient temperature as 300\u00c2\u00b0C and trigger thermal runaway protection.",
+      "message": "The thermistor connects to the T0 pin header (2-pin, signal + GND). Polarity matters â€” reversing the thermistor will read ambient temperature as 300Â°C and trigger thermal runaway protection.",
       "targetId": null,
       "partId": null,
       "type": "text"

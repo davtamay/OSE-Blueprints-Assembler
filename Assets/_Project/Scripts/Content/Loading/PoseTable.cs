@@ -141,6 +141,11 @@ namespace OSE.Content.Loading
         private readonly Dictionary<PoseKey, PoseResolution> _map;
         private readonly Dictionary<string, int> _firstVisibleSeq;
         private readonly Dictionary<string, int> _lastVisibleSeq;
+        // seq → parts visible at that seq (non-Hidden). Built once from _map
+        // at construction so EnumerateVisiblePartsAt is O(1) per call and
+        // allocation-free. Empty seqs simply miss the dictionary.
+        private readonly Dictionary<int, List<string>> _visiblePartsBySeq;
+        private static readonly List<string> s_emptyList = new List<string>(0);
 
         // Retained refs so the table can re-resolve a single cell with a
         // different PoseMode (editor Start/Assembled preview toggle). The
@@ -161,6 +166,15 @@ namespace OSE.Content.Loading
             _lastVisibleSeq  = lastVisibleSeq  ?? new Dictionary<string, int>(StringComparer.Ordinal);
             _pkg = pkg;
             _idx = idx;
+
+            _visiblePartsBySeq = new Dictionary<int, List<string>>();
+            foreach (var kvp in _map)
+            {
+                if (kvp.Value.IsHidden) continue;
+                if (!_visiblePartsBySeq.TryGetValue(kvp.Key.viewSeq, out var bucket))
+                    _visiblePartsBySeq[kvp.Key.viewSeq] = bucket = new List<string>();
+                bucket.Add(kvp.Key.partId);
+            }
         }
 
         public int Count => _map.Count;
@@ -204,5 +218,23 @@ namespace OSE.Content.Loading
             => _lastVisibleSeq.TryGetValue(partId ?? string.Empty, out int seq) ? seq : int.MinValue;
 
         public IEnumerable<PoseKey> Keys => _map.Keys;
+
+        /// <summary>
+        /// True iff <paramref name="partId"/> has a non-Hidden baked pose at
+        /// <paramref name="viewSeq"/>. Single source of truth for both editor
+        /// and runtime visibility — callers must not re-derive from step
+        /// fields (requiredPartIds / visualPartIds / subassembly members), or
+        /// editor and play will diverge.
+        /// </summary>
+        public bool IsVisibleAt(string partId, int viewSeq)
+            => _map.TryGetValue(new PoseKey(partId, viewSeq), out var r) && !r.IsHidden;
+
+        /// <summary>
+        /// Every part that is visible at <paramref name="viewSeq"/>. Backed by
+        /// a bake-time bucket: O(1) lookup, no per-call allocation. The
+        /// returned list is a shared reference — do not mutate.
+        /// </summary>
+        public IReadOnlyList<string> EnumerateVisiblePartsAt(int viewSeq)
+            => _visiblePartsBySeq.TryGetValue(viewSeq, out var list) ? list : s_emptyList;
     }
 }

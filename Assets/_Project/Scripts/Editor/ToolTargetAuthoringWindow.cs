@@ -118,6 +118,7 @@ namespace OSE.Editor
         private readonly HashSet<string> _dirtyPartAssetRefIds = new HashSet<string>(StringComparer.Ordinal);
         private readonly HashSet<string> _dirtyPartToolIds     = new HashSet<string>(StringComparer.Ordinal); // Phase 7b — Part × Tool affinity
         private readonly HashSet<string> _dirtySubassemblyIds  = new HashSet<string>(StringComparer.Ordinal); // Phase 7e — Subassembly writes
+        private readonly HashSet<string> _dirtyPartIds         = new HashSet<string>(StringComparer.Ordinal); // Generic part-level edits (animationCues, subassemblyIds, etc.)
         private readonly PackageAssetResolver _assetResolver = new PackageAssetResolver();
 
         // SceneView part-count summary updated by RespawnScene
@@ -268,7 +269,7 @@ namespace OSE.Editor
         private string              _previewingForStepId;
 
         private static readonly string[] _cueTypes =
-            { "shake", "pulse", "demonstratePlacement", "poseTransition", "orientSubassembly" };
+            { "shake", "pulse", "demonstratePlacement", "poseTransition", "orientSubassembly", "animationClip" };
         // Trigger values written to machine.json (must stay in sync with _cueTriggerLabels)
         private static readonly string[] _cueTriggers =
             { "onActivate", "afterDelay", "afterPartsShown", "onStepComplete", "onFirstInteraction", "onTaskComplete" };

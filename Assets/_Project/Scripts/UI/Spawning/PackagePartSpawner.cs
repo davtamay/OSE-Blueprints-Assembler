@@ -29,6 +29,11 @@ namespace OSE.UI.Root
         private MachinePackageDefinition _currentPackage;
         private PackagePreviewConfig _currentPreviewConfig;
         private readonly List<GameObject> _spawnedParts = new List<GameObject>();
+
+        // Subassembly root GO lifecycle — mirrors TTAW Phase A2 so play-mode
+        // hierarchy matches the authoring view. Keyed by subassembly id.
+        private readonly Dictionary<string, GameObject> _subassemblyRoots =
+            new Dictionary<string, GameObject>(System.StringComparer.Ordinal);
         private readonly PackageAssetResolver _resolver = new PackageAssetResolver();
         private readonly PreviewConfigLookup _configLookup = new PreviewConfigLookup();
         private EditModeGhostManager _ghostManager;
@@ -104,8 +109,44 @@ namespace OSE.UI.Root
         }
 #endif
 
+        private bool _pendingFirstPlayHide;
+
+        private void Update()
+        {
+            // First-play defensive hide: edit-mode left every part active,
+            // and the async-spawn/session-init ordering isn't reliable. Once
+            // we have a package AND the spawner has populated its parts
+            // list, deactivate every spawned part in one pass so the
+            // subsequent RevealStepParts activates only the current step's
+            // set. Runs exactly once per play session.
+            if (!_pendingFirstPlayHide || !Application.isPlaying) return;
+            if (_setup?.PreviewRoot == null) return;
+            var pkg = _currentPackage ?? SessionDriver.CurrentPackage;
+            // Fire as soon as the package is known. Don't gate on
+            // _spawnedParts.Count — on the first play press the edit-mode
+            // parts are already children of PreviewRoot with their partId
+            // names, but _spawnedParts may still be empty until the play-
+            // mode spawn cycle runs. We want to deactivate them NOW, before
+            // the user sees the flash.
+            if (pkg?.parts == null) return;
+
+            var ids = new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal);
+            foreach (var p in pkg.parts)
+                if (p != null && !string.IsNullOrEmpty(p.id)) ids.Add(p.id);
+            for (int i = _setup.PreviewRoot.childCount - 1; i >= 0; i--)
+            {
+                var child = _setup.PreviewRoot.GetChild(i);
+                if (child == null) continue;
+                if (!ids.Contains(child.name)) continue;
+                if (child.gameObject.activeSelf)
+                    child.gameObject.SetActive(false);
+            }
+            _pendingFirstPlayHide = false;
+        }
+
         private void OnEnable()
         {
+            if (Application.isPlaying) _pendingFirstPlayHide = true;
             _setup = GetComponent<PreviewSceneSetup>();
             _assetLoader = new PartAssetLoader(
                 () => _currentPackage?.packageId,
@@ -143,14 +184,33 @@ namespace OSE.UI.Root
             if (Application.isPlaying && _setup?.PreviewRoot != null)
             {
                 Transform root = _setup.PreviewRoot;
+                // First pass: collect partId set from the current package
+                // (resolved best-effort — spawner's own currentPackage or
+                // SessionDriver's). Used below to decide which children are
+                // "parts" vs scaffolding (UI, proxies, ghosts, etc).
+                var partIdSet = new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal);
+                var bootPkg = _currentPackage ?? SessionDriver.CurrentPackage;
+                if (bootPkg?.parts != null)
+                    foreach (var p in bootPkg.parts)
+                        if (p != null && !string.IsNullOrEmpty(p.id)) partIdSet.Add(p.id);
+
                 for (int i = root.childCount - 1; i >= 0; i--)
                 {
                     Transform child = root.GetChild(i);
-                    if (child != null && child.name != null &&
-                        child.name.StartsWith("EditGhost_", System.StringComparison.Ordinal))
+                    if (child == null) continue;
+                    string nm = child.name;
+                    if (nm == null) continue;
+                    if (nm.StartsWith("EditGhost_", System.StringComparison.Ordinal))
                     {
                         Destroy(child.gameObject);
+                        continue;
                     }
+                    // Play-mode: deactivate every child that is a known part
+                    // (leftover active from edit-mode preview). Leaves UI,
+                    // proxies, ghosts, Group_* roots untouched. Reveal pass
+                    // turns only the current step's parts back on.
+                    if (partIdSet.Contains(nm) && child.gameObject.activeSelf)
+                        child.gameObject.SetActive(false);
                 }
             }
 
@@ -265,39 +325,21 @@ namespace OSE.UI.Root
                 return;
             }
 
-            // ── Pre-compute which part IDs will be covered by subassembly ghosts ──
-            // At the current step, subassembly member parts would otherwise render at
-            // their individual play positions AND as ghost children — hide the real ones
-            // so only the ghost silhouette shows.  Single-part ghosts are fine: the real
-            // part sits at its start position while the ghost shows the play position.
+            // Subassembly ghost suppression was previously applied here, hiding
+            // member parts behind a translucent ghost silhouette during a
+            // stacking step. The editor authoring view doesn't apply this, so
+            // suppressing at runtime made play diverge from what the author
+            // sees in TTAW. Authoring is the source of truth for visibility —
+            // every part the resolver places gets shown.
             var ghostedSubassemblyPartIds = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
-            if (!Application.isPlaying && !fullyAssembled)
-            {
-                StepDefinition ghostStep = null;
-                foreach (var step in orderedSteps)
-                {
-                    if (step != null && step.sequenceIndex == targetSequenceIndex)
-                    { ghostStep = step; break; }
-                }
-                if (ghostStep?.targetIds != null)
-                {
-                    foreach (string tid in ghostStep.targetIds)
-                    {
-                        if (string.IsNullOrEmpty(tid) || !pkg.TryGetTarget(tid, out var tgt)) continue;
 
-                        if (!string.IsNullOrWhiteSpace(tgt.associatedSubassemblyId) &&
-                            pkg.TryGetSubassembly(tgt.associatedSubassemblyId, out var sub) &&
-                            sub?.partIds != null)
-                        {
-                            foreach (string pid in sub.partIds)
-                            {
-                                if (!string.IsNullOrEmpty(pid))
-                                    ghostedSubassemblyPartIds.Add(pid);
-                            }
-                        }
-                    }
-                }
-            }
+            // Phase-A2 hierarchy parity: mirror TTAW's subassembly root GO
+            // lifecycle so the runtime scene graph matches the authoring view.
+            // Creates a root per visible group, reparents member parts, nests
+            // aggregates, applies the step's working-orientation. Runs BEFORE
+            // positioning so subsequent SetLocalPositionAndRotation calls
+            // resolve against the correct parent transform.
+            EnsureSubassemblyRoots(pkg, currentStepDef);
 
             foreach (var partGo in _spawnedParts)
             {
@@ -306,18 +348,38 @@ namespace OSE.UI.Root
                 if (pp == null) continue;
                 if (SplinePartFactory.HasSplineData(pp)) continue;
 
-                // Hidden: either the table has no entry (part not yet visible
-                // at lookupSeq) or the step's ghost replaces this real part.
-                if (!poseTable.TryGet(partGo.name, lookupSeq, out var resolution)
-                    || ghostedSubassemblyPartIds.Contains(partGo.name))
+                // Ghost suppression still hides members that are replaced by a
+                // translucent ghost silhouette.
+                if (ghostedSubassemblyPartIds.Contains(partGo.name))
                 {
                     partGo.SetActive(false);
                     continue;
                 }
 
+                // Visibility policy: if the pose-table has no entry for this
+                // part at lookupSeq, fall back to the authored
+                // startPosition/startRotation on the placement instead of
+                // hiding. TTAW's authoring view (source of truth) shows every
+                // part with a placement at its start pose even when no step
+                // explicitly references it — matching that here keeps play
+                // 1:1 with the editor.
+                Vector3 rpos; Quaternion rrot; Vector3 rscl;
+                if (poseTable.TryGet(partGo.name, lookupSeq, out var resolution))
+                {
+                    rpos = resolution.pos; rrot = resolution.rot; rscl = resolution.scl;
+                }
+                else
+                {
+                    rpos = new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z);
+                    rrot = new Quaternion(pp.startRotation.x, pp.startRotation.y, pp.startRotation.z, pp.startRotation.w);
+                    if (rrot.x == 0f && rrot.y == 0f && rrot.z == 0f && rrot.w == 0f) rrot = Quaternion.identity;
+                    rscl = new Vector3(pp.startScale.x, pp.startScale.y, pp.startScale.z);
+                    if (rscl.sqrMagnitude < 0.00001f) rscl = Vector3.one;
+                }
+
                 partGo.SetActive(true);
-                partGo.transform.SetLocalPositionAndRotation(resolution.pos, resolution.rot);
-                partGo.transform.localScale = resolution.scl;
+                partGo.transform.SetLocalPositionAndRotation(rpos, rrot);
+                partGo.transform.localScale = rscl;
 
                 if (!Application.isPlaying)
                 {
@@ -340,6 +402,12 @@ namespace OSE.UI.Root
                         RestoreEditModeVisual(partGo);
                 }
             }
+
+            // Working orientation is intentionally NOT applied to group roots
+            // here: baked poses on placements are PreviewRoot-space, so a
+            // non-identity root would double-rotate every member. Working
+            // orientation is an editor-only gizmo for authoring; runtime
+            // renders from the baked poses directly.
 
             // ── Edit-mode ghost previews ──
             // Show translucent ghosts at the play (target) position for parts that
@@ -750,7 +818,18 @@ namespace OSE.UI.Root
 
             bool showGeometry = _setup.ActiveProfile.ShowGeometryPreview;
             foreach (var p in _spawnedParts)
-                SetObjectActive(p, showGeometry);
+            {
+                // In play mode, start every part inactive — the reveal pass
+                // (PartVisualFeedbackManager.RevealStepParts) activates only
+                // the ones that belong to the current step. Without this, a
+                // race between spawner-done and the first HideNonIntroduced-
+                // Parts call leaves every part visible on the first play
+                // press ("have to stop/play twice to see correct count").
+                if (Application.isPlaying && showGeometry)
+                    SetObjectActive(p, false);
+                else
+                    SetObjectActive(p, showGeometry);
+            }
         }
 
         // Layout constants moved to PartPositionResolver — access via PartPositionResolver.LayoutRadius etc.
@@ -790,6 +869,256 @@ namespace OSE.UI.Root
 
         // ── Cleanup ──
 
+        /// <summary>
+        /// Public entry for runtime callers (step activation, reveal pass) to
+        /// refresh the subassembly root hierarchy. Creates/destroys Group_*
+        /// roots, reparents visible members, nests aggregates. Roots stay at
+        /// PreviewRoot origin + identity rotation — the baked poses on
+        /// placements are PreviewRoot-space, so roots must NOT have a
+        /// non-identity transform (would double-rotate members). Working
+        /// orientation is an editor-gizmo authoring concept; at runtime the
+        /// poses already encode whatever the author intended.
+        /// </summary>
+        public void SyncSubassemblyHierarchy(MachinePackageDefinition pkg, StepDefinition currentStep)
+        {
+            EnsureSubassemblyRoots(pkg, currentStep);
+        }
+
+        /// <summary>
+        /// Returns the persistent Group_* root GameObject for a subassembly,
+        /// or null if none exists (no visible members at the current step).
+        /// Other systems — notably AnimationCueCoordinator — target this root
+        /// so per-group animations play on the same hierarchy the user sees
+        /// and grabs, rather than creating a parallel temporary parent.
+        /// </summary>
+        public GameObject GetSubassemblyRoot(string subassemblyId)
+        {
+            if (string.IsNullOrEmpty(subassemblyId)) return null;
+            return _subassemblyRoots.TryGetValue(subassemblyId, out var go) ? go : null;
+        }
+
+        // ── Phase-A2 parity: subassembly root GO lifecycle ────────────────────
+        //
+        // Matches TTAW.PackageLoad.cs EnsureAllSubassemblyRoots. For every
+        // subassembly with at least one visible member, we create a "Group_*"
+        // GameObject under PreviewRoot (at origin, identity rotation),
+        // reparent the member parts under it, nest aggregate→child groups,
+        // and apply the current step's workingOrientation to the matching
+        // root. When no longer needed, roots are destroyed and members move
+        // back under PreviewRoot.
+        //
+        // Member localPositions remain authored in PreviewRoot space — the
+        // root sits at origin/identity by default so reparenting is a no-op
+        // geometrically. The working-orientation rotation is the ONLY thing
+        // that sets a non-identity transform on the root, and that naturally
+        // rotates all members via Unity parenting.
+        private void EnsureSubassemblyRoots(MachinePackageDefinition pkg, StepDefinition step)
+        {
+            var previewRoot = _setup?.PreviewRoot;
+            if (previewRoot == null || pkg == null)
+            {
+                DestroyAllSubassemblyRoots();
+                return;
+            }
+
+            var allSubs = pkg.GetSubassemblies();
+            if (allSubs == null || allSubs.Length == 0)
+            {
+                DestroyAllSubassemblyRoots();
+                return;
+            }
+
+            // A part is "visible" at the current step if the spawned GO is active.
+            // (We run AFTER the spawner spawns all parts but BEFORE the per-part
+            // positioning loop below — so active-self at this point reflects
+            // prior step state. That's fine: we only care about membership for
+            // the root, not the current pose.)
+            var visiblePartIds = new HashSet<string>(System.StringComparer.Ordinal);
+            foreach (var go in _spawnedParts)
+                if (go != null) visiblePartIds.Add(go.name);
+
+            var neededIds = new HashSet<string>(System.StringComparer.Ordinal);
+
+            // Pass 1 — create a root per subassembly with any visible member.
+            foreach (var sub in allSubs)
+            {
+                if (sub == null || string.IsNullOrEmpty(sub.id)) continue;
+
+                bool hasVisibleMember = false;
+                if (sub.partIds != null)
+                {
+                    foreach (var pid in sub.partIds)
+                        if (!string.IsNullOrEmpty(pid) && visiblePartIds.Contains(pid))
+                        { hasVisibleMember = true; break; }
+                }
+                if (!hasVisibleMember && sub.isAggregate && sub.memberSubassemblyIds != null)
+                {
+                    foreach (var childId in sub.memberSubassemblyIds)
+                    {
+                        if (string.IsNullOrEmpty(childId)) continue;
+                        if (!pkg.TryGetSubassembly(childId, out var childSub) || childSub?.partIds == null) continue;
+                        foreach (var pid in childSub.partIds)
+                            if (!string.IsNullOrEmpty(pid) && visiblePartIds.Contains(pid))
+                            { hasVisibleMember = true; break; }
+                        if (hasVisibleMember) break;
+                    }
+                }
+                if (!hasVisibleMember) continue;
+
+                neededIds.Add(sub.id);
+
+                bool freshRoot = false;
+                if (!_subassemblyRoots.TryGetValue(sub.id, out var rootGO) || rootGO == null)
+                {
+                    rootGO = new GameObject($"Group_{sub.GetDisplayName()}");
+                    rootGO.transform.SetParent(previewRoot, false);
+                    _subassemblyRoots[sub.id] = rootGO;
+                    freshRoot = true;
+                }
+                rootGO.transform.localPosition = Vector3.zero;
+                rootGO.transform.localRotation = Quaternion.identity;
+                rootGO.transform.localScale    = Vector3.one;
+
+                // Group root grab is only enabled when the current step's
+                // task IS this subassembly (requiredSubassemblyId match, or a
+                // target's associatedSubassemblyId match). Otherwise the group
+                // is scene context — no-task — and must not be grabbable.
+                // This prevents the user from dragging a past-placed group
+                // like the carriage frame around by grabbing the root.
+                bool groupIsTaskTarget = StepTargetsSubassembly(pkg, step, sub.id);
+                if (freshRoot && Application.isPlaying && _xrGrabSetup != null)
+                    EnsureGroupRootCollider(rootGO);
+                if (Application.isPlaying && _xrGrabSetup != null)
+                {
+                    if (groupIsTaskTarget)
+                        _xrGrabSetup.EnableGrab(rootGO);
+                    else
+                        _xrGrabSetup.SetGrabEnabled(rootGO, false);
+                }
+
+                // Reparent visible members (non-aggregates only — aggregates own
+                // parts indirectly through child subassemblies).
+                if (!sub.isAggregate && sub.partIds != null)
+                {
+                    foreach (var pid in sub.partIds)
+                    {
+                        if (string.IsNullOrEmpty(pid)) continue;
+                        var memberGO = FindSpawnedGo(pid);
+                        if (memberGO == null) continue;
+                        if (memberGO.transform.parent != rootGO.transform)
+                            memberGO.transform.SetParent(rootGO.transform, worldPositionStays: true);
+                        // Members' grabs stay managed by
+                        // PartVisualFeedbackManager.SyncPartGrabInteractivity,
+                        // which gates on the active-step part set — NO-TASK
+                        // members never get grab. The group root handles the
+                        // whole-group grab when the group IS the step's task.
+                        if (Application.isPlaying && groupIsTaskTarget)
+                            _xrGrabSetup?.SetGrabEnabled(memberGO, false);
+                    }
+                }
+            }
+
+            // Pass 2 — nest child group roots under aggregate parent roots.
+            foreach (var sub in allSubs)
+            {
+                if (sub == null || !sub.isAggregate || sub.memberSubassemblyIds == null) continue;
+                if (!_subassemblyRoots.TryGetValue(sub.id, out var parentGO) || parentGO == null) continue;
+
+                foreach (var childId in sub.memberSubassemblyIds)
+                {
+                    if (string.IsNullOrEmpty(childId)) continue;
+                    if (!_subassemblyRoots.TryGetValue(childId, out var childGO) || childGO == null) continue;
+                    if (childGO.transform.parent != parentGO.transform)
+                        childGO.transform.SetParent(parentGO.transform, worldPositionStays: true);
+                }
+            }
+
+            // Pass 3 — destroy roots no longer needed; move orphaned members back under PreviewRoot.
+            List<string> toRemove = null;
+            foreach (var kv in _subassemblyRoots)
+                if (!neededIds.Contains(kv.Key))
+                    (toRemove ??= new List<string>()).Add(kv.Key);
+
+            if (toRemove != null)
+            {
+                foreach (var id in toRemove)
+                {
+                    if (!_subassemblyRoots.TryGetValue(id, out var go) || go == null)
+                    { _subassemblyRoots.Remove(id); continue; }
+
+                    for (int i = go.transform.childCount - 1; i >= 0; i--)
+                    {
+                        var child = go.transform.GetChild(i);
+                        child.SetParent(previewRoot, worldPositionStays: true);
+                        // Re-enable the member's individual grab now that
+                        // it's no longer under a group root.
+                        if (Application.isPlaying)
+                            _xrGrabSetup?.SetGrabEnabled(child.gameObject, true);
+                    }
+                    SafeDestroy(go);
+                    _subassemblyRoots.Remove(id);
+                }
+            }
+        }
+
+        private static bool StepTargetsSubassembly(MachinePackageDefinition pkg, StepDefinition step, string subId)
+        {
+            if (step == null || string.IsNullOrEmpty(subId)) return false;
+            if (string.Equals(step.requiredSubassemblyId, subId, System.StringComparison.Ordinal)) return true;
+            if (pkg != null && step.targetIds != null)
+            {
+                foreach (var tid in step.targetIds)
+                {
+                    if (string.IsNullOrWhiteSpace(tid) || !pkg.TryGetTarget(tid, out var tgt) || tgt == null) continue;
+                    if (string.Equals(tgt.associatedSubassemblyId, subId, System.StringComparison.Ordinal)) return true;
+                }
+            }
+            return false;
+        }
+
+        private static void EnsureGroupRootCollider(GameObject root)
+        {
+            // XRGrabInteractable needs a collider to receive raycasts/hover.
+            // A small invisible sphere at the root's pivot is enough — member
+            // colliders still work for per-part snap/ray operations, but the
+            // grab hit-test uses the root's collider so the whole group moves.
+            if (root.GetComponent<Collider>() != null) return;
+            var sc = root.AddComponent<SphereCollider>();
+            sc.radius = 0.05f;
+            sc.isTrigger = true;
+        }
+
+        private void DestroyAllSubassemblyRoots()
+        {
+            if (_subassemblyRoots.Count == 0) return;
+            var previewRoot = _setup?.PreviewRoot;
+            foreach (var kv in _subassemblyRoots)
+            {
+                var go = kv.Value;
+                if (go == null) continue;
+                if (previewRoot != null)
+                {
+                    for (int i = go.transform.childCount - 1; i >= 0; i--)
+                    {
+                        var child = go.transform.GetChild(i);
+                        child.SetParent(previewRoot, worldPositionStays: true);
+                        if (Application.isPlaying)
+                            _xrGrabSetup?.SetGrabEnabled(child.gameObject, true);
+                    }
+                }
+                SafeDestroy(go);
+            }
+            _subassemblyRoots.Clear();
+        }
+
+        private GameObject FindSpawnedGo(string partId)
+        {
+            if (string.IsNullOrEmpty(partId)) return null;
+            foreach (var go in _spawnedParts)
+                if (go != null && go.name == partId) return go;
+            return null;
+        }
+
         private void ClearSpawnedParts()
         {
 #if UNITY_EDITOR
@@ -821,6 +1150,7 @@ namespace OSE.UI.Root
             }
 #endif
             _ghostManager?.Clear();
+            DestroyAllSubassemblyRoots();
             foreach (var go in _spawnedParts)
             {
                 if (go == null) continue;

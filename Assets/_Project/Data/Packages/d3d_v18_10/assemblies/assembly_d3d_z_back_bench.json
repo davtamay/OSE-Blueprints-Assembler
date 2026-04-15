@@ -52,27 +52,19 @@
     {
       "id": "subassembly_z_back_idler_build",
       "name": "Z-Back Idler Assembly",
-      "assemblyId": "assembly_d3d_z_back_bench",
-      "description": "Same idler build as Y-Left. Long M6x30 frame-mount bolt placed loosely. The Z-back idler mounts on the back face bottom hole directly behind Z-front.",
-      "partIds": [
-        "idler001"
-      ],
       "stepIds": [
         "step_z_back_idler_insert_bolt",
         "step_z_back_idler_insert_bearings",
         "step_z_back_idler_align_halves",
         "step_z_back_idler_bolt"
       ],
+      "assemblyId": "assembly_d3d_z_back_bench",
+      "description": "Same idler build as Y-Left. Long M6x30 frame-mount bolt placed loosely. The Z-back idler mounts on the back face bottom hole directly behind Z-front.",
       "milestoneMessage": "Z-back idler assembled. Frame-mount bolt left loose."
     },
     {
       "id": "subassembly_z_back_motor_build",
       "name": "Z-Back Motor Holder Assembly",
-      "assemblyId": "assembly_d3d_z_back_bench",
-      "description": "Same motor holder build as Y-Left. All 8 motor-piece bolts will be pre-tightened at bench — they become inaccessible after frame mounting.",
-      "partIds": [
-        "motor001"
-      ],
       "stepIds": [
         "step_z_back_motor_pulley",
         "step_z_back_motor_pulley_pop",
@@ -84,18 +76,13 @@
         "step_z_back_motor_m6_bolts",
         "step_z_back_motor_dangle_test"
       ],
+      "assemblyId": "assembly_d3d_z_back_bench",
+      "description": "Same motor holder build as Y-Left. All 8 motor-piece bolts will be pre-tightened at bench — they become inaccessible after frame mounting.",
       "milestoneMessage": "Z-back motor holder assembled."
     },
     {
       "id": "subassembly_z_back_rod_assembly",
       "name": "Z-Back Axis Rod Assembly",
-      "assemblyId": "assembly_d3d_z_back_bench",
-      "description": "Threads rods through idler, carriage (with spacers z1_spacer_1 and z1_spacer_002), and motor holder. Checks rods flush at idler.",
-      "partIds": [
-        "z1_spacer_1",
-        "z1_spacer_002",
-        "motor_piece001"
-      ],
       "stepIds": [
         "step_z_back_rods_into_idler",
         "step_z_back_idler_tighten_rods",
@@ -103,16 +90,13 @@
         "step_z_back_motor_onto_rods",
         "step_z_back_rods_qc"
       ],
+      "assemblyId": "assembly_d3d_z_back_bench",
+      "description": "Threads rods through idler, carriage (with spacers z1_spacer_1 and z1_spacer_002), and motor holder. Checks rods flush at idler.",
       "milestoneMessage": "Z-back guide rods threaded with spacers in place."
     },
     {
       "id": "subassembly_z_back_belt_threading",
       "name": "Z-Back Belt Threading",
-      "assemblyId": "assembly_d3d_z_back_bench",
-      "description": "Routes belt, locks first peg, places second peg loosely. No endstop for Z axes. Label axis Z-Back.",
-      "partIds": [
-        "fastener_z_back_belt_peg"
-      ],
       "stepIds": [
         "step_z_back_belt_large_hole",
         "step_z_back_belt_around_idler",
@@ -123,6 +107,8 @@
         "step_z_back_belt_travel_test",
         "step_z_back_label_axis"
       ],
+      "assemblyId": "assembly_d3d_z_back_bench",
+      "description": "Routes belt, locks first peg, places second peg loosely. No endstop for Z axes. Label axis Z-Back.",
       "milestoneMessage": "Z-back axis complete: belt routed, first peg locked, axis labeled and QC checked."
     },
     {
@@ -178,7 +164,10 @@
           "b": 0.7,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_z_back_idler_build"
+      ]
     },
     {
       "id": "motor001",
@@ -212,7 +201,10 @@
           "b": 0.7,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_z_back_motor_build"
+      ]
     },
     {
       "id": "motor_piece001",
@@ -246,7 +238,10 @@
           "b": 0.7,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_z_back_rod_assembly"
+      ]
     },
     {
       "id": "z1_half_carriage",
@@ -314,7 +309,10 @@
           "b": 0.7,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_z_back_rod_assembly"
+      ]
     },
     {
       "id": "z1_spacer_1",
@@ -348,7 +346,10 @@
           "b": 0.7,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_z_back_rod_assembly"
+      ]
     }
   ],
   "steps": [
@@ -362,11 +363,29 @@
       "instructionText": "Begin assembling the idler: place an M6x18 bolt through one idler half-piece from the outside.",
       "removePersistentToolIds": [],
       "targetIds": [],
-      "requiredPartIds": [ "idler001" ],
+      "requiredPartIds": [
+        "idler001"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"idler001"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "idler001"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
     {
       "id": "step_z_back_idler_insert_bearings",
       "name": "Stack two flanged bearings onto bolt",
@@ -404,11 +423,29 @@
       "instructionText": "Rest the thin spacer on the motor housing, then seat the pulley on the shaft above it. Tighten the first set screw with an Allen key — the spacer keeps the pulley off the housing.",
       "removePersistentToolIds": [],
       "targetIds": [],
-      "requiredPartIds": [ "motor001" ],
+      "requiredPartIds": [
+        "motor001"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"motor001"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "motor001"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
     {
       "id": "step_z_back_motor_pulley_pop",
       "name": "Lock pulley set screw until it pops",
@@ -491,12 +528,34 @@
       "instructionText": "Insert both guide rods into the completed idler piece. Rod ends must be flush against the bottom of the idler. If rods are hard to insert, loosen the idler bolts, slide rods in, then re-tighten.",
       "removePersistentToolIds": [],
       "targetIds": [],
-      "requiredPartIds": [ "z1_spacer_1", "z1_spacer_002" ],
+      "requiredPartIds": [
+        "z1_spacer_1",
+        "z1_spacer_002"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"z1_spacer_1"},
-        {"kind":"part","id":"z1_spacer_002"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "z1_spacer_1"
+        },
+        {
+          "kind": "part",
+          "id": "z1_spacer_002"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
     {
       "id": "step_z_back_idler_tighten_rods",
       "name": "Tighten short idler bolts onto rods",
@@ -516,11 +575,29 @@
       "instructionText": "Slide the completed carriage onto the rods with the long bolt ends closer to the idler. This orientation maximizes the travel distance.",
       "removePersistentToolIds": [],
       "targetIds": [],
-      "requiredPartIds": [ "motor_piece001" ],
+      "requiredPartIds": [
+        "motor_piece001"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"motor_piece001"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "motor_piece001"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
     {
       "id": "step_z_back_motor_onto_rods",
       "name": "Push motor holder onto rods",
@@ -576,11 +653,29 @@
       "instructionText": "Thread the belt end through a belt peg. Confirm: the foot of the peg faces away from the toothed side of the belt and away from the axis center. Wrong orientation prevents the peg from locking correctly.",
       "removePersistentToolIds": [],
       "targetIds": [],
-      "requiredPartIds": [ "fastener_z_back_belt_peg" ],
+      "requiredPartIds": [
+        "fastener_z_back_belt_peg"
+      ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"fastener_z_back_belt_peg"}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
-  },
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "fastener_z_back_belt_peg"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
     {
       "id": "step_z_back_belt_first_peg",
       "name": "Lock first belt peg",

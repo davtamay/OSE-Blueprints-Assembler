@@ -54,6 +54,15 @@ namespace OSE.Content
         public string[] memberSubassemblyIds;
 
         /// <summary>
+        /// Animation / particle cues hosted on this subassembly (or
+        /// aggregate). Fires on the <c>Group_*</c> root at runtime —
+        /// shake/rotate/pulse/particle covers every live member in one
+        /// coordinated motion via the transient anim-group mechanism.
+        /// Each entry may scope to specific <see cref="AnimationCueEntry.stepIds"/>.
+        /// </summary>
+        public AnimationCueEntry[] animationCues;
+
+        /// <summary>
         /// Derived rigid-body cache keyed by targetId. Populated by
         /// <see cref="Loading.MachinePackageNormalizer.BakeGroupRigidBody"/>.
         /// Never persisted. Enables the editor to treat a group-at-target as

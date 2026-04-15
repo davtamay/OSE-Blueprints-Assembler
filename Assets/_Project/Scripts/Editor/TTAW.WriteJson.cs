@@ -116,6 +116,7 @@ namespace OSE.Editor
             if (_dirtyPartAssetRefIds.Count > 0)  return true;
             if (_dirtyPartToolIds.Count > 0)      return true;
             if (_dirtySubassemblyIds.Count > 0)   return true;
+            if (_dirtyPartIds.Count > 0)          return true;
             if (_targets != null) foreach (var t in _targets) if (t.isDirty) return true;
             if (_parts   != null) foreach (var p in _parts)   if (p.isDirty) return true;
             return false;
@@ -661,17 +662,13 @@ namespace OSE.Editor
                 if (!string.IsNullOrEmpty(sub.name))
                     InjectField(subId, "name", $"\"{sub.name}\"");
 
-                // partIds
-                if (sub.partIds != null && sub.partIds.Length > 0)
-                {
-                    string pJson = "[ " + string.Join(", ",
-                        Array.ConvertAll(sub.partIds, id => $"\"{id}\"")) + " ]";
-                    InjectField(subId, "partIds", pJson);
-                }
-                else
-                {
-                    RemoveField(subId, "partIds");
-                }
+                // partIds is now derived at load time from each
+                // PartDefinition.subassemblyIds claim (see
+                // MachinePackageNormalizer.DeriveSubassemblyPartIds). Authors
+                // edit membership per part, not per subassembly — so TTAW
+                // must never write this field. Always strip any legacy value
+                // so the file stays clean across save cycles.
+                RemoveField(subId, "partIds");
 
                 // stepIds
                 if (sub.stepIds != null && sub.stepIds.Length > 0)
@@ -728,8 +725,76 @@ namespace OSE.Editor
                     InjectField(subId, "milestoneMessage", $"\"{sub.milestoneMessage}\"");
                 else
                     RemoveField(subId, "milestoneMessage");
+
+                // animationCues — host-owned cues on this subassembly / aggregate.
+                // Each entry is a full AnimationCueEntry serialized as an array
+                // element. JsonUtility wraps arrays behind a holder, so we
+                // hand-build the array JSON element-by-element.
+                if (sub.animationCues != null && sub.animationCues.Length > 0)
+                {
+                    var sb = new System.Text.StringBuilder("[");
+                    for (int ci = 0; ci < sub.animationCues.Length; ci++)
+                    {
+                        if (ci > 0) sb.Append(',');
+                        string raw = JsonUtility.ToJson(sub.animationCues[ci]);
+                        sb.Append(PackageJsonUtils.RoundFloatsInJson(raw));
+                    }
+                    sb.Append(']');
+                    InjectField(subId, "animationCues", sb.ToString());
+                    Debug.Log($"[TTAW] wrote sub.animationCues for '{subId}' (count={sub.animationCues.Length}, first.duration={sub.animationCues[0].durationSeconds})");
+                }
+                else
+                {
+                    RemoveField(subId, "animationCues");
+                }
             }
             _dirtySubassemblyIds.Clear();
+
+            // ── Part-level edits: animationCues, subassemblyIds ──
+            // Generic write pass for fields edited from the selection-scoped
+            // inspector (Animations & Effects on a part, membership claims).
+            // Parts live in many files; FindPart locates the right one.
+            if (_dirtyPartIds != null && _dirtyPartIds.Count > 0 && _pkg?.parts != null)
+            {
+                foreach (string partId in _dirtyPartIds)
+                {
+                    PartDefinition part = null;
+                    for (int pi = 0; pi < _pkg.parts.Length; pi++)
+                    {
+                        if (_pkg.parts[pi]?.id == partId) { part = _pkg.parts[pi]; break; }
+                    }
+                    if (part == null) continue;
+
+                    if (part.animationCues != null && part.animationCues.Length > 0)
+                    {
+                        var sb = new System.Text.StringBuilder("[");
+                        for (int ci = 0; ci < part.animationCues.Length; ci++)
+                        {
+                            if (ci > 0) sb.Append(',');
+                            string raw = JsonUtility.ToJson(part.animationCues[ci]);
+                            sb.Append(PackageJsonUtils.RoundFloatsInJson(raw));
+                        }
+                        sb.Append(']');
+                        InjectField(partId, "animationCues", sb.ToString());
+                    }
+                    else
+                    {
+                        RemoveField(partId, "animationCues");
+                    }
+
+                    if (part.subassemblyIds != null && part.subassemblyIds.Length > 0)
+                    {
+                        string sJson = "[ " + string.Join(", ",
+                            Array.ConvertAll(part.subassemblyIds, id => $"\"{id}\"")) + " ]";
+                        InjectField(partId, "subassemblyIds", sJson);
+                    }
+                    else
+                    {
+                        RemoveField(partId, "subassemblyIds");
+                    }
+                }
+                _dirtyPartIds.Clear();
+            }
 
             // Step 5d: Write stagingPose to parts[] for dirty parts.
             if (_parts != null)
@@ -800,7 +865,18 @@ namespace OSE.Editor
                 // Step 7: Reload and clear dirty flags
                 _pkg = PackageJsonUtils.LoadPackage(_pkgId);
                 if (_pkg != null)
+                {
+                    // Normalize bakes stagingPose → placement.startPosition AND
+                    // builds pkg.poseTable so the editor renders from the same
+                    // source the runtime spawner reads. Without this, after
+                    // Save the editor would fall back to PartEditState (showing
+                    // e.g. assembledPosition under the toggle) while play mode
+                    // — which always normalizes via MachinePackageLoader —
+                    // shows the resolver's NO-TASK startPosition. That's the
+                    // "editor and play mode disagree on NO-TASK parts" symptom.
+                    OSE.Content.Loading.MachinePackageNormalizer.Normalize(_pkg);
                     _assetResolver.BuildCatalog(_pkgId, _pkg.parts ?? System.Array.Empty<PartDefinition>());
+                }
                 _taskSeqReorderList          = null;
                 _taskSeqReorderListForStepId = null;
                 InvalidateTaskOrderCache();

@@ -226,12 +226,14 @@ namespace OSE.Editor
                     if (currentStepActsOnPart
                         && (_editingPoseMode == PoseModeStart || _editingPoseMode == PoseModeAssembled))
                     {
-                        var overrideMode = _editingPoseMode == PoseModeStart
-                            ? OSE.Content.Loading.PoseMode.StartPreview
-                            : OSE.Content.Loading.PoseMode.AssembledPreview;
-                        var r = poseTable.Resolve(pid, _sceneBuildCurrentSeq, overrideMode);
-                        if (r.IsHidden) { pos = Vector3.zero; rot = Quaternion.identity; scl = Vector3.one; return false; }
-                        pos = r.pos; rot = r.rot; scl = r.scl;
+                        // Read directly from the in-memory edit state — the
+                        // PoseTable is baked at load time and will return the
+                        // stale value, snapping the part back as soon as the
+                        // user tries to move it in Start/Assembled mode.
+                        bool useAssembled = _editingPoseMode == PoseModeAssembled;
+                        pos = useAssembled ? p.assembledPosition : p.startPosition;
+                        rot = useAssembled ? p.assembledRotation : p.startRotation;
+                        scl = useAssembled ? p.assembledScale    : p.startScale;
                         if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
                         return true;
                     }

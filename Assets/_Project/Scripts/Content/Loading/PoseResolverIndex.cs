@@ -159,6 +159,20 @@ namespace OSE.Content.Loading
             }
             stackingEvents.Sort((a, b) => a.seq.CompareTo(b.seq));
 
+            // Fallback for "loose" parts: any part with a placement that no
+            // step references gets pinned to the first step's seq so the
+            // resolver returns its startPosition for every viewSeq. The
+            // editor authoring view (TTAW) shows these parts unconditionally;
+            // without this fallback the runtime hides them via
+            // poseTable.TryGet → SetActive(false), and play diverges from
+            // what the author placed in the scene.
+            int firstStepSeq = orderedSteps.Count > 0 ? orderedSteps[0].sequenceIndex : 1;
+            foreach (var kvp in placementByPart)
+            {
+                if (!firstVisibleSeqByPart.ContainsKey(kvp.Key))
+                    firstVisibleSeqByPart[kvp.Key] = firstStepSeq;
+            }
+
             // author-written spans
             authorSpansByPart = new Dictionary<string, List<ResolvedAuthorSpan>>(StringComparer.Ordinal);
             foreach (var kvp in placementByPart)

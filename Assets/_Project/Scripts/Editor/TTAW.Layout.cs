@@ -151,18 +151,26 @@ namespace OSE.Editor
                     {
                         case "part":
                         {
-                            // Inline tool toggles (replaces the Part×Tool matrix)
-                            DrawInlineToolToggles(entry.id);
+                            // Group entries reuse the "part" kind. Their own cue
+                            // strip is rendered by DrawTaskInspectorBody — don't
+                            // double up with a part-scope strip here.
+                            bool entryIsGroup = _pkg != null
+                                && _pkg.TryGetSubassembly(entry.id, out var _grp)
+                                && _grp != null;
 
-                            // Group membership
-                            DrawInspectorGroupLabel(entry.id);
+                            if (!entryIsGroup)
+                            {
+                                // Inline tool toggles (replaces the Part×Tool matrix)
+                                DrawInlineToolToggles(entry.id);
 
-                            // Animation cues for this part
-                            DrawCuesForPart(step, entry.id);
+                                // Group membership
+                                DrawInspectorGroupLabel(entry.id);
 
-                            // Particle effects (step-level, shown here for convenience)
-                            EditorGUILayout.Space(6);
-                            DrawParticleEffectsSection(step);
+                                // Animations & Effects on the SELECTED part
+                                // (host-owned cues with optional step scope).
+                                if (_pkg != null && _pkg.TryGetPart(entry.id, out var selPart) && selPart != null)
+                                    DrawPartAnimationCuesSection(selPart, step);
+                            }
                             break;
                         }
                         default: // toolAction, target, wire, confirm
@@ -192,14 +200,17 @@ namespace OSE.Editor
             }
             else if (step != null)
             {
-                // Nothing selected — step-level view
-                // All step-level animation cues
+                // Step-level animation authoring is removed. Cues now live
+                // on the host (part / subassembly / aggregate) — select a
+                // part or group to author its Animations & Effects. The
+                // legacy step.animationCues / particle-effects blocks
+                // remain readable at runtime as a fallback for unmigrated
+                // packages, but new authoring goes through the
+                // selection-scoped inspector.
                 EditorGUILayout.Space(6);
-                DrawAnimationCuesSection(step);
-
-                // All step-level particle effects
-                EditorGUILayout.Space(6);
-                DrawParticleEffectsSection(step);
+                EditorGUILayout.HelpBox(
+                    "Select a part or group to author its Animations & Effects.",
+                    MessageType.Info);
             }
         }
 
@@ -301,11 +312,11 @@ namespace OSE.Editor
             // Inline editor (name, description, parts, steps)
             DrawSubassemblyInlineEditor(sub, step);
 
-            // Step-level cues + particles
+            // Animations & Effects on the SELECTED group (host-owned cues).
+            // Step-level cue authoring is gone — cues belong to the part,
+            // subassembly, or aggregate they animate.
             EditorGUILayout.Space(6);
-            DrawAnimationCuesSection(step);
-            EditorGUILayout.Space(6);
-            DrawParticleEffectsSection(step);
+            DrawSubassemblyAnimationCuesSection(sub, step);
         }
 
         /// <summary>
