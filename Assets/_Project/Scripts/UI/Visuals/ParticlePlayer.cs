@@ -61,7 +61,21 @@ namespace OSE.UI.Root
                 // the centroid of the host's active children so the effect
                 // appears WHERE the parts are. For non-group hosts the host
                 // is the part itself; centroid is identity.
-                instance.transform.localPosition = ComputeChildrenCentroidLocal(host.transform);
+                Vector3 pivot = ComputeChildrenCentroidLocal(host.transform);
+
+                // Optional authored pivot override — shift the effect origin
+                // by a local-space offset from the host's default pivot
+                // (centroid for groups, origin for single-part hosts).
+                var entry = context.Entry;
+                if (entry != null && entry.pivotOffsetOverride)
+                {
+                    pivot += new Vector3(
+                        entry.pivotOffset.x,
+                        entry.pivotOffset.y,
+                        entry.pivotOffset.z);
+                }
+
+                instance.transform.localPosition = pivot;
                 instance.transform.localRotation = Quaternion.identity;
 
                 var ps = instance.GetComponentInChildren<ParticleSystem>();

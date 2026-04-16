@@ -237,6 +237,33 @@ namespace OSE.Editor
             var rl = GetOrBuildPanelList(step, scope, scopeKey, trigger, cueIndices);
             rl.DoLayoutList();
 
+            // Inline edit panels — render DrawCueEntry under the row for any
+            // cue whose foldout is expanded. Reuses the same full-field editor
+            // used by the legacy canvas section so authors get the complete
+            // set of type-specific fields (shake amplitude/frequency/axis,
+            // rotation Euler, pulse colors, pivot override, etc).
+            if (cues != null)
+            {
+                for (int i = 0; i < cueIndices.Count; i++)
+                {
+                    int cueIdx = cueIndices[i];
+                    if (cueIdx < 0 || cueIdx >= cues.Length) continue;
+                    if (cueIdx >= _cueFoldouts.Count || !_cueFoldouts[cueIdx]) continue;
+
+                    using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                    {
+                        DrawCueEntry(step, cues, cueIdx,
+                            out bool removeInline, out bool _, out bool _);
+                        if (removeInline)
+                        {
+                            RemoveCueAtIndex(step, cueIdx);
+                            Repaint();
+                            return;
+                        }
+                    }
+                }
+            }
+
             // + Add cue
             if (GUILayout.Button(new GUIContent("    + Add cue ▾",
                 "Add a new cue row to this panel."), EditorStyles.miniButton, GUILayout.Height(18f)))
@@ -247,12 +274,33 @@ namespace OSE.Editor
             EditorGUILayout.Space(2);
         }
 
+        // Persistent per-panel list that ReorderableList holds a stable
+        // reference to. We refill it in-place each frame so cue additions /
+        // deletions are reflected, without handing ReorderableList a new
+        // list instance (which would destroy drag state mid-drag and make
+        // rows impossible to reorder).
+        private readonly Dictionary<string, List<int>> _panelIndexLists =
+            new Dictionary<string, List<int>>(StringComparer.Ordinal);
+
         private ReorderableList GetOrBuildPanelList(StepDefinition step, CueScope scope, string scopeKey,
                                                     string trigger, List<int> cueIndices)
         {
             string key = $"{ScopeKeyPrefix(step.id, scope, scopeKey)}/list/{trigger}";
-            // Rebuild each call: cue indices can shift as cues are added/removed from step.
-            var rl = new ReorderableList(cueIndices, typeof(int),
+
+            // Keep the backing list instance stable: fill in place so Unity's
+            // drag-state (internal index, active-drag flag) survives across
+            // IMGUI repaint frames.
+            if (!_panelIndexLists.TryGetValue(key, out var persistent))
+                _panelIndexLists[key] = persistent = new List<int>(cueIndices.Count);
+            persistent.Clear();
+            persistent.AddRange(cueIndices);
+
+            // Reuse the cached ReorderableList when possible so drag state is
+            // not reset each frame. Only rebuild when no cache entry exists.
+            if (_timingPanelLists.TryGetValue(key, out var cachedRL) && cachedRL != null)
+                return cachedRL;
+
+            var rl = new ReorderableList(persistent, typeof(int),
                 draggable: true, displayHeader: false, displayAddButton: false, displayRemoveButton: false)
             {
                 elementHeight = EditorGUIUtility.singleLineHeight + 2f,
@@ -261,13 +309,17 @@ namespace OSE.Editor
             rl.drawElementCallback = (rect, index, isActive, isFocused) =>
             {
                 var cues = step.animationCues?.cues;
-                if (cues == null || index < 0 || index >= cueIndices.Count) return;
-                int cueIdx = cueIndices[index];
+                if (cues == null || index < 0 || index >= persistent.Count) return;
+                int cueIdx = persistent[index];
                 if (cueIdx < 0 || cueIdx >= cues.Length) return;
                 var cue = cues[cueIdx];
                 if (cue == null) return;
 
-                float x = rect.x;
+                // Leave space on the left for Unity's ReorderableList drag
+                // handle — otherwise our buttons intercept the drag click and
+                // rows can't be reordered.
+                const float DragHandleWidth = 18f;
+                float x = rect.x + DragHandleWidth;
                 float y = rect.y + 1f;
                 float h = rect.height - 2f;
 
@@ -284,19 +336,45 @@ namespace OSE.Editor
                 }
                 x += 26f;
 
-                // Summary label
+                // Summary label — leave room on the right for Play + Edit + Delete
                 string summary = SummarizeCue(cue);
-                var labelRect = new Rect(x, y, rect.width - (x - rect.x) - 96f, h);
+                var labelRect = new Rect(x, y, rect.width - (x - rect.x) - 120f, h);
                 GUI.Label(labelRect, summary, EditorStyles.miniLabel);
 
-                // Reveal
-                var revealRect = new Rect(rect.xMax - 96f, y, 60f, h);
-                if (GUI.Button(revealRect, new GUIContent("Reveal",
-                    "Open this cue's foldout in the canvas ANIMATION CUES section."),
+                // Play / Stop
+                bool isPreviewing = _previewPlayer != null
+                    && _previewPlayer.IsPlaying
+                    && _previewingCueIdx == cueIdx;
+                var playRect = new Rect(rect.xMax - 120f, y, 28f, h);
+                var playColor = GUI.color;
+                GUI.color = isPreviewing ? new Color(1f, 0.55f, 0.55f) : new Color(0.55f, 0.95f, 0.55f);
+                if (GUI.Button(playRect, new GUIContent(isPreviewing ? "■" : "▶",
+                        isPreviewing ? "Stop preview." : "Play this cue in the scene preview."),
                     EditorStyles.miniButton))
                 {
-                    while (_cueFoldouts.Count <= cueIdx) _cueFoldouts.Add(false);
-                    _cueFoldouts[cueIdx] = true;
+                    if (isPreviewing)
+                    {
+                        Debug.Log($"[TTAW] Stop preview (cue {cueIdx}).");
+                        StopAllPreviews();
+                    }
+                    else
+                    {
+                        Debug.Log($"[TTAW] Play preview: step='{step?.id}' cueIdx={cueIdx} type='{cue.type}' targetSub='{cue.targetSubassemblyId}' targetParts={(cue.targetPartIds?.Length ?? 0)}");
+                        StartCuePreview(step, cueIdx);
+                    }
+                    Repaint();
+                }
+                GUI.color = playColor;
+
+                // Edit — toggles inline expand directly beneath this panel
+                while (_cueFoldouts.Count <= cueIdx) _cueFoldouts.Add(false);
+                bool expanded = _cueFoldouts[cueIdx];
+                var editRect = new Rect(rect.xMax - 90f, y, 56f, h);
+                if (GUI.Button(editRect, new GUIContent(expanded ? "Edit ▴" : "Edit ▾",
+                        "Show or hide this cue's property fields inline."),
+                    EditorStyles.miniButton))
+                {
+                    _cueFoldouts[cueIdx] = !expanded;
                     Repaint();
                 }
 
@@ -316,9 +394,9 @@ namespace OSE.Editor
             {
                 var cues = step.animationCues?.cues;
                 if (cues == null) return;
-                for (int i = 0; i < cueIndices.Count; i++)
+                for (int i = 0; i < persistent.Count; i++)
                 {
-                    int cueIdx = cueIndices[i];
+                    int cueIdx = persistent[i];
                     if (cueIdx >= 0 && cueIdx < cues.Length && cues[cueIdx] != null)
                         cues[cueIdx].panelOrder = i;
                 }

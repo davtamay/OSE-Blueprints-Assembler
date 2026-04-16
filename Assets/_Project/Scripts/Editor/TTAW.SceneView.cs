@@ -57,6 +57,11 @@ namespace OSE.Editor
             // ── Phase A3: subassembly root rotation gizmo ─────────────────────
             DrawSubassemblyRootGizmo();
 
+            // Animation-cue pivot-offset gizmos — one PositionHandle per cue
+            // whose pivotOffsetOverride is set. Lets authors drag the rotation
+            // / effect origin in-scene instead of typing numbers.
+            DrawCuePivotGizmos();
+
             // Detect if the author rearranged parts between group roots in the
             // Hierarchy and update partIds[] accordingly.
             PollHierarchyGroupChanges();

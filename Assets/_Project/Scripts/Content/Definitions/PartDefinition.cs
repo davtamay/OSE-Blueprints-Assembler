@@ -53,8 +53,17 @@ namespace OSE.Content
     }
 
     [Serializable]
-    public sealed class PartDefinition
+    public sealed class PartDefinition : IAnimationHost
     {
+        string IAnimationHost.HostId => id;
+        string IAnimationHost.HostDisplayName => GetDisplayName();
+        AnimationHostKind IAnimationHost.HostKind => AnimationHostKind.Part;
+        AnimationCueEntry[] IAnimationHost.AnimationCues
+        {
+            get => animationCues;
+            set => animationCues = value;
+        }
+
         public string id;
         public string name;
         public string displayName;

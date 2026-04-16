@@ -23,8 +23,17 @@ namespace OSE.Content
     }
 
     [Serializable]
-    public sealed class SubassemblyDefinition
+    public sealed class SubassemblyDefinition : IAnimationHost
     {
+        string IAnimationHost.HostId => id;
+        string IAnimationHost.HostDisplayName => GetDisplayName();
+        AnimationHostKind IAnimationHost.HostKind => AnimationHostKind.Subassembly;
+        AnimationCueEntry[] IAnimationHost.AnimationCues
+        {
+            get => animationCues;
+            set => animationCues = value;
+        }
+
         public string id;
         public string name;
         public string assemblyId;

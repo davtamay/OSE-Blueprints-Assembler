@@ -173,6 +173,25 @@ namespace OSE.Content
         /// (which targets a GLB-embedded clip).
         /// </summary>
         public string animationClipAssetPath;
+
+        // ── Pivot override (optional — default pivot is host mesh origin for
+        //    parts and member centroid for subassemblies) ──
+
+        /// <summary>
+        /// When true, <see cref="pivotOffset"/> is applied to this cue's
+        /// rotation / effect origin. When false (default), the host's default
+        /// pivot is used (mesh origin for parts, <c>GroupRigidBody.groupCenter</c>
+        /// for subassemblies) — existing content keeps identical runtime
+        /// behavior.
+        /// </summary>
+        public bool pivotOffsetOverride;
+
+        /// <summary>
+        /// Local-space offset from the host's default pivot. Only honored
+        /// when <see cref="pivotOffsetOverride"/> is true. Authored via the
+        /// Scene-view pivot gizmo in TTAW; serialized at 4-decimal precision.
+        /// </summary>
+        public SceneFloat3 pivotOffset;
     }
 
     /// <summary>

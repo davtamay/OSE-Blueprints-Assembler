@@ -269,7 +269,7 @@ namespace OSE.Editor
         private string              _previewingForStepId;
 
         private static readonly string[] _cueTypes =
-            { "shake", "pulse", "demonstratePlacement", "poseTransition", "orientSubassembly", "animationClip" };
+            { "transform", "shake", "pulse", "demonstratePlacement", "poseTransition", "orientSubassembly", "animationClip" };
         // Trigger values written to machine.json (must stay in sync with _cueTriggerLabels)
         private static readonly string[] _cueTriggers =
             { "onActivate", "afterDelay", "afterPartsShown", "onStepComplete", "onFirstInteraction", "onTaskComplete" };

@@ -56,6 +56,17 @@ namespace OSE.UI.Root
             // collapses to the legacy "rotate-in-place" behaviour for a
             // single-part target.
             _pivotLocal = ComputeChildrenCentroidLocal(root);
+
+            // Optional authored pivot override — shift the rotation center
+            // by a local-space offset. Default behaviour (override == false)
+            // leaves _pivotLocal at the derived centroid unchanged.
+            if (entry.pivotOffsetOverride)
+            {
+                _pivotLocal += new Vector3(
+                    entry.pivotOffset.x,
+                    entry.pivotOffset.y,
+                    entry.pivotOffset.z);
+            }
         }
 
         public bool Tick(float deltaTime)

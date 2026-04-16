@@ -19,6 +19,7 @@ namespace OSE.UI.Root
         private AnimationCueResolvedPose[] _toPoses;
         private float _spinRevolutions;
         private Vector3 _spinAxis;
+        private Vector3[] _pivotsLocal; // children centroid per target (zero for single-part targets)
 
         public void Start(AnimationCueContext context)
         {
@@ -37,6 +38,7 @@ namespace OSE.UI.Root
             int count = _ctx.Targets.Count;
             _fromPoses = new AnimationCueResolvedPose[count];
             _toPoses = new AnimationCueResolvedPose[count];
+            _pivotsLocal = new Vector3[count];
 
             for (int i = 0; i < count; i++)
             {
@@ -46,12 +48,42 @@ namespace OSE.UI.Root
                 if (_ctx.Targets[i] != null)
                 {
                     var t = _ctx.Targets[i].transform;
+
+                    // Same centroid logic as OrientSubassemblyPlayer: compute
+                    // children centroid in the target's local frame. For group
+                    // roots this gives the geometric centre of the parts; for
+                    // single-part targets (no children) it is (0,0,0) and the
+                    // counter-translate in Tick collapses to zero.
+                    _pivotsLocal[i] = ComputeChildrenCentroidLocal(t);
+                    if (context.Entry != null && context.Entry.pivotOffsetOverride)
+                    {
+                        _pivotsLocal[i] += new Vector3(
+                            context.Entry.pivotOffset.x,
+                            context.Entry.pivotOffset.y,
+                            context.Entry.pivotOffset.z);
+                    }
+
                     t.localPosition = _fromPoses[i].Position;
                     t.localRotation = _fromPoses[i].Rotation;
                     if (_fromPoses[i].Scale.sqrMagnitude > 0.001f)
                         t.localScale = _fromPoses[i].Scale;
                 }
             }
+        }
+
+        private static Vector3 ComputeChildrenCentroidLocal(Transform root)
+        {
+            if (root == null || root.childCount == 0) return Vector3.zero;
+            Vector3 sum = Vector3.zero;
+            int n = 0;
+            for (int i = 0; i < root.childCount; i++)
+            {
+                var c = root.GetChild(i);
+                if (c == null || !c.gameObject.activeInHierarchy) continue;
+                sum += c.localPosition;
+                n++;
+            }
+            return n > 0 ? sum / n : Vector3.zero;
         }
 
         public bool Tick(float deltaTime)
@@ -67,15 +99,26 @@ namespace OSE.UI.Root
                 if (_ctx.Targets[i] == null) continue;
                 var t = _ctx.Targets[i].transform;
 
-                t.localPosition = Vector3.Lerp(_fromPoses[i].Position, _toPoses[i].Position, easedT);
-
-                Quaternion baseRot = Quaternion.Slerp(_fromPoses[i].Rotation, _toPoses[i].Rotation, easedT);
+                // Rotation delta from the authored fromPose
+                Quaternion fromRot = _fromPoses[i].Rotation;
+                Quaternion toRot   = _toPoses[i].Rotation;
+                Quaternion deltaRot = Quaternion.Slerp(fromRot, toRot, easedT)
+                                      * Quaternion.Inverse(fromRot);
                 if (_spinRevolutions > 0f)
                 {
                     float spinAngle = easedT * _spinRevolutions * 360f;
-                    baseRot = baseRot * Quaternion.AngleAxis(spinAngle, _spinAxis);
+                    deltaRot = deltaRot * Quaternion.AngleAxis(spinAngle, _spinAxis);
                 }
-                t.localRotation = baseRot;
+                t.localRotation = fromRot * deltaRot;
+
+                // Counter-translate so rotation pivots around the children
+                // centroid (same formula as OrientSubassemblyPlayer):
+                //   counter = C - deltaRot * C   in the target's local frame
+                //   position = fromPos + fromRot * counter + positionDelta
+                Vector3 C = _pivotsLocal[i];
+                Vector3 counter = C - deltaRot * C;
+                Vector3 posLerp = Vector3.Lerp(_fromPoses[i].Position, _toPoses[i].Position, easedT);
+                t.localPosition = posLerp + fromRot * counter;
 
                 if (_fromPoses[i].Scale.sqrMagnitude > 0.001f && _toPoses[i].Scale.sqrMagnitude > 0.001f)
                     t.localScale = Vector3.Lerp(_fromPoses[i].Scale, _toPoses[i].Scale, easedT);
@@ -91,17 +134,18 @@ namespace OSE.UI.Root
 
         public void Stop()
         {
-            if (!IsPlaying) return;
             IsPlaying = false;
 
             for (int i = 0; i < _ctx.Targets.Count; i++)
             {
-                if (_ctx.Targets[i] == null || i >= _toPoses.Length) continue;
+                if (_ctx.Targets[i] == null || i >= _fromPoses.Length) continue;
                 var t = _ctx.Targets[i].transform;
-                t.localPosition = _toPoses[i].Position;
-                t.localRotation = _toPoses[i].Rotation;
-                if (_toPoses[i].Scale.sqrMagnitude > 0.001f)
-                    t.localScale = _toPoses[i].Scale;
+                // Restore to fromPose (preview is cosmetic — leave the group
+                // where it started so other editor systems aren't confused).
+                t.localPosition = _fromPoses[i].Position;
+                t.localRotation = _fromPoses[i].Rotation;
+                if (_fromPoses[i].Scale.sqrMagnitude > 0.001f)
+                    t.localScale = _fromPoses[i].Scale;
             }
         }
 

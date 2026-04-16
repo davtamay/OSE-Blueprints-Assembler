@@ -17,12 +17,10 @@
     {
       "id": "subassembly_cable_routing",
       "name": "Cable Routing",
-      "stepIds": [
-        "step_place_cable_management"
-      ],
+      "stepIds": [ "step_place_cable_management" ],
       "assemblyId": "assembly_d3d_cable_stage_01",
       "description": "Cable chain assemblies for X-axis and Y-axis wiring routes."
-    }
+  }
   ],
   "parts": [
     {

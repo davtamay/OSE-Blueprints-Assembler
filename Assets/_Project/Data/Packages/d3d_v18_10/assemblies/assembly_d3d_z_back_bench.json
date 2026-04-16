@@ -52,65 +52,35 @@
     {
       "id": "subassembly_z_back_idler_build",
       "name": "Z-Back Idler Assembly",
-      "stepIds": [
-        "step_z_back_idler_insert_bolt",
-        "step_z_back_idler_insert_bearings",
-        "step_z_back_idler_align_halves",
-        "step_z_back_idler_bolt"
-      ],
+      "stepIds": [ "step_z_back_idler_insert_bolt", "step_z_back_idler_insert_bearings", "step_z_back_idler_align_halves", "step_z_back_idler_bolt" ],
       "assemblyId": "assembly_d3d_z_back_bench",
       "description": "Same idler build as Y-Left. Long M6x30 frame-mount bolt placed loosely. The Z-back idler mounts on the back face bottom hole directly behind Z-front.",
       "milestoneMessage": "Z-back idler assembled. Frame-mount bolt left loose."
-    },
+  },
     {
       "id": "subassembly_z_back_motor_build",
       "name": "Z-Back Motor Holder Assembly",
-      "stepIds": [
-        "step_z_back_motor_pulley",
-        "step_z_back_motor_pulley_pop",
-        "step_z_back_motor_half_nuts",
-        "step_z_back_motor_belt_channel",
-        "step_z_back_motor_close_halves",
-        "step_z_back_motor_belt_test",
-        "step_z_back_motor_screws",
-        "step_z_back_motor_m6_bolts",
-        "step_z_back_motor_dangle_test"
-      ],
+      "stepIds": [ "step_z_back_motor_pulley", "step_z_back_motor_pulley_pop", "step_z_back_motor_half_nuts", "step_z_back_motor_belt_channel", "step_z_back_motor_close_halves", "step_z_back_motor_belt_test", "step_z_back_motor_screws", "step_z_back_motor_m6_bolts", "step_z_back_motor_dangle_test" ],
       "assemblyId": "assembly_d3d_z_back_bench",
       "description": "Same motor holder build as Y-Left. All 8 motor-piece bolts will be pre-tightened at bench — they become inaccessible after frame mounting.",
       "milestoneMessage": "Z-back motor holder assembled."
-    },
+  },
     {
       "id": "subassembly_z_back_rod_assembly",
       "name": "Z-Back Axis Rod Assembly",
-      "stepIds": [
-        "step_z_back_rods_into_idler",
-        "step_z_back_idler_tighten_rods",
-        "step_z_back_carriage_onto_rods",
-        "step_z_back_motor_onto_rods",
-        "step_z_back_rods_qc"
-      ],
+      "stepIds": [ "step_z_back_rods_into_idler", "step_z_back_idler_tighten_rods", "step_z_back_carriage_onto_rods", "step_z_back_motor_onto_rods", "step_z_back_rods_qc" ],
       "assemblyId": "assembly_d3d_z_back_bench",
       "description": "Threads rods through idler, carriage (with spacers z1_spacer_1 and z1_spacer_002), and motor holder. Checks rods flush at idler.",
       "milestoneMessage": "Z-back guide rods threaded with spacers in place."
-    },
+  },
     {
       "id": "subassembly_z_back_belt_threading",
       "name": "Z-Back Belt Threading",
-      "stepIds": [
-        "step_z_back_belt_large_hole",
-        "step_z_back_belt_around_idler",
-        "step_z_back_belt_small_hole",
-        "step_z_back_belt_peg_orient",
-        "step_z_back_belt_first_peg",
-        "step_z_back_belt_second_peg",
-        "step_z_back_belt_travel_test",
-        "step_z_back_label_axis"
-      ],
+      "stepIds": [ "step_z_back_belt_large_hole", "step_z_back_belt_around_idler", "step_z_back_belt_small_hole", "step_z_back_belt_peg_orient", "step_z_back_belt_first_peg", "step_z_back_belt_second_peg", "step_z_back_belt_travel_test", "step_z_back_label_axis" ],
       "assemblyId": "assembly_d3d_z_back_bench",
       "description": "Routes belt, locks first peg, places second peg loosely. No endstop for Z axes. Label axis Z-Back.",
       "milestoneMessage": "Z-back axis complete: belt routed, first peg locked, axis labeled and QC checked."
-    },
+  },
     {
       "id": "subassembly_z_back_bench_unit",
       "name": "Z Back Complete Axis Unit",

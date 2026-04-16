@@ -28,17 +28,11 @@
     {
       "id": "subassembly_extruder_carriage_mount_stack",
       "name": "Extruder Carriage Mount Stack",
-      "stepIds": [
-        "step_stage_extruder_simplified_carriage",
-        "step_place_titan_aero_mount_bracket",
-        "step_secure_titan_aero_mount_bracket",
-        "step_place_titan_aero_mount_top_plate",
-        "step_secure_titan_aero_mount_top_plate"
-      ],
+      "stepIds": [ "step_stage_extruder_simplified_carriage", "step_place_titan_aero_mount_bracket", "step_secure_titan_aero_mount_bracket", "step_place_titan_aero_mount_top_plate", "step_secure_titan_aero_mount_top_plate" ],
       "assemblyId": "assembly_d3d_extruder_stage_02",
       "description": "Stages the simplified carriage and assembles the first carriage-side Titan Aero bracket and top-plate stack before the nozzle module is mounted.",
       "milestoneMessage": "Simplified carriage, bracket, and top plate assembled into the first carriage-side Titan Aero mount stack."
-    },
+  },
     {
       "id": "subassembly_extruder_carriage_unit",
       "name": "Extruder Carriage Unit",

@@ -328,6 +328,17 @@ namespace OSE.Editor
 
         // ── Animation Cue preview lifecycle ──────────────────────────────────
 
+        // Temporary reparent state — members of a group that were NOT already
+        // children of its Group_ root get attached for the duration of the
+        // preview, then restored to their original parent on Stop. Prevents
+        // "only a few parts animate" when some members live elsewhere in the
+        // hierarchy (aggregate sub-roots, previewRoot siblings, etc).
+        private readonly List<(Transform child, Transform originalParent)> _previewReparents = new();
+
+        // Transient wrapper GOs created when no persistent Group_ root exists
+        // for the subassembly being previewed. Destroyed on Stop.
+        private readonly List<GameObject> _previewTransientWrappers = new();
+
         private void StopAllPreviews()
         {
             if (_previewPlayer != null)
@@ -335,6 +346,31 @@ namespace OSE.Editor
                 if (_previewPlayer.IsPlaying) _previewPlayer.Stop();
                 _previewPlayer = null;
             }
+
+            // Restore any members we temporarily reparented.
+            if (_previewReparents.Count > 0)
+            {
+                for (int i = _previewReparents.Count - 1; i >= 0; i--)
+                {
+                    var (ch, orig) = _previewReparents[i];
+                    if (ch != null) ch.SetParent(orig, worldPositionStays: true);
+                }
+                _previewReparents.Clear();
+            }
+
+            // Destroy any transient wrapper GOs we created for the preview.
+            if (_previewTransientWrappers.Count > 0)
+            {
+                for (int i = _previewTransientWrappers.Count - 1; i >= 0; i--)
+                {
+                    var w = _previewTransientWrappers[i];
+                    if (w == null) continue;
+                    if (Application.isPlaying) UnityEngine.Object.Destroy(w);
+                    else                        UnityEngine.Object.DestroyImmediate(w);
+                }
+                _previewTransientWrappers.Clear();
+            }
+
             _previewingCueIdx   = -1;
             _previewingForStepId = null;
             if (_previewUpdateRegistered)
@@ -419,6 +455,7 @@ namespace OSE.Editor
                 "particle"             => new OSE.UI.Root.ParticlePlayer(),
                 "demonstratePlacement" => new OSE.UI.Root.DemonstratePlacementPlayer(),
                 "poseTransition"       => new OSE.UI.Root.PoseTransitionPlayer(),
+                "transform"            => new OSE.UI.Root.PoseTransitionPlayer(),
                 "orientSubassembly"    => new OSE.UI.Root.OrientSubassemblyPlayer(),
                 _                      => null,
             };
@@ -428,7 +465,7 @@ namespace OSE.Editor
                 return;
             }
 
-            float duration = entry.durationSeconds > 0f ? entry.durationSeconds : 0f;
+            float duration = entry.durationSeconds > 0f ? entry.durationSeconds : 1.5f;
             var ctx = new OSE.UI.Root.AnimationCueContext(entry, targets, startPoses, asmPoses, duration);
             player.Start(ctx);
 
@@ -464,10 +501,111 @@ namespace OSE.Editor
             var startPoses = new List<OSE.UI.Root.AnimationCueResolvedPose>();
             var asmPoses   = new List<OSE.UI.Root.AnimationCueResolvedPose>();
 
+            // Subassembly-scoped cues resolve to the Group_* root when one is
+            // spawned. If no root exists for this step, fall back to the
+            // subassembly's member part GOs so Play still animates something
+            // visible instead of silently no-op'ing.
+            bool groupRootResolved = false;
+            if (!string.IsNullOrEmpty(entry.targetSubassemblyId))
+            {
+                Debug.Log($"[AnimCuePreview] Cue scoped to subassembly '{entry.targetSubassemblyId}'.");
+                // After editor restart, Group_ GOs (HideFlags.DontSave)
+                // are destroyed but the dictionary may hold stale keys.
+                // Trigger a package reload to recreate them if needed.
+                GameObject groupRoot = null;
+                if (_subassemblyRootGOs != null
+                    && _subassemblyRootGOs.TryGetValue(entry.targetSubassemblyId, out groupRoot)
+                    && groupRoot == null)
+                {
+                    Debug.Log("[AnimCuePreview] Group root was destroyed (editor restart?). Triggering refresh.");
+                    _subassemblyRootGOs.Remove(entry.targetSubassemblyId);
+                    // Re-build group roots for the current step.
+                    if (_stepIds != null && _stepFilterIdx > 0 && _stepFilterIdx < _stepIds.Length)
+                    {
+                        var refreshStep = FindStep(_stepIds[_stepFilterIdx]);
+                        if (refreshStep != null) EnsureAllSubassemblyRoots(refreshStep);
+                    }
+                    _subassemblyRootGOs.TryGetValue(entry.targetSubassemblyId, out groupRoot);
+                }
+                if (groupRoot != null)
+                {
+                    targets.Add(groupRoot);
+                    var gt = groupRoot.transform;
+                    var gpose = new OSE.UI.Root.AnimationCueResolvedPose
+                    {
+                        Position = gt.localPosition,
+                        Rotation = gt.localRotation,
+                        Scale    = gt.localScale,
+                    };
+                    startPoses.Add(gpose);
+                    asmPoses.Add(gpose);
+                    groupRootResolved = true;
+
+                    Debug.Log($"[AnimCuePreview] Resolved group root '{groupRoot.name}'.");
+                }
+                else if (_pkg != null
+                    && _pkg.TryGetSubassembly(entry.targetSubassemblyId, out var subDef)
+                    && subDef?.partIds != null)
+                {
+                    // Fallback: no Group_ root is registered, so spawn a
+                    // transient wrapper root at PreviewRoot, scoop all member
+                    // parts under it, and animate the wrapper as a single
+                    // group target. Cleanup on Stop restores every member's
+                    // original parent.
+                    Debug.LogWarning($"[AnimCuePreview] No Group_ root for '{entry.targetSubassemblyId}'. Creating transient wrapper for the preview.");
+                    var previewRoot = GetPreviewRoot();
+                    var wrapperGO   = new GameObject($"PreviewGroup_{entry.targetSubassemblyId}")
+                    {
+                        hideFlags = HideFlags.DontSave,
+                    };
+                    if (previewRoot != null) wrapperGO.transform.SetParent(previewRoot, false);
+
+                    int scooped = 0;
+                    foreach (string pid in subDef.partIds)
+                    {
+                        if (string.IsNullOrEmpty(pid)) continue;
+                        var pgo = FindLivePartGO(pid);
+                        if (pgo == null) continue;
+                        var pt2 = pgo.transform;
+                        _previewReparents.Add((pt2, pt2.parent));
+                        pt2.SetParent(wrapperGO.transform, worldPositionStays: true);
+                        scooped++;
+                    }
+
+                    if (scooped > 0)
+                    {
+                        // Also track the wrapper itself so Stop can destroy it.
+                        _previewTransientWrappers.Add(wrapperGO);
+                        targets.Add(wrapperGO);
+                        var wt = wrapperGO.transform;
+                        var wpose = new OSE.UI.Root.AnimationCueResolvedPose
+                        {
+                            Position = wt.localPosition,
+                            Rotation = wt.localRotation,
+                            Scale    = wt.localScale,
+                        };
+                        startPoses.Add(wpose);
+                        asmPoses.Add(wpose);
+                        groupRootResolved = true;
+                        Debug.Log($"[AnimCuePreview] Transient wrapper contains {scooped} member(s).");
+                    }
+                    else
+                    {
+                        UnityEngine.Object.DestroyImmediate(wrapperGO);
+                    }
+                }
+            }
+
+            // When the cue is group-scoped, the group root (or its member
+            // parts) is the target set — don't also spam all the step's
+            // required parts.
+            bool hasSubTarget = groupRootResolved;
             bool hasExplicitTargets = entry.targetPartIds != null && entry.targetPartIds.Length > 0;
-            IEnumerable<string> resolveIds = hasExplicitTargets
-                ? (IEnumerable<string>)entry.targetPartIds
-                : (step.requiredPartIds ?? Array.Empty<string>());
+            IEnumerable<string> resolveIds = hasSubTarget
+                ? Array.Empty<string>()
+                : (hasExplicitTargets
+                    ? (IEnumerable<string>)entry.targetPartIds
+                    : (step.requiredPartIds ?? Array.Empty<string>()));
 
             foreach (string pid in resolveIds)
             {
@@ -553,6 +691,7 @@ namespace OSE.Editor
                 "pulse"                => new OSE.UI.Root.PulsePlayer(),
                 "demonstratePlacement" => new OSE.UI.Root.DemonstratePlacementPlayer(),
                 "poseTransition"       => new OSE.UI.Root.PoseTransitionPlayer(),
+                "transform"            => new OSE.UI.Root.PoseTransitionPlayer(),
                 "orientSubassembly"    => new OSE.UI.Root.OrientSubassemblyPlayer(),
                 _                      => null,
             };
@@ -563,7 +702,7 @@ namespace OSE.Editor
                 return;
             }
 
-            float duration = entry.durationSeconds > 0f ? entry.durationSeconds : 0f;
+            float duration = entry.durationSeconds > 0f ? entry.durationSeconds : 1.5f;
             var ctx = new OSE.UI.Root.AnimationCueContext(entry, targets, startPoses, asmPoses, duration);
             player.Start(ctx);
 
@@ -997,37 +1136,9 @@ namespace OSE.Editor
                 _dirtyStepIds.Add(step.id);
             }
 
-            // ── Target Part IDs ─────────────────────────────────────────────────
-            var stepPartIds = step.requiredPartIds ?? Array.Empty<string>();
-            if (stepPartIds.Length == 0 && _pkg?.parts != null)
-                stepPartIds = Array.ConvertAll(_pkg.parts, p => p?.id ?? "");
-
-            if (stepPartIds.Length > 0)
-            {
-                EditorGUILayout.LabelField("Target Part IDs", EditorStyles.boldLabel);
-                EditorGUI.indentLevel++;
-                var currentTargets = new HashSet<string>(cue.targetPartIds ?? Array.Empty<string>(), StringComparer.Ordinal);
-                bool targetsDirty  = false;
-                foreach (string pid in stepPartIds)
-                {
-                    if (string.IsNullOrEmpty(pid)) continue;
-                    bool on = currentTargets.Contains(pid);
-                    EditorGUI.BeginChangeCheck();
-                    bool newOn = EditorGUILayout.ToggleLeft(pid, on, EditorStyles.miniLabel);
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        if (newOn) currentTargets.Add(pid); else currentTargets.Remove(pid);
-                        targetsDirty = true;
-                    }
-                }
-                if (targetsDirty)
-                {
-                    cue.targetPartIds = currentTargets.ToArray();
-                    cues[idx]         = cue;
-                    _dirtyStepIds.Add(step.id);
-                }
-                EditorGUI.indentLevel--;
-            }
+            // Target selection is derived from the cue's host (the selected
+            // part or group in the task sequence). The old Target Part IDs
+            // toggle block has been removed — authoring is host-scoped now.
 
             // ── Target Subassembly (orientSubassembly only) ─────────────────────
             if (string.Equals(cue.type, "orientSubassembly", StringComparison.Ordinal))
@@ -1083,11 +1194,9 @@ namespace OSE.Editor
             int newModeIdx = EditorGUILayout.Popup("Target Mode", modeIdx, _cueTargetModes);
             cue.target     = _cueTargetModes[newModeIdx];
 
-            cue.sequenceAfterPrevious = EditorGUILayout.Toggle(
-                new GUIContent("Wait for Previous",
-                    "When checked, this row waits for the previous row in its timing panel " +
-                    "to finish before starting (⇣). When unchecked, it runs in parallel (∥)."),
-                cue.sequenceAfterPrevious);
+            // Parallel / Sequenced is authored via the ∥ / ⇣ toggle on the
+            // timing-panel row header — redundant toggle removed to avoid
+            // two UIs writing the same field.
 
             if (string.Equals(cue.type, "animationClip", StringComparison.Ordinal))
             {
@@ -1142,13 +1251,10 @@ namespace OSE.Editor
                 }
                 case "poseTransition":
                 {
-                    cue.spinRevolutions = FloatFieldClip("Spin Revolutions", cue.spinRevolutions);
-                    var sa2 = new Vector3(cue.spinAxis.x, cue.spinAxis.y, cue.spinAxis.z);
-                    if (sa2 == Vector3.zero) sa2 = Vector3.up;
-                    sa2          = Vector3FieldClip("Spin Axis", sa2);
-                    cue.spinAxis = new SceneFloat3 { x = sa2.x, y = sa2.y, z = sa2.z };
-
-                    EditorGUILayout.Space(4);
+                    // Spin fields intentionally omitted — pose transition is
+                    // now strictly a from→to interpolation. Use the dedicated
+                    // 'demonstratePlacement' cue when spin is needed.
+                    cue.spinRevolutions = 0f;
                     if (EditorGUI.EndChangeCheck()) { cues[idx] = cue; _dirtyStepIds.Add(step.id); EditorGUI.BeginChangeCheck(); }
                     DrawAnimationPoseField("From Pose", ref cue.fromPose, step);
                     DrawAnimationPoseField("To Pose",   ref cue.toPose,   step);
@@ -1162,8 +1268,70 @@ namespace OSE.Editor
                     cue.subassemblyRotation = new SceneFloat3 { x = rot.x, y = rot.y, z = rot.z };
                     break;
                 }
+                case "transform":
+                {
+                    // Universal From → To transform animation (position, rotation,
+                    // scale). Backed by PoseTransitionPlayer. "Capture Current"
+                    // snapshots the selected host's live transform into the
+                    // chosen pose so authors see real starting values.
+                    EditorGUILayout.HelpBox(
+                        "Animates position, rotation, and scale from the From pose " +
+                        "to the To pose over Duration. Use Capture Current to " +
+                        "snapshot the host's live transform.",
+                        MessageType.None);
+                    if (EditorGUI.EndChangeCheck()) { cues[idx] = cue; _dirtyStepIds.Add(step.id); EditorGUI.BeginChangeCheck(); }
+                    DrawAnimationPoseField("From Pose", ref cue.fromPose, step);
+                    DrawAnimationPoseField("To Pose",   ref cue.toPose,   step);
+                    cues[idx] = cue;
+                    break;
+                }
             }
             if (EditorGUI.EndChangeCheck()) { cues[idx] = cue; _dirtyStepIds.Add(step.id); }
+
+            // ── Pivot override (optional — types that rotate or emit from a point) ──
+            // Default pivot for "orientSubassembly" is the member centroid; for
+            // "particle" it is the host's position (centroid for groups). The
+            // override lets authors nudge the rotation / effect origin with a
+            // local-space offset. Only exposed for types where it is meaningful.
+            bool pivotCapable =
+                string.Equals(cue.type, "orientSubassembly", StringComparison.Ordinal) ||
+                string.Equals(cue.type, "particle", StringComparison.Ordinal) ||
+                string.Equals(cue.type, "transform", StringComparison.Ordinal) ||
+                string.Equals(cue.type, "poseTransition", StringComparison.Ordinal);
+            if (pivotCapable)
+            {
+                EditorGUILayout.Space(2);
+                EditorGUI.BeginChangeCheck();
+                bool newOverride = EditorGUILayout.Toggle(
+                    new GUIContent("Pivot Override",
+                        "When off (default), pivot is the host's natural origin " +
+                        "(mesh origin for parts, member centroid for groups). " +
+                        "When on, the offset below shifts the rotation / effect origin."),
+                    cue.pivotOffsetOverride);
+                if (newOverride != cue.pivotOffsetOverride)
+                {
+                    cue.pivotOffsetOverride = newOverride;
+                    if (!newOverride)
+                        cue.pivotOffset = new SceneFloat3 { x = 0f, y = 0f, z = 0f };
+                }
+                if (cue.pivotOffsetOverride)
+                {
+                    EditorGUI.indentLevel++;
+                    var off = new Vector3(cue.pivotOffset.x, cue.pivotOffset.y, cue.pivotOffset.z);
+                    off = Vector3FieldClip("Pivot Offset (m, local)", off);
+                    cue.pivotOffset = new SceneFloat3 { x = off.x, y = off.y, z = off.z };
+
+                    if (GUILayout.Button(new GUIContent("Reset to Default",
+                        "Clear the pivot override. Rotation / effect returns to the host's natural origin."),
+                        EditorStyles.miniButton, GUILayout.Width(140)))
+                    {
+                        cue.pivotOffsetOverride = false;
+                        cue.pivotOffset = new SceneFloat3 { x = 0f, y = 0f, z = 0f };
+                    }
+                    EditorGUI.indentLevel--;
+                }
+                if (EditorGUI.EndChangeCheck()) { cues[idx] = cue; _dirtyStepIds.Add(step.id); }
+            }
 
             // ── Preview strip ───────────────────────────────────────────────────
             EditorGUILayout.Space(4);
@@ -1248,35 +1416,50 @@ namespace OSE.Editor
                 _dirtyStepIds.Add(step.id);
             }
 
-            // Capture from the currently selected part's live GO
-            if (GUILayout.Button("Capture from selected part in Scene", EditorStyles.miniButton))
+            // Capture from the selected host's live GO (part OR group root).
+            if (GUILayout.Button("Capture Current", EditorStyles.miniButton))
             {
-                string captureId = null;
-                if (_selectedPartIdx >= 0 && _parts != null && _selectedPartIdx < _parts.Length)
-                    captureId = _parts[_selectedPartIdx].def?.id;
-                else if (_selectedTaskSeqIdx >= 0 && _stepIds != null && _stepFilterIdx < _stepIds.Length)
+                Transform captured = null;
+                string    captureLabel = null;
+
+                // Prefer a group root when a subassembly is selected.
+                if (!string.IsNullOrEmpty(_canvasSelectedSubId)
+                    && _subassemblyRootGOs != null
+                    && _subassemblyRootGOs.TryGetValue(_canvasSelectedSubId, out var groupGO)
+                    && groupGO != null)
                 {
-                    var ord = GetOrDeriveTaskOrder(step);
-                    if (_selectedTaskSeqIdx < ord.Count && ord[_selectedTaskSeqIdx].kind == "part")
-                        captureId = ord[_selectedTaskSeqIdx].id;
+                    captured = groupGO.transform;
+                    captureLabel = $"group '{_canvasSelectedSubId}'";
+                }
+                else
+                {
+                    string captureId = null;
+                    if (_selectedPartIdx >= 0 && _parts != null && _selectedPartIdx < _parts.Length)
+                        captureId = _parts[_selectedPartIdx].def?.id;
+                    else if (_selectedTaskSeqIdx >= 0 && _stepIds != null && _stepFilterIdx < _stepIds.Length)
+                    {
+                        var ord = GetOrDeriveTaskOrder(step);
+                        if (_selectedTaskSeqIdx < ord.Count && ord[_selectedTaskSeqIdx].kind == "part")
+                            captureId = ord[_selectedTaskSeqIdx].id;
+                    }
+                    if (!string.IsNullOrEmpty(captureId))
+                    {
+                        var pgo = FindLivePartGO(captureId);
+                        if (pgo != null) { captured = pgo.transform; captureLabel = $"part '{captureId}'"; }
+                    }
                 }
 
-                if (!string.IsNullOrEmpty(captureId))
+                if (captured != null)
                 {
-                    var go = FindLivePartGO(captureId);
-                    if (go != null)
-                    {
-                        var t = go.transform;
-                        pose.position = new SceneFloat3 { x = t.localPosition.x, y = t.localPosition.y, z = t.localPosition.z };
-                        var q2 = t.localRotation;
-                        pose.rotation = new SceneQuaternion { x = q2.x, y = q2.y, z = q2.z, w = q2.w };
-                        pose.scale    = new SceneFloat3 { x = t.localScale.x, y = t.localScale.y, z = t.localScale.z };
-                        _dirtyStepIds.Add(step.id);
-                        GUI.changed = true;
-                    }
-                    else Debug.LogWarning($"[AnimCueCapture] No live GO for part '{captureId}'.");
+                    pose.position = new SceneFloat3 { x = captured.localPosition.x, y = captured.localPosition.y, z = captured.localPosition.z };
+                    var q2 = captured.localRotation;
+                    pose.rotation = new SceneQuaternion { x = q2.x, y = q2.y, z = q2.z, w = q2.w };
+                    pose.scale    = new SceneFloat3 { x = captured.localScale.x, y = captured.localScale.y, z = captured.localScale.z };
+                    _dirtyStepIds.Add(step.id);
+                    GUI.changed = true;
+                    Debug.Log($"[AnimCueCapture] Captured {captureLabel}: pos={captured.localPosition} rot={q2.eulerAngles} scl={captured.localScale}");
                 }
-                else Debug.LogWarning("[AnimCueCapture] Select a part task or a part in the scene first.");
+                else Debug.LogWarning("[AnimCueCapture] Select a part or group row in the task sequence first.");
             }
 
             EditorGUI.indentLevel--;

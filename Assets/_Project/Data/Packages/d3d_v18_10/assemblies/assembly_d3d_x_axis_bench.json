@@ -66,81 +66,43 @@
     {
       "id": "subassembly_x_axis_carriage_build",
       "name": "X-Axis Carriage Assembly",
-      "stepIds": [
-        "step_x_axis_prep_layout",
-        "step_x_axis_prep_clean_holes",
-        "step_x_axis_prep_qc_plastic",
-        "step_x_axis_carriage_place_bearings",
-        "step_x_axis_carriage_shake_test",
-        "step_x_axis_carriage_rod_slide_test",
-        "step_x_axis_carriage_bolt"
-      ],
+      "stepIds": [ "step_x_axis_prep_layout", "step_x_axis_prep_clean_holes", "step_x_axis_prep_qc_plastic", "step_x_axis_carriage_place_bearings", "step_x_axis_carriage_shake_test", "step_x_axis_carriage_rod_slide_test", "step_x_axis_carriage_bolt" ],
       "assemblyId": "assembly_d3d_x_axis_bench",
       "description": "Same bearing-in-carriage procedure as Y axes. Middle holes must fit together as pictured. M6x18 bolts at top, M6x30 bolts at bottom. Run shake test and rod-slide test.",
       "milestoneMessage": "X-axis carriage assembled and bearing fit verified."
-    },
+  },
     {
       "id": "subassembly_x_axis_idler_build",
       "name": "X-Axis Idler Assembly",
-      "stepIds": [
-        "step_x_axis_idler_insert_bolt",
-        "step_x_axis_idler_insert_bearings",
-        "step_x_axis_idler_align_halves",
-        "step_x_axis_idler_bolt"
-      ],
+      "stepIds": [ "step_x_axis_idler_insert_bolt", "step_x_axis_idler_insert_bearings", "step_x_axis_idler_align_halves", "step_x_axis_idler_bolt" ],
       "assemblyId": "assembly_d3d_x_axis_bench",
       "description": "X-axis idler uses 5 M6x18 screws and 2 half-bearings (not full bearings). Place bearings with flanges out. Put nuts beside bearings in their slots — these nuts attach the X-axis to the Y-axis carriages later. Add 2 M6x18 bolts through the half-piece, close and tighten fully.",
       "milestoneMessage": "X-axis idler assembled with nuts in place for Y-carriage attachment."
-    },
+  },
     {
       "id": "subassembly_x_axis_motor_build",
       "name": "X-Axis Motor Holder Assembly",
-      "stepIds": [
-        "step_x_axis_motor_pulley",
-        "step_x_axis_motor_pulley_pop",
-        "step_x_axis_motor_half_nuts",
-        "step_x_axis_motor_belt_channel",
-        "step_x_axis_motor_close_halves",
-        "step_x_axis_motor_belt_test",
-        "step_x_axis_motor_screws",
-        "step_x_axis_motor_m6_bolts",
-        "step_x_axis_motor_dangle_test"
-      ],
+      "stepIds": [ "step_x_axis_motor_pulley", "step_x_axis_motor_pulley_pop", "step_x_axis_motor_half_nuts", "step_x_axis_motor_belt_channel", "step_x_axis_motor_close_halves", "step_x_axis_motor_belt_test", "step_x_axis_motor_screws", "step_x_axis_motor_m6_bolts", "step_x_axis_motor_dangle_test" ],
       "assemblyId": "assembly_d3d_x_axis_bench",
       "description": "Sets two nuts in motor half-piece. Places belt toothed-side inward in channel. Closes half-pieces aligned. Inserts 4 nuts (no bolts yet). Pulley on motor with set screws. Motor placed on top with cable plug pointing toward belt. 4 M3x25 screws then 3 M6x18 bolts and 1 M6x30 bolt — note long bolt position relative to belt hole.",
       "milestoneMessage": "X-axis motor holder assembled."
-    },
+  },
     {
       "id": "subassembly_x_axis_rod_assembly",
       "name": "X-Axis Rod Assembly",
-      "stepIds": [
-        "step_x_axis_rods_into_idler",
-        "step_x_axis_idler_tighten_rods",
-        "step_x_axis_carriage_onto_rods",
-        "step_x_axis_motor_onto_rods",
-        "step_x_axis_rods_qc"
-      ],
+      "stepIds": [ "step_x_axis_rods_into_idler", "step_x_axis_idler_tighten_rods", "step_x_axis_carriage_onto_rods", "step_x_axis_motor_onto_rods", "step_x_axis_rods_qc" ],
       "assemblyId": "assembly_d3d_x_axis_bench",
       "description": "Inserts rods into completed idler flush with bottom. Slides carriage onto rods. Pushes motor holder onto rods in correct orientation. Checks rods still flush at idler.",
       "milestoneMessage": "X-axis guide rods threaded. Carriage slides smoothly."
-    },
+  },
     {
       "id": "subassembly_x_axis_belt_threading",
       "name": "X-Axis Belt Threading",
-      "stepIds": [
-        "step_x_axis_belt_large_hole",
-        "step_x_axis_belt_around_idler",
-        "step_x_axis_belt_small_hole",
-        "step_x_axis_belt_peg_orient",
-        "step_x_axis_belt_first_peg",
-        "step_x_axis_belt_second_peg",
-        "step_x_axis_belt_travel_test",
-        "step_x_axis_label_axis"
-      ],
+      "stepIds": [ "step_x_axis_belt_large_hole", "step_x_axis_belt_around_idler", "step_x_axis_belt_small_hole", "step_x_axis_belt_peg_orient", "step_x_axis_belt_first_peg", "step_x_axis_belt_second_peg", "step_x_axis_belt_travel_test", "step_x_axis_label_axis" ],
       "assemblyId": "assembly_d3d_x_axis_bench",
       "description": "Routes belt from large carriage hole, around idler bearing (slight curve helps), through idler belt-catcher side, through first peg (foot away from axis center), locks first peg. Second peg placed loosely — tightened after fitting to Y axes.",
       "milestoneMessage": "X-axis belt routed and first peg locked. Second peg loose for Y-fitting tensioning."
-    },
+  },
     {
       "id": "subassembly_x_axis_endstop_build",
       "name": "X-Axis Endstop Attachment",

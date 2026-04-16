@@ -63,5 +63,86 @@ namespace OSE.Editor
             DrawTimingPanelsStrip(step, CueScope.Subassembly, subassemblyId,
                 title: $"ANIMATION CUES FOR  {subName}");
         }
+
+        // ── Row-level cue-count badges (inline affordance on list rows) ──────
+        //
+        // Renders a compact "🎬 N" / "✨ M" pill beside part and group rows so
+        // authors can see at a glance which hosts carry animation cues or
+        // particle effects — without selecting the row first. Returns the
+        // total pill width consumed so callers can lay out adjacent content.
+
+        private static readonly Color CueBadgeAnim     = new(0.95f, 0.65f, 0.20f); // orange (animation accent)
+        private static readonly Color CueBadgeParticle = new(0.55f, 0.80f, 1.00f); // blue-cyan (particles)
+
+        /// <summary>
+        /// Counts animation cues and particle cues hosted on an
+        /// <see cref="IAnimationHost"/>. Returns (animCount, particleCount).
+        /// Particle cues are those with <c>type == "particle"</c>; everything
+        /// else is counted as an animation cue.
+        /// </summary>
+        private static (int anim, int particle) CountHostCues(IAnimationHost host)
+        {
+            if (host == null) return (0, 0);
+            var cues = host.AnimationCues;
+            if (cues == null || cues.Length == 0) return (0, 0);
+
+            int anim = 0, particle = 0;
+            for (int i = 0; i < cues.Length; i++)
+            {
+                var c = cues[i];
+                if (c == null) continue;
+                if (string.Equals(c.type, "particle", StringComparison.Ordinal))
+                    particle++;
+                else
+                    anim++;
+            }
+            return (anim, particle);
+        }
+
+        /// <summary>
+        /// Draws cue-count pills within <paramref name="area"/> right-aligned.
+        /// Returns the total width used (0 when no cues). Use to reserve
+        /// space in parent row layouts.
+        /// </summary>
+        private float DrawCueCountBadges(Rect area, IAnimationHost host)
+        {
+            var (anim, particle) = CountHostCues(host);
+            if (anim == 0 && particle == 0) return 0f;
+
+            var pillStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                fontSize  = 9,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+            };
+
+            float x = area.xMax;
+            float h = Mathf.Min(14f, area.height - 4f);
+            float y = area.y + (area.height - h) * 0.5f;
+
+            if (particle > 0)
+            {
+                string label = $"✨ {particle}";
+                float w = Mathf.Max(24f, pillStyle.CalcSize(new GUIContent(label)).x + 6f);
+                x -= w;
+                var r = new Rect(x, y, w, h);
+                EditorGUI.DrawRect(r, new Color(CueBadgeParticle.r, CueBadgeParticle.g, CueBadgeParticle.b, 0.22f));
+                var s = new GUIStyle(pillStyle) { normal = { textColor = CueBadgeParticle } };
+                GUI.Label(r, label, s);
+                x -= 3f;
+            }
+            if (anim > 0)
+            {
+                string label = $"🎬 {anim}";
+                float w = Mathf.Max(24f, pillStyle.CalcSize(new GUIContent(label)).x + 6f);
+                x -= w;
+                var r = new Rect(x, y, w, h);
+                EditorGUI.DrawRect(r, new Color(CueBadgeAnim.r, CueBadgeAnim.g, CueBadgeAnim.b, 0.22f));
+                var s = new GUIStyle(pillStyle) { normal = { textColor = CueBadgeAnim } };
+                GUI.Label(r, label, s);
+            }
+
+            return area.xMax - x;
+        }
     }
 }

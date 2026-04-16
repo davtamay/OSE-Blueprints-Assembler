@@ -2663,6 +2663,12 @@ namespace OSE.Editor
                 Rect labelRect = EditorGUILayout.GetControlRect();
                 EditorGUI.LabelField(labelRect, $"  {p.def.id}{badge}", style);
 
+                // Cue-count badges — at-a-glance signal of which parts host
+                // animation / particle cues. Drawn right-aligned inside the
+                // same row so the label remains the primary read.
+                var cueArea = new Rect(labelRect.xMax - 80f, labelRect.y, 78f, labelRect.height);
+                DrawCueCountBadges(cueArea, p.def);
+
                 if (labelRect.Contains(Event.current.mousePosition) && Event.current.type == EventType.MouseDown)
                 {
                     bool ctrl  = Event.current.control;

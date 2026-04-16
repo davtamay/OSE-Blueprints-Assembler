@@ -52,65 +52,35 @@
     {
       "id": "subassembly_z_front_idler_build",
       "name": "Z-Front Idler Assembly",
-      "stepIds": [
-        "step_z_front_idler_insert_bolt",
-        "step_z_front_idler_insert_bearings",
-        "step_z_front_idler_align_halves",
-        "step_z_front_idler_bolt"
-      ],
+      "stepIds": [ "step_z_front_idler_insert_bolt", "step_z_front_idler_insert_bearings", "step_z_front_idler_align_halves", "step_z_front_idler_bolt" ],
       "assemblyId": "assembly_d3d_z_front_bench",
       "description": "Same idler build as Y-Right. Long M6x30 frame-mount bolt placed loosely — it will size to the front frame face bottom hole. No bearing in the middle of Z idler (Z uses the same idler piece as Y-Right).",
       "milestoneMessage": "Z-front idler assembled. Frame-mount bolt left loose."
-    },
+  },
     {
       "id": "subassembly_z_front_motor_build",
       "name": "Z-Front Motor Holder Assembly",
-      "stepIds": [
-        "step_z_front_motor_pulley",
-        "step_z_front_motor_pulley_pop",
-        "step_z_front_motor_half_nuts",
-        "step_z_front_motor_belt_channel",
-        "step_z_front_motor_close_halves",
-        "step_z_front_motor_belt_test",
-        "step_z_front_motor_screws",
-        "step_z_front_motor_m6_bolts",
-        "step_z_front_motor_dangle_test"
-      ],
+      "stepIds": [ "step_z_front_motor_pulley", "step_z_front_motor_pulley_pop", "step_z_front_motor_half_nuts", "step_z_front_motor_belt_channel", "step_z_front_motor_close_halves", "step_z_front_motor_belt_test", "step_z_front_motor_screws", "step_z_front_motor_m6_bolts", "step_z_front_motor_dangle_test" ],
       "assemblyId": "assembly_d3d_z_front_bench",
       "description": "Same motor holder build as Y-Right. Belt in channel, motor attached. All 8 motor-piece bolts will be tightened before frame mounting (they become inaccessible after).",
       "milestoneMessage": "Z-front motor holder assembled."
-    },
+  },
     {
       "id": "subassembly_z_front_rod_assembly",
       "name": "Z-Front Axis Rod Assembly",
-      "stepIds": [
-        "step_z_front_rods_into_idler",
-        "step_z_front_idler_tighten_rods",
-        "step_z_front_carriage_onto_rods",
-        "step_z_front_motor_onto_rods",
-        "step_z_front_rods_qc"
-      ],
+      "stepIds": [ "step_z_front_rods_into_idler", "step_z_front_idler_tighten_rods", "step_z_front_carriage_onto_rods", "step_z_front_motor_onto_rods", "step_z_front_rods_qc" ],
       "assemblyId": "assembly_d3d_z_front_bench",
       "description": "Threads rods through idler, carriage (with spacers z2_spacer and z2_spacer_2 between carriage and half-carriage), and motor holder. Checks rods flush at idler.",
       "milestoneMessage": "Z-front guide rods threaded with spacers in place."
-    },
+  },
     {
       "id": "subassembly_z_front_belt_threading",
       "name": "Z-Front Belt Threading",
-      "stepIds": [
-        "step_z_front_belt_large_hole",
-        "step_z_front_belt_around_idler",
-        "step_z_front_belt_small_hole",
-        "step_z_front_belt_peg_orient",
-        "step_z_front_belt_first_peg",
-        "step_z_front_belt_second_peg",
-        "step_z_front_belt_travel_test",
-        "step_z_front_label_axis"
-      ],
+      "stepIds": [ "step_z_front_belt_large_hole", "step_z_front_belt_around_idler", "step_z_front_belt_small_hole", "step_z_front_belt_peg_orient", "step_z_front_belt_first_peg", "step_z_front_belt_second_peg", "step_z_front_belt_travel_test", "step_z_front_label_axis" ],
       "assemblyId": "assembly_d3d_z_front_bench",
       "description": "Routes belt, locks first peg, places second peg loosely. No endstop for Z axes. Label axis Z-Front.",
       "milestoneMessage": "Z-front axis complete: belt routed, first peg locked, axis labeled and QC checked."
-    },
+  },
     {
       "id": "subassembly_z_front_bench_unit",
       "name": "Z Front Complete Axis Unit",

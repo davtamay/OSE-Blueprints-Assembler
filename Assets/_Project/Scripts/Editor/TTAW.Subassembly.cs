@@ -1341,6 +1341,12 @@ namespace OSE.Editor
                     normal    = { textColor = new Color(0.55f, 0.58f, 0.62f) },
                     alignment = TextAnchor.MiddleRight,
                 };
+                // Cue-count badges — inline at-a-glance affordance so authors
+                // see which groups own animation/particle cues without having
+                // to select each row.
+                var badgeArea = new Rect(rowRect.xMax - 160f, rowRect.y, 78f, rowRect.height);
+                DrawCueCountBadges(badgeArea, sub);
+
                 var countRect = new Rect(rowRect.xMax - 80f, rowRect.y, 74f, rowRect.height);
                 int groupChildren = sub.memberSubassemblyIds?.Length ?? 0;
                 string countText = sub.isAggregate && groupChildren > 0

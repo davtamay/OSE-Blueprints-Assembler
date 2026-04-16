@@ -21,23 +21,17 @@
     {
       "id": "subassembly_bed_platform",
       "name": "Heated Bed Platform",
-      "stepIds": [
-        "step_mount_bed_guide_rods",
-        "step_place_bed_raisers",
-        "step_check_bed_platform_alignment"
-      ],
+      "stepIds": [ "step_mount_bed_guide_rods", "step_place_bed_raisers", "step_check_bed_platform_alignment" ],
       "assemblyId": "assembly_d3d_heatbed_stage_02",
       "description": "Bed standoff raisers and guide rods that support the heated bed above the Z carriages."
-    },
+  },
     {
       "id": "subassembly_y_bed_rods",
       "name": "Y-Axis Bed Guide Rods",
-      "stepIds": [
-        "step_place_y_bed_rods"
-      ],
+      "stepIds": [ "step_place_y_bed_rods" ],
       "assemblyId": "assembly_d3d_heatbed_stage_02",
       "description": "Guide rods for Y-axis bed travel, connecting front and back Z carriages."
-    }
+  }
   ],
   "parts": [
     {
