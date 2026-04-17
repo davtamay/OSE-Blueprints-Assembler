@@ -82,21 +82,14 @@ namespace OSE.UI.Root
                 return;
             }
 
-            // Gather cues from every host (part / subassembly / aggregate)
-            // that is visible at this step, plus legacy step.animationCues
-            // as a fallback for unmigrated JSON. Each gathered entry carries
-            // its pre-resolved host so the coordinator doesn't re-walk the
-            // fields on every fire.
+            // Host-owned cues are the authoritative source. Step-level cues
+            // are migrated onto their target host at load time by
+            // MachinePackageNormalizer.MigrateStepAnimationCuesToHosts, so
+            // the runtime only reads from parts and subassemblies here.
+            // Any step-level leftovers are flagged as errors by the
+            // normalizer's validator and intentionally do not fire.
             var gathered = new List<GatheredCue>();
             GatherHostCues(package, step, gathered);
-
-            var legacyPayload = step.animationCues;
-            var legacyCues = legacyPayload?.cues;
-            if (legacyCues != null)
-            {
-                for (int i = 0; i < legacyCues.Length; i++)
-                    gathered.Add(new GatheredCue { Entry = legacyCues[i], HostKind = HostKind.Step });
-            }
 
             // Compute per-cue panel delays so the ∥ / ⇣ toggles authored in
             // TTAW are honoured at runtime — same scheduling the editor's
@@ -321,17 +314,12 @@ namespace OSE.UI.Root
             var package = _ctx.Spawner?.CurrentPackage;
             if (package == null || !package.TryGetStep(stepId, out var step)) return;
 
-            // Merge host-hosted cues with legacy step-owned cues so deferred
-            // triggers (onStepComplete / onFirstInteraction / onTaskComplete)
-            // work for relocated cues the same way they work for legacy ones.
+            // Deferred-trigger dispatch reads only host-owned cues. Legacy
+            // step-level cues are migrated onto hosts at load time
+            // (MachinePackageNormalizer.MigrateStepAnimationCuesToHosts),
+            // so this path does not need a legacy fallback.
             var gathered = new List<GatheredCue>();
             GatherHostCues(package, step, gathered);
-            var legacyCues = step.animationCues?.cues;
-            if (legacyCues != null)
-            {
-                for (int i = 0; i < legacyCues.Length; i++)
-                    gathered.Add(new GatheredCue { Entry = legacyCues[i], HostKind = HostKind.Step });
-            }
 
             for (int i = 0; i < gathered.Count; i++)
             {

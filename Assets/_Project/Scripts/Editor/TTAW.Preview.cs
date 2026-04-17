@@ -1073,7 +1073,10 @@ namespace OSE.Editor
         }
 
         private static readonly string[] HostCueTypes = { "shake", "rotate", "pulse", "particle", "demonstratePlacement", "orientSubassembly", "poseTransition" };
-        private static readonly string[] HostCueTriggers = { "onStepActivate", "onStepComplete", "always" };
+        // Canonical trigger strings shown in the host-cue authoring dropdown.
+        // Must match MachinePackageNormalizer.NormalizeAnimationCueTriggers
+        // canonical names so editor values and runtime bucketing agree.
+        private static readonly string[] HostCueTriggers = { "onActivate", "onStepComplete", "always" };
 
         private void DrawHostCueList(string title, AnimationCueEntry[] cues, StepDefinition step, string hostKind, string hostId, System.Action<AnimationCueEntry[]> setCues)
         {
@@ -1089,15 +1092,18 @@ namespace OSE.Editor
             // panelOrder so the author sees the execution plan: cues in the
             // same panel fire on the same event; within a panel they play in
             // parallel (∥) or wait for the previous row (⇣) per row flag.
-            // Canonicalize legacy trigger alias so migrated cues collapse
-            // into the same panel as new ones. "onActivate" was the
-            // step-level JSON name; "onStepActivate" is the host-cue name.
-            // They mean the same thing to the runtime — merge in the UI
-            // and rewrite on the cue itself so next save normalizes it.
+            // Canonical trigger name is "onActivate" — matches
+            // MachinePackageNormalizer.NormalizeAnimationCueTriggers so the
+            // editor and runtime always bucket the same way. Legacy values
+            // like "onStepActivate" are rewritten here for immediate
+            // consistency; the normalizer re-applies at next load as a
+            // safety net.
             static string CanonicalTrigger(string t)
             {
-                if (string.IsNullOrEmpty(t)) return "onStepActivate";
-                if (string.Equals(t, "onActivate", StringComparison.Ordinal)) return "onStepActivate";
+                if (string.IsNullOrEmpty(t)) return "onActivate";
+                if (string.Equals(t, "onStepActivate",  StringComparison.OrdinalIgnoreCase)) return "onActivate";
+                if (string.Equals(t, "onStepActivated", StringComparison.OrdinalIgnoreCase)) return "onActivate";
+                if (string.Equals(t, "onStepStart",     StringComparison.OrdinalIgnoreCase)) return "onActivate";
                 return t;
             }
             var panelIndices = new Dictionary<string, List<int>>(StringComparer.Ordinal);
@@ -1159,7 +1165,7 @@ namespace OSE.Editor
                             int newType = EditorGUILayout.Popup(typeIdx, HostCueTypes, GUILayout.Width(160));
                             if (newType != typeIdx) c.type = HostCueTypes[newType];
 
-                            int trgIdx = Mathf.Max(0, Array.IndexOf(HostCueTriggers, c.trigger ?? "onStepActivate"));
+                            int trgIdx = Mathf.Max(0, Array.IndexOf(HostCueTriggers, c.trigger ?? "onActivate"));
                             int newTrg = EditorGUILayout.Popup(trgIdx, HostCueTriggers, GUILayout.Width(140));
                             if (newTrg != trgIdx) c.trigger = HostCueTriggers[newTrg];
 
@@ -1240,7 +1246,7 @@ namespace OSE.Editor
 
                 int moveAt = moveUpAt >= 0 ? moveUpAt : moveDownAt;
                 int dir    = moveUpAt >= 0 ? -1 : 1;
-                string trg = string.IsNullOrEmpty(working[moveAt].trigger) ? "onStepActivate" : working[moveAt].trigger;
+                string trg = string.IsNullOrEmpty(working[moveAt].trigger) ? "onActivate" : working[moveAt].trigger;
                 if (panelIndices.TryGetValue(trg, out var siblings))
                 {
                     int pos = siblings.IndexOf(moveAt);
@@ -1265,7 +1271,7 @@ namespace OSE.Editor
                     working.Add(new AnimationCueEntry
                     {
                         type    = "shake",
-                        trigger = "onStepActivate",
+                        trigger = "onActivate",
                         stepIds = step != null ? new[] { step.id } : Array.Empty<string>(),
                         shakeAmplitude = 0.01f,
                         shakeFrequency = 8f,

@@ -31,6 +31,252 @@ namespace OSE.Content.Loading
             DeriveSubassemblyPartIds(package);
             BakeGroupRigidBody(package);
             BakePoseTable(package);
+            NormalizeAnimationCueTriggers(package);
+            MigrateStepAnimationCuesToHosts(package);
+            ValidateAnimationCueInvariants(package);
+        }
+
+        // Canonical trigger names for AnimationCueEntry.trigger. Every alias
+        // encountered in authored JSON is rewritten to one of these at load.
+        private const string TriggerOnActivate         = "onActivate";
+        private const string TriggerAfterDelay         = "afterDelay";
+        private const string TriggerAfterPartsShown    = "afterPartsShown";
+        private const string TriggerOnStepComplete     = "onStepComplete";
+        private const string TriggerOnFirstInteraction = "onFirstInteraction";
+        private const string TriggerOnTaskComplete     = "onTaskComplete";
+
+        /// <summary>
+        /// Rewrites legacy / typo trigger aliases to their canonical names so
+        /// cues land in the same scheduling bucket regardless of how they
+        /// were authored. Runs on every cue across steps, parts, and
+        /// subassemblies. Protective: prevents the "onStepActivate vs
+        /// onActivate" divergence that caused step 55's double-fire.
+        /// </summary>
+        private static void NormalizeAnimationCueTriggers(MachinePackageDefinition package)
+        {
+            int rewrites = 0;
+
+            if (package.steps != null)
+                for (int i = 0; i < package.steps.Length; i++)
+                {
+                    var s = package.steps[i];
+                    rewrites += RewriteArray(s?.animationCues?.cues);
+                }
+
+            if (package.parts != null)
+                for (int i = 0; i < package.parts.Length; i++)
+                    rewrites += RewriteArray(package.parts[i]?.animationCues);
+
+            var subs = package.GetSubassemblies();
+            if (subs != null)
+                for (int i = 0; i < subs.Length; i++)
+                    rewrites += RewriteArray(subs[i]?.animationCues);
+
+            if (rewrites > 0)
+                Debug.Log($"[CueRuntime.Normalize] rewrote {rewrites} legacy trigger alias(es) to canonical names in '{package.packageId}'.");
+
+            static int RewriteArray(AnimationCueEntry[] cues)
+            {
+                if (cues == null) return 0;
+                int n = 0;
+                for (int i = 0; i < cues.Length; i++)
+                {
+                    if (cues[i] == null) continue;
+                    string canonical = Canonicalize(cues[i].trigger);
+                    if (!string.Equals(canonical, cues[i].trigger, StringComparison.Ordinal))
+                    {
+                        cues[i].trigger = canonical;
+                        n++;
+                    }
+                }
+                return n;
+            }
+
+            static string Canonicalize(string trigger)
+            {
+                if (string.IsNullOrEmpty(trigger)) return TriggerOnActivate;
+                // Case-insensitive match against canonicals, plus known legacy aliases.
+                if (string.Equals(trigger, TriggerOnActivate,         StringComparison.OrdinalIgnoreCase)) return TriggerOnActivate;
+                if (string.Equals(trigger, TriggerAfterDelay,         StringComparison.OrdinalIgnoreCase)) return TriggerAfterDelay;
+                if (string.Equals(trigger, TriggerAfterPartsShown,    StringComparison.OrdinalIgnoreCase)) return TriggerAfterPartsShown;
+                if (string.Equals(trigger, TriggerOnStepComplete,     StringComparison.OrdinalIgnoreCase)) return TriggerOnStepComplete;
+                if (string.Equals(trigger, TriggerOnFirstInteraction, StringComparison.OrdinalIgnoreCase)) return TriggerOnFirstInteraction;
+                if (string.Equals(trigger, TriggerOnTaskComplete,     StringComparison.OrdinalIgnoreCase)) return TriggerOnTaskComplete;
+                // Legacy aliases — map to canonical.
+                if (string.Equals(trigger, "onStepActivate",   StringComparison.OrdinalIgnoreCase)) return TriggerOnActivate;
+                if (string.Equals(trigger, "onStepActivated",  StringComparison.OrdinalIgnoreCase)) return TriggerOnActivate;
+                if (string.Equals(trigger, "onStepStart",      StringComparison.OrdinalIgnoreCase)) return TriggerOnActivate;
+                if (string.Equals(trigger, "afterParts",       StringComparison.OrdinalIgnoreCase)) return TriggerAfterPartsShown;
+                // Unknown — leave as-is and let ValidateAnimationCueInvariants flag it.
+                return trigger;
+            }
+        }
+
+        /// <summary>
+        /// Host-owned cues (part / subassembly) are the authoritative home.
+        /// Any cues still living on <c>step.animationCues.cues</c> are
+        /// migrated to their target host at load time, so the runtime only
+        /// ever sees host-owned cues. Legacy content keeps working without
+        /// manual JSON editing; new authoring tools write directly to hosts.
+        ///
+        /// Migration rules:
+        /// - If the entry has a non-empty <c>targetSubassemblyId</c>, move to
+        ///   that subassembly's <c>animationCues</c>.
+        /// - Else if the entry has exactly one <c>targetPartIds[]</c> entry,
+        ///   move to that part's <c>animationCues</c>.
+        /// - Else: leave on the step and let the validator flag it — the
+        ///   author needs to pick a host.
+        /// </summary>
+        private static void MigrateStepAnimationCuesToHosts(MachinePackageDefinition package)
+        {
+            if (package.steps == null || package.steps.Length == 0) return;
+
+            int moved = 0;
+            int left = 0;
+
+            for (int si = 0; si < package.steps.Length; si++)
+            {
+                var step = package.steps[si];
+                var payload = step?.animationCues;
+                var cues = payload?.cues;
+                if (cues == null || cues.Length == 0) continue;
+
+                var kept = new List<AnimationCueEntry>();
+                for (int ci = 0; ci < cues.Length; ci++)
+                {
+                    var entry = cues[ci];
+                    if (entry == null) continue;
+
+                    if (!string.IsNullOrEmpty(entry.targetSubassemblyId)
+                        && TryAppendToSubassembly(package, entry.targetSubassemblyId, entry))
+                    { moved++; continue; }
+
+                    if (entry.targetPartIds != null && entry.targetPartIds.Length == 1
+                        && !string.IsNullOrEmpty(entry.targetPartIds[0])
+                        && TryAppendToPart(package, entry.targetPartIds[0], entry))
+                    { moved++; continue; }
+
+                    kept.Add(entry);
+                    left++;
+                }
+
+                step.animationCues.cues = kept.ToArray();
+            }
+
+            if (moved > 0)
+                Debug.Log($"[CueRuntime.Migrate] moved {moved} step-level cue(s) onto their target host in '{package.packageId}'.");
+            if (left > 0)
+                Debug.LogWarning($"[CueRuntime.Migrate] {left} step-level cue(s) in '{package.packageId}' have no clear host target and remain on the step. Edit them in TTAW to assign a host.");
+
+            static bool TryAppendToSubassembly(MachinePackageDefinition pkg, string subId, AnimationCueEntry entry)
+            {
+                var subs = pkg.GetSubassemblies();
+                if (subs == null) return false;
+                for (int i = 0; i < subs.Length; i++)
+                {
+                    if (subs[i] == null) continue;
+                    if (!string.Equals(subs[i].id, subId, StringComparison.Ordinal)) continue;
+                    if (HasEquivalentCue(subs[i].animationCues, entry))
+                    {
+                        Debug.LogError($"[CueRuntime.Migrate] subassembly '{subId}' already has a (type='{entry.type}', trigger='{entry.trigger}') cue. Refusing to migrate a duplicate from the step level — delete one in TTAW.");
+                        return false;
+                    }
+                    subs[i].animationCues = Append(subs[i].animationCues, entry);
+                    return true;
+                }
+                return false;
+            }
+
+            static bool TryAppendToPart(MachinePackageDefinition pkg, string partId, AnimationCueEntry entry)
+            {
+                if (pkg.parts == null) return false;
+                for (int i = 0; i < pkg.parts.Length; i++)
+                {
+                    if (pkg.parts[i] == null) continue;
+                    if (!string.Equals(pkg.parts[i].id, partId, StringComparison.Ordinal)) continue;
+                    if (HasEquivalentCue(pkg.parts[i].animationCues, entry))
+                    {
+                        Debug.LogError($"[CueRuntime.Migrate] part '{partId}' already has a (type='{entry.type}', trigger='{entry.trigger}') cue. Refusing to migrate a duplicate from the step level — delete one in TTAW.");
+                        return false;
+                    }
+                    pkg.parts[i].animationCues = Append(pkg.parts[i].animationCues, entry);
+                    return true;
+                }
+                return false;
+            }
+
+            static bool HasEquivalentCue(AnimationCueEntry[] arr, AnimationCueEntry entry)
+            {
+                if (arr == null || entry == null) return false;
+                for (int i = 0; i < arr.Length; i++)
+                {
+                    if (arr[i] == null) continue;
+                    if (string.Equals(arr[i].type, entry.type, StringComparison.Ordinal)
+                        && string.Equals(arr[i].trigger ?? "", entry.trigger ?? "", StringComparison.Ordinal))
+                        return true;
+                }
+                return false;
+            }
+
+            static AnimationCueEntry[] Append(AnimationCueEntry[] arr, AnimationCueEntry entry)
+            {
+                if (arr == null || arr.Length == 0) return new[] { entry };
+                var next = new AnimationCueEntry[arr.Length + 1];
+                Array.Copy(arr, next, arr.Length);
+                next[arr.Length] = entry;
+                return next;
+            }
+        }
+
+        /// <summary>
+        /// Protective guard: after normalize + migrate, the scheduling
+        /// invariants should be uniform across the package. Any remaining
+        /// step-level cues (that the migrator could not re-host), unknown
+        /// triggers, or same-(host, trigger) duplicates with identical type
+        /// are logged as errors so content authors see the problem before
+        /// Play. Does not throw — load succeeds but the console flags the
+        /// issue.
+        /// </summary>
+        private static void ValidateAnimationCueInvariants(MachinePackageDefinition package)
+        {
+            // 1. No step-level cues should remain after migration.
+            if (package.steps != null)
+            {
+                for (int i = 0; i < package.steps.Length; i++)
+                {
+                    var s = package.steps[i];
+                    var cues = s?.animationCues?.cues;
+                    if (cues != null && cues.Length > 0)
+                        Debug.LogError($"[CueRuntime.Validate] step '{s.id}' still has {cues.Length} step-level cue(s) after migration. Assign a target host (part/subassembly) in TTAW.");
+                }
+            }
+
+            // 2. No unknown triggers on host-owned cues.
+            if (package.parts != null)
+                for (int i = 0; i < package.parts.Length; i++)
+                    CheckTriggers(package.parts[i]?.animationCues, $"part '{package.parts[i]?.id}'");
+
+            var subs = package.GetSubassemblies();
+            if (subs != null)
+                for (int i = 0; i < subs.Length; i++)
+                    CheckTriggers(subs[i]?.animationCues, $"subassembly '{subs[i]?.id}'");
+
+            static void CheckTriggers(AnimationCueEntry[] arr, string hostLabel)
+            {
+                if (arr == null) return;
+                for (int i = 0; i < arr.Length; i++)
+                {
+                    if (arr[i] == null) continue;
+                    string t = arr[i].trigger;
+                    if (string.IsNullOrEmpty(t)) continue;
+                    bool canonical =
+                        t == TriggerOnActivate || t == TriggerAfterDelay ||
+                        t == TriggerAfterPartsShown || t == TriggerOnStepComplete ||
+                        t == TriggerOnFirstInteraction || t == TriggerOnTaskComplete;
+                    if (!canonical)
+                        Debug.LogError($"[CueRuntime.Validate] {hostLabel} cue[{i}] has unknown trigger '{t}'. Canonical values: onActivate, afterDelay, afterPartsShown, onStepComplete, onFirstInteraction, onTaskComplete.");
+                }
+            }
         }
 
         /// <summary>
