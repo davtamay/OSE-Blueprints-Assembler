@@ -314,7 +314,9 @@
           "targetPartIds": [],
           "targetToolIds": [],
           "targetSubassemblyId": "subassembly_carriage_y_left",
-          "stepIds": [],
+          "stepIds": [
+            "step_batch_c1_shake_test"
+          ],
           "always": false,
           "particlePrefabRef": "",
           "trigger": "onActivate",
@@ -407,7 +409,9 @@
           "targetPartIds": [],
           "targetToolIds": [],
           "targetSubassemblyId": "",
-          "stepIds": [],
+          "stepIds": [
+            "step_batch_c1_shake_test"
+          ],
           "always": false,
           "particlePrefabRef": "",
           "trigger": "onActivate",
