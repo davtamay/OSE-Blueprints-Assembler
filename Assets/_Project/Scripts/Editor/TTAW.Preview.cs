@@ -326,6 +326,35 @@ namespace OSE.Editor
             SceneView.RepaintAll();
         }
 
+        /// <summary>
+        /// Centroid of a subassembly's member parts from their authored
+        /// <c>assembledPosition</c>. Mirrors the runtime's equivalent so
+        /// editor preview pivots on the same spot as Play mode. Returns
+        /// null when no members have authored positions.
+        /// </summary>
+        private Vector3? ComputeAuthoredCentroidLocalEditor(string subassemblyId, Transform target)
+        {
+            if (_pkg == null || !_pkg.TryGetSubassembly(subassemblyId, out var sub) || sub?.partIds == null)
+                return null;
+            var previewCfg = _pkg.previewConfig?.partPlacements;
+            if (previewCfg == null) return null;
+
+            Vector3 sum = Vector3.zero;
+            int n = 0;
+            var members = new System.Collections.Generic.HashSet<string>(sub.partIds, StringComparer.Ordinal);
+            for (int i = 0; i < previewCfg.Length; i++)
+            {
+                var pp = previewCfg[i];
+                if (pp == null || !members.Contains(pp.partId)) continue;
+                Vector3 world = target.parent != null
+                    ? target.parent.TransformPoint(new Vector3(pp.assembledPosition.x, pp.assembledPosition.y, pp.assembledPosition.z))
+                    : new Vector3(pp.assembledPosition.x, pp.assembledPosition.y, pp.assembledPosition.z);
+                sum += target.InverseTransformPoint(world);
+                n++;
+            }
+            return n > 0 ? sum / n : (Vector3?)null;
+        }
+
         // ── Animation Cue preview lifecycle ──────────────────────────────────
 
         // Temporary reparent state — members of a group that were NOT already
@@ -339,15 +368,150 @@ namespace OSE.Editor
         // for the subassembly being previewed. Destroyed on Stop.
         private readonly List<GameObject> _previewTransientWrappers = new();
 
-        private void StopAllPreviews()
+        // Panel-playback queue: cues scheduled to start at a given time
+        // offset from when "Play Panel" was pressed. Honors the ∥ / ⇣
+        // (parallel / sequenced) toggle on each row.
+        private struct PanelCueEntry
         {
-            if (_previewPlayer != null)
+            public int    cueIdx;
+            public float  startOffset;   // seconds from panel-play start
+            public float  duration;      // for sequencing math; the player tracks its own timing
+            public bool   started;
+            public OSE.UI.Root.IAnimationCuePlayer player;
+        }
+        private readonly List<PanelCueEntry> _panelQueue = new();
+        private double _panelPlayStartTime;
+        private StepDefinition _panelPlayStep;
+        // Re-entrancy guard: when starting a single cue inside the panel
+        // loop, StartCuePreview calls StopAllPreviews — which would normally
+        // clear _panelQueue mid-iteration. This flag suppresses that clear.
+        private bool _suppressPanelQueueClear;
+
+        /// <summary>
+        /// Plays every cue in a timing panel back-to-back, honoring each
+        /// row's ∥ / ⇣ toggle: parallel rows start with the previous,
+        /// sequenced rows start when the previous finishes. Reuses the
+        /// per-cue player infrastructure — same pivot, same target
+        /// resolution, same stop semantics. Visual sequence-vs-parallel
+        /// authoring can be tested without entering Play mode.
+        /// </summary>
+        private void StartPanelPreview(StepDefinition step, List<int> cueIndices)
+        {
+            StopAllPreviews();
+            if (step?.animationCues?.cues == null || cueIndices == null || cueIndices.Count == 0) return;
+
+            var cues = step.animationCues.cues;
+            float runningOffset = 0f;
+            float prevDuration  = 0f;
+
+            for (int rowIdx = 0; rowIdx < cueIndices.Count; rowIdx++)
             {
-                if (_previewPlayer.IsPlaying) _previewPlayer.Stop();
-                _previewPlayer = null;
+                int ci = cueIndices[rowIdx];
+                if (ci < 0 || ci >= cues.Length) continue;
+                var cue = cues[ci];
+                if (cue == null) continue;
+
+                // First row always starts at offset 0. Sequenced rows wait
+                // for the previous to finish; parallel rows start with the
+                // previous (same offset).
+                if (rowIdx > 0 && cue.sequenceAfterPrevious)
+                    runningOffset += prevDuration;
+
+                float duration = cue.durationSeconds > 0f
+                    ? cue.durationSeconds
+                    : AnimationCueDefaults.GetDefaultDuration(cue.type);
+
+                _panelQueue.Add(new PanelCueEntry
+                {
+                    cueIdx      = ci,
+                    startOffset = runningOffset,
+                    duration    = duration,
+                    started     = false,
+                });
+                Debug.Log($"[PanelPlay] row {rowIdx}: cueIdx={ci} type={cue.type} seqAfterPrev={cue.sequenceAfterPrevious} duration={duration:0.00}s startOffset={runningOffset:0.00}s");
+                prevDuration = duration;
             }
 
-            // Restore any members we temporarily reparented.
+            if (_panelQueue.Count == 0) return;
+
+            _panelPlayStartTime = EditorApplication.timeSinceStartup;
+            _panelPlayStep      = step;
+            _previewLastTickTime = _panelPlayStartTime;
+
+            EditorApplication.update -= OnPanelPlayUpdate;
+            EditorApplication.update += OnPanelPlayUpdate;
+            _previewUpdateRegistered  = true;
+
+            Debug.Log($"[PanelPlay] Scheduled {_panelQueue.Count} cue(s) on step '{step.id}'.");
+        }
+
+        private void OnPanelPlayUpdate()
+        {
+            try
+            {
+                if (_panelQueue.Count == 0) { StopPanelPreview(); return; }
+
+                double now = EditorApplication.timeSinceStartup;
+                float elapsed = (float)(now - _panelPlayStartTime);
+                float deltaTime = Mathf.Min((float)(now - _previewLastTickTime), 0.05f);
+                _previewLastTickTime = now;
+
+                bool anyAlive = false;
+                for (int i = 0; i < _panelQueue.Count; i++)
+                {
+                    var e = _panelQueue[i];
+
+                    // Start cues whose offset has been reached.
+                    if (!e.started && elapsed >= e.startOffset)
+                    {
+                        e.player = StartSinglePanelCue(_panelPlayStep, e.cueIdx);
+                        e.started = true;
+                        _panelQueue[i] = e;
+                    }
+
+                    if (e.started && e.player != null && e.player.IsPlaying)
+                    {
+                        bool still = e.player.Tick(deltaTime);
+                        if (!still) { try { e.player.Stop(); } catch { } e.player = null; _panelQueue[i] = e; }
+                        else        anyAlive = true;
+                    }
+                    else if (!e.started)
+                    {
+                        anyAlive = true; // not-yet-started cues keep loop alive
+                    }
+                }
+
+                SceneView.RepaintAll();
+                Repaint();
+
+                if (!anyAlive) StopPanelPreview();
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[PanelPlay] update failed: {ex.Message}");
+                StopPanelPreview();
+            }
+        }
+
+        private void StopPanelPreview()
+        {
+            for (int i = 0; i < _panelQueue.Count; i++)
+            {
+                var e = _panelQueue[i];
+                if (e.player != null) { try { e.player.Stop(); } catch { } }
+            }
+            _panelQueue.Clear();
+            _panelPlayStep = null;
+            EditorApplication.update -= OnPanelPlayUpdate;
+            _previewUpdateRegistered = false;
+            // Clean any reparents/wrappers the per-cue Start created.
+            CleanupPreviewSideEffects();
+            SceneView.RepaintAll();
+            Repaint();
+        }
+
+        private void CleanupPreviewSideEffects()
+        {
             if (_previewReparents.Count > 0)
             {
                 for (int i = _previewReparents.Count - 1; i >= 0; i--)
@@ -357,8 +521,6 @@ namespace OSE.Editor
                 }
                 _previewReparents.Clear();
             }
-
-            // Destroy any transient wrapper GOs we created for the preview.
             if (_previewTransientWrappers.Count > 0)
             {
                 for (int i = _previewTransientWrappers.Count - 1; i >= 0; i--)
@@ -369,6 +531,88 @@ namespace OSE.Editor
                     else                        UnityEngine.Object.DestroyImmediate(w);
                 }
                 _previewTransientWrappers.Clear();
+            }
+        }
+
+        /// <summary>
+        /// Builds a context for a single cue and starts it without registering
+        /// the per-cue update loop (the panel-play loop drives Tick instead).
+        /// Returns the player instance, or null on failure.
+        /// </summary>
+        private OSE.UI.Root.IAnimationCuePlayer StartSinglePanelCue(StepDefinition step, int cueIdx)
+        {
+            var payload = step?.animationCues;
+            if (payload?.cues == null || cueIdx < 0 || cueIdx >= payload.cues.Length) return null;
+            var entry = payload.cues[cueIdx];
+            if (entry == null) return null;
+
+            // Reuse the existing per-cue start path so target resolution +
+            // pivot + reparent logic is identical. Suppress the panel-queue
+            // clear that StartCuePreview's internal StopAllPreviews would
+            // otherwise trigger — the panel loop owns the queue and is
+            // mid-iteration.
+            _suppressPanelQueueClear = true;
+            try { StartCuePreview(step, cueIdx); }
+            finally { _suppressPanelQueueClear = false; }
+
+            EditorApplication.update -= OnPreviewUpdate;
+            var player = _previewPlayer;
+            _previewPlayer       = null;     // panel queue owns it now
+            _previewingCueIdx    = -1;
+            return player;
+        }
+
+        private void StopAllPreviews()
+        {
+            // Tear down panel-play queue if active — unless we're being
+            // called re-entrantly from inside StartSinglePanelCue (in which
+            // case the panel loop owns the queue and is about to install
+            // the freshly-created player into it).
+            if (!_suppressPanelQueueClear && _panelQueue.Count > 0)
+            {
+                for (int i = 0; i < _panelQueue.Count; i++)
+                {
+                    var e = _panelQueue[i];
+                    if (e.player != null) { try { e.player.Stop(); } catch { } }
+                }
+                _panelQueue.Clear();
+                _panelPlayStep = null;
+                EditorApplication.update -= OnPanelPlayUpdate;
+            }
+
+            if (_previewPlayer != null)
+            {
+                try { _previewPlayer.Stop(); }
+                catch (System.Exception e) { Debug.LogWarning($"[AnimCuePreview] Stop failed: {e.Message}"); }
+                _previewPlayer = null;
+            }
+
+            // When re-entered from inside the panel-queue (suppress flag),
+            // skip these cleanups too — the side-effect lists belong to a
+            // still-running cue in the queue. Final cleanup runs when the
+            // panel orchestrator stops via StopPanelPreview.
+            if (!_suppressPanelQueueClear)
+            {
+                if (_previewReparents.Count > 0)
+                {
+                    for (int i = _previewReparents.Count - 1; i >= 0; i--)
+                    {
+                        var (ch, orig) = _previewReparents[i];
+                        if (ch != null) ch.SetParent(orig, worldPositionStays: true);
+                    }
+                    _previewReparents.Clear();
+                }
+                if (_previewTransientWrappers.Count > 0)
+                {
+                    for (int i = _previewTransientWrappers.Count - 1; i >= 0; i--)
+                    {
+                        var w = _previewTransientWrappers[i];
+                        if (w == null) continue;
+                        if (Application.isPlaying) UnityEngine.Object.Destroy(w);
+                        else                        UnityEngine.Object.DestroyImmediate(w);
+                    }
+                    _previewTransientWrappers.Clear();
+                }
             }
 
             _previewingCueIdx   = -1;
@@ -465,9 +709,17 @@ namespace OSE.Editor
                 return;
             }
 
-            float duration = entry.durationSeconds > 0f ? entry.durationSeconds : 1.5f;
+            float duration = entry.durationSeconds > 0f
+                ? entry.durationSeconds
+                : AnimationCueDefaults.GetDefaultDuration(entry.type);
+
             var ctx = new OSE.UI.Root.AnimationCueContext(entry, targets, startPoses, asmPoses, duration);
-            player.Start(ctx);
+            try { player.Start(ctx); }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[AnimCuePreview] player.Start failed: {e}");
+                return;
+            }
 
             _previewPlayer       = player;
             _previewingCueIdx    = cueIdx;
@@ -475,11 +727,12 @@ namespace OSE.Editor
             _previewStartTime    = EditorApplication.timeSinceStartup;
             _previewLastTickTime = EditorApplication.timeSinceStartup;
 
-            if (!_previewUpdateRegistered)
-            {
-                EditorApplication.update += OnPreviewUpdate;
-                _previewUpdateRegistered  = true;
-            }
+            // Always force-clean the delegate before registering so a
+            // prior crash / exception can't leave us in a state where the
+            // flag says "registered" but the delegate is actually gone.
+            EditorApplication.update -= OnPreviewUpdate;
+            EditorApplication.update += OnPreviewUpdate;
+            _previewUpdateRegistered  = true;
 
             SceneView.RepaintAll();
             Repaint();
@@ -513,20 +766,39 @@ namespace OSE.Editor
                 // are destroyed but the dictionary may hold stale keys.
                 // Trigger a package reload to recreate them if needed.
                 GameObject groupRoot = null;
-                if (_subassemblyRootGOs != null
-                    && _subassemblyRootGOs.TryGetValue(entry.targetSubassemblyId, out groupRoot)
-                    && groupRoot == null)
+                bool hasKey = _subassemblyRootGOs != null
+                    && _subassemblyRootGOs.TryGetValue(entry.targetSubassemblyId, out groupRoot);
+
+                // If the key is missing or the GO was destroyed (editor
+                // restart clears DontSave GOs), rebuild all group roots
+                // for the current step before giving up.
+                if (!hasKey || groupRoot == null)
                 {
-                    Debug.Log("[AnimCuePreview] Group root was destroyed (editor restart?). Triggering refresh.");
-                    _subassemblyRootGOs.Remove(entry.targetSubassemblyId);
-                    // Re-build group roots for the current step.
+                    if (hasKey) _subassemblyRootGOs.Remove(entry.targetSubassemblyId);
                     if (_stepIds != null && _stepFilterIdx > 0 && _stepFilterIdx < _stepIds.Length)
                     {
                         var refreshStep = FindStep(_stepIds[_stepFilterIdx]);
-                        if (refreshStep != null) EnsureAllSubassemblyRoots(refreshStep);
+                        if (refreshStep != null)
+                        {
+                            Debug.Log("[AnimCuePreview] Group root missing — rebuilding subassembly roots.");
+                            EnsureAllSubassemblyRoots(refreshStep);
+                        }
                     }
-                    _subassemblyRootGOs.TryGetValue(entry.targetSubassemblyId, out groupRoot);
+                    if (_subassemblyRootGOs != null)
+                        _subassemblyRootGOs.TryGetValue(entry.targetSubassemblyId, out groupRoot);
                 }
+                // Always rebuild the group hierarchy before preview.
+                // Parts may be partially reparented, inactive, or live in
+                // another group after navigation — rebuilding guarantees a
+                // correct centroid every time. Cheap (just reparenting).
+                if (_stepIds != null && _stepFilterIdx > 0 && _stepFilterIdx < _stepIds.Length)
+                {
+                    var refreshStep = FindStep(_stepIds[_stepFilterIdx]);
+                    if (refreshStep != null) EnsureAllSubassemblyRoots(refreshStep);
+                }
+                // Re-fetch in case roots were recreated during the rebuild.
+                if (_subassemblyRootGOs != null)
+                    _subassemblyRootGOs.TryGetValue(entry.targetSubassemblyId, out groupRoot);
                 if (groupRoot != null)
                 {
                     targets.Add(groupRoot);
@@ -541,7 +813,7 @@ namespace OSE.Editor
                     asmPoses.Add(gpose);
                     groupRootResolved = true;
 
-                    Debug.Log($"[AnimCuePreview] Resolved group root '{groupRoot.name}'.");
+                    Debug.Log($"[AnimCuePreview] Resolved group root '{groupRoot.name}' at localPos={gt.localPosition}");
                 }
                 else if (_pkg != null
                     && _pkg.TryGetSubassembly(entry.targetSubassemblyId, out var subDef)
@@ -702,9 +974,16 @@ namespace OSE.Editor
                 return;
             }
 
-            float duration = entry.durationSeconds > 0f ? entry.durationSeconds : 1.5f;
+            float duration = entry.durationSeconds > 0f
+                ? entry.durationSeconds
+                : AnimationCueDefaults.GetDefaultDuration(entry.type);
             var ctx = new OSE.UI.Root.AnimationCueContext(entry, targets, startPoses, asmPoses, duration);
-            player.Start(ctx);
+            try { player.Start(ctx); }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[AnimCuePreview] player.Start failed: {e}");
+                return;
+            }
 
             _previewPlayer         = player;
             _previewingCueIdx      = cueIdx;
@@ -712,11 +991,12 @@ namespace OSE.Editor
             _previewStartTime      = EditorApplication.timeSinceStartup;
             _previewLastTickTime   = EditorApplication.timeSinceStartup;
 
-            if (!_previewUpdateRegistered)
-            {
-                EditorApplication.update += OnPreviewUpdate;
-                _previewUpdateRegistered  = true;
-            }
+            // Always force-clean the delegate before registering so a
+            // prior crash / exception can't leave us in a state where the
+            // flag says "registered" but the delegate is actually gone.
+            EditorApplication.update -= OnPreviewUpdate;
+            EditorApplication.update += OnPreviewUpdate;
+            _previewUpdateRegistered  = true;
 
             SceneView.RepaintAll();
             Repaint();
@@ -724,21 +1004,29 @@ namespace OSE.Editor
 
         private void OnPreviewUpdate()
         {
-            if (_previewPlayer == null || !_previewPlayer.IsPlaying)
+            try
             {
-                StopAllPreviews();
-                return;
+                if (_previewPlayer == null || !_previewPlayer.IsPlaying)
+                {
+                    StopAllPreviews();
+                    return;
+                }
+
+                double now      = EditorApplication.timeSinceStartup;
+                float deltaTime = Mathf.Min((float)(now - _previewLastTickTime), 0.05f);
+                _previewLastTickTime = now;
+
+                bool still = _previewPlayer.Tick(deltaTime);
+                if (!still) StopAllPreviews();
+
+                SceneView.RepaintAll();
+                Repaint();
             }
-
-            double now      = EditorApplication.timeSinceStartup;
-            float deltaTime = Mathf.Min((float)(now - _previewLastTickTime), 0.05f);
-            _previewLastTickTime = now;
-
-            bool still = _previewPlayer.Tick(deltaTime);
-            if (!still) StopAllPreviews();
-
-            SceneView.RepaintAll();
-            Repaint();
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[AnimCuePreview] OnPreviewUpdate failed: {e.Message}");
+                StopAllPreviews();
+            }
         }
 
         // ── Host-owned (selection-scoped) animation cue editor ───────────────
@@ -1288,6 +1576,30 @@ namespace OSE.Editor
             }
             if (EditorGUI.EndChangeCheck()) { cues[idx] = cue; _dirtyStepIds.Add(step.id); }
 
+            // ── Hold-at-end (optional — only meaningful for pose-based cues) ──
+            bool holdCapable =
+                string.Equals(cue.type, "transform", StringComparison.Ordinal) ||
+                string.Equals(cue.type, "poseTransition", StringComparison.Ordinal) ||
+                string.Equals(cue.type, "orientSubassembly", StringComparison.Ordinal);
+            if (holdCapable)
+            {
+                bool newHold = EditorGUILayout.Toggle(
+                    new GUIContent("Hold At End",
+                        "When ON, children stay at their final animated pose when the cue stops. " +
+                        "When OFF (default), they snap back to the baseline pose. " +
+                        "Use ON for animations whose end-state should persist (e.g. an orientation flip)."),
+                    cue.holdAtEnd);
+                // Only mark dirty on an actual value change — avoids the
+                // "1 unsaved" appearing the moment an author opens the edit
+                // panel without changing anything.
+                if (newHold != cue.holdAtEnd)
+                {
+                    cue.holdAtEnd = newHold;
+                    cues[idx] = cue;
+                    _dirtyStepIds.Add(step.id);
+                }
+            }
+
             // ── Pivot override (optional — types that rotate or emit from a point) ──
             // Default pivot for "orientSubassembly" is the member centroid; for
             // "particle" it is the host's position (centroid for groups). The
@@ -1301,7 +1613,8 @@ namespace OSE.Editor
             if (pivotCapable)
             {
                 EditorGUILayout.Space(2);
-                EditorGUI.BeginChangeCheck();
+                bool dirtyFromPivot = false;
+
                 bool newOverride = EditorGUILayout.Toggle(
                     new GUIContent("Pivot Override",
                         "When off (default), pivot is the host's natural origin " +
@@ -1313,13 +1626,18 @@ namespace OSE.Editor
                     cue.pivotOffsetOverride = newOverride;
                     if (!newOverride)
                         cue.pivotOffset = new SceneFloat3 { x = 0f, y = 0f, z = 0f };
+                    dirtyFromPivot = true;
                 }
                 if (cue.pivotOffsetOverride)
                 {
                     EditorGUI.indentLevel++;
-                    var off = new Vector3(cue.pivotOffset.x, cue.pivotOffset.y, cue.pivotOffset.z);
-                    off = Vector3FieldClip("Pivot Offset (m, local)", off);
-                    cue.pivotOffset = new SceneFloat3 { x = off.x, y = off.y, z = off.z };
+                    var oldOff = new Vector3(cue.pivotOffset.x, cue.pivotOffset.y, cue.pivotOffset.z);
+                    var newOff = Vector3FieldClip("Pivot Offset (m, local)", oldOff);
+                    if (newOff != oldOff)
+                    {
+                        cue.pivotOffset = new SceneFloat3 { x = newOff.x, y = newOff.y, z = newOff.z };
+                        dirtyFromPivot = true;
+                    }
 
                     if (GUILayout.Button(new GUIContent("Reset to Default",
                         "Clear the pivot override. Rotation / effect returns to the host's natural origin."),
@@ -1327,10 +1645,11 @@ namespace OSE.Editor
                     {
                         cue.pivotOffsetOverride = false;
                         cue.pivotOffset = new SceneFloat3 { x = 0f, y = 0f, z = 0f };
+                        dirtyFromPivot = true;
                     }
                     EditorGUI.indentLevel--;
                 }
-                if (EditorGUI.EndChangeCheck()) { cues[idx] = cue; _dirtyStepIds.Add(step.id); }
+                if (dirtyFromPivot) { cues[idx] = cue; _dirtyStepIds.Add(step.id); }
             }
 
             // ── Preview strip ───────────────────────────────────────────────────

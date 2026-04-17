@@ -61,6 +61,7 @@ namespace OSE.UI.Root
                 { "orientSubassembly",    () => new OrientSubassemblyPlayer() },
                 { "shake",                () => new ShakePlayer() },
                 { "particle",             () => new ParticlePlayer() },
+                { "transform",            () => new PoseTransitionPlayer() },
             };
         }
 
@@ -96,6 +97,13 @@ namespace OSE.UI.Root
                 for (int i = 0; i < legacyCues.Length; i++)
                     gathered.Add(new GatheredCue { Entry = legacyCues[i], HostKind = HostKind.Step });
             }
+
+            // Compute per-cue panel delays so the ∥ / ⇣ toggles authored in
+            // TTAW are honoured at runtime — same scheduling the editor's
+            // ▶▶ panel-play uses. Group by (host, trigger) to form panels,
+            // sort by panelOrder, then walk the sequenceAfterPrevious chain
+            // to compute an accumulated start-offset per cue.
+            ApplyPanelTimingDelays(gathered);
 
             if (gathered.Count == 0)
             {
@@ -141,8 +149,17 @@ namespace OSE.UI.Root
                     continue;
                 }
 
-                bool isDelayed         = string.Equals(entry.trigger, "afterDelay", StringComparison.OrdinalIgnoreCase)
-                                         && entry.delaySeconds > 0f;
+                // Effective delay = authored afterDelay seconds + the
+                // panel-chain offset (parallel rows share an offset,
+                // sequenced rows wait for the previous row to finish).
+                float effectiveDelay = g.PanelDelay
+                    + (string.Equals(entry.trigger, "afterDelay", StringComparison.OrdinalIgnoreCase)
+                        ? entry.delaySeconds : 0f);
+                bool isDelayed         = effectiveDelay > 0f
+                                         && !string.Equals(entry.trigger, "onStepComplete",     StringComparison.OrdinalIgnoreCase)
+                                         && !string.Equals(entry.trigger, "onFirstInteraction", StringComparison.OrdinalIgnoreCase)
+                                         && !string.Equals(entry.trigger, "onTaskComplete",     StringComparison.OrdinalIgnoreCase)
+                                         && !string.Equals(entry.trigger, "afterPartsShown",    StringComparison.OrdinalIgnoreCase);
                 bool isAfterPartsShown = string.Equals(entry.trigger, "afterPartsShown", StringComparison.OrdinalIgnoreCase);
                 // Deferred-trigger cues (onStepComplete, onFirstInteraction, onTaskComplete) are
                 // fired by their dedicated public methods and must NOT start on step activation.
@@ -157,11 +174,12 @@ namespace OSE.UI.Root
                 }
                 else if (isDelayed)
                 {
+                    Debug.Log($"[CueRuntime.Schedule] type={entry.type} hostId={g.HostId} → delayed by {effectiveDelay:0.00}s (panel={g.PanelDelay:0.00}s + authored={(string.Equals(entry.trigger, "afterDelay", StringComparison.OrdinalIgnoreCase) ? entry.delaySeconds : 0f):0.00}s)");
                     _delayedCues.Add(new DelayedCue
                     {
                         Entry = entry,
                         Context = context,
-                        RemainingDelay = entry.delaySeconds,
+                        RemainingDelay = effectiveDelay,
                     });
                 }
                 else if (isAfterPartsShown)
@@ -183,6 +201,7 @@ namespace OSE.UI.Root
                 }
                 else
                 {
+                    Debug.Log($"[CueRuntime.Schedule] type={entry.type} hostId={g.HostId} → fire immediately (effectiveDelay={effectiveDelay:0.00}s)");
                     var player = factory();
                     player.Start(context);
                     _activeCues.Add(new ActiveCue { Player = player, Context = context });
@@ -394,6 +413,63 @@ namespace OSE.UI.Root
 
         // ── Host-owned cue gather / fire ────────────────────────────────
 
+        /// <summary>
+        /// Mirrors the editor's ▶▶ panel-play scheduling: cues that share a
+        /// (host, trigger) "panel" are sorted by <c>panelOrder</c>, then
+        /// each cue's <c>PanelDelay</c> is computed from the
+        /// <c>sequenceAfterPrevious</c> chain. Parallel (∥) rows inherit
+        /// the previous row's offset; sequenced (⇣) rows add the previous
+        /// row's duration. Honours runtime-authored toggles 1:1 with the
+        /// editor preview.
+        /// </summary>
+        private static void ApplyPanelTimingDelays(List<GatheredCue> gathered)
+        {
+            if (gathered == null || gathered.Count == 0) return;
+
+            // Bucket by (HostKind, HostId, trigger). Step-scoped cues use
+            // an empty HostId so they all land in the same per-trigger bucket
+            // — matching how step.animationCues was authored historically.
+            var groups = new Dictionary<(HostKind, string, string), List<int>>();
+            for (int i = 0; i < gathered.Count; i++)
+            {
+                var e = gathered[i].Entry;
+                if (e == null) continue;
+                string trig = string.IsNullOrEmpty(e.trigger) ? "onActivate" : e.trigger;
+                var key = (gathered[i].HostKind, gathered[i].HostId ?? "", trig);
+                if (!groups.TryGetValue(key, out var list))
+                    groups[key] = list = new List<int>();
+                list.Add(i);
+            }
+
+            foreach (var kv in groups)
+            {
+                var indices = kv.Value;
+                indices.Sort((a, b) =>
+                    gathered[a].Entry.panelOrder.CompareTo(gathered[b].Entry.panelOrder));
+
+                float runningOffset = 0f;
+                float prevDuration  = 0f;
+                for (int row = 0; row < indices.Count; row++)
+                {
+                    int gi = indices[row];
+                    var cue = gathered[gi].Entry;
+
+                    if (row > 0 && cue.sequenceAfterPrevious)
+                        runningOffset += prevDuration;
+
+                    var entry = gathered[gi];
+                    entry.PanelDelay = runningOffset;
+                    gathered[gi] = entry;
+
+                    prevDuration = cue.durationSeconds > 0f
+                        ? cue.durationSeconds
+                        : AnimationCueDefaults.GetDefaultDuration(cue.type);
+
+                    Debug.Log($"[CueRuntime.Panel] bucket={kv.Key} row={row} type={cue.type} seqAfterPrev={cue.sequenceAfterPrevious} panelOrder={cue.panelOrder} duration={prevDuration:0.00}s panelDelay={entry.PanelDelay:0.00}s");
+                }
+            }
+        }
+
         private enum HostKind { Step, Part, Subassembly }
 
         private struct GatheredCue
@@ -401,6 +477,15 @@ namespace OSE.UI.Root
             public AnimationCueEntry Entry;
             public HostKind HostKind;
             public string HostId;
+
+            /// <summary>
+            /// Per-fire delay computed from the timing-panel grouping +
+            /// <see cref="AnimationCueEntry.sequenceAfterPrevious"/> chain.
+            /// Added on top of the cue's authored <c>delaySeconds</c>.
+            /// Mirrors the editor's ▶▶ panel-play scheduling so runtime
+            /// playback matches preview 1:1.
+            /// </summary>
+            public float PanelDelay;
         }
 
         /// <summary>
@@ -798,6 +883,39 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
+        /// Computes the centroid of a subassembly's member parts from their
+        /// authored <c>assembledPosition</c> values (stored in the package).
+        /// Returns the centroid in the target's local frame. Null when no
+        /// member has an authored position.
+        /// </summary>
+        private Vector3? ComputeAuthoredCentroidLocal(string subassemblyId, Transform target)
+        {
+            var pkg = _ctx.Spawner?.CurrentPackage;
+            if (pkg == null || !pkg.TryGetSubassembly(subassemblyId, out var sub) || sub?.partIds == null)
+                return null;
+
+            Vector3 sum = Vector3.zero;
+            int n = 0;
+            for (int i = 0; i < sub.partIds.Length; i++)
+            {
+                var pid = sub.partIds[i];
+                if (string.IsNullOrEmpty(pid)) continue;
+                var pp = _ctx.Spawner?.FindPartPlacement(pid);
+                if (pp == null) continue;
+                // assembledPosition is in PreviewRoot-local space — convert
+                // to the target's local frame so the player applies it in
+                // the same coordinate system ComputeChildrenCentroidLocal
+                // would produce.
+                Vector3 world = target.parent != null
+                    ? target.parent.TransformPoint(new Vector3(pp.assembledPosition.x, pp.assembledPosition.y, pp.assembledPosition.z))
+                    : new Vector3(pp.assembledPosition.x, pp.assembledPosition.y, pp.assembledPosition.z);
+                sum += target.InverseTransformPoint(world);
+                n++;
+            }
+            return n > 0 ? sum / n : (Vector3?)null;
+        }
+
+        /// <summary>
         /// Resolves a subassembly target. For stacking steps that have a proxy, returns the proxy root.
         /// For fabrication steps with no proxy, groups the completed member parts under a temp parent.
         /// </summary>
@@ -1051,13 +1169,7 @@ namespace OSE.UI.Root
             return ghost;
         }
 
-        private static float GetDefaultDuration(string type) => type switch
-        {
-            "demonstratePlacement" => 1.5f,
-            "poseTransition"      => 1.0f,
-            "pulse"               => 0f,
-            "orientSubassembly"   => 0.6f,
-            _                     => 1.0f,
-        };
+        private static float GetDefaultDuration(string type)
+            => AnimationCueDefaults.GetDefaultDuration(type);
     }
 }

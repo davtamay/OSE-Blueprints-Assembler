@@ -192,6 +192,17 @@ namespace OSE.Content
         /// Scene-view pivot gizmo in TTAW; serialized at 4-decimal precision.
         /// </summary>
         public SceneFloat3 pivotOffset;
+
+        /// <summary>
+        /// When true, the player leaves children at their final animated
+        /// pose at Stop instead of restoring the pre-animation baseline.
+        /// Use for cues that should "stick" — e.g. an orientation flip that
+        /// reveals an assembly's far face, where the trainee continues the
+        /// step with the new orientation.
+        /// Default false preserves the cosmetic-preview behavior (revert to
+        /// fromPose), matching legacy content.
+        /// </summary>
+        public bool holdAtEnd;
     }
 
     /// <summary>

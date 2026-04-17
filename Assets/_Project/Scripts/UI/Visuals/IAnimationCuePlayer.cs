@@ -52,13 +52,25 @@ namespace OSE.UI.Root
         /// </summary>
         public readonly List<GameObject> Ghosts;
 
+        /// <summary>
+        /// Optional pivot hint in the first target's local frame. When set
+        /// (non-null), players that do centroid-pivot rotation (e.g.
+        /// PoseTransitionPlayer, OrientSubassemblyPlayer) should use this
+        /// instead of computing centroid from live children. Lets callers
+        /// pass a stable pivot derived from authored data (e.g. the average
+        /// of member parts' assembledPosition) so rotation pivots correctly
+        /// regardless of hierarchy / active-state flakiness at runtime.
+        /// </summary>
+        public readonly Vector3? PivotHintLocal;
+
         public AnimationCueContext(
             AnimationCueEntry entry,
             List<GameObject> targets,
             List<AnimationCueResolvedPose> startPoses,
             List<AnimationCueResolvedPose> assembledPoses,
             float duration,
-            List<GameObject> ghosts = null)
+            List<GameObject> ghosts = null,
+            Vector3? pivotHintLocal = null)
         {
             Entry = entry;
             Targets = targets;
@@ -66,6 +78,7 @@ namespace OSE.UI.Root
             AssembledPoses = assembledPoses;
             Duration = duration;
             Ghosts = ghosts;
+            PivotHintLocal = pivotHintLocal;
         }
     }
 

@@ -192,12 +192,26 @@ namespace OSE.Editor
                 normal    = { textColor = new Color(0.95f, 0.80f, 0.50f) },
                 alignment = TextAnchor.MiddleLeft,
             };
-            if (GUI.Button(new Rect(row.x + 6f, row.y, row.width - 120f, row.height), headerTxt, hStyle))
+            if (GUI.Button(new Rect(row.x + 6f, row.y, row.width - 150f, row.height), headerTxt, hStyle))
             {
                 if (isOpen) _cueContextOpenKeys.Remove(openKey);
                 else        _cueContextOpenKeys.Add(openKey);
                 isOpen = !isOpen;
             }
+
+            // [▶▶] play panel — runs every cue back-to-back, honouring the
+            // ∥ / ⇣ toggle on each row so authors can verify sequence vs
+            // parallel timing without entering Play mode.
+            var playPanelRect = new Rect(row.xMax - 50f, row.y + 1f, 24f, row.height - 2f);
+            var playPanelColor = GUI.color;
+            GUI.color = new Color(0.55f, 0.95f, 0.55f);
+            if (GUI.Button(playPanelRect, new GUIContent("▶▶",
+                    "Play every cue in this panel back-to-back, honouring the parallel/sequenced toggle on each row."),
+                EditorStyles.miniButton))
+            {
+                StartPanelPreview(step, cueIndices);
+            }
+            GUI.color = playPanelColor;
 
             // [×] delete panel
             var xRect = new Rect(row.xMax - 22f, row.y + 1f, 18f, row.height - 2f);

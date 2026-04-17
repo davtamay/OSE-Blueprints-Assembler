@@ -1,7 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python -c \":*)",
+      "Read","Write","Edit","Glob","Grep","Bash(*)","WebFetch","WebSearch",
       "Bash(find 'c:\\\\Users\\\\davta\\\\Repos\\\\OSE Blueprints Assembler\\\\Assets\\\\_Project\\\\Scripts\\\\Interaction.V2' -name *.cs)",
       "Bash(python3 -c \":*)",
       "Read(//c/Users/davta/Repos/OSE Blueprints Assembler/**)",
@@ -278,7 +278,10 @@
       "Bash(PYTHONIOENCODING=utf-8 python tools/migrate_step_animations.py d3d_v18_10)",
       "Bash(git add:*)",
       "Bash(git commit -m ':*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(awk '/FindLivePartGO.*\\\\\\(/{flag=1} flag{print NR\": \"$0; if\\(/^[[:space:]]*\\\\}/\\) exit}' \"c:\\\\Users\\\\davta\\\\Repos\\\\OSE Blueprints Assembler\\\\Assets\\\\_Project\\\\Scripts\\\\Editor\\\\TTAW.Preview.cs\")",
+      "Bash(find \"c:\\\\Users\\\\davta\\\\Repos\\\\OSE Blueprints Assembler\\\\Assets\\\\_Project\\\\Scripts\\\\Editor\" -type f -name \"*.cs\" -exec grep -l \"FindLivePartGO\" {} \\\\;)",
+      "Bash(find \"c:\\\\Users\\\\davta\\\\Repos\\\\OSE Blueprints Assembler\\\\Assets\\\\_Project\\\\Scripts\" -name \"*.cs\" -type f -exec grep -l \"FindSpawnedPart.*{\" {} \\\\;)"
     ],
     "additionalDirectories": [
       "c:\\Users\\davta\\Repos\\OSE Blueprints Assembler\\Assets\\_Project\\Data\\Packages\\d3d_v18_10\\source_cad\\heatbed_stage01\\raw\\glb_centered",
