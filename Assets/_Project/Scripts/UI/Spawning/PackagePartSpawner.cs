@@ -202,6 +202,38 @@ namespace OSE.UI.Root
                 for (int i = 0; i < _spawnedParts.Count; i++)
                     if (_spawnedParts[i] != null) trackedNames.Add(_spawnedParts[i].name);
 
+                // First pass: evict stale transient GOs left over from the
+                // pre-compile session. Domain reload wipes _subassemblyRoots
+                // (PackagePartSpawner) and _fabricationGroupRoot
+                // (AnimationCueCoordinator) — the C# fields reset to empty /
+                // null, but the scene GameObjects survive. On the next step
+                // activation, fresh Group_* / _AnimCue_* GOs get created
+                // alongside the stale ones, which the user sees as duplicate
+                // "frame cube" + "frame pieces" or static + animated copies
+                // of the same target. Reparent their non-group children back
+                // to PreviewRoot first so we don't destroy live parts along
+                // with the stale wrapper, then destroy the wrapper itself.
+                for (int i = root.childCount - 1; i >= 0; i--)
+                {
+                    Transform child = root.GetChild(i);
+                    if (child == null) continue;
+                    string nm = child.name;
+                    if (nm == null) continue;
+                    bool isOrphanGroup =
+                        nm.StartsWith("Group_",                System.StringComparison.Ordinal) ||
+                        nm.StartsWith("_AnimCue_FabGroup_",    System.StringComparison.Ordinal) ||
+                        nm.StartsWith("_AnimCue_AnimGroup_",   System.StringComparison.Ordinal);
+                    if (!isOrphanGroup) continue;
+
+                    for (int c = child.childCount - 1; c >= 0; c--)
+                    {
+                        var inner = child.GetChild(c);
+                        if (inner == null) continue;
+                        inner.SetParent(root, worldPositionStays: true);
+                    }
+                    SafeDestroy(child.gameObject);
+                }
+
                 for (int i = root.childCount - 1; i >= 0; i--)
                 {
                     Transform child = root.GetChild(i);
