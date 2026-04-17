@@ -105,8 +105,10 @@ namespace OSE.UI.Root
             }
 
             // previewDelaySeconds still lives on the step payload wrapper
-            // for now (migration will move it onto the step directly).
-            float previewDelay = legacyPayload != null ? legacyPayload.previewDelaySeconds : 0f;
+            // (migration has not moved it onto the step directly yet). The
+            // cues array itself is empty after host migration — only this
+            // timing knob still lives here.
+            float previewDelay = step.animationCues != null ? step.animationCues.previewDelaySeconds : 0f;
             if (previewDelay > 0f && deferredPreviewSpawn != null)
             {
                 _deferredPreviewSpawn = deferredPreviewSpawn;
