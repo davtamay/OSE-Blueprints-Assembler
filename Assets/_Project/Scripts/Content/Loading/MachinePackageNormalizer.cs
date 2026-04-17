@@ -30,9 +30,15 @@ namespace OSE.Content.Loading
             IndexPartOwnership(package);
             DeriveSubassemblyPartIds(package);
             BakeGroupRigidBody(package);
-            BakePoseTable(package);
+            // Animation-cue cleanup runs BEFORE BakePoseTable so any
+            // stepPoses synthesized from legacy cue toPoses are visible to
+            // the resolver. Trigger normalization and step→host migration
+            // are prerequisites — the cue-to-stepPose migration needs
+            // canonical data to reason about.
             NormalizeAnimationCueTriggers(package);
             MigrateStepAnimationCuesToHosts(package);
+            MigrateAnimationCueEndPoses(package);
+            BakePoseTable(package);
             ValidateAnimationCueInvariants(package);
         }
 
@@ -277,6 +283,188 @@ namespace OSE.Content.Loading
                         Debug.LogError($"[CueRuntime.Validate] {hostLabel} cue[{i}] has unknown trigger '{t}'. Canonical values: onActivate, afterDelay, afterPartsShown, onStepComplete, onFirstInteraction, onTaskComplete.");
                 }
             }
+        }
+
+        /// <summary>
+        /// Retires the obsolete per-cue pose fields (<c>fromPose</c>,
+        /// <c>toPose</c>, <c>holdAtEnd</c>). Runs before <c>BakePoseTable</c>
+        /// so any stepPoses we synthesize land in the table on the next
+        /// resolve.
+        ///
+        /// Rules (per the approved plan):
+        /// - <c>shake</c> / <c>pulse</c> / <c>particle</c>: these animate in
+        ///   place. Clear <c>toPose</c> — never read, never needed.
+        /// - <c>poseTransition</c> / <c>transform</c>:
+        ///   - If the cue names exactly one <c>targetPartIds</c> (or is a
+        ///     part-hosted cue in a future pass), synthesize a stepPose on
+        ///     that <c>PartPreviewPlacement</c> at the cue's step using the
+        ///     cue's <c>toPose</c>. The part-hosted coordinator then reads
+        ///     the destination from the stepPose via PoseTable — no dual
+        ///     storage.
+        ///   - If the cue is subassembly-hosted with no partIds, leave
+        ///     <c>toPose</c> alone. Subassemblies do not yet carry stepPoses;
+        ///     the runtime still reads the obsolete field for now
+        ///     (<see cref="AnimationCueCoordinator.ResolveHostedSubassemblyContext"/>
+        ///     with a documented pragma).
+        /// - <c>fromPose</c> and <c>holdAtEnd</c>: always cleared — both
+        ///   semantics are now implicit (fromPose = live transform,
+        ///   holdAtEnd = always hold, PoseTable drives next step).
+        /// </summary>
+        private static void MigrateAnimationCueEndPoses(MachinePackageDefinition package)
+        {
+            int clearedFrom = 0;
+            int clearedToInPlace = 0;
+            int synthesizedStepPoses = 0;
+            int clearedHold = 0;
+            int skippedSubassembly = 0;
+
+            void MigrateArray(AnimationCueEntry[] arr, string hostLabel)
+            {
+                if (arr == null) return;
+                for (int i = 0; i < arr.Length; i++)
+                {
+                    var e = arr[i];
+                    if (e == null) continue;
+
+#pragma warning disable CS0618
+                    // fromPose: never read at runtime. Always clear.
+                    if (e.fromPose != null)
+                    {
+                        e.fromPose = null;
+                        clearedFrom++;
+                    }
+
+                    bool isInPlaceType =
+                        string.Equals(e.type, "shake",    StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(e.type, "pulse",    StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(e.type, "particle", StringComparison.OrdinalIgnoreCase);
+
+                    if (isInPlaceType)
+                    {
+                        if (e.toPose != null)
+                        {
+                            e.toPose = null;
+                            clearedToInPlace++;
+                        }
+                    }
+                    else if (e.toPose != null
+                             && !string.IsNullOrEmpty(e.type)
+                             && (string.Equals(e.type, "poseTransition", StringComparison.OrdinalIgnoreCase)
+                                 || string.Equals(e.type, "transform",      StringComparison.OrdinalIgnoreCase)))
+                    {
+                        // For part-hosted poseTransitions with exactly one
+                        // target part, convert toPose into a stepPose on
+                        // that part for the cue's step. Requires a single
+                        // stepId so we know where the pose anchors.
+                        string targetPartId = null;
+                        if (e.targetPartIds != null && e.targetPartIds.Length == 1
+                            && !string.IsNullOrEmpty(e.targetPartIds[0]))
+                            targetPartId = e.targetPartIds[0];
+
+                        string anchorStepId = null;
+                        if (e.stepIds != null && e.stepIds.Length == 1
+                            && !string.IsNullOrEmpty(e.stepIds[0]))
+                            anchorStepId = e.stepIds[0];
+
+                        if (targetPartId != null && anchorStepId != null
+                            && TrySynthesizeStepPose(package, targetPartId, anchorStepId, e.toPose))
+                        {
+                            e.toPose = null;
+                            synthesizedStepPoses++;
+                        }
+                        else if (!string.IsNullOrEmpty(e.targetSubassemblyId)
+                                 && (e.targetPartIds == null || e.targetPartIds.Length == 0))
+                        {
+                            // Subassembly-hosted root transform — keep toPose
+                            // for now. The runtime reads it via
+                            // AnimationCueCoordinator.ResolveHostedSubassemblyContext
+                            // (documented pragma). Logged so authors can
+                            // eventually migrate to subassembly stepPoses.
+                            skippedSubassembly++;
+                        }
+                    }
+
+                    // holdAtEnd: never read at runtime (Stop always holds).
+                    if (e.holdAtEnd)
+                    {
+                        e.holdAtEnd = false;
+                        clearedHold++;
+                    }
+#pragma warning restore CS0618
+                }
+            }
+
+            if (package.steps != null)
+                for (int i = 0; i < package.steps.Length; i++)
+                    MigrateArray(package.steps[i]?.animationCues?.cues, $"step '{package.steps[i]?.id}'");
+
+            if (package.parts != null)
+                for (int i = 0; i < package.parts.Length; i++)
+                    MigrateArray(package.parts[i]?.animationCues, $"part '{package.parts[i]?.id}'");
+
+            var subs = package.GetSubassemblies();
+            if (subs != null)
+                for (int i = 0; i < subs.Length; i++)
+                    MigrateArray(subs[i]?.animationCues, $"subassembly '{subs[i]?.id}'");
+
+            int total = clearedFrom + clearedToInPlace + synthesizedStepPoses + clearedHold;
+            if (total > 0)
+                Debug.Log($"[CueRuntime.Migrate] end-poses in '{package.packageId}': cleared {clearedFrom} fromPose, {clearedToInPlace} in-place toPose, synthesized {synthesizedStepPoses} stepPose(s), cleared {clearedHold} holdAtEnd. Kept {skippedSubassembly} subassembly-root toPose(s) (no stepPose equivalent yet).");
+        }
+
+        /// <summary>
+        /// Writes an <c>AnimationPose</c> onto the target part's
+        /// <see cref="PartPreviewPlacement.stepPoses"/> for the given step,
+        /// unless an entry for that step already exists (author-authored
+        /// data wins).
+        /// </summary>
+        private static bool TrySynthesizeStepPose(MachinePackageDefinition package, string partId, string stepId, AnimationPose pose)
+        {
+            if (package?.previewConfig?.partPlacements == null || pose == null) return false;
+
+            PartPreviewPlacement placement = null;
+            for (int i = 0; i < package.previewConfig.partPlacements.Length; i++)
+            {
+                var pp = package.previewConfig.partPlacements[i];
+                if (pp == null) continue;
+                if (string.Equals(pp.partId, partId, StringComparison.Ordinal))
+                {
+                    placement = pp;
+                    break;
+                }
+            }
+            if (placement == null) return false;
+
+            if (placement.stepPoses != null)
+            {
+                for (int i = 0; i < placement.stepPoses.Length; i++)
+                {
+                    var sp = placement.stepPoses[i];
+                    if (sp != null && string.Equals(sp.stepId, stepId, StringComparison.Ordinal))
+                        return false; // author-authored stepPose already present
+                }
+            }
+
+            var entry = new StepPoseEntry
+            {
+                stepId = stepId,
+                position = new SceneFloat3   { x = pose.position.x, y = pose.position.y, z = pose.position.z },
+                rotation = new SceneQuaternion { x = pose.rotation.x, y = pose.rotation.y, z = pose.rotation.z, w = pose.rotation.w },
+                scale    = new SceneFloat3   { x = pose.scale.x,    y = pose.scale.y,    z = pose.scale.z },
+            };
+
+            if (placement.stepPoses == null || placement.stepPoses.Length == 0)
+            {
+                placement.stepPoses = new[] { entry };
+            }
+            else
+            {
+                var next = new StepPoseEntry[placement.stepPoses.Length + 1];
+                Array.Copy(placement.stepPoses, next, placement.stepPoses.Length);
+                next[placement.stepPoses.Length] = entry;
+                placement.stepPoses = next;
+            }
+            return true;
         }
 
         /// <summary>

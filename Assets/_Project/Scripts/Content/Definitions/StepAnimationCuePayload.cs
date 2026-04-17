@@ -95,10 +95,27 @@ namespace OSE.Content
 
         // ── Type-specific (optional, ignored by other types) ──
 
-        /// <summary>Explicit start pose for poseTransition.</summary>
+        /// <summary>
+        /// [OBSOLETE] Explicit start pose for poseTransition.
+        /// Retained for JSON backward-compat deserialization only.
+        /// Runtime no longer reads this — animations start from the live
+        /// target transform (which equals PoseTable.TryGet at step activation).
+        /// MachinePackageNormalizer.MigrateAnimationCueEndPoses clears this
+        /// field at load.
+        /// </summary>
+        [Obsolete("Not read at runtime. Animation start pose is the live transform at cue start.")]
         public AnimationPose fromPose;
 
-        /// <summary>Explicit end pose for poseTransition.</summary>
+        /// <summary>
+        /// [OBSOLETE] Explicit end pose for poseTransition.
+        /// Retained for JSON backward-compat deserialization only.
+        /// Runtime no longer reads this — animation destinations live on
+        /// PartPreviewPlacement.stepPoses for the cue's step, resolved via
+        /// PoseTable. MachinePackageNormalizer.MigrateAnimationCueEndPoses
+        /// migrates any leftover toPose onto the target part's stepPoses at
+        /// load.
+        /// </summary>
+        [Obsolete("Not read at runtime. Use PartPreviewPlacement.stepPoses on the target part.")]
         public AnimationPose toPose;
 
         /// <summary>Euler rotation for orientSubassembly.</summary>
@@ -194,14 +211,15 @@ namespace OSE.Content
         public SceneFloat3 pivotOffset;
 
         /// <summary>
-        /// When true, the player leaves children at their final animated
-        /// pose at Stop instead of restoring the pre-animation baseline.
-        /// Use for cues that should "stick" — e.g. an orientation flip that
-        /// reveals an assembly's far face, where the trainee continues the
-        /// step with the new orientation.
-        /// Default false preserves the cosmetic-preview behavior (revert to
-        /// fromPose), matching legacy content.
+        /// [OBSOLETE] When true, leave the animated pose at Stop instead of
+        /// reverting. The runtime now always holds the last Tick value on
+        /// Stop; the PoseTable drives pose at the next step boundary.
+        /// Retained for JSON deserialization only; not read at runtime.
+        /// MachinePackageNormalizer.MigrateAnimationCueEndPoses uses a
+        /// non-default value as a migration hint to synthesize a destination
+        /// stepPose on the target part, then clears the field.
         /// </summary>
+        [Obsolete("Not read at runtime. Destination persistence lives on PartPreviewPlacement.stepPoses.")]
         public bool holdAtEnd;
     }
 

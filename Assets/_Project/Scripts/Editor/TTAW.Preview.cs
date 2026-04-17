@@ -1550,8 +1550,11 @@ namespace OSE.Editor
                     // 'demonstratePlacement' cue when spin is needed.
                     cue.spinRevolutions = 0f;
                     if (EditorGUI.EndChangeCheck()) { cues[idx] = cue; _dirtyStepIds.Add(step.id); EditorGUI.BeginChangeCheck(); }
-                    DrawAnimationPoseField("From Pose", ref cue.fromPose, step);
-                    DrawAnimationPoseField("To Pose",   ref cue.toPose,   step);
+                    EditorGUILayout.HelpBox(
+                        "Pose Transition destination = the target part's stepPose for this step " +
+                        "(author it in the part's pose panel). For subassembly-hosted cues, the " +
+                        "legacy toPose is still read as a fallback until subassemblies gain stepPoses.",
+                        MessageType.Info);
                     cues[idx] = cue;
                     break;
                 }
@@ -1565,46 +1568,26 @@ namespace OSE.Editor
                 case "transform":
                 {
                     // Universal From → To transform animation (position, rotation,
-                    // scale). Backed by PoseTransitionPlayer. "Capture Current"
-                    // snapshots the selected host's live transform into the
-                    // chosen pose so authors see real starting values.
+                    // scale). Backed by PoseTransitionPlayer. Destination now
+                    // lives on the target part's stepPose — authored in the
+                    // part's pose panel, read by the runtime via PoseTable.
                     EditorGUILayout.HelpBox(
-                        "Animates position, rotation, and scale from the From pose " +
-                        "to the To pose over Duration. Use Capture Current to " +
-                        "snapshot the host's live transform.",
-                        MessageType.None);
+                        "Animates from the current live pose to the part's stepPose for this step. " +
+                        "Author the destination in the part's pose panel (not here) so editor and " +
+                        "runtime read the same value.",
+                        MessageType.Info);
                     if (EditorGUI.EndChangeCheck()) { cues[idx] = cue; _dirtyStepIds.Add(step.id); EditorGUI.BeginChangeCheck(); }
-                    DrawAnimationPoseField("From Pose", ref cue.fromPose, step);
-                    DrawAnimationPoseField("To Pose",   ref cue.toPose,   step);
                     cues[idx] = cue;
                     break;
                 }
             }
             if (EditorGUI.EndChangeCheck()) { cues[idx] = cue; _dirtyStepIds.Add(step.id); }
 
-            // ── Hold-at-end (optional — only meaningful for pose-based cues) ──
-            bool holdCapable =
-                string.Equals(cue.type, "transform", StringComparison.Ordinal) ||
-                string.Equals(cue.type, "poseTransition", StringComparison.Ordinal) ||
-                string.Equals(cue.type, "orientSubassembly", StringComparison.Ordinal);
-            if (holdCapable)
-            {
-                bool newHold = EditorGUILayout.Toggle(
-                    new GUIContent("Hold At End",
-                        "When ON, children stay at their final animated pose when the cue stops. " +
-                        "When OFF (default), they snap back to the baseline pose. " +
-                        "Use ON for animations whose end-state should persist (e.g. an orientation flip)."),
-                    cue.holdAtEnd);
-                // Only mark dirty on an actual value change — avoids the
-                // "1 unsaved" appearing the moment an author opens the edit
-                // panel without changing anything.
-                if (newHold != cue.holdAtEnd)
-                {
-                    cue.holdAtEnd = newHold;
-                    cues[idx] = cue;
-                    _dirtyStepIds.Add(step.id);
-                }
-            }
+            // Hold-at-end UI removed — the runtime always holds the last Tick
+            // value on Stop. PoseTable drives pose at the next step boundary,
+            // so a visible "revert" would only produce a frame of snap
+            // between cue-end and next-step activation. MachinePackageNormalizer
+            // clears the legacy field at load.
 
             // ── Pivot override (optional — types that rotate or emit from a point) ──
             // Default pivot for "orientSubassembly" is the member centroid; for
