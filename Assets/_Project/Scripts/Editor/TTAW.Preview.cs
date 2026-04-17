@@ -382,6 +382,11 @@ namespace OSE.Editor
         private readonly List<PanelCueEntry> _panelQueue = new();
         private double _panelPlayStartTime;
         private StepDefinition _panelPlayStep;
+        // Scope of the currently-playing panel. Needed by OnPanelPlayUpdate /
+        // StartSinglePanelCue to look up the host's cue array (host-owned
+        // storage) instead of the empty step.animationCues.cues.
+        private CueScope _panelPlayScope;
+        private string _panelPlayScopeKey;
         // Re-entrancy guard: when starting a single cue inside the panel
         // loop, StartCuePreview calls StopAllPreviews — which would normally
         // clear _panelQueue mid-iteration. This flag suppresses that clear.
@@ -395,12 +400,15 @@ namespace OSE.Editor
         /// resolution, same stop semantics. Visual sequence-vs-parallel
         /// authoring can be tested without entering Play mode.
         /// </summary>
-        private void StartPanelPreview(StepDefinition step, List<int> cueIndices)
+        private void StartPanelPreview(StepDefinition step, CueScope scope, string scopeKey, List<int> cueIndices)
         {
             StopAllPreviews();
-            if (step?.animationCues?.cues == null || cueIndices == null || cueIndices.Count == 0) return;
+            if (step == null || cueIndices == null || cueIndices.Count == 0) return;
 
-            var cues = step.animationCues.cues;
+            var storage = GetHostCueStorage(step, scope, scopeKey);
+            var cues = storage.cues;
+            if (cues == null || cues.Length == 0) return;
+
             float runningOffset = 0f;
             float prevDuration  = 0f;
 
@@ -436,6 +444,8 @@ namespace OSE.Editor
 
             _panelPlayStartTime = EditorApplication.timeSinceStartup;
             _panelPlayStep      = step;
+            _panelPlayScope     = scope;
+            _panelPlayScopeKey  = scopeKey;
             _previewLastTickTime = _panelPlayStartTime;
 
             EditorApplication.update -= OnPanelPlayUpdate;
@@ -464,7 +474,7 @@ namespace OSE.Editor
                     // Start cues whose offset has been reached.
                     if (!e.started && elapsed >= e.startOffset)
                     {
-                        e.player = StartSinglePanelCue(_panelPlayStep, e.cueIdx);
+                        e.player = StartSinglePanelCue(_panelPlayStep, _panelPlayScope, _panelPlayScopeKey, e.cueIdx);
                         e.started = true;
                         _panelQueue[i] = e;
                     }
@@ -539,20 +549,29 @@ namespace OSE.Editor
         /// the per-cue update loop (the panel-play loop drives Tick instead).
         /// Returns the player instance, or null on failure.
         /// </summary>
-        private OSE.UI.Root.IAnimationCuePlayer StartSinglePanelCue(StepDefinition step, int cueIdx)
+        private OSE.UI.Root.IAnimationCuePlayer StartSinglePanelCue(StepDefinition step, CueScope scope, string scopeKey, int cueIdx)
         {
-            var payload = step?.animationCues;
-            if (payload?.cues == null || cueIdx < 0 || cueIdx >= payload.cues.Length) return null;
-            var entry = payload.cues[cueIdx];
+            var storage = GetHostCueStorage(step, scope, scopeKey);
+            var cues = storage.cues;
+            if (cues == null || cueIdx < 0 || cueIdx >= cues.Length) return null;
+            var entry = cues[cueIdx];
             if (entry == null) return null;
 
-            // Reuse the existing per-cue start path so target resolution +
-            // pivot + reparent logic is identical. Suppress the panel-queue
-            // clear that StartCuePreview's internal StopAllPreviews would
-            // otherwise trigger — the panel loop owns the queue and is
-            // mid-iteration.
+            // Route through the same per-cue start path as the inline ▶ Play
+            // button: host-owned for Part/Subassembly (target = host GO) and
+            // legacy for Tool. Suppress the panel-queue clear that
+            // StartAllPreviews would otherwise trigger — the panel loop owns
+            // the queue and is mid-iteration.
             _suppressPanelQueueClear = true;
-            try { StartCuePreview(step, cueIdx); }
+            try
+            {
+                if (scope == CueScope.Tool)
+                    StartCuePreview(step, cueIdx);
+                else
+                    StartHostCuePreview(entry, cueIdx, step,
+                        scope == CueScope.Part ? "part" : "subassembly",
+                        scopeKey);
+            }
             finally { _suppressPanelQueueClear = false; }
 
             EditorApplication.update -= OnPreviewUpdate;
@@ -1029,271 +1048,23 @@ namespace OSE.Editor
             }
         }
 
-        // ── Host-owned (selection-scoped) animation cue editor ───────────────
-
-        /// <summary>
-        /// Renders the "Animations & Effects" section for the selected
-        /// subassembly. Cues live on <see cref="SubassemblyDefinition.animationCues"/>;
-        /// each cue may scope to specific stepIds (defaults to current step
-        /// when added). Step-level cue authoring has been removed —
-        /// authors set animations on the host they should follow.
-        /// </summary>
-        private void DrawSubassemblyAnimationCuesSection(SubassemblyDefinition sub, StepDefinition step)
-        {
-            if (sub == null) return;
-            int count = sub.animationCues?.Length ?? 0;
-            // Header is just a title bar — no onAdd lambda (that's the
-            // "+" callback, NOT the body). The body renders inline below.
-            DrawUnifiedSectionHeader($"ANIMATIONS & EFFECTS  ({count})", count);
-            DrawHostCueList(
-                title: $"Cues hosted on '{sub.GetDisplayName()}'",
-                cues: sub.animationCues,
-                step: step,
-                hostKind: "subassembly",
-                hostId: sub.id,
-                setCues: arr => { sub.animationCues = arr; _dirtySubassemblyIds.Add(sub.id); });
-        }
-
-        /// <summary>
-        /// Same UX for a selected part — cues live on
-        /// <see cref="PartDefinition.animationCues"/>.
-        /// </summary>
-        private void DrawPartAnimationCuesSection(PartDefinition part, StepDefinition step)
-        {
-            if (part == null) return;
-            int count = part.animationCues?.Length ?? 0;
-            DrawUnifiedSectionHeader($"ANIMATIONS & EFFECTS  ({count})", count);
-            DrawHostCueList(
-                title: $"Cues hosted on '{part.GetDisplayName()}'",
-                cues: part.animationCues,
-                step: step,
-                hostKind: "part",
-                hostId: part.id,
-                setCues: arr => { part.animationCues = arr; _dirtyPartIds.Add(part.id); });
-        }
-
-        private static readonly string[] HostCueTypes = { "shake", "rotate", "pulse", "particle", "demonstratePlacement", "orientSubassembly", "poseTransition" };
-        // Canonical trigger strings shown in the host-cue authoring dropdown.
-        // Must match MachinePackageNormalizer.NormalizeAnimationCueTriggers
-        // canonical names so editor values and runtime bucketing agree.
-        private static readonly string[] HostCueTriggers = { "onActivate", "onStepComplete", "always" };
-
-        private void DrawHostCueList(string title, AnimationCueEntry[] cues, StepDefinition step, string hostKind, string hostId, System.Action<AnimationCueEntry[]> setCues)
-        {
-            EditorGUILayout.LabelField(title, EditorStyles.miniBoldLabel);
-
-            var working = new List<AnimationCueEntry>(cues ?? Array.Empty<AnimationCueEntry>());
-            int removeAt = -1;
-            int moveUpAt = -1;
-            int moveDownAt = -1;
-            EditorGUI.BeginChangeCheck();
-
-            // Group by trigger ("panel"), then within each panel sort by
-            // panelOrder so the author sees the execution plan: cues in the
-            // same panel fire on the same event; within a panel they play in
-            // parallel (∥) or wait for the previous row (⇣) per row flag.
-            // Canonical trigger name is "onActivate" — matches
-            // MachinePackageNormalizer.NormalizeAnimationCueTriggers so the
-            // editor and runtime always bucket the same way. Legacy values
-            // like "onStepActivate" are rewritten here for immediate
-            // consistency; the normalizer re-applies at next load as a
-            // safety net.
-            static string CanonicalTrigger(string t)
-            {
-                if (string.IsNullOrEmpty(t)) return "onActivate";
-                if (string.Equals(t, "onStepActivate",  StringComparison.OrdinalIgnoreCase)) return "onActivate";
-                if (string.Equals(t, "onStepActivated", StringComparison.OrdinalIgnoreCase)) return "onActivate";
-                if (string.Equals(t, "onStepStart",     StringComparison.OrdinalIgnoreCase)) return "onActivate";
-                return t;
-            }
-            var panelIndices = new Dictionary<string, List<int>>(StringComparer.Ordinal);
-            bool canonicalizedAny = false;
-            for (int i = 0; i < working.Count; i++)
-            {
-                string canon = CanonicalTrigger(working[i].trigger);
-                if (!string.Equals(canon, working[i].trigger, StringComparison.Ordinal))
-                {
-                    working[i].trigger = canon; // persist canonical value
-                    canonicalizedAny = true;
-                }
-                if (!panelIndices.TryGetValue(canon, out var list))
-                    panelIndices[canon] = list = new List<int>();
-                list.Add(i);
-            }
-            foreach (var kv in panelIndices)
-                kv.Value.Sort((a, b) => working[a].panelOrder.CompareTo(working[b].panelOrder));
-
-            foreach (var kv in panelIndices)
-            {
-                EditorGUILayout.Space(2);
-                EditorGUILayout.LabelField($"◆ {kv.Key}  (×{kv.Value.Count})", EditorStyles.boldLabel);
-                var rows = kv.Value;
-                for (int rowIdx = 0; rowIdx < rows.Count; rowIdx++)
-                {
-                    int i = rows[rowIdx];
-                    var c = working[i];
-                    using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
-                    {
-                        using (new EditorGUILayout.HorizontalScope())
-                        {
-                            // Run order: parallel (runs alongside previous
-                            // row) vs sequential (waits for previous row to
-                            // finish). Always rendered so the toggle is
-                            // discoverable even when there's only one cue —
-                            // row 0 of a panel has no predecessor so the
-                            // control is disabled (shows "parallel").
-                            bool seq  = c.sequenceAfterPrevious && rowIdx > 0;
-                            string lbl = seq ? "sequential" : "parallel";
-                            string tip = rowIdx == 0
-                                ? "First row of a panel has no previous row to sequence after."
-                                : (seq ? "Waits for the previous row to finish. Click to switch to parallel."
-                                       : "Runs alongside the previous row. Click to run sequentially.");
-                            GUI.enabled = rowIdx > 0;
-                            if (GUILayout.Button(new GUIContent(lbl, tip), EditorStyles.miniButton, GUILayout.Width(80)))
-                                c.sequenceAfterPrevious = !c.sequenceAfterPrevious;
-                            GUI.enabled = true;
-                            if (rowIdx == 0) c.sequenceAfterPrevious = false;
-
-                            // Reorder within panel
-                            GUI.enabled = rowIdx > 0;
-                            if (GUILayout.Button("▲", EditorStyles.miniButtonLeft, GUILayout.Width(22))) moveUpAt = i;
-                            GUI.enabled = rowIdx < rows.Count - 1;
-                            if (GUILayout.Button("▼", EditorStyles.miniButtonRight, GUILayout.Width(22))) moveDownAt = i;
-                            GUI.enabled = true;
-
-                            int typeIdx = Mathf.Max(0, Array.IndexOf(HostCueTypes, c.type ?? ""));
-                            int newType = EditorGUILayout.Popup(typeIdx, HostCueTypes, GUILayout.Width(160));
-                            if (newType != typeIdx) c.type = HostCueTypes[newType];
-
-                            int trgIdx = Mathf.Max(0, Array.IndexOf(HostCueTriggers, c.trigger ?? "onActivate"));
-                            int newTrg = EditorGUILayout.Popup(trgIdx, HostCueTriggers, GUILayout.Width(140));
-                            if (newTrg != trgIdx) c.trigger = HostCueTriggers[newTrg];
-
-                            GUILayout.FlexibleSpace();
-                            if (GUILayout.Button("×", GUILayout.Width(22))) removeAt = i;
-                        }
-
-                    // Scope (read-only). Cues are auto-scoped to the step
-                    // they're added in; multi-step / always-on scopes stay
-                    // editable via JSON (advanced case).
-                    string scopeText = (c.stepIds == null || c.stepIds.Length == 0)
-                        ? "Scope: Always"
-                        : "Scope: " + string.Join(", ", c.stepIds);
-                    EditorGUILayout.LabelField(scopeText, EditorStyles.miniLabel);
-
-                    // ▶ Play / ■ Stop — preview this cue in the Scene view.
-                    using (new EditorGUILayout.HorizontalScope())
-                    {
-                        bool isPreviewing = _previewPlayer != null && _previewPlayer.IsPlaying && _previewingCueIdx == i;
-                        if (isPreviewing)
-                        {
-                            if (GUILayout.Button("■ Stop", GUILayout.Width(80)))
-                                StopAllPreviews();
-                        }
-                        else
-                        {
-                            if (GUILayout.Button("▶ Play", GUILayout.Width(80)))
-                                StartHostCuePreview(c, i, step, hostKind, hostId);
-                        }
-                    }
-
-                    // Duration + loop are common to all cue types. 0s = run
-                    // indefinitely until step navigates away; any positive
-                    // value stops the player (and clears particle instances)
-                    // after that many seconds. Loop restarts the clip on
-                    // completion — meaningful alongside a non-zero duration.
-                    using (new EditorGUILayout.HorizontalScope())
-                    {
-                        c.durationSeconds = EditorGUILayout.FloatField(
-                            new GUIContent("duration (s)", "0 = run until step ends"),
-                            Mathf.Max(0f, c.durationSeconds),
-                            GUILayout.Width(180));
-                        c.loop = EditorGUILayout.ToggleLeft("loop", c.loop, GUILayout.Width(60));
-                    }
-
-                    // Type-specific minimal payload editing — fuller editor still in JSON.
-                    switch (c.type)
-                    {
-                        case "shake":
-                            c.shakeAmplitude = EditorGUILayout.FloatField("amplitude (m)", c.shakeAmplitude);
-                            c.shakeFrequency = EditorGUILayout.FloatField("frequency (Hz)", c.shakeFrequency);
-                            break;
-                        case "particle":
-                            c.particlePrefabRef = EditorGUILayout.TextField("prefab (Resources path)", c.particlePrefabRef ?? "");
-                            break;
-                    }
-                }
-                }
-            }
-            bool fieldChanged = EditorGUI.EndChangeCheck();
-            bool structuralChanged = canonicalizedAny;
-
-            // Apply reorder within panel: swap panelOrder values so the
-            // saved JSON encodes the new sequence. Cues in adjacent rows
-            // swap their panelOrder (using the rowIdx position), which
-            // means authors see the expected up/down effect on next
-            // repaint. panelOrder may be 0 for freshly-added rows —
-            // normalize to the current row index first if so.
-            if (moveUpAt >= 0 || moveDownAt >= 0)
-            {
-                // Normalize panelOrder to current ordinal within each panel
-                // (first-run housekeeping).
-                foreach (var kv in panelIndices)
-                {
-                    var rows = kv.Value;
-                    for (int r = 0; r < rows.Count; r++) working[rows[r]].panelOrder = r;
-                }
-
-                int moveAt = moveUpAt >= 0 ? moveUpAt : moveDownAt;
-                int dir    = moveUpAt >= 0 ? -1 : 1;
-                string trg = string.IsNullOrEmpty(working[moveAt].trigger) ? "onActivate" : working[moveAt].trigger;
-                if (panelIndices.TryGetValue(trg, out var siblings))
-                {
-                    int pos = siblings.IndexOf(moveAt);
-                    int swap = pos + dir;
-                    if (swap >= 0 && swap < siblings.Count)
-                    {
-                        int a = siblings[pos], b = siblings[swap];
-                        int oa = working[a].panelOrder, ob = working[b].panelOrder;
-                        working[a].panelOrder = ob;
-                        working[b].panelOrder = oa;
-                        structuralChanged = true;
-                    }
-                }
-            }
-
-            if (removeAt >= 0) { working.RemoveAt(removeAt); structuralChanged = true; }
-
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                if (GUILayout.Button("+ Add cue", GUILayout.Width(120)))
-                {
-                    working.Add(new AnimationCueEntry
-                    {
-                        type    = "shake",
-                        trigger = "onActivate",
-                        stepIds = step != null ? new[] { step.id } : Array.Empty<string>(),
-                        shakeAmplitude = 0.01f,
-                        shakeFrequency = 8f,
-                        shakeAxis = new SceneFloat3 { x = 1f, y = 0f, z = 0f },
-                    });
-                    structuralChanged = true;
-                }
-            }
-            bool changed = fieldChanged || structuralChanged;
-
-            // Persist only when the array actually changed — and force a
-            // repaint so the new row appears immediately. Without these, the
-            // host gets a fresh array reference every frame (no-op writes
-            // marking everything dirty) and the freshly-added row only shows
-            // on the next mouse event.
-            if (changed)
-            {
-                setCues(working.ToArray());
-                Repaint();
-                GUI.changed = true;
-            }
-        }
+        // ── Host-section authoring removed ───────────────────────────────────
+        //
+        // The "Animations & Effects" section that used to render on the
+        // selected part / subassembly inspector was a duplicate authoring
+        // surface for the same host-owned cue data. Authoring now happens in
+        // the task-sequence timing panels (TTAW.TimingPanels.cs +
+        // TTAW.CueContext.cs DrawCuesForPart / DrawCuesForSubassembly /
+        // DrawCuesForTool), which read/write the same host storage and drive
+        // the same scene preview. One surface, one storage — no drift.
+        //
+        // The block below was intentionally deleted:
+        //   DrawSubassemblyAnimationCuesSection
+        //   DrawPartAnimationCuesSection
+        //   DrawHostCueList
+        //   HostCueTypes / HostCueTriggers dropdown constants
+        // StartHostCuePreview is still invoked by the timing-panels play
+        // button (host-aware preview) and lives in its original location.
 
         // ── Legacy step-level cue editor (kept for fallback rendering only) ──
 
@@ -1550,11 +1321,8 @@ namespace OSE.Editor
                     // 'demonstratePlacement' cue when spin is needed.
                     cue.spinRevolutions = 0f;
                     if (EditorGUI.EndChangeCheck()) { cues[idx] = cue; _dirtyStepIds.Add(step.id); EditorGUI.BeginChangeCheck(); }
-                    EditorGUILayout.HelpBox(
-                        "Pose Transition destination = the target part's stepPose for this step " +
-                        "(author it in the part's pose panel). For subassembly-hosted cues, the " +
-                        "legacy toPose is still read as a fallback until subassemblies gain stepPoses.",
-                        MessageType.Info);
+                    DrawAnimationPoseField("From Pose", ref cue.fromPose, step);
+                    DrawAnimationPoseField("To Pose",   ref cue.toPose,   step);
                     cues[idx] = cue;
                     break;
                 }
@@ -1568,26 +1336,46 @@ namespace OSE.Editor
                 case "transform":
                 {
                     // Universal From → To transform animation (position, rotation,
-                    // scale). Backed by PoseTransitionPlayer. Destination now
-                    // lives on the target part's stepPose — authored in the
-                    // part's pose panel, read by the runtime via PoseTable.
+                    // scale). Backed by PoseTransitionPlayer. "Capture Current"
+                    // snapshots the selected host's live transform into the
+                    // chosen pose so authors see real starting values.
                     EditorGUILayout.HelpBox(
-                        "Animates from the current live pose to the part's stepPose for this step. " +
-                        "Author the destination in the part's pose panel (not here) so editor and " +
-                        "runtime read the same value.",
-                        MessageType.Info);
+                        "Animates position, rotation, and scale from the From pose " +
+                        "to the To pose over Duration. Use Capture Current to " +
+                        "snapshot the host's live transform.",
+                        MessageType.None);
                     if (EditorGUI.EndChangeCheck()) { cues[idx] = cue; _dirtyStepIds.Add(step.id); EditorGUI.BeginChangeCheck(); }
+                    DrawAnimationPoseField("From Pose", ref cue.fromPose, step);
+                    DrawAnimationPoseField("To Pose",   ref cue.toPose,   step);
                     cues[idx] = cue;
                     break;
                 }
             }
             if (EditorGUI.EndChangeCheck()) { cues[idx] = cue; _dirtyStepIds.Add(step.id); }
 
-            // Hold-at-end UI removed — the runtime always holds the last Tick
-            // value on Stop. PoseTable drives pose at the next step boundary,
-            // so a visible "revert" would only produce a frame of snap
-            // between cue-end and next-step activation. MachinePackageNormalizer
-            // clears the legacy field at load.
+            // ── Hold-at-end (optional — only meaningful for pose-based cues) ──
+            bool holdCapable =
+                string.Equals(cue.type, "transform", StringComparison.Ordinal) ||
+                string.Equals(cue.type, "poseTransition", StringComparison.Ordinal) ||
+                string.Equals(cue.type, "orientSubassembly", StringComparison.Ordinal);
+            if (holdCapable)
+            {
+                bool newHold = EditorGUILayout.Toggle(
+                    new GUIContent("Hold At End",
+                        "When ON, children stay at their final animated pose when the cue stops. " +
+                        "When OFF (default), they snap back to the baseline pose. " +
+                        "Use ON for animations whose end-state should persist (e.g. an orientation flip)."),
+                    cue.holdAtEnd);
+                // Only mark dirty on an actual value change — avoids the
+                // "1 unsaved" appearing the moment an author opens the edit
+                // panel without changing anything.
+                if (newHold != cue.holdAtEnd)
+                {
+                    cue.holdAtEnd = newHold;
+                    cues[idx] = cue;
+                    _dirtyStepIds.Add(step.id);
+                }
+            }
 
             // ── Pivot override (optional — types that rotate or emit from a point) ──
             // Default pivot for "orientSubassembly" is the member centroid; for

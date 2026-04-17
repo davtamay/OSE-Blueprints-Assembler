@@ -278,18 +278,43 @@ namespace OSE.UI.Root
         {
             IsPlaying = false;
 
-            // Always hold the last Tick value. The authored holdAtEnd flag is
-            // obsolete — animations own their own duration, PoseTable owns
-            // pose at step boundaries. When the next step activates, the
-            // normal spawner refresh writes poses back from PoseTable, so
-            // reverting here would only produce a visible snap between
-            // "animation ends" and "next step starts".
-            //
-            // Rigidbody kinematic state still restores (it's a control
-            // concern, not a pose concern).
+            // Authored opt-in: when true, leave children at their final
+            // animated pose. Otherwise revert to baseline (default).
+            bool hold = _ctx.Entry != null && _ctx.Entry.holdAtEnd;
+
             for (int i = 0; i < _ctx.Targets.Count; i++)
             {
                 if (_ctx.Targets[i] == null || i >= _fromPoses.Length) continue;
+                var t = _ctx.Targets[i].transform;
+
+                if (!hold)
+                {
+                    // Restore to fromPose so other editor systems aren't
+                    // confused by a displaced root.
+                    t.localPosition = _fromPoses[i].Position;
+                    t.localRotation = _fromPoses[i].Rotation;
+                    if (_fromPoses[i].Scale.sqrMagnitude > 0.001f)
+                        t.localScale = _fromPoses[i].Scale;
+
+                    // Restore each child's baseline local pose.
+                    var baselines = _childBaselines != null && i < _childBaselines.Length ? _childBaselines[i] : null;
+                    if (baselines != null)
+                    {
+                        for (int k = 0; k < baselines.Length; k++)
+                        {
+                            var ch = baselines[k].t;
+                            if (ch == null) continue;
+                            ch.localPosition = baselines[k].localPos;
+                            ch.localRotation = baselines[k].localRot;
+                        }
+                    }
+                }
+                // When hold == true: leave children/target at whatever pose
+                // the last Tick wrote. Subsequent step transitions will
+                // re-establish positions via the normal spawner refresh.
+
+                // Always restore Rigidbody kinematic state — that's a
+                // control concern, not a pose concern.
                 if (_targetRigidbodies != null && i < _targetRigidbodies.Length
                     && _targetRigidbodies[i] != null
                     && !_rbWasKinematic[i])
@@ -299,25 +324,32 @@ namespace OSE.UI.Root
             }
         }
 
-        // Start pose = wherever the target lives right now. This equals the
-        // PoseTable answer at the current step because the spawner always
-        // writes PoseTable poses before step activation. No need for a
-        // dedicated "fromPose" field on the cue.
         private static AnimationCueResolvedPose ResolveFrom(AnimationCueContext ctx, int index)
-            => CurrentPose(ctx, index);
+        {
+            AnimationPose explicitFrom = ctx.Entry.fromPose;
+            if (explicitFrom != null)
+                return ConvertPose(explicitFrom);
+            if (index < ctx.StartPoses.Count)
+                return ctx.StartPoses[index];
+            return CurrentPose(ctx, index);
+        }
 
-        // End pose = AssembledPoses[index], which the coordinator populates
-        // from the target's PartPreviewPlacement stepPose at the cue's step
-        // (or from assembledPosition when no stepPose is authored). See
-        // AnimationCueCoordinator.ResolveHostedPartContext /
-        // ResolveHostedSubassemblyContext. The cue entry's obsolete toPose
-        // field is no longer read.
         private static AnimationCueResolvedPose ResolveTo(AnimationCueContext ctx, int index)
         {
+            AnimationPose explicitTo = ctx.Entry.toPose;
+            if (explicitTo != null)
+                return ConvertPose(explicitTo);
             if (index < ctx.AssembledPoses.Count)
                 return ctx.AssembledPoses[index];
             return CurrentPose(ctx, index);
         }
+
+        private static AnimationCueResolvedPose ConvertPose(AnimationPose p) => new AnimationCueResolvedPose
+        {
+            Position = new Vector3(p.position.x, p.position.y, p.position.z),
+            Rotation = new Quaternion(p.rotation.x, p.rotation.y, p.rotation.z, p.rotation.w),
+            Scale = new Vector3(p.scale.x, p.scale.y, p.scale.z),
+        };
 
         private static AnimationCueResolvedPose CurrentPose(AnimationCueContext ctx, int index)
         {

@@ -72,81 +72,51 @@
     {
       "id": "subassembly_bottom_frame_side",
       "name": "Bottom Frame Side",
-      "stepIds": [
-        "step_bottom_place_bars",
-        "step_bottom_verify_square",
-        "step_bottom_clamp_panel",
-        "step_bottom_tack_weld_corners"
-      ],
+      "stepIds": [ "step_bottom_place_bars", "step_bottom_verify_square", "step_bottom_clamp_panel", "step_bottom_tack_weld_corners" ],
       "assemblyId": "assembly_d3d_frame",
       "description": "Lays out, checks, clamps, and tack-welds the bottom frame side as one 14 inch square panel.",
       "milestoneMessage": "Bottom Frame Side laid out, held, and tack-welded."
-    },
+  },
     {
       "id": "subassembly_top_frame_side",
       "name": "Top Frame Side",
-      "stepIds": [
-        "step_top_place_bars",
-        "step_top_verify_square",
-        "step_top_clamp_panel",
-        "step_top_tack_weld_corners"
-      ],
+      "stepIds": [ "step_top_place_bars", "step_top_verify_square", "step_top_clamp_panel", "step_top_tack_weld_corners" ],
       "assemblyId": "assembly_d3d_frame",
       "description": "Lays out, checks, clamps, and tack-welds the top frame side as one 14 inch square panel.",
       "milestoneMessage": "Top Frame Side laid out, held, and tack-welded."
-    },
+  },
     {
       "id": "subassembly_left_frame_side",
       "name": "Left Frame Side",
-      "stepIds": [
-        "step_left_place_bars",
-        "step_left_verify_square",
-        "step_left_clamp_panel",
-        "step_left_tack_weld_corners"
-      ],
+      "stepIds": [ "step_left_place_bars", "step_left_verify_square", "step_left_clamp_panel", "step_left_tack_weld_corners" ],
       "assemblyId": "assembly_d3d_frame",
       "description": "Lays out, checks, clamps, and tack-welds the left frame side as one 14 inch square panel.",
       "milestoneMessage": "Left Frame Side laid out, held, and tack-welded."
-    },
+  },
     {
       "id": "subassembly_right_frame_side",
       "name": "Right Frame Side",
-      "stepIds": [
-        "step_right_place_bars",
-        "step_right_verify_square",
-        "step_right_clamp_panel",
-        "step_right_tack_weld_corners"
-      ],
+      "stepIds": [ "step_right_place_bars", "step_right_verify_square", "step_right_clamp_panel", "step_right_tack_weld_corners" ],
       "assemblyId": "assembly_d3d_frame",
       "description": "Lays out, checks, clamps, and tack-welds the right frame side as one 14 inch square panel.",
       "milestoneMessage": "Right Frame Side laid out, held, and tack-welded."
-    },
+  },
     {
       "id": "subassembly_front_frame_side",
       "name": "Front Frame Side",
-      "stepIds": [
-        "step_front_place_bars",
-        "step_front_verify_square",
-        "step_front_clamp_panel",
-        "step_front_tack_weld_corners"
-      ],
+      "stepIds": [ "step_front_place_bars", "step_front_verify_square", "step_front_clamp_panel", "step_front_tack_weld_corners" ],
       "assemblyId": "assembly_d3d_frame",
       "description": "Lays out, checks, clamps, and tack-welds the front frame side as one 14 inch square panel.",
       "milestoneMessage": "Front Frame Side laid out, held, and tack-welded."
-    },
+  },
     {
       "id": "subassembly_rear_frame_side",
       "name": "Rear Frame Side",
-      "stepIds": [
-        "step_rear_place_bars",
-        "step_rear_verify_square",
-        "step_rear_clamp_panel",
-        "step_rear_tack_weld_corners"
-      ],
+      "stepIds": [ "step_rear_place_bars", "step_rear_verify_square", "step_rear_clamp_panel", "step_rear_tack_weld_corners" ],
       "assemblyId": "assembly_d3d_frame",
       "description": "Lays out, checks, clamps, and tack-welds the rear frame side as one 14 inch square panel.",
       "milestoneMessage": "Rear Frame Side laid out, held, and tack-welded."
-    },
+  },
     {
       "id": "subassembly_cube_joining",
       "name": "Frame Cube Joining",

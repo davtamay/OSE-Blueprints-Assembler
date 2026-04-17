@@ -166,10 +166,12 @@ namespace OSE.Editor
                                 // Group membership
                                 DrawInspectorGroupLabel(entry.id);
 
-                                // Animations & Effects on the SELECTED part
-                                // (host-owned cues with optional step scope).
-                                if (_pkg != null && _pkg.TryGetPart(entry.id, out var selPart) && selPart != null)
-                                    DrawPartAnimationCuesSection(selPart, step);
+                                // Animation cues for this part live in the step
+                                // task-sequence via DrawCuesForPart — same
+                                // timing-panels UI used for groups and tools.
+                                // Host-owned storage (part.animationCues) is
+                                // the single source of truth.
+                                DrawCuesForPart(step, entry.id);
                             }
                             break;
                         }
@@ -312,11 +314,11 @@ namespace OSE.Editor
             // Inline editor (name, description, parts, steps)
             DrawSubassemblyInlineEditor(sub, step);
 
-            // Animations & Effects on the SELECTED group (host-owned cues).
-            // Step-level cue authoring is gone — cues belong to the part,
-            // subassembly, or aggregate they animate.
-            EditorGUILayout.Space(6);
-            DrawSubassemblyAnimationCuesSection(sub, step);
+            // Animation cue authoring for the selected subassembly is handled
+            // by DrawCuesForSubassembly in the task-sequence inspector
+            // (TTAW.UnifiedList.cs:DrawTaskInspectorBody). No host-section
+            // editor here — one authoring surface keeps cues off the "two
+            // systems" split.
         }
 
         /// <summary>

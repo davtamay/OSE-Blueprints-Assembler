@@ -53,6 +53,100 @@ namespace OSE.Editor
         private readonly Dictionary<string, ReorderableList> _timingPanelLists =
             new Dictionary<string, ReorderableList>(StringComparer.Ordinal);
 
+        // ── Host-storage abstraction ──────────────────────────────────────────
+        //
+        // Cues are authored in the task sequence UI (this file) but physically
+        // live on the host that owns them — part.animationCues for part scope,
+        // sub.animationCues for subassembly scope. Tool scope remains on
+        // step.animationCues.cues for now (ToolDefinition doesn't have a
+        // host-owned animationCues field yet). The storage struct lets every
+        // read/write path stay scope-agnostic.
+        private readonly struct HostCueStorage
+        {
+            public readonly AnimationCueEntry[] cues;
+            public readonly Action<AnimationCueEntry[]> setter;
+            public readonly Action markDirty;
+            public readonly bool isHostOwned; // true for Part/Sub, false for Tool (legacy step)
+
+            public HostCueStorage(AnimationCueEntry[] cues,
+                Action<AnimationCueEntry[]> setter, Action markDirty, bool isHostOwned)
+            {
+                this.cues = cues ?? Array.Empty<AnimationCueEntry>();
+                this.setter = setter;
+                this.markDirty = markDirty;
+                this.isHostOwned = isHostOwned;
+            }
+
+            public bool IsValid => setter != null;
+        }
+
+        private HostCueStorage GetHostCueStorage(StepDefinition step, CueScope scope, string scopeKey)
+        {
+            switch (scope)
+            {
+                case CueScope.Part:
+                {
+                    if (_pkg == null || !_pkg.TryGetPart(scopeKey, out var part) || part == null)
+                        return default;
+                    var captured = part;
+                    return new HostCueStorage(
+                        cues: captured.animationCues,
+                        setter: arr => captured.animationCues = arr,
+                        markDirty: () => _dirtyPartIds.Add(captured.id),
+                        isHostOwned: true);
+                }
+                case CueScope.Subassembly:
+                {
+                    if (_pkg == null || !_pkg.TryGetSubassembly(scopeKey, out var sub) || sub == null)
+                        return default;
+                    var captured = sub;
+                    return new HostCueStorage(
+                        cues: captured.animationCues,
+                        setter: arr => captured.animationCues = arr,
+                        markDirty: () => _dirtySubassemblyIds.Add(captured.id),
+                        isHostOwned: true);
+                }
+                case CueScope.Tool:
+                {
+                    // Legacy step-level storage — ToolDefinition doesn't own
+                    // animationCues yet. Runtime reads host-owned cues only,
+                    // so tool cues authored here don't fire until the tool
+                    // host migration lands (TODO).
+                    var payload = step.animationCues ?? (step.animationCues =
+                        new StepAnimationCuePayload { cues = Array.Empty<AnimationCueEntry>() });
+                    var capturedStep = step;
+                    return new HostCueStorage(
+                        cues: payload.cues,
+                        setter: arr => capturedStep.animationCues.cues = arr,
+                        markDirty: () => _dirtyStepIds.Add(capturedStep.id),
+                        isHostOwned: false);
+                }
+            }
+            return default;
+        }
+
+        // Tool cues are filtered by targetToolIds (legacy). Host-owned cues
+        // are already stored on the host — only filter by stepIds, which
+        // defines which steps the cue applies to (empty = always-on).
+        private static bool CueAppliesHere(AnimationCueEntry c, StepDefinition step,
+            CueScope scope, string scopeKey)
+        {
+            if (c == null) return false;
+            if (scope == CueScope.Tool)
+            {
+                if (c.targetToolIds == null) return false;
+                foreach (var t in c.targetToolIds)
+                    if (string.Equals(t, scopeKey, StringComparison.Ordinal)) return true;
+                return false;
+            }
+            // Host-owned (Part/Subassembly): cue is stored on the host itself,
+            // stepIds gates which steps it fires on.
+            if (c.stepIds == null || c.stepIds.Length == 0) return true;
+            foreach (var sid in c.stepIds)
+                if (string.Equals(sid, step.id, StringComparison.Ordinal)) return true;
+            return false;
+        }
+
         // ── Public entry ──────────────────────────────────────────────────────
 
         private void DrawTimingPanelsStrip(StepDefinition step, CueScope scope, string scopeKey, string title)
@@ -89,8 +183,12 @@ namespace OSE.Editor
                 ShowAddTimingPanelMenu(step, scope, scopeKey);
             }
 
-            // Collect cue indices per panel (trigger), scoped to this target.
-            var cues = step.animationCues?.cues;
+            // Collect cue indices per panel (trigger), filtered to this
+            // target. Host-owned storage: indices are into the host's
+            // animationCues array (part/sub); runtime and editor read the
+            // same source.
+            var storage = GetHostCueStorage(step, scope, scopeKey);
+            var cues = storage.cues;
             var panels = new Dictionary<string, List<int>>(StringComparer.Ordinal);
             if (cues != null)
             {
@@ -98,7 +196,7 @@ namespace OSE.Editor
                 {
                     var c = cues[i];
                     if (c == null) continue;
-                    if (!CueMatchesScope(c, scope, scopeKey)) continue;
+                    if (!CueAppliesHere(c, step, scope, scopeKey)) continue;
                     string trig = string.IsNullOrEmpty(c.trigger) ? "onActivate" : c.trigger;
                     if (!panels.TryGetValue(trig, out var list))
                         panels[trig] = list = new List<int>();
@@ -209,7 +307,7 @@ namespace OSE.Editor
                     "Play every cue in this panel back-to-back, honouring the parallel/sequenced toggle on each row."),
                 EditorStyles.miniButton))
             {
-                StartPanelPreview(step, cueIndices);
+                StartPanelPreview(step, scope, scopeKey, cueIndices);
             }
             GUI.color = playPanelColor;
 
@@ -231,7 +329,8 @@ namespace OSE.Editor
 
             if (!isOpen) return;
 
-            var cues = step.animationCues?.cues;
+            var storage = GetHostCueStorage(step, scope, scopeKey);
+            var cues = storage.cues;
 
             // "Show During" shared delaySeconds
             if (string.Equals(trigger, "afterDelay", StringComparison.Ordinal) && cues != null && cueIndices.Count > 0)
@@ -243,7 +342,7 @@ namespace OSE.Editor
                 {
                     next = Mathf.Max(0f, next);
                     foreach (var idx in cueIndices) cues[idx].delaySeconds = next;
-                    _dirtyStepIds.Add(step.id);
+                    storage.markDirty();
                 }
             }
 
@@ -253,9 +352,7 @@ namespace OSE.Editor
 
             // Inline edit panels — render DrawCueEntry under the row for any
             // cue whose foldout is expanded. Reuses the same full-field editor
-            // used by the legacy canvas section so authors get the complete
-            // set of type-specific fields (shake amplitude/frequency/axis,
-            // rotation Euler, pulse colors, pivot override, etc).
+            // so authors get the complete set of type-specific fields.
             if (cues != null)
             {
                 for (int i = 0; i < cueIndices.Count; i++)
@@ -266,11 +363,18 @@ namespace OSE.Editor
 
                     using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
                     {
+                        EditorGUI.BeginChangeCheck();
                         DrawCueEntry(step, cues, cueIdx,
                             out bool removeInline, out bool _, out bool _);
+                        // DrawCueEntry mutates cues[cueIdx] in place and marks
+                        // _dirtyStepIds internally. For host-owned cues we
+                        // also need the host's dirty flag so WriteJson picks
+                        // up the edit — the step write would never emit it.
+                        if (EditorGUI.EndChangeCheck())
+                            storage.markDirty();
                         if (removeInline)
                         {
-                            RemoveCueAtIndex(step, cueIdx);
+                            RemoveCueAtIndex(step, scope, scopeKey, cueIdx);
                             Repaint();
                             return;
                         }
@@ -322,7 +426,8 @@ namespace OSE.Editor
 
             rl.drawElementCallback = (rect, index, isActive, isFocused) =>
             {
-                var cues = step.animationCues?.cues;
+                var drawStorage = GetHostCueStorage(step, scope, scopeKey);
+                var cues = drawStorage.cues;
                 if (cues == null || index < 0 || index >= persistent.Count) return;
                 int cueIdx = persistent[index];
                 if (cueIdx < 0 || cueIdx >= cues.Length) return;
@@ -346,7 +451,7 @@ namespace OSE.Editor
                         : "Parallel — starts together with the previous row."), seqStyle))
                 {
                     cue.sequenceAfterPrevious = !seq;
-                    _dirtyStepIds.Add(step.id);
+                    drawStorage.markDirty();
                 }
                 x += 26f;
 
@@ -373,8 +478,16 @@ namespace OSE.Editor
                     }
                     else
                     {
-                        Debug.Log($"[TTAW] Play preview: step='{step?.id}' cueIdx={cueIdx} type='{cue.type}' targetSub='{cue.targetSubassemblyId}' targetParts={(cue.targetPartIds?.Length ?? 0)}");
-                        StartCuePreview(step, cueIdx);
+                        Debug.Log($"[TTAW] Play preview: step='{step?.id}' scope={scope} host='{scopeKey}' cueIdx={cueIdx} type='{cue.type}'");
+                        // Host-owned cues (Part/Subassembly) use the host-aware
+                        // preview so target resolution matches runtime. Tool
+                        // scope still reads from step storage via legacy path.
+                        if (scope == CueScope.Tool)
+                            StartCuePreview(step, cueIdx);
+                        else
+                            StartHostCuePreview(cue, cueIdx, step,
+                                scope == CueScope.Part ? "part" : "subassembly",
+                                scopeKey);
                     }
                     Repaint();
                 }
@@ -397,7 +510,7 @@ namespace OSE.Editor
                 GUI.color = new Color(1f, 0.6f, 0.6f);
                 if (GUI.Button(delRect, new GUIContent("×", "Remove this cue."), EditorStyles.miniButton))
                 {
-                    RemoveCueAtIndex(step, cueIdx);
+                    RemoveCueAtIndex(step, scope, scopeKey, cueIdx);
                     GUI.color = Color.white;
                     return;
                 }
@@ -406,7 +519,8 @@ namespace OSE.Editor
 
             rl.onReorderCallback = _list =>
             {
-                var cues = step.animationCues?.cues;
+                var reorderStorage = GetHostCueStorage(step, scope, scopeKey);
+                var cues = reorderStorage.cues;
                 if (cues == null) return;
                 for (int i = 0; i < persistent.Count; i++)
                 {
@@ -414,7 +528,7 @@ namespace OSE.Editor
                     if (cueIdx >= 0 && cueIdx < cues.Length && cues[cueIdx] != null)
                         cues[cueIdx].panelOrder = i;
                 }
-                _dirtyStepIds.Add(step.id);
+                reorderStorage.markDirty();
             };
 
             _timingPanelLists[key] = rl;
@@ -444,12 +558,12 @@ namespace OSE.Editor
                                                string trigger, HashSet<string> emptySet)
         {
             if (emptySet != null && emptySet.Contains(trigger)) return true;
-            var cues = step.animationCues?.cues;
-            if (cues == null) return false;
-            foreach (var c in cues)
+            var storage = GetHostCueStorage(step, scope, scopeKey);
+            if (storage.cues == null) return false;
+            foreach (var c in storage.cues)
             {
                 if (c == null) continue;
-                if (!CueMatchesScope(c, scope, scopeKey)) continue;
+                if (!CueAppliesHere(c, step, scope, scopeKey)) continue;
                 string t = string.IsNullOrEmpty(c.trigger) ? "onActivate" : c.trigger;
                 if (string.Equals(t, trigger, StringComparison.Ordinal)) return true;
             }
@@ -464,28 +578,28 @@ namespace OSE.Editor
             {
                 string picked = EditorUtility.OpenFilePanel("Pick animation asset", Application.dataPath, "");
                 if (string.IsNullOrEmpty(picked)) return;
-                // Relativize to Assets/ when possible.
                 if (picked.StartsWith(Application.dataPath, StringComparison.OrdinalIgnoreCase))
                     clipPath = "Assets" + picked.Substring(Application.dataPath.Length).Replace('\\', '/');
                 else
                     clipPath = picked.Replace('\\', '/');
             }
 
-            var payload = step.animationCues ?? (step.animationCues =
-                new StepAnimationCuePayload { cues = Array.Empty<AnimationCueEntry>() });
-
-            // Compute next panelOrder within this panel.
-            int nextOrder = 0;
-            if (payload.cues != null)
+            var storage = GetHostCueStorage(step, scope, scopeKey);
+            if (!storage.IsValid)
             {
-                foreach (var c in payload.cues)
-                {
-                    if (c == null) continue;
-                    if (!CueMatchesScope(c, scope, scopeKey)) continue;
-                    string t = string.IsNullOrEmpty(c.trigger) ? "onActivate" : c.trigger;
-                    if (!string.Equals(t, trigger, StringComparison.Ordinal)) continue;
-                    if (c.panelOrder >= nextOrder) nextOrder = c.panelOrder + 1;
-                }
+                Debug.LogWarning($"[TTAW] AddCueInPanel: no storage for {scope} '{scopeKey}'.");
+                return;
+            }
+
+            // Compute next panelOrder within this trigger bucket.
+            int nextOrder = 0;
+            foreach (var c in storage.cues)
+            {
+                if (c == null) continue;
+                if (!CueAppliesHere(c, step, scope, scopeKey)) continue;
+                string t = string.IsNullOrEmpty(c.trigger) ? "onActivate" : c.trigger;
+                if (!string.Equals(t, trigger, StringComparison.Ordinal)) continue;
+                if (c.panelOrder >= nextOrder) nextOrder = c.panelOrder + 1;
             }
 
             var cue = new AnimationCueEntry
@@ -494,89 +608,79 @@ namespace OSE.Editor
                 trigger                = trigger,
                 panelOrder             = nextOrder,
                 animationClipAssetPath = clipPath,
+                // Scope new host-owned cues to the current step. Runtime checks
+                // stepIds to decide whether the cue fires on the active step.
+                stepIds                = storage.isHostOwned ? new[] { step.id } : null,
             };
-            ApplyScope(cue, scope, scopeKey);
+            // Tool scope still writes target fields; host-owned cues don't need
+            // them (the host is the target).
+            if (!storage.isHostOwned)
+                ApplyScope(cue, scope, scopeKey);
             ApplyTypeDefaults(cue);
 
-            var list = new List<AnimationCueEntry>(payload.cues ?? Array.Empty<AnimationCueEntry>());
+            var list = new List<AnimationCueEntry>(storage.cues);
             list.Add(cue);
-            payload.cues = list.ToArray();
+            var updated = list.ToArray();
+            storage.setter(updated);
+            storage.markDirty();
 
-            while (_cueFoldouts.Count < payload.cues.Length) _cueFoldouts.Add(false);
-            _cueFoldouts[payload.cues.Length - 1] = true;
+            while (_cueFoldouts.Count < updated.Length) _cueFoldouts.Add(false);
+            _cueFoldouts[updated.Length - 1] = true;
 
-            // Clear the placeholder for this panel now that a real cue exists.
             string k = EmptyPanelKey(step.id, scope, scopeKey);
             if (_emptyPanels.TryGetValue(k, out var set)) set.Remove(trigger);
 
             _cueContextOpenKeys.Add($"{ScopeKeyPrefix(step.id, scope, scopeKey)}/panel/{trigger}");
-            _dirtyStepIds.Add(step.id);
             Repaint();
         }
 
-        private void RemoveCueAtIndex(StepDefinition step, int cueIdx)
+        private void RemoveCueAtIndex(StepDefinition step, CueScope scope, string scopeKey, int cueIdx)
         {
-            var cues = step.animationCues?.cues;
-            if (cues == null || cueIdx < 0 || cueIdx >= cues.Length) return;
-            var list = new List<AnimationCueEntry>(cues);
+            var storage = GetHostCueStorage(step, scope, scopeKey);
+            if (!storage.IsValid || cueIdx < 0 || cueIdx >= storage.cues.Length) return;
+            var list = new List<AnimationCueEntry>(storage.cues);
             list.RemoveAt(cueIdx);
-            step.animationCues.cues = list.ToArray();
+            storage.setter(list.ToArray());
+            storage.markDirty();
             if (cueIdx < _cueFoldouts.Count) _cueFoldouts.RemoveAt(cueIdx);
-            _dirtyStepIds.Add(step.id);
             Repaint();
         }
 
         private void RemovePanel(StepDefinition step, CueScope scope, string scopeKey,
                                  string trigger, List<int> cueIndices)
         {
-            var cues = step.animationCues?.cues;
-            if (cues != null && cueIndices.Count > 0)
+            var storage = GetHostCueStorage(step, scope, scopeKey);
+            if (storage.IsValid && cueIndices.Count > 0)
             {
                 var toRemove = new HashSet<int>(cueIndices);
-                var keep = new List<AnimationCueEntry>(cues.Length - cueIndices.Count);
-                for (int i = 0; i < cues.Length; i++)
-                    if (!toRemove.Contains(i)) keep.Add(cues[i]);
-                step.animationCues.cues = keep.ToArray();
-                // Rebuild _cueFoldouts sized to the new array.
+                var keep = new List<AnimationCueEntry>(storage.cues.Length - cueIndices.Count);
+                for (int i = 0; i < storage.cues.Length; i++)
+                    if (!toRemove.Contains(i)) keep.Add(storage.cues[i]);
+                var updated = keep.ToArray();
+                storage.setter(updated);
+                storage.markDirty();
                 _cueFoldouts.Clear();
-                for (int i = 0; i < step.animationCues.cues.Length; i++) _cueFoldouts.Add(false);
+                for (int i = 0; i < updated.Length; i++) _cueFoldouts.Add(false);
             }
             string k = EmptyPanelKey(step.id, scope, scopeKey);
             if (_emptyPanels.TryGetValue(k, out var set)) set.Remove(trigger);
-            _dirtyStepIds.Add(step.id);
             Repaint();
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────
 
-        private static bool CueMatchesScope(AnimationCueEntry cue, CueScope scope, string scopeKey)
-        {
-            if (cue == null) return false;
-            switch (scope)
-            {
-                case CueScope.Part:
-                    if (cue.targetPartIds == null) return false;
-                    foreach (var p in cue.targetPartIds)
-                        if (string.Equals(p, scopeKey, StringComparison.Ordinal)) return true;
-                    return false;
-                case CueScope.Tool:
-                    if (cue.targetToolIds == null) return false;
-                    foreach (var t in cue.targetToolIds)
-                        if (string.Equals(t, scopeKey, StringComparison.Ordinal)) return true;
-                    return false;
-                case CueScope.Subassembly:
-                    return string.Equals(cue.targetSubassemblyId, scopeKey, StringComparison.Ordinal);
-            }
-            return false;
-        }
-
+        // ApplyScope stamps the legacy target fields on a cue. Host-owned
+        // cues (Part / Subassembly) don't need this — the host itself is the
+        // target. Kept for Tool scope, which still writes into
+        // step.animationCues.cues until ToolDefinition gains its own
+        // animationCues field.
         private static void ApplyScope(AnimationCueEntry cue, CueScope scope, string scopeKey)
         {
             switch (scope)
             {
-                case CueScope.Part:         cue.targetPartIds       = new[] { scopeKey }; break;
                 case CueScope.Tool:         cue.targetToolIds       = new[] { scopeKey }; break;
-                case CueScope.Subassembly:  cue.targetSubassemblyId = scopeKey;           break;
+                // Part / Subassembly: no target fields needed — host storage
+                // implies the target. Left intentionally empty.
             }
         }
 

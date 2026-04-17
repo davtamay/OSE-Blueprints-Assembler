@@ -639,36 +639,9 @@ namespace OSE.UI.Root
 
             targets.Add(root);
             var t = root.transform;
-            var startPose = new AnimationCueResolvedPose { Position = t.localPosition, Rotation = t.localRotation, Scale = t.localScale };
-            startPoses.Add(startPose);
-
-            // Subassembly-hosted destination pose: until subassemblies grow
-            // their own stepPoses array, the cue's (obsolete) toPose carries
-            // the root's destination rotation/position. Read it here, with
-            // the obsolete warning suppressed, so authored step-55-style
-            // rotations keep working. Part-hosted cues use
-            // PartPreviewPlacement.stepPoses instead (see
-            // ResolveHostedPartContext).
-#pragma warning disable CS0618
-            var explicitTo = entry.toPose;
-#pragma warning restore CS0618
-            if (explicitTo != null &&
-                (explicitTo.position.x != 0f || explicitTo.position.y != 0f || explicitTo.position.z != 0f
-                 || explicitTo.rotation.x != 0f || explicitTo.rotation.y != 0f || explicitTo.rotation.z != 0f
-                 || explicitTo.rotation.w != 0f
-                 || explicitTo.scale.x != 0f || explicitTo.scale.y != 0f || explicitTo.scale.z != 0f))
-            {
-                assembledPoses.Add(new AnimationCueResolvedPose
-                {
-                    Position = new Vector3(explicitTo.position.x, explicitTo.position.y, explicitTo.position.z),
-                    Rotation = new Quaternion(explicitTo.rotation.x, explicitTo.rotation.y, explicitTo.rotation.z, explicitTo.rotation.w),
-                    Scale    = new Vector3(explicitTo.scale.x, explicitTo.scale.y, explicitTo.scale.z),
-                });
-            }
-            else
-            {
-                assembledPoses.Add(startPose);
-            }
+            var pose = new AnimationCueResolvedPose { Position = t.localPosition, Rotation = t.localRotation, Scale = t.localScale };
+            startPoses.Add(pose);
+            assembledPoses.Add(pose);
 
             return new AnimationCueContext(entry, targets, startPoses, assembledPoses, DurationOrDefault(entry), null);
         }
