@@ -1028,10 +1028,26 @@ namespace OSE.UI.Root
                 bool freshRoot = false;
                 if (!_subassemblyRoots.TryGetValue(sub.id, out var rootGO) || rootGO == null)
                 {
-                    rootGO = new GameObject($"Group_{sub.GetDisplayName()}");
-                    rootGO.transform.SetParent(previewRoot, false);
-                    _subassemblyRoots[sub.id] = rootGO;
-                    freshRoot = true;
+                    // Protective adopt: if an orphan Group_* with this exact
+                    // name already lives under PreviewRoot (leftover from a
+                    // domain reload that wiped _subassemblyRoots), adopt it
+                    // into the dict instead of creating a duplicate. Without
+                    // this, the dict-miss path below would instantiate a
+                    // new GO beside the orphan and the user sees two copies.
+                    string expectedName = $"Group_{sub.GetDisplayName()}";
+                    var existing = previewRoot.Find(expectedName);
+                    if (existing != null)
+                    {
+                        rootGO = existing.gameObject;
+                        _subassemblyRoots[sub.id] = rootGO;
+                    }
+                    else
+                    {
+                        rootGO = new GameObject(expectedName);
+                        rootGO.transform.SetParent(previewRoot, false);
+                        _subassemblyRoots[sub.id] = rootGO;
+                        freshRoot = true;
+                    }
                 }
                 rootGO.transform.localPosition = Vector3.zero;
                 rootGO.transform.localRotation = Quaternion.identity;
@@ -1148,8 +1164,9 @@ namespace OSE.UI.Root
 
         private void DestroyAllSubassemblyRoots()
         {
-            if (_subassemblyRoots.Count == 0) return;
             var previewRoot = _setup?.PreviewRoot;
+
+            // Destroy the roots we're tracking in the dict.
             foreach (var kv in _subassemblyRoots)
             {
                 var go = kv.Value;
@@ -1167,6 +1184,41 @@ namespace OSE.UI.Root
                 SafeDestroy(go);
             }
             _subassemblyRoots.Clear();
+
+            // Sweep any orphan Group_* / _AnimCue_* GOs that are NOT in the
+            // dict — domain reload wipes _subassemblyRoots (and the
+            // AnimationCueCoordinator's _fabricationGroupRoot), leaving the
+            // scene GOs dangling. Without this sweep they survive into the
+            // first play/spawn cycle and EnsureSubassemblyRoots creates
+            // duplicates alongside them. Belt-and-suspenders: the OnEnable
+            // rehydration does the same sweep, but that only covers the
+            // enable path. This covers every call site (ClearSpawnedParts,
+            // EnsureSubassemblyRoots, HandlePackageChanged).
+            if (previewRoot != null)
+            {
+                for (int i = previewRoot.childCount - 1; i >= 0; i--)
+                {
+                    Transform child = previewRoot.GetChild(i);
+                    if (child == null) continue;
+                    string nm = child.name;
+                    if (nm == null) continue;
+                    bool isOrphanGroup =
+                        nm.StartsWith("Group_",              System.StringComparison.Ordinal) ||
+                        nm.StartsWith("_AnimCue_FabGroup_",  System.StringComparison.Ordinal) ||
+                        nm.StartsWith("_AnimCue_AnimGroup_", System.StringComparison.Ordinal);
+                    if (!isOrphanGroup) continue;
+
+                    for (int c = child.childCount - 1; c >= 0; c--)
+                    {
+                        var inner = child.GetChild(c);
+                        if (inner == null) continue;
+                        inner.SetParent(previewRoot, worldPositionStays: true);
+                        if (Application.isPlaying)
+                            _xrGrabSetup?.SetGrabEnabled(inner.gameObject, true);
+                    }
+                    SafeDestroy(child.gameObject);
+                }
+            }
         }
 
         private GameObject FindSpawnedGo(string partId)
