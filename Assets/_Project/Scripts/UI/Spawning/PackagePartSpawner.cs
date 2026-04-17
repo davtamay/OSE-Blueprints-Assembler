@@ -231,6 +231,7 @@ namespace OSE.UI.Root
                         if (inner == null) continue;
                         inner.SetParent(root, worldPositionStays: true);
                     }
+                    ClearEditorSelectionIfUnder(child);
                     SafeDestroy(child.gameObject);
                 }
 
@@ -1181,6 +1182,7 @@ namespace OSE.UI.Root
                             _xrGrabSetup?.SetGrabEnabled(child.gameObject, true);
                     }
                 }
+                ClearEditorSelectionIfUnder(go.transform);
                 SafeDestroy(go);
             }
             _subassemblyRoots.Clear();
@@ -1216,6 +1218,7 @@ namespace OSE.UI.Root
                         if (Application.isPlaying)
                             _xrGrabSetup?.SetGrabEnabled(inner.gameObject, true);
                     }
+                    ClearEditorSelectionIfUnder(child);
                     SafeDestroy(child.gameObject);
                 }
             }
@@ -1363,6 +1366,27 @@ namespace OSE.UI.Root
         {
             if (target != null && target.activeSelf != active)
                 target.SetActive(active);
+        }
+
+        /// <summary>
+        /// Editor-only: clears Unity's Selection if it points at
+        /// <paramref name="about_to_destroy"/> or any of its descendants.
+        /// Prevents GameObjectInspector / TransformInspector from throwing
+        /// MissingReferenceException and SerializedObjectNotCreatableException
+        /// when their selected target vanishes mid-frame. No-op in play mode
+        /// or when Selection is unrelated.
+        /// </summary>
+        private static void ClearEditorSelectionIfUnder(Transform about_to_destroy)
+        {
+#if UNITY_EDITOR
+            if (Application.isPlaying) return;
+            if (about_to_destroy == null) return;
+            var sel = UnityEditor.Selection.activeGameObject;
+            if (sel == null) return;
+            if (sel.transform != about_to_destroy && !sel.transform.IsChildOf(about_to_destroy)) return;
+            UnityEditor.Selection.objects = System.Array.Empty<UnityEngine.Object>();
+            UnityEditor.ActiveEditorTracker.sharedTracker.ForceRebuild();
+#endif
         }
 
         private static void SafeDestroy(Object target)
