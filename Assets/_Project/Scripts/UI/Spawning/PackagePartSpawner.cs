@@ -175,24 +175,32 @@ namespace OSE.UI.Root
             ServiceRegistry.Register<IStepAwarePositioner>(this);
             RuntimeEventBus.Subscribe<PackageLoaded>(OnPackageLoaded);
 
-            // Sweep any leaked EditGhost_* siblings under PreviewRoot. EditModeGhostManager
-            // owns these in edit mode, but if "Reload Scene" is disabled in Enter Play
-            // Mode settings, instantiated ghosts survive into play mode unowned because
-            // _ghostManager was just constructed fresh and its tracking list is empty.
-            // The EditModeGhostManager.SpawnGhosts early-return on isPlaying never gives
-            // us another chance to clean them up. Sweep PreviewRoot directly.
-            if (Application.isPlaying && _setup?.PreviewRoot != null)
+            // Post-domain-reload rehydration. Runs in BOTH edit and play mode.
+            //
+            // Domain reload wipes _spawnedParts (in-memory list) but every part
+            // GO under PreviewRoot survives (serialized scene state). Without
+            // this pass, every visibility-applying method that iterates
+            // _spawnedParts (ApplyStepAwarePositions in editor, the reveal /
+            // deactivate pass at runtime) sees an empty list and silently
+            // no-ops — which is why TTAW step scrubbing "does nothing" after
+            // a compile and why the first Play after compile leaks every part.
+            //
+            // Adopt the surviving children into _spawnedParts here. Subsequent
+            // SpawnPackageParts calls will find them via PreviewRoot.Find and
+            // skip re-instantiation. Editor callers then apply step visibility
+            // against the full set; play-mode deactivation also covers them.
+            if (_setup?.PreviewRoot != null)
             {
                 Transform root = _setup.PreviewRoot;
-                // First pass: collect partId set from the current package
-                // (resolved best-effort — spawner's own currentPackage or
-                // SessionDriver's). Used below to decide which children are
-                // "parts" vs scaffolding (UI, proxies, ghosts, etc).
                 var partIdSet = new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal);
                 var bootPkg = _currentPackage ?? SessionDriver.CurrentPackage;
                 if (bootPkg?.parts != null)
                     foreach (var p in bootPkg.parts)
                         if (p != null && !string.IsNullOrEmpty(p.id)) partIdSet.Add(p.id);
+
+                var trackedNames = new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal);
+                for (int i = 0; i < _spawnedParts.Count; i++)
+                    if (_spawnedParts[i] != null) trackedNames.Add(_spawnedParts[i].name);
 
                 for (int i = root.childCount - 1; i >= 0; i--)
                 {
@@ -205,11 +213,19 @@ namespace OSE.UI.Root
                         Destroy(child.gameObject);
                         continue;
                     }
-                    // Play-mode: deactivate every child that is a known part
-                    // (leftover active from edit-mode preview). Leaves UI,
-                    // proxies, ghosts, Group_* roots untouched. Reveal pass
-                    // turns only the current step's parts back on.
-                    if (partIdSet.Contains(nm) && child.gameObject.activeSelf)
+                    if (!partIdSet.Contains(nm)) continue;
+
+                    // Adopt any part child not already tracked.
+                    if (!trackedNames.Contains(nm))
+                    {
+                        _spawnedParts.Add(child.gameObject);
+                        trackedNames.Add(nm);
+                    }
+
+                    // Play-mode: start every adopted part inactive. The reveal
+                    // pass turns only the current step's parts back on. Edit
+                    // mode leaves visibility to ApplyStepAwarePositions.
+                    if (Application.isPlaying && child.gameObject.activeSelf)
                         child.gameObject.SetActive(false);
                 }
             }
@@ -356,13 +372,19 @@ namespace OSE.UI.Root
                     continue;
                 }
 
-                // Visibility policy: if the pose-table has no entry for this
-                // part at lookupSeq, fall back to the authored
-                // startPosition/startRotation on the placement instead of
-                // hiding. TTAW's authoring view (source of truth) shows every
-                // part with a placement at its start pose even when no step
-                // explicitly references it — matching that here keeps play
-                // 1:1 with the editor.
+                // Visibility is authoritative: PoseTable.IsVisibleAt decides.
+                // Future-step parts (no entry at lookupSeq, or explicitly
+                // Hidden) are deactivated — no startPosition fallback for
+                // them. This matches TTAW.SyncAllPartMeshesToActivePose which
+                // hides future parts via TryGetStepAwarePose returning false.
+                // Without this hide, domain-reload and step-scrub paths leak
+                // every future part at its startPosition.
+                if (!poseTable.IsVisibleAt(partGo.name, lookupSeq))
+                {
+                    if (partGo.activeSelf) partGo.SetActive(false);
+                    continue;
+                }
+
                 Vector3 rpos; Quaternion rrot; Vector3 rscl;
                 if (poseTable.TryGet(partGo.name, lookupSeq, out var resolution))
                 {
@@ -370,6 +392,10 @@ namespace OSE.UI.Root
                 }
                 else
                 {
+                    // Visible at this seq but no pose entry — use start pose
+                    // as the display anchor (rare; e.g. partially-authored
+                    // placements where IsVisibleAt is true but TryGet hasn't
+                    // indexed a concrete pose).
                     rpos = new Vector3(pp.startPosition.x, pp.startPosition.y, pp.startPosition.z);
                     rrot = new Quaternion(pp.startRotation.x, pp.startRotation.y, pp.startRotation.z, pp.startRotation.w);
                     if (rrot.x == 0f && rrot.y == 0f && rrot.z == 0f && rrot.w == 0f) rrot = Quaternion.identity;

@@ -609,8 +609,13 @@ namespace OSE.UI.Root
                     toReveal.Add(partId);
             }
 
-            if (toReveal.Count == 0)
-                return;
+            // Do NOT early-return when toReveal is empty. The deactivation
+            // pass at the end of this method still needs to run so parts that
+            // left the visible set (backward navigation, step transition past
+            // a part's lastVisibleSeq) get hidden. Skipping that pass is the
+            // reason first-play-after-compile leaked future-step parts — the
+            // reveal loop is a no-op when everything is already in
+            // _revealedPartIds, but hiding still needs to happen.
 
             // Activate, position, and style each newly-revealed part.
             var unplacedParts = new List<(string partId, GameObject go, float width)>();
