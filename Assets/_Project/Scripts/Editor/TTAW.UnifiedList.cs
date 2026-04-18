@@ -1030,6 +1030,29 @@ namespace OSE.Editor
                         int    instance = TaskInstanceId.ToInstance(entry.id);
                         displayId = $"{bareId}  (instance {instance})";
                     }
+                    // Phase I follow-up: tool actions whose target has an associatedPartId
+                    // append "→ partId" so the author sees at a glance that the task
+                    // tweaks a part (vs. a tool task that only observes/measures). The
+                    // same link drives MachinePackageNormalizer.ResolveToolActionPartIds —
+                    // this is the authoring-surface reflection of that derivation.
+                    else if (entry.kind == "toolAction" && step.requiredToolActions != null && _pkg?.targets != null)
+                    {
+                        string actionTargetId = null;
+                        foreach (var a in step.requiredToolActions)
+                            if (a?.id == entry.id) { actionTargetId = a.targetId; break; }
+                        if (!string.IsNullOrEmpty(actionTargetId))
+                        {
+                            for (int ti = 0; ti < _pkg.targets.Length; ti++)
+                            {
+                                var t = _pkg.targets[ti];
+                                if (t?.id == actionTargetId && !string.IsNullOrEmpty(t.associatedPartId))
+                                {
+                                    displayId = $"{entry.id}  \u2192  {t.associatedPartId}";
+                                    break;
+                                }
+                            }
+                        }
+                    }
                     EditorGUI.LabelField(idRect, displayId, EditorStyles.miniLabel);
 
                     // ── Ownership-conflict / orphan badge (quiet when clean) ──
