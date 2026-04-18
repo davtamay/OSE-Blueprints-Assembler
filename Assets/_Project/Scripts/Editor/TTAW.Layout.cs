@@ -1392,12 +1392,13 @@ namespace OSE.Editor
             // Optional parts, the full Start/Custom/Assembled set is shown.
             bool isNoTaskRow = noTaskAutoIdx >= 0;
 
-            // ── Phase F: End-pose readout + picker (pose-chain authoring) ────
-            // Read-only-ish display of "this task ends at pose X" + a picker that
-            // snaps _editingPoseMode onto whatever pose the author chose. The chip
-            // row below remains the primary transform-editing surface.
+            // ── G.2.5.c: inline End Transform authoring (task-owned) ─────────
+            // Replaces Phase F's pose-dropdown. Writes to this Part task's
+            // TaskOrderEntry.endTransform so the pose lives on the TASK, not on
+            // the part's stepPoses[] array. The chip row below still authors the
+            // part's intrinsic Start / Assembled poses.
             if (hasPart && !string.IsNullOrEmpty(currentStepId))
-                DrawPartEndPoseRow(ref _parts[_selectedPartIdx], currentStepId, poses, noTaskAutoIdx);
+                DrawPartTaskEndTransformRow(ref _parts[_selectedPartIdx], currentStepId);
 
             EditorGUILayout.BeginHorizontal();
 
@@ -1481,6 +1482,136 @@ namespace OSE.Editor
             // Transform fields for Required / Optional / Custom poses are
             // rendered by DrawPartDetailPanel below — don't duplicate them
             // up here or the inspector shows two identical blocks.
+        }
+
+        /// <summary>
+        /// G.2.5.c: inline End Transform authoring at the top of the Part inspector.
+        /// Writes to the Part task's <see cref="TaskOrderEntry.endTransform"/> — the
+        /// per-task inline pose introduced by Phase G.2. The normalizer bakes this
+        /// into a synthetic stepPose so every runtime consumer of FindPartStepPose
+        /// automatically picks it up, and <c>TTAW.WriteJson.cs</c> filters the synth
+        /// out so the authored source-of-truth stays on the task entry itself.
+        ///
+        /// <para>Matches the Tool-task Interaction Panel's inline Position / Rotation /
+        /// Scale fields (G.2.5.a) for symmetry: every task in the sequence, whether
+        /// Part or Tool, authors its end-pose in the same shape.</para>
+        /// </summary>
+        private void DrawPartTaskEndTransformRow(ref PartEditState p, string currentStepId)
+        {
+            var step = FindStep(currentStepId);
+            if (step == null || p.def == null) return;
+
+            // Find the Part task entry. Multi-instance (G.2.6) will select by index;
+            // for now always operate on the first instance.
+            TaskOrderEntry entry = null;
+            if (step.taskOrder != null)
+            {
+                foreach (var e in step.taskOrder)
+                {
+                    if (e == null || e.kind != "part") continue;
+                    if (TaskInstanceId.ToPartId(e.id) == p.def.id) { entry = e; break; }
+                }
+            }
+            if (entry == null) return; // part has no task in this step — pose authoring not meaningful here
+
+            bool hasInline = entry.endTransform != null;
+
+            EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
+            EditorGUILayout.LabelField(
+                new GUIContent(
+                    hasInline
+                        ? $"🔩 End Transform (inline) — task on step '{currentStepId}'"
+                        : $"🔩 End Transform — task on step '{currentStepId}'",
+                    "The pose this Part task ends at. Authored inline on the task — " +
+                    "no other task can see or mutate this data (pose-chain invariant)."),
+                EditorStyles.boldLabel);
+            GUILayout.FlexibleSpace();
+            if (hasInline && GUILayout.Button("Clear", EditorStyles.miniButton, GUILayout.Width(56)))
+            {
+                entry.endTransform = null;
+                _dirtyStepIds.Add(step.id);
+                SceneView.RepaintAll();
+                Repaint();
+            }
+            if (GUILayout.Button(
+                new GUIContent(hasInline ? "From scene" : "Capture from scene",
+                    "Capture the part's live scene transform into this task's inline end-transform."),
+                EditorStyles.miniButton,
+                GUILayout.Width(hasInline ? 90 : 140)))
+            {
+                CapturePartLiveTransformIntoTaskEndTransform(step, entry, p.def.id);
+            }
+            if (!hasInline && GUILayout.Button(
+                new GUIContent("From assembled",
+                    "Initialize the inline transform from the part's assembledPosition."),
+                EditorStyles.miniButton, GUILayout.Width(110)))
+            {
+                CapturePartAssembledIntoTaskEndTransform(step, entry, p);
+            }
+            EditorGUILayout.EndHorizontal();
+
+            if (!hasInline)
+            {
+                EditorGUILayout.LabelField(
+                    "No inline end-transform set — this task ends at the part's Assembled pose (default).",
+                    EditorStyles.miniLabel);
+                return;
+            }
+
+            // Inline fields.
+            var t = entry.endTransform;
+            EditorGUI.BeginChangeCheck();
+            Vector3 pos = new Vector3(t.position.x, t.position.y, t.position.z);
+            Vector3 newPos = EditorGUILayout.Vector3Field("Position", pos);
+            Quaternion rot = t.rotation.IsIdentity
+                ? Quaternion.identity
+                : new Quaternion(t.rotation.x, t.rotation.y, t.rotation.z, t.rotation.w);
+            Vector3 newEul = EditorGUILayout.Vector3Field("Rotation (Euler)", rot.eulerAngles);
+            Vector3 scl = new Vector3(t.scale.x, t.scale.y, t.scale.z);
+            Vector3 newScl = EditorGUILayout.Vector3Field("Scale", scl);
+            if (EditorGUI.EndChangeCheck())
+            {
+                t.position = new SceneFloat3 { x = newPos.x, y = newPos.y, z = newPos.z };
+                Quaternion q = Quaternion.Euler(newEul);
+                t.rotation = new SceneQuaternion { x = q.x, y = q.y, z = q.z, w = q.w };
+                t.scale    = new SceneFloat3 { x = newScl.x, y = newScl.y, z = newScl.z };
+                _dirtyStepIds.Add(step.id);
+                SceneView.RepaintAll();
+            }
+        }
+
+        private void CapturePartLiveTransformIntoTaskEndTransform(
+            StepDefinition step, TaskOrderEntry entry, string partId)
+        {
+            var go = FindLivePartGO(partId);
+            if (go == null)
+            {
+                Debug.LogWarning($"[TTAW] Capture aborted: no live GameObject for part '{partId}'. " +
+                                 "Spawn the scene via the TTAW preview first.");
+                return;
+            }
+            var tf = go.transform;
+            entry.endTransform ??= new TaskEndTransform();
+            entry.endTransform.position = new SceneFloat3
+                { x = tf.localPosition.x, y = tf.localPosition.y, z = tf.localPosition.z };
+            entry.endTransform.rotation = new SceneQuaternion
+                { x = tf.localRotation.x, y = tf.localRotation.y, z = tf.localRotation.z, w = tf.localRotation.w };
+            entry.endTransform.scale = new SceneFloat3
+                { x = tf.localScale.x, y = tf.localScale.y, z = tf.localScale.z };
+            _dirtyStepIds.Add(step.id);
+            Repaint();
+            SceneView.RepaintAll();
+        }
+
+        private void CapturePartAssembledIntoTaskEndTransform(
+            StepDefinition step, TaskOrderEntry entry, PartEditState p)
+        {
+            entry.endTransform ??= new TaskEndTransform();
+            entry.endTransform.position = PackageJsonUtils.ToFloat3(p.assembledPosition);
+            entry.endTransform.rotation = PackageJsonUtils.ToQuaternion(p.assembledRotation);
+            entry.endTransform.scale    = PackageJsonUtils.ToFloat3(p.assembledScale);
+            _dirtyStepIds.Add(step.id);
+            Repaint();
         }
 
         /// <summary>
