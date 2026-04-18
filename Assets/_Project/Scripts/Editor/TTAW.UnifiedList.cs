@@ -1021,6 +1021,15 @@ namespace OSE.Editor
                             ? $"{dispSub.GetDisplayName()}  ({memberCount} part{(memberCount == 1 ? "" : "s")})"
                             : dispSub.GetDisplayName();
                     }
+                    // G.2.6: make the #N instance suffix visible as "(instance N)" for Part tasks,
+                    // so it's obvious at a glance when the same partId participates in multiple
+                    // tasks within one step.
+                    else if (entry.kind == "part" && TaskInstanceId.HasInstanceSuffix(entry.id))
+                    {
+                        string bareId  = TaskInstanceId.ToPartId(entry.id);
+                        int    instance = TaskInstanceId.ToInstance(entry.id);
+                        displayId = $"{bareId}  (instance {instance})";
+                    }
                     EditorGUI.LabelField(idRect, displayId, EditorStyles.miniLabel);
 
                     // ── Ownership-conflict / orphan badge (quiet when clean) ──
@@ -2479,10 +2488,24 @@ namespace OSE.Editor
             }
             PlaceConflictHandled:
 
-            var list = new List<string>(step.requiredPartIds ?? System.Array.Empty<string>()) { partId };
-            step.requiredPartIds = list.ToArray();
+            // requiredPartIds is a set of BARE partIds — add only if not present.
+            // Multi-instance lives on taskOrder entries via TaskInstanceId.Build.
+            var requiredList = new List<string>(step.requiredPartIds ?? System.Array.Empty<string>());
+            if (!requiredList.Contains(partId)) requiredList.Add(partId);
+            step.requiredPartIds = requiredList.ToArray();
+
+            // G.2.6: if this partId already appears in the step's taskOrder as a
+            // Part task, append an instance suffix so a single step can hold
+            // multiple Part tasks for the same partId (e.g. place → adjust).
             var order = GetOrDeriveTaskOrder(step);
-            order.Add(new TaskOrderEntry { kind = "part", id = partId });
+            int existingInstances = 0;
+            foreach (var e in order)
+            {
+                if (e == null || e.kind != "part") continue;
+                if (TaskInstanceId.ToPartId(e.id) == partId) existingInstances++;
+            }
+            string entryId = TaskInstanceId.Build(partId, existingInstances + 1);
+            order.Add(new TaskOrderEntry { kind = "part", id = entryId });
             step.taskOrder = order.ToArray();
             InvalidateTaskOrderCache();
             _dirtyStepIds.Add(step.id);
