@@ -811,7 +811,7 @@ namespace OSE.Editor
             for (int i = 0; i < order.Count; i++)
             {
                 var e = order[i];
-                if (e != null && e.kind == "part" && e.id == partId)
+                if (e != null && e.kind == "part" && TaskInstanceId.ToPartId(e.id) == partId)
                 {
                     _selectedTaskSeqIdx = i;
                     Repaint();

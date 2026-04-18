@@ -1539,7 +1539,7 @@ namespace OSE.Editor
                     {
                         var ord = GetOrDeriveTaskOrder(step);
                         if (_selectedTaskSeqIdx < ord.Count && ord[_selectedTaskSeqIdx].kind == "part")
-                            captureId = ord[_selectedTaskSeqIdx].id;
+                            captureId = TaskInstanceId.ToPartId(ord[_selectedTaskSeqIdx].id);
                     }
                     if (!string.IsNullOrEmpty(captureId))
                     {

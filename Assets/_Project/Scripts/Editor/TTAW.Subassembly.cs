@@ -947,7 +947,7 @@ namespace OSE.Editor
             for (int i = 0; i < order.Count; i++)
             {
                 var entry = order[i];
-                if (entry.kind == "part" && memberSet.Contains(entry.id))
+                if (entry.kind == "part" && memberSet.Contains(TaskInstanceId.ToPartId(entry.id)))
                     _multiSelectedTaskSeqIdxs.Add(i);
                 // Also highlight tool actions / confirms whose step is in the group
                 else if (stepSet.Contains(step.id))

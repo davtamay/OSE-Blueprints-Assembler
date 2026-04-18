@@ -499,7 +499,13 @@ namespace OSE.Editor
                     var kind  = entry.kind == "part"
                         ? EditorSelection.Kind.Part
                         : EditorSelection.Kind.Task;
-                    _selection = new EditorSelection(kind, entry.id, stepId, _editingPoseMode, 0);
+                    // For Part kind, broadcast the bare partId (strip #N instance
+                    // suffix) so external listeners receive a key they can look up
+                    // against PartDefinition arrays.
+                    string selId = kind == EditorSelection.Kind.Part
+                        ? TaskInstanceId.ToPartId(entry.id)
+                        : entry.id;
+                    _selection = new EditorSelection(kind, selId, stepId, _editingPoseMode, 0);
                     return;
                 }
             }

@@ -160,18 +160,19 @@ namespace OSE.Editor
 
                             if (!entryIsGroup)
                             {
+                                string entryPartId = TaskInstanceId.ToPartId(entry.id);
                                 // Inline tool toggles (replaces the Part×Tool matrix)
-                                DrawInlineToolToggles(entry.id);
+                                DrawInlineToolToggles(entryPartId);
 
                                 // Group membership
-                                DrawInspectorGroupLabel(entry.id);
+                                DrawInspectorGroupLabel(entryPartId);
 
                                 // Animation cues for this part live in the step
                                 // task-sequence via DrawCuesForPart — same
                                 // timing-panels UI used for groups and tools.
                                 // Host-owned storage (part.animationCues) is
                                 // the single source of truth.
-                                DrawCuesForPart(step, entry.id);
+                                DrawCuesForPart(step, entryPartId);
                             }
                             break;
                         }

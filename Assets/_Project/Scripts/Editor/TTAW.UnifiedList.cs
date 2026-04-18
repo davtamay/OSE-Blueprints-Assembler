@@ -218,7 +218,7 @@ namespace OSE.Editor
                 string subId = step.requiredSubassemblyId;
                 bool found = false;
                 foreach (var e in order)
-                    if (e.kind == "part" && string.Equals(e.id, subId, StringComparison.Ordinal))
+                    if (e.kind == "part" && string.Equals(TaskInstanceId.ToPartId(e.id), subId, StringComparison.Ordinal))
                     { found = true; break; }
                 if (!found)
                     order.Insert(0, new TaskOrderEntry { kind = "part", id = subId });
@@ -256,9 +256,14 @@ namespace OSE.Editor
             foreach (var e in order)
             {
                 if (e == null) continue;
-                if (e.kind == "part" && !string.IsNullOrEmpty(e.id)) presentPartIds.Add(e.id);
+                if (e.kind == "part" && !string.IsNullOrEmpty(e.id))
+                {
+                    // presentPartIds is a set of BARE partIds for orphan reconciliation.
+                    // Strip #N instance suffix so a "partId#2" entry still counts as "partId present".
+                    presentPartIds.Add(TaskInstanceId.ToPartId(e.id));
+                }
                 if (e.kind == "part" && _pkg != null
-                    && _pkg.TryGetSubassembly(e.id, out var subDef) && subDef?.partIds != null)
+                    && _pkg.TryGetSubassembly(TaskInstanceId.ToPartId(e.id), out var subDef) && subDef?.partIds != null)
                 {
                     foreach (var mpid in subDef.partIds)
                         if (!string.IsNullOrEmpty(mpid)) suppressedByGroup.Add(mpid);
@@ -526,9 +531,10 @@ namespace OSE.Editor
             if (entry == null) return false;
             if (entry.kind == "part")
             {
+                string partId = TaskInstanceId.ToPartId(entry.id);
                 if (_parts != null)
                     for (int i = 0; i < _parts.Length; i++)
-                        if (_parts[i].def?.id == entry.id) return _parts[i].isDirty;
+                        if (_parts[i].def?.id == partId) return _parts[i].isDirty;
                 return false;
             }
             // wire, tool, target — check the backing target
@@ -562,7 +568,7 @@ namespace OSE.Editor
             string thisTargetId = null;
             string thisPartId   = null;
 
-            if (entry.kind == "part") thisPartId = entry.id;
+            if (entry.kind == "part") thisPartId = TaskInstanceId.ToPartId(entry.id);
             else if (entry.kind == "toolAction" && step?.requiredToolActions != null)
             {
                 foreach (var a in step.requiredToolActions)
@@ -806,7 +812,7 @@ namespace OSE.Editor
                     // visualPartIds. Not a task; numbered column gets a "·".
                     bool isNoTask = entry.kind == "part"
                                      && step.visualPartIds != null
-                                     && Array.IndexOf(step.visualPartIds, entry.id) >= 0;
+                                     && Array.IndexOf(step.visualPartIds, TaskInstanceId.ToPartId(entry.id)) >= 0;
 
                     // Sequence number — computed from task rows only so
                     // "N." counts real tasks and "·" marks a no-task row.
@@ -816,7 +822,7 @@ namespace OSE.Editor
                         var other = order[ri];
                         bool otherNoTask = other.kind == "part"
                                             && step.visualPartIds != null
-                                            && Array.IndexOf(step.visualPartIds, other.id) >= 0;
+                                            && Array.IndexOf(step.visualPartIds, TaskInstanceId.ToPartId(other.id)) >= 0;
                         if (!otherNoTask) taskSeq++;
                     }
                     var numRect = new Rect(rect.x, rect.y + 1f, 22f, rect.height);
@@ -917,7 +923,7 @@ namespace OSE.Editor
                                 if      (isNoTask)   next = PartRole.Required;
                                 else if (isOptional) next = PartRole.NoTask;
                                 else                 next = PartRole.Optional;
-                                SetPartRoleForStep(step, entry.id, next);
+                                SetPartRoleForStep(step, TaskInstanceId.ToPartId(entry.id), next);
                                 entry.isOptional = (next == PartRole.Optional);
                             }
                             else
@@ -943,7 +949,7 @@ namespace OSE.Editor
                     // tooltip. Total strip width tracked for layout.
                     List<PartGroupRef> partGroups = null;
                     if (entry.kind == "part" && _partToGroupsAll != null)
-                        _partToGroupsAll.TryGetValue(entry.id, out partGroups);
+                        _partToGroupsAll.TryGetValue(TaskInstanceId.ToPartId(entry.id), out partGroups);
                     int totalGroups = partGroups?.Count ?? 0;
                     int visiblePills = Mathf.Min(totalGroups, 2);
                     int overflow     = totalGroups - visiblePills;
@@ -1028,7 +1034,7 @@ namespace OSE.Editor
                     float ownBadgeW = 0f;
                     float ownBadgeX = idRect.xMax + 2f;
                     bool isOrphanRow = entry.kind == "part"
-                                       && _cachedOrphanTaskIds.Contains(entry.id);
+                                       && _cachedOrphanTaskIds.Contains(TaskInstanceId.ToPartId(entry.id));
                     if (entry.kind == "part" && !isGroup)
                     {
                         Color badgeFg = default;
@@ -1037,7 +1043,7 @@ namespace OSE.Editor
                         string badgeTip  = null;
                         if (_ownership != null)
                         {
-                            var own = _ownership.ForPart(entry.id);
+                            var own = _ownership.ForPart(TaskInstanceId.ToPartId(entry.id));
                             if (own.HasMultiplePlaces)
                             {
                                 // Info, not error — multi-placement is
@@ -1223,7 +1229,7 @@ namespace OSE.Editor
                         var contextPartIds = new List<string>();
                         foreach (int tidx in contextRowIdxs)
                             if (order[tidx].kind == "part")
-                                contextPartIds.Add(order[tidx].id);
+                                contextPartIds.Add(TaskInstanceId.ToPartId(order[tidx].id));
 
                         {
                             var menu = new GenericMenu();
@@ -1416,7 +1422,7 @@ namespace OSE.Editor
                     // member rows the author added separately stay
                     // untouched. Plain part rows still evict from role
                     // arrays so the reconciler doesn't re-add them.
-                    RemovePartFromStepRoleArrays(step, doomed.id);
+                    RemovePartFromStepRoleArrays(step, TaskInstanceId.ToPartId(doomed.id));
                 }
                 order.RemoveAt(idx);
             }
@@ -1895,9 +1901,10 @@ namespace OSE.Editor
                     else if (_parts != null && _parts.Length > 0)
                     {
                         // Individual part — find it in _parts[]
+                        string entryPartId = TaskInstanceId.ToPartId(entry.id);
                         int pick = -1;
                         for (int i = 0; i < _parts.Length; i++)
-                            if (_parts[i].def?.id == entry.id) { pick = i; break; }
+                            if (_parts[i].def?.id == entryPartId) { pick = i; break; }
                         if (pick >= 0)
                         {
                             _selectedPartIdx = pick;
@@ -1965,9 +1972,10 @@ namespace OSE.Editor
 
                 if (entry.kind == "part" && _parts != null)
                 {
+                    string entryPartId = TaskInstanceId.ToPartId(entry.id);
                     for (int i = 0; i < _parts.Length; i++)
                     {
-                        if (_parts[i].def?.id == entry.id)
+                        if (_parts[i].def?.id == entryPartId)
                         {
                             _multiSelectedParts.Add(i);
                             _selectedPartIdx = i;
@@ -1999,7 +2007,7 @@ namespace OSE.Editor
             switch (entry.kind)
             {
                 case "part":
-                    DrawPartContextPanel(step, entry.id);
+                    DrawPartContextPanel(step, TaskInstanceId.ToPartId(entry.id));
                     break;
                 case "toolAction":
                     DrawToolActionContextPanel(step, entry.id);
@@ -2360,10 +2368,11 @@ namespace OSE.Editor
             if (step == null || string.IsNullOrEmpty(subId)) return;
             step.requiredSubassemblyId = subId;
             var order = GetOrDeriveTaskOrder(step);
-            // Only add if not already present
+            // Only add if not already present (strip instance suffix so the dedup
+            // check still works once G.2.6 introduces multi-instance entries)
             bool exists = false;
             foreach (var e in order)
-                if (e.kind == "part" && e.id == subId) { exists = true; break; }
+                if (e.kind == "part" && TaskInstanceId.ToPartId(e.id) == subId) { exists = true; break; }
             if (!exists)
             {
                 order.Add(new TaskOrderEntry { kind = "part", id = subId });
@@ -2930,14 +2939,15 @@ namespace OSE.Editor
                             if (GUILayout.Button("Save", EditorStyles.miniButton, GUILayout.Width(42)))
                                 SaveTaskEntry(selEntry, step);
                             if (GUILayout.Button("Revert", EditorStyles.miniButton, GUILayout.Width(52)))
-                                RevertPartEntry(selEntry.id);
+                                RevertPartEntry(TaskInstanceId.ToPartId(selEntry.id));
                             EditorGUILayout.EndHorizontal();
                         }
                         DrawPartPoseToggle();
-                        DrawPartOwnershipSection(selEntry.id);
+                        DrawPartOwnershipSection(TaskInstanceId.ToPartId(selEntry.id));
+                        string selPartId = TaskInstanceId.ToPartId(selEntry.id);
                         if (_parts != null)
                             for (int i = 0; i < _parts.Length; i++)
-                                if (_parts[i].def?.id == selEntry.id)
+                                if (_parts[i].def?.id == selPartId)
                                 { DrawPartDetailPanel(ref _parts[i]); break; }
                     }
 
