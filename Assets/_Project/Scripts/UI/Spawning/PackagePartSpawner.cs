@@ -633,7 +633,6 @@ namespace OSE.UI.Root
             _currentPackage = package;
             _currentPreviewConfig = package?.previewConfig;
             _configLookup.SetConfig(_currentPreviewConfig);
-            _configLookup.SetPackage(package); // G.2.5.b Path A — task endTransform resolution
 
             // Build the asset resolution catalog — scans the parts folder and maps
             // part IDs to GLB files (individual or nodes inside combined files).
