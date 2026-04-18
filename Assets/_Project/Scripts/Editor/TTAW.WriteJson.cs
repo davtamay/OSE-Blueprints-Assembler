@@ -313,6 +313,12 @@ namespace OSE.Editor
                             if (!string.IsNullOrEmpty(spEntry.label)
                                 && spEntry.label.StartsWith(MachinePackageNormalizer.AutoNoTaskLabel, StringComparison.Ordinal))
                                 continue;
+                            // G.2.5.b: synthesized entries from TaskOrderEntry.endTransform
+                            // never round-trip to JSON — regenerated on every load from the
+                            // authored task data.
+                            if (!string.IsNullOrEmpty(spEntry.label)
+                                && spEntry.label.StartsWith(MachinePackageNormalizer.TaskEndBakeLabel, StringComparison.Ordinal))
+                                continue;
                             // Auto-heal: entries with empty propagateFromStep
                             // would be saved as "unbounded from anchor" —
                             // resolver treats that as "this step → end" so
