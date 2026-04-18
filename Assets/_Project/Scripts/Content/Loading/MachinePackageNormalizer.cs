@@ -39,6 +39,14 @@ namespace OSE.Content.Loading
             ValidateAnimationCueInvariants(package);
             BakeHoldAtEndEndPoses(package);
 
+            // G.2.5.b v2: synthesize stepPose entries from TaskOrderEntry.endTransform
+            // so every runtime consumer of FindPartStepPose automatically sees
+            // task-owned inline poses. Label prefix "synthesized:" is whitelisted by
+            // PoseTableInvariants so the open-ended forward spans don't trip the
+            // duplicate-span validator. Runs BEFORE BakePoseTable so the synths flow
+            // into the resolver index.
+            BakeTaskEndTransforms(package);
+
             BakePoseTable(package);
         }
 
@@ -762,6 +770,133 @@ namespace OSE.Content.Loading
         /// preview_config.json files.
         /// </summary>
         public const string AutoNoTaskLabel = "__notask_auto";
+
+        /// <summary>
+        /// Label prefix for synthesized <see cref="StepPoseEntry"/> entries produced by
+        /// <see cref="BakeTaskEndTransforms"/> — one per task with an authored
+        /// <see cref="TaskOrderEntry.endTransform"/>. Starts with <c>"synthesized:"</c>
+        /// so <see cref="PoseTableInvariants"/> skips overlap detection for these
+        /// (the synth spans are open-ended forward by design; the resolver's
+        /// closest-anchor tie-break picks the correct one at each view step).
+        ///
+        /// <para>The save path in <c>TTAW.WriteJson.cs</c> also filters this prefix
+        /// so synth entries never round-trip to JSON — the authored
+        /// <c>TaskOrderEntry.endTransform</c> remains the sole source of truth on disk.</para>
+        /// </summary>
+        public const string TaskEndBakeLabel = "synthesized:taskEndTransform";
+
+        /// <summary>
+        /// G.2.5.b v2 normalization pass. Walks every step's <c>taskOrder</c>, and for
+        /// each <see cref="TaskOrderEntry"/> with an authored <c>endTransform</c>,
+        /// synthesizes a <see cref="StepPoseEntry"/> on the
+        /// <see cref="PartPreviewPlacement"/> of the part that task touches.
+        ///
+        /// <para>Ownership rule for (partId P, stepId S): the LAST task in the step's
+        /// taskOrder touching P whose endTransform is non-null owns the step's
+        /// end-pose for P. Later tasks overwrite earlier synths for the same stepId,
+        /// matching runtime "last task wins" semantics.</para>
+        ///
+        /// <para>Task→part mapping:
+        /// <list type="bullet">
+        ///   <item>Part task (kind="part"): partId = <c>TaskInstanceId.ToPartId(entry.id)</c></item>
+        ///   <item>Tool task (kind="toolAction"): partId = target's <c>associatedPartId</c></item>
+        /// </list>
+        /// Other kinds contribute nothing.</para>
+        /// </summary>
+        private static void BakeTaskEndTransforms(MachinePackageDefinition package)
+        {
+            if (package?.steps == null || package.previewConfig?.partPlacements == null) return;
+
+            var placementByPartId = new System.Collections.Generic.Dictionary<string, PartPreviewPlacement>(
+                System.StringComparer.Ordinal);
+            foreach (var pp in package.previewConfig.partPlacements)
+                if (pp != null && !string.IsNullOrEmpty(pp.partId))
+                    placementByPartId[pp.partId] = pp;
+
+            var actionById = new System.Collections.Generic.Dictionary<string, ToolActionDefinition>(
+                System.StringComparer.Ordinal);
+            foreach (var s in package.steps)
+                if (s?.requiredToolActions != null)
+                    foreach (var a in s.requiredToolActions)
+                        if (a != null && !string.IsNullOrEmpty(a.id))
+                            actionById[a.id] = a;
+
+            var targetById = new System.Collections.Generic.Dictionary<string, TargetDefinition>(
+                System.StringComparer.Ordinal);
+            var targets = package.GetTargets();
+            if (targets != null)
+                foreach (var t in targets)
+                    if (t != null && !string.IsNullOrEmpty(t.id))
+                        targetById[t.id] = t;
+
+            foreach (var step in package.steps)
+            {
+                if (step?.taskOrder == null || string.IsNullOrEmpty(step.id)) continue;
+
+                foreach (var entry in step.taskOrder)
+                {
+                    if (entry?.endTransform == null) continue;
+
+                    string partId = ResolvePartIdForTask(entry, actionById, targetById);
+                    if (string.IsNullOrEmpty(partId)) continue;
+                    if (!placementByPartId.TryGetValue(partId, out var pp)) continue;
+
+                    var synth = new StepPoseEntry
+                    {
+                        stepId   = step.id,
+                        label    = TaskEndBakeLabel,
+                        position = entry.endTransform.position,
+                        rotation = entry.endTransform.rotation,
+                        scale    = entry.endTransform.scale,
+                    };
+
+                    var list = new System.Collections.Generic.List<StepPoseEntry>(
+                        pp.stepPoses ?? System.Array.Empty<StepPoseEntry>());
+                    int existingIdx = -1;
+                    for (int i = 0; i < list.Count; i++)
+                        if (list[i] != null && string.Equals(list[i].stepId, step.id, System.StringComparison.Ordinal)
+                            && !string.IsNullOrEmpty(list[i].label)
+                            && list[i].label.StartsWith(TaskEndBakeLabel, System.StringComparison.Ordinal))
+                        {
+                            existingIdx = i; break;
+                        }
+                    if (existingIdx >= 0)
+                        list[existingIdx] = synth; // later task wins
+                    else
+                        list.Add(synth);
+                    pp.stepPoses = list.ToArray();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Resolves which part a <see cref="TaskOrderEntry"/> commits to an end-pose.
+        /// Part tasks carry the partId directly (stripping any #N instance suffix);
+        /// Tool tasks resolve through requiredToolActions[].targetId →
+        /// Target.associatedPartId. Returns null for wire / confirm / unknown kinds.
+        /// </summary>
+        private static string ResolvePartIdForTask(
+            TaskOrderEntry entry,
+            System.Collections.Generic.Dictionary<string, ToolActionDefinition> actionById,
+            System.Collections.Generic.Dictionary<string, TargetDefinition> targetById)
+        {
+            if (entry == null || string.IsNullOrEmpty(entry.kind)) return null;
+            switch (entry.kind)
+            {
+                case "part":
+                    return TaskInstanceId.ToPartId(entry.id);
+                case "toolAction":
+                    if (actionById.TryGetValue(entry.id ?? string.Empty, out var action)
+                        && !string.IsNullOrEmpty(action?.targetId)
+                        && targetById.TryGetValue(action.targetId, out var target))
+                    {
+                        return target?.associatedPartId;
+                    }
+                    return null;
+                default:
+                    return null;
+            }
+        }
 
         /// <summary>
         /// Auto-derives <see cref="SubassemblyDefinition.isAggregate"/> from the
