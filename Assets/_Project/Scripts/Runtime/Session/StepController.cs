@@ -12,6 +12,7 @@ namespace OSE.Runtime
     {
         private StepDefinition _currentStep;
         private RuntimeStepState _currentState;
+        private TaskCursor _currentTaskCursor;
 
         // Set by the navigation layer (SessionNavigationController) to structurally
         // block step completion while navigation is in progress. This replaces the
@@ -21,6 +22,20 @@ namespace OSE.Runtime
         public RuntimeStepState CurrentStepState => _currentState;
         public StepDefinition CurrentStepDefinition => _currentStep;
         public bool HasActiveStep => _currentStep != null && !_currentState.IsTerminal;
+
+        /// <summary>
+        /// Phase I.c — the task sequencer for the currently-active step. Built
+        /// fresh on every <see cref="ActivateStep"/>. Callers that need per-span
+        /// task availability consult this cursor; subscribers that want to react
+        /// to span transitions attach to <see cref="TaskCursor.TaskSpanOpened"/>
+        /// from their step-activation handler. <see cref="TaskCursor.Start"/> is
+        /// called at the end of <see cref="ActivateStep"/> (after the Active
+        /// <see cref="StepStateChanged"/> is published) so event-bus subscribers
+        /// have a chance to attach before the initial span fires.
+        ///
+        /// <para>Null when no step is active (e.g. after <see cref="Reset"/>).</para>
+        /// </summary>
+        public TaskCursor CurrentTaskCursor => _currentTaskCursor;
 
         public void ActivateStep(StepDefinition step, float atSeconds)
         {
@@ -38,10 +53,18 @@ namespace OSE.Runtime
             }
 
             _currentStep = step;
+            _currentTaskCursor = new TaskCursor(step);
 
             // Transition through Available briefly for event consistency
             TransitionTo(StepState.Available, atSeconds);
             TransitionTo(StepState.Active, atSeconds);
+
+            // Fire the cursor's initial TaskSpanOpened AFTER the Active state
+            // change has been published, so handlers that subscribed to
+            // StepStateChanged have a chance to attach to the cursor's event
+            // before the initial span fires. Phase I.c.1 wires this plumbing;
+            // no subscribers consume the event yet, so this is a no-op today.
+            _currentTaskCursor.Start();
         }
 
         /// <summary>
@@ -162,6 +185,7 @@ namespace OSE.Runtime
         {
             _currentStep = null;
             _currentState = default;
+            _currentTaskCursor = null;
             _completionBlocked = false;
         }
 

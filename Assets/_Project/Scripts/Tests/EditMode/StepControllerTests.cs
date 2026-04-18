@@ -584,5 +584,45 @@ namespace OSE.Tests.EditMode
             Assert.AreEqual(2, _controller.CurrentStepState.AttemptCount);
             Assert.AreEqual(StepState.Active, _controller.CurrentStepState.State);
         }
+
+        // ── Phase I.c.1 — TaskCursor lifecycle ─────────────────────────────────
+
+        [Test]
+        public void ActivateStep_ConstructsTaskCursorFromTaskOrder()
+        {
+            var step = new StepDefinition
+            {
+                id = "step-with-tasks",
+                taskOrder = new[]
+                {
+                    new TaskOrderEntry { kind = "part", id = "a" },
+                    new TaskOrderEntry { kind = "part", id = "b" }
+                }
+            };
+            _controller.ActivateStep(step, 0f);
+
+            Assert.IsNotNull(_controller.CurrentTaskCursor);
+            Assert.AreEqual(2, _controller.CurrentTaskCursor.TotalSpans);
+            Assert.IsFalse(_controller.CurrentTaskCursor.IsComplete);
+        }
+
+        [Test]
+        public void ActivateStep_EmptyTaskOrder_CursorIsCompleteImmediately()
+        {
+            _controller.ActivateStep(MakeStep(), 0f);
+
+            Assert.IsNotNull(_controller.CurrentTaskCursor);
+            Assert.IsTrue(_controller.CurrentTaskCursor.IsComplete);
+        }
+
+        [Test]
+        public void Reset_ClearsCurrentTaskCursor()
+        {
+            _controller.ActivateStep(MakeStep(), 0f);
+            Assert.IsNotNull(_controller.CurrentTaskCursor);
+
+            _controller.Reset();
+            Assert.IsNull(_controller.CurrentTaskCursor);
+        }
     }
 }
