@@ -429,11 +429,29 @@ namespace OSE.UI.Root
             // current step's requiredToolActions. Null means "no payload → lerp / auto".
             ToolPartInteraction payload = TryResolveInteractionPayload(stepCtrl.CurrentStepDefinition, targetId, out var toolPose);
 
-            // End pose: honor payload.toPose when set (Phase F), fall back to implicit
-            // stepPoses[currentStepId] → assembledPosition chain.
-            if (!ResolveEndPose(payload?.toPose, partId, currentStepId, spawner,
-                                out Vector3 endPos, out Quaternion endRot, out Vector3 endScale))
+            // G.2.3: end-pose precedence is
+            //   (1) the task's own TaskOrderEntry.endTransform  (Phase G inline)
+            //   (2) Phase F toPose token                         (start/assembled/step:<id>)
+            //   (3) legacy stepPoses[currentStepId] → assembledPosition chain
+            // Inline endTransform wins because it is task-owned and cannot be
+            // mutated by other tasks (pose-chain linearity invariant).
+            Vector3 endPos;
+            Quaternion endRot;
+            Vector3 endScale;
+            TaskEndTransform inline = TryResolveToolTaskEndTransform(stepCtrl.CurrentStepDefinition, targetId);
+            if (inline != null)
+            {
+                endPos   = new Vector3(inline.position.x, inline.position.y, inline.position.z);
+                endRot   = !inline.rotation.IsIdentity
+                    ? new Quaternion(inline.rotation.x, inline.rotation.y, inline.rotation.z, inline.rotation.w)
+                    : Quaternion.identity;
+                endScale = new Vector3(inline.scale.x, inline.scale.y, inline.scale.z);
+            }
+            else if (!ResolveEndPose(payload?.toPose, partId, currentStepId, spawner,
+                                     out endPos, out endRot, out endScale))
+            {
                 return null;
+            }
 
             // Start pose: part's current local transform. Never authored — the pose
             // chain derives start from whatever the previous task left the part at.
@@ -493,6 +511,40 @@ namespace OSE.UI.Root
             }
 
             return match.interaction;
+        }
+
+        /// <summary>
+        /// G.2.3 inline end-pose resolver. Finds the <see cref="TaskOrderEntry"/> in
+        /// <paramref name="step"/>.taskOrder whose kind is "toolAction" and whose id
+        /// matches the <see cref="ToolActionDefinition"/> targeting
+        /// <paramref name="targetId"/>. Returns its <see cref="TaskOrderEntry.endTransform"/>
+        /// when authored, else null.
+        ///
+        /// <para>When non-null, callers use this transform as the authoritative end
+        /// pose — it takes precedence over any <c>toPose</c> token or stepPose entry.
+        /// This is how pose-chain linearity is enforced: each task's end-pose is its
+        /// own inline data, never shared with other tasks.</para>
+        /// </summary>
+        private static TaskEndTransform TryResolveToolTaskEndTransform(StepDefinition step, string targetId)
+        {
+            if (step?.requiredToolActions == null || step.taskOrder == null || string.IsNullOrEmpty(targetId))
+                return null;
+
+            // Find the action definition whose targetId matches.
+            string actionId = null;
+            foreach (var a in step.requiredToolActions)
+            {
+                if (a != null && a.targetId == targetId) { actionId = a.id; break; }
+            }
+            if (string.IsNullOrEmpty(actionId)) return null;
+
+            // Look up the matching taskOrder entry for its endTransform.
+            foreach (var entry in step.taskOrder)
+            {
+                if (entry != null && entry.kind == "toolAction" && entry.id == actionId)
+                    return entry.endTransform;
+            }
+            return null;
         }
 
         /// <summary>
