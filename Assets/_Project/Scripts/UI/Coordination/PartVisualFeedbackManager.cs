@@ -837,14 +837,23 @@ namespace OSE.UI.Root
             if (package == null || !package.TryGetStep(stepId, out var step))
                 return;
 
-            // Use the merged set so Use-family steps (e.g. drill-tighten) can
-            // move the parts their tool actions operate on to the step's pose.
             string[] partIds = step.GetAllTouchedPartIds();
             if (partIds == null || partIds.Length == 0) return;
 
             foreach (string partId in partIds)
             {
-                MovePartToStepPose(partId, stepId);
+                // Reposition only when the author asked for it: a part-level
+                // stepPose authored for this step wins, else a Place-family
+                // task on the part target moves it to assembledPosition.
+                // Use / Confirm / Connect tasks do NOT move parts — a tool
+                // action on a part isn't a transform change on the part,
+                // and auto-moving here was clobbering holdAtEnd cue
+                // persistence (e.g. step-58 tighten snapping carriage
+                // halves back to assembled). Group transforms and per-part
+                // transforms are independent concerns; this helper only
+                // touches per-part.
+                if (ShouldRepositionOnTaskComplete(step, partId))
+                    MovePartToStepPose(partId, stepId);
 
                 GameObject partGo = _ctx.FindSpawnedPart(partId);
                 if (partGo != null)
@@ -856,6 +865,22 @@ namespace OSE.UI.Root
                     _revealedPartIds.Add(partId);
                 }
             }
+        }
+
+        /// <summary>
+        /// True when step-completion machinery should write a new local
+        /// transform to <paramref name="partId"/>. An authored
+        /// <c>StepPoseEntry</c> for this (part, step) always wins (author
+        /// intent). Otherwise only Place-family tasks on the part target
+        /// reposition — Use / Confirm / Connect are behaviours on a tool or
+        /// a proposition, not on the part's transform.
+        /// </summary>
+        private bool ShouldRepositionOnTaskComplete(StepDefinition step, string partId)
+        {
+            if (step == null || string.IsNullOrEmpty(partId)) return false;
+            if (_ctx.Spawner?.FindPartStepPose(partId, step.id) != null) return true;
+            return step.ResolvedFamily == OSE.Content.StepFamily.Place
+                   && IsPartTaskOfStep(step, partId);
         }
 
         public void RestoreCompletedStepParts(StepDefinition[] steps)
@@ -884,7 +909,13 @@ namespace OSE.UI.Root
                         string partId = partIds[p];
                         if (string.IsNullOrEmpty(partId)) continue;
 
-                        MovePartToStepPose(partId, step.id);
+                        // Same rule as MoveStepPartsToPlayPosition: only
+                        // reposition when the author asked (part stepPose
+                        // or Place-family task). Use / Confirm / Connect
+                        // leave per-part transforms alone during restore
+                        // so holdAtEnd / group-level poses survive.
+                        if (ShouldRepositionOnTaskComplete(step, partId))
+                            MovePartToStepPose(partId, step.id);
 
                         GameObject partGo = _ctx.FindSpawnedPart(partId);
                         if (partGo != null) partGo.SetActive(true);
