@@ -52,8 +52,15 @@ namespace OSE.Content.Validation
         internal static readonly HashSet<string> HintPriorityValues =
             S("low", "medium", "high");
 
+        // Canonical action-type vocabulary. Extended in Phase A.1 to match the
+        // TTAW authoring dropdown (DrawActionTypePicker) and ToolDefinition's
+        // primaryActionType seed values. `drill` / `screw` / `press` / `clamp`
+        // are **authoring-facing labels** — the runtime decides motion via the
+        // step's `profile` field and the tool action's `interaction` payload
+        // (archetype + axis + rotation), not via this string.
         internal static readonly HashSet<string> ToolActionTypeValues =
-            S("measure", "tighten", "strike", "weld_pass", "grind_pass");
+            S("measure", "tighten", "strike", "weld_pass", "grind_pass",
+              "drill", "screw", "press", "clamp", "cut", "solder");
 
         internal static readonly HashSet<string> EffectTypeValues =
             S("placement_feedback", "success_feedback", "error_feedback", "welding", "sparks", "heat_glow", "fire", "dust", "milestone");
