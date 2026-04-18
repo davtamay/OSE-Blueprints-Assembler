@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using OSE.Content;
 
 namespace OSE.UI.Root
@@ -10,11 +11,42 @@ namespace OSE.UI.Root
     /// </summary>
     internal sealed class PreviewConfigLookup
     {
-        private PackagePreviewConfig _config;
+        private PackagePreviewConfig           _config;
+        private StepDefinition[]               _steps;
+        private ToolActionDefinition[]         _flatActions;
+        private TargetDefinition[]             _targets;
 
         internal void SetConfig(PackagePreviewConfig config)
         {
             _config = config;
+        }
+
+        /// <summary>
+        /// G.2.5.b Path A: give the lookup access to the package's steps + targets
+        /// so <see cref="FindPartStepPose"/> can resolve
+        /// <see cref="TaskOrderEntry.endTransform"/> on-the-fly without injecting
+        /// synthesized entries into package data. No mutation of anything — the
+        /// synth only exists as a return value from the lookup call.
+        /// </summary>
+        internal void SetPackage(MachinePackageDefinition pkg)
+        {
+            _steps   = pkg?.steps;
+            _targets = pkg?.GetTargets();
+
+            // Flatten all requiredToolActions for fast id→action resolution.
+            if (_steps == null)
+            {
+                _flatActions = null;
+                return;
+            }
+            var list = new List<ToolActionDefinition>(_steps.Length * 2);
+            foreach (var s in _steps)
+            {
+                if (s?.requiredToolActions == null) continue;
+                foreach (var a in s.requiredToolActions)
+                    if (a != null && !string.IsNullOrEmpty(a.id)) list.Add(a);
+            }
+            _flatActions = list.ToArray();
         }
 
         internal PartPreviewPlacement FindPartPlacement(string partId)
@@ -100,16 +132,100 @@ namespace OSE.UI.Root
         /// <summary>
         /// Returns the <see cref="StepPoseEntry"/> for the given part at the given step,
         /// or null if no intermediate pose is authored (caller falls back to assembledPosition).
+        ///
+        /// <para>G.2.5.b Path A: first checks <see cref="TaskOrderEntry.endTransform"/> on
+        /// any task in the step's taskOrder that touches the part. When found, wraps it
+        /// in a fresh <see cref="StepPoseEntry"/> (never stored anywhere) and returns it.
+        /// This closes the pose-chain loop for Part + Tool tasks without mutating the
+        /// package data or interacting with the invariant validator at all.</para>
         /// </summary>
         internal StepPoseEntry FindPartStepPose(string partId, string stepId)
         {
             if (string.IsNullOrEmpty(partId) || string.IsNullOrEmpty(stepId)) return null;
+
+            // G.2.5.b Path A: consult task endTransforms first (task-owned, Phase G.2).
+            StepPoseEntry inline = TryBuildInlineTaskPose(partId, stepId);
+            if (inline != null) return inline;
+
+            // Fall back to authored stepPoses + normalizer synths on the placement.
             PartPreviewPlacement pp = FindPartPlacement(partId);
             if (pp?.stepPoses == null) return null;
             for (int i = 0; i < pp.stepPoses.Length; i++)
             {
                 if (string.Equals(pp.stepPoses[i].stepId, stepId, StringComparison.OrdinalIgnoreCase))
                     return pp.stepPoses[i];
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Walks the step's taskOrder in order and returns the LAST task touching
+        /// <paramref name="partId"/> whose <see cref="TaskOrderEntry.endTransform"/>
+        /// is authored, wrapped in a fresh <see cref="StepPoseEntry"/>. Returns
+        /// null when there's no package context, no matching step, no matching
+        /// task, or no endTransform on the matching task. Pure read — does not
+        /// mutate or cache anything.
+        /// </summary>
+        private StepPoseEntry TryBuildInlineTaskPose(string partId, string stepId)
+        {
+            if (_steps == null) return null;
+
+            // Locate the step.
+            StepDefinition step = null;
+            for (int i = 0; i < _steps.Length; i++)
+            {
+                if (_steps[i] != null && string.Equals(_steps[i].id, stepId, StringComparison.Ordinal))
+                { step = _steps[i]; break; }
+            }
+            if (step?.taskOrder == null) return null;
+
+            // Walk taskOrder for tasks that touch partId — last wins (matches
+            // runtime "final pose after step completes").
+            TaskEndTransform et = null;
+            foreach (var entry in step.taskOrder)
+            {
+                if (entry?.endTransform == null) continue;
+                string p = ResolvePartIdForEntry(entry);
+                if (!string.IsNullOrEmpty(p) && string.Equals(p, partId, StringComparison.Ordinal))
+                    et = entry.endTransform;
+            }
+            if (et == null) return null;
+
+            // Build an ephemeral StepPoseEntry. Not stored anywhere, not persisted,
+            // not visible to the invariant validator. Just a shape the existing
+            // consumers know how to read.
+            return new StepPoseEntry
+            {
+                stepId   = stepId,
+                label    = null, // unlabelled — callers that branch on label treat as regular authored
+                position = et.position,
+                rotation = et.rotation,
+                scale    = et.scale,
+            };
+        }
+
+        /// <summary>
+        /// Resolves which part a <see cref="TaskOrderEntry"/> touches.
+        /// Part task: strip any #N instance suffix. Tool task: resolve
+        /// through the action's targetId → target's associatedPartId.
+        /// </summary>
+        private string ResolvePartIdForEntry(TaskOrderEntry entry)
+        {
+            if (entry == null || string.IsNullOrEmpty(entry.kind)) return null;
+            if (entry.kind == "part") return TaskInstanceId.ToPartId(entry.id);
+            if (entry.kind == "toolAction" && _flatActions != null && !string.IsNullOrEmpty(entry.id))
+            {
+                for (int i = 0; i < _flatActions.Length; i++)
+                {
+                    var a = _flatActions[i];
+                    if (a == null || a.id != entry.id) continue;
+                    if (string.IsNullOrEmpty(a.targetId) || _targets == null) return null;
+                    for (int j = 0; j < _targets.Length; j++)
+                    {
+                        if (_targets[j]?.id == a.targetId) return _targets[j].associatedPartId;
+                    }
+                    return null;
+                }
             }
             return null;
         }
