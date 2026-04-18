@@ -906,12 +906,7 @@
           "successMessage": "M6x18 bolt A tightened.",
           "failureMessage": "Equip the power drill (lowest torque) and drive the bolt into the carriage.",
           "interaction": {
-            "archetype": "thread_in",
-            "axis": {
-              "space": "part_local",
-              "vec": { "x": 0.0, "y": 1.0, "z": 0.0 }
-            },
-            "totalRotationsDeg": 1080.0,
+            "archetype": "lerp",
             "easing": "easeInOut",
             "followPart": true
           }
