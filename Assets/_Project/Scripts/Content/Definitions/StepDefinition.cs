@@ -480,5 +480,18 @@ namespace OSE.Content
         /// all task kinds (part, toolAction, wire, target, confirm).
         /// </summary>
         public bool isOptional;
+
+        /// <summary>
+        /// Inline end-pose for the part this task touches. When non-null, the
+        /// runtime snaps the part to this transform on task completion. When
+        /// null, the task falls back to the part's <c>assembledPosition</c>
+        /// (or, during Phase G.2 migration, any remaining legacy
+        /// <c>stepPoses[]</c> entry matching this step).
+        ///
+        /// <para>Added by Phase G.2 to replace shared stepPose references with
+        /// task-owned inline transforms. Each task owns its end-pose
+        /// exclusively — enforcing pose-chain linearity by construction.</para>
+        /// </summary>
+        public TaskEndTransform endTransform;
     }
 }
