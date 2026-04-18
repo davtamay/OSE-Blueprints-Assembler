@@ -58,7 +58,8 @@
         "hand",
         "finger tight",
         "hand tighten"
-      ]
+      ],
+      "assetRef": "tool_hand.glb"
     },
     {
       "id": "tool_locking_clamp",

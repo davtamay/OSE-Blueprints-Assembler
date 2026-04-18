@@ -1351,6 +1351,9 @@
       "family": "Use",
       "instructionText": "Thread and finger-tighten all 4 bolts on the Y-Left carriage. Seat each bolt snug by hand before moving to the power drill \u00e2\u20ac\u201d this prevents cross-threading and lets the drill finish the final torque cleanly.",
       "removePersistentToolIds": [],
+      "relevantToolIds": [
+        "tool_hand"
+      ],
       "targetIds": [
         "target_c1_bolt_tighten_a",
         "target_c1_bolt_tighten_b",
@@ -1527,6 +1530,9 @@
       "family": "Use",
       "instructionText": "Use the power drill on the lowest torque setting to drive all 4 bolts to final torque. Set the carriage aside \u00e2\u20ac\u201d carriage 1 of 4 is complete.",
       "removePersistentToolIds": [],
+      "relevantToolIds": [
+        "tool_power_drill"
+      ],
       "targetIds": [
         "target_c1_bolt_tighten_a",
         "target_c1_bolt_tighten_b",
