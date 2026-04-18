@@ -1357,18 +1357,6 @@
         "target_c1_bolt_tighten_c",
         "target_c1_bolt_tighten_d"
       ],
-      "requiredPartIds": [
-        "y_left_carriage_half_a",
-        "y_left_carriage_half_b",
-        "y_left_m6x18_a",
-        "y_left_carriage_m6x18_b",
-        "y_left_m6x30_a",
-        "y_left_m6x30_b",
-        "y_left_m6_nut_a",
-        "y_left_m6_nut_b",
-        "y_left_m6_nut_c",
-        "y_left_m6_nut_d"
-      ],
       "requiredToolActions": [
         {
           "id": "action_target_c1_bolt_hand_tighten_a",
@@ -1428,46 +1416,6 @@
         }
       ],
       "taskOrder": [
-        {
-          "kind": "part",
-          "id": "y_left_carriage_half_a"
-        },
-        {
-          "kind": "part",
-          "id": "y_left_carriage_half_b"
-        },
-        {
-          "kind": "part",
-          "id": "y_left_m6x18_a"
-        },
-        {
-          "kind": "part",
-          "id": "y_left_carriage_m6x18_b"
-        },
-        {
-          "kind": "part",
-          "id": "y_left_m6x30_a"
-        },
-        {
-          "kind": "part",
-          "id": "y_left_m6x30_b"
-        },
-        {
-          "kind": "part",
-          "id": "y_left_m6_nut_a"
-        },
-        {
-          "kind": "part",
-          "id": "y_left_m6_nut_b"
-        },
-        {
-          "kind": "part",
-          "id": "y_left_m6_nut_c"
-        },
-        {
-          "kind": "part",
-          "id": "y_left_m6_nut_d"
-        },
         {
           "kind": "toolAction",
           "id": "action_target_c1_bolt_hand_tighten_a",
@@ -1584,12 +1532,6 @@
         "target_c1_bolt_tighten_b",
         "target_c1_bolt_tighten_c",
         "target_c1_bolt_tighten_d"
-      ],
-      "requiredPartIds": [
-        "y_left_m6x18_a",
-        "y_left_carriage_m6x18_b",
-        "y_left_m6x30_a",
-        "y_left_m6x30_b"
       ],
       "requiredToolActions": [
         {
