@@ -24,11 +24,14 @@ namespace OSE.Interaction
                 MaterialHelper.SetEmission(context.ToolPreview, new Color(0.3f, 1f, 0.6f, 1f));
         }
 
-        public override float TickObserve(float deltaTime)
-        {
-            _elapsed += deltaTime;
-            return Mathf.Clamp01(_elapsed / Duration);
-        }
+        // TickObserve inherits the base implementation, which calls ApplyEffects.
+        // Earlier this file overrode TickObserve without invoking ApplyEffects —
+        // that broke the follow-part contract with ToolActionPreviewController:
+        // the controller adds a *cumulative* part-effect offset each frame on the
+        // assumption that the preview has just reset tool.position to its base,
+        // so if the preview never resets, the offset compounds and the tool
+        // drifts far past the part. See the overshoot reported on tool_hand
+        // when driving through DefaultPreview.
 
         /// <summary>Any drag in any direction counts — no directional constraint.</summary>
         public override float TickGuided(float deltaTime, Vector2 dragDelta, Vector2 screenPos)
@@ -48,7 +51,22 @@ namespace OSE.Interaction
                 _guidedProgress += AutoAssistRate * deltaTime;
 
             _guidedProgress = Mathf.Clamp01(_guidedProgress);
+            ApplyEffects(_guidedProgress);
             return _guidedProgress;
+        }
+
+        /// <summary>
+        /// Snaps the tool preview back to its entry position each tick. The
+        /// controller composes the part-follow offset on top of this baseline —
+        /// see <see cref="ToolActionPreviewController"/>'s TickAction comment
+        /// "preview resets tool position each frame" for the contract.
+        /// Without this reset the controller's cumulative offset addition
+        /// compounds every frame → massive overshoot.
+        /// </summary>
+        protected override void ApplyEffects(float progress)
+        {
+            if (_ctx.ToolPreview != null)
+                _ctx.ToolPreview.transform.position = _ctx.ToolStartWorldPos;
         }
 
         public override Vector2 GetExpectedDragDirection(PreviewContext context)
