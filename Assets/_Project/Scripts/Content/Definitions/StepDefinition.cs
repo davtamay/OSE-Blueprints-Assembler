@@ -493,5 +493,26 @@ namespace OSE.Content
         /// exclusively — enforcing pose-chain linearity by construction.</para>
         /// </summary>
         public TaskEndTransform endTransform;
+
+        /// <summary>
+        /// Optional authoring label marking this entry as a member of an
+        /// unordered set — a contiguous span of tasks that open together and
+        /// may be completed in any order. When null or empty, the entry is a
+        /// strict-sequential singleton (default).
+        ///
+        /// <para>Members of an <c>unorderedSet</c> must be contiguous in
+        /// <c>StepDefinition.taskOrder</c> and must share the same
+        /// <see cref="kind"/>. Both rules are enforced at load time by
+        /// <c>MachinePackageNormalizer</c>; violations become load errors.
+        /// Labels are scoped to a single step and must appear only once as
+        /// a contiguous span (reusing the same label for two separate spans
+        /// is not allowed, since that would require reordering to enforce
+        /// contiguity).</para>
+        ///
+        /// <para>Introduced in Phase I.a (spec-only schema; runtime does not
+        /// yet gate task availability on this field — see the plan file's
+        /// Phase I for the execution design).</para>
+        /// </summary>
+        public string unorderedSet;
     }
 }

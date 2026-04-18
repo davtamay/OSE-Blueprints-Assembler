@@ -1,6 +1,8 @@
 using NUnit.Framework;
 using OSE.Content;
 using OSE.Content.Loading;
+using UnityEngine.TestTools;
+using UnityEngine;
 
 namespace OSE.Tests.EditMode
 {
@@ -184,6 +186,104 @@ namespace OSE.Tests.EditMode
             MachinePackageNormalizer.Normalize(package);
 
             Assert.AreEqual("sub_1", package.steps[0].subassemblyId);
+        }
+
+        // ──────────────────────────────────────────────────────────────────
+        // Phase I.a — unorderedSet validation
+        // ──────────────────────────────────────────────────────────────────
+
+        private static MachinePackageDefinition PkgWithTaskOrder(params TaskOrderEntry[] taskOrder)
+            => new MachinePackageDefinition
+            {
+                assemblies    = System.Array.Empty<AssemblyDefinition>(),
+                subassemblies = System.Array.Empty<SubassemblyDefinition>(),
+                parts         = System.Array.Empty<PartDefinition>(),
+                partTemplates = System.Array.Empty<PartTemplateDefinition>(),
+                steps = new[]
+                {
+                    new StepDefinition
+                    {
+                        id = "s1",
+                        sequenceIndex = 1,
+                        taskOrder = taskOrder,
+                    }
+                }
+            };
+
+        [Test]
+        public void UnorderedSetValidate_StrictSequentialSingletons_NoLogs()
+        {
+            var pkg = PkgWithTaskOrder(
+                new TaskOrderEntry { kind = "part", id = "a" },
+                new TaskOrderEntry { kind = "part", id = "b" },
+                new TaskOrderEntry { kind = "toolAction", id = "c" });
+
+            // No Expect calls — LogAssert fails the test on any unexpected log.
+            Assert.DoesNotThrow(() => MachinePackageNormalizer.Normalize(pkg));
+        }
+
+        [Test]
+        public void UnorderedSetValidate_ValidContiguousSameKindSpan_NoLogs()
+        {
+            var pkg = PkgWithTaskOrder(
+                new TaskOrderEntry { kind = "part", id = "a", unorderedSet = "panel" },
+                new TaskOrderEntry { kind = "part", id = "b", unorderedSet = "panel" },
+                new TaskOrderEntry { kind = "part", id = "c", unorderedSet = "panel" },
+                new TaskOrderEntry { kind = "part", id = "c", unorderedSet = "panel" });
+
+            Assert.DoesNotThrow(() => MachinePackageNormalizer.Normalize(pkg));
+        }
+
+        [Test]
+        public void UnorderedSetValidate_ContiguityViolation_LogsError()
+        {
+            var pkg = PkgWithTaskOrder(
+                new TaskOrderEntry { kind = "part", id = "a", unorderedSet = "alpha" },
+                new TaskOrderEntry { kind = "part", id = "b", unorderedSet = "alpha" },
+                new TaskOrderEntry { kind = "part", id = "c" /* break */ },
+                new TaskOrderEntry { kind = "part", id = "d", unorderedSet = "alpha" /* reappears */ });
+
+            // Error message includes "reappears as a non-contiguous span"
+            LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex(
+                @"\[UnorderedSet\.Validate\].*step 's1'.*unorderedSet 'alpha' reappears"));
+            MachinePackageNormalizer.Normalize(pkg);
+        }
+
+        [Test]
+        public void UnorderedSetValidate_KindPurityViolation_LogsError()
+        {
+            var pkg = PkgWithTaskOrder(
+                new TaskOrderEntry { kind = "part",       id = "a", unorderedSet = "mixed" },
+                new TaskOrderEntry { kind = "toolAction", id = "b", unorderedSet = "mixed" });
+
+            LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex(
+                @"\[UnorderedSet\.Validate\].*step 's1'.*unorderedSet 'mixed' mixes kinds"));
+            MachinePackageNormalizer.Normalize(pkg);
+        }
+
+        [Test]
+        public void UnorderedSetValidate_SingleMemberSet_LogsWarning()
+        {
+            var pkg = PkgWithTaskOrder(
+                new TaskOrderEntry { kind = "part", id = "a" },
+                new TaskOrderEntry { kind = "part", id = "b", unorderedSet = "lonely" });
+
+            LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex(
+                @"\[UnorderedSet\.Validate\].*step 's1'.*unorderedSet 'lonely' has only 1 member"));
+            MachinePackageNormalizer.Normalize(pkg);
+        }
+
+        [Test]
+        public void UnorderedSetValidate_TwoDistinctAdjacentSpans_NoLogs()
+        {
+            // Two sets back-to-back, different labels, both kind-pure, each 2+ members.
+            var pkg = PkgWithTaskOrder(
+                new TaskOrderEntry { kind = "part", id = "a", unorderedSet = "first" },
+                new TaskOrderEntry { kind = "part", id = "b", unorderedSet = "first" },
+                new TaskOrderEntry { kind = "toolAction", id = "c", unorderedSet = "second" },
+                new TaskOrderEntry { kind = "toolAction", id = "d", unorderedSet = "second" });
+
+            Assert.DoesNotThrow(() => MachinePackageNormalizer.Normalize(pkg));
         }
     }
 }

@@ -24,6 +24,7 @@ namespace OSE.Content.Loading
             InflatePartTemplates(package);
             BakeStagingPoses(package);
             InferStepParentIds(package);
+            ValidateUnorderedSets(package);
             NormalizeToolActions(package);
             ResolveToolActionPartIds(package);
             ResolveDirectTargetPartIds(package);
@@ -281,6 +282,97 @@ namespace OSE.Content.Loading
                         t == TriggerOnFirstInteraction || t == TriggerOnTaskComplete;
                     if (!canonical)
                         Debug.LogError($"[CueRuntime.Validate] {hostLabel} cue[{i}] has unknown trigger '{t}'. Canonical values: onActivate, afterDelay, afterPartsShown, onStepComplete, onFirstInteraction, onTaskComplete.");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Validates Phase I.a's <c>unorderedSet</c> label semantics on
+        /// <see cref="StepDefinition.taskOrder"/>:
+        /// <list type="number">
+        ///   <item><b>Contiguity</b> — entries sharing a non-empty label must
+        ///   be adjacent. A label re-appearing after a different label (or
+        ///   null) constitutes a second span, which is forbidden.</item>
+        ///   <item><b>Kind purity</b> — all entries in a set share the same
+        ///   <see cref="TaskOrderEntry.kind"/> (e.g. all "part", or all
+        ///   "toolAction"). Mixed kinds break the runtime controller contract
+        ///   Phase I.c / I.d depend on.</item>
+        ///   <item><b>Single-span per label</b> — subsumed by contiguity; a
+        ///   label that tries to start a second span after closing is flagged
+        ///   as the contiguity error.</item>
+        ///   <item><b>Single-member warning</b> — an unordered set with just
+        ///   one member is an authoring smell; warn but do not block.</item>
+        /// </list>
+        /// Errors use <see cref="Debug.LogError"/>; single-member warnings
+        /// use <see cref="Debug.LogWarning"/>. Does not throw — load succeeds
+        /// with console feedback so authors see the issue before Play.
+        /// Phase I.a is spec + validation only; no runtime path consumes the
+        /// field yet. Future wiring (I.c / I.d) assumes these invariants hold.
+        /// </summary>
+        private static void ValidateUnorderedSets(MachinePackageDefinition package)
+        {
+            if (package?.steps == null) return;
+
+            for (int si = 0; si < package.steps.Length; si++)
+            {
+                var step = package.steps[si];
+                if (step?.taskOrder == null || step.taskOrder.Length == 0) continue;
+
+                var closedLabels = new HashSet<string>(StringComparer.Ordinal);
+                string currentLabel = null;
+                string currentKind  = null;
+                int    currentSize  = 0;
+
+                for (int ti = 0; ti < step.taskOrder.Length; ti++)
+                {
+                    var entry = step.taskOrder[ti];
+                    string label = string.IsNullOrEmpty(entry?.unorderedSet) ? null : entry.unorderedSet;
+
+                    if (string.Equals(label, currentLabel, StringComparison.Ordinal))
+                    {
+                        if (label != null)
+                        {
+                            if (!string.Equals(entry.kind, currentKind, StringComparison.Ordinal))
+                            {
+                                Debug.LogError($"[UnorderedSet.Validate] step '{step.id}' unorderedSet '{label}' mixes kinds ('{currentKind}' and '{entry.kind}'). Sets must be kind-pure.");
+                            }
+                            currentSize++;
+                        }
+                        continue;
+                    }
+
+                    // Span transition: close the previous span, open a new one.
+                    if (currentLabel != null)
+                    {
+                        closedLabels.Add(currentLabel);
+                        if (currentSize == 1)
+                        {
+                            Debug.LogWarning($"[UnorderedSet.Validate] step '{step.id}' unorderedSet '{currentLabel}' has only 1 member — drop the label or add siblings.");
+                        }
+                    }
+
+                    if (label != null)
+                    {
+                        if (closedLabels.Contains(label))
+                        {
+                            Debug.LogError($"[UnorderedSet.Validate] step '{step.id}' unorderedSet '{label}' reappears as a non-contiguous span. Entries with the same label must be adjacent.");
+                        }
+                        currentLabel = label;
+                        currentKind  = entry?.kind;
+                        currentSize  = 1;
+                    }
+                    else
+                    {
+                        currentLabel = null;
+                        currentKind  = null;
+                        currentSize  = 0;
+                    }
+                }
+
+                // Trailing span check for single-member warning.
+                if (currentLabel != null && currentSize == 1)
+                {
+                    Debug.LogWarning($"[UnorderedSet.Validate] step '{step.id}' unorderedSet '{currentLabel}' has only 1 member — drop the label or add siblings.");
                 }
             }
         }
