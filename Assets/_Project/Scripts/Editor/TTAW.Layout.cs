@@ -1392,13 +1392,11 @@ namespace OSE.Editor
             // Optional parts, the full Start/Custom/Assembled set is shown.
             bool isNoTaskRow = noTaskAutoIdx >= 0;
 
-            // ── G.2.5.c: inline End Transform authoring (task-owned) ─────────
-            // Replaces Phase F's pose-dropdown. Writes to this Part task's
-            // TaskOrderEntry.endTransform so the pose lives on the TASK, not on
-            // the part's stepPoses[] array. The chip row below still authors the
-            // part's intrinsic Start / Assembled poses.
-            if (hasPart && !string.IsNullOrEmpty(currentStepId))
-                DrawPartTaskEndTransformRow(ref _parts[_selectedPartIdx], currentStepId);
+            // Part tasks do NOT author per-task end transforms. A Part task always
+            // ends at the part's Assembled pose (runtime falls back to assembled
+            // when no stepPose is present). If a part needs an intermediate pose,
+            // add another Part task OR a Tool task — tool tasks carry their own
+            // inline End Transform in the Interaction Panel. (G.2.5.c reverted.)
 
             EditorGUILayout.BeginHorizontal();
 
@@ -1465,12 +1463,10 @@ namespace OSE.Editor
                     ApplyPoseMode(PoseModeAssembled);
             }
 
-            // [+] add new custom pose
-            if (hasPart)
-            {
-                if (GUILayout.Button("+", EditorStyles.miniButtonRight, GUILayout.Width(24)))
-                    AddStepPoseForCurrentStep(_selectedPartIdx, currentStepId ?? "");
-            }
+            // Custom-pose creation removed in Phase G.2. Parts have only Start and
+            // Assembled intrinsic poses now; intermediate pose states belong on
+            // TASKS (Tool task Interaction Panel → End Transform, or additional
+            // Part/Tool task entries in the sequence).
 
             EditorGUILayout.EndHorizontal();
 
