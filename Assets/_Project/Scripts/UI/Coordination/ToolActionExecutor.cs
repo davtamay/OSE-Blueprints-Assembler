@@ -540,13 +540,28 @@ namespace OSE.UI.Root
                 if (toPoseToken.StartsWith(ToPoseTokens.StepPrefix, System.StringComparison.Ordinal))
                 {
                     string stepId = toPoseToken.Substring(ToPoseTokens.StepPrefix.Length);
-                    StepPoseEntry sp = spawner.FindPartStepPose(partId, stepId);
-                    if (sp != null)
+
+                    // Pose-chain invariant (G.1): a task may only reference its OWN
+                    // step's stepPose. Cross-task refs are disallowed — any "step:<otherId>"
+                    // silently degrades to auto resolution and logs a warning so legacy
+                    // content keeps working during migration while the authoring UI
+                    // blocks new cross-refs from being written.
+                    if (!string.IsNullOrEmpty(stepId) && !string.Equals(stepId, currentStepId, System.StringComparison.Ordinal))
                     {
-                        AssignFromFloats(sp.position, sp.rotation, sp.scale, out pos, out rot, out scale);
-                        return true;
+                        Debug.LogWarning($"[ToolAction] Cross-task pose reference ignored: " +
+                                         $"toPose='{toPoseToken}' referenced from step '{currentStepId}' on part '{partId}'. " +
+                                         $"Only 'step:{currentStepId}' (self-step) is valid. Falling back to auto resolution.");
                     }
-                    // stale reference — fall through to implicit chain
+                    else
+                    {
+                        StepPoseEntry sp = spawner.FindPartStepPose(partId, stepId);
+                        if (sp != null)
+                        {
+                            AssignFromFloats(sp.position, sp.rotation, sp.scale, out pos, out rot, out scale);
+                            return true;
+                        }
+                    }
+                    // self-ref with no stepPose entry OR cross-ref — fall through to implicit chain
                 }
             }
 

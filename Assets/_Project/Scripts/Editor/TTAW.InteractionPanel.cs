@@ -192,7 +192,16 @@ namespace OSE.Editor
                 if (toPoseToken.StartsWith(ToPoseTokens.StepPrefix, StringComparison.Ordinal))
                 {
                     string refStepId = toPoseToken.Substring(ToPoseTokens.StepPrefix.Length);
-                    if (pp.stepPoses != null)
+
+                    // Pose-chain invariant (G.1): only self-step refs are valid. Cross-task
+                    // refs degrade to auto and log so the author can re-pick. This mirrors
+                    // the runtime guard in ToolActionExecutor.ResolveEndPose.
+                    if (!string.IsNullOrEmpty(refStepId) && !string.Equals(refStepId, stepId, StringComparison.Ordinal))
+                    {
+                        Debug.LogWarning($"[TTAW Preview] Cross-task pose reference ignored: " +
+                                         $"toPose='{toPoseToken}' on step '{stepId}'. Only self-step refs are valid.");
+                    }
+                    else if (pp.stepPoses != null)
                     {
                         foreach (var sp in pp.stepPoses)
                         {
@@ -202,7 +211,7 @@ namespace OSE.Editor
                             return true;
                         }
                     }
-                    // stale reference — fall through to implicit chain
+                    // fall through to implicit chain
                 }
             }
 
@@ -337,7 +346,7 @@ namespace OSE.Editor
             PartPreviewPlacement pp = FindPartPlacement(partId);
             string toPose = taskAction.interaction?.toPose;
             string toLabel = PosePickerDropdown.ResolveLabel(toPose, pp, step.id);
-            bool stale = PosePickerDropdown.IsStaleReference(toPose, pp);
+            bool stale = PosePickerDropdown.IsStaleReference(toPose, pp, step.id);
 
             if (stale)
             {

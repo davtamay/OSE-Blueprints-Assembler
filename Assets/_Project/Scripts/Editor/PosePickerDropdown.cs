@@ -97,27 +97,24 @@ namespace OSE.Editor
             _tokenByItem[assembledItem.id] = ToPoseTokens.Assembled;
             root.AddChild(assembledItem);
 
-            // Custom step poses, sorted by stepId for stable ordering.
+            // G.1 pose-chain invariant: only the current-step stepPose is a valid
+            // custom-pose choice. Cross-task refs are forbidden by the grammar, so
+            // the picker never offers them as options. If other stepPose entries
+            // exist on the part, they belong to other tasks — not this one.
             var stepPoses = _placement?.stepPoses;
-            if (stepPoses != null && stepPoses.Length > 0)
+            if (!string.IsNullOrEmpty(_currentStepId) && stepPoses != null)
             {
-                root.AddSeparator();
-                var sorted = new List<StepPoseEntry>(stepPoses);
-                sorted.Sort((a, b) =>
+                foreach (var sp in stepPoses)
                 {
-                    string ax = a?.stepId ?? "";
-                    string bx = b?.stepId ?? "";
-                    return string.Compare(ax, bx, StringComparison.Ordinal);
-                });
-                foreach (var sp in sorted)
-                {
-                    if (sp == null || string.IsNullOrEmpty(sp.stepId)) continue;
+                    if (sp == null || sp.stepId != _currentStepId) continue;
+                    root.AddSeparator();
                     string label = !string.IsNullOrEmpty(sp.label)
-                        ? $"{sp.label}  —  step:{sp.stepId}"
-                        : $"step:{sp.stepId}";
+                        ? $"{sp.label}  —  (this task's custom pose)"
+                        : $"(custom pose for step '{sp.stepId}')";
                     var item = new AdvancedDropdownItem(label);
                     _tokenByItem[item.id] = ToPoseTokens.StepPrefix + sp.stepId;
                     root.AddChild(item);
+                    break;
                 }
             }
 
@@ -145,7 +142,8 @@ namespace OSE.Editor
         /// <summary>
         /// Resolves a human-readable label for a <c>toPose</c> token against the given
         /// placement. Used by the Interaction Panel's Motion readout and the canvas
-        /// diagnostics chip. Returns null for malformed tokens so callers can flag them.
+        /// diagnostics chip. Returns null for malformed or cross-task tokens so callers
+        /// can flag them (G.1 pose-chain invariant: only self-step refs are valid).
         /// </summary>
         public static string ResolveLabel(string token, PartPreviewPlacement placement, string currentStepId)
         {
@@ -164,24 +162,35 @@ namespace OSE.Editor
             if (token.StartsWith(ToPoseTokens.StepPrefix, StringComparison.Ordinal))
             {
                 string stepId = token.Substring(ToPoseTokens.StepPrefix.Length);
+
+                // G.1 invariant: cross-task refs are invalid. Treat any non-self-step
+                // reference as stale so the UI flags it and prompts a re-pick.
+                if (!string.IsNullOrEmpty(currentStepId) && !string.Equals(stepId, currentStepId, StringComparison.Ordinal))
+                    return null;
+
                 if (placement?.stepPoses != null)
                 {
                     foreach (var sp in placement.stepPoses)
                         if (sp != null && sp.stepId == stepId)
                             return !string.IsNullOrEmpty(sp.label) ? sp.label : $"step:{stepId}";
                 }
-                return null; // stale reference — caller should flag
+                return null; // self-step ref with no entry yet — treat as stale so UI prompts
             }
             return null;
         }
 
-        /// <summary>True when the given token is a <c>step:&lt;id&gt;</c> reference whose
-        /// <see cref="StepPoseEntry"/> is missing from the placement.</summary>
-        public static bool IsStaleReference(string token, PartPreviewPlacement placement)
+        /// <summary>True when the given token is a <c>step:&lt;id&gt;</c> reference that is
+        /// invalid (cross-task ref, or self-ref whose <see cref="StepPoseEntry"/> is missing).</summary>
+        public static bool IsStaleReference(string token, PartPreviewPlacement placement, string currentStepId = null)
         {
             if (string.IsNullOrEmpty(token)) return false;
             if (!token.StartsWith(ToPoseTokens.StepPrefix, StringComparison.Ordinal)) return false;
             string stepId = token.Substring(ToPoseTokens.StepPrefix.Length);
+
+            // Cross-task references are always stale under the G.1 invariant.
+            if (!string.IsNullOrEmpty(currentStepId) && !string.Equals(stepId, currentStepId, StringComparison.Ordinal))
+                return true;
+
             if (placement?.stepPoses == null) return true;
             foreach (var sp in placement.stepPoses)
                 if (sp != null && sp.stepId == stepId) return false;
