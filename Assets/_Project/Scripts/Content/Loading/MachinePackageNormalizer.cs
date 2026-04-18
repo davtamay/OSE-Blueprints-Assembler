@@ -30,10 +30,16 @@ namespace OSE.Content.Loading
             IndexPartOwnership(package);
             DeriveSubassemblyPartIds(package);
             BakeGroupRigidBody(package);
-            BakePoseTable(package);
+
+            // Cue passes run BEFORE BakePoseTable so synthesized stepPoses
+            // (below) are picked up by the regular bake. Trigger rewrite and
+            // host migration don't depend on poseTable.
             NormalizeAnimationCueTriggers(package);
             MigrateStepAnimationCuesToHosts(package);
             ValidateAnimationCueInvariants(package);
+            BakeHoldAtEndEndPoses(package);
+
+            BakePoseTable(package);
         }
 
         // Canonical trigger names for AnimationCueEntry.trigger. Every alias
@@ -278,6 +284,358 @@ namespace OSE.Content.Loading
                 }
             }
         }
+
+        private const string SynthesizedStepPoseLabelPrefix = "synthesized:holdAtEnd";
+
+        /// <summary>
+        /// Bakes the end-state of every <c>poseTransition</c> cue with
+        /// <c>holdAtEnd=true</c> into per-member <see cref="StepPoseEntry"/>
+        /// records on each member's <see cref="PartPreviewPlacement.stepPoses"/>.
+        /// The synthesized entry is anchored to the step immediately AFTER
+        /// the cue's step so the cue still animates from the authored
+        /// baseline at its own step; forward-propagation carries the pose
+        /// to every subsequent step until an authored stepPose or later
+        /// cue supersedes.
+        ///
+        /// Crucially, member baseline positions and the rotation pivot
+        /// (centroid) are resolved via <see cref="PoseResolver.Resolve"/>
+        /// at the cue's step — the exact same source the runtime player's
+        /// <c>ComputeChildrenCentroidLocal</c> sees — so synthesized poses
+        /// match what the player would produce at <c>easedT=1</c>
+        /// (<see cref="PoseTransitionPlayer.Tick"/> multi-child branch,
+        /// formula: <c>final = C + deltaRot * (baseline - C)</c>).
+        ///
+        /// Idempotent: strips prior synthesized entries (label prefix
+        /// <see cref="SynthesizedStepPoseLabelPrefix"/>) before writing.
+        /// Authored stepPoses whose propagation span covers the synthesized
+        /// anchor are preserved and cause synthesis to skip that member
+        /// with a warning.
+        /// </summary>
+        private static void BakeHoldAtEndEndPoses(MachinePackageDefinition package)
+        {
+            if (package?.previewConfig == null) return;
+
+            // Lookup for part placements (write target).
+            var placementByPart = new Dictionary<string, PartPreviewPlacement>(StringComparer.Ordinal);
+            if (package.previewConfig.partPlacements != null)
+                foreach (var pp in package.previewConfig.partPlacements)
+                    if (pp != null && !string.IsNullOrEmpty(pp.partId))
+                        placementByPart[pp.partId] = pp;
+
+            // Strip prior synthesized entries so the pass is idempotent.
+            foreach (var pp in placementByPart.Values)
+                pp.stepPoses = StripSynthesizedStepPoses(pp.stepPoses);
+
+            // Resolver index for effective-pose lookups. Cycle-free — only
+            // reads package, placements, and subassembly membership; does
+            // not touch poseTable.
+            var idx = new PoseResolverIndex(package);
+
+            // seqByStepId mirror for overlap-check against existing spans.
+            var seqByStepId = new Dictionary<string, int>(StringComparer.Ordinal);
+            if (package.steps != null)
+                foreach (var s in package.steps)
+                    if (s != null && !string.IsNullOrEmpty(s.id))
+                        seqByStepId[s.id] = s.sequenceIndex;
+
+            var orderedSteps = package.GetOrderedSteps();
+            if (orderedSteps == null || orderedSteps.Length == 0) return;
+
+            int synthesizedOnSubs  = 0;
+            int synthesizedOnParts = 0;
+
+            // ── Subassembly-hosted cues ──
+            var subs = package.GetSubassemblies();
+            if (subs != null)
+            {
+                for (int si = 0; si < subs.Length; si++)
+                {
+                    var sub = subs[si];
+                    if (sub?.animationCues == null || sub.animationCues.Length == 0) continue;
+                    if (sub.partIds == null || sub.partIds.Length == 0) continue;
+                    synthesizedOnSubs += SynthesizeGroupHoldAtEnd(
+                        package, sub, idx, orderedSteps, seqByStepId, placementByPart);
+                }
+            }
+
+            // ── Part-hosted cues ──
+            if (package.parts != null)
+            {
+                for (int pi = 0; pi < package.parts.Length; pi++)
+                {
+                    var part = package.parts[pi];
+                    if (part?.animationCues == null || part.animationCues.Length == 0) continue;
+                    if (!placementByPart.TryGetValue(part.id, out var placement) || placement == null) continue;
+                    synthesizedOnParts += SynthesizePartHoldAtEnd(
+                        package, part, placement, idx, orderedSteps, seqByStepId);
+                }
+            }
+
+            int total = synthesizedOnSubs + synthesizedOnParts;
+            if (total > 0)
+                Debug.Log($"[CueRuntime.BakeHoldAtEnd] synthesized {total} stepPose(s) in '{package.packageId}' ({synthesizedOnSubs} from group cues, {synthesizedOnParts} from part cues).");
+        }
+
+        private static int SynthesizeGroupHoldAtEnd(
+            MachinePackageDefinition package,
+            SubassemblyDefinition sub,
+            PoseResolverIndex idx,
+            StepDefinition[] orderedSteps,
+            Dictionary<string, int> seqByStepId,
+            Dictionary<string, PartPreviewPlacement> placementByPart)
+        {
+            int count = 0;
+
+            for (int ci = 0; ci < sub.animationCues.Length; ci++)
+            {
+                var cue = sub.animationCues[ci];
+                if (cue == null) continue;
+                if (!string.Equals(cue.type, "poseTransition", StringComparison.Ordinal)) continue;
+                if (!cue.holdAtEnd) continue;
+                if (cue.stepIds == null || cue.stepIds.Length == 0)
+                {
+                    Debug.LogWarning($"[CueRuntime.BakeHoldAtEnd] subassembly '{sub.id}' cue[{ci}]: holdAtEnd=true but empty stepIds — skipping.");
+                    continue;
+                }
+                if (cue.toPose == null || IsZeroQuaternion(cue.toPose.rotation))
+                {
+                    Debug.LogWarning($"[CueRuntime.BakeHoldAtEnd] subassembly '{sub.id}' cue[{ci}]: toPose.rotation is zero quaternion — skipping.");
+                    continue;
+                }
+
+                Quaternion toRot   = QuatFrom(cue.toPose.rotation);
+                Quaternion fromRot = cue.fromPose != null && !IsZeroQuaternion(cue.fromPose.rotation)
+                    ? QuatFrom(cue.fromPose.rotation)
+                    : Quaternion.identity;
+                Quaternion deltaRot = toRot * Quaternion.Inverse(fromRot);
+
+                for (int si = 0; si < cue.stepIds.Length; si++)
+                {
+                    string cueStepId = cue.stepIds[si];
+                    if (string.IsNullOrEmpty(cueStepId)) continue;
+                    if (!package.TryGetStep(cueStepId, out var cueStep) || cueStep == null) continue;
+
+                    StepDefinition nextStep = null;
+                    for (int k = 0; k < orderedSteps.Length; k++)
+                    {
+                        if (orderedSteps[k].sequenceIndex > cueStep.sequenceIndex)
+                        { nextStep = orderedSteps[k]; break; }
+                    }
+                    if (nextStep == null)
+                    {
+                        Debug.LogWarning($"[CueRuntime.BakeHoldAtEnd] subassembly '{sub.id}' cue[{ci}] anchors to final step '{cueStepId}' — no next step to persist into.");
+                        continue;
+                    }
+                    int anchorSeq = nextStep.sequenceIndex;
+
+                    // Eligible members: resolve each member's effective pose
+                    // at the cue's step via PoseResolver. Hidden / at-origin
+                    // members match the runtime centroid filter and are
+                    // excluded.
+                    var eligible = new List<(string id, Vector3 pos, Quaternion rot, Vector3 scl)>();
+                    for (int mi = 0; mi < sub.partIds.Length; mi++)
+                    {
+                        string memberId = sub.partIds[mi];
+                        if (string.IsNullOrEmpty(memberId)) continue;
+                        if (!placementByPart.ContainsKey(memberId)) continue;
+                        var res = PoseResolver.Resolve(
+                            memberId, cueStep.sequenceIndex, package, idx, PoseMode.Committed);
+                        if (res.source == PoseSource.Hidden) continue;
+                        if (res.pos.sqrMagnitude < 0.0001f) continue;
+                        eligible.Add((memberId, res.pos, res.rot, res.scl));
+                    }
+                    if (eligible.Count == 0)
+                    {
+                        Debug.LogWarning($"[CueRuntime.BakeHoldAtEnd] subassembly '{sub.id}' cue[{ci}] at '{cueStepId}': no eligible members visible at cue step — skipping.");
+                        continue;
+                    }
+
+                    Vector3 centroid = Vector3.zero;
+                    for (int k = 0; k < eligible.Count; k++) centroid += eligible[k].pos;
+                    centroid /= eligible.Count;
+
+                    // Fan out per member.
+                    for (int k = 0; k < eligible.Count; k++)
+                    {
+                        var m = eligible[k];
+                        var placement = placementByPart[m.id];
+
+                        if (AnyAuthoredSpanCovers(placement.stepPoses, anchorSeq, seqByStepId))
+                        {
+                            Debug.LogWarning($"[CueRuntime.BakeHoldAtEnd] member '{m.id}' has authored stepPose covering step '{nextStep.id}' (seq {anchorSeq}) — skipping synthesis for this member (authored wins).");
+                            continue;
+                        }
+
+                        Vector3    finalPos = centroid + deltaRot * (m.pos - centroid);
+                        Quaternion finalRot = deltaRot * m.rot;
+
+                        var synth = new StepPoseEntry
+                        {
+                            stepId = nextStep.id,
+                            label  = $"{SynthesizedStepPoseLabelPrefix} (sub={sub.id} cue={cue.type}[{ci}])",
+                            position = new SceneFloat3 { x = finalPos.x, y = finalPos.y, z = finalPos.z },
+                            rotation = new SceneQuaternion { x = finalRot.x, y = finalRot.y, z = finalRot.z, w = finalRot.w },
+                            scale    = m.scl.sqrMagnitude > 0.0001f
+                                         ? new SceneFloat3 { x = m.scl.x, y = m.scl.y, z = m.scl.z }
+                                         : new SceneFloat3 { x = 1f, y = 1f, z = 1f },
+                            propagateFromStep    = "",
+                            propagateThroughStep = "",
+                        };
+                        placement.stepPoses = AppendStepPose(placement.stepPoses, synth);
+                        count++;
+                    }
+                }
+            }
+            return count;
+        }
+
+        private static int SynthesizePartHoldAtEnd(
+            MachinePackageDefinition package,
+            PartDefinition part,
+            PartPreviewPlacement placement,
+            PoseResolverIndex idx,
+            StepDefinition[] orderedSteps,
+            Dictionary<string, int> seqByStepId)
+        {
+            int count = 0;
+
+            for (int ci = 0; ci < part.animationCues.Length; ci++)
+            {
+                var cue = part.animationCues[ci];
+                if (cue == null) continue;
+                if (!string.Equals(cue.type, "poseTransition", StringComparison.Ordinal)) continue;
+                if (!cue.holdAtEnd) continue;
+                if (cue.stepIds == null || cue.stepIds.Length == 0)
+                {
+                    Debug.LogWarning($"[CueRuntime.BakeHoldAtEnd] part '{part.id}' cue[{ci}]: holdAtEnd=true but empty stepIds — skipping.");
+                    continue;
+                }
+                if (cue.toPose == null || IsZeroQuaternion(cue.toPose.rotation))
+                {
+                    Debug.LogWarning($"[CueRuntime.BakeHoldAtEnd] part '{part.id}' cue[{ci}]: toPose.rotation is zero quaternion — skipping.");
+                    continue;
+                }
+
+                // Part-hosted cue → single target (the part itself). Runtime
+                // single-part branch lerps position/rotation directly to
+                // toPose, so the end state is literally toPose composed
+                // with the part's current pose for the from side.
+                // With default fromPose = current (PoseResolver at cueStep),
+                // end state = toPose literal for position/rotation/scale.
+                for (int si = 0; si < cue.stepIds.Length; si++)
+                {
+                    string cueStepId = cue.stepIds[si];
+                    if (string.IsNullOrEmpty(cueStepId)) continue;
+                    if (!package.TryGetStep(cueStepId, out var cueStep) || cueStep == null) continue;
+
+                    StepDefinition nextStep = null;
+                    for (int k = 0; k < orderedSteps.Length; k++)
+                    {
+                        if (orderedSteps[k].sequenceIndex > cueStep.sequenceIndex)
+                        { nextStep = orderedSteps[k]; break; }
+                    }
+                    if (nextStep == null)
+                    {
+                        Debug.LogWarning($"[CueRuntime.BakeHoldAtEnd] part '{part.id}' cue[{ci}] anchors to final step '{cueStepId}' — no next step to persist into.");
+                        continue;
+                    }
+                    int anchorSeq = nextStep.sequenceIndex;
+
+                    if (AnyAuthoredSpanCovers(placement.stepPoses, anchorSeq, seqByStepId))
+                    {
+                        Debug.LogWarning($"[CueRuntime.BakeHoldAtEnd] part '{part.id}' has authored stepPose covering step '{nextStep.id}' (seq {anchorSeq}) — skipping synthesis (authored wins).");
+                        continue;
+                    }
+
+                    var synth = new StepPoseEntry
+                    {
+                        stepId = nextStep.id,
+                        label  = $"{SynthesizedStepPoseLabelPrefix} (part={part.id} cue={cue.type}[{ci}])",
+                        position = cue.toPose.position,
+                        rotation = cue.toPose.rotation,
+                        scale    = IsZeroOrNearZeroScale(cue.toPose.scale)
+                                     ? new SceneFloat3 { x = 1f, y = 1f, z = 1f }
+                                     : cue.toPose.scale,
+                        propagateFromStep    = "",
+                        propagateThroughStep = "",
+                    };
+                    placement.stepPoses = AppendStepPose(placement.stepPoses, synth);
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        private static StepPoseEntry[] StripSynthesizedStepPoses(StepPoseEntry[] arr)
+        {
+            if (arr == null || arr.Length == 0) return arr;
+            int kept = 0;
+            for (int i = 0; i < arr.Length; i++)
+            {
+                if (arr[i] == null) continue;
+                if (arr[i].label != null && arr[i].label.StartsWith(SynthesizedStepPoseLabelPrefix, StringComparison.Ordinal)) continue;
+                kept++;
+            }
+            if (kept == arr.Length) return arr;
+            var next = new StepPoseEntry[kept];
+            int w = 0;
+            for (int i = 0; i < arr.Length; i++)
+            {
+                if (arr[i] == null) continue;
+                if (arr[i].label != null && arr[i].label.StartsWith(SynthesizedStepPoseLabelPrefix, StringComparison.Ordinal)) continue;
+                next[w++] = arr[i];
+            }
+            return next;
+        }
+
+        private static StepPoseEntry[] AppendStepPose(StepPoseEntry[] arr, StepPoseEntry entry)
+        {
+            if (arr == null || arr.Length == 0) return new[] { entry };
+            var next = new StepPoseEntry[arr.Length + 1];
+            Array.Copy(arr, next, arr.Length);
+            next[arr.Length] = entry;
+            return next;
+        }
+
+        /// <summary>
+        /// True when any non-synthesized <see cref="StepPoseEntry"/> on
+        /// <paramref name="arr"/> has a resolved propagation span that
+        /// covers <paramref name="targetSeq"/>. Mirrors
+        /// <see cref="PoseResolverIndex"/>'s span resolution (closed
+        /// interval [fromSeq..throughSeq]) so the check aligns 1:1 with
+        /// what PoseTableInvariants flags. Prior-pass synthesized entries
+        /// are stripped before this runs, so anything present is authored.
+        /// </summary>
+        private static bool AnyAuthoredSpanCovers(
+            StepPoseEntry[] arr, int targetSeq, Dictionary<string, int> seqByStepId)
+        {
+            if (arr == null) return false;
+            for (int i = 0; i < arr.Length; i++)
+            {
+                var e = arr[i];
+                if (e == null) continue;
+                if (e.label != null && e.label.StartsWith(SynthesizedStepPoseLabelPrefix, StringComparison.Ordinal))
+                    continue;
+                int anchorSeq  = seqByStepId.TryGetValue(e.stepId ?? "", out int a) ? a : int.MinValue;
+                int fromSeq    = string.IsNullOrEmpty(e.propagateFromStep)
+                    ? (anchorSeq >= 0 ? anchorSeq : int.MinValue)
+                    : (seqByStepId.TryGetValue(e.propagateFromStep, out int f) ? f : int.MinValue);
+                int throughSeq = string.IsNullOrEmpty(e.propagateThroughStep)
+                    ? int.MaxValue
+                    : (seqByStepId.TryGetValue(e.propagateThroughStep, out int t) ? t : int.MaxValue);
+                if (fromSeq <= targetSeq && throughSeq >= targetSeq) return true;
+            }
+            return false;
+        }
+
+        private static bool IsZeroQuaternion(SceneQuaternion q)
+            => q.x == 0f && q.y == 0f && q.z == 0f && q.w == 0f;
+
+        private static bool IsZeroOrNearZeroScale(SceneFloat3 s)
+            => (s.x * s.x + s.y * s.y + s.z * s.z) < 0.0001f;
+
+        private static Quaternion QuatFrom(SceneQuaternion q)
+            => new Quaternion(q.x, q.y, q.z, q.w);
 
         /// <summary>
         /// Derives each non-aggregate subassembly's <c>partIds</c> list from
