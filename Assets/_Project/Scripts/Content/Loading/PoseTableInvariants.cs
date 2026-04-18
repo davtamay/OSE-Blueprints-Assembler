@@ -84,12 +84,25 @@ namespace OSE.Content.Loading
                     if (sp.fromSeq > sp.throughSeq)
                     { Report($"{Tag} [monotonic-span] part '{pid}' stepPose@'{e.stepId}' has fromSeq={sp.fromSeq} > throughSeq={sp.throughSeq}."); violations++; criticalViolations++; }
 
+                    // Skip overlap detection when either side is a normalizer-
+                    // synthesized entry (e.g. BakeHoldAtEndEndPoses produces
+                    // "synthesized:holdAtEnd" records with open-ended forward
+                    // propagation). The resolver picks the closest anchor
+                    // correctly for those — their formal [anchor..MaxValue]
+                    // spans overlap by design, not by authoring error.
+                    bool eIsSynth = !string.IsNullOrEmpty(e.label)
+                        && (e.label.StartsWith("synthesized:", StringComparison.Ordinal));
+                    if (eIsSynth) continue;
                     for (int j = i + 1; j < list.Count; j++)
                     {
                         var other = list[j];
+                        var oe = other.entry;
+                        bool otherIsSynth = !string.IsNullOrEmpty(oe.label)
+                            && (oe.label.StartsWith("synthesized:", StringComparison.Ordinal));
+                        if (otherIsSynth) continue;
                         if (sp.fromSeq <= other.throughSeq && other.fromSeq <= sp.throughSeq)
                         {
-                            Report($"{Tag} [duplicate-span] part '{pid}' has overlapping author stepPoses: '{e.stepId}' [{sp.fromSeq}..{sp.throughSeq}] and '{other.entry.stepId}' [{other.fromSeq}..{other.throughSeq}].");
+                            Report($"{Tag} [duplicate-span] part '{pid}' has overlapping author stepPoses: '{e.stepId}' [{sp.fromSeq}..{sp.throughSeq}] and '{oe.stepId}' [{other.fromSeq}..{other.throughSeq}].");
                             violations++; criticalViolations++;
                         }
                     }
