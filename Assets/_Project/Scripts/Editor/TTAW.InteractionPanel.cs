@@ -338,38 +338,207 @@ namespace OSE.Editor
                 return;
             }
 
-            // ── End-pose dropdown (Phase F) ───────────────────────────────────
-            DrawEndPoseRow(step, taskAction, partId);
+            // ── G.2.5.a: inline end-transform (task-owned, per pose-chain invariant) ──
+            TaskOrderEntry taskEntry = FindTaskOrderEntryForAction(step, taskAction);
+            DrawEndTransformFields(step, taskAction, taskEntry, partId);
+        }
 
-            // ── Motion readout — plain English, always shows "(inherited)" on
-            // the left to reinforce that start is sequence-derived, not authored.
-            PartPreviewPlacement pp = FindPartPlacement(partId);
-            string toPose = taskAction.interaction?.toPose;
-            string toLabel = PosePickerDropdown.ResolveLabel(toPose, pp, step.id);
-            bool stale = PosePickerDropdown.IsStaleReference(toPose, pp, step.id);
-
-            if (stale)
+        /// <summary>
+        /// Inline end-transform authoring for a Tool task. Replaces the Phase F
+        /// pose-dropdown with position/rotation/scale fields that write directly to
+        /// <see cref="TaskOrderEntry.endTransform"/>. When null the task falls through
+        /// to the legacy Phase F <c>toPose</c> chain (→ assembled), so pre-G.2.5
+        /// content keeps working while new authoring uses inline transforms.
+        /// </summary>
+        private void DrawEndTransformFields(
+            StepDefinition step, ToolActionDefinition taskAction, TaskOrderEntry taskEntry, string partId)
+        {
+            if (taskEntry == null)
             {
                 EditorGUILayout.HelpBox(
-                    $"Stale pose reference: '{toPose}' no longer exists on this part. " +
-                    "Re-pick an End pose above.",
+                    "Tool task entry not found in step.taskOrder — cannot author an inline end-transform.",
                     MessageType.Warning);
+                return;
+            }
+
+            // Legacy Phase F banner + migration button when toPose is still set.
+            string legacyToPose = taskAction.interaction?.toPose;
+            if (!string.IsNullOrEmpty(legacyToPose) && taskEntry.endTransform == null)
+            {
+                EditorGUILayout.HelpBox(
+                    $"Legacy Phase F toPose token: '{legacyToPose}'. The runtime still resolves it, " +
+                    "but new authoring should use the inline End Transform below. Click \"Migrate to inline\" " +
+                    "to bake the current resolved pose into endTransform and clear the token.",
+                    MessageType.Info);
+                if (GUILayout.Button("Migrate legacy toPose → inline End Transform", GUILayout.Height(20)))
+                {
+                    MigrateLegacyToPoseToInline(step, taskAction, taskEntry, partId);
+                }
+            }
+
+            bool hasInline = taskEntry.endTransform != null;
+
+            // Header row — status + live-scene capture.
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField(
+                hasInline ? "🔩 End Transform (inline):" : "🔩 End Transform:",
+                EditorStyles.boldLabel);
+            GUILayout.FlexibleSpace();
+            if (hasInline && GUILayout.Button(
+                new GUIContent("Clear", "Clear the inline transform. Runtime falls back to assembledPosition."),
+                GUILayout.Width(56)))
+            {
+                taskEntry.endTransform = null;
+                _dirtyStepIds.Add(step.id);
+                Repaint();
+            }
+            if (GUILayout.Button(
+                new GUIContent(hasInline ? "From scene" : "Capture from scene",
+                    "Capture the part's live scene transform into this task's inline end-transform."),
+                GUILayout.Width(hasInline ? 90 : 140)))
+            {
+                CaptureLiveTransformIntoTaskEndTransform(step, taskEntry, partId);
+            }
+            if (!hasInline && GUILayout.Button(
+                new GUIContent("From assembled",
+                    "Initialize the inline transform from the part's assembledPosition."),
+                GUILayout.Width(110)))
+            {
+                CaptureAssembledIntoTaskEndTransform(step, taskEntry, partId);
+            }
+            EditorGUILayout.EndHorizontal();
+
+            if (!hasInline)
+            {
+                EditorGUILayout.HelpBox(
+                    "No inline end-transform set. On task completion the runtime snaps the part to its assembled pose " +
+                    "(unless a legacy toPose token resolves otherwise). Use the buttons above to author one.",
+                    MessageType.None);
             }
             else
             {
-                EditorGUILayout.LabelField(
-                    $"ℹ  Motion: (inherited from previous task)  →  {toLabel ?? "Assembled"}",
-                    EditorStyles.miniLabel);
+                DrawInlineTransformEditor(step, taskEntry.endTransform);
             }
 
+            // Motion readout — plain English, always shows "(inherited)" on the left.
+            string endLabel = hasInline ? "inline transform" : "Assembled";
+            EditorGUILayout.LabelField(
+                $"ℹ  Motion: (inherited from previous task)  →  {endLabel}",
+                EditorStyles.miniLabel);
+
             if (GUILayout.Button(
-                new GUIContent("Edit pose transforms in Part task →",
+                new GUIContent("Edit the Part's own Start / Assembled poses →",
                     "Jumps the task-sequence selection to the Part task for this part so you can " +
-                    "author pose transforms (start / assembled / custom stepPoses) in the existing part UI."),
+                    "author its intrinsic Start and Assembled poses."),
                 GUILayout.Height(20)))
             {
                 JumpSelectionToPart(partId);
             }
+        }
+
+        /// <summary>
+        /// Renders the inline position / rotation (euler) / scale fields that mutate
+        /// <paramref name="t"/> directly. Marks the step dirty on any change so the
+        /// existing <c>TTAW.WriteJson.cs</c> pipeline persists the new field.
+        /// </summary>
+        private void DrawInlineTransformEditor(StepDefinition step, TaskEndTransform t)
+        {
+            if (t == null) return;
+
+            EditorGUI.BeginChangeCheck();
+            Vector3 pos = new Vector3(t.position.x, t.position.y, t.position.z);
+            Vector3 newPos = EditorGUILayout.Vector3Field("Position", pos);
+            Quaternion rot = t.rotation.IsIdentity
+                ? Quaternion.identity
+                : new Quaternion(t.rotation.x, t.rotation.y, t.rotation.z, t.rotation.w);
+            Vector3 eul = rot.eulerAngles;
+            Vector3 newEul = EditorGUILayout.Vector3Field("Rotation (Euler)", eul);
+            Vector3 scl = new Vector3(t.scale.x, t.scale.y, t.scale.z);
+            Vector3 newScl = EditorGUILayout.Vector3Field("Scale", scl);
+            if (EditorGUI.EndChangeCheck())
+            {
+                t.position = new SceneFloat3 { x = newPos.x, y = newPos.y, z = newPos.z };
+                Quaternion newRot = Quaternion.Euler(newEul);
+                t.rotation = new SceneQuaternion { x = newRot.x, y = newRot.y, z = newRot.z, w = newRot.w };
+                t.scale = new SceneFloat3 { x = newScl.x, y = newScl.y, z = newScl.z };
+                _dirtyStepIds.Add(step.id);
+            }
+        }
+
+        /// <summary>Finds the <see cref="TaskOrderEntry"/> in <paramref name="step"/>.taskOrder
+        /// whose kind is "toolAction" and id matches <paramref name="taskAction"/>.id.</summary>
+        private static TaskOrderEntry FindTaskOrderEntryForAction(StepDefinition step, ToolActionDefinition taskAction)
+        {
+            if (step?.taskOrder == null || taskAction == null) return null;
+            foreach (var e in step.taskOrder)
+            {
+                if (e != null && e.kind == "toolAction" && e.id == taskAction.id)
+                    return e;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Snapshots the part's live scene transform into the task's end-transform.
+        /// The scene transform at authoring time represents "where the author posed
+        /// the part to end up," so this is the canonical way to author inline poses.
+        /// </summary>
+        private void CaptureLiveTransformIntoTaskEndTransform(StepDefinition step, TaskOrderEntry taskEntry, string partId)
+        {
+            var go = FindLivePartGO(partId);
+            if (go == null)
+            {
+                Debug.LogWarning($"[TTAW] Capture aborted: no live GameObject for part '{partId}'. " +
+                                 "Spawn the scene via the TTAW preview first.");
+                return;
+            }
+            var tf = go.transform;
+            taskEntry.endTransform ??= new TaskEndTransform();
+            taskEntry.endTransform.position = new SceneFloat3
+                { x = tf.localPosition.x, y = tf.localPosition.y, z = tf.localPosition.z };
+            taskEntry.endTransform.rotation = new SceneQuaternion
+                { x = tf.localRotation.x, y = tf.localRotation.y, z = tf.localRotation.z, w = tf.localRotation.w };
+            taskEntry.endTransform.scale = new SceneFloat3
+                { x = tf.localScale.x, y = tf.localScale.y, z = tf.localScale.z };
+            _dirtyStepIds.Add(step.id);
+            Repaint();
+            SceneView.RepaintAll();
+        }
+
+        private void CaptureAssembledIntoTaskEndTransform(StepDefinition step, TaskOrderEntry taskEntry, string partId)
+        {
+            var pp = FindPartPlacement(partId);
+            if (pp == null) { Debug.LogWarning($"[TTAW] No PartPreviewPlacement for '{partId}'."); return; }
+            taskEntry.endTransform ??= new TaskEndTransform();
+            taskEntry.endTransform.position = pp.assembledPosition;
+            taskEntry.endTransform.rotation = pp.assembledRotation;
+            taskEntry.endTransform.scale    = pp.assembledScale;
+            _dirtyStepIds.Add(step.id);
+            Repaint();
+        }
+
+        /// <summary>
+        /// One-click migration from Phase F's <c>toPose</c> token to an inline
+        /// <see cref="TaskEndTransform"/>. Uses the runtime-equivalent resolver to
+        /// compute the pose the token WOULD snap to, bakes it inline, and clears the
+        /// token so subsequent loads skip the legacy fallback branch entirely.
+        /// </summary>
+        private void MigrateLegacyToPoseToInline(
+            StepDefinition step, ToolActionDefinition taskAction, TaskOrderEntry taskEntry, string partId)
+        {
+            if (!TryResolvePreviewEndPose(partId, step.id, taskAction.interaction?.toPose,
+                                          out Vector3 p, out Quaternion r, out Vector3 s))
+                return;
+            taskEntry.endTransform = new TaskEndTransform
+            {
+                position = new SceneFloat3 { x = p.x, y = p.y, z = p.z },
+                rotation = new SceneQuaternion { x = r.x, y = r.y, z = r.z, w = r.w },
+                scale    = new SceneFloat3 { x = s.x, y = s.y, z = s.z },
+            };
+            if (taskAction.interaction != null)
+                taskAction.interaction.toPose = null;
+            _dirtyStepIds.Add(step.id);
+            Repaint();
         }
 
         /// <summary>
