@@ -20,6 +20,14 @@ namespace OSE.Runtime
         private PartPlacementState _selectedPartPreviousState;
         private string _activeStepId;
 
+        // Phase I.c.2 — attached to the StepController's current TaskCursor when
+        // a step is active with a non-empty taskOrder. Part introduction is
+        // span-gated via OnTaskSpanOpened; TransitionPart notifies the cursor
+        // on PlacedVirtually so the cursor advances past completed Part tasks.
+        // Null when no cursor is active OR when the step has no taskOrder (in
+        // which case legacy all-at-once introduction still runs).
+        private TaskCursor _attachedCursor;
+
         public string SelectedPartId => _selectedPartId;
         public string ActiveStepId => _activeStepId;
 
@@ -58,6 +66,7 @@ namespace OSE.Runtime
         public void Dispose()
         {
             RuntimeEventBus.Unsubscribe<StepStateChanged>(HandleStepStateChanged);
+            DetachFromStepCursor();
             _partStates.Clear();
             _selectedPartId = null;
             _activeStepId = null;
@@ -387,11 +396,104 @@ namespace OSE.Runtime
             {
                 _activeStepId = evt.StepId;
                 ResetAllTransientStates();
+
+                // Phase I.c.2 — attach BEFORE IntroduceStepParts so OnTaskSpanOpened
+                // catches the cursor's initial Start() event fired by StepController
+                // at the end of ActivateStep. If the step has no taskOrder, the
+                // cursor has zero spans and TaskSpanOpened never fires; the legacy
+                // IntroduceStepParts fallback handles introduction in that case.
+                AttachToStepCursor();
                 IntroduceStepParts(evt.StepId);
             }
             else if (evt.Current == StepState.Completed)
             {
                 CompleteStepParts(evt.StepId);
+                DetachFromStepCursor();
+            }
+            else if (evt.Current == StepState.Suspended)
+            {
+                // No detach — Suspended state keeps the cursor so Resume can reuse it.
+            }
+        }
+
+        // ── Phase I.c.2 — TaskCursor integration ────────────────────────────
+
+        private void AttachToStepCursor()
+        {
+            DetachFromStepCursor();
+
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session)) return;
+            var stepController = session?.AssemblyController?.StepController;
+            var cursor = stepController?.CurrentTaskCursor;
+            if (cursor == null || cursor.TotalSpans == 0) return;
+
+            _attachedCursor = cursor;
+            _attachedCursor.TaskSpanOpened += OnTaskSpanOpened;
+        }
+
+        private void DetachFromStepCursor()
+        {
+            if (_attachedCursor == null) return;
+            _attachedCursor.TaskSpanOpened -= OnTaskSpanOpened;
+            _attachedCursor = null;
+        }
+
+        private void OnTaskSpanOpened(TaskSpanOpenedInfo info)
+        {
+            if (info.Entries == null || _attachedCursor == null) return;
+
+            // Phase I.c.3 — auto-skip parts that are already Completed or
+            // PlacedVirtually from prior steps. Without this, spurious Part
+            // entries in taskOrder (e.g. step 58's 10 "requires the bolts
+            // placed in step 57" entries) would deadlock the cursor: the
+            // entry stays open forever because the trainee isn't going to
+            // re-place an already-done part.
+            //
+            // Completions are notified AFTER the loop to prevent
+            // NotifyTaskCompleted from advancing the cursor mid-iteration
+            // (which would fire a new TaskSpanOpened and recursively invoke
+            // this handler on a stale `info`).
+            List<string> toNotifyCompleted = null;
+
+            for (int i = 0; i < info.Entries.Count; i++)
+            {
+                var entry = info.Entries[i];
+                if (entry == null || string.IsNullOrEmpty(entry.id)) continue;
+                if (!string.Equals(entry.kind, "part", StringComparison.Ordinal)) continue;
+
+                var current = GetPartState(entry.id);
+                switch (current)
+                {
+                    case PartPlacementState.NotIntroduced:
+                        TransitionPart(entry.id, PartPlacementState.Available);
+                        OseLog.VerboseInfo($"[PartRuntime] Span-open: part '{entry.id}' introduced (NotIntroduced → Available) for span '{info.Label ?? "<singleton>"}'.");
+                        break;
+
+                    case PartPlacementState.Completed:
+                    case PartPlacementState.PlacedVirtually:
+                        // Already done in a prior step / earlier navigation — auto-close
+                        // this task so the cursor advances past it.
+                        (toNotifyCompleted ??= new List<string>()).Add(entry.id);
+                        OseLog.VerboseInfo($"[PartRuntime] Span-open: part '{entry.id}' auto-skipped (already {current}) for span '{info.Label ?? "<singleton>"}'.");
+                        break;
+
+                    // Available / Selected / Grabbed / Inspected / Valid/InvalidPlacement
+                    // — currently-interacting states. Leave them alone; the cursor will
+                    // advance naturally when the trainee finishes placement.
+                }
+            }
+
+            if (toNotifyCompleted != null)
+            {
+                for (int i = 0; i < toNotifyCompleted.Count; i++)
+                {
+                    // NB: NotifyTaskCompleted may advance the cursor, which fires
+                    // another TaskSpanOpened. That new event is handled by the
+                    // re-entry to this method on the next span — safe because
+                    // _attachedCursor is the same reference and this loop's
+                    // work is complete before re-entry.
+                    _attachedCursor?.NotifyTaskCompleted("part", toNotifyCompleted[i]);
+                }
             }
         }
 
@@ -416,6 +518,19 @@ namespace OSE.Runtime
         private void IntroduceStepParts(string stepId)
         {
             if (_package == null || !_package.TryGetStep(stepId, out var step))
+                return;
+
+            // Phase I.c.2 — when a cursor is attached (step has taskOrder), the
+            // cursor drives per-span introduction via OnTaskSpanOpened. The
+            // cursor's initial TaskSpanOpened fires from StepController.Start()
+            // right after this method returns, so introducing here would
+            // duplicate work for tasks in the first span (and leak introductions
+            // for later spans that shouldn't be open yet). Return early.
+            //
+            // The legacy all-at-once introduction below runs only for steps
+            // lacking a taskOrder — packages that haven't migrated to the
+            // Phase I sequencing model keep working identically to pre-I.c.
+            if (_attachedCursor != null && _attachedCursor.TotalSpans > 0)
                 return;
 
             string[] partIds = step.GetEffectiveRequiredPartIds();
@@ -495,6 +610,19 @@ namespace OSE.Runtime
             _partStates[partId] = newState;
 
             RuntimeEventBus.Publish(new PartStateChanged(partId, _activeStepId ?? string.Empty, previous, newState));
+
+            // Phase I.c.2 — advance the cursor when a part lands in PlacedVirtually
+            // (the successful-placement signal). The cursor ignores completions
+            // for tasks not in the currently-open span, so this is safe to call
+            // on every placement — stale/out-of-span notifications are no-ops.
+            // Also guards against re-firing on PlacedVirtually→Completed
+            // transitions at step-end: `previous == PlacedVirtually` means the
+            // cursor was already notified when the part first landed.
+            if (newState == PartPlacementState.PlacedVirtually &&
+                previous != PartPlacementState.PlacedVirtually)
+            {
+                _attachedCursor?.NotifyTaskCompleted("part", partId);
+            }
         }
 
     }
