@@ -1017,7 +1017,7 @@
         {
           "id": "action_target_c1_bolt_tighten_a",
           "toolId": "tool_power_drill",
-          "actionType": "drill",
+          "actionType": "tighten",
           "targetId": "target_c1_bolt_tighten_a",
           "requiredCount": 1,
           "successMessage": "M6x18 bolt A tightened.",
@@ -1031,7 +1031,7 @@
         {
           "id": "action_target_c1_bolt_tighten_b",
           "toolId": "tool_power_drill",
-          "actionType": "drill",
+          "actionType": "tighten",
           "targetId": "target_c1_bolt_tighten_b",
           "requiredCount": 1,
           "successMessage": "M6 bolt B tightened.",
@@ -1045,7 +1045,7 @@
         {
           "id": "action_target_c1_bolt_tighten_c",
           "toolId": "tool_power_drill",
-          "actionType": "drill",
+          "actionType": "tighten",
           "targetId": "target_c1_bolt_tighten_c",
           "requiredCount": 1,
           "successMessage": "M6 bolt C tightened.",
@@ -1059,7 +1059,7 @@
         {
           "id": "action_target_c1_bolt_tighten_d",
           "toolId": "tool_power_drill",
-          "actionType": "drill",
+          "actionType": "tighten",
           "targetId": "target_c1_bolt_tighten_d",
           "requiredCount": 1,
           "successMessage": "M6 bolt D tightened.",

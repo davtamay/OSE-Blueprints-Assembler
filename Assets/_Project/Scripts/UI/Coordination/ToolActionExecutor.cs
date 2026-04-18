@@ -1,6 +1,7 @@
 using System;
 using OSE.App;
 using OSE.Content;
+using OSE.Content.Loading;
 using OSE.Core;
 using OSE.Interaction;
 using OSE.Runtime;
@@ -223,7 +224,7 @@ namespace OSE.UI.Root
 
             if (!TryExecuteToolPrimaryAction(interactedTargetId, out bool shouldCompleteStep, out bool handled))
             {
-                OseLog.Info($"[PartInteraction] TryExecuteExternalToolAction: action rejected for '{interactedTargetId}'.");
+                OseLog.Info($"[PartInteraction] TryExecuteExternalToolAction: action rejected for '{interactedTargetId}'. handled={handled}, shouldCompleteStep={shouldCompleteStep}, useHandlerPresent={_ctx.UseHandler != null}.");
                 return false;
             }
 
@@ -447,7 +448,8 @@ namespace OSE.UI.Root
                     : Quaternion.identity;
                 endScale = new Vector3(inline.scale.x, inline.scale.y, inline.scale.z);
             }
-            else if (!ResolveEndPose(payload?.toPose, partId, currentStepId, spawner,
+            else if (!ResolveEndPose(payload?.toPose, partId, currentStepId,
+                                     stepCtrl.CurrentStepDefinition.sequenceIndex, spawner,
                                      out endPos, out endRot, out endScale))
             {
                 return null;
@@ -549,32 +551,39 @@ namespace OSE.UI.Root
 
         /// <summary>
         /// Phase F end-pose resolver. Honors the authored <c>toPose</c> token from
-        /// <see cref="ToolPartInteraction"/> and falls back to the legacy implicit
-        /// resolution (<c>stepPoses[currentStepId]</c> → <c>assembledPosition</c>)
-        /// when the token is <c>"auto"</c> / null / empty.
+        /// <see cref="ToolPartInteraction"/> and falls back to the single-source-of-truth
+        /// pose resolver (<see cref="PoseTable"/>) when the token is <c>"auto"</c> / null / empty.
         ///
         /// <para>Token grammar (see <see cref="ToPoseTokens"/>):</para>
         /// <list type="bullet">
-        ///   <item><c>"auto"</c> / null → implicit chain (unchanged pre-F behavior).</item>
+        ///   <item><c>"auto"</c> / null → <see cref="PoseTable.TryGet"/> at the current seq.</item>
         ///   <item><c>"start"</c> → <see cref="PartPreviewPlacement.startPosition"/>.</item>
         ///   <item><c>"assembled"</c> → <see cref="PartPreviewPlacement.assembledPosition"/>.</item>
-        ///   <item><c>"step:&lt;stepId&gt;"</c> → named <see cref="StepPoseEntry"/>.</item>
+        ///   <item><c>"step:&lt;stepId&gt;"</c> → authored span lookup via poseTable (self-step only).</item>
         /// </list>
         ///
+        /// <para>Phase H.4: the two legacy <c>FindPartStepPose</c> lookups are replaced
+        /// with <see cref="PoseTable.TryGet"/> so tool-part effects see every pose
+        /// source (ExplicitSpan, IntegratedMember, Assembled, NoTask) the rest of the
+        /// runtime sees. Previously this method walked raw <c>stepPoses[]</c> and was
+        /// the single consumer that bypassed the canonical resolver — see the H.1
+        /// diagnostic report.</para>
+        ///
         /// <para>Returns <c>false</c> only when neither the authored token nor the
-        /// fallback chain can produce a pose (e.g. the part has no placement data at
-        /// all). Stale <c>"step:&lt;id&gt;"</c> references silently degrade to the
-        /// implicit chain — authoring-time validation surfaces the stale reference in
-        /// the TTAW panel before it reaches runtime.</para>
+        /// fallback chain can produce a pose (e.g. the part is Hidden at the current
+        /// seq and no placement data exists). Stale <c>"step:&lt;id&gt;"</c> references
+        /// silently degrade to the implicit chain — authoring-time validation surfaces
+        /// the stale reference in the TTAW panel before it reaches runtime.</para>
         /// </summary>
         private static bool ResolveEndPose(
-            string toPoseToken, string partId, string currentStepId,
+            string toPoseToken, string partId, string currentStepId, int currentStepSeq,
             PackagePartSpawner spawner,
             out Vector3 pos, out Quaternion rot, out Vector3 scale)
         {
             pos = Vector3.zero; rot = Quaternion.identity; scale = Vector3.one;
 
             PartPreviewPlacement pp = spawner.FindPartPlacement(partId);
+            PoseTable poseTable = spawner.CurrentPackage?.poseTable;
 
             // Explicit token dispatch.
             if (!ToPoseTokens.IsAuto(toPoseToken))
@@ -604,26 +613,26 @@ namespace OSE.UI.Root
                                          $"toPose='{toPoseToken}' referenced from step '{currentStepId}' on part '{partId}'. " +
                                          $"Only 'step:{currentStepId}' (self-step) is valid. Falling back to auto resolution.");
                     }
-                    else
+                    else if (poseTable != null
+                             && poseTable.TryGet(partId, currentStepSeq, out PoseResolution authored)
+                             && authored.source == PoseSource.ExplicitSpan)
                     {
-                        StepPoseEntry sp = spawner.FindPartStepPose(partId, stepId);
-                        if (sp != null)
-                        {
-                            AssignFromFloats(sp.position, sp.rotation, sp.scale, out pos, out rot, out scale);
-                            return true;
-                        }
+                        pos = authored.pos; rot = authored.rot; scale = authored.scl;
+                        return true;
                     }
-                    // self-ref with no stepPose entry OR cross-ref — fall through to implicit chain
+                    // self-ref with no authored span OR cross-ref — fall through to implicit chain
                 }
             }
 
-            // Implicit chain (pre-Phase-F behavior, unchanged).
-            StepPoseEntry stepPose = spawner.FindPartStepPose(partId, currentStepId);
-            if (stepPose != null)
+            // Implicit chain — PoseTable is the single source of truth. Returns
+            // ExplicitSpan > IntegratedMember > Assembled > NoTask in one lookup.
+            if (poseTable != null && poseTable.TryGet(partId, currentStepSeq, out PoseResolution r))
             {
-                AssignFromFloats(stepPose.position, stepPose.rotation, stepPose.scale, out pos, out rot, out scale);
+                pos = r.pos; rot = r.rot; scale = r.scl;
                 return true;
             }
+            // Fallback: assembled. Unreachable if poseTable baked correctly and the
+            // part is visible at this seq — kept as a defensive guard.
             if (pp != null)
             {
                 AssignFromFloats(pp.assembledPosition, pp.assembledRotation, pp.assembledScale, out pos, out rot, out scale);

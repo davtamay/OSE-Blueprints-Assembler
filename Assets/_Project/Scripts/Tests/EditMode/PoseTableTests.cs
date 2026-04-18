@@ -413,5 +413,149 @@ namespace OSE.Tests.EditMode
             Assert.AreNotEqual(PoseSource.ExplicitSpan, pkg.poseTable.GetOrHidden("p", 3).source,
                 "span bounds must be respected — if they leaked, seq 3 would still be ExplicitSpan");
         }
+
+        // ──────────────────────────────────────────────────────────────────
+        // holdAtEnd synthesis — authored spans win, synth skips, no
+        // invariant violation. Guards the class of bugs the three G.2.5.b
+        // attempts all hit.
+        // ──────────────────────────────────────────────────────────────────
+
+        [Test]
+        public void Resolve_HoldAtEnd_AuthoredSpanCoveringAnchor_Wins()
+        {
+            // Sub with one member part. A poseTransition cue with holdAtEnd=true
+            // at step 1 would synthesize a stepPose on member at step 2 (the
+            // next step). An authored stepPose on the member covering step 2
+            // must win — the synth is skipped with a warning, no invariant
+            // throw.
+            var cue = new AnimationCueEntry {
+                type      = "poseTransition",
+                stepIds   = new[] { "s1" },
+                holdAtEnd = true,
+                fromPose  = new AnimationPose { rotation = Q(0, 0, 0, 1) },
+                toPose    = new AnimationPose {
+                    position = V(0,0,0),
+                    rotation = Q(0, 0.7071f, 0, 0.7071f),   // 90° about Y
+                    scale    = V(1,1,1),
+                },
+            };
+            var pkg = new MachinePackageDefinition {
+                machine = new MachineDefinition { id = "m" },
+                steps = new[] {
+                    Step(1, "s1", required: new[] { "half_a" }),
+                    Step(2, "s2"),
+                    Step(3, "s3"),
+                },
+                parts = new[] { new PartDefinition { id = "half_a" } },
+                subassemblies = new[] {
+                    new SubassemblyDefinition {
+                        id            = "carriage",
+                        partIds       = new[] { "half_a" },
+                        animationCues = new[] { cue },
+                    }
+                },
+                previewConfig = new PackagePreviewConfig {
+                    partPlacements = new[] {
+                        new PartPreviewPlacement {
+                            partId            = "half_a",
+                            startPosition     = V(0,0,0),        startRotation     = Q(0,0,0,1), startScale     = V(1,1,1),
+                            assembledPosition = V(1,0,0),        assembledRotation = Q(0,0,0,1), assembledScale = V(1,1,1),
+                            stepPoses = new[] {
+                                new StepPoseEntry {
+                                    stepId = "s2", label = "authored_after_cue",
+                                    position = V(42, 0, 0), rotation = Q(0, 0, 0, 1), scale = V(1,1,1),
+                                    propagateFromStep = "s2", propagateThroughStep = "s2",
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            // Must not throw invariant violation (synth-vs-authored overlap
+            // is the false-positive class fixed in commit 212f381).
+            Assert.DoesNotThrow(() => MachinePackageNormalizer.Normalize(pkg),
+                "holdAtEnd + authored span covering same anchor must not throw");
+
+            Assert.IsTrue(pkg.poseTable.TryGet("half_a", 2, out var r2));
+            Assert.AreEqual(PoseSource.ExplicitSpan, r2.source,
+                "authored span at s2 wins over synthesized holdAtEnd");
+            Assert.AreEqual(new Vector3(42, 0, 0), r2.pos,
+                "authored pose wins — synth must be skipped, not merged");
+        }
+
+        // ──────────────────────────────────────────────────────────────────
+        // Tool-part effect self-step lookup (H.4 guard).
+        // ToolActionExecutor.ResolveEndPose currently calls
+        // spawner.FindPartStepPose(partId, currentStepId). H.4 replaces
+        // both call sites with poseTable.TryGet(partId, currentStepSeq).
+        // This test fixes the contract: at the tool's own step, the
+        // resolver must return the same pose either way —
+        //   • explicit stepPose covering the self-step → ExplicitSpan pose
+        //   • no stepPose at the self-step → Assembled pose
+        // ──────────────────────────────────────────────────────────────────
+
+        [Test]
+        public void Resolve_ToolActionSelfStep_ExplicitSpan_WinsOverAssembled()
+        {
+            // Bolt is assembled at seq 1 (Committed → Assembled).
+            // An explicit stepPose on seq 1 covering itself overrides.
+            // H.4: poseTable.TryGet("bolt", 1) must return the authored
+            //   (99,0,0), not the assembled (20,0,0).
+            var pkg = new MachinePackageDefinition {
+                machine = new MachineDefinition { id = "m" },
+                steps = new[] { Step(1, "s1", required: new[] { "bolt" }) },
+                parts = new[] { new PartDefinition { id = "bolt" } },
+                subassemblies = System.Array.Empty<SubassemblyDefinition>(),
+                previewConfig = new PackagePreviewConfig {
+                    partPlacements = new[] {
+                        new PartPreviewPlacement {
+                            partId            = "bolt",
+                            startPosition     = V(10,0,0), startRotation = Q(0,0,0,1), startScale = V(1,1,1),
+                            assembledPosition = V(20,0,0), assembledRotation = Q(0,0,0,1), assembledScale = V(1,1,1),
+                            stepPoses = new[] {
+                                new StepPoseEntry {
+                                    stepId = "s1", label = "intermediate",
+                                    position = V(99, 0, 0), rotation = Q(0,0,0,1), scale = V(1,1,1),
+                                    propagateFromStep = "s1", propagateThroughStep = "s1",
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+            MachinePackageNormalizer.Normalize(pkg);
+
+            Assert.IsTrue(pkg.poseTable.TryGet("bolt", 1, out var r1));
+            Assert.AreEqual(PoseSource.ExplicitSpan, r1.source,
+                "self-step explicit span must win over Committed→Assembled " +
+                "(H.4 contract: poseTable.TryGet at the tool's step preserves " +
+                "the legacy FindPartStepPose(partId, currentStepId) result).");
+            Assert.AreEqual(new Vector3(99, 0, 0), r1.pos);
+        }
+
+        [Test]
+        public void Resolve_ToolActionSelfStep_NoStepPose_ReturnsAssembled()
+        {
+            // Bolt is assembled at seq 1 with no authored stepPose.
+            // H.4: poseTable.TryGet("bolt", 1) must return Assembled — this
+            // is the fallback branch of the legacy implicit chain
+            // (FindPartStepPose returns null → assembledPosition).
+            var pkg = new MachinePackageDefinition {
+                machine = new MachineDefinition { id = "m" },
+                steps = new[] { Step(1, "s1", required: new[] { "bolt" }) },
+                parts = new[] { new PartDefinition { id = "bolt" } },
+                subassemblies = System.Array.Empty<SubassemblyDefinition>(),
+                previewConfig = new PackagePreviewConfig {
+                    partPlacements = new[] { PP("bolt", V(10, 0, 0), V(20, 0, 0)) }
+                }
+            };
+            MachinePackageNormalizer.Normalize(pkg);
+
+            Assert.IsTrue(pkg.poseTable.TryGet("bolt", 1, out var r1));
+            Assert.AreEqual(PoseSource.Assembled, r1.source,
+                "no stepPose on self-step → Assembled (legacy fallback contract).");
+            Assert.AreEqual(new Vector3(20, 0, 0), r1.pos);
+        }
     }
 }

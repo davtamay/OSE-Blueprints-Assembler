@@ -220,7 +220,7 @@ namespace OSE.UI.Root
 
             if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session) || session.ToolController == null)
             {
-                OseLog.VerboseInfo("[UseStepHandler] TryExecuteToolPrimaryAction: no session or tool controller.");
+                OseLog.Info($"[UseStepHandler] TryExecuteToolPrimaryAction: no session or tool controller. sessionPresent={session != null}, toolControllerPresent={session?.ToolController != null}.");
                 return false;
             }
 
@@ -233,8 +233,7 @@ namespace OSE.UI.Root
             bool actionRan = handled && toolResult.FailureReason == ToolActionFailureReason.None;
             if (!actionRan)
             {
-                if (toolResult.FailureReason != ToolActionFailureReason.None)
-                    OseLog.Info($"[UseStepHandler] Tool action rejected ({toolResult.FailureReason}): {toolResult.Message}.");
+                OseLog.Info($"[UseStepHandler] Tool action NOT run: handled={handled}, FailureReason={toolResult.FailureReason}, Message='{toolResult.Message}', CurrentCount={toolResult.CurrentCount}/{toolResult.RequiredCount}.");
                 return false;
             }
 

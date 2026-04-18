@@ -1,6 +1,9 @@
 # Grab Pose Editor backups
 .pose_backups/
 
+# Content migration script backups (tools/migrate_*.py, etc.)
+.migration_backups/
+
 # Unity generated folders
 [Ll]ibrary/
 [Tt]emp/
