@@ -196,6 +196,7 @@
         "step_batch_c1_rod_slide_test",
         "step_batch_c1_close_halves",
         "step_batch_c1_place_bolts",
+        "step_batch_c1_hand_tighten",
         "step_batch_c1_tighten",
         "step_batch_c2_place_bearings",
         "step_batch_c2_shake_test",
@@ -268,6 +269,7 @@
         "step_batch_c1_rod_slide_test",
         "step_batch_c1_close_halves",
         "step_batch_c1_place_bolts",
+        "step_batch_c1_hand_tighten",
         "step_batch_c1_tighten",
         "step_batch_c2_place_bearings",
         "step_batch_c2_shake_test",
@@ -296,17 +298,325 @@
     {
       "id": "subassembly_carriage_y_left",
       "name": "Carriage 1 (Y-Left)",
-      "stepIds": [ "step_batch_carriage_layout", "step_batch_carriage_clean_holes", "step_batch_carriage_qc_plastic", "step_batch_c1_place_bearings", "step_batch_c1_shake_test", "step_batch_c1_rod_slide_test", "step_batch_c1_close_halves", "step_batch_c1_place_bolts", "step_batch_c1_tighten" ],
+      "stepIds": [
+        "step_batch_carriage_layout",
+        "step_batch_carriage_clean_holes",
+        "step_batch_carriage_qc_plastic",
+        "step_batch_c1_place_bearings",
+        "step_batch_c1_shake_test",
+        "step_batch_c1_rod_slide_test",
+        "step_batch_c1_close_halves",
+        "step_batch_c1_place_bolts",
+        "step_batch_c1_hand_tighten",
+        "step_batch_c1_tighten"
+      ],
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "animationCues": [{"type":"shake","targetPartIds":[],"targetToolIds":[],"targetSubassemblyId":"subassembly_carriage_y_left","stepIds":["step_batch_c1_shake_test"],"always":false,"particlePrefabRef":"","trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.01,"shakeFrequency":8.0,"shakeAxis":{"x":1.0,"y":0.0,"z":0.0},"animationClipName":"","panelOrder":2,"sequenceAfterPrevious":true,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":false},{"type":"poseTransition","targetPartIds":[],"targetToolIds":[],"targetSubassemblyId":"","stepIds":["step_batch_c1_shake_test"],"always":false,"particlePrefabRef":"","trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.7071,"w":0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeAmplitude":0.0,"shakeFrequency":0.0,"shakeAxis":{"x":0.0,"y":0.0,"z":0.0},"animationClipName":"","panelOrder":0,"sequenceAfterPrevious":true,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":true}]
-  },
+      "animationCues": [
+        {
+          "type": "shake",
+          "targetPartIds": [],
+          "targetToolIds": [],
+          "targetSubassemblyId": "subassembly_carriage_y_left",
+          "stepIds": [
+            "step_batch_c1_shake_test"
+          ],
+          "always": false,
+          "particlePrefabRef": "",
+          "trigger": "onActivate",
+          "delaySeconds": 0.0,
+          "durationSeconds": 0.0,
+          "loop": false,
+          "easing": "smoothStep",
+          "target": "part",
+          "fromPose": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          },
+          "toPose": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          },
+          "subassemblyRotation": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "pulseColorA": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseColorB": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseSpeed": 0.0,
+          "spinRevolutions": 0.0,
+          "spinAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "shakeAmplitude": 0.01,
+          "shakeFrequency": 8.0,
+          "shakeAxis": {
+            "x": 1.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "animationClipName": "",
+          "panelOrder": 2,
+          "sequenceAfterPrevious": true,
+          "animationClipAssetPath": "",
+          "pivotOffsetOverride": false,
+          "pivotOffset": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "holdAtEnd": false
+        },
+        {
+          "type": "poseTransition",
+          "targetPartIds": [],
+          "targetToolIds": [],
+          "targetSubassemblyId": "",
+          "stepIds": [
+            "step_batch_c1_shake_test"
+          ],
+          "always": false,
+          "particlePrefabRef": "",
+          "trigger": "onActivate",
+          "delaySeconds": 0.0,
+          "durationSeconds": 0.0,
+          "loop": false,
+          "easing": "smoothStep",
+          "target": "part",
+          "fromPose": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 1.0
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          },
+          "toPose": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.7071,
+              "w": 0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          },
+          "subassemblyRotation": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "pulseColorA": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseColorB": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseSpeed": 0.0,
+          "spinRevolutions": 0.0,
+          "spinAxis": {
+            "x": 0.0,
+            "y": 1.0,
+            "z": 0.0
+          },
+          "shakeAmplitude": 0.0,
+          "shakeFrequency": 0.0,
+          "shakeAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "animationClipName": "",
+          "panelOrder": 0,
+          "sequenceAfterPrevious": true,
+          "animationClipAssetPath": "",
+          "pivotOffsetOverride": false,
+          "pivotOffset": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "holdAtEnd": true
+        }
+      ]
+    },
     {
       "id": "subassembly_carriage_y_right",
       "name": "Carriage 2 (Y-Right)",
-      "stepIds": [ "step_batch_carriage_layout", "step_batch_carriage_clean_holes", "step_batch_carriage_qc_plastic", "step_batch_c2_place_bearings", "step_batch_c2_shake_test", "step_batch_c2_rod_slide_test", "step_batch_c2_close_halves", "step_batch_c2_place_bolts", "step_batch_c2_tighten" ],
+      "stepIds": [
+        "step_batch_carriage_layout",
+        "step_batch_carriage_clean_holes",
+        "step_batch_carriage_qc_plastic",
+        "step_batch_c2_place_bearings",
+        "step_batch_c2_shake_test",
+        "step_batch_c2_rod_slide_test",
+        "step_batch_c2_close_halves",
+        "step_batch_c2_place_bolts",
+        "step_batch_c2_tighten"
+      ],
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "animationCues": [{"type":"shake","targetPartIds":[],"targetToolIds":[],"targetSubassemblyId":"","stepIds":["step_batch_c2_shake_test"],"always":false,"particlePrefabRef":"","trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":true,"easing":"","target":"","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.006,"shakeFrequency":8.0,"shakeAxis":{"x":1.0,"y":0.0,"z":0.0},"animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":false}]
-  },
+      "animationCues": [
+        {
+          "type": "shake",
+          "targetPartIds": [],
+          "targetToolIds": [],
+          "targetSubassemblyId": "",
+          "stepIds": [
+            "step_batch_c2_shake_test"
+          ],
+          "always": false,
+          "particlePrefabRef": "",
+          "trigger": "onActivate",
+          "delaySeconds": 0.0,
+          "durationSeconds": 0.0,
+          "loop": true,
+          "easing": "",
+          "target": "",
+          "fromPose": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          },
+          "toPose": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          },
+          "subassemblyRotation": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "pulseColorA": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseColorB": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseSpeed": 0.0,
+          "spinRevolutions": 0.0,
+          "spinAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "shakeAmplitude": 0.006,
+          "shakeFrequency": 8.0,
+          "shakeAxis": {
+            "x": 1.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "animationClipName": "",
+          "panelOrder": 0,
+          "sequenceAfterPrevious": false,
+          "animationClipAssetPath": "",
+          "pivotOffsetOverride": false,
+          "pivotOffset": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "holdAtEnd": false
+        }
+      ]
+    },
     {
       "id": "subassembly_carriage_z_back",
       "name": "Carriage 3 (Z-Back)",
@@ -530,13 +840,59 @@
         {
           "kind": "part",
           "id": "y_left_carriage_half_a",
-          "stagingPose": {"position":{"x":0.3728,"y":0.55,"z":-1.3411e-7},"rotation":{"x":-0.5,"y":0.5,"z":-0.5,"w":0.5},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.7,"g":0.7,"b":0.7,"a":1.0}}
-      },
+          "stagingPose": {
+            "position": {
+              "x": 0.3728,
+              "y": 0.55,
+              "z": -1.3411e-07
+            },
+            "rotation": {
+              "x": -0.5,
+              "y": 0.5,
+              "z": -0.5,
+              "w": 0.5
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            },
+            "color": {
+              "r": 0.7,
+              "g": 0.7,
+              "b": 0.7,
+              "a": 1.0
+            }
+          }
+        },
         {
           "kind": "part",
           "id": "y_left_carriage_half_b",
-          "stagingPose": {"position":{"x":0.5228,"y":0.55,"z":-1.3411e-7},"rotation":{"x":0.5,"y":0.5,"z":-0.5,"w":-0.5},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.7,"g":0.7,"b":0.7,"a":1.0}}
-      },
+          "stagingPose": {
+            "position": {
+              "x": 0.5228,
+              "y": 0.55,
+              "z": -1.3411e-07
+            },
+            "rotation": {
+              "x": 0.5,
+              "y": 0.5,
+              "z": -0.5,
+              "w": -0.5
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            },
+            "color": {
+              "r": 0.7,
+              "g": 0.7,
+              "b": 0.7,
+              "a": 1.0
+            }
+          }
+        },
         {
           "kind": "part",
           "id": "y_right_carriage_half_a",
@@ -987,13 +1343,13 @@
       }
     },
     {
-      "id": "step_batch_c1_tighten",
-      "name": "Carriage 1: tighten \u00e2\u20ac\u201d 1 of 4 complete",
+      "id": "step_batch_c1_hand_tighten",
+      "name": "Carriage 1: hand-tighten \u00e2\u20ac\u201d prep for drill",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "subassemblyId": "subassembly_carriage_y_left",
       "sequenceIndex": 58,
       "family": "Use",
-      "instructionText": "Use the power drill on the lowest torque setting to tighten all 4 bolts on the Y-Left carriage. Set it aside \u00e2\u20ac\u201d carriage 1 of 4 is complete.",
+      "instructionText": "Thread and finger-tighten all 4 bolts on the Y-Left carriage. Seat each bolt snug by hand before moving to the power drill \u00e2\u20ac\u201d this prevents cross-threading and lets the drill finish the final torque cleanly.",
       "removePersistentToolIds": [],
       "targetIds": [
         "target_c1_bolt_tighten_a",
@@ -1012,6 +1368,228 @@
         "y_left_m6_nut_b",
         "y_left_m6_nut_c",
         "y_left_m6_nut_d"
+      ],
+      "requiredToolActions": [
+        {
+          "id": "action_target_c1_bolt_hand_tighten_a",
+          "toolId": "tool_hand",
+          "actionType": "tighten",
+          "targetId": "target_c1_bolt_tighten_a",
+          "requiredCount": 1,
+          "successMessage": "M6x18 bolt A finger-tight.",
+          "failureMessage": "Thread the bolt by hand until it seats snug \u00e2\u20ac\u201d no drill yet.",
+          "interaction": {
+            "archetype": "lerp",
+            "easing": "easeInOut",
+            "followPart": true
+          }
+        },
+        {
+          "id": "action_target_c1_bolt_hand_tighten_b",
+          "toolId": "tool_hand",
+          "actionType": "tighten",
+          "targetId": "target_c1_bolt_tighten_b",
+          "requiredCount": 1,
+          "successMessage": "M6 bolt B finger-tight.",
+          "failureMessage": "Thread the bolt by hand until it seats snug \u00e2\u20ac\u201d no drill yet.",
+          "interaction": {
+            "archetype": "lerp",
+            "easing": "easeInOut",
+            "followPart": true
+          }
+        },
+        {
+          "id": "action_target_c1_bolt_hand_tighten_c",
+          "toolId": "tool_hand",
+          "actionType": "tighten",
+          "targetId": "target_c1_bolt_tighten_c",
+          "requiredCount": 1,
+          "successMessage": "M6 bolt C finger-tight.",
+          "failureMessage": "Thread the bolt by hand until it seats snug \u00e2\u20ac\u201d no drill yet.",
+          "interaction": {
+            "archetype": "lerp",
+            "easing": "easeInOut",
+            "followPart": true
+          }
+        },
+        {
+          "id": "action_target_c1_bolt_hand_tighten_d",
+          "toolId": "tool_hand",
+          "actionType": "tighten",
+          "targetId": "target_c1_bolt_tighten_d",
+          "requiredCount": 1,
+          "successMessage": "M6 bolt D finger-tight.",
+          "failureMessage": "Thread the bolt by hand until it seats snug \u00e2\u20ac\u201d no drill yet.",
+          "interaction": {
+            "archetype": "lerp",
+            "easing": "easeInOut",
+            "followPart": true
+          }
+        }
+      ],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "y_left_carriage_half_a"
+        },
+        {
+          "kind": "part",
+          "id": "y_left_carriage_half_b"
+        },
+        {
+          "kind": "part",
+          "id": "y_left_m6x18_a"
+        },
+        {
+          "kind": "part",
+          "id": "y_left_carriage_m6x18_b"
+        },
+        {
+          "kind": "part",
+          "id": "y_left_m6x30_a"
+        },
+        {
+          "kind": "part",
+          "id": "y_left_m6x30_b"
+        },
+        {
+          "kind": "part",
+          "id": "y_left_m6_nut_a"
+        },
+        {
+          "kind": "part",
+          "id": "y_left_m6_nut_b"
+        },
+        {
+          "kind": "part",
+          "id": "y_left_m6_nut_c"
+        },
+        {
+          "kind": "part",
+          "id": "y_left_m6_nut_d"
+        },
+        {
+          "kind": "toolAction",
+          "id": "action_target_c1_bolt_hand_tighten_a",
+          "endTransform": {
+            "position": {
+              "x": 0.8351,
+              "y": 0.5693,
+              "z": 0.0158
+            },
+            "rotation": {
+              "x": -0.7071,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          }
+        },
+        {
+          "kind": "toolAction",
+          "id": "action_target_c1_bolt_hand_tighten_b",
+          "endTransform": {
+            "position": {
+              "x": 0.8351,
+              "y": 0.5693,
+              "z": -0.0145
+            },
+            "rotation": {
+              "x": -0.7071,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          }
+        },
+        {
+          "kind": "toolAction",
+          "id": "action_target_c1_bolt_hand_tighten_c",
+          "endTransform": {
+            "position": {
+              "x": 0.8048,
+              "y": 0.5693,
+              "z": 0.015
+            },
+            "rotation": {
+              "x": -0.7071,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          }
+        },
+        {
+          "kind": "toolAction",
+          "id": "action_target_c1_bolt_hand_tighten_d",
+          "endTransform": {
+            "position": {
+              "x": 0.8048,
+              "y": 0.5693,
+              "z": -0.0149
+            },
+            "rotation": {
+              "x": -0.7071,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          }
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    },
+    {
+      "id": "step_batch_c1_tighten",
+      "name": "Carriage 1: drill-tighten \u00e2\u20ac\u201d 1 of 4 complete",
+      "assemblyId": "assembly_d3d_batch_carriage_build",
+      "subassemblyId": "subassembly_carriage_y_left",
+      "sequenceIndex": 59,
+      "family": "Use",
+      "instructionText": "Use the power drill on the lowest torque setting to drive all 4 bolts to final torque. Set the carriage aside \u00e2\u20ac\u201d carriage 1 of 4 is complete.",
+      "removePersistentToolIds": [],
+      "targetIds": [
+        "target_c1_bolt_tighten_a",
+        "target_c1_bolt_tighten_b",
+        "target_c1_bolt_tighten_c",
+        "target_c1_bolt_tighten_d"
+      ],
+      "requiredPartIds": [
+        "y_left_m6x18_a",
+        "y_left_carriage_m6x18_b",
+        "y_left_m6x30_a",
+        "y_left_m6x30_b"
       ],
       "requiredToolActions": [
         {
@@ -1072,46 +1650,6 @@
         }
       ],
       "taskOrder": [
-        {
-          "kind": "part",
-          "id": "y_left_carriage_half_a"
-        },
-        {
-          "kind": "part",
-          "id": "y_left_carriage_half_b"
-        },
-        {
-          "kind": "part",
-          "id": "y_left_m6x18_a"
-        },
-        {
-          "kind": "part",
-          "id": "y_left_carriage_m6x18_b"
-        },
-        {
-          "kind": "part",
-          "id": "y_left_m6x30_a"
-        },
-        {
-          "kind": "part",
-          "id": "y_left_m6x30_b"
-        },
-        {
-          "kind": "part",
-          "id": "y_left_m6_nut_a"
-        },
-        {
-          "kind": "part",
-          "id": "y_left_m6_nut_b"
-        },
-        {
-          "kind": "part",
-          "id": "y_left_m6_nut_c"
-        },
-        {
-          "kind": "part",
-          "id": "y_left_m6_nut_d"
-        },
         {
           "kind": "toolAction",
           "id": "action_target_c1_bolt_tighten_a",
@@ -1219,7 +1757,7 @@
       "name": "Carriage 2 (Y-Right): place 4 LM8UU bearings",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "subassemblyId": "subassembly_carriage_y_right",
-      "sequenceIndex": 59,
+      "sequenceIndex": 60,
       "family": "Place",
       "instructionText": "Pick up the Y-Right carriage halves. Place four LM8UU bearings into half A with flanges facing outward \u00e2\u20ac\u201d same technique as carriage 1.",
       "removePersistentToolIds": [],
@@ -1272,7 +1810,7 @@
       "name": "Carriage 2: close the second carriage half",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "subassemblyId": "subassembly_carriage_y_right",
-      "sequenceIndex": 60,
+      "sequenceIndex": 61,
       "family": "Place",
       "instructionText": "Place the second Y-Right carriage half onto the first, trapping the 4 bearings. The small ribbed belt hole must sit directly beside the large smooth belt hole.",
       "removePersistentToolIds": [],
@@ -1305,7 +1843,7 @@
       "name": "Carriage 2: shake test",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "subassemblyId": "subassembly_carriage_y_right",
-      "sequenceIndex": 61,
+      "sequenceIndex": 62,
       "family": "Confirm",
       "guidance": {
         "instructionText": "Hold both Y-Right carriage halves firmly together and shake the assembly.",
@@ -1355,7 +1893,7 @@
       "name": "Carriage 2: rod slide test",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "subassemblyId": "subassembly_carriage_y_right",
-      "sequenceIndex": 62,
+      "sequenceIndex": 63,
       "family": "Confirm",
       "guidance": {
         "instructionText": "Insert a smooth guide rod through the Y-Right carriage and hold it vertical.",
@@ -1410,7 +1948,7 @@
       "name": "Carriage 2: place bolts and thread nuts",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "subassemblyId": "subassembly_carriage_y_right",
-      "sequenceIndex": 63,
+      "sequenceIndex": 64,
       "family": "Place",
       "instructionText": "Insert 2\u00c3\u2014 M6x18 bolts into the two top holes and 2\u00c3\u2014 M6x30 bolts into the two bottom holes. Thread one M6 nut onto each bolt finger-tight.",
       "removePersistentToolIds": [],
@@ -1478,7 +2016,7 @@
       "name": "Carriage 2: tighten \u00e2\u20ac\u201d 2 of 4 complete",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "subassemblyId": "subassembly_carriage_y_right",
-      "sequenceIndex": 64,
+      "sequenceIndex": 65,
       "family": "Use",
       "instructionText": "Tighten all 4 bolts on the Y-Right carriage with the power drill on lowest torque. Set it beside carriage 1 \u00e2\u20ac\u201d carriage 2 of 4 is complete.",
       "removePersistentToolIds": [],
@@ -1556,7 +2094,7 @@
       "name": "Carriage 3 (Z-Back): place 4 LM8UU bearings in half A",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "subassemblyId": "subassembly_carriage_z_back",
-      "sequenceIndex": 65,
+      "sequenceIndex": 66,
       "family": "Place",
       "instructionText": "Pick up the Z-Back carriage half A. Place four LM8UU bearings into the bearing pockets with flanges facing outward. Same technique as the Y-axis carriages.",
       "removePersistentToolIds": [],
@@ -1589,7 +2127,7 @@
       "name": "Carriage 3: shake test",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "subassemblyId": "subassembly_carriage_z_back",
-      "sequenceIndex": 66,
+      "sequenceIndex": 67,
       "family": "Confirm",
       "guidance": {
         "instructionText": "Hold both Z-Back carriage halves firmly together and shake the assembly.",
@@ -1639,7 +2177,7 @@
       "name": "Carriage 3: rod slide test",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "subassemblyId": "subassembly_carriage_z_back",
-      "sequenceIndex": 67,
+      "sequenceIndex": 68,
       "family": "Confirm",
       "guidance": {
         "instructionText": "Insert a smooth guide rod through the Z-Back carriage and hold it vertical.",
@@ -1694,7 +2232,7 @@
       "name": "Carriage 3: close halves, bolt and tighten \u00e2\u20ac\u201d 3 of 4 complete",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "subassemblyId": "subassembly_carriage_z_back",
-      "sequenceIndex": 68,
+      "sequenceIndex": 69,
       "family": "Use",
       "instructionText": "Press Z-Back carriage half B onto half A to trap the bearings. Align so the small ribbed belt hole sits beside the large smooth belt hole. Secure with M6x18 bolts on top and M6x30 bolts on bottom. Tighten with the power drill on lowest torque. Set it aside \u00e2\u20ac\u201d carriage 3 of 4 is complete.",
       "removePersistentToolIds": [],
@@ -1732,7 +2270,7 @@
       "name": "Carriage 4 (Z-Front): place 4 LM8UU bearings in half A",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "subassemblyId": "subassembly_carriage_z_front",
-      "sequenceIndex": 69,
+      "sequenceIndex": 70,
       "family": "Place",
       "instructionText": "Pick up the Z-Front carriage half A. Place four LM8UU bearings into the bearing pockets with flanges facing outward.",
       "removePersistentToolIds": [],
@@ -1765,7 +2303,7 @@
       "name": "Carriage 4: shake test",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "subassemblyId": "subassembly_carriage_z_front",
-      "sequenceIndex": 70,
+      "sequenceIndex": 71,
       "family": "Confirm",
       "guidance": {
         "instructionText": "Hold both Z-Front carriage halves firmly together and shake the assembly.",
@@ -1815,7 +2353,7 @@
       "name": "Carriage 4: rod slide test",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "subassemblyId": "subassembly_carriage_z_front",
-      "sequenceIndex": 71,
+      "sequenceIndex": 72,
       "family": "Confirm",
       "guidance": {
         "instructionText": "Insert a smooth guide rod through the Z-Front carriage and hold it vertical.",
@@ -1870,7 +2408,7 @@
       "name": "Carriage 4: close halves, bolt and tighten \u00e2\u20ac\u201d 4 of 4 complete",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "subassemblyId": "subassembly_carriage_z_front",
-      "sequenceIndex": 72,
+      "sequenceIndex": 73,
       "family": "Use",
       "instructionText": "Press Z-Front carriage half B onto half A to trap the bearings. Align the small ribbed belt hole directly beside the large smooth belt hole. Secure with M6x18 bolts on top and M6x30 bolts on bottom. Tighten with the power drill on lowest torque. All four axis carriages are now complete \u00e2\u20ac\u201d set the Z-Front carriage with the others.",
       "removePersistentToolIds": [],

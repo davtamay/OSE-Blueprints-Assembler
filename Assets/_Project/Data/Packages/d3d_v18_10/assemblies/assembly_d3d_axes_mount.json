@@ -53,19 +53,25 @@
     {
       "id": "subassembly_y_left_frame_mount",
       "name": "Y-Left Axis Frame Mount",
-      "stepIds": [ "step_mount_y_left_axis_to_frame", "step_verify_y_left_axis_motion" ],
+      "stepIds": [
+        "step_mount_y_left_axis_to_frame",
+        "step_verify_y_left_axis_motion"
+      ],
       "assemblyId": "assembly_d3d_axes_mount",
       "description": "Mounts the completed bench-built Y-left axis unit onto the left face of the welded frame and verifies smooth travel.",
       "milestoneMessage": "Y-left axis mounted and motion verified."
-  },
+    },
     {
       "id": "subassembly_y_right_frame_mount",
       "name": "Y-Right Axis Frame Mount",
-      "stepIds": [ "step_mount_y_right_axis_to_frame", "step_verify_y_axis_pair_alignment" ],
+      "stepIds": [
+        "step_mount_y_right_axis_to_frame",
+        "step_verify_y_axis_pair_alignment"
+      ],
       "assemblyId": "assembly_d3d_axes_mount",
       "description": "Mounts the completed bench-built Y-right axis unit onto the right face of the welded frame and confirms the Y-axis pair establishes the X-axis span.",
       "milestoneMessage": "Y-right axis mounted. Both Y axes are parallel with motors at back."
-  },
+    },
     {
       "id": "subassembly_x_axis_frame_fit",
       "name": "X-Axis Frame Fit",
@@ -576,7 +582,7 @@
       "name": "Mount the Y-left axis to the frame",
       "assemblyId": "assembly_d3d_axes_mount",
       "subassemblyId": "subassembly_y_left_frame_mount",
-      "sequenceIndex": 73,
+      "sequenceIndex": 74,
       "instructionText": "Place the completed Y-left axis unit onto the welded frame at the authored left-side mount.",
       "family": "Place",
       "hintIds": [
@@ -614,7 +620,7 @@
       "name": "Confirm the Y-left axis seats cleanly on the frame",
       "assemblyId": "assembly_d3d_axes_mount",
       "subassemblyId": "subassembly_y_left_frame_mount",
-      "sequenceIndex": 74,
+      "sequenceIndex": 75,
       "instructionText": "Inspect the mounted Y-left axis and confirm its travel direction is clear and the unit sits flat on the frame-side mount.",
       "family": "Confirm",
       "viewMode": "Inspect",
@@ -631,7 +637,7 @@
       "name": "Mount the Y-right axis to the frame",
       "assemblyId": "assembly_d3d_axes_mount",
       "subassemblyId": "subassembly_y_right_frame_mount",
-      "sequenceIndex": 75,
+      "sequenceIndex": 76,
       "instructionText": "Place the completed Y-right axis unit onto the welded frame at the authored right-side mount.",
       "family": "Place",
       "hintIds": [
@@ -669,7 +675,7 @@
       "name": "Confirm the Y-axis pair establishes the X-axis span",
       "assemblyId": "assembly_d3d_axes_mount",
       "subassemblyId": "subassembly_y_right_frame_mount",
-      "sequenceIndex": 76,
+      "sequenceIndex": 77,
       "instructionText": "Inspect the mounted Y-left and Y-right axes together and confirm they establish a clean span for the X-axis between them.",
       "family": "Confirm",
       "viewMode": "Inspect",
@@ -686,7 +692,7 @@
       "name": "Tighten the X-axis idler screws",
       "assemblyId": "assembly_d3d_axes_mount",
       "subassemblyId": "subassembly_x_axis_frame_fit",
-      "sequenceIndex": 77,
+      "sequenceIndex": 78,
       "instructionText": "Tighten the X-axis idler screws while the module is still staged in the work area.",
       "family": "Use",
       "profile": "Torque",
@@ -731,7 +737,7 @@
       "name": "Place the X-axis assembly with the idler side anchored on Y-right",
       "assemblyId": "assembly_d3d_axes_mount",
       "subassemblyId": "subassembly_x_axis_frame_fit",
-      "sequenceIndex": 78,
+      "sequenceIndex": 79,
       "instructionText": "Place the X-axis idler side, rod pair, motor-holder side, and the two Y-right M6x30 bolts into their pre-fit positions so the idler side anchors on Y-right first.",
       "family": "Place",
       "hintIds": [
@@ -778,7 +784,7 @@
       "name": "Snug the Y-right M6x30 anchor bolts",
       "assemblyId": "assembly_d3d_axes_mount",
       "subassemblyId": "subassembly_x_axis_frame_fit",
-      "sequenceIndex": 79,
+      "sequenceIndex": 80,
       "instructionText": "Use the metric Allen key to snug the two Y-right M6x30 bolts so the idler side stays anchored while the motor-holder side still remains adjustable.",
       "family": "Use",
       "profile": "Torque",
@@ -815,7 +821,7 @@
       "name": "Loosely start the X-axis motor-holder bolts on the Y-left carriage",
       "assemblyId": "assembly_d3d_axes_mount",
       "subassemblyId": "subassembly_x_axis_frame_fit",
-      "sequenceIndex": 80,
+      "sequenceIndex": 81,
       "instructionText": "Place the two Y-left M6x30 motor-holder bolts by hand only loosely so the X-axis span can still be adjusted.",
       "family": "Place",
       "hintIds": [
@@ -859,7 +865,7 @@
       "name": "Lengthen the X-axis to fit tightly between the Y axes",
       "assemblyId": "assembly_d3d_axes_mount",
       "subassemblyId": "subassembly_x_axis_frame_fit",
-      "sequenceIndex": 81,
+      "sequenceIndex": 82,
       "instructionText": "Drag the yellow motor-holder side left along the fit guide until it reaches the green final-fit marker and seats against the Y-left side.",
       "family": "Place",
       "profile": "AxisFit",
@@ -876,7 +882,7 @@
       "name": "Lock the Y-left mount bolts and motor-holder screws",
       "assemblyId": "assembly_d3d_axes_mount",
       "subassemblyId": "subassembly_x_axis_frame_fit",
-      "sequenceIndex": 82,
+      "sequenceIndex": 83,
       "instructionText": "After the X-axis span is seated tightly, tighten the two Y-left M6x30 mount bolts first, then lock the motor-holder-side internal screws.",
       "family": "Use",
       "profile": "Torque",
@@ -969,7 +975,7 @@
       "name": "Tension the X-axis belt",
       "assemblyId": "assembly_d3d_axes_mount",
       "subassemblyId": "subassembly_x_axis_frame_fit",
-      "sequenceIndex": 83,
+      "sequenceIndex": 84,
       "instructionText": "Pull the X-axis belt to final hand tension only after the span and fasteners are locked.",
       "family": "Use",
       "profile": "Torque",
@@ -997,7 +1003,7 @@
       "id": "step_reinsert_x_axis_belt_peg",
       "name": "Reinsert the belt peg",
       "assemblyId": "assembly_d3d_axes_mount",
-      "sequenceIndex": 84,
+      "sequenceIndex": 85,
       "instructionText": "Place the belt peg back into the retainer once the belt is tensioned.",
       "family": "Place",
       "hintIds": [
@@ -1035,7 +1041,7 @@
       "name": "Check X-axis tightness and travel",
       "assemblyId": "assembly_d3d_axes_mount",
       "subassemblyId": "subassembly_x_axis_frame_fit",
-      "sequenceIndex": 85,
+      "sequenceIndex": 86,
       "instructionText": "Inspect the fitted X-axis and confirm it can travel along the mounted Y axes without binding, without a visible gap at the left interface, and with the Y-left end-stop relationship preserved.",
       "family": "Confirm",
       "viewMode": "Inspect",
@@ -1053,8 +1059,8 @@
       "name": "Tighten the Z-front idler screws",
       "assemblyId": "assembly_d3d_axes_mount",
       "subassemblyId": "subassembly_z_front_frame_mount",
-      "sequenceIndex": 269,
-      "instructionText": "Tighten the two shorter M6x18 bolts on the Z-front idler using an electric drill on low torque. This locks the rods flush against the back of the idler. Leave the longer M6x30 bolt loose â€” it will attach to the frame.",
+      "sequenceIndex": 270,
+      "instructionText": "Tighten the two shorter M6x18 bolts on the Z-front idler using an electric drill on low torque. This locks the rods flush against the back of the idler. Leave the longer M6x30 bolt loose \u00e2\u20ac\u201d it will attach to the frame.",
       "profile": "Torque",
       "targetIds": [
         "target_z_front_idler_screw_1",
@@ -1090,7 +1096,7 @@
       "name": "Mount the Z-front axis to the front frame face",
       "assemblyId": "assembly_d3d_axes_mount",
       "subassemblyId": "subassembly_z_front_frame_mount",
-      "sequenceIndex": 270,
+      "sequenceIndex": 271,
       "instructionText": "Pop the loose belt peg out and set aside. Tighten all 8 motor-piece bolts before mounting (they become inaccessible after). Lengthen the axis and fit the idler long bolt through the bottom hole of the front frame face; fit the motor long bolt through the top hole. Fasten both with nuts.",
       "hintIds": [
         "hint_mount_z_front_axis"
@@ -1135,7 +1141,7 @@
       "name": "Lock the Z-front motor holder bolts",
       "assemblyId": "assembly_d3d_axes_mount",
       "subassemblyId": "subassembly_z_front_frame_mount",
-      "sequenceIndex": 271,
+      "sequenceIndex": 272,
       "instructionText": "With the Z-front axis at the correct frame length, tighten the two motor-piece bolts fully. This locks the rods in place so the belt can be properly tensioned.",
       "profile": "Torque",
       "targetIds": [
@@ -1172,8 +1178,8 @@
       "name": "Tension the Z-front axis belt",
       "assemblyId": "assembly_d3d_axes_mount",
       "subassemblyId": "subassembly_z_front_frame_mount",
-      "sequenceIndex": 272,
-      "instructionText": "Grip the loose belt end with pliers and pull until the belt is taut enough to twang like a guitar string when plucked. Do not overtighten â€” the belt can snap. Hold tension and proceed to insert the belt peg.",
+      "sequenceIndex": 273,
+      "instructionText": "Grip the loose belt end with pliers and pull until the belt is taut enough to twang like a guitar string when plucked. Do not overtighten \u00e2\u20ac\u201d the belt can snap. Hold tension and proceed to insert the belt peg.",
       "profile": "Torque",
       "targetIds": [
         "target_z_front_belt_tension"
@@ -1201,8 +1207,8 @@
       "name": "Reinsert the Z-front belt peg",
       "assemblyId": "assembly_d3d_axes_mount",
       "subassemblyId": "subassembly_z_front_frame_mount",
-      "sequenceIndex": 273,
-      "instructionText": "Insert the belt end approximately Â¾ inch through the peg, foot facing away from the axis center. Push the peg firmly into the small ribbed belt-catcher hole to lock the belt tension.",
+      "sequenceIndex": 274,
+      "instructionText": "Insert the belt end approximately \u00c2\u00be inch through the peg, foot facing away from the axis center. Push the peg firmly into the small ribbed belt-catcher hole to lock the belt tension.",
       "hintIds": [
         "hint_reinsert_z_front_belt_peg"
       ],
@@ -1240,7 +1246,7 @@
       "name": "Check Z-front axis travel and QC",
       "assemblyId": "assembly_d3d_axes_mount",
       "subassemblyId": "subassembly_z_front_frame_mount",
-      "sequenceIndex": 274,
+      "sequenceIndex": 275,
       "instructionText": "Run the Z-front QC checklist: carriage moves smoothly along full travel; rods flush with idler bottom; idler and carriage bolt heads on the same side; toothed side of belt faces inward.",
       "targetIds": [
         "target_z_front_carriage_travel_qc"
@@ -1256,7 +1262,7 @@
       "name": "Tighten the Z-back idler screws",
       "assemblyId": "assembly_d3d_axes_mount",
       "subassemblyId": "subassembly_z_back_frame_mount",
-      "sequenceIndex": 275,
+      "sequenceIndex": 276,
       "instructionText": "Tighten the two shorter M6x18 bolts on the Z-back idler using an electric drill on low torque. Leave the longer M6x30 bolt loose for frame attachment.",
       "profile": "Torque",
       "targetIds": [
@@ -1293,7 +1299,7 @@
       "name": "Mount the Z-back axis to the back frame face",
       "assemblyId": "assembly_d3d_axes_mount",
       "subassemblyId": "subassembly_z_back_frame_mount",
-      "sequenceIndex": 276,
+      "sequenceIndex": 277,
       "instructionText": "Tighten all 8 motor-piece bolts first. Lengthen the Z-back axis and fit the idler bolt through the bottom hole of the back frame face; fit the motor bolt through the top hole. Fasten both. Align directly behind Z-front.",
       "hintIds": [
         "hint_mount_z_back_axis"
@@ -1338,8 +1344,8 @@
       "name": "Lock the Z-back motor holder bolts",
       "assemblyId": "assembly_d3d_axes_mount",
       "subassemblyId": "subassembly_z_back_frame_mount",
-      "sequenceIndex": 277,
-      "instructionText": "Tighten the two motor-piece bolts on the Z-back axis. Verify both Z columns are aligned â€” Z-back carriage should be at the same height as Z-front carriage before locking.",
+      "sequenceIndex": 278,
+      "instructionText": "Tighten the two motor-piece bolts on the Z-back axis. Verify both Z columns are aligned \u00e2\u20ac\u201d Z-back carriage should be at the same height as Z-front carriage before locking.",
       "profile": "Torque",
       "targetIds": [
         "target_z_back_motor_holder_bolt_1",
@@ -1375,7 +1381,7 @@
       "name": "Tension the Z-back axis belt",
       "assemblyId": "assembly_d3d_axes_mount",
       "subassemblyId": "subassembly_z_back_frame_mount",
-      "sequenceIndex": 278,
+      "sequenceIndex": 279,
       "instructionText": "Tension the Z-back belt with pliers until it twangs like a guitar string. Hold tension and proceed to the belt peg step.",
       "profile": "Torque",
       "targetIds": [
@@ -1404,8 +1410,8 @@
       "name": "Reinsert the Z-back belt peg",
       "assemblyId": "assembly_d3d_axes_mount",
       "subassemblyId": "subassembly_z_back_frame_mount",
-      "sequenceIndex": 279,
-      "instructionText": "Insert belt end ~Â¾ inch through the peg, foot facing away from axis center. Push peg firmly into the ribbed belt-catcher hole.",
+      "sequenceIndex": 280,
+      "instructionText": "Insert belt end ~\u00c2\u00be inch through the peg, foot facing away from axis center. Push peg firmly into the ribbed belt-catcher hole.",
       "hintIds": [
         "hint_reinsert_z_back_belt_peg"
       ],
@@ -1443,7 +1449,7 @@
       "name": "Check Z-back axis travel and QC",
       "assemblyId": "assembly_d3d_axes_mount",
       "subassemblyId": "subassembly_z_back_frame_mount",
-      "sequenceIndex": 280,
+      "sequenceIndex": 281,
       "instructionText": "QC: carriage moves smoothly; rods flush; bolt heads same side; toothed belt faces inward; Z-back carriage level with Z-front carriage.",
       "targetIds": [
         "target_z_back_carriage_travel_qc"
@@ -1884,7 +1890,7 @@
       "id": "target_z_front_motor_holder_bolt_1",
       "name": "Z-Front Motor Holder Bolt 1",
       "anchorRef": "anchors/d3d/z_axis_front/motor_holder_bolt_1",
-      "description": "Motor piece bolt on Z-front axis â€” lock after span is set",
+      "description": "Motor piece bolt on Z-front axis \u00e2\u20ac\u201d lock after span is set",
       "associatedPartId": "motor_piece",
       "tags": [
         "screw",
@@ -1901,7 +1907,7 @@
       "id": "target_z_front_motor_holder_bolt_2",
       "name": "Z-Front Motor Holder Bolt 2",
       "anchorRef": "anchors/d3d/z_axis_front/motor_holder_bolt_2",
-      "description": "Motor piece bolt on Z-front axis â€” lock after span is set",
+      "description": "Motor piece bolt on Z-front axis \u00e2\u20ac\u201d lock after span is set",
       "associatedPartId": "motor_piece",
       "tags": [
         "screw",
@@ -1952,7 +1958,7 @@
       "id": "target_z_front_carriage_travel_qc",
       "name": "Z-Front Carriage Travel QC",
       "anchorRef": "anchors/d3d/z_axis_front/carriage_travel_qc",
-      "description": "Carriage travel check point â€” Z-front axis",
+      "description": "Carriage travel check point \u00e2\u20ac\u201d Z-front axis",
       "associatedPartId": "",
       "tags": [
         "qc",
@@ -2105,7 +2111,7 @@
       "id": "target_z_back_carriage_travel_qc",
       "name": "Z-Back Carriage Travel QC",
       "anchorRef": "anchors/d3d/z_axis_back/carriage_travel_qc",
-      "description": "Carriage travel check point â€” Z-back axis",
+      "description": "Carriage travel check point \u00e2\u20ac\u201d Z-back axis",
       "associatedPartId": "",
       "tags": [
         "qc",
@@ -2133,7 +2139,7 @@
       "id": "hint_verify_y_left_axis_seating",
       "type": "highlight",
       "title": "Carriage shake test + rod-slide test",
-      "message": "Run both bearing fit tests before calling the axis good. Shake test: compress the carriage halves by hand and shake â€” bearings must not rattle inside. Rod-slide test: hold the carriage with a rod running vertically â€” the rod should slide through with slight resistance, not drop freely. If too loose, wrap each bearing in one layer of electrical tape; if too tight, remove tape. Also push the carriage along the full rod length â€” no binding.",
+      "message": "Run both bearing fit tests before calling the axis good. Shake test: compress the carriage halves by hand and shake \u00e2\u20ac\u201d bearings must not rattle inside. Rod-slide test: hold the carriage with a rod running vertically \u00e2\u20ac\u201d the rod should slide through with slight resistance, not drop freely. If too loose, wrap each bearing in one layer of electrical tape; if too tight, remove tape. Also push the carriage along the full rod length \u00e2\u20ac\u201d no binding.",
       "targetId": "target_y_left_axis_qc",
       "priority": "medium"
     },
@@ -2141,7 +2147,7 @@
       "id": "hint_mount_y_right_axis",
       "type": "highlight",
       "title": "Seat Y-right idler and lock all 8 motor-holder bolts",
-      "message": "Mirror the Y-left procedure for the right face. Loosen the idler long bolt, fit it through the correct frame hole, and secure with a nut. Span the axis outward until the motor-holder long bolt reaches the opposite frame hole. Tighten all 8 motor-holder bolts (3 M6x18 + 4 M3 screws + long M6x30) before fastening to frame â€” they are inaccessible afterward. Anchor both ends with pliers.",
+      "message": "Mirror the Y-left procedure for the right face. Loosen the idler long bolt, fit it through the correct frame hole, and secure with a nut. Span the axis outward until the motor-holder long bolt reaches the opposite frame hole. Tighten all 8 motor-holder bolts (3 M6x18 + 4 M3 screws + long M6x30) before fastening to frame \u00e2\u20ac\u201d they are inaccessible afterward. Anchor both ends with pliers.",
       "targetId": "target_y_right_axis_mount",
       "partId": "d3d_y_right_axis_unit",
       "priority": "medium"
@@ -2150,7 +2156,7 @@
       "id": "hint_verify_y_axis_pair",
       "type": "highlight",
       "title": "Both Y axes: smooth motion, end stop, motors at back",
-      "message": "Check all four items: (1) Carriage slides smoothly along each Y axis without binding. (2) Each motor shaft spins freely when you turn the carriage by hand. (3) On Y-left, push the carriage into the end stop and confirm it clicks. (4) Both motors are at the back of the frame â€” the axes are mirror images of each other.",
+      "message": "Check all four items: (1) Carriage slides smoothly along each Y axis without binding. (2) Each motor shaft spins freely when you turn the carriage by hand. (3) On Y-left, push the carriage into the end stop and confirm it clicks. (4) Both motors are at the back of the frame \u00e2\u20ac\u201d the axes are mirror images of each other.",
       "targetId": "target_y_left_axis_mount",
       "priority": "medium"
     },
@@ -2158,7 +2164,7 @@
       "id": "hint_tighten_x_axis_idler_screws",
       "type": "tool_reminder",
       "title": "Tighten the two shorter M6x18 idler bolts; leave M6x30 loose",
-      "message": "Use a drill on low torque to tighten the two shorter M6x18 bolts on the idler. These lock the rods flush against the back of the idler so they cannot be pushed out when the axis is extended. Leave the longer M6x30 bolt loose â€” it will attach the idler to the Y-right carriage in the next step.",
+      "message": "Use a drill on low torque to tighten the two shorter M6x18 bolts on the idler. These lock the rods flush against the back of the idler so they cannot be pushed out when the axis is extended. Leave the longer M6x30 bolt loose \u00e2\u20ac\u201d it will attach the idler to the Y-right carriage in the next step.",
       "toolId": "tool_allen_key_metric",
       "targetId": "target_x_axis_idler_screw_1",
       "priority": "medium"
@@ -2167,7 +2173,7 @@
       "id": "hint_anchor_x_axis_idler",
       "type": "highlight",
       "title": "Drop two M6x30 bolts through Y-right carriage into idler",
-      "message": "Insert two M6x30 bolts through the Y-right carriage from the outside. Move the X-axis so those bolts enter the idler nut catchers. Fasten with drill on low-torque setting â€” do not overtighten. The idler is now anchored; the motor-holder side remains free to slide outward for the span-fit step. Note: it does not matter yet whether the X-axis is perfectly vertical.",
+      "message": "Insert two M6x30 bolts through the Y-right carriage from the outside. Move the X-axis so those bolts enter the idler nut catchers. Fasten with drill on low-torque setting \u00e2\u20ac\u201d do not overtighten. The idler is now anchored; the motor-holder side remains free to slide outward for the span-fit step. Note: it does not matter yet whether the X-axis is perfectly vertical.",
       "targetId": "target_x_axis_idler_anchor_prefit",
       "priority": "high"
     },
@@ -2175,7 +2181,7 @@
       "id": "hint_snug_x_axis_idler_bolts",
       "type": "tool_reminder",
       "title": "Snug motor-holder bolts then back off half a turn each",
-      "message": "Before extending the X-axis to its final span, minimize play in the motor holder: tighten the 3 M6x18 bolts and 4 M3 motor screws by hand until snug, then loosen each by half a turn. The long M6x30 bolt stays completely loose at this stage. The holder must still slide freely along the rods for the span-fit step â€” but without excessive wobble.",
+      "message": "Before extending the X-axis to its final span, minimize play in the motor holder: tighten the 3 M6x18 bolts and 4 M3 motor screws by hand until snug, then loosen each by half a turn. The long M6x30 bolt stays completely loose at this stage. The holder must still slide freely along the rods for the span-fit step \u00e2\u20ac\u201d but without excessive wobble.",
       "toolId": "tool_allen_key_metric",
       "targetId": "target_x_axis_idler_mount_y_right_a",
       "priority": "high"
@@ -2192,7 +2198,7 @@
       "id": "hint_fit_x_axis_span",
       "type": "highlight",
       "title": "Push Y carriages to rod ends; extend X to Y-left face",
-      "message": "For the most accurate span fit, slide both Y-axis carriages toward the far ends of the Y rods where the rods are most constrained. Then push the X-axis motor holder outward until it butts flush against the Y-left carriage face. While extending, regularly check that both rods remain flush in the idler â€” if they start to protrude, push them back in.",
+      "message": "For the most accurate span fit, slide both Y-axis carriages toward the far ends of the Y rods where the rods are most constrained. Then push the X-axis motor holder outward until it butts flush against the Y-left carriage face. While extending, regularly check that both rods remain flush in the idler \u00e2\u20ac\u201d if they start to protrude, push them back in.",
       "targetId": "target_x_axis_span_fit",
       "priority": "high"
     },
@@ -2208,8 +2214,8 @@
     {
       "id": "hint_tension_x_axis_belt",
       "type": "tool_reminder",
-      "title": "Pull belt taut with pliers â€” twang test before inserting peg",
-      "message": "Grip the loose belt end with pliers and pull, or grip and twist, until the belt is taut. Pluck the belt â€” it should twang like a guitar string. Be firm but careful: excessive force can snap the belt. When the belt feels correct, hold tension and insert the belt peg in the next step without releasing.",
+      "title": "Pull belt taut with pliers \u00e2\u20ac\u201d twang test before inserting peg",
+      "message": "Grip the loose belt end with pliers and pull, or grip and twist, until the belt is taut. Pluck the belt \u00e2\u20ac\u201d it should twang like a guitar string. Be firm but careful: excessive force can snap the belt. When the belt feels correct, hold tension and insert the belt peg in the next step without releasing.",
       "toolId": "tool_pliers",
       "targetId": "target_x_axis_belt_tension",
       "priority": "high"
@@ -2217,8 +2223,8 @@
     {
       "id": "hint_reinsert_x_axis_belt_peg",
       "type": "highlight",
-      "title": "Insert belt ~Â¾\" through peg foot; foot faces away from center",
-      "message": "Thread the belt end through the inside of the peg approximately Â¾ inch, with the peg foot turned away from the toothed side of the belt. Quick check: the foot faces away from the center of the axis assembly; the belt passes through the carriage before going through the foot. Insert the peg into the small, ribbed belt-catcher hole and push firmly. This peg locks the belt tail so tension is maintained.",
+      "title": "Insert belt ~\u00c2\u00be\" through peg foot; foot faces away from center",
+      "message": "Thread the belt end through the inside of the peg approximately \u00c2\u00be inch, with the peg foot turned away from the toothed side of the belt. Quick check: the foot faces away from the center of the axis assembly; the belt passes through the carriage before going through the foot. Insert the peg into the small, ribbed belt-catcher hole and push firmly. This peg locks the belt tail so tension is maintained.",
       "targetId": "target_x_axis_belt_peg_insert",
       "partId": "fastener_x_axis_belt_peg",
       "priority": "medium"
@@ -2227,7 +2233,7 @@
       "id": "hint_check_x_axis_travel",
       "type": "highlight",
       "title": "Four-point X-axis QC: travel, flush rods, bolt sides, belt direction",
-      "message": "Run the full QC checklist before calling the X-axis complete: (1) Carriage moves smoothly along full X travel â€” no binding. Lubricate rods if tightness remains after checking rod alignment. (2) Rods are flush with the idler bottom â€” not protruding. (3) Idler and carriage bolt heads are on the same side. (4) Toothed side of belt faces inward. (5) X-axis butts tightly to both Y-axes with no visible gap. (6) Extruder carriage reaches and triggers the X-axis end stop.",
+      "message": "Run the full QC checklist before calling the X-axis complete: (1) Carriage moves smoothly along full X travel \u00e2\u20ac\u201d no binding. Lubricate rods if tightness remains after checking rod alignment. (2) Rods are flush with the idler bottom \u00e2\u20ac\u201d not protruding. (3) Idler and carriage bolt heads are on the same side. (4) Toothed side of belt faces inward. (5) X-axis butts tightly to both Y-axes with no visible gap. (6) Extruder carriage reaches and triggers the X-axis end stop.",
       "targetId": "target_x_axis_qc_left_travel",
       "priority": "high"
     },
@@ -2235,7 +2241,7 @@
       "id": "hint_tighten_z_front_idler_screws",
       "type": "tool_reminder",
       "title": "Tighten the two shorter M6x18 bolts; leave M6x30 loose",
-      "message": "Use a drill on low torque to tighten the two shorter M6x18 bolts on the Z-front idler. These lock the rods flush against the back of the idler. Leave the longer M6x30 bolt loose â€” it attaches to the bottom of the front frame face in the next step.",
+      "message": "Use a drill on low torque to tighten the two shorter M6x18 bolts on the Z-front idler. These lock the rods flush against the back of the idler. Leave the longer M6x30 bolt loose \u00e2\u20ac\u201d it attaches to the bottom of the front frame face in the next step.",
       "targetId": "target_z_front_idler_screw_1",
       "partId": "",
       "toolId": "tool_allen_key_metric",
@@ -2244,8 +2250,8 @@
     {
       "id": "hint_mount_z_front_axis",
       "type": "highlight",
-      "title": "Idler to frame bottom; motor to frame top â€” tighten all 8 motor bolts first",
-      "message": "Pop out the belt peg that does NOT have a belt passing through it and set it aside. Tighten all 8 motor-piece bolts (3 M6x18 + 4 M3 screws + 1 M6x30) before mounting to frame â€” they become inaccessible once the axis is on the frame. Fit the long idler bolt through the bottom hole of the front frame face and fasten with a nut. Lengthen the axis until the motor-holder long bolt reaches the top frame hole and fasten. While extending, keep checking that rods stay flush in the idler.",
+      "title": "Idler to frame bottom; motor to frame top \u00e2\u20ac\u201d tighten all 8 motor bolts first",
+      "message": "Pop out the belt peg that does NOT have a belt passing through it and set it aside. Tighten all 8 motor-piece bolts (3 M6x18 + 4 M3 screws + 1 M6x30) before mounting to frame \u00e2\u20ac\u201d they become inaccessible once the axis is on the frame. Fit the long idler bolt through the bottom hole of the front frame face and fasten with a nut. Lengthen the axis until the motor-holder long bolt reaches the top frame hole and fasten. While extending, keep checking that rods stay flush in the idler.",
       "targetId": "target_z_front_axis_idler_bolt",
       "partId": "",
       "toolId": "",
@@ -2255,7 +2261,7 @@
       "id": "hint_lock_z_front_motor_holder",
       "type": "tool_reminder",
       "title": "Lock motor-piece bolts to set the span",
-      "message": "Tighten both motor-piece bolts fully once the axis is at the correct frame length. These prevent the rods from shifting during belt tensioning. Use the allen key to reach the bolts â€” they are on the face that was accessible before mounting.",
+      "message": "Tighten both motor-piece bolts fully once the axis is at the correct frame length. These prevent the rods from shifting during belt tensioning. Use the allen key to reach the bolts \u00e2\u20ac\u201d they are on the face that was accessible before mounting.",
       "targetId": "target_z_front_motor_holder_bolt_1",
       "partId": "",
       "toolId": "tool_allen_key_metric",
@@ -2264,8 +2270,8 @@
     {
       "id": "hint_tension_z_front_belt",
       "type": "tool_reminder",
-      "title": "Pliers tension â€” belt should twang like a guitar string",
-      "message": "Grip the loose belt end with pliers and pull, or grip and twist, until the belt is taut. Pluck the belt â€” it should twang like a guitar string. Be firm but careful: excessive force can snap the belt. Hold tension while reinserting the belt peg in the next step.",
+      "title": "Pliers tension \u00e2\u20ac\u201d belt should twang like a guitar string",
+      "message": "Grip the loose belt end with pliers and pull, or grip and twist, until the belt is taut. Pluck the belt \u00e2\u20ac\u201d it should twang like a guitar string. Be firm but careful: excessive force can snap the belt. Hold tension while reinserting the belt peg in the next step.",
       "targetId": "target_z_front_belt_tension",
       "partId": "",
       "toolId": "tool_pliers",
@@ -2274,8 +2280,8 @@
     {
       "id": "hint_reinsert_z_front_belt_peg",
       "type": "highlight",
-      "title": "Insert belt ~Â¾\" through peg; foot faces away from axis center",
-      "message": "Thread the belt end approximately Â¾ inch through the peg, with the peg foot turned away from the toothed side of the belt. The foot faces away from the center of the axis assembly. Push the peg firmly into the small, ribbed belt-catcher hole to lock belt tension.",
+      "title": "Insert belt ~\u00c2\u00be\" through peg; foot faces away from axis center",
+      "message": "Thread the belt end approximately \u00c2\u00be inch through the peg, with the peg foot turned away from the toothed side of the belt. The foot faces away from the center of the axis assembly. Push the peg firmly into the small, ribbed belt-catcher hole to lock belt tension.",
       "targetId": "target_z_front_belt_peg_insert",
       "partId": "",
       "toolId": "",
@@ -2285,7 +2291,7 @@
       "id": "hint_check_z_front_axis_travel",
       "type": "highlight",
       "title": "Four-point Z-front QC: travel, rods flush, bolt sides, belt direction",
-      "message": "Run the full QC checklist: (1) Carriage moves smoothly along full Z travel â€” no binding; lubricate rods if tight. (2) Rods are flush with the idler bottom â€” not protruding. (3) Idler and carriage bolt heads are on the same side. (4) Toothed side of belt faces inward.",
+      "message": "Run the full QC checklist: (1) Carriage moves smoothly along full Z travel \u00e2\u20ac\u201d no binding; lubricate rods if tight. (2) Rods are flush with the idler bottom \u00e2\u20ac\u201d not protruding. (3) Idler and carriage bolt heads are on the same side. (4) Toothed side of belt faces inward.",
       "targetId": "target_z_front_carriage_travel_qc",
       "partId": "",
       "toolId": "",
@@ -2295,7 +2301,7 @@
       "id": "hint_tighten_z_back_idler_screws",
       "type": "tool_reminder",
       "title": "Tighten the two shorter M6x18 bolts on Z-back; leave M6x30 loose",
-      "message": "Use a drill on low torque to tighten the two shorter M6x18 bolts on the Z-back idler. These lock the rods flush against the back of the idler. Leave the longer M6x30 bolt loose â€” it attaches to the bottom of the back frame face in the next step.",
+      "message": "Use a drill on low torque to tighten the two shorter M6x18 bolts on the Z-back idler. These lock the rods flush against the back of the idler. Leave the longer M6x30 bolt loose \u00e2\u20ac\u201d it attaches to the bottom of the back frame face in the next step.",
       "targetId": "target_z_back_idler_screw_1",
       "partId": "",
       "toolId": "tool_allen_key_metric",
@@ -2304,7 +2310,7 @@
     {
       "id": "hint_mount_z_back_axis",
       "type": "highlight",
-      "title": "Z-back mirrors Z-front â€” idler to back-face bottom, motor to top",
+      "title": "Z-back mirrors Z-front \u00e2\u20ac\u201d idler to back-face bottom, motor to top",
       "message": "This step is identical to Z-front but mounts onto the back face of the frame. Tighten all 8 motor-piece bolts before mounting. Fit idler long bolt to bottom back-face hole, motor long bolt to top back-face hole. Keep checking rods stay flush while lengthening. The Z-back axis should align directly behind the Z-front axis.",
       "targetId": "target_z_back_axis_idler_bolt",
       "partId": "",
@@ -2315,7 +2321,7 @@
       "id": "hint_lock_z_back_motor_holder",
       "type": "tool_reminder",
       "title": "Lock Z-back motor-piece bolts",
-      "message": "Tighten both motor-piece bolts on the Z-back axis once it is at the correct frame length. The two Z columns must be aligned â€” check that the Z-back axis sits directly behind the Z-front axis before locking.",
+      "message": "Tighten both motor-piece bolts on the Z-back axis once it is at the correct frame length. The two Z columns must be aligned \u00e2\u20ac\u201d check that the Z-back axis sits directly behind the Z-front axis before locking.",
       "targetId": "target_z_back_motor_holder_bolt_1",
       "partId": "",
       "toolId": "tool_allen_key_metric",
@@ -2325,7 +2331,7 @@
       "id": "hint_tension_z_back_belt",
       "type": "tool_reminder",
       "title": "Tension Z-back belt to guitar-string tautness",
-      "message": "Grip the loose belt end with pliers and pull until taut. Pluck the belt â€” guitar-string twang is the target. Hold tension and insert the belt peg in the next step without releasing.",
+      "message": "Grip the loose belt end with pliers and pull until taut. Pluck the belt \u00e2\u20ac\u201d guitar-string twang is the target. Hold tension and insert the belt peg in the next step without releasing.",
       "targetId": "target_z_back_belt_tension",
       "partId": "",
       "toolId": "tool_pliers",
@@ -2334,8 +2340,8 @@
     {
       "id": "hint_reinsert_z_back_belt_peg",
       "type": "highlight",
-      "title": "Insert Z-back belt peg ~Â¾\"; foot away from axis center",
-      "message": "Thread the belt end approximately Â¾ inch through the peg foot, with the foot turned away from the center of the axis assembly. Push the peg firmly into the small, ribbed belt-catcher hole.",
+      "title": "Insert Z-back belt peg ~\u00c2\u00be\"; foot away from axis center",
+      "message": "Thread the belt end approximately \u00c2\u00be inch through the peg foot, with the foot turned away from the center of the axis assembly. Push the peg firmly into the small, ribbed belt-catcher hole.",
       "targetId": "target_z_back_belt_peg_insert",
       "partId": "",
       "toolId": "",
@@ -2345,7 +2351,7 @@
       "id": "hint_check_z_back_axis_travel",
       "type": "highlight",
       "title": "Z-back QC: travel, rods flush, bolt sides, belt direction",
-      "message": "QC checklist: (1) Carriage moves smoothly along full Z travel. (2) Rods flush with idler bottom. (3) Idler and carriage bolt heads on the same side. (4) Toothed side of belt faces inward. (5) Z-back carriage is at the same height as Z-front carriage â€” they must stay level to keep the bed flat.",
+      "message": "QC checklist: (1) Carriage moves smoothly along full Z travel. (2) Rods flush with idler bottom. (3) Idler and carriage bolt heads on the same side. (4) Toothed side of belt faces inward. (5) Z-back carriage is at the same height as Z-front carriage \u00e2\u20ac\u201d they must stay level to keep the bed flat.",
       "targetId": "target_z_back_carriage_travel_qc",
       "partId": "",
       "toolId": "",

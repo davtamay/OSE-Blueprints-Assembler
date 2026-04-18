@@ -21,17 +21,23 @@
     {
       "id": "subassembly_bed_platform",
       "name": "Heated Bed Platform",
-      "stepIds": [ "step_mount_bed_guide_rods", "step_place_bed_raisers", "step_check_bed_platform_alignment" ],
+      "stepIds": [
+        "step_mount_bed_guide_rods",
+        "step_place_bed_raisers",
+        "step_check_bed_platform_alignment"
+      ],
       "assemblyId": "assembly_d3d_heatbed_stage_02",
       "description": "Bed standoff raisers and guide rods that support the heated bed above the Z carriages."
-  },
+    },
     {
       "id": "subassembly_y_bed_rods",
       "name": "Y-Axis Bed Guide Rods",
-      "stepIds": [ "step_place_y_bed_rods" ],
+      "stepIds": [
+        "step_place_y_bed_rods"
+      ],
       "assemblyId": "assembly_d3d_heatbed_stage_02",
       "description": "Guide rods for Y-axis bed travel, connecting front and back Z carriages."
-  }
+    }
   ],
   "parts": [
     {
@@ -447,7 +453,7 @@
       "id": "step_mount_bed_guide_rods",
       "name": "Mount the bed guide rods through the Z carriages",
       "assemblyId": "assembly_d3d_heatbed_stage_02",
-      "sequenceIndex": 281,
+      "sequenceIndex": 282,
       "instructionText": "Thread two nuts onto each bed guide rod. Slide each rod through the matching hole in the Z-front carriage and the Z-back carriage. Push rod ends flush with the outer edges of both carriages.",
       "hintIds": [
         "hint_mount_bed_guide_rods"
@@ -491,7 +497,7 @@
       "id": "step_place_bed_raisers",
       "name": "Thread the bed raiser standoffs onto the guide rods",
       "assemblyId": "assembly_d3d_heatbed_stage_02",
-      "sequenceIndex": 282,
+      "sequenceIndex": 283,
       "instructionText": "Thread three bed raiser standoffs onto each of the two guide rods. Space them evenly. The raisers create the flat support surface that the heated bed rests on and maintain the correct bed height above the carriages.",
       "hintIds": [
         "hint_place_bed_raisers"
@@ -554,7 +560,7 @@
       "id": "step_check_bed_platform_alignment",
       "name": "Check bed platform alignment and rod seating",
       "assemblyId": "assembly_d3d_heatbed_stage_02",
-      "sequenceIndex": 283,
+      "sequenceIndex": 284,
       "instructionText": "Verify: rod ends are flush with idler outer edges; two nuts per rod; bolts tightened without deforming plastic; platform does not rock laterally when pressed.",
       "targetIds": [
         "target_bed_platform_qc"
@@ -571,7 +577,7 @@
       "assemblyId": "assembly_d3d_heatbed_stage_02",
       "instructionText": "Position the Y-axis bed guide rods connecting the front and back Z carriages. These rods enable the bed platform to travel smoothly along the Y axis.",
       "family": "Place",
-      "sequenceIndex": 284,
+      "sequenceIndex": 285,
       "hintIds": [
         "hint_y_bed_rods"
       ],
@@ -671,7 +677,7 @@
       "id": "target_bed_platform_qc",
       "name": "Bed Platform QC",
       "anchorRef": "anchors/d3d/bed/platform_qc",
-      "description": "Check point â€” bed platform level and rods flush",
+      "description": "Check point \u00e2\u20ac\u201d bed platform level and rods flush",
       "associatedPartId": "",
       "tags": [
         "qc",
@@ -742,7 +748,7 @@
       "id": "hint_mount_bed_guide_rods",
       "type": "highlight",
       "title": "Slide both bed rods through front and back Z carriages",
-      "message": "Each bed guide rod threads through the hole in the Z-front carriage and the matching hole in the Z-back carriage. Thread two nuts onto each rod before inserting â€” the nuts sit on either side of the carriage to provide a flat support surface for the heated bed and to minimize heat transfer to the plastic. Push the rod ends flush with the outer edges of both carriages.",
+      "message": "Each bed guide rod threads through the hole in the Z-front carriage and the matching hole in the Z-back carriage. Thread two nuts onto each rod before inserting \u00e2\u20ac\u201d the nuts sit on either side of the carriage to provide a flat support surface for the heated bed and to minimize heat transfer to the plastic. Push the rod ends flush with the outer edges of both carriages.",
       "targetId": "target_bed_rod_a_mount",
       "partId": "",
       "toolId": "",
@@ -752,7 +758,7 @@
       "id": "hint_place_bed_raisers",
       "type": "highlight",
       "title": "Thread 3 standoff raisers onto each rod; space them evenly",
-      "message": "Thread the 6 bed raiser standoffs onto the two guide rods â€” 3 per rod. Space them evenly along the rod length so the heated bed will sit flat. The raisers provide the correct height gap between the Z carriage and the heated bed and allow wiring to pass freely beneath the bed surface.",
+      "message": "Thread the 6 bed raiser standoffs onto the two guide rods \u00e2\u20ac\u201d 3 per rod. Space them evenly along the rod length so the heated bed will sit flat. The raisers provide the correct height gap between the Z carriage and the heated bed and allow wiring to pass freely beneath the bed surface.",
       "targetId": "target_bed_raisers_set",
       "partId": "",
       "toolId": "",
@@ -762,7 +768,7 @@
       "id": "hint_check_bed_platform_alignment",
       "type": "highlight",
       "title": "Confirm rods are flush, raisers level, and no side-to-side rock",
-      "message": "QC checklist: (1) Rod ends are flush with the outer edges of both idler pieces â€” not protruding. (2) Two nuts are present on each rod. (3) Bolts are tightened enough to hold the rods but not so tight they deform the plastic. (4) The platform does not rock side to side when you apply light lateral pressure.",
+      "message": "QC checklist: (1) Rod ends are flush with the outer edges of both idler pieces \u00e2\u20ac\u201d not protruding. (2) Two nuts are present on each rod. (3) Bolts are tightened enough to hold the rods but not so tight they deform the plastic. (4) The platform does not rock side to side when you apply light lateral pressure.",
       "targetId": "target_bed_platform_qc",
       "partId": "",
       "toolId": "",

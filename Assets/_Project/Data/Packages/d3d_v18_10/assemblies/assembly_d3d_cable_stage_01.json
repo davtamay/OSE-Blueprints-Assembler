@@ -17,10 +17,12 @@
     {
       "id": "subassembly_cable_routing",
       "name": "Cable Routing",
-      "stepIds": [ "step_place_cable_management" ],
+      "stepIds": [
+        "step_place_cable_management"
+      ],
       "assemblyId": "assembly_d3d_cable_stage_01",
       "description": "Cable chain assemblies for X-axis and Y-axis wiring routes."
-  }
+    }
   ],
   "parts": [
     {
@@ -142,7 +144,7 @@
       "assemblyId": "assembly_d3d_cable_stage_01",
       "instructionText": "Position the cable chain assemblies: X-axis cable chain at the top of the gantry, Y-axis cable chain along the left side, and the cable chain bracket that anchors the Y chain to the Y-left carriage.",
       "family": "Place",
-      "sequenceIndex": 285,
+      "sequenceIndex": 286,
       "hintIds": [
         "hint_cable_management"
       ],
