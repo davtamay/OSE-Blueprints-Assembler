@@ -54,6 +54,11 @@ namespace OSE.Editor
 
             DrawPartSceneHandles(sv);
 
+            // ── Tool × Part interaction axis gizmo ────────────────────────────
+            // Renders a yellow arrow along the authored motion axis when a
+            // tool-action task with an interaction payload is selected.
+            DrawInteractionAxisGizmo();
+
             // ── Phase A3: subassembly root rotation gizmo ─────────────────────
             DrawSubassemblyRootGizmo();
 

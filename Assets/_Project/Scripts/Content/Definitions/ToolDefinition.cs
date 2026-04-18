@@ -46,6 +46,13 @@ namespace OSE.Content
         /// </summary>
         public ToolPoseConfig toolPose;
 
+        /// <summary>
+        /// Default <c>actionType</c> inherited by new tool-target tasks that use this tool
+        /// (drill→"drill", framing square→"measure", wrench→"tighten", etc.). Authors can
+        /// still override per step for off-label use. Null means "no default — author picks".
+        /// </summary>
+        public string primaryActionType;
+
         public bool HasOrientationOverride => useOrientationOverride;
 
         /// <summary>

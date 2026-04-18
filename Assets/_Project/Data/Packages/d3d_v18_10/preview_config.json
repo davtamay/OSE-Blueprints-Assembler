@@ -5983,7 +5983,30 @@
                 "y": 0.8,
                 "z": 0.8
             },
-            "stepPoses": [],
+            "stepPoses": [
+                {
+                    "stepId": "step_batch_c1_rod_slide_test",
+                    "label": "synthesized:holdAtEnd (sub=subassembly_carriage_y_left cue=poseTransition[1])",
+                    "position": {
+                        "x": 0.5222,
+                        "y": 0.5376,
+                        "z": 0.028
+                    },
+                    "rotation": {
+                        "x": -0.5,
+                        "y": 0.5,
+                        "z": 0.5,
+                        "w": 0.5
+                    },
+                    "scale": {
+                        "x": 0.8,
+                        "y": 0.8,
+                        "z": 0.8
+                    },
+                    "propagateFromStep": "",
+                    "propagateThroughStep": ""
+                }
+            ],
             "splinePath": {
                 "radius": 0.0,
                 "segments": 0,
@@ -6038,7 +6061,30 @@
                 "y": 0.8,
                 "z": 0.8
             },
-            "stepPoses": [],
+            "stepPoses": [
+                {
+                    "stepId": "step_batch_c1_rod_slide_test",
+                    "label": "synthesized:holdAtEnd (sub=subassembly_carriage_y_left cue=poseTransition[1])",
+                    "position": {
+                        "x": 0.5222,
+                        "y": 0.5636,
+                        "z": 0.028
+                    },
+                    "rotation": {
+                        "x": -0.5,
+                        "y": 0.5,
+                        "z": 0.5,
+                        "w": 0.5
+                    },
+                    "scale": {
+                        "x": 0.8,
+                        "y": 0.8,
+                        "z": 0.8
+                    },
+                    "propagateFromStep": "",
+                    "propagateThroughStep": ""
+                }
+            ],
             "splinePath": {
                 "radius": 0.0,
                 "segments": 0,
@@ -6093,7 +6139,30 @@
                 "y": 0.8,
                 "z": 0.8
             },
-            "stepPoses": [],
+            "stepPoses": [
+                {
+                    "stepId": "step_batch_c1_rod_slide_test",
+                    "label": "synthesized:holdAtEnd (sub=subassembly_carriage_y_left cue=poseTransition[1])",
+                    "position": {
+                        "x": 0.5222,
+                        "y": 0.5376,
+                        "z": -0.0279
+                    },
+                    "rotation": {
+                        "x": -0.5,
+                        "y": 0.5,
+                        "z": 0.5,
+                        "w": 0.5
+                    },
+                    "scale": {
+                        "x": 0.8,
+                        "y": 0.8,
+                        "z": 0.8
+                    },
+                    "propagateFromStep": "",
+                    "propagateThroughStep": ""
+                }
+            ],
             "splinePath": {
                 "radius": 0.0,
                 "segments": 0,
@@ -6148,7 +6217,30 @@
                 "y": 0.8,
                 "z": 0.8
             },
-            "stepPoses": [],
+            "stepPoses": [
+                {
+                    "stepId": "step_batch_c1_rod_slide_test",
+                    "label": "synthesized:holdAtEnd (sub=subassembly_carriage_y_left cue=poseTransition[1])",
+                    "position": {
+                        "x": 0.5222,
+                        "y": 0.5636,
+                        "z": -0.0279
+                    },
+                    "rotation": {
+                        "x": -0.5,
+                        "y": 0.5,
+                        "z": 0.5,
+                        "w": 0.5
+                    },
+                    "scale": {
+                        "x": 0.8,
+                        "y": 0.8,
+                        "z": 0.8
+                    },
+                    "propagateFromStep": "",
+                    "propagateThroughStep": ""
+                }
+            ],
             "splinePath": {
                 "radius": 0.0,
                 "segments": 0,
@@ -7216,7 +7308,30 @@
                 "y": 1.0,
                 "z": 1.0
             },
-            "stepPoses": [],
+            "stepPoses": [
+                {
+                    "stepId": "step_batch_c1_rod_slide_test",
+                    "label": "synthesized:holdAtEnd (sub=subassembly_carriage_y_left cue=poseTransition[1])",
+                    "position": {
+                        "x": 0.5233,
+                        "y": 0.5509,
+                        "z": 0.0
+                    },
+                    "rotation": {
+                        "x": 0.0,
+                        "y": -0.7071,
+                        "z": 0.7071,
+                        "w": 0.0
+                    },
+                    "scale": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    },
+                    "propagateFromStep": "",
+                    "propagateThroughStep": ""
+                }
+            ],
             "splinePath": {
                 "radius": 0.0,
                 "segments": 8,
@@ -7271,7 +7386,30 @@
                 "y": 1.0,
                 "z": 1.0
             },
-            "stepPoses": [],
+            "stepPoses": [
+                {
+                    "stepId": "step_batch_c1_rod_slide_test",
+                    "label": "synthesized:holdAtEnd (sub=subassembly_carriage_y_left cue=poseTransition[1])",
+                    "position": {
+                        "x": 0.5233,
+                        "y": 0.5509,
+                        "z": -1.3411e-7
+                    },
+                    "rotation": {
+                        "x": 0.0,
+                        "y": 0.7071,
+                        "z": -0.7071,
+                        "w": 0.0
+                    },
+                    "scale": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    },
+                    "propagateFromStep": "",
+                    "propagateThroughStep": ""
+                }
+            ],
             "splinePath": {
                 "radius": 0.0,
                 "segments": 8,
@@ -8683,15 +8821,15 @@
         {
             "partId": "batch_test_rod",
             "startPosition": {
-                "x": 0.82,
-                "y": 0.75,
-                "z": 0.05
+                "x": 0.5222,
+                "y": 0.7002,
+                "z": 0.027
             },
             "startRotation": {
-                "x": 0.0,
+                "x": -0.7071,
                 "y": 0.0,
                 "z": 0.0,
-                "w": 1.0
+                "w": 0.7071
             },
             "startScale": {
                 "x": 1.0,
@@ -17195,6 +17333,41 @@
                 "g": 0.85,
                 "b": 0.95,
                 "a": 0.5
+            },
+            "portA": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "portB": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        },
+        {
+            "targetId": "target_c1_bolt_tighten_a",
+            "position": {
+                "x": 0.8351,
+                "y": 0.576,
+                "z": 0.0158
+            },
+            "rotation": {
+                "x": 0.5,
+                "y": -0.5,
+                "z": 0.5,
+                "w": -0.5
+            },
+            "scale": {
+                "x": 0.01,
+                "y": 0.01,
+                "z": 0.01
+            },
+            "color": {
+                "r": 1.0,
+                "g": 0.6,
+                "b": 0.0,
+                "a": 1.0
             },
             "portA": {
                 "x": 0.0,

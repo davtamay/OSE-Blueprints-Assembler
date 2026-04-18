@@ -425,31 +425,18 @@ namespace OSE.UI.Root
 
             string currentStepId = stepCtrl.CurrentStepDefinition.id;
 
-            // End pose: stepPose for this step if authored, else assembledPosition
-            Vector3 endPos;
-            Quaternion endRot;
-            Vector3 endScale;
-            StepPoseEntry stepPose = spawner.FindPartStepPose(partId, currentStepId);
-            if (stepPose != null)
-            {
-                endPos = new Vector3(stepPose.position.x, stepPose.position.y, stepPose.position.z);
-                endRot = !stepPose.rotation.IsIdentity
-                    ? new Quaternion(stepPose.rotation.x, stepPose.rotation.y, stepPose.rotation.z, stepPose.rotation.w)
-                    : Quaternion.identity;
-                endScale = new Vector3(stepPose.scale.x, stepPose.scale.y, stepPose.scale.z);
-            }
-            else
-            {
-                PartPreviewPlacement pp = spawner.FindPartPlacement(partId);
-                if (pp == null) return null;
-                endPos = new Vector3(pp.assembledPosition.x, pp.assembledPosition.y, pp.assembledPosition.z);
-                endRot = !pp.assembledRotation.IsIdentity
-                    ? new Quaternion(pp.assembledRotation.x, pp.assembledRotation.y, pp.assembledRotation.z, pp.assembledRotation.w)
-                    : Quaternion.identity;
-                endScale = new Vector3(pp.assembledScale.x, pp.assembledScale.y, pp.assembledScale.z);
-            }
+            // Resolve the authored interaction payload (Phase B) from the
+            // current step's requiredToolActions. Null means "no payload → lerp / auto".
+            ToolPartInteraction payload = TryResolveInteractionPayload(stepCtrl.CurrentStepDefinition, targetId, out var toolPose);
 
-            // Start pose: part's current local transform
+            // End pose: honor payload.toPose when set (Phase F), fall back to implicit
+            // stepPoses[currentStepId] → assembledPosition chain.
+            if (!ResolveEndPose(payload?.toPose, partId, currentStepId, spawner,
+                                out Vector3 endPos, out Quaternion endRot, out Vector3 endScale))
+                return null;
+
+            // Start pose: part's current local transform. Never authored — the pose
+            // chain derives start from whatever the previous task left the part at.
             Vector3 startPos = partGo.transform.localPosition;
             Quaternion startRot = partGo.transform.localRotation;
             Vector3 startScale = partGo.transform.localScale;
@@ -460,10 +447,130 @@ namespace OSE.UI.Root
                 return null;
 
             Transform previewRoot = _ctx.Setup?.PreviewRoot;
-            return new LerpPosePartEffect(
-                partGo.transform, previewRoot,
-                startPos, startRot, startScale,
-                endPos, endRot, endScale);
+
+            var args = new PartEffectBuildArgs
+            {
+                PartTransform = partGo.transform,
+                PreviewRoot   = previewRoot,
+                Start         = new PoseSnapshot(startPos, startRot, startScale),
+                End           = new PoseSnapshot(endPos,   endRot,   endScale),
+                Payload       = payload,
+                ToolPose      = toolPose,
+            };
+
+            string archetype = !string.IsNullOrEmpty(payload?.archetype)
+                ? payload.archetype
+                : PartEffectArchetypes.Lerp;
+            return PartEffectRegistry.Build(archetype, args);
+        }
+
+        /// <summary>
+        /// Walks the step's <c>requiredToolActions</c> for the entry keyed to
+        /// <paramref name="targetId"/>, returning its authored interaction payload
+        /// and the referenced tool's pose metadata. Both are null when absent.
+        /// </summary>
+        private ToolPartInteraction TryResolveInteractionPayload(
+            StepDefinition step, string targetId, out ToolPoseConfig toolPose)
+        {
+            toolPose = null;
+            if (step?.requiredToolActions == null || string.IsNullOrEmpty(targetId)) return null;
+
+            ToolActionDefinition match = null;
+            foreach (var a in step.requiredToolActions)
+            {
+                if (a != null && a.targetId == targetId) { match = a; break; }
+            }
+            if (match == null) return null;
+
+            // Look up the tool's pose for archetypes that reference tool_action_axis.
+            var package = _ctx.Spawner?.CurrentPackage;
+            if (package?.tools != null && !string.IsNullOrEmpty(match.toolId))
+            {
+                foreach (var t in package.tools)
+                {
+                    if (t != null && t.id == match.toolId) { toolPose = t.toolPose; break; }
+                }
+            }
+
+            return match.interaction;
+        }
+
+        /// <summary>
+        /// Phase F end-pose resolver. Honors the authored <c>toPose</c> token from
+        /// <see cref="ToolPartInteraction"/> and falls back to the legacy implicit
+        /// resolution (<c>stepPoses[currentStepId]</c> → <c>assembledPosition</c>)
+        /// when the token is <c>"auto"</c> / null / empty.
+        ///
+        /// <para>Token grammar (see <see cref="ToPoseTokens"/>):</para>
+        /// <list type="bullet">
+        ///   <item><c>"auto"</c> / null → implicit chain (unchanged pre-F behavior).</item>
+        ///   <item><c>"start"</c> → <see cref="PartPreviewPlacement.startPosition"/>.</item>
+        ///   <item><c>"assembled"</c> → <see cref="PartPreviewPlacement.assembledPosition"/>.</item>
+        ///   <item><c>"step:&lt;stepId&gt;"</c> → named <see cref="StepPoseEntry"/>.</item>
+        /// </list>
+        ///
+        /// <para>Returns <c>false</c> only when neither the authored token nor the
+        /// fallback chain can produce a pose (e.g. the part has no placement data at
+        /// all). Stale <c>"step:&lt;id&gt;"</c> references silently degrade to the
+        /// implicit chain — authoring-time validation surfaces the stale reference in
+        /// the TTAW panel before it reaches runtime.</para>
+        /// </summary>
+        private static bool ResolveEndPose(
+            string toPoseToken, string partId, string currentStepId,
+            PackagePartSpawner spawner,
+            out Vector3 pos, out Quaternion rot, out Vector3 scale)
+        {
+            pos = Vector3.zero; rot = Quaternion.identity; scale = Vector3.one;
+
+            PartPreviewPlacement pp = spawner.FindPartPlacement(partId);
+
+            // Explicit token dispatch.
+            if (!ToPoseTokens.IsAuto(toPoseToken))
+            {
+                if (toPoseToken == ToPoseTokens.Start && pp != null)
+                {
+                    AssignFromFloats(pp.startPosition, pp.startRotation, pp.startScale, out pos, out rot, out scale);
+                    return true;
+                }
+                if (toPoseToken == ToPoseTokens.Assembled && pp != null)
+                {
+                    AssignFromFloats(pp.assembledPosition, pp.assembledRotation, pp.assembledScale, out pos, out rot, out scale);
+                    return true;
+                }
+                if (toPoseToken.StartsWith(ToPoseTokens.StepPrefix, System.StringComparison.Ordinal))
+                {
+                    string stepId = toPoseToken.Substring(ToPoseTokens.StepPrefix.Length);
+                    StepPoseEntry sp = spawner.FindPartStepPose(partId, stepId);
+                    if (sp != null)
+                    {
+                        AssignFromFloats(sp.position, sp.rotation, sp.scale, out pos, out rot, out scale);
+                        return true;
+                    }
+                    // stale reference — fall through to implicit chain
+                }
+            }
+
+            // Implicit chain (pre-Phase-F behavior, unchanged).
+            StepPoseEntry stepPose = spawner.FindPartStepPose(partId, currentStepId);
+            if (stepPose != null)
+            {
+                AssignFromFloats(stepPose.position, stepPose.rotation, stepPose.scale, out pos, out rot, out scale);
+                return true;
+            }
+            if (pp != null)
+            {
+                AssignFromFloats(pp.assembledPosition, pp.assembledRotation, pp.assembledScale, out pos, out rot, out scale);
+                return true;
+            }
+            return false;
+        }
+
+        private static void AssignFromFloats(SceneFloat3 p, SceneQuaternion r, SceneFloat3 s,
+            out Vector3 pos, out Quaternion rot, out Vector3 scale)
+        {
+            pos = new Vector3(p.x, p.y, p.z);
+            rot = !r.IsIdentity ? new Quaternion(r.x, r.y, r.z, r.w) : Quaternion.identity;
+            scale = new Vector3(s.x, s.y, s.z);
         }
     }
 }

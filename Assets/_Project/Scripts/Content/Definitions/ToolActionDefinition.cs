@@ -12,5 +12,12 @@ namespace OSE.Content
         public int requiredCount = 1;
         public string successMessage;
         public string failureMessage;
+
+        /// <summary>
+        /// Optional authored description of HOW the tool drives the part.
+        /// Null ≡ "lerp archetype with auto-derived axis" (pre-payload behavior).
+        /// See <see cref="ToolPartInteraction"/>.
+        /// </summary>
+        public ToolPartInteraction interaction;
     }
 }

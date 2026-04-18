@@ -87,17 +87,19 @@ namespace OSE.Editor
         /// Weld axis = drift direction; weld length = distance to travel.
         /// </summary>
         private static readonly TaskFieldProfile s_toolAction = new(
-            showPosition:        true,
-            showRotation:        true,
-            showWeldAxis:        true,
-            showWeldLength:      true,
-            showToolOptions:     true,
-            showClickToSnap:     true,
-            scenePositionHandle: true,
-            sceneRotationHandle: true,
-            sceneWeldArrow:      true,
-            scenePortPoints:     true,
-            scenePartConnector:  true);
+            showPosition:         true,
+            showRotation:         true,
+            showWeldAxis:         true,
+            showWeldLength:       true,
+            showToolOptions:      true,
+            showClickToSnap:      true,
+            showActionType:       true,
+            showInteractionPanel: true,
+            scenePositionHandle:  true,
+            sceneRotationHandle:  true,
+            sceneWeldArrow:       true,
+            scenePortPoints:      true,
+            scenePartConnector:   true);
 
         /// <summary>Fallback — same as tool action.</summary>
         private static readonly TaskFieldProfile s_default = s_toolAction;

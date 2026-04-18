@@ -40,6 +40,12 @@ namespace OSE.Editor
         /// <summary>Show the click-to-snap surface button.</summary>
         public readonly bool ShowClickToSnap;
 
+        /// <summary>Show the tool-action <c>actionType</c> picker (drill, wrench, press, weld, …).</summary>
+        public readonly bool ShowActionType;
+
+        /// <summary>Show the Tool × Part Interaction authoring panel (archetype, axis, motion).</summary>
+        public readonly bool ShowInteractionPanel;
+
         // ── Scene gizmos ──────────────────────────────────────────────────────
 
         /// <summary>Draw the position move handle in SceneView.</summary>
@@ -67,6 +73,8 @@ namespace OSE.Editor
             bool showPortFields      = false,
             bool showToolOptions     = false,
             bool showClickToSnap     = false,
+            bool showActionType      = false,
+            bool showInteractionPanel = false,
             bool scenePositionHandle = false,
             bool sceneRotationHandle = false,
             bool sceneWeldArrow      = false,
@@ -82,6 +90,8 @@ namespace OSE.Editor
             ShowPortFields      = showPortFields;
             ShowToolOptions     = showToolOptions;
             ShowClickToSnap     = showClickToSnap;
+            ShowActionType       = showActionType;
+            ShowInteractionPanel = showInteractionPanel;
             ScenePositionHandle = scenePositionHandle;
             SceneRotationHandle = sceneRotationHandle;
             SceneWeldArrow      = sceneWeldArrow;

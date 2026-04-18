@@ -1391,6 +1391,13 @@ namespace OSE.Editor
             // Optional parts, the full Start/Custom/Assembled set is shown.
             bool isNoTaskRow = noTaskAutoIdx >= 0;
 
+            // ── Phase F: End-pose readout + picker (pose-chain authoring) ────
+            // Read-only-ish display of "this task ends at pose X" + a picker that
+            // snaps _editingPoseMode onto whatever pose the author chose. The chip
+            // row below remains the primary transform-editing surface.
+            if (hasPart && !string.IsNullOrEmpty(currentStepId))
+                DrawPartEndPoseRow(ref _parts[_selectedPartIdx], currentStepId, poses, noTaskAutoIdx);
+
             EditorGUILayout.BeginHorizontal();
 
             if (!isNoTaskRow)
@@ -1473,6 +1480,127 @@ namespace OSE.Editor
             // Transform fields for Required / Optional / Custom poses are
             // rendered by DrawPartDetailPanel below — don't duplicate them
             // up here or the inspector shows two identical blocks.
+        }
+
+        /// <summary>
+        /// Phase F: compact "End pose for this step" row at the top of the Part
+        /// inspector. Complements the existing pose-mode chips below — the chips
+        /// handle transform authoring; this row makes the current step's
+        /// end-pose selection explicit and one-click switchable via the shared
+        /// <see cref="PosePickerDropdown"/>.
+        /// </summary>
+        private void DrawPartEndPoseRow(
+            ref PartEditState p,
+            string currentStepId,
+            List<StepPoseEntry> poses,
+            int noTaskAutoIdx)
+        {
+            // Resolve the current end-pose label for display.
+            string label;
+            if (noTaskAutoIdx >= 0 && poses != null && noTaskAutoIdx < poses.Count)
+            {
+                var e = poses[noTaskAutoIdx];
+                label = !string.IsNullOrEmpty(e?.label) ? e.label : $"step:{e?.stepId}";
+            }
+            else
+            {
+                int curIdx = -1;
+                if (poses != null)
+                {
+                    for (int i = 0; i < poses.Count; i++)
+                    {
+                        var e = poses[i];
+                        if (e != null && e.stepId == currentStepId) { curIdx = i; break; }
+                    }
+                }
+                if (curIdx >= 0)
+                {
+                    var e = poses[curIdx];
+                    label = !string.IsNullOrEmpty(e.label) ? e.label : $"step:{e.stepId}";
+                }
+                else
+                {
+                    label = "Assembled (default — no stepPose for this step)";
+                }
+            }
+
+            EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
+            EditorGUILayout.LabelField(
+                new GUIContent($"🔩 End pose for step '{currentStepId}':",
+                    "Which pose the part is in when this step's Part task completes. " +
+                    "Start pose is inherited from the previous task that touched this " +
+                    "part (pose-chain invariant)."),
+                GUILayout.Width(240));
+            EditorGUILayout.LabelField(label, EditorStyles.boldLabel);
+            if (GUILayout.Button(new GUIContent("Pick ▾", "Pick from the part's pose catalogue"),
+                    EditorStyles.miniButton, GUILayout.Width(56)))
+            {
+                var placement = FindPartPlacement(p.def?.id);
+                int capturedPartIdx = _selectedPartIdx;
+                string capturedStepId = currentStepId;
+                PosePickerDropdown.Open(placement, currentStepId, token =>
+                {
+                    OnPartEndPosePicked(capturedPartIdx, capturedStepId, token);
+                }, offerCreateNew: true);
+            }
+            EditorGUILayout.EndHorizontal();
+        }
+
+        /// <summary>
+        /// Interprets a <see cref="PosePickerDropdown"/> selection for a Part task.
+        /// Navigation-only: jumps <c>_editingPoseMode</c> onto the matching pose so
+        /// the existing chip UI + transform fields let the author fine-tune. Does
+        /// not mutate stepPoses[] — mutation happens through the chip UI once the
+        /// right pose is selected.
+        /// </summary>
+        private void OnPartEndPosePicked(int partIdx, string currentStepId, string token)
+        {
+            if (partIdx < 0 || _parts == null || partIdx >= _parts.Length) return;
+            ref PartEditState p = ref _parts[partIdx];
+
+            // The "+ New custom pose for this step" sentinel — create + select.
+            if (token == PosePickerDropdown.CreateNewToken)
+            {
+                if (p.def != null && !string.IsNullOrEmpty(currentStepId))
+                {
+                    AddStepPoseForCurrentStep(partIdx, currentStepId);
+                    Repaint();
+                }
+                return;
+            }
+
+            if (token == ToPoseTokens.Start || ToPoseTokens.IsAuto(token))
+            {
+                // "auto" is a navigation signal — flip to Start or Assembled.
+                ApplyPoseMode(token == ToPoseTokens.Start ? PoseModeStart : PoseModeAssembled);
+                Repaint();
+                return;
+            }
+            if (token == ToPoseTokens.Assembled)
+            {
+                ApplyPoseMode(PoseModeAssembled);
+                Repaint();
+                return;
+            }
+            if (token.StartsWith(ToPoseTokens.StepPrefix, StringComparison.Ordinal))
+            {
+                string stepId = token.Substring(ToPoseTokens.StepPrefix.Length);
+                if (p.stepPoses != null)
+                {
+                    for (int i = 0; i < p.stepPoses.Count; i++)
+                    {
+                        var e = p.stepPoses[i];
+                        if (e != null && e.stepId == stepId) { ApplyPoseMode(i); Repaint(); return; }
+                    }
+                }
+                // No stepPose exists — if the author picked the current step,
+                // lazy-create one so they can start editing transforms.
+                if (stepId == currentStepId && p.def != null)
+                {
+                    AddStepPoseForCurrentStep(partIdx, currentStepId);
+                    Repaint();
+                }
+            }
         }
 
         /// <summary>

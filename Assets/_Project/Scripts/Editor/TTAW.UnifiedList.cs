@@ -2489,7 +2489,13 @@ namespace OSE.Editor
             step.targetIds = tList.ToArray();
             var actionId = $"action_{targetId}";
             var aList = new List<ToolActionDefinition>(step.requiredToolActions ?? System.Array.Empty<ToolActionDefinition>());
-            aList.Add(new ToolActionDefinition { id = actionId, toolId = toolId, targetId = targetId });
+            aList.Add(new ToolActionDefinition
+            {
+                id         = actionId,
+                toolId     = toolId,
+                targetId   = targetId,
+                actionType = ResolvePrimaryActionType(toolId),
+            });
             step.requiredToolActions = aList.ToArray();
             var order = GetOrDeriveTaskOrder(step);
             order.Add(new TaskOrderEntry { kind = "toolAction", id = actionId });
@@ -3081,11 +3087,22 @@ namespace OSE.Editor
                     }
 
                     // ── Tool picker ───────────────────────────────────────
-                    // Find the requiredToolAction entry for this target (may be null if not yet set)
+                    // Resolve the action entry. For a "toolAction" row the selEntry.id
+                    // is the ACTION id (e.g. action_target_foo); for a "target" row it's
+                    // the target id. Check both so the picker works in either context.
                     ToolActionDefinition taskAction = null;
                     if (step.requiredToolActions != null)
+                    {
                         foreach (var a in step.requiredToolActions)
-                            if (a?.targetId == selEntry.id) { taskAction = a; break; }
+                        {
+                            if (a == null) continue;
+                            if (a.id == selEntry.id || a.targetId == selEntry.id)
+                            {
+                                taskAction = a;
+                                break;
+                            }
+                        }
+                    }
 
                     if (_pkg?.tools != null && _pkg.tools.Length > 0)
                     {
@@ -3144,6 +3161,18 @@ namespace OSE.Editor
                                 EditorGUILayout.LabelField($"Category: {selTool.category}", EditorStyles.miniLabel);
                         }
                     }
+
+                    // ── Action type picker ───────────────────────────────
+                    // Previously JSON-only; now a dropdown of canonical values
+                    // with a "Custom…" fallback for archetype-specific extensions.
+                    var toolActionProfile = TaskFieldRegistry.Get("toolAction");
+                    if (toolActionProfile.ShowActionType && taskAction != null)
+                        DrawActionTypePicker(step, taskAction);
+
+                    // ── Tool × Part Interaction panel ────────────────────
+                    // Archetype + motion-shape authoring for this tool action.
+                    if (toolActionProfile.ShowInteractionPanel && taskAction != null)
+                        DrawInteractionPanel(step, taskAction);
 
                     DrawPersistentToolRemovalRows();
 

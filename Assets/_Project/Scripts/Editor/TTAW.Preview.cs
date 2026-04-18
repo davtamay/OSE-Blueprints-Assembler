@@ -583,6 +583,9 @@ namespace OSE.Editor
 
         private void StopAllPreviews()
         {
+            // Cancel any running Tool × Part Interaction preview and restore pose.
+            InteractionPreviewRunner.Stop();
+
             // Tear down panel-play queue if active — unless we're being
             // called re-entrantly from inside StartSinglePanelCue (in which
             // case the panel loop owns the queue and is about to install
