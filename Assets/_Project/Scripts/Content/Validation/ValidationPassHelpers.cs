@@ -52,15 +52,17 @@ namespace OSE.Content.Validation
         internal static readonly HashSet<string> HintPriorityValues =
             S("low", "medium", "high");
 
-        // Canonical action-type vocabulary. Extended in Phase A.1 to match the
-        // TTAW authoring dropdown (DrawActionTypePicker) and ToolDefinition's
-        // primaryActionType seed values. `drill` / `screw` / `press` / `clamp`
-        // are **authoring-facing labels** — the runtime decides motion via the
-        // step's `profile` field and the tool action's `interaction` payload
-        // (archetype + axis + rotation), not via this string.
+        // Canonical action-type vocabulary — MUST match the 5 verbs that
+        // ToolActionTypeHelper.Parse() recognizes at runtime. Authoring labels
+        // that don't parse at runtime cause silent action rejection (see the
+        // step-58 "unsupported actionType 'drill'" bug from session 2026-04-18:
+        // Phase A.1 expanded this list with editor-facing labels like `drill` /
+        // `screw` / `press` without wiring them to the runtime, producing a
+        // class where authored content loaded fine but every tool engagement
+        // silently failed). Any expansion here MUST ship together with a
+        // matching ToolActionTypeHelper.Parse() alias.
         internal static readonly HashSet<string> ToolActionTypeValues =
-            S("measure", "tighten", "strike", "weld_pass", "grind_pass",
-              "drill", "screw", "press", "clamp", "cut", "solder");
+            S("measure", "tighten", "strike", "weld_pass", "grind_pass");
 
         internal static readonly HashSet<string> EffectTypeValues =
             S("placement_feedback", "success_feedback", "error_feedback", "welding", "sparks", "heat_glow", "fire", "dust", "milestone");

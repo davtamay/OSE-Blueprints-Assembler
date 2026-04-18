@@ -13,25 +13,21 @@ namespace OSE.Editor
     public sealed partial class ToolTargetAuthoringWindow : EditorWindow
     {
         /// <summary>
-        /// Canonical action types surfaced in the inspector dropdown. The set is
-        /// intentionally a superset of the runtime profiles in
-        /// <c>OSE.Interaction.ToolActionProfiles</c> plus a few author-facing synonyms
-        /// (e.g. "drill" vs "tighten") that make intent obvious when reading JSON.
-        /// Custom strings are always allowed via the "Custom…" entry.
+        /// Canonical action types surfaced in the inspector dropdown. MUST stay
+        /// in sync with <c>OSE.Runtime.ToolActionTypeHelper.Parse</c> — authoring
+        /// labels that don't parse at runtime cause silent tool-action rejection
+        /// (see the step-58 "unsupported actionType 'drill'" bug, session
+        /// 2026-04-18). The Custom… entry remains as an escape hatch for
+        /// archetype-specific extensions, but authors taking that route need to
+        /// also add a runtime parse alias.
         /// </summary>
         private static readonly string[] s_knownActionTypes = new[]
         {
+            "measure",
             "tighten",
-            "drill",
-            "screw",
+            "strike",
             "weld_pass",
             "grind_pass",
-            "cut",
-            "press",
-            "strike",
-            "measure",
-            "clamp",
-            "solder",
         };
 
         private const string kActionTypeNoneLabel   = "(none)";
