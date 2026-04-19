@@ -93,13 +93,18 @@ namespace OSE.UI.Root
         {
             if (_ctx.SpawnedPreviews.Count == 0) return false;
 
-            PlacementPreviewInfo previewInfo = RaycastPreviewAtScreen(screenPos, selectionId);
+            // Phase I.i — if the selected part belongs to an interchangeable
+            // unordered-set span, any ghost in the set is a legal click
+            // target (not just the part's authored ghost).
+            bool cross = TryGetInterchangeableSet(selectionId, out HashSet<string> setPartIds);
+
+            PlacementPreviewInfo previewInfo = RaycastPreviewAtScreen(screenPos, selectionId, cross ? setPartIds : null);
             if (previewInfo == null)
-                previewInfo = FindNearestPreviewByScreenProximity(screenPos, selectionId);
+                previewInfo = FindNearestPreviewByScreenProximity(screenPos, selectionId, cross ? setPartIds : null);
             if (previewInfo == null)
                 return false;
 
-            ExecuteClickToPlace(selectionId, partGo, previewInfo);
+            ExecuteClickToPlace(selectionId, partGo, previewInfo, cross);
             return true;
         }
 
@@ -365,22 +370,17 @@ namespace OSE.UI.Root
         /// to any target in the set. All three gates must hold; a single
         /// failure falls back to strict per-part matching.
         /// </summary>
-        private static string _lastCrossDiagKey;
-
-        private static bool TryGetInterchangeableSet(string selectionId, out HashSet<string> openPartIds)
+        internal static bool TryGetInterchangeableSet(string selectionId, out HashSet<string> openPartIds)
         {
             openPartIds = null;
             if (string.IsNullOrEmpty(selectionId)) return false;
             string draggedPartId = TaskInstanceId.ToPartId(selectionId);
             if (string.IsNullOrEmpty(draggedPartId)) return false;
 
-            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
-            { LogCrossDiag(selectionId, "no-session"); return false; }
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session)) return false;
             TaskCursor cursor = session?.AssemblyController?.StepController?.CurrentTaskCursor;
-            if (cursor == null)        { LogCrossDiag(selectionId, "no-cursor"); return false; }
-            if (cursor.IsComplete)     { LogCrossDiag(selectionId, "cursor-complete"); return false; }
-            if (string.IsNullOrEmpty(cursor.CurrentSetLabel))
-            { LogCrossDiag(selectionId, $"no-set-label (span={cursor.SpanIndex}/{cursor.TotalSpans}, open={cursor.OpenTasks?.Count ?? 0})"); return false; }
+            if (cursor == null || cursor.IsComplete || string.IsNullOrEmpty(cursor.CurrentSetLabel))
+                return false;
 
             var partIds = new HashSet<string>(StringComparer.Ordinal);
             foreach (var entry in cursor.OpenTasks)
@@ -388,28 +388,22 @@ namespace OSE.UI.Root
                 if (entry?.kind == "part" && !string.IsNullOrEmpty(entry.id))
                     partIds.Add(TaskInstanceId.ToPartId(entry.id));
             }
-            if (partIds.Count < 2)
-            { LogCrossDiag(selectionId, $"set-too-small ({partIds.Count})"); return false; }
-            if (!partIds.Contains(draggedPartId))
-            { LogCrossDiag(selectionId, $"dragged-not-in-set draggedPartId='{draggedPartId}' set=[{string.Join(",", partIds)}]"); return false; }
+            if (partIds.Count < 2 || !partIds.Contains(draggedPartId)) return false;
 
             var package = session.Package;
-            if (package == null) { LogCrossDiag(selectionId, "no-package"); return false; }
+            if (package == null) return false;
             var placements = package.previewConfig?.partPlacements;
-            if (placements == null) { LogCrossDiag(selectionId, "no-placements"); return false; }
+            if (placements == null) return false;
 
             string commonAssetRef = null;
             bool scaleSet = false;
             SceneFloat3 commonScale = default;
             foreach (var pid in partIds)
             {
-                if (!package.TryGetPart(pid, out var part) || part == null)
-                { LogCrossDiag(selectionId, $"part-not-found '{pid}'"); return false; }
-                if (string.IsNullOrEmpty(part.assetRef))
-                { LogCrossDiag(selectionId, $"part-missing-assetRef '{pid}'"); return false; }
+                if (!package.TryGetPart(pid, out var part) || part == null) return false;
+                if (string.IsNullOrEmpty(part.assetRef)) return false;
                 if (commonAssetRef == null) commonAssetRef = part.assetRef;
-                else if (!string.Equals(commonAssetRef, part.assetRef, StringComparison.Ordinal))
-                { LogCrossDiag(selectionId, $"assetRef-mismatch '{pid}': '{part.assetRef}' vs '{commonAssetRef}'"); return false; }
+                else if (!string.Equals(commonAssetRef, part.assetRef, StringComparison.Ordinal)) return false;
 
                 SceneFloat3 scale = default;
                 bool found = false;
@@ -422,23 +416,13 @@ namespace OSE.UI.Root
                         break;
                     }
                 }
-                if (!found) { LogCrossDiag(selectionId, $"no-placement '{pid}'"); return false; }
+                if (!found) return false;
                 if (!scaleSet) { commonScale = scale; scaleSet = true; }
-                else if (!ScaleApprox(commonScale, scale))
-                { LogCrossDiag(selectionId, $"scale-mismatch '{pid}'"); return false; }
+                else if (!ScaleApprox(commonScale, scale)) return false;
             }
 
             openPartIds = partIds;
-            LogCrossDiag(selectionId, $"OK set=[{string.Join(",", partIds)}] label='{cursor.CurrentSetLabel}'");
             return true;
-        }
-
-        private static void LogCrossDiag(string selectionId, string reason)
-        {
-            string key = selectionId + "|" + reason;
-            if (key == _lastCrossDiagKey) return;
-            _lastCrossDiagKey = key;
-            OseLog.Info($"[PlaceHandler][cross-diag] selection='{selectionId}' → {reason}");
         }
 
         private static bool ScaleApprox(SceneFloat3 a, SceneFloat3 b)
@@ -600,7 +584,7 @@ namespace OSE.UI.Root
         //  Private helpers
         // ====================================================================
 
-        private void ExecuteClickToPlace(string selectionId, GameObject partGo, PlacementPreviewInfo previewInfo)
+        private void ExecuteClickToPlace(string selectionId, GameObject partGo, PlacementPreviewInfo previewInfo, bool cross = false)
         {
             if (!ServiceRegistry.TryGet<IPartRuntimeController>(out var partController))
                 return;
@@ -647,7 +631,13 @@ namespace OSE.UI.Root
                 _animator.BeginSnapToTarget(partGo, selectionId, targetId, previewInfo.transform);
             }
 
-            RemovePreviewForSelection(selectionId);
+            // Phase I.i — under cross-placement the authored ghost and the
+            // clicked-on ghost differ. Remove the ghost at the clicked target,
+            // not the dragged part's authored ghost.
+            if (cross)
+                RemovePreviewByTargetId(targetId);
+            else
+                RemovePreviewForSelection(selectionId);
             _ctx.HandlePlacementSucceeded(partGo);
             CheckStepCompletion(partController, session);
         }
@@ -710,7 +700,7 @@ namespace OSE.UI.Root
             return snapshot.IsConfigured && !snapshot.IsCompleted;
         }
 
-        private PlacementPreviewInfo RaycastPreviewAtScreen(Vector2 screenPos, string selectionId)
+        private PlacementPreviewInfo RaycastPreviewAtScreen(Vector2 screenPos, string selectionId, HashSet<string> crossSet = null)
         {
             Camera cam = CameraUtil.GetMain();
             if (cam == null) return null;
@@ -729,7 +719,7 @@ namespace OSE.UI.Root
                 if (info == null)
                     continue;
 
-                if (!string.IsNullOrEmpty(selectionId) && !info.MatchesSelectionId(selectionId))
+                if (!PreviewMatchesSelectionOrSet(info, selectionId, crossSet))
                     continue;
 
                 if (hits[i].distance < bestDistance)
@@ -740,6 +730,14 @@ namespace OSE.UI.Root
             }
 
             return best;
+        }
+
+        private static bool PreviewMatchesSelectionOrSet(PlacementPreviewInfo info, string selectionId, HashSet<string> crossSet)
+        {
+            if (info == null) return false;
+            if (crossSet != null && !string.IsNullOrEmpty(info.PartId))
+                return crossSet.Contains(TaskInstanceId.ToPartId(info.PartId));
+            return string.IsNullOrEmpty(selectionId) || info.MatchesSelectionId(selectionId);
         }
 
         private static PlacementPreviewInfo FindPreviewInfoFromHit(Transform hitTransform)
@@ -753,7 +751,7 @@ namespace OSE.UI.Root
             return null;
         }
 
-        private PlacementPreviewInfo FindNearestPreviewByScreenProximity(Vector2 screenPos, string selectionId)
+        private PlacementPreviewInfo FindNearestPreviewByScreenProximity(Vector2 screenPos, string selectionId, HashSet<string> crossSet = null)
         {
             Camera cam = CameraUtil.GetMain();
             if (cam == null) return null;
@@ -768,7 +766,7 @@ namespace OSE.UI.Root
                 GameObject preview = _ctx.SpawnedPreviews[i];
                 if (preview == null) continue;
                 PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
-                if (info == null || !info.MatchesSelectionId(selectionId)) continue;
+                if (!PreviewMatchesSelectionOrSet(info, selectionId, crossSet)) continue;
 
                 Vector3 sp = cam.WorldToScreenPoint(preview.transform.position);
                 if (sp.z <= 0f) continue;

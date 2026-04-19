@@ -212,12 +212,20 @@ namespace OSE.UI.Root
         {
             if (_previewPulsePartId == null) return;
 
+            // Phase I.i — if the pulsed selection was inside an interchangeable
+            // unordered set, restore every set-member ghost (not just the
+            // authored one). Falls back to strict match for non-cross drags.
+            bool cross = PlaceStepHandler.TryGetInterchangeableSet(_previewPulsePartId, out var crossSet);
             for (int i = 0; i < _ctx.SpawnedPreviews.Count; i++)
             {
                 GameObject preview = _ctx.SpawnedPreviews[i];
                 if (preview == null) continue;
                 PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
-                if (info != null && info.MatchesSelectionId(_previewPulsePartId))
+                if (info == null) continue;
+                bool match = cross
+                    ? !string.IsNullOrEmpty(info.PartId) && crossSet.Contains(TaskInstanceId.ToPartId(info.PartId))
+                    : info.MatchesSelectionId(_previewPulsePartId);
+                if (match)
                     MaterialHelper.ApplyPreviewMaterial(preview);
             }
             _previewPulsePartId = null;
@@ -366,13 +374,22 @@ namespace OSE.UI.Root
 
             Color pulseColor = ColorPulseHelper.Lerp(PreviewSelectedPulseA, PreviewSelectedPulseB, PreviewSelectedPulseSpeed);
 
+            // Phase I.i — resolve once per frame. When the selection belongs
+            // to an interchangeable unordered-set span, pulse EVERY set-member
+            // ghost so the trainee sees "all four slots accept this bar".
+            bool cross = PlaceStepHandler.TryGetInterchangeableSet(_previewPulsePartId, out var crossSet);
+
             for (int i = 0; i < _ctx.SpawnedPreviews.Count; i++)
             {
                 GameObject preview = _ctx.SpawnedPreviews[i];
                 if (preview == null) continue;
                 PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
-                if (info == null || !info.MatchesSelectionId(_previewPulsePartId)) continue;
-                MaterialHelper.SetMaterialColor(preview, pulseColor);
+                if (info == null) continue;
+                bool match = cross
+                    ? !string.IsNullOrEmpty(info.PartId) && crossSet.Contains(TaskInstanceId.ToPartId(info.PartId))
+                    : info.MatchesSelectionId(_previewPulsePartId);
+                if (match)
+                    MaterialHelper.SetMaterialColor(preview, pulseColor);
             }
         }
 
