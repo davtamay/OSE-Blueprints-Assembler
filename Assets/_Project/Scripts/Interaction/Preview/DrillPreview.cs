@@ -85,28 +85,14 @@ namespace OSE.Interaction
         {
             if (_ctx.ToolPreview == null) return;
 
-            // Speed envelope: ramp up, sustain, ramp down
-            float intensity;
-            if (progress < RampUpEnd)
-                intensity = Mathf.SmoothStep(0f, 1f, progress / RampUpEnd);
-            else if (progress > RampDownStart)
-                intensity = Mathf.SmoothStep(1f, 0f, (progress - RampDownStart) / (1f - RampDownStart));
-            else
-                intensity = 1f;
-
-            // Keep rotation stable
+            // Keep rotation stable. Position is NOT written here anymore —
+            // the controller owns it under the overlay contract. Vibration
+            // is returned from ComputeOverlayOffset below and composed by
+            // the controller on top of its follow-part math.
             _ctx.ToolPreview.transform.rotation = _startRot;
 
-            // Subtle random-feeling vibration in all axes
-            float amp = intensity * ShakeAmplitude;
-            float t = progress * ShakeFrequency;
-            float dx = Mathf.Sin(t * 1.0f) * amp;
-            float dy = Mathf.Sin(t * 1.3f + 1.7f) * amp * 0.7f;
-            float dz = Mathf.Sin(t * 0.9f + 3.1f) * amp * 0.5f;
-            _ctx.ToolPreview.transform.position = _startPos + new Vector3(dx, dy, dz);
-
             // Emission glow proportional to motor intensity
-            float glow = intensity * 0.5f;
+            float glow = ComputeIntensity(progress) * 0.5f;
             MaterialHelper.SetEmission(_ctx.ToolPreview,
                 new Color(0.3f * glow, 0.7f * glow, 1f * glow, 1f));
 
@@ -123,6 +109,33 @@ namespace OSE.Interaction
                 CompletionParticleEffect.TrySpawn("torque_sparks",
                     _ctx.TargetWorldPos, Vector3.one * 0.04f);
             }
+        }
+
+        /// <summary>
+        /// Drill vibration in all three axes. The controller composes this on
+        /// top of <c>_workingPos + _partEffectOffset</c> each frame — so the
+        /// bit appears to wobble while still following the bolt downward.
+        /// Amplitude scales with the ramp-up/ramp-down intensity envelope so
+        /// vibration fades in at 0–15% progress and out at 85–100%.
+        /// </summary>
+        public override Vector3 ComputeOverlayOffset(float progress)
+        {
+            float intensity = ComputeIntensity(progress);
+            float amp = intensity * ShakeAmplitude;
+            float t = progress * ShakeFrequency;
+            float dx = Mathf.Sin(t * 1.0f) * amp;
+            float dy = Mathf.Sin(t * 1.3f + 1.7f) * amp * 0.7f;
+            float dz = Mathf.Sin(t * 0.9f + 3.1f) * amp * 0.5f;
+            return new Vector3(dx, dy, dz);
+        }
+
+        private static float ComputeIntensity(float progress)
+        {
+            if (progress < RampUpEnd)
+                return Mathf.SmoothStep(0f, 1f, progress / RampUpEnd);
+            if (progress > RampDownStart)
+                return Mathf.SmoothStep(1f, 0f, (progress - RampDownStart) / (1f - RampDownStart));
+            return 1f;
         }
     }
 }

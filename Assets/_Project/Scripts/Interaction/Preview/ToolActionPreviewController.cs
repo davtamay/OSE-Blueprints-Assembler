@@ -293,14 +293,27 @@ namespace OSE.Interaction
                 : _preview.TickGuided(deltaTime, dragDelta, screenPos);
 
             // Drive part transform and follow its displacement.
-            // Accumulate offset because the preview resets tool position each frame
-            // (e.g. DrillPreview sets position = _startPos + vibration).
-            // We re-apply the full cumulative offset after the preview's ApplyEffects.
+            //
+            // When a PartEffect is active, the controller OWNS tool.position
+            // each frame: position = _workingPos + cumulative-part-follow +
+            // preview-overlay. This is the overlay contract defined in
+            // IToolActionPreview.ComputeOverlayOffset — previews are expected
+            // to NOT write position directly in this regime; anything they
+            // write via ApplyEffects is overwritten here.
+            //
+            // The pre-refactor code used `+= _partEffectOffset` (cumulative
+            // add), which only composed correctly if every preview reset
+            // position to its own base every frame. That implicit contract
+            // broke twice (DefaultPreview, CutPreview) and both times showed
+            // up as tool massively overshooting or drifting. The overlay
+            // contract removes the hidden state: controller is the only
+            // writer when part-follow is active.
             if (_partEffect != null && _toolPreview != null)
             {
                 Vector3 delta = _partEffect.Apply(progress);
                 _partEffectOffset += delta;
-                _toolPreview.transform.position += _partEffectOffset;
+                Vector3 overlay = _preview?.ComputeOverlayOffset(progress) ?? Vector3.zero;
+                _toolPreview.transform.position = _workingPos + _partEffectOffset + overlay;
             }
 
             _visualGuide?.SetProgress(progress);

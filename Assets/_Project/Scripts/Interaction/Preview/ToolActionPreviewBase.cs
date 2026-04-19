@@ -71,5 +71,15 @@ namespace OSE.Interaction
         public abstract void End(bool completed);
 
         protected virtual void ApplyEffects(float progress) { }
+
+        /// <summary>
+        /// Default overlay: no displacement. Override in concrete previews
+        /// (e.g. DrillPreview vibration, CutPreview x-vibration) to contribute
+        /// visual motion that composes cleanly with the controller's
+        /// follow-part offset when a <see cref="IPartEffect"/> is active.
+        /// See <see cref="IToolActionPreview.ComputeOverlayOffset"/> for the
+        /// full contract.
+        /// </summary>
+        public virtual Vector3 ComputeOverlayOffset(float progress) => Vector3.zero;
     }
 }

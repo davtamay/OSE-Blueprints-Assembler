@@ -83,12 +83,23 @@ namespace OSE.Interaction
                     0.002f);
             }
 
-            // Tool vibration during cutting
-            if (_ctx.ToolPreview != null && progress > 0.15f && progress < 0.9f)
-            {
-                float vibrate = Mathf.Sin(progress * 80f) * 0.15f;
-                _ctx.ToolPreview.transform.position += new Vector3(vibrate * 0.001f, 0f, 0f);
-            }
+            // Tool vibration during cutting. Formerly this was a direct
+            // transform.position += on top of whatever the controller had
+            // written — which silently broke the follow-part accumulator.
+            // Now returned via ComputeOverlayOffset below so the controller
+            // composes it cleanly.
+        }
+
+        /// <summary>
+        /// X-axis chatter during the active-cutting window. Outside [0.15, 0.9]
+        /// progress range the overlay is zero — the tool holds steady during
+        /// tool-approach and spark-dissipation phases.
+        /// </summary>
+        public override Vector3 ComputeOverlayOffset(float progress)
+        {
+            if (progress <= 0.15f || progress >= 0.9f) return Vector3.zero;
+            float vibrate = Mathf.Sin(progress * 80f) * 0.15f;
+            return new Vector3(vibrate * 0.001f, 0f, 0f);
         }
 
         private static GameObject SpawnCutLine(Vector3 worldPos)

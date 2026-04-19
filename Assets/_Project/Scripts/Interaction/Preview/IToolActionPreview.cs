@@ -67,6 +67,28 @@ namespace OSE.Interaction
         /// <summary>Expected drag direction in screen space for guided mode arrow overlay.</summary>
         Vector2 GetExpectedDragDirection(PreviewContext context);
 
+        /// <summary>
+        /// Per-frame positional overlay the preview contributes on top of the
+        /// controller's authoritative follow-part math. Returned value is a
+        /// world-space displacement (vibration, micro-wobble, shake, etc.)
+        /// added to <c>workingPos + partFollowOffset</c> each tick.
+        ///
+        /// <para><b>Contract:</b> when a <see cref="IPartEffect"/> is active,
+        /// the controller owns <c>tool.transform.position</c> and computes
+        /// it as <c>workingPos + partFollowOffset + ComputeOverlayOffset</c>.
+        /// Previews MUST NOT write <c>transform.position</c> directly in that
+        /// regime — anything they write is overwritten by the controller's
+        /// composition. Path-driven previews (weld bead travel, square
+        /// settle) run with no PartEffect and the controller leaves the
+        /// position alone; they can still write position directly in that
+        /// case.</para>
+        ///
+        /// <para>Default zero means "no overlay" and is suitable for most
+        /// previews. Override to contribute vibration or similar visual
+        /// effects without breaking the follow-part contract.</para>
+        /// </summary>
+        Vector3 ComputeOverlayOffset(float progress);
+
         /// <summary>Called on completion or cancellation. Clean up any spawned objects.</summary>
         void End(bool completed);
     }

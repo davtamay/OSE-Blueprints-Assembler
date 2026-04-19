@@ -15,34 +15,18 @@ namespace OSE.Interaction
         protected override float AutoAssistRate => 1f;
         protected override float GuidedDragScale => 0.003f;
 
-        // Tool's position at the moment Action phase starts (already docked at the
-        // working pose after Approach). We reset to this each tick, not to
-        // context.ToolStartWorldPos which is the cursor pose — snapping to the
-        // cursor here made the tool fly away from the part every frame.
-        // Mirrors the pattern in DrillPreview / CutPreview / WeldPreview.
-        private Vector3 _actionBasePos;
+        // DefaultPreview no longer needs a position base — the controller
+        // owns tool.position under the overlay contract. Emission is the
+        // only visual effect DefaultPreview contributes.
 
         public override void Begin(PreviewContext context)
         {
             base.Begin(context);
 
-            _actionBasePos = context.ToolPreview != null
-                ? context.ToolPreview.transform.position
-                : Vector3.zero;
-
             // Brief emission pulse on the preview
             if (context.ToolPreview != null)
                 MaterialHelper.SetEmission(context.ToolPreview, new Color(0.3f, 1f, 0.6f, 1f));
         }
-
-        // TickObserve inherits the base implementation, which calls ApplyEffects.
-        // Earlier this file overrode TickObserve without invoking ApplyEffects —
-        // that broke the follow-part contract with ToolActionPreviewController:
-        // the controller adds a *cumulative* part-effect offset each frame on the
-        // assumption that the preview has just reset tool.position to its base,
-        // so if the preview never resets, the offset compounds and the tool
-        // drifts far past the part. See the overshoot reported on tool_hand
-        // when driving through DefaultPreview.
 
         /// <summary>Any drag in any direction counts — no directional constraint.</summary>
         public override float TickGuided(float deltaTime, Vector2 dragDelta, Vector2 screenPos)
@@ -62,27 +46,7 @@ namespace OSE.Interaction
                 _guidedProgress += AutoAssistRate * deltaTime;
 
             _guidedProgress = Mathf.Clamp01(_guidedProgress);
-            ApplyEffects(_guidedProgress);
             return _guidedProgress;
-        }
-
-        /// <summary>
-        /// Snaps the tool preview back to its Action-phase base position each
-        /// tick. The controller composes the part-follow offset on top of this
-        /// baseline — see <see cref="ToolActionPreviewController"/>'s
-        /// TickAction comment "preview resets tool position each frame" for the
-        /// contract. Without this reset the cumulative offset addition
-        /// compounds every frame → massive overshoot.
-        ///
-        /// <para>Base is captured in <see cref="Begin"/> (at the
-        /// Approach→Action phase transition, when the tool is already docked at
-        /// the working pose) — NOT <c>_ctx.ToolStartWorldPos</c> which is the
-        /// cursor pose and would fling the tool back to the cursor every frame.</para>
-        /// </summary>
-        protected override void ApplyEffects(float progress)
-        {
-            if (_ctx.ToolPreview != null)
-                _ctx.ToolPreview.transform.position = _actionBasePos;
         }
 
         public override Vector2 GetExpectedDragDirection(PreviewContext context)
