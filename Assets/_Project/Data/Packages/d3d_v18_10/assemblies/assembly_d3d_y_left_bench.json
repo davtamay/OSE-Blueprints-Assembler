@@ -59,48 +59,27 @@
     {
       "id": "subassembly_y_left_idler_build",
       "name": "Y-Left Idler Assembly",
-      "stepIds": [
-        "step_y_left_idler_insert_bolt",
-        "step_y_left_idler_insert_bearings",
-        "step_y_left_idler_align_halves",
-        "step_y_left_idler_bolt"
-      ],
+      "stepIds": [ "step_y_left_idler_insert_bolt", "step_y_left_idler_insert_bearings", "step_y_left_idler_align_halves", "step_y_left_idler_bolt" ],
       "assemblyId": "assembly_d3d_y_left_bench",
       "description": "Inserts M6x18 bolt through one idler half, seats two flanged bearings on the bolt with flanges facing out, places the second idler half so rod holes line up, then installs the M6x30 frame-mount bolt in the belt-side hole to clamp the halves together.",
       "milestoneMessage": "Y-left idler assembled. Frame-mount bolt left loose for sizing at frame."
-    },
+  },
     {
       "id": "subassembly_y_left_motor_build",
       "name": "Y-Left Motor Holder Assembly",
-      "stepIds": [
-        "step_y_left_motor_pulley",
-        "step_y_left_motor_pulley_pop",
-        "step_y_left_motor_half_nuts",
-        "step_y_left_motor_belt_channel",
-        "step_y_left_motor_close_halves",
-        "step_y_left_motor_belt_test",
-        "step_y_left_motor_screws",
-        "step_y_left_motor_m6_bolts",
-        "step_y_left_motor_dangle_test"
-      ],
+      "stepIds": [ "step_y_left_motor_pulley", "step_y_left_motor_pulley_pop", "step_y_left_motor_half_nuts", "step_y_left_motor_belt_channel", "step_y_left_motor_close_halves", "step_y_left_motor_belt_test", "step_y_left_motor_screws", "step_y_left_motor_m6_bolts", "step_y_left_motor_dangle_test" ],
       "assemblyId": "assembly_d3d_y_left_bench",
-      "description": "Places pulley on motor shaft with thin spacer, tightens first set screw, removes spacer, tightens second set screw until pop. Preps motor half-piece with one M6x30 bolt (bottom-left hole, poking up) and three nuts. Places belt toothed-side inward in belt channel of other half. Closes halves gently. Inserts motor with cable plug facing bottom-right. Tightens 4 M3x25 motor screws \u00c2\u00be tight then 3 M6x18 bolts. Performs dangle test.",
+      "description": "Places pulley on motor shaft with thin spacer, tightens first set screw, removes spacer, tightens second set screw until pop. Preps motor half-piece with one M6x30 bolt (bottom-left hole, poking up) and three nuts. Places belt toothed-side inward in belt channel of other half. Closes halves gently. Inserts motor with cable plug facing bottom-right. Tightens 4 M3x25 motor screws Â¾ tight then 3 M6x18 bolts. Performs dangle test.",
       "milestoneMessage": "Y-left motor holder assembled and dangle-tested."
-    },
+  },
     {
       "id": "subassembly_y_left_rod_assembly",
       "name": "Y-Left Axis Rod Assembly",
-      "stepIds": [
-        "step_y_left_rods_into_idler",
-        "step_y_left_idler_tighten_rods",
-        "step_y_left_carriage_onto_rods",
-        "step_y_left_motor_onto_rods",
-        "step_y_left_rods_qc"
-      ],
+      "stepIds": [ "step_y_left_rods_into_idler", "step_y_left_idler_tighten_rods", "step_y_left_carriage_onto_rods", "step_y_left_motor_onto_rods", "step_y_left_rods_qc" ],
       "assemblyId": "assembly_d3d_y_left_bench",
       "description": "Inserts the two guide rods into the completed idler (rods flush with idler bottom), slides the carriage onto the rods (long bolt ends closer to idler), then pushes the motor holder onto the rods (motor facing the carriage bolt heads). Tightens the idler's two shorter bolts. Checks rods are still flush with idler bottom.",
-      "milestoneMessage": "Y-left guide rods threaded through idler \u00e2\u2020\u2019 carriage \u00e2\u2020\u2019 motor holder with rods flush at idler."
-    },
+      "milestoneMessage": "Y-left guide rods threaded through idler â†’ carriage â†’ motor holder with rods flush at idler."
+  },
     {
       "id": "subassembly_y_left_belt_threading",
       "name": "Y-Left Belt Threading",
@@ -126,18 +105,11 @@
     {
       "id": "subassembly_y_left_endstop_build",
       "name": "Y-Left Endstop Attachment",
-      "stepIds": [
-        "step_y_left_endstop_gather",
-        "step_y_left_endstop_slide",
-        "step_y_left_endstop_glue_board",
-        "step_y_left_endstop_prep_motor",
-        "step_y_left_endstop_attach",
-        "step_y_left_endstop_reinforce"
-      ],
+      "stepIds": [ "step_y_left_endstop_gather", "step_y_left_endstop_slide", "step_y_left_endstop_glue_board", "step_y_left_endstop_prep_motor", "step_y_left_endstop_attach", "step_y_left_endstop_reinforce" ],
       "assemblyId": "assembly_d3d_y_left_bench",
       "description": "Slides endstop board into holder crevice with switch arm facing the arrowhead direction, bottom flush with holder bottom. Dabs super glue into top-left and bottom-left motor-piece holes facing the belt. Presses and holds the endstop holder against the motor piece. Adds reinforcing glue along the holder edges. Labels axis Y-Left with masking tape.",
       "milestoneMessage": "Y-left axis complete: endstop glued, QC passed (belt smooth, rods flush, bolt heads same side, belt toothed side inward), axis labeled."
-    },
+  },
     {
       "id": "subassembly_y_left_bench_unit",
       "name": "Y Left Complete Axis Unit",
@@ -1818,7 +1790,7 @@
       "assemblyId": "assembly_d3d_y_left_bench",
       "subassemblyId": "subassembly_y_left_motor_build",
       "sequenceIndex": 121,
-      "family": "Use",
+      "family": "Place",
       "instructionText": "Insert the first M3x25 motor screw and tighten 3/4 of the way. Insert the remaining three screws and tighten each the same way \u00e2\u20ac\u201d leave slightly loose so the motor retains flex for belt tensioning later.",
       "removePersistentToolIds": [],
       "targetIds": [],
@@ -1866,7 +1838,7 @@
       "assemblyId": "assembly_d3d_y_left_bench",
       "subassemblyId": "subassembly_y_left_motor_build",
       "sequenceIndex": 122,
-      "family": "Use",
+      "family": "Place",
       "instructionText": "Insert M6x18 bolts into the three remaining motor holder holes and tighten each into the nuts with an electric drill.",
       "removePersistentToolIds": [],
       "targetIds": [],

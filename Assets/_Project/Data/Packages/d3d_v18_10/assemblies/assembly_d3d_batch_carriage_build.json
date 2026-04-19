@@ -2181,20 +2181,15 @@
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "subassemblyId": "subassembly_carriage_z_back",
       "sequenceIndex": 69,
-      "family": "Use",
+      "family": "Place",
       "instructionText": "Press Z-Back carriage half B onto half A to trap the bearings. Align so the small ribbed belt hole sits beside the large smooth belt hole. Secure with M6x18 bolts on top and M6x30 bolts on bottom. Tighten with the power drill on lowest torque. Set it aside \u00e2\u20ac\u201d carriage 3 of 4 is complete.",
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [
-        "z_back_carriage_half_a",
         "z_back_carriage_half_b"
       ],
       "requiredToolActions": [],
       "taskOrder": [
-        {
-          "kind": "part",
-          "id": "z_back_carriage_half_a"
-        },
         {
           "kind": "part",
           "id": "z_back_carriage_half_b"
@@ -2357,20 +2352,15 @@
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "subassemblyId": "subassembly_carriage_z_front",
       "sequenceIndex": 73,
-      "family": "Use",
+      "family": "Place",
       "instructionText": "Press Z-Front carriage half B onto half A to trap the bearings. Align the small ribbed belt hole directly beside the large smooth belt hole. Secure with M6x18 bolts on top and M6x30 bolts on bottom. Tighten with the power drill on lowest torque. All four axis carriages are now complete \u00e2\u20ac\u201d set the Z-Front carriage with the others.",
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [
-        "z_front_carriage_half_a",
         "z_front_carriage_half_b"
       ],
       "requiredToolActions": [],
       "taskOrder": [
-        {
-          "kind": "part",
-          "id": "z_front_carriage_half_a"
-        },
         {
           "kind": "part",
           "id": "z_front_carriage_half_b"
