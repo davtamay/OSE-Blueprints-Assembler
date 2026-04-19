@@ -128,19 +128,47 @@ namespace OSE.Editor
 
         private void RefreshToolPreview(ref TargetEditState t)
         {
-            ClearToolPreview();
-            Transform previewRoot = GetPreviewRoot();
-            if (!_showToolPreview || previewRoot == null) return;
-            if (string.IsNullOrEmpty(_pkgId)) return;
+            // Split guards into two buckets:
+            //
+            //  • SEMANTIC ("this target has no tool / preview is off") → clear
+            //    the old preview. The user's intent is "no tool shown here."
+            //
+            //  • TRANSIENT ("assets / services not ready yet") → keep the old
+            //    preview. A frame later the retry will find them and replace.
+            //    The worst offender is `previewRoot == null` immediately after
+            //    a domain reload, before the spawner re-registers its service.
+            //    Clearing in that window destroys the preview and leaves no
+            //    replacement — the "tool visual disappears after compile" bug.
 
-            if (_targetToolIdMap == null || !_targetToolIdMap.TryGetValue(t.def.id, out string toolId)) return;
+            // ── Semantic guards (clear and exit) ─────────────────────────────
+            if (!_showToolPreview || string.IsNullOrEmpty(_pkgId))
+            {
+                ClearToolPreview();
+                return;
+            }
+
+            // Target without a tool (pure observe/measure/confirm target) —
+            // the old preview is no longer relevant.
+            if (_targetToolIdMap == null || !_targetToolIdMap.TryGetValue(t.def.id, out string toolId))
+            {
+                ClearToolPreview();
+                return;
+            }
 
             ToolDefinition toolDef = null;
             if (_pkg?.tools != null)
                 foreach (var td in _pkg.tools)
                     if (td != null && td.id == toolId) { toolDef = td; break; }
 
-            if (toolDef == null || string.IsNullOrEmpty(toolDef.assetRef)) return;
+            if (toolDef == null || string.IsNullOrEmpty(toolDef.assetRef))
+            {
+                ClearToolPreview();
+                return;
+            }
+
+            // ── Transient guards (silently bail, keep old preview) ───────────
+            Transform previewRoot = GetPreviewRoot();
+            if (previewRoot == null) return;
 
             string path = $"Assets/_Project/Data/Packages/{_pkgId}/{toolDef.assetRef}";
             var pfb = AssetDatabase.LoadAssetAtPath<GameObject>(path);
@@ -161,6 +189,16 @@ namespace OSE.Editor
                 Debug.LogWarning($"[ToolTargetAuthoring] Tool asset not found: {path}");
                 return;
             }
+
+            // Idempotent: if the active preview is already for this exact tool,
+            // skip re-instantiation. Keeps the preview stable on repeated task
+            // clicks and post-reload lazy-retries.
+            if (_toolPreviewGO != null && _toolPreviewDef == toolDef)
+                return;
+
+            // All resources resolved — now we can safely swap. Destroy the
+            // previous preview (if any) and spawn the replacement.
+            ClearToolPreview();
 
             // Spawn as a child of previewRoot so it lives in the same coordinate space
             _toolPreviewGO           = Instantiate(pfb, previewRoot);
@@ -678,6 +716,23 @@ namespace OSE.Editor
                     asmPoses.Add(pose);
                 }
             }
+            else if (string.Equals(hostKind, "tool", StringComparison.Ordinal))
+            {
+                // TTAW spawns its own tool preview GO ("[ToolTargetAuthoring]
+                // ToolPreview") — prefer that over scene-search since the
+                // runtime cursor preview isn't live in edit mode. Falls back
+                // to any scene GO named after the tool id (runtime name
+                // convention) then to anchor-only resolution.
+                GameObject go = _toolPreviewGO != null ? _toolPreviewGO : FindLivePartGO(hostId);
+                if (go != null)
+                {
+                    targets.Add(go);
+                    var t = go.transform;
+                    var pose = new OSE.UI.Root.AnimationCueResolvedPose { Position = t.localPosition, Rotation = t.localRotation, Scale = t.localScale };
+                    startPoses.Add(pose);
+                    asmPoses.Add(pose);
+                }
+            }
             else if (string.Equals(hostKind, "part", StringComparison.Ordinal))
             {
                 GameObject go = FindLivePartGO(hostId);
@@ -714,17 +769,7 @@ namespace OSE.Editor
 
             Debug.Log($"[AnimCuePreview] Starting '{entry.type}' on {targets.Count} target(s): {string.Join(", ", targets.ConvertAll(t => t ? t.name : "<null>"))}");
 
-            OSE.UI.Root.IAnimationCuePlayer player = entry.type switch
-            {
-                "shake"                => new OSE.UI.Root.ShakePlayer(),
-                "pulse"                => new OSE.UI.Root.PulsePlayer(),
-                "particle"             => new OSE.UI.Root.ParticlePlayer(),
-                "demonstratePlacement" => new OSE.UI.Root.DemonstratePlacementPlayer(),
-                "poseTransition"       => new OSE.UI.Root.PoseTransitionPlayer(),
-                "transform"            => new OSE.UI.Root.PoseTransitionPlayer(),
-                "orientSubassembly"    => new OSE.UI.Root.OrientSubassemblyPlayer(),
-                _                      => null,
-            };
+            OSE.UI.Root.IAnimationCuePlayer player = CreatePreviewPlayer(entry.type);
             if (player == null)
             {
                 Debug.LogWarning($"[AnimCuePreview] Unknown cue type '{entry.type}'.");
@@ -979,17 +1024,7 @@ namespace OSE.Editor
                 return;
             }
 
-            OSE.UI.Root.IAnimationCuePlayer player = entry.type switch
-            {
-                "shake"                => new OSE.UI.Root.ShakePlayer(),
-                "pulse"                => new OSE.UI.Root.PulsePlayer(),
-                "demonstratePlacement" => new OSE.UI.Root.DemonstratePlacementPlayer(),
-                "poseTransition"       => new OSE.UI.Root.PoseTransitionPlayer(),
-                "transform"            => new OSE.UI.Root.PoseTransitionPlayer(),
-                "orientSubassembly"    => new OSE.UI.Root.OrientSubassemblyPlayer(),
-                _                      => null,
-            };
-
+            OSE.UI.Root.IAnimationCuePlayer player = CreatePreviewPlayer(entry.type);
             if (player == null)
             {
                 Debug.LogWarning($"[AnimCuePreview] Unknown cue type '{entry.type}'.");
@@ -1080,7 +1115,7 @@ namespace OSE.Editor
             var payload  = step.animationCues;
             int cueCount = payload?.cues?.Length ?? 0;
 
-            DrawUnifiedSectionHeader($"ANIMATION CUES ({cueCount})", cueCount, () =>
+            DrawUnifiedSectionHeader($"ANIMATION & EFFECT CUES ({cueCount})", cueCount, () =>
             {
                 if (payload == null)
                 {
@@ -1251,6 +1286,30 @@ namespace OSE.Editor
                     "ensure the part ID you checked above matches that task's part ID.",
                     MessageType.Info);
 
+            // Phase 2: progress-range scheduling for onDuringAction cues.
+            // Remaps the cue onto the tool action's 0..1 progress timeline
+            // so a weld bead can extend 20–90% of progress, sparks fire at
+            // 10%, etc. — exactly matching WeldPreview / DrillPreview.
+            if (string.Equals(cue.trigger, "onDuringAction", StringComparison.Ordinal))
+            {
+                EditorGUILayout.LabelField("Progress Range (on tool action 0..1)", EditorStyles.miniBoldLabel);
+                EditorGUI.indentLevel++;
+                cue.startProgress = EditorGUILayout.Slider(
+                    new GUIContent("Start", "When in the tool action this cue begins. 0 = action start."),
+                    cue.startProgress, 0f, 1f);
+                float endDisplay = cue.endProgress <= 0f ? 1f : cue.endProgress;
+                endDisplay = EditorGUILayout.Slider(
+                    new GUIContent("End", "When in the tool action this cue completes. 1 = action end."),
+                    endDisplay, 0f, 1f);
+                cue.endProgress = endDisplay >= 1f ? 1f : endDisplay;
+                if (cue.endProgress < cue.startProgress) cue.endProgress = cue.startProgress;
+                EditorGUILayout.HelpBox(
+                    "Leave Start=0 and End=1 for full-action behaviour (legacy). " +
+                    "Set a sub-range to scope the cue onto a window of the tool action's progress.",
+                    MessageType.None);
+                EditorGUI.indentLevel--;
+            }
+
             cue.durationSeconds = Mathf.Max(0f, FloatFieldClip("Duration (s — 0 = indefinite)", cue.durationSeconds));
             cue.loop            = EditorGUILayout.Toggle("Loop", cue.loop);
 
@@ -1334,6 +1393,61 @@ namespace OSE.Editor
                     var rot = new Vector3(cue.subassemblyRotation.x, cue.subassemblyRotation.y, cue.subassemblyRotation.z);
                     rot                     = Vector3FieldClip("Rotation (Euler °)", rot);
                     cue.subassemblyRotation = new SceneFloat3 { x = rot.x, y = rot.y, z = rot.z };
+                    break;
+                }
+                case "particle":
+                {
+                    DrawParticleCueFields(cue);
+                    break;
+                }
+                case "emissionPulse":
+                {
+                    DrawEmissionPulseFields(cue);
+                    break;
+                }
+                case "colorTween":
+                {
+                    DrawColorTweenFields(cue);
+                    break;
+                }
+                case "materialFade":
+                {
+                    DrawMaterialFadeFields(cue);
+                    break;
+                }
+                case "clickPop":
+                {
+                    DrawClickPopFields(cue);
+                    break;
+                }
+                case "poseWobble":
+                {
+                    DrawPoseWobbleFields(cue);
+                    break;
+                }
+                case "toolVibration":
+                {
+                    DrawToolVibrationFields(cue);
+                    break;
+                }
+                case "lineBetweenAnchors":
+                {
+                    DrawLineBetweenAnchorsFields(cue);
+                    break;
+                }
+                case "drawSpline":
+                {
+                    DrawSplinePathFields(cue);
+                    break;
+                }
+                case "measureLine":
+                {
+                    DrawMeasureLineFields(cue);
+                    break;
+                }
+                case "screwSpin":
+                {
+                    DrawScrewSpinFields(cue);
                     break;
                 }
                 case "transform":
@@ -1481,6 +1595,375 @@ namespace OSE.Editor
 
             EditorGUI.indentLevel--;
             EditorGUILayout.Space(4);
+        }
+
+        /// <summary>
+        /// Single source of truth for instantiating a preview player by
+        /// cue type. Mirrors <c>AnimationCueCoordinator._factories</c> so
+        /// the editor ▶ button and the runtime scheduler produce the same
+        /// behaviour. Returns null for unknown types — the caller logs.
+        /// </summary>
+        private static OSE.UI.Root.IAnimationCuePlayer CreatePreviewPlayer(string type) => type switch
+        {
+            "shake"                => new OSE.UI.Root.ShakePlayer(),
+            "pulse"                => new OSE.UI.Root.PulsePlayer(),
+            "particle"             => new OSE.UI.Root.ParticlePlayer(),
+            "demonstratePlacement" => new OSE.UI.Root.DemonstratePlacementPlayer(),
+            "poseTransition"       => new OSE.UI.Root.PoseTransitionPlayer(),
+            "transform"            => new OSE.UI.Root.PoseTransitionPlayer(),
+            "orientSubassembly"    => new OSE.UI.Root.OrientSubassemblyPlayer(),
+            // Phase 2 effect cues
+            "emissionPulse"        => new OSE.UI.Root.EmissionPulsePlayer(),
+            "colorTween"           => new OSE.UI.Root.ColorTweenPlayer(),
+            "materialFade"         => new OSE.UI.Root.MaterialFadePlayer(),
+            "clickPop"             => new OSE.UI.Root.ClickPopPlayer(),
+            "poseWobble"           => new OSE.UI.Root.PoseWobblePlayer(),
+            "toolVibration"        => new OSE.UI.Root.ToolVibrationPlayer(),
+            "lineBetweenAnchors"   => new OSE.UI.Root.LineBetweenAnchorsPlayer(),
+            "drawSpline"           => new OSE.UI.Root.DrawSplinePlayer(),
+            "measureLine"          => new OSE.UI.Root.MeasureLinePlayer(),
+            "screwSpin"            => new OSE.UI.Root.ScrewSpinPlayer(),
+            _                      => null,
+        };
+
+        // Cached preset labels for the particle-cue dropdown — rebuilt on demand.
+        private static string[] _cachedParticlePresetIds;
+
+        private static string[] GetParticlePresetIds()
+        {
+            if (_cachedParticlePresetIds == null || _cachedParticlePresetIds.Length == 0)
+            {
+                var ids = CompletionParticleEffect.PresetIds;
+                _cachedParticlePresetIds = ids != null ? ids.ToArray() : Array.Empty<string>();
+            }
+            return _cachedParticlePresetIds;
+        }
+
+        // Converts a project-path GameObject asset into its Resources.Load-relative
+        // path (no extension) when the asset lives under any Resources/ folder.
+        // Returns null when the asset is not under a Resources/ root — the UI uses
+        // that signal to warn the author.
+        private static string ResolveResourcesRelativePath(GameObject asset)
+        {
+            if (asset == null) return null;
+            string projectPath = AssetDatabase.GetAssetPath(asset);
+            if (string.IsNullOrEmpty(projectPath)) return null;
+            projectPath = projectPath.Replace('\\', '/');
+
+            const string marker = "/Resources/";
+            int idx = projectPath.IndexOf(marker, StringComparison.Ordinal);
+            if (idx < 0) return null;
+
+            string rel = projectPath.Substring(idx + marker.Length);
+            int dot = rel.LastIndexOf('.');
+            if (dot >= 0) rel = rel.Substring(0, dot);
+            return rel;
+        }
+
+        private void DrawParticleCueFields(AnimationCueEntry cue)
+        {
+            // Source mode — preset (procedural) vs. prefab (Resources.Load).
+            string mode = string.IsNullOrEmpty(cue.particleSourceMode) ? "preset" : cue.particleSourceMode;
+            int modeIdx = string.Equals(mode, "prefab", StringComparison.Ordinal) ? 1 : 0;
+            int newModeIdx = EditorGUILayout.Popup(
+                new GUIContent("Source",
+                    "Preset: procedural effect from CompletionParticleEffect (weld_arc, torque_sparks, …). " +
+                    "Prefab: Resources.Load a prefab by package-relative path."),
+                modeIdx, new[] { "preset", "prefab" });
+            cue.particleSourceMode = newModeIdx == 1 ? "prefab" : "preset";
+
+            if (cue.particleSourceMode == "preset")
+            {
+                string[] ids = GetParticlePresetIds();
+                int sel = Mathf.Max(0, Array.IndexOf(ids, cue.particlePresetId ?? ""));
+                int newSel = EditorGUILayout.Popup(
+                    new GUIContent("Preset",
+                        "Named entry from CompletionParticleEffect.Presets. Single source of truth — " +
+                        "add new presets there to see them here."),
+                    sel, ids);
+                if (ids.Length > 0)
+                    cue.particlePresetId = ids[Mathf.Clamp(newSel, 0, ids.Length - 1)];
+            }
+            else
+            {
+                string currentRef = cue.particlePrefabRef ?? "";
+                GameObject current = null;
+                if (!string.IsNullOrEmpty(currentRef))
+                    current = Resources.Load<GameObject>(currentRef);
+
+                GameObject picked = (GameObject)EditorGUILayout.ObjectField(
+                    new GUIContent("Prefab",
+                        "Drop a prefab that lives under any Assets/.../Resources/ folder. " +
+                        "Stored as the Resources-relative path (no extension)."),
+                    current, typeof(GameObject), false);
+
+                if (picked != current)
+                {
+                    string resolved = ResolveResourcesRelativePath(picked);
+                    if (picked != null && resolved == null)
+                    {
+                        EditorGUILayout.HelpBox(
+                            "Prefab is not under a Resources/ folder — Resources.Load cannot find it. " +
+                            "Move the prefab under Assets/.../Resources/ and drop it again.",
+                            MessageType.Warning);
+                    }
+                    else
+                    {
+                        cue.particlePrefabRef = resolved ?? "";
+                    }
+                }
+                else
+                {
+                    cue.particlePrefabRef = EditorGUILayout.TextField(
+                        new GUIContent("Prefab Path",
+                            "Resources-relative path (no extension). Set automatically when dropping a prefab."),
+                        cue.particlePrefabRef ?? "");
+                }
+            }
+
+            // Scale multiplier — applies on top of host local scale.
+            float scale = cue.particleScale > 0f ? cue.particleScale : 1f;
+            cue.particleScale = Mathf.Clamp(
+                EditorGUILayout.Slider(
+                    new GUIContent("Scale", "Multiplier applied to the emitter base scale. 1.0 = native size."),
+                    scale, 0.1f, 5f),
+                0.05f, 20f);
+
+            // Colour tint — alpha = 0 means "no tint".
+            Color tint = new Color(
+                cue.particleColorTint.r, cue.particleColorTint.g,
+                cue.particleColorTint.b, cue.particleColorTint.a);
+            tint = EditorGUILayout.ColorField(
+                new GUIContent("Tint",
+                    "Multiplied into each ParticleSystem.main.startColor at spawn. " +
+                    "Leave alpha = 0 to skip tinting (use the preset's native colour)."),
+                tint);
+            cue.particleColorTint = new SceneFloat4 { r = tint.r, g = tint.g, b = tint.b, a = tint.a };
+        }
+
+        // ── Phase 2 cue-type editors ─────────────────────────────────────
+        //
+        // Each helper renders the fields that its cue type reads. Common
+        // shared pieces (from/to color pair, anchor ref pair) are extracted
+        // into tiny helpers so the per-type helpers stay focused on what is
+        // unique.
+
+        private static readonly string[] _anchorRefOptions =
+        {
+            "",
+            "targetSurface",
+            "weldStart",
+            "weldEnd",
+            "weldMid",
+            "measureAnchorA",
+            "measureAnchorB",
+            "toolTip",
+            "toolGrip",
+            "partAssembledCenter",
+        };
+
+        private static string DrawAnchorRefPopup(string label, string tooltip, string current)
+        {
+            // When current matches a known ref, show the popup with it
+            // selected. When it doesn't (e.g. "literal:0,0,0"), show a
+            // text field instead so the authored value is preserved.
+            bool isKnown = System.Array.IndexOf(_anchorRefOptions, current ?? "") >= 0;
+            if (isKnown)
+            {
+                int idx = System.Array.IndexOf(_anchorRefOptions, current ?? "");
+                int newIdx = EditorGUILayout.Popup(new GUIContent(label, tooltip + "\nSwitch to literal: in the field below for custom coordinates."), idx, _anchorRefOptions);
+                string picked = _anchorRefOptions[Mathf.Clamp(newIdx, 0, _anchorRefOptions.Length - 1)];
+                if (string.Equals(picked, "", System.StringComparison.Ordinal))
+                {
+                    // Author picked the empty option — offer a text field so
+                    // they can type a literal ref next frame.
+                    return EditorGUILayout.TextField(new GUIContent(" ", "Type a custom ref, e.g. literal:0.0,0.1,0.0"), "");
+                }
+                return picked;
+            }
+            else
+            {
+                return EditorGUILayout.TextField(new GUIContent(label, tooltip), current ?? "");
+            }
+        }
+
+        private static (Color fromC, Color toC) DrawColorPair(string fromLabel, string toLabel,
+            SceneFloat4 from, SceneFloat4 to, Color fromDefault, Color toDefault)
+        {
+            Color cf = from.a > 0f || from.r > 0f || from.g > 0f || from.b > 0f
+                ? new Color(from.r, from.g, from.b, from.a) : fromDefault;
+            Color ct = to.a > 0f || to.r > 0f || to.g > 0f || to.b > 0f
+                ? new Color(to.r, to.g, to.b, to.a) : toDefault;
+            cf = EditorGUILayout.ColorField(fromLabel, cf);
+            ct = EditorGUILayout.ColorField(toLabel, ct);
+            return (cf, ct);
+        }
+
+        private void DrawEmissionPulseFields(AnimationCueEntry cue)
+        {
+            EditorGUILayout.HelpBox(
+                "Tweens emission colour and intensity on the host's material. " +
+                "Pair with trigger=onDuringAction + a progress range for a " +
+                "glow that ramps with the tool action.",
+                MessageType.None);
+            var (fromE, toE) = DrawColorPair("From Emission", "To Emission",
+                cue.fromEmission, cue.toEmission, Color.black, Color.white);
+            cue.fromEmission = new SceneFloat4 { r = fromE.r, g = fromE.g, b = fromE.b, a = fromE.a };
+            cue.toEmission   = new SceneFloat4 { r = toE.r,   g = toE.g,   b = toE.b,   a = toE.a };
+            cue.fromIntensity = Mathf.Clamp(EditorGUILayout.FloatField("From Intensity", cue.fromIntensity), 0f, 20f);
+            cue.toIntensity   = Mathf.Clamp(EditorGUILayout.FloatField("To Intensity",   cue.toIntensity   > 0f ? cue.toIntensity : 1f), 0f, 20f);
+        }
+
+        private void DrawColorTweenFields(AnimationCueEntry cue)
+        {
+            var (fromC, toC) = DrawColorPair("From Color", "To Color",
+                cue.fromColor, cue.toColor, Color.white, Color.gray);
+            cue.fromColor = new SceneFloat4 { r = fromC.r, g = fromC.g, b = fromC.b, a = fromC.a };
+            cue.toColor   = new SceneFloat4 { r = toC.r,   g = toC.g,   b = toC.b,   a = toC.a };
+        }
+
+        private void DrawMaterialFadeFields(AnimationCueEntry cue)
+        {
+            EditorGUILayout.HelpBox(
+                "Combined colour + emission tween — recreates a weld bead " +
+                "fading from hot silver + orange emission to cool grey over " +
+                "the duration.",
+                MessageType.None);
+            var (fromC, toC) = DrawColorPair("From Color", "To Color",
+                cue.fromColor, cue.toColor,
+                new Color(0.85f, 0.82f, 0.72f, 1f),
+                new Color(0.55f, 0.55f, 0.52f, 1f));
+            cue.fromColor = new SceneFloat4 { r = fromC.r, g = fromC.g, b = fromC.b, a = fromC.a };
+            cue.toColor   = new SceneFloat4 { r = toC.r,   g = toC.g,   b = toC.b,   a = toC.a };
+            var (fromE, toE) = DrawColorPair("From Emission", "To Emission",
+                cue.fromEmission, cue.toEmission,
+                new Color(1f, 0.9f, 0.7f, 1f),
+                Color.black);
+            cue.fromEmission = new SceneFloat4 { r = fromE.r, g = fromE.g, b = fromE.b, a = fromE.a };
+            cue.toEmission   = new SceneFloat4 { r = toE.r,   g = toE.g,   b = toE.b,   a = toE.a };
+            cue.fromIntensity = Mathf.Clamp(EditorGUILayout.FloatField("From Intensity", cue.fromIntensity > 0f ? cue.fromIntensity : 1.5f), 0f, 20f);
+            cue.toIntensity   = Mathf.Clamp(EditorGUILayout.FloatField("To Intensity",   cue.toIntensity), 0f, 20f);
+        }
+
+        private void DrawClickPopFields(AnimationCueEntry cue)
+        {
+            Color col = cue.fromColor.a > 0f
+                ? new Color(cue.fromColor.r, cue.fromColor.g, cue.fromColor.b, cue.fromColor.a)
+                : new Color(0.2f, 1.0f, 0.4f, 0.9f);
+            col = EditorGUILayout.ColorField("Color", col);
+            cue.fromColor = new SceneFloat4 { r = col.r, g = col.g, b = col.b, a = col.a };
+            cue.pulseScale = EditorGUILayout.Slider("Pulse Scale",
+                cue.pulseScale > 0f ? cue.pulseScale : 1.8f, 0.5f, 5f);
+        }
+
+        private void DrawPoseWobbleFields(AnimationCueEntry cue)
+        {
+            var axis = new Vector3(
+                cue.wobbleAxis.x != 0f ? cue.wobbleAxis.x : 1f,
+                cue.wobbleAxis.y != 0f ? cue.wobbleAxis.y : 1f,
+                cue.wobbleAxis.z);
+            axis = EditorGUILayout.Vector3Field("Wobble Axis (per-axis amp mask)", axis);
+            cue.wobbleAxis = new SceneFloat3 { x = axis.x, y = axis.y, z = axis.z };
+            cue.wobbleAmplitude = Mathf.Clamp(
+                EditorGUILayout.FloatField("Amplitude (rad)", cue.wobbleAmplitude > 0f ? cue.wobbleAmplitude : 0.12f),
+                0f, 1f);
+            cue.wobbleFrequency = Mathf.Clamp(
+                EditorGUILayout.FloatField("Frequency (rad/s)", cue.wobbleFrequency > 0f ? cue.wobbleFrequency : 40f),
+                0f, 200f);
+        }
+
+        private void DrawToolVibrationFields(AnimationCueEntry cue)
+        {
+            var amp = new Vector3(
+                cue.vibrationAxes.x != 0f ? cue.vibrationAxes.x : 0.0004f,
+                cue.vibrationAxes.y != 0f ? cue.vibrationAxes.y : 0.00028f,
+                cue.vibrationAxes.z != 0f ? cue.vibrationAxes.z : 0.0002f);
+            amp = EditorGUILayout.Vector3Field("Amplitude (m)", amp);
+            cue.vibrationAxes = new SceneFloat3 { x = amp.x, y = amp.y, z = amp.z };
+            cue.vibrationFrequency = Mathf.Clamp(
+                EditorGUILayout.FloatField("Frequency (Hz)", cue.vibrationFrequency > 0f ? cue.vibrationFrequency : 55f),
+                0f, 500f);
+            cue.vibrationRampIn = EditorGUILayout.Slider("Ramp In (progress)",
+                cue.vibrationRampIn > 0f ? cue.vibrationRampIn : 0.15f, 0f, 1f);
+            cue.vibrationRampOut = EditorGUILayout.Slider("Ramp Out (progress)",
+                cue.vibrationRampOut > 0f ? cue.vibrationRampOut : 0.85f, 0f, 1f);
+        }
+
+        private void DrawLineBetweenAnchorsFields(AnimationCueEntry cue)
+        {
+            cue.anchorARef = DrawAnchorRefPopup("Anchor A", "Start endpoint of the line.", cue.anchorARef);
+            cue.anchorBRef = DrawAnchorRefPopup("Anchor B", "End endpoint; the line extends toward this point as progress ramps 0→1.", cue.anchorBRef);
+            cue.lineWidth = EditorGUILayout.Slider("Width (m)",
+                cue.lineWidth > 0f ? cue.lineWidth : 0.004f, 0.001f, 0.05f);
+            Color col = cue.fromColor.a > 0f
+                ? new Color(cue.fromColor.r, cue.fromColor.g, cue.fromColor.b, cue.fromColor.a)
+                : new Color(0.85f, 0.82f, 0.72f, 1f);
+            col = EditorGUILayout.ColorField("Color", col);
+            cue.fromColor = new SceneFloat4 { r = col.r, g = col.g, b = col.b, a = col.a };
+            Color emi = cue.fromEmission.a > 0f
+                ? new Color(cue.fromEmission.r, cue.fromEmission.g, cue.fromEmission.b, cue.fromEmission.a)
+                : new Color(1f, 0.9f, 0.7f, 1f);
+            emi = EditorGUILayout.ColorField("Emission", emi);
+            cue.fromEmission = new SceneFloat4 { r = emi.r, g = emi.g, b = emi.b, a = emi.a };
+            cue.lineEmissionIntensity = Mathf.Clamp(
+                EditorGUILayout.FloatField("Emission Intensity", cue.lineEmissionIntensity > 0f ? cue.lineEmissionIntensity : 1.5f),
+                0f, 20f);
+        }
+
+        private void DrawSplinePathFields(AnimationCueEntry cue)
+        {
+            EditorGUILayout.HelpBox(
+                "One-shot tube-mesh path between ≥2 anchor refs. Uses the " +
+                "same SplinePartFactory as wires/hoses.",
+                MessageType.None);
+            int count = cue.splineAnchorRefs != null ? cue.splineAnchorRefs.Length : 2;
+            count = Mathf.Clamp(EditorGUILayout.IntField("Knot Count", Mathf.Max(2, count)), 2, 20);
+            if (cue.splineAnchorRefs == null || cue.splineAnchorRefs.Length != count)
+            {
+                var next = new string[count];
+                if (cue.splineAnchorRefs != null)
+                    for (int i = 0; i < Mathf.Min(count, cue.splineAnchorRefs.Length); i++) next[i] = cue.splineAnchorRefs[i];
+                cue.splineAnchorRefs = next;
+            }
+            for (int i = 0; i < cue.splineAnchorRefs.Length; i++)
+                cue.splineAnchorRefs[i] = DrawAnchorRefPopup($"Knot {i}", "Anchor for this knot.", cue.splineAnchorRefs[i]);
+
+            cue.splineRadius = EditorGUILayout.Slider("Tube Radius (m)",
+                cue.splineRadius > 0f ? cue.splineRadius : 0.003f, 0.001f, 0.05f);
+            cue.splineMetallic = EditorGUILayout.Slider("Metallic",
+                cue.splineMetallic > 0f ? cue.splineMetallic : 0.4f, 0f, 1f);
+            cue.splineSmoothness = EditorGUILayout.Slider("Smoothness",
+                cue.splineSmoothness > 0f ? cue.splineSmoothness : 0.5f, 0f, 1f);
+            Color col = cue.fromColor.a > 0f
+                ? new Color(cue.fromColor.r, cue.fromColor.g, cue.fromColor.b, cue.fromColor.a)
+                : new Color(0.1f, 0.1f, 0.1f, 1f);
+            col = EditorGUILayout.ColorField("Color", col);
+            cue.fromColor = new SceneFloat4 { r = col.r, g = col.g, b = col.b, a = col.a };
+        }
+
+        private void DrawMeasureLineFields(AnimationCueEntry cue)
+        {
+            cue.anchorARef = DrawAnchorRefPopup("Anchor A", "Measurement start point.", cue.anchorARef ?? "measureAnchorA");
+            cue.anchorBRef = DrawAnchorRefPopup("Anchor B", "Measurement end point.", cue.anchorBRef ?? "measureAnchorB");
+            string[] units = { "mm", "cm", "m", "inch", "ft" };
+            int uIdx = Mathf.Max(0, System.Array.IndexOf(units, cue.measureUnit ?? "mm"));
+            int newU = EditorGUILayout.Popup("Display Unit", uIdx, units);
+            cue.measureUnit = units[Mathf.Clamp(newU, 0, units.Length - 1)];
+            Color col = cue.fromColor.a > 0f
+                ? new Color(cue.fromColor.r, cue.fromColor.g, cue.fromColor.b, cue.fromColor.a)
+                : new Color(1f, 0.8f, 0.2f, 1f);
+            col = EditorGUILayout.ColorField("Line Color", col);
+            cue.fromColor = new SceneFloat4 { r = col.r, g = col.g, b = col.b, a = col.a };
+        }
+
+        private void DrawScrewSpinFields(AnimationCueEntry cue)
+        {
+            cue.spinAngleDegrees = EditorGUILayout.FloatField("Total Angle (°)",
+                cue.spinAngleDegrees != 0f ? cue.spinAngleDegrees : 120f);
+            var sa = new Vector3(cue.spinAxis.x, cue.spinAxis.y, cue.spinAxis.z);
+            if (sa == Vector3.zero) sa = Vector3.up;
+            sa = EditorGUILayout.Vector3Field("Spin Axis (local)", sa);
+            cue.spinAxis = new SceneFloat3 { x = sa.x, y = sa.y, z = sa.z };
         }
 
         /// <summary>Draws editable position/rotation/scale fields for an AnimationPose with a "Capture" button.</summary>
