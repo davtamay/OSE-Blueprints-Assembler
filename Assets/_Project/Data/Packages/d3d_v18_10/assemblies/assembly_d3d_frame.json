@@ -1297,19 +1297,23 @@
       "taskOrder": [
         {
           "kind": "part",
-          "id": "d3d_frame_bottom_top_bar"
+          "id": "d3d_frame_bottom_top_bar",
+          "unorderedSet": "bottom_frame_bars"
         },
         {
           "kind": "part",
-          "id": "d3d_frame_bottom_right_bar"
+          "id": "d3d_frame_bottom_right_bar",
+          "unorderedSet": "bottom_frame_bars"
         },
         {
           "kind": "part",
-          "id": "d3d_frame_bottom_bottom_bar"
+          "id": "d3d_frame_bottom_bottom_bar",
+          "unorderedSet": "bottom_frame_bars"
         },
         {
           "kind": "part",
-          "id": "d3d_frame_bottom_left_bar"
+          "id": "d3d_frame_bottom_left_bar",
+          "unorderedSet": "bottom_frame_bars"
         }
       ],
       "workingOrientation": {
