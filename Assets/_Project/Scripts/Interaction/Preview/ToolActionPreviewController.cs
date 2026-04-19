@@ -359,6 +359,7 @@ namespace OSE.Interaction
 
         private void BeginReturn()
         {
+            OseLog.Info($"[ToolLifecycle] BeginReturn — phase was {_phase}, toolPreview={(_toolPreview != null ? _toolPreview.name : "NULL")}, completed={_completed}");
             if (_phase == Phase.Action && _preview != null)
             {
                 _preview.End(false);
@@ -372,6 +373,7 @@ namespace OSE.Interaction
 
             if (_toolPreview == null)
             {
+                OseLog.Warn("[ToolLifecycle] BeginReturn — toolPreview is NULL, skipping return animation");
                 CleanupAndNotify(_completed);
                 return;
             }
@@ -397,6 +399,7 @@ namespace OSE.Interaction
 
         private void FinishExit()
         {
+            OseLog.Info($"[ToolLifecycle] FinishExit — toolPreview={(_toolPreview != null ? _toolPreview.name : "NULL")}, completed={_completed}");
             if (_toolPreview != null)
             {
                 // Return to transparent cursor appearance before re-parenting

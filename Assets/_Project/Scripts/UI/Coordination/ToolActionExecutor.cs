@@ -351,7 +351,10 @@ namespace OSE.UI.Root
             => _ctx.CursorManager.ToolPreview;
 
         public void SetToolPreviewPositionSuspended(bool suspended)
-            => _ctx.CursorManager.PositionUpdateSuspended = suspended;
+        {
+            OseLog.Info($"[ToolLifecycle] PositionUpdateSuspended={suspended}");
+            _ctx.CursorManager.PositionUpdateSuspended = suspended;
+        }
 
         // ════════════════════════════════════════════════════════════════════
         // Helpers

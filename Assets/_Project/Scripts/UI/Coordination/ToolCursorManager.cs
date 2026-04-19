@@ -66,6 +66,7 @@ namespace OSE.UI.Root
             if (_toolPreviewIndicator == null)
                 return;
 
+            OseLog.Info($"[ToolLifecycle] Clear — destroying '{_toolPreviewIndicator.name}' (stack: {System.Environment.StackTrace.Substring(0, System.Math.Min(400, System.Environment.StackTrace.Length))})");
             if (toolPreviewIsHintPreview)
                 clearHintCallback?.Invoke();
 
@@ -89,6 +90,7 @@ namespace OSE.UI.Root
             GameObject preview = _toolPreviewIndicator;
             if (preview == null) return null;
 
+            OseLog.Info($"[ToolLifecycle] DetachPreview — releasing '{preview.name}' for persistent conversion");
             _toolPreviewIndicator = null;
             _toolPreviewUpCorrection = Quaternion.identity;
             _cursorInReadyState = false;
@@ -102,13 +104,21 @@ namespace OSE.UI.Root
                             bool toolPreviewIsHintPreview, Action clearHintCallback,
                             CancellationToken ct = default)
         {
+            OseLog.Info($"[ToolLifecycle] RefreshAsync START (gen={_refreshGeneration + 1})");
             Clear(toolPreviewIsHintPreview, clearHintCallback);
 
             if (!Application.isPlaying || spawner == null || setup == null)
+            {
+                OseLog.Info("[ToolLifecycle] RefreshAsync ABORT — not playing or no spawner/setup");
                 return;
+            }
 
             if (!TryGetActiveToolDefinition(out string activeToolId, out ToolDefinition tool))
+            {
+                OseLog.Info("[ToolLifecycle] RefreshAsync ABORT — no active tool");
                 return;
+            }
+            OseLog.Info($"[ToolLifecycle] RefreshAsync loading asset for '{activeToolId}'");
 
             int myGeneration = ++_refreshGeneration;
 
@@ -165,6 +175,7 @@ namespace OSE.UI.Root
             // This prevents a one-frame flash at screen center that looks like
             // the tool is pre-placed on the workpiece.
             _toolPreviewIndicator.SetActive(false);
+            OseLog.Info($"[ToolLifecycle] RefreshAsync DONE — preview ready '{_toolPreviewIndicator.name}' (hidden until first UpdatePosition)");
         }
 
         /// <summary>
