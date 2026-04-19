@@ -125,8 +125,9 @@ namespace OSE.UI.Root
             // part belongs to an interchangeable unorderedSet, any ghost in
             // the set accepts the drop. Non-set drags use the strict per-
             // part match as before.
+            HashSet<string> setPartIds = null;
             bool cross = !isSubassemblySelection &&
-                         TryGetInterchangeableSet(selectionId, out HashSet<string> setPartIds);
+                         TryGetInterchangeableSet(selectionId, out setPartIds);
             float nearestDist;
             PlacementPreviewInfo nearestInfo = cross
                 ? FindNearestPreviewInSet(setPartIds, partGo.transform.position, out nearestDist)
@@ -263,8 +264,9 @@ namespace OSE.UI.Root
             // whose members all share the same assetRef + assembledScale,
             // widen the proximity match across the whole set so any target
             // in the set can accept any member.
+            HashSet<string> setPartIds = null;
             bool cross = !isSubassemblySelection &&
-                         TryGetInterchangeableSet(selectionId, out HashSet<string> setPartIds);
+                         TryGetInterchangeableSet(selectionId, out setPartIds);
 
             float nearestDist;
             PlacementPreviewInfo nearestInfo = cross
