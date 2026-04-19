@@ -21,6 +21,8 @@ namespace OSE.Editor
 
         private void OnEnable()
         {
+            Debug.Log($"[TTAW.ToolPreview] ── OnEnable (post-reload or fresh open) — _pkgId='{_pkgId ?? "<null>"}' _selectedTargetId='{_selectedTargetId ?? "<null>"}' _selectedIdx={_selectedIdx} _showToolPreview={_showToolPreview}");
+
             // Destroy any stale PreviewRoot objects left from a previous session that
             // survived domain reload with HideFlags.HideAndDontSave.
             // (No stale preview roots to destroy — TTAW no longer creates HideAndDontSave objects.)
@@ -52,6 +54,8 @@ namespace OSE.Editor
 
         private void OnDisable()
         {
+            Debug.Log($"[TTAW.ToolPreview] ── OnDisable (pre-reload or window close) — _pkgId='{_pkgId ?? "<null>"}' _selectedTargetId='{_selectedTargetId ?? "<null>"}' _selectedIdx={_selectedIdx} toolPreviewGO={(_toolPreviewGO != null ? "live" : "null")}");
+
             StopAllPreviews();
             StopParticlePreview();
             SceneView.duringSceneGui -= OnSceneGUI;
@@ -93,6 +97,9 @@ namespace OSE.Editor
         /// </summary>
         private void OnSpawnerPartsReady(SpawnerPartsReady _)
         {
+            Debug.Log($"[TTAW.ToolPreview] OnSpawnerPartsReady — _selectedIdx={_selectedIdx} _targets={(_targets == null ? "null" : _targets.Length.ToString())} toolPreviewGO={(_toolPreviewGO != null ? "live" : "null")}");
+
+
             // Re-apply authoritative _pkg positions after the spawn cycle.
             // The spawn itself calls ApplyStepAwarePositions(_editModePackage) which may
             // override positions using stale StreamingAssets data — overwrite with _pkg.
@@ -123,6 +130,19 @@ namespace OSE.Editor
             else
             {
                 Selection.activeGameObject = null;
+            }
+
+            // Re-spawn the tool preview for the currently-selected target.
+            // Without this, after a script recompile / domain reload the
+            // _toolPreviewGO (HideAndDontSave) is destroyed but nothing
+            // triggers RefreshToolPreview, so the tool visual is missing
+            // until the author re-selects the task. Parts just came back
+            // via the spawner event — now is the right moment to bring
+            // the tool back with them.
+            if (_selectedIdx >= 0 && _targets != null && _selectedIdx < _targets.Length
+                && _targets[_selectedIdx].def != null)
+            {
+                RefreshToolPreview(ref _targets[_selectedIdx]);
             }
         }
 
