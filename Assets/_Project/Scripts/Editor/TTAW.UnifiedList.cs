@@ -814,17 +814,61 @@ namespace OSE.Editor
                                      && step.visualPartIds != null
                                      && Array.IndexOf(step.visualPartIds, TaskInstanceId.ToPartId(entry.id)) >= 0;
 
-                    // Sequence number — computed from task rows only so
-                    // "N." counts real tasks and "·" marks a no-task row.
+                    // Phase I.f.a — unorderedSet membership. A row is a set
+                    // leader when it has a non-empty unorderedSet and its
+                    // predecessor doesn't share the same label. Non-leader
+                    // members render indented under the leader and share the
+                    // leader's task number (the whole set is "one step" in
+                    // the author's mental model).
+                    string setLabel = string.IsNullOrEmpty(entry?.unorderedSet) ? null : entry.unorderedSet;
+                    bool hasPrev    = index > 0;
+                    string prevSet  = hasPrev && !string.IsNullOrEmpty(order[index - 1]?.unorderedSet)
+                        ? order[index - 1].unorderedSet
+                        : null;
+                    bool isSetMember = setLabel != null;
+                    bool isSetLeader = isSetMember && !string.Equals(setLabel, prevSet, StringComparison.Ordinal);
+                    bool isNonLeaderMember = isSetMember && !isSetLeader;
+
+                    // Count set membership span starting at this leader row
+                    // — used to show "(N)" next to the set label chip.
+                    int setSize = 0;
+                    if (isSetLeader)
+                    {
+                        for (int si = index; si < order.Count; si++)
+                        {
+                            if (!string.Equals(order[si]?.unorderedSet, setLabel, StringComparison.Ordinal)) break;
+                            setSize++;
+                        }
+                    }
+                    // For non-leader members, detect "last of the span" so we
+                    // draw └ instead of ├ as the tree character.
+                    bool isLastOfSpan = isNonLeaderMember
+                        && (index == order.Count - 1
+                            || !string.Equals(order[index + 1]?.unorderedSet, setLabel, StringComparison.Ordinal));
+
+                    // Sequence number — counts no-task rows as "·" and
+                    // collapses non-leader set members (they share the
+                    // leader's number, so numbering skips them).
                     int taskSeq = 0;
+                    string prevSetWalk = null;
                     for (int ri = 0; ri <= index && ri < order.Count; ri++)
                     {
                         var other = order[ri];
                         bool otherNoTask = other.kind == "part"
                                             && step.visualPartIds != null
                                             && Array.IndexOf(step.visualPartIds, TaskInstanceId.ToPartId(other.id)) >= 0;
-                        if (!otherNoTask) taskSeq++;
+                        string otherSet = string.IsNullOrEmpty(other?.unorderedSet) ? null : other.unorderedSet;
+                        bool otherIsNonLeaderMember = otherSet != null && string.Equals(otherSet, prevSetWalk, StringComparison.Ordinal);
+                        if (!otherNoTask && !otherIsNonLeaderMember) taskSeq++;
+                        prevSetWalk = otherSet;
                     }
+
+                    // Member rows indent by memberIndent to visually cluster
+                    // under the leader. All subsequent rect computations add
+                    // memberIndent to their x offset.
+                    const float memberIndent = 16f;
+                    float indent = isNonLeaderMember ? memberIndent : 0f;
+
                     var numRect = new Rect(rect.x, rect.y + 1f, 22f, rect.height);
                     if (isNoTask)
                     {
@@ -834,6 +878,19 @@ namespace OSE.Editor
                             normal    = { textColor = new Color(0.55f, 0.55f, 0.58f) },
                         };
                         EditorGUI.LabelField(numRect, "·", dotStyle);
+                    }
+                    else if (isNonLeaderMember)
+                    {
+                        // Tree character in the number slot (├ for middle
+                        // members, └ for the last). No task number — the
+                        // leader above owns the number for the whole set.
+                        var treeStyle = new GUIStyle(EditorStyles.miniLabel)
+                        {
+                            alignment = TextAnchor.MiddleCenter,
+                            normal    = { textColor = new Color(0.55f, 0.78f, 0.95f) },
+                            fontSize  = 12,
+                        };
+                        EditorGUI.LabelField(numRect, isLastOfSpan ? "\u2514" : "\u251C", treeStyle);
                     }
                     else
                     {
@@ -870,7 +927,7 @@ namespace OSE.Editor
                         alignment = TextAnchor.MiddleCenter,
                     };
                     float badgeW = isGroup ? 36f : 52f; // narrower to make room for [G]
-                    var badgeRect = new Rect(rect.x + 24f, rect.y + 1f, badgeW, rect.height - 2f);
+                    var badgeRect = new Rect(rect.x + 24f + indent, rect.y + 1f, badgeW, rect.height - 2f);
                     EditorGUI.LabelField(badgeRect, badge, badgeStyle);
 
                     // [G] indicator in blue, right after the green PART badge
@@ -907,7 +964,7 @@ namespace OSE.Editor
                             alignment = TextAnchor.MiddleCenter,
                             normal    = { textColor = roColor },
                         };
-                        var roRect = new Rect(rect.x + 78f, rect.y + 2f, 16f, rect.height - 4f);
+                        var roRect = new Rect(rect.x + 78f + indent, rect.y + 2f, 16f, rect.height - 4f);
                         string tooltip = isNoTask
                             ? "No Task — click to cycle back to Required (R → O → N → R)"
                             : (isOptional
@@ -938,40 +995,61 @@ namespace OSE.Editor
                         }
                     }
 
-                    // Phase I.f — unorderedSet label field. Empty = ordered
-                    // (strict-sequential singleton). Any value = this row is a
-                    // member of the unordered set with that label. Contiguous
-                    // same-label entries form one span that opens together at
-                    // runtime; members can complete in any order. The
-                    // normalizer validates contiguity + kind-purity at load, so
-                    // typos or mixed-kind spans surface as errors in the
-                    // console before Play. Label is stable-id style (not
-                    // localized): re-use the same label on adjacent rows to
-                    // join them into one span.
+                    // Phase I.f.a — unorderedSet label field. Shown only on
+                    // set leaders and on ordered singleton rows; hidden on
+                    // non-leader members (the leader above owns the label
+                    // for the whole span, and editing a member's label in
+                    // isolation would break the contiguity+kind invariants
+                    // the normalizer enforces).
                     //
-                    // NO TASK rows (visual-only part introductions) don't
-                    // participate in task sequencing at all, so the field is
-                    // hidden there and the NO TASK pill takes the slot.
+                    // NO TASK rows also hide the field — those are visual-
+                    // only part introductions and don't participate in task
+                    // sequencing; the NO TASK pill takes the slot.
+                    //
+                    // On leaders, a small "\u257e" (loop/shuffle-ish) prefix
+                    // sits to the left of the field so the unordered-set
+                    // affordance is visually distinct from any other text
+                    // input on the row. Ordered singletons render an empty
+                    // field — typing a label upgrades the row to a set leader
+                    // on next render. Drag-to-nest (I.f.b) and right-click
+                    // (I.f.c) are the richer affordances; this field stays
+                    // as a power-user escape hatch and a paste target for
+                    // bulk edits.
                     const float setFieldW = 58f;
-                    if (!isNoTask)
+                    if (!isNoTask && !isNonLeaderMember)
                     {
-                        float setFieldX = rect.x + 78f + reqOptW + 2f;
+                        float setFieldX = rect.x + 78f + reqOptW + 2f + indent;
+                        // Chevron prefix (~12px) for leader rows only — makes
+                        // the "this row anchors an unordered span" affordance
+                        // obvious without relying on the field label alone.
+                        if (isSetLeader)
+                        {
+                            var chevRect = new Rect(setFieldX - 12f, rect.y + 1f, 12f, rect.height - 2f);
+                            var chevStyle = new GUIStyle(EditorStyles.miniLabel)
+                            {
+                                alignment = TextAnchor.MiddleCenter,
+                                normal    = { textColor = new Color(0.55f, 0.78f, 0.95f) },
+                                fontSize  = 11,
+                                fontStyle = FontStyle.Bold,
+                            };
+                            GUI.Label(chevRect,
+                                new GUIContent("\u257E",
+                                    $"unordered set '{setLabel}' — {setSize} member{(setSize == 1 ? "" : "s")}, any-order"),
+                                chevStyle);
+                        }
                         var setRect = new Rect(setFieldX, rect.y + 2f, setFieldW, rect.height - 4f);
                         var setStyle = new GUIStyle(EditorStyles.textField)
                         {
                             fontSize  = 9,
                             alignment = TextAnchor.MiddleLeft,
+                            fontStyle = isSetLeader ? FontStyle.Bold : FontStyle.Normal,
                         };
-                        string prevSet = entry.unorderedSet ?? string.Empty;
-                        // Tooltip overlay — EditorGUI.TextField has no native tooltip
-                        // channel, so draw a transparent Label with the hover text
-                        // behind the field. The label is click-through so the field
-                        // still receives input.
+                        string prevFieldValue = entry.unorderedSet ?? string.Empty;
                         GUI.Label(setRect,
                             new GUIContent(string.Empty,
                                 "unordered set label — empty = ordered (strict-sequential singleton); shared label on adjacent rows groups them into one any-order span"));
                         EditorGUI.BeginChangeCheck();
-                        string nextSet = EditorGUI.TextField(setRect, prevSet, setStyle);
+                        string nextSet = EditorGUI.TextField(setRect, prevFieldValue, setStyle);
                         if (EditorGUI.EndChangeCheck())
                         {
                             string normalized = string.IsNullOrWhiteSpace(nextSet) ? null : nextSet.Trim();
@@ -1054,13 +1132,16 @@ namespace OSE.Editor
                             ntStyle);
                     }
 
-                    // setFieldW (58) + 2px gap after the R/O/N toggle makes room
-                    // for the unorderedSet label field above — but only when
-                    // that field is actually drawn. NO TASK rows hide the set
-                    // field and reuse the slot for the NO TASK pill via leadPad.
-                    float setFieldReserve = isNoTask ? 0f : (setFieldW + 2f);
-                    float idX    = rect.x + 80f + reqOptW + setFieldReserve + leadPad;
-                    float idW    = rect.width - 110f - tagW - dirtyW - reqOptW - setFieldReserve - leadPad;
+                    // setFieldW (58) + 2px gap reserves space for the set-label
+                    // field — but only on rows that actually draw it (leaders
+                    // and ordered singletons; NO TASK rows use the slot for
+                    // the NO TASK pill via leadPad; non-leader set members
+                    // hide the field so the id label can run closer to the
+                    // indented badge).
+                    bool reservesSetField = !isNoTask && !isNonLeaderMember;
+                    float setFieldReserve = reservesSetField ? (setFieldW + 2f) : 0f;
+                    float idX    = rect.x + 80f + reqOptW + setFieldReserve + leadPad + indent;
+                    float idW    = rect.width - 110f - tagW - dirtyW - reqOptW - setFieldReserve - leadPad - indent;
                     var idRect   = new Rect(idX, rect.y + 1f, idW, rect.height);
                     // Show group display name + member count for [G] tasks, raw id for everything else.
                     // The count badge ("14 parts") makes group scope visible at a glance so authors
