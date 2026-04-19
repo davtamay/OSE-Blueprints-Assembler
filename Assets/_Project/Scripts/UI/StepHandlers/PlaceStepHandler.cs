@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using OSE.App;
 using OSE.Content;
 using OSE.Core;
@@ -24,6 +25,14 @@ namespace OSE.UI.Root
         // ── Owned state ──
         private GameObject _hoveredPreview;
         private bool _previewHighlighted;
+
+        // Phase I.i — for interchangeable unordered-set drags the proximity
+        // pass highlights ALL set-member ghosts green (not just the nearest
+        // match). This list tracks every preview currently carrying the
+        // ready material so drag-end / step-change can restore them all.
+        // For non-set drags it holds at most one entry (the single nearest
+        // hovered preview), keeping the legacy one-green-ghost behavior.
+        private readonly List<GameObject> _highlightedPreviews = new List<GameObject>();
 
         // ── Constants ──
         private const float SnapZoneRadius = 0.8f;
@@ -112,7 +121,16 @@ namespace OSE.UI.Root
 
             bool isSubassemblySelection = TryGetSubassemblySelection(partGo, out var subassemblyController, out string subassemblyId);
 
-            PlacementPreviewInfo nearestInfo = FindNearestPreviewForSelection(selectionId, partGo.transform.position, out float nearestDist);
+            // Phase I.i — cross-placement target search. When the dragged
+            // part belongs to an interchangeable unorderedSet, any ghost in
+            // the set accepts the drop. Non-set drags use the strict per-
+            // part match as before.
+            bool cross = !isSubassemblySelection &&
+                         TryGetInterchangeableSet(selectionId, out HashSet<string> setPartIds);
+            float nearestDist;
+            PlacementPreviewInfo nearestInfo = cross
+                ? FindNearestPreviewInSet(setPartIds, partGo.transform.position, out nearestDist)
+                : FindNearestPreviewForSelection(selectionId, partGo.transform.position, out nearestDist);
             float snapZoneRadius = isSubassemblySelection ? SubassemblySnapZoneRadius : SnapZoneRadius;
             bool inSnapZone = nearestInfo != null && nearestDist <= snapZoneRadius;
 
@@ -189,9 +207,44 @@ namespace OSE.UI.Root
                 _animator.BeginSnapToTarget(partGo, selectionId, matchedTargetId, nearestInfo.transform);
             }
 
-            RemovePreviewForSelection(selectionId);
+            // Phase I.i — under cross-placement the dropped ghost and the
+            // dragged part's authored ghost are different. Remove the
+            // ghost the user DROPPED ON (the set-member target that was
+            // just filled), not the dragged part's authored target.
+            if (cross)
+                RemovePreviewByTargetId(matchedTargetId);
+            else
+                RemovePreviewForSelection(selectionId);
+
             _ctx.HandlePlacementSucceeded(partGo);
             CheckStepCompletion(partController, session);
+        }
+
+        /// <summary>
+        /// Phase I.i — mirror of <see cref="RemovePreviewForSelection"/>
+        /// that matches on <c>PlacementPreviewInfo.TargetId</c> instead of
+        /// PartId. Used by cross-placement so the ghost at the drop
+        /// location disappears even when the dropped-on target's
+        /// associatedPartId differs from the dragged part's id.
+        /// </summary>
+        private void RemovePreviewByTargetId(string targetId)
+        {
+            if (string.IsNullOrEmpty(targetId)) return;
+            for (int i = _ctx.SpawnedPreviews.Count - 1; i >= 0; i--)
+            {
+                var preview = _ctx.SpawnedPreviews[i];
+                if (preview == null)
+                {
+                    _ctx.SpawnedPreviews.RemoveAt(i);
+                    continue;
+                }
+                var info = preview.GetComponent<PlacementPreviewInfo>();
+                if (info != null && string.Equals(info.TargetId, targetId, StringComparison.OrdinalIgnoreCase))
+                {
+                    UnityEngine.Object.Destroy(preview);
+                    _ctx.SpawnedPreviews.RemoveAt(i);
+                }
+            }
         }
 
         /// <summary>
@@ -204,7 +257,20 @@ namespace OSE.UI.Root
                 return;
 
             bool isSubassemblySelection = TryGetSubassemblySelection(partGo, out var subassemblyController, out _);
-            PlacementPreviewInfo nearestInfo = FindNearestPreviewForSelection(selectionId, partGo.transform.position, out float nearestDist);
+
+            // Phase I.i — interchangeable cross-placement detection. When
+            // the dragged part sits inside an authored unorderedSet span
+            // whose members all share the same assetRef + assembledScale,
+            // widen the proximity match across the whole set so any target
+            // in the set can accept any member.
+            bool cross = !isSubassemblySelection &&
+                         TryGetInterchangeableSet(selectionId, out HashSet<string> setPartIds);
+
+            float nearestDist;
+            PlacementPreviewInfo nearestInfo = cross
+                ? FindNearestPreviewInSet(setPartIds, partGo.transform.position, out nearestDist)
+                : FindNearestPreviewForSelection(selectionId, partGo.transform.position, out nearestDist);
+
             float snapZoneRadius = isSubassemblySelection ? SubassemblySnapZoneRadius : SnapZoneRadius;
             float previewRadius = isSubassemblySelection ? SubassemblyDockPreviewRadius : snapZoneRadius;
             GameObject nearest = (nearestInfo != null && nearestDist <= previewRadius) ? nearestInfo.gameObject : null;
@@ -220,16 +286,50 @@ namespace OSE.UI.Root
                 }
             }
 
-            if (nearest != null && nearest != _hoveredPreview)
+            if (cross)
             {
-                ClearPreviewHighlight();
-                _hoveredPreview = nearest;
-                _previewHighlighted = true;
-                MaterialHelper.Apply(nearest, "Preview Ready Material", PreviewReadyColor);
+                // All set-member ghosts glow green. Frame-idempotent: build
+                // the new highlight set, then restore any prior highlights
+                // that dropped out (a set member was just placed and its
+                // ghost was removed — ApplyPreviewMaterial on a dead
+                // GameObject is a no-op because the list entry has gone
+                // null, which the loop filters).
+                var newHighlighted = new List<GameObject>();
+                foreach (var preview in _ctx.SpawnedPreviews)
+                {
+                    if (preview == null) continue;
+                    var info = preview.GetComponent<PlacementPreviewInfo>();
+                    if (info == null || string.IsNullOrEmpty(info.PartId)) continue;
+                    if (!setPartIds.Contains(TaskInstanceId.ToPartId(info.PartId))) continue;
+                    MaterialHelper.Apply(preview, "Preview Ready Material", PreviewReadyColor);
+                    newHighlighted.Add(preview);
+                }
+                for (int i = 0; i < _highlightedPreviews.Count; i++)
+                {
+                    var old = _highlightedPreviews[i];
+                    if (old != null && !newHighlighted.Contains(old))
+                        MaterialHelper.ApplyPreviewMaterial(old);
+                }
+                _highlightedPreviews.Clear();
+                _highlightedPreviews.AddRange(newHighlighted);
+                _hoveredPreview = nearest;     // still tracked for auto-snap
+                _previewHighlighted = _highlightedPreviews.Count > 0;
             }
-            else if (nearest == null && _previewHighlighted)
+            else
             {
-                ClearPreviewHighlight();
+                // Legacy single-green-highlight for non-set drags.
+                if (nearest != null && nearest != _hoveredPreview)
+                {
+                    ClearAllHighlights();
+                    _hoveredPreview = nearest;
+                    _previewHighlighted = true;
+                    MaterialHelper.Apply(nearest, "Preview Ready Material", PreviewReadyColor);
+                    _highlightedPreviews.Add(nearest);
+                }
+                else if (nearest == null && _previewHighlighted)
+                {
+                    ClearAllHighlights();
+                }
             }
 
             if (nearestInfo != null && nearest != null && isDragging)
@@ -238,10 +338,122 @@ namespace OSE.UI.Root
 
         public void ClearPreviewHighlight()
         {
-            if (_previewHighlighted && _hoveredPreview != null)
-                MaterialHelper.ApplyPreviewMaterial(_hoveredPreview);
+            ClearAllHighlights();
+        }
+
+        private void ClearAllHighlights()
+        {
+            for (int i = 0; i < _highlightedPreviews.Count; i++)
+            {
+                var p = _highlightedPreviews[i];
+                if (p != null)
+                    MaterialHelper.ApplyPreviewMaterial(p);
+            }
+            _highlightedPreviews.Clear();
             _hoveredPreview = null;
             _previewHighlighted = false;
+        }
+
+        /// <summary>
+        /// Phase I.i — returns true iff <paramref name="selectionId"/>'s
+        /// partId is in a currently-open unorderedSet span (size ≥ 2) AND
+        /// every member of that span shares the same <c>assetRef</c> and
+        /// <c>assembledScale</c>. Under those conditions the runtime treats
+        /// the set's parts as physically interchangeable: any part can snap
+        /// to any target in the set. All three gates must hold; a single
+        /// failure falls back to strict per-part matching.
+        /// </summary>
+        private static bool TryGetInterchangeableSet(string selectionId, out HashSet<string> openPartIds)
+        {
+            openPartIds = null;
+            if (string.IsNullOrEmpty(selectionId)) return false;
+            string draggedPartId = TaskInstanceId.ToPartId(selectionId);
+            if (string.IsNullOrEmpty(draggedPartId)) return false;
+
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session)) return false;
+            TaskCursor cursor = session?.AssemblyController?.StepController?.CurrentTaskCursor;
+            if (cursor == null || cursor.IsComplete || string.IsNullOrEmpty(cursor.CurrentSetLabel))
+                return false;
+
+            var partIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var entry in cursor.OpenTasks)
+            {
+                if (entry?.kind == "part" && !string.IsNullOrEmpty(entry.id))
+                    partIds.Add(TaskInstanceId.ToPartId(entry.id));
+            }
+            if (partIds.Count < 2 || !partIds.Contains(draggedPartId)) return false;
+
+            var package = session.Package;
+            if (package == null) return false;
+            var placements = package.previewConfig?.partPlacements;
+            if (placements == null) return false;
+
+            string commonAssetRef = null;
+            bool scaleSet = false;
+            SceneFloat3 commonScale = default;
+            foreach (var pid in partIds)
+            {
+                if (!package.TryGetPart(pid, out var part) || part == null) return false;
+                if (string.IsNullOrEmpty(part.assetRef)) return false;
+                if (commonAssetRef == null) commonAssetRef = part.assetRef;
+                else if (!string.Equals(commonAssetRef, part.assetRef, StringComparison.Ordinal)) return false;
+
+                // Find assembledScale for this part
+                SceneFloat3 scale = default;
+                bool found = false;
+                foreach (var entry in placements)
+                {
+                    if (entry != null && string.Equals(entry.partId, pid, StringComparison.Ordinal))
+                    {
+                        scale = entry.assembledScale;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) return false;
+                if (!scaleSet) { commonScale = scale; scaleSet = true; }
+                else if (!ScaleApprox(commonScale, scale)) return false;
+            }
+
+            openPartIds = partIds;
+            return true;
+        }
+
+        private static bool ScaleApprox(SceneFloat3 a, SceneFloat3 b)
+        {
+            const float eps = 0.0001f;
+            return Mathf.Abs(a.x - b.x) < eps
+                && Mathf.Abs(a.y - b.y) < eps
+                && Mathf.Abs(a.z - b.z) < eps;
+        }
+
+        /// <summary>
+        /// Phase I.i — proximity-matches any preview whose partId is in the
+        /// interchangeable set. Mirror of <see cref="FindNearestPreviewForSelection"/>
+        /// with a widened membership check so cross-placement can pick the
+        /// nearest set-target, not just the dragged part's authored target.
+        /// </summary>
+        private PlacementPreviewInfo FindNearestPreviewInSet(HashSet<string> setPartIds, Vector3 worldPos, out float nearestDist)
+        {
+            nearestDist = float.PositiveInfinity;
+            if (setPartIds == null || setPartIds.Count == 0) return null;
+
+            PlacementPreviewInfo nearest = null;
+            foreach (var preview in _ctx.SpawnedPreviews)
+            {
+                if (preview == null) continue;
+                var info = preview.GetComponent<PlacementPreviewInfo>();
+                if (info == null || string.IsNullOrEmpty(info.PartId)) continue;
+                if (!setPartIds.Contains(TaskInstanceId.ToPartId(info.PartId))) continue;
+
+                float dist = Vector3.Distance(worldPos, preview.transform.position);
+                if (dist < nearestDist)
+                {
+                    nearestDist = dist;
+                    nearest = info;
+                }
+            }
+            return nearest;
         }
 
         private void TryAutoSnapCurrentTarget(
