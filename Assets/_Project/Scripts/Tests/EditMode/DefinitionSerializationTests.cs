@@ -81,7 +81,6 @@ namespace OSE.Tests.EditMode
                 material = "steel",
                 assetRef = "models/bolt.glb",
                 quantity = 4,
-                toolIds = new[] { "tool_wrench" },
                 templateId = "template_bolt"
             };
 
@@ -95,7 +94,6 @@ namespace OSE.Tests.EditMode
             Assert.AreEqual(original.material, deserialized.material);
             Assert.AreEqual(original.assetRef, deserialized.assetRef);
             Assert.AreEqual(original.quantity, deserialized.quantity);
-            Assert.AreEqual(original.toolIds, deserialized.toolIds);
             Assert.AreEqual(original.templateId, deserialized.templateId);
         }
 

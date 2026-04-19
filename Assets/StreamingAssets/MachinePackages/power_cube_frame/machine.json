@@ -62,11 +62,6 @@
       "material": "4Ã—4 tubular steel, 11-gauge wall",
       "structuralRole": "Primary frame member",
       "quantity": 1,
-      "toolIds": [
-        "tool_tape_measure",
-        "tool_angle_grinder",
-        "tool_welder"
-      ],
       "assetRef": "base_tube_long.glb",
       "allowPhysicalSubstitution": true,
       "tags": [
@@ -81,11 +76,6 @@
       "material": "4Ã—4 tubular steel, 11-gauge wall",
       "structuralRole": "Primary frame member",
       "quantity": 1,
-      "toolIds": [
-        "tool_tape_measure",
-        "tool_angle_grinder",
-        "tool_welder"
-      ],
       "assetRef": "base_tube_short.glb",
       "allowPhysicalSubstitution": true,
       "tags": [
@@ -100,11 +90,6 @@
       "material": "4Ã—4 tubular steel, 11-gauge wall",
       "structuralRole": "Vertical frame member",
       "quantity": 1,
-      "toolIds": [
-        "tool_tape_measure",
-        "tool_angle_grinder",
-        "tool_welder"
-      ],
       "assetRef": "vertical_post.glb",
       "searchTerms": [
         "vertical post",
@@ -125,10 +110,6 @@
       "material": "4Ã—4 tubular steel, 11-gauge wall",
       "structuralRole": "Top frame member",
       "quantity": 1,
-      "toolIds": [
-        "tool_tape_measure",
-        "tool_welder"
-      ],
       "assetRef": "base_tube_long.glb",
       "allowPhysicalSubstitution": true,
       "tags": [
@@ -143,10 +124,6 @@
       "material": "4Ã—4 tubular steel, 11-gauge wall",
       "structuralRole": "Top frame member",
       "quantity": 1,
-      "toolIds": [
-        "tool_tape_measure",
-        "tool_welder"
-      ],
       "assetRef": "base_tube_short.glb",
       "allowPhysicalSubstitution": true,
       "tags": [
@@ -558,11 +535,6 @@
       "function": "Provides a flat mounting surface for the engine on top of the frame.",
       "structuralRole": "Engine support platform",
       "quantity": 1,
-      "toolIds": [
-        "tool_tape_measure",
-        "tool_angle_grinder",
-        "tool_welder"
-      ],
       "assetRef": "engine_mount_plate.glb",
       "searchTerms": [
         "mount plate",
@@ -587,9 +559,6 @@
       "function": "Provides mechanical power to drive the hydraulic pump via the coupling.",
       "structuralRole": "Prime mover",
       "quantity": 1,
-      "toolIds": [
-        "tool_torque_wrench"
-      ],
       "assetRef": "engine.glb",
       "searchTerms": [
         "engine",
@@ -615,9 +584,6 @@
       "function": "Connects the engine output shaft to the hydraulic pump input shaft with flexible vibration damping.",
       "structuralRole": "Power transmission",
       "quantity": 1,
-      "toolIds": [
-        "tool_torque_wrench"
-      ],
       "assetRef": "pump_coupling.glb",
       "searchTerms": [
         "coupling",
@@ -642,9 +608,6 @@
       "function": "Converts engine rotational power into hydraulic fluid flow and pressure.",
       "structuralRole": "Hydraulic power source",
       "quantity": 1,
-      "toolIds": [
-        "tool_torque_wrench"
-      ],
       "assetRef": "hydraulic_pump.glb",
       "searchTerms": [
         "pump",
@@ -669,9 +632,6 @@
       "function": "Stores hydraulic oil, allows air separation, and provides suction head for the pump.",
       "structuralRole": "Fluid storage",
       "quantity": 1,
-      "toolIds": [
-        "tool_torque_wrench"
-      ],
       "assetRef": "reservoir.glb",
       "searchTerms": [
         "reservoir",
@@ -696,9 +656,6 @@
       "function": "Carries pressurized hydraulic fluid from the pump outlet to the quick couplers.",
       "structuralRole": "Pressure line",
       "quantity": 1,
-      "toolIds": [
-        "tool_line_wrench"
-      ],
       "assetRef": "pressure_hose.glb",
       "searchTerms": [
         "pressure hose",
@@ -723,9 +680,6 @@
       "function": "Returns low-pressure hydraulic fluid from the tools back to the reservoir.",
       "structuralRole": "Return line",
       "quantity": 1,
-      "toolIds": [
-        "tool_line_wrench"
-      ],
       "assetRef": "return_hose.glb",
       "searchTerms": [
         "return hose",
@@ -750,10 +704,6 @@
       "function": "Cools hydraulic oil to prevent overheating during sustained operation.",
       "structuralRole": "Thermal management",
       "quantity": 1,
-      "toolIds": [
-        "tool_torque_wrench",
-        "tool_line_wrench"
-      ],
       "assetRef": "oil_cooler.glb",
       "searchTerms": [
         "cooler",
@@ -779,9 +729,6 @@
       "function": "Stores gasoline and gravity-feeds the engine carburetor through the fuel line.",
       "structuralRole": "Fuel storage",
       "quantity": 1,
-      "toolIds": [
-        "tool_socket_set"
-      ],
       "assetRef": "fuel_tank.glb",
       "searchTerms": [
         "fuel tank",
@@ -804,9 +751,6 @@
       "function": "Routes gasoline from the tank outlet through a filter to the engine carburetor.",
       "structuralRole": "Fuel delivery",
       "quantity": 1,
-      "toolIds": [
-        "tool_socket_set"
-      ],
       "assetRef": "fuel_line.glb",
       "searchTerms": [
         "fuel line",
@@ -829,9 +773,6 @@
       "function": "Allows the operator to cut off fuel flow for maintenance or storage.",
       "structuralRole": "Fuel control",
       "quantity": 1,
-      "toolIds": [
-        "tool_socket_set"
-      ],
       "assetRef": "fuel_shutoff_valve.glb",
       "searchTerms": [
         "shutoff",
@@ -855,9 +796,6 @@
       "function": "Provides electrical power to crank the engine starter motor.",
       "structuralRole": "Electrical power source",
       "quantity": 1,
-      "toolIds": [
-        "tool_socket_set"
-      ],
       "assetRef": "battery.glb",
       "searchTerms": [
         "battery",
@@ -881,10 +819,6 @@
       "function": "Connects the battery to the starter solenoid and engine ground.",
       "structuralRole": "Electrical connection",
       "quantity": 1,
-      "toolIds": [
-        "tool_socket_set",
-        "tool_wire_crimper"
-      ],
       "assetRef": "battery_cables.glb",
       "searchTerms": [
         "battery cable",
@@ -908,10 +842,6 @@
       "function": "Controls engine start/stop. Positions: Off, Run, Start, Accessory.",
       "structuralRole": "Engine control",
       "quantity": 1,
-      "toolIds": [
-        "tool_socket_set",
-        "tool_wire_crimper"
-      ],
       "assetRef": "key_switch.glb",
       "searchTerms": [
         "key switch",
@@ -934,9 +864,6 @@
       "function": "Allows the operator to engage/disengage the engine choke for cold starts.",
       "structuralRole": "Engine control",
       "quantity": 1,
-      "toolIds": [
-        "tool_socket_set"
-      ],
       "assetRef": "choke_cable.glb",
       "searchTerms": [
         "choke cable",
@@ -959,9 +886,6 @@
       "function": "Allows the operator to control engine RPM from the frame face.",
       "structuralRole": "Engine control",
       "quantity": 1,
-      "toolIds": [
-        "tool_socket_set"
-      ],
       "assetRef": "throttle_cable.glb",
       "searchTerms": [
         "throttle cable",
@@ -984,9 +908,6 @@
       "function": "Displays system hydraulic pressure for testing and monitoring.",
       "structuralRole": "Instrumentation",
       "quantity": 1,
-      "toolIds": [
-        "tool_line_wrench"
-      ],
       "assetRef": "pressure_gauge.glb",
       "searchTerms": [
         "pressure gauge",

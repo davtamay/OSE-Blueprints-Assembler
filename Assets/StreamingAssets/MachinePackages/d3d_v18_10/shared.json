@@ -463,12 +463,6 @@
       "function": "Forms one edge of a D3D frame side.",
       "structuralRole": "Frame side member",
       "quantity": 1,
-      "toolIds": [
-        "tool_framing_square",
-        "tool_locking_clamp",
-        "tool_mig_torch",
-        "tool_angle_grinder"
-      ],
       "assetRef": "d3d_frame_flat_bar_approved.glb",
       "searchTerms": [
         "d3d frame flat bar",

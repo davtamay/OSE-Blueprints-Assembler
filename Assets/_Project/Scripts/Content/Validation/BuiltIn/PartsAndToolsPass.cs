@@ -31,8 +31,6 @@ namespace OSE.Content.Validation
 
                 if (p.quantity < 1)
                     issues.Add(ValidationPassHelpers.Error($"{path}.quantity", "Part quantity must be at least 1."));
-
-                ValidationPassHelpers.ValidateOptionalReferences(p.toolIds, ctx.ToolIds, $"{path}.toolIds", issues);
             }
         }
 

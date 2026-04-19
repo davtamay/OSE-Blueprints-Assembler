@@ -274,7 +274,6 @@
           "function": { "type": "string" },
           "templateId": { "type": "string", "description": "Inherit model/tools from a PartTemplateDefinition." },
           "assetRef": { "type": "string", "description": "Path to GLB asset file." },
-          "toolIds": { "type": "array", "items": { "type": "string" } },
           "quantity": { "type": "integer", "minimum": 1 },
           "isOptional": { "type": "boolean" },
           "tags": { "type": "array", "items": { "type": "string" } }

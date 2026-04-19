@@ -75,9 +75,6 @@
       "function": "A practice beam used to learn selection and placement.",
       "structuralRole": "Training part",
       "quantity": 1,
-      "toolIds": [
-        "tool_tape_measure"
-      ],
       "assetRef": "training_beam.gltf",
       "searchTerms": [
         "training beam",
@@ -100,9 +97,6 @@
       "function": "A practice bracket used to learn hint usage and a second placement.",
       "structuralRole": "Training part",
       "quantity": 1,
-      "toolIds": [
-        "tool_tape_measure"
-      ],
       "assetRef": "training_bracket.gltf",
       "searchTerms": [
         "training bracket",

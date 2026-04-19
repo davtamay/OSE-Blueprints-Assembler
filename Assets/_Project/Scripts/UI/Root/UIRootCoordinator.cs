@@ -283,7 +283,6 @@ namespace OSE.UI.Root
                     partInfo.PartName,
                     partInfo.Function,
                     partInfo.Material,
-                    partInfo.Tool,
                     partInfo.SearchTerms);
             }
 
@@ -367,7 +366,6 @@ namespace OSE.UI.Root
                     partInfo.PartName,
                     partInfo.Function,
                     partInfo.Material,
-                    partInfo.Tool,
                     partInfo.SearchTerms);
             }
 
@@ -447,11 +445,10 @@ namespace OSE.UI.Root
             string partName,
             string function,
             string material,
-            string tool,
             string searchTerms)
         {
             if (_orchestrator == null) return;
-            _orchestrator.SetPartInfoContent(partName, function, material, tool, searchTerms);
+            _orchestrator.SetPartInfoContent(partName, function, material, searchTerms);
             _orchestrator.RefreshPartInfoPanel();
 
             if (_gate.TryUnlockOnPartSelected())
@@ -462,11 +459,10 @@ namespace OSE.UI.Root
             string partName,
             string function,
             string material,
-            string tool,
             string searchTerms)
         {
             if (_orchestrator == null) return;
-            _orchestrator.SetHoverPartInfoContent(partName, function, material, tool, searchTerms);
+            _orchestrator.SetHoverPartInfoContent(partName, function, material, searchTerms);
             _orchestrator.RefreshPartInfoPanel();
         }
 

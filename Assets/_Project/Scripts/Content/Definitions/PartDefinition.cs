@@ -44,7 +44,6 @@ namespace OSE.Content
         public string function;
         public string structuralRole;
         public int quantity;
-        public string[] toolIds;
         public string assetRef;
         public string[] searchTerms;
         public bool allowPhysicalSubstitution;
@@ -72,7 +71,6 @@ namespace OSE.Content
         public string function;
         public string structuralRole;
         public int quantity;
-        public string[] toolIds;
         public string assetRef;
         public string[] searchTerms;
         public bool allowPhysicalSubstitution;

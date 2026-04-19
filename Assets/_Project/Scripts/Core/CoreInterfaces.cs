@@ -89,7 +89,7 @@ namespace OSE.Core
     {
         void ShowPartInfo(string partId);
         void ShowToolInfo(string toolId);
-        void ShowPartInfoShell(string partName, string function, string material, string tool, string searchTerms);
+        void ShowPartInfoShell(string partName, string function, string material, string searchTerms);
         void HidePartInfoPanel();
     }
 

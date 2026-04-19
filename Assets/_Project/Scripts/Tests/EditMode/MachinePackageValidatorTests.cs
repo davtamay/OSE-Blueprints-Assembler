@@ -341,18 +341,6 @@ namespace OSE.Tests.EditMode
             AssertHasIssueContaining(result, "quantity");
         }
 
-        [Test]
-        public void Part_Referencing_Missing_Tool_Reported()
-        {
-            var package = CreateMinimalValidPackage();
-            package.parts[0].toolIds = new[] { "nonexistent_tool" };
-
-            var result = MachinePackageValidator.Validate(package);
-
-            Assert.IsTrue(result.HasErrors);
-            AssertHasIssueContaining(result, "does not resolve");
-        }
-
         // ── Tool Validation ──
 
         [Test]

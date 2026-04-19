@@ -1422,7 +1422,6 @@ namespace OSE.Content.Loading
                 if (string.IsNullOrEmpty(part.function)) part.function = template.function;
                 if (string.IsNullOrEmpty(part.structuralRole)) part.structuralRole = template.structuralRole;
                 if (part.quantity == 0) part.quantity = template.quantity;
-                if (part.toolIds == null || part.toolIds.Length == 0) part.toolIds = template.toolIds;
                 if (string.IsNullOrEmpty(part.assetRef)) part.assetRef = template.assetRef;
                 if (part.searchTerms == null || part.searchTerms.Length == 0) part.searchTerms = template.searchTerms;
                 if (!part.allowPhysicalSubstitution) part.allowPhysicalSubstitution = template.allowPhysicalSubstitution;

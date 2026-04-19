@@ -262,7 +262,6 @@ def _validate_parts(parts: list, tool_ids: set, issues: list[Issue]) -> None:
         qty = part.get("quantity")
         if qty is not None and (not isinstance(qty, (int, float)) or qty < 1):
             issues.append(_err(f"{path}.quantity", "Part quantity must be at least 1."))
-        _check_optional_refs(part.get("toolIds"), tool_ids, f"{path}.toolIds", issues)
 
 
 def _validate_tools(tools: list, issues: list[Issue]) -> None:

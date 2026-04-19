@@ -31,7 +31,6 @@ namespace OSE.Tests.EditMode
                         material = "steel",
                         function = "Secure two plates",
                         assetRef = "models/bolt.glb",
-                        toolIds = new[] { "tool_wrench" },
                         quantity = 4
                     }
                 },
@@ -59,7 +58,6 @@ namespace OSE.Tests.EditMode
             Assert.AreEqual("Secure two plates", part.function);
             Assert.AreEqual("models/bolt.glb", part.assetRef);
             Assert.AreEqual(4, part.quantity);
-            Assert.AreEqual(new[] { "tool_wrench" }, part.toolIds);
         }
 
         [Test]

@@ -4,7 +4,6 @@ using OSE.Content;
 using OSE.Core;
 using OSE.Interaction;
 using OSE.Runtime;
-using System.Text;
 using UnityEngine;
 
 namespace OSE.UI.Root
@@ -195,31 +194,15 @@ namespace OSE.UI.Root
             if (!package.TryGetPart(partId, out var part)) return;
             if (!ServiceRegistry.TryGet<IPresentationAdapter>(out var ui)) return;
 
-            string toolNames = string.Empty;
-            if (part.toolIds != null && part.toolIds.Length > 0)
-            {
-                var sb = new StringBuilder();
-                foreach (string toolId in part.toolIds)
-                {
-                    if (string.IsNullOrEmpty(toolId)) continue;
-                    if (package.TryGetTool(toolId, out var tool))
-                    {
-                        if (sb.Length > 0) sb.Append(", ");
-                        sb.Append(tool.GetDisplayName());
-                    }
-                }
-                toolNames = sb.ToString();
-            }
-
             string displayName = part.GetDisplayName();
             string functionText = part.function ?? string.Empty;
             string materialText = part.material ?? string.Empty;
             string searchTerms = part.searchTerms != null ? string.Join(" ", part.searchTerms) : string.Empty;
 
             if (isHoverInfo && ui is UIRootCoordinator hoverUi)
-                hoverUi.ShowHoverPartInfoShell(displayName, functionText, materialText, toolNames, searchTerms);
+                hoverUi.ShowHoverPartInfoShell(displayName, functionText, materialText, searchTerms);
             else
-                ui.ShowPartInfoShell(displayName, functionText, materialText, toolNames, searchTerms);
+                ui.ShowPartInfoShell(displayName, functionText, materialText, searchTerms);
         }
 
         public void PushSubassemblyInfoToUI(GameObject target, bool isHoverInfo = false)
@@ -235,9 +218,9 @@ namespace OSE.UI.Root
             const string searchTerms = "finished subassembly panel cube joining";
 
             if (isHoverInfo && ui is UIRootCoordinator hoverUi)
-                hoverUi.ShowHoverPartInfoShell(displayName, description ?? string.Empty, material, string.Empty, searchTerms);
+                hoverUi.ShowHoverPartInfoShell(displayName, description ?? string.Empty, material, searchTerms);
             else
-                ui.ShowPartInfoShell(displayName, description ?? string.Empty, material, string.Empty, searchTerms);
+                ui.ShowPartInfoShell(displayName, description ?? string.Empty, material, searchTerms);
         }
 
         public void PushWireInfoToUI(WireSplineMarker marker, bool isHoverInfo = false)
@@ -258,9 +241,9 @@ namespace OSE.UI.Root
             const string searchTerms = "wire connection cable connect";
 
             if (isHoverInfo && ui is UIRootCoordinator hoverUi)
-                hoverUi.ShowHoverPartInfoShell(displayName, functionText, material, string.Empty, searchTerms);
+                hoverUi.ShowHoverPartInfoShell(displayName, functionText, material, searchTerms);
             else
-                ui.ShowPartInfoShell(displayName, functionText, material, string.Empty, searchTerms);
+                ui.ShowPartInfoShell(displayName, functionText, material, searchTerms);
         }
 
         // ── Private ───────────────────────────────────────────────────────

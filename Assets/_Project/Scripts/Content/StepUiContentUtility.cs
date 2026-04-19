@@ -28,12 +28,11 @@ namespace OSE.Content
 
         public readonly struct PartInfoShellContent
         {
-            public PartInfoShellContent(string partName, string function, string material, string tool, string searchTerms)
+            public PartInfoShellContent(string partName, string function, string material, string searchTerms)
             {
                 PartName = partName;
                 Function = function;
                 Material = material;
-                Tool = tool;
                 SearchTerms = searchTerms;
                 HasContent = true;
             }
@@ -41,7 +40,6 @@ namespace OSE.Content
             public string PartName { get; }
             public string Function { get; }
             public string Material { get; }
-            public string Tool { get; }
             public string SearchTerms { get; }
             public bool HasContent { get; }
         }
@@ -119,28 +117,6 @@ namespace OSE.Content
             return null;
         }
 
-        public static string ResolveToolNames(MachinePackageDefinition package, string[] toolIds)
-        {
-            if (toolIds == null || toolIds.Length == 0)
-                return string.Empty;
-
-            var sb = new StringBuilder();
-            for (int i = 0; i < toolIds.Length; i++)
-            {
-                if (string.IsNullOrWhiteSpace(toolIds[i]))
-                    continue;
-
-                if (package.TryGetTool(toolIds[i], out ToolDefinition tool))
-                {
-                    if (sb.Length > 0)
-                        sb.Append(", ");
-                    sb.Append(tool.GetDisplayName());
-                }
-            }
-
-            return sb.ToString();
-        }
-
         public static string JoinStrings(string[] values)
         {
             if (values == null || values.Length == 0)
@@ -175,7 +151,6 @@ namespace OSE.Content
                     part.GetDisplayName(),
                     part.function ?? string.Empty,
                     part.material ?? string.Empty,
-                    ResolveToolNames(package, part.toolIds),
                     JoinStrings(part.searchTerms));
             }
 
@@ -186,7 +161,6 @@ namespace OSE.Content
                 "No part referenced",
                 step.ResolvedInstructionText ?? string.Empty,
                 string.Empty,
-                ResolveToolNames(package, step.relevantToolIds),
                 string.Empty);
         }
 

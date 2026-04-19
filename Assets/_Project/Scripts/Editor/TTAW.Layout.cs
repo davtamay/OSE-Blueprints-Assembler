@@ -161,8 +161,6 @@ namespace OSE.Editor
                             if (!entryIsGroup)
                             {
                                 string entryPartId = TaskInstanceId.ToPartId(entry.id);
-                                // Inline tool toggles (replaces the Part×Tool matrix)
-                                DrawInlineToolToggles(entryPartId);
 
                                 // Group membership
                                 DrawInspectorGroupLabel(entryPartId);
@@ -215,55 +213,6 @@ namespace OSE.Editor
                     "Select a part or group to author its Animations & Effects.",
                     MessageType.Info);
             }
-        }
-
-        /// <summary>
-        /// Draws inline tool toggles for a part: one toggle per package tool.
-        /// Replaces the canvas-level Part×Tool matrix with a simple,
-        /// zero-cognitive-overhead set of checkboxes.
-        /// </summary>
-        private void DrawInlineToolToggles(string partId)
-        {
-            if (_pkg?.tools == null || _pkg.tools.Length == 0 || string.IsNullOrEmpty(partId))
-                return;
-
-            var part = FindPartById(partId);
-            if (part == null) return;
-
-            EditorGUILayout.Space(6);
-            EditorGUILayout.LabelField("Tools for this part:", EditorStyles.miniBoldLabel);
-
-            var currentToolIds = part.toolIds != null
-                ? new HashSet<string>(part.toolIds, System.StringComparer.Ordinal)
-                : new HashSet<string>(System.StringComparer.Ordinal);
-
-            EditorGUILayout.BeginHorizontal();
-            int col = 0;
-            foreach (var tool in _pkg.tools)
-            {
-                if (tool == null || string.IsNullOrEmpty(tool.id)) continue;
-
-                bool isOn  = currentToolIds.Contains(tool.id);
-                var style  = new GUIStyle(EditorStyles.miniButton)
-                {
-                    fontStyle = FontStyle.Bold,
-                    normal    = { textColor = isOn
-                        ? new Color(0.20f, 0.62f, 0.95f)  // blue accent
-                        : new Color(0.50f, 0.50f, 0.55f) },
-                };
-                string label = (isOn ? "▣ " : "☐ ") + tool.GetDisplayName();
-                if (GUILayout.Button(label, style, GUILayout.Height(18)))
-                    ToggleToolForPart(part, tool.id, !isOn);
-
-                col++;
-                // Wrap to next row after every 2 tools to fit narrow inspector
-                if (col % 2 == 0)
-                {
-                    EditorGUILayout.EndHorizontal();
-                    EditorGUILayout.BeginHorizontal();
-                }
-            }
-            EditorGUILayout.EndHorizontal();
         }
 
         /// <summary>

@@ -439,7 +439,6 @@ namespace OSE.Editor
                            + (_dirtyStepIds?.Count          ?? 0)
                            + (_dirtyTaskOrderStepIds?.Count ?? 0)
                            + (_dirtyPartAssetRefIds?.Count  ?? 0)
-                           + (_dirtyPartToolIds?.Count      ?? 0)
                            + (_dirtySubassemblyIds?.Count   ?? 0);
             string dirtyText = dirtyCount > 0 ? $"● {dirtyCount} unsaved" : string.Empty;
             if (_toolbarDirtyLabel.text != dirtyText)

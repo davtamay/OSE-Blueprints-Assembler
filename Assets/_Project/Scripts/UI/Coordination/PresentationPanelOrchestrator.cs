@@ -108,37 +108,27 @@ namespace OSE.UI.Root
 
         public void SetPartInfoContent(
             string partName, string function,
-            string material, string tool,
+            string material,
             string searchTerms)
         {
             string resolved = string.IsNullOrWhiteSpace(partName) ? _partName : partName;
-            bool samePart   = string.Equals(resolved, _partName, System.StringComparison.Ordinal);
             _showingHoverPartInfo = false;
             _partName     = resolved;
             _partFunction = function;
             _partMaterial = material;
-            if (!string.IsNullOrWhiteSpace(tool))
-                _partTool = tool;
-            else if (!samePart)
-                _partTool = "No specific tool required.";
             _partSearchTerms = searchTerms;
         }
 
         public void SetHoverPartInfoContent(
             string partName, string function,
-            string material, string tool,
+            string material,
             string searchTerms)
         {
             string resolved = string.IsNullOrWhiteSpace(partName) ? _partName : partName;
-            bool samePart   = string.Equals(resolved, _partName, System.StringComparison.Ordinal);
             _showingHoverPartInfo = true;
             _partName     = resolved;
             _partFunction = function;
             _partMaterial = material;
-            if (!string.IsNullOrWhiteSpace(tool))
-                _partTool = tool;
-            else if (!samePart)
-                _partTool = "No specific tool required.";
             _partSearchTerms = searchTerms;
         }
 

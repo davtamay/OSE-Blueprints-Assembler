@@ -461,7 +461,6 @@ namespace OSE.Runtime.Preview
                 part.GetDisplayName(),
                 part.function ?? string.Empty,
                 part.material ?? string.Empty,
-                StepUiContentUtility.ResolveToolNames(_session.Package, part.toolIds),
                 StepUiContentUtility.JoinStrings(part.searchTerms));
         }
 
@@ -614,7 +613,6 @@ namespace OSE.Runtime.Preview
                     partInfo.PartName,
                     partInfo.Function,
                     partInfo.Material,
-                    partInfo.Tool,
                     partInfo.SearchTerms);
             }
 
