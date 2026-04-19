@@ -26,6 +26,7 @@ namespace OSE.Content.Loading
             InferStepParentIds(package);
             NormalizeTaskOrderToolActionKinds(package);
             EnsureTaskOrderCoversRequirements(package);
+            ValidateUseFamilyPartsArePrePlaced(package);
             ValidateUnorderedSets(package);
             NormalizeToolActions(package);
             ResolveToolActionPartIds(package);
@@ -460,6 +461,83 @@ namespace OSE.Content.Loading
                 step.taskOrder = combined.ToArray();
 
                 Debug.LogWarning($"[TaskOrder.Normalize] step '{step.id}': appended {missing.Count} missing taskOrder entr{(missing.Count == 1 ? "y" : "ies")} to cover declared requirements — the cursor would otherwise deadlock. Update the authoring source so taskOrder reflects every requiredPart/requiredToolAction explicitly.");
+            }
+        }
+
+        /// <summary>
+        /// Catches the "family=Use with unplaced requiredPartIds" authoring
+        /// bug at load time. A Use-family step routes interactions through
+        /// <c>UseStepHandler</c> — there's no placement handler active, so
+        /// any Part task in <c>taskOrder</c> will never transition to
+        /// <c>PlacedVirtually</c>, the cursor stalls on its first Part span,
+        /// and subsequent toolAction spans never open. Users experience
+        /// this as "tool target does nothing when clicked."
+        ///
+        /// <para>A part is considered placed-prior if any step with a smaller
+        /// <c>sequenceIndex</c> listed it in <c>requiredPartIds</c> under
+        /// family=Place. Use-family steps that depend on parts never placed
+        /// by a prior Place step are reported as errors — the authoring fix
+        /// is either (a) change the step's family to Place (if the intent is
+        /// to place these parts here), or (b) add a prior Place step that
+        /// introduces them.</para>
+        ///
+        /// <para>Seen 2026-04-19 on step 43 (step_place_upper_corner_brackets)
+        /// — should have been family=Place like its sibling step 41
+        /// (step_place_lower_corner_brackets) but was mis-authored as
+        /// family=Use+profile=Torque. Deadlocked on first tool target click.
+        /// Validator log would have caught this at load before Play.</para>
+        /// </summary>
+        private static void ValidateUseFamilyPartsArePrePlaced(MachinePackageDefinition package)
+        {
+            if (package?.steps == null) return;
+
+            // Steps are not guaranteed sorted; clone + sort by sequenceIndex.
+            var sorted = new List<StepDefinition>(package.steps.Length);
+            for (int i = 0; i < package.steps.Length; i++)
+                if (package.steps[i] != null) sorted.Add(package.steps[i]);
+            sorted.Sort((a, b) => a.sequenceIndex.CompareTo(b.sequenceIndex));
+
+            var placedBefore = new HashSet<string>(StringComparer.Ordinal);
+
+            for (int i = 0; i < sorted.Count; i++)
+            {
+                var step = sorted[i];
+                string family = (step.family ?? string.Empty).Trim();
+
+                if (string.Equals(family, "Use", StringComparison.OrdinalIgnoreCase))
+                {
+                    var required = step.requiredPartIds;
+                    if (required != null && required.Length > 0)
+                    {
+                        List<string> unplaced = null;
+                        for (int r = 0; r < required.Length; r++)
+                        {
+                            string pid = required[r];
+                            if (string.IsNullOrEmpty(pid)) continue;
+                            if (!placedBefore.Contains(pid))
+                                (unplaced ??= new List<string>()).Add(pid);
+                        }
+                        if (unplaced != null)
+                        {
+                            Debug.LogError($"[Validate.UseParts] step '{step.id}' (seq {step.sequenceIndex}, family=Use) declares requiredPartIds that no prior family=Place step placed: {string.Join(", ", unplaced)}. Trainee cannot complete this step — Use-family routes interactions through UseStepHandler, which does not place parts. Either change the family to Place, or add a prior Place step that introduces these parts.");
+                        }
+                    }
+                }
+
+                // Accumulate: Place-family steps contribute their requiredPartIds
+                // to the placed-before set for subsequent step checks.
+                if (string.Equals(family, "Place", StringComparison.OrdinalIgnoreCase))
+                {
+                    var placed = step.requiredPartIds;
+                    if (placed != null)
+                    {
+                        for (int r = 0; r < placed.Length; r++)
+                        {
+                            if (!string.IsNullOrEmpty(placed[r]))
+                                placedBefore.Add(placed[r]);
+                        }
+                    }
+                }
             }
         }
 

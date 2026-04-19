@@ -3885,12 +3885,8 @@
       "sequenceIndex": 43,
       "instructionText": "Slide a corner bracket onto each of the four upper cube corners. Push flush until seated, then thread two M6x18 bolts per bracket in by hand. Work in the same order: front-left, rear-right, front-right, rear-left.",
       "whyItMattersText": "Upper brackets complete the structural lock of all eight cube corners.",
-      "relevantToolIds": [
-        "tool_allen_key_metric"
-      ],
       "targetOrder": "sequential",
-      "family": "Use",
-      "profile": "Torque",
+      "family": "Place",
       "viewMode": "WorkZone",
       "hintIds": [
         "hint_bracket_upper_placement"
@@ -3920,32 +3916,6 @@
         "compound007_upper_fr",
         "compound007_upper_rl",
         "compound007_upper_rr"
-      ],
-      "requiredToolActions": [
-        {
-          "id": "action_bracket_upper_front_left",
-          "toolId": "tool_allen_key_metric",
-          "targetId": "target_cube_weld_upper_front_left",
-          "actionType": "Tighten"
-        },
-        {
-          "id": "action_bracket_upper_rear_right",
-          "toolId": "tool_allen_key_metric",
-          "targetId": "target_cube_weld_upper_rear_right",
-          "actionType": "Tighten"
-        },
-        {
-          "id": "action_bracket_upper_front_right",
-          "toolId": "tool_allen_key_metric",
-          "targetId": "target_cube_weld_upper_front_right",
-          "actionType": "Tighten"
-        },
-        {
-          "id": "action_bracket_upper_rear_left",
-          "toolId": "tool_allen_key_metric",
-          "targetId": "target_cube_weld_upper_rear_left",
-          "actionType": "Tighten"
-        }
       ],
       "taskOrder": [
         {
