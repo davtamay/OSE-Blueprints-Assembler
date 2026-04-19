@@ -39,6 +39,7 @@ namespace OSE.Interaction
         private float _weldLength;
         private Renderer _targetSphereRenderer;
         private bool _completed;
+        private bool _loggedMidAction;
         private bool _instantPlacement;
         private IPartEffect _partEffect;
         private Vector3 _partEffectOffset;
@@ -150,6 +151,7 @@ namespace OSE.Interaction
             _phase = Phase.Approach;
             _elapsed = 0f;
             _completed = false;
+            _loggedMidAction = false;
 
             // Hide the target sphere renderer so the tool action is fully visible
             _targetSphereRenderer = FindTargetSphereRenderer(ctx.SurfaceWorldPos);
@@ -157,6 +159,7 @@ namespace OSE.Interaction
                 _targetSphereRenderer.enabled = false;
 
             OseLog.Info($"[ToolActionPreview] Entered — profile='{profile}', mode={mode}, speed={_speed:F2}x, target='{ctx.TargetId}', tipDist={toolReach:F3}");
+            OseLog.Info($"[ToolPhase] ENTER — preview='{toolPreview.name}' active={toolPreview.activeSelf} activeInHierarchy={toolPreview.activeInHierarchy} startPos={_startPos} workingPos={_workingPos} startScale={_startScale:F3} targetScale={_targetScale:F3}");
 
             // Visual guide (progress ring + arrow for guided)
             _visualGuide = new ToolActionVisualGuide();
@@ -239,6 +242,8 @@ namespace OSE.Interaction
                 _toolPreview.transform.rotation = _actionRot;
                 _toolPreview.transform.localScale = Vector3.one * _targetScale;
 
+                OseLog.Info($"[ToolPhase] APPROACH→ACTION — preview='{_toolPreview.name}' active={_toolPreview.activeSelf} activeInH={_toolPreview.activeInHierarchy} pos={_toolPreview.transform.position} scale={_toolPreview.transform.localScale.x:F3}");
+
                 // Persistent tools (clamps, fixtures): snap into place at end of approach.
                 // No action animation plays yet — a screw-tighten animation can be plugged
                 // in later by removing this branch. The I Do / We Do / auto mode selection
@@ -316,10 +321,24 @@ namespace OSE.Interaction
                 _toolPreview.transform.position = _workingPos + _partEffectOffset + overlay;
             }
 
+            // One-shot mid-Action sample: catch cases where the tool GO goes
+            // inactive or gets reparented mid-animation without triggering a
+            // phase transition we'd otherwise log.
+            if (_toolPreview != null && !_loggedMidAction && progress > 0.3f && progress < 0.7f)
+            {
+                _loggedMidAction = true;
+                OseLog.Info($"[ToolPhase] ACTION mid (p={progress:F2}) — preview='{_toolPreview.name}' active={_toolPreview.activeSelf} activeInH={_toolPreview.activeInHierarchy} pos={_toolPreview.transform.position} parent={(_toolPreview.transform.parent != null ? _toolPreview.transform.parent.name : "null")}");
+            }
+
             _visualGuide?.SetProgress(progress);
 
             if (progress >= 1f)
             {
+                if (_toolPreview != null)
+                    OseLog.Info($"[ToolPhase] ACTION→RETURN — preview='{_toolPreview.name}' active={_toolPreview.activeSelf} activeInH={_toolPreview.activeInHierarchy} pos={_toolPreview.transform.position} scale={_toolPreview.transform.localScale.x:F3}");
+                else
+                    OseLog.Warn("[ToolPhase] ACTION→RETURN — _toolPreview is NULL");
+
                 _completed = true;
                 _partEffect?.End();
                 _partEffect = null;
