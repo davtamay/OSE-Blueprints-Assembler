@@ -108,13 +108,17 @@ namespace OSE.Editor
             // task. Restore the package inline so _targets is ready before we
             // run the sibling re-attach work below.
             //
-            // Safe in this context because the spawner only publishes
-            // SpawnerPartsReady AFTER MachinePackageLoader.LoadFromStreamingAssetsAsync
-            // completes — AssetDatabase is guaranteed to be ready.
-            if (_pkg == null && !string.IsNullOrEmpty(_pkgId))
+            // Gate on `_targets == null` (the thing the refresh block needs)
+            // rather than `_pkg == null`, in case some other code path has
+            // partially populated state. Safe in this context because the
+            // spawner only publishes SpawnerPartsReady AFTER
+            // MachinePackageLoader.LoadFromStreamingAssetsAsync completes —
+            // AssetDatabase is guaranteed to be ready.
+            if (_targets == null && !string.IsNullOrEmpty(_pkgId))
             {
-                Debug.Log($"[TTAW.ToolPreview] OnSpawnerPartsReady — loading pkg '{_pkgId}' inline to catch post-reload race");
+                Debug.Log($"[TTAW.ToolPreview] OnSpawnerPartsReady — loading pkg '{_pkgId}' inline to catch post-reload race (_pkg={(_pkg == null ? "null" : "loaded")})");
                 LoadPkg(_pkgId, restoring: true);
+                Debug.Log($"[TTAW.ToolPreview] OnSpawnerPartsReady — inline LoadPkg complete, _targets={(_targets == null ? "null" : _targets.Length.ToString())}");
             }
 
             // Re-apply authoritative _pkg positions after the spawn cycle.
