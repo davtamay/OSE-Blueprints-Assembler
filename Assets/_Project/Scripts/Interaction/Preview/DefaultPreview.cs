@@ -15,9 +15,20 @@ namespace OSE.Interaction
         protected override float AutoAssistRate => 1f;
         protected override float GuidedDragScale => 0.003f;
 
+        // Tool's position at the moment Action phase starts (already docked at the
+        // working pose after Approach). We reset to this each tick, not to
+        // context.ToolStartWorldPos which is the cursor pose — snapping to the
+        // cursor here made the tool fly away from the part every frame.
+        // Mirrors the pattern in DrillPreview / CutPreview / WeldPreview.
+        private Vector3 _actionBasePos;
+
         public override void Begin(PreviewContext context)
         {
             base.Begin(context);
+
+            _actionBasePos = context.ToolPreview != null
+                ? context.ToolPreview.transform.position
+                : Vector3.zero;
 
             // Brief emission pulse on the preview
             if (context.ToolPreview != null)
@@ -56,17 +67,22 @@ namespace OSE.Interaction
         }
 
         /// <summary>
-        /// Snaps the tool preview back to its entry position each tick. The
-        /// controller composes the part-follow offset on top of this baseline —
-        /// see <see cref="ToolActionPreviewController"/>'s TickAction comment
-        /// "preview resets tool position each frame" for the contract.
-        /// Without this reset the controller's cumulative offset addition
+        /// Snaps the tool preview back to its Action-phase base position each
+        /// tick. The controller composes the part-follow offset on top of this
+        /// baseline — see <see cref="ToolActionPreviewController"/>'s
+        /// TickAction comment "preview resets tool position each frame" for the
+        /// contract. Without this reset the cumulative offset addition
         /// compounds every frame → massive overshoot.
+        ///
+        /// <para>Base is captured in <see cref="Begin"/> (at the
+        /// Approach→Action phase transition, when the tool is already docked at
+        /// the working pose) — NOT <c>_ctx.ToolStartWorldPos</c> which is the
+        /// cursor pose and would fling the tool back to the cursor every frame.</para>
         /// </summary>
         protected override void ApplyEffects(float progress)
         {
             if (_ctx.ToolPreview != null)
-                _ctx.ToolPreview.transform.position = _ctx.ToolStartWorldPos;
+                _ctx.ToolPreview.transform.position = _actionBasePos;
         }
 
         public override Vector2 GetExpectedDragDirection(PreviewContext context)
