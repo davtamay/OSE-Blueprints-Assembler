@@ -25,6 +25,7 @@ namespace OSE.Content.Loading
             BakeStagingPoses(package);
             InferStepParentIds(package);
             NormalizeTaskOrderToolActionKinds(package);
+            EnsureTaskOrderCoversRequirements(package);
             ValidateUnorderedSets(package);
             NormalizeToolActions(package);
             ResolveToolActionPartIds(package);
@@ -353,6 +354,112 @@ namespace OSE.Content.Loading
                 {
                     Debug.LogWarning($"[TaskOrder.Normalize] step '{step.id}': rewrote {rewritten} kind='target' entr{(rewritten == 1 ? "y" : "ies")} to kind='toolAction' (cursor drives on action ids, not target ids). Update the authoring source to emit kind='toolAction' directly.");
                 }
+            }
+        }
+
+        /// <summary>
+        /// Guarantees that <see cref="StepDefinition.taskOrder"/> covers every
+        /// runtime-completion-gated requirement declared on the step. Missing
+        /// entries are appended in the order they appear in the requirement
+        /// arrays; existing entries are left alone (preserves author-specified
+        /// sequence + <c>unorderedSet</c> labels + <c>endTransform</c>).
+        ///
+        /// <para>Why: the <see cref="TaskCursor"/> completion gate is the only
+        /// runtime path that advances a step past its first span. It only
+        /// notifies on <c>(kind, id)</c> tuples that appear in <c>taskOrder</c>.
+        /// When authored content declares <c>requiredToolActions</c> or
+        /// <c>requiredPartIds</c> but forgets to add matching <c>taskOrder</c>
+        /// entries, the step deadlocks: placement handlers refuse to complete
+        /// the step (tool actions still pending), and the tool controller
+        /// refuses to dispatch the actions (cursor never opens them).</para>
+        ///
+        /// <para>Seen 2026-04-19 on <c>step_place_upper_corner_brackets</c>
+        /// (seq 43): taskOrder had the 4 Part entries but zero toolAction
+        /// entries. User got stuck clicking a tool target that never completed.
+        /// Prior instances of the same deadlock shape on steps 4/27 had
+        /// different triggers (wrong kind, stale PartEffect) — the common
+        /// failure is "cursor doesn't know about something the step requires."
+        /// This pass is a fail-closed guarantee: every required task is
+        /// visible to the cursor, regardless of how the taskOrder was
+        /// authored.</para>
+        ///
+        /// <para>Warnings are logged so authors can clean up content upstream,
+        /// but the runtime doesn't wait — the step plays correctly on load.</para>
+        /// </summary>
+        private static void EnsureTaskOrderCoversRequirements(MachinePackageDefinition package)
+        {
+            if (package?.steps == null) return;
+
+            for (int si = 0; si < package.steps.Length; si++)
+            {
+                var step = package.steps[si];
+                if (step == null) continue;
+
+                // Build the set of (kind, id) tuples already represented.
+                var existing = new HashSet<string>(StringComparer.Ordinal);
+                if (step.taskOrder != null)
+                {
+                    for (int ti = 0; ti < step.taskOrder.Length; ti++)
+                    {
+                        var e = step.taskOrder[ti];
+                        if (e == null || string.IsNullOrEmpty(e.kind) || string.IsNullOrEmpty(e.id)) continue;
+                        existing.Add(e.kind + ":" + e.id);
+                    }
+                }
+
+                var missing = new List<TaskOrderEntry>();
+
+                // Required part tasks — cursor gates placement completion on these.
+                var requiredParts = step.requiredPartIds;
+                if (requiredParts != null)
+                {
+                    for (int pi = 0; pi < requiredParts.Length; pi++)
+                    {
+                        string pid = requiredParts[pi];
+                        if (string.IsNullOrEmpty(pid)) continue;
+                        // Match is on bare partId OR an instance id (partId#N). Any
+                        // existing "part:" entry whose ToPartId == pid satisfies
+                        // the requirement — don't add a duplicate.
+                        bool covered = false;
+                        if (step.taskOrder != null)
+                        {
+                            for (int ti = 0; ti < step.taskOrder.Length && !covered; ti++)
+                            {
+                                var e = step.taskOrder[ti];
+                                if (e == null || !string.Equals(e.kind, "part", StringComparison.Ordinal)) continue;
+                                if (string.IsNullOrEmpty(e.id)) continue;
+                                if (string.Equals(TaskInstanceId.ToPartId(e.id), pid, StringComparison.Ordinal))
+                                    covered = true;
+                            }
+                        }
+                        if (!covered)
+                            missing.Add(new TaskOrderEntry { kind = "part", id = pid });
+                    }
+                }
+
+                // Required tool actions — cursor gates tool-action execution on these.
+                var requiredActions = step.requiredToolActions;
+                if (requiredActions != null)
+                {
+                    for (int ai = 0; ai < requiredActions.Length; ai++)
+                    {
+                        var a = requiredActions[ai];
+                        if (a == null || string.IsNullOrEmpty(a.id)) continue;
+                        if (existing.Contains("toolAction:" + a.id)) continue;
+                        missing.Add(new TaskOrderEntry { kind = "toolAction", id = a.id });
+                    }
+                }
+
+                if (missing.Count == 0) continue;
+
+                // Append in declaration order. Authors can re-order in source
+                // if they want a different sequence; we just guarantee presence.
+                var combined = new List<TaskOrderEntry>(step.taskOrder?.Length + missing.Count ?? missing.Count);
+                if (step.taskOrder != null) combined.AddRange(step.taskOrder);
+                combined.AddRange(missing);
+                step.taskOrder = combined.ToArray();
+
+                Debug.LogWarning($"[TaskOrder.Normalize] step '{step.id}': appended {missing.Count} missing taskOrder entr{(missing.Count == 1 ? "y" : "ies")} to cover declared requirements — the cursor would otherwise deadlock. Update the authoring source so taskOrder reflects every requiredPart/requiredToolAction explicitly.");
             }
         }
 
