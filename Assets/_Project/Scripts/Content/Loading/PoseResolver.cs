@@ -37,6 +37,74 @@ namespace OSE.Content.Loading
             string partId, int viewSeq, MachinePackageDefinition pkg,
             PoseResolverIndex idx, PoseMode mode)
         {
+            var basePose = ResolveWithoutGroupCompose(partId, viewSeq, pkg, idx, mode);
+            if (basePose.IsHidden) return basePose;
+            return ApplyGroupStepPose(partId, viewSeq, idx, basePose);
+        }
+
+        /// <summary>
+        /// Composes the member's per-part resolved pose with any group
+        /// stepPose active for the owning subassembly at <paramref name="viewSeq"/>.
+        /// No-op when the part has no owning subassembly OR the subassembly has
+        /// no group stepPose covering this seq — keeps existing content byte-
+        /// identical with the pre-Phase-A resolver.
+        ///
+        /// <para>Composition formula: world = groupTransform × memberLocal.
+        /// <list type="bullet">
+        ///   <item><c>composedPos = groupPos + groupRot * memberLocalPos</c></item>
+        ///   <item><c>composedRot = groupRot * memberLocalRot</c></item>
+        ///   <item>Scale is inherited from the member (group scale not yet used).</item>
+        /// </list>
+        /// Matches the Unity transform-hierarchy semantics: the group root
+        /// carries <c>groupPos</c>/<c>groupRot</c>, members carry their
+        /// already-resolved poses as their localTransform, and world =
+        /// root×local.</para>
+        /// </summary>
+        private static PoseResolution ApplyGroupStepPose(
+            string partId, int viewSeq, PoseResolverIndex idx, PoseResolution memberLocal)
+        {
+            if (!idx.subassemblyIdByMember.TryGetValue(partId, out string subId)) return memberLocal;
+            if (!idx.groupStepPosesBySubassembly.TryGetValue(subId, out var spans)) return memberLocal;
+
+            ResolvedAuthorSpan? best = null;
+            int bestDist = int.MaxValue;
+            int bestAnchor = int.MinValue;
+            for (int i = 0; i < spans.Count; i++)
+            {
+                var sp = spans[i];
+                if (!sp.Covers(viewSeq)) continue;
+                int dist = sp.anchorSeq >= 0 ? Math.Abs(viewSeq - sp.anchorSeq) : int.MaxValue / 2;
+                bool preferBackward = dist == bestDist
+                                     && sp.anchorSeq <= viewSeq
+                                     && bestAnchor   >  viewSeq;
+                if (dist < bestDist || preferBackward)
+                {
+                    best       = sp;
+                    bestDist   = dist;
+                    bestAnchor = sp.anchorSeq;
+                }
+            }
+            if (!best.HasValue) return memberLocal;
+
+            var g = best.Value.entry;
+            Quaternion groupRot = ToQuat(g.rotation);
+            Vector3    groupPos = ToVec3(g.position);
+
+            Vector3    composedPos = groupPos + groupRot * memberLocal.pos;
+            Quaternion composedRot = groupRot * memberLocal.rot;
+
+            return new PoseResolution(
+                composedPos,
+                composedRot,
+                memberLocal.scl,
+                memberLocal.source,
+                memberLocal.meta);
+        }
+
+        private static PoseResolution ResolveWithoutGroupCompose(
+            string partId, int viewSeq, MachinePackageDefinition pkg,
+            PoseResolverIndex idx, PoseMode mode)
+        {
             if (string.IsNullOrEmpty(partId) || pkg == null || idx == null) return PoseResolution.Hidden;
             if (!idx.placementByPart.TryGetValue(partId, out var pp) || pp == null) return PoseResolution.Hidden;
 

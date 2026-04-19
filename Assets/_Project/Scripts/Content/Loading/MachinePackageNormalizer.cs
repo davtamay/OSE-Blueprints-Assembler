@@ -720,6 +720,16 @@ namespace OSE.Content.Loading
         private const string SynthesizedStepPoseLabelPrefix = "synthesized:holdAtEnd";
 
         /// <summary>
+        /// Dedicated label prefix for group-level synthesized stepPoses emitted
+        /// onto <see cref="SubassemblyPreviewPlacement.stepPoses"/> by the
+        /// Phase-B refactor. Carefully chosen to NOT share a common prefix
+        /// with the legacy per-member prefix — strips key off StartsWith, and
+        /// the legacy strip (<c>SynthesizedStepPoseLabelPrefix</c>) must not
+        /// accidentally catch the new group entries, nor vice versa.
+        /// </summary>
+        private const string SynthesizedGroupStepPoseLabelPrefix = "synthGroup:holdAtEnd";
+
+        /// <summary>
         /// Bakes the end-state of every <c>poseTransition</c> cue with
         /// <c>holdAtEnd=true</c> into per-member <see cref="StepPoseEntry"/>
         /// records on each member's <see cref="PartPreviewPlacement.stepPoses"/>.
@@ -754,9 +764,20 @@ namespace OSE.Content.Loading
                     if (pp != null && !string.IsNullOrEmpty(pp.partId))
                         placementByPart[pp.partId] = pp;
 
-            // Strip prior synthesized entries so the pass is idempotent.
+            // Strip prior synthesized entries so the pass is idempotent. This
+            // now removes BOTH the legacy per-member entries (Phase-B
+            // migration: the group-centric model replaces them) and any prior
+            // group synthesized entries from earlier runs in this load.
             foreach (var pp in placementByPart.Values)
                 pp.stepPoses = StripSynthesizedStepPoses(pp.stepPoses);
+
+            // Lookup / ensure SubassemblyPreviewPlacement entries so the
+            // baker can write group stepPoses onto them. Absent placements
+            // are materialised on the fly — cue-bearing subassemblies may
+            // not have authored a placement entry yet.
+            var placementBySub = EnsureSubassemblyPlacements(package);
+            foreach (var sp in placementBySub.Values)
+                sp.stepPoses = StripSynthesizedGroupStepPoses(sp.stepPoses);
 
             // Resolver index for effective-pose lookups. Cycle-free — only
             // reads package, placements, and subassembly membership; does
@@ -786,7 +807,7 @@ namespace OSE.Content.Loading
                     if (sub?.animationCues == null || sub.animationCues.Length == 0) continue;
                     if (sub.partIds == null || sub.partIds.Length == 0) continue;
                     synthesizedOnSubs += SynthesizeGroupHoldAtEnd(
-                        package, sub, idx, orderedSteps, seqByStepId, placementByPart);
+                        package, sub, idx, orderedSteps, seqByStepId, placementByPart, placementBySub);
                 }
             }
 
@@ -808,15 +829,33 @@ namespace OSE.Content.Loading
                 Debug.Log($"[CueRuntime.BakeHoldAtEnd] synthesized {total} stepPose(s) in '{package.packageId}' ({synthesizedOnSubs} from group cues, {synthesizedOnParts} from part cues).");
         }
 
+        /// <summary>
+        /// Phase-B group-centric bake. Instead of fanning the cue's rotation
+        /// into N per-member <see cref="StepPoseEntry"/> rows, emit a single
+        /// <see cref="StepPoseEntry"/> onto the subassembly's
+        /// <see cref="SubassemblyPreviewPlacement.stepPoses"/>. At resolve
+        /// time <c>PoseResolver.ApplyGroupStepPose</c> composes the group's
+        /// transform onto each member's per-part pose.
+        ///
+        /// <para>Encoding: a pivot-based rotation <c>final = C + R*(p - C)</c>
+        /// is equivalent to a free transform <c>final = R*p + (C - R*C)</c>.
+        /// So we encode <c>groupRot = R</c> and <c>groupPos = C - R*C</c>.
+        /// Composition reproduces the same world pose for every member,
+        /// regardless of which member (pure math — no per-member data needed).</para>
+        /// </summary>
         private static int SynthesizeGroupHoldAtEnd(
             MachinePackageDefinition package,
             SubassemblyDefinition sub,
             PoseResolverIndex idx,
             StepDefinition[] orderedSteps,
             Dictionary<string, int> seqByStepId,
-            Dictionary<string, PartPreviewPlacement> placementByPart)
+            Dictionary<string, PartPreviewPlacement> placementByPart,
+            Dictionary<string, SubassemblyPreviewPlacement> placementBySub)
         {
             int count = 0;
+
+            if (!placementBySub.TryGetValue(sub.id, out var subPlacement) || subPlacement == null)
+                return 0;
 
             for (int ci = 0; ci < sub.animationCues.Length; ci++)
             {
@@ -858,19 +897,12 @@ namespace OSE.Content.Loading
                         Debug.LogWarning($"[CueRuntime.BakeHoldAtEnd] subassembly '{sub.id}' cue[{ci}] anchors to final step '{cueStepId}' — no next step to persist into.");
                         continue;
                     }
-                    int anchorSeq = nextStep.sequenceIndex;
 
-                    // Eligible members: resolve each member's effective pose
-                    // at the cue's step via PoseResolver. Hidden members are
-                    // excluded entirely. At-origin members ARE included in
-                    // synthesis (the runtime PoseTransitionPlayer rotates every
-                    // child including centroid-origin ones) but are NOT used
-                    // for centroid computation — matching the runtime's
-                    // ComputeChildrenCentroidLocal filter. Earlier versions
-                    // skipped at-origin members everywhere, which left them at
-                    // the un-rotated pose on the next step while siblings
-                    // stayed rotated — the "one part back at start pose" bug.
-                    var eligible = new List<(string id, Vector3 pos, Quaternion rot, Vector3 scl, bool useInCentroid)>();
+                    // Centroid computation mirrors the runtime's
+                    // ComputeChildrenCentroidLocal filter: include only
+                    // non-origin members visible at the cue's step.
+                    Vector3 centroid = Vector3.zero;
+                    int centroidCount = 0;
                     for (int mi = 0; mi < sub.partIds.Length; mi++)
                     {
                         string memberId = sub.partIds[mi];
@@ -878,56 +910,36 @@ namespace OSE.Content.Loading
                         if (!placementByPart.ContainsKey(memberId)) continue;
                         var res = PoseResolver.Resolve(
                             memberId, cueStep.sequenceIndex, package, idx, PoseMode.Committed);
-                        if (res.source == PoseSource.Hidden) continue;
-                        bool atOrigin = res.pos.sqrMagnitude < 0.0001f;
-                        eligible.Add((memberId, res.pos, res.rot, res.scl, !atOrigin));
-                    }
-                    if (eligible.Count == 0)
-                    {
-                        Debug.LogWarning($"[CueRuntime.BakeHoldAtEnd] subassembly '{sub.id}' cue[{ci}] at '{cueStepId}': no eligible members visible at cue step — skipping.");
-                        continue;
-                    }
-
-                    Vector3 centroid = Vector3.zero;
-                    int centroidCount = 0;
-                    for (int k = 0; k < eligible.Count; k++)
-                    {
-                        if (!eligible[k].useInCentroid) continue;
-                        centroid += eligible[k].pos;
+                        if (res.IsHidden) continue;
+                        if (res.pos.sqrMagnitude < 0.0001f) continue;
+                        centroid += res.pos;
                         centroidCount++;
                     }
-                    if (centroidCount > 0) centroid /= centroidCount;
-
-                    // Fan out per member.
-                    for (int k = 0; k < eligible.Count; k++)
+                    if (centroidCount == 0)
                     {
-                        var m = eligible[k];
-                        var placement = placementByPart[m.id];
-
-                        if (AnyAuthoredSpanCovers(placement.stepPoses, anchorSeq, seqByStepId))
-                        {
-                            Debug.LogWarning($"[CueRuntime.BakeHoldAtEnd] member '{m.id}' has authored stepPose covering step '{nextStep.id}' (seq {anchorSeq}) — skipping synthesis for this member (authored wins).");
-                            continue;
-                        }
-
-                        Vector3    finalPos = centroid + deltaRot * (m.pos - centroid);
-                        Quaternion finalRot = deltaRot * m.rot;
-
-                        var synth = new StepPoseEntry
-                        {
-                            stepId = nextStep.id,
-                            label  = $"{SynthesizedStepPoseLabelPrefix} (sub={sub.id} cue={cue.type}[{ci}])",
-                            position = new SceneFloat3 { x = finalPos.x, y = finalPos.y, z = finalPos.z },
-                            rotation = new SceneQuaternion { x = finalRot.x, y = finalRot.y, z = finalRot.z, w = finalRot.w },
-                            scale    = m.scl.sqrMagnitude > 0.0001f
-                                         ? new SceneFloat3 { x = m.scl.x, y = m.scl.y, z = m.scl.z }
-                                         : new SceneFloat3 { x = 1f, y = 1f, z = 1f },
-                            propagateFromStep    = "",
-                            propagateThroughStep = "",
-                        };
-                        placement.stepPoses = AppendStepPose(placement.stepPoses, synth);
-                        count++;
+                        Debug.LogWarning($"[CueRuntime.BakeHoldAtEnd] subassembly '{sub.id}' cue[{ci}] at '{cueStepId}': no non-origin members visible — skipping group synthesis.");
+                        continue;
                     }
+                    centroid /= centroidCount;
+
+                    // Encode pivot-based rotation as a free transform:
+                    // final = C + R*(p - C) = R*p + (C - R*C)
+                    //      → groupRot = R, groupPos = C - R*C
+                    Vector3 groupPos = centroid - deltaRot * centroid;
+                    Quaternion groupRot = deltaRot;
+
+                    var synth = new StepPoseEntry
+                    {
+                        stepId = nextStep.id,
+                        label  = $"{SynthesizedGroupStepPoseLabelPrefix} (sub={sub.id} cue={cue.type}[{ci}])",
+                        position = new SceneFloat3 { x = groupPos.x, y = groupPos.y, z = groupPos.z },
+                        rotation = new SceneQuaternion { x = groupRot.x, y = groupRot.y, z = groupRot.z, w = groupRot.w },
+                        scale    = new SceneFloat3 { x = 1f, y = 1f, z = 1f },
+                        propagateFromStep    = "",
+                        propagateThroughStep = "",
+                    };
+                    subPlacement.stepPoses = AppendStepPose(subPlacement.stepPoses, synth);
+                    count++;
                 }
             }
             return count;
@@ -1030,6 +1042,108 @@ namespace OSE.Content.Loading
                 next[w++] = arr[i];
             }
             return next;
+        }
+
+        /// <summary>
+        /// Strips previously-synthesized GROUP stepPoses
+        /// (<see cref="SynthesizedGroupStepPoseLabelPrefix"/>) from a
+        /// <see cref="SubassemblyPreviewPlacement.stepPoses"/> array so the
+        /// Phase-B bake is idempotent. Author-written group stepPoses are
+        /// preserved (they use neither prefix).
+        /// </summary>
+        private static StepPoseEntry[] StripSynthesizedGroupStepPoses(StepPoseEntry[] arr)
+        {
+            if (arr == null || arr.Length == 0) return arr;
+            int kept = 0;
+            for (int i = 0; i < arr.Length; i++)
+            {
+                if (arr[i] == null) continue;
+                if (arr[i].label != null && arr[i].label.StartsWith(SynthesizedGroupStepPoseLabelPrefix, StringComparison.Ordinal)) continue;
+                kept++;
+            }
+            if (kept == arr.Length) return arr;
+            var next = new StepPoseEntry[kept];
+            int w = 0;
+            for (int i = 0; i < arr.Length; i++)
+            {
+                if (arr[i] == null) continue;
+                if (arr[i].label != null && arr[i].label.StartsWith(SynthesizedGroupStepPoseLabelPrefix, StringComparison.Ordinal)) continue;
+                next[w++] = arr[i];
+            }
+            return next;
+        }
+
+        /// <summary>
+        /// Ensures every non-aggregate subassembly with animationCues has a
+        /// <see cref="SubassemblyPreviewPlacement"/> in
+        /// <see cref="PackagePreviewConfig.subassemblyPlacements"/>. Existing
+        /// placements are reused; missing ones are created with identity
+        /// transforms so the baker has a write target. Returns a lookup
+        /// keyed by subassemblyId.
+        ///
+        /// <para>Rationale: authors may define a subassembly (partIds +
+        /// animationCues) without authoring a placement — before Phase B
+        /// nothing read <c>subassemblyPlacements[].stepPoses</c>, so there
+        /// was no need. The baker now writes there, so the placement must
+        /// exist.</para>
+        /// </summary>
+        private static Dictionary<string, SubassemblyPreviewPlacement> EnsureSubassemblyPlacements(
+            MachinePackageDefinition package)
+        {
+            var byId = new Dictionary<string, SubassemblyPreviewPlacement>(StringComparer.Ordinal);
+            if (package?.previewConfig == null) return byId;
+
+            var existing = package.previewConfig.subassemblyPlacements;
+            if (existing != null)
+            {
+                foreach (var sp in existing)
+                {
+                    if (sp == null || string.IsNullOrEmpty(sp.subassemblyId)) continue;
+                    byId[sp.subassemblyId] = sp;
+                }
+            }
+
+            // Materialize missing placements for subassemblies with cues. The
+            // baker only writes to subassemblies that actually have
+            // holdAtEnd cues, but we populate eagerly here to give the index
+            // a consistent view regardless of whether the cue fires this run.
+            var subs = package.GetSubassemblies();
+            if (subs == null) return byId;
+
+            var toAppend = new List<SubassemblyPreviewPlacement>();
+            for (int i = 0; i < subs.Length; i++)
+            {
+                var sub = subs[i];
+                if (sub == null || string.IsNullOrEmpty(sub.id)) continue;
+                if (sub.isAggregate) continue;
+                if (byId.ContainsKey(sub.id)) continue;
+
+                var sp = new SubassemblyPreviewPlacement
+                {
+                    subassemblyId     = sub.id,
+                    position          = default,
+                    rotation          = new SceneQuaternion { x = 0f, y = 0f, z = 0f, w = 1f },
+                    scale             = new SceneFloat3 { x = 1f, y = 1f, z = 1f },
+                    startPosition     = default,
+                    startRotation     = new SceneQuaternion { x = 0f, y = 0f, z = 0f, w = 1f },
+                    startScale        = new SceneFloat3 { x = 1f, y = 1f, z = 1f },
+                    assembledPosition = default,
+                    assembledRotation = new SceneQuaternion { x = 0f, y = 0f, z = 0f, w = 1f },
+                    assembledScale    = new SceneFloat3 { x = 1f, y = 1f, z = 1f },
+                };
+                byId[sub.id] = sp;
+                toAppend.Add(sp);
+            }
+
+            if (toAppend.Count > 0)
+            {
+                var combined = new List<SubassemblyPreviewPlacement>();
+                if (existing != null) combined.AddRange(existing);
+                combined.AddRange(toAppend);
+                package.previewConfig.subassemblyPlacements = combined.ToArray();
+            }
+
+            return byId;
         }
 
         private static StepPoseEntry[] AppendStepPose(StepPoseEntry[] arr, StepPoseEntry entry)
