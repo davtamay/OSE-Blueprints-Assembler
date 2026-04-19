@@ -30,11 +30,26 @@ namespace OSE.Editor
         {
             if (_toolPreviewGO != null)
             {
+                string stackSnippet = System.Environment.StackTrace;
+                if (stackSnippet.Length > 500) stackSnippet = stackSnippet.Substring(0, 500);
+                Debug.Log($"[TTAW.ToolPreview] Clear — destroying '{_toolPreviewGO.name}' (stack: {stackSnippet})");
                 DeselectIfSelected(_toolPreviewGO);
                 DestroyImmediate(_toolPreviewGO);
                 _toolPreviewGO = null;
             }
             _toolPreviewDef = null;
+        }
+
+        // Rate-limited diagnostic so the OnGUI retry loop doesn't spam. Logs
+        // the same (target, reason) tuple at most once — use when investigating
+        // "tool preview disappeared" reports. Cleared each time we actually
+        // spawn a preview so the next issue re-logs fresh.
+        private string _lastRefreshDiagKey;
+        private void LogRefreshDiag(string msg)
+        {
+            if (string.Equals(_lastRefreshDiagKey, msg, System.StringComparison.Ordinal)) return;
+            _lastRefreshDiagKey = msg;
+            Debug.Log($"[TTAW.ToolPreview] {msg}");
         }
 
         private void ClearWirePreview()
@@ -128,6 +143,9 @@ namespace OSE.Editor
 
         private void RefreshToolPreview(ref TargetEditState t)
         {
+            string diagTargetId = t.def != null ? t.def.id : "<null def>";
+            LogRefreshDiag($"enter target='{diagTargetId}' showPreview={_showToolPreview} pkgId='{_pkgId ?? "<null>"}' toolPreviewGO={(_toolPreviewGO != null ? "live" : "null")} selectedIdx={_selectedIdx}");
+
             // Split guards into two buckets:
             //
             //  • SEMANTIC ("this target has no tool / preview is off") → clear
@@ -143,6 +161,7 @@ namespace OSE.Editor
             // ── Semantic guards (clear and exit) ─────────────────────────────
             if (!_showToolPreview || string.IsNullOrEmpty(_pkgId))
             {
+                LogRefreshDiag($"SEMANTIC bail: showPreview={_showToolPreview} pkgId='{_pkgId ?? "<null>"}' — Clear+return");
                 ClearToolPreview();
                 return;
             }
@@ -151,6 +170,7 @@ namespace OSE.Editor
             // the old preview is no longer relevant.
             if (_targetToolIdMap == null || !_targetToolIdMap.TryGetValue(t.def.id, out string toolId))
             {
+                LogRefreshDiag($"SEMANTIC bail: _targetToolIdMap is {(_targetToolIdMap == null ? "null" : $"set ({_targetToolIdMap.Count} entries)")} — no tool for '{diagTargetId}' — Clear+return");
                 ClearToolPreview();
                 return;
             }
@@ -162,13 +182,18 @@ namespace OSE.Editor
 
             if (toolDef == null || string.IsNullOrEmpty(toolDef.assetRef))
             {
+                LogRefreshDiag($"SEMANTIC bail: toolDef={(toolDef == null ? "null" : $"'{toolId}' assetRef='{toolDef?.assetRef ?? "<null>"}'")} — Clear+return");
                 ClearToolPreview();
                 return;
             }
 
             // ── Transient guards (silently bail, keep old preview) ───────────
             Transform previewRoot = GetPreviewRoot();
-            if (previewRoot == null) return;
+            if (previewRoot == null)
+            {
+                LogRefreshDiag($"TRANSIENT bail: previewRoot null (ISpawnerQueryService not registered yet)");
+                return;
+            }
 
             string path = $"Assets/_Project/Data/Packages/{_pkgId}/{toolDef.assetRef}";
             var pfb = AssetDatabase.LoadAssetAtPath<GameObject>(path);
@@ -186,6 +211,7 @@ namespace OSE.Editor
 
             if (pfb == null)
             {
+                LogRefreshDiag($"TRANSIENT bail: asset not found at '{path}'");
                 Debug.LogWarning($"[ToolTargetAuthoring] Tool asset not found: {path}");
                 return;
             }
@@ -194,7 +220,12 @@ namespace OSE.Editor
             // skip re-instantiation. Keeps the preview stable on repeated task
             // clicks and post-reload lazy-retries.
             if (_toolPreviewGO != null && _toolPreviewDef == toolDef)
+            {
+                LogRefreshDiag($"idempotent: existing preview matches '{toolId}', skip");
                 return;
+            }
+
+            LogRefreshDiag($"SPAWN new preview for '{toolId}' at '{path}'");
 
             // All resources resolved — now we can safely swap. Destroy the
             // previous preview (if any) and spawn the replacement.
@@ -215,6 +246,7 @@ namespace OSE.Editor
             float rootS = previewRoot.lossyScale.x;
             float localToolScale = Mathf.Approximately(rootS, 0f) ? toolCursorScale : toolCursorScale / rootS;
             _toolPreviewGO.transform.localScale = Vector3.one * localToolScale;
+            _lastRefreshDiagKey = null; // reset so next bail re-logs fresh
 
             // Remove colliders — preview only, must not interfere with click-to-snap raycasts
             foreach (var c in _toolPreviewGO.GetComponentsInChildren<Collider>(true))
@@ -595,20 +627,22 @@ namespace OSE.Editor
             var entry = cues[cueIdx];
             if (entry == null) return null;
 
-            // Route through the same per-cue start path as the inline ▶ Play
-            // button: host-owned for Part/Subassembly (target = host GO) and
-            // legacy for Tool. Suppress the panel-queue clear that
-            // StartAllPreviews would otherwise trigger — the panel loop owns
-            // the queue and is mid-iteration.
+            // All three scopes are host-owned — route through StartHostCuePreview
+            // with the right hostKind. Previously Tool scope fell through to the
+            // legacy StartCuePreview which reads step.animationCues; since Phase 1
+            // moved tool cues onto tool.animationCues, that path found nothing and
+            // the play-every-cue button silently no-oped on tool panels.
+            string hostKindStr = scope switch
+            {
+                CueScope.Part        => "part",
+                CueScope.Tool        => "tool",
+                CueScope.Subassembly => "subassembly",
+                _                    => "part",
+            };
             _suppressPanelQueueClear = true;
             try
             {
-                if (scope == CueScope.Tool)
-                    StartCuePreview(step, cueIdx);
-                else
-                    StartHostCuePreview(entry, cueIdx, step,
-                        scope == CueScope.Part ? "part" : "subassembly",
-                        scopeKey);
+                StartHostCuePreview(entry, cueIdx, step, hostKindStr, scopeKey);
             }
             finally { _suppressPanelQueueClear = false; }
 
