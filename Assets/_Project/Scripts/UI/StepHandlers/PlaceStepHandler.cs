@@ -40,7 +40,11 @@ namespace OSE.UI.Root
         private const float SubassemblySnapZoneRadius = 1.35f;
         private const float SubassemblyDockPreviewRadius = 1.9f;
         private static readonly Color PreviewReadyColor = new Color(0.3f, 1.0f, 0.5f, 0.4f);
-        private static readonly Color PreviewHintColor  = new Color(0.4f, 0.85f, 1.0f, 0.32f);
+        // Warm amber / gold — intentionally distinct from the default preview
+        // material color (cyan-blue in MaterialHelper.PreviewColor) so the
+        // hint tier is visually obvious, and distinct from the green ready
+        // color so the proximity-match still reads as the "this one" target.
+        private static readonly Color PreviewHintColor  = new Color(1.0f, 0.80f, 0.25f, 0.55f);
 
         // ── Animation sub-system ──
         private readonly PlaceStepAnimator _animator;
