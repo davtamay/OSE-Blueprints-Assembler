@@ -13,6 +13,7 @@ namespace OSE.Runtime
     {
         private struct ToolActionRuntimeState
         {
+            public string Id;
             public string ToolId;
             public ToolActionType ActionType;
             public string TargetId;
@@ -35,6 +36,13 @@ namespace OSE.Runtime
         private string _activeToolId;
         private string[] _requiredToolIds = Array.Empty<string>();
         private ToolActionRuntimeState[] _toolActions = Array.Empty<ToolActionRuntimeState>();
+
+        // Phase I.d — attached to the StepController's active TaskCursor when a
+        // step has a non-empty taskOrder. Tool action dispatch is gated through
+        // cursor.IsToolActionOpen; completions notify the cursor so it advances
+        // past completed toolAction spans. Null when no cursor is active OR
+        // when the step has no taskOrder (legacy all-actions-dispatchable path).
+        private TaskCursor _attachedCursor;
 
         public event Action StateChanged;
 
@@ -60,6 +68,7 @@ namespace OSE.Runtime
         public void Dispose()
         {
             RuntimeEventBus.Unsubscribe<StepStateChanged>(HandleStepStateChanged);
+            DetachFromStepCursor();
             _package = null;
             _availableTools = Array.Empty<ToolDefinition>();
             _activeStepId = null;
@@ -67,6 +76,25 @@ namespace OSE.Runtime
             _requiredToolIds = Array.Empty<string>();
             _toolActions = Array.Empty<ToolActionRuntimeState>();
             RaiseStateChanged();
+        }
+
+        // ── Phase I.d — TaskCursor integration ──────────────────────────────
+
+        private void AttachToStepCursor()
+        {
+            DetachFromStepCursor();
+
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session)) return;
+            var stepController = session?.AssemblyController?.StepController;
+            var cursor = stepController?.CurrentTaskCursor;
+            if (cursor == null || cursor.TotalSpans == 0) return;
+
+            _attachedCursor = cursor;
+        }
+
+        private void DetachFromStepCursor()
+        {
+            _attachedCursor = null;
         }
 
         public ToolDefinition[] GetAvailableTools()
@@ -253,6 +281,13 @@ namespace OSE.Runtime
 
             if (action.CurrentCount >= action.RequiredCount)
             {
+                // Phase I.d — notify the cursor that this toolAction just
+                // completed so it can advance past the span. The cursor
+                // ignores stale/out-of-span notifications, so this is safe
+                // to call on every completion (including targetless ones).
+                if (!string.IsNullOrWhiteSpace(action.Id))
+                    _attachedCursor?.NotifyTaskCompleted("toolAction", action.Id);
+
                 string completionMessage = BuildCompletionMessage(action);
                 RuntimeEventBus.Publish(new ToolActionCompleted(
                     _activeStepId,
@@ -349,6 +384,7 @@ namespace OSE.Runtime
                 _activeStepId = evt.StepId;
                 _requiredToolIds = ResolveRequiredToolIds(evt.StepId);
                 _toolActions = ResolveToolActions(evt.StepId);
+                AttachToStepCursor();
 
                 int configuredActionCount = GetConfiguredActionCount();
                 if (configuredActionCount > 0)
@@ -387,6 +423,7 @@ namespace OSE.Runtime
                 _activeStepId = null;
                 _requiredToolIds = Array.Empty<string>();
                 _toolActions = Array.Empty<ToolActionRuntimeState>();
+                DetachFromStepCursor();
                 RaiseStateChanged();
             }
         }
@@ -506,6 +543,7 @@ namespace OSE.Runtime
 
                 buffer[count++] = new ToolActionRuntimeState
                 {
+                    Id = string.IsNullOrWhiteSpace(definition.id) ? null : definition.id.Trim(),
                     ToolId = definition.toolId.Trim(),
                     ActionType = actionType,
                     TargetId = string.IsNullOrWhiteSpace(definition.targetId) ? null : definition.targetId.Trim(),
@@ -649,8 +687,16 @@ namespace OSE.Runtime
                     if (!action.IsConfigured || action.IsCompleted || string.IsNullOrWhiteSpace(action.TargetId))
                         continue;
 
-                    if (string.Equals(action.TargetId, normalizedTargetId, StringComparison.OrdinalIgnoreCase))
-                        return i;
+                    if (!string.Equals(action.TargetId, normalizedTargetId, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    // Phase I.d — when a cursor is driving, only actions in the
+                    // currently-open span are eligible for dispatch. Stale hits
+                    // on completed/future-span targets fall through as WrongTarget.
+                    if (_attachedCursor != null && !_attachedCursor.IsToolActionOpen(action.Id))
+                        continue;
+
+                    return i;
                 }
 
                 return -1;
@@ -664,6 +710,10 @@ namespace OSE.Runtime
                     continue;
 
                 if (!string.IsNullOrWhiteSpace(action.TargetId))
+                    continue;
+
+                // Phase I.d — same gate for the single-targetless-action path.
+                if (_attachedCursor != null && !_attachedCursor.IsToolActionOpen(action.Id))
                     continue;
 
                 if (incompleteIndex >= 0)
@@ -746,6 +796,7 @@ namespace OSE.Runtime
             _activeStepId = healStepId;
             _requiredToolIds = ResolveRequiredToolIds(healStepId);
             _toolActions = ResolveToolActions(healStepId);
+            AttachToStepCursor();
             return HasAnyConfiguredToolActions();
         }
 
