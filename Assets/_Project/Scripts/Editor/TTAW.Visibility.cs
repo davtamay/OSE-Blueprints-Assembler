@@ -196,6 +196,12 @@ namespace OSE.Editor
         /// </summary>
         private static void DrawCountPill(Color color, int count, string label)
         {
+            // Hide zero-count pills entirely — they were visual noise on most
+            // steps (a typical Place step shows "0 tools 0 wires 0 optional
+            // 0 group 0 earlier" right next to the actually-meaningful "X parts"
+            // pill). Only the buckets that have content take screen space.
+            if (count <= 0) return;
+
             string text = $"{count} {label}";
             var style = new GUIStyle(EditorStyles.miniLabel)
             {
@@ -207,9 +213,7 @@ namespace OSE.Editor
             var size    = style.CalcSize(content);
             var rect    = GUILayoutUtility.GetRect(size.x + 12f, 16f,
                               GUILayout.Width(size.x + 12f), GUILayout.Height(16f));
-            // Faded background when the bucket is empty so empty pills don't shout
-            var bgColor = count > 0 ? color : new Color(color.r, color.g, color.b, 0.30f);
-            EditorGUI.DrawRect(rect, bgColor);
+            EditorGUI.DrawRect(rect, color);
             GUI.Label(rect, content, style);
             GUILayout.Space(3);
         }
