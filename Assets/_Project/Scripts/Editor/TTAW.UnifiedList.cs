@@ -2261,6 +2261,14 @@ namespace OSE.Editor
             }
         }
 
+        /// <summary>
+        /// Emits <c>step.taskOrder</c> as a JSON array. Delegates each entry
+        /// to <see cref="TaskJsonSerializer.BuildTaskOrderEntryJson"/> which
+        /// handles the authored-field enumeration. Centralising the per-entry
+        /// logic in <c>TaskJsonSerializer</c> makes it testable and removes
+        /// the silent-field-drop class of bug that destroyed content through
+        /// most of Phase I.
+        /// </summary>
         private static string BuildTaskOrderJson(List<TaskOrderEntry> entries)
         {
             if (entries == null || entries.Count == 0) return "[]";
@@ -2269,7 +2277,7 @@ namespace OSE.Editor
             for (int i = 0; i < entries.Count; i++)
             {
                 if (i > 0) rows.Append(",\n        ");
-                rows.Append($"{{\"kind\":\"{entries[i].kind}\",\"id\":\"{entries[i].id}\"}}");
+                rows.Append(TaskJsonSerializer.BuildTaskOrderEntryJson(entries[i]));
             }
             rows.Append("]");
             return rows.ToString();

@@ -497,6 +497,15 @@ namespace OSE.Editor
                 }
 
                 // requiredToolActions
+                //
+                // Exhaustive field serializer. The old implementation only emitted
+                // id/toolId/targetId, silently stripping actionType, requiredCount,
+                // successMessage, failureMessage, and the whole interaction payload
+                // on every round-trip. That destroyed authored content multiple
+                // times during Phase I (see commits that had to git-checkout the
+                // assembly JSON after Unity saved it). Every authored field on
+                // ToolActionDefinition must appear here; nested complex types go
+                // through JsonUtility.ToJson for future-proofing.
                 if (step.requiredToolActions != null)
                 {
                     string aJson;
@@ -506,17 +515,7 @@ namespace OSE.Editor
                     }
                     else
                     {
-                        var rows = Array.ConvertAll(step.requiredToolActions, a =>
-                        {
-                            if (a == null) return "{}";
-                            var sb = new System.Text.StringBuilder("{");
-                            if (!string.IsNullOrEmpty(a.id))       sb.Append($"\"id\":\"{a.id}\",");
-                            if (!string.IsNullOrEmpty(a.toolId))   sb.Append($"\"toolId\":\"{a.toolId}\",");
-                            if (!string.IsNullOrEmpty(a.targetId)) sb.Append($"\"targetId\":\"{a.targetId}\"");
-                            else if (sb[sb.Length - 1] == ',')     sb.Length--; // trim trailing comma
-                            sb.Append("}");
-                            return sb.ToString();
-                        });
+                        var rows = Array.ConvertAll(step.requiredToolActions, TaskJsonSerializer.BuildToolActionJson);
                         aJson = "[ " + string.Join(", ", rows) + " ]";
                     }
                     InjectField(stepId, "requiredToolActions", aJson);
