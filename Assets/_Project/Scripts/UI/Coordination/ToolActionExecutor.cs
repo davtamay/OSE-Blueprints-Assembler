@@ -427,19 +427,21 @@ namespace OSE.UI.Root
             var activeStep = stepCtrl.CurrentStepDefinition;
             string currentStepId = activeStep.id;
 
-            // Weld/tack profiles: the target is a seam on a stationary part,
-            // not a handle on a part that moves. Building a PartEffect here
-            // causes the tool to track the part's step-to-step pose lerp,
-            // dragging it metres off-screen during the action (user-report
-            // step 27: "tool goes away fast when we do action, comes back
-            // when we finish"; only on first visit because on repeat visits
-            // start == end pose so no effect is built anyway). Skip outright.
-            string profile = activeStep.profile ?? string.Empty;
-            if (string.Equals(profile, "Weld", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(profile, "Tack", StringComparison.OrdinalIgnoreCase))
-            {
+            // Fail-closed: only build a PartEffect when the profile's
+            // descriptor explicitly opts in via PartFollowsTool. Every other
+            // profile (Weld, SquareCheck, Measure, Cut, Strike, Clamp, AxisFit,
+            // WireConnect, and any new profile that hasn't been classified)
+            // keeps the part stationary during the action. Without this gate
+            // the controller drags the tool along with the part's step-to-step
+            // pose lerp, visible as "tool flies off-screen on action start"
+            // (seen 2026-04-18 on step 27 tack-weld, 1.9m drift over 1.5s).
+            //
+            // To add follow behavior for a new profile: set PartFollowsTool = true
+            // on its ToolProfileRegistry entry. One source of truth, no string
+            // matching scattered across call sites.
+            var profileDesc = ToolProfileRegistry.Get(activeStep.profile);
+            if (!profileDesc.PartFollowsTool)
                 return null;
-            }
 
             // Resolve the authored interaction payload (Phase B) from the
             // current step's requiredToolActions. Null means "no payload → lerp / auto".

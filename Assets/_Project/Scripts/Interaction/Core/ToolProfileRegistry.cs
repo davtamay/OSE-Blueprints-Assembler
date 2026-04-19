@@ -54,6 +54,11 @@ namespace OSE.Interaction
                 ApproachTiltDegrees = 0f,
                 PreviewStyle = PreviewStyle.Drill,
                 SpawnClickEffect = true,
+                // Drill drives bolt down, wrench threads a nut, screwdriver
+                // drives a screw — in all cases the associated part moves
+                // WITH the tool during the action. This is the one profile
+                // where tool-follows-part is the authored intent.
+                PartFollowsTool = true,
             });
 
             Register(ToolActionProfiles.Weld, new ToolProfileDescriptor

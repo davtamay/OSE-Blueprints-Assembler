@@ -42,5 +42,25 @@ namespace OSE.Interaction
         // ── Completion effects ──
         /// <summary>Whether to spawn a click/particle effect on target completion.</summary>
         public bool SpawnClickEffect;
+
+        // ── Part motion during action ──
+        /// <summary>
+        /// When true, the active step's associated part is expected to move
+        /// <b>during</b> the tool action (not just end up at a new pose after
+        /// the step). The controller builds a <c>LerpPosePartEffect</c> so the
+        /// tool follows the part's motion each frame — e.g. a drill driving a
+        /// bolt down: tool and bolt descend together.
+        ///
+        /// <para>Default <c>false</c> (fail-closed): profiles like Weld,
+        /// SquareCheck, Measure, Cut etc. keep the part stationary and the
+        /// tool rides a seam/axis/probe on it. Building a PartEffect in those
+        /// cases dragged the tool along with any step-to-step pose delta of
+        /// the part — visible as "tool flies off-screen when action starts,
+        /// returns when action ends" (seen on step 27 first-visit 2026-04-18).</para>
+        ///
+        /// <para>New profiles inherit the safe default. Only flip to true when
+        /// the authored animation semantics require tool-follows-part.</para>
+        /// </summary>
+        public bool PartFollowsTool;
     }
 }
