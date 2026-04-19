@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using OSE.App;
 using OSE.Content;
 using OSE.Core;
@@ -25,11 +26,21 @@ namespace OSE.UI.Root
         private GameObject _hoveredPreview;
         private bool _previewHighlighted;
 
+        // Phase I.h — set-aware drag hinting. When the trainee drags a part
+        // that belongs to a currently-open unorderedSet span (size ≥ 2), every
+        // other member's ghost pulses soft cyan as a hint "any of these is a
+        // valid next placement." The specific proximity-matched ghost keeps
+        // the stronger green ready color on top. Tracked as a list so the
+        // cleanup path can restore all hint previews to their default
+        // material without leaking state across drags or steps.
+        private readonly List<GameObject> _hintedPreviews = new List<GameObject>();
+
         // ── Constants ──
         private const float SnapZoneRadius = 0.8f;
         private const float SubassemblySnapZoneRadius = 1.35f;
         private const float SubassemblyDockPreviewRadius = 1.9f;
         private static readonly Color PreviewReadyColor = new Color(0.3f, 1.0f, 0.5f, 0.4f);
+        private static readonly Color PreviewHintColor  = new Color(0.4f, 0.85f, 1.0f, 0.32f);
 
         // ── Animation sub-system ──
         private readonly PlaceStepAnimator _animator;
@@ -222,26 +233,133 @@ namespace OSE.UI.Root
 
             if (nearest != null && nearest != _hoveredPreview)
             {
-                ClearPreviewHighlight();
+                ClearReadyHighlightOnly();
                 _hoveredPreview = nearest;
                 _previewHighlighted = true;
                 MaterialHelper.Apply(nearest, "Preview Ready Material", PreviewReadyColor);
             }
             else if (nearest == null && _previewHighlighted)
             {
-                ClearPreviewHighlight();
+                ClearReadyHighlightOnly();
             }
+
+            // Phase I.h — refresh the set-aware hint pass every frame. Frame-
+            // idempotent: computes the current hint set and diffs against the
+            // previous, restoring default material on previews that dropped
+            // out. Running AFTER the ready-highlight pass so the one "ready"
+            // preview doesn't get overwritten with the dim hint color.
+            ApplyUnorderedSpanHints(selectionId, nearest);
 
             if (nearestInfo != null && nearest != null && isDragging)
                 TryAutoSnapCurrentTarget(partGo, selectionId, nearestInfo, isSubassemblySelection, subassemblyController);
         }
 
+        /// <summary>
+        /// Full cleanup — ready highlight AND set-aware hints. Called from
+        /// external drag-reset and step-transition paths.
+        /// </summary>
         public void ClearPreviewHighlight()
+        {
+            ClearReadyHighlightOnly();
+            ClearUnorderedSpanHints();
+        }
+
+        /// <summary>
+        /// Narrow cleanup — just the "ready" (green) highlight. Used inside
+        /// <see cref="UpdateDragProximity"/> when the proximity target changes
+        /// or vanishes mid-drag: hints should persist across those micro-
+        /// transitions so they don't flicker away while the trainee is still
+        /// holding the part over other set members.
+        /// </summary>
+        private void ClearReadyHighlightOnly()
         {
             if (_previewHighlighted && _hoveredPreview != null)
                 MaterialHelper.ApplyPreviewMaterial(_hoveredPreview);
             _hoveredPreview = null;
             _previewHighlighted = false;
+        }
+
+        /// <summary>
+        /// Phase I.h — cyan hint pass. For a Part drag whose part belongs to
+        /// a currently-open unorderedSet span of size ≥ 2, every OTHER member's
+        /// ghost pulses soft cyan so the trainee sees all valid any-order
+        /// destinations at once. The proximity-matched ghost (
+        /// <paramref name="readyPreview"/>) is skipped so its stronger green
+        /// ready color stays on top.
+        ///
+        /// Cases that fall through to <see cref="ClearUnorderedSpanHints"/>:
+        /// - No active cursor / no open span / singleton span (size 1).
+        /// - Dragged part is not in the open span (could happen during
+        ///   navigation or if the trainee picks up a part outside the
+        ///   current step's taskOrder scope).
+        /// - No selectionId.
+        /// </summary>
+        private void ApplyUnorderedSpanHints(string selectionId, GameObject readyPreview)
+        {
+            string draggedPartId = string.IsNullOrEmpty(selectionId) ? null : TaskInstanceId.ToPartId(selectionId);
+            if (string.IsNullOrEmpty(draggedPartId)) { ClearUnorderedSpanHints(); return; }
+
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session)) { ClearUnorderedSpanHints(); return; }
+            TaskCursor cursor = session?.AssemblyController?.StepController?.CurrentTaskCursor;
+            if (cursor == null || cursor.IsComplete || string.IsNullOrEmpty(cursor.CurrentSetLabel))
+            {
+                // No cursor, or cursor is past the last span, or currently-
+                // open span is a singleton (no label) — nothing to hint.
+                ClearUnorderedSpanHints();
+                return;
+            }
+
+            var openPartIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var entry in cursor.OpenTasks)
+            {
+                if (entry?.kind == "part" && !string.IsNullOrEmpty(entry.id))
+                    openPartIds.Add(TaskInstanceId.ToPartId(entry.id));
+            }
+            if (openPartIds.Count < 2 || !openPartIds.Contains(draggedPartId))
+            {
+                ClearUnorderedSpanHints();
+                return;
+            }
+
+            // Build the new hint set (every spawned preview whose partId is in
+            // the open span, excluding the ready-highlighted one).
+            var newHinted = new List<GameObject>();
+            foreach (var preview in _ctx.SpawnedPreviews)
+            {
+                if (preview == null || preview == readyPreview) continue;
+                var info = preview.GetComponent<PlacementPreviewInfo>();
+                if (info == null || string.IsNullOrEmpty(info.PartId)) continue;
+                string previewPartId = TaskInstanceId.ToPartId(info.PartId);
+                if (!openPartIds.Contains(previewPartId)) continue;
+
+                MaterialHelper.Apply(preview, "Preview Hint Material", PreviewHintColor);
+                newHinted.Add(preview);
+            }
+
+            // Restore any prior hints that dropped out of the new set (e.g.
+            // the ready-preview target changed and the old ready is now just
+            // a hint again — or a set member was placed and its ghost was
+            // removed from SpawnedPreviews entirely).
+            for (int i = 0; i < _hintedPreviews.Count; i++)
+            {
+                var old = _hintedPreviews[i];
+                if (old != null && !newHinted.Contains(old))
+                    MaterialHelper.ApplyPreviewMaterial(old);
+            }
+
+            _hintedPreviews.Clear();
+            _hintedPreviews.AddRange(newHinted);
+        }
+
+        private void ClearUnorderedSpanHints()
+        {
+            for (int i = 0; i < _hintedPreviews.Count; i++)
+            {
+                var preview = _hintedPreviews[i];
+                if (preview != null)
+                    MaterialHelper.ApplyPreviewMaterial(preview);
+            }
+            _hintedPreviews.Clear();
         }
 
         private void TryAutoSnapCurrentTarget(
