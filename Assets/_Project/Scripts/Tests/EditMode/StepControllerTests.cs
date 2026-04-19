@@ -624,5 +624,42 @@ namespace OSE.Tests.EditMode
             _controller.Reset();
             Assert.IsNull(_controller.CurrentTaskCursor);
         }
+
+        // ── Phase I.e — cursor-driven completion ───────────────────────────────
+
+        [Test]
+        public void CursorStepTasksComplete_CompletesStep()
+        {
+            var step = new StepDefinition
+            {
+                id = "step-cursor-done",
+                taskOrder = new[]
+                {
+                    new TaskOrderEntry { kind = "part", id = "a" },
+                    new TaskOrderEntry { kind = "part", id = "b" }
+                }
+            };
+            _controller.ActivateStep(step, 0f);
+            Assert.AreEqual(StepState.Active, _controller.CurrentStepState.State);
+
+            // Drive the cursor past its final span. The StepController is
+            // subscribed to StepTasksComplete and should call CompleteStep.
+            _controller.CurrentTaskCursor.NotifyTaskCompleted("part", "a");
+            _controller.CurrentTaskCursor.NotifyTaskCompleted("part", "b");
+
+            Assert.AreEqual(StepState.Completed, _controller.CurrentStepState.State);
+        }
+
+        [Test]
+        public void CursorStepTasksComplete_EmptyTaskOrder_DoesNotAutoComplete()
+        {
+            // Empty taskOrder → cursor IsComplete from construction but
+            // StepTasksComplete is only fired on transition, not on start.
+            // Steps without a taskOrder keep their legacy completion path.
+            _controller.ActivateStep(MakeStep(), 0f);
+
+            Assert.AreEqual(StepState.Active, _controller.CurrentStepState.State,
+                "step must stay Active; empty-taskOrder cursor must not auto-complete");
+        }
     }
 }

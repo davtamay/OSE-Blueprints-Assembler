@@ -53,7 +53,21 @@ namespace OSE.Runtime
             }
 
             _currentStep = step;
+            // Defensive detach: if a previous cursor still holds our handler
+            // (e.g. ActivateStep on top of a non-terminal step), drop the
+            // subscription before replacing the field so the old cursor can
+            // be GC'd without risk of firing StepTasksComplete into this
+            // controller after the step has rolled over.
+            if (_currentTaskCursor != null)
+                _currentTaskCursor.StepTasksComplete -= HandleCursorStepComplete;
             _currentTaskCursor = new TaskCursor(step);
+            // Phase I.e — cursor drives step completion when the step has a
+            // non-empty taskOrder. Subscribing here (before TransitionTo)
+            // means the handler captures the correct cursor instance even if
+            // CompleteStep re-enters transition logic. The handler itself is
+            // a closure around session.GetElapsedSeconds so it stays in sync
+            // with whenever the cursor's final span actually closes.
+            _currentTaskCursor.StepTasksComplete += HandleCursorStepComplete;
 
             // Transition through Available briefly for event consistency
             TransitionTo(StepState.Available, atSeconds);
@@ -62,9 +76,20 @@ namespace OSE.Runtime
             // Fire the cursor's initial TaskSpanOpened AFTER the Active state
             // change has been published, so handlers that subscribed to
             // StepStateChanged have a chance to attach to the cursor's event
-            // before the initial span fires. Phase I.c.1 wires this plumbing;
-            // no subscribers consume the event yet, so this is a no-op today.
+            // before the initial span fires.
             _currentTaskCursor.Start();
+        }
+
+        private void HandleCursorStepComplete()
+        {
+            if (!HasActiveStep) return;
+
+            float atSeconds = 0f;
+            if (ServiceRegistry.TryGet<IMachineSessionController>(out var session))
+                atSeconds = session.GetElapsedSeconds();
+
+            OseLog.Info($"[StepController] Cursor reports all tasks complete for step '{_currentStep?.id}' — completing step.");
+            CompleteStep(atSeconds);
         }
 
         /// <summary>
@@ -185,6 +210,8 @@ namespace OSE.Runtime
         {
             _currentStep = null;
             _currentState = default;
+            if (_currentTaskCursor != null)
+                _currentTaskCursor.StepTasksComplete -= HandleCursorStepComplete;
             _currentTaskCursor = null;
             _completionBlocked = false;
         }

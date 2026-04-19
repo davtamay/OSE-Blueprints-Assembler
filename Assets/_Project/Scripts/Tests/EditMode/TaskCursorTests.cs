@@ -251,6 +251,61 @@ namespace OSE.Tests.EditMode
 
         // ── event payload ────────────────────────────────────────────────
 
+        // ── StepTasksComplete event (Phase I.e) ──────────────────────────
+
+        [Test]
+        public void StepTasksComplete_FiresOnceWhenCursorAdvancesPastLastSpan()
+        {
+            int completeCount = 0;
+            var cursor = new TaskCursor(Step(Part("a"), Part("b")));
+            cursor.StepTasksComplete += () => completeCount++;
+            cursor.Start();
+
+            Assert.AreEqual(0, completeCount);
+
+            cursor.NotifyTaskCompleted("part", "a");
+            Assert.AreEqual(0, completeCount, "still on span 2 of 2");
+
+            cursor.NotifyTaskCompleted("part", "b");
+            Assert.AreEqual(1, completeCount, "advanced past last span");
+
+            // Extra notifies after completion must not re-fire.
+            cursor.NotifyTaskCompleted("part", "a");
+            Assert.AreEqual(1, completeCount);
+        }
+
+        [Test]
+        public void StepTasksComplete_DoesNotFireForEmptyTaskOrder()
+        {
+            int completeCount = 0;
+            var cursor = new TaskCursor(Step());
+            cursor.StepTasksComplete += () => completeCount++;
+            cursor.Start();
+
+            // Empty taskOrder → IsComplete from construction. Event must NOT
+            // fire from Start() — subscribers that want to treat pre-complete
+            // cursors specially check IsComplete explicitly.
+            Assert.AreEqual(0, completeCount);
+            Assert.IsTrue(cursor.IsComplete);
+        }
+
+        [Test]
+        public void StepTasksComplete_FiresAfterUnorderedSetCloses()
+        {
+            int completeCount = 0;
+            var cursor = new TaskCursor(Step(
+                Part("a", set: "panel"),
+                Part("b", set: "panel")));
+            cursor.StepTasksComplete += () => completeCount++;
+            cursor.Start();
+
+            cursor.NotifyTaskCompleted("part", "b");
+            Assert.AreEqual(0, completeCount);
+
+            cursor.NotifyTaskCompleted("part", "a");
+            Assert.AreEqual(1, completeCount);
+        }
+
         [Test]
         public void TaskSpanOpenedInfo_ReportsCorrectIndexAndTotal()
         {

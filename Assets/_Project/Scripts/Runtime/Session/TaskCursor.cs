@@ -78,6 +78,25 @@ namespace OSE.Runtime
         /// <summary>Fires whenever a new span opens, including the initial one (via <see cref="Start"/>).</summary>
         public event Action<TaskSpanOpenedInfo> TaskSpanOpened;
 
+        /// <summary>
+        /// Fires exactly once when the cursor advances past the last span and
+        /// transitions to <see cref="IsComplete"/>. Does NOT fire on
+        /// construction when an empty taskOrder makes the cursor immediately
+        /// complete — subscribers who want to treat "started complete" as an
+        /// instant completion should check <see cref="IsComplete"/> after
+        /// subscribing but before <see cref="Start"/> runs.
+        ///
+        /// <para>Phase I.e — <c>StepController</c> subscribes and calls
+        /// <c>CompleteStep</c> when this fires, so any step whose
+        /// <c>taskOrder</c> drives cursor-gated completion (Part tasks under
+        /// I.c, tool actions under I.d) can use the cursor as its unified
+        /// completion gate. Legacy per-family completion paths
+        /// (AreAllToolActionsCompleted / AreActiveStepRequiredPartsPlaced)
+        /// remain and still call <c>CompleteStep</c> — the method is
+        /// idempotent, so whichever signal fires first wins.</para>
+        /// </summary>
+        public event Action StepTasksComplete;
+
         /// <summary>Currently-open tasks. Empty when <see cref="IsComplete"/>.</summary>
         public IReadOnlyList<TaskOrderEntry> OpenTasks =>
             IsComplete ? EmptyEntries : _spans[_currentSpanIndex].Entries;
@@ -167,7 +186,10 @@ namespace OSE.Runtime
             {
                 _currentSpanIndex++;
                 _completedInCurrentSpan.Clear();
-                if (!IsComplete) FireSpanOpened();
+                if (!IsComplete)
+                    FireSpanOpened();
+                else
+                    StepTasksComplete?.Invoke();
             }
         }
 
