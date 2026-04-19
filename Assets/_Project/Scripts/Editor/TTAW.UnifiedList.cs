@@ -938,6 +938,53 @@ namespace OSE.Editor
                         }
                     }
 
+                    // Phase I.f — unorderedSet label field. Empty = ordered
+                    // (strict-sequential singleton). Any value = this row is a
+                    // member of the unordered set with that label. Contiguous
+                    // same-label entries form one span that opens together at
+                    // runtime; members can complete in any order. The
+                    // normalizer validates contiguity + kind-purity at load, so
+                    // typos or mixed-kind spans surface as errors in the
+                    // console before Play. Label is stable-id style (not
+                    // localized): re-use the same label on adjacent rows to
+                    // join them into one span.
+                    //
+                    // NO TASK rows (visual-only part introductions) don't
+                    // participate in task sequencing at all, so the field is
+                    // hidden there and the NO TASK pill takes the slot.
+                    const float setFieldW = 58f;
+                    if (!isNoTask)
+                    {
+                        float setFieldX = rect.x + 78f + reqOptW + 2f;
+                        var setRect = new Rect(setFieldX, rect.y + 2f, setFieldW, rect.height - 4f);
+                        var setStyle = new GUIStyle(EditorStyles.textField)
+                        {
+                            fontSize  = 9,
+                            alignment = TextAnchor.MiddleLeft,
+                        };
+                        string prevSet = entry.unorderedSet ?? string.Empty;
+                        // Tooltip overlay — EditorGUI.TextField has no native tooltip
+                        // channel, so draw a transparent Label with the hover text
+                        // behind the field. The label is click-through so the field
+                        // still receives input.
+                        GUI.Label(setRect,
+                            new GUIContent(string.Empty,
+                                "unordered set label — empty = ordered (strict-sequential singleton); shared label on adjacent rows groups them into one any-order span"));
+                        EditorGUI.BeginChangeCheck();
+                        string nextSet = EditorGUI.TextField(setRect, prevSet, setStyle);
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            string normalized = string.IsNullOrWhiteSpace(nextSet) ? null : nextSet.Trim();
+                            if (!string.Equals(normalized, entry.unorderedSet, StringComparison.Ordinal))
+                            {
+                                entry.unorderedSet = normalized;
+                                step.taskOrder = order.ToArray();
+                                _dirtyStepIds.Add(step.id);
+                                _dirtyTaskOrderStepIds.Add(step.id);
+                                Repaint();
+                            }
+                        }
+                    }
 
                     // ID label + group tag + per-task dirty dot
                     bool entryDirty = IsTaskEntryDirty(entry, step);
@@ -1007,8 +1054,13 @@ namespace OSE.Editor
                             ntStyle);
                     }
 
-                    float idX    = rect.x + 80f + reqOptW + leadPad;
-                    float idW    = rect.width - 110f - tagW - dirtyW - reqOptW - leadPad;
+                    // setFieldW (58) + 2px gap after the R/O/N toggle makes room
+                    // for the unorderedSet label field above — but only when
+                    // that field is actually drawn. NO TASK rows hide the set
+                    // field and reuse the slot for the NO TASK pill via leadPad.
+                    float setFieldReserve = isNoTask ? 0f : (setFieldW + 2f);
+                    float idX    = rect.x + 80f + reqOptW + setFieldReserve + leadPad;
+                    float idW    = rect.width - 110f - tagW - dirtyW - reqOptW - setFieldReserve - leadPad;
                     var idRect   = new Rect(idX, rect.y + 1f, idW, rect.height);
                     // Show group display name + member count for [G] tasks, raw id for everything else.
                     // The count badge ("14 parts") makes group scope visible at a glance so authors
