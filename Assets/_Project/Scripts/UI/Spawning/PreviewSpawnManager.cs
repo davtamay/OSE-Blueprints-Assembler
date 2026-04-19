@@ -23,6 +23,13 @@ namespace OSE.UI.Root
         private int _sequentialTargetIndex;
         private string _activeStepId;
 
+        // Phase I.g — attached to the StepController's active TaskCursor
+        // when a step has a non-empty taskOrder. Ghost previews are scoped
+        // to the parts in the currently-open span; subsequent spans get
+        // their own previews on TaskSpanOpened. Null when no cursor is
+        // active OR when the step has no taskOrder (legacy path runs).
+        private TaskCursor _attachedCursor;
+
         /// <summary>The shared preview list. Passed by reference to PlaceStepHandler / UseStepHandler.</summary>
         public List<GameObject> SpawnedPreviews => _ctx.SpawnedPreviews;
 
@@ -38,6 +45,7 @@ namespace OSE.UI.Root
         public void SpawnPreviewsForStep(string stepId)
         {
             ClearPreviews();
+            DetachFromStepCursor();
             _activeStepId = stepId;
             var package = _ctx.Spawner.CurrentPackage;
             if (package == null || !package.TryGetStep(stepId, out var step))
@@ -57,6 +65,23 @@ namespace OSE.UI.Root
 
             _isSequentialStep = step.IsSequential;
             _sequentialTargetIndex = 0;
+
+            // Phase I.g — when a TaskCursor is active with spans, scope
+            // previews to the parts in the currently-open span. This lets
+            // an unordered set of N Part tasks show all N ghosts
+            // simultaneously (the author's intent), and strict-sequential
+            // singletons show only one ghost at a time (cursor advances on
+            // each placement, re-spawning for the next span).
+            //
+            // The legacy path below (step.IsSequential / parallel) only
+            // runs when the step has no cursor spans — older content that
+            // authored targetOrder directly without migrating to taskOrder.
+            if (TryGetActiveCursor(out var cursor) && cursor.TotalSpans > 0)
+            {
+                AttachToStepCursor(cursor);
+                SpawnPreviewsForCurrentSpan(package, step);
+                return;
+            }
 
             if (hasTargets)
             {
@@ -82,6 +107,94 @@ namespace OSE.UI.Root
             // IS the target. Ghost still uses the standard preview
             // material / click-to-place logic via a virtual target key.
             SpawnTargetlessGhostsFromRequiredParts(package, step);
+        }
+
+        // ── Phase I.g — TaskCursor integration ─────────────────────────────
+
+        private static bool TryGetActiveCursor(out TaskCursor cursor)
+        {
+            cursor = null;
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session)) return false;
+            cursor = session?.AssemblyController?.StepController?.CurrentTaskCursor;
+            return cursor != null;
+        }
+
+        private void AttachToStepCursor(TaskCursor cursor)
+        {
+            if (_attachedCursor == cursor) return;
+            DetachFromStepCursor();
+            _attachedCursor = cursor;
+            _attachedCursor.TaskSpanOpened += OnSpanOpened;
+        }
+
+        private void DetachFromStepCursor()
+        {
+            if (_attachedCursor == null) return;
+            _attachedCursor.TaskSpanOpened -= OnSpanOpened;
+            _attachedCursor = null;
+        }
+
+        private void OnSpanOpened(TaskSpanOpenedInfo info)
+        {
+            // Span advanced — replace the prior span's previews with the
+            // new span's. The initial TaskSpanOpened fired at step
+            // activation is already handled by SpawnPreviewsForStep's
+            // initial SpawnPreviewsForCurrentSpan call, but re-running is
+            // safe because ClearPreviews precedes SpawnPreviewsForCurrentSpan.
+            if (_ctx?.Spawner?.CurrentPackage == null || string.IsNullOrEmpty(_activeStepId)) return;
+            if (!_ctx.Spawner.CurrentPackage.TryGetStep(_activeStepId, out var step)) return;
+            ClearPreviews();
+            SpawnPreviewsForCurrentSpan(_ctx.Spawner.CurrentPackage, step);
+        }
+
+        /// <summary>
+        /// Spawns a ghost preview for every Part-kind task in the currently-
+        /// open cursor span. Each part's ghost uses the same
+        /// <see cref="SpawnPreviewForTarget"/> path (for parts with explicit
+        /// targets) or <see cref="SpawnPreviewForAssembledPart"/> fallback
+        /// (for parts without targets). Unordered set members all get their
+        /// ghosts simultaneously — that's the authoring intent of an
+        /// unordered set.
+        /// </summary>
+        private void SpawnPreviewsForCurrentSpan(MachinePackageDefinition package, StepDefinition step)
+        {
+            if (_attachedCursor == null) return;
+
+            var openPartIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var entry in _attachedCursor.OpenTasks)
+            {
+                if (entry?.kind == "part" && !string.IsNullOrEmpty(entry.id))
+                    openPartIds.Add(TaskInstanceId.ToPartId(entry.id));
+            }
+            if (openPartIds.Count == 0) return;
+
+            // Prefer the explicit targets path — matches the step's authored
+            // targetIds/partId association and uses the full SpawnPreview
+            // pipeline (spline, step-pose overrides, etc.).
+            var matchedPartIds = new HashSet<string>(StringComparer.Ordinal);
+            if (step.targetIds != null)
+            {
+                foreach (var targetId in step.targetIds)
+                {
+                    if (string.IsNullOrEmpty(targetId)) continue;
+                    if (!package.TryGetTarget(targetId, out var t)) continue;
+                    if (string.IsNullOrEmpty(t.associatedPartId)) continue;
+                    if (!openPartIds.Contains(t.associatedPartId)) continue;
+                    SpawnPreviewForTarget(package, targetId);
+                    matchedPartIds.Add(t.associatedPartId);
+                }
+            }
+
+            // Targetless fallback — open parts whose partId didn't match any
+            // step target (either the step has no targets at all, or the
+            // target's associatedPartId points elsewhere). Spawn a ghost at
+            // the part's assembledPose so the author's intent "place this
+            // here" still shows up visually even without a target wired.
+            foreach (var pid in openPartIds)
+            {
+                if (!matchedPartIds.Contains(pid))
+                    SpawnPreviewForAssembledPart(package, pid);
+            }
         }
 
         /// <summary>
