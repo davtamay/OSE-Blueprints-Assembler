@@ -424,7 +424,22 @@ namespace OSE.UI.Root
             if (stepCtrl == null || !stepCtrl.HasActiveStep)
                 return null;
 
-            string currentStepId = stepCtrl.CurrentStepDefinition.id;
+            var activeStep = stepCtrl.CurrentStepDefinition;
+            string currentStepId = activeStep.id;
+
+            // Weld/tack profiles: the target is a seam on a stationary part,
+            // not a handle on a part that moves. Building a PartEffect here
+            // causes the tool to track the part's step-to-step pose lerp,
+            // dragging it metres off-screen during the action (user-report
+            // step 27: "tool goes away fast when we do action, comes back
+            // when we finish"; only on first visit because on repeat visits
+            // start == end pose so no effect is built anyway). Skip outright.
+            string profile = activeStep.profile ?? string.Empty;
+            if (string.Equals(profile, "Weld", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(profile, "Tack", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
 
             // Resolve the authored interaction payload (Phase B) from the
             // current step's requiredToolActions. Null means "no payload → lerp / auto".
