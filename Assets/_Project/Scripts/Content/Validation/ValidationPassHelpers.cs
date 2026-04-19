@@ -22,8 +22,14 @@ namespace OSE.Content.Validation
         internal static readonly HashSet<string> PartCategoryValues =
             S("plate", "bracket", "fastener", "shaft", "panel", "housing", "pipe", "custom");
 
+        // `conceptual` is for tools without a discrete mesh — bare-hand
+        // engagement, a pointing finger, a reference pose. Validator exempts
+        // them from the assetRef non-empty requirement (see PartsAndToolsPass)
+        // and runtime falls back to the cursor/no-mesh rendering path. All
+        // other tool categories represent physical objects with their own
+        // GLB assets.
         internal static readonly HashSet<string> ToolCategoryValues =
-            S("hand_tool", "power_tool", "measurement", "safety", "specialty");
+            S("hand_tool", "power_tool", "measurement", "safety", "specialty", "conceptual");
 
         internal static readonly HashSet<string> CompletionTypeValues =
             S("placement", "tool_action", "confirmation", "pipe_connection");

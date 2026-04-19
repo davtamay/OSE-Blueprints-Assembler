@@ -49,7 +49,7 @@
     {
       "id": "tool_hand",
       "name": "Hand",
-      "category": "hand_tool",
+      "category": "conceptual",
       "primaryActionType": "tighten",
       "purpose": "Finger-tightens fasteners before a powered tool delivers final torque. Represents bare-hand engagement — threading a nut, snugging a bolt, or holding a part in place.",
       "usageNotes": "Use at steps that call for finger-tight / hand-tight engagement. The bolt or nut should seat firmly but not be driven to final torque.",
@@ -58,8 +58,7 @@
         "hand",
         "finger tight",
         "hand tighten"
-      ],
-      "assetRef": "tool_hand.glb"
+      ]
     },
     {
       "id": "tool_locking_clamp",

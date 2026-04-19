@@ -50,7 +50,12 @@ namespace OSE.Content.Validation
                 ValidationPassHelpers.ValidateRequiredText(t.name,     $"{path}.name",     issues);
                 ValidationPassHelpers.ValidateRequiredEnum(t.category, ValidationPassHelpers.ToolCategoryValues, $"{path}.category", issues);
                 ValidationPassHelpers.ValidateRequiredText(t.purpose,  $"{path}.purpose",  issues);
-                ValidationPassHelpers.ValidateRequiredText(t.assetRef, $"{path}.assetRef", issues);
+                // Conceptual tools (bare hand, pointing finger, etc.) have no
+                // discrete mesh — runtime falls back to the cursor rendering
+                // path, so assetRef legitimately stays empty.
+                bool isConceptual = string.Equals(t.category, "conceptual", System.StringComparison.Ordinal);
+                if (!isConceptual)
+                    ValidationPassHelpers.ValidateRequiredText(t.assetRef, $"{path}.assetRef", issues);
             }
         }
     }
