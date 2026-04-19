@@ -34,6 +34,14 @@ namespace OSE.UI.Root
         private Vector3 _gripOffset = Vector3.zero;
         private Material[][] _toolPreviewOriginalMaterials;
         private int _refreshGeneration;
+
+        // Tool id the current preview was loaded for. Used to short-circuit
+        // repeated RefreshAsync calls with the same active tool — the previous
+        // behavior destroyed + async-reloaded on every session restore, startup
+        // poll, visual rebuild, and step-state change, so the preview blinked
+        // out for the duration of the asset load. Matches on tool id keeps
+        // the preview stable across those calls.
+        private string _loadedToolId;
         private Vector3 _baseLocalScale;
         private float _baseToolScale;             // CursorUniformScale * scaleOverride before assembly scale
         private PreviewSceneSetup _sceneSetup;  // cached to read assembly scale each frame
@@ -66,7 +74,6 @@ namespace OSE.UI.Root
             if (_toolPreviewIndicator == null)
                 return;
 
-            OseLog.Info($"[ToolLifecycle] Clear — destroying '{_toolPreviewIndicator.name}' (stack: {System.Environment.StackTrace.Substring(0, System.Math.Min(400, System.Environment.StackTrace.Length))})");
             if (toolPreviewIsHintPreview)
                 clearHintCallback?.Invoke();
 
@@ -76,6 +83,7 @@ namespace OSE.UI.Root
             _cursorInReadyState = false;
             _positionUpdateSuspended = false;
             _toolPreviewOriginalMaterials = null;
+            _loadedToolId = null;
         }
 
         /// <summary>
@@ -90,8 +98,8 @@ namespace OSE.UI.Root
             GameObject preview = _toolPreviewIndicator;
             if (preview == null) return null;
 
-            OseLog.Info($"[ToolLifecycle] DetachPreview — releasing '{preview.name}' for persistent conversion");
             _toolPreviewIndicator = null;
+            _loadedToolId = null;
             _toolPreviewUpCorrection = Quaternion.identity;
             _cursorInReadyState = false;
             _positionUpdateSuspended = false;
@@ -104,21 +112,33 @@ namespace OSE.UI.Root
                             bool toolPreviewIsHintPreview, Action clearHintCallback,
                             CancellationToken ct = default)
         {
-            OseLog.Info($"[ToolLifecycle] RefreshAsync START (gen={_refreshGeneration + 1})");
-            Clear(toolPreviewIsHintPreview, clearHintCallback);
-
             if (!Application.isPlaying || spawner == null || setup == null)
             {
-                OseLog.Info("[ToolLifecycle] RefreshAsync ABORT — not playing or no spawner/setup");
+                Clear(toolPreviewIsHintPreview, clearHintCallback);
+                _loadedToolId = null;
                 return;
             }
 
-            if (!TryGetActiveToolDefinition(out string activeToolId, out ToolDefinition tool))
+            bool hasActive = TryGetActiveToolDefinition(out string activeToolId, out ToolDefinition tool);
+
+            // Idempotency guard: same tool id, live preview already exists →
+            // no-op. This eliminates the destroy-reload churn that caused the
+            // "tool goes away when selecting a target" class of bug. Callers
+            // (session restore, startup sync, rebuild, step-state-changed)
+            // can fire RefreshAsync freely without the preview blinking out
+            // for the duration of the async asset load.
+            if (hasActive &&
+                _toolPreviewIndicator != null &&
+                string.Equals(_loadedToolId, activeToolId, StringComparison.Ordinal))
             {
-                OseLog.Info("[ToolLifecycle] RefreshAsync ABORT — no active tool");
                 return;
             }
-            OseLog.Info($"[ToolLifecycle] RefreshAsync loading asset for '{activeToolId}'");
+
+            Clear(toolPreviewIsHintPreview, clearHintCallback);
+            _loadedToolId = null;
+
+            if (!hasActive)
+                return;
 
             int myGeneration = ++_refreshGeneration;
 
@@ -175,7 +195,7 @@ namespace OSE.UI.Root
             // This prevents a one-frame flash at screen center that looks like
             // the tool is pre-placed on the workpiece.
             _toolPreviewIndicator.SetActive(false);
-            OseLog.Info($"[ToolLifecycle] RefreshAsync DONE — preview ready '{_toolPreviewIndicator.name}' (hidden until first UpdatePosition)");
+            _loadedToolId = activeToolId;
         }
 
         /// <summary>
