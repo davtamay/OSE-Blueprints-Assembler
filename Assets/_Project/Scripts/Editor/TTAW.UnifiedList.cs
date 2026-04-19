@@ -1184,11 +1184,15 @@ namespace OSE.Editor
                         displayId = $"{bareId}  (instance {instance})";
                     }
                     // Phase I follow-up: tool actions whose target has an associatedPartId
-                    // append "→ partId" so the author sees at a glance that the task
-                    // tweaks a part (vs. a tool task that only observes/measures). The
-                    // same link drives MachinePackageNormalizer.ResolveToolActionPartIds —
-                    // this is the authoring-surface reflection of that derivation.
-                    else if (entry.kind == "toolAction" && step.requiredToolActions != null && _pkg?.targets != null)
+                    // append a prominent "×Part <name>" tag so the author sees at a
+                    // glance that the task modifies a part (vs. a tool task that only
+                    // observes/measures). The associatedPartId drives
+                    // MachinePackageNormalizer.ResolveToolActionPartIds — this is the
+                    // authoring-surface reflection of that derivation. Rich-text
+                    // colorized so it reads as a tag even without a separate pill draw.
+                    bool toolActionShowsPartTag = false;
+                    string toolActionRichTag = null;
+                    if (entry.kind == "toolAction" && step.requiredToolActions != null && _pkg?.targets != null)
                     {
                         string actionTargetId = null;
                         foreach (var a in step.requiredToolActions)
@@ -1200,13 +1204,36 @@ namespace OSE.Editor
                                 var t = _pkg.targets[ti];
                                 if (t?.id == actionTargetId && !string.IsNullOrEmpty(t.associatedPartId))
                                 {
-                                    displayId = $"{entry.id}  \u2192  {t.associatedPartId}";
+                                    string refId = t.associatedPartId;
+                                    string refName = refId;
+                                    string groupMark = "";
+                                    if (_pkg.TryGetSubassembly(refId, out var refSub) && refSub != null)
+                                    {
+                                        refName = refSub.GetDisplayName();
+                                        groupMark = "[g]";
+                                    }
+                                    else if (_pkg.TryGetPart(refId, out var refPart) && refPart != null)
+                                    {
+                                        refName = refPart.GetDisplayName();
+                                    }
+                                    toolActionRichTag =
+                                        $"<color=#d48ae8><b>×Part{groupMark}</b></color> <color=#c9a7d6>{refName}</color>";
+                                    toolActionShowsPartTag = true;
                                     break;
                                 }
                             }
                         }
                     }
-                    EditorGUI.LabelField(idRect, displayId, EditorStyles.miniLabel);
+
+                    if (toolActionShowsPartTag)
+                    {
+                        var richStyle = new GUIStyle(EditorStyles.miniLabel) { richText = true };
+                        EditorGUI.LabelField(idRect, $"{displayId}   {toolActionRichTag}", richStyle);
+                    }
+                    else
+                    {
+                        EditorGUI.LabelField(idRect, displayId, EditorStyles.miniLabel);
+                    }
 
                     // ── Ownership-conflict / orphan badge (quiet when clean) ──
                     // Three possible states, one badge slot:
