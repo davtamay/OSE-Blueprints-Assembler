@@ -99,6 +99,23 @@ namespace OSE.Editor
         {
             Debug.Log($"[TTAW.ToolPreview] OnSpawnerPartsReady — _selectedIdx={_selectedIdx} _targets={(_targets == null ? "null" : _targets.Length.ToString())} toolPreviewGO={(_toolPreviewGO != null ? "live" : "null")}");
 
+            // Post-reload race fix: the spawner finishes and fires this event
+            // before TTAW gets its first OnGUI, so the lazy LoadPkg in
+            // DrawTopContent hasn't built _targets yet. Without _targets the
+            // refresh block below silently bails — and since this is the one
+            // event-driven path that re-spawns the tool preview post-compile,
+            // the preview stays gone until the author manually re-selects a
+            // task. Restore the package inline so _targets is ready before we
+            // run the sibling re-attach work below.
+            //
+            // Safe in this context because the spawner only publishes
+            // SpawnerPartsReady AFTER MachinePackageLoader.LoadFromStreamingAssetsAsync
+            // completes — AssetDatabase is guaranteed to be ready.
+            if (_pkg == null && !string.IsNullOrEmpty(_pkgId))
+            {
+                Debug.Log($"[TTAW.ToolPreview] OnSpawnerPartsReady — loading pkg '{_pkgId}' inline to catch post-reload race");
+                LoadPkg(_pkgId, restoring: true);
+            }
 
             // Re-apply authoritative _pkg positions after the spawn cycle.
             // The spawn itself calls ApplyStepAwarePositions(_editModePackage) which may
