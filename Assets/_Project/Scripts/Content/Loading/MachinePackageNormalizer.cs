@@ -39,6 +39,7 @@ namespace OSE.Content.Loading
             // (below) are picked up by the regular bake. Trigger rewrite and
             // host migration don't depend on poseTable.
             NormalizeAnimationCueTriggers(package);
+            NormalizeParticleCueSourceMode(package);
             MigrateStepAnimationCuesToHosts(package);
             ValidateAnimationCueInvariants(package);
             BakeHoldAtEndEndPoses(package);
@@ -54,6 +55,7 @@ namespace OSE.Content.Loading
         private const string TriggerOnStepComplete     = "onStepComplete";
         private const string TriggerOnFirstInteraction = "onFirstInteraction";
         private const string TriggerOnTaskComplete     = "onTaskComplete";
+        private const string TriggerOnDuringAction     = "onDuringAction";
 
         /// <summary>
         /// Rewrites legacy / typo trigger aliases to their canonical names so
@@ -81,6 +83,10 @@ namespace OSE.Content.Loading
             if (subs != null)
                 for (int i = 0; i < subs.Length; i++)
                     rewrites += RewriteArray(subs[i]?.animationCues);
+
+            if (package.tools != null)
+                for (int i = 0; i < package.tools.Length; i++)
+                    rewrites += RewriteArray(package.tools[i]?.animationCues);
 
             if (rewrites > 0)
                 Debug.Log($"[CueRuntime.Normalize] rewrote {rewrites} legacy trigger alias(es) to canonical names in '{package.packageId}'.");
@@ -112,6 +118,7 @@ namespace OSE.Content.Loading
                 if (string.Equals(trigger, TriggerOnStepComplete,     StringComparison.OrdinalIgnoreCase)) return TriggerOnStepComplete;
                 if (string.Equals(trigger, TriggerOnFirstInteraction, StringComparison.OrdinalIgnoreCase)) return TriggerOnFirstInteraction;
                 if (string.Equals(trigger, TriggerOnTaskComplete,     StringComparison.OrdinalIgnoreCase)) return TriggerOnTaskComplete;
+                if (string.Equals(trigger, TriggerOnDuringAction,     StringComparison.OrdinalIgnoreCase)) return TriggerOnDuringAction;
                 // Legacy aliases — map to canonical.
                 if (string.Equals(trigger, "onStepActivate",   StringComparison.OrdinalIgnoreCase)) return TriggerOnActivate;
                 if (string.Equals(trigger, "onStepActivated",  StringComparison.OrdinalIgnoreCase)) return TriggerOnActivate;
@@ -119,6 +126,51 @@ namespace OSE.Content.Loading
                 if (string.Equals(trigger, "afterParts",       StringComparison.OrdinalIgnoreCase)) return TriggerAfterPartsShown;
                 // Unknown — leave as-is and let ValidateAnimationCueInvariants flag it.
                 return trigger;
+            }
+        }
+
+        /// <summary>
+        /// For <c>type == "particle"</c> cues, fills in <c>particleSourceMode</c>
+        /// when the author left it empty. Back-compat for content written
+        /// before the field existed: a non-empty <c>particlePresetId</c> maps
+        /// to <c>"preset"</c>; a non-empty <c>particlePrefabRef</c> maps to
+        /// <c>"prefab"</c>. Entries with neither are left alone so the
+        /// validator can flag them.
+        /// </summary>
+        private static void NormalizeParticleCueSourceMode(MachinePackageDefinition package)
+        {
+            if (package.steps != null)
+                for (int i = 0; i < package.steps.Length; i++)
+                    InferModes(package.steps[i]?.animationCues?.cues);
+
+            if (package.parts != null)
+                for (int i = 0; i < package.parts.Length; i++)
+                    InferModes(package.parts[i]?.animationCues);
+
+            var subs = package.GetSubassemblies();
+            if (subs != null)
+                for (int i = 0; i < subs.Length; i++)
+                    InferModes(subs[i]?.animationCues);
+
+            if (package.tools != null)
+                for (int i = 0; i < package.tools.Length; i++)
+                    InferModes(package.tools[i]?.animationCues);
+
+            static void InferModes(AnimationCueEntry[] arr)
+            {
+                if (arr == null) return;
+                for (int i = 0; i < arr.Length; i++)
+                {
+                    var e = arr[i];
+                    if (e == null) continue;
+                    if (!string.Equals(e.type, "particle", StringComparison.OrdinalIgnoreCase)) continue;
+                    if (!string.IsNullOrEmpty(e.particleSourceMode)) continue;
+
+                    if (!string.IsNullOrEmpty(e.particlePresetId))
+                        e.particleSourceMode = "preset";
+                    else if (!string.IsNullOrEmpty(e.particlePrefabRef))
+                        e.particleSourceMode = "prefab";
+                }
             }
         }
 
@@ -166,6 +218,11 @@ namespace OSE.Content.Loading
                         && TryAppendToPart(package, entry.targetPartIds[0], entry))
                     { moved++; continue; }
 
+                    if (entry.targetToolIds != null && entry.targetToolIds.Length == 1
+                        && !string.IsNullOrEmpty(entry.targetToolIds[0])
+                        && TryAppendToTool(package, entry.targetToolIds[0], entry, step?.id))
+                    { moved++; continue; }
+
                     kept.Add(entry);
                     left++;
                 }
@@ -210,6 +267,29 @@ namespace OSE.Content.Loading
                         return false;
                     }
                     pkg.parts[i].animationCues = Append(pkg.parts[i].animationCues, entry);
+                    return true;
+                }
+                return false;
+            }
+
+            static bool TryAppendToTool(MachinePackageDefinition pkg, string toolId, AnimationCueEntry entry, string stepId)
+            {
+                if (pkg.tools == null) return false;
+                for (int i = 0; i < pkg.tools.Length; i++)
+                {
+                    if (pkg.tools[i] == null) continue;
+                    if (!string.Equals(pkg.tools[i].id, toolId, StringComparison.Ordinal)) continue;
+                    if (HasEquivalentCue(pkg.tools[i].animationCues, entry))
+                    {
+                        Debug.LogError($"[CueRuntime.Migrate] tool '{toolId}' already has a (type='{entry.type}', trigger='{entry.trigger}') cue. Refusing to migrate a duplicate from the step level — delete one in TTAW.");
+                        return false;
+                    }
+                    // Step-level tool cues implicitly scoped to one step; keep
+                    // that scope by stamping stepIds so the migrated host-owned
+                    // entry only fires on that step.
+                    if ((entry.stepIds == null || entry.stepIds.Length == 0) && !string.IsNullOrEmpty(stepId))
+                        entry.stepIds = new[] { stepId };
+                    pkg.tools[i].animationCues = Append(pkg.tools[i].animationCues, entry);
                     return true;
                 }
                 return false;
@@ -271,6 +351,10 @@ namespace OSE.Content.Loading
                 for (int i = 0; i < subs.Length; i++)
                     CheckTriggers(subs[i]?.animationCues, $"subassembly '{subs[i]?.id}'");
 
+            if (package.tools != null)
+                for (int i = 0; i < package.tools.Length; i++)
+                    CheckTriggers(package.tools[i]?.animationCues, $"tool '{package.tools[i]?.id}'");
+
             static void CheckTriggers(AnimationCueEntry[] arr, string hostLabel)
             {
                 if (arr == null) return;
@@ -282,9 +366,10 @@ namespace OSE.Content.Loading
                     bool canonical =
                         t == TriggerOnActivate || t == TriggerAfterDelay ||
                         t == TriggerAfterPartsShown || t == TriggerOnStepComplete ||
-                        t == TriggerOnFirstInteraction || t == TriggerOnTaskComplete;
+                        t == TriggerOnFirstInteraction || t == TriggerOnTaskComplete ||
+                        t == TriggerOnDuringAction;
                     if (!canonical)
-                        Debug.LogError($"[CueRuntime.Validate] {hostLabel} cue[{i}] has unknown trigger '{t}'. Canonical values: onActivate, afterDelay, afterPartsShown, onStepComplete, onFirstInteraction, onTaskComplete.");
+                        Debug.LogError($"[CueRuntime.Validate] {hostLabel} cue[{i}] has unknown trigger '{t}'. Canonical values: onActivate, afterDelay, afterPartsShown, onStepComplete, onFirstInteraction, onTaskComplete, onDuringAction.");
                 }
             }
         }
@@ -776,10 +861,16 @@ namespace OSE.Content.Loading
                     int anchorSeq = nextStep.sequenceIndex;
 
                     // Eligible members: resolve each member's effective pose
-                    // at the cue's step via PoseResolver. Hidden / at-origin
-                    // members match the runtime centroid filter and are
-                    // excluded.
-                    var eligible = new List<(string id, Vector3 pos, Quaternion rot, Vector3 scl)>();
+                    // at the cue's step via PoseResolver. Hidden members are
+                    // excluded entirely. At-origin members ARE included in
+                    // synthesis (the runtime PoseTransitionPlayer rotates every
+                    // child including centroid-origin ones) but are NOT used
+                    // for centroid computation — matching the runtime's
+                    // ComputeChildrenCentroidLocal filter. Earlier versions
+                    // skipped at-origin members everywhere, which left them at
+                    // the un-rotated pose on the next step while siblings
+                    // stayed rotated — the "one part back at start pose" bug.
+                    var eligible = new List<(string id, Vector3 pos, Quaternion rot, Vector3 scl, bool useInCentroid)>();
                     for (int mi = 0; mi < sub.partIds.Length; mi++)
                     {
                         string memberId = sub.partIds[mi];
@@ -788,8 +879,8 @@ namespace OSE.Content.Loading
                         var res = PoseResolver.Resolve(
                             memberId, cueStep.sequenceIndex, package, idx, PoseMode.Committed);
                         if (res.source == PoseSource.Hidden) continue;
-                        if (res.pos.sqrMagnitude < 0.0001f) continue;
-                        eligible.Add((memberId, res.pos, res.rot, res.scl));
+                        bool atOrigin = res.pos.sqrMagnitude < 0.0001f;
+                        eligible.Add((memberId, res.pos, res.rot, res.scl, !atOrigin));
                     }
                     if (eligible.Count == 0)
                     {
@@ -798,8 +889,14 @@ namespace OSE.Content.Loading
                     }
 
                     Vector3 centroid = Vector3.zero;
-                    for (int k = 0; k < eligible.Count; k++) centroid += eligible[k].pos;
-                    centroid /= eligible.Count;
+                    int centroidCount = 0;
+                    for (int k = 0; k < eligible.Count; k++)
+                    {
+                        if (!eligible[k].useInCentroid) continue;
+                        centroid += eligible[k].pos;
+                        centroidCount++;
+                    }
+                    if (centroidCount > 0) centroid /= centroidCount;
 
                     // Fan out per member.
                     for (int k = 0; k < eligible.Count; k++)

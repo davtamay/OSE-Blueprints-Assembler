@@ -4,8 +4,17 @@ using UnityEngine;
 namespace OSE.Content
 {
     [Serializable]
-    public sealed class ToolDefinition
+    public sealed class ToolDefinition : IAnimationHost
     {
+        string IAnimationHost.HostId => id;
+        string IAnimationHost.HostDisplayName => GetDisplayName();
+        AnimationHostKind IAnimationHost.HostKind => AnimationHostKind.Tool;
+        AnimationCueEntry[] IAnimationHost.AnimationCues
+        {
+            get => animationCues;
+            set => animationCues = value;
+        }
+
         public string id;
         public string name;
         public string category;
@@ -14,6 +23,14 @@ namespace OSE.Content
         public string safetyNotes;
         public string[] searchTerms;
         public string assetRef;
+
+        /// <summary>
+        /// Animation &amp; effect cues owned by this tool. Cues fire on the
+        /// tool's cursor preview GameObject. Authored in TTAW via the
+        /// unified "Animation &amp; Effect Cues" panel — same UX as parts
+        /// and subassemblies.
+        /// </summary>
+        public AnimationCueEntry[] animationCues;
 
         /// <summary>
         /// Set to true to use <see cref="orientationEuler"/> instead of automatic

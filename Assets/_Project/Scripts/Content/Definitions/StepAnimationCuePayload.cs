@@ -28,8 +28,12 @@ namespace OSE.Content
     public sealed class AnimationCueEntry
     {
         /// <summary>
-        /// Animation type key: "demonstratePlacement", "poseTransition", "pulse", "orientSubassembly".
-        /// Matched to an <c>IAnimationCuePlayer</c> factory by the coordinator.
+        /// Animation type key. Core: "demonstratePlacement", "poseTransition",
+        /// "pulse", "orientSubassembly", "shake", "particle". Phase-2 effect
+        /// cues: "emissionPulse", "colorTween", "materialFade", "clickPop",
+        /// "poseWobble", "toolVibration", "lineBetweenAnchors", "drawSpline",
+        /// "measureLine", "screwSpin". Matched to an <c>IAnimationCuePlayer</c>
+        /// factory by the coordinator.
         /// </summary>
         public string type;
 
@@ -65,14 +69,33 @@ namespace OSE.Content
         public bool always;
 
         /// <summary>
-        /// Package-relative prefab path for <see cref="type"/> = "particle".
-        /// Coordinator instantiates the prefab at the host's world pose on
-        /// trigger, destroys it when the step ends (or on loop restart).
-        /// Ignored for non-particle cue types.
+        /// Package-relative prefab path for <see cref="type"/> = "particle" when
+        /// <see cref="particleSourceMode"/> is "prefab". Ignored otherwise.
         /// </summary>
         public string particlePrefabRef;
 
-        /// <summary>"onActivate" (default), "afterDelay", "onStepComplete", or "always".</summary>
+        /// <summary>
+        /// "preset" = instantiate a procedural preset from
+        /// <c>CompletionParticleEffect.Presets</c> (weld_arc, torque_sparks, …);
+        /// "prefab" = load <see cref="particlePrefabRef"/> via Resources.Load.
+        /// Empty = inferred on load by the normalizer.
+        /// </summary>
+        public string particleSourceMode;
+
+        /// <summary>Preset key into <c>CompletionParticleEffect.Presets</c> when <see cref="particleSourceMode"/> = "preset".</summary>
+        public string particlePresetId;
+
+        /// <summary>Scale multiplier applied to the spawned particle. 0 or unset = 1.0.</summary>
+        public float particleScale;
+
+        /// <summary>Optional colour tint multiplied into child ParticleSystem.main.startColor. Alpha = 0 means "no tint".</summary>
+        public SceneFloat4 particleColorTint;
+
+        /// <summary>
+        /// "onActivate" (default), "afterDelay", "afterPartsShown",
+        /// "onStepComplete", "onFirstInteraction", "onTaskComplete",
+        /// "onDuringAction" (starts on tool action, stops on action end).
+        /// </summary>
         public string trigger;
 
         /// <summary>Delay in seconds when trigger is "afterDelay".</summary>
@@ -146,6 +169,17 @@ namespace OSE.Content
         /// </summary>
         public SceneFloat3 shakeAxis;
 
+        /// <summary>
+        /// Waveform mode for the shake:
+        ///   "" / "sine"     — bidirectional oscillation (default, back-compat)
+        ///   "positive"      — half-wave rectified: always travels in the axis's
+        ///                     positive direction, returns to zero each cycle
+        ///   "slide"         — single out-and-back pulse over the cue's duration
+        ///                     (smoothstep ramp up to amplitude, then back to 0).
+        ///                     Ideal for a rod slide test: slides forward, returns.
+        /// </summary>
+        public string shakeMode;
+
         // ── Future: GLB-embedded animation support ──
 
         /// <summary>
@@ -203,6 +237,111 @@ namespace OSE.Content
         /// fromPose), matching legacy content.
         /// </summary>
         public bool holdAtEnd;
+
+        // ── Phase 2: progress-range scheduling (trigger=onDuringAction) ──
+
+        /// <summary>
+        /// First moment in the tool action's 0..1 progress timeline at which
+        /// this cue fires (burst cues) or begins interpolating (tween cues).
+        /// Only meaningful when <see cref="trigger"/> = "onDuringAction".
+        /// Default 0.0 = start of the action.
+        /// </summary>
+        public float startProgress;
+
+        /// <summary>
+        /// Last moment in the tool action's 0..1 progress timeline at which
+        /// this cue is active. Tween cues complete at endProgress. Only
+        /// meaningful when <see cref="trigger"/> = "onDuringAction".
+        /// Default 0.0 (treated as 1.0 by the coordinator when both start
+        /// and end are zero — preserves legacy onDuringAction behaviour).
+        /// </summary>
+        public float endProgress;
+
+        // ── Phase 2: emissionPulse / colorTween / materialFade ──
+
+        /// <summary>Start colour of a color/emission tween (RGBA).</summary>
+        public SceneFloat4 fromColor;
+
+        /// <summary>End colour of a color/emission tween (RGBA).</summary>
+        public SceneFloat4 toColor;
+
+        /// <summary>Start emission colour for emissionPulse / materialFade (RGBA).</summary>
+        public SceneFloat4 fromEmission;
+
+        /// <summary>End emission colour for emissionPulse / materialFade (RGBA).</summary>
+        public SceneFloat4 toEmission;
+
+        /// <summary>Start emission intensity multiplier (default 0 = 1.0 when both from/to are zero).</summary>
+        public float fromIntensity;
+
+        /// <summary>End emission intensity multiplier.</summary>
+        public float toIntensity;
+
+        // ── Phase 2: clickPop ──
+
+        /// <summary>Ring pulse scale for <c>clickPop</c> cues. Default 1.8.</summary>
+        public float pulseScale;
+
+        // ── Phase 2: poseWobble ──
+
+        /// <summary>Local-space axis (Euler per-axis amplitudes) for wobble. (1,1,0) = pitch+yaw.</summary>
+        public SceneFloat3 wobbleAxis;
+
+        /// <summary>Peak rotation amplitude in radians for <c>poseWobble</c>.</summary>
+        public float wobbleAmplitude;
+
+        /// <summary>Angular frequency (rad/s) for <c>poseWobble</c>.</summary>
+        public float wobbleFrequency;
+
+        // ── Phase 2: toolVibration ──
+
+        /// <summary>Per-axis amplitude vector (metres) for <c>toolVibration</c>.</summary>
+        public SceneFloat3 vibrationAxes;
+
+        /// <summary>Oscillation frequency (Hz) for <c>toolVibration</c>.</summary>
+        public float vibrationFrequency;
+
+        /// <summary>Ramp-in progress (0..1) — amplitude eases in over [0, rampIn].</summary>
+        public float vibrationRampIn;
+
+        /// <summary>Ramp-out progress (0..1) — amplitude eases out over [rampOut, 1].</summary>
+        public float vibrationRampOut;
+
+        // ── Phase 2: line / spline ──
+
+        /// <summary>Anchor ref for endpoint A (e.g. "weldStart", "measureAnchorA", "literal:0,0,0").</summary>
+        public string anchorARef;
+
+        /// <summary>Anchor ref for endpoint B.</summary>
+        public string anchorBRef;
+
+        /// <summary>LineRenderer width for <c>lineBetweenAnchors</c>. Default 0.004.</summary>
+        public float lineWidth;
+
+        /// <summary>Emission intensity multiplier for line / spline materials.</summary>
+        public float lineEmissionIntensity;
+
+        /// <summary>Tube radius for <c>drawSpline</c>. Default 0.003.</summary>
+        public float splineRadius;
+
+        /// <summary>PBR metallic for <c>drawSpline</c>.</summary>
+        public float splineMetallic;
+
+        /// <summary>PBR smoothness for <c>drawSpline</c>.</summary>
+        public float splineSmoothness;
+
+        /// <summary>Ordered anchor refs for a multi-point spline path.</summary>
+        public string[] splineAnchorRefs;
+
+        // ── Phase 2: screwSpin ──
+
+        /// <summary>Total rotation angle in degrees for <c>screwSpin</c> (120° matches torque wrench).</summary>
+        public float spinAngleDegrees;
+
+        // ── Phase 2: measure ──
+
+        /// <summary>Display unit for <c>measureLine</c> readout: "mm", "cm", "m", "inch", "ft".</summary>
+        public string measureUnit;
     }
 
     /// <summary>

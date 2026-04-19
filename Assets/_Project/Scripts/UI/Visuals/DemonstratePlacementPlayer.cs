@@ -87,10 +87,13 @@ namespace OSE.UI.Root
 
         public void Stop()
         {
-            if (!IsPlaying) return;
+            // Always snap to assembled pose — skipping when IsPlaying=false
+            // meant natural Tick completion left whatever in-between pose
+            // the last frame wrote instead of guaranteeing the assembled
+            // endpoint. Contributed to pose accumulation across steps.
             IsPlaying = false;
 
-            // Snap to assembled pose
+            if (_ctx.Targets == null || _ctx.AssembledPoses == null) return;
             for (int i = 0; i < _ctx.Targets.Count; i++)
             {
                 if (_ctx.Targets[i] == null) continue;

@@ -46,6 +46,22 @@ namespace OSE.Editor
                 if (_pkg == null) _pkgId = null;
             }
 
+            // Lazy tool-preview recovery. HideAndDontSave GameObjects are
+            // destroyed by Unity on every domain reload, and the event
+            // path that normally re-spawns them (OnSpawnerPartsReady) can
+            // fire before the Editor regains focus / before the window
+            // re-subscribes, so the window misses it. Retry every frame
+            // until the GO exists. When the spawner isn't ready yet,
+            // RefreshToolPreview internally early-returns (cheap no-op);
+            // once ready, it spawns and the guard stops firing.
+            if (_pkg != null && _showToolPreview && _toolPreviewGO == null
+                && _selectedIdx >= 0 && _targets != null
+                && _selectedIdx < _targets.Length
+                && _targets[_selectedIdx].def != null)
+            {
+                RefreshToolPreview(ref _targets[_selectedIdx]);
+            }
+
             // Empty / no-package state — toolbar handles the package picker now,
             // so the body just shows a friendly hint.
             if (_pkg == null)
@@ -176,19 +192,32 @@ namespace OSE.Editor
                         }
                         default: // toolAction, target, wire, confirm
                         {
-                            // Animation cues for the tool (if wired)
+                            // Animation & Effect Cues for every tool referenced by
+                            // this step. Previously we only rendered the panel
+                            // when the selected task's id matched a
+                            // requiredToolActions.targetId exactly, which failed
+                            // on task kinds like toolAnimation / target / wire
+                            // that don't carry the action's target id — so the
+                            // cue panel silently disappeared. Tool cues are
+                            // host-owned now, so authoring is step-agnostic:
+                            // show one panel per unique tool used in this step.
                             if (step.requiredToolActions != null)
                             {
+                                var seenToolIds = new HashSet<string>(StringComparer.Ordinal);
                                 foreach (var a in step.requiredToolActions)
                                 {
-                                    if (a?.targetId == entry.id && !string.IsNullOrEmpty(a.toolId))
-                                    { DrawCuesForTool(step, a.toolId); break; }
+                                    if (a == null || string.IsNullOrEmpty(a.toolId)) continue;
+                                    if (!seenToolIds.Add(a.toolId)) continue;
+                                    DrawCuesForTool(step, a.toolId);
                                 }
                             }
 
-                            // Particle effects
-                            EditorGUILayout.Space(6);
-                            DrawParticleEffectsSection(step);
+                            // Legacy step.particleEffects authoring is retired —
+                            // particle authoring now happens through the
+                            // Animation & Effect Cues panel (type = "particle").
+                            // Runtime still reads step.particleEffects for
+                            // unmigrated content, but the UI no longer
+                            // surfaces a separate panel.
                             break;
                         }
                     }
@@ -1098,11 +1127,14 @@ namespace OSE.Editor
             }
         }
 
-        // Returns true when profile calls for this field group, or when no step is selected.
-        // Field group visibility — "All Steps" (null profile) shows everything.
-        private bool ShowWeldGroup()    => string.IsNullOrEmpty(_activeStepProfile)
-                                          || _activeStepProfile == "Weld"
-                                          || _activeStepProfile == "Cut";
+        // Weld Axis / Length fields describe the direction and distance the
+        // tool travels during the action — semantically useful on every
+        // tool-action profile, not just Weld/Cut. Task-kind gating
+        // (TaskFieldProfile.ShowWeldAxis) already hides these on parts,
+        // wires, confirms; step-profile gating on top was double-filtering
+        // and hid the fields on Drill/Torque/Measure/Square where authors
+        // legitimately want to set the action's travel direction.
+        private bool ShowWeldGroup()    => true;
 
         // portA/portB are wire/pipe endpoints — visible only for Connect-family steps.
         private bool ShowPortGroup()    => _activeStepIsConnect;

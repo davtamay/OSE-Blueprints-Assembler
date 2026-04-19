@@ -467,6 +467,20 @@ namespace OSE.Core
     }
 
     /// <summary>
+    /// Published each frame by <c>ToolActionPreviewController</c> during the
+    /// action phase with the normalised 0..1 progress. Consumed by the
+    /// animation cue coordinator to drive progress-ranged
+    /// <c>onDuringAction</c> cues (weld bead extension, drill vibration
+    /// ramp, etc.). Progress is monotonic per action and resets at the
+    /// start of each new action.
+    /// </summary>
+    public readonly struct ToolActionProgressTick
+    {
+        public readonly float Progress;
+        public ToolActionProgressTick(float progress) => Progress = progress;
+    }
+
+    /// <summary>
     /// Published by <see cref="OSE.UI.Root.PackagePartSpawner"/> immediately after each
     /// individual GLB model swaps in to replace its placeholder during async loading.
     /// Allows the visual system to re-apply the correct material state for this part

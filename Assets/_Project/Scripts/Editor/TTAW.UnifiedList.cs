@@ -545,6 +545,63 @@ namespace OSE.Editor
             return true;
         }
 
+        /// <summary>
+        /// Returns true when the part (or group) backing <paramref name="entry"/>
+        /// hosts a <c>poseTransition</c>/<c>transform</c> cue with
+        /// <c>holdAtEnd=true</c> that applies to <paramref name="step"/>. The
+        /// tooltip describes where the pose change originates so authors can
+        /// trace "why is this part at a different pose on step N+1?" back to
+        /// the hold-at-end cue here. Empty <c>stepIds</c> counts as always-on.
+        /// </summary>
+        private bool TryGetPoseHoldInfo(TaskOrderEntry entry, StepDefinition step, out string tooltip)
+        {
+            tooltip = null;
+            if (entry == null || step == null || string.IsNullOrEmpty(entry.id)) return false;
+            if (entry.kind != "part" || _pkg == null) return false;
+
+            AnimationCueEntry[] cues = null;
+            string hostLabel = null;
+            if (_pkg.TryGetSubassembly(entry.id, out var sub) && sub != null)
+            {
+                cues = sub.animationCues;
+                hostLabel = $"group '{sub.GetDisplayName()}'";
+            }
+            else
+            {
+                string partId = TaskInstanceId.ToPartId(entry.id);
+                if (_pkg.TryGetPart(partId, out var part) && part != null)
+                {
+                    cues = part.animationCues;
+                    hostLabel = $"part '{part.GetDisplayName() ?? partId}'";
+                }
+            }
+            if (cues == null || cues.Length == 0) return false;
+
+            string cueType = null;
+            for (int i = 0; i < cues.Length; i++)
+            {
+                var c = cues[i];
+                if (c == null || !c.holdAtEnd) continue;
+                if (!string.Equals(c.type, "poseTransition", StringComparison.Ordinal)
+                    && !string.Equals(c.type, "transform", StringComparison.Ordinal)) continue;
+                if (c.stepIds != null && c.stepIds.Length > 0)
+                {
+                    bool hits = false;
+                    for (int s = 0; s < c.stepIds.Length; s++)
+                        if (string.Equals(c.stepIds[s], step.id, StringComparison.Ordinal)) { hits = true; break; }
+                    if (!hits) continue;
+                }
+                cueType = c.type;
+                break;
+            }
+            if (cueType == null) return false;
+
+            tooltip = $"{hostLabel} authors a {cueType} cue with holdAtEnd=true on this step. " +
+                      "Its to-pose persists to later steps until another cue writes the same target — so any later step " +
+                      "that sees this part at a non-default transform is reading from this hold.";
+            return true;
+        }
+
         /// <summary>Returns true when the item backing this task entry has in-memory unsaved edits.</summary>
         private bool IsTaskEntryDirty(TaskOrderEntry entry, StepDefinition step)
         {
@@ -1303,6 +1360,32 @@ namespace OSE.Editor
                         }
                     }
 
+                    // Pose-hold indicator — flags task rows whose host authors a
+                    // poseTransition / transform cue with holdAtEnd=true that
+                    // applies to this step. Surfaces the source of "part
+                    // transform differs from staging/assembled default here"
+                    // so authors can trace why a later step sees the part at
+                    // a different pose. Drawn right after the ownership badge
+                    // slot so it shares the same gutter.
+                    float holdBadgeW = 0f;
+                    float holdBadgeX = ownBadgeX + ownBadgeW + (ownBadgeW > 0 ? 2f : 0f);
+                    if (entry.kind == "part" && TryGetPoseHoldInfo(entry, step, out string holdTooltip))
+                    {
+                        holdBadgeW = 28f;
+                        var bg = new Color(0.55f, 0.32f, 0.78f, 0.28f);
+                        var fg = new Color(0.82f, 0.68f, 0.98f);
+                        var bgRect = new Rect(holdBadgeX, rect.y + 3f, holdBadgeW, rect.height - 4f);
+                        EditorGUI.DrawRect(bgRect, bg);
+                        var style = new GUIStyle(EditorStyles.miniLabel)
+                        {
+                            normal    = { textColor = fg },
+                            fontStyle = FontStyle.Bold,
+                            alignment = TextAnchor.MiddleCenter,
+                            fontSize  = 8,
+                        };
+                        GUI.Label(bgRect, new GUIContent("HOLD", holdTooltip), style);
+                    }
+
                     // "Editing this group" membership is handled per-pill
                     // below: each pill computes its own isSelected against
                     // _canvasSelectedSubId, so no row-level flag is needed.
@@ -1311,7 +1394,9 @@ namespace OSE.Editor
                     // which membership the GROUPS-panel selection refers to.
                     if (totalGroups > 0)
                     {
-                        float cursorX = idRect.xMax + 2f + ownBadgeW + (ownBadgeW > 0 ? 2f : 0f);
+                        float cursorX = idRect.xMax + 2f
+                            + ownBadgeW  + (ownBadgeW  > 0 ? 2f : 0f)
+                            + holdBadgeW + (holdBadgeW > 0 ? 2f : 0f);
                         for (int p2 = 0; p2 < visiblePills; p2++)
                         {
                             var g = partGroups[p2];
@@ -3426,6 +3511,14 @@ namespace OSE.Editor
                         for (int i = 0; i < _targets.Length; i++)
                             if (_targets[i].def?.id == toolTargetId)
                             { DrawDetailPanel(ref _targets[i]); break; }
+
+                    // Phase 3: consolidated Tool / Tool-Pose / Profile /
+                    // Preview-Overrides config block. Renders below the
+                    // target-detail panel so target authoring (position /
+                    // weldAxis / etc.) and tool-action config are visible
+                    // together.
+                    if (taskAction != null)
+                        DrawToolActionConfigSection(step, taskAction);
 
                     // Phase 7c cue affordance moved to DrawInspectorContextualSections
                     break;

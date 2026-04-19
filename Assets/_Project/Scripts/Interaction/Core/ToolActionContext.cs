@@ -57,5 +57,15 @@ namespace OSE.Interaction
         /// correction is still needed for correct visual placement.
         /// </summary>
         public bool ToolActionRotationIsMesh;
+
+        /// <summary>
+        /// Per-action override payload from the resolved
+        /// <see cref="ToolActionDefinition.previewConfig"/>. Null when the
+        /// action has no overrides authored — preview classes fall back to
+        /// their hardcoded defaults via <c>Override(authored, fallback)</c>.
+        /// Set by the bridge layer at the same time as the other action
+        /// data; see <c>TargetActionResolver</c> / bridge equivalent.
+        /// </summary>
+        public ToolActionPreviewConfig PreviewConfig;
     }
 }

@@ -117,10 +117,31 @@ namespace OSE.Content.Loading
             // [4] Task-step acts on this part at viewSeq — the Start/Assembled
             //     toggle is authoritative here, and it's the ONLY branch where
             //     PoseMode matters.
+            //
+            //     Runtime convention (PoseMode.Committed): at the part's FIRST
+            //     task step, the trainee is placing the part — show Start
+            //     (staging) pose so the floating ghost is visible and the
+            //     user has something to drag. At any SUBSEQUENT task step
+            //     (part already placed earlier; this step just re-touches
+            //     it — confirm, tool action, etc.), show Assembled so the
+            //     part sits at its committed position.
+            //
+            //     Editor previews (StartPreview / AssembledPreview) still
+            //     honour the author's explicit toggle regardless of task
+            //     ordering — that's the authoring intent.
             if (idx.taskSeqsByPart.TryGetValue(partId, out var taskSeqs) && taskSeqs.Contains(viewSeq))
             {
-                bool wantAssembled = mode == PoseMode.AssembledPreview
-                                  || mode == PoseMode.Committed;
+                bool wantAssembled;
+                if (mode == PoseMode.Committed)
+                {
+                    int firstTaskSeq = idx.firstTaskSeqByPart.TryGetValue(partId, out int ft2) ? ft2 : int.MaxValue;
+                    wantAssembled = viewSeq > firstTaskSeq;
+                }
+                else
+                {
+                    wantAssembled = mode == PoseMode.AssembledPreview;
+                }
+
                 if (wantAssembled)
                     return new PoseResolution(
                         ToVec3(pp.assembledPosition),

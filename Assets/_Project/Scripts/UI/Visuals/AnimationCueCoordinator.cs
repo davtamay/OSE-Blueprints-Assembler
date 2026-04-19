@@ -20,6 +20,16 @@ namespace OSE.UI.Root
         private readonly List<DelayedCue> _delayedCues = new List<DelayedCue>();
         private readonly List<GameObject> _ghostObjects = new List<GameObject>();
 
+        // Phase 2: progress-range onDuringAction cues. Populated by
+        // FireDuringActionStart, advanced by OnToolActionProgress,
+        // cleared by StopDuringAction / Cleanup.
+        private readonly List<RangedCue> _rangedCues = new List<RangedCue>();
+        private float _lastToolProgress;
+
+        // Tracks the currently-active step so ToolActionProgressTick events
+        // can be routed without the controller needing to know the stepId.
+        private string _currentStepId;
+
         // Fabrication grouping: temp parent for ungrouped subassembly members
         private GameObject _fabricationGroupRoot;
         private readonly List<FabricationGroupEntry> _fabricationGroupEntries = new List<FabricationGroupEntry>();
@@ -39,6 +49,25 @@ namespace OSE.UI.Root
             public AnimationCueEntry Entry;
             public AnimationCueContext Context;
             public float RemainingDelay;
+        }
+
+        /// <summary>
+        /// A progress-ranged onDuringAction cue — gathered at action start,
+        /// promoted to active (via Player) when tool-action progress crosses
+        /// <see cref="StartProgress"/>, ticked via <c>TickProgress</c> until
+        /// progress crosses <see cref="EndProgress"/>.
+        /// </summary>
+        private struct RangedCue
+        {
+            public AnimationCueEntry Entry;
+            public AnimationCueContext Context;
+            public Func<IAnimationCuePlayer> Factory;
+            public IAnimationCuePlayer Player;
+            public float StartProgress;
+            public float EndProgress;
+            public bool IsStarted;
+            public bool IsStopped;
+            public bool IsBurst;
         }
 
         private struct FabricationGroupEntry
@@ -62,7 +91,29 @@ namespace OSE.UI.Root
                 { "shake",                () => new ShakePlayer() },
                 { "particle",             () => new ParticlePlayer() },
                 { "transform",            () => new PoseTransitionPlayer() },
+                // Phase 2 effect cues
+                { "emissionPulse",        () => new EmissionPulsePlayer() },
+                { "colorTween",           () => new ColorTweenPlayer() },
+                { "materialFade",         () => new MaterialFadePlayer() },
+                { "clickPop",             () => new ClickPopPlayer() },
+                { "poseWobble",           () => new PoseWobblePlayer() },
+                { "toolVibration",        () => new ToolVibrationPlayer() },
+                { "lineBetweenAnchors",   () => new LineBetweenAnchorsPlayer() },
+                { "drawSpline",           () => new DrawSplinePlayer() },
+                { "measureLine",          () => new MeasureLinePlayer() },
+                { "screwSpin",            () => new ScrewSpinPlayer() },
             };
+
+            // Subscribe to tool-action progress ticks emitted by
+            // ToolActionPreviewController so progress-ranged onDuringAction
+            // cues advance in lockstep with the action.
+            OSE.Core.RuntimeEventBus.Subscribe<OSE.Core.ToolActionProgressTick>(OnToolProgressEvent);
+        }
+
+        private void OnToolProgressEvent(OSE.Core.ToolActionProgressTick evt)
+        {
+            if (string.IsNullOrEmpty(_currentStepId)) return;
+            OnToolActionProgress(_currentStepId, evt.Progress);
         }
 
         /// <summary>
@@ -74,8 +125,24 @@ namespace OSE.UI.Root
         public void OnStepActivated(string stepId, Action deferredPreviewSpawn = null)
         {
             Cleanup();
+            _currentStepId = stepId;
 
             var package = _ctx.Spawner?.CurrentPackage;
+
+            // Play-mode step-pose re-apply. Edit-mode preview drives this via
+            // EditModePreviewDriver; play mode had no equivalent, so any
+            // cue-animated state from the previous step lingered on some
+            // children (those the cue touched) while others still sat at
+            // their original spawn pose — the "mixed pre/post pose" symptom
+            // on step 56 after step 55's group transition. Running the
+            // spawner's step-aware positioning here guarantees every part
+            // is at its authored canonical step pose before the new step's
+            // cues start. The baker that pre-computes hold-at-end cue
+            // results into the next step's poseTable makes this the
+            // right source of truth.
+            if (Application.isPlaying && package != null && package.TryGetStep(stepId, out var s))
+                _ctx.Spawner?.ApplyStepAwarePositions(s.sequenceIndex, package);
+
             if (package == null || !package.TryGetStep(stepId, out var step))
             {
                 deferredPreviewSpawn?.Invoke();
@@ -136,6 +203,7 @@ namespace OSE.UI.Root
                 {
                     HostKind.Part        => ResolveHostedPartContext(g.HostId, entry, step),
                     HostKind.Subassembly => ResolveHostedSubassemblyContext(g.HostId, entry, step),
+                    HostKind.Tool        => ResolveHostedToolContext(g.HostId, entry, step),
                     _                    => ResolveContext(entry, step),
                 };
                 if (context.Targets == null || context.Targets.Count == 0)
@@ -154,13 +222,16 @@ namespace OSE.UI.Root
                                          && !string.Equals(entry.trigger, "onStepComplete",     StringComparison.OrdinalIgnoreCase)
                                          && !string.Equals(entry.trigger, "onFirstInteraction", StringComparison.OrdinalIgnoreCase)
                                          && !string.Equals(entry.trigger, "onTaskComplete",     StringComparison.OrdinalIgnoreCase)
+                                         && !string.Equals(entry.trigger, "onDuringAction",     StringComparison.OrdinalIgnoreCase)
                                          && !string.Equals(entry.trigger, "afterPartsShown",    StringComparison.OrdinalIgnoreCase);
                 bool isAfterPartsShown = string.Equals(entry.trigger, "afterPartsShown", StringComparison.OrdinalIgnoreCase);
-                // Deferred-trigger cues (onStepComplete, onFirstInteraction, onTaskComplete) are
-                // fired by their dedicated public methods and must NOT start on step activation.
+                // Deferred-trigger cues (onStepComplete, onFirstInteraction, onTaskComplete,
+                // onDuringAction) are fired by their dedicated public methods and must NOT
+                // start on step activation.
                 bool isDeferredTrigger = string.Equals(entry.trigger, "onStepComplete",      StringComparison.OrdinalIgnoreCase)
                                       || string.Equals(entry.trigger, "onFirstInteraction",  StringComparison.OrdinalIgnoreCase)
-                                      || string.Equals(entry.trigger, "onTaskComplete",       StringComparison.OrdinalIgnoreCase);
+                                      || string.Equals(entry.trigger, "onTaskComplete",       StringComparison.OrdinalIgnoreCase)
+                                      || string.Equals(entry.trigger, "onDuringAction",       StringComparison.OrdinalIgnoreCase);
 
                 if (isDeferredTrigger)
                 {
@@ -239,10 +310,15 @@ namespace OSE.UI.Root
                 }
             }
 
-            // Tick active cues
+            // Tick active cues. Skip players that are being driven by a
+            // progress-ranged onDuringAction cue — those advance via
+            // TickProgress() from OnToolActionProgress, not wall-clock
+            // Tick(). Ticking both would double-advance tween players.
             for (int i = _activeCues.Count - 1; i >= 0; i--)
             {
                 var active = _activeCues[i];
+                if (IsProgressDriven(active.Player)) continue;
+
                 bool stillPlaying = active.Player.Tick(deltaTime);
                 if (!stillPlaying)
                 {
@@ -260,6 +336,18 @@ namespace OSE.UI.Root
             }
         }
 
+        private bool IsProgressDriven(IAnimationCuePlayer player)
+        {
+            if (player == null) return false;
+            for (int i = 0; i < _rangedCues.Count; i++)
+            {
+                var rc = _rangedCues[i];
+                if (rc.IsStarted && !rc.IsStopped && ReferenceEquals(rc.Player, player))
+                    return true;
+            }
+            return false;
+        }
+
         public void Cleanup()
         {
             // Fire deferred preview if still pending (navigated away before delay expired)
@@ -273,6 +361,16 @@ namespace OSE.UI.Root
                 _activeCues[i].Player.Stop();
             _activeCues.Clear();
             _delayedCues.Clear();
+
+            // Phase 2: drop any progress-ranged cues still pending / active.
+            for (int i = 0; i < _rangedCues.Count; i++)
+            {
+                var rc = _rangedCues[i];
+                if (rc.IsStarted && !rc.IsStopped && rc.Player != null)
+                    rc.Player.Stop();
+            }
+            _rangedCues.Clear();
+            _lastToolProgress = 0f;
 
             // Ungroup fabrication members back to their original parents
             UngroupFabricationMembers();
@@ -307,6 +405,164 @@ namespace OSE.UI.Root
             => FireTriggerCues(stepId, "onTaskComplete", taskId);
 
         /// <summary>
+        /// Fire <c>onDuringAction</c> cues when a tool action starts. Cues
+        /// with no authored progress range fire immediately (Phase 1 legacy
+        /// behaviour); cues with a range are stashed and promoted by
+        /// <see cref="OnToolActionProgress"/> as progress crosses
+        /// <c>startProgress</c>. Pair with <see cref="StopDuringAction"/> on
+        /// action end so looping cues fade out cleanly.
+        /// </summary>
+        public void FireDuringActionStart(string stepId)
+        {
+            _lastToolProgress = 0f;
+
+            var package = _ctx.Spawner?.CurrentPackage;
+            if (package == null || !package.TryGetStep(stepId, out var step)) return;
+
+            var gathered = new List<GatheredCue>();
+            GatherHostCues(package, step, gathered);
+
+            for (int i = 0; i < gathered.Count; i++)
+            {
+                var g = gathered[i];
+                var entry = g.Entry;
+                if (entry == null) continue;
+                if (!string.Equals(entry.trigger, "onDuringAction", StringComparison.OrdinalIgnoreCase)) continue;
+                if (string.IsNullOrEmpty(entry.type)) continue;
+                if (!_factories.TryGetValue(entry.type, out var factory)) continue;
+
+                AnimationCueContext context = g.HostKind switch
+                {
+                    HostKind.Part        => ResolveHostedPartContext(g.HostId, entry, step),
+                    HostKind.Subassembly => ResolveHostedSubassemblyContext(g.HostId, entry, step),
+                    HostKind.Tool        => ResolveHostedToolContext(g.HostId, entry, step),
+                    _                    => ResolveContext(entry, step),
+                };
+                if (context.Targets == null || context.Targets.Count == 0) continue;
+
+                if (HasProgressRange(entry))
+                {
+                    // Stash — promoted by OnToolActionProgress.
+                    _rangedCues.Add(new RangedCue
+                    {
+                        Entry          = entry,
+                        Context        = context,
+                        Factory        = factory,
+                        Player         = null,
+                        StartProgress  = Mathf.Clamp01(entry.startProgress),
+                        EndProgress    = ResolveEndProgress(entry),
+                        IsStarted      = false,
+                        IsStopped      = false,
+                        IsBurst        = IsBurstType(entry.type),
+                    });
+                }
+                else
+                {
+                    // Phase 1 path: fire immediately, stop on action end.
+                    var player = factory();
+                    player.Start(context);
+                    _activeCues.Add(new ActiveCue { Player = player, Context = context });
+                }
+            }
+        }
+
+        /// <summary>
+        /// Advance progress-ranged <c>onDuringAction</c> cues. Called each
+        /// frame by <c>ToolActionPreviewController</c> with the action's
+        /// normalised 0..1 progress. Safe to call when no ranged cues are
+        /// pending — a no-op in that case.
+        /// </summary>
+        public void OnToolActionProgress(string stepId, float progress01)
+        {
+            progress01 = Mathf.Clamp01(progress01);
+            _lastToolProgress = progress01;
+
+            if (_rangedCues.Count == 0) return;
+
+            for (int i = 0; i < _rangedCues.Count; i++)
+            {
+                var rc = _rangedCues[i];
+                if (rc.IsStopped) continue;
+                if (progress01 < rc.StartProgress) continue;
+
+                if (!rc.IsStarted)
+                {
+                    rc.Player = rc.Factory();
+                    rc.Player.Start(rc.Context);
+                    _activeCues.Add(new ActiveCue { Player = rc.Player, Context = rc.Context });
+                    rc.IsStarted = true;
+                }
+
+                float range = Mathf.Max(0.0001f, rc.EndProgress - rc.StartProgress);
+                float t = Mathf.Clamp01((progress01 - rc.StartProgress) / range);
+
+                if (!rc.IsBurst)
+                    rc.Player.TickProgress(t);
+
+                if (progress01 >= rc.EndProgress)
+                {
+                    rc.Player.Stop();
+                    for (int a = _activeCues.Count - 1; a >= 0; a--)
+                        if (ReferenceEquals(_activeCues[a].Player, rc.Player)) { _activeCues.RemoveAt(a); break; }
+                    rc.IsStopped = true;
+                }
+
+                _rangedCues[i] = rc;
+            }
+        }
+
+        /// <summary>
+        /// Gracefully stops any active cue with trigger
+        /// <c>"onDuringAction"</c> (Phase 1 legacy path) and any pending or
+        /// active progress-ranged cue (Phase 2). Safe to call when no
+        /// during-action cues are running.
+        /// </summary>
+        public void StopDuringAction(string stepId)
+        {
+            for (int i = _activeCues.Count - 1; i >= 0; i--)
+            {
+                var entry = _activeCues[i].Context.Entry;
+                if (entry == null) continue;
+                if (!string.Equals(entry.trigger, "onDuringAction", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                _activeCues[i].Player.Stop();
+                _activeCues.RemoveAt(i);
+            }
+
+            for (int i = 0; i < _rangedCues.Count; i++)
+            {
+                var rc = _rangedCues[i];
+                if (rc.IsStarted && !rc.IsStopped && rc.Player != null)
+                    rc.Player.Stop();
+            }
+            _rangedCues.Clear();
+            _lastToolProgress = 0f;
+        }
+
+        private static bool HasProgressRange(AnimationCueEntry e)
+        {
+            // Both zero = unset = legacy full-range onDuringAction.
+            if (e.startProgress == 0f && e.endProgress == 0f) return false;
+            return true;
+        }
+
+        private static float ResolveEndProgress(AnimationCueEntry e)
+        {
+            if (e.endProgress <= 0f) return 1f;
+            return Mathf.Clamp01(e.endProgress);
+        }
+
+        private static bool IsBurstType(string type)
+        {
+            // Burst types fire once at startProgress and don't receive
+            // TickProgress updates. Everything else is a tween.
+            return string.Equals(type, "particle",   StringComparison.OrdinalIgnoreCase)
+                || string.Equals(type, "clickPop",   StringComparison.OrdinalIgnoreCase)
+                || string.Equals(type, "drawSpline", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
         /// Common helper: instantiate and start all cues that match <paramref name="trigger"/>
         /// (and optionally filter by <paramref name="matchId"/> when non-null).
         /// Skips cues whose targets cannot be resolved.
@@ -336,9 +592,7 @@ namespace OSE.UI.Root
                 if (matchId != null)
                 {
                     bool idMatch;
-                    if (g.HostKind == HostKind.Part)
-                        idMatch = string.Equals(g.HostId, matchId, StringComparison.Ordinal);
-                    else if (g.HostKind == HostKind.Subassembly)
+                    if (g.HostKind == HostKind.Part || g.HostKind == HostKind.Subassembly || g.HostKind == HostKind.Tool)
                         idMatch = string.Equals(g.HostId, matchId, StringComparison.Ordinal);
                     else
                         idMatch = (entry.targetPartIds != null && System.Array.IndexOf(entry.targetPartIds, matchId) >= 0)
@@ -356,6 +610,7 @@ namespace OSE.UI.Root
                 {
                     HostKind.Part        => ResolveHostedPartContext(g.HostId, entry, step),
                     HostKind.Subassembly => ResolveHostedSubassemblyContext(g.HostId, entry, step),
+                    HostKind.Tool        => ResolveHostedToolContext(g.HostId, entry, step),
                     _                    => ResolveContext(entry, step),
                 };
                 if (context.Targets == null || context.Targets.Count == 0)
@@ -460,7 +715,7 @@ namespace OSE.UI.Root
             }
         }
 
-        private enum HostKind { Step, Part, Subassembly }
+        private enum HostKind { Step, Part, Subassembly, Tool }
 
         private struct GatheredCue
         {
@@ -540,6 +795,36 @@ namespace OSE.UI.Root
                         var e = sub.animationCues[k];
                         if (!MatchesStepScope(e, step.id)) continue;
                         out_.Add(new GatheredCue { Entry = e, HostKind = HostKind.Subassembly, HostId = sub.id });
+                    }
+                }
+            }
+
+            // Tool-hosted cues — gated by the step's requiredToolActions so a
+            // tool's cues only fire when that tool is actually in use this
+            // step. Tools don't have a "visibility" concept like parts; the
+            // step's tool-action list is the authoritative signal.
+            var reqActions = step.requiredToolActions;
+            if (reqActions != null && reqActions.Length > 0 && package.tools != null)
+            {
+                for (int i = 0; i < package.tools.Length; i++)
+                {
+                    var tool = package.tools[i];
+                    if (tool == null || string.IsNullOrEmpty(tool.id) || tool.animationCues == null || tool.animationCues.Length == 0)
+                        continue;
+
+                    bool toolInUse = false;
+                    for (int a = 0; a < reqActions.Length; a++)
+                    {
+                        if (reqActions[a] != null && string.Equals(reqActions[a].toolId, tool.id, StringComparison.Ordinal))
+                        { toolInUse = true; break; }
+                    }
+                    if (!toolInUse) continue;
+
+                    for (int k = 0; k < tool.animationCues.Length; k++)
+                    {
+                        var e = tool.animationCues[k];
+                        if (!MatchesStepScope(e, step.id)) continue;
+                        out_.Add(new GatheredCue { Entry = e, HostKind = HostKind.Tool, HostId = tool.id });
                     }
                 }
             }
@@ -639,6 +924,31 @@ namespace OSE.UI.Root
 
             targets.Add(root);
             var t = root.transform;
+            var pose = new AnimationCueResolvedPose { Position = t.localPosition, Rotation = t.localRotation, Scale = t.localScale };
+            startPoses.Add(pose);
+            assembledPoses.Add(pose);
+
+            return new AnimationCueContext(entry, targets, startPoses, assembledPoses, DurationOrDefault(entry), null);
+        }
+
+        /// <summary>
+        /// Tool-hosted cue target: the active tool's cursor preview GO
+        /// resolved via <see cref="ToolCursorManager.ToolPreview"/>. When
+        /// no preview is live (e.g. step hasn't activated the tool yet),
+        /// returns an empty context so the scheduler skips the cue.
+        /// </summary>
+        private AnimationCueContext ResolveHostedToolContext(string toolId, AnimationCueEntry entry, StepDefinition step)
+        {
+            var targets = new List<GameObject>();
+            var startPoses = new List<AnimationCueResolvedPose>();
+            var assembledPoses = new List<AnimationCueResolvedPose>();
+
+            GameObject toolGo = _ctx.CursorManager?.ToolPreview;
+            if (toolGo == null)
+                return new AnimationCueContext(entry, targets, startPoses, assembledPoses, DurationOrDefault(entry), null);
+
+            targets.Add(toolGo);
+            var t = toolGo.transform;
             var pose = new AnimationCueResolvedPose { Position = t.localPosition, Rotation = t.localRotation, Scale = t.localScale };
             startPoses.Add(pose);
             assembledPoses.Add(pose);

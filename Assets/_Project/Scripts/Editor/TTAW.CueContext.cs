@@ -32,7 +32,7 @@ namespace OSE.Editor
         {
             if (step == null || string.IsNullOrEmpty(partId)) return;
             DrawTimingPanelsStrip(step, CueScope.Part, partId,
-                title: $"ANIMATION CUES FOR  {partId}");
+                title: $"ANIMATION & EFFECT CUES FOR  {partId}");
         }
 
         private void DrawCuesForTool(StepDefinition step, string toolId)
@@ -49,7 +49,7 @@ namespace OSE.Editor
                 }
             }
             DrawTimingPanelsStrip(step, CueScope.Tool, toolId,
-                title: $"ANIMATION CUES FOR  {toolName}");
+                title: $"ANIMATION & EFFECT CUES FOR  {toolName}");
         }
 
         private void DrawCuesForSubassembly(StepDefinition step, string subassemblyId)
@@ -61,7 +61,7 @@ namespace OSE.Editor
                 subName = sub.GetDisplayName();
 
             DrawTimingPanelsStrip(step, CueScope.Subassembly, subassemblyId,
-                title: $"ANIMATION CUES FOR  {subName}");
+                title: $"ANIMATION & EFFECT CUES FOR  {subName}");
         }
 
         // ── Row-level cue-count badges (inline affordance on list rows) ──────

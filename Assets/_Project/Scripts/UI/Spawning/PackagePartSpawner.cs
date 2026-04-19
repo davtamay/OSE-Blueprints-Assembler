@@ -25,6 +25,12 @@ namespace OSE.UI.Root
     public sealed class PackagePartSpawner : MonoBehaviour, Interaction.ISpawnerQueryService, IStepAwarePositioner
     {
         private const string SamplePartName = "Sample Beam";
+
+        // Neutral steel-grey used when an imported GLB ships without any
+        // material bound. Not meant as a "correct" colour — just enough to
+        // make the part visible and interactive while the author re-exports
+        // the asset. A warning is logged on first fallback per-owner.
+        private static readonly Color FallbackPartColor = new Color(0.62f, 0.62f, 0.64f, 1f);
         private PreviewSceneSetup _setup;
         private MachinePackageDefinition _currentPackage;
         private PackagePreviewConfig _currentPreviewConfig;
@@ -764,6 +770,9 @@ namespace OSE.UI.Root
 
                 // Swap placeholder for real model
                 loaded.name = partDef.id;
+                // Fill null material slots BEFORE MarkAsImported so the cache
+                // snapshot captures the fallback as the "original."
+                MaterialHelper.EnsureFallbackMaterialForImported(loaded, FallbackPartColor);
                 MaterialHelper.MarkAsImported(loaded);
                 if (Application.isPlaying)
                     TryEnableXRGrabInteractable(loaded, partDef.grabConfig);
@@ -860,6 +869,7 @@ namespace OSE.UI.Root
 
                 if (go != null)
                 {
+                    MaterialHelper.EnsureFallbackMaterialForImported(go, FallbackPartColor);
                     MaterialHelper.MarkAsImported(go);
                 }
                 else

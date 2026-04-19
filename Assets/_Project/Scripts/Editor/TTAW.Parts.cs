@@ -223,13 +223,20 @@ namespace OSE.Editor
                         }
                     }
 
-                    if (currentStepActsOnPart
+                    // Read live from in-memory edit state when either:
+                    //   • the current step acts on this part (user is authoring
+                    //     this step's placement), OR
+                    //   • this is the SELECTED part and we're in a global
+                    //     Start/Assembled edit mode (user is authoring the
+                    //     part's pose at a step that treats it as a
+                    //     past-placed visual — e.g. the rod on step 56).
+                    // Without the second clause, edits to any non-task part
+                    // snap back to the baked PoseTable value on the next
+                    // Sync tick, because the baked table was computed at
+                    // load and doesn't reflect the in-memory edit.
+                    if ((currentStepActsOnPart || isSelectedPart)
                         && (_editingPoseMode == PoseModeStart || _editingPoseMode == PoseModeAssembled))
                     {
-                        // Read directly from the in-memory edit state — the
-                        // PoseTable is baked at load time and will return the
-                        // stale value, snapping the part back as soon as the
-                        // user tries to move it in Start/Assembled mode.
                         bool useAssembled = _editingPoseMode == PoseModeAssembled;
                         pos = useAssembled ? p.assembledPosition : p.startPosition;
                         rot = useAssembled ? p.assembledRotation : p.startRotation;

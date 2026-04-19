@@ -127,29 +127,32 @@ namespace OSE.UI.Root
                     _totalRotDelta[i] = Quaternion.Inverse(_fromPoses[i].Rotation)
                                         * _toPoses[i].Rotation;
 
-                    // Snapshot each child's local pose — INCLUDE inactive
-                    // children as long as they have an authored (non-zero)
-                    // localPosition. Inactive members represent parts not
-                    // yet revealed; they must still move with the rotation
-                    // so when a future step makes them visible they appear
-                    // at the correct rotated position. Children sitting at
-                    // localPosition (0,0,0) are truly unplaced placeholders —
-                    // skip them so the pivot math doesn't snap them off origin.
+                    // Snapshot every ACTIVE child. Inactive children (e.g. bolts
+                    // that haven't been introduced yet on a shake-test step) are
+                    // NOT children the runtime should animate — they're hidden,
+                    // and writing to their transforms during Tick/Stop leaves
+                    // them at rotated positions that persist across navigation.
+                    // Repeated passes through the cue would compound rotations
+                    // on each hidden child, so they land at unpredictable poses
+                    // when they finally become visible on their introduction
+                    // step. Matches the ComputeChildrenCentroidLocal filter.
+                    //
+                    // At-origin active children are still included: they're
+                    // legitimate members sitting at the group centroid, and
+                    // skipping them would leave them un-rotated while siblings
+                    // rotate — the original "mixed pre/post pose" symptom.
                     int kids = 0;
                     for (int c = 0; c < t.childCount; c++)
                     {
-                        var c_ = t.GetChild(c);
-                        if (c_ == null) continue;
-                        if (c_.localPosition.sqrMagnitude < 0.0001f) continue;
-                        kids++;
+                        var cc = t.GetChild(c);
+                        if (cc != null && cc.gameObject.activeInHierarchy) kids++;
                     }
                     var baselines = new ChildBaseline[kids];
                     int bi = 0;
                     for (int c = 0; c < t.childCount; c++)
                     {
                         var ch = t.GetChild(c);
-                        if (ch == null) continue;
-                        if (ch.localPosition.sqrMagnitude < 0.0001f) continue;
+                        if (ch == null || !ch.gameObject.activeInHierarchy) continue;
                         baselines[bi++] = new ChildBaseline
                         {
                             t = ch,
@@ -278,25 +281,69 @@ namespace OSE.UI.Root
         {
             IsPlaying = false;
 
-            // Authored opt-in: when true, leave children at their final
-            // animated pose. Otherwise revert to baseline (default).
-            bool hold = _ctx.Entry != null && _ctx.Entry.holdAtEnd;
+            // Pose-transform invariant: end at either fromPose (0) or
+            // toPose (1), never in-between. When Tick reached full
+            // progress, the cue's natural end state is toPose — keep it.
+            // When Stop is called mid-animation (step change / cancel),
+            // revert to fromPose so the target is in a clean unstarted
+            // state before the next step's cues take over. The
+            // holdAtEnd authored flag forces the toPose end even on
+            // mid-animation interrupt (legacy semantics).
+            bool completed = _ctx.Duration > 0f && _elapsed >= _ctx.Duration;
+            bool hold      = _ctx.Entry != null && _ctx.Entry.holdAtEnd;
+            bool keepTo    = completed || hold;
 
             for (int i = 0; i < _ctx.Targets.Count; i++)
             {
                 if (_ctx.Targets[i] == null || i >= _fromPoses.Length) continue;
                 var t = _ctx.Targets[i].transform;
 
-                if (!hold)
+                if (keepTo)
                 {
-                    // Restore to fromPose so other editor systems aren't
-                    // confused by a displaced root.
+                    // Natural completion — land at toPose DETERMINISTICALLY.
+                    //
+                    // Group target (has baselines): write each animated
+                    // child to its final rotated pose using the SAME
+                    // rotation delta formula Tick uses at progress=1:
+                    // dRot = toRot * inv(fromRot). The Start-time field
+                    // `_totalRotDelta` uses the reverse order and produces
+                    // a different rotation — do NOT reuse it here, or
+                    // Stop will overwrite Tick's correct last-frame
+                    // writes with a different (wrong) rotation.
+                    //
+                    // Single-part target (no baselines): write toPose
+                    // directly to the root transform.
+                    var baselines = _childBaselines != null && i < _childBaselines.Length ? _childBaselines[i] : null;
+                    if (baselines != null && baselines.Length > 0)
+                    {
+                        Quaternion fromRot = _fromPoses[i].Rotation;
+                        Quaternion toRot   = _toPoses[i].Rotation;
+                        Quaternion dRot    = toRot * Quaternion.Inverse(fromRot);
+                        Vector3 C = _pivotsLocal[i];
+                        for (int k = 0; k < baselines.Length; k++)
+                        {
+                            var ch = baselines[k].t;
+                            if (ch == null) continue;
+                            ch.localPosition = C + dRot * (baselines[k].localPos - C);
+                            ch.localRotation = dRot * baselines[k].localRot;
+                        }
+                    }
+                    else
+                    {
+                        t.localPosition = _toPoses[i].Position;
+                        t.localRotation = _toPoses[i].Rotation;
+                        if (_toPoses[i].Scale.sqrMagnitude > 0.001f)
+                            t.localScale = _toPoses[i].Scale;
+                    }
+                }
+                else
+                {
+                    // Mid-animation teardown: revert to fromPose.
                     t.localPosition = _fromPoses[i].Position;
                     t.localRotation = _fromPoses[i].Rotation;
                     if (_fromPoses[i].Scale.sqrMagnitude > 0.001f)
                         t.localScale = _fromPoses[i].Scale;
 
-                    // Restore each child's baseline local pose.
                     var baselines = _childBaselines != null && i < _childBaselines.Length ? _childBaselines[i] : null;
                     if (baselines != null)
                     {
@@ -309,9 +356,6 @@ namespace OSE.UI.Root
                         }
                     }
                 }
-                // When hold == true: leave children/target at whatever pose
-                // the last Tick wrote. Subsequent step transitions will
-                // re-establish positions via the normal spawner refresh.
 
                 // Always restore Rigidbody kinematic state — that's a
                 // control concern, not a pose concern.

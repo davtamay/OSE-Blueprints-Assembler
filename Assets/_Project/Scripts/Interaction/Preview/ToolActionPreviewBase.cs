@@ -1,4 +1,5 @@
 using UnityEngine;
+using OSE.Content;
 
 namespace OSE.Interaction
 {
@@ -49,9 +50,13 @@ namespace OSE.Interaction
             Vector2 expected = GetExpectedDragDirection(_ctx);
             float dot = Vector2.Dot(dragDelta, expected);
 
+            float dragScale    = Override(Cfg?.guidedDragScale ?? 0f, GuidedDragScale);
+            float assistDelay  = Override(Cfg?.autoAssistDelay ?? 0f, AutoAssistDelay);
+            float assistRate   = Override(Cfg?.autoAssistRate  ?? 0f, AutoAssistRate);
+
             if (dot > 0f)
             {
-                _guidedProgress += dot * GuidedDragScale;
+                _guidedProgress += dot * dragScale;
                 _autoAssistTimer = 0f;
             }
             else
@@ -59,8 +64,8 @@ namespace OSE.Interaction
                 _autoAssistTimer += deltaTime;
             }
 
-            if (_autoAssistTimer >= AutoAssistDelay)
-                _guidedProgress += AutoAssistRate * deltaTime;
+            if (_autoAssistTimer >= assistDelay)
+                _guidedProgress += assistRate * deltaTime;
 
             _guidedProgress = Mathf.Clamp01(_guidedProgress);
             ApplyEffects(_guidedProgress);
@@ -81,5 +86,28 @@ namespace OSE.Interaction
         /// full contract.
         /// </summary>
         public virtual Vector3 ComputeOverlayOffset(float progress) => Vector3.zero;
+
+        // ── Per-action override helpers ──────────────────────────────────
+        //
+        // Each preview class authors its hardcoded constants (Duration,
+        // wobble amp, spark thresholds, colours, etc.) as fallbacks. When a
+        // ToolActionDefinition carries a ToolActionPreviewConfig, authored
+        // values override the defaults. Sentinel convention: 0 for floats,
+        // alpha=0 for colours → "use fallback". Matches the Phase-1/2
+        // convention (particleScale==0 → 1.0, etc.) and avoids needing an
+        // explicit per-field "override?" boolean.
+
+        /// <summary>Returns <paramref name="authored"/> when &gt; 0, else <paramref name="fallback"/>.</summary>
+        protected static float Override(float authored, float fallback)
+            => authored > 0f ? authored : fallback;
+
+        /// <summary>Returns <paramref name="authored"/> when alpha &gt; 0, else <paramref name="fallback"/>.</summary>
+        protected static Color Override(SceneFloat4 authored, Color fallback)
+            => authored.a > 0f
+                ? new Color(authored.r, authored.g, authored.b, authored.a)
+                : fallback;
+
+        /// <summary>Access the config on the active context, or null when no action is associated.</summary>
+        protected ToolActionPreviewConfig Cfg => _ctx.PreviewConfig;
     }
 }

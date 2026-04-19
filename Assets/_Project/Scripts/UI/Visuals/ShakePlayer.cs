@@ -18,6 +18,8 @@ namespace OSE.UI.Root
         private const float DefaultAmplitude = 0.01f;  // 1 cm
         private const float DefaultFrequency = 3f;     // Hz — 8 was nauseating; 3 is perceptible but smooth
 
+        private enum ShakeMode { Sine, Positive, Slide }
+
         public string AnimationType => "shake";
         public bool IsPlaying { get; private set; }
 
@@ -27,6 +29,7 @@ namespace OSE.UI.Root
         private Vector3[] _originLocalPositions;
         private Vector3 _axis;
         private float _elapsed;
+        private ShakeMode _mode;
 
         public void Start(AnimationCueContext context)
         {
@@ -37,6 +40,7 @@ namespace OSE.UI.Root
             var entry = context.Entry;
             _amplitude = entry.shakeAmplitude > 0f ? entry.shakeAmplitude : DefaultAmplitude;
             _frequency = entry.shakeFrequency > 0f ? entry.shakeFrequency : DefaultFrequency;
+            _mode      = ParseMode(entry.shakeMode);
 
             // Resolve shake axis from authored SceneFloat3; fall back to side-to-side
             bool hasAxis = entry.shakeAxis.x != 0f || entry.shakeAxis.y != 0f || entry.shakeAxis.z != 0f;
@@ -60,7 +64,35 @@ namespace OSE.UI.Root
 
             _elapsed += deltaTime;
 
-            float displacement = _amplitude * Mathf.Sin(_elapsed * _frequency * Mathf.PI * 2f);
+            float displacement;
+            switch (_mode)
+            {
+                case ShakeMode.Positive:
+                    // Half-wave rectified: always in the axis's positive
+                    // direction. Rod-slide style: out-and-back each cycle.
+                    displacement = _amplitude * Mathf.Abs(Mathf.Sin(_elapsed * _frequency * Mathf.PI * 2f));
+                    break;
+
+                case ShakeMode.Slide:
+                {
+                    // Single out-and-back pulse over the cue's Duration.
+                    // Smoothstep ramps 0 → 1 over the first half, 1 → 0 over
+                    // the second half. If Duration is 0 (indefinite), the
+                    // pulse runs over 1 s as a sensible default cadence.
+                    float pulseLen = _ctx.Duration > 0f ? _ctx.Duration : 1f;
+                    float t = Mathf.Clamp01(_elapsed / pulseLen);
+                    float pulse = t < 0.5f
+                        ? Mathf.SmoothStep(0f, 1f, t * 2f)
+                        : Mathf.SmoothStep(1f, 0f, (t - 0.5f) * 2f);
+                    displacement = _amplitude * pulse;
+                    break;
+                }
+
+                case ShakeMode.Sine:
+                default:
+                    displacement = _amplitude * Mathf.Sin(_elapsed * _frequency * Mathf.PI * 2f);
+                    break;
+            }
 
             for (int i = 0; i < _ctx.Targets.Count; i++)
             {
@@ -76,13 +108,26 @@ namespace OSE.UI.Root
             return true;
         }
 
+        private static ShakeMode ParseMode(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return ShakeMode.Sine;
+            if (string.Equals(s, "positive", System.StringComparison.OrdinalIgnoreCase)) return ShakeMode.Positive;
+            if (string.Equals(s, "slide",    System.StringComparison.OrdinalIgnoreCase)) return ShakeMode.Slide;
+            return ShakeMode.Sine;
+        }
+
         public void Stop()
         {
-            if (!IsPlaying) return;
+            // Always restore, even after Tick set IsPlaying=false on natural
+            // completion. Previously the early-return here skipped the
+            // restore when the cue finished normally, leaving the target
+            // at whatever sine-wave displacement the last Tick produced.
+            // Contributed to the pose-accumulation bug when stepping
+            // forwards / backwards through steps.
             IsPlaying = false;
 
-            // Restore each target to its origin position
-            for (int i = 0; i < _ctx.Targets.Count; i++)
+            if (_originLocalPositions == null) return;
+            for (int i = 0; i < _ctx.Targets.Count && i < _originLocalPositions.Length; i++)
             {
                 if (_ctx.Targets[i] != null)
                     _ctx.Targets[i].transform.localPosition = _originLocalPositions[i];

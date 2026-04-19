@@ -39,30 +39,10 @@
     {
       "id": "subassembly_electronics_wiring",
       "name": "Electronics and Wiring",
-      "stepIds": [
-        "step_mount_control_panel",
-        "step_install_ramps_board",
-        "step_secure_control_panel",
-        "step_connect_psu_12v",
-        "step_connect_psu_gnd",
-        "step_connect_psu_atx_enable",
-        "step_verify_psu_connections",
-        "step_connect_x_motor",
-        "step_connect_y_left_motor",
-        "step_connect_y_right_motor",
-        "step_connect_z_front_motor",
-        "step_connect_z_back_motor",
-        "step_connect_x_endstop",
-        "step_connect_y_endstop",
-        "step_connect_z_endstop",
-        "step_connect_heater_cartridge",
-        "step_connect_thermistor",
-        "step_connect_extruder_fan",
-        "step_route_cables_chain"
-      ],
+      "stepIds": [ "step_mount_control_panel", "step_install_ramps_board", "step_secure_control_panel", "step_connect_psu_12v", "step_connect_psu_gnd", "step_connect_psu_atx_enable", "step_verify_psu_connections", "step_connect_x_motor", "step_connect_y_left_motor", "step_connect_y_right_motor", "step_connect_z_front_motor", "step_connect_z_back_motor", "step_connect_x_endstop", "step_connect_y_endstop", "step_connect_z_endstop", "step_connect_heater_cartridge", "step_connect_thermistor", "step_connect_extruder_fan", "step_route_cables_chain" ],
       "assemblyId": "assembly_d3d_electronics",
       "description": "Control panel, RAMPS board, PSU wiring, motor connectors, endstops, and extruder electronics."
-    }
+  }
   ],
   "parts": [
     {

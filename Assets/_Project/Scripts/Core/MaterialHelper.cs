@@ -446,6 +446,85 @@ namespace OSE.Core
             }
         }
 
+        // Cached fallback material for imported GLBs that ship without any
+        // material bound (Blender export without a valid PBR graph, for
+        // example). Cached so repeated fallbacks on a dozen instances of the
+        // same bad GLB share one material instead of leaking one per slot.
+        private static readonly Dictionary<int, Material> _fallbackCacheMap =
+            new Dictionary<int, Material>();
+
+        // Logged-once per asset family so we don't spam the console — the
+        // message is meant to flag an authoring regression, not tell the
+        // author about it every frame.
+        private static readonly HashSet<string> _fallbackWarnedOwners = new HashSet<string>();
+
+        /// <summary>
+        /// Scans every renderer under <paramref name="target"/> and fills any
+        /// null material slots with a cached URP/Lit fallback in
+        /// <paramref name="fallbackColor"/>. Intended for imported GLBs that
+        /// shipped without materials — without this they render as Unity's
+        /// missing-material pink (or worse, invisible on some pipelines).
+        /// Existing non-null slots are left alone, so the fix is a no-op on
+        /// correctly authored assets. Call right after <see cref="MarkAsImported"/>
+        /// so the <see cref="OriginalMaterialCache"/> snapshot captures the
+        /// fallback as the "original" for future Restore calls.
+        /// </summary>
+        public static bool EnsureFallbackMaterialForImported(GameObject target, Color fallbackColor)
+        {
+            if (target == null) return false;
+            var renderers = GetRenderers(target);
+            if (renderers == null || renderers.Length == 0) return false;
+
+            bool anyFilled = false;
+            foreach (var renderer in renderers)
+            {
+                if (renderer == null) continue;
+                if (renderer.gameObject.name == OutlineChildName) continue;
+
+                var slots = renderer.sharedMaterials;
+                if (slots == null || slots.Length == 0) continue;
+
+                bool dirty = false;
+                for (int i = 0; i < slots.Length; i++)
+                {
+                    if (slots[i] != null) continue;
+                    slots[i] = GetOrCreateFallback(fallbackColor);
+                    dirty = true;
+                    anyFilled = true;
+                }
+                if (dirty)
+                    renderer.sharedMaterials = slots;
+            }
+
+            if (anyFilled && _fallbackWarnedOwners.Add(target.name))
+            {
+                Debug.LogWarning($"[MaterialHelper] '{target.name}' GLB has null material slot(s); applied fallback. " +
+                                 "Re-export the asset from Blender with a bound PBR material to fix at the source.");
+            }
+            return anyFilled;
+        }
+
+        private static Material GetOrCreateFallback(Color color)
+        {
+            int key = TintCacheKey("OSE_FallbackMaterial", color);
+            if (_fallbackCacheMap.TryGetValue(key, out var cached) && cached != null)
+                return cached;
+
+            var mat = CreateUrpMaterial("OSE_FallbackMaterial");
+            if (mat == null) return null;
+
+            SetBaseColor(mat, color);
+            // Moderate metallic + low smoothness reads as "mild steel-ish"
+            // for the common case (frame bars, brackets) without looking
+            // like a deliberate material choice — the warning log nudges
+            // authors to fix the GLB rather than normalize around this.
+            if (mat.HasProperty("_Metallic"))  mat.SetFloat("_Metallic", 0.4f);
+            if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.35f);
+
+            _fallbackCacheMap[key] = mat;
+            return mat;
+        }
+
         /// <summary>
         /// Sets emission glow on existing materials without affecting base color.
         /// Supports both URP/Lit (<c>_EmissionColor</c> + <c>_EMISSION</c>) and

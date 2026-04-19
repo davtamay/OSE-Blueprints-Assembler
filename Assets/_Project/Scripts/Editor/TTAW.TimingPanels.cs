@@ -32,6 +32,7 @@ namespace OSE.Editor
         {
             ("onActivate",         "First to Show",              false),
             ("afterDelay",         "Show During",                false),
+            ("onDuringAction",     "During Tool Action",         false),
             ("onStepComplete",     "Show once step completed",   false),
             ("onTaskComplete",     "Show once task completed",   false),
             ("onFirstInteraction", "On First Interaction",       true),
@@ -47,6 +48,18 @@ namespace OSE.Editor
             ("pulse",                 "Pulse"),
             ("demonstratePlacement",  "Demonstrate Placement"),
             ("poseTransition",        "Pose Transition"),
+            ("particle",              "Particle Effect…"),
+            // Phase 2 effect cues — tool-preview parity.
+            ("emissionPulse",         "Emission Pulse"),
+            ("colorTween",            "Color Tween"),
+            ("materialFade",          "Material Fade (hot→cool)"),
+            ("clickPop",              "Click Pop"),
+            ("poseWobble",            "Pose Wobble"),
+            ("toolVibration",         "Tool Vibration"),
+            ("lineBetweenAnchors",    "Line Between Anchors"),
+            ("drawSpline",            "Draw Spline Path"),
+            ("measureLine",           "Measure Line"),
+            ("screwSpin",             "Screw Spin"),
             ("animationClip",         "Animation Clip…"),
         };
 
@@ -108,39 +121,26 @@ namespace OSE.Editor
                 }
                 case CueScope.Tool:
                 {
-                    // Legacy step-level storage — ToolDefinition doesn't own
-                    // animationCues yet. Runtime reads host-owned cues only,
-                    // so tool cues authored here don't fire until the tool
-                    // host migration lands (TODO).
-                    var payload = step.animationCues ?? (step.animationCues =
-                        new StepAnimationCuePayload { cues = Array.Empty<AnimationCueEntry>() });
-                    var capturedStep = step;
+                    if (_pkg == null || !_pkg.TryGetTool(scopeKey, out var tool) || tool == null)
+                        return default;
+                    var captured = tool;
                     return new HostCueStorage(
-                        cues: payload.cues,
-                        setter: arr => capturedStep.animationCues.cues = arr,
-                        markDirty: () => _dirtyStepIds.Add(capturedStep.id),
-                        isHostOwned: false);
+                        cues: captured.animationCues,
+                        setter: arr => captured.animationCues = arr,
+                        markDirty: () => _dirtyToolIds.Add(captured.id),
+                        isHostOwned: true);
                 }
             }
             return default;
         }
 
-        // Tool cues are filtered by targetToolIds (legacy). Host-owned cues
-        // are already stored on the host — only filter by stepIds, which
-        // defines which steps the cue applies to (empty = always-on).
+        // All three scopes (Part / Subassembly / Tool) are now host-owned —
+        // the cue is stored on the host itself, and stepIds gates which
+        // steps it fires on (empty = always-on wherever the host is live).
         private static bool CueAppliesHere(AnimationCueEntry c, StepDefinition step,
             CueScope scope, string scopeKey)
         {
             if (c == null) return false;
-            if (scope == CueScope.Tool)
-            {
-                if (c.targetToolIds == null) return false;
-                foreach (var t in c.targetToolIds)
-                    if (string.Equals(t, scopeKey, StringComparison.Ordinal)) return true;
-                return false;
-            }
-            // Host-owned (Part/Subassembly): cue is stored on the host itself,
-            // stepIds gates which steps it fires on.
             if (c.stepIds == null || c.stepIds.Length == 0) return true;
             foreach (var sid in c.stepIds)
                 if (string.Equals(sid, step.id, StringComparison.Ordinal)) return true;
@@ -171,7 +171,37 @@ namespace OSE.Editor
             GUI.Label(new Rect(headerRect.x + 8f, headerRect.y, headerRect.width - 160f, headerRect.height),
                       title, titleStyle);
 
-            var addBtnRect = new Rect(headerRect.xMax - 150f, headerRect.y + 2f, 146f, headerRect.height - 4f);
+            // Seed-from-preview button, only shown for Tool scope when the
+            // step has a resolvable profile AND no cues currently apply to
+            // this step. Explicit click only — no OnGUI-driven auto-seed,
+            // no delayCall write-loop. Author saves via the normal Save
+            // path when they're ready.
+            string seedProfile = null;
+            if (scope == CueScope.Tool)
+                seedProfile = ResolveToolProfileForStep(step, scopeKey);
+            bool showSeedBtn = !string.IsNullOrEmpty(seedProfile) && !StepHasApplicableCues(step, scope, scopeKey);
+
+            float addBtnWidth = 146f;
+            float addBtnXMax  = headerRect.xMax - 4f;
+            if (showSeedBtn)
+            {
+                var seedRect = new Rect(addBtnXMax - 118f, headerRect.y + 2f, 118f, headerRect.height - 4f);
+                var seedStyle = new GUIStyle(EditorStyles.miniButton)
+                {
+                    fontStyle = FontStyle.Normal,
+                    normal    = { textColor = CueContextAccent },
+                };
+                if (GUI.Button(seedRect,
+                    new GUIContent($"Seed from {seedProfile} ▾",
+                        $"Append the cue stack that reproduces the live {seedProfile} preview. Review, then Save to persist."),
+                    seedStyle))
+                {
+                    PopulateFromToolPreview(step, scope, scopeKey, seedProfile);
+                }
+                addBtnXMax -= 122f;
+            }
+
+            var addBtnRect = new Rect(addBtnXMax - addBtnWidth, headerRect.y + 2f, addBtnWidth, headerRect.height - 4f);
             var addStyle   = new GUIStyle(EditorStyles.miniButton)
             {
                 fontStyle = FontStyle.Bold,
@@ -479,15 +509,17 @@ namespace OSE.Editor
                     else
                     {
                         Debug.Log($"[TTAW] Play preview: step='{step?.id}' scope={scope} host='{scopeKey}' cueIdx={cueIdx} type='{cue.type}'");
-                        // Host-owned cues (Part/Subassembly) use the host-aware
-                        // preview so target resolution matches runtime. Tool
-                        // scope still reads from step storage via legacy path.
-                        if (scope == CueScope.Tool)
-                            StartCuePreview(step, cueIdx);
-                        else
-                            StartHostCuePreview(cue, cueIdx, step,
-                                scope == CueScope.Part ? "part" : "subassembly",
-                                scopeKey);
+                        // All three scopes are host-owned now — route them
+                        // through the same host-aware preview so target
+                        // resolution matches runtime.
+                        string hostKindStr = scope switch
+                        {
+                            CueScope.Part        => "part",
+                            CueScope.Tool        => "tool",
+                            CueScope.Subassembly => "subassembly",
+                            _                    => "part",
+                        };
+                        StartHostCuePreview(cue, cueIdx, step, hostKindStr, scopeKey);
                     }
                     Repaint();
                 }
@@ -616,7 +648,7 @@ namespace OSE.Editor
             // them (the host is the target).
             if (!storage.isHostOwned)
                 ApplyScope(cue, scope, scopeKey);
-            ApplyTypeDefaults(cue);
+            ApplyTypeDefaults(cue, step, scope);
 
             var list = new List<AnimationCueEntry>(storage.cues);
             list.Add(cue);
@@ -684,7 +716,7 @@ namespace OSE.Editor
             }
         }
 
-        private static void ApplyTypeDefaults(AnimationCueEntry cue)
+        private static void ApplyTypeDefaults(AnimationCueEntry cue, StepDefinition step, CueScope scope)
         {
             switch (cue.type)
             {
@@ -705,7 +737,148 @@ namespace OSE.Editor
                 case "poseTransition":
                     cue.spinAxis = new SceneFloat3 { x = 0f, y = 1f, z = 0f };
                     break;
+                case "particle":
+                    cue.particleSourceMode = "preset";
+                    cue.particleScale      = 1f;
+                    cue.particlePresetId   = DefaultParticlePresetFor(step, scope);
+                    break;
+
+                // ── Phase 2: effect-cue defaults ─────────────────────────
+                //
+                // These seed field values that match the existing C# tool
+                // previews so an author adding, say, a poseWobble to a Weld
+                // tool sees the same amplitude/frequency WeldPreview uses.
+                // Trigger defaults to onDuringAction for tool-scope effect
+                // cues — the common case.
+
+                case "emissionPulse":
+                    if (scope == CueScope.Tool) cue.trigger = "onDuringAction";
+                    SeedEmissionDefaults(cue, step, scope);
+                    break;
+
+                case "colorTween":
+                    cue.fromColor = new SceneFloat4 { r = 0.85f, g = 0.82f, b = 0.72f, a = 1f };
+                    cue.toColor   = new SceneFloat4 { r = 0.55f, g = 0.55f, b = 0.52f, a = 1f };
+                    break;
+
+                case "materialFade":
+                    if (scope == CueScope.Tool) cue.trigger = "onStepComplete";
+                    cue.fromColor    = new SceneFloat4 { r = 0.85f, g = 0.82f, b = 0.72f, a = 1f };
+                    cue.toColor      = new SceneFloat4 { r = 0.55f, g = 0.55f, b = 0.52f, a = 1f };
+                    cue.fromEmission = new SceneFloat4 { r = 1.00f, g = 0.90f, b = 0.70f, a = 1f };
+                    cue.toEmission   = new SceneFloat4 { r = 0f,    g = 0f,    b = 0f,    a = 1f };
+                    cue.fromIntensity = 1.5f;
+                    cue.toIntensity   = 0f;
+                    cue.durationSeconds = 2f;
+                    break;
+
+                case "clickPop":
+                    cue.fromColor  = new SceneFloat4 { r = 0.2f, g = 1f, b = 0.4f, a = 0.9f };
+                    cue.pulseScale = 1.8f;
+                    break;
+
+                case "poseWobble":
+                    if (scope == CueScope.Tool) cue.trigger = "onDuringAction";
+                    cue.wobbleAxis      = new SceneFloat3 { x = 1f, y = 1f, z = 0f };
+                    cue.wobbleAmplitude = 0.12f;
+                    cue.wobbleFrequency = 40f;
+                    // Weld wobbles most of the way through the action.
+                    cue.startProgress = 0.05f;
+                    cue.endProgress   = 0.95f;
+                    break;
+
+                case "toolVibration":
+                    if (scope == CueScope.Tool) cue.trigger = "onDuringAction";
+                    cue.vibrationAxes      = new SceneFloat3 { x = 0.0004f, y = 0.00028f, z = 0.0002f };
+                    cue.vibrationFrequency = 55f;
+                    cue.vibrationRampIn    = 0.15f;
+                    cue.vibrationRampOut   = 0.85f;
+                    break;
+
+                case "lineBetweenAnchors":
+                    if (scope == CueScope.Tool) cue.trigger = "onDuringAction";
+                    cue.anchorARef           = "weldStart";
+                    cue.anchorBRef           = "weldEnd";
+                    cue.lineWidth            = 0.004f;
+                    cue.fromColor            = new SceneFloat4 { r = 0.85f, g = 0.82f, b = 0.72f, a = 1f };
+                    cue.fromEmission         = new SceneFloat4 { r = 1f,    g = 0.9f,  b = 0.7f,  a = 1f };
+                    cue.lineEmissionIntensity = 1.5f;
+                    cue.startProgress        = 0.2f;
+                    cue.endProgress          = 0.9f;
+                    break;
+
+                case "drawSpline":
+                    cue.splineAnchorRefs   = new[] { "weldStart", "weldEnd" };
+                    cue.splineRadius       = 0.003f;
+                    cue.splineMetallic     = 0.8f;
+                    cue.splineSmoothness   = 0.6f;
+                    cue.fromColor          = new SceneFloat4 { r = 0.85f, g = 0.82f, b = 0.72f, a = 1f };
+                    break;
+
+                case "measureLine":
+                    cue.anchorARef    = "measureAnchorA";
+                    cue.anchorBRef    = "measureAnchorB";
+                    cue.measureUnit   = "mm";
+                    cue.fromColor     = new SceneFloat4 { r = 1f, g = 0.8f, b = 0.2f, a = 1f };
+                    break;
+
+                case "screwSpin":
+                    if (scope == CueScope.Tool) cue.trigger = "onDuringAction";
+                    cue.spinAngleDegrees = 120f;
+                    cue.spinAxis         = new SceneFloat3 { x = 0f, y = 1f, z = 0f };
+                    break;
             }
+        }
+
+        // Seeds emissionPulse colour defaults that match the tool's
+        // inline-preview glow (weld cyan-white, drill/cut warm, square
+        // green, default neutral warm).
+        private static void SeedEmissionDefaults(AnimationCueEntry cue, StepDefinition step, CueScope scope)
+        {
+            cue.fromEmission  = new SceneFloat4 { r = 0f, g = 0f, b = 0f, a = 1f };
+            cue.toEmission    = new SceneFloat4 { r = 0.9f, g = 0.95f, b = 1f, a = 1f };
+            cue.fromIntensity = 0f;
+            cue.toIntensity   = 1.5f;
+
+            if (scope != CueScope.Tool || step == null || string.IsNullOrEmpty(step.profile)) return;
+
+            string p = step.profile;
+            if (string.Equals(p, "Drill", StringComparison.OrdinalIgnoreCase))
+            {
+                cue.toEmission    = new SceneFloat4 { r = 0.3f, g = 0.7f, b = 1f, a = 1f };
+                cue.toIntensity   = 0.5f;
+            }
+            else if (string.Equals(p, "Cut", StringComparison.OrdinalIgnoreCase))
+            {
+                cue.toEmission    = new SceneFloat4 { r = 1f, g = 0.5f, b = 0.1f, a = 1f };
+                cue.toIntensity   = 1f;
+            }
+            else if (string.Equals(p, "Square", StringComparison.OrdinalIgnoreCase))
+            {
+                cue.toEmission    = new SceneFloat4 { r = 0.1f, g = 0.9f, b = 0.2f, a = 1f };
+                cue.toIntensity   = 2f;
+            }
+        }
+
+        // Maps a step's tool profile to its signature particle preset so
+        // authors adding a particle cue on a Tool host get the aesthetic
+        // that already matches the tool's inline preview (weld_arc for a
+        // weld step, torque_sparks for drill / torque / cut, square_confirm
+        // for square-check). Falls back to torque_sparks so non-tool hosts
+        // still pick up a sensible default.
+        private static string DefaultParticlePresetFor(StepDefinition step, CueScope scope)
+        {
+            if (scope != CueScope.Tool || step == null || string.IsNullOrEmpty(step.profile))
+                return "torque_sparks";
+
+            string p = step.profile;
+            if (string.Equals(p, "Weld",   StringComparison.OrdinalIgnoreCase)) return "weld_arc";
+            if (string.Equals(p, "Glue",   StringComparison.OrdinalIgnoreCase)) return "weld_arc";
+            if (string.Equals(p, "Square", StringComparison.OrdinalIgnoreCase)) return "square_confirm";
+            if (string.Equals(p, "Drill",  StringComparison.OrdinalIgnoreCase)) return "torque_sparks";
+            if (string.Equals(p, "Torque", StringComparison.OrdinalIgnoreCase)) return "torque_sparks";
+            if (string.Equals(p, "Cut",    StringComparison.OrdinalIgnoreCase)) return "torque_sparks";
+            return "torque_sparks";
         }
 
         private static string SummarizeCue(AnimationCueEntry cue)
@@ -714,7 +887,12 @@ namespace OSE.Editor
             switch (cue.type)
             {
                 case "shake":
-                    return $"shake   ·  {cue.shakeAmplitude:0.###} m · {cue.shakeFrequency:0.#} Hz";
+                {
+                    string mode = string.IsNullOrEmpty(cue.shakeMode) ? "sine" : cue.shakeMode;
+                    if (string.Equals(mode, "slide", StringComparison.Ordinal))
+                        return $"shake · slide · {cue.shakeAmplitude:0.###} m";
+                    return $"shake · {mode} · {cue.shakeAmplitude:0.###} m · {cue.shakeFrequency:0.#} Hz";
+                }
                 case "orientSubassembly":
                     return $"rotate   ·  ({cue.subassemblyRotation.x:0}°, {cue.subassemblyRotation.y:0}°, {cue.subassemblyRotation.z:0}°)";
                 case "pulse":
@@ -728,6 +906,43 @@ namespace OSE.Editor
                     int slash = p.LastIndexOf('/');
                     if (slash >= 0) p = p.Substring(slash + 1);
                     return $"clip   ·  {p}";
+                case "particle":
+                {
+                    string mode = string.IsNullOrEmpty(cue.particleSourceMode) ? "?" : cue.particleSourceMode;
+                    string label;
+                    if (mode == "preset")
+                        label = string.IsNullOrEmpty(cue.particlePresetId) ? "(no preset)" : cue.particlePresetId;
+                    else
+                    {
+                        label = cue.particlePrefabRef ?? "(no prefab)";
+                        int sl = label.LastIndexOf('/');
+                        if (sl >= 0) label = label.Substring(sl + 1);
+                    }
+                    return $"particle   ·  {mode}  ·  {label}";
+                }
+                case "emissionPulse":
+                    return $"emissionPulse   ·  {(cue.toIntensity > 0f ? cue.toIntensity : 1f):0.#}×";
+                case "colorTween":
+                    return $"colorTween";
+                case "materialFade":
+                    return $"materialFade (hot→cool)";
+                case "clickPop":
+                    return $"clickPop   ·  ×{(cue.pulseScale > 0f ? cue.pulseScale : 1.8f):0.#}";
+                case "poseWobble":
+                    return $"poseWobble   ·  {(cue.wobbleAmplitude > 0f ? cue.wobbleAmplitude : 0.12f):0.###} rad @ {(cue.wobbleFrequency > 0f ? cue.wobbleFrequency : 40f):0.#} rad/s";
+                case "toolVibration":
+                    return $"toolVibration   ·  {(cue.vibrationFrequency > 0f ? cue.vibrationFrequency : 55f):0.#} Hz";
+                case "lineBetweenAnchors":
+                    return $"line   ·  {cue.anchorARef ?? "?"} → {cue.anchorBRef ?? "?"}";
+                case "drawSpline":
+                {
+                    int n = cue.splineAnchorRefs != null ? cue.splineAnchorRefs.Length : 0;
+                    return $"drawSpline   ·  {n} knot(s)";
+                }
+                case "measureLine":
+                    return $"measureLine   ·  {cue.anchorARef ?? "?"} → {cue.anchorBRef ?? "?"}  ·  {cue.measureUnit ?? "mm"}";
+                case "screwSpin":
+                    return $"screwSpin   ·  {(cue.spinAngleDegrees != 0f ? cue.spinAngleDegrees : 120f):0.#}°";
                 default:
                     return typ;
             }

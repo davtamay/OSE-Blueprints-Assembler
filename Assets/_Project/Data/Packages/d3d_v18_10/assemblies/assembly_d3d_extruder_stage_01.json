@@ -30,28 +30,19 @@
     {
       "id": "subassembly_titan_aero_core",
       "name": "Titan Aero Core",
-      "stepIds": [
-        "step_stage_titan_aero_core",
-        "step_attach_extruder_nozzle_assembly"
-      ],
+      "stepIds": [ "step_stage_titan_aero_core", "step_attach_extruder_nozzle_assembly" ],
       "assemblyId": "assembly_d3d_extruder_stage_01",
       "description": "Stages the Titan Aero core and adds the nozzle assembly as the base of the first extruder module slice.",
       "milestoneMessage": "Titan Aero core and nozzle assembly staged."
-    },
+  },
     {
       "id": "subassembly_extruder_sensor_and_fan_attachment",
       "name": "Extruder Sensor and Fan Attachment",
-      "stepIds": [
-        "step_place_extruder_blower_attachment",
-        "step_secure_extruder_blower_attachment",
-        "step_place_extruder_sensor_holder",
-        "step_secure_extruder_sensor_holder",
-        "step_place_extruder_8mm_sensor"
-      ],
+      "stepIds": [ "step_place_extruder_blower_attachment", "step_secure_extruder_blower_attachment", "step_place_extruder_sensor_holder", "step_secure_extruder_sensor_holder", "step_place_extruder_8mm_sensor" ],
       "assemblyId": "assembly_d3d_extruder_stage_01",
       "description": "Adds the first print-cooling blower, sensor holder, and 8 mm sensor around the staged Titan Aero core.",
       "milestoneMessage": "First fan and sensor-side hardware added to the nozzle module."
-    },
+  },
     {
       "id": "subassembly_extruder_nozzle_module",
       "name": "Extruder Nozzle Module",

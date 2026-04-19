@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using OSE.App;
 using OSE.Content;
 using OSE.Core;
 using OSE.Runtime;
@@ -138,14 +139,17 @@ namespace OSE.UI.Root
                 Encapsulate(toolTargetBounds);
             }
 
-            // Always include target positions from previewConfig — not just as a fallback.
-            if (step.targetIds != null && step.targetIds.Length > 0)
+            // Include target positions from previewConfig ONLY when the spawned
+            // tool-target markers don't already cover them — otherwise it's a
+            // duplicate source of truth and unauthored (0,0,0) placements
+            // would yank the camera to world origin below the assembly.
+            if (toolTargetCount == 0 && step.targetIds != null && step.targetIds.Length > 0)
             {
                 Transform previewRoot = GetPreviewRoot();
                 for (int i = 0; i < step.targetIds.Length; i++)
                 {
                     TargetPreviewPlacement targetPlacement = _ctx.Spawner.FindTargetPlacement(step.targetIds[i]);
-                    if (targetPlacement == null)
+                    if (targetPlacement == null || IsZeroPosition(targetPlacement.position))
                         continue;
 
                     fallbackTargetCount++;
@@ -155,8 +159,7 @@ namespace OSE.UI.Root
                 }
             }
 
-            // Also include requiredToolActions target positions.
-            if (step.requiredToolActions != null)
+            if (toolTargetCount == 0 && step.requiredToolActions != null)
             {
                 Transform previewRoot = GetPreviewRoot();
                 for (int i = 0; i < step.requiredToolActions.Length; i++)
@@ -166,7 +169,7 @@ namespace OSE.UI.Root
                         continue;
 
                     TargetPreviewPlacement targetPlacement = _ctx.Spawner.FindTargetPlacement(action.targetId);
-                    if (targetPlacement == null)
+                    if (targetPlacement == null || IsZeroPosition(targetPlacement.position))
                         continue;
 
                     fallbackTargetCount++;
@@ -174,6 +177,24 @@ namespace OSE.UI.Root
                     Vector3 worldPos = previewRoot != null ? previewRoot.TransformPoint(localPos) : localPos;
                     Encapsulate(new Bounds(worldPos, Vector3.one * 0.08f));
                 }
+            }
+
+            // Re-center the bounds on the active cursor tool-action target
+            // when present. FrameBounds sets pivot to bounds.center — if the
+            // accumulated box averages across multiple context parts, the
+            // pivot drifts off the target and the user sees "camera points
+            // somewhere near the target, not at it." Building a box centered
+            // ON the target that still fully contains the accumulated content
+            // keeps the context in-frame while locking the pivot to the
+            // work point.
+            if (hasBounds && TryGetActiveToolTargetWorldPosition(step, out Vector3 activeTargetPos))
+            {
+                Vector3 posOffset = activeTargetPos - accumulatedBounds.min;
+                Vector3 negOffset = accumulatedBounds.max - activeTargetPos;
+                Vector3 halfExtents = Vector3.Max(
+                    new Vector3(Mathf.Abs(posOffset.x), Mathf.Abs(posOffset.y), Mathf.Abs(posOffset.z)),
+                    new Vector3(Mathf.Abs(negOffset.x), Mathf.Abs(negOffset.y), Mathf.Abs(negOffset.z)));
+                accumulatedBounds = new Bounds(activeTargetPos, halfExtents * 2f);
             }
 
             // Enforce a minimum bounds size so tiny parts (single bolts, etc.)
@@ -205,37 +226,135 @@ namespace OSE.UI.Root
             if (package == null || step == null || results == null)
                 return;
 
-            if (!string.IsNullOrWhiteSpace(step.subassemblyId))
+            // Prefer the TaskCursor's open tasks when available. Mirrors the
+            // cursor-gate invariant already applied to tray emission, ghosts,
+            // and hints: "required this step" telegraphs must scope to what
+            // the trainee has to touch RIGHT NOW, not every part in the
+            // subassembly. Without this, the camera frame encapsulates parts
+            // still sitting in the staging tray and the centroid drops below
+            // the actual tool target. Fall back to step.requiredPartIds when
+            // no cursor is available (bootstrap, session teardown, etc.).
+            bool fromCursor = TryCollectFromCursor(results);
+
+            if (!fromCursor)
             {
-                StepDefinition[] allSteps = package.GetOrderedSteps();
-                for (int i = 0; i < allSteps.Length; i++)
+                string[] stepParts = step.GetEffectiveRequiredPartIds();
+                for (int i = 0; i < stepParts.Length; i++)
                 {
-                    StepDefinition candidate = allSteps[i];
-                    if (candidate == null ||
-                        !string.Equals(candidate.subassemblyId, step.subassemblyId, StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
-
-                    string[] candidateParts = candidate.GetEffectiveRequiredPartIds();
-                    for (int p = 0; p < candidateParts.Length; p++)
-                    {
-                        string partId = candidateParts[p];
-                        if (!string.IsNullOrWhiteSpace(partId))
-                            results.Add(partId);
-                    }
+                    string partId = stepParts[i];
+                    if (!string.IsNullOrWhiteSpace(partId))
+                        results.Add(partId);
                 }
-
-                return;
             }
 
-            string[] stepParts = step.GetEffectiveRequiredPartIds();
-            for (int i = 0; i < stepParts.Length; i++)
+            // Always supplement with the parts associated with this step's
+            // targets. Use steps typically have no requiredPartIds (they act
+            // on existing structure), so without this the scope collapses to
+            // just the tool-target marker positions — a tight cluster that
+            // makes the camera zoom past the surrounding geometry. The
+            // associatedPartId on each target is the bracket / bolt / frame
+            // piece being acted upon, which is exactly the context the
+            // trainee needs in frame.
+            AddTargetAssociatedParts(package, step, results);
+        }
+
+        private static void AddTargetAssociatedParts(MachinePackageDefinition package, StepDefinition step, HashSet<string> results)
+        {
+            if (step.targetIds != null)
             {
-                string partId = stepParts[i];
-                if (!string.IsNullOrWhiteSpace(partId))
-                    results.Add(partId);
+                for (int i = 0; i < step.targetIds.Length; i++)
+                {
+                    string tid = step.targetIds[i];
+                    if (string.IsNullOrWhiteSpace(tid)) continue;
+                    if (!package.TryGetTarget(tid, out var target) || target == null) continue;
+                    if (!string.IsNullOrWhiteSpace(target.associatedPartId))
+                        results.Add(target.associatedPartId);
+                }
             }
+
+            if (step.requiredToolActions != null)
+            {
+                for (int i = 0; i < step.requiredToolActions.Length; i++)
+                {
+                    var action = step.requiredToolActions[i];
+                    if (action == null || string.IsNullOrWhiteSpace(action.targetId)) continue;
+                    if (!package.TryGetTarget(action.targetId, out var target) || target == null) continue;
+                    if (!string.IsNullOrWhiteSpace(target.associatedPartId))
+                        results.Add(target.associatedPartId);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Resolves the WORLD position of the tool-action target currently
+        /// open in the TaskCursor. Returns false if no cursor, no toolAction
+        /// entry, or the target placement can't be found. Used to re-anchor
+        /// camera framing to the active work point on Use steps.
+        /// </summary>
+        private bool TryGetActiveToolTargetWorldPosition(StepDefinition step, out Vector3 worldPos)
+        {
+            worldPos = default;
+            if (step?.requiredToolActions == null || step.requiredToolActions.Length == 0)
+                return false;
+
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
+                return false;
+            var cursor = session?.AssemblyController?.StepController?.CurrentTaskCursor;
+            if (cursor == null || cursor.IsComplete)
+                return false;
+
+            string activeActionId = null;
+            foreach (var entry in cursor.OpenTasks)
+            {
+                if (entry == null || string.IsNullOrEmpty(entry.id)) continue;
+                if (!string.Equals(entry.kind, "toolAction", StringComparison.Ordinal)) continue;
+                activeActionId = entry.id;
+                break;
+            }
+            if (string.IsNullOrEmpty(activeActionId))
+                return false;
+
+            string activeTargetId = null;
+            for (int i = 0; i < step.requiredToolActions.Length; i++)
+            {
+                var action = step.requiredToolActions[i];
+                if (action == null) continue;
+                if (!string.Equals(action.id, activeActionId, StringComparison.Ordinal)) continue;
+                activeTargetId = action.targetId;
+                break;
+            }
+            if (string.IsNullOrEmpty(activeTargetId))
+                return false;
+
+            TargetPreviewPlacement placement = _ctx.Spawner?.FindTargetPlacement(activeTargetId);
+            if (placement == null || IsZeroPosition(placement.position))
+                return false;
+
+            Vector3 localPos = new Vector3(placement.position.x, placement.position.y, placement.position.z);
+            Transform previewRoot = GetPreviewRoot();
+            worldPos = previewRoot != null ? previewRoot.TransformPoint(localPos) : localPos;
+            return true;
+        }
+
+        private static bool TryCollectFromCursor(HashSet<string> results)
+        {
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
+                return false;
+            var cursor = session?.AssemblyController?.StepController?.CurrentTaskCursor;
+            if (cursor == null || cursor.IsComplete)
+                return false;
+
+            bool any = false;
+            foreach (var entry in cursor.OpenTasks)
+            {
+                if (entry == null || string.IsNullOrEmpty(entry.id)) continue;
+                if (!string.Equals(entry.kind, "part", StringComparison.Ordinal)) continue;
+                string partId = TaskInstanceId.ToPartId(entry.id);
+                if (string.IsNullOrWhiteSpace(partId)) continue;
+                results.Add(partId);
+                any = true;
+            }
+            return any;
         }
 
         private static bool TryInvokeCameraMethod(string methodName, object[] args, params Type[] signature)
@@ -287,5 +406,12 @@ namespace OSE.UI.Root
             var setup = _ctx.Setup;
             return setup != null ? setup.PreviewRoot : null;
         }
+
+        // Unauthored placements deserialise as all-zero SceneFloat3 — treat
+        // that as "no position" rather than "at world origin." A real target
+        // at literal (0,0,0) is vanishingly rare in practice and not worth
+        // the camera jumping to the floor when the placement is missing.
+        private static bool IsZeroPosition(SceneFloat3 pos)
+            => pos.x == 0f && pos.y == 0f && pos.z == 0f;
     }
 }

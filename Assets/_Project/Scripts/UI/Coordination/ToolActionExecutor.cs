@@ -128,6 +128,27 @@ namespace OSE.UI.Root
                 ? markerParent.TransformPoint(resolvedTarget.SurfaceLocalPosition)
                 : resolvedTarget.transform.position;
 
+            // Locate the matching ToolActionDefinition on the active step so
+            // authored per-action overrides (ToolActionPreviewConfig) flow
+            // into the PreviewContext the controller will build. Null is
+            // fine — preview classes fall back to their hardcoded defaults
+            // via ToolActionPreviewBase.Override() when the config is null
+            // or any field is sentinel-zero.
+            Content.ToolActionPreviewConfig previewCfg = null;
+            if (ServiceRegistry.TryGet<IMachineSessionController>(out var sessionForCfg))
+            {
+                var activeStep = sessionForCfg.AssemblyController?.StepController?.CurrentStepDefinition;
+                if (activeStep?.requiredToolActions != null)
+                {
+                    foreach (var a in activeStep.requiredToolActions)
+                    {
+                        if (a == null) continue;
+                        if (string.Equals(a.targetId, resolvedTarget.TargetId, System.StringComparison.Ordinal))
+                        { previewCfg = a.previewConfig; break; }
+                    }
+                }
+            }
+
             context = new ToolActionContext
             {
                 TargetId = resolvedTarget.TargetId,
@@ -142,6 +163,7 @@ namespace OSE.UI.Root
                 ToolActionRotationIsMesh = toolActionRotIsMesh,
                 InstantPlacement = isPersistent,
                 AssemblyScale = _ctx.CursorManager.AssemblyScale,
+                PreviewConfig = previewCfg,
             };
 
             // Resolve optional part effect for progress-driven part movement

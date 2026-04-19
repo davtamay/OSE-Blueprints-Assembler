@@ -950,6 +950,10 @@ namespace OSE.UI.Root
             }
 
             PlacementValidationResult result = PlacementValidator.ValidateExact();
+            // Capture step id before AttemptPlacement — the TaskCursor may synchronously
+            // complete this step and activate the next, so the AreActiveStepRequiredPartsPlaced
+            // check below must scope to the original step, not whatever is active now.
+            string placingForStepId = session.AssemblyController?.StepController?.CurrentStepDefinition?.id;
             partController.AttemptPlacement(selectedId, matchedTargetId, result);
 
             if (TryResolveSnapPose(selectedId, matchedTargetId, out Vector3 pPos, out Quaternion pRot, out Vector3 pScale))
@@ -964,12 +968,16 @@ namespace OSE.UI.Root
 
             RemovePreviewForPart(selectedId);
 
+            string currentStepId = session.AssemblyController?.StepController?.CurrentStepDefinition?.id;
+            bool stepStillActive = string.IsNullOrEmpty(placingForStepId)
+                                   || string.Equals(placingForStepId, currentStepId, StringComparison.Ordinal);
+
             if (_mgr?.PreviewManager != null && _mgr.PreviewManager.IsSequentialStep)
             {
-                if (AdvanceSequentialTarget())
+                if (stepStillActive && AdvanceSequentialTarget())
                     session.AssemblyController?.StepController?.CompleteStep(session.GetElapsedSeconds());
             }
-            else if (partController.AreActiveStepRequiredPartsPlaced())
+            else if (stepStillActive && partController.AreActiveStepRequiredPartsPlaced())
             {
                 session.AssemblyController?.StepController?.CompleteStep(session.GetElapsedSeconds());
             }

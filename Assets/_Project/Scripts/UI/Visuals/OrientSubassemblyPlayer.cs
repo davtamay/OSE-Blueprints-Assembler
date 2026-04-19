@@ -95,10 +95,15 @@ namespace OSE.UI.Root
 
         public void Stop()
         {
-            if (!IsPlaying) return;
+            // Always restore, even after Tick already set IsPlaying=false
+            // on natural completion. Previously the early-return here
+            // skipped restoration when the cue finished normally, leaving
+            // the Group_ root rotated and causing pose accumulation when
+            // stepping forwards / backwards.
             IsPlaying = false;
 
-            if (_ctx.Targets.Count > 0 && _ctx.Targets[0] != null)
+            if (_ctx.Targets != null && _ctx.Targets.Count > 0 && _ctx.Targets[0] != null
+                && !(_ctx.Entry != null && _ctx.Entry.holdAtEnd))
             {
                 // Restore to baseline so the persistent Group_ root is
                 // ready for the next interaction / animation. Final

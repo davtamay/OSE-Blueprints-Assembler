@@ -1375,12 +1375,46 @@ namespace OSE.Editor
             {
                 case "shake":
                 {
+                    // Mode picker — controls directionality of the oscillation.
+                    // sine     → bidirectional (classic shake test)
+                    // positive → half-wave rectified (always along positive
+                    //            axis, returns through zero each cycle)
+                    // slide    → single out-and-back pulse over Duration
+                    //            (rod slide test: forward and back, once)
+                    string[] modeIds    = { "sine", "positive", "slide" };
+                    string[] modeLabels = {
+                        "Sine (bidirectional)",
+                        "Positive only (one way + return each cycle)",
+                        "Slide (single out-and-back pulse over duration)",
+                    };
+                    string curMode = string.IsNullOrEmpty(cue.shakeMode) ? "sine" : cue.shakeMode;
+                    int curIdx = Mathf.Max(0, System.Array.IndexOf(modeIds, curMode));
+                    int newIdx = EditorGUILayout.Popup(
+                        new GUIContent("Mode",
+                            "Sine = classic shake. Positive = always along positive axis (no backward swing). " +
+                            "Slide = single forward-and-back pulse over the cue's Duration — use this for a rod slide test."),
+                        curIdx, modeLabels);
+                    cue.shakeMode = modeIds[Mathf.Clamp(newIdx, 0, modeIds.Length - 1)];
+
                     cue.shakeAmplitude = Mathf.Max(0f, FloatFieldClip("Amplitude (m)", cue.shakeAmplitude));
-                    cue.shakeFrequency = Mathf.Max(0f, FloatFieldClip("Frequency (Hz)", cue.shakeFrequency > 0f ? cue.shakeFrequency : 3f));
+
+                    // Frequency is irrelevant for "slide" mode (it runs once
+                    // over Duration). Hide to reduce noise.
+                    if (!string.Equals(cue.shakeMode, "slide", System.StringComparison.Ordinal))
+                        cue.shakeFrequency = Mathf.Max(0f, FloatFieldClip("Frequency (Hz)", cue.shakeFrequency > 0f ? cue.shakeFrequency : 3f));
+
                     var axis = new Vector3(cue.shakeAxis.x, cue.shakeAxis.y, cue.shakeAxis.z);
                     if (axis == Vector3.zero) axis = Vector3.right;
                     axis           = Vector3FieldClip("Shake Axis", axis);
                     cue.shakeAxis  = new SceneFloat3 { x = axis.x, y = axis.y, z = axis.z };
+
+                    if (string.Equals(cue.shakeMode, "slide", System.StringComparison.Ordinal))
+                    {
+                        EditorGUILayout.HelpBox(
+                            "Slide mode uses the cue's Duration as the pulse length (smooth ramp out then back). " +
+                            "Leave Duration at 0 to use the 1 s default, or set e.g. 2 s for a longer pull.",
+                            MessageType.None);
+                    }
                     break;
                 }
                 case "pulse":

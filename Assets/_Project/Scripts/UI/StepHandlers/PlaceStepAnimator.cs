@@ -25,6 +25,7 @@ namespace OSE.UI.Root
             public Vector3    TargetPos;
             public Quaternion TargetRot;
             public Vector3    TargetScale;
+            public string     QueuedForStepId;
         }
         private readonly List<SnapEntry> _activeSnaps = new();
 
@@ -68,12 +69,17 @@ namespace OSE.UI.Root
         {
             ClearRequiredPartEmission();
             _requiredPartIdsForStep = null;
+            // Drop any in-flight snaps — the part has landed, and letting the
+            // snap continue across step transitions can override poses written
+            // by the next step's ApplyStepAwarePositions / cue system.
+            _activeSnaps.Clear();
         }
 
         public void Cleanup()
         {
             ClearRequiredPartEmission();
             _requiredPartIdsForStep = null;
+            _activeSnaps.Clear();
         }
 
         // ── Snap ──
@@ -88,18 +94,30 @@ namespace OSE.UI.Root
                     _activeSnaps.RemoveAt(i);
             }
 
+            // Capture the step this snap is being queued for. Placement
+            // happens mid-step; the snap's target is only meaningful for that
+            // step. If the session advances past it (confirm / step-forward /
+            // nav), UpdateSnapAnimation drops the entry — stale snaps would
+            // otherwise slerp the part's rotation toward an outdated target
+            // for dozens of frames while the distance hovers above the 0.001
+            // threshold (floating-point tail between synthesized stepPose
+            // position and raw assembledPosition).
+            string queuedForStepId = null;
+            if (ServiceRegistry.TryGet<IMachineSessionController>(out var queueSession))
+                queuedForStepId = queueSession.AssemblyController?.StepController?.CurrentStepDefinition?.id;
+
             if (ServiceRegistry.TryGet<ISubassemblyPlacementService>(out var subassemblyController) &&
                 subassemblyController != null &&
                 subassemblyController.IsProxy(partGo) &&
                 subassemblyController.TryResolveTargetPose(targetId, out Vector3 proxyPos, out Quaternion proxyRot, out Vector3 proxyScale))
             {
-                _activeSnaps.Add(new SnapEntry { Part = partGo, TargetPos = proxyPos, TargetRot = proxyRot, TargetScale = proxyScale });
+                _activeSnaps.Add(new SnapEntry { Part = partGo, TargetPos = proxyPos, TargetRot = proxyRot, TargetScale = proxyScale, QueuedForStepId = queuedForStepId });
                 return;
             }
 
             if (TryResolveSnapPose(selectionId, targetId, out Vector3 pos, out Quaternion rot, out Vector3 scale))
             {
-                _activeSnaps.Add(new SnapEntry { Part = partGo, TargetPos = pos, TargetRot = rot, TargetScale = scale });
+                _activeSnaps.Add(new SnapEntry { Part = partGo, TargetPos = pos, TargetRot = rot, TargetScale = scale, QueuedForStepId = queuedForStepId });
                 return;
             }
 
@@ -110,7 +128,8 @@ namespace OSE.UI.Root
                     Part       = partGo,
                     TargetPos  = fallback.localPosition,
                     TargetRot  = fallback.localRotation,
-                    TargetScale = fallback.localScale
+                    TargetScale = fallback.localScale,
+                    QueuedForStepId = queuedForStepId,
                 });
             }
         }
@@ -316,10 +335,30 @@ namespace OSE.UI.Root
 
             float t = StepHandlerConstants.Animation.SnapLerpSpeed * deltaTime;
 
+            // Resolve the currently-active step once — entries queued for a
+            // different step are stale and must be dropped before they
+            // overwrite the new step's authored pose.
+            string currentStepId = null;
+            if (ServiceRegistry.TryGet<IMachineSessionController>(out var tickSession))
+                currentStepId = tickSession.AssemblyController?.StepController?.CurrentStepDefinition?.id;
+
             for (int i = _activeSnaps.Count - 1; i >= 0; i--)
             {
                 var snap = _activeSnaps[i];
                 if (snap.Part == null) { _activeSnaps.RemoveAt(i); continue; }
+
+                // Drop stale snaps queued for a now-inactive step. Without
+                // this, a snap whose distance hovers just above the 0.001
+                // finalize threshold (floating-point tail) keeps slerping
+                // rotation for dozens of frames — overriding the next step's
+                // authored holdAtEnd rotation on the same part.
+                if (!string.IsNullOrEmpty(snap.QueuedForStepId) &&
+                    !string.IsNullOrEmpty(currentStepId) &&
+                    !string.Equals(snap.QueuedForStepId, currentStepId, System.StringComparison.Ordinal))
+                {
+                    _activeSnaps.RemoveAt(i);
+                    continue;
+                }
 
                 snap.Part.transform.localPosition = Vector3.Lerp(snap.Part.transform.localPosition, snap.TargetPos, t);
                 snap.Part.transform.localRotation = Quaternion.Slerp(snap.Part.transform.localRotation, snap.TargetRot, t);

@@ -13,7 +13,7 @@ namespace OSE.Interaction
     /// </summary>
     public sealed class TorquePreview : ToolActionPreviewBase
     {
-        public override float Duration => 0.8f;
+        public override float Duration => Override(Cfg?.duration ?? 0f, 0.8f);
 
         protected override float AutoAssistDelay => 3f;
         protected override float AutoAssistRate => 0.5f;
@@ -74,7 +74,10 @@ namespace OSE.Interaction
             Vector2 toPointer = screenPos - _targetScreenCenter;
             float radius = toPointer.magnitude;
 
-            if (radius > MinRadius)
+            float minRadius = Override(Cfg?.torqueMinRadius ?? 0f, MinRadius);
+            float gestureArc = Override(Cfg?.torqueGestureArc ?? 0f, GestureArc);
+            float dragFallback = Override(Cfg?.torqueDragFallbackScale ?? 0f, DragFallbackScale);
+            if (radius > minRadius)
             {
                 float currentAngle = Mathf.Atan2(toPointer.y, toPointer.x) * Mathf.Rad2Deg;
 
@@ -101,7 +104,7 @@ namespace OSE.Interaction
             // Secondary: horizontal drag fallback
             if (dragDelta.x > 1f)
             {
-                float dragContribution = dragDelta.x * DragFallbackScale * GestureArc;
+                float dragContribution = dragDelta.x * dragFallback * gestureArc;
                 if (dragContribution > angleDelta)
                 {
                     angleDelta = dragContribution;
@@ -120,10 +123,10 @@ namespace OSE.Interaction
             }
 
             if (_autoAssistTimer >= AutoAssistDelay)
-                _accumulatedAngle += AutoAssistRate * GestureArc * deltaTime;
+                _accumulatedAngle += AutoAssistRate * gestureArc * deltaTime;
 
             _accumulatedAngle = Mathf.Max(_accumulatedAngle, 0f);
-            _guidedProgress = Mathf.Clamp01(_accumulatedAngle / GestureArc);
+            _guidedProgress = Mathf.Clamp01(_accumulatedAngle / gestureArc);
 
             ApplyRotation(EaseInOutCubic(_guidedProgress));
             CheckSparks(_guidedProgress);
@@ -142,17 +145,20 @@ namespace OSE.Interaction
         private void ApplyRotation(float easedProgress)
         {
             if (_ctx.ToolPreview == null) return;
-            float angle = Mathf.Lerp(0f, TargetAngle, easedProgress);
+            float targetAngle = Override(Cfg?.torqueTargetAngle ?? 0f, TargetAngle);
+            float angle = Mathf.Lerp(0f, targetAngle, easedProgress);
             _ctx.ToolPreview.transform.rotation = Quaternion.AngleAxis(angle, _rotationAxisWorld) * _startRot;
         }
 
         private void CheckSparks(float progress)
         {
-            if (!_sparksSpawned && progress >= 0.5f)
+            float sparkThreshold = Override(Cfg?.torqueSparkThreshold ?? 0f, 0.5f);
+            float sparkScale     = Override(Cfg?.torqueSparkScale ?? 0f, 0.1f);
+            if (!_sparksSpawned && progress >= sparkThreshold)
             {
                 _sparksSpawned = true;
                 CompletionParticleEffect.TrySpawn("torque_sparks",
-                    _ctx.TargetWorldPos, Vector3.one * 0.1f);
+                    _ctx.TargetWorldPos, Vector3.one * sparkScale);
             }
         }
 

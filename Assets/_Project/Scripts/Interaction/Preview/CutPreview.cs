@@ -11,7 +11,7 @@ namespace OSE.Interaction
     /// </summary>
     public sealed class CutPreview : ToolActionPreviewBase
     {
-        public override float Duration => 1.2f;
+        public override float Duration => Override(Cfg?.duration ?? 0f, 1.2f);
 
         protected override float GuidedDragScale => 0.005f;
         protected override float AutoAssistDelay => 3f;
@@ -50,59 +50,65 @@ namespace OSE.Interaction
 
         protected override void ApplyEffects(float progress)
         {
-            // At 15%: tool emission glow (orange-hot)
-            if (progress >= 0.15f && _ctx.ToolPreview != null)
-                MaterialHelper.SetEmission(_ctx.ToolPreview, new Color(1f, 0.5f, 0.1f, 1f));
+            float emitThresh  = Override(Cfg?.cutEmissionThreshold ?? 0f, 0.15f);
+            Color glowColor   = Override(Cfg?.cutGlowColor ?? default, new Color(1f, 0.5f, 0.1f, 1f));
+            float s1Threshold = Override(Cfg?.cutSpark1Threshold ?? 0f, 0.2f);
+            float s1Scale     = Override(Cfg?.cutSpark1Scale ?? 0f, 0.12f);
+            float s2Threshold = Override(Cfg?.cutSpark2Threshold ?? 0f, 0.6f);
+            float s2Scale     = Override(Cfg?.cutSpark2Scale ?? 0f, 0.08f);
+            float lineSpawn   = Override(Cfg?.cutLineSpawn ?? 0f, 0.25f);
+            float lineWinEnd  = Override(Cfg?.cutLineWindowEnd ?? 0f, 0.9f);
 
-            // Sparks at 20%
-            if (!_sparksSpawned && progress >= 0.2f)
+            // Tool emission glow (orange-hot by default).
+            if (progress >= emitThresh && _ctx.ToolPreview != null)
+                MaterialHelper.SetEmission(_ctx.ToolPreview, glowColor);
+
+            if (!_sparksSpawned && progress >= s1Threshold)
             {
                 _sparksSpawned = true;
                 CompletionParticleEffect.TrySpawn("torque_sparks",
-                    _ctx.TargetWorldPos, Vector3.one * 0.12f);
+                    _ctx.TargetWorldPos, Vector3.one * s1Scale);
             }
 
-            // Second sparks burst at 60%
-            if (!_sparksBurst2 && progress >= 0.6f)
+            if (!_sparksBurst2 && progress >= s2Threshold)
             {
                 _sparksBurst2 = true;
                 CompletionParticleEffect.TrySpawn("torque_sparks",
-                    _ctx.TargetWorldPos, Vector3.one * 0.08f);
+                    _ctx.TargetWorldPos, Vector3.one * s2Scale);
             }
 
-            // Cut line appears at 25% and extends
-            if (_cutLine == null && progress >= 0.25f)
-                _cutLine = SpawnCutLine(_ctx.TargetWorldPos);
+            if (_cutLine == null && progress >= lineSpawn)
+                _cutLine = SpawnCutLine(_ctx.TargetWorldPos, Override(Cfg?.cutLineColor ?? default, new Color(0.15f, 0.1f, 0.05f, 0.9f)));
 
             if (_cutLine != null)
             {
-                float lineProgress = Mathf.InverseLerp(0.25f, 0.9f, progress);
+                float lineProgress = Mathf.InverseLerp(lineSpawn, lineWinEnd, progress);
                 _cutLine.transform.localScale = new Vector3(
                     Mathf.Lerp(0.001f, 0.06f, lineProgress),
                     0.002f,
                     0.002f);
             }
-
-            // Tool vibration during cutting. Formerly this was a direct
-            // transform.position += on top of whatever the controller had
-            // written — which silently broke the follow-part accumulator.
-            // Now returned via ComputeOverlayOffset below so the controller
-            // composes it cleanly.
         }
 
         /// <summary>
-        /// X-axis chatter during the active-cutting window. Outside [0.15, 0.9]
-        /// progress range the overlay is zero — the tool holds steady during
-        /// tool-approach and spark-dissipation phases.
+        /// X-axis chatter during the active-cutting window. Outside the
+        /// authored [windowStart, windowEnd] progress range the overlay is
+        /// zero — the tool holds steady during tool-approach and spark-
+        /// dissipation phases.
         /// </summary>
         public override Vector3 ComputeOverlayOffset(float progress)
         {
-            if (progress <= 0.15f || progress >= 0.9f) return Vector3.zero;
-            float vibrate = Mathf.Sin(progress * 80f) * 0.15f;
-            return new Vector3(vibrate * 0.001f, 0f, 0f);
+            float winStart = Override(Cfg?.cutVibrationWindowStart ?? 0f, 0.15f);
+            float winEnd   = Override(Cfg?.cutVibrationWindowEnd ?? 0f, 0.9f);
+            float freq     = Override(Cfg?.cutVibrationFrequency ?? 0f, 80f);
+            float amp      = Override(Cfg?.cutVibrationAmplitude ?? 0f, 0.00015f);
+
+            if (progress <= winStart || progress >= winEnd) return Vector3.zero;
+            float vibrate = Mathf.Sin(progress * freq) * amp;
+            return new Vector3(vibrate, 0f, 0f);
         }
 
-        private static GameObject SpawnCutLine(Vector3 worldPos)
+        private static GameObject SpawnCutLine(Vector3 worldPos, Color color)
         {
             GameObject line = GameObject.CreatePrimitive(PrimitiveType.Cube);
             line.name = "CutLine";
@@ -116,7 +122,7 @@ namespace OSE.Interaction
             if (renderer != null)
             {
                 var mat = new Material(Shader.Find("Sprites/Default") ?? Shader.Find("Universal Render Pipeline/Lit"));
-                mat.color = new Color(0.15f, 0.1f, 0.05f, 0.9f); // dark scorch mark
+                mat.color = color;
                 renderer.material = mat;
             }
 

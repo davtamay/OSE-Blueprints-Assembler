@@ -51,6 +51,7 @@ namespace OSE.Editor
             if (!string.IsNullOrEmpty(a.successMessage)) { Sep(); sb.Append($"\"successMessage\":{JsonQuote(a.successMessage)}"); }
             if (!string.IsNullOrEmpty(a.failureMessage)) { Sep(); sb.Append($"\"failureMessage\":{JsonQuote(a.failureMessage)}"); }
             if (a.interaction != null)                   { Sep(); sb.Append($"\"interaction\":{JsonUtility.ToJson(a.interaction)}"); }
+            if (a.previewConfig != null)                 { Sep(); sb.Append($"\"previewConfig\":{JsonUtility.ToJson(a.previewConfig)}"); }
             sb.Append("}");
             return sb.ToString();
         }

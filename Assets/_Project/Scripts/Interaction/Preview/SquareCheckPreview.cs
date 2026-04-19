@@ -13,7 +13,7 @@ namespace OSE.Interaction
     /// </summary>
     public sealed class SquareCheckPreview : ToolActionPreviewBase
     {
-        public override float Duration => 1.2f;
+        public override float Duration => Override(Cfg?.duration ?? 0f, 1.2f);
 
         protected override float GuidedDragScale => 0.006f;
         protected override float AutoAssistDelay => 3f;
@@ -41,7 +41,8 @@ namespace OSE.Interaction
             {
                 _hoverPos = context.ToolPreview.transform.position;
                 Vector3 toSurface = (context.TargetWorldPos - _hoverPos).normalized;
-                _settledPos = _hoverPos + toSurface * SettleDistance;
+                float settleDist = Override(Cfg?.squareSettleDistance ?? 0f, SettleDistance);
+                _settledPos = _hoverPos + toSurface * settleDist;
             }
             else
             {
@@ -66,10 +67,15 @@ namespace OSE.Interaction
         {
             if (_ctx.ToolPreview == null) return;
 
-            // Settle phase: square pushes gently into the corner
-            if (progress <= SettleEnd)
+            float settleEnd = Override(Cfg?.squareSettleEnd ?? 0f, SettleEnd);
+            float holdEnd   = Override(Cfg?.squareHoldEnd ?? 0f, HoldEnd);
+            Color glowCol   = Override(Cfg?.squareGlowColor ?? default, new Color(0.1f, 0.8f, 0.2f));
+            float pulseFreq = Override(Cfg?.squarePulseFrequency ?? 0f, 1f);
+
+            // Settle phase: square pushes gently into the corner.
+            if (progress <= settleEnd)
             {
-                float settleT = Mathf.Clamp01(progress / SettleEnd);
+                float settleT = Mathf.Clamp01(progress / settleEnd);
                 float eased = EaseOutQuad(settleT);
                 _ctx.ToolPreview.transform.position = Vector3.Lerp(_hoverPos, _settledPos, eased);
             }
@@ -78,23 +84,23 @@ namespace OSE.Interaction
                 _ctx.ToolPreview.transform.position = _settledPos;
             }
 
-            // Hold phase: green glow builds
-            if (progress >= SettleEnd && !_glowStarted)
+            // Hold phase: green glow builds.
+            if (progress >= settleEnd && !_glowStarted)
                 _glowStarted = true;
 
-            if (_glowStarted && progress < HoldEnd)
+            if (_glowStarted && progress < holdEnd)
             {
-                float glowT = Mathf.InverseLerp(SettleEnd, HoldEnd, progress);
-                Color glow = Color.Lerp(Color.black, new Color(0.1f, 0.8f, 0.2f) * 1.5f, glowT);
+                float glowT = Mathf.InverseLerp(settleEnd, holdEnd, progress);
+                Color glow = Color.Lerp(Color.black, glowCol * 1.5f, glowT);
                 MaterialHelper.SetEmission(_ctx.ToolPreview, glow);
             }
 
-            // Confirmation phase: bright green pulse + particle
-            if (progress >= HoldEnd)
+            // Confirmation phase: bright green pulse + particle.
+            if (progress >= holdEnd)
             {
-                float confirmT = Mathf.InverseLerp(HoldEnd, 1f, progress);
-                float pulse = 1f + 0.3f * Mathf.Sin(confirmT * Mathf.PI * 2f);
-                Color confirm = new Color(0.1f, 0.9f, 0.2f) * pulse * 2f;
+                float confirmT = Mathf.InverseLerp(holdEnd, 1f, progress);
+                float pulse = 1f + 0.3f * Mathf.Sin(confirmT * Mathf.PI * 2f * pulseFreq);
+                Color confirm = new Color(glowCol.r + 0.0f, glowCol.g + 0.1f, glowCol.b) * pulse * 2f;
                 MaterialHelper.SetEmission(_ctx.ToolPreview, confirm);
 
                 if (!_confirmSpawned)

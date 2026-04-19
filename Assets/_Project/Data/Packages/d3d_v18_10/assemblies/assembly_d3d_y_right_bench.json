@@ -52,48 +52,27 @@
     {
       "id": "subassembly_y_right_idler_build",
       "name": "Y-Right Idler Assembly",
-      "stepIds": [
-        "step_y_right_idler_insert_bolt",
-        "step_y_right_idler_insert_bearings",
-        "step_y_right_idler_align_halves",
-        "step_y_right_idler_bolt"
-      ],
+      "stepIds": [ "step_y_right_idler_insert_bolt", "step_y_right_idler_insert_bearings", "step_y_right_idler_align_halves", "step_y_right_idler_bolt" ],
       "assemblyId": "assembly_d3d_y_right_bench",
       "description": "Same procedure as Y-left idler. Orient idler with large rectangular hole to the left. Insert M6x30 screw into top hole so screw end faces you. Leave all frame-mount bolts loose.",
       "milestoneMessage": "Y-right idler assembled. Frame-mount bolt left loose."
-    },
+  },
     {
       "id": "subassembly_y_right_motor_build",
       "name": "Y-Right Motor Holder Assembly",
-      "stepIds": [
-        "step_y_right_motor_pulley",
-        "step_y_right_motor_pulley_pop",
-        "step_y_right_motor_half_nuts",
-        "step_y_right_motor_belt_channel",
-        "step_y_right_motor_close_halves",
-        "step_y_right_motor_belt_test",
-        "step_y_right_motor_screws",
-        "step_y_right_motor_m6_bolts",
-        "step_y_right_motor_dangle_test"
-      ],
+      "stepIds": [ "step_y_right_motor_pulley", "step_y_right_motor_pulley_pop", "step_y_right_motor_half_nuts", "step_y_right_motor_belt_channel", "step_y_right_motor_close_halves", "step_y_right_motor_belt_test", "step_y_right_motor_screws", "step_y_right_motor_m6_bolts", "step_y_right_motor_dangle_test" ],
       "assemblyId": "assembly_d3d_y_right_bench",
       "description": "Same procedure as Y-left motor holder. Note: M6x30 bolt goes in bottom-left hole (right side of motor half-piece has belt drive). Motor cable plug faces belt drive hole opposite the long M6x30 bolt.",
       "milestoneMessage": "Y-right motor holder assembled and dangle-tested."
-    },
+  },
     {
       "id": "subassembly_y_right_rod_assembly",
       "name": "Y-Right Axis Rod Assembly",
-      "stepIds": [
-        "step_y_right_rods_into_idler",
-        "step_y_right_idler_tighten_rods",
-        "step_y_right_carriage_onto_rods",
-        "step_y_right_motor_onto_rods",
-        "step_y_right_rods_qc"
-      ],
+      "stepIds": [ "step_y_right_rods_into_idler", "step_y_right_idler_tighten_rods", "step_y_right_carriage_onto_rods", "step_y_right_motor_onto_rods", "step_y_right_rods_qc" ],
       "assemblyId": "assembly_d3d_y_right_bench",
       "description": "Inserts rods into idler flush with bottom, slides carriage onto rods (long bolts closer to idler), pushes motor holder onto rods (motor facing carriage bolt heads). Tightens idler's two shorter bolts and re-checks rods flush.",
       "milestoneMessage": "Y-right guide rods threaded through all three units with rods flush at idler."
-    },
+  },
     {
       "id": "subassembly_y_right_belt_threading",
       "name": "Y-Right Belt Threading",

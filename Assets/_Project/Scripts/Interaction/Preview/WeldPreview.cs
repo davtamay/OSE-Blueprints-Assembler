@@ -11,7 +11,7 @@ namespace OSE.Interaction
     /// </summary>
     public sealed class WeldPreview : ToolActionPreviewBase
     {
-        public override float Duration => 1.5f;
+        public override float Duration => Override(Cfg?.duration ?? 0f, 1.5f);
 
         protected override float GuidedDragScale => 0.004f;
         protected override float AutoAssistDelay => 3f;
@@ -81,15 +81,29 @@ namespace OSE.Interaction
             }
             else if (_weldBeadObj != null)
             {
+                float coolDur   = Override(Cfg?.weldCoolerDuration ?? 0f, 2f);
+                Color hotColor  = Override(Cfg?.weldBeadHotColor  ?? default, new Color(0.85f, 0.82f, 0.72f, 1f));
+                Color coolColor = Override(Cfg?.weldBeadCoolColor ?? default, new Color(0.55f, 0.55f, 0.52f, 1f));
                 var fader = _weldBeadObj.AddComponent<WeldBeadCooler>();
-                fader.Init(2f);
+                fader.Init(coolDur, hotColor, coolColor);
             }
         }
 
         protected override void ApplyEffects(float progress)
         {
-            // At 10%: start continuous weld arc sparks that track the torch
-            if (!_arcSpawned && progress >= 0.1f)
+            // All tunable values read through Override() — when the active
+            // ToolActionDefinition carries a ToolActionPreviewConfig,
+            // authored values win; otherwise the historical constants
+            // (0.1 arc, 0.2 bead, 40 rad/s wobble, 0.12 rad amp) apply.
+            float arcThreshold  = Override(Cfg?.weldArcSpawnThreshold ?? 0f, 0.1f);
+            float beadThreshold = Override(Cfg?.weldBeadSpawnThreshold ?? 0f, 0.2f);
+            float travelStart   = Override(Cfg?.weldBeadWindowStart ?? 0f, 0.15f);
+            float travelEnd     = Override(Cfg?.weldBeadWindowEnd ?? 0f, 0.9f);
+            float wobbleAmp     = Override(Cfg?.weldWobbleAmplitude ?? 0f, 0.12f);
+            float wobbleFreq    = Override(Cfg?.weldWobbleFrequency ?? 0f, 40f);
+
+            // At arc threshold: start continuous weld arc sparks that track the torch.
+            if (!_arcSpawned && progress >= arcThreshold)
             {
                 _arcSpawned = true;
 
@@ -100,7 +114,7 @@ namespace OSE.Interaction
                     _ctx.TargetWorldPos, Vector3.one * 0.06f);
             }
 
-            float travelProgress = Mathf.InverseLerp(0.15f, 0.9f, progress);
+            float travelProgress = Mathf.InverseLerp(travelStart, travelEnd, progress);
 
             // Move the arc effect to follow the current weld point
             if (_arcEffect != null)
@@ -120,12 +134,12 @@ namespace OSE.Interaction
                     targetToolPos,
                     Time.deltaTime * 6f);
 
-                float wobble = Mathf.Sin(progress * 40f) * 0.12f;
+                float wobble = Mathf.Sin(progress * wobbleFreq) * wobbleAmp;
                 _ctx.ToolPreview.transform.rotation = _actionRot * Quaternion.Euler(wobble, 0f, wobble * 0.5f);
             }
 
             // Weld bead line
-            if (_weldBeadObj == null && progress >= 0.2f)
+            if (_weldBeadObj == null && progress >= beadThreshold)
                 SpawnWeldLine();
 
             if (_weldLine != null)
@@ -137,11 +151,12 @@ namespace OSE.Interaction
             _weldBeadObj = new GameObject("WeldBeadLine");
             _weldBeadObj.transform.position = _ctx.TargetWorldPos;
 
+            float width = Override(Cfg?.weldBeadWidth ?? 0f, BeadWidth);
             _weldLine = _weldBeadObj.AddComponent<LineRenderer>();
             _weldLine.useWorldSpace = true;
             _weldLine.positionCount = 2;
-            _weldLine.startWidth = BeadWidth;
-            _weldLine.endWidth = BeadWidth;
+            _weldLine.startWidth = width;
+            _weldLine.endWidth = width;
             _weldLine.numCapVertices = 4;
             _weldLine.alignment = LineAlignment.TransformZ;
             _weldLine.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -152,8 +167,9 @@ namespace OSE.Interaction
             var shader = Shader.Find("Universal Render Pipeline/Lit")
                 ?? Shader.Find("Standard")
                 ?? Shader.Find("Sprites/Default");
+            Color hotColor = Override(Cfg?.weldBeadHotColor ?? default, new Color(0.85f, 0.82f, 0.72f, 1f));
             var mat = new Material(shader);
-            mat.color = new Color(0.85f, 0.82f, 0.72f, 1f);
+            mat.color = hotColor;
             if (mat.HasProperty("_Metallic"))
                 mat.SetFloat("_Metallic", 0.8f);
             if (mat.HasProperty("_Smoothness"))
@@ -201,8 +217,11 @@ namespace OSE.Interaction
         private Renderer _renderer;
         private Material _material;
 
-        private static readonly Color HotColor = new Color(0.85f, 0.82f, 0.72f, 1f);
-        private static readonly Color CoolColor = new Color(0.55f, 0.55f, 0.52f, 1f);
+        private static readonly Color DefaultHotColor = new Color(0.85f, 0.82f, 0.72f, 1f);
+        private static readonly Color DefaultCoolColor = new Color(0.55f, 0.55f, 0.52f, 1f);
+
+        private Color _hotColor = DefaultHotColor;
+        private Color _coolColor = DefaultCoolColor;
 
         public void Init(float duration)
         {
@@ -212,6 +231,13 @@ namespace OSE.Interaction
                 _material = _renderer.material;
         }
 
+        public void Init(float duration, Color hotColor, Color coolColor)
+        {
+            Init(duration);
+            _hotColor = hotColor;
+            _coolColor = coolColor;
+        }
+
         private void Update()
         {
             _elapsed += Time.deltaTime;
@@ -219,7 +245,7 @@ namespace OSE.Interaction
 
             if (_material != null)
             {
-                _material.color = Color.Lerp(HotColor, CoolColor, t);
+                _material.color = Color.Lerp(_hotColor, _coolColor, t);
 
                 if (_material.HasProperty("_EmissionColor"))
                 {

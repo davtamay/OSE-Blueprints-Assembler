@@ -5,14 +5,14 @@ namespace OSE.Content
     public enum AnimationHostKind
     {
         Part,
-        Subassembly
+        Subassembly,
+        Tool
     }
 
     /// <summary>
-    /// Unifies parts and subassemblies behind one abstraction for animation-cue
-    /// authoring and playback. Tools are not yet hosts (their cues are still
-    /// step-scoped via <see cref="AnimationCueEntry.targetToolIds"/>) and will
-    /// be migrated in a later pass.
+    /// Unifies parts, subassemblies, and tools behind one abstraction for
+    /// animation-cue authoring and playback. Tool cues fire via the cursor
+    /// preview GameObject resolved by <c>CursorManager.ToolPreview</c>.
     /// </summary>
     public interface IAnimationHost
     {

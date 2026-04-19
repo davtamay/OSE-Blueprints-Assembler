@@ -12,7 +12,7 @@ namespace OSE.Interaction
     /// </summary>
     public sealed class DrillPreview : ToolActionPreviewBase
     {
-        public override float Duration => 1.0f;
+        public override float Duration => Override(Cfg?.duration ?? 0f, 1.0f);
 
         protected override float GuidedDragScale => 0.006f;
         protected override float AutoAssistDelay => 2.5f;
@@ -86,28 +86,33 @@ namespace OSE.Interaction
             if (_ctx.ToolPreview == null) return;
 
             // Keep rotation stable. Position is NOT written here anymore —
-            // the controller owns it under the overlay contract. Vibration
-            // is returned from ComputeOverlayOffset below and composed by
-            // the controller on top of its follow-part math.
+            // the controller owns it under the overlay contract.
             _ctx.ToolPreview.transform.rotation = _startRot;
 
-            // Emission glow proportional to motor intensity
-            float glow = ComputeIntensity(progress) * 0.5f;
-            MaterialHelper.SetEmission(_ctx.ToolPreview,
-                new Color(0.3f * glow, 0.7f * glow, 1f * glow, 1f));
+            float glowScale       = Override(Cfg?.drillGlowIntensity ?? 0f, 0.5f);
+            Color glowColor       = Override(Cfg?.drillGlowColor ?? default, new Color(0.3f, 0.7f, 1f, 1f));
+            float spark1Threshold = Override(Cfg?.drillSpark1Threshold ?? 0f, 0.4f);
+            float spark2Threshold = Override(Cfg?.drillSpark2Threshold ?? 0f, 0.8f);
+            float spark1Scale     = Override(Cfg?.drillSpark1Scale ?? 0f, 0.06f);
+            float spark2Scale     = Override(Cfg?.drillSpark2Scale ?? 0f, 0.04f);
 
-            // Spark bursts
-            if (!_sparks1 && progress >= 0.4f)
+            // Emission glow proportional to motor intensity.
+            float glow = ComputeIntensity(progress) * glowScale;
+            MaterialHelper.SetEmission(_ctx.ToolPreview,
+                new Color(glowColor.r * glow, glowColor.g * glow, glowColor.b * glow, 1f));
+
+            // Spark bursts.
+            if (!_sparks1 && progress >= spark1Threshold)
             {
                 _sparks1 = true;
                 CompletionParticleEffect.TrySpawn("torque_sparks",
-                    _ctx.TargetWorldPos, Vector3.one * 0.06f);
+                    _ctx.TargetWorldPos, Vector3.one * spark1Scale);
             }
-            if (!_sparks2 && progress >= 0.8f)
+            if (!_sparks2 && progress >= spark2Threshold)
             {
                 _sparks2 = true;
                 CompletionParticleEffect.TrySpawn("torque_sparks",
-                    _ctx.TargetWorldPos, Vector3.one * 0.04f);
+                    _ctx.TargetWorldPos, Vector3.one * spark2Scale);
             }
         }
 
@@ -120,21 +125,25 @@ namespace OSE.Interaction
         /// </summary>
         public override Vector3 ComputeOverlayOffset(float progress)
         {
+            float shakeAmp  = Override(Cfg?.drillShakeAmplitude ?? 0f, ShakeAmplitude);
+            float shakeFreq = Override(Cfg?.drillShakeFrequency ?? 0f, ShakeFrequency);
             float intensity = ComputeIntensity(progress);
-            float amp = intensity * ShakeAmplitude;
-            float t = progress * ShakeFrequency;
+            float amp = intensity * shakeAmp;
+            float t = progress * shakeFreq;
             float dx = Mathf.Sin(t * 1.0f) * amp;
             float dy = Mathf.Sin(t * 1.3f + 1.7f) * amp * 0.7f;
             float dz = Mathf.Sin(t * 0.9f + 3.1f) * amp * 0.5f;
             return new Vector3(dx, dy, dz);
         }
 
-        private static float ComputeIntensity(float progress)
+        private float ComputeIntensity(float progress)
         {
-            if (progress < RampUpEnd)
-                return Mathf.SmoothStep(0f, 1f, progress / RampUpEnd);
-            if (progress > RampDownStart)
-                return Mathf.SmoothStep(1f, 0f, (progress - RampDownStart) / (1f - RampDownStart));
+            float rampUpEnd   = Override(Cfg?.drillRampUpEnd ?? 0f, RampUpEnd);
+            float rampDownStart = Override(Cfg?.drillRampDownStart ?? 0f, RampDownStart);
+            if (progress < rampUpEnd)
+                return Mathf.SmoothStep(0f, 1f, progress / rampUpEnd);
+            if (progress > rampDownStart)
+                return Mathf.SmoothStep(1f, 0f, (progress - rampDownStart) / (1f - rampDownStart));
             return 1f;
         }
     }

@@ -18,7 +18,15 @@ namespace OSE.Core
             ["torque_sparks"] = ConfigureTorqueSparks,
             ["weld_glow"] = ConfigureWeldGlow,
             ["weld_arc"] = ConfigureWeldArc,
+            ["square_confirm"] = ConfigureSquareConfirm,
         };
+
+        /// <summary>
+        /// Preset IDs known to this effect library. Authoring UIs read this to
+        /// populate the preset dropdown; validators read it to reject unknown
+        /// references. Single source of truth — do not duplicate elsewhere.
+        /// </summary>
+        public static IReadOnlyCollection<string> PresetIds => Presets.Keys;
 
         /// <summary>
         /// Spawns a particle effect at <paramref name="worldPosition"/> using the named preset.
@@ -36,6 +44,11 @@ namespace OSE.Core
             }
 
             GameObject go = new GameObject($"ParticleEffect_{presetId}");
+            // HideAndDontSave: do not persist in the scene file and do not
+            // survive a domain reload. Prevents orphan particle GOs from
+            // accumulating across script recompiles, play-mode transitions,
+            // or scene saves. Hierarchy view hides them to reduce clutter.
+            go.hideFlags = HideFlags.HideAndDontSave;
             go.transform.position = worldPosition;
 
             var ps = go.AddComponent<ParticleSystem>();
@@ -72,6 +85,7 @@ namespace OSE.Core
             }
 
             GameObject go = new GameObject($"ParticleEffect_{presetId}");
+            go.hideFlags = HideFlags.HideAndDontSave;
             go.transform.position = worldPosition;
 
             var ps = go.AddComponent<ParticleSystem>();
@@ -121,6 +135,55 @@ namespace OSE.Core
                 new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) }
             );
             colorOverLifetime.color = gradient;
+
+            var renderer = ps.GetComponent<ParticleSystemRenderer>();
+            renderer.material = CreateParticleMaterial();
+        }
+
+        // ── Square confirm (cool-toned confirmation puff) ─────────────────
+
+        private static void ConfigureSquareConfirm(ParticleSystem ps, Vector3 scale)
+        {
+            float radius = Mathf.Max(scale.x, scale.z) * 0.5f;
+
+            var main = ps.main;
+            main.duration = 0.5f;
+            main.loop = false;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(0.35f, 0.7f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0.4f, 1.2f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.02f, 0.05f);
+            main.startColor = new Color(0.5f, 0.9f, 1f, 1f); // cool cyan
+            main.gravityModifier = 0f;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.maxParticles = 24;
+
+            var emission = ps.emission;
+            emission.enabled = true;
+            emission.SetBursts(new[] { new ParticleSystem.Burst(0f, 12, 18) });
+            emission.rateOverTime = 0f;
+
+            var shape = ps.shape;
+            shape.enabled = true;
+            shape.shapeType = ParticleSystemShapeType.Sphere;
+            shape.radius = Mathf.Max(radius * 0.25f, 0.003f);
+
+            var colorOverLifetime = ps.colorOverLifetime;
+            colorOverLifetime.enabled = true;
+            var gradient = new Gradient();
+            gradient.SetKeys(
+                new[]
+                {
+                    new GradientColorKey(new Color(0.7f, 0.95f, 1f), 0f),
+                    new GradientColorKey(new Color(0.3f, 0.7f, 0.9f), 1f),
+                },
+                new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) }
+            );
+            colorOverLifetime.color = gradient;
+
+            var sizeOverLifetime = ps.sizeOverLifetime;
+            sizeOverLifetime.enabled = true;
+            sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(
+                new Keyframe(0f, 0.8f), new Keyframe(0.3f, 1.2f), new Keyframe(1f, 0f)));
 
             var renderer = ps.GetComponent<ParticleSystemRenderer>();
             renderer.material = CreateParticleMaterial();
@@ -645,7 +708,7 @@ namespace OSE.Core
     /// <summary>
     /// Auto-destroys the GameObject once the ParticleSystem finishes playing.
     /// </summary>
-    internal sealed class ParticleAutoDestroy : MonoBehaviour
+    public sealed class ParticleAutoDestroy : MonoBehaviour
     {
         private ParticleSystem _ps;
 

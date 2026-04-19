@@ -19,5 +19,15 @@ namespace OSE.Content
         /// See <see cref="ToolPartInteraction"/>.
         /// </summary>
         public ToolPartInteraction interaction;
+
+        /// <summary>
+        /// Per-action override of preview behavioural constants (durations,
+        /// vibration amp/freq, spark thresholds, colours, etc.) — see
+        /// <see cref="ToolActionPreviewConfig"/>. Null or any unset field
+        /// (0 / empty / alpha-zero) means "use the preview class's hardcoded
+        /// default". Lets authors tune a specific tool action without
+        /// affecting other steps that use the same profile.
+        /// </summary>
+        public ToolActionPreviewConfig previewConfig;
     }
 }

@@ -427,7 +427,7 @@ namespace OSE.Editor
                 InjectField(t.def.id, "toolActionRotation", tarJson);
             }
 
-            // Step 5a: Inject ToolDefinition.persistent for dirty tools
+            // Step 5a: Inject ToolDefinition.persistent + animationCues for dirty tools
             foreach (string toolId in _dirtyToolIds)
             {
                 ToolDefinition toolDef = null;
@@ -435,7 +435,26 @@ namespace OSE.Editor
                     foreach (var td in _pkg.tools)
                         if (td != null && td.id == toolId) { toolDef = td; break; }
                 if (toolDef != null)
+                {
                     InjectField(toolId, "persistent", toolDef.persistent ? "true" : "false");
+
+                    if (toolDef.animationCues != null && toolDef.animationCues.Length > 0)
+                    {
+                        var sb = new System.Text.StringBuilder("[");
+                        for (int ci = 0; ci < toolDef.animationCues.Length; ci++)
+                        {
+                            if (ci > 0) sb.Append(',');
+                            string raw = JsonUtility.ToJson(toolDef.animationCues[ci]);
+                            sb.Append(PackageJsonUtils.RoundFloatsInJson(raw));
+                        }
+                        sb.Append(']');
+                        InjectField(toolId, "animationCues", sb.ToString());
+                    }
+                    else
+                    {
+                        RemoveField(toolId, "animationCues");
+                    }
+                }
             }
             _dirtyToolIds.Clear();
 

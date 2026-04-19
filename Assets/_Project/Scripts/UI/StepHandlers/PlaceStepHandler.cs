@@ -166,6 +166,12 @@ namespace OSE.UI.Root
 
             string matchedTargetId = nearestInfo.TargetId;
             PlacementValidationResult result = PlacementValidator.ValidateExact();
+            // Capture the step id BEFORE AttemptPlacement so CheckStepCompletion can scope its
+            // completion check to this step. AttemptPlacement may synchronously complete the
+            // step (via the TaskCursor) and activate the next one — falling through to
+            // AreActiveStepRequiredPartsPlaced on the next step spuriously completes it when
+            // that step has empty requiredPartIds (e.g. Confirm-family shake-test steps).
+            string placingForStepId = session.AssemblyController?.StepController?.CurrentStepDefinition?.id;
             if (!isSubassemblySelection)
                 partController.AttemptPlacement(selectionId, matchedTargetId, result);
 
@@ -223,7 +229,7 @@ namespace OSE.UI.Root
                 RemovePreviewForSelection(selectionId);
 
             _ctx.HandlePlacementSucceeded(partGo);
-            CheckStepCompletion(partController, session);
+            CheckStepCompletion(partController, session, placingForStepId);
         }
 
         /// <summary>
@@ -595,6 +601,9 @@ namespace OSE.UI.Root
 
             string targetId = previewInfo.TargetId;
             PlacementValidationResult result = PlacementValidator.ValidateExact();
+            // Capture step id before AttemptPlacement — see AttemptPlacement() above for
+            // why this matters (synchronous cascading step completion).
+            string placingForStepId = session.AssemblyController?.StepController?.CurrentStepDefinition?.id;
             if (!isSubassemblySelection)
                 partController.AttemptPlacement(selectionId, targetId, result);
 
@@ -639,17 +648,29 @@ namespace OSE.UI.Root
             else
                 RemovePreviewForSelection(selectionId);
             _ctx.HandlePlacementSucceeded(partGo);
-            CheckStepCompletion(partController, session);
+            CheckStepCompletion(partController, session, placingForStepId);
         }
 
-        private void CheckStepCompletion(IPartRuntimeController partController, IMachineSessionController session)
+        private void CheckStepCompletion(IPartRuntimeController partController, IMachineSessionController session, string placingForStepId)
         {
+            // Bail if the step has already changed since placement started — the TaskCursor
+            // may have synchronously completed that step and activated the next one during
+            // AttemptPlacement. Running AreActiveStepRequiredPartsPlaced against a
+            // now-different active step spuriously auto-completes Confirm-family steps
+            // (which have empty requiredPartIds and thus trivially "satisfy" the check).
+            string currentStepId = session.AssemblyController?.StepController?.CurrentStepDefinition?.id;
+            if (!string.IsNullOrEmpty(placingForStepId) &&
+                !string.Equals(placingForStepId, currentStepId, StringComparison.Ordinal))
+            {
+                OseLog.VerboseInfo($"[PlaceHandler] Skipping CheckStepCompletion — step changed from '{placingForStepId}' to '{currentStepId}' during placement (cursor-driven completion already fired).");
+                return;
+            }
+
             // Don't complete the step if there are pending tool actions (e.g. clamp).
             // Mixed placement+tool steps must wait for both parts AND tool actions.
             if (HasPendingToolActions(session))
                 return;
 
-            string currentStepId = session.AssemblyController?.StepController?.CurrentStepDefinition?.id;
             if (ServiceRegistry.TryGet<ISubassemblyPlacementService>(out var subassemblyController) &&
                 subassemblyController != null &&
                 !string.IsNullOrWhiteSpace(currentStepId) &&

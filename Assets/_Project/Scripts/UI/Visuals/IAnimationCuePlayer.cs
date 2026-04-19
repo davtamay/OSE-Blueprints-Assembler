@@ -16,6 +16,17 @@ namespace OSE.UI.Root
         bool Tick(float deltaTime);
         void Stop();
         bool IsPlaying { get; }
+
+        /// <summary>
+        /// Progress-driven tick for cues with <c>trigger = "onDuringAction"</c>
+        /// and an authored <c>[startProgress, endProgress]</c> range. The
+        /// coordinator calls this with <paramref name="progress01"/> already
+        /// remapped to the cue's local 0..1 window (0 at startProgress, 1 at
+        /// endProgress). Tween-style players should sample their animation at
+        /// <paramref name="progress01"/>. Default implementation is a no-op —
+        /// time-based players stay on their wall-clock Tick() path.
+        /// </summary>
+        void TickProgress(float progress01) { /* no-op default */ }
     }
 
     /// <summary>

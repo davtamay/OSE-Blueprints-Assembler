@@ -30,6 +30,7 @@ namespace OSE.UI.Root
         // ── State ──
         private string _activeProfile;
         private StepProfile _activeProfileEnum;
+        private string _activeStepId;
         private Color _completionEffectColor = DefaultCompletionColor;
         private string _completionParticleId;
         private float _completionPulseScale = DefaultPulseScale;
@@ -118,6 +119,7 @@ namespace OSE.UI.Root
             _completedTargetCountForStep = 0;
             _activeProfile = context.Step.profile;
             _activeProfileEnum = context.Step.ResolvedProfile;
+            _activeStepId = context.Step.id;
 
             var fb = context.Step.feedback;
             _completionEffectColor = TryParseHexColor(fb?.completionEffectColor, DefaultCompletionColor);
@@ -157,6 +159,7 @@ namespace OSE.UI.Root
             _measure.Reset();
             _activeProfile = null;
             _activeProfileEnum = StepProfile.None;
+            _activeStepId = null;
             _completedTargetCountForStep = 0;
         }
 
@@ -209,6 +212,7 @@ namespace OSE.UI.Root
             // Phase 2: end anchor tap — spawn effect before clearing targets
             if (_measure.IsActive && _measure.TryCompletePhase2(interactedTargetId, out shouldCompleteStep, out _))
             {
+                _ctx.AnimationCues?.FireDuringActionStart(_activeStepId);
                 _animator.SpawnClickEffect(
                     interactedTargetId, _activeProfile, _activeProfileEnum,
                     _completionEffectColor, _completionPulseScale, _completionParticleId,
@@ -240,6 +244,7 @@ namespace OSE.UI.Root
             OseLog.Info($"[UseStepHandler] Tool action succeeded on '{interactedTargetId}'. shouldComplete={shouldCompleteStep}, profile={_activeProfile}.");
 
             string measureStartAnchor = _measure.Payload?.startAnchorTargetId;
+            _ctx.AnimationCues?.FireDuringActionStart(_activeStepId);
             _animator.SpawnClickEffect(
                 interactedTargetId, _activeProfile, _activeProfileEnum,
                 _completionEffectColor, _completionPulseScale, _completionParticleId,

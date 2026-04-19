@@ -53,25 +53,19 @@
     {
       "id": "subassembly_y_left_frame_mount",
       "name": "Y-Left Axis Frame Mount",
-      "stepIds": [
-        "step_mount_y_left_axis_to_frame",
-        "step_verify_y_left_axis_motion"
-      ],
+      "stepIds": [ "step_mount_y_left_axis_to_frame", "step_verify_y_left_axis_motion" ],
       "assemblyId": "assembly_d3d_axes_mount",
       "description": "Mounts the completed bench-built Y-left axis unit onto the left face of the welded frame and verifies smooth travel.",
       "milestoneMessage": "Y-left axis mounted and motion verified."
-    },
+  },
     {
       "id": "subassembly_y_right_frame_mount",
       "name": "Y-Right Axis Frame Mount",
-      "stepIds": [
-        "step_mount_y_right_axis_to_frame",
-        "step_verify_y_axis_pair_alignment"
-      ],
+      "stepIds": [ "step_mount_y_right_axis_to_frame", "step_verify_y_axis_pair_alignment" ],
       "assemblyId": "assembly_d3d_axes_mount",
       "description": "Mounts the completed bench-built Y-right axis unit onto the right face of the welded frame and confirms the Y-axis pair establishes the X-axis span.",
       "milestoneMessage": "Y-right axis mounted. Both Y axes are parallel with motors at back."
-    },
+  },
     {
       "id": "subassembly_x_axis_frame_fit",
       "name": "X-Axis Frame Fit",

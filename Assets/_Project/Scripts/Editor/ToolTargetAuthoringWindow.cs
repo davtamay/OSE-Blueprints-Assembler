@@ -268,10 +268,13 @@ namespace OSE.Editor
         private string              _previewingForStepId;
 
         private static readonly string[] _cueTypes =
-            { "transform", "shake", "pulse", "demonstratePlacement", "poseTransition", "orientSubassembly", "animationClip" };
+            { "transform", "shake", "pulse", "demonstratePlacement", "poseTransition", "orientSubassembly", "particle",
+              "emissionPulse", "colorTween", "materialFade", "clickPop", "poseWobble", "toolVibration",
+              "lineBetweenAnchors", "drawSpline", "measureLine", "screwSpin",
+              "animationClip" };
         // Trigger values written to machine.json (must stay in sync with _cueTriggerLabels)
         private static readonly string[] _cueTriggers =
-            { "onActivate", "afterDelay", "afterPartsShown", "onStepComplete", "onFirstInteraction", "onTaskComplete" };
+            { "onActivate", "afterDelay", "afterPartsShown", "onStepComplete", "onFirstInteraction", "onTaskComplete", "onDuringAction" };
         // Human-readable labels shown in the dropdown (parallel to _cueTriggers)
         private static readonly string[] _cueTriggerLabels =
         {
@@ -281,6 +284,7 @@ namespace OSE.Editor
             "On Step Complete — when all tasks are validated",
             "On First Interaction — first tool contact this step",
             "On Task Complete — when a specific task is validated",
+            "During Tool Action — while the user is performing the action",
         };
         private static readonly string[] _cueEasings   = { "smoothStep", "linear", "easeInOut" };
         private static readonly string[] _cueTargetModes = { "part", "ghost" };

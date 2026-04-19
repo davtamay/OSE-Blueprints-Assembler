@@ -29,6 +29,16 @@ namespace OSE.Interaction
         public float WeldLength;
 
         /// <summary>
+        /// Per-tool-action override payload. Preview classes read via
+        /// <c>ToolActionPreviewBase.Override(authored, fallback)</c>; any
+        /// unset field (0 / empty / alpha-zero) falls back to the preview's
+        /// hardcoded default, so null-config means legacy behaviour.
+        /// Set by <c>ToolActionPreviewController</c> when building the
+        /// context from the active <c>ToolActionDefinition</c>.
+        /// </summary>
+        public ToolActionPreviewConfig PreviewConfig;
+
+        /// <summary>
         /// Projects a world-space direction into screen space, returning a normalized 2D vector.
         /// Falls back to <paramref name="fallback"/> if projection fails or direction is zero.
         /// </summary>

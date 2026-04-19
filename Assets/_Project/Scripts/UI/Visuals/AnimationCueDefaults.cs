@@ -9,6 +9,7 @@ namespace OSE.UI.Root
             "transform"           => 1.5f,
             "pulse"               => 0f,
             "orientSubassembly"   => 0.6f,
+            "particle"            => 0f,
             _                     => 1.0f,
         };
     }

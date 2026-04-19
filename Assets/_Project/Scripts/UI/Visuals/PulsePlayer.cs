@@ -64,10 +64,12 @@ namespace OSE.UI.Root
 
         public void Stop()
         {
-            if (!IsPlaying) return;
+            // Always clear emission — skipping when IsPlaying=false (after
+            // natural Tick completion) left emission lingering between step
+            // transitions.
             IsPlaying = false;
 
-            // Clear emission
+            if (_ctx.Targets == null) return;
             for (int i = 0; i < _ctx.Targets.Count; i++)
             {
                 if (_ctx.Targets[i] != null)

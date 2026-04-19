@@ -94,6 +94,27 @@ namespace OSE.Content.Loading
         /// </summary>
         public readonly List<StackingEvent> stackingEvents;
 
+        /// <summary>
+        /// subassemblyId → author-written (or synthesized) group-level stepPose
+        /// entries from <see cref="SubassemblyPreviewPlacement.stepPoses"/>,
+        /// pre-resolved with each entry's effective <c>[fromSeq..throughSeq]</c>
+        /// span. Empty when a subassembly has no temporal group transform —
+        /// the resolver's composition branch short-circuits in that case.
+        ///
+        /// <para>Distinct from <see cref="authorSpansByPart"/> (per-part spans).
+        /// When both apply, per-part spans win over group spans — author
+        /// intent for a specific member always overrides group motion. This
+        /// matches the Phase-A design: group stepPoses describe the
+        /// subassembly's transform; a member's own stepPose is a local
+        /// override relative to that transform.</para>
+        /// </summary>
+        public readonly Dictionary<string, List<ResolvedAuthorSpan>> groupStepPosesBySubassembly;
+
+        /// <summary>
+        /// subassemblyId → its <see cref="SubassemblyPreviewPlacement"/> (or null).
+        /// </summary>
+        public readonly Dictionary<string, SubassemblyPreviewPlacement> subassemblyPlacementById;
+
         public PoseResolverIndex(MachinePackageDefinition pkg)
         {
             if (pkg == null) throw new ArgumentNullException(nameof(pkg));
@@ -210,6 +231,39 @@ namespace OSE.Content.Loading
                         if (!string.IsNullOrEmpty(pid) && !subassemblyIdByMember.ContainsKey(pid))
                             subassemblyIdByMember[pid] = sub.id;
                 }
+            }
+
+            // subassembly placement by id
+            subassemblyPlacementById = new Dictionary<string, SubassemblyPreviewPlacement>(StringComparer.Ordinal);
+            if (pkg.previewConfig?.subassemblyPlacements != null)
+            {
+                foreach (var sp in pkg.previewConfig.subassemblyPlacements)
+                {
+                    if (sp == null || string.IsNullOrEmpty(sp.subassemblyId)) continue;
+                    subassemblyPlacementById[sp.subassemblyId] = sp;
+                }
+            }
+
+            // group step-pose spans — same resolution as per-part spans but keyed by subassembly
+            groupStepPosesBySubassembly = new Dictionary<string, List<ResolvedAuthorSpan>>(StringComparer.Ordinal);
+            foreach (var kvp in subassemblyPlacementById)
+            {
+                var sp = kvp.Value;
+                if (sp.stepPoses == null || sp.stepPoses.Length == 0) continue;
+                var list = new List<ResolvedAuthorSpan>(sp.stepPoses.Length);
+                foreach (var entry in sp.stepPoses)
+                {
+                    if (entry == null) continue;
+                    int anchorSeq = seqByStepId.TryGetValue(entry.stepId ?? "", out int a) ? a : int.MinValue;
+                    int fromSeq = string.IsNullOrEmpty(entry.propagateFromStep)
+                        ? (anchorSeq >= 0 ? anchorSeq : int.MinValue)
+                        : (seqByStepId.TryGetValue(entry.propagateFromStep, out int f) ? f : int.MinValue);
+                    int throughSeq = string.IsNullOrEmpty(entry.propagateThroughStep)
+                        ? int.MaxValue
+                        : (seqByStepId.TryGetValue(entry.propagateThroughStep, out int t) ? t : int.MaxValue);
+                    list.Add(new ResolvedAuthorSpan(entry, anchorSeq, fromSeq, throughSeq));
+                }
+                if (list.Count > 0) groupStepPosesBySubassembly[kvp.Key] = list;
             }
 
             // integrated placements

@@ -5946,7 +5946,7 @@
         {
             "partId": "y_left_lm8uu_a",
             "startPosition": {
-                "x": 0.887,
+                "x": 0.588,
                 "y": 0.56,
                 "z": 0.015
             },
@@ -6003,7 +6003,7 @@
                         "y": 0.8,
                         "z": 0.8
                     },
-                    "propagateFromStep": "",
+                    "propagateFromStep": "step_batch_c1_rod_slide_test",
                     "propagateThroughStep": ""
                 }
             ],
@@ -6024,7 +6024,7 @@
         {
             "partId": "y_left_lm8uu_b",
             "startPosition": {
-                "x": 0.913,
+                "x": 0.614,
                 "y": 0.56,
                 "z": 0.015
             },
@@ -6081,7 +6081,7 @@
                         "y": 0.8,
                         "z": 0.8
                     },
-                    "propagateFromStep": "",
+                    "propagateFromStep": "step_batch_c1_rod_slide_test",
                     "propagateThroughStep": ""
                 }
             ],
@@ -6102,7 +6102,7 @@
         {
             "partId": "y_left_lm8uu_c",
             "startPosition": {
-                "x": 0.887,
+                "x": 0.588,
                 "y": 0.56,
                 "z": -0.015
             },
@@ -6159,7 +6159,7 @@
                         "y": 0.8,
                         "z": 0.8
                     },
-                    "propagateFromStep": "",
+                    "propagateFromStep": "step_batch_c1_rod_slide_test",
                     "propagateThroughStep": ""
                 }
             ],
@@ -6180,7 +6180,7 @@
         {
             "partId": "y_left_lm8uu_d",
             "startPosition": {
-                "x": 0.913,
+                "x": 0.614,
                 "y": 0.56,
                 "z": -0.015
             },
@@ -6237,7 +6237,7 @@
                         "y": 0.8,
                         "z": 0.8
                     },
-                    "propagateFromStep": "",
+                    "propagateFromStep": "step_batch_c1_rod_slide_test",
                     "propagateThroughStep": ""
                 }
             ],
@@ -7363,7 +7363,30 @@
                 "y": 1.0,
                 "z": 1.0
             },
-            "stepPoses": [],
+            "stepPoses": [
+                {
+                    "stepId": "step_batch_c1_rod_slide_test",
+                    "label": "synthesized:holdAtEnd (sub=subassembly_carriage_y_left cue=poseTransition[1])",
+                    "position": {
+                        "x": 0.5233,
+                        "y": 0.5509,
+                        "z": -1.3411e-7
+                    },
+                    "rotation": {
+                        "x": 0.0,
+                        "y": 0.7071,
+                        "z": -0.7071,
+                        "w": 0.0
+                    },
+                    "scale": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    },
+                    "propagateFromStep": "",
+                    "propagateThroughStep": ""
+                }
+            ],
             "splinePath": {
                 "radius": 0.0,
                 "segments": 8,
@@ -8707,7 +8730,7 @@
             "partId": "batch_test_rod",
             "startPosition": {
                 "x": 0.5222,
-                "y": 0.7002,
+                "y": 0.757,
                 "z": 0.027
             },
             "startRotation": {

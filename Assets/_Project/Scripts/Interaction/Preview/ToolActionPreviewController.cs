@@ -37,6 +37,7 @@ namespace OSE.Interaction
         private ToolPoseConfig _toolPose;
         private Vector3 _weldAxis;
         private float _weldLength;
+        private OSE.Content.ToolActionPreviewConfig _previewConfig;
         private Renderer _targetSphereRenderer;
         private bool _completed;
         private bool _instantPlacement;
@@ -83,6 +84,7 @@ namespace OSE.Interaction
             _speed = Mathf.Max(speed, 0.1f);
             _weldAxis = ctx.WeldAxis;
             _weldLength = ctx.WeldLength;
+            _previewConfig = ctx.PreviewConfig;
             _onComplete = onComplete;
             _onActionDone = onActionDone;
             _onCancel = onCancel;
@@ -226,7 +228,9 @@ namespace OSE.Interaction
 
         private void TickApproach()
         {
-            float t = Mathf.Clamp01(_elapsed / (BaseApproachDuration / _speed));
+            float approachDur = _previewConfig != null && _previewConfig.approachDuration > 0f
+                ? _previewConfig.approachDuration : BaseApproachDuration;
+            float t = Mathf.Clamp01(_elapsed / (approachDur / _speed));
             float eased = EaseOutQuad(t);
 
             _toolPreview.transform.position = Vector3.Lerp(_startPos, _workingPos, eased);
@@ -273,7 +277,8 @@ namespace OSE.Interaction
                     Platform = InteractionMode.Auto,
                     ToolPose = _toolPose,
                     WeldAxis = _weldAxis,
-                    WeldLength = _weldLength
+                    WeldLength = _weldLength,
+                    PreviewConfig = _previewConfig,
                 };
                 _preview.Begin(ctx);
                 _partEffect?.Begin();
@@ -291,6 +296,13 @@ namespace OSE.Interaction
             float progress = (_mode == PreviewMode.Observe)
                 ? _preview.TickObserve(deltaTime * _speed)
                 : _preview.TickGuided(deltaTime, dragDelta, screenPos);
+
+            // Phase 2: stream progress to any listener (notably
+            // AnimationCueCoordinator) so progress-ranged onDuringAction
+            // cues advance in lockstep with the tool action. Decoupled via
+            // RuntimeEventBus to respect the Interaction → UI asmdef
+            // boundary.
+            OSE.Core.RuntimeEventBus.Publish(new OSE.Core.ToolActionProgressTick(progress));
 
             // Drive part transform and follow its displacement.
             //
@@ -343,7 +355,9 @@ namespace OSE.Interaction
 
         private void TickReturn()
         {
-            float t = Mathf.Clamp01(_elapsed / (BaseReturnDuration / _speed));
+            float returnDur = _previewConfig != null && _previewConfig.returnDuration > 0f
+                ? _previewConfig.returnDuration : BaseReturnDuration;
+            float t = Mathf.Clamp01(_elapsed / (returnDur / _speed));
             float eased = EaseInQuad(t);
 
             _toolPreview.transform.position = Vector3.Lerp(_returnStartPos, _returnEndPos, eased);
@@ -496,7 +510,10 @@ namespace OSE.Interaction
             Vector3 approachDir = -camToSurface; // from surface toward camera
 
             var profileDesc = ToolProfileRegistry.Get(profile);
-            float workingDist = profileDesc.WorkingDistance;
+            // Per-action override (ToolActionPreviewConfig.workingDistance) wins
+            // when > 0; else use the profile descriptor's baseline.
+            float workingDist = _previewConfig != null && _previewConfig.workingDistance > 0f
+                ? _previewConfig.workingDistance : profileDesc.WorkingDistance;
             workingPos = surfacePos + approachDir * (toolHalfLength + workingDist);
 
             // SquareCheck: prefer authored toolActionRotation when available (same as
@@ -559,8 +576,12 @@ namespace OSE.Interaction
                 Quaternion shaftCorrection = Quaternion.FromToRotation(currentTip, desiredShaft);
                 actionRot = shaftCorrection * _startRot;
 
-                // Apply small profile-specific tilt for realism
-                float tiltDegrees = profileDesc.ApproachTiltDegrees;
+                // Apply small profile-specific tilt for realism; per-action
+                // override (ToolActionPreviewConfig.approachTiltDegrees) wins
+                // when > 0.
+                float tiltDegrees = _previewConfig != null && _previewConfig.approachTiltDegrees > 0f
+                    ? _previewConfig.approachTiltDegrees
+                    : profileDesc.ApproachTiltDegrees;
                 if (Mathf.Abs(tiltDegrees) > 0.01f)
                 {
                     Vector3 tiltAxis = Vector3.Cross(desiredShaft, Vector3.up).normalized;
