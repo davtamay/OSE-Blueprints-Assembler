@@ -365,6 +365,8 @@ namespace OSE.UI.Root
         /// to any target in the set. All three gates must hold; a single
         /// failure falls back to strict per-part matching.
         /// </summary>
+        private static string _lastCrossDiagKey;
+
         private static bool TryGetInterchangeableSet(string selectionId, out HashSet<string> openPartIds)
         {
             openPartIds = null;
@@ -372,10 +374,13 @@ namespace OSE.UI.Root
             string draggedPartId = TaskInstanceId.ToPartId(selectionId);
             if (string.IsNullOrEmpty(draggedPartId)) return false;
 
-            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session)) return false;
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
+            { LogCrossDiag(selectionId, "no-session"); return false; }
             TaskCursor cursor = session?.AssemblyController?.StepController?.CurrentTaskCursor;
-            if (cursor == null || cursor.IsComplete || string.IsNullOrEmpty(cursor.CurrentSetLabel))
-                return false;
+            if (cursor == null)        { LogCrossDiag(selectionId, "no-cursor"); return false; }
+            if (cursor.IsComplete)     { LogCrossDiag(selectionId, "cursor-complete"); return false; }
+            if (string.IsNullOrEmpty(cursor.CurrentSetLabel))
+            { LogCrossDiag(selectionId, $"no-set-label (span={cursor.SpanIndex}/{cursor.TotalSpans}, open={cursor.OpenTasks?.Count ?? 0})"); return false; }
 
             var partIds = new HashSet<string>(StringComparer.Ordinal);
             foreach (var entry in cursor.OpenTasks)
@@ -383,24 +388,29 @@ namespace OSE.UI.Root
                 if (entry?.kind == "part" && !string.IsNullOrEmpty(entry.id))
                     partIds.Add(TaskInstanceId.ToPartId(entry.id));
             }
-            if (partIds.Count < 2 || !partIds.Contains(draggedPartId)) return false;
+            if (partIds.Count < 2)
+            { LogCrossDiag(selectionId, $"set-too-small ({partIds.Count})"); return false; }
+            if (!partIds.Contains(draggedPartId))
+            { LogCrossDiag(selectionId, $"dragged-not-in-set draggedPartId='{draggedPartId}' set=[{string.Join(",", partIds)}]"); return false; }
 
             var package = session.Package;
-            if (package == null) return false;
+            if (package == null) { LogCrossDiag(selectionId, "no-package"); return false; }
             var placements = package.previewConfig?.partPlacements;
-            if (placements == null) return false;
+            if (placements == null) { LogCrossDiag(selectionId, "no-placements"); return false; }
 
             string commonAssetRef = null;
             bool scaleSet = false;
             SceneFloat3 commonScale = default;
             foreach (var pid in partIds)
             {
-                if (!package.TryGetPart(pid, out var part) || part == null) return false;
-                if (string.IsNullOrEmpty(part.assetRef)) return false;
+                if (!package.TryGetPart(pid, out var part) || part == null)
+                { LogCrossDiag(selectionId, $"part-not-found '{pid}'"); return false; }
+                if (string.IsNullOrEmpty(part.assetRef))
+                { LogCrossDiag(selectionId, $"part-missing-assetRef '{pid}'"); return false; }
                 if (commonAssetRef == null) commonAssetRef = part.assetRef;
-                else if (!string.Equals(commonAssetRef, part.assetRef, StringComparison.Ordinal)) return false;
+                else if (!string.Equals(commonAssetRef, part.assetRef, StringComparison.Ordinal))
+                { LogCrossDiag(selectionId, $"assetRef-mismatch '{pid}': '{part.assetRef}' vs '{commonAssetRef}'"); return false; }
 
-                // Find assembledScale for this part
                 SceneFloat3 scale = default;
                 bool found = false;
                 foreach (var entry in placements)
@@ -412,13 +422,23 @@ namespace OSE.UI.Root
                         break;
                     }
                 }
-                if (!found) return false;
+                if (!found) { LogCrossDiag(selectionId, $"no-placement '{pid}'"); return false; }
                 if (!scaleSet) { commonScale = scale; scaleSet = true; }
-                else if (!ScaleApprox(commonScale, scale)) return false;
+                else if (!ScaleApprox(commonScale, scale))
+                { LogCrossDiag(selectionId, $"scale-mismatch '{pid}'"); return false; }
             }
 
             openPartIds = partIds;
+            LogCrossDiag(selectionId, $"OK set=[{string.Join(",", partIds)}] label='{cursor.CurrentSetLabel}'");
             return true;
+        }
+
+        private static void LogCrossDiag(string selectionId, string reason)
+        {
+            string key = selectionId + "|" + reason;
+            if (key == _lastCrossDiagKey) return;
+            _lastCrossDiagKey = key;
+            OseLog.Info($"[PlaceHandler][cross-diag] selection='{selectionId}' → {reason}");
         }
 
         private static bool ScaleApprox(SceneFloat3 a, SceneFloat3 b)
