@@ -1444,15 +1444,8 @@
       "sequenceIndex": 4,
       "instructionText": "Equip the MIG torch and place four short tack welds on the bottom frame side in this order: upper-left, lower-right, upper-right, then lower-left. Keep the panel flat and avoid a long heat soak.",
       "whyItMattersText": "Short tacks lock the overlap geometry in place while limiting distortion before the full frame cube is assembled.",
-      "optionalPartIds": [],
       "relevantToolIds": [
         "tool_mig_torch"
-      ],
-      "targetIds": [
-        "target_bottom_weld_upper_left",
-        "target_bottom_weld_lower_right",
-        "target_bottom_weld_upper_right",
-        "target_bottom_weld_lower_left"
       ],
       "targetOrder": "sequential",
       "family": "Use",
@@ -1463,44 +1456,6 @@
         "hint_bottom_weld_lower_right",
         "hint_bottom_weld_upper_right",
         "hint_bottom_weld_lower_left"
-      ],
-      "requiredToolActions": [
-        {
-          "id": "action_bottom_weld_upper_left",
-          "toolId": "tool_mig_torch",
-          "actionType": "weld_pass",
-          "targetId": "target_bottom_weld_upper_left",
-          "requiredCount": 1,
-          "successMessage": "Bottom Frame Side upper-left corner tack complete.",
-          "failureMessage": "Equip the MIG torch and use it on the highlighted corner tack target."
-        },
-        {
-          "id": "action_bottom_weld_lower_right",
-          "toolId": "tool_mig_torch",
-          "actionType": "weld_pass",
-          "targetId": "target_bottom_weld_lower_right",
-          "requiredCount": 1,
-          "successMessage": "Bottom Frame Side lower-right corner tack complete.",
-          "failureMessage": "Equip the MIG torch and use it on the highlighted corner tack target."
-        },
-        {
-          "id": "action_bottom_weld_upper_right",
-          "toolId": "tool_mig_torch",
-          "actionType": "weld_pass",
-          "targetId": "target_bottom_weld_upper_right",
-          "requiredCount": 1,
-          "successMessage": "Bottom Frame Side upper-right corner tack complete.",
-          "failureMessage": "Equip the MIG torch and use it on the highlighted corner tack target."
-        },
-        {
-          "id": "action_bottom_weld_lower_left",
-          "toolId": "tool_mig_torch",
-          "actionType": "weld_pass",
-          "targetId": "target_bottom_weld_lower_left",
-          "requiredCount": 1,
-          "successMessage": "Bottom Frame Side lower-left corner tack complete.",
-          "failureMessage": "Equip the MIG torch and use it on the highlighted corner tack target."
-        }
       ],
       "allowSkip": false,
       "challengeFlags": {
@@ -1533,8 +1488,16 @@
         "milestoneMessage": "First frame side complete! You've learned the full Place-Square-Clamp-Weld cycle.",
         "safetyNote": "Keep the MIG torch tip clean between tacks. A dirty tip causes spatter and weak penetration.",
         "counterfactualText": "Skipping the diagonal order would concentrate heat on one side, warping the panel before the last corner locks."
-      }
-    },
+      },
+      "removePersistentToolIds": [],
+      "targetIds": [ "target_bottom_weld_upper_left", "target_bottom_weld_lower_right", "target_bottom_weld_upper_right", "target_bottom_weld_lower_left" ],
+      "requiredToolActions": [ {"id":"action_bottom_weld_upper_left","toolId":"tool_mig_torch","actionType":"weld_pass","targetId":"target_bottom_weld_upper_left","requiredCount":1,"successMessage":"Bottom Frame Side upper-left corner tack complete.","failureMessage":"Equip the MIG torch and use it on the highlighted corner tack target.","interaction":{"archetype":"","axis":{"space":"","vec":{"x":0.0,"y":0.0,"z":0.0}},"distance":0.0,"totalRotationsDeg":0.0,"rotationDegPerUnit":0.0,"followPart":true,"easing":"","toPose":""}}, {"id":"action_bottom_weld_lower_right","toolId":"tool_mig_torch","actionType":"weld_pass","targetId":"target_bottom_weld_lower_right","requiredCount":1,"successMessage":"Bottom Frame Side lower-right corner tack complete.","failureMessage":"Equip the MIG torch and use it on the highlighted corner tack target.","interaction":{"archetype":"","axis":{"space":"","vec":{"x":0.0,"y":0.0,"z":0.0}},"distance":0.0,"totalRotationsDeg":0.0,"rotationDegPerUnit":0.0,"followPart":true,"easing":"","toPose":""}}, {"id":"action_bottom_weld_upper_right","toolId":"tool_mig_torch","actionType":"weld_pass","targetId":"target_bottom_weld_upper_right","requiredCount":1,"successMessage":"Bottom Frame Side upper-right corner tack complete.","failureMessage":"Equip the MIG torch and use it on the highlighted corner tack target.","interaction":{"archetype":"","axis":{"space":"","vec":{"x":0.0,"y":0.0,"z":0.0}},"distance":0.0,"totalRotationsDeg":0.0,"rotationDegPerUnit":0.0,"followPart":true,"easing":"","toPose":""}}, {"id":"action_bottom_weld_lower_left","toolId":"tool_mig_torch","actionType":"weld_pass","targetId":"target_bottom_weld_lower_left","requiredCount":1,"successMessage":"Bottom Frame Side lower-left corner tack complete.","failureMessage":"Equip the MIG torch and use it on the highlighted corner tack target.","interaction":{"archetype":"","axis":{"space":"","vec":{"x":0.0,"y":0.0,"z":0.0}},"distance":0.0,"totalRotationsDeg":0.0,"rotationDegPerUnit":0.0,"followPart":true,"easing":"","toPose":""}} ],
+      "taskOrder": [{"kind":"target","id":"target_bottom_weld_upper_left","unorderedSet":"t"},
+        {"kind":"target","id":"target_bottom_weld_lower_right","unorderedSet":"t"},
+        {"kind":"target","id":"target_bottom_weld_upper_right","unorderedSet":"t"},
+        {"kind":"target","id":"target_bottom_weld_lower_left","unorderedSet":"t"}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_top_place_bars",
       "name": "Place all four top frame side bars",
@@ -1597,19 +1560,23 @@
       "taskOrder": [
         {
           "kind": "part",
-          "id": "d3d_frame_top_top_bar"
+          "id": "d3d_frame_top_top_bar",
+          "unorderedSet": "top_frame_bars"
         },
         {
           "kind": "part",
-          "id": "d3d_frame_top_right_bar"
+          "id": "d3d_frame_top_right_bar",
+          "unorderedSet": "top_frame_bars"
         },
         {
           "kind": "part",
-          "id": "d3d_frame_top_bottom_bar"
+          "id": "d3d_frame_top_bottom_bar",
+          "unorderedSet": "top_frame_bars"
         },
         {
           "kind": "part",
-          "id": "d3d_frame_top_left_bar"
+          "id": "d3d_frame_top_left_bar",
+          "unorderedSet": "top_frame_bars"
         }
       ],
       "workingOrientation": {
@@ -1891,19 +1858,23 @@
       "taskOrder": [
         {
           "kind": "part",
-          "id": "d3d_frame_left_top_bar"
+          "id": "d3d_frame_left_top_bar",
+          "unorderedSet": "left_frame_bars"
         },
         {
           "kind": "part",
-          "id": "d3d_frame_left_right_bar"
+          "id": "d3d_frame_left_right_bar",
+          "unorderedSet": "left_frame_bars"
         },
         {
           "kind": "part",
-          "id": "d3d_frame_left_bottom_bar"
+          "id": "d3d_frame_left_bottom_bar",
+          "unorderedSet": "left_frame_bars"
         },
         {
           "kind": "part",
-          "id": "d3d_frame_left_left_bar"
+          "id": "d3d_frame_left_left_bar",
+          "unorderedSet": "left_frame_bars"
         }
       ],
       "workingOrientation": {
@@ -2182,19 +2153,23 @@
       "taskOrder": [
         {
           "kind": "part",
-          "id": "d3d_frame_right_top_bar"
+          "id": "d3d_frame_right_top_bar",
+          "unorderedSet": "right_frame_bars"
         },
         {
           "kind": "part",
-          "id": "d3d_frame_right_right_bar"
+          "id": "d3d_frame_right_right_bar",
+          "unorderedSet": "right_frame_bars"
         },
         {
           "kind": "part",
-          "id": "d3d_frame_right_bottom_bar"
+          "id": "d3d_frame_right_bottom_bar",
+          "unorderedSet": "right_frame_bars"
         },
         {
           "kind": "part",
-          "id": "d3d_frame_right_left_bar"
+          "id": "d3d_frame_right_left_bar",
+          "unorderedSet": "right_frame_bars"
         }
       ],
       "workingOrientation": {
@@ -2473,19 +2448,23 @@
       "taskOrder": [
         {
           "kind": "part",
-          "id": "d3d_frame_front_top_bar"
+          "id": "d3d_frame_front_top_bar",
+          "unorderedSet": "front_frame_bars"
         },
         {
           "kind": "part",
-          "id": "d3d_frame_front_right_bar"
+          "id": "d3d_frame_front_right_bar",
+          "unorderedSet": "front_frame_bars"
         },
         {
           "kind": "part",
-          "id": "d3d_frame_front_bottom_bar"
+          "id": "d3d_frame_front_bottom_bar",
+          "unorderedSet": "front_frame_bars"
         },
         {
           "kind": "part",
-          "id": "d3d_frame_front_left_bar"
+          "id": "d3d_frame_front_left_bar",
+          "unorderedSet": "front_frame_bars"
         }
       ],
       "workingOrientation": {
@@ -2764,19 +2743,23 @@
       "taskOrder": [
         {
           "kind": "part",
-          "id": "d3d_frame_rear_top_bar"
+          "id": "d3d_frame_rear_top_bar",
+          "unorderedSet": "rear_frame_bars"
         },
         {
           "kind": "part",
-          "id": "d3d_frame_rear_right_bar"
+          "id": "d3d_frame_rear_right_bar",
+          "unorderedSet": "rear_frame_bars"
         },
         {
           "kind": "part",
-          "id": "d3d_frame_rear_bottom_bar"
+          "id": "d3d_frame_rear_bottom_bar",
+          "unorderedSet": "rear_frame_bars"
         },
         {
           "kind": "part",
-          "id": "d3d_frame_rear_left_bar"
+          "id": "d3d_frame_rear_left_bar",
+          "unorderedSet": "rear_frame_bars"
         }
       ],
       "workingOrientation": {
