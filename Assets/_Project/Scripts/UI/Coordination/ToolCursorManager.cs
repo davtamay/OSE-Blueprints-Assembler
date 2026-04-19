@@ -60,7 +60,22 @@ namespace OSE.UI.Root
         public bool PositionUpdateSuspended
         {
             get => _positionUpdateSuspended;
-            set => _positionUpdateSuspended = value;
+            set
+            {
+                _positionUpdateSuspended = value;
+
+                // When the preview controller suspends cursor tracking to
+                // take over the tool (animating it toward a target), ensure
+                // the tool GO is active. UpdatePosition deactivates the
+                // preview while a drag is in flight; if the drag-end and
+                // preview-entry race interleaves the wrong way, the tool
+                // is left SetActive(false) and the subsequent preview
+                // animation plays on an invisible GameObject — user sees
+                // "tool goes away when selecting target". Force-active on
+                // suspend closes that race.
+                if (value && _toolPreviewIndicator != null && !_toolPreviewIndicator.activeSelf)
+                    _toolPreviewIndicator.SetActive(true);
+            }
         }
 
         public ToolCursorManager(Transform fallbackParent)
