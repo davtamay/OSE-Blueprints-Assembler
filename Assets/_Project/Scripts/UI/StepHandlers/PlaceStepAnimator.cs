@@ -400,6 +400,14 @@ namespace OSE.UI.Root
 
             Color emissionColor = ColorPulseHelper.Lerp(RequiredPartEmissionA, RequiredPartEmissionB, RequiredPartPulseSpeed * Mathf.PI * 2f);
 
+            // Resolve once per frame: under cursor-gated steps, the
+            // "required-and-actionable-now" set is the cursor's current span's
+            // part ids — not the whole step.requiredPartIds list. Parts
+            // in future spans must not pulse as selectable, or the tray
+            // telegraph contradicts the cursor's gating. Null set = no cursor
+            // or no spans → legacy behavior: pulse every requiredPartId.
+            HashSet<string> openPartIds = ResolveCursorOpenPartIds();
+
             for (int i = 0; i < _requiredPartIdsForStep.Length; i++)
             {
                 string partId = _requiredPartIdsForStep[i];
@@ -417,8 +425,30 @@ namespace OSE.UI.Root
                 if (state == PartPlacementState.PlacedVirtually || state == PartPlacementState.Completed)
                     continue;
 
+                if (openPartIds != null && !openPartIds.Contains(TaskInstanceId.ToPartId(partId)))
+                {
+                    // Cursor is active but this part is in a later span —
+                    // not selectable right now, don't telegraph it as such.
+                    MaterialHelper.SetEmission(partGo, Color.black);
+                    continue;
+                }
+
                 MaterialHelper.SetEmission(partGo, emissionColor);
             }
+        }
+
+        private static HashSet<string> ResolveCursorOpenPartIds()
+        {
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session)) return null;
+            var cursor = session?.AssemblyController?.StepController?.CurrentTaskCursor;
+            if (cursor == null || cursor.TotalSpans == 0 || cursor.IsComplete) return null;
+            var set = new HashSet<string>(System.StringComparer.Ordinal);
+            foreach (var entry in cursor.OpenTasks)
+            {
+                if (entry?.kind != "part" || string.IsNullOrEmpty(entry.id)) continue;
+                set.Add(TaskInstanceId.ToPartId(entry.id));
+            }
+            return set;
         }
 
         private void FlashInvalid(GameObject partGo, string partId)
