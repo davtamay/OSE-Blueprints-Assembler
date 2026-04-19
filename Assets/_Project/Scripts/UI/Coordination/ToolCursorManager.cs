@@ -134,14 +134,22 @@ namespace OSE.UI.Root
                 return;
             }
 
-            Clear(toolPreviewIsHintPreview, clearHintCallback);
-            _loadedToolId = null;
-
             if (!hasActive)
+            {
+                // No active tool anymore — tear down whatever's there.
+                Clear(toolPreviewIsHintPreview, clearHintCallback);
+                _loadedToolId = null;
                 return;
+            }
 
             int myGeneration = ++_refreshGeneration;
 
+            // Load-first-then-swap: keep the old preview alive and tracking the
+            // cursor while we await the new tool's asset. Only once the new one
+            // is ready do we tear down the old and install the new. Previously
+            // Clear() was called BEFORE the await, leaving the cursor empty for
+            // the full asset-load duration — that was the "tool goes away" blink
+            // on the first visit to a step with a different required tool.
             GameObject previewTool = null;
             if (!string.IsNullOrWhiteSpace(tool.assetRef))
             {
@@ -151,7 +159,8 @@ namespace OSE.UI.Root
                 previewTool = await spawner.LoadPackageAssetAsync(toolPath, ct: ct);
             }
 
-            // Another RefreshAsync call started while we were awaiting — discard our result
+            // Another RefreshAsync call started while we were awaiting — discard
+            // our result and let the newer call take over. Old preview stays put.
             if (myGeneration != _refreshGeneration)
             {
                 if (previewTool != null)
@@ -161,6 +170,12 @@ namespace OSE.UI.Root
 
             if (previewTool == null)
                 previewTool = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+
+            // Now — and only now — swap. Tear down the old preview and install
+            // the new one. The instantaneous swap is invisible compared to the
+            // prior gap-during-async-load behavior.
+            Clear(toolPreviewIsHintPreview, clearHintCallback);
+            _loadedToolId = null;
 
             _toolPreviewIndicator = previewTool;
             _toolPreviewIndicator.name = $"CursorTool_{activeToolId}";
