@@ -24,6 +24,7 @@ namespace OSE.Content.Loading
             InflatePartTemplates(package);
             BakeStagingPoses(package);
             InferStepParentIds(package);
+            NormalizeTaskOrderToolActionKinds(package);
             ValidateUnorderedSets(package);
             NormalizeToolActions(package);
             ResolveToolActionPartIds(package);
@@ -282,6 +283,75 @@ namespace OSE.Content.Loading
                         t == TriggerOnFirstInteraction || t == TriggerOnTaskComplete;
                     if (!canonical)
                         Debug.LogError($"[CueRuntime.Validate] {hostLabel} cue[{i}] has unknown trigger '{t}'. Canonical values: onActivate, afterDelay, afterPartsShown, onStepComplete, onFirstInteraction, onTaskComplete.");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Rewrites <see cref="TaskOrderEntry.kind"/> = <c>"target"</c> entries
+        /// to <c>"toolAction"</c> when the step has a
+        /// <see cref="StepDefinition.requiredToolActions"/> entry whose
+        /// <c>targetId</c> matches the task entry's <c>id</c>. The entry's
+        /// <c>id</c> is replaced with the matching action's id so the runtime
+        /// <see cref="TaskCursor"/> and <c>ToolRuntimeController</c> see the
+        /// same identity the completion-notify path uses.
+        ///
+        /// <para>Why: TTAW's <c>GetOrDeriveTaskOrder</c> writes <c>kind="target"</c>
+        /// for every entry in <c>step.targetIds</c> on Use/Connect/Weld steps,
+        /// then skips a paired <c>kind="toolAction"</c> entry because the
+        /// target is already covered. That choice was fine before Phase I.d,
+        /// but the cursor now drives tool-action availability and advancement,
+        /// and it only notifies on <c>kind="toolAction"</c>. A step authored
+        /// with <c>kind="target"</c> stalls: the user fires the action, the
+        /// controller calls <c>cursor.NotifyTaskCompleted("toolAction", …)</c>,
+        /// no match, cursor never advances, trainee is locked to the first
+        /// target forever.</para>
+        ///
+        /// <para>Structural prevention: normalize at load time, keep
+        /// <c>unorderedSet</c> / <c>isOptional</c> / <c>endTransform</c>
+        /// intact. Also emit a warning so authors can clean up the source
+        /// eventually — but content continues to play correctly in the
+        /// meantime. Entries with no matching action are left alone (they
+        /// may belong to a Confirm-family step with its own semantics).</para>
+        /// </summary>
+        private static void NormalizeTaskOrderToolActionKinds(MachinePackageDefinition package)
+        {
+            if (package?.steps == null) return;
+
+            for (int si = 0; si < package.steps.Length; si++)
+            {
+                var step = package.steps[si];
+                if (step?.taskOrder == null || step.taskOrder.Length == 0) continue;
+                var actions = step.requiredToolActions;
+                if (actions == null || actions.Length == 0) continue;
+
+                int rewritten = 0;
+                for (int ti = 0; ti < step.taskOrder.Length; ti++)
+                {
+                    var entry = step.taskOrder[ti];
+                    if (entry == null) continue;
+                    if (!string.Equals(entry.kind, "target", StringComparison.Ordinal)) continue;
+                    if (string.IsNullOrEmpty(entry.id)) continue;
+
+                    ToolActionDefinition match = null;
+                    for (int ai = 0; ai < actions.Length; ai++)
+                    {
+                        var a = actions[ai];
+                        if (a == null || string.IsNullOrEmpty(a.id)) continue;
+                        if (!string.Equals(a.targetId, entry.id, StringComparison.Ordinal)) continue;
+                        match = a;
+                        break;
+                    }
+                    if (match == null) continue;
+
+                    entry.kind = "toolAction";
+                    entry.id   = match.id;
+                    rewritten++;
+                }
+
+                if (rewritten > 0)
+                {
+                    Debug.LogWarning($"[TaskOrder.Normalize] step '{step.id}': rewrote {rewritten} kind='target' entr{(rewritten == 1 ? "y" : "ies")} to kind='toolAction' (cursor drives on action ids, not target ids). Update the authoring source to emit kind='toolAction' directly.");
                 }
             }
         }

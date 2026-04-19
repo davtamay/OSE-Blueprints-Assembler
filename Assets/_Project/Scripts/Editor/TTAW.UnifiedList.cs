@@ -192,21 +192,41 @@ namespace OSE.Editor
 
                 // Place-family targets are snap anchors, not user-facing tasks — omit them.
                 // Confirm-family targets are inspection points — shown as "confirm" kind (no tool picker).
-                // Use/Connect targets are tool interaction points.
-                var coveredTargetIds = new HashSet<string>(StringComparer.Ordinal);
+                // Use/Connect targets paired with a tool action MUST be authored as kind="toolAction"
+                // so the runtime cursor (which notifies on action.id, not target.id) can advance
+                // past them — see NormalizeTaskOrderToolActionKinds in MachinePackageNormalizer.
+                var coveredTargetIds    = new HashSet<string>(StringComparer.Ordinal);
+                var coveredActionIds    = new HashSet<string>(StringComparer.Ordinal);
                 if (!isPlace && step.targetIds != null)
                     foreach (var tid in step.targetIds)
                         if (!string.IsNullOrEmpty(tid))
                         {
-                            string kind = isWire ? "wire" : isConfirm2 ? "confirm" : "target";
-                            order.Add(new TaskOrderEntry { kind = kind, id = tid });
+                            ToolActionDefinition backingAction = null;
+                            if (step.requiredToolActions != null)
+                                foreach (var a in step.requiredToolActions)
+                                    if (a != null && !string.IsNullOrEmpty(a.id) &&
+                                        string.Equals(a.targetId, tid, StringComparison.Ordinal))
+                                    { backingAction = a; break; }
+
+                            if (backingAction != null)
+                            {
+                                order.Add(new TaskOrderEntry { kind = "toolAction", id = backingAction.id });
+                                coveredActionIds.Add(backingAction.id);
+                            }
+                            else
+                            {
+                                string kind = isWire ? "wire" : isConfirm2 ? "confirm" : "target";
+                                order.Add(new TaskOrderEntry { kind = kind, id = tid });
+                            }
                             coveredTargetIds.Add(tid);
                         }
 
-                // Only add toolAction entries whose target isn't already shown via targetIds
+                // Catch any remaining toolAction whose target wasn't in step.targetIds.
                 if (step.requiredToolActions != null)
                     foreach (var a in step.requiredToolActions)
-                        if (!string.IsNullOrEmpty(a?.id) && !coveredTargetIds.Contains(a.targetId ?? ""))
+                        if (!string.IsNullOrEmpty(a?.id) &&
+                            !coveredActionIds.Contains(a.id) &&
+                            !coveredTargetIds.Contains(a.targetId ?? ""))
                             order.Add(new TaskOrderEntry { kind = "toolAction", id = a.id });
             }
 
