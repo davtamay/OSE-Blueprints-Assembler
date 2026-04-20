@@ -5946,7 +5946,7 @@
         {
             "partId": "y_left_lm8uu_a",
             "startPosition": {
-                "x": 0.588,
+                "x": 0.887,
                 "y": 0.56,
                 "z": 0.015
             },
@@ -5983,30 +5983,7 @@
                 "y": 0.8,
                 "z": 0.8
             },
-            "stepPoses": [
-                {
-                    "stepId": "step_batch_c1_rod_slide_test",
-                    "label": "synthesized:holdAtEnd (sub=subassembly_carriage_y_left cue=poseTransition[1])",
-                    "position": {
-                        "x": 0.5222,
-                        "y": 0.5376,
-                        "z": 0.028
-                    },
-                    "rotation": {
-                        "x": -0.5,
-                        "y": 0.5,
-                        "z": 0.5,
-                        "w": 0.5
-                    },
-                    "scale": {
-                        "x": 0.8,
-                        "y": 0.8,
-                        "z": 0.8
-                    },
-                    "propagateFromStep": "step_batch_c1_rod_slide_test",
-                    "propagateThroughStep": ""
-                }
-            ],
+            "stepPoses": [],
             "splinePath": {
                 "radius": 0.0,
                 "segments": 0,
@@ -6024,7 +6001,7 @@
         {
             "partId": "y_left_lm8uu_b",
             "startPosition": {
-                "x": 0.614,
+                "x": 0.913,
                 "y": 0.56,
                 "z": 0.015
             },
@@ -6061,30 +6038,7 @@
                 "y": 0.8,
                 "z": 0.8
             },
-            "stepPoses": [
-                {
-                    "stepId": "step_batch_c1_rod_slide_test",
-                    "label": "synthesized:holdAtEnd (sub=subassembly_carriage_y_left cue=poseTransition[1])",
-                    "position": {
-                        "x": 0.5222,
-                        "y": 0.5636,
-                        "z": 0.028
-                    },
-                    "rotation": {
-                        "x": -0.5,
-                        "y": 0.5,
-                        "z": 0.5,
-                        "w": 0.5
-                    },
-                    "scale": {
-                        "x": 0.8,
-                        "y": 0.8,
-                        "z": 0.8
-                    },
-                    "propagateFromStep": "step_batch_c1_rod_slide_test",
-                    "propagateThroughStep": ""
-                }
-            ],
+            "stepPoses": [],
             "splinePath": {
                 "radius": 0.0,
                 "segments": 0,
@@ -6102,7 +6056,7 @@
         {
             "partId": "y_left_lm8uu_c",
             "startPosition": {
-                "x": 0.588,
+                "x": 0.887,
                 "y": 0.56,
                 "z": -0.015
             },
@@ -6139,30 +6093,7 @@
                 "y": 0.8,
                 "z": 0.8
             },
-            "stepPoses": [
-                {
-                    "stepId": "step_batch_c1_rod_slide_test",
-                    "label": "synthesized:holdAtEnd (sub=subassembly_carriage_y_left cue=poseTransition[1])",
-                    "position": {
-                        "x": 0.5222,
-                        "y": 0.5376,
-                        "z": -0.0279
-                    },
-                    "rotation": {
-                        "x": -0.5,
-                        "y": 0.5,
-                        "z": 0.5,
-                        "w": 0.5
-                    },
-                    "scale": {
-                        "x": 0.8,
-                        "y": 0.8,
-                        "z": 0.8
-                    },
-                    "propagateFromStep": "step_batch_c1_rod_slide_test",
-                    "propagateThroughStep": ""
-                }
-            ],
+            "stepPoses": [],
             "splinePath": {
                 "radius": 0.0,
                 "segments": 0,
@@ -6180,7 +6111,7 @@
         {
             "partId": "y_left_lm8uu_d",
             "startPosition": {
-                "x": 0.614,
+                "x": 0.913,
                 "y": 0.56,
                 "z": -0.015
             },
@@ -6217,30 +6148,7 @@
                 "y": 0.8,
                 "z": 0.8
             },
-            "stepPoses": [
-                {
-                    "stepId": "step_batch_c1_rod_slide_test",
-                    "label": "synthesized:holdAtEnd (sub=subassembly_carriage_y_left cue=poseTransition[1])",
-                    "position": {
-                        "x": 0.5222,
-                        "y": 0.5636,
-                        "z": -0.0279
-                    },
-                    "rotation": {
-                        "x": -0.5,
-                        "y": 0.5,
-                        "z": 0.5,
-                        "w": 0.5
-                    },
-                    "scale": {
-                        "x": 0.8,
-                        "y": 0.8,
-                        "z": 0.8
-                    },
-                    "propagateFromStep": "step_batch_c1_rod_slide_test",
-                    "propagateThroughStep": ""
-                }
-            ],
+            "stepPoses": [],
             "splinePath": {
                 "radius": 0.0,
                 "segments": 0,
@@ -7285,30 +7193,7 @@
                 "y": 1.0,
                 "z": 1.0
             },
-            "stepPoses": [
-                {
-                    "stepId": "step_batch_c1_rod_slide_test",
-                    "label": "synthesized:holdAtEnd (sub=subassembly_carriage_y_left cue=poseTransition[1])",
-                    "position": {
-                        "x": 0.5233,
-                        "y": 0.5509,
-                        "z": 0.0
-                    },
-                    "rotation": {
-                        "x": 0.0,
-                        "y": -0.7071,
-                        "z": 0.7071,
-                        "w": 0.0
-                    },
-                    "scale": {
-                        "x": 1.0,
-                        "y": 1.0,
-                        "z": 1.0
-                    },
-                    "propagateFromStep": "",
-                    "propagateThroughStep": ""
-                }
-            ],
+            "stepPoses": [],
             "splinePath": {
                 "radius": 0.0,
                 "segments": 8,
@@ -7363,30 +7248,7 @@
                 "y": 1.0,
                 "z": 1.0
             },
-            "stepPoses": [
-                {
-                    "stepId": "step_batch_c1_rod_slide_test",
-                    "label": "synthesized:holdAtEnd (sub=subassembly_carriage_y_left cue=poseTransition[1])",
-                    "position": {
-                        "x": 0.5233,
-                        "y": 0.5509,
-                        "z": -1.3411e-7
-                    },
-                    "rotation": {
-                        "x": 0.0,
-                        "y": 0.7071,
-                        "z": -0.7071,
-                        "w": 0.0
-                    },
-                    "scale": {
-                        "x": 1.0,
-                        "y": 1.0,
-                        "z": 1.0
-                    },
-                    "propagateFromStep": "",
-                    "propagateThroughStep": ""
-                }
-            ],
+            "stepPoses": [],
             "splinePath": {
                 "radius": 0.0,
                 "segments": 8,
@@ -18260,6 +18122,1819 @@
                 "x": 0.0,
                 "y": 0.0,
                 "z": 0.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_y_left_frame_mount",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_y_right_frame_mount",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_carriage_y_left",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": [
+                {
+                    "stepId": "step_batch_c1_rod_slide_test",
+                    "label": "synthGroup:holdAtEnd (sub=subassembly_carriage_y_left cue=poseTransition[1])",
+                    "position": {
+                        "x": 1.0733,
+                        "y": 0.0281,
+                        "z": 0.0
+                    },
+                    "rotation": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.7071,
+                        "w": 0.7071
+                    },
+                    "scale": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    },
+                    "propagateFromStep": "",
+                    "propagateThroughStep": ""
+                },
+                {
+                    "stepId": "step_batch_c1_hand_tighten",
+                    "label": "synthGroup:holdAtEnd (sub=subassembly_carriage_y_left cue=poseTransition[3])",
+                    "position": {
+                        "x": 0.2022,
+                        "y": 1.3314,
+                        "z": 0.0
+                    },
+                    "rotation": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": -0.7071,
+                        "w": 0.7071
+                    },
+                    "scale": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    },
+                    "propagateFromStep": "",
+                    "propagateThroughStep": ""
+                }
+            ]
+        },
+        {
+            "subassemblyId": "subassembly_carriage_y_right",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_carriage_z_back",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_carriage_z_front",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_cable_routing",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_electronics_wiring",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_titan_aero_core",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_extruder_sensor_and_fan_attachment",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_extruder_carriage_mount_stack",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_heatbed_mechanical_stack",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_bed_platform",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_y_bed_rods",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_x_axis_carriage_build",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_x_axis_idler_build",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_x_axis_motor_build",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_x_axis_rod_assembly",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_x_axis_belt_threading",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_y_left_idler_build",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_y_left_motor_build",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_y_left_rod_assembly",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_y_left_endstop_build",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_y_right_idler_build",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_y_right_motor_build",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_y_right_rod_assembly",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_z_back_idler_build",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_z_back_motor_build",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_z_back_rod_assembly",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_z_back_belt_threading",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_z_front_idler_build",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_z_front_motor_build",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_z_front_rod_assembly",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "stepPoses": []
+        },
+        {
+            "subassemblyId": "subassembly_z_front_belt_threading",
+            "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "startPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "startRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "startScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "assembledPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "assembledRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "assembledScale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
             },
             "stepPoses": []
         }
