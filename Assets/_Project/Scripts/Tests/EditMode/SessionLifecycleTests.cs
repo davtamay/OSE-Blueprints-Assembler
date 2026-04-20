@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using NUnit.Framework;
 using OSE.App;
 using OSE.Content;
@@ -328,6 +330,101 @@ namespace OSE.Tests.EditMode
             Assert.AreEqual("s3", progression.GetCurrentStep().id);
         }
 
+        // ── Nested-event cursor ownership race (PartRuntimeController) ──
+
+        [Test]
+        public void PartRuntimeController_Completed_Does_Not_Detach_Cursor_Owned_By_Nested_Active_Step()
+        {
+            // Regression for the step-53 bearings bug: AssemblyRuntimeController
+            // subscribes to StepStateChanged and synchronously calls
+            // ActivateStep(next) on Completed(prev). The nested Active publish
+            // inside the outer Completed publish causes PartRuntimeController
+            // to attach the next step's cursor FIRST, then the outer Completed
+            // handler ran a blind detach that corrupted ownership — the next
+            // step's cursor got detached immediately after attachment, and any
+            // TransitionPart(PlacedVirtually) call saw _attachedCursor=null
+            // and silently failed to advance the task cursor.
+            //
+            // Fix: PartRuntimeController tags _attachedCursor with the owning
+            // step id and uses DetachIfOwnedBy(stepId) in the Completed branch.
+            // This test reproduces the race and asserts the cursor stays
+            // attached to the new step after the outer Completed completes.
+            var package = CreateTwoStepPackageWithTaskOrder();
+
+            var assemblyCtrl = new AssemblyRuntimeController();
+            assemblyCtrl.Initialize(package);
+
+            // Stub the session registry so PartRuntimeController can resolve
+            // AssemblyController.StepController.CurrentTaskCursor.
+            var sessionStub = new TestSessionStub(assemblyCtrl, package);
+            ServiceRegistry.Register<IMachineSessionController>(sessionStub);
+
+            var partCtrl = new PartRuntimeController();
+            partCtrl.Initialize(package);
+
+            // Begin assembly → step_1 Active → PartRuntime attaches step_1 cursor.
+            assemblyCtrl.BeginAssembly("asm_1", () => 0f);
+            Assert.AreEqual("step_1", assemblyCtrl.StepController.CurrentStepDefinition.id);
+            Assert.IsNotNull(assemblyCtrl.StepController.CurrentTaskCursor);
+
+            // Complete step_1 → AssemblyRuntime's Completed handler nested-
+            // publishes Active(step_2). After all event dispatch finishes,
+            // step_2 should own the cursor. Pre-fix, step_2's cursor got
+            // detached by PartRuntimeController's outer-Completed handler.
+            assemblyCtrl.StepController.CompleteStep(1f);
+
+            Assert.AreEqual("step_2", assemblyCtrl.StepController.CurrentStepDefinition.id,
+                "step_2 should be active after step_1 completes");
+
+            // Place a part in step_2 — TransitionPart publishes PlacedVirtually
+            // and notifies the cursor. If the cursor was detached by the race,
+            // task advancement silently fails and span stays at 0.
+            partCtrl.AttemptPlacement("p2a", "__auto_p2a", PlacementValidationResult.Valid(true));
+
+            // Cursor should have advanced past span 0 — step_2 has 2 singleton
+            // spans (p2a then p2b). After placing p2a, span should be 1.
+            var cursor = assemblyCtrl.StepController.CurrentTaskCursor;
+            Assert.IsNotNull(cursor, "Cursor must remain attached after the nested publish.");
+            Assert.AreEqual(1, cursor.SpanIndex,
+                "Cursor should have advanced to span 1 — if it stayed at 0, the nested-event detach race regressed.");
+
+            partCtrl.Dispose();
+            ServiceRegistry.Unregister<IMachineSessionController>();
+        }
+
+        /// <summary>Minimal IMachineSessionController stub for editmode tests.</summary>
+        private sealed class TestSessionStub : IMachineSessionController
+        {
+            private readonly AssemblyRuntimeController _assembly;
+            private readonly MachinePackageDefinition _package;
+            public TestSessionStub(AssemblyRuntimeController assembly, MachinePackageDefinition package)
+            { _assembly = assembly; _package = package; }
+
+            public event Action<MachinePackageDefinition> PackageReady { add { } remove { } }
+            public MachineSessionState SessionState => null;
+            public MachinePackageDefinition Package => _package;
+            public AssemblyRuntimeController AssemblyController => _assembly;
+            public IPartRuntimeController PartController => null;
+            public IToolRuntimeController ToolController => null;
+            public bool IsNavigating => false;
+            public float LastNavigationTime => -1f;
+            public bool CanStepBack => false;
+            public bool CanStepForward => true;
+            public Task<bool> StartSessionAsync(string packageId, SessionMode mode, int restoreStepCount = 0, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+            public void PauseSession() { }
+            public void ResumeSession() { }
+            public void EndSession() { }
+            public void FlushPersistenceSnapshot() { }
+            public float GetElapsedSeconds() => 0f;
+            public void TickElapsed(float deltaTime) { }
+            public bool StepBack() => false;
+            public bool StepForward() => false;
+            public bool NavigateToLastStep() => false;
+            public bool NavigateToGlobalStep(int globalIndex) => false;
+            public bool RestoreToStep(int completedStepCount) => false;
+            public void ResumeAfterTransition() { }
+        }
+
         // ── Helpers ──
 
         private static StepDefinition MakeStep(string id, int sequence = 1)
@@ -341,6 +438,53 @@ namespace OSE.Tests.EditMode
                 completionType = "placement",
                 instructionText = $"Do {id}.",
                 sequenceIndex = sequence
+            };
+        }
+
+        private static StepDefinition MakeStepWithTaskOrder(string id, int sequence, params string[] partIds)
+        {
+            var step = MakeStep(id, sequence);
+            step.requiredPartIds = partIds;
+            step.taskOrder = new TaskOrderEntry[partIds.Length];
+            for (int i = 0; i < partIds.Length; i++)
+                step.taskOrder[i] = new TaskOrderEntry { kind = "part", id = partIds[i] };
+            return step;
+        }
+
+        private static MachinePackageDefinition CreateTwoStepPackageWithTaskOrder()
+        {
+            return new MachinePackageDefinition
+            {
+                schemaVersion = "1.0.0",
+                packageVersion = "0.1.0",
+                machine = new MachineDefinition
+                {
+                    id = "test_machine",
+                    name = "Test Machine",
+                    description = "Test",
+                    difficulty = "beginner",
+                    entryAssemblyIds = new[] { "asm_1" }
+                },
+                assemblies = new[]
+                {
+                    new AssemblyDefinition { id = "asm_1", name = "Assembly 1", machineId = "test_machine", stepIds = new[] { "step_1", "step_2" } }
+                },
+                steps = new[]
+                {
+                    MakeStepWithTaskOrder("step_1", 1, "p1a"),
+                    MakeStepWithTaskOrder("step_2", 2, "p2a", "p2b")
+                },
+                parts = new[]
+                {
+                    new PartDefinition { id = "p1a" },
+                    new PartDefinition { id = "p2a" },
+                    new PartDefinition { id = "p2b" }
+                },
+                tools = Array.Empty<ToolDefinition>(),
+                targets = Array.Empty<TargetDefinition>(),
+                validationRules = Array.Empty<ValidationRuleDefinition>(),
+                hints = Array.Empty<HintDefinition>(),
+                effects = Array.Empty<EffectDefinition>()
             };
         }
 

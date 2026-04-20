@@ -26,7 +26,18 @@ namespace OSE.Runtime
         // on PlacedVirtually so the cursor advances past completed Part tasks.
         // Null when no cursor is active OR when the step has no taskOrder (in
         // which case legacy all-at-once introduction still runs).
+        //
+        // <para><b>Ownership invariant:</b> <c>_attachedCursor</c> and
+        // <c>_attachedCursorStepId</c> are set and cleared as a pair —
+        // either both are populated (cursor owned by the named step) or both
+        // are null. <see cref="DetachFromStepCursor"/> drops ownership;
+        // <see cref="DetachIfOwnedBy"/> drops ownership only if the caller
+        // can prove it owns the cursor (matches stepId). Every callsite that
+        // might run while a nested publish has already handed the cursor to
+        // the next step MUST use <see cref="DetachIfOwnedBy"/>, never
+        // <see cref="DetachFromStepCursor"/> directly.</para>
         private TaskCursor _attachedCursor;
+        private string _attachedCursorStepId;
 
         public string SelectedPartId => _selectedPartId;
         public string ActiveStepId => _activeStepId;
@@ -408,7 +419,15 @@ namespace OSE.Runtime
             else if (evt.Current == StepState.Completed)
             {
                 CompleteStepParts(evt.StepId);
-                DetachFromStepCursor();
+                // Only detach if the attached cursor still belongs to the
+                // completing step. See class-level ownership invariant: when
+                // AssemblyRuntimeController handles the same Completed event
+                // first and synchronously calls ActivateStep(next) — which
+                // publishes StepStateChanged(Active, next) nested inside the
+                // outer Completed publish — PartRuntimeController's Active
+                // handler has already set up ownership for the new step, and
+                // a blind detach here would corrupt it.
+                DetachIfOwnedBy(evt.StepId);
             }
             else if (evt.Current == StepState.Suspended)
             {
@@ -428,6 +447,7 @@ namespace OSE.Runtime
             if (cursor == null || cursor.TotalSpans == 0) return;
 
             _attachedCursor = cursor;
+            _attachedCursorStepId = stepController?.CurrentStepDefinition?.id;
             _attachedCursor.TaskSpanOpened += OnTaskSpanOpened;
         }
 
@@ -436,6 +456,28 @@ namespace OSE.Runtime
             if (_attachedCursor == null) return;
             _attachedCursor.TaskSpanOpened -= OnTaskSpanOpened;
             _attachedCursor = null;
+            _attachedCursorStepId = null;
+        }
+
+        /// <summary>
+        /// Detach only when the attached cursor belongs to <paramref name="expectedStepId"/>.
+        /// The completing-step handler must use this — when Active(next) fires
+        /// nested inside Completed(prev) (see ownership invariant at
+        /// <see cref="_attachedCursor"/>), <c>_attachedCursor</c> has already
+        /// been handed to the next step by the nested Active handler, and a
+        /// plain <see cref="DetachFromStepCursor"/> here would strip ownership
+        /// the next step relies on.
+        ///
+        /// <para>Safe guard: silent no-op on mismatch. Callers don't need to
+        /// know which ordering the event bus picked — the resource knows
+        /// whether it still belongs to them.</para>
+        /// </summary>
+        private void DetachIfOwnedBy(string expectedStepId)
+        {
+            if (_attachedCursor == null) return;
+            if (!string.Equals(_attachedCursorStepId, expectedStepId, StringComparison.Ordinal))
+                return; // nested Active already reassigned ownership — leave alone
+            DetachFromStepCursor();
         }
 
         private void OnTaskSpanOpened(TaskSpanOpenedInfo info)
