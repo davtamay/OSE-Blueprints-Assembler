@@ -928,7 +928,9 @@ namespace OSE.UI.Root
             startPoses.Add(pose);
             assembledPoses.Add(pose);
 
-            return new AnimationCueContext(entry, targets, startPoses, assembledPoses, DurationOrDefault(entry), null);
+            Vector3? pivotHint = PivotCentroidResolver.ComputeBodyCentroidLocal(root.transform, pkg, step);
+
+            return new AnimationCueContext(entry, targets, startPoses, assembledPoses, DurationOrDefault(entry), null, pivotHint);
         }
 
         /// <summary>

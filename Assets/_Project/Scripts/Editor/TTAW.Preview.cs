@@ -814,7 +814,20 @@ namespace OSE.Editor
                 ? entry.durationSeconds
                 : AnimationCueDefaults.GetDefaultDuration(entry.type);
 
-            var ctx = new OSE.UI.Root.AnimationCueContext(entry, targets, startPoses, asmPoses, duration);
+            // Pivot hint parity with runtime: subassembly hosts get the
+            // body centroid from PivotCentroidResolver. Without this, the
+            // editor preview rotates around the Group_ root origin (0,0,0)
+            // while the runtime rotates around the centroid — exactly the
+            // divergence this whole change set exists to prevent.
+            Vector3? pivotHint = null;
+            if (string.Equals(hostKind, "subassembly", StringComparison.Ordinal)
+                && targets.Count > 0 && targets[0] != null)
+            {
+                pivotHint = OSE.UI.Root.PivotCentroidResolver.ComputeBodyCentroidLocal(
+                    targets[0].transform, _pkg, step);
+            }
+
+            var ctx = new OSE.UI.Root.AnimationCueContext(entry, targets, startPoses, asmPoses, duration, null, pivotHint);
             try { player.Start(ctx); }
             catch (System.Exception e)
             {
@@ -1068,7 +1081,20 @@ namespace OSE.Editor
             float duration = entry.durationSeconds > 0f
                 ? entry.durationSeconds
                 : AnimationCueDefaults.GetDefaultDuration(entry.type);
-            var ctx = new OSE.UI.Root.AnimationCueContext(entry, targets, startPoses, asmPoses, duration);
+
+            // Pivot hint parity with runtime: when a group root resolved,
+            // seed PivotHintLocal with the body centroid. Mirrors
+            // AnimationCueCoordinator.ResolveHostedSubassemblyContext so
+            // the editor preview rotates around the same point the runtime
+            // will. Without this, the preview rotates around Group_ origin.
+            Vector3? pivotHint = null;
+            if (groupRootResolved && targets.Count > 0 && targets[0] != null)
+            {
+                pivotHint = OSE.UI.Root.PivotCentroidResolver.ComputeBodyCentroidLocal(
+                    targets[0].transform, _pkg, step);
+            }
+
+            var ctx = new OSE.UI.Root.AnimationCueContext(entry, targets, startPoses, asmPoses, duration, null, pivotHint);
             try { player.Start(ctx); }
             catch (System.Exception e)
             {
@@ -1308,7 +1334,17 @@ namespace OSE.Editor
             EditorGUI.BeginChangeCheck();
 
             int trigIdx    = Mathf.Max(0, Array.IndexOf(_cueTriggers, cue.trigger));
-            int newTrigIdx = EditorGUILayout.Popup("Trigger", trigIdx, _cueTriggerLabels);
+            int newTrigIdx = EditorGUILayout.Popup(
+                new GUIContent("Trigger",
+                    "When the cue fires:\n" +
+                    "• On Activate — immediately when step opens.\n" +
+                    "• After Delay — N seconds after step opens.\n" +
+                    "• After Parts Shown — once all previews are spawned.\n" +
+                    "• On Step Complete — when all tasks are validated.\n" +
+                    "• On First Interaction — first tool contact this step.\n" +
+                    "• On Task Complete — when a specific task is validated.\n" +
+                    "• During Tool Action — while the user is performing the action."),
+                trigIdx, _cueTriggerLabels);
             cue.trigger    = _cueTriggers[newTrigIdx];
 
             if (string.Equals(cue.trigger, "afterDelay", StringComparison.Ordinal))
@@ -1577,6 +1613,34 @@ namespace OSE.Editor
                 EditorGUILayout.Space(2);
                 bool dirtyFromPivot = false;
 
+                // Resolve the centroid the runtime will use for this cue
+                // at this step, via PivotCentroidResolver (single source
+                // of truth). Null → no body members on this step; shown
+                // as "—" so authors can distinguish that from a genuine
+                // (0,0,0) centroid.
+                Vector3? centroidLocal = ResolveCueCentroidForAuthoring(cue, step);
+                Vector3 baseForEffective = centroidLocal ?? Vector3.zero;
+                Vector3 effective = baseForEffective
+                                    + new Vector3(cue.pivotOffset.x, cue.pivotOffset.y, cue.pivotOffset.z);
+
+                // Wordwrap=true so the read-only row never forces the
+                // inspector wider than its container; label+value split
+                // uses standard EditorGUIUtility.labelWidth, no custom
+                // widths that stretch the column.
+                var roStyle = new GUIStyle(EditorStyles.miniLabel) { wordWrap = true };
+                roStyle.normal.textColor = new Color(0.75f, 0.75f, 0.75f);
+                EditorGUILayout.LabelField(
+                    new GUIContent("Centroid",
+                        "Default rotation pivot for this cue — centroid of the group's body at this step. " +
+                        "'—' means no body members exist on this step."),
+                    new GUIContent(centroidLocal.HasValue ? FormatXYZ(centroidLocal.Value) : "—"),
+                    roStyle);
+                EditorGUILayout.LabelField(
+                    new GUIContent("Effective Pivot",
+                        "Centroid + pivot offset. The point the runtime will actually rotate around."),
+                    new GUIContent(FormatXYZ(effective)),
+                    roStyle);
+
                 bool newOverride = EditorGUILayout.Toggle(
                     new GUIContent("Pivot Override",
                         "When off (default), pivot is the host's natural origin " +
@@ -1601,9 +1665,9 @@ namespace OSE.Editor
                         dirtyFromPivot = true;
                     }
 
-                    if (GUILayout.Button(new GUIContent("Reset to Default",
+                    if (GUILayout.Button(new GUIContent("Reset",
                         "Clear the pivot override. Rotation / effect returns to the host's natural origin."),
-                        EditorStyles.miniButton, GUILayout.Width(140)))
+                        EditorStyles.miniButton, GUILayout.Width(70)))
                     {
                         cue.pivotOffsetOverride = false;
                         cue.pivotOffset = new SceneFloat3 { x = 0f, y = 0f, z = 0f };
@@ -1611,6 +1675,25 @@ namespace OSE.Editor
                     }
                     EditorGUI.indentLevel--;
                 }
+
+                // Copy-from-previous-step button — explicit, no silent
+                // inheritance. Finds a cue on the previous step with the
+                // same type + same host and copies its pivot settings.
+                if (GUILayout.Button(new GUIContent("Copy Pivot ← Prev",
+                    "Find a cue on sequenceIndex - 1 with the same type and same host, " +
+                    "and copy its pivotOffsetOverride + pivotOffset here. Shows a dialog when no match exists."),
+                    EditorStyles.miniButton, GUILayout.Width(120)))
+                {
+                    if (TryCopyPivotFromPreviousStep(step, cue,
+                            out bool copiedOverride, out SceneFloat3 copiedOffset))
+                    {
+                        cue.pivotOffsetOverride = copiedOverride;
+                        cue.pivotOffset = copiedOffset;
+                        dirtyFromPivot = true;
+                        UnityEditor.SceneView.RepaintAll();
+                    }
+                }
+
                 if (dirtyFromPivot) { cues[idx] = cue; _dirtyStepIds.Add(step.id); }
             }
 
@@ -2402,6 +2485,158 @@ namespace OSE.Editor
 
             EditorGUI.indentLevel--;
             EditorGUILayout.Space(4);
+        }
+
+        // ── Pivot inspector helpers ────────────────────────────────────────────
+
+        private static string FormatXYZ(Vector3 v)
+            => $"({v.x:0.##}, {v.y:0.##}, {v.z:0.##})";
+
+        /// <summary>
+        /// Authoring-time centroid for a cue, routed through
+        /// <see cref="PivotCentroidResolver"/> so the inspector readout
+        /// matches the scene-view gizmo and the runtime pivot exactly.
+        /// Subassembly-owned cues often leave <c>targetSubassemblyId</c>
+        /// empty (the host IS the owning subassembly); if empty we scan
+        /// <c>_pkg.subassemblies</c> for the one whose
+        /// <c>animationCues</c> array contains this cue instance.
+        /// Returns null when no body centroid is meaningful (non-subassembly
+        /// host, or first-step-introducing-group case).
+        /// </summary>
+        private Vector3? ResolveCueCentroidForAuthoring(AnimationCueEntry cue, StepDefinition step)
+        {
+            if (cue == null || step == null) return null;
+
+            string subId = cue.targetSubassemblyId;
+            if (string.IsNullOrEmpty(subId) && _pkg?.subassemblies != null)
+            {
+                foreach (var sub in _pkg.subassemblies)
+                {
+                    if (sub?.animationCues == null) continue;
+                    for (int k = 0; k < sub.animationCues.Length; k++)
+                    {
+                        if (ReferenceEquals(sub.animationCues[k], cue))
+                        { subId = sub.id; break; }
+                    }
+                    if (!string.IsNullOrEmpty(subId)) break;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(subId)
+                && _subassemblyRootGOs != null
+                && _subassemblyRootGOs.TryGetValue(subId, out var groupGO)
+                && groupGO != null)
+            {
+                return PivotCentroidResolver.ComputeBodyCentroidLocal(
+                    groupGO.transform, _pkg, step);
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Walks <c>_pkg.steps</c> for a step with
+        /// <c>sequenceIndex == current.sequenceIndex - 1</c>, then searches
+        /// that step's host-owned cues (subassembly, part, tool) and the
+        /// step's own <c>animationCues.cues</c> array for a cue matching
+        /// the current cue's type + host. Returns the matched cue's
+        /// pivotOverride + pivotOffset when found. When no match, shows
+        /// a dialog and returns false — no silent write.
+        /// </summary>
+        private bool TryCopyPivotFromPreviousStep(StepDefinition currentStep, AnimationCueEntry currentCue,
+            out bool overrideFlag, out SceneFloat3 offset)
+        {
+            overrideFlag = false;
+            offset = new SceneFloat3 { x = 0f, y = 0f, z = 0f };
+
+            if (currentStep == null || currentCue == null || _pkg == null) return false;
+
+            StepDefinition prev = null;
+            if (_pkg.steps != null)
+            {
+                int wantedSeq = currentStep.sequenceIndex - 1;
+                foreach (var s in _pkg.steps)
+                {
+                    if (s != null && s.sequenceIndex == wantedSeq) { prev = s; break; }
+                }
+            }
+            if (prev == null)
+            {
+                UnityEditor.EditorUtility.DisplayDialog("Copy Pivot",
+                    $"No step found with sequenceIndex {currentStep.sequenceIndex - 1}.", "OK");
+                return false;
+            }
+
+            // Step-scoped cues.
+            if (prev.animationCues?.cues != null)
+            {
+                foreach (var c in prev.animationCues.cues)
+                    if (CueMatchesForPivotCopy(c, currentCue)) { overrideFlag = c.pivotOffsetOverride; offset = c.pivotOffset; return true; }
+            }
+
+            // Host-owned cues filtered by stepIds include prev step.
+            if (_pkg.subassemblies != null)
+            {
+                foreach (var sub in _pkg.subassemblies)
+                {
+                    if (sub?.animationCues == null) continue;
+                    foreach (var c in sub.animationCues)
+                        if (CueAppliesToStepId(c, prev.id) && CueMatchesForPivotCopy(c, currentCue))
+                        { overrideFlag = c.pivotOffsetOverride; offset = c.pivotOffset; return true; }
+                }
+            }
+            if (_pkg.parts != null)
+            {
+                foreach (var part in _pkg.parts)
+                {
+                    if (part?.animationCues == null) continue;
+                    foreach (var c in part.animationCues)
+                        if (CueAppliesToStepId(c, prev.id) && CueMatchesForPivotCopy(c, currentCue))
+                        { overrideFlag = c.pivotOffsetOverride; offset = c.pivotOffset; return true; }
+                }
+            }
+            if (_pkg.tools != null)
+            {
+                foreach (var tool in _pkg.tools)
+                {
+                    if (tool?.animationCues == null) continue;
+                    foreach (var c in tool.animationCues)
+                        if (CueAppliesToStepId(c, prev.id) && CueMatchesForPivotCopy(c, currentCue))
+                        { overrideFlag = c.pivotOffsetOverride; offset = c.pivotOffset; return true; }
+                }
+            }
+
+            UnityEditor.EditorUtility.DisplayDialog("Copy Pivot",
+                $"No matching cue found on step '{prev.id}' (sequenceIndex {prev.sequenceIndex}).\n\n" +
+                $"Looking for: type='{currentCue.type}' on the same host.", "OK");
+            return false;
+        }
+
+        private static bool CueAppliesToStepId(AnimationCueEntry cue, string stepId)
+        {
+            if (cue == null) return false;
+            if (cue.stepIds == null || cue.stepIds.Length == 0) return true;
+            for (int i = 0; i < cue.stepIds.Length; i++)
+                if (string.Equals(cue.stepIds[i], stepId, StringComparison.Ordinal)) return true;
+            return false;
+        }
+
+        private static bool CueMatchesForPivotCopy(AnimationCueEntry candidate, AnimationCueEntry target)
+        {
+            if (candidate == null || target == null) return false;
+            if (!string.Equals(candidate.type, target.type, StringComparison.Ordinal)) return false;
+
+            bool subMatch = !string.IsNullOrEmpty(target.targetSubassemblyId)
+                            && string.Equals(candidate.targetSubassemblyId, target.targetSubassemblyId, StringComparison.Ordinal);
+            if (subMatch) return true;
+
+            string targetPid = (target.targetPartIds != null && target.targetPartIds.Length > 0)
+                ? target.targetPartIds[0] : null;
+            string candPid = (candidate.targetPartIds != null && candidate.targetPartIds.Length > 0)
+                ? candidate.targetPartIds[0] : null;
+            if (!string.IsNullOrEmpty(targetPid) && string.Equals(candPid, targetPid, StringComparison.Ordinal))
+                return true;
+
+            return false;
         }
     }
 }

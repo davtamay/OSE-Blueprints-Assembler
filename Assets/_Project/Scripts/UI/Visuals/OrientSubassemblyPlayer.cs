@@ -43,19 +43,19 @@ namespace OSE.UI.Root
                 entry.subassemblyRotation.y,
                 entry.subassemblyRotation.z);
 
-            // Compute the centroid of immediate active children in the
-            // target's local frame. The transform identity:
+            // Centroid C in the target's local frame. The transform identity:
             //   childWorld = root.position + root.rotation * child.localPosition
-            // implies that to rotate every child around centroid C (in
-            // root-local space) by R while leaving Group_'s authored
-            // baseline pose (_fromPos / _fromRot) intact, we set
+            // implies that to rotate every child around centroid C by R while
+            // leaving Group_'s authored baseline pose (_fromPos / _fromRot)
+            // intact, we set
             //   root.position = _fromPos + (_fromRot * C) - (_fromRot * R * C)
             //                 = _fromPos + _fromRot * (I - R) * C
             //   root.rotation = _fromRot * R
-            // C falls out as (0,0,0) when the root has no children, which
-            // collapses to the legacy "rotate-in-place" behaviour for a
-            // single-part target.
-            _pivotLocal = ComputeChildrenCentroidLocal(root);
+            // Prefer the caller-provided hint (PivotCentroidResolver, the
+            // single source of truth shared with runtime + authoring). Falls
+            // back to zero for single-part targets or when no body members
+            // exist yet — which collapses to "rotate-in-place" (I - R) * 0 = 0.
+            _pivotLocal = context.PivotHintLocal ?? Vector3.zero;
 
             // Optional authored pivot override — shift the rotation center
             // by a local-space offset. Default behaviour (override == false)
@@ -115,19 +115,5 @@ namespace OSE.UI.Root
             }
         }
 
-        private static Vector3 ComputeChildrenCentroidLocal(Transform root)
-        {
-            if (root == null || root.childCount == 0) return Vector3.zero;
-            Vector3 sum = Vector3.zero;
-            int n = 0;
-            for (int i = 0; i < root.childCount; i++)
-            {
-                Transform c = root.GetChild(i);
-                if (c == null || !c.gameObject.activeInHierarchy) continue;
-                sum += c.localPosition;
-                n++;
-            }
-            return n > 0 ? sum / n : Vector3.zero;
-        }
     }
 }

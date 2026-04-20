@@ -64,7 +64,15 @@ namespace OSE.UI.Root
                 var host = context.Targets[i];
                 if (host == null) continue;
 
-                Vector3 pivot = ComputeChildrenCentroidLocal(host.transform);
+                // Use the caller-provided pivot hint (PivotCentroidResolver,
+                // shared with rotation cues + authoring) when present. Hint
+                // applies to target[0] only — the same contract as other
+                // subassembly-hosted cue players. Falls back to zero (host
+                // origin) for part/tool hosts or when no body centroid is
+                // meaningful on this step.
+                Vector3 pivot = (i == 0 && context.PivotHintLocal.HasValue)
+                    ? context.PivotHintLocal.Value
+                    : Vector3.zero;
                 if (entry.pivotOffsetOverride)
                 {
                     pivot += new Vector3(entry.pivotOffset.x, entry.pivotOffset.y, entry.pivotOffset.z);
@@ -271,19 +279,5 @@ namespace OSE.UI.Root
             }
         }
 
-        private static Vector3 ComputeChildrenCentroidLocal(Transform root)
-        {
-            if (root == null || root.childCount == 0) return Vector3.zero;
-            Vector3 sum = Vector3.zero;
-            int n = 0;
-            for (int i = 0; i < root.childCount; i++)
-            {
-                Transform c = root.GetChild(i);
-                if (c == null || !c.gameObject.activeInHierarchy) continue;
-                sum += c.localPosition;
-                n++;
-            }
-            return n > 0 ? sum / n : Vector3.zero;
-        }
     }
 }

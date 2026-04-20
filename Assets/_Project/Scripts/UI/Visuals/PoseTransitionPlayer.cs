@@ -91,19 +91,18 @@ namespace OSE.UI.Root
                         }
                     }
 
-                    // Same centroid logic as OrientSubassemblyPlayer: compute
-                    // children centroid in the target's local frame. For group
-                    // roots this gives the geometric centre of the parts; for
-                    // single-part targets (no children) it is (0,0,0) and the
-                    // counter-translate in Tick collapses to zero.
-                    // Prefer caller-provided pivot hint (derived from
-                    // authored package data) over live-children centroid.
-                    // Hint applies only to target[0] — that's where groups
-                    // always land.
+                    // Pivot policy: always use the caller-provided hint when
+                    // present (subassembly hosts get one from
+                    // PivotCentroidResolver, the single source of truth).
+                    // When absent (part/tool hosts, or a subassembly with no
+                    // "body" members yet on this step), fall back to the
+                    // target's local origin — a single-part rotation pivots
+                    // around its own origin; the counter-translate in Tick
+                    // collapses to zero. Hint applies only to target[0].
                     if (i == 0 && context.PivotHintLocal.HasValue)
                         _pivotsLocal[i] = context.PivotHintLocal.Value;
                     else
-                        _pivotsLocal[i] = ComputeChildrenCentroidLocal(t);
+                        _pivotsLocal[i] = Vector3.zero;
                     int activeKids = 0, placedKids = 0;
                     for (int c = 0; c < t.childCount; c++)
                     {
@@ -134,8 +133,7 @@ namespace OSE.UI.Root
                     // them at rotated positions that persist across navigation.
                     // Repeated passes through the cue would compound rotations
                     // on each hidden child, so they land at unpredictable poses
-                    // when they finally become visible on their introduction
-                    // step. Matches the ComputeChildrenCentroidLocal filter.
+                    // when they finally become visible on their introduction step.
                     //
                     // At-origin active children are still included: they're
                     // legitimate members sitting at the group centroid, and
@@ -168,26 +166,6 @@ namespace OSE.UI.Root
                         t.localScale = _fromPoses[i].Scale;
                 }
             }
-        }
-
-        private static Vector3 ComputeChildrenCentroidLocal(Transform root)
-        {
-            if (root == null || root.childCount == 0) return Vector3.zero;
-            // Count only active children with non-zero localPosition: those
-            // are members already placed at their real positions. Inactive
-            // members and freshly-parented members sit at (0,0,0) and would
-            // drag the centroid toward the origin.
-            Vector3 sum = Vector3.zero;
-            int n = 0;
-            for (int i = 0; i < root.childCount; i++)
-            {
-                var c = root.GetChild(i);
-                if (c == null || !c.gameObject.activeInHierarchy) continue;
-                if (c.localPosition.sqrMagnitude < 0.0001f) continue; // skip unplaced
-                sum += c.localPosition;
-                n++;
-            }
-            return n > 0 ? sum / n : Vector3.zero;
         }
 
         public bool Tick(float deltaTime)
