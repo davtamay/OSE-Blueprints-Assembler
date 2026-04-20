@@ -256,6 +256,65 @@ namespace OSE.UI.Root
             // piece being acted upon, which is exactly the context the
             // trainee needs in frame.
             AddTargetAssociatedParts(package, step, results);
+
+            // Visual-context parts: Confirm/Use steps that author
+            // visualPartIds explicitly are saying "look at these." Pull them
+            // in too so a "check every carriage half" QC step centers on the
+            // halves rather than falling through to the subassembly-member
+            // fallback (which might span more than the author intended).
+            if (step.visualPartIds != null)
+            {
+                for (int i = 0; i < step.visualPartIds.Length; i++)
+                {
+                    string pid = step.visualPartIds[i];
+                    if (!string.IsNullOrWhiteSpace(pid)) results.Add(pid);
+                }
+            }
+
+            // Final fallback: step.subassemblyId members. Some Confirm / Use
+            // steps describe an action that applies to "the whole group" with
+            // no explicit part list — e.g. step 52 "QC: verify all carriage
+            // holes are clean" has empty requiredPartIds / targets / task
+            // parts and only lives under subassembly_carriage_batch_all. With
+            // nothing else to anchor the camera, framing falls through to
+            // whatever the previous step framed (often the 3D printer frame
+            // from an earlier assembly stage) instead of the carriages the
+            // trainee is inspecting.
+            if (results.Count == 0 && !string.IsNullOrWhiteSpace(step.subassemblyId))
+                AddSubassemblyMembers(package, step.subassemblyId, results);
+        }
+
+        /// <summary>
+        /// Recursively walks a subassembly id and adds every member partId to
+        /// <paramref name="results"/>. Aggregates (batch-all-carriages) are
+        /// expanded through <see cref="SubassemblyDefinition.memberSubassemblyIds"/>
+        /// so the fallback catches every relevant carriage half, not just
+        /// the top-level entry.
+        /// </summary>
+        private static void AddSubassemblyMembers(
+            MachinePackageDefinition package, string subassemblyId, HashSet<string> results)
+        {
+            if (string.IsNullOrEmpty(subassemblyId)) return;
+            if (!package.TryGetSubassembly(subassemblyId, out var sub) || sub == null) return;
+
+            if (sub.partIds != null)
+            {
+                for (int i = 0; i < sub.partIds.Length; i++)
+                {
+                    string pid = sub.partIds[i];
+                    if (!string.IsNullOrWhiteSpace(pid)) results.Add(pid);
+                }
+            }
+
+            if (sub.isAggregate && sub.memberSubassemblyIds != null)
+            {
+                for (int i = 0; i < sub.memberSubassemblyIds.Length; i++)
+                {
+                    string childId = sub.memberSubassemblyIds[i];
+                    if (!string.IsNullOrWhiteSpace(childId))
+                        AddSubassemblyMembers(package, childId, results);
+                }
+            }
         }
 
         private static void AddTargetAssociatedParts(MachinePackageDefinition package, StepDefinition step, HashSet<string> results)
