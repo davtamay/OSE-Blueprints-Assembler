@@ -109,7 +109,6 @@ namespace OSE.Editor
                     assembledRotation = asmRot,
                     assembledScale    = asmScl.sqrMagnitude < 0.00001f ? Vector3.one : asmScl,
                     isDirty          = false,
-                    stepPoses        = hasP && sp.stepPoses != null ? new List<StepPoseEntry>(sp.stepPoses) : null,
                 };
                 list.Add(state);
             }
@@ -207,14 +206,6 @@ namespace OSE.Editor
                         scl = g.assembledScale;
                     }
                 }
-                else if (applyPoseOverride && _editingGroupPoseMode >= 0 && g.stepPoses != null
-                    && _editingGroupPoseMode < g.stepPoses.Count && (g.isDirty || g.hasPlacement))
-                {
-                    var sp = g.stepPoses[_editingGroupPoseMode];
-                    pos = PackageJsonUtils.ToVector3(sp.position);
-                    rot = PackageJsonUtils.ToUnityQuaternion(sp.rotation);
-                    scl = PackageJsonUtils.ToVector3(sp.scale);
-                }
                 // else: Start Pose mode OR non-selected group → origin
 
                 if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
@@ -225,9 +216,7 @@ namespace OSE.Editor
                 // assuming PreviewRoot is the parent, so a non-zero root offset
                 // would shift their visuals on the next spawner pass.
                 bool startPoseMode = !(applyPoseOverride && _editingGroupPoseMode == PoseModeAssembled
-                                       && (g.isDirty || g.hasPlacement))
-                                  && !(applyPoseOverride && _editingGroupPoseMode >= 0 && g.stepPoses != null
-                                       && _editingGroupPoseMode < g.stepPoses.Count && (g.isDirty || g.hasPlacement));
+                                       && (g.isDirty || g.hasPlacement));
 
                 if (startPoseMode && applyPoseOverride)
                 {
@@ -391,32 +380,20 @@ namespace OSE.Editor
         // ── Group pose read/write helpers ─────────────────────────────────────
 
         private Vector3 GetActiveGroupPosition(ref GroupEditState g)
-        {
-            if (_editingGroupPoseMode >= 0 && g.stepPoses != null && _editingGroupPoseMode < g.stepPoses.Count)
-                return PackageJsonUtils.ToVector3(g.stepPoses[_editingGroupPoseMode].position);
-            return _editingGroupPoseMode == PoseModeAssembled ? g.assembledPosition : g.startPosition;
-        }
+            => _editingGroupPoseMode == PoseModeAssembled ? g.assembledPosition : g.startPosition;
 
         private Quaternion GetActiveGroupRotation(ref GroupEditState g)
-        {
-            if (_editingGroupPoseMode >= 0 && g.stepPoses != null && _editingGroupPoseMode < g.stepPoses.Count)
-                return PackageJsonUtils.ToUnityQuaternion(g.stepPoses[_editingGroupPoseMode].rotation);
-            return _editingGroupPoseMode == PoseModeAssembled ? g.assembledRotation : g.startRotation;
-        }
+            => _editingGroupPoseMode == PoseModeAssembled ? g.assembledRotation : g.startRotation;
 
         private void ApplyPositionToGroup(ref GroupEditState g, Vector3 pos)
         {
-            if (_editingGroupPoseMode >= 0 && g.stepPoses != null && _editingGroupPoseMode < g.stepPoses.Count)
-                g.stepPoses[_editingGroupPoseMode].position = PackageJsonUtils.ToFloat3(pos);
-            else if (_editingGroupPoseMode == PoseModeAssembled) g.assembledPosition = pos;
+            if (_editingGroupPoseMode == PoseModeAssembled) g.assembledPosition = pos;
             else g.startPosition = pos;
         }
 
         private void ApplyRotationToGroup(ref GroupEditState g, Quaternion rot)
         {
-            if (_editingGroupPoseMode >= 0 && g.stepPoses != null && _editingGroupPoseMode < g.stepPoses.Count)
-                g.stepPoses[_editingGroupPoseMode].rotation = PackageJsonUtils.ToQuaternion(rot);
-            else if (_editingGroupPoseMode == PoseModeAssembled) g.assembledRotation = rot;
+            if (_editingGroupPoseMode == PoseModeAssembled) g.assembledRotation = rot;
             else g.startRotation = rot;
         }
 
@@ -453,61 +430,13 @@ namespace OSE.Editor
                 if (!isAssembled) { _editingGroupPoseMode = PoseModeAssembled; SyncAllPartMeshesToActivePose(); SyncAllGroupRootsToActivePose(); ActivateAllVisibleGroupMembers(); SceneView.RepaintAll(); }
             }
 
-            // Per-stepPose toggles — [Custom 1] [Custom 2] … lets the author
-            // target a specific authored group stepPose.
-            // Synthesized holdAtEnd entries (label starts with
-            // SynthesizedGroupStepPoseLabelPrefix) are baked from poseTransition
-            // cues on every load — editing them won't persist, and their long
-            // labels bloat the toggle row. Same hide-from-UI pattern used for
-            // AutoNoTaskLabel on the part side.
-            int gPoseCount = g.stepPoses?.Count ?? 0;
-
-            // If the active pose mode happens to point at an entry we're about
-            // to hide, fall back to Start so the transform fields below don't
-            // silently reflect a non-selectable slot.
-            if (_editingGroupPoseMode >= 0 && _editingGroupPoseMode < gPoseCount
-                && g.stepPoses[_editingGroupPoseMode]?.label != null
-                && g.stepPoses[_editingGroupPoseMode].label.StartsWith(
-                       OSE.Content.Loading.MachinePackageNormalizer.SynthesizedGroupStepPoseLabelPrefix,
-                       StringComparison.Ordinal))
-            {
-                _editingGroupPoseMode = PoseModeStart;
-            }
-
-            for (int gi = 0; gi < gPoseCount; gi++)
-            {
-                string poseLabel = g.stepPoses[gi]?.label;
-                if (!string.IsNullOrEmpty(poseLabel)
-                    && poseLabel.StartsWith(
-                           OSE.Content.Loading.MachinePackageNormalizer.SynthesizedGroupStepPoseLabelPrefix,
-                           StringComparison.Ordinal))
-                    continue;
-
-                string btnLabel = !string.IsNullOrEmpty(poseLabel)
-                    ? poseLabel
-                    : $"Custom {gi + 1}";
-                bool sel = _editingGroupPoseMode == gi;
-                if (GUILayout.Toggle(sel, btnLabel, toggleStyle, GUILayout.Height(18)) && !sel)
-                {
-                    _editingGroupPoseMode = gi;
-                    SyncAllPartMeshesToActivePose();
-                    SyncAllGroupRootsToActivePose();
-                    ActivateAllVisibleGroupMembers();
-                    SceneView.RepaintAll();
-                }
-            }
-
-            // [+] add a new group stepPose anchored to the current step.
-            if (GUILayout.Button("+", toggleStyle, GUILayout.Width(22), GUILayout.Height(18)))
-                AddGroupStepPoseForCurrentStep(ref g);
-
             EditorGUILayout.EndHorizontal();
 
-            // Group propagation UI removed — same simplification as on the
-            // part side. Authors edit Start / Assembled / Custom group
-            // poses directly without span pickers.
-
-            // Per-entry span row removed alongside propagation UI.
+            // Custom group stepPoses removed — groups have ONLY Start and
+            // Assembled intrinsic poses (mirrors the part-side deprecation).
+            // Intermediate poses during a step are driven by poseTransition
+            // cues with holdAtEnd, which synthesize runtime-only stepPose
+            // entries on every load (see MachinePackageNormalizer).
 
             EditorGUILayout.Space(4);
 
@@ -656,334 +585,6 @@ namespace OSE.Editor
                 if (rb.memberScales != null && rb.memberScales.TryGetValue(pid, out var s) && s.sqrMagnitude > 0.00001f)
                     child.localScale = s;
             }
-        }
-
-        // ── Group stepPose authoring (parallel to parts) ─────────────────────
-
-        /// <summary>
-        /// Creates a new <see cref="StepPoseEntry"/> on the group anchored to
-        /// the currently selected step. Captures the live group root pose so
-        /// the entry starts at whatever the author sees on screen. Default
-        /// span is anchor→end (empty fields) — identical to how a new part
-        /// stepPose defaults to "This step → end".
-        /// </summary>
-        private void AddGroupStepPoseForCurrentStep(ref GroupEditState g)
-        {
-            if (g.def == null) return;
-            string stepId = (_stepFilterIdx > 0 && _stepIds != null && _stepFilterIdx < _stepIds.Length)
-                ? _stepIds[_stepFilterIdx] : "";
-
-            Vector3 pos = _editingGroupPoseMode == PoseModeAssembled ? g.assembledPosition : g.startPosition;
-            Quaternion rot = _editingGroupPoseMode == PoseModeAssembled ? g.assembledRotation : g.startRotation;
-            Vector3 scl = _editingGroupPoseMode == PoseModeAssembled ? g.assembledScale : g.startScale;
-
-            if (g.stepPoses == null) g.stepPoses = new List<StepPoseEntry>();
-            g.stepPoses.Add(new StepPoseEntry
-            {
-                stepId   = stepId,
-                position = PackageJsonUtils.ToFloat3(pos),
-                rotation = PackageJsonUtils.ToQuaternion(rot),
-                scale    = PackageJsonUtils.ToFloat3(scl),
-            });
-            g.isDirty = true;
-            _dirtySubassemblyIds.Add(g.def.id);
-            _editingGroupPoseMode = g.stepPoses.Count - 1;
-            SyncAllGroupRootsToActivePose();
-            SyncAllPartMeshesToActivePose();
-            SceneView.RepaintAll();
-            Repaint();
-        }
-
-        private void DrawGroupStepPoseDetailRow(ref GroupEditState g, int poseIdx)
-        {
-            if (g.stepPoses == null || poseIdx < 0 || poseIdx >= g.stepPoses.Count) return;
-            var pose = g.stepPoses[poseIdx];
-
-            var smallLabel = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleLeft };
-
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Label("Anchor", smallLabel, GUILayout.Width(52));
-            string anchorLabel = string.IsNullOrEmpty(pose.stepId) ? "(none)" : StepShortLabel(pose.stepId);
-            if (GUILayout.Button(anchorLabel, EditorStyles.miniButton, GUILayout.MinWidth(80)))
-                ShowGroupStepIdPickerMenu(g.def.id, poseIdx);
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button("×", EditorStyles.miniButton, GUILayout.Width(22)))
-            {
-                RemoveGroupStepPose(g.def.id, poseIdx);
-                EditorGUILayout.EndHorizontal();
-                return;
-            }
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Label("Apply to", smallLabel, GUILayout.Width(52));
-            string applyLabel = DescribeSpan(pose);
-            if (GUILayout.Button(applyLabel, EditorStyles.popup, GUILayout.MinWidth(110)))
-                ShowStepPoseSpanMenuForGroup(g.def.id, poseIdx);
-
-            string rangeTxt = ResolveSpanChip(pose);
-            if (!string.IsNullOrEmpty(rangeTxt))
-            {
-                GUILayout.FlexibleSpace();
-                var chipStyle = new GUIStyle(EditorStyles.miniLabel)
-                {
-                    normal    = { textColor = new Color(0.55f, 0.78f, 0.95f) },
-                    alignment = TextAnchor.MiddleRight,
-                };
-                GUILayout.Label(rangeTxt, chipStyle);
-            }
-            EditorGUILayout.EndHorizontal();
-        }
-
-        private void ShowGroupStepIdPickerMenu(string subId, int poseIdx)
-        {
-            var menu = new GenericMenu();
-            if (_pkg?.steps == null) { menu.AddDisabledItem(new GUIContent("No steps available")); menu.ShowAsContext(); return; }
-            foreach (var step in _pkg.steps)
-            {
-                if (step == null) continue;
-                string sid = step.id;
-                string label = step.GetDisplayName() ?? sid;
-                menu.AddItem(new GUIContent(label), false, () =>
-                {
-                    int gi = FindGroupIdx(subId);
-                    if (gi < 0) return;
-                    ref GroupEditState gg = ref _groups[gi];
-                    if (gg.stepPoses == null || poseIdx < 0 || poseIdx >= gg.stepPoses.Count) return;
-                    gg.stepPoses[poseIdx].stepId = sid;
-                    gg.isDirty = true;
-                    _dirtySubassemblyIds.Add(subId);
-                    Repaint();
-                });
-            }
-            menu.ShowAsContext();
-        }
-
-        // Same-group filter for group propagation pickers. Defaults ON.
-        private bool _groupPropagationFilterSameGroup = true;
-
-        private void DrawGroupPropagationRow(ref GroupEditState g, string anchorStepId)
-        {
-            int gPoseCount = g.stepPoses?.Count ?? 0;
-            int activeIdx  = _editingGroupPoseMode >= 0 && gPoseCount > 0 && _editingGroupPoseMode < gPoseCount
-                ? _editingGroupPoseMode : -1;
-            string fromId    = activeIdx >= 0 ? g.stepPoses[activeIdx].propagateFromStep    : "";
-            string throughId = activeIdx >= 0 ? g.stepPoses[activeIdx].propagateThroughStep : "";
-
-            var header = new GUIStyle(EditorStyles.miniLabel) { fontStyle = FontStyle.Bold };
-            string poseName = _editingGroupPoseMode == PoseModeStart     ? "Start pose"
-                            : _editingGroupPoseMode == PoseModeAssembled ? "Assembled pose"
-                            : (activeIdx >= 0
-                                ? (string.IsNullOrEmpty(g.stepPoses[activeIdx].label) ? $"Custom {activeIdx + 1}" : g.stepPoses[activeIdx].label)
-                                : "Pose");
-            EditorGUILayout.LabelField($"Propagate {poseName}", header);
-
-            _groupPropagationFilterSameGroup = EditorGUILayout.ToggleLeft(
-                new GUIContent("Only steps using this group",
-                    "List only steps whose subassemblyId / requiredSubassemblyId matches this group, or whose part fields touch any of its members. Flip off to pick from every step."),
-                _groupPropagationFilterSameGroup, EditorStyles.miniLabel);
-
-            string subId = g.def?.id;
-            var smallLabel = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleLeft };
-
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Label("From",    smallLabel, GUILayout.Width(54));
-            if (GUILayout.Button(FormatStepButtonLabel(fromId, "(start of package)"),
-                    EditorStyles.popup, GUILayout.MinWidth(120)))
-            {
-                Func<StepDefinition, bool> filter = _groupPropagationFilterSameGroup ? (Func<StepDefinition, bool>)(s => StepTouchesGroup(s, subId)) : null;
-                string captured = subId;
-                EditorApplication.delayCall += () =>
-                    StepPickerDropdown.Open(_pkg?.steps, filter, anchorStepId,
-                        sid => SetGroupPropagationEndpoint(captured, anchorStepId, fromEndpoint: true, stepId: sid));
-            }
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Label("Through", smallLabel, GUILayout.Width(54));
-            if (GUILayout.Button(FormatStepButtonLabel(throughId, "(end of package)"),
-                    EditorStyles.popup, GUILayout.MinWidth(120)))
-            {
-                Func<StepDefinition, bool> filter = _groupPropagationFilterSameGroup ? (Func<StepDefinition, bool>)(s => StepTouchesGroup(s, subId)) : null;
-                string captured = subId;
-                EditorApplication.delayCall += () =>
-                    StepPickerDropdown.Open(_pkg?.steps, filter, anchorStepId,
-                        sid => SetGroupPropagationEndpoint(captured, anchorStepId, fromEndpoint: false, stepId: sid));
-            }
-            EditorGUILayout.EndHorizontal();
-        }
-
-        private bool StepTouchesGroup(StepDefinition step, string subId)
-        {
-            if (step == null || string.IsNullOrEmpty(subId)) return false;
-            if (string.Equals(step.subassemblyId,         subId, StringComparison.Ordinal)) return true;
-            if (string.Equals(step.requiredSubassemblyId, subId, StringComparison.Ordinal)) return true;
-            // Also include steps whose part fields reach any member of this group.
-            if (_pkg != null && _pkg.TryGetSubassembly(subId, out var sub) && sub?.partIds != null)
-            {
-                foreach (var pid in sub.partIds)
-                    if (StepTouchesPart(step, pid)) return true;
-            }
-            return false;
-        }
-
-        private void SetGroupPropagationEndpoint(string subId, string anchorStepId, bool fromEndpoint, string stepId)
-        {
-            int gi = FindGroupIdx(subId);
-            if (gi < 0) return;
-            ref GroupEditState g = ref _groups[gi];
-
-            StepPoseEntry target;
-            if (_editingGroupPoseMode >= 0 && g.stepPoses != null && _editingGroupPoseMode < g.stepPoses.Count)
-            {
-                target = g.stepPoses[_editingGroupPoseMode];
-            }
-            else
-            {
-                Vector3 capPos; Quaternion capRot; Vector3 capScl;
-                if (_editingGroupPoseMode == PoseModeAssembled)
-                {
-                    capPos = g.assembledPosition; capRot = g.assembledRotation; capScl = g.assembledScale;
-                }
-                else
-                {
-                    capPos = g.startPosition; capRot = g.startRotation; capScl = g.startScale;
-                }
-                if (g.stepPoses == null) g.stepPoses = new List<StepPoseEntry>();
-                target = new StepPoseEntry
-                {
-                    stepId   = anchorStepId,
-                    position = PackageJsonUtils.ToFloat3(capPos),
-                    rotation = PackageJsonUtils.ToQuaternion(capRot),
-                    scale    = PackageJsonUtils.ToFloat3(capScl),
-                };
-                g.stepPoses.Add(target);
-                _editingGroupPoseMode = g.stepPoses.Count - 1;
-            }
-
-            if (fromEndpoint) target.propagateFromStep    = stepId;
-            else              target.propagateThroughStep = stepId;
-
-            g.isDirty = true;
-            _dirtySubassemblyIds.Add(subId);
-            SyncAllGroupRootsToActivePose();
-            SyncAllPartMeshesToActivePose();
-            SceneView.RepaintAll();
-            Repaint();
-        }
-
-        /// <summary>
-        /// Like <see cref="ShowPartPosePropagationMenu"/> but for groups. When
-        /// Start/Assembled is active, captures those field values into a new
-        /// stepPose entry at the current step; otherwise rewrites the active
-        /// Custom entry's span.
-        /// </summary>
-        private void ShowGroupPosePropagationMenu(string subId, string anchorStepId)
-        {
-            var menu = new GenericMenu();
-            menu.AddItem(new GUIContent("From start → this step"),   false, () => PropagateGroupPose(subId, anchorStepId, SpanPreset.StartToAnchor, null));
-            menu.AddItem(new GUIContent("This step → end"),          false, () => PropagateGroupPose(subId, anchorStepId, SpanPreset.AnchorToEnd, null));
-            menu.AddItem(new GUIContent("All steps"),                false, () => PropagateGroupPose(subId, anchorStepId, SpanPreset.AllSteps, null));
-            menu.AddSeparator("");
-            menu.AddItem(new GUIContent("Through step… (search)"),  false, () =>
-            {
-                EditorApplication.delayCall += () =>
-                    StepPickerDropdown.Open(_pkg?.steps, sid => PropagateGroupPose(subId, anchorStepId, SpanPreset.FixedThrough, sid));
-            });
-            menu.ShowAsContext();
-        }
-
-        private void PropagateGroupPose(string subId, string anchorStepId, SpanPreset preset, string throughStepIdOpt)
-        {
-            int gi = FindGroupIdx(subId);
-            if (gi < 0) return;
-            ref GroupEditState g = ref _groups[gi];
-
-            StepPoseEntry target;
-            if (_editingGroupPoseMode >= 0 && g.stepPoses != null && _editingGroupPoseMode < g.stepPoses.Count)
-            {
-                target = g.stepPoses[_editingGroupPoseMode];
-            }
-            else
-            {
-                Vector3 capPos; Quaternion capRot; Vector3 capScl;
-                if (_editingGroupPoseMode == PoseModeAssembled)
-                {
-                    capPos = g.assembledPosition;
-                    capRot = g.assembledRotation;
-                    capScl = g.assembledScale;
-                }
-                else
-                {
-                    capPos = g.startPosition;
-                    capRot = g.startRotation;
-                    capScl = g.startScale;
-                }
-                if (g.stepPoses == null) g.stepPoses = new List<StepPoseEntry>();
-                target = new StepPoseEntry
-                {
-                    stepId   = anchorStepId,
-                    position = PackageJsonUtils.ToFloat3(capPos),
-                    rotation = PackageJsonUtils.ToQuaternion(capRot),
-                    scale    = PackageJsonUtils.ToFloat3(capScl),
-                };
-                g.stepPoses.Add(target);
-                _editingGroupPoseMode = g.stepPoses.Count - 1;
-            }
-
-            ApplyPreset(target, preset, throughStepIdOpt);
-            g.isDirty = true;
-            _dirtySubassemblyIds.Add(subId);
-            SyncAllGroupRootsToActivePose();
-            SyncAllPartMeshesToActivePose();
-            SceneView.RepaintAll();
-            Repaint();
-        }
-
-        private void ShowStepPoseSpanMenuForGroup(string subId, int poseIdx)
-        {
-            var menu = new GenericMenu();
-            menu.AddItem(new GUIContent("From start → this step"), false, () => SetGroupSpan(subId, poseIdx, SpanPreset.StartToAnchor, null));
-            menu.AddItem(new GUIContent("This step → end"),        false, () => SetGroupSpan(subId, poseIdx, SpanPreset.AnchorToEnd, null));
-            menu.AddItem(new GUIContent("All steps"),              false, () => SetGroupSpan(subId, poseIdx, SpanPreset.AllSteps, null));
-            menu.AddSeparator("");
-            menu.AddItem(new GUIContent("Through step… (search)"), false, () =>
-            {
-                EditorApplication.delayCall += () =>
-                    StepPickerDropdown.Open(_pkg?.steps, sid => SetGroupSpan(subId, poseIdx, SpanPreset.FixedThrough, sid));
-            });
-            menu.ShowAsContext();
-        }
-
-        private void SetGroupSpan(string subId, int poseIdx, SpanPreset preset, string throughStepIdOpt)
-        {
-            int gi = FindGroupIdx(subId);
-            if (gi < 0) return;
-            ref GroupEditState g = ref _groups[gi];
-            if (g.stepPoses == null || poseIdx < 0 || poseIdx >= g.stepPoses.Count) return;
-            ApplyPreset(g.stepPoses[poseIdx], preset, throughStepIdOpt);
-            g.isDirty = true;
-            _dirtySubassemblyIds.Add(subId);
-            SyncAllGroupRootsToActivePose();
-            SyncAllPartMeshesToActivePose();
-            SceneView.RepaintAll();
-            Repaint();
-        }
-
-        private void RemoveGroupStepPose(string subId, int poseIdx)
-        {
-            int gi = FindGroupIdx(subId);
-            if (gi < 0) return;
-            ref GroupEditState g = ref _groups[gi];
-            if (g.stepPoses == null || poseIdx < 0 || poseIdx >= g.stepPoses.Count) return;
-            g.stepPoses.RemoveAt(poseIdx);
-            g.isDirty = true;
-            _dirtySubassemblyIds.Add(subId);
-            _editingGroupPoseMode = PoseModeAssembled;
-            SyncAllGroupRootsToActivePose();
-            SyncAllPartMeshesToActivePose();
-            SceneView.RepaintAll();
-            Repaint();
         }
 
         // ── Find group index by subassembly ID ───────────────────────────────

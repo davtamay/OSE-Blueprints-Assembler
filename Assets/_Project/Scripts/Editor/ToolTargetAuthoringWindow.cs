@@ -431,7 +431,6 @@ namespace OSE.Editor
             public Vector3    startPosition,    assembledPosition;
             public Quaternion startRotation,    assembledRotation;
             public Vector3    startScale,       assembledScale;
-            public List<StepPoseEntry> stepPoses;
         }
 
         private GroupEditState[]       _groups;

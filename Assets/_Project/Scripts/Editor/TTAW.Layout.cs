@@ -1723,7 +1723,6 @@ namespace OSE.Editor
         /// stepPose's anchor step, a preset dropdown that writes
         /// <c>propagateFromStep</c>/<c>propagateThroughStep</c> in one click,
         /// a resolved-range chip (e.g. "steps 5–11"), and a remove button.
-        /// Mirrors the same data on groups via <see cref="DrawGroupStepPoseDetailRow"/>.
         /// </summary>
         private void DrawStepPoseDetailRow(ref PartEditState p, int poseIdx)
         {

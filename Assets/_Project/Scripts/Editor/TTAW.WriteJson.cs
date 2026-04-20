@@ -346,7 +346,12 @@ namespace OSE.Editor
                     entry.assembledPosition = PackageJsonUtils.ToFloat3(g.assembledPosition);
                     entry.assembledRotation = PackageJsonUtils.ToQuaternion(g.assembledRotation);
                     entry.assembledScale    = PackageJsonUtils.ToFloat3(g.assembledScale);
-                    entry.stepPoses         = g.stepPoses?.Count > 0 ? g.stepPoses.ToArray() : null;
+                    // Group stepPoses are no longer author-editable. Any entries
+                    // present on the in-memory list are synthesized holdAtEnd
+                    // bakes from poseTransition cues — regenerated on every
+                    // load by MachinePackageNormalizer.SynthesizeGroupHoldAtEnd.
+                    // Writing them back is wasted churn; authors never see them.
+                    entry.stepPoses         = null;
                     // Also update legacy position field for backward compat
                     entry.position = entry.startPosition;
                     entry.rotation = entry.startRotation;
