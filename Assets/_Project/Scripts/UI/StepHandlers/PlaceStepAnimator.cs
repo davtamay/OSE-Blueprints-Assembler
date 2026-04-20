@@ -472,6 +472,11 @@ namespace OSE.UI.Root
                     continue;
                 }
 
+                // Always re-apply emission each frame so that any
+                // intermediate writer (PartVisualFeedbackManager hover /
+                // state-change path, tint clear, etc.) that stomped emission
+                // gets re-pulsed the next frame. The per-frame cost is
+                // trivial — one SetEmission per open-and-pending part.
                 MaterialHelper.SetEmission(partGo, emissionColor);
             }
         }
