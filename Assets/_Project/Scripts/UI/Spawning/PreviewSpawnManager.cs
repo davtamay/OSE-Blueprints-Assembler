@@ -60,6 +60,16 @@ namespace OSE.UI.Root
             if (step.IsToolAction)
                 return;
 
+            // Confirm-family steps don't require part placement — they're
+            // "acknowledge these parts are present / condition is met" steps.
+            // When a Confirm step authors "part" entries in taskOrder (e.g.
+            // step_batch_carriage_layout's "gather and lay out all 8 halves"),
+            // those are task markers for cursor gating, NOT targets for
+            // drag-to-place ghost rendering. Spawning ghosts here surfaces
+            // placement UX for parts that don't need placing.
+            if (step.IsConfirmation)
+                return;
+
             string[] targetIds = step.targetIds;
             bool hasTargets = targetIds != null && targetIds.Length > 0;
 
