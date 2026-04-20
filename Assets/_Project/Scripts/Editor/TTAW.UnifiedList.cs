@@ -3197,6 +3197,24 @@ namespace OSE.Editor
                 return;
             }
 
+            // Force narrow mode for the task inspector so Vector3Field rows
+            // wrap their X/Y/Z fields under the label instead of forcing a
+            // wide single-line layout that blows out the panel. Restored in
+            // the finally block so unrelated inspectors aren't affected.
+            bool wasWideMode = EditorGUIUtility.wideMode;
+            EditorGUIUtility.wideMode = false;
+            try
+            {
+                DrawTaskInspectorBodyInner(step, order);
+            }
+            finally
+            {
+                EditorGUIUtility.wideMode = wasWideMode;
+            }
+        }
+
+        private void DrawTaskInspectorBodyInner(StepDefinition step, List<TaskOrderEntry> order)
+        {
             var selEntry = order[_selectedTaskSeqIdx];
             EditorGUILayout.Space(4);
 
@@ -3530,34 +3548,46 @@ namespace OSE.Editor
 
         private void DrawBottomEditPanel()
         {
-            // ── Task-sequence-driven (authoritative when a task is selected) ──────
-            // Both the canvas (when inspector is hidden) and the inspector pane
-            // route through DrawTaskInspectorBody so the rich detail UI has a
-            // single source of truth.
-            if (_selectedTaskSeqIdx >= 0 && _stepFilterIdx > 0
-                && _stepIds != null && _stepFilterIdx < _stepIds.Length)
+            // Force narrow mode for every fallback path too so Vector3Field
+            // rows wrap compactly. Task-inspector path already does this
+            // internally; setting it here keeps the fallback panels narrow.
+            bool wasWideMode = EditorGUIUtility.wideMode;
+            EditorGUIUtility.wideMode = false;
+            try
             {
-                var step  = FindStep(_stepIds[_stepFilterIdx]);
-                var order = step != null ? GetOrDeriveTaskOrder(step) : null;
-                if (step != null && order != null)
+                // ── Task-sequence-driven (authoritative when a task is selected) ──────
+                // Both the canvas (when inspector is hidden) and the inspector pane
+                // route through DrawTaskInspectorBody so the rich detail UI has a
+                // single source of truth.
+                if (_selectedTaskSeqIdx >= 0 && _stepFilterIdx > 0
+                    && _stepIds != null && _stepFilterIdx < _stepIds.Length)
                 {
-                    DrawTaskInspectorBody(step, order);
-                    return;
+                    var step  = FindStep(_stepIds[_stepFilterIdx]);
+                    var order = step != null ? GetOrDeriveTaskOrder(step) : null;
+                    if (step != null && order != null)
+                    {
+                        DrawTaskInspectorBody(step, order);
+                        return;
+                    }
                 }
-            }
 
-            // ── Fallback: direct selection state (no task sequence active) ────────
-            if (_multiSelectedParts.Count > 1)
-                DrawPartBatchPanel();
-            else if (_selectedPartIdx >= 0 && _parts != null && _selectedPartIdx < _parts.Length)
-                DrawPartDetailPanel(ref _parts[_selectedPartIdx]);
-            else if (_multiSelected.Count > 1)
-                DrawBatchPanel();
-            else if (_selectedIdx >= 0 && _targets != null && _selectedIdx < _targets.Length)
-                DrawDetailPanel(ref _targets[_selectedIdx]);
-            else
-                EditorGUILayout.LabelField("Select a part or target in the sequence above.",
-                    EditorStyles.centeredGreyMiniLabel);
+                // ── Fallback: direct selection state (no task sequence active) ────────
+                if (_multiSelectedParts.Count > 1)
+                    DrawPartBatchPanel();
+                else if (_selectedPartIdx >= 0 && _parts != null && _selectedPartIdx < _parts.Length)
+                    DrawPartDetailPanel(ref _parts[_selectedPartIdx]);
+                else if (_multiSelected.Count > 1)
+                    DrawBatchPanel();
+                else if (_selectedIdx >= 0 && _targets != null && _selectedIdx < _targets.Length)
+                    DrawDetailPanel(ref _targets[_selectedIdx]);
+                else
+                    EditorGUILayout.LabelField("Select a part or target in the sequence above.",
+                        EditorStyles.centeredGreyMiniLabel);
+            }
+            finally
+            {
+                EditorGUIUtility.wideMode = wasWideMode;
+            }
         }
 
         private void DrawUnifiedActions()

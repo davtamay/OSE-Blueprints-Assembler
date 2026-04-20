@@ -455,11 +455,36 @@ namespace OSE.Editor
 
             // Per-stepPose toggles — [Custom 1] [Custom 2] … lets the author
             // target a specific authored group stepPose.
+            // Synthesized holdAtEnd entries (label starts with
+            // SynthesizedGroupStepPoseLabelPrefix) are baked from poseTransition
+            // cues on every load — editing them won't persist, and their long
+            // labels bloat the toggle row. Same hide-from-UI pattern used for
+            // AutoNoTaskLabel on the part side.
             int gPoseCount = g.stepPoses?.Count ?? 0;
+
+            // If the active pose mode happens to point at an entry we're about
+            // to hide, fall back to Start so the transform fields below don't
+            // silently reflect a non-selectable slot.
+            if (_editingGroupPoseMode >= 0 && _editingGroupPoseMode < gPoseCount
+                && g.stepPoses[_editingGroupPoseMode]?.label != null
+                && g.stepPoses[_editingGroupPoseMode].label.StartsWith(
+                       OSE.Content.Loading.MachinePackageNormalizer.SynthesizedGroupStepPoseLabelPrefix,
+                       StringComparison.Ordinal))
+            {
+                _editingGroupPoseMode = PoseModeStart;
+            }
+
             for (int gi = 0; gi < gPoseCount; gi++)
             {
-                string btnLabel = !string.IsNullOrEmpty(g.stepPoses[gi].label)
-                    ? g.stepPoses[gi].label
+                string poseLabel = g.stepPoses[gi]?.label;
+                if (!string.IsNullOrEmpty(poseLabel)
+                    && poseLabel.StartsWith(
+                           OSE.Content.Loading.MachinePackageNormalizer.SynthesizedGroupStepPoseLabelPrefix,
+                           StringComparison.Ordinal))
+                    continue;
+
+                string btnLabel = !string.IsNullOrEmpty(poseLabel)
+                    ? poseLabel
                     : $"Custom {gi + 1}";
                 bool sel = _editingGroupPoseMode == gi;
                 if (GUILayout.Toggle(sel, btnLabel, toggleStyle, GUILayout.Height(18)) && !sel)
@@ -674,33 +699,39 @@ namespace OSE.Editor
             if (g.stepPoses == null || poseIdx < 0 || poseIdx >= g.stepPoses.Count) return;
             var pose = g.stepPoses[poseIdx];
 
-            EditorGUILayout.BeginHorizontal();
             var smallLabel = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleLeft };
-            GUILayout.Label("Anchor", smallLabel, GUILayout.Width(46));
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label("Anchor", smallLabel, GUILayout.Width(52));
             string anchorLabel = string.IsNullOrEmpty(pose.stepId) ? "(none)" : StepShortLabel(pose.stepId);
             if (GUILayout.Button(anchorLabel, EditorStyles.miniButton, GUILayout.MinWidth(80)))
                 ShowGroupStepIdPickerMenu(g.def.id, poseIdx);
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("×", EditorStyles.miniButton, GUILayout.Width(22)))
+            {
+                RemoveGroupStepPose(g.def.id, poseIdx);
+                EditorGUILayout.EndHorizontal();
+                return;
+            }
+            EditorGUILayout.EndHorizontal();
 
+            EditorGUILayout.BeginHorizontal();
             GUILayout.Label("Apply to", smallLabel, GUILayout.Width(52));
             string applyLabel = DescribeSpan(pose);
-            if (GUILayout.Button(applyLabel, EditorStyles.popup, GUILayout.MinWidth(130)))
+            if (GUILayout.Button(applyLabel, EditorStyles.popup, GUILayout.MinWidth(110)))
                 ShowStepPoseSpanMenuForGroup(g.def.id, poseIdx);
-
-            GUILayout.FlexibleSpace();
 
             string rangeTxt = ResolveSpanChip(pose);
             if (!string.IsNullOrEmpty(rangeTxt))
             {
+                GUILayout.FlexibleSpace();
                 var chipStyle = new GUIStyle(EditorStyles.miniLabel)
                 {
                     normal    = { textColor = new Color(0.55f, 0.78f, 0.95f) },
                     alignment = TextAnchor.MiddleRight,
                 };
-                GUILayout.Label(rangeTxt, chipStyle, GUILayout.MinWidth(80));
+                GUILayout.Label(rangeTxt, chipStyle);
             }
-
-            if (GUILayout.Button("×", EditorStyles.miniButton, GUILayout.Width(22)))
-                RemoveGroupStepPose(g.def.id, poseIdx);
             EditorGUILayout.EndHorizontal();
         }
 
@@ -753,11 +784,12 @@ namespace OSE.Editor
                 _groupPropagationFilterSameGroup, EditorStyles.miniLabel);
 
             string subId = g.def?.id;
-            EditorGUILayout.BeginHorizontal();
             var smallLabel = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleLeft };
-            GUILayout.Label("From", smallLabel, GUILayout.Width(40));
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label("From",    smallLabel, GUILayout.Width(54));
             if (GUILayout.Button(FormatStepButtonLabel(fromId, "(start of package)"),
-                    EditorStyles.popup, GUILayout.MinWidth(150)))
+                    EditorStyles.popup, GUILayout.MinWidth(120)))
             {
                 Func<StepDefinition, bool> filter = _groupPropagationFilterSameGroup ? (Func<StepDefinition, bool>)(s => StepTouchesGroup(s, subId)) : null;
                 string captured = subId;
@@ -765,10 +797,12 @@ namespace OSE.Editor
                     StepPickerDropdown.Open(_pkg?.steps, filter, anchorStepId,
                         sid => SetGroupPropagationEndpoint(captured, anchorStepId, fromEndpoint: true, stepId: sid));
             }
+            EditorGUILayout.EndHorizontal();
 
-            GUILayout.Label("Through", smallLabel, GUILayout.Width(58));
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label("Through", smallLabel, GUILayout.Width(54));
             if (GUILayout.Button(FormatStepButtonLabel(throughId, "(end of package)"),
-                    EditorStyles.popup, GUILayout.MinWidth(150)))
+                    EditorStyles.popup, GUILayout.MinWidth(120)))
             {
                 Func<StepDefinition, bool> filter = _groupPropagationFilterSameGroup ? (Func<StepDefinition, bool>)(s => StepTouchesGroup(s, subId)) : null;
                 string captured = subId;

@@ -89,14 +89,14 @@ namespace OSE.Editor
             _rightSideHost = new VisualElement();
             _rightSideHost.style.flexGrow      = 1;
             _rightSideHost.style.flexDirection = FlexDirection.Row;
-            _rightSideHost.style.minWidth      = 320;
+            _rightSideHost.style.minWidth      = 260;
             _rightSideHost.style.overflow      = Overflow.Hidden;
             _outerSplit.Add(_rightSideHost);
 
             // Canvas pane — the existing IMGUI body
             _canvasPane = new VisualElement();
             _canvasPane.style.flexGrow = 1;
-            _canvasPane.style.minWidth = 320;
+            _canvasPane.style.minWidth = 260;
             _canvasPane.style.overflow = Overflow.Hidden;
             // Single IMGUIContainer that runs the existing OnGUI body (now
             // renamed DrawAuthoringIMGUI in TTAW.Layout.cs). All Event.current,
@@ -159,7 +159,7 @@ namespace OSE.Editor
 
             if (_inspectorVisible)
             {
-                _innerSplit = new TwoPaneSplitView(1, 280f, TwoPaneSplitViewOrientation.Horizontal);
+                _innerSplit = new TwoPaneSplitView(1, 240f, TwoPaneSplitViewOrientation.Horizontal);
                 _innerSplit.style.flexGrow = 1;
                 _innerSplit.Add(_canvasPane);
                 _innerSplit.Add(_inspectorPane);

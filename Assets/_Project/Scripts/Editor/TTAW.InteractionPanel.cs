@@ -23,6 +23,13 @@ namespace OSE.Editor
             "linear", "smoothStep", "easeIn", "easeOut", "easeInOut",
         };
 
+        // Column widths for the interaction panel rows. Tuned so the
+        // "prefix label + editable field" pattern fits inside the ~260 px
+        // usable width of the inspector pane without clipping.
+        private const float kLabelW         = 96f;
+        private const float kBtnW           = 90f;
+        private const float kBtnWAssembled  = 100f;
+
         /// <summary>
         /// Draws the Tool × Part Interaction panel for a <see cref="ToolActionDefinition"/>.
         /// Creates an <see cref="ToolPartInteraction"/> on first edit; safe to skip rendering
@@ -393,16 +400,16 @@ namespace OSE.Editor
                 Repaint();
             }
             if (GUILayout.Button(
-                new GUIContent(hasInline ? "From scene" : "Capture from scene",
+                new GUIContent("From scene",
                     "Capture the part's live scene transform into this task's inline end-transform."),
-                GUILayout.Width(hasInline ? 90 : 140)))
+                GUILayout.Width(kBtnW)))
             {
                 CaptureLiveTransformIntoTaskEndTransform(step, taskEntry, partId);
             }
             if (!hasInline && GUILayout.Button(
                 new GUIContent("From assembled",
                     "Initialize the inline transform from the part's assembledPosition."),
-                GUILayout.Width(110)))
+                GUILayout.Width(kBtnWAssembled)))
             {
                 CaptureAssembledIntoTaskEndTransform(step, taskEntry, partId);
             }
@@ -560,7 +567,7 @@ namespace OSE.Editor
                     "Which pose the part is in when this tool action completes.\n" +
                     "Start pose is never authored — it is always inherited from the previous task " +
                     "that touched this part (pose-chain invariant)."),
-                GUILayout.Width(110));
+                GUILayout.Width(kLabelW));
             if (EditorGUILayout.DropdownButton(new GUIContent(label), FocusType.Keyboard))
             {
                 var captured = taskAction;
@@ -667,7 +674,7 @@ namespace OSE.Editor
                     "Which part this target drives.\n" +
                     "Writes target.associatedPartId. Searchable — type to filter " +
                     "the list by id or name."),
-                GUILayout.Width(110));
+                GUILayout.Width(kLabelW));
             if (EditorGUILayout.DropdownButton(new GUIContent(label), FocusType.Keyboard))
             {
                 var parts = _pkg.GetParts();
@@ -736,7 +743,7 @@ namespace OSE.Editor
                     "lerp: generic A→B. thread_in: plunge + rotate (drill/screw). " +
                     "axis_plunge: push along axis. rotate_in_place: spin without translating. " +
                     "clamp_hold: no motion."),
-                GUILayout.Width(110));
+                GUILayout.Width(kLabelW));
             EditorGUI.BeginChangeCheck();
             int newIdx = EditorGUILayout.Popup(idx, keys);
             EditorGUILayout.EndHorizontal();
@@ -773,7 +780,7 @@ namespace OSE.Editor
                 new GUIContent("🔧 Axis:",
                     "Motion axis. part_local = part's own frame (most common). " +
                     "tool_action_axis = inherits from the tool's ToolPose.actionAxis."),
-                GUILayout.Width(110));
+                GUILayout.Width(kLabelW));
             string[] spaces = { AxisSpaces.PartLocal, AxisSpaces.ToolActionAxis, AxisSpaces.TargetLocal, AxisSpaces.World };
             int sIdx = System.Array.IndexOf(spaces, payload.axis.space);
             if (sIdx < 0) sIdx = 0;
@@ -803,7 +810,7 @@ namespace OSE.Editor
             EditorGUILayout.LabelField(
                 new GUIContent("🔧 Distance:",
                     "Meters along the axis. 0 = auto (derived from start→end pose delta)."),
-                GUILayout.Width(110));
+                GUILayout.Width(kLabelW));
             EditorGUI.BeginChangeCheck();
             float newDist = EditorGUILayout.FloatField(payload.distance);
             if (EditorGUI.EndChangeCheck() && !Mathf.Approximately(newDist, payload.distance))
@@ -824,7 +831,7 @@ namespace OSE.Editor
                 new GUIContent("🔧 Total rot:",
                     "Total rotation in degrees across the whole action.\n" +
                     "Overridden by 'Deg / meter' if that is also set > 0."),
-                GUILayout.Width(110));
+                GUILayout.Width(kLabelW));
             EditorGUI.BeginChangeCheck();
             float newVal = EditorGUILayout.FloatField(payload.totalRotationsDeg);
             if (EditorGUI.EndChangeCheck() && !Mathf.Approximately(newVal, payload.totalRotationsDeg))
@@ -844,7 +851,7 @@ namespace OSE.Editor
                 new GUIContent("🔧 Deg / meter:",
                     "Thread-pitch model: degrees of rotation per meter of axial travel.\n" +
                     "When > 0, takes precedence over Total rot. 1080 ≈ 3 full turns per cm."),
-                GUILayout.Width(110));
+                GUILayout.Width(kLabelW));
             EditorGUI.BeginChangeCheck();
             float newVal = EditorGUILayout.FloatField(payload.rotationDegPerUnit);
             if (EditorGUI.EndChangeCheck() && !Mathf.Approximately(newVal, payload.rotationDegPerUnit))
@@ -866,7 +873,7 @@ namespace OSE.Editor
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField(
                 new GUIContent("🔧 Easing:", "Curve applied to progress before motion is computed."),
-                GUILayout.Width(110));
+                GUILayout.Width(kLabelW));
             EditorGUI.BeginChangeCheck();
             int newIdx = EditorGUILayout.Popup(idx, s_easingOptions);
             EditorGUILayout.EndHorizontal();

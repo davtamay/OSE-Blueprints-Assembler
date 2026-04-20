@@ -727,7 +727,7 @@ namespace OSE.Content.Loading
         /// the legacy strip (<c>SynthesizedStepPoseLabelPrefix</c>) must not
         /// accidentally catch the new group entries, nor vice versa.
         /// </summary>
-        private const string SynthesizedGroupStepPoseLabelPrefix = "synthGroup:holdAtEnd";
+        public const string SynthesizedGroupStepPoseLabelPrefix = "synthGroup:holdAtEnd";
 
         /// <summary>
         /// Bakes the end-state of every <c>poseTransition</c> cue with

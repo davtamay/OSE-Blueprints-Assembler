@@ -1493,39 +1493,45 @@ namespace OSE.Editor
 
             bool hasInline = entry.endTransform != null;
 
-            EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
-            EditorGUILayout.LabelField(
-                new GUIContent(
-                    hasInline
-                        ? $"🔩 End Transform (inline) — task on step '{currentStepId}'"
-                        : $"🔩 End Transform — task on step '{currentStepId}'",
-                    "The pose this Part task ends at. Authored inline on the task — " +
-                    "no other task can see or mutate this data (pose-chain invariant)."),
-                EditorStyles.boldLabel);
-            GUILayout.FlexibleSpace();
-            if (hasInline && GUILayout.Button("Clear", EditorStyles.miniButton, GUILayout.Width(56)))
+            // Two-line header so the label doesn't push the button row
+            // wider than the inspector. Label wraps; buttons sit below.
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                entry.endTransform = null;
-                _dirtyStepIds.Add(step.id);
-                SceneView.RepaintAll();
-                Repaint();
+                var wrapHeader = new GUIStyle(EditorStyles.boldLabel) { wordWrap = true };
+                string headerText = hasInline
+                    ? $"🔩 End Transform (inline) — step '{currentStepId}'"
+                    : $"🔩 End Transform — step '{currentStepId}'";
+                EditorGUILayout.LabelField(
+                    new GUIContent(headerText,
+                        "The pose this Part task ends at. Authored inline on the task — " +
+                        "no other task can see or mutate this data (pose-chain invariant)."),
+                    wrapHeader);
+
+                EditorGUILayout.BeginHorizontal();
+                if (hasInline && GUILayout.Button("Clear", EditorStyles.miniButton, GUILayout.Width(54)))
+                {
+                    entry.endTransform = null;
+                    _dirtyStepIds.Add(step.id);
+                    SceneView.RepaintAll();
+                    Repaint();
+                }
+                if (GUILayout.Button(
+                    new GUIContent("From scene",
+                        "Capture the part's live scene transform into this task's inline end-transform."),
+                    EditorStyles.miniButton, GUILayout.Width(80)))
+                {
+                    CapturePartLiveTransformIntoTaskEndTransform(step, entry, p.def.id);
+                }
+                if (!hasInline && GUILayout.Button(
+                    new GUIContent("From assembled",
+                        "Initialize the inline transform from the part's assembledPosition."),
+                    EditorStyles.miniButton, GUILayout.Width(100)))
+                {
+                    CapturePartAssembledIntoTaskEndTransform(step, entry, p);
+                }
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.EndHorizontal();
             }
-            if (GUILayout.Button(
-                new GUIContent(hasInline ? "From scene" : "Capture from scene",
-                    "Capture the part's live scene transform into this task's inline end-transform."),
-                EditorStyles.miniButton,
-                GUILayout.Width(hasInline ? 90 : 140)))
-            {
-                CapturePartLiveTransformIntoTaskEndTransform(step, entry, p.def.id);
-            }
-            if (!hasInline && GUILayout.Button(
-                new GUIContent("From assembled",
-                    "Initialize the inline transform from the part's assembledPosition."),
-                EditorStyles.miniButton, GUILayout.Width(110)))
-            {
-                CapturePartAssembledIntoTaskEndTransform(step, entry, p);
-            }
-            EditorGUILayout.EndHorizontal();
 
             if (!hasInline)
             {
@@ -1635,11 +1641,11 @@ namespace OSE.Editor
 
             EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
             EditorGUILayout.LabelField(
-                new GUIContent($"🔩 End pose for step '{currentStepId}':",
-                    "Which pose the part is in when this step's Part task completes. " +
-                    "Start pose is inherited from the previous task that touched this " +
-                    "part (pose-chain invariant)."),
-                GUILayout.Width(240));
+                new GUIContent("🔩 End pose:",
+                    $"End pose for step '{currentStepId}'. Which pose the part is in when this " +
+                    "step's Part task completes. Start pose is inherited from the previous task " +
+                    "that touched this part (pose-chain invariant)."),
+                GUILayout.Width(90));
             EditorGUILayout.LabelField(label, EditorStyles.boldLabel);
             if (GUILayout.Button(new GUIContent("Pick ▾", "Pick from the part's pose catalogue"),
                     EditorStyles.miniButton, GUILayout.Width(56)))
@@ -1724,34 +1730,42 @@ namespace OSE.Editor
             if (p.stepPoses == null || poseIdx < 0 || poseIdx >= p.stepPoses.Count) return;
             var pose = p.stepPoses[poseIdx];
 
-            EditorGUILayout.BeginHorizontal();
             var smallLabel = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleLeft };
-            GUILayout.Label("Anchor", smallLabel, GUILayout.Width(46));
+
+            // Anchor + delete on one row; Apply-to + range chip on the next.
+            // Two narrow rows fit inside the panel without horizontal scroll
+            // instead of one row whose combined MinWidth exceeds ~400px.
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label("Anchor", smallLabel, GUILayout.Width(52));
             string anchorLabel = string.IsNullOrEmpty(pose.stepId) ? "(none)" : StepShortLabel(pose.stepId);
             if (GUILayout.Button(anchorLabel, EditorStyles.miniButton, GUILayout.MinWidth(80)))
                 ShowStepIdPickerMenu(_selectedPartIdx, poseIdx);
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("×", EditorStyles.miniButton, GUILayout.Width(22)))
+            {
+                RemoveStepPose(_selectedPartIdx, poseIdx);
+                EditorGUILayout.EndHorizontal();
+                return;
+            }
+            EditorGUILayout.EndHorizontal();
 
+            EditorGUILayout.BeginHorizontal();
             GUILayout.Label("Apply to", smallLabel, GUILayout.Width(52));
             string applyLabel = DescribeSpan(pose);
-            if (GUILayout.Button(applyLabel, EditorStyles.popup, GUILayout.MinWidth(130)))
+            if (GUILayout.Button(applyLabel, EditorStyles.popup, GUILayout.MinWidth(110)))
                 ShowStepPoseSpanMenuForPart(_selectedPartIdx, poseIdx);
 
-            GUILayout.FlexibleSpace();
-
-            // Resolved range chip
             string rangeTxt = ResolveSpanChip(pose);
             if (!string.IsNullOrEmpty(rangeTxt))
             {
+                GUILayout.FlexibleSpace();
                 var chipStyle = new GUIStyle(EditorStyles.miniLabel)
                 {
                     normal    = { textColor = new Color(0.55f, 0.78f, 0.95f) },
                     alignment = TextAnchor.MiddleRight,
                 };
-                GUILayout.Label(rangeTxt, chipStyle, GUILayout.MinWidth(80));
+                GUILayout.Label(rangeTxt, chipStyle);
             }
-
-            if (GUILayout.Button("×", EditorStyles.miniButton, GUILayout.Width(22)))
-                RemoveStepPose(_selectedPartIdx, poseIdx);
             EditorGUILayout.EndHorizontal();
         }
 
@@ -1851,22 +1865,27 @@ namespace OSE.Editor
                     "When on, the From/Through pickers list only steps whose requiredPartIds, visualPartIds, optionalPartIds, or requiredSubassemblyId reference this part. Flip off to pick from every step."),
                 _propagationFilterSamePart, EditorStyles.miniLabel);
 
-            // From / Through buttons — each opens a searchable StepPickerDropdown.
-            EditorGUILayout.BeginHorizontal();
+            // From / Through buttons — stacked on two rows (each row only
+            // needs label + one MinWidth button) so the pair doesn't force
+            // the inspector ~400px wide.
             var smallLabel = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleLeft };
-            GUILayout.Label("From", smallLabel, GUILayout.Width(40));
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label("From",    smallLabel, GUILayout.Width(54));
             if (GUILayout.Button(FormatStepButtonLabel(fromId, emptyFallback: "(start of package)"),
-                    EditorStyles.popup, GUILayout.MinWidth(150)))
+                    EditorStyles.popup, GUILayout.MinWidth(120)))
             {
                 Func<StepDefinition, bool> filter = _propagationFilterSamePart ? (Func<StepDefinition, bool>)(s => StepTouchesPart(s, partId)) : null;
                 EditorApplication.delayCall += () =>
                     StepPickerDropdown.Open(_pkg?.steps, filter, currentStepId,
                         sid => SetPartPropagationEndpoint(currentStepId, fromEndpoint: true, stepId: sid));
             }
+            EditorGUILayout.EndHorizontal();
 
-            GUILayout.Label("Through", smallLabel, GUILayout.Width(58));
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label("Through", smallLabel, GUILayout.Width(54));
             if (GUILayout.Button(FormatStepButtonLabel(throughId, emptyFallback: "(end of package)"),
-                    EditorStyles.popup, GUILayout.MinWidth(150)))
+                    EditorStyles.popup, GUILayout.MinWidth(120)))
             {
                 Func<StepDefinition, bool> filter = _propagationFilterSamePart ? (Func<StepDefinition, bool>)(s => StepTouchesPart(s, partId)) : null;
                 EditorApplication.delayCall += () =>
@@ -2794,14 +2813,15 @@ namespace OSE.Editor
             int integratedCount = CountIntegratedPlacementsForSubassembly(ownerSubId);
             if (integratedCount > 0)
             {
-                EditorGUILayout.BeginHorizontal();
                 var warnStyle = new GUIStyle(EditorStyles.miniLabel)
                 {
                     normal    = { textColor = new Color(0.95f, 0.65f, 0.30f) },
                     fontStyle = FontStyle.Italic,
+                    wordWrap  = true,
                 };
-                GUILayout.Label($"  {integratedCount} integrated placement(s) on group '{ownerSubId}' can override later steps", warnStyle);
-                GUILayout.FlexibleSpace();
+                EditorGUILayout.LabelField(
+                    $"  {integratedCount} integrated placement(s) on group '{ownerSubId}' may override later steps.",
+                    warnStyle);
                 if (GUILayout.Button(new GUIContent("Strip integrated",
                         "Removes every integratedSubassemblyPlacements entry for this part's owning subassembly. The spawner will then fall back to startPosition / assembledPosition, letting NO TASK pose dominate."),
                     EditorStyles.miniButton, GUILayout.Width(112)))
@@ -2809,7 +2829,6 @@ namespace OSE.Editor
                     StripIntegratedPlacementsForSubassembly(ownerSubId);
                     return;
                 }
-                EditorGUILayout.EndHorizontal();
             }
 
             // Sort indices by the anchor step's sequenceIndex so the list
@@ -2848,20 +2867,18 @@ namespace OSE.Editor
                     : $"(unknown: {e.stepId ?? "∅"})";
                 string span = ResolveSpanChip(e);
 
-                EditorGUILayout.BeginHorizontal();
+                // Two narrow rows instead of one wide row so the Go/× buttons
+                // don't get clipped off the right edge of the inspector pane
+                // (~260 px usable). Row 1 = anchor label + Go + ×. Row 2 =
+                // span chip, drawn only when non-empty.
                 var labelStyle = new GUIStyle(EditorStyles.miniLabel)
                 {
                     fontStyle = isCurrent ? FontStyle.Bold : FontStyle.Normal,
                     normal    = { textColor = isCurrent ? new Color(0.70f, 0.88f, 1f) : new Color(0.78f, 0.78f, 0.80f) },
                 };
-                GUILayout.Label(anchorLabel, labelStyle, GUILayout.MinWidth(140));
-                var spanStyle = new GUIStyle(EditorStyles.miniLabel)
-                {
-                    normal    = { textColor = new Color(0.55f, 0.78f, 0.95f) },
-                    alignment = TextAnchor.MiddleLeft,
-                };
-                GUILayout.Label(string.IsNullOrEmpty(span) ? "" : span, spanStyle, GUILayout.MinWidth(90));
-                GUILayout.FlexibleSpace();
+
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Label(anchorLabel, labelStyle, GUILayout.ExpandWidth(true));
                 if (GUILayout.Button("Go", EditorStyles.miniButtonLeft, GUILayout.Width(28)) && anchorSeq >= 0)
                 {
                     // Jump the step filter to this pose's anchor step so the
@@ -2871,12 +2888,24 @@ namespace OSE.Editor
                             if (string.Equals(_stepIds[k], e.stepId, StringComparison.Ordinal))
                             { ApplyStepFilter(k); break; }
                 }
-                if (GUILayout.Button("×", EditorStyles.miniButtonRight, GUILayout.Width(22)))
+                bool removed = GUILayout.Button("×", EditorStyles.miniButtonRight, GUILayout.Width(22));
+                EditorGUILayout.EndHorizontal();
+                if (removed)
                 {
                     RemoveStepPose(_selectedPartIdx, idx);
                     break; // indices shifted; re-render next frame
                 }
-                EditorGUILayout.EndHorizontal();
+
+                if (!string.IsNullOrEmpty(span))
+                {
+                    var spanStyle = new GUIStyle(EditorStyles.miniLabel)
+                    {
+                        normal    = { textColor = new Color(0.55f, 0.78f, 0.95f) },
+                        alignment = TextAnchor.MiddleLeft,
+                        padding   = new RectOffset(12, 0, 0, 0),
+                    };
+                    GUILayout.Label(span, spanStyle);
+                }
             }
         }
 

@@ -275,16 +275,18 @@ namespace OSE.Editor
         // Trigger values written to machine.json (must stay in sync with _cueTriggerLabels)
         private static readonly string[] _cueTriggers =
             { "onActivate", "afterDelay", "afterPartsShown", "onStepComplete", "onFirstInteraction", "onTaskComplete", "onDuringAction" };
-        // Human-readable labels shown in the dropdown (parallel to _cueTriggers)
+        // Human-readable labels shown in the dropdown (parallel to _cueTriggers).
+        // Short enough to not force the Popup column wider than the inspector;
+        // the full explanation goes in the Popup's tooltip (see DrawCueEntry).
         private static readonly string[] _cueTriggerLabels =
         {
-            "On Activate — immediately when step opens",
-            "After Delay — N seconds after step opens",
-            "After Parts Shown — once all previews are spawned",
-            "On Step Complete — when all tasks are validated",
-            "On First Interaction — first tool contact this step",
-            "On Task Complete — when a specific task is validated",
-            "During Tool Action — while the user is performing the action",
+            "On Activate",
+            "After Delay",
+            "After Parts Shown",
+            "On Step Complete",
+            "On First Interaction",
+            "On Task Complete",
+            "During Tool Action",
         };
         private static readonly string[] _cueEasings   = { "smoothStep", "linear", "easeInOut" };
         private static readonly string[] _cueTargetModes = { "part", "ghost" };
@@ -444,11 +446,11 @@ namespace OSE.Editor
         private static void OpenWindow()
         {
             var w = GetWindow<ToolTargetAuthoringWindow>("Assembly Step Authoring");
-            // Phase 4 — three-pane layout (nav 240 + canvas 320 + inspector 280) needs ~880 wide.
+            // Phase 4 — three-pane layout (nav 240 + canvas 260 + inspector 240) needs ~740 wide.
             // The inspector can be hidden via the toolbar to recover horizontal space.
-            w.minSize = new Vector2(720, 580);
-            if (w.position.width < 880f)
-                w.position = new Rect(w.position.x, w.position.y, 880f, Mathf.Max(w.position.height, 720f));
+            w.minSize = new Vector2(620, 540);
+            if (w.position.width < 780f)
+                w.position = new Rect(w.position.x, w.position.y, 780f, Mathf.Max(w.position.height, 720f));
             w.Show();
         }
     }
