@@ -705,6 +705,27 @@ namespace OSE.UI.Root
             await SpawnGlbPartsAsync(ct);         // then fills in GLB models asynchronously
             if (ct.IsCancellationRequested) return;
             PositionParts();
+
+            // First-play / post-compile race: step activation fires
+            // StepStateChanged(Active) before SpawnerPartsReady when the
+            // spawner is still GLB-loading. ApplyStepAwarePositions then
+            // no-ops (_spawnedParts.Count == 0 guard) so no Group_* roots
+            // get created. When the subsequent SpawnerPartsReady rebuild
+            // tries to apply positioning, the part visibility is correct
+            // but parts aren't parented under any Group_* root — they
+            // render at world-space and the carriages look "missing"
+            // because the expected Group hierarchy hasn't materialised.
+            //
+            // Eagerly create roots here, right after parts have been
+            // spawned and positioned, so any later step activation sees a
+            // consistent hierarchy regardless of who fires first. Uses
+            // null step → roots created with grab disabled (safe default);
+            // the active step's ApplyStepAwarePositions will re-run
+            // EnsureSubassemblyRoots with the real step and enable grab
+            // where appropriate.
+            if (_currentPackage != null)
+                EnsureSubassemblyRoots(_currentPackage, step: null);
+
             RuntimeEventBus.Publish(new SpawnerPartsReady());
         }
 
