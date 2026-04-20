@@ -693,6 +693,15 @@ namespace OSE.UI.Root
                         ApplyStepAwarePositions(stepSeq, pkg);
                 }
             }
+            // Eagerly create Group_* roots so the subassembly hierarchy is
+            // in place before any external subscriber reacts to
+            // SpawnerPartsReady. See the detailed comment in the async path
+            // below (same rationale applies in editor-Play mode — the sync
+            // editor path used to skip this and the first play-press after
+            // a script recompile would show no carriages until the user
+            // stopped and played again).
+            if (_currentPackage != null)
+                EnsureSubassemblyRoots(_currentPackage, step: null);
             RuntimeEventBus.Publish(new SpawnerPartsReady());
 #else
             _ = SpawnPackagePartsAsync(_spawnCts.Token);
