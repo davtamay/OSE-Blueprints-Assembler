@@ -66,6 +66,16 @@ namespace OSE.Content.Loading
             if (!idx.subassemblyIdByMember.TryGetValue(partId, out string subId)) return memberLocal;
             if (!idx.groupStepPosesBySubassembly.TryGetValue(subId, out var spans)) return memberLocal;
 
+            // Membership filter: a group stepPose only applies to members that
+            // were already visible when the group transform kicked in. Members
+            // introduced AFTER the anchor seq (e.g. bolts/nuts placed at step
+            // 57 while the group rotation anchor is step 56) store their
+            // poses in the un-rotated PreviewRoot frame; applying the group
+            // transform would double-rotate them. The old per-member baker
+            // implicitly filtered by skipping Hidden members at the cue step —
+            // the group-centric path needs to replicate that semantic here.
+            int memberFirstVisible = idx.firstVisibleSeqByPart.TryGetValue(partId, out int fv) ? fv : int.MaxValue;
+
             ResolvedAuthorSpan? best = null;
             int bestDist = int.MaxValue;
             int bestAnchor = int.MinValue;
@@ -73,6 +83,11 @@ namespace OSE.Content.Loading
             {
                 var sp = spans[i];
                 if (!sp.Covers(viewSeq)) continue;
+                // Skip group transforms whose anchor is at-or-before the
+                // member's introduction step — the member wasn't part of the
+                // group when the cue rotated it, so its stored pose is in the
+                // un-rotated frame.
+                if (memberFirstVisible >= sp.anchorSeq) continue;
                 int dist = sp.anchorSeq >= 0 ? Math.Abs(viewSeq - sp.anchorSeq) : int.MaxValue / 2;
                 bool preferBackward = dist == bestDist
                                      && sp.anchorSeq <= viewSeq
