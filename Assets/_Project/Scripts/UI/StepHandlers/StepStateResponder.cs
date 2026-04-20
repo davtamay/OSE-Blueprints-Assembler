@@ -51,20 +51,25 @@ namespace OSE.UI.Root
             if (spawner.CurrentPackage == null)
                 return;
 
-            if (ServiceRegistry.TryGet<IMachineSessionController>(out var session))
-            {
-                var stepController = session.AssemblyController?.StepController;
-                if (stepController != null && stepController.HasActiveStep)
-                {
-                    string activeStepId = stepController.CurrentStepState.StepId;
-                    if (!string.IsNullOrWhiteSpace(activeStepId))
-                    {
-                        int completedCount = session.SessionState != null ? session.SessionState.CompletedStepCount : 0;
-                        StepDefinition[] completedSteps = GetCompletedSteps(session, completedCount);
-                        RebuildVisualStateForActiveStep(completedSteps, activeStepId, resetToDefaultView: true);
-                    }
-                }
-            }
+            // Keep retrying until session is registered AND has an active step.
+            // First-play-after-compile can land SpawnerPartsReady before the
+            // session's first step activates; without this retry loop the
+            // startup rebuild (which would reveal step parts) never runs and
+            // carriages stay hidden until the user stops and plays again.
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
+                return;
+
+            var stepController = session.AssemblyController?.StepController;
+            if (stepController == null || !stepController.HasActiveStep)
+                return;
+
+            string activeStepId = stepController.CurrentStepState.StepId;
+            if (string.IsNullOrWhiteSpace(activeStepId))
+                return;
+
+            int completedCount = session.SessionState != null ? session.SessionState.CompletedStepCount : 0;
+            StepDefinition[] completedSteps = GetCompletedSteps(session, completedCount);
+            RebuildVisualStateForActiveStep(completedSteps, activeStepId, resetToDefaultView: true);
 
             _startupSyncPending = false;
         }
