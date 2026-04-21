@@ -21,6 +21,26 @@ namespace OSE.UI.Root
         private string _lastCameraFramedStepId;
         private float _lastCameraFramedTime;
 
+        // ── Task-weighted framing ──
+        // The primary bounds = the bounding box of the cursor's currently-open
+        // task element(s) — the specific part(s) the trainee must touch RIGHT
+        // NOW, plus the active tool-action target where applicable. The
+        // context bounds = everything the old computation already included
+        // (other step parts, visual-only, subassembly fallback).
+        //
+        // Final pivot is locked to primary.center when a primary exists, and
+        // the final box SIZE interpolates between the primary extent and the
+        // full context extent by TaskWeight. TaskWeight=1 means "frame the
+        // task tightly, ignore context"; TaskWeight=0 means "frame the full
+        // context evenly, ignore task priority." 0.65 = 65% weight on the
+        // task: the camera zooms in on the task while keeping surrounding
+        // context visible for orientation.
+        //
+        // Tunable here rather than through InteractionSettings because
+        // StepFocusComputer is plain C# (no SerializeField). Promote to the
+        // settings asset later if designers want to iterate at runtime.
+        private const float TaskWeight = 0.65f;
+
         public StepFocusComputer(IBridgeContext context)
         {
             _ctx = context;
@@ -74,21 +94,34 @@ namespace OSE.UI.Root
             if (package == null || !package.TryGetStep(stepId, out StepDefinition step) || step == null)
                 return false;
 
-            Bounds accumulatedBounds = default;
-            bool hasBounds = false;
-            int previewCount = 0, partCount = 0, toolTargetCount = 0, fallbackTargetCount = 0;
+            // Two parallel bounds: "primary" = the currently-open task
+            // element (cursor.OpenTasks + active tool-action target);
+            // "context" = primary + everything else the old computation
+            // included. We then blend them by TaskWeight so the camera
+            // biases toward the task while still keeping context in frame.
+            Bounds primaryBounds = default;
+            Bounds contextBounds = default;
+            bool hasPrimary = false;
+            bool hasContext = false;
+            int previewCount = 0, partCount = 0, toolTargetCount = 0, fallbackTargetCount = 0, primaryPartCount = 0;
 
-            void Encapsulate(Bounds candidate)
+            void EncapsulateContext(Bounds candidate)
             {
-                if (!hasBounds)
-                {
-                    accumulatedBounds = candidate;
-                    hasBounds = true;
-                    return;
-                }
-
-                accumulatedBounds.Encapsulate(candidate);
+                if (!hasContext) { contextBounds = candidate; hasContext = true; }
+                else contextBounds.Encapsulate(candidate);
             }
+
+            void EncapsulatePrimary(Bounds candidate)
+            {
+                if (!hasPrimary) { primaryBounds = candidate; hasPrimary = true; }
+                else primaryBounds.Encapsulate(candidate);
+            }
+
+            // Resolve the set of primary (task-scope) part ids ONCE up front
+            // so we can tag parts as we iterate them below. Independent of
+            // focusPartIds (full-context set) so a part can be both.
+            HashSet<string> primaryPartIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            CollectPrimaryFocusPartIds(package, step, primaryPartIds);
 
             var spawnedPreviews = _ctx.PreviewManager.SpawnedPreviews;
             for (int i = 0; i < spawnedPreviews.Count; i++)
@@ -98,10 +131,11 @@ namespace OSE.UI.Root
                     continue;
 
                 previewCount++;
-                if (PreviewSpawnManager.TryGetRenderableBounds(preview, out Bounds previewBounds))
-                    Encapsulate(previewBounds);
-                else
-                    Encapsulate(new Bounds(preview.transform.position, Vector3.one * 0.08f));
+                Bounds pb = PreviewSpawnManager.TryGetRenderableBounds(preview, out var prB)
+                    ? prB : new Bounds(preview.transform.position, Vector3.one * 0.08f);
+                EncapsulateContext(pb);
+                // Previews visualize the open task's destination — treat as primary.
+                EncapsulatePrimary(pb);
             }
 
             HashSet<string> focusPartIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -114,10 +148,14 @@ namespace OSE.UI.Root
                     continue;
 
                 partCount++;
-                if (PreviewSpawnManager.TryGetRenderableBounds(partGo, out Bounds partBounds))
-                    Encapsulate(partBounds);
-                else
-                    Encapsulate(new Bounds(partGo.transform.position, Vector3.one * 0.08f));
+                Bounds pb = PreviewSpawnManager.TryGetRenderableBounds(partGo, out var pB)
+                    ? pB : new Bounds(partGo.transform.position, Vector3.one * 0.08f);
+                EncapsulateContext(pb);
+                if (primaryPartIds.Contains(partId))
+                {
+                    primaryPartCount++;
+                    EncapsulatePrimary(pb);
+                }
             }
 
             var subCtrl = _ctx.SubassemblyController;
@@ -126,17 +164,19 @@ namespace OSE.UI.Root
                 subCtrl.TryGetProxy(step.requiredSubassemblyId, out GameObject proxy) &&
                 proxy != null)
             {
-                if (PreviewSpawnManager.TryGetRenderableBounds(proxy, out Bounds proxyBounds))
-                    Encapsulate(proxyBounds);
-                else
-                    Encapsulate(new Bounds(proxy.transform.position, Vector3.one * 0.18f));
+                Bounds pb = PreviewSpawnManager.TryGetRenderableBounds(proxy, out var prxB)
+                    ? prxB : new Bounds(proxy.transform.position, Vector3.one * 0.18f);
+                EncapsulateContext(pb);
+                // Proxy is the task artifact for a subassembly-placement step.
+                EncapsulatePrimary(pb);
             }
 
             var useHandler = _ctx.UseHandler;
             if (useHandler != null && useHandler.TryGetSpawnedTargetBounds(out Bounds toolTargetBounds))
             {
                 toolTargetCount++;
-                Encapsulate(toolTargetBounds);
+                EncapsulateContext(toolTargetBounds);
+                EncapsulatePrimary(toolTargetBounds);
             }
 
             // Include target positions from previewConfig ONLY when the spawned
@@ -155,7 +195,7 @@ namespace OSE.UI.Root
                     fallbackTargetCount++;
                     Vector3 localPos = new Vector3(targetPlacement.position.x, targetPlacement.position.y, targetPlacement.position.z);
                     Vector3 worldPos = previewRoot != null ? previewRoot.TransformPoint(localPos) : localPos;
-                    Encapsulate(new Bounds(worldPos, Vector3.one * 0.08f));
+                    EncapsulateContext(new Bounds(worldPos, Vector3.one * 0.08f));
                 }
             }
 
@@ -175,50 +215,131 @@ namespace OSE.UI.Root
                     fallbackTargetCount++;
                     Vector3 localPos = new Vector3(targetPlacement.position.x, targetPlacement.position.y, targetPlacement.position.z);
                     Vector3 worldPos = previewRoot != null ? previewRoot.TransformPoint(localPos) : localPos;
-                    Encapsulate(new Bounds(worldPos, Vector3.one * 0.08f));
+                    EncapsulateContext(new Bounds(worldPos, Vector3.one * 0.08f));
                 }
             }
 
-            // Re-center the bounds on the active cursor tool-action target
-            // when present. FrameBounds sets pivot to bounds.center — if the
-            // accumulated box averages across multiple context parts, the
-            // pivot drifts off the target and the user sees "camera points
-            // somewhere near the target, not at it." Building a box centered
-            // ON the target that still fully contains the accumulated content
-            // keeps the context in-frame while locking the pivot to the
-            // work point.
-            if (hasBounds && TryGetActiveToolTargetWorldPosition(step, out Vector3 activeTargetPos))
+            // Active-tool-target — world position of the cursor's currently
+            // open tool-action. This IS the work point for Use steps and
+            // belongs in the primary set so the framing locks to it.
+            if (TryGetActiveToolTargetWorldPosition(step, out Vector3 activeTargetPos))
             {
-                Vector3 posOffset = activeTargetPos - accumulatedBounds.min;
-                Vector3 negOffset = accumulatedBounds.max - activeTargetPos;
-                Vector3 halfExtents = Vector3.Max(
-                    new Vector3(Mathf.Abs(posOffset.x), Mathf.Abs(posOffset.y), Mathf.Abs(posOffset.z)),
-                    new Vector3(Mathf.Abs(negOffset.x), Mathf.Abs(negOffset.y), Mathf.Abs(negOffset.z)));
-                accumulatedBounds = new Bounds(activeTargetPos, halfExtents * 2f);
+                var atb = new Bounds(activeTargetPos, Vector3.one * 0.08f);
+                EncapsulatePrimary(atb);
+                EncapsulateContext(atb);
+            }
+
+            if (!hasContext)
+            {
+                OseLog.Info($"[FocusBounds] Step '{stepId}' — previews={previewCount}, parts={partCount}/{focusPartIds.Count}, toolTargets={toolTargetCount}, fallbackTargets={fallbackTargetCount}, primary=none, hasBounds=false");
+                return false;
+            }
+
+            // Compose the final frame:
+            //   pivot  = primary.center when a primary exists, else context.center
+            //   extent = Lerp(primary.size, context.size, 1 - TaskWeight)
+            //
+            // Equivalently: at TaskWeight=1 the camera frames ONLY the task;
+            // at TaskWeight=0 it frames all context evenly. Using Lerp on
+            // size keeps the transition smooth when the task grows (e.g.
+            // multi-member unordered set opens).
+            //
+            // The primary center must still CONTAIN the primary box — never
+            // crop the task. We max the final half-extents against the
+            // primary half-extents as a floor so shrinking can't hide the
+            // task itself.
+            Bounds finalBounds;
+            if (hasPrimary)
+            {
+                Vector3 pivot = primaryBounds.center;
+                Vector3 contextSize = contextBounds.size;
+                Vector3 primarySize = primaryBounds.size;
+                Vector3 blendedSize = Vector3.Lerp(contextSize, primarySize, TaskWeight);
+
+                // Floor: whatever the blend, never smaller than the primary
+                // extent measured from this pivot. Prevents the task from
+                // being cropped when primary.center != context.center.
+                Vector3 pHalf = primaryBounds.extents;
+                blendedSize.x = Mathf.Max(blendedSize.x, pHalf.x * 2f);
+                blendedSize.y = Mathf.Max(blendedSize.y, pHalf.y * 2f);
+                blendedSize.z = Mathf.Max(blendedSize.z, pHalf.z * 2f);
+
+                finalBounds = new Bounds(pivot, blendedSize);
+            }
+            else
+            {
+                // No primary task could be resolved — fall back to the full
+                // context, same behaviour as the old code path. Happens for
+                // Confirm/QC steps with no cursor-open entry and no active
+                // tool target.
+                finalBounds = contextBounds;
             }
 
             // Enforce a minimum bounds size so tiny parts (single bolts, etc.)
             // still get a readable frame rather than an extreme close-up.
-            // FrameBounds already applies a 1.35× FOV padding and the caller
-            // adds Expand(0.18, 0.12, 0.18) — so only a fixed floor is needed here.
-            // The previous contentExtent * 2f multiplier was triple-stacking margin
-            // and caused the camera to pull far back on multi-part subassemblies.
-            if (hasBounds)
+            const float minSize = 0.15f;
+            Vector3 sz = finalBounds.size;
+            sz.x = Mathf.Max(sz.x, minSize);
+            sz.y = Mathf.Max(sz.y, minSize);
+            sz.z = Mathf.Max(sz.z, minSize);
+            finalBounds.size = sz;
+
+            OseLog.Info($"[FocusBounds] Step '{stepId}' — previews={previewCount}, parts={partCount}/{focusPartIds.Count}, toolTargets={toolTargetCount}, fallbackTargets={fallbackTargetCount}, primaryParts={primaryPartCount}, primary={(hasPrimary ? primaryBounds.size.ToString("F2") : "none")}, context={contextBounds.size:F2}, final={finalBounds.size:F2}");
+
+            bounds = finalBounds;
+            return true;
+        }
+
+        /// <summary>
+        /// Primary focus set: the cursor's currently-open part tasks plus
+        /// the parts associated with the cursor's currently-open tool-action
+        /// target. This is the "task element" scope the camera weights
+        /// heavily for framing. Empty when no cursor / cursor has no open
+        /// part tasks — callers fall back to the broader context box.
+        /// </summary>
+        internal static void CollectPrimaryFocusPartIds(MachinePackageDefinition package, StepDefinition step, HashSet<string> results)
+        {
+            if (package == null || step == null || results == null)
+                return;
+
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
+                return;
+            var cursor = session?.AssemblyController?.StepController?.CurrentTaskCursor;
+            if (cursor == null || cursor.IsComplete)
+                return;
+
+            foreach (var entry in cursor.OpenTasks)
             {
-                const float minSize = 0.15f;
-                Vector3 size = accumulatedBounds.size;
-                size.x = Mathf.Max(size.x, minSize);
-                size.y = Mathf.Max(size.y, minSize);
-                size.z = Mathf.Max(size.z, minSize);
-                accumulatedBounds.size = size;
+                if (entry == null || string.IsNullOrEmpty(entry.id)) continue;
+
+                if (string.Equals(entry.kind, "part", StringComparison.Ordinal))
+                {
+                    string partId = TaskInstanceId.ToPartId(entry.id);
+                    if (!string.IsNullOrWhiteSpace(partId)) results.Add(partId);
+                }
+                else if (string.Equals(entry.kind, "toolAction", StringComparison.Ordinal))
+                {
+                    // The tool-action's target usually carries an
+                    // associatedPartId — the bracket/bolt being acted upon.
+                    // Pull it in so Use steps frame the part under the drill,
+                    // not just the drill target marker.
+                    if (step.requiredToolActions == null) continue;
+                    for (int i = 0; i < step.requiredToolActions.Length; i++)
+                    {
+                        var action = step.requiredToolActions[i];
+                        if (action == null) continue;
+                        if (!string.Equals(action.id, entry.id, StringComparison.Ordinal)) continue;
+                        if (string.IsNullOrWhiteSpace(action.targetId)) break;
+                        if (package.TryGetTarget(action.targetId, out var target)
+                            && target != null
+                            && !string.IsNullOrWhiteSpace(target.associatedPartId))
+                        {
+                            results.Add(target.associatedPartId);
+                        }
+                        break;
+                    }
+                }
             }
-
-            OseLog.Info($"[FocusBounds] Step '{stepId}' — previews={previewCount}, parts={partCount}/{focusPartIds.Count}, toolTargets={toolTargetCount}, fallbackTargets={fallbackTargetCount}, hasBounds={hasBounds}");
-
-            if (hasBounds)
-                bounds = accumulatedBounds;
-
-            return hasBounds;
         }
 
         internal static void CollectStepFocusPartIds(MachinePackageDefinition package, StepDefinition step, HashSet<string> results)

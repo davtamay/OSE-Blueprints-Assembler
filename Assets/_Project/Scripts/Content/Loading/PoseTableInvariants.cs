@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using OSE.Core;
 using UnityEngine;
 
 namespace OSE.Content.Loading
@@ -161,9 +162,9 @@ namespace OSE.Content.Loading
                     $"{Tag} {criticalViolations} critical pose invariant violation(s) in package '{pkg.packageId}' — see console. " +
                     "These indicate silent-wrong-pose bugs (unresolved step refs, inverted ranges, overlapping author spans) and would render incorrectly. Fix the authored data before loading.");
             if (violations > 0)
-                Debug.LogWarning($"{Tag} {violations} non-critical violation(s) logged for package '{pkg.packageId}'. Coverage/orphan issues may reflect mid-authoring state; review the individual warnings.");
+                OseLog.Warn($"{Tag} {violations} non-critical violation(s) logged for package '{pkg.packageId}'. Coverage/orphan issues may reflect mid-authoring state; review the individual warnings.");
         }
 
-        private static void Report(string msg) => Debug.LogWarning(msg);
+        private static void Report(string msg) => OseLog.Warn(msg);
     }
 }

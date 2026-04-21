@@ -1,4 +1,5 @@
 using OSE.Content;
+using OSE.Core;
 using UnityEngine;
 
 namespace OSE.UI.Root
@@ -111,7 +112,7 @@ namespace OSE.UI.Root
                         if (c_.gameObject.activeInHierarchy) activeKids++;
                         if (c_.localPosition.sqrMagnitude >= 0.0001f) placedKids++;
                     }
-                    Debug.Log($"[PoseTransition] '{t.name}' active={activeKids}/{t.childCount} placed={placedKids} (animated) pivot={_pivotsLocal[i]}");
+                    OseLog.Info($"[PoseTransition] '{t.name}' cue-step-seq={context.StepSeq} active={activeKids}/{t.childCount} placed={placedKids} pivot={_pivotsLocal[i]} fromRot={_fromPoses[i].Rotation.eulerAngles} toRot={_toPoses[i].Rotation.eulerAngles}");
                     if (context.Entry != null && context.Entry.pivotOffsetOverride)
                     {
                         _pivotsLocal[i] += new Vector3(
@@ -126,31 +127,60 @@ namespace OSE.UI.Root
                     _totalRotDelta[i] = Quaternion.Inverse(_fromPoses[i].Rotation)
                                         * _toPoses[i].Rotation;
 
-                    // Snapshot every ACTIVE child. Inactive children (e.g. bolts
-                    // that haven't been introduced yet on a shake-test step) are
-                    // NOT children the runtime should animate — they're hidden,
-                    // and writing to their transforms during Tick/Stop leaves
-                    // them at rotated positions that persist across navigation.
-                    // Repeated passes through the cue would compound rotations
-                    // on each hidden child, so they land at unpredictable poses
-                    // when they finally become visible on their introduction step.
-                    //
-                    // At-origin active children are still included: they're
-                    // legitimate members sitting at the group centroid, and
-                    // skipping them would leave them un-rotated while siblings
-                    // rotate — the original "mixed pre/post pose" symptom.
+                    // Snapshot ACTIVE body children — the same set
+                    // PivotCentroidResolver uses for pivot computation:
+                    //   • Skip inactive children (bolts not yet introduced on
+                    //     a shake-test step). Writing to their transforms
+                    //     during Tick/Stop leaves them at rotated positions
+                    //     that persist; repeated passes compound rotations.
+                    //   • Skip children whose firstVisibleSeq >= current
+                    //     step seq. Those are "staging" parts being
+                    //     introduced THIS step — they sit at their
+                    //     authored startPosition (tray) so the user can
+                    //     pick them up. Animating them drags them away
+                    //     from the tray and the pickup task silently
+                    //     breaks. Their pose must come from the authored
+                    //     stepPose, not the cue. (Falls back to "include
+                    //     every active child" when Package/StepSeq aren't
+                    //     supplied — preserves legacy behaviour for cues
+                    //     resolved through paths that haven't been updated
+                    //     to pass the package context yet.)
+                    //   • At-origin active body children ARE included —
+                    //     they're legitimate members at the group centroid;
+                    //     skipping would leave them un-rotated while
+                    //     siblings rotate (original "mixed pre/post pose"
+                    //     symptom).
+                    var poseTable = context.Package?.poseTable;
+                    int filterSeq = context.StepSeq;
                     int kids = 0;
+                    int filteredOut = 0;
+                    System.Text.StringBuilder kept = new System.Text.StringBuilder();
+                    System.Text.StringBuilder skipped = new System.Text.StringBuilder();
                     for (int c = 0; c < t.childCount; c++)
                     {
                         var cc = t.GetChild(c);
-                        if (cc != null && cc.gameObject.activeInHierarchy) kids++;
+                        if (cc == null || !cc.gameObject.activeInHierarchy) continue;
+                        if (poseTable != null && filterSeq >= 0
+                            && poseTable.FirstVisibleSeq(cc.name) >= filterSeq)
+                        {
+                            filteredOut++;
+                            if (skipped.Length > 0) skipped.Append(", ");
+                            skipped.Append(cc.name);
+                            continue;
+                        }
+                        kids++;
+                        if (kept.Length > 0) kept.Append(", ");
+                        kept.Append(cc.name);
                     }
+                    OseLog.Info($"[PoseTransition.Filter] '{t.name}' poseTable={(poseTable != null ? "ok" : "NULL")} filterSeq={filterSeq} kept={kids}[{kept}] skipped={filteredOut}[{skipped}]");
                     var baselines = new ChildBaseline[kids];
                     int bi = 0;
                     for (int c = 0; c < t.childCount; c++)
                     {
                         var ch = t.GetChild(c);
                         if (ch == null || !ch.gameObject.activeInHierarchy) continue;
+                        if (poseTable != null && filterSeq >= 0
+                            && poseTable.FirstVisibleSeq(ch.name) >= filterSeq) continue;
                         baselines[bi++] = new ChildBaseline
                         {
                             t = ch,
@@ -166,6 +196,52 @@ namespace OSE.UI.Root
                         t.localScale = _fromPoses[i].Scale;
                 }
             }
+
+            // Camera follow: when the target[0] is translating meaningfully
+            // between fromPose and toPose, publish a CueCameraFollowStarted
+            // so the camera rig smoothly tracks the motion. Skipped when
+            // the object only rotates around a stationary pivot (centroid-
+            // preserving rotation — the camera has nothing useful to
+            // follow) or when there are no targets. Single-part cues are
+            // the main consumer; group cues with child-level baselines
+            // leave the root stationary and don't need follow.
+            PublishCameraFollowIfTranslating();
+        }
+
+        private object _cameraFollowToken;
+
+        private void PublishCameraFollowIfTranslating()
+        {
+            if (_ctx.Targets == null || _ctx.Targets.Count == 0) return;
+            var target = _ctx.Targets[0];
+            if (target == null) return;
+
+            // Only publish for single-part cues (no child baselines written).
+            // Group cues animate children while the root stays put, so
+            // root-center follow would be a no-op.
+            var baselines = _childBaselines != null && 0 < _childBaselines.Length
+                ? _childBaselines[0] : null;
+            bool isGroupWithChildrenAnim = baselines != null && baselines.Length > 0;
+            if (isGroupWithChildrenAnim) return;
+
+            Vector3 fromLocal = _fromPoses[0].Position;
+            Vector3 toLocal   = _toPoses[0].Position;
+            if ((toLocal - fromLocal).sqrMagnitude < 0.0001f) return; // rotation-only; nothing to follow
+
+            Transform parent = target.transform.parent;
+            Vector3 fromWorld = parent != null ? parent.TransformPoint(fromLocal) : fromLocal;
+            Vector3 toWorld   = parent != null ? parent.TransformPoint(toLocal)   : toLocal;
+
+            _cameraFollowToken = this; // simple per-player identity
+            OSE.Core.RuntimeEventBus.Publish(new OSE.Core.CueCameraFollowStarted(
+                _cameraFollowToken, fromWorld, toWorld, _ctx.Duration, _ctx.Entry.easing));
+        }
+
+        private void PublishCameraFollowStopIfActive()
+        {
+            if (_cameraFollowToken == null) return;
+            OSE.Core.RuntimeEventBus.Publish(new OSE.Core.CueCameraFollowStopped(_cameraFollowToken));
+            _cameraFollowToken = null;
         }
 
         public bool Tick(float deltaTime)
@@ -189,7 +265,7 @@ namespace OSE.UI.Root
                     Vector3 posDrift = t.localPosition - _lastWrotePos;
                     float rotDrift = Quaternion.Angle(t.localRotation, _lastWroteRot);
                     if (posDrift.sqrMagnitude > 0.0001f || rotDrift > 0.1f)
-                        Debug.LogWarning($"[PoseTransition.Drift] actualPos={t.localPosition} ourLastPos={_lastWrotePos} driftPos={posDrift} driftRotDeg={rotDrift:0.00}");
+                        OseLog.Warn($"[PoseTransition.Drift] actualPos={t.localPosition} ourLastPos={_lastWrotePos} driftPos={posDrift} driftRotDeg={rotDrift:0.00}");
                 }
 
                 Quaternion fromRot = _fromPoses[i].Rotation;
@@ -242,7 +318,7 @@ namespace OSE.UI.Root
                     {
                         _lastLogTime = _elapsed;
                         int animatedChildren = _childBaselines != null && i < _childBaselines.Length && _childBaselines[i] != null ? _childBaselines[i].Length : 0;
-                        Debug.Log($"[PoseTransition.Tick] t={rawT:0.00} pivot={C} animatedChildren={animatedChildren} deltaEuler={deltaRot.eulerAngles}");
+                        OseLog.VerboseInfo($"[PoseTransition.Tick] t={rawT:0.00} pivot={C} animatedChildren={animatedChildren} deltaEuler={deltaRot.eulerAngles}");
                     }
                 }
             }
@@ -258,6 +334,7 @@ namespace OSE.UI.Root
         public void Stop()
         {
             IsPlaying = false;
+            PublishCameraFollowStopIfActive();
 
             // Pose-transform invariant: end at either fromPose (0) or
             // toPose (1), never in-between. When Tick reached full

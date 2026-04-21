@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using OSE.App;
 using OSE.Content;
 using OSE.Core;
+using OSE.Runtime;
 using UnityEngine;
 
 namespace OSE.UI.Root
@@ -38,10 +40,52 @@ namespace OSE.UI.Root
         private Action _deferredPreviewSpawn;
         private float _previewDelayRemaining;
 
+        // ── awaitCues state ──────────────────────────────────────────────────
+        //
+        // When a TaskOrderEntry is flagged awaitCues=true, this coordinator:
+        //   1) Deferrs its host's onActivate cues at step activation — they
+        //      don't fire immediately. Instead they're kept in
+        //      _pendingAwaitCues keyed by the entry's (kind, id).
+        //   2) Subscribes to the active TaskCursor's TaskSpanOpened event.
+        //   3) When a span opens containing an awaitCues entry, starts that
+        //      entry's deferred cues, tagging each active cue with
+        //      AwaitingEntry = (kind, id). Tracks how many non-loop cues
+        //      are still running per entry in _awaitCueCount.
+        //   4) Tick's cue-removal path decrements _awaitCueCount when a
+        //      non-loop AwaitingEntry cue finishes. When the count for an
+        //      entry hits 0, the coordinator calls NotifyTaskCompleted so
+        //      the cursor advances past the entry.
+        //
+        // Loop cues (entry.loop == true) are fire-and-forget — they never
+        // block advancement. Covers the "ambient particle that keeps
+        // playing through the whole step" case.
+        private readonly Dictionary<(string kind, string id), List<PendingAwaitCue>> _pendingAwaitCues
+            = new Dictionary<(string kind, string id), List<PendingAwaitCue>>();
+        private readonly Dictionary<(string kind, string id), int> _awaitCueCount
+            = new Dictionary<(string kind, string id), int>();
+        private TaskCursor _awaitAttachedCursor;
+        private StepDefinition _awaitStep;
+
+        private struct PendingAwaitCue
+        {
+            public AnimationCueEntry Entry;
+            public AnimationCueContext Context;
+            public Func<IAnimationCuePlayer> Factory;
+        }
+
         private struct ActiveCue
         {
             public IAnimationCuePlayer Player;
             public AnimationCueContext Context;
+            /// <summary>
+            /// When this cue corresponds to a TaskOrderEntry that has
+            /// <c>awaitCues=true</c>, these are the (kind, id) of that
+            /// entry — so when Tick removes the cue on completion, the
+            /// coordinator decrements the entry's await-count and,
+            /// when the count hits 0, tells the cursor to advance.
+            /// Null when the cue isn't being awaited by any entry.
+            /// </summary>
+            public (string kind, string id)? AwaitingEntry;
         }
 
         private struct DelayedCue
@@ -149,6 +193,23 @@ namespace OSE.UI.Root
                 return;
             }
 
+            // Diagnostic: dump taskOrder state as the runtime sees it, so we
+            // can tell from logs alone whether awaitCues/isOptional survived
+            // load + normalization.
+            if (step.taskOrder != null)
+            {
+                var sb = new System.Text.StringBuilder();
+                sb.Append($"[CueRuntime.TaskOrderState] step='{step.id}' entries=");
+                for (int ti = 0; ti < step.taskOrder.Length; ti++)
+                {
+                    var te = step.taskOrder[ti];
+                    if (te == null) continue;
+                    if (ti > 0) sb.Append(", ");
+                    sb.Append($"[{ti}]({te.kind}:{te.id} opt={te.isOptional} awaitCues={te.awaitCues})");
+                }
+                OseLog.Info(sb.ToString());
+            }
+
             // Host-owned cues are the authoritative source. Step-level cues
             // are migrated onto their target host at load time by
             // MachinePackageNormalizer.MigrateStepAnimationCuesToHosts, so
@@ -212,6 +273,46 @@ namespace OSE.UI.Root
                     continue;
                 }
 
+                // awaitCues deferral — FIRST priority. If this cue's host
+                // matches a taskOrder entry flagged awaitCues=true, the
+                // author has explicitly said "this cue gates its span."
+                // That intent overrides every other timing path (panel
+                // delay, afterDelay, afterPartsShown) — we always stash the
+                // cue in _pendingAwaitCues and wait for the span-open
+                // handler to fire it when the cursor lands on that entry.
+                //
+                // Only onActivate-style triggers qualify. Triggers like
+                // onStepComplete / onTaskComplete / onDuringAction fire via
+                // dedicated public methods and must not be captured here
+                // (they'd block forever since no span-open would fire
+                // their host's cue).
+                bool triggerIsActivationLike =
+                    string.IsNullOrEmpty(entry.trigger) ||
+                    string.Equals(entry.trigger, "onActivate",      StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(entry.trigger, "afterDelay",      StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(entry.trigger, "afterPartsShown", StringComparison.OrdinalIgnoreCase);
+                if (triggerIsActivationLike)
+                {
+                    var awaitingEntry = TryResolveAwaitingEntry(step, entry, g.HostKind, g.HostId);
+                    if (awaitingEntry.HasValue)
+                    {
+                        if (!_pendingAwaitCues.TryGetValue(awaitingEntry.Value, out var list))
+                            _pendingAwaitCues[awaitingEntry.Value] = list = new List<PendingAwaitCue>();
+                        list.Add(new PendingAwaitCue
+                        {
+                            Entry   = entry,
+                            Context = context,
+                            Factory = factory,
+                        });
+                        OseLog.Info($"[CueRuntime.AwaitDefer] type={entry.type} hostId={g.HostId} → deferred for task entry ({awaitingEntry.Value.kind}, {awaitingEntry.Value.id})");
+                        continue;
+                    }
+                    else
+                    {
+                        OseLog.Info($"[CueRuntime.AwaitNoMatch] type={entry.type} hostKind={g.HostKind} hostId={g.HostId} — no awaitCues taskOrder entry matched; will fire normally");
+                    }
+                }
+
                 // Effective delay = authored afterDelay seconds + the
                 // panel-chain offset (parallel rows share an offset,
                 // sequenced rows wait for the previous row to finish).
@@ -240,7 +341,7 @@ namespace OSE.UI.Root
                 }
                 else if (isDelayed)
                 {
-                    Debug.Log($"[CueRuntime.Schedule] type={entry.type} hostId={g.HostId} → delayed by {effectiveDelay:0.00}s (panel={g.PanelDelay:0.00}s + authored={(string.Equals(entry.trigger, "afterDelay", StringComparison.OrdinalIgnoreCase) ? entry.delaySeconds : 0f):0.00}s)");
+                    OseLog.Info($"[CueRuntime.Schedule] type={entry.type} hostId={g.HostId} → delayed by {effectiveDelay:0.00}s (panel={g.PanelDelay:0.00}s + authored={(string.Equals(entry.trigger, "afterDelay", StringComparison.OrdinalIgnoreCase) ? entry.delaySeconds : 0f):0.00}s)");
                     _delayedCues.Add(new DelayedCue
                     {
                         Entry = entry,
@@ -267,10 +368,238 @@ namespace OSE.UI.Root
                 }
                 else
                 {
-                    Debug.Log($"[CueRuntime.Schedule] type={entry.type} hostId={g.HostId} → fire immediately (effectiveDelay={effectiveDelay:0.00}s)");
+                    OseLog.Info($"[CueRuntime.Schedule] type={entry.type} hostId={g.HostId} → fire immediately (effectiveDelay={effectiveDelay:0.00}s)");
                     var player = factory();
                     player.Start(context);
                     _activeCues.Add(new ActiveCue { Player = player, Context = context });
+                }
+            }
+
+            // Attach to the active cursor so span-opens can start deferred
+            // awaitCues cues at the right moment.
+            AttachAwaitCursor(step);
+        }
+
+        /// <summary>
+        /// Looks up the taskOrder entry whose (kind, host-id) matches this
+        /// cue's host AND has <c>awaitCues=true</c>. Returns null when no
+        /// such entry exists — the cue will fire normally. Part-entry id
+        /// can be either a partId or a subassemblyId (group task); both
+        /// resolve via HostKind matching.
+        ///
+        /// <para><b>Required entries are deliberately excluded.</b>
+        /// awaitCues is a visual-pacing affordance for optional / NO-TASK
+        /// entries — the cursor needs a way to "wait on the animation"
+        /// for something the user doesn't otherwise interact with.
+        /// Required entries drive their own advancement through user
+        /// completion (placement, tool action), and their cue timing
+        /// lives in the per-cue timing panels (First to Show / Show
+        /// During / During Tool Action / …). Applying awaitCues on a
+        /// required entry would either auto-advance past the required
+        /// task (wrong) or create an ambiguity between cue-done and
+        /// user-done completion sources. Ignore the flag in that case.
+        /// </para>
+        /// </summary>
+        private static (string kind, string id)? TryResolveAwaitingEntry(
+            StepDefinition step, AnimationCueEntry cue, HostKind cueHostKind, string cueHostId)
+        {
+            if (step?.taskOrder == null || step.taskOrder.Length == 0) return null;
+
+            // Dump the taskOrder state as TryResolveAwaitingEntry sees it, so
+            // one log line proves whether awaitCues survived load/normalize.
+            // This duplicates some of the TaskOrderState dump but fires at
+            // the exact moment we're deciding to defer, so timing is precise.
+            var trDesc = new System.Text.StringBuilder();
+            for (int li = 0; li < step.taskOrder.Length; li++)
+            {
+                var le = step.taskOrder[li];
+                if (le == null) continue;
+                if (trDesc.Length > 0) trDesc.Append(", ");
+                trDesc.Append($"({le.kind}:{le.id} awaitCues={le.awaitCues} opt={le.isOptional})");
+            }
+            OseLog.Info($"[CueRuntime.TryResolve] cueHost=({cueHostKind}:{cueHostId}) taskOrder=[{trDesc}]");
+
+            for (int i = 0; i < step.taskOrder.Length; i++)
+            {
+                var e = step.taskOrder[i];
+                if (e == null || !e.awaitCues || string.IsNullOrEmpty(e.id)) continue;
+                // NOTE: we intentionally do NOT gate on e.isOptional here.
+                // Required vs optional differentiation is handled by
+                // OnAwaitSpanOpened (autoAdvanceOnCueDone = e.isOptional).
+                // Gating here would cause required+awaitCues entries — and
+                // entries where MarkVisualOnlyTaskOrderEntriesOptional
+                // failed to run for any reason — to bypass await-defer and
+                // fire their cues in parallel with adjacent awaitCues
+                // entries, breaking the sequential-NO-TASK invariant.
+
+                // Part-kind entry: host is a Part OR Subassembly with that id.
+                if (string.Equals(e.kind, "part", StringComparison.Ordinal))
+                {
+                    string partId = TaskInstanceId.ToPartId(e.id);
+                    if ((cueHostKind == HostKind.Part         && string.Equals(cueHostId, partId, StringComparison.Ordinal))
+                     || (cueHostKind == HostKind.Subassembly  && string.Equals(cueHostId, e.id,   StringComparison.Ordinal)))
+                    {
+                        return (e.kind, e.id);
+                    }
+                }
+                // toolAction-kind entry: host is a Tool whose id matches the
+                // action's toolId in step.requiredToolActions.
+                else if (string.Equals(e.kind, "toolAction", StringComparison.Ordinal)
+                         && cueHostKind == HostKind.Tool
+                         && step.requiredToolActions != null)
+                {
+                    for (int ai = 0; ai < step.requiredToolActions.Length; ai++)
+                    {
+                        var a = step.requiredToolActions[ai];
+                        if (a == null) continue;
+                        if (!string.Equals(a.id, e.id, StringComparison.Ordinal)) continue;
+                        if (string.Equals(cueHostId, a.toolId, StringComparison.Ordinal))
+                            return (e.kind, e.id);
+                    }
+                }
+            }
+            return null;
+        }
+
+        private void AttachAwaitCursor(StepDefinition step)
+        {
+            _awaitStep = step;
+            var cursor = TryGetCursorForStep();
+            if (cursor == null) return;
+            if (ReferenceEquals(_awaitAttachedCursor, cursor)) return;
+
+            DetachAwaitCursor();
+            _awaitAttachedCursor = cursor;
+            _awaitAttachedCursor.TaskSpanOpened += OnAwaitSpanOpened;
+
+            // Manual replay ONLY when cursor.Start() has already fired.
+            //
+            // During the normal initial step-activation flow, OnStepActivated
+            // (this path) runs synchronously from StepStateChanged(Active),
+            // which fires BEFORE StepController.ActivateStep calls
+            // cursor.Start(). The TaskCursor exposes OpenTasks for span 0
+            // even pre-Start (spans are built in the constructor), so the
+            // Count > 0 heuristic alone produced a double-fire bug: manual
+            // call here fires cue A, list is cleared; then cursor.Start()
+            // fires TaskSpanOpened naturally → OnAwaitSpanOpened runs again
+            // with empty pending list → auto-notify advances the cursor →
+            // span 1 opens → cue B fires → both cues now running in parallel.
+            //
+            // Gating on HasStarted eliminates the double-fire. For
+            // late-attach cases (e.g. RebuildVisualStateForActiveStep
+            // calling OnStepActivated after a step has already been
+            // playing), HasStarted is true → replay fires as intended.
+            if (cursor.HasStarted && cursor.OpenTasks != null && cursor.OpenTasks.Count > 0)
+            {
+                OnAwaitSpanOpened(new TaskSpanOpenedInfo(
+                    cursor.OpenTasks, cursor.CurrentSetLabel, cursor.SpanIndex, cursor.TotalSpans));
+            }
+        }
+
+        private void DetachAwaitCursor()
+        {
+            if (_awaitAttachedCursor != null)
+                _awaitAttachedCursor.TaskSpanOpened -= OnAwaitSpanOpened;
+            _awaitAttachedCursor = null;
+        }
+
+        private static TaskCursor TryGetCursorForStep()
+        {
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
+                return null;
+            return session?.AssemblyController?.StepController?.CurrentTaskCursor;
+        }
+
+        /// <summary>
+        /// Fires every time the cursor opens a new span. For any span entry
+        /// flagged awaitCues, starts the cues deferred at OnStepActivated for
+        /// that entry, tagging each active cue with AwaitingEntry so the Tick
+        /// loop can notify the cursor when the entry's cues finish. Entries
+        /// with no deferred cues immediately fire NotifyTaskCompleted since
+        /// there's nothing to wait on.
+        /// </summary>
+        private void OnAwaitSpanOpened(TaskSpanOpenedInfo info)
+        {
+            if (info.Entries == null) return;
+
+            var entriesDesc = new System.Text.StringBuilder();
+            for (int li = 0; li < info.Entries.Count; li++)
+            {
+                var le = info.Entries[li];
+                if (le == null) continue;
+                if (entriesDesc.Length > 0) entriesDesc.Append(", ");
+                entriesDesc.Append($"({le.kind}:{le.id} awaitCues={le.awaitCues} opt={le.isOptional})");
+            }
+            int pendingKeys = _pendingAwaitCues.Count;
+            OseLog.Info($"[CueRuntime.SpanOpen] spanIdx={info.SpanIndex}/{info.TotalSpans} entries=[{entriesDesc}] pendingKeys={pendingKeys}");
+
+            for (int i = 0; i < info.Entries.Count; i++)
+            {
+                var e = info.Entries[i];
+                if (e == null || !e.awaitCues || string.IsNullOrEmpty(e.id)) continue;
+                var key = (e.kind ?? string.Empty, e.id);
+
+                // Required entries: fire cues at span-open (visual effect
+                // lands when the cursor visits this entry, which is the
+                // whole point of awaitCues), but DO NOT auto-notify. The
+                // cursor advances when the user completes the required
+                // task through the normal runtime path (placement, tool
+                // action, etc.). Auto-notifying here would bypass the
+                // user's actual interaction and complete the task on
+                // cue-end alone — wrong for Required + awaitCues.
+                //
+                // Only optional entries (NO TASK markers primarily) get
+                // the auto-notify-on-cue-complete behaviour.
+                bool autoAdvanceOnCueDone = e.isOptional;
+
+                if (!_pendingAwaitCues.TryGetValue(key, out var list) || list.Count == 0)
+                {
+                    if (autoAdvanceOnCueDone)
+                    {
+                        _awaitAttachedCursor?.NotifyTaskCompleted(key.Item1, key.id);
+                        OseLog.Info($"[CueRuntime.AwaitFire] ({key.Item1}, {key.id}) → no cues deferred; auto-notify complete.");
+                    }
+                    continue;
+                }
+
+                int nonLoopCount = 0;
+                for (int ci = 0; ci < list.Count; ci++)
+                {
+                    var pac = list[ci];
+                    if (!_factories.TryGetValue(pac.Entry.type ?? string.Empty, out var _)) continue;
+                    var player = pac.Factory();
+                    player.Start(pac.Context);
+                    var active = new ActiveCue
+                    {
+                        Player         = player,
+                        Context        = pac.Context,
+                        // Only tag with AwaitingEntry when we WANT the
+                        // Tick loop to decrement the count and auto-notify
+                        // the cursor on cue finish. For required entries
+                        // we skip the tag so Tick doesn't auto-advance.
+                        AwaitingEntry  = autoAdvanceOnCueDone ? key : (ValueTuple<string, string>?)null,
+                    };
+                    _activeCues.Add(active);
+                    if (autoAdvanceOnCueDone && !pac.Entry.loop) nonLoopCount++;
+                }
+                list.Clear();
+                _pendingAwaitCues.Remove(key);
+
+                if (!autoAdvanceOnCueDone)
+                {
+                    OseLog.Info($"[CueRuntime.AwaitFire] ({key.Item1}, {key.id}) → required entry: cues started without auto-advance; user completion drives advancement.");
+                    continue;
+                }
+
+                if (nonLoopCount == 0)
+                {
+                    _awaitAttachedCursor?.NotifyTaskCompleted(key.Item1, key.id);
+                    OseLog.Info($"[CueRuntime.AwaitFire] ({key.Item1}, {key.id}) → all cues looped; auto-notify complete.");
+                }
+                else
+                {
+                    _awaitCueCount[key] = nonLoopCount;
+                    OseLog.Info($"[CueRuntime.AwaitFire] ({key.Item1}, {key.id}) → started, waiting on {nonLoopCount} non-loop cue(s).");
                 }
             }
         }
@@ -331,9 +660,31 @@ namespace OSE.UI.Root
                     {
                         active.Player.Stop();
                         _activeCues.RemoveAt(i);
+                        NotifyAwaitCueFinished(active);
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Decrements the await-count for the task entry this finished cue
+        /// was contributing to, if any. When the count hits zero, fires
+        /// NotifyTaskCompleted on the attached cursor so the span advances.
+        /// </summary>
+        private void NotifyAwaitCueFinished(ActiveCue finished)
+        {
+            if (!finished.AwaitingEntry.HasValue) return;
+            var key = finished.AwaitingEntry.Value;
+            if (!_awaitCueCount.TryGetValue(key, out int remaining)) return;
+            remaining--;
+            if (remaining > 0)
+            {
+                _awaitCueCount[key] = remaining;
+                return;
+            }
+            _awaitCueCount.Remove(key);
+            _awaitAttachedCursor?.NotifyTaskCompleted(key.kind, key.id);
+            OseLog.VerboseInfo($"[CueRuntime.AwaitDone] ({key.kind}, {key.id}) → all non-loop cues finished; cursor notified.");
         }
 
         private bool IsProgressDriven(IAnimationCuePlayer player)
@@ -361,6 +712,15 @@ namespace OSE.UI.Root
                 _activeCues[i].Player.Stop();
             _activeCues.Clear();
             _delayedCues.Clear();
+
+            // awaitCues: drop every deferred cue and unsubscribe from the
+            // cursor. Any entry still in _awaitCueCount had its cues
+            // cancelled — we do NOT fire NotifyTaskCompleted here because
+            // the step is tearing down, not completing.
+            _pendingAwaitCues.Clear();
+            _awaitCueCount.Clear();
+            DetachAwaitCursor();
+            _awaitStep = null;
 
             // Phase 2: drop any progress-ranged cues still pending / active.
             for (int i = 0; i < _rangedCues.Count; i++)
@@ -710,7 +1070,7 @@ namespace OSE.UI.Root
                         ? cue.durationSeconds
                         : AnimationCueDefaults.GetDefaultDuration(cue.type);
 
-                    Debug.Log($"[CueRuntime.Panel] bucket={kv.Key} row={row} type={cue.type} seqAfterPrev={cue.sequenceAfterPrevious} panelOrder={cue.panelOrder} duration={prevDuration:0.00}s panelDelay={entry.PanelDelay:0.00}s");
+                    OseLog.VerboseInfo($"[CueRuntime.Panel] bucket={kv.Key} row={row} type={cue.type} seqAfterPrev={cue.sequenceAfterPrevious} panelOrder={cue.panelOrder} duration={prevDuration:0.00}s panelDelay={entry.PanelDelay:0.00}s");
                 }
             }
         }
@@ -930,7 +1290,13 @@ namespace OSE.UI.Root
 
             Vector3? pivotHint = PivotCentroidResolver.ComputeBodyCentroidLocal(root.transform, pkg, step);
 
-            return new AnimationCueContext(entry, targets, startPoses, assembledPoses, DurationOrDefault(entry), null, pivotHint);
+            return new AnimationCueContext(
+                entry, targets, startPoses, assembledPoses,
+                DurationOrDefault(entry),
+                ghosts: null,
+                pivotHintLocal: pivotHint,
+                package: pkg,
+                stepSeq: step != null ? step.sequenceIndex : -1);
         }
 
         /// <summary>

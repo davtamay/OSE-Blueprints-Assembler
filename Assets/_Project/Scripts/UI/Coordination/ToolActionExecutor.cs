@@ -648,9 +648,9 @@ namespace OSE.UI.Root
                     // blocks new cross-refs from being written.
                     if (!string.IsNullOrEmpty(stepId) && !string.Equals(stepId, currentStepId, System.StringComparison.Ordinal))
                     {
-                        Debug.LogWarning($"[ToolAction] Cross-task pose reference ignored: " +
-                                         $"toPose='{toPoseToken}' referenced from step '{currentStepId}' on part '{partId}'. " +
-                                         $"Only 'step:{currentStepId}' (self-step) is valid. Falling back to auto resolution.");
+                        OseLog.Warn($"[ToolAction] Cross-task pose reference ignored: " +
+                                    $"toPose='{toPoseToken}' referenced from step '{currentStepId}' on part '{partId}'. " +
+                                    $"Only 'step:{currentStepId}' (self-step) is valid. Falling back to auto resolution.");
                     }
                     else if (poseTable != null
                              && poseTable.TryGet(partId, currentStepSeq, out PoseResolution authored)

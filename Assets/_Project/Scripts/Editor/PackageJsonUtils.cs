@@ -22,6 +22,84 @@ namespace OSE.Editor
         private static readonly Regex _floatPattern =
             new(@"-?\d+\.\d{5,}", RegexOptions.Compiled);
 
+        // ── Entity → source-file map (structural, built at load) ──────────────
+        //
+        // WriteJson needs to know which file to modify when editing an entity.
+        // The old "find the first file that textually contains '\"id\": \"<x>\"'"
+        // heuristic got fooled by compact taskOrder entries
+        // ({"kind":"part","id":"foo"...}) in neighbouring assembly files: the
+        // heuristic returned the taskOrder file, injection landed inside a
+        // TaskOrderEntry (no schema slot for stagingPose / assetRef / etc.),
+        // and the author's edits silently vanished on reload.
+        //
+        // This map is populated at LoadPackage time by walking each chunk's
+        // parts[] / targets[] / tools[] / steps[] / subassemblies[] /
+        // partTemplates[] arrays and recording <entityId → sourceFilePath>.
+        // It is the ONE authoritative answer to "which file contains this
+        // entity's definition?" — no string matching, no alphabetical order
+        // dependency, no ambiguity with taskOrder refs.
+        //
+        // Keyed by packageId at the outer level so multiple packages can
+        // coexist (editor can switch between packages without collisions).
+        private static readonly Dictionary<string, Dictionary<string, string>> _entityOriginByPackage
+            = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
+
+        /// <summary>
+        /// Returns the absolute path of the file containing the first-class
+        /// definition of <paramref name="entityId"/> in package
+        /// <paramref name="packageId"/>, or <c>null</c> if the entity is
+        /// unknown (never loaded, or created in-editor and not yet saved).
+        /// Populated by <see cref="LoadPackage"/> — callers that need an
+        /// origin-file answer MUST ensure LoadPackage ran for this package
+        /// in the current editor session first.
+        /// </summary>
+        internal static string TryGetEntityOriginFile(string packageId, string entityId)
+        {
+            if (string.IsNullOrEmpty(packageId) || string.IsNullOrEmpty(entityId)) return null;
+            if (!_entityOriginByPackage.TryGetValue(packageId, out var map)) return null;
+            return map.TryGetValue(entityId, out string fp) ? fp : null;
+        }
+
+        // Records (entityId → sourceFilePath) for every entity found in the
+        // definition-bearing arrays of a parsed chunk. Duplicate keys
+        // surfaced here indicate the same id is defined in multiple files
+        // — ambiguous ownership and very likely an authoring bug. Log
+        // loudly so the author finds it immediately instead of hitting a
+        // silent edit-loss later.
+        private static void RecordEntityOrigins(
+            Dictionary<string, string> map, MachinePackageDefinition chunk, string sourceFile)
+        {
+            if (chunk == null || map == null || string.IsNullOrEmpty(sourceFile)) return;
+            RecordIds(map, chunk.parts,         p => p?.id, sourceFile, "part");
+            RecordIds(map, chunk.targets,       t => t?.id, sourceFile, "target");
+            RecordIds(map, chunk.tools,         t => t?.id, sourceFile, "tool");
+            RecordIds(map, chunk.steps,         s => s?.id, sourceFile, "step");
+            RecordIds(map, chunk.subassemblies, s => s?.id, sourceFile, "subassembly");
+            RecordIds(map, chunk.partTemplates, t => t?.id, sourceFile, "partTemplate");
+        }
+
+        private static void RecordIds<T>(
+            Dictionary<string, string> map, T[] array, Func<T, string> idOf,
+            string sourceFile, string kind)
+        {
+            if (array == null) return;
+            for (int i = 0; i < array.Length; i++)
+            {
+                string id = idOf(array[i]);
+                if (string.IsNullOrWhiteSpace(id)) continue;
+                if (map.TryGetValue(id, out string prior) && prior != sourceFile)
+                {
+                    Debug.LogError(
+                        $"[PackageJsonUtils] Duplicate {kind} definition for id '{id}': " +
+                        $"first seen in '{prior}', also found in '{sourceFile}'. " +
+                        "Editor edits will write to the FIRST-seen file, silently dropping " +
+                        "any changes intended for the other. Resolve by renaming or removing one definition.");
+                    continue;
+                }
+                map[id] = sourceFile;
+            }
+        }
+
         /// <summary>
         /// Rounds all float literals in a JSON string to <paramref name="decimals"/> decimal places
         /// (default 4). Unity's JsonUtility writes up to 9 significant digits; 4 places gives
@@ -140,6 +218,16 @@ namespace OSE.Editor
         internal static string FindEntityFilePath(string packageId, string entityId)
         {
             if (string.IsNullOrEmpty(packageId) || string.IsNullOrEmpty(entityId)) return null;
+
+            // Structural map populated at LoadPackage time — authoritative.
+            // Covers every entity that has a first-class definition in the
+            // package. String matching below is a fallback for entities
+            // created in-editor THIS session and not yet persisted (the map
+            // doesn't know about them until the first save+reload).
+            string mapped = TryGetEntityOriginFile(packageId, entityId);
+            if (!string.IsNullOrEmpty(mapped) && File.Exists(mapped))
+                return mapped;
+
             string packageDir     = Path.Combine(AuthoringRoot, packageId);
             string assemblyFolder = Path.Combine(packageDir, "assemblies");
             if (!Directory.Exists(assemblyFolder)) return null;
@@ -150,8 +238,7 @@ namespace OSE.Editor
             foreach (string asmFile in Directory.GetFiles(assemblyFolder, "*.json"))
             {
                 string text = File.ReadAllText(asmFile);
-                if (text.Contains(needle1, StringComparison.Ordinal) ||
-                    text.Contains(needle2, StringComparison.Ordinal))
+                if (ContainsDefinitionMatch(text, needle1, needle2))
                     return asmFile;
             }
 
@@ -159,11 +246,56 @@ namespace OSE.Editor
             if (File.Exists(sharedPath))
             {
                 string text = File.ReadAllText(sharedPath);
-                if (text.Contains(needle1, StringComparison.Ordinal) ||
-                    text.Contains(needle2, StringComparison.Ordinal))
+                if (ContainsDefinitionMatch(text, needle1, needle2))
                     return sharedPath;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Returns true when the <paramref name="text"/> contains an id match
+        /// for the entity in a context that looks like a first-class
+        /// definition — i.e. a standalone <c>"id": "..."</c> line in a
+        /// pretty-printed <c>parts[]</c> / <c>targets[]</c> / <c>tools[]</c> /
+        /// <c>steps[]</c> array, NOT a compact one-line taskOrder reference
+        /// like <c>{"kind":"part","id":"foo",...}</c>. The <c>kind</c>
+        /// keyword on the same line is the sure sign of a taskOrder entry;
+        /// authoritative definitions never co-locate <c>kind</c> with
+        /// <c>id</c> on the same line. Without this filter, a taskOrder
+        /// reference in a neighbouring assembly file hijacks the entity →
+        /// file mapping, and WriteJson's <c>stagingPose</c> injection ends
+        /// up inside a TaskOrderEntry where JsonUtility silently drops it
+        /// on reload (no schema slot), so per-part gizmo edits vanish after
+        /// Save.
+        /// </summary>
+        private static bool ContainsDefinitionMatch(string text, string needle1, string needle2)
+        {
+            return HasDefinitionMatch(text, needle1) || HasDefinitionMatch(text, needle2);
+        }
+
+        private static bool HasDefinitionMatch(string text, string needle)
+        {
+            int from = 0;
+            while (from < text.Length)
+            {
+                int idx = text.IndexOf(needle, from, StringComparison.Ordinal);
+                if (idx < 0) return false;
+                int lineStart = text.LastIndexOf('\n', idx) + 1;
+                int lineEnd   = text.IndexOf('\n', idx);
+                if (lineEnd < 0) lineEnd = text.Length;
+                int lineLen = lineEnd - lineStart;
+                if (lineLen > 0)
+                {
+                    // A definition line has "id": ... by itself (possibly
+                    // trailing comma / brace). A taskOrder reference has
+                    // "kind":"part","id":"..." on the same line — reject.
+                    string line = text.Substring(lineStart, lineLen);
+                    if (line.IndexOf("\"kind\"", StringComparison.Ordinal) < 0)
+                        return true;
+                }
+                from = idx + needle.Length;
+            }
+            return false;
         }
 
         /// <summary>
@@ -177,17 +309,32 @@ namespace OSE.Editor
             string packageDir     = Path.Combine(AuthoringRoot, packageId);
             string assemblyFolder = Path.Combine(packageDir, "assemblies");
             if (Directory.Exists(assemblyFolder))
-                return LoadSplitLayoutPackage(packageDir, assemblyFolder);
+                return LoadSplitLayoutPackage(packageId, packageDir, assemblyFolder);
 
             string path = GetJsonPath(packageId);
             if (path == null) return null;
-            return JsonUtility.FromJson<MachinePackageDefinition>(File.ReadAllText(path));
+            var pkg = JsonUtility.FromJson<MachinePackageDefinition>(File.ReadAllText(path));
+
+            // Monolithic: every entity lives in the one file. Build the
+            // origin-file map so WriteJson can still resolve deterministically.
+            var map = new Dictionary<string, string>(StringComparer.Ordinal);
+            RecordEntityOrigins(map, pkg, path);
+            _entityOriginByPackage[packageId] = map;
+
+            return pkg;
         }
 
-        private static MachinePackageDefinition LoadSplitLayoutPackage(string packageDir, string assemblyFolder)
+        private static MachinePackageDefinition LoadSplitLayoutPackage(
+            string packageId, string packageDir, string assemblyFolder)
         {
-            string machineJson = File.ReadAllText(Path.Combine(packageDir, "machine.json"));
+            // Fresh map per load — stale mappings from a previous edit
+            // session would point at files whose layouts may have changed.
+            var originMap = new Dictionary<string, string>(StringComparer.Ordinal);
+
+            string machinePath = Path.Combine(packageDir, "machine.json");
+            string machineJson = File.ReadAllText(machinePath);
             var pkg = JsonUtility.FromJson<MachinePackageDefinition>(machineJson) ?? new MachinePackageDefinition();
+            RecordEntityOrigins(originMap, pkg, machinePath);
 
             string sharedPath = Path.Combine(packageDir, "shared.json");
             if (File.Exists(sharedPath))
@@ -202,6 +349,7 @@ namespace OSE.Editor
                     pkg.hints           = MergeArrays(pkg.hints,           shared.hints);
                     if (pkg.challengeConfig == null && shared.challengeConfig != null)
                         pkg.challengeConfig = shared.challengeConfig;
+                    RecordEntityOrigins(originMap, shared, sharedPath);
                 }
             }
 
@@ -216,6 +364,7 @@ namespace OSE.Editor
                 pkg.targets         = MergeArrays(pkg.targets,         chunk.targets);
                 pkg.hints           = MergeArrays(pkg.hints,           chunk.hints);
                 pkg.validationRules = MergeArrays(pkg.validationRules, chunk.validationRules);
+                RecordEntityOrigins(originMap, chunk, asmFile);
             }
 
             string previewPath = Path.Combine(packageDir, "preview_config.json");
@@ -225,6 +374,8 @@ namespace OSE.Editor
                 if (wrap?.previewConfig != null)
                     pkg.previewConfig = wrap.previewConfig;
             }
+
+            _entityOriginByPackage[packageId] = originMap;
             return pkg;
         }
 

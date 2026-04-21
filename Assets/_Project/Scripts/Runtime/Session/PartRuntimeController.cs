@@ -503,6 +503,21 @@ namespace OSE.Runtime
                 if (entry == null || string.IsNullOrEmpty(entry.id)) continue;
                 if (!string.Equals(entry.kind, "part", StringComparison.Ordinal)) continue;
 
+                // awaitCues entries are owned by AnimationCueCoordinator —
+                // the cue's completion is what advances the span, NOT the
+                // part's placement state. Auto-skipping here would race
+                // cue playback: span 0 opens → auto-skip fires
+                // NotifyTaskCompleted → cursor advances to span 1 → span 1
+                // opens → its own auto-skip fires → cursor advances again,
+                // all in one tick. AnimationCueCoordinator then fires BOTH
+                // cues back-to-back in parallel instead of sequentially.
+                //
+                // Leaving awaitCues entries alone here lets the cue
+                // coordinator's OnAwaitSpanOpened drive completion via
+                // cue-done NotifyTaskCompleted, which is the whole point
+                // of the awaitCues flag.
+                if (entry.awaitCues) continue;
+
                 var current = GetPartState(entry.id);
                 switch (current)
                 {

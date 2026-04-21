@@ -18,6 +18,86 @@ namespace OSE.Editor
 {
     public sealed partial class ToolTargetAuthoringWindow : EditorWindow
     {
+        // ── Auto-save state ──────────────────────────────────────────────────
+        //
+        // When on, any dirty edit (gizmo release, field commit, multiselect
+        // batch apply) triggers a WriteJson call from TickAutoSave() once:
+        //   (a) the user has stopped interacting (GUIUtility.hotControl == 0
+        //       → no gizmo handle or field is being held), AND
+        //   (b) debounce elapsed since the last edit committed dirty state.
+        //
+        // The debounce coalesces rapid field-tabbing and ensures a drag
+        // writes ONCE at release rather than every tick during the drag.
+        // Explicit "Write to machine.json" button still works and is the
+        // "flush now" affordance when auto-save is off.
+        [SerializeField] private bool   _autoSaveEnabled;
+        private const double AutoSaveDebounceSeconds = 0.5;
+        private double _lastEditTime;
+        private double _lastAutoSaveTime;
+        // Monotonically-increasing dirty signature — sum of dirty-set sizes.
+        // When it changes between ticks, we know a NEW edit arrived this
+        // frame, so reset the debounce window.
+        private int _lastDirtySignature;
+
+        /// <summary>
+        /// Commits any dirty edits to JSON when:
+        ///   (1) <see cref="_autoSaveEnabled"/> is on,
+        ///   (2) something is actually dirty,
+        ///   (3) no gizmo handle or field is currently held
+        ///       (<c>GUIUtility.hotControl == 0</c> — the user has released),
+        ///   (4) <see cref="AutoSaveDebounceSeconds"/> have elapsed since the
+        ///       most recent dirty state change. Resetting the debounce on
+        ///       every new edit coalesces drags (every tick during a drag
+        ///       bumps the timer; the save fires once after release stops
+        ///       producing new edits).
+        /// </summary>
+        private void TickAutoSave()
+        {
+            if (!_autoSaveEnabled) return;
+            if (_pkg == null) return;
+            if (!AnyDirty()) return;
+            if (GUIUtility.hotControl != 0) return; // user still interacting
+
+            int sig = (_dirtyStepIds?.Count ?? 0)
+                    + (_dirtyToolIds?.Count ?? 0)
+                    + (_dirtySubassemblyIds?.Count ?? 0)
+                    + (_dirtyTaskOrderStepIds?.Count ?? 0)
+                    + (_dirtyPartAssetRefIds?.Count ?? 0)
+                    + CountDirtyPartsForAutoSave()
+                    + CountDirtyTargetsForAutoSave();
+            if (sig != _lastDirtySignature)
+            {
+                _lastDirtySignature = sig;
+                _lastEditTime       = EditorApplication.timeSinceStartup;
+                return; // let the debounce window open
+            }
+
+            double now = EditorApplication.timeSinceStartup;
+            if (now - _lastEditTime < AutoSaveDebounceSeconds) return;
+            if (now - _lastAutoSaveTime < AutoSaveDebounceSeconds) return;
+
+            _lastAutoSaveTime = now;
+            WriteJson();
+        }
+
+        private int CountDirtyPartsForAutoSave()
+        {
+            if (_parts == null) return 0;
+            int n = 0;
+            for (int i = 0; i < _parts.Length; i++)
+                if (_parts[i].isDirty) n++;
+            return n;
+        }
+
+        private int CountDirtyTargetsForAutoSave()
+        {
+            if (_targets == null) return 0;
+            int n = 0;
+            for (int i = 0; i < _targets.Length; i++)
+                if (_targets[i].isDirty) n++;
+            return n;
+        }
+
         // ── Main GUI (canvas pane) ────────────────────────────────────────────
         //
         // PHASE 4 of the UX redesign: this method runs inside the canvas
@@ -36,15 +116,23 @@ namespace OSE.Editor
 
         private void DrawAuthoringIMGUI()
         {
-            // Restore after domain reload: _pkgId survives via [SerializeField] but
-            // _pkg (not serializable) is lost. By the time the IMGUIContainer first
-            // ticks the AssetDatabase is ready, so scene meshes and tool previews
-            // load correctly.
-            if (_pkg == null && !string.IsNullOrEmpty(_pkgId))
+            // Idempotent load guard. If OnEnable already populated _pkg this
+            // is a no-op; if OnEnable's load raised _pendingLoadRetry this
+            // frame retries. If the retry fails to produce a _pkg, clear the
+            // stale id so the empty-state UI below runs rather than sitting
+            // in a zombie "loading" state forever.
+            if (_pendingLoadRetry || _pkg == null)
             {
-                LoadPkg(_pkgId, restoring: true);
-                if (_pkg == null) _pkgId = null;
+                EnsureLoaded();
+                if (_pendingLoadRetry && _pkg == null)
+                    _pkgId = null;
             }
+
+            // Auto-save tick. Runs every IMGUI repaint while the window is
+            // open. The WriteJson call below is internally gated on dirty
+            // state + no active drag + debounce elapsed, so invoking it
+            // here is cheap in the common steady-state case.
+            TickAutoSave();
 
             // Lazy tool-preview recovery. HideAndDontSave GameObjects are
             // destroyed by Unity on every domain reload, and the event
@@ -595,6 +683,21 @@ namespace OSE.Editor
             BuildTargetList();
             BuildPartList();
             _editingPoseMode = PoseModeStart;           // always land on Start Pose when switching steps
+            _editingGroupPoseMode = PoseModeStart;      // same rule for groups — otherwise After-cue /
+                                                         // Before-cue / custom-stepPose modes persist across
+                                                         // step navigation, and SyncAllGroupRootsToActivePose
+                                                         // drags the selected group's root (and its children
+                                                         // via Unity parenting) to a stale pose. Observed as
+                                                         // "a lot of parts don't show" because members end up
+                                                         // at world origin / below-ground when the resolver
+                                                         // can't match the stale step/def.
+            // Also clear the cue-preview context so a stale _afterCueGroupDef
+            // from the previous step can't bind the resolver to a mismatched
+            // subassembly on the new step.
+            _beforeCuePartDef = null; _beforeCueStepId = null;
+            _afterCuePartDef = null; _afterCueStepId = null;
+            _beforeCueGroupDef = null;
+            _afterCueGroupDef = null; _afterCueGroupSynthIdx = -1;
             RespawnScene();                  // uses _editAssembledPose — must come AFTER the reset
             SyncAllPartMeshesToActivePose(); // second pass: ensures live GOs match after RespawnScene
             // Spawner writes member localPositions against PreviewRoot. Snap
@@ -1396,12 +1499,21 @@ namespace OSE.Editor
                     ApplyPoseMode(noTaskAutoIdx);
             }
 
-            // [Custom 1] [×] [Custom 2] [×] … — author-authored intermediate
-            // poses with an inline delete button. Synthetic NO-TASK waypoints
-            // (label starts with AutoNoTaskLabel) are computed every load and
-            // never persist; they shouldn't surface as toggleable Custom
-            // entries. The × renders alongside its toggle so removal is one
-            // click — no need to select-then-scroll-to-Remove-Pose.
+            // Before-cue pills — rendered right after Start (author-requested
+            // placement: "its own pose selection on the top next to Start pose").
+            // One pill per poseTransition cue on this part scoped to the
+            // current step with an explicitly authored fromPose. Clicking
+            // positions the part at cue.fromPose without persisting (preview
+            // only — runtime start pose is baseline-derived, not authored).
+            DrawBeforeCuePillsForPart(currentStepId);
+
+            // Author-authored custom pills only. Synthesized holdAtEnd
+            // stepPoses are NO LONGER surfaced here — their preview is
+            // handled by the "After cue" pill rendered below, which reads
+            // cue.toPose directly and appears on the cue's own step (not
+            // just the synth's landing step). Author customs (non-synth,
+            // non-NO-TASK) show regardless of stepId so the author sees
+            // every authored waypoint.
             int customCounter = 0;
             int pendingRemoveIdx = -1;
             var xStyle = new GUIStyle(EditorStyles.miniButton)
@@ -1419,15 +1531,39 @@ namespace OSE.Editor
                 if (!string.IsNullOrEmpty(entry.label)
                     && entry.label.StartsWith(OSE.Content.Loading.MachinePackageNormalizer.AutoNoTaskLabel, StringComparison.Ordinal))
                     continue;
+                // Skip synth entries — the "After cue" pill covers them.
+                if (PoseLabels.IsHoldAtEndSynth(entry)) continue;
+
                 customCounter++;
-                string btnLabel = !string.IsNullOrEmpty(entry.label) ? entry.label : $"Custom {customCounter}";
+
+                string tooltip;
+                string btnLabel;
+                if (!string.IsNullOrEmpty(entry.label))
+                {
+                    btnLabel = PoseLabels.FriendlyName(entry, 0, 0, out tooltip);
+                }
+                else
+                {
+                    btnLabel = $"Custom {customCounter}";
+                    tooltip  = $"Author-added intermediate pose at step '{entry.stepId}'.";
+                }
+
                 bool isSel = _editingPoseMode == i;
-                if (GUILayout.Toggle(isSel, btnLabel, EditorStyles.miniButtonMid) && !isSel)
+                var content = new GUIContent(btnLabel, tooltip);
+                if (GUILayout.Toggle(isSel, content, EditorStyles.miniButtonMid) && !isSel)
                     ApplyPoseMode(i);
+
                 if (GUILayout.Button(new GUIContent("×", $"Delete '{btnLabel}'"),
                         xStyle, GUILayout.Width(16)))
                     pendingRemoveIdx = i;
             }
+
+            // After-cue pills — one per poseTransition cue scoped to this
+            // step with authored toPose. Symmetric to Before cue; reads the
+            // pose directly from cue.toPose so the pill appears on the
+            // cue's own step, not dependent on where holdAtEnd synth lands.
+            DrawAfterCuePillsForPart(currentStepId);
+
             if (pendingRemoveIdx >= 0)
             {
                 RemoveStepPose(_selectedPartIdx, pendingRemoveIdx);
@@ -1459,6 +1595,234 @@ namespace OSE.Editor
             // Transform fields for Required / Optional / Custom poses are
             // rendered by DrawPartDetailPanel below — don't duplicate them
             // up here or the inspector shows two identical blocks.
+        }
+
+        /// <summary>
+        /// Renders one pill per poseTransition cue on the currently-selected
+        /// part with an explicitly-authored fromPose scoped to the current
+        /// step. Clicking a pill snaps the live part to cue.fromPose via the
+        /// PoseModeBeforeCueBase sentinel range. Editor-only preview — no
+        /// JSON writes, no runtime effect.
+        /// </summary>
+        private void DrawBeforeCuePillsForPart(string currentStepId)
+        {
+            if (_pkg == null || string.IsNullOrEmpty(currentStepId)) return;
+            if (_selectedPartIdx < 0 || _selectedPartIdx >= (_parts?.Length ?? 0)) return;
+            var partDef = _parts[_selectedPartIdx].def;
+            if (partDef?.animationCues == null || partDef.animationCues.Length == 0) return;
+
+            // Enumerate authored-fromPose poseTransition cues on this part
+            // scoped to the current step. First pass counts them so ordinals
+            // only append when there's more than one match.
+            int total = 0;
+            for (int i = 0; i < partDef.animationCues.Length; i++)
+                if (IsAuthoredFromPoseMatch(partDef.animationCues[i], currentStepId)) total++;
+            if (total == 0) return;
+
+            int ordinal = 0;
+            for (int i = 0; i < partDef.animationCues.Length; i++)
+            {
+                var cue = partDef.animationCues[i];
+                if (!IsAuthoredFromPoseMatch(cue, currentStepId)) continue;
+                ordinal++;
+
+                int mode = PoseModeBeforeCueBase - (ordinal - 1);
+                string label = PoseLabels.BeforeCueName(ordinal, total, out string tooltip,
+                    cue.type ?? "cue", currentStepId, i);
+                bool isSel = _editingPoseMode == mode;
+                var content = new GUIContent(label, tooltip);
+                if (GUILayout.Toggle(isSel, content, EditorStyles.miniButtonMid) && !isSel)
+                {
+                    _beforeCuePartDef = partDef;       // cache so the sync path can resolve
+                    _beforeCueStepId  = currentStepId;
+                    ApplyPoseMode(mode);
+                }
+            }
+        }
+
+        // ── Before-cue preview state ──────────────────────────────────────
+        // When _editingPoseMode is in the PoseModeBeforeCueBase range, the
+        // pose resolver walks _beforeCuePartDef.animationCues (matched to
+        // _beforeCueStepId) and returns the N-th authored-fromPose cue's
+        // pose. Set by DrawBeforeCuePillsForPart on toggle click; consumed
+        // by TryResolveBeforeCuePose below.
+        private PartDefinition _beforeCuePartDef;
+        private string         _beforeCueStepId;
+
+        private static bool IsAuthoredFromPoseMatch(OSE.Content.AnimationCueEntry cue, string stepId)
+            => IsAuthoredCuePoseMatch(cue, stepId, which: CuePoseWhich.From);
+
+        private static bool IsAuthoredToPoseMatch(OSE.Content.AnimationCueEntry cue, string stepId)
+            => IsAuthoredCuePoseMatch(cue, stepId, which: CuePoseWhich.To);
+
+        private enum CuePoseWhich { From, To }
+
+        private static bool IsAuthoredCuePoseMatch(OSE.Content.AnimationCueEntry cue, string stepId, CuePoseWhich which)
+        {
+            if (cue == null) return false;
+            if (!string.Equals(cue.type, "poseTransition", StringComparison.Ordinal)) return false;
+            var p = which == CuePoseWhich.From ? cue.fromPose : cue.toPose;
+            if (p == null) return false;
+            if (cue.stepIds == null || cue.stepIds.Length == 0) return false;
+            bool stepMatches = false;
+            for (int i = 0; i < cue.stepIds.Length; i++)
+                if (string.Equals(cue.stepIds[i], stepId, StringComparison.Ordinal)) { stepMatches = true; break; }
+            if (!stepMatches) return false;
+
+            // Consider the pose "authored" when any field is non-zero. A
+            // struct of all zeros is the JsonUtility default for an
+            // unassigned pose; treating that as authored would snap the
+            // target to world origin unexpectedly.
+            bool hasPos = p.position.x != 0f || p.position.y != 0f || p.position.z != 0f;
+            bool hasRot = p.rotation.x != 0f || p.rotation.y != 0f || p.rotation.z != 0f || p.rotation.w != 0f;
+            bool hasScl = p.scale.x    != 0f || p.scale.y    != 0f || p.scale.z    != 0f;
+            return hasPos || hasRot || hasScl;
+        }
+
+        /// <summary>
+        /// Renders one "After cue[ N]" pill per poseTransition cue on the
+        /// currently-selected part scoped to the current step with an
+        /// authored toPose. Symmetric to <see cref="DrawBeforeCuePillsForPart"/>.
+        /// Encoded via PoseModeAfterCueBase sentinel range.
+        /// </summary>
+        private void DrawAfterCuePillsForPart(string currentStepId)
+        {
+            if (_pkg == null || string.IsNullOrEmpty(currentStepId)) return;
+            if (_selectedPartIdx < 0 || _selectedPartIdx >= (_parts?.Length ?? 0)) return;
+            var partDef = _parts[_selectedPartIdx].def;
+
+            // One-shot diagnostic — logs at most once per step/part change so
+            // we can tell from the console why the After cue pill didn't
+            // render. Guarded so it doesn't spam every OnGUI frame.
+            string diagKey = (partDef?.id ?? "null") + "|" + currentStepId;
+            if (diagKey != _lastAfterCueDiagKey)
+            {
+                _lastAfterCueDiagKey = diagKey;
+                int cueCount = partDef?.animationCues?.Length ?? 0;
+                int matched = 0;
+                if (partDef?.animationCues != null)
+                    for (int i = 0; i < partDef.animationCues.Length; i++)
+                        if (IsAuthoredToPoseMatch(partDef.animationCues[i], currentStepId)) matched++;
+                OSE.Core.OseLog.Info($"[TTAW.AfterCueDiag] part='{partDef?.id}' step='{currentStepId}' animCues={cueCount} toPoseMatched={matched}");
+            }
+
+            if (partDef?.animationCues == null || partDef.animationCues.Length == 0) return;
+
+            int total = 0;
+            for (int i = 0; i < partDef.animationCues.Length; i++)
+                if (IsAuthoredToPoseMatch(partDef.animationCues[i], currentStepId)) total++;
+            if (total == 0) return;
+
+            int ordinal = 0;
+            for (int i = 0; i < partDef.animationCues.Length; i++)
+            {
+                var cue = partDef.animationCues[i];
+                if (!IsAuthoredToPoseMatch(cue, currentStepId)) continue;
+                ordinal++;
+
+                int mode = PoseModeAfterCueBase - (ordinal - 1);
+                string tooltip = $"After cue finishes — jumps the target to cue.toPose.\n{cue.type ?? "cue"} cue #{i} on step '{currentStepId}'.";
+                string label = total <= 1 ? "After cue" : $"After cue {ordinal}";
+                bool isSel = _editingPoseMode == mode;
+                var content = new GUIContent(label, tooltip);
+                if (GUILayout.Toggle(isSel, content, EditorStyles.miniButtonMid) && !isSel)
+                {
+                    _afterCuePartDef = partDef;
+                    _afterCueStepId  = currentStepId;
+                    ApplyPoseMode(mode);
+                }
+            }
+        }
+
+        // After-cue preview state (parallel to _beforeCuePartDef / _beforeCueStepId).
+        private PartDefinition _afterCuePartDef;
+        private string         _afterCueStepId;
+        // One-shot diagnostic key (DrawAfterCuePillsForPart). Changes when
+        // part or step changes; used to log diagnostics once per change.
+        private string         _lastAfterCueDiagKey;
+
+        /// <summary>
+        /// Resolves the After-cue preview pose for the current
+        /// <see cref="_editingPoseMode"/> when it sits in the
+        /// PoseModeAfterCueBase range. Mirrors <see cref="TryResolveBeforeCuePose"/>
+        /// but reads cue.toPose instead of cue.fromPose.
+        /// </summary>
+        private bool TryResolveAfterCuePose(out Vector3 pos, out Quaternion rot, out Vector3 scl)
+        {
+            pos = Vector3.zero; rot = Quaternion.identity; scl = Vector3.one;
+            // After-cue range: [PoseModeAfterCueBase, PoseModeBeforeCueBase)
+            // — strictly less than PoseModeBeforeCueBase AND in the after range.
+            if (_editingPoseMode > PoseModeAfterCueBase)      return false;
+            if (_editingPoseMode <= PoseModeAfterCueBase - 100) return false; // below reserved range
+            if (_afterCuePartDef?.animationCues == null)      return false;
+            if (string.IsNullOrEmpty(_afterCueStepId))        return false;
+
+            int requestedOrdinal = PoseModeAfterCueBase - _editingPoseMode; // 0-based
+            int ord = 0;
+            for (int i = 0; i < _afterCuePartDef.animationCues.Length; i++)
+            {
+                var cue = _afterCuePartDef.animationCues[i];
+                if (!IsAuthoredToPoseMatch(cue, _afterCueStepId)) continue;
+                if (ord == requestedOrdinal)
+                {
+                    var p = cue.toPose;
+                    pos = new Vector3(p.position.x, p.position.y, p.position.z);
+                    rot = new Quaternion(p.rotation.x, p.rotation.y, p.rotation.z, p.rotation.w);
+                    scl = new Vector3(p.scale.x, p.scale.y, p.scale.z);
+                    if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
+                    if (rot.x == 0 && rot.y == 0 && rot.z == 0 && rot.w == 0) rot = Quaternion.identity;
+                    return true;
+                }
+                ord++;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// True when the pose mode is in the Before-cue sentinel range
+        /// (<c>_editingPoseMode &lt;= PoseModeBeforeCueBase</c> AND
+        /// <c>&gt; PoseModeAfterCueBase</c>). Use this instead of bare
+        /// <c>&lt;= PoseModeBeforeCueBase</c> anywhere the after-cue range
+        /// could also satisfy that condition — the ranges overlap
+        /// numerically (after is more negative).
+        /// </summary>
+        private bool IsBeforeCueMode() =>
+            _editingPoseMode <= PoseModeBeforeCueBase && _editingPoseMode > PoseModeAfterCueBase;
+
+        private bool IsAfterCueMode() =>
+            _editingPoseMode <= PoseModeAfterCueBase && _editingPoseMode > PoseModeAfterCueBase - 100;
+
+        /// <summary>
+        /// Resolves the Before-cue preview pose for the current
+        /// <see cref="_editingPoseMode"/> when it sits in the
+        /// PoseModeBeforeCueBase range. Returns false for any other mode.
+        /// </summary>
+        private bool TryResolveBeforeCuePose(out Vector3 pos, out Quaternion rot, out Vector3 scl)
+        {
+            pos = Vector3.zero; rot = Quaternion.identity; scl = Vector3.one;
+            if (!IsBeforeCueMode()) return false;
+            if (_beforeCuePartDef?.animationCues == null) return false;
+            if (string.IsNullOrEmpty(_beforeCueStepId)) return false;
+
+            int requestedOrdinal = PoseModeBeforeCueBase - _editingPoseMode; // 0-based
+            int ord = 0;
+            for (int i = 0; i < _beforeCuePartDef.animationCues.Length; i++)
+            {
+                var cue = _beforeCuePartDef.animationCues[i];
+                if (!IsAuthoredFromPoseMatch(cue, _beforeCueStepId)) continue;
+                if (ord == requestedOrdinal)
+                {
+                    var p = cue.fromPose;
+                    pos = new Vector3(p.position.x, p.position.y, p.position.z);
+                    rot = new Quaternion(p.rotation.x, p.rotation.y, p.rotation.z, p.rotation.w);
+                    scl = new Vector3(p.scale.x, p.scale.y, p.scale.z);
+                    if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
+                    if (rot.x == 0 && rot.y == 0 && rot.z == 0 && rot.w == 0) rot = Quaternion.identity;
+                    return true;
+                }
+                ord++;
+            }
+            return false;
         }
 
         /// <summary>
@@ -2533,7 +2897,19 @@ namespace OSE.Editor
                     // author explicitly creates one.
                     if (__foundIdx >= 0)
                     {
-                        if (_editingPoseMode != __foundIdx) _editingPoseMode = __foundIdx;
+                        // Only auto-pivot to NO TASK when the pose mode is
+                        // the generic Start/Assembled default. If the author
+                        // has explicitly selected another pose pill (Before
+                        // cue sentinel, After cue / custom stepPose index),
+                        // honour that selection — force-resetting here each
+                        // redraw would snap the pill back to NO TASK the
+                        // instant the inspector redraws, making Before/After
+                        // cue non-selectable on NO-TASK rows.
+                        bool __authorPickedOther =
+                            _editingPoseMode <= PoseModeBeforeCueBase
+                            || (_editingPoseMode >= 0 && _editingPoseMode != __foundIdx);
+                        if (!__authorPickedOther && _editingPoseMode != __foundIdx)
+                            _editingPoseMode = __foundIdx;
 
                         var __h = new GUIStyle(EditorStyles.boldLabel)
                         {

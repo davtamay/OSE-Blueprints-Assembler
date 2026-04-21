@@ -675,6 +675,7 @@ namespace OSE.Editor
             storage.setter(list.ToArray());
             storage.markDirty();
             if (cueIdx < _cueFoldouts.Count) _cueFoldouts.RemoveAt(cueIdx);
+            RefreshCueSynthAfterCueMutation();
             Repaint();
         }
 
@@ -696,7 +697,34 @@ namespace OSE.Editor
             }
             string k = EmptyPanelKey(step.id, scope, scopeKey);
             if (_emptyPanels.TryGetValue(k, out var set)) set.Remove(trigger);
+            RefreshCueSynthAfterCueMutation();
             Repaint();
+        }
+
+        /// <summary>
+        /// Invoked after any in-place cue-array mutation (add / remove /
+        /// panel delete) to strip the synthesized stepPose entries tied
+        /// to the pre-mutation cue graph and rebuild from the current
+        /// cue set. Without this, future steps keep rendering the old
+        /// holdAtEnd pose — e.g. deleting a poseTransition cue on
+        /// step N leaves the synth on step N+1, so step N+1 still
+        /// shows the old rotation until the next package reload.
+        ///
+        /// <para>Calls <see cref="MachinePackageNormalizer.RebakeCueSynthesisAndPoseTable"/>
+        /// which is idempotent (strip-then-bake). Light enough to run
+        /// on every cue mutation; heavy enough that we don't run it
+        /// from hot paths.</para>
+        /// </summary>
+        private void RefreshCueSynthAfterCueMutation()
+        {
+            if (_pkg == null) return;
+            OSE.Content.Loading.MachinePackageNormalizer.RebakeCueSynthesisAndPoseTable(_pkg);
+            // Sync live scene to the refreshed pose table so the author
+            // sees the effect immediately — otherwise the old pose
+            // lingers on-screen until the next step navigation.
+            SyncAllPartMeshesToActivePose();
+            SyncAllGroupRootsToActivePose();
+            SceneView.RepaintAll();
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────

@@ -152,7 +152,8 @@
       "material": "Steel rod",
       "quantity": 1,
       "assetRef": "rod_005_approved.glb",
-      "stagingPose": {"position":{"x":0.5222,"y":0.757,"z":0.027},"rotation":{"x":-0.7071,"y":0.0,"z":0.0,"w":0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.75,"g":0.75,"b":0.8,"a":1.0}}
+      "stagingPose": {"position":{"x":0.988,"y":0.566,"z":0.027},"rotation":{"x":1.1921e-7,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.75,"g":0.75,"b":0.8,"a":1.0}},
+      "animationCues": [{"type":"poseTransition","targetPartIds":[],"targetToolIds":[],"targetSubassemblyId":"","stepIds":["step_batch_c1_rod_slide_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":2.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.988,"y":0.566,"z":0.027},"rotation":{"x":1.1921e-7,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0}},"toPose":{"position":{"x":0.5222,"y":0.757,"z":0.027},"rotation":{"x":-0.7071,"y":0.0,"z":0.0,"w":0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeAmplitude":0.0,"shakeFrequency":0.0,"shakeAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":true,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""},{"type":"poseTransition","targetPartIds":[],"targetToolIds":[],"targetSubassemblyId":"","stepIds":["step_batch_c1_place_bolts"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.5222,"y":0.757,"z":0.027},"rotation":{"x":-0.7071,"y":0.0,"z":0.0,"w":0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}},"toPose":{"position":{"x":0.988,"y":0.566,"z":0.027},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeAmplitude":0.0,"shakeFrequency":0.0,"shakeAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":true,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""}]
   }
   ],
   "assemblies": [
@@ -277,14 +278,14 @@
       "name": "Carriage 1 (Y-Left)",
       "stepIds": [ "step_batch_carriage_layout", "step_batch_carriage_clean_holes", "step_batch_carriage_qc_plastic", "step_batch_c1_place_bearings", "step_batch_c1_shake_test", "step_batch_c1_rod_slide_test", "step_batch_c1_close_halves", "step_batch_c1_place_bolts", "step_batch_c1_hand_tighten", "step_batch_c1_tighten" ],
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "animationCues": [{"type":"shake","targetPartIds":[],"targetToolIds":[],"targetSubassemblyId":"subassembly_carriage_y_left","stepIds":["step_batch_c1_shake_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.01,"shakeFrequency":8.0,"shakeAxis":{"x":1.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":2,"sequenceAfterPrevious":true,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":false,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""},{"type":"poseTransition","targetPartIds":[],"targetToolIds":[],"targetSubassemblyId":"","stepIds":["step_batch_c1_shake_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.7071,"w":0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeAmplitude":0.0,"shakeFrequency":0.0,"shakeAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":true,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":true,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""},{"type":"shake","targetPartIds":[],"targetToolIds":[],"targetSubassemblyId":"","stepIds":["step_batch_c1_rod_slide_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.05,"shakeFrequency":1.0,"shakeAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeMode":"slide","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":false,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""},{"type":"poseTransition","targetPartIds":[],"targetToolIds":[],"targetSubassemblyId":"","stepIds":["step_batch_c1_place_bolts"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":-0.7071,"w":0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeAmplitude":0.0,"shakeFrequency":0.0,"shakeAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":true,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""}]
+      "animationCues": [{"type":"shake","targetPartIds":[],"targetToolIds":[],"targetSubassemblyId":"subassembly_carriage_y_left","stepIds":["step_batch_c1_shake_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.01,"shakeFrequency":8.0,"shakeAxis":{"x":1.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":2,"sequenceAfterPrevious":true,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":false,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""},{"type":"poseTransition","targetPartIds":[],"targetToolIds":[],"targetSubassemblyId":"","stepIds":["step_batch_c1_shake_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.7071,"w":0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeAmplitude":0.0,"shakeFrequency":0.0,"shakeAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":true,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":true,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""},{"type":"shake","targetPartIds":[],"targetToolIds":[],"targetSubassemblyId":"","stepIds":["step_batch_c1_rod_slide_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.05,"shakeFrequency":1.0,"shakeAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeMode":"slide","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":false,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""},{"type":"poseTransition","targetPartIds":[],"targetToolIds":[],"targetSubassemblyId":"","stepIds":["step_batch_c1_place_bolts"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.7071,"w":-0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeAmplitude":0.0,"shakeFrequency":0.0,"shakeAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":true,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""}]
   },
     {
       "id": "subassembly_carriage_y_right",
       "name": "Carriage 2 (Y-Right)",
       "stepIds": [ "step_batch_carriage_layout", "step_batch_carriage_clean_holes", "step_batch_carriage_qc_plastic", "step_batch_c2_place_bearings", "step_batch_c2_shake_test", "step_batch_c2_rod_slide_test", "step_batch_c2_close_halves", "step_batch_c2_place_bolts", "step_batch_c2_tighten" ],
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "animationCues": [{"type":"shake","targetPartIds":[],"targetToolIds":[],"targetSubassemblyId":"","stepIds":["step_batch_c2_shake_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":true,"easing":"","target":"","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.006,"shakeFrequency":8.0,"shakeAxis":{"x":1.0,"y":0.0,"z":0.0},"animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":false,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""}]
+      "animationCues": [{"type":"shake","targetPartIds":[],"targetToolIds":[],"targetSubassemblyId":"","stepIds":["step_batch_c2_shake_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":true,"easing":"","target":"","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.006,"shakeFrequency":8.0,"shakeAxis":{"x":1.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":false,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""}]
   },
     {
       "id": "subassembly_carriage_z_back",
@@ -316,140 +317,19 @@
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [],
-      "visualPartIds": [
-        "y_left_carriage_half_a",
-        "y_right_carriage_half_a",
-        "y_right_carriage_half_b",
-        "z_back_carriage_half_a",
-        "z_back_carriage_half_b",
-        "z_front_carriage_half_a",
-        "z_front_carriage_half_b",
-        "y_left_carriage_half_b"
-      ],
+      "visualPartIds": [ "y_left_carriage_half_a", "y_right_carriage_half_a", "y_right_carriage_half_b", "z_back_carriage_half_a", "z_back_carriage_half_b", "z_front_carriage_half_a", "z_front_carriage_half_b", "y_left_carriage_half_b" ],
       "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "y_left_carriage_half_a",
-          "stagingPose": {
-            "position": {
-              "x": 0.3728,
-              "y": 0.55,
-              "z": -1.3411e-07
-            },
-            "rotation": {
-              "x": -0.5,
-              "y": 0.5,
-              "z": -0.5,
-              "w": 0.5
-            },
-            "scale": {
-              "x": 1.0,
-              "y": 1.0,
-              "z": 1.0
-            },
-            "color": {
-              "r": 0.7,
-              "g": 0.7,
-              "b": 0.7,
-              "a": 1.0
-            }
-          }
-        },
-        {
-          "kind": "part",
-          "id": "y_left_carriage_half_b",
-          "stagingPose": {
-            "position": {
-              "x": 0.5228,
-              "y": 0.55,
-              "z": -1.3411e-07
-            },
-            "rotation": {
-              "x": 0.5,
-              "y": 0.5,
-              "z": -0.5,
-              "w": -0.5
-            },
-            "scale": {
-              "x": 1.0,
-              "y": 1.0,
-              "z": 1.0
-            },
-            "color": {
-              "r": 0.7,
-              "g": 0.7,
-              "b": 0.7,
-              "a": 1.0
-            }
-          }
-        },
-        {
-          "kind": "part",
-          "id": "y_right_carriage_half_a",
-          "stagingPose": {
-            "position": {
-              "x": 0.6728,
-              "y": 0.55,
-              "z": -1.3411e-07
-            },
-            "rotation": {
-              "x": -0.5,
-              "y": 0.5,
-              "z": -0.5,
-              "w": 0.5
-            },
-            "scale": {
-              "x": 1.0,
-              "y": 1.0,
-              "z": 1.0
-            },
-            "color": {
-              "r": 0.7,
-              "g": 0.7,
-              "b": 0.7,
-              "a": 1.0
-            }
-          }
-        },
-        {
-          "kind": "part",
-          "id": "y_right_carriage_half_b"
-        },
-        {
-          "kind": "part",
-          "id": "z_back_carriage_half_a"
-        },
-        {
-          "kind": "part",
-          "id": "z_back_carriage_half_b"
-        },
-        {
-          "kind": "part",
-          "id": "z_front_carriage_half_a"
-        },
-        {
-          "kind": "part",
-          "id": "z_front_carriage_half_b"
-        },
-        {
-          "kind": "confirm_action",
-          "id": "confirm"
-        }
-      ],
-      "workingOrientation": {
-        "subassemblyRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        },
-        "subassemblyPositionOffset": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
-      }
-    },
+      "taskOrder": [{"kind":"part","id":"y_left_carriage_half_a","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"y_left_carriage_half_b","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"y_right_carriage_half_a","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"y_right_carriage_half_b","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"z_back_carriage_half_a","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"z_back_carriage_half_b","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"z_front_carriage_half_a","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"z_front_carriage_half_b","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"confirm_action","id":"confirm","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_batch_carriage_clean_holes",
       "name": "Clean excess plastic from all carriage holes",
@@ -597,33 +477,12 @@
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [],
-      "visualPartIds": [
-        "subassembly_carriage_y_left"
-      ],
+      "visualPartIds": [ "subassembly_carriage_y_left" ],
       "requiredToolActions": [],
-      "taskOrder": [
-        {
-          "kind": "part",
-          "id": "subassembly_carriage_y_left"
-        },
-        {
-          "kind": "confirm_action",
-          "id": "confirm"
-        }
-      ],
-      "workingOrientation": {
-        "subassemblyRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        },
-        "subassemblyPositionOffset": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        }
-      }
-    },
+      "taskOrder": [{"kind":"part","id":"subassembly_carriage_y_left","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"confirm_action","id":"confirm","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}],
+      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+  },
     {
       "id": "step_batch_c1_rod_slide_test",
       "name": "Carriage 1: rod slide test",
@@ -649,8 +508,8 @@
       "requiredPartIds": [],
       "visualPartIds": [ "batch_test_rod", "subassembly_carriage_y_left" ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"subassembly_carriage_y_left","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
-        {"kind":"part","id":"batch_test_rod","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+      "taskOrder": [{"kind":"part","id":"batch_test_rod","awaitCues":true,"endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"subassembly_carriage_y_left","awaitCues":true,"endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
         {"kind":"confirm_action","id":"confirm","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}],
       "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
   },
@@ -665,9 +524,10 @@
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [ "y_left_m6x18_a", "y_left_carriage_m6x18_b", "y_left_m6x30_a", "y_left_m6x30_b", "y_left_m6_nut_a", "y_left_m6_nut_b", "y_left_m6_nut_c", "y_left_m6_nut_d" ],
-      "visualPartIds": [ "subassembly_carriage_y_left" ],
+      "visualPartIds": [ "subassembly_carriage_y_left", "batch_test_rod" ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"subassembly_carriage_y_left"},
+      "taskOrder": [{"kind":"part","id":"batch_test_rod","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"subassembly_carriage_y_left","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
         {"kind":"part","id":"y_left_m6x18_a","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
         {"kind":"part","id":"y_left_carriage_m6x18_b","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
         {"kind":"part","id":"y_left_m6x30_a","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},

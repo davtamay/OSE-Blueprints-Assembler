@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using OSE.Core;
 using UnityEngine;
 
 namespace OSE.Content.Loading
@@ -16,6 +17,31 @@ namespace OSE.Content.Loading
     /// </summary>
     public static class MachinePackageNormalizer
     {
+        /// <summary>
+        /// Re-runs the cue-synthesis bake and pose-table rebuild
+        /// idempotently. Use from editor paths that mutate cues in place
+        /// (add / delete / retarget / change holdAtEnd) so synthesized
+        /// stepPoses tied to the old cue graph are stripped and rebuilt
+        /// from the current state in the same tick. Without this, the
+        /// in-memory poseTable still reflects the pre-mutation cue set,
+        /// and future steps show stale hold-at-end poses until the next
+        /// full package reload.
+        ///
+        /// <para>Stripping happens inside <see cref="BakeHoldAtEndEndPoses"/>
+        /// (per its idempotency contract). Callers don't need to strip
+        /// manually; just invoke this after the cue mutation.</para>
+        ///
+        /// <para>Safe to call repeatedly — every pass here is idempotent.
+        /// Do NOT call from the hot path; this does an O(subs × cues) +
+        /// O(parts × steps) pass.</para>
+        /// </summary>
+        public static void RebakeCueSynthesisAndPoseTable(MachinePackageDefinition package)
+        {
+            if (package == null) return;
+            BakeHoldAtEndEndPoses(package);
+            BakePoseTable(package);
+        }
+
         public static void Normalize(MachinePackageDefinition package)
         {
             if (package == null) return;
@@ -26,6 +52,7 @@ namespace OSE.Content.Loading
             InferStepParentIds(package);
             NormalizeTaskOrderToolActionKinds(package);
             EnsureTaskOrderCoversRequirements(package);
+            MarkVisualOnlyTaskOrderEntriesOptional(package);
             ValidateUseFamilyPartsArePrePlaced(package);
             ValidateUnorderedSets(package);
             NormalizeToolActions(package);
@@ -89,7 +116,7 @@ namespace OSE.Content.Loading
                     rewrites += RewriteArray(package.tools[i]?.animationCues);
 
             if (rewrites > 0)
-                Debug.Log($"[CueRuntime.Normalize] rewrote {rewrites} legacy trigger alias(es) to canonical names in '{package.packageId}'.");
+                OseLog.Info($"[CueRuntime.Normalize] rewrote {rewrites} legacy trigger alias(es) to canonical names in '{package.packageId}'.");
 
             static int RewriteArray(AnimationCueEntry[] cues)
             {
@@ -231,9 +258,9 @@ namespace OSE.Content.Loading
             }
 
             if (moved > 0)
-                Debug.Log($"[CueRuntime.Migrate] moved {moved} step-level cue(s) onto their target host in '{package.packageId}'.");
+                OseLog.Info($"[CueRuntime.Migrate] moved {moved} step-level cue(s) onto their target host in '{package.packageId}'.");
             if (left > 0)
-                Debug.LogWarning($"[CueRuntime.Migrate] {left} step-level cue(s) in '{package.packageId}' have no clear host target and remain on the step. Edit them in TTAW to assign a host.");
+                OseLog.Warn($"[CueRuntime.Migrate] {left} step-level cue(s) in '{package.packageId}' have no clear host target and remain on the step. Edit them in TTAW to assign a host.");
 
             static bool TryAppendToSubassembly(MachinePackageDefinition pkg, string subId, AnimationCueEntry entry)
             {
@@ -245,7 +272,7 @@ namespace OSE.Content.Loading
                     if (!string.Equals(subs[i].id, subId, StringComparison.Ordinal)) continue;
                     if (HasEquivalentCue(subs[i].animationCues, entry))
                     {
-                        Debug.LogError($"[CueRuntime.Migrate] subassembly '{subId}' already has a (type='{entry.type}', trigger='{entry.trigger}') cue. Refusing to migrate a duplicate from the step level — delete one in TTAW.");
+                        OseLog.Error($"[CueRuntime.Migrate] subassembly '{subId}' already has a (type='{entry.type}', trigger='{entry.trigger}') cue. Refusing to migrate a duplicate from the step level — delete one in TTAW.");
                         return false;
                     }
                     subs[i].animationCues = Append(subs[i].animationCues, entry);
@@ -263,7 +290,7 @@ namespace OSE.Content.Loading
                     if (!string.Equals(pkg.parts[i].id, partId, StringComparison.Ordinal)) continue;
                     if (HasEquivalentCue(pkg.parts[i].animationCues, entry))
                     {
-                        Debug.LogError($"[CueRuntime.Migrate] part '{partId}' already has a (type='{entry.type}', trigger='{entry.trigger}') cue. Refusing to migrate a duplicate from the step level — delete one in TTAW.");
+                        OseLog.Error($"[CueRuntime.Migrate] part '{partId}' already has a (type='{entry.type}', trigger='{entry.trigger}') cue. Refusing to migrate a duplicate from the step level — delete one in TTAW.");
                         return false;
                     }
                     pkg.parts[i].animationCues = Append(pkg.parts[i].animationCues, entry);
@@ -281,7 +308,7 @@ namespace OSE.Content.Loading
                     if (!string.Equals(pkg.tools[i].id, toolId, StringComparison.Ordinal)) continue;
                     if (HasEquivalentCue(pkg.tools[i].animationCues, entry))
                     {
-                        Debug.LogError($"[CueRuntime.Migrate] tool '{toolId}' already has a (type='{entry.type}', trigger='{entry.trigger}') cue. Refusing to migrate a duplicate from the step level — delete one in TTAW.");
+                        OseLog.Error($"[CueRuntime.Migrate] tool '{toolId}' already has a (type='{entry.type}', trigger='{entry.trigger}') cue. Refusing to migrate a duplicate from the step level — delete one in TTAW.");
                         return false;
                     }
                     // Step-level tool cues implicitly scoped to one step; keep
@@ -337,7 +364,7 @@ namespace OSE.Content.Loading
                     var s = package.steps[i];
                     var cues = s?.animationCues?.cues;
                     if (cues != null && cues.Length > 0)
-                        Debug.LogError($"[CueRuntime.Validate] step '{s.id}' still has {cues.Length} step-level cue(s) after migration. Assign a target host (part/subassembly) in TTAW.");
+                        OseLog.Error($"[CueRuntime.Validate] step '{s.id}' still has {cues.Length} step-level cue(s) after migration. Assign a target host (part/subassembly) in TTAW.");
                 }
             }
 
@@ -369,7 +396,7 @@ namespace OSE.Content.Loading
                         t == TriggerOnFirstInteraction || t == TriggerOnTaskComplete ||
                         t == TriggerOnDuringAction;
                     if (!canonical)
-                        Debug.LogError($"[CueRuntime.Validate] {hostLabel} cue[{i}] has unknown trigger '{t}'. Canonical values: onActivate, afterDelay, afterPartsShown, onStepComplete, onFirstInteraction, onTaskComplete, onDuringAction.");
+                        OseLog.Error($"[CueRuntime.Validate] {hostLabel} cue[{i}] has unknown trigger '{t}'. Canonical values: onActivate, afterDelay, afterPartsShown, onStepComplete, onFirstInteraction, onTaskComplete, onDuringAction.");
                 }
             }
         }
@@ -438,7 +465,7 @@ namespace OSE.Content.Loading
 
                 if (rewritten > 0)
                 {
-                    Debug.LogWarning($"[TaskOrder.Normalize] step '{step.id}': rewrote {rewritten} kind='target' entr{(rewritten == 1 ? "y" : "ies")} to kind='toolAction' (cursor drives on action ids, not target ids). Update the authoring source to emit kind='toolAction' directly.");
+                    OseLog.Warn($"[TaskOrder.Normalize] step '{step.id}': rewrote {rewritten} kind='target' entr{(rewritten == 1 ? "y" : "ies")} to kind='toolAction' (cursor drives on action ids, not target ids). Update the authoring source to emit kind='toolAction' directly.");
                 }
             }
         }
@@ -545,7 +572,62 @@ namespace OSE.Content.Loading
                 combined.AddRange(missing);
                 step.taskOrder = combined.ToArray();
 
-                Debug.LogWarning($"[TaskOrder.Normalize] step '{step.id}': appended {missing.Count} missing taskOrder entr{(missing.Count == 1 ? "y" : "ies")} to cover declared requirements — the cursor would otherwise deadlock. Update the authoring source so taskOrder reflects every requiredPart/requiredToolAction explicitly.");
+                OseLog.Warn($"[TaskOrder.Normalize] step '{step.id}': appended {missing.Count} missing taskOrder entr{(missing.Count == 1 ? "y" : "ies")} to cover declared requirements — the cursor would otherwise deadlock. Update the authoring source so taskOrder reflects every requiredPart/requiredToolAction explicitly.");
+            }
+        }
+
+        /// <summary>
+        /// Marks <c>kind:"part"</c> <see cref="TaskOrderEntry"/> entries as
+        /// <c>isOptional=true</c> when their id appears only in
+        /// <c>step.visualPartIds</c> — TTAW calls these "NO TASK" rows. The
+        /// runtime <see cref="TaskCursor"/> has no visualPartIds awareness;
+        /// without this pass it opens the first span on the visual-only
+        /// entry, waits forever for a "completion" the user cannot deliver,
+        /// and never advances to the spans that carry the actual required
+        /// tasks. Marking them optional lets the cursor auto-skip (required
+        /// count = 0 → span closes immediately) so the real tasks become
+        /// active. No-op on entries already optional or on entries whose id
+        /// is also in requiredPartIds / optionalPartIds (membership win
+        /// order: required &gt; optional &gt; visual-only).
+        /// </summary>
+        private static void MarkVisualOnlyTaskOrderEntriesOptional(MachinePackageDefinition package)
+        {
+            if (package?.steps == null) return;
+
+            for (int si = 0; si < package.steps.Length; si++)
+            {
+                var step = package.steps[si];
+                if (step?.taskOrder == null || step.taskOrder.Length == 0) continue;
+                if (step.visualPartIds == null || step.visualPartIds.Length == 0) continue;
+
+                var visual = new HashSet<string>(step.visualPartIds, StringComparer.Ordinal);
+                var required = step.requiredPartIds != null
+                    ? new HashSet<string>(step.requiredPartIds, StringComparer.Ordinal)
+                    : new HashSet<string>(StringComparer.Ordinal);
+                var optional = step.optionalPartIds != null
+                    ? new HashSet<string>(step.optionalPartIds, StringComparer.Ordinal)
+                    : new HashSet<string>(StringComparer.Ordinal);
+
+                int marked = 0;
+                for (int ti = 0; ti < step.taskOrder.Length; ti++)
+                {
+                    var e = step.taskOrder[ti];
+                    if (e == null || !string.Equals(e.kind, "part", StringComparison.Ordinal)) continue;
+                    if (e.isOptional) continue;
+                    if (string.IsNullOrEmpty(e.id)) continue;
+
+                    string partId = TaskInstanceId.ToPartId(e.id);
+                    if (string.IsNullOrEmpty(partId)) continue;
+                    if (required.Contains(partId)) continue;
+                    if (optional.Contains(partId)) continue;
+                    if (!visual.Contains(partId)) continue;
+
+                    e.isOptional = true;
+                    marked++;
+                }
+
+                if (marked > 0)
+                    OseLog.VerboseInfo($"[TaskOrder.Normalize] step '{step.id}': marked {marked} visual-only taskOrder entr{(marked == 1 ? "y" : "ies")} isOptional=true so the cursor auto-advances past them (they're NO TASK visual markers, not actionable).");
             }
         }
 
@@ -604,7 +686,7 @@ namespace OSE.Content.Loading
                         }
                         if (unplaced != null)
                         {
-                            Debug.LogError($"[Validate.UseParts] step '{step.id}' (seq {step.sequenceIndex}, family=Use) declares requiredPartIds that no prior family=Place step placed: {string.Join(", ", unplaced)}. Trainee cannot complete this step — Use-family routes interactions through UseStepHandler, which does not place parts. Either change the family to Place, or add a prior Place step that introduces these parts.");
+                            OseLog.Error($"[Validate.UseParts] step '{step.id}' (seq {step.sequenceIndex}, family=Use) declares requiredPartIds that no prior family=Place step placed: {string.Join(", ", unplaced)}. Trainee cannot complete this step — Use-family routes interactions through UseStepHandler, which does not place parts. Either change the family to Place, or add a prior Place step that introduces these parts.");
                         }
                     }
                 }
@@ -674,7 +756,7 @@ namespace OSE.Content.Loading
                         {
                             if (!string.Equals(entry.kind, currentKind, StringComparison.Ordinal))
                             {
-                                Debug.LogError($"[UnorderedSet.Validate] step '{step.id}' unorderedSet '{label}' mixes kinds ('{currentKind}' and '{entry.kind}'). Sets must be kind-pure.");
+                                OseLog.Error($"[UnorderedSet.Validate] step '{step.id}' unorderedSet '{label}' mixes kinds ('{currentKind}' and '{entry.kind}'). Sets must be kind-pure.");
                             }
                             currentSize++;
                         }
@@ -687,7 +769,7 @@ namespace OSE.Content.Loading
                         closedLabels.Add(currentLabel);
                         if (currentSize == 1)
                         {
-                            Debug.LogWarning($"[UnorderedSet.Validate] step '{step.id}' unorderedSet '{currentLabel}' has only 1 member — drop the label or add siblings.");
+                            OseLog.Warn($"[UnorderedSet.Validate] step '{step.id}' unorderedSet '{currentLabel}' has only 1 member — drop the label or add siblings.");
                         }
                     }
 
@@ -695,7 +777,7 @@ namespace OSE.Content.Loading
                     {
                         if (closedLabels.Contains(label))
                         {
-                            Debug.LogError($"[UnorderedSet.Validate] step '{step.id}' unorderedSet '{label}' reappears as a non-contiguous span. Entries with the same label must be adjacent.");
+                            OseLog.Error($"[UnorderedSet.Validate] step '{step.id}' unorderedSet '{label}' reappears as a non-contiguous span. Entries with the same label must be adjacent.");
                         }
                         currentLabel = label;
                         currentKind  = entry?.kind;
@@ -712,7 +794,7 @@ namespace OSE.Content.Loading
                 // Trailing span check for single-member warning.
                 if (currentLabel != null && currentSize == 1)
                 {
-                    Debug.LogWarning($"[UnorderedSet.Validate] step '{step.id}' unorderedSet '{currentLabel}' has only 1 member — drop the label or add siblings.");
+                    OseLog.Warn($"[UnorderedSet.Validate] step '{step.id}' unorderedSet '{currentLabel}' has only 1 member — drop the label or add siblings.");
                 }
             }
         }
@@ -826,7 +908,7 @@ namespace OSE.Content.Loading
 
             int total = synthesizedOnSubs + synthesizedOnParts;
             if (total > 0)
-                Debug.Log($"[CueRuntime.BakeHoldAtEnd] synthesized {total} stepPose(s) in '{package.packageId}' ({synthesizedOnSubs} from group cues, {synthesizedOnParts} from part cues).");
+                OseLog.Info($"[CueRuntime.BakeHoldAtEnd] synthesized {total} stepPose(s) in '{package.packageId}' ({synthesizedOnSubs} from group cues, {synthesizedOnParts} from part cues).");
         }
 
         /// <summary>
@@ -865,12 +947,12 @@ namespace OSE.Content.Loading
                 if (!cue.holdAtEnd) continue;
                 if (cue.stepIds == null || cue.stepIds.Length == 0)
                 {
-                    Debug.LogWarning($"[CueRuntime.BakeHoldAtEnd] subassembly '{sub.id}' cue[{ci}]: holdAtEnd=true but empty stepIds — skipping.");
+                    OseLog.Warn($"[CueRuntime.BakeHoldAtEnd] subassembly '{sub.id}' cue[{ci}]: holdAtEnd=true but empty stepIds — skipping.");
                     continue;
                 }
                 if (cue.toPose == null || IsZeroQuaternion(cue.toPose.rotation))
                 {
-                    Debug.LogWarning($"[CueRuntime.BakeHoldAtEnd] subassembly '{sub.id}' cue[{ci}]: toPose.rotation is zero quaternion — skipping.");
+                    OseLog.Warn($"[CueRuntime.BakeHoldAtEnd] subassembly '{sub.id}' cue[{ci}]: toPose.rotation is zero quaternion — skipping.");
                     continue;
                 }
 
@@ -894,15 +976,37 @@ namespace OSE.Content.Loading
                     }
                     if (nextStep == null)
                     {
-                        Debug.LogWarning($"[CueRuntime.BakeHoldAtEnd] subassembly '{sub.id}' cue[{ci}] anchors to final step '{cueStepId}' — no next step to persist into.");
+                        OseLog.Warn($"[CueRuntime.BakeHoldAtEnd] subassembly '{sub.id}' cue[{ci}] anchors to final step '{cueStepId}' — no next step to persist into.");
                         continue;
                     }
 
-                    // Centroid computation mirrors the runtime's
-                    // ComputeChildrenCentroidLocal filter: include only
-                    // non-origin members visible at the cue's step.
-                    Vector3 centroid = Vector3.zero;
-                    int centroidCount = 0;
+                    // Centroid computation must match PivotCentroidResolver
+                    // — the runtime's pivot source. Both filter:
+                    //   (1) hidden members (not visible at cueStep),
+                    //   (2) at-origin members (not yet positioned),
+                    //   (3) members introduced THIS step — their
+                    //       firstVisibleSeq == cueStep.sequenceIndex means
+                    //       they sit at startPosition (tray/staging), not
+                    //       on the established body. Including them drags
+                    //       the pivot toward the tray, producing the
+                    //       "group jumps on next step" bug: animation uses
+                    //       body-only centroid, synthesized stepPose uses
+                    //       centroid-polluted-by-staging → same rotation
+                    //       around different pivots, visible jump on the
+                    //       step the hold-at-end persists into.
+                    //
+                    // Body-only centroid matches PivotCentroidResolver's
+                    // filter, which is what the runtime's
+                    // PoseTransitionPlayer uses as the rotation pivot.
+                    // When no body members exist (every member is being
+                    // introduced THIS step), runtime's PivotHint is null
+                    // and PoseTransitionPlayer falls back to Vector3.zero
+                    // (group-root-local origin) — so the baker must do
+                    // the same to keep the runtime animation's end frame
+                    // identical to the synthesized step-N+1 pose.
+                    Vector3 bodyCentroid = Vector3.zero;
+                    int     bodyCount    = 0;
+                    bool    anyVisible   = false;
                     for (int mi = 0; mi < sub.partIds.Length; mi++)
                     {
                         string memberId = sub.partIds[mi];
@@ -912,21 +1016,80 @@ namespace OSE.Content.Loading
                             memberId, cueStep.sequenceIndex, package, idx, PoseMode.Committed);
                         if (res.IsHidden) continue;
                         if (res.pos.sqrMagnitude < 0.0001f) continue;
-                        centroid += res.pos;
-                        centroidCount++;
+                        anyVisible = true;
+
+                        bool isEstablishedBody =
+                            !idx.firstVisibleSeqByPart.TryGetValue(memberId, out int memberFirstSeq)
+                            || memberFirstSeq < cueStep.sequenceIndex;
+                        if (isEstablishedBody)
+                        {
+                            bodyCentroid += res.pos;
+                            bodyCount++;
+                        }
                     }
-                    if (centroidCount == 0)
+                    if (!anyVisible)
                     {
-                        Debug.LogWarning($"[CueRuntime.BakeHoldAtEnd] subassembly '{sub.id}' cue[{ci}] at '{cueStepId}': no non-origin members visible — skipping group synthesis.");
+                        OseLog.Warn($"[CueRuntime.BakeHoldAtEnd] subassembly '{sub.id}' cue[{ci}] at '{cueStepId}': no non-origin members visible — skipping group synthesis.");
                         continue;
                     }
-                    centroid /= centroidCount;
+                    Vector3 centroid;
+                    if (bodyCount > 0)
+                        centroid = bodyCentroid / bodyCount;
+                    else
+                    {
+                        // No established body members at this step —
+                        // runtime uses Vector3.zero as pivot; match it.
+                        centroid = Vector3.zero;
+                        OseLog.VerboseInfo($"[CueRuntime.BakeHoldAtEnd] subassembly '{sub.id}' cue[{ci}] at '{cueStepId}': no established body members (all introduced this step); using Vector3.zero pivot to match runtime fallback.");
+                    }
 
-                    // Encode pivot-based rotation as a free transform:
-                    // final = C + R*(p - C) = R*p + (C - R*C)
-                    //      → groupRot = R, groupPos = C - R*C
-                    Vector3 groupPos = centroid - deltaRot * centroid;
-                    Quaternion groupRot = deltaRot;
+                    // Compose with any prior group stepPose covering cueStep —
+                    // handles stacked hold-at-end cues. Runtime applies each
+                    // cue's deltaRot to the current baselines (which include
+                    // prior cues' accumulated state). ApplyGroupStepPose at
+                    // resolve-time picks the closest-anchor span, so if we
+                    // encoded only this cue's deltaRot, step N+1 would show
+                    // just deltaRot applied to authored base — NOT the runtime
+                    // end state which is deltaRot composed with the prior
+                    // state. Composition formula:
+                    //   runtime_end = C + dRot*(prior_composed - C)
+                    //   prior_composed = priorPos + priorRot*base
+                    //   → net = (C - dRot*C + dRot*priorPos) + (dRot*priorRot)*base
+                    // So newRot = dRot*priorRot, newPos = (C - dRot*C) + dRot*priorPos.
+                    Quaternion priorRot = Quaternion.identity;
+                    Vector3    priorPos = Vector3.zero;
+                    if (subPlacement.stepPoses != null)
+                    {
+                        int bestDist = int.MaxValue;
+                        StepPoseEntry bestEntry = null;
+                        for (int spi = 0; spi < subPlacement.stepPoses.Length; spi++)
+                        {
+                            var sp = subPlacement.stepPoses[spi];
+                            if (sp == null) continue;
+                            int anchorSeq = seqByStepId.TryGetValue(sp.stepId ?? "", out int a) ? a : int.MinValue;
+                            int fromSeq = string.IsNullOrEmpty(sp.propagateFromStep)
+                                ? (anchorSeq >= 0 ? anchorSeq : int.MinValue)
+                                : (seqByStepId.TryGetValue(sp.propagateFromStep, out int f) ? f : int.MinValue);
+                            int throughSeq = string.IsNullOrEmpty(sp.propagateThroughStep)
+                                ? int.MaxValue
+                                : (seqByStepId.TryGetValue(sp.propagateThroughStep, out int t) ? t : int.MaxValue);
+                            if (cueStep.sequenceIndex < fromSeq || cueStep.sequenceIndex > throughSeq) continue;
+                            int dist = anchorSeq >= 0 ? Mathf.Abs(cueStep.sequenceIndex - anchorSeq) : int.MaxValue / 2;
+                            if (dist < bestDist)
+                            {
+                                bestDist = dist;
+                                bestEntry = sp;
+                            }
+                        }
+                        if (bestEntry != null)
+                        {
+                            priorRot = QuatFrom(bestEntry.rotation);
+                            priorPos = new Vector3(bestEntry.position.x, bestEntry.position.y, bestEntry.position.z);
+                        }
+                    }
+
+                    Quaternion groupRot = deltaRot * priorRot;
+                    Vector3    groupPos = (centroid - deltaRot * centroid) + deltaRot * priorPos;
 
                     var synth = new StepPoseEntry
                     {
@@ -963,12 +1126,12 @@ namespace OSE.Content.Loading
                 if (!cue.holdAtEnd) continue;
                 if (cue.stepIds == null || cue.stepIds.Length == 0)
                 {
-                    Debug.LogWarning($"[CueRuntime.BakeHoldAtEnd] part '{part.id}' cue[{ci}]: holdAtEnd=true but empty stepIds — skipping.");
+                    OseLog.Warn($"[CueRuntime.BakeHoldAtEnd] part '{part.id}' cue[{ci}]: holdAtEnd=true but empty stepIds — skipping.");
                     continue;
                 }
                 if (cue.toPose == null || IsZeroQuaternion(cue.toPose.rotation))
                 {
-                    Debug.LogWarning($"[CueRuntime.BakeHoldAtEnd] part '{part.id}' cue[{ci}]: toPose.rotation is zero quaternion — skipping.");
+                    OseLog.Warn($"[CueRuntime.BakeHoldAtEnd] part '{part.id}' cue[{ci}]: toPose.rotation is zero quaternion — skipping.");
                     continue;
                 }
 
@@ -992,14 +1155,14 @@ namespace OSE.Content.Loading
                     }
                     if (nextStep == null)
                     {
-                        Debug.LogWarning($"[CueRuntime.BakeHoldAtEnd] part '{part.id}' cue[{ci}] anchors to final step '{cueStepId}' — no next step to persist into.");
+                        OseLog.Warn($"[CueRuntime.BakeHoldAtEnd] part '{part.id}' cue[{ci}] anchors to final step '{cueStepId}' — no next step to persist into.");
                         continue;
                     }
                     int anchorSeq = nextStep.sequenceIndex;
 
                     if (AnyAuthoredSpanCovers(placement.stepPoses, anchorSeq, seqByStepId))
                     {
-                        Debug.LogWarning($"[CueRuntime.BakeHoldAtEnd] part '{part.id}' has authored stepPose covering step '{nextStep.id}' (seq {anchorSeq}) — skipping synthesis (authored wins).");
+                        OseLog.Warn($"[CueRuntime.BakeHoldAtEnd] part '{part.id}' has authored stepPose covering step '{nextStep.id}' (seq {anchorSeq}) — skipping synthesis (authored wins).");
                         continue;
                     }
 

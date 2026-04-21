@@ -492,6 +492,56 @@ namespace OSE.Core
         public SpawnerPartSwapped(string partId) => PartId = partId;
     }
 
+    // ── Cue Camera Follow Events ──
+
+    /// <summary>
+    /// Published by <c>PoseTransitionPlayer</c> when it begins animating a
+    /// single-target pose transition whose from-world-center and
+    /// to-world-center differ meaningfully (i.e. the object is actually
+    /// moving, not just rotating around a stationary centroid).
+    ///
+    /// <para>The <see cref="AssemblyCameraRig"/> subscribes to drive the
+    /// camera pivot along the same eased trajectory, so the camera follows
+    /// the motion tightly instead of leaving the object to drift to the
+    /// edge of frame. FromWorld / ToWorld are resolved in world space at
+    /// cue start — they represent where the object is right now and where
+    /// it'll land when the cue finishes.</para>
+    ///
+    /// <para><see cref="Token"/> is an opaque reference to the originating
+    /// cue instance; a matching <see cref="CueCameraFollowStopped"/> with
+    /// the same token ends the follow (e.g. on Stop / cue teardown).
+    /// Consumers may also stop following naturally when the follow timer
+    /// reaches <see cref="DurationSeconds"/>.</para>
+    /// </summary>
+    public readonly struct CueCameraFollowStarted
+    {
+        public readonly object Token;
+        public readonly UnityEngine.Vector3 FromWorld;
+        public readonly UnityEngine.Vector3 ToWorld;
+        public readonly float DurationSeconds;
+        public readonly string Easing;
+
+        public CueCameraFollowStarted(object token, UnityEngine.Vector3 fromWorld, UnityEngine.Vector3 toWorld, float durationSeconds, string easing)
+        {
+            Token           = token;
+            FromWorld       = fromWorld;
+            ToWorld         = toWorld;
+            DurationSeconds = durationSeconds;
+            Easing          = easing ?? string.Empty;
+        }
+    }
+
+    /// <summary>
+    /// Published when a follow-in-progress should cancel — e.g. the cue
+    /// stopped mid-animation. Consumer snaps the target pivot to whatever
+    /// position the follow interpolation had reached and stops driving.
+    /// </summary>
+    public readonly struct CueCameraFollowStopped
+    {
+        public readonly object Token;
+        public CueCameraFollowStopped(object token) => Token = token;
+    }
+
     // ── Package Events ──
 
     /// <summary>

@@ -1,3 +1,4 @@
+using OSE.Core;
 using UnityEngine;
 
 namespace OSE.Interaction
@@ -29,6 +30,21 @@ namespace OSE.Interaction
 
         private bool _initialized;
 
+        // ── Cue camera-follow state ──
+        // While a PoseTransition cue translates a single part meaningfully,
+        // PoseTransitionPlayer publishes CueCameraFollowStarted. We track the
+        // motion and drive _targetState.PivotPosition along the fromWorld→toWorld
+        // lerp for the cue's duration so the camera tracks the object in real
+        // time. Stop event clears state; matching tokens prevent a stale Stop
+        // from cancelling a newer Start (back-to-back cues).
+        private bool _followActive;
+        private object _followToken;
+        private Vector3 _followFromWorld;
+        private Vector3 _followToWorld;
+        private float _followDuration;
+        private string _followEasing;
+        private float _followElapsed;
+
         // ── Public accessors ──
 
         public CameraState CurrentState => _currentState;
@@ -42,6 +58,20 @@ namespace OSE.Interaction
             _pivotResolver = new CameraPivotResolver();
         }
 
+        private void OnEnable()
+        {
+            RuntimeEventBus.Subscribe<CueCameraFollowStarted>(OnCueCameraFollowStarted);
+            RuntimeEventBus.Subscribe<CueCameraFollowStopped>(OnCueCameraFollowStopped);
+        }
+
+        private void OnDisable()
+        {
+            RuntimeEventBus.Unsubscribe<CueCameraFollowStarted>(OnCueCameraFollowStarted);
+            RuntimeEventBus.Unsubscribe<CueCameraFollowStopped>(OnCueCameraFollowStopped);
+            _followActive = false;
+            _followToken = null;
+        }
+
         private void Start()
         {
             if (!_initialized)
@@ -52,6 +82,13 @@ namespace OSE.Interaction
         {
             if (!_initialized || _settings == null || !_settings.Enabled)
                 return;
+
+            // Cue-driven pivot follow — overrides _targetState.PivotPosition
+            // for the cue's duration. Smoothing still applies, so the camera
+            // doesn't snap between the pre-follow pivot and the fromWorld
+            // starting point; it eases in naturally.
+            if (_followActive)
+                TickCameraFollow(Time.deltaTime);
 
             // Smooth interpolation
             _currentState = _smoothing.Step(_currentState, _targetState, Time.deltaTime);
@@ -219,5 +256,56 @@ namespace OSE.Interaction
             transform.position = state.ComputePosition();
             transform.rotation = state.ComputeRotation();
         }
+
+        // ── Cue camera-follow handlers ──
+
+        private void OnCueCameraFollowStarted(CueCameraFollowStarted evt)
+        {
+            _followActive = true;
+            _followToken = evt.Token;
+            _followFromWorld = evt.FromWorld;
+            _followToWorld = evt.ToWorld;
+            _followDuration = Mathf.Max(0.0001f, evt.DurationSeconds);
+            _followEasing = evt.Easing;
+            _followElapsed = 0f;
+        }
+
+        private void OnCueCameraFollowStopped(CueCameraFollowStopped evt)
+        {
+            // Token match prevents a stale Stop from the previous cue
+            // cancelling a just-issued Start on a back-to-back transition.
+            if (!_followActive) return;
+            if (!ReferenceEquals(_followToken, evt.Token)) return;
+            _followActive = false;
+            _followToken = null;
+        }
+
+        private void TickCameraFollow(float deltaTime)
+        {
+            _followElapsed += deltaTime;
+            float raw = Mathf.Clamp01(_followElapsed / _followDuration);
+            float eased = ApplyEasing(_followEasing, raw);
+            _targetState.PivotPosition = Vector3.Lerp(_followFromWorld, _followToWorld, eased);
+
+            if (raw >= 1f)
+            {
+                _followActive = false;
+                _followToken = null;
+            }
+        }
+
+        // Mirrors OSE.UI.Root.EasingHelper. Kept local because
+        // OSE.Interaction cannot depend on OSE.UI (layer direction).
+        private static float ApplyEasing(string easing, float t) => easing switch
+        {
+            "linear"         => t,
+            "easeIn"         => t * t,
+            "easeOut"        => 1f - (1f - t) * (1f - t),
+            "easeInOut"      => t < 0.5f ? 2f * t * t : 1f - Mathf.Pow(-2f * t + 2f, 2f) * 0.5f,
+            "easeInCubic"    => t * t * t,
+            "easeOutCubic"   => 1f - Mathf.Pow(1f - t, 3f),
+            "easeInOutCubic" => t < 0.5f ? 4f * t * t * t : 1f - Mathf.Pow(-2f * t + 2f, 3f) * 0.5f,
+            _                => t < 0.5f ? 2f * t * t : 1f - Mathf.Pow(-2f * t + 2f, 2f) * 0.5f, // default: easeInOut
+        };
     }
 }

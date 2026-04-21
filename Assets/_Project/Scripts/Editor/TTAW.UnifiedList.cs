@@ -1072,6 +1072,44 @@ namespace OSE.Editor
                         }
                     }
 
+                    // awaitCues toggle — only shown on optional / NO-TASK
+                    // entries. awaitCues is a visual-pacing affordance:
+                    // the cursor waits for this entry's non-loop cues to
+                    // complete before auto-advancing. Required entries
+                    // drive advancement through user completion and the
+                    // cue's own timing panel (First to Show / Show
+                    // During / …), so the toggle is hidden there to avoid
+                    // authoring a no-op flag. Loop cues never block —
+                    // they're fire-and-forget ambient decoration.
+                    const float awaitW = 18f;
+                    bool awaitEligible = isOptional || isNoTask;
+                    if (awaitEligible)
+                    {
+                        bool awaitOn = entry.awaitCues;
+                        var awaitStyle = new GUIStyle(EditorStyles.miniButton)
+                        {
+                            fontSize  = 10,
+                            fontStyle = FontStyle.Bold,
+                            alignment = TextAnchor.MiddleCenter,
+                            normal    = { textColor = awaitOn
+                                ? new Color(0.30f, 0.78f, 0.36f)
+                                : new Color(0.55f, 0.55f, 0.60f) },
+                        };
+                        var awaitRect = new Rect(rect.x + 78f + reqOptW + indent, rect.y + 2f, awaitW, rect.height - 4f);
+                        string awaitTip = awaitOn
+                            ? "awaitCues ON — cursor waits for every non-loop cue hosted by this entry to complete before advancing. Loop cues don't block."
+                            : "awaitCues OFF — cues fire at step activation, cursor doesn't wait. Click to hold the cursor on this span until the cue finishes.";
+                        if (GUI.Button(awaitRect, new GUIContent("\u23F1", awaitTip), awaitStyle))
+                        {
+                            entry.awaitCues = !entry.awaitCues;
+                            step.taskOrder = order.ToArray();
+                            _dirtyStepIds.Add(step.id);
+                            _dirtyTaskOrderStepIds.Add(step.id);
+                            Repaint();
+                        }
+                        reqOptW += awaitW + 2f;
+                    }
+
                     // Phase I.f.a — unorderedSet label field. Shown only on
                     // set leaders and on ordered singleton rows; hidden on
                     // non-leader members (the leader above owns the label
@@ -2304,7 +2342,19 @@ namespace OSE.Editor
             switch (entry.kind)
             {
                 case "part":
-                    DrawPartContextPanel(step, TaskInstanceId.ToPartId(entry.id));
+                    // A kind="part" entry whose id resolves to a subassembly
+                    // is a group task (part[g]). Route it to the group
+                    // inspector so it gets pose pills (Start / Before cue /
+                    // After cue / Assembled / NO TASK) that mirror the
+                    // individual-part inspector. Without this branch,
+                    // DrawPartContextPanel searches _parts[] for the id,
+                    // misses (subassemblies aren't in _parts), and drops
+                    // the row to a "Part '…' not in current step filter"
+                    // hint — losing every pose affordance.
+                    if (_pkg != null && _pkg.TryGetSubassembly(entry.id, out _))
+                        DrawGroupTaskContextPanel(step, entry.id);
+                    else
+                        DrawPartContextPanel(step, TaskInstanceId.ToPartId(entry.id));
                     break;
                 case "toolAction":
                     DrawToolActionContextPanel(step, entry.id);
@@ -2314,6 +2364,39 @@ namespace OSE.Editor
                     DrawWireOrTargetContextPanel(step, entry.id, entry.kind == "wire");
                     break;
             }
+        }
+
+        /// <summary>
+        /// Inspector for a group task (task entry whose kind="part" but id
+        /// resolves to a subassembly). Shows the group pose editor with the
+        /// same pill convention as individual parts. Synthesized hold-at-end
+        /// stepPoses on the subassembly surface as "After cue"; poseTransition
+        /// cues with authored fromPose hosted on the subassembly surface as
+        /// "Before cue".
+        /// </summary>
+        private void DrawGroupTaskContextPanel(StepDefinition step, string subId)
+        {
+            DrawUnifiedSectionHeader($"GROUP: {subId}", 1);
+
+            if (_groups == null || _groups.Length == 0)
+            {
+                EditorGUILayout.LabelField("  No groups loaded.", EditorStyles.miniLabel);
+                return;
+            }
+
+            int idx = FindGroupIdx(subId);
+            if (idx < 0)
+            {
+                EditorGUILayout.LabelField($"  Group '{subId}' not in current package.", EditorStyles.miniLabel);
+                return;
+            }
+
+            // Keep _selectedGroupIdx aligned so SceneView handles + gizmo
+            // sync target this group, not whatever was selected last.
+            if (_selectedGroupIdx != idx)
+                _selectedGroupIdx = idx;
+
+            DrawGroupPoseFields(ref _groups[idx], step);
         }
 
         private void DrawPartContextPanel(StepDefinition step, string partId)
@@ -3253,6 +3336,15 @@ namespace OSE.Editor
                         int gIdx = FindGroupIdx(selEntry.id);
                         if (gIdx >= 0 && _groups != null && gIdx < _groups.Length)
                         {
+                            // Align _selectedGroupIdx so SyncAllGroupRootsToActivePose
+                            // recognises this group as "selected" — the After-cue /
+                            // Before-cue / synth-stepPose preview branches all key off
+                            // isThisGroupSelected = (_selectedGroupIdx == i). Without
+                            // this, clicking a pill sets the pose-mode but the sync
+                            // method silently skips every group because sel=-1.
+                            if (_selectedGroupIdx != gIdx)
+                                _selectedGroupIdx = gIdx;
+
                             DrawGroupPoseFields(ref _groups[gIdx], step);
                         }
 
@@ -3601,6 +3693,35 @@ namespace OSE.Editor
             EditorGUI.EndDisabledGroup();
             if (GUILayout.Button("↺", EditorStyles.miniButton, GUILayout.Width(22), GUILayout.Height(26)))
                 RevertAllChanges();
+            EditorGUILayout.EndHorizontal();
+
+            // Auto-save toggle. When on, the lifecycle tick auto-commits dirty
+            // edits to JSON at natural commit points — gizmo release + no
+            // active hotControl + debounce after last change — so the JSON is
+            // always the source of truth with no "unsaved state" window. The
+            // explicit Write button stays as a "flush now" affordance.
+            EditorGUILayout.BeginHorizontal();
+            bool newAuto = EditorGUILayout.ToggleLeft(
+                new GUIContent("Auto-save (on release)",
+                    "Commit dirty edits to JSON automatically when no gizmo or field is " +
+                    "mid-drag and no change has landed in the last 500 ms. Eliminates the " +
+                    "unsaved in-memory window so JSON files are always the source of truth."),
+                _autoSaveEnabled, GUILayout.Width(220));
+            if (newAuto != _autoSaveEnabled)
+            {
+                _autoSaveEnabled = newAuto;
+                _lastEditTime = EditorApplication.timeSinceStartup;
+            }
+            if (_autoSaveEnabled && anyDirty)
+            {
+                var pendStyle = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    normal = { textColor = new Color(0.95f, 0.70f, 0.20f) },
+                    fontStyle = FontStyle.Italic,
+                };
+                GUILayout.Label("pending…", pendStyle);
+            }
+            GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();

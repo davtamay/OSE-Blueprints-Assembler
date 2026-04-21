@@ -514,5 +514,34 @@ namespace OSE.Content
         /// Phase I for the execution design).</para>
         /// </summary>
         public string unorderedSet;
+
+        /// <summary>
+        /// When true, the TaskCursor holds this entry's span open until every
+        /// non-loop animation / particle cue hosted by this entry's target
+        /// (part / group / tool) and scoped to the active step finishes.
+        /// Default false (legacy parallel behaviour: cues fire but don't
+        /// gate advancement).
+        ///
+        /// <para>Use case: a NO-TASK visual marker entry authored to
+        /// pre-show the next part with a poseTransition — authors want the
+        /// cue to play to completion before the cursor advances to the
+        /// next entry, so the trainee watches the motion finish rather
+        /// than seeing it interrupted by the next span opening.</para>
+        ///
+        /// <para><b>Loop cues don't block.</b> Any cue with <c>loop:true</c>
+        /// is treated as fire-and-forget (ambient decoration that never
+        /// signals completion). Only finite-duration cues delay
+        /// advancement. Set <c>loop:false</c> on a cue you want to block
+        /// advancement.</para>
+        ///
+        /// <para><b>Required entries with awaitCues:</b> cues play first,
+        /// then the entry opens for user interaction. Matches
+        /// "see this, then do this" teaching semantics.</para>
+        ///
+        /// <para><b>Optional entries with awaitCues:</b> override the
+        /// auto-skip behaviour of optional-only spans — the span stays
+        /// open until cues complete, then the cursor auto-advances.</para>
+        /// </summary>
+        public bool awaitCues;
     }
 }

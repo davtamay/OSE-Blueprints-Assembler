@@ -205,6 +205,112 @@ Affected files:
 
 ---
 
+## ADR 010 — Cursor-Gate for "Required This Step" Visual Telegraphs
+
+**Problem:** Multiple UI systems independently answer the question "what does the trainee need to do right now?" — tray emission pulse, ghost previews, selection highlights, step hint display, camera framing bounds. If one surface uses `step.requiredPartIds` and another uses `TaskCursor.OpenTasks`, they disagree during unordered spans and strict-sequential spans where only a subset is actionable. The disagreement IS the bug: under `step_top_place_bars` (4 sequential singletons), the tray pulsed all 4 bars as "pick me" even though only the first was cursor-open; the trainee picked bar #2, the state-machine silently rejected it, no ghost appeared, no feedback. UX looked broken because two visual systems claimed different scopes for the same signal.
+
+**Decision:** Every visual layer that telegraphs "which required parts/actions are live *right now*" must consult `TaskCursor.OpenTasks` when a cursor exists. `step.requiredPartIds` / `step.targetIds` is a fallback only for the no-session bootstrap path.
+
+**Canonical resolution pattern:**
+```csharp
+if (ServiceRegistry.TryGet<IMachineSessionController>(out var session)
+    && session?.AssemblyController?.StepController?.CurrentTaskCursor is { IsComplete: false } cursor)
+{
+    foreach (var entry in cursor.OpenTasks)
+    {
+        if (entry.kind == "part") results.Add(TaskInstanceId.ToPartId(entry.id));
+        // else if (entry.kind == "toolAction") resolve via step.requiredToolActions[].targetId
+    }
+}
+else
+{
+    // Fallback: step.requiredPartIds / step.targetIds
+}
+```
+
+**Surfaces that must follow this rule:**
+- [`PlaceStepAnimator.UpdateRequiredPartPulse`](Assets/_Project/Scripts/UI/StepHandlers/PlaceStepAnimator.cs) — tray emission
+- [`PreviewSpawnManager.SpawnPreviewsForCurrentSpan`](Assets/_Project/Scripts/UI/Spawning/PreviewSpawnManager.cs) — ghost previews
+- [`PlaceStepAnimator.UpdatePreviewSelectionPulse`](Assets/_Project/Scripts/UI/StepHandlers/PlaceStepAnimator.cs) — selection pulses
+- [`StepFocusComputer.CollectStepFocusPartIds`](Assets/_Project/Scripts/UI/StepHandlers/StepFocusComputer.cs) — camera framing bounds
+- Any future guidance pointer, hint pulse, or per-step visual highlight — apply the same rule up-front.
+
+**Why:** A behavior change that narrows the cursor's actionable scope but isn't matched on a visual surface creates a fresh variant of this bug. The invariant MUST be applied at every telegraph-drawing site.
+
+**Enforcement:** No structural test today; adherence is by convention + code review. A future improvement is an analyzer or integration test that invokes each telegraph function with a mock cursor and asserts the scope.
+
+---
+
+## ADR 011 — EditorWindow Post-Reload State Recovery via Single EnsureLoaded Guard
+
+**Problem:** `ToolTargetAuthoringWindow` (TTAW) carries serialized state (`_pkgId`) across Unity domain reloads but not live state (`_pkg`, `_targets`). Three places in the window's lifecycle defensively loaded the package when state was missing: a fresh-open fallback in `OnEnable`, a lazy retry at the top of the IMGUI callback, and an inline `LoadPkg` at the top of `OnSpawnerPartsReady`. Each had slightly different guards (`_pkg == null` vs `_targets == null`), and a race (spawner's `SpawnerPartsReady` fires before TTAW's first OnGUI) slipped through them — the tool preview GameObject would disappear after every C# compile until the author manually re-selected the task. Five consecutive commits tried to patch the race by widening guards in each block.
+
+**Decision:** One idempotent `EnsureLoaded()` guard. Every lifecycle entry point calls it. No ad-hoc `if (_pkg == null) LoadPkg(_pkgId)` lines anywhere else.
+
+```csharp
+private bool _pendingLoadRetry;
+
+private void EnsureLoaded()
+{
+    if (_pkg != null && _targets != null) { _pendingLoadRetry = false; return; }
+    if (string.IsNullOrEmpty(_pkgId))     { _pendingLoadRetry = false; return; }
+    try
+    {
+        LoadPkg(_pkgId, restoring: true);
+        _pendingLoadRetry = _pkg == null || _targets == null;
+    }
+    catch (Exception e)
+    {
+        OseLog.Warn($"[TTAW.Lifecycle] EnsureLoaded threw '{e.Message}'. Will retry.");
+        _pendingLoadRetry = true;
+    }
+}
+```
+
+**Myth this debunks:** Earlier code deferred loading to the first OnGUI "because AssetDatabase must be ready." `PackageJsonUtils.LoadPackage` uses `File.ReadAllText`, and `MachinePackageNormalizer.Normalize` is pure data — neither touches AssetDatabase. The deferral was defensive overreach that created the race window.
+
+**Where it's called:**
+- `OnEnable` — close the domain-reload race before any event fires.
+- IMGUI callback (first block) — catch `_pendingLoadRetry`.
+- `OnSpawnerPartsReady` — the spawner event may arrive before first OnGUI.
+- Any other event handler that touches `_pkg` / `_targets`.
+
+**Rule:** If you catch yourself writing `if (_pkg == null) LoadPkg(...)` in a new lifecycle hook, route through `EnsureLoaded()` instead. Scattered defensive blocks drift apart and regenerate this bug.
+
+---
+
+## ADR 012 — MaterialPropertyBlock for Per-Instance Visual Overrides
+
+**Problem:** [`MaterialHelper.SetEmission`](Assets/_Project/Scripts/Core/MaterialHelper.cs) and `SetMaterialColor` mutated `renderer.sharedMaterials[m].SetColor(...)` directly. Because 12 frame-bar parts share one GLB prefab (one source Material asset), setting emission on one bar's renderer flashed the emission on all 12. The old code partially hid this with `bool useShared = !Application.isPlaying` — in play mode it read `renderer.materials` (cloning per-renderer, no cross-bleed) but leaked Material instances in edit mode, so the edit-mode path kept `sharedMaterials` and shipped the bug visibly.
+
+**Decision:** Transient per-renderer visual overrides (emission color, base color tint pulse) write to a shared reusable `MaterialPropertyBlock`, never to `sharedMaterial`. The property block is per-renderer; it never mutates the underlying Material asset, so sibling instances that share the same source material are unaffected. No Material instances are leaked in either edit mode or play mode.
+
+```csharp
+private static readonly MaterialPropertyBlock s_propBlock = new MaterialPropertyBlock();
+
+public static void SetEmission(GameObject target, Color emissionColor)
+{
+    foreach (var renderer in GetRenderers(target))
+    {
+        if (hasEmission) EnsureEmissionKeywords(renderer); // one-time keyword flag
+        renderer.GetPropertyBlock(s_propBlock);
+        s_propBlock.SetColor(ID_EmissionColor, emissionColor);
+        s_propBlock.SetColor(ID_EmissiveFactor, emissionColor);
+        renderer.SetPropertyBlock(s_propBlock);
+    }
+}
+```
+
+**Keyword caveat:** `MaterialPropertyBlock` cannot toggle shader keywords (`_EMISSION`, `_EMISSIVE` on URP/Lit and glTFast Shader Graph). `EnsureEmissionKeywords` enables them once on each shared material the first time that renderer wants emission. The keyword-on state has no visible effect with black emission color; color writes stay per-instance.
+
+**What keeps `sharedMaterial` mutation:**
+- Wholesale material swaps (`ApplyTint` puts a cached `tintMat` in every slot) — swap, not mutate, and cached tintMat is keyed by color so shared-across-instances is fine.
+- Fallback material injection for GLBs with null material slots (one-time assignment at spawn time).
+
+**Rule:** Any per-frame or per-interaction color/emission write must go through `MaterialPropertyBlock`. Do not call `.sharedMaterial.SetColor(...)` or mutate `renderer.sharedMaterials[i]` for transient effects. If you need a new transient override, add a property ID constant alongside `ID_BaseColor` / `ID_EmissionColor` and route through `s_propBlock`.
+
+---
+
 ## Key Files
 
 | File | Role |

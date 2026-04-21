@@ -179,6 +179,19 @@ namespace OSE.Editor
                 && _selectedPartIdx < (_parts?.Length ?? 0)
                 && _parts[_selectedPartIdx].def?.id == pid;
 
+            // [0] Before-cue / After-cue preview — when the user clicks a
+            // "Before cue" or "After cue" pill, position the selected part
+            // at cue.fromPose or cue.toPose respectively. Editor-only
+            // preview; doesn't touch stepPoses or JSON. Other parts
+            // continue rendering from the PoseTable / placement as usual.
+            if (isSelectedPart)
+            {
+                if (IsBeforeCueMode() && TryResolveBeforeCuePose(out pos, out rot, out scl))
+                    return true;
+                if (IsAfterCueMode()  && TryResolveAfterCuePose (out pos, out rot, out scl))
+                    return true;
+            }
+
             // [A] Author is editing a Custom (author-written) intermediate
             // pose on the selected part — read directly from the in-memory
             // edit state because un-saved changes aren't in the baked
@@ -559,6 +572,8 @@ namespace OSE.Editor
 
         private Vector3 GetActivePosePosition(ref PartEditState p)
         {
+            if (IsBeforeCueMode() && TryResolveBeforeCuePose(out Vector3 bp, out _, out _)) return bp;
+            if (IsAfterCueMode()  && TryResolveAfterCuePose (out Vector3 ap, out _, out _)) return ap;
             if (_editingPoseMode >= 0 && p.stepPoses != null && _editingPoseMode < p.stepPoses.Count)
                 return PackageJsonUtils.ToVector3(p.stepPoses[_editingPoseMode].position);
             return _editAssembledPose ? p.assembledPosition : p.startPosition;
@@ -566,6 +581,8 @@ namespace OSE.Editor
 
         private Quaternion GetActivePoseRotation(ref PartEditState p)
         {
+            if (IsBeforeCueMode() && TryResolveBeforeCuePose(out _, out Quaternion br, out _)) return br;
+            if (IsAfterCueMode()  && TryResolveAfterCuePose (out _, out Quaternion ar, out _)) return ar;
             if (_editingPoseMode >= 0 && p.stepPoses != null && _editingPoseMode < p.stepPoses.Count)
                 return PackageJsonUtils.ToUnityQuaternion(p.stepPoses[_editingPoseMode].rotation);
             return _editAssembledPose ? p.assembledRotation : p.startRotation;
@@ -573,6 +590,11 @@ namespace OSE.Editor
 
         private void ApplyPositionToPart(ref PartEditState p, Vector3 pos)
         {
+            // Before-cue / After-cue modes are preview — don't mutate any
+            // stored pose. Author edits to cue.fromPose / cue.toPose happen
+            // in the cue panel, not here.
+            if (IsBeforeCueMode() || IsAfterCueMode()) return;
+
             if (_editingPoseMode >= 0 && p.stepPoses != null && _editingPoseMode < p.stepPoses.Count)
             {
                 p.stepPoses[_editingPoseMode].position = PackageJsonUtils.ToFloat3(pos);
@@ -595,6 +617,9 @@ namespace OSE.Editor
 
         private void ApplyRotationToPart(ref PartEditState p, Quaternion rot)
         {
+            // Before-cue / After-cue modes are preview — see ApplyPositionToPart.
+            if (IsBeforeCueMode() || IsAfterCueMode()) return;
+
             if (_editingPoseMode >= 0 && p.stepPoses != null && _editingPoseMode < p.stepPoses.Count)
             {
                 p.stepPoses[_editingPoseMode].rotation = PackageJsonUtils.ToQuaternion(rot);
@@ -728,6 +753,22 @@ namespace OSE.Editor
             ref GroupEditState g = ref _groups[_selectedGroupIdx];
             if (g.def?.partIds == null) return false;
             if (!g.isDirty && !g.hasPlacement) return false;
+
+            // Before/After cue preview modes ALWAYS cede positioning to the
+            // group sync — those modes write member poses directly from
+            // poseTable at the cue's step (current or next). If individual
+            // sync ran afterwards with the current step's poseTable values,
+            // it would overwrite the cue-step writes, leaking the pre-cue
+            // state through the preview. Check this BEFORE the "current
+            // step stacks this group" gate — cue preview is valid on
+            // NO-TASK rows where the group isn't being placed.
+            if (IsGroupBeforeCueMode() || IsGroupAfterCueMode())
+            {
+                foreach (var pid in g.def.partIds)
+                    if (string.Equals(pid, partId, StringComparison.Ordinal))
+                        return true;
+                return false;
+            }
 
             // Only cede positioning to the group root when the current step
             // is actually stacking this group (requiredSubassemblyId matches).

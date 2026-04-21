@@ -1575,18 +1575,21 @@ namespace OSE.Editor
         /// </summary>
         private static bool TryInjectBlock(ref string json, string id, string block, string blockJson)
         {
-            // Find "id": "<id>" in the tools/parts array.
-            // Strategy: search for the full pattern "id": "tool_mig_torch" as a single string
-            // to avoid false positives from "toolId", sub-object "id" keys, etc.
-            string fullPattern = $"\"id\": \"{id}\"";
-            int idPos = json.IndexOf(fullPattern, System.StringComparison.Ordinal);
+            // Find "id": "<id>" in the tools/parts array. Skip matches whose
+            // line also contains "kind" — those are compact taskOrder entries
+            // like {"kind":"part","id":"foo",...}, NOT first-class parts[] /
+            // targets[] / tools[] / steps[] definitions. Injecting into a
+            // taskOrder entry is silently dropped by JsonUtility on reload
+            // (no schema slot for most field names), so gizmo edits vanish.
+            //
+            // Strategy: search for the full pattern "id": "<id>" as a single
+            // string to avoid false positives from "toolId", sub-object "id"
+            // keys, etc.
+            int idPos = FindFirstDefinitionIdMatch(json, $"\"id\": \"{id}\"");
 
             // Also try without space after colon
             if (idPos < 0)
-            {
-                fullPattern = $"\"id\":\"{id}\"";
-                idPos = json.IndexOf(fullPattern, System.StringComparison.Ordinal);
-            }
+                idPos = FindFirstDefinitionIdMatch(json, $"\"id\":\"{id}\"");
 
             // Try with variable whitespace: find "id" then verify value
             if (idPos < 0)
@@ -1696,6 +1699,31 @@ namespace OSE.Editor
                 if (inStr) continue;
                 if (c == open) depth++;
                 if (c == close) { depth--; if (depth == 0) return i; }
+            }
+            return -1;
+        }
+
+        /// <summary>
+        /// Finds the first occurrence of <paramref name="needle"/> whose line
+        /// does NOT also contain <c>"kind"</c> — i.e. a first-class
+        /// definition entry, not a compact taskOrder reference like
+        /// <c>{"kind":"part","id":"..."}</c>. Returns -1 when no definition
+        /// match exists. See TryInjectBlock for the rationale.
+        /// </summary>
+        private static int FindFirstDefinitionIdMatch(string json, string needle)
+        {
+            int from = 0;
+            while (from < json.Length)
+            {
+                int idx = json.IndexOf(needle, from, System.StringComparison.Ordinal);
+                if (idx < 0) return -1;
+                int lineStart = json.LastIndexOf('\n', idx) + 1;
+                int lineEnd   = json.IndexOf('\n', idx);
+                if (lineEnd < 0) lineEnd = json.Length;
+                string line = json.Substring(lineStart, lineEnd - lineStart);
+                if (line.IndexOf("\"kind\"", System.StringComparison.Ordinal) < 0)
+                    return idx;
+                from = idx + needle.Length;
             }
             return -1;
         }

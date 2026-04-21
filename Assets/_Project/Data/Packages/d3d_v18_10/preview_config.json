@@ -5946,7 +5946,7 @@
         {
             "partId": "y_left_lm8uu_a",
             "startPosition": {
-                "x": 0.887,
+                "x": 0.5818,
                 "y": 0.56,
                 "z": 0.015
             },
@@ -6001,7 +6001,7 @@
         {
             "partId": "y_left_lm8uu_b",
             "startPosition": {
-                "x": 0.913,
+                "x": 0.6078,
                 "y": 0.56,
                 "z": 0.015
             },
@@ -6056,7 +6056,7 @@
         {
             "partId": "y_left_lm8uu_c",
             "startPosition": {
-                "x": 0.887,
+                "x": 0.5818,
                 "y": 0.56,
                 "z": -0.015
             },
@@ -6111,7 +6111,7 @@
         {
             "partId": "y_left_lm8uu_d",
             "startPosition": {
-                "x": 0.913,
+                "x": 0.6078,
                 "y": 0.56,
                 "z": -0.015
             },
@@ -6166,9 +6166,9 @@
         {
             "partId": "y_left_m6x18_a",
             "startPosition": {
-                "x": 0.92,
-                "y": 0.6,
-                "z": 0.018
+                "x": 0.5856,
+                "y": 0.5479,
+                "z": -0.0464
             },
             "startRotation": {
                 "x": 0.0,
@@ -6188,7 +6188,7 @@
                 "a": 1.0
             },
             "assembledPosition": {
-                "x": 0.8351,
+                "x": 0.538,
                 "y": 0.576,
                 "z": 0.0158
             },
@@ -6496,7 +6496,7 @@
         {
             "partId": "y_left_m6_nut_a",
             "startPosition": {
-                "x": 0.96,
+                "x": 0.5873,
                 "y": 0.55,
                 "z": 0.018
             },
@@ -6518,7 +6518,7 @@
                 "a": 1.0
             },
             "assembledPosition": {
-                "x": 0.833,
+                "x": 0.5359,
                 "y": 0.5349,
                 "z": 0.018
             },
@@ -6551,7 +6551,7 @@
         {
             "partId": "y_left_m6_nut_b",
             "startPosition": {
-                "x": 0.96,
+                "x": 0.5873,
                 "y": 0.55,
                 "z": -0.018
             },
@@ -6573,7 +6573,7 @@
                 "a": 1.0
             },
             "assembledPosition": {
-                "x": 0.833,
+                "x": 0.5359,
                 "y": 0.5354,
                 "z": -0.018
             },
@@ -6606,7 +6606,7 @@
         {
             "partId": "y_left_m6_nut_c",
             "startPosition": {
-                "x": 0.98,
+                "x": 0.6073,
                 "y": 0.55,
                 "z": 0.018
             },
@@ -6628,7 +6628,7 @@
                 "a": 1.0
             },
             "assembledPosition": {
-                "x": 0.807,
+                "x": 0.5099,
                 "y": 0.5354,
                 "z": 0.018
             },
@@ -7619,9 +7619,9 @@
         {
             "partId": "y_left_m6x30_a",
             "startPosition": {
-                "x": 0.94,
-                "y": 0.6,
-                "z": 0.018
+                "x": 0.6056,
+                "y": 0.5479,
+                "z": -0.0464
             },
             "startRotation": {
                 "x": 0.0,
@@ -7641,7 +7641,7 @@
                 "a": 1.0
             },
             "assembledPosition": {
-                "x": 0.8048,
+                "x": 0.5077,
                 "y": 0.576,
                 "z": 0.015
             },
@@ -7674,9 +7674,9 @@
         {
             "partId": "y_left_m6x30_b",
             "startPosition": {
-                "x": 0.94,
-                "y": 0.6,
-                "z": -0.018
+                "x": 0.6056,
+                "y": 0.5479,
+                "z": -0.0824
             },
             "startRotation": {
                 "x": 0.0,
@@ -7696,7 +7696,7 @@
                 "a": 1.0
             },
             "assembledPosition": {
-                "x": 0.8048,
+                "x": 0.5077,
                 "y": 0.576,
                 "z": -0.0149
             },
@@ -7729,7 +7729,7 @@
         {
             "partId": "y_left_m6_nut_d",
             "startPosition": {
-                "x": 0.98,
+                "x": 0.6073,
                 "y": 0.55,
                 "z": -0.018
             },
@@ -7751,7 +7751,7 @@
                 "a": 1.0
             },
             "assembledPosition": {
-                "x": 0.807,
+                "x": 0.5099,
                 "y": 0.5354,
                 "z": -0.018
             },
@@ -8224,9 +8224,9 @@
         {
             "partId": "y_left_carriage_m6x18_b",
             "startPosition": {
-                "x": 0.92,
-                "y": 0.6,
-                "z": -0.018
+                "x": 0.5856,
+                "y": 0.5479,
+                "z": -0.0824
             },
             "startRotation": {
                 "x": 0.0,
@@ -8246,7 +8246,7 @@
                 "a": 1.0
             },
             "assembledPosition": {
-                "x": 0.8351,
+                "x": 0.538,
                 "y": 0.576,
                 "z": -0.0145
             },
@@ -8591,15 +8591,15 @@
         {
             "partId": "batch_test_rod",
             "startPosition": {
-                "x": 0.5222,
-                "y": 0.757,
+                "x": 0.988,
+                "y": 0.566,
                 "z": 0.027
             },
             "startRotation": {
-                "x": -0.7071,
+                "x": 1.1921e-7,
                 "y": 0.0,
                 "z": 0.0,
-                "w": 0.7071
+                "w": 1.0
             },
             "startScale": {
                 "x": 1.0,
@@ -8628,7 +8628,52 @@
                 "y": 1.0,
                 "z": 1.0
             },
-            "stepPoses": [],
+            "stepPoses": [
+                {
+                    "stepId": "step_batch_c1_place_bolts",
+                    "label": "synthesized:holdAtEnd (part=batch_test_rod cue=poseTransition[0])",
+                    "position": {
+                        "x": 0.5222,
+                        "y": 0.757,
+                        "z": 0.027
+                    },
+                    "rotation": {
+                        "x": -0.7071,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 0.7071
+                    },
+                    "scale": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    },
+                    "propagateFromStep": "",
+                    "propagateThroughStep": ""
+                },
+                {
+                    "stepId": "step_batch_c1_hand_tighten",
+                    "label": "synthesized:holdAtEnd (part=batch_test_rod cue=poseTransition[1])",
+                    "position": {
+                        "x": 0.988,
+                        "y": 0.566,
+                        "z": 0.027
+                    },
+                    "rotation": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 1.0
+                    },
+                    "scale": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    },
+                    "propagateFromStep": "",
+                    "propagateThroughStep": ""
+                }
+            ],
             "splinePath": {
                 "radius": 0.0,
                 "segments": 0,
@@ -18232,7 +18277,7 @@
         {
             "subassemblyId": "subassembly_carriage_y_left",
             "position": {
-                "x": 0.0,
+                "x": -0.0329,
                 "y": 0.0,
                 "z": 0.0
             },
@@ -18248,7 +18293,7 @@
                 "z": 1.0
             },
             "startPosition": {
-                "x": 0.0,
+                "x": -0.0329,
                 "y": 0.0,
                 "z": 0.0
             },
@@ -18292,28 +18337,6 @@
                         "x": 0.0,
                         "y": 0.0,
                         "z": 0.7071,
-                        "w": 0.7071
-                    },
-                    "scale": {
-                        "x": 1.0,
-                        "y": 1.0,
-                        "z": 1.0
-                    },
-                    "propagateFromStep": "",
-                    "propagateThroughStep": ""
-                },
-                {
-                    "stepId": "step_batch_c1_hand_tighten",
-                    "label": "synthGroup:holdAtEnd (sub=subassembly_carriage_y_left cue=poseTransition[3])",
-                    "position": {
-                        "x": 0.2022,
-                        "y": 1.3314,
-                        "z": 0.0
-                    },
-                    "rotation": {
-                        "x": 0.0,
-                        "y": 0.0,
-                        "z": -0.7071,
                         "w": 0.7071
                     },
                     "scale": {

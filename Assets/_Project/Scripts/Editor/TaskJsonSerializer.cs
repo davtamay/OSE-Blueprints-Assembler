@@ -71,6 +71,7 @@ namespace OSE.Editor
             if (!string.IsNullOrEmpty(e.kind))         { Sep(); sb.Append($"\"kind\":\"{e.kind}\""); }
             if (!string.IsNullOrEmpty(e.id))           { Sep(); sb.Append($"\"id\":\"{e.id}\""); }
             if (e.isOptional)                          { Sep(); sb.Append("\"isOptional\":true"); }
+            if (e.awaitCues)                           { Sep(); sb.Append("\"awaitCues\":true"); }
             if (!string.IsNullOrEmpty(e.unorderedSet)) { Sep(); sb.Append($"\"unorderedSet\":\"{e.unorderedSet}\""); }
             if (e.endTransform != null)                { Sep(); sb.Append($"\"endTransform\":{JsonUtility.ToJson(e.endTransform)}"); }
             sb.Append("}");

@@ -74,6 +74,24 @@ namespace OSE.UI.Root
         /// </summary>
         public readonly Vector3? PivotHintLocal;
 
+        /// <summary>
+        /// Optional package reference the coordinator supplies for cues that
+        /// need to query authored metadata (firstVisibleSeq, stepPoses, etc.)
+        /// at play time. Null for contexts where no such lookup is needed.
+        /// </summary>
+        public readonly Content.MachinePackageDefinition Package;
+
+        /// <summary>
+        /// Sequence index of the step this cue is firing on. Used by
+        /// <see cref="PoseTransitionPlayer"/> to filter baseline capture —
+        /// children whose <c>firstVisibleSeq &gt;= StepSeq</c> are
+        /// being introduced on this step and sit at their
+        /// <c>startPosition</c> (tray/staging). Animating them drags them
+        /// away from the tray and breaks task pickup. <c>-1</c> means "no
+        /// filter" (player falls back to "animate every active child").
+        /// </summary>
+        public readonly int StepSeq;
+
         public AnimationCueContext(
             AnimationCueEntry entry,
             List<GameObject> targets,
@@ -81,7 +99,9 @@ namespace OSE.UI.Root
             List<AnimationCueResolvedPose> assembledPoses,
             float duration,
             List<GameObject> ghosts = null,
-            Vector3? pivotHintLocal = null)
+            Vector3? pivotHintLocal = null,
+            Content.MachinePackageDefinition package = null,
+            int stepSeq = -1)
         {
             Entry = entry;
             Targets = targets;
@@ -90,6 +110,8 @@ namespace OSE.UI.Root
             Duration = duration;
             Ghosts = ghosts;
             PivotHintLocal = pivotHintLocal;
+            Package = package;
+            StepSeq = stepSeq;
         }
     }
 

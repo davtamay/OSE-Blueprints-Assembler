@@ -477,34 +477,11 @@
       "material": "LM8UU linear ball bearing",
       "function": "Linear bearing seated in Y-left carriage half for smooth rod travel.",
       "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 0.887,
-          "y": 0.56,
-          "z": 0.015
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.6,
-          "g": 0.6,
-          "b": 0.65,
-          "a": 1.0
-        }
-      },
       "subassemblyIds": [
         "subassembly_carriage_y_left"
-      ]
-    },
+      ],
+      "stagingPose": {"position":{"x":0.5818,"y":0.56,"z":0.015},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.6,"g":0.6,"b":0.65,"a":1.0}}
+  },
     {
       "id": "y_left_lm8uu_b",
       "displayName": "Y-Left LM8UU B",
@@ -514,34 +491,11 @@
       "material": "LM8UU linear ball bearing",
       "function": "Linear bearing seated in Y-left carriage half for smooth rod travel.",
       "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 0.913,
-          "y": 0.56,
-          "z": 0.015
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.6,
-          "g": 0.6,
-          "b": 0.65,
-          "a": 1.0
-        }
-      },
       "subassemblyIds": [
         "subassembly_carriage_y_left"
-      ]
-    },
+      ],
+      "stagingPose": {"position":{"x":0.6078,"y":0.56,"z":0.015},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.6,"g":0.6,"b":0.65,"a":1.0}}
+  },
     {
       "id": "y_left_lm8uu_c",
       "displayName": "Y-Left LM8UU C",
@@ -551,34 +505,11 @@
       "material": "LM8UU linear ball bearing",
       "function": "Linear bearing seated in Y-left carriage half for smooth rod travel.",
       "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 0.887,
-          "y": 0.56,
-          "z": -0.015
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.6,
-          "g": 0.6,
-          "b": 0.65,
-          "a": 1.0
-        }
-      },
       "subassemblyIds": [
         "subassembly_carriage_y_left"
-      ]
-    },
+      ],
+      "stagingPose": {"position":{"x":0.5818,"y":0.56,"z":-0.015},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.6,"g":0.6,"b":0.65,"a":1.0}}
+  },
     {
       "id": "y_left_lm8uu_d",
       "displayName": "Y-Left LM8UU D",
@@ -588,34 +519,11 @@
       "material": "LM8UU linear ball bearing",
       "function": "Linear bearing seated in Y-left carriage half for smooth rod travel.",
       "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 0.913,
-          "y": 0.56,
-          "z": -0.015
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.6,
-          "g": 0.6,
-          "b": 0.65,
-          "a": 1.0
-        }
-      },
       "subassemblyIds": [
         "subassembly_carriage_y_left"
-      ]
-    },
+      ],
+      "stagingPose": {"position":{"x":0.6078,"y":0.56,"z":-0.015},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.6,"g":0.6,"b":0.65,"a":1.0}}
+  },
     {
       "id": "y_left_625zz_a",
       "displayName": "Y-Left 625ZZ A",
@@ -773,34 +681,11 @@
       "material": "M6x18 hex bolt, zinc-plated",
       "function": "Secures carriage halves at top position.",
       "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 0.92,
-          "y": 0.6,
-          "z": 0.018
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.6,
-          "g": 0.6,
-          "b": 0.65,
-          "a": 1.0
-        }
-      },
       "subassemblyIds": [
         "subassembly_carriage_y_left"
-      ]
-    },
+      ],
+      "stagingPose": {"position":{"x":0.5856,"y":0.5479,"z":-0.0464},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.6,"g":0.6,"b":0.65,"a":1.0}}
+  },
     {
       "id": "y_left_m6x18_b",
       "displayName": "Y-Left M6x18 B",
@@ -1032,34 +917,11 @@
       "material": "M6 hex nut, zinc-plated",
       "function": "Pre-loaded into motor holder before motor blocks access.",
       "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 0.96,
-          "y": 0.55,
-          "z": 0.018
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.6,
-          "g": 0.6,
-          "b": 0.65,
-          "a": 1.0
-        }
-      },
       "subassemblyIds": [
         "subassembly_carriage_y_left"
-      ]
-    },
+      ],
+      "stagingPose": {"position":{"x":0.5873,"y":0.55,"z":0.018},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.6,"g":0.6,"b":0.65,"a":1.0}}
+  },
     {
       "id": "y_left_m6_nut_b",
       "displayName": "Y-Left M6 Nut B",
@@ -1069,34 +931,11 @@
       "material": "M6 hex nut, zinc-plated",
       "function": "Pre-loaded into motor holder before motor blocks access.",
       "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 0.96,
-          "y": 0.55,
-          "z": -0.018
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.6,
-          "g": 0.6,
-          "b": 0.65,
-          "a": 1.0
-        }
-      },
       "subassemblyIds": [
         "subassembly_carriage_y_left"
-      ]
-    },
+      ],
+      "stagingPose": {"position":{"x":0.5873,"y":0.55,"z":-0.018},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.6,"g":0.6,"b":0.65,"a":1.0}}
+  },
     {
       "id": "y_left_m6_nut_c",
       "displayName": "Y-Left M6 Nut C",
@@ -1106,34 +945,11 @@
       "material": "M6 hex nut, zinc-plated",
       "function": "Pre-loaded into motor holder before motor blocks access.",
       "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 0.98,
-          "y": 0.55,
-          "z": 0.018
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.6,
-          "g": 0.6,
-          "b": 0.65,
-          "a": 1.0
-        }
-      },
       "subassemblyIds": [
         "subassembly_carriage_y_left"
-      ]
-    },
+      ],
+      "stagingPose": {"position":{"x":0.6073,"y":0.55,"z":0.018},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.6,"g":0.6,"b":0.65,"a":1.0}}
+  },
     {
       "id": "y_left_motor_m6_nut_a",
       "displayName": "Y-Left Motor M6 Nut A",
@@ -1362,34 +1178,11 @@
       "material": "Steel",
       "quantity": 1,
       "assetRef": "d3d_axis_m6x18_bolt.glb",
-      "stagingPose": {
-        "position": {
-          "x": 0.94,
-          "y": 0.6,
-          "z": 0.018
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.8,
-          "g": 0.8,
-          "b": 0.8,
-          "a": 1.0
-        }
-      },
       "subassemblyIds": [
         "subassembly_carriage_y_left"
-      ]
-    },
+      ],
+      "stagingPose": {"position":{"x":0.6056,"y":0.5479,"z":-0.0464},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.8,"g":0.8,"b":0.8,"a":1.0}}
+  },
     {
       "id": "y_left_m6x30_b",
       "name": "Y-Left M6x30 Bolt B",
@@ -1398,34 +1191,11 @@
       "material": "Steel",
       "quantity": 1,
       "assetRef": "d3d_axis_m6x18_bolt.glb",
-      "stagingPose": {
-        "position": {
-          "x": 0.94,
-          "y": 0.6,
-          "z": -0.018
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.8,
-          "g": 0.8,
-          "b": 0.8,
-          "a": 1.0
-        }
-      },
       "subassemblyIds": [
         "subassembly_carriage_y_left"
-      ]
-    },
+      ],
+      "stagingPose": {"position":{"x":0.6056,"y":0.5479,"z":-0.0824},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.8,"g":0.8,"b":0.8,"a":1.0}}
+  },
     {
       "id": "y_left_m6_nut_d",
       "name": "Y-Left Hex Nut D",
@@ -1434,34 +1204,11 @@
       "material": "Steel",
       "quantity": 1,
       "assetRef": "d3d_axis_m6_nut.glb",
-      "stagingPose": {
-        "position": {
-          "x": 0.98,
-          "y": 0.55,
-          "z": -0.018
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.8,
-          "g": 0.8,
-          "b": 0.8,
-          "a": 1.0
-        }
-      },
       "subassemblyIds": [
         "subassembly_carriage_y_left"
-      ]
-    },
+      ],
+      "stagingPose": {"position":{"x":0.6073,"y":0.55,"z":-0.018},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.8,"g":0.8,"b":0.8,"a":1.0}}
+  },
     {
       "id": "y_left_carriage_m6x18_b",
       "displayName": "Y-Left Carriage M6x18 B",
@@ -1471,34 +1218,11 @@
       "material": "M6x18 hex bolt, zinc-plated",
       "function": "Secures carriage halves together (second top bolt).",
       "quantity": 1,
-      "stagingPose": {
-        "position": {
-          "x": 0.92,
-          "y": 0.6,
-          "z": -0.018
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        },
-        "scale": {
-          "x": 1.0,
-          "y": 1.0,
-          "z": 1.0
-        },
-        "color": {
-          "r": 0.6,
-          "g": 0.6,
-          "b": 0.65,
-          "a": 1.0
-        }
-      },
       "subassemblyIds": [
         "subassembly_carriage_y_left"
-      ]
-    }
+      ],
+      "stagingPose": {"position":{"x":0.5856,"y":0.5479,"z":-0.0824},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.6,"g":0.6,"b":0.65,"a":1.0}}
+  }
   ],
   "steps": [
     {

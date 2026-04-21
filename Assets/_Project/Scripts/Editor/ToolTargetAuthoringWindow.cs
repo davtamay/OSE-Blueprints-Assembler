@@ -198,8 +198,29 @@ namespace OSE.Editor
         private PartOwnershipIndex       _ownership = PartOwnershipIndex.Empty;
         // Pose-mode selector: PoseModeStart = start pose, PoseModeAssembled = assembled pose,
         // 0..N = stepPose index (intermediate poses).
-        private const int PoseModeStart     = -1;
-        private const int PoseModeAssembled = -2;
+        //
+        // Extension: "Before cue" pills for poseTransition cues with authored
+        // fromPose show the part at cue.fromPose without persisting. Encoded
+        // as PoseModeBeforeCueBase - cueIdxAmongMatches (so -100 = first match,
+        // -101 = second, …). Negative range stays clear of valid stepPose
+        // indices (0..N) and the two intrinsic sentinels (-1, -2). Author can
+        // preview the state of a part "just before cue fires" in the editor
+        // without adding a stepPose entry. Runtime is unaffected — nothing
+        // writes to JSON for these previews.
+        private const int PoseModeStart          = -1;
+        private const int PoseModeAssembled      = -2;
+        // Preview-only sentinel ranges for cue fromPose / toPose pills.
+        // Before cue: -100, -101, -102, …  (ordinal = PoseModeBeforeCueBase - mode)
+        // After cue:  -200, -201, -202, …  (ordinal = PoseModeAfterCueBase  - mode)
+        // The ranges are at least 100 apart so adding more ordinals per
+        // category can't overlap. Both read pose directly from the cue
+        // entry (fromPose / toPose) — NOT from synth stepPoses, so the
+        // pills appear on the cue's OWN step regardless of where the
+        // holdAtEnd synth lands. Keeps the naming convention stepId-
+        // agnostic: clicking "After cue" on step N previews the part at
+        // cue.toPose when the cue on step N finishes.
+        private const int PoseModeBeforeCueBase  = -100;
+        private const int PoseModeAfterCueBase   = -200;
         [SerializeField] private int    _editingPoseMode = PoseModeStart;
         private bool _editAssembledPose => _editingPoseMode == PoseModeAssembled;
         private double _poseSwitchCooldownUntil; // EditorApplication.timeSinceStartup deadline; suppress false dirty until then

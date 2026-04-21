@@ -19,13 +19,29 @@ namespace OSE.Editor
     {
         // ── Lifecycle ─────────────────────────────────────────────────────────
 
+        // Consolidated lifecycle contract:
+        //   • OnEnable wires events and calls EnsureLoaded() — the single
+        //     idempotent guard that resolves _pkg / _targets whenever they're
+        //     missing. Earlier versions of this file deferred loading to the
+        //     first OnGUI out of an AssetDatabase-readiness concern, but
+        //     PackageJsonUtils.LoadPackage uses File.IO and Normalize is pure
+        //     data — neither requires AssetDatabase to be ready. The deferral
+        //     left a window where SpawnerPartsReady fired before _targets was
+        //     built, dropping the tool-preview refresh that the event was
+        //     supposed to trigger. EnsureLoaded() closes that window.
+        //   • OnGUI and OnSpawnerPartsReady ALSO call EnsureLoaded() as a
+        //     safety net. It returns immediately when already loaded, so the
+        //     redundant calls are cheap and defensive against any path that
+        //     could lose state (e.g. Revert All Changes).
+        //   • _pendingLoadRetry flags a transient failure (should not happen
+        //     in normal operation) so the next OnGUI reattempts rather than
+        //     leaving the window in a silently-broken state.
+
+        private bool _pendingLoadRetry;
+
         private void OnEnable()
         {
-            Debug.Log($"[TTAW.ToolPreview] ── OnEnable (post-reload or fresh open) — _pkgId='{_pkgId ?? "<null>"}' _selectedTargetId='{_selectedTargetId ?? "<null>"}' _selectedIdx={_selectedIdx} _showToolPreview={_showToolPreview}");
-
-            // Destroy any stale PreviewRoot objects left from a previous session that
-            // survived domain reload with HideFlags.HideAndDontSave.
-            // (No stale preview roots to destroy — TTAW no longer creates HideAndDontSave objects.)
+            OseLog.VerboseInfo($"[TTAW.Lifecycle] OnEnable — _pkgId='{_pkgId ?? "<null>"}' _selectedIdx={_selectedIdx} _showToolPreview={_showToolPreview}");
 
             // After a domain reload the runtime ServiceRegistry is wiped, so
             // FindLivePartGO returns null until the spawner re-registers. Unity's
@@ -37,24 +53,65 @@ namespace OSE.Editor
             Selection.activeGameObject = null;
 
             RefreshPackageList();
-            // Package restore after domain reload is handled by OnGUI (first frame)
-            // where the AssetDatabase is guaranteed to be ready.
-            // Only handle the fresh-open fallback (no _pkgId yet) here.
-            if (_pkg == null && string.IsNullOrEmpty(_pkgId)
+
+            // Fresh-open fallback: no saved _pkgId → pick the first available
+            // package so the window isn't empty on first launch.
+            if (string.IsNullOrEmpty(_pkgId)
                 && _packageIds != null && _packageIds.Length > 0
                 && _pkgIdx >= 0 && _pkgIdx < _packageIds.Length)
             {
-                LoadPkg(_packageIds[_pkgIdx]);
+                _pkgId = _packageIds[_pkgIdx];
             }
+
             SceneView.duringSceneGui += OnSceneGUI;
             SessionDriver.EditModeStepChanged += OnSessionDriverStepChanged;
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
             RuntimeEventBus.Subscribe<SpawnerPartsReady>(OnSpawnerPartsReady);
+
+            // Resolve _pkg / _targets here rather than deferring to the first
+            // OnGUI. Any exception (e.g. corrupt JSON) sets _pendingLoadRetry
+            // and OnGUI / OnSpawnerPartsReady will retry.
+            EnsureLoaded();
+        }
+
+        /// <summary>
+        /// Single idempotent "ensure the package is loaded" guard. All three
+        /// former defensive blocks (OnEnable fresh-open fallback, OnGUI lazy
+        /// retry, OnSpawnerPartsReady inline LoadPkg) now funnel through here.
+        /// Returns immediately when <c>_pkg</c> and <c>_targets</c> are already
+        /// populated. On exception flags <see cref="_pendingLoadRetry"/> so the
+        /// next lifecycle tick retries rather than silently leaving the window
+        /// broken.
+        /// </summary>
+        private void EnsureLoaded()
+        {
+            if (_pkg != null && _targets != null)
+            {
+                _pendingLoadRetry = false;
+                return;
+            }
+            if (string.IsNullOrEmpty(_pkgId))
+            {
+                _pendingLoadRetry = false;
+                return;
+            }
+            try
+            {
+                LoadPkg(_pkgId, restoring: true);
+                _pendingLoadRetry = _pkg == null || _targets == null;
+                if (_pendingLoadRetry)
+                    OseLog.Warn($"[TTAW.Lifecycle] EnsureLoaded: LoadPkg('{_pkgId}') completed but state still incomplete (pkg={(_pkg == null ? "null" : "ok")}, targets={(_targets == null ? "null" : _targets.Length.ToString())}). Will retry.");
+            }
+            catch (Exception e)
+            {
+                OseLog.Warn($"[TTAW.Lifecycle] EnsureLoaded: LoadPkg('{_pkgId}') threw '{e.Message}'. Will retry on next OnGUI.");
+                _pendingLoadRetry = true;
+            }
         }
 
         private void OnDisable()
         {
-            Debug.Log($"[TTAW.ToolPreview] ── OnDisable (pre-reload or window close) — _pkgId='{_pkgId ?? "<null>"}' _selectedTargetId='{_selectedTargetId ?? "<null>"}' _selectedIdx={_selectedIdx} toolPreviewGO={(_toolPreviewGO != null ? "live" : "null")}");
+            OseLog.VerboseInfo($"[TTAW.Lifecycle] OnDisable — _pkgId='{_pkgId ?? "<null>"}' _selectedIdx={_selectedIdx} toolPreviewGO={(_toolPreviewGO != null ? "live" : "null")}");
 
             StopAllPreviews();
             StopParticlePreview();
@@ -80,6 +137,17 @@ namespace OSE.Editor
             // is an unsaved scene object and must not carry over into the runtime scene.
             if (state == PlayModeStateChange.ExitingEditMode)
             {
+                // Force-save any dirty TTAW edits before Play loads
+                // machine.json from disk. Without this, in-memory
+                // authoring state (freshly-toggled awaitCues clocks,
+                // new step poses, unsaved field edits) is silently
+                // discarded at Play — the runtime reads the old on-disk
+                // JSON and behaves as if the edit never happened. The
+                // "ambiguous green checkbox" bug. Flushing here makes
+                // Play-button behaviour deterministic: what you see in
+                // TTAW is always what Play runs.
+                FlushDirtyEditsBeforePlay();
+
                 StopAllPreviews();
                 StopParticlePreview();
                 return;
@@ -92,34 +160,47 @@ namespace OSE.Editor
         }
 
         /// <summary>
+        /// Invoked on <see cref="PlayModeStateChange.ExitingEditMode"/>.
+        /// Saves any pending TTAW edits so the Play session reads
+        /// current authoring state from disk rather than stale JSON.
+        /// Safe to call when nothing is dirty — <see cref="AnyDirty"/>
+        /// short-circuits. Catches and logs so a single broken package
+        /// can't block Play from starting.
+        /// </summary>
+        private void FlushDirtyEditsBeforePlay()
+        {
+            try
+            {
+                if (_pkg == null) return;
+                if (!AnyDirty()) return;
+
+                OseLog.Info("[TTAW.Lifecycle] Flushing dirty edits to JSON before entering Play.");
+                // reloadAfter:false — we're transitioning out of edit
+                // mode; Play's own MachinePackageLoader will read fresh
+                // JSON. Full reload-and-respawn during ExitingEditMode
+                // collides with Unity's own scene teardown.
+                WriteJson(reloadAfter: false);
+            }
+            catch (Exception e)
+            {
+                OseLog.Warn($"[TTAW.Lifecycle] FlushDirtyEditsBeforePlay threw '{e.Message}'. Play will start with stale JSON for this window.");
+            }
+        }
+
+        /// <summary>
         /// Fired each time <see cref="PackagePartSpawner"/> finishes a spawn cycle.
         /// Re-sync live part positions and add mesh colliders so click-to-snap still works.
         /// </summary>
         private void OnSpawnerPartsReady(SpawnerPartsReady _)
         {
-            Debug.Log($"[TTAW.ToolPreview] OnSpawnerPartsReady — _selectedIdx={_selectedIdx} _targets={(_targets == null ? "null" : _targets.Length.ToString())} toolPreviewGO={(_toolPreviewGO != null ? "live" : "null")}");
+            OseLog.VerboseInfo($"[TTAW.Lifecycle] OnSpawnerPartsReady — _selectedIdx={_selectedIdx} _targets={(_targets == null ? "null" : _targets.Length.ToString())} toolPreviewGO={(_toolPreviewGO != null ? "live" : "null")}");
 
-            // Post-reload race fix: the spawner finishes and fires this event
-            // before TTAW gets its first OnGUI, so the lazy LoadPkg in
-            // DrawTopContent hasn't built _targets yet. Without _targets the
-            // refresh block below silently bails — and since this is the one
-            // event-driven path that re-spawns the tool preview post-compile,
-            // the preview stays gone until the author manually re-selects a
-            // task. Restore the package inline so _targets is ready before we
-            // run the sibling re-attach work below.
-            //
-            // Gate on `_targets == null` (the thing the refresh block needs)
-            // rather than `_pkg == null`, in case some other code path has
-            // partially populated state. Safe in this context because the
-            // spawner only publishes SpawnerPartsReady AFTER
-            // MachinePackageLoader.LoadFromStreamingAssetsAsync completes —
-            // AssetDatabase is guaranteed to be ready.
-            if (_targets == null && !string.IsNullOrEmpty(_pkgId))
-            {
-                Debug.Log($"[TTAW.ToolPreview] OnSpawnerPartsReady — loading pkg '{_pkgId}' inline to catch post-reload race (_pkg={(_pkg == null ? "null" : "loaded")})");
-                LoadPkg(_pkgId, restoring: true);
-                Debug.Log($"[TTAW.ToolPreview] OnSpawnerPartsReady — inline LoadPkg complete, _targets={(_targets == null ? "null" : _targets.Length.ToString())}");
-            }
+            // The spawner may fire this event before TTAW's first OnGUI (post
+            // domain-reload race). EnsureLoaded is idempotent and closes the
+            // window where _targets was null when the refresh block below
+            // needed it — that race was the root cause of "tool preview
+            // disappears after compile."
+            EnsureLoaded();
 
             // Re-apply authoritative _pkg positions after the spawn cycle.
             // The spawn itself calls ApplyStepAwarePositions(_editModePackage) which may

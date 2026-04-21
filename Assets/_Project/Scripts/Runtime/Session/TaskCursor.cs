@@ -74,6 +74,16 @@ namespace OSE.Runtime
         private readonly List<Span> _spans;
         private int _currentSpanIndex;
         private readonly HashSet<(string kind, string id)> _completedInCurrentSpan = new HashSet<(string, string)>();
+        private bool _hasStarted;
+
+        /// <summary>
+        /// True after <see cref="Start"/> has been invoked at least once.
+        /// Subscribers that attach late (after Start already ran) can use
+        /// this to decide whether to manually replay the current span's
+        /// TaskSpanOpened fire; subscribers that attach early should NOT
+        /// manually replay, since Start will fire it naturally.
+        /// </summary>
+        public bool HasStarted => _hasStarted;
 
         /// <summary>Fires whenever a new span opens, including the initial one (via <see cref="Start"/>).</summary>
         public event Action<TaskSpanOpenedInfo> TaskSpanOpened;
@@ -147,11 +157,56 @@ namespace OSE.Runtime
         /// Fires the initial <see cref="TaskSpanOpened"/>. Call once after
         /// construction + subscription so subscribers see the opening. No-op
         /// when the cursor starts already complete (empty taskOrder).
+        ///
+        /// Spans containing only optional entries (e.g. visual-only NO TASK
+        /// markers, marked by <c>MarkVisualOnlyTaskOrderEntriesOptional</c>
+        /// at load time) are skipped here — they have zero required members
+        /// to complete, so the cursor would otherwise stall on them forever
+        /// waiting for a <see cref="NotifyTaskCompleted"/> that can never
+        /// arrive. Walking forward until we land on a span with at least one
+        /// required entry (or run out) mirrors the advancement behaviour in
+        /// <see cref="NotifyTaskCompleted"/>.
         /// </summary>
         public void Start()
         {
-            if (IsComplete) return;
+            _hasStarted = true;
+            SkipFullyOptionalSpans();
+            if (IsComplete)
+            {
+                StepTasksComplete?.Invoke();
+                return;
+            }
             FireSpanOpened();
+        }
+
+        // Walk forward over any contiguous all-optional spans starting at
+        // _currentSpanIndex. Clears per-span completion state each step
+        // since those spans effectively opened-and-closed in the same tick.
+        private void SkipFullyOptionalSpans()
+        {
+            while (!IsComplete && SpanHasNoRequiredMembers(_spans[_currentSpanIndex]))
+            {
+                _currentSpanIndex++;
+                _completedInCurrentSpan.Clear();
+            }
+        }
+
+        private static bool SpanHasNoRequiredMembers(Span span)
+        {
+            for (int i = 0; i < span.Entries.Count; i++)
+            {
+                var e = span.Entries[i];
+                if (e == null) continue;
+                // awaitCues entries block span advancement regardless of
+                // optional flag — the cue-completion notify IS how the
+                // span finishes. Treat them as required for the purpose
+                // of auto-skip so the fully-optional fast path doesn't
+                // bypass the cue-await behaviour.
+                if (e.awaitCues) return false;
+                if (e.isOptional) continue;
+                return false;
+            }
+            return true;
         }
 
         /// <summary>
@@ -180,12 +235,26 @@ namespace OSE.Runtime
             if (IsComplete) return;
             if (!SpanContainsTask(_spans[_currentSpanIndex], kind, id)) return;
 
+            // Diagnostic: shows which caller advances the cursor and from
+            // where. Stack frame 1 is the direct caller.
+            var stackFrame = new System.Diagnostics.StackFrame(1, false);
+            var callerMethod = stackFrame.GetMethod();
+            string callerName = callerMethod != null
+                ? $"{callerMethod.DeclaringType?.Name}.{callerMethod.Name}"
+                : "unknown";
+            OSE.Core.OseLog.Info($"[TaskCursor.Notify] span={_currentSpanIndex}/{_spans.Count} ({kind},{id}) from {callerName}");
+
             _completedInCurrentSpan.Add((kind ?? string.Empty, id ?? string.Empty));
 
             if (AllRequiredCompletedInCurrentSpan())
             {
                 _currentSpanIndex++;
                 _completedInCurrentSpan.Clear();
+                // Skip over any contiguous all-optional spans that follow —
+                // identical to the skip in Start(). Keeps "next actionable
+                // span" semantics consistent whether the cursor starts on
+                // an optional span or lands on one after an advance.
+                SkipFullyOptionalSpans();
                 if (!IsComplete)
                     FireSpanOpened();
                 else
@@ -221,7 +290,11 @@ namespace OSE.Runtime
             for (int i = 0; i < span.Entries.Count; i++)
             {
                 var e = span.Entries[i];
-                if (e == null || e.isOptional) continue;
+                if (e == null) continue;
+                // An awaitCues entry MUST complete (via cue-done notify)
+                // regardless of its optional flag — see SpanHasNoRequiredMembers.
+                bool mustComplete = e.awaitCues || !e.isOptional;
+                if (!mustComplete) continue;
                 if (!_completedInCurrentSpan.Contains((e.kind ?? string.Empty, e.id ?? string.Empty)))
                     return false;
             }

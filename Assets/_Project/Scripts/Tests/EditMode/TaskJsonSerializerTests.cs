@@ -127,6 +127,7 @@ namespace OSE.Tests.EditMode
                 kind          = "toolAction",
                 id            = "action_demo",
                 isOptional    = true,
+                awaitCues     = true,
                 unorderedSet  = "panel_bars",
                 endTransform  = new TaskEndTransform
                 {
@@ -142,6 +143,7 @@ namespace OSE.Tests.EditMode
             Assert.AreEqual(original.kind,         roundTripped.kind);
             Assert.AreEqual(original.id,           roundTripped.id);
             Assert.AreEqual(original.isOptional,   roundTripped.isOptional);
+            Assert.AreEqual(original.awaitCues,    roundTripped.awaitCues);
             Assert.AreEqual(original.unorderedSet, roundTripped.unorderedSet);
             Assert.IsNotNull(roundTripped.endTransform, "endTransform must round-trip");
             Assert.AreEqual(original.endTransform.position.x, roundTripped.endTransform.position.x);
@@ -161,6 +163,8 @@ namespace OSE.Tests.EditMode
             Assert.IsTrue(json.Contains("\"id\":\"bolt_a\""));
             Assert.IsFalse(json.Contains("\"isOptional\""),
                 "isOptional must not emit when false — keeps the common row compact");
+            Assert.IsFalse(json.Contains("\"awaitCues\""),
+                "awaitCues must not emit when false — keeps the common row compact");
             Assert.IsFalse(json.Contains("\"unorderedSet\""),
                 "empty unorderedSet must be omitted");
             Assert.IsFalse(json.Contains("\"endTransform\""),
@@ -182,6 +186,7 @@ namespace OSE.Tests.EditMode
                 kind          = "part",
                 id            = "p",
                 isOptional    = true,
+                awaitCues     = true,
                 unorderedSet  = "set",
                 endTransform  = new TaskEndTransform
                 {

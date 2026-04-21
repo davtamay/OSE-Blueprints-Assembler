@@ -16,6 +16,23 @@ namespace OSE.Core
         private const int TransparentRenderQueue = 3000;
         private const int OverlayRenderQueue = 4000;
 
+        // Cached shader property IDs. Property lookups via int ID are significantly
+        // faster than string lookups, and the values never change across sessions.
+        private static readonly int ID_BaseColor       = Shader.PropertyToID("_BaseColor");
+        private static readonly int ID_Color           = Shader.PropertyToID("_Color");
+        private static readonly int ID_BaseColorFactor = Shader.PropertyToID("baseColorFactor");
+        private static readonly int ID_EmissionColor   = Shader.PropertyToID("_EmissionColor");
+        private static readonly int ID_EmissiveFactor  = Shader.PropertyToID("emissiveFactor");
+
+        // Reusable per-renderer override scratchpad. MaterialPropertyBlock writes
+        // per-renderer overrides without mutating the shared Material asset — so
+        // two GameObjects that instance the same GLB prefab (e.g. 12 frame bars
+        // from one assetRef) can have independent emission/tint without cross-
+        // contaminating each other's visible state. Reusing one block across
+        // calls is the documented Unity pattern; GetPropertyBlock reads into it,
+        // SetPropertyBlock consumes it.
+        private static readonly MaterialPropertyBlock s_propBlock = new MaterialPropertyBlock();
+
         // Cached shader — resolved on first use. Unity clears this on domain reload.
         private static Shader _urpLitShader;
 
@@ -236,7 +253,7 @@ namespace OSE.Core
 
             if (_ghostOverlayBase == null)
             {
-                Debug.LogWarning("[MaterialHelper] Resources/GhostOverlay.mat not found — falling back to URP Lit.");
+                OseLog.Warn("[MaterialHelper] Resources/GhostOverlay.mat not found — falling back to URP Lit.");
                 Material fallback = CreateUrpMaterial("Preview Material");
                 if (fallback == null) return;
                 ConfigureTransparent(fallback, TransparentRenderQueue);
@@ -261,7 +278,7 @@ namespace OSE.Core
             var renderers = target.GetComponentsInChildren<Renderer>(true);
             if (renderers == null || renderers.Length == 0)
             {
-                Debug.LogWarning($"[MaterialHelper] No renderers found on '{target.name}' or its children.");
+                OseLog.Warn($"[MaterialHelper] No renderers found on '{target.name}' or its children.");
                 return;
             }
 
@@ -410,39 +427,35 @@ namespace OSE.Core
         }
 
         /// <summary>
-        /// Updates the color of existing materials on the target without allocating new ones.
-        /// Useful for lightweight highlight pulses.
+        /// Updates the color of renderers on <paramref name="target"/> via a
+        /// per-renderer MaterialPropertyBlock — no Material allocation and no
+        /// mutation of the shared asset. Safe to call per-frame for highlight
+        /// pulses. Sibling instances that share the same source GLB material
+        /// are unaffected.
         /// </summary>
         public static void SetMaterialColor(GameObject target, Color color)
         {
             var renderers = GetRenderers(target);
             if (renderers == null || renderers.Length == 0) return;
 
-            bool useShared = !Application.isPlaying;
+            Color faintEmission = color * 0.08f;
 
             foreach (var renderer in renderers)
             {
+                if (renderer == null) continue;
                 if (renderer.gameObject.name == OutlineChildName) continue;
 
-                Material[] mats = useShared ? renderer.sharedMaterials : renderer.materials;
-                for (int m = 0; m < mats.Length; m++)
-                {
-                    Material material = mats[m];
-                    if (material == null) continue;
-
-                    // URP/Lit
-                    SetBaseColor(material, color);
-                    if (material.HasProperty("_EmissionColor"))
-                        material.SetColor("_EmissionColor", color * 0.08f);
-
-                    // glTFast Shader Graph (glTF-pbrMetallicRoughness)
-                    if (material.HasProperty("baseColorFactor"))
-                        material.SetColor("baseColorFactor", color);
-                    if (material.HasProperty("emissiveFactor"))
-                        material.SetColor("emissiveFactor", color * 0.08f);
-                }
-                if (!useShared)
-                    renderer.materials = mats;
+                renderer.GetPropertyBlock(s_propBlock);
+                // Cover URP/Lit + Built-in + glTFast Shader Graph — property
+                // block writes that target a property the shader doesn't
+                // expose are silently ignored, so it's safe to always write
+                // all the candidates.
+                s_propBlock.SetColor(ID_BaseColor,       color);
+                s_propBlock.SetColor(ID_Color,           color);
+                s_propBlock.SetColor(ID_BaseColorFactor, color);
+                s_propBlock.SetColor(ID_EmissionColor,   faintEmission);
+                s_propBlock.SetColor(ID_EmissiveFactor,  faintEmission);
+                renderer.SetPropertyBlock(s_propBlock);
             }
         }
 
@@ -498,8 +511,8 @@ namespace OSE.Core
 
             if (anyFilled && _fallbackWarnedOwners.Add(target.name))
             {
-                Debug.LogWarning($"[MaterialHelper] '{target.name}' GLB has null material slot(s); applied fallback. " +
-                                 "Re-export the asset from Blender with a bound PBR material to fix at the source.");
+                OseLog.Warn($"[MaterialHelper] '{target.name}' GLB has null material slot(s); applied fallback. " +
+                            "Re-export the asset from Blender with a bound PBR material to fix at the source.");
             }
             return anyFilled;
         }
@@ -526,10 +539,17 @@ namespace OSE.Core
         }
 
         /// <summary>
-        /// Sets emission glow on existing materials without affecting base color.
-        /// Supports both URP/Lit (<c>_EmissionColor</c> + <c>_EMISSION</c>) and
-        /// glTFast Shader Graph (<c>emissiveFactor</c> + <c>_EMISSIVE</c>).
-        /// Pass <see cref="Color.black"/> to clear emission.
+        /// Sets emission glow on each renderer via a per-renderer
+        /// MaterialPropertyBlock — no Material allocation and no mutation of
+        /// the shared asset. Pass <see cref="Color.black"/> to clear emission.
+        ///
+        /// Because PropertyBlock cannot toggle shader keywords, the
+        /// <c>_EMISSION</c> / <c>_EMISSIVE</c> keyword is enabled once on the
+        /// shared material the first time we touch emission on its renderer.
+        /// This is a one-time write (keyword flag, not color), so it does not
+        /// cause the cross-instance bleed the old sharedMaterial.SetColor path
+        /// did — subsequent per-frame color writes go to the property block
+        /// and stay local to each renderer.
         /// </summary>
         public static void SetEmission(GameObject target, Color emissionColor)
         {
@@ -537,45 +557,40 @@ namespace OSE.Core
             if (renderers == null || renderers.Length == 0) return;
 
             bool hasEmission = emissionColor.r > 0f || emissionColor.g > 0f || emissionColor.b > 0f;
-            // In edit mode, .materials creates leaked instances. Use .sharedMaterials
-            // to modify materials in-place (safe — they are per-import instances, not
-            // project assets).
-            bool useShared = !Application.isPlaying;
 
             foreach (var renderer in renderers)
             {
+                if (renderer == null) continue;
                 if (renderer.gameObject.name == OutlineChildName) continue;
 
-                // Use .materials (not .material) to update ALL material slots.
-                // .material only returns slot 0, missing sub-meshes on multi-material models.
-                Material[] mats = useShared ? renderer.sharedMaterials : renderer.materials;
-                for (int m = 0; m < mats.Length; m++)
-                {
-                    Material material = mats[m];
-                    if (material == null) continue;
+                if (hasEmission)
+                    EnsureEmissionKeywords(renderer);
 
-                    // URP/Lit shader
-                    if (material.HasProperty("_EmissionColor"))
-                    {
-                        material.SetColor("_EmissionColor", emissionColor);
-                        if (hasEmission)
-                            material.EnableKeyword("_EMISSION");
-                        else
-                            material.DisableKeyword("_EMISSION");
-                    }
+                renderer.GetPropertyBlock(s_propBlock);
+                s_propBlock.SetColor(ID_EmissionColor,  emissionColor);
+                s_propBlock.SetColor(ID_EmissiveFactor, emissionColor);
+                renderer.SetPropertyBlock(s_propBlock);
+            }
+        }
 
-                    // glTFast Shader Graph (glTF-pbrMetallicRoughness)
-                    if (material.HasProperty("emissiveFactor"))
-                    {
-                        material.SetColor("emissiveFactor", emissionColor);
-                        if (hasEmission)
-                            material.EnableKeyword("_EMISSIVE");
-                        else
-                            material.DisableKeyword("_EMISSIVE");
-                    }
-                }
-                if (!useShared)
-                    renderer.materials = mats;
+        // Enables the emission keyword on each shared material under the
+        // renderer the first time we want emission to render on it. Idempotent
+        // and cheap (IsKeywordEnabled + EnableKeyword). Keywords live at the
+        // material level — PropertyBlock overrides take effect only when the
+        // material's keyword is on. Leaving it on when emission is black is
+        // fine: the black color contributes nothing to the lit pass.
+        private static void EnsureEmissionKeywords(Renderer renderer)
+        {
+            var mats = renderer.sharedMaterials;
+            if (mats == null) return;
+            for (int i = 0; i < mats.Length; i++)
+            {
+                var m = mats[i];
+                if (m == null) continue;
+                if (m.HasProperty(ID_EmissionColor) && !m.IsKeywordEnabled("_EMISSION"))
+                    m.EnableKeyword("_EMISSION");
+                if (m.HasProperty(ID_EmissiveFactor) && !m.IsKeywordEnabled("_EMISSIVE"))
+                    m.EnableKeyword("_EMISSIVE");
             }
         }
 
