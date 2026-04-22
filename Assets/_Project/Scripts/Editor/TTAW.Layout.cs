@@ -1485,16 +1485,21 @@ namespace OSE.Editor
 
             if (!isNoTaskRow)
             {
-                // [Start Pose]
+                // [Start Pose] — green accent via shared PoseToggleStyle so
+                // Part and Group look identical.
                 bool isStart = _editingPoseMode == PoseModeStart;
-                if (GUILayout.Toggle(isStart, "Start Pose", EditorStyles.miniButtonLeft) && !isStart)
+                if (GUILayout.Toggle(isStart, "Start Pose",
+                        PoseToggleStyle(isStart, PoseAccentStart, EditorStyles.miniButtonLeft))
+                    && !isStart)
                     ApplyPoseMode(PoseModeStart);
             }
             else
             {
-                // [NO TASK pose] — anchor toggle for NO TASK rows.
+                // [NO TASK pose] — light-blue accent via shared PoseToggleStyle.
                 bool isNoTask = _editingPoseMode == noTaskAutoIdx;
-                if (GUILayout.Toggle(isNoTask, "NO TASK pose", EditorStyles.miniButtonLeft) && !isNoTask)
+                if (GUILayout.Toggle(isNoTask, "NO TASK pose",
+                        PoseToggleStyle(isNoTask, PoseAccentNoTask, EditorStyles.miniButtonLeft))
+                    && !isNoTask)
                     ApplyPoseMode(noTaskAutoIdx);
             }
 
@@ -1572,10 +1577,15 @@ namespace OSE.Editor
 
             if (!isNoTaskRow)
             {
-                // [Assembled Pose] — task parts only.
+                // [Assembled Pose] — blue accent via shared PoseToggleStyle.
+                // Placement in the segmented row depends on whether custom
+                // pills are drawn to the left (miniButtonMid) or not
+                // (miniButtonRight).
                 bool isAssembled = _editingPoseMode == PoseModeAssembled;
-                GUIStyle assembledStyle = (poseCount > 0 || hasPart) ? EditorStyles.miniButtonMid : EditorStyles.miniButtonRight;
-                if (GUILayout.Toggle(isAssembled, "Assembled Pose", assembledStyle) && !isAssembled)
+                GUIStyle baseSeg = (poseCount > 0 || hasPart) ? EditorStyles.miniButtonMid : EditorStyles.miniButtonRight;
+                if (GUILayout.Toggle(isAssembled, "Assembled Pose",
+                        PoseToggleStyle(isAssembled, PoseAccentAssembled, baseSeg))
+                    && !isAssembled)
                     ApplyPoseMode(PoseModeAssembled);
             }
 

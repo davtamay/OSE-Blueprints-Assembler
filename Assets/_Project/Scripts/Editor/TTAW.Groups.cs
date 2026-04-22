@@ -555,29 +555,26 @@ namespace OSE.Editor
                     { isGroupNoTaskRow = true; break; }
             }
 
-            // Pose mode toggle
+            // Pose mode toggle — uses the shared PoseToggleStyle so Part and
+            // Group Inspectors read identically (green = Start, blue = Assembled,
+            // muted gray = inactive).
             EditorGUILayout.BeginHorizontal();
-            var toggleStyle = new GUIStyle(EditorStyles.miniButton) { fontStyle = FontStyle.Bold };
 
             bool isStart     = _editingGroupPoseMode == PoseModeStart;
             bool isAssembled = _editingGroupPoseMode == PoseModeAssembled;
 
-            var startStyle = new GUIStyle(toggleStyle)
-            {
-                normal = { textColor = isStart ? new Color(0.30f, 0.78f, 0.36f) : new Color(0.55f, 0.55f, 0.58f) },
-            };
-            if (GUILayout.Toggle(isStart, "Start Pose", startStyle, GUILayout.Height(18)))
+            if (GUILayout.Toggle(isStart, "Start Pose",
+                    PoseToggleStyle(isStart, PoseAccentStart),
+                    GUILayout.Height(18)))
             {
                 if (!isStart) { _editingGroupPoseMode = PoseModeStart; SyncAllPartMeshesToActivePose(); SyncAllGroupRootsToActivePose(); ActivateAllVisibleGroupMembers(); SceneView.RepaintAll(); }
             }
 
             if (!isGroupNoTaskRow)
             {
-                var asmStyle = new GUIStyle(toggleStyle)
-                {
-                    normal = { textColor = isAssembled ? new Color(0.20f, 0.62f, 0.95f) : new Color(0.55f, 0.55f, 0.58f) },
-                };
-                if (GUILayout.Toggle(isAssembled, "Assembled Pose", asmStyle, GUILayout.Height(18)))
+                if (GUILayout.Toggle(isAssembled, "Assembled Pose",
+                        PoseToggleStyle(isAssembled, PoseAccentAssembled),
+                        GUILayout.Height(18)))
                 {
                     if (!isAssembled) { _editingGroupPoseMode = PoseModeAssembled; SyncAllPartMeshesToActivePose(); SyncAllGroupRootsToActivePose(); ActivateAllVisibleGroupMembers(); SceneView.RepaintAll(); }
                 }
