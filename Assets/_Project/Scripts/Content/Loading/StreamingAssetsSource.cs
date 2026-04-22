@@ -36,7 +36,7 @@ namespace OSE.Content.Loading
             var wrapper = new GameObject(System.IO.Path.GetFileNameWithoutExtension(assetRef));
             wrapper.transform.SetParent(parent, false);
 
-            bool instantiated = gltf.InstantiateMainScene(wrapper.transform);
+            bool instantiated = await gltf.InstantiateMainSceneAsync(wrapper.transform);
             gltf.Dispose();
 
             if (!instantiated)

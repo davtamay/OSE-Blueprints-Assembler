@@ -80,11 +80,11 @@ namespace OSE.Content.Validation
             var referenced = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             for (int i = 0; i < steps.Length; i++)
             {
-                string[] flat = steps[i].hintIds;
-                if (flat != null) for (int j = 0; j < flat.Length; j++) referenced.Add(flat[j]);
-
+                // ResolvedHintIds already falls back from guidance.hintIds to
+                // the legacy flat hintIds field (StepDefinition.cs:207-208),
+                // so one pass covers both authoring shapes.
                 string[] resolved = steps[i].ResolvedHintIds;
-                if (resolved != null && resolved != flat)
+                if (resolved != null)
                     for (int j = 0; j < resolved.Length; j++) referenced.Add(resolved[j]);
             }
             // Hints referenced as correctionHintId on validation rules
