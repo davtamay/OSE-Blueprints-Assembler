@@ -432,6 +432,9 @@ namespace OSE.Content.Loading
         {
             if (package?.steps == null) return;
 
+            int totalStepsTouched = 0;
+            int totalEntriesRewritten = 0;
+
             for (int si = 0; si < package.steps.Length; si++)
             {
                 var step = package.steps[si];
@@ -465,8 +468,17 @@ namespace OSE.Content.Loading
 
                 if (rewritten > 0)
                 {
-                    OseLog.Warn($"[TaskOrder.Normalize] step '{step.id}': rewrote {rewritten} kind='target' entr{(rewritten == 1 ? "y" : "ies")} to kind='toolAction' (cursor drives on action ids, not target ids). Update the authoring source to emit kind='toolAction' directly.");
+                    totalStepsTouched++;
+                    totalEntriesRewritten += rewritten;
+                    // Per-step detail is Verbose (gated) to avoid console spam
+                    // on every load. One summary Warn is emitted below.
+                    OseLog.VerboseInfo($"[TaskOrder.Normalize] step '{step.id}': rewrote {rewritten} kind='target' entr{(rewritten == 1 ? "y" : "ies")} to kind='toolAction'.");
                 }
+            }
+
+            if (totalStepsTouched > 0)
+            {
+                OseLog.Warn($"[TaskOrder.Normalize] Auto-rewrote kind='target'→'toolAction' on {totalEntriesRewritten} entr{(totalEntriesRewritten == 1 ? "y" : "ies")} across {totalStepsTouched} step{(totalStepsTouched == 1 ? "" : "s")}. Set OseLog.Verbose=true for per-step detail, or update authoring source to emit kind='toolAction' directly.");
             }
         }
 
@@ -502,6 +514,9 @@ namespace OSE.Content.Loading
         private static void EnsureTaskOrderCoversRequirements(MachinePackageDefinition package)
         {
             if (package?.steps == null) return;
+
+            int totalStepsTouched = 0;
+            int totalEntriesAppended = 0;
 
             for (int si = 0; si < package.steps.Length; si++)
             {
@@ -572,7 +587,16 @@ namespace OSE.Content.Loading
                 combined.AddRange(missing);
                 step.taskOrder = combined.ToArray();
 
-                OseLog.Warn($"[TaskOrder.Normalize] step '{step.id}': appended {missing.Count} missing taskOrder entr{(missing.Count == 1 ? "y" : "ies")} to cover declared requirements — the cursor would otherwise deadlock. Update the authoring source so taskOrder reflects every requiredPart/requiredToolAction explicitly.");
+                totalStepsTouched++;
+                totalEntriesAppended += missing.Count;
+                // Per-step detail is Verbose (gated) to avoid console spam on
+                // every load. One summary Warn is emitted below.
+                OseLog.VerboseInfo($"[TaskOrder.Normalize] step '{step.id}': appended {missing.Count} missing taskOrder entr{(missing.Count == 1 ? "y" : "ies")}.");
+            }
+
+            if (totalStepsTouched > 0)
+            {
+                OseLog.Warn($"[TaskOrder.Normalize] Auto-appended {totalEntriesAppended} missing taskOrder entr{(totalEntriesAppended == 1 ? "y" : "ies")} across {totalStepsTouched} step{(totalStepsTouched == 1 ? "" : "s")} to prevent cursor deadlock. Set OseLog.Verbose=true for per-step detail, or update authoring source so taskOrder reflects every requiredPart/requiredToolAction explicitly.");
             }
         }
 
