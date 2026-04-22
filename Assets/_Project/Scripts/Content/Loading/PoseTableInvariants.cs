@@ -110,17 +110,22 @@ namespace OSE.Content.Loading
                 }
             }
 
-            // [4] Orphan visualPartIds: every NO-TASK partId must have a
-            // PartPreviewPlacement — otherwise the resolver has no pose to
-            // surface (step earlier this session: a typo'd partId).
+            // [4] Orphan visualPartIds: every NO-TASK id must resolve to a
+            // placement — either a PartPreviewPlacement (normal part) or a
+            // SubassemblyPreviewPlacement (group NO-TASK row; TTAW already
+            // allows subassembly ids in visualPartIds for group NO-TASK
+            // detection — see TTAW.Groups.cs:545). Without this dual-check
+            // the invariant falsely flags legitimate group NO-TASK entries.
             foreach (var s in idx.orderedSteps)
             {
                 if (s.visualPartIds == null) continue;
                 foreach (var pid in s.visualPartIds)
                 {
                     if (string.IsNullOrEmpty(pid)) continue;
-                    if (!idx.placementByPart.ContainsKey(pid))
-                    { Report($"{Tag} [orphan-visualPart] step '{s.id}' visualPartIds contains '{pid}' but no partPlacement exists."); violations++; }
+                    if (idx.placementByPart.ContainsKey(pid)) continue;
+                    if (idx.subassemblyPlacementById.ContainsKey(pid)) continue;
+                    Report($"{Tag} [orphan-visualPart] step '{s.id}' visualPartIds contains '{pid}' but no partPlacement or subassemblyPlacement exists.");
+                    violations++;
                 }
             }
 

@@ -9,15 +9,20 @@ using UnityEngine;
 namespace OSE.Editor
 {
     /// <summary>
-    /// Editor menu items for validating machine.json packages without entering Play mode.
-    /// Loads each package from the authoring folder, runs <see cref="MachinePackageValidator"/>,
-    /// and prints a full report to the Console.
+    /// Legacy package-validation helpers kept for <see cref="ToolTargetAuthoringWindow"/>
+    /// (TTAW.Validation.cs) which still calls <see cref="ValidatePackageAt"/> directly.
+    /// The "OSE → Validate All Packages" menu entry lives on
+    /// <see cref="MachineJsonPrePlayValidator"/> — the modern validator that
+    /// also gates Play mode. No <see cref="MenuItem"/> attributes here to
+    /// avoid duplicate registration.
     /// </summary>
     internal static class MachinePackageValidatorMenu
     {
         private const string AuthoringRoot = PackageJsonUtils.AuthoringRoot;
 
-        [MenuItem("OSE/Validate All Packages")]
+        // [MenuItem attribute removed — MachineJsonPrePlayValidator.ValidateAllMenu
+        // owns "OSE/Validate All Packages". Keep the body in case a future
+        // console-only entry is wanted.]
         private static void ValidateAllPackages()
         {
             // Ensure profile registry is wired for editor-time validation.
