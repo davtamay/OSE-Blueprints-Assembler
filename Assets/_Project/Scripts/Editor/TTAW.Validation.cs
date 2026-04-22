@@ -228,6 +228,11 @@ namespace OSE.Editor
             if (_validationFoldout.text != foldoutTitle)
                 _validationFoldout.text = foldoutTitle;
 
+            // Slice A: mirror the state onto the top-bar validation badge so
+            // issue counts are visible while the Navigator pane is scrolled
+            // away from its footer.
+            RefreshValidationBadge(errors, warnings);
+
             // Re-bind the list if the buffer changed
             if (!ReferenceEquals(_validationListView.itemsSource, _validationIssues))
             {
@@ -252,6 +257,71 @@ namespace OSE.Editor
             int rows  = Math.Min(_validationIssues.Length, 6);
             float h   = Math.Max(rows * 22f, 22f);
             _validationListView.style.height = h;
+        }
+
+        // ── Top-bar badge (Slice A) ──────────────────────────────────────────
+
+        /// <summary>
+        /// Updates the top-bar validation pill (<see cref="_toolbarValidationBadge"/>).
+        /// Red tint for any errors, amber for warnings-only, green for clean.
+        /// Hidden when no package is loaded. Called from
+        /// <see cref="RefreshValidationDashboard"/> so the badge follows the
+        /// same refresh cadence as the foldout summary label.
+        /// </summary>
+        private void RefreshValidationBadge(int errors, int warnings)
+        {
+            if (_toolbarValidationBadge == null) return;
+
+            if (_pkg == null)
+            {
+                _toolbarValidationBadge.style.display = DisplayStyle.None;
+                return;
+            }
+            _toolbarValidationBadge.style.display = DisplayStyle.Flex;
+
+            string label;
+            Color tint;
+            if (_validationLastRunUtc == DateTime.MinValue)
+            {
+                label = "● …";
+                tint  = new Color(0.55f, 0.58f, 0.62f);
+                _toolbarValidationBadge.tooltip = "Validation hasn't run yet.";
+            }
+            else if (errors > 0)
+            {
+                label = $"● {errors + warnings}";
+                tint  = new Color(0.95f, 0.35f, 0.30f);
+                _toolbarValidationBadge.tooltip =
+                    $"{errors} error(s), {warnings} warning(s). Click to open the dashboard.";
+            }
+            else if (warnings > 0)
+            {
+                label = $"● {warnings}";
+                tint  = new Color(0.95f, 0.80f, 0.20f);
+                _toolbarValidationBadge.tooltip =
+                    $"{warnings} warning(s). Click to open the dashboard.";
+            }
+            else
+            {
+                label = "✓";
+                tint  = new Color(0.30f, 0.85f, 0.40f);
+                _toolbarValidationBadge.tooltip = "No validation issues.";
+            }
+
+            if (_toolbarValidationBadge.text != label)
+                _toolbarValidationBadge.text = label;
+            _toolbarValidationBadge.style.color = tint;
+        }
+
+        /// <summary>
+        /// Expands the Navigator-pane Validation foldout so the full issue
+        /// list is visible. Wired to the top-bar validation pill.
+        /// </summary>
+        private void OnToolbarValidationBadgeClicked()
+        {
+            if (_validationFoldout == null) return;
+            _validationFoldout.value = true;
+            _validationFoldout.Focus();
         }
 
         // ── Issue → step jump ────────────────────────────────────────────────

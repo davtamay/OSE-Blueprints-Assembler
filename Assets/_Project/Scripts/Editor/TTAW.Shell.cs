@@ -51,6 +51,10 @@ namespace OSE.Editor
         private ToolbarButton        _toolbarNewStepBtn;
         private ToolbarToggle        _toolbarInspectorBtn;
         private Label                _toolbarSelectionLabel;
+        // Slice A: compact validation pill in the top bar. Error-tinted when
+        // any errors, amber when warnings only, green when clean. Click
+        // expands the Navigator-pane Validation foldout.
+        private ToolbarButton        _toolbarValidationBadge;
 
         // ── Three-pane shell references ───────────────────────────────────────
         private TwoPaneSplitView     _outerSplit;     // navigator | (canvas + inspector)
@@ -229,6 +233,19 @@ namespace OSE.Editor
             _toolbarDirtyLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
             _toolbarDirtyLabel.tooltip = "Unsaved authoring changes";
             row1.Add(_toolbarDirtyLabel);
+
+            // Validation badge — compact pill showing issue count. Click
+            // expands the Navigator-pane Validation foldout so the full list
+            // is visible. Text + color refreshed by RefreshValidationDashboard.
+            _toolbarValidationBadge = new ToolbarButton(OnToolbarValidationBadgeClicked)
+            {
+                text    = "● …",
+                tooltip = "Validation issues. Click to open the dashboard.",
+            };
+            _toolbarValidationBadge.style.unityFontStyleAndWeight = FontStyle.Bold;
+            _toolbarValidationBadge.style.marginLeft  = 2;
+            _toolbarValidationBadge.style.marginRight = 4;
+            row1.Add(_toolbarValidationBadge);
 
             _toolbarInspectorBtn = new ToolbarToggle { text = "Inspector", value = _inspectorVisible };
             _toolbarInspectorBtn.tooltip = "Show/hide the right-side inspector pane";

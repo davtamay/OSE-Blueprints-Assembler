@@ -3344,18 +3344,35 @@ namespace OSE.Editor
                             // method silently skips every group because sel=-1.
                             if (_selectedGroupIdx != gIdx)
                                 _selectedGroupIdx = gIdx;
-
-                            DrawGroupPoseFields(ref _groups[gIdx], step);
                         }
 
-                        // Group membership editor (parts, steps, name, description)
-                        DrawSubassemblyInlineEditor(groupDef, step);
+                        // Slice A: same card pattern as Part context.
+                        // POSE (expanded) → CUES (expanded, own header) →
+                        // MEMBERS (collapsed, holds parts/steps/meta).
 
-                        // Per-group cue authoring strip — adds the "+ Add cue"
-                        // affordance with a Rotate / Shake picker, and lists
-                        // existing cues whose targetSubassemblyId matches this
-                        // group. Mirrors the part/tool patterns in TTAW.CueContext.cs.
+                        // POSE — group pose fields (toggle + pills + transforms).
+                        DrawCard("POSE", "group/pose", CardAccentNeutral,
+                            defaultExpanded: true, count: null, body: () =>
+                        {
+                            if (gIdx >= 0 && _groups != null && gIdx < _groups.Length)
+                                DrawGroupPoseFields(ref _groups[gIdx], step);
+                        });
+
+                        // ANIMATION & EFFECT CUES — own rich header, not card-
+                        // wrapped. Moved up from the end of the group block so
+                        // cues sit directly under Pose.
                         DrawCuesForSubassembly(step, selEntry.id);
+
+                        // MEMBERS — parts list + build steps list + name /
+                        // description. Collapsed by default; the inline
+                        // editor already provides its own internal foldouts
+                        // (e.g. PARTS foldout) so nested progressive
+                        // disclosure is preserved.
+                        DrawCard("MEMBERS (parts, build steps, metadata)", "group/members", SubAccent,
+                            defaultExpanded: false, count: null, body: () =>
+                        {
+                            DrawSubassemblyInlineEditor(groupDef, step);
+                        });
                     }
                     else
                     {
@@ -3371,16 +3388,59 @@ namespace OSE.Editor
                                 RevertPartEntry(TaskInstanceId.ToPartId(selEntry.id));
                             EditorGUILayout.EndHorizontal();
                         }
-                        DrawPartPoseToggle();
-                        DrawPartOwnershipSection(TaskInstanceId.ToPartId(selEntry.id));
+
+                        // Slice A: sections wrapped in foldable cards (EditorPrefs-
+                        // persisted), and reordered so Animation & Effect Cues —
+                        // the most-edited section — sits directly under Pose
+                        // instead of at the bottom of the pipeline. Ownership and
+                        // Model collapse by default, reclaiming the ~400 px that
+                        // the 3D preview widget used to force.
                         string selPartId = TaskInstanceId.ToPartId(selEntry.id);
+                        int partIdx = -1;
                         if (_parts != null)
+                        {
                             for (int i = 0; i < _parts.Length; i++)
-                                if (_parts[i].def?.id == selPartId)
-                                { DrawPartDetailPanel(ref _parts[i]); break; }
+                            {
+                                if (_parts[i].def?.id == selPartId) { partIdx = i; break; }
+                            }
+                        }
+
+                        // POSE — expanded.
+                        DrawCard("POSE", "part/pose", CardAccentNeutral,
+                            defaultExpanded: true, count: null, body: () =>
+                        {
+                            DrawPartPoseToggle();
+                            if (partIdx >= 0 && _parts != null && partIdx < _parts.Length)
+                                DrawPartPoseEditSection(ref _parts[partIdx]);
+                        });
+
+                        // ANIMATION & EFFECT CUES — own rich header, not card-
+                        // wrapped. Hoisted here from DrawInspectorContextualSections
+                        // so Cues sits directly under Pose instead of the bottom.
+                        DrawCuesForPart(step, selPartId);
+
+                        // Group membership hint — moved from
+                        // DrawInspectorContextualSections to keep the former
+                        // contextual block empty for part tasks.
+                        DrawInspectorGroupLabel(selPartId);
+
+                        // OWNERSHIP — collapsed.
+                        DrawCard("OWNERSHIP", "part/ownership", CardAccentNeutral,
+                            defaultExpanded: false, count: null, body: () =>
+                        {
+                            DrawPartOwnershipSection(selPartId);
+                        });
+
+                        // MODEL — collapsed. Holds the asset field + 3D preview
+                        // widget that used to force ~400 px of unavoidable scroll.
+                        DrawCard("MODEL", "part/model", CardAccentNeutral,
+                            defaultExpanded: false, count: null, body: () =>
+                        {
+                            if (partIdx >= 0 && _parts != null && partIdx < _parts.Length)
+                                DrawPartModelSection(ref _parts[partIdx]);
+                        });
                     }
 
-                    // Phase 7c cue affordance moved to DrawInspectorContextualSections
                     break;
                 }
                 case "wire":

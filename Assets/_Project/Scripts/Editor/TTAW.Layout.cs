@@ -262,19 +262,18 @@ namespace OSE.Editor
                                 && _pkg.TryGetSubassembly(entry.id, out var _grp)
                                 && _grp != null;
 
-                            if (!entryIsGroup)
+                            // Slice A: DrawInspectorGroupLabel and DrawCuesForPart
+                            // now render inside the part dispatcher
+                            // (TTAW.UnifiedList.cs:3362) so Cues sit directly
+                            // under the Pose card. Nothing to render here for
+                            // part-task selection; fall through to the tool
+                            // branch below only when entryIsGroup or a non-part
+                            // entry kind was active.
+                            if (entryIsGroup)
                             {
-                                string entryPartId = TaskInstanceId.ToPartId(entry.id);
-
-                                // Group membership
-                                DrawInspectorGroupLabel(entryPartId);
-
-                                // Animation cues for this part live in the step
-                                // task-sequence via DrawCuesForPart — same
-                                // timing-panels UI used for groups and tools.
-                                // Host-owned storage (part.animationCues) is
-                                // the single source of truth.
-                                DrawCuesForPart(step, entryPartId);
+                                // No extra contextual sections needed for group
+                                // tasks — the dispatcher already rendered the
+                                // group pose + cues + member editor.
                             }
                             break;
                         }
@@ -2872,7 +2871,26 @@ namespace OSE.Editor
             EditorGUILayout.Space(6);
         }
 
+        /// <summary>
+        /// Composite entry point kept for legacy fallback callers (when no
+        /// task sequence is active — see TTAW.UnifiedList.cs:3670). Draws the
+        /// model/preview section followed by the pose edit section in the
+        /// original monolithic order. The task-sequence dispatcher calls the
+        /// split helpers directly so it can reorder them into cards.
+        /// </summary>
         private void DrawPartDetailPanel(ref PartEditState p)
+        {
+            DrawPartModelSection(ref p);
+            DrawPartPoseEditSection(ref p);
+        }
+
+        /// <summary>
+        /// Asset reference field + 3D model preview widget for a part.
+        /// Split out of <see cref="DrawPartDetailPanel"/> so the Slice-A
+        /// card-based dispatcher can place this block inside a collapsed-by-
+        /// default MODEL card, below the pose block.
+        /// </summary>
+        private void DrawPartModelSection(ref PartEditState p)
         {
             // ── Asset Ref field ───────────────────────────────────────────────
             if (p.def != null && !string.IsNullOrEmpty(_pkgId))
@@ -2929,7 +2947,18 @@ namespace OSE.Editor
             }
 
             DrawPartModelPreview(ref p);
+        }
 
+        /// <summary>
+        /// Pose authoring body: waypoint audit strip, NO-TASK auto-selection,
+        /// Custom / Assembled / Start transform fields (position / rotation /
+        /// scale), and the pose Undo/Redo row. Split out of
+        /// <see cref="DrawPartDetailPanel"/> so the Slice-A card-based
+        /// dispatcher can place this under the POSE card, above the cue
+        /// strip.
+        /// </summary>
+        private void DrawPartPoseEditSection(ref PartEditState p)
+        {
             // Always-on waypoint audit — renders directly under the preview
             // whenever the part has any stepPose entries, regardless of
             // role (Required / Optional / No Task). This is the single
