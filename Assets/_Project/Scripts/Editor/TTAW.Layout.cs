@@ -1603,6 +1603,13 @@ namespace OSE.Editor
         /// step. Clicking a pill snaps the live part to cue.fromPose via the
         /// PoseModeBeforeCueBase sentinel range. Editor-only preview — no
         /// JSON writes, no runtime effect.
+        ///
+        /// <para>A "Before cue" pill is suppressed when its <c>fromPose</c>
+        /// is the same (within float tolerance) as the part's <c>startPosition
+        /// / startRotation / startScale</c>. That state is already covered by
+        /// the Start pill (on task rows) or the NO TASK pose pill (on NO TASK
+        /// rows, which resolves to startPosition), so the Before-cue pill
+        /// would be a duplicate of the default state.</para>
         /// </summary>
         private void DrawBeforeCuePillsForPart(string currentStepId)
         {
@@ -1611,12 +1618,21 @@ namespace OSE.Editor
             var partDef = _parts[_selectedPartIdx].def;
             if (partDef?.animationCues == null || partDef.animationCues.Length == 0) return;
 
+            var placement = FindPartPlacement(partDef?.id);
+
             // Enumerate authored-fromPose poseTransition cues on this part
-            // scoped to the current step. First pass counts them so ordinals
-            // only append when there's more than one match.
+            // scoped to the current step. Cues whose fromPose equals the
+            // part's start pose are skipped — see xmldoc above. First pass
+            // counts the filtered set so ordinals only append when there's
+            // more than one match.
             int total = 0;
             for (int i = 0; i < partDef.animationCues.Length; i++)
-                if (IsAuthoredFromPoseMatch(partDef.animationCues[i], currentStepId)) total++;
+            {
+                var c = partDef.animationCues[i];
+                if (!IsAuthoredFromPoseMatch(c, currentStepId)) continue;
+                if (IsCueFromPoseSameAsStart(c, placement)) continue;
+                total++;
+            }
             if (total == 0) return;
 
             int ordinal = 0;
@@ -1624,6 +1640,7 @@ namespace OSE.Editor
             {
                 var cue = partDef.animationCues[i];
                 if (!IsAuthoredFromPoseMatch(cue, currentStepId)) continue;
+                if (IsCueFromPoseSameAsStart(cue, placement)) continue;
                 ordinal++;
 
                 int mode = PoseModeBeforeCueBase - (ordinal - 1);
@@ -1638,6 +1655,63 @@ namespace OSE.Editor
                     ApplyPoseMode(mode);
                 }
             }
+        }
+
+        /// <summary>
+        /// True when <c>cue.fromPose</c> matches the placement's
+        /// <c>startPosition / startRotation / startScale</c> within float
+        /// tolerance. Used to suppress redundant "Before cue" pills whose
+        /// visual state is already covered by the Start / NO TASK pose pill.
+        /// Thin shim over <see cref="IsCueFromPoseSameAsStartPose"/> so the
+        /// group (subassembly) call site can share the same comparator.
+        /// </summary>
+        private static bool IsCueFromPoseSameAsStart(OSE.Content.AnimationCueEntry cue,
+            PartPreviewPlacement placement)
+        {
+            if (placement == null) return false;
+            return IsCueFromPoseSameAsStartPose(cue,
+                placement.startPosition, placement.startRotation, placement.startScale);
+        }
+
+        /// <summary>
+        /// Shape-agnostic variant — takes raw startPosition/Rotation/Scale so
+        /// part (PartPreviewPlacement) and group (SubassemblyPreviewPlacement)
+        /// paths can share one comparator. Tolerances match the 4-decimal
+        /// authoring precision enforced by <c>PackageJsonUtils</c>: ±0.0005 m
+        /// on position, ±0.001 on scale, ≥0.99995 on quaternion dot (~0.5° cone).
+        /// </summary>
+        private static bool IsCueFromPoseSameAsStartPose(OSE.Content.AnimationCueEntry cue,
+            SceneFloat3 startPos, SceneQuaternion startRot, SceneFloat3 startScl)
+        {
+            if (cue?.fromPose == null) return false;
+            var p = cue.fromPose;
+
+            const float posTol = 0.0005f;
+            if (Math.Abs(p.position.x - startPos.x) > posTol) return false;
+            if (Math.Abs(p.position.y - startPos.y) > posTol) return false;
+            if (Math.Abs(p.position.z - startPos.z) > posTol) return false;
+
+            // Quaternion dot — near 1.0 means same orientation. Absolute
+            // value handles the sign ambiguity (q and -q represent the same
+            // rotation). Unauthored startRotation arrives as (0,0,0,0);
+            // treat that as identity.
+            float sx = startRot.x, sy = startRot.y, sz = startRot.z, sw = startRot.w;
+            if (sx == 0f && sy == 0f && sz == 0f && sw == 0f) { sw = 1f; }
+            float dot = p.rotation.x * sx + p.rotation.y * sy + p.rotation.z * sz + p.rotation.w * sw;
+            if (Math.Abs(dot) < 0.99995f) return false;
+
+            // Scale — treat (0,0,0) as identity since the resolver normalizes
+            // unset scales to (1,1,1) before rendering.
+            float stx = startScl.x, sty = startScl.y, stz = startScl.z;
+            if (stx == 0f && sty == 0f && stz == 0f) { stx = 1f; sty = 1f; stz = 1f; }
+            float ptx = p.scale.x, pty = p.scale.y, ptz = p.scale.z;
+            if (ptx == 0f && pty == 0f && ptz == 0f) { ptx = 1f; pty = 1f; ptz = 1f; }
+            const float sclTol = 0.001f;
+            if (Math.Abs(ptx - stx) > sclTol) return false;
+            if (Math.Abs(pty - sty) > sclTol) return false;
+            if (Math.Abs(ptz - stz) > sclTol) return false;
+
+            return true;
         }
 
         // ── Before-cue preview state ──────────────────────────────────────

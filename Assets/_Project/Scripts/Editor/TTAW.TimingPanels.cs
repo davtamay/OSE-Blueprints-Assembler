@@ -41,10 +41,14 @@ namespace OSE.Editor
 
         // Built-in type ids + friendly menu labels. "animationClip" is a sentinel
         // for the asset-driven row (data lives in animationClipAssetPath).
+        //
+        // NOTE: "orientSubassembly" is intentionally omitted from the add menu —
+        // use "poseTransition" for any rotation/translation/scale. Existing
+        // orientSubassembly cues in data still render and edit; the Type popup
+        // in DrawCueEntry still lists it for forward-compat.
         private static readonly (string type, string label)[] _timingCueTypes =
         {
             ("shake",                 "Shake"),
-            ("orientSubassembly",     "Rotate (orientSubassembly)"),
             ("pulse",                 "Pulse"),
             ("demonstratePlacement",  "Demonstrate Placement"),
             ("poseTransition",        "Pose Transition"),
@@ -394,8 +398,19 @@ namespace OSE.Editor
                     using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
                     {
                         EditorGUI.BeginChangeCheck();
+                        // Pass the cue's authoring scope so DrawAnimationPoseField
+                        // can resolve the correct host (part/group/tool) without
+                        // relying on ambient canvas selection.
+                        string hostKindStr = scope switch
+                        {
+                            CueScope.Part        => "part",
+                            CueScope.Subassembly => "sub",
+                            CueScope.Tool        => "tool",
+                            _                    => null,
+                        };
                         DrawCueEntry(step, cues, cueIdx,
-                            out bool removeInline, out bool _, out bool _);
+                            out bool removeInline, out bool _, out bool _,
+                            hostKindOverride: hostKindStr, hostKeyOverride: scopeKey);
                         // DrawCueEntry mutates cues[cueIdx] in place and marks
                         // _dirtyStepIds internally. For host-owned cues we
                         // also need the host's dirty flag so WriteJson picks

@@ -1253,7 +1253,39 @@ namespace OSE.Editor
             }
         }
 
+        // Thread-local override so DrawAnimationPoseField (called deep inside
+        // the per-type switch) can resolve the cue's owning host explicitly —
+        // the timing-panel caller knows the scope ("part" / "sub" / "tool")
+        // and key. Without this, ResolvePoseFieldHost falls back to canvas
+        // selection, which doesn't always match the cue's actual owner
+        // (e.g. a subassembly cue authored from a part task row).
+        private string _poseFieldHostKindOverride;
+        private string _poseFieldHostKeyOverride;
+
         private void DrawCueEntry(StepDefinition step, AnimationCueEntry[] cues, int idx,
+                                  out bool remove, out bool moveUp, out bool moveDown,
+                                  string hostKindOverride = null, string hostKeyOverride = null)
+        {
+            remove   = false;
+            moveUp   = false;
+            moveDown = false;
+
+            string prevKind = _poseFieldHostKindOverride;
+            string prevKey  = _poseFieldHostKeyOverride;
+            _poseFieldHostKindOverride = hostKindOverride;
+            _poseFieldHostKeyOverride  = hostKeyOverride;
+            try
+            {
+                DrawCueEntryBody(step, cues, idx, out remove, out moveUp, out moveDown);
+            }
+            finally
+            {
+                _poseFieldHostKindOverride = prevKind;
+                _poseFieldHostKeyOverride  = prevKey;
+            }
+        }
+
+        private void DrawCueEntryBody(StepDefinition step, AnimationCueEntry[] cues, int idx,
                                   out bool remove, out bool moveUp, out bool moveDown)
         {
             remove   = false;
@@ -2117,7 +2149,65 @@ namespace OSE.Editor
             cue.spinAxis = new SceneFloat3 { x = sa.x, y = sa.y, z = sa.z };
         }
 
-        /// <summary>Draws editable position/rotation/scale fields for an AnimationPose with a "Capture" button.</summary>
+        /// <summary>
+        /// Describes the current canvas selection's "pose source" for the
+        /// From/To pose dropdown. A host can be a Part (backed by a
+        /// PartPreviewPlacement), a Group (backed by a SubassemblyPreviewPlacement),
+        /// or None (tool/no selection — only Custom + Capture Live options
+        /// are offered). Carries a live Transform so the dropdown's
+        /// "Capture Live Transform" option can snapshot the scene without a
+        /// separate button.
+        /// </summary>
+        private enum PoseFieldHostKind { None, Part, Group }
+
+        private readonly struct PoseFieldHost
+        {
+            public readonly PoseFieldHostKind Kind;
+            public readonly string DisplayId;
+            public readonly SceneFloat3 StartPos;
+            public readonly SceneQuaternion StartRot;
+            public readonly SceneFloat3 StartScl;
+            public readonly SceneFloat3 AssembledPos;
+            public readonly SceneQuaternion AssembledRot;
+            public readonly SceneFloat3 AssembledScl;
+            public readonly StepPoseEntry[] StepPoses;
+            public readonly Transform LiveTransform;
+
+            public PoseFieldHost(PoseFieldHostKind kind, string displayId,
+                SceneFloat3 startPos, SceneQuaternion startRot, SceneFloat3 startScl,
+                SceneFloat3 assembledPos, SceneQuaternion assembledRot, SceneFloat3 assembledScl,
+                StepPoseEntry[] stepPoses, Transform liveTransform)
+            {
+                Kind = kind; DisplayId = displayId;
+                StartPos = startPos; StartRot = startRot; StartScl = startScl;
+                AssembledPos = assembledPos; AssembledRot = assembledRot; AssembledScl = assembledScl;
+                StepPoses = stepPoses; LiveTransform = liveTransform;
+            }
+
+            public static PoseFieldHost FromPart(PartPreviewPlacement pp, Transform live, string id)
+                => new PoseFieldHost(PoseFieldHostKind.Part, id,
+                    pp.startPosition, pp.startRotation, pp.startScale,
+                    pp.assembledPosition, pp.assembledRotation, pp.assembledScale,
+                    pp.stepPoses, live);
+
+            public static PoseFieldHost FromGroup(SubassemblyPreviewPlacement sp, Transform live, string id)
+                => new PoseFieldHost(PoseFieldHostKind.Group, id,
+                    sp.startPosition, sp.startRotation, sp.startScale,
+                    sp.assembledPosition, sp.assembledRotation, sp.assembledScale,
+                    sp.stepPoses, live);
+
+            public static PoseFieldHost Empty(Transform live)
+                => new PoseFieldHost(PoseFieldHostKind.None, null,
+                    default, default, default, default, default, default, null, live);
+        }
+
+        /// <summary>
+        /// Draws editable position/rotation/scale fields for an AnimationPose
+        /// with a unified dropdown offering Custom (edit numbers below), Start,
+        /// Assembled, This step's end pose, and Capture Live Transform. Works
+        /// identically for part and group (subassembly) scopes — only the
+        /// backing placement differs.
+        /// </summary>
         private void DrawAnimationPoseField(string label, ref AnimationPose pose, StepDefinition step)
         {
             if (pose == null)
@@ -2130,6 +2220,9 @@ namespace OSE.Editor
 
             EditorGUILayout.LabelField(label, EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
+
+            var host = ResolvePoseFieldHost(step);
+            DrawPoseFieldPresetDropdown(pose, step, host);
 
             var pos = new Vector3(pose.position.x, pose.position.y, pose.position.z);
             var rot = new Quaternion(pose.rotation.x, pose.rotation.y, pose.rotation.z, pose.rotation.w).eulerAngles;
@@ -2149,53 +2242,244 @@ namespace OSE.Editor
                 _dirtyStepIds.Add(step.id);
             }
 
-            // Capture from the selected host's live GO (part OR group root).
-            if (GUILayout.Button("Capture Current", EditorStyles.miniButton))
+            EditorGUI.indentLevel--;
+        }
+
+        /// <summary>
+        /// Resolves the canvas selection into a <see cref="PoseFieldHost"/>.
+        /// Priority: Group (subassembly selected on canvas) &gt; explicit Part
+        /// row &gt; task-sequence Part row. The host's LiveTransform feeds the
+        /// "Capture Live Transform" dropdown option. Returns Empty when the
+        /// selection can't be resolved — in that case the dropdown still
+        /// renders with Custom (+ Capture if any live transform can be
+        /// inferred).
+        /// </summary>
+        private PoseFieldHost ResolvePoseFieldHost(StepDefinition step)
+        {
+            // Caller-supplied override wins (timing-panel call site knows
+            // whether this cue is authored on a part, subassembly, or tool).
+            // Canvas-selection fallback below only runs for the legacy step-
+            // level cue editor that has no scope context.
+            if (!string.IsNullOrEmpty(_poseFieldHostKindOverride)
+                && !string.IsNullOrEmpty(_poseFieldHostKeyOverride))
             {
-                Transform captured = null;
-                string    captureLabel = null;
-
-                // Prefer a group root when a subassembly is selected.
-                if (!string.IsNullOrEmpty(_canvasSelectedSubId)
-                    && _subassemblyRootGOs != null
-                    && _subassemblyRootGOs.TryGetValue(_canvasSelectedSubId, out var groupGO)
-                    && groupGO != null)
-                {
-                    captured = groupGO.transform;
-                    captureLabel = $"group '{_canvasSelectedSubId}'";
-                }
-                else
-                {
-                    string captureId = null;
-                    if (_selectedPartIdx >= 0 && _parts != null && _selectedPartIdx < _parts.Length)
-                        captureId = _parts[_selectedPartIdx].def?.id;
-                    else if (_selectedTaskSeqIdx >= 0 && _stepIds != null && _stepFilterIdx < _stepIds.Length)
-                    {
-                        var ord = GetOrDeriveTaskOrder(step);
-                        if (_selectedTaskSeqIdx < ord.Count && ord[_selectedTaskSeqIdx].kind == "part")
-                            captureId = TaskInstanceId.ToPartId(ord[_selectedTaskSeqIdx].id);
-                    }
-                    if (!string.IsNullOrEmpty(captureId))
-                    {
-                        var pgo = FindLivePartGO(captureId);
-                        if (pgo != null) { captured = pgo.transform; captureLabel = $"part '{captureId}'"; }
-                    }
-                }
-
-                if (captured != null)
-                {
-                    pose.position = new SceneFloat3 { x = captured.localPosition.x, y = captured.localPosition.y, z = captured.localPosition.z };
-                    var q2 = captured.localRotation;
-                    pose.rotation = new SceneQuaternion { x = q2.x, y = q2.y, z = q2.z, w = q2.w };
-                    pose.scale    = new SceneFloat3 { x = captured.localScale.x, y = captured.localScale.y, z = captured.localScale.z };
-                    _dirtyStepIds.Add(step.id);
-                    GUI.changed = true;
-                    Debug.Log($"[AnimCueCapture] Captured {captureLabel}: pos={captured.localPosition} rot={q2.eulerAngles} scl={captured.localScale}");
-                }
-                else Debug.LogWarning("[AnimCueCapture] Select a part or group row in the task sequence first.");
+                return ResolvePoseFieldHostFromScope(_poseFieldHostKindOverride, _poseFieldHostKeyOverride);
             }
 
-            EditorGUI.indentLevel--;
+            // Group (subassembly) — takes priority because canvas selection of a
+            // group is explicit (click on group outline).
+            if (!string.IsNullOrEmpty(_canvasSelectedSubId)
+                && _subassemblyRootGOs != null
+                && _subassemblyRootGOs.TryGetValue(_canvasSelectedSubId, out var groupGO)
+                && groupGO != null)
+            {
+                SubassemblyPreviewPlacement sp = null;
+                if (_pkg?.previewConfig?.subassemblyPlacements != null)
+                {
+                    foreach (var s in _pkg.previewConfig.subassemblyPlacements)
+                    {
+                        if (s != null && string.Equals(s.subassemblyId, _canvasSelectedSubId, StringComparison.Ordinal))
+                        { sp = s; break; }
+                    }
+                }
+                if (sp != null)
+                    return PoseFieldHost.FromGroup(sp, groupGO.transform, _canvasSelectedSubId);
+                return new PoseFieldHost(PoseFieldHostKind.None, _canvasSelectedSubId,
+                    default, default, default, default, default, default, null, groupGO.transform);
+            }
+
+            // Part — explicit part-row selection first, then task-sequence row.
+            string partId = null;
+            if (_selectedPartIdx >= 0 && _parts != null && _selectedPartIdx < _parts.Length)
+                partId = _parts[_selectedPartIdx].def?.id;
+            else if (step != null && _selectedTaskSeqIdx >= 0)
+            {
+                var ord = GetOrDeriveTaskOrder(step);
+                if (_selectedTaskSeqIdx < ord.Count && ord[_selectedTaskSeqIdx].kind == "part")
+                    partId = TaskInstanceId.ToPartId(ord[_selectedTaskSeqIdx].id);
+            }
+            if (string.IsNullOrEmpty(partId)) return PoseFieldHost.Empty(null);
+            return ResolvePoseFieldHostFromScope("part", partId);
+        }
+
+        /// <summary>
+        /// Resolves a PoseFieldHost from an explicit scope/key pair — used by
+        /// the timing-panel call site where the cue's owner is known, and by
+        /// the canvas-part fallback above once the part id is determined.
+        /// Supports "part", "sub" / "subassembly", and "tool" host kinds.
+        /// </summary>
+        private PoseFieldHost ResolvePoseFieldHostFromScope(string hostKind, string hostKey)
+        {
+            if (string.IsNullOrEmpty(hostKey)) return PoseFieldHost.Empty(null);
+
+            if (string.Equals(hostKind, "part", StringComparison.OrdinalIgnoreCase))
+            {
+                PartPreviewPlacement pp = null;
+                if (_pkg?.previewConfig?.partPlacements != null)
+                {
+                    foreach (var p in _pkg.previewConfig.partPlacements)
+                    {
+                        if (p != null && string.Equals(p.partId, hostKey, StringComparison.Ordinal))
+                        { pp = p; break; }
+                    }
+                }
+                Transform live = null;
+                var pgo = FindLivePartGO(hostKey);
+                if (pgo != null) live = pgo.transform;
+                if (pp != null) return PoseFieldHost.FromPart(pp, live, hostKey);
+                return new PoseFieldHost(PoseFieldHostKind.None, hostKey,
+                    default, default, default, default, default, default, null, live);
+            }
+
+            if (string.Equals(hostKind, "sub", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(hostKind, "subassembly", StringComparison.OrdinalIgnoreCase))
+            {
+                SubassemblyPreviewPlacement sp = null;
+                if (_pkg?.previewConfig?.subassemblyPlacements != null)
+                {
+                    foreach (var s in _pkg.previewConfig.subassemblyPlacements)
+                    {
+                        if (s != null && string.Equals(s.subassemblyId, hostKey, StringComparison.Ordinal))
+                        { sp = s; break; }
+                    }
+                }
+                Transform live = null;
+                if (_subassemblyRootGOs != null
+                    && _subassemblyRootGOs.TryGetValue(hostKey, out var groupGO)
+                    && groupGO != null)
+                    live = groupGO.transform;
+                if (sp != null) return PoseFieldHost.FromGroup(sp, live, hostKey);
+                return new PoseFieldHost(PoseFieldHostKind.None, hostKey,
+                    default, default, default, default, default, default, null, live);
+            }
+
+            // Tool — no placement model yet; offer Capture Live only if we can
+            // find a live tool GO. Tool GOs aren't centrally registered like
+            // parts / groups, so leave LiveTransform null for now.
+            return new PoseFieldHost(PoseFieldHostKind.None, hostKey,
+                default, default, default, default, default, default, null, null);
+        }
+
+        /// <summary>
+        /// Renders the preset dropdown above the numeric fields. Options are
+        /// built dynamically from what the host supports:
+        /// <list type="bullet">
+        ///   <item>Custom (edit below) — always present.</item>
+        ///   <item>Start (staging) — part or group host with a placement.</item>
+        ///   <item>Assembled (final) — part or group host with a placement.</item>
+        ///   <item>This step's end pose — any host with a matching stepPoses entry,
+        ///         else falls back to Assembled.</item>
+        ///   <item>Capture Live Transform — any host whose live GO is resolvable.</item>
+        /// </list>
+        /// Picking any non-Custom option snapshots the corresponding values
+        /// into the cue's AnimationPose; the numeric fields then reflect the
+        /// snapshot and the author can tweak them.
+        /// </summary>
+        private void DrawPoseFieldPresetDropdown(AnimationPose pose, StepDefinition step, PoseFieldHost host)
+        {
+            var labels  = new List<GUIContent>(6);
+            var actions = new List<Action>(6);
+
+            labels.Add(new GUIContent("Custom (edit below)",
+                "Keep the position/rotation/scale you edit in the fields below."));
+            actions.Add(null);
+
+            bool hasPlacement = host.Kind == PoseFieldHostKind.Part || host.Kind == PoseFieldHostKind.Group;
+            if (hasPlacement)
+            {
+                string hostWord = host.Kind == PoseFieldHostKind.Group ? "group" : "part";
+                labels.Add(new GUIContent("Start (staging)",
+                    $"Snapshot the {hostWord}'s pre-placement (staging) pose."));
+                actions.Add(() => ApplyStartPose(pose, host));
+
+                labels.Add(new GUIContent("Assembled (final)",
+                    $"Snapshot the {hostWord}'s fully-assembled pose."));
+                actions.Add(() => ApplyAssembledPose(pose, host));
+
+                labels.Add(new GUIContent("This step's end pose",
+                    $"Snapshot the {hostWord}'s authored end pose for this step " +
+                    "(falls back to Assembled if none exists)."));
+                actions.Add(() => ApplyStepEndPose(pose, host, step));
+            }
+
+            if (host.LiveTransform != null)
+            {
+                labels.Add(new GUIContent("Capture Live Transform",
+                    "Snapshot the live scene transform of the selected part or group root."));
+                actions.Add(() => ApplyLiveCapture(pose, host));
+            }
+
+            if (labels.Count == 1) return; // only Custom — don't clutter the UI
+
+            EditorGUI.BeginChangeCheck();
+            int pick = EditorGUILayout.Popup(new GUIContent("Preset",
+                "Snapshot values from a known pose. 'Custom' leaves the numbers below untouched."),
+                0, labels.ToArray());
+            if (EditorGUI.EndChangeCheck() && pick > 0)
+            {
+                actions[pick]?.Invoke();
+                _dirtyStepIds.Add(step.id);
+                GUI.changed = true;
+            }
+        }
+
+        private static void ApplyStartPose(AnimationPose pose, PoseFieldHost host)
+        {
+            pose.position = host.StartPos;
+            pose.rotation = host.StartRot;
+            pose.scale    = host.StartScl;
+            NormalizeZeroScale(pose);
+        }
+
+        private static void ApplyAssembledPose(AnimationPose pose, PoseFieldHost host)
+        {
+            pose.position = host.AssembledPos;
+            pose.rotation = host.AssembledRot;
+            pose.scale    = host.AssembledScl;
+            NormalizeZeroScale(pose);
+        }
+
+        private static void ApplyStepEndPose(AnimationPose pose, PoseFieldHost host, StepDefinition step)
+        {
+            StepPoseEntry sp = null;
+            if (step != null && host.StepPoses != null)
+            {
+                foreach (var s in host.StepPoses)
+                {
+                    if (s != null && string.Equals(s.stepId, step.id, StringComparison.Ordinal))
+                    { sp = s; break; }
+                }
+            }
+            if (sp != null)
+            {
+                pose.position = sp.position;
+                pose.rotation = sp.rotation;
+                pose.scale    = sp.scale;
+            }
+            else
+            {
+                pose.position = host.AssembledPos;
+                pose.rotation = host.AssembledRot;
+                pose.scale    = host.AssembledScl;
+            }
+            NormalizeZeroScale(pose);
+        }
+
+        private static void ApplyLiveCapture(AnimationPose pose, PoseFieldHost host)
+        {
+            var t = host.LiveTransform;
+            if (t == null) return;
+            pose.position = new SceneFloat3 { x = t.localPosition.x, y = t.localPosition.y, z = t.localPosition.z };
+            var q = t.localRotation;
+            pose.rotation = new SceneQuaternion { x = q.x, y = q.y, z = q.z, w = q.w };
+            pose.scale    = new SceneFloat3 { x = t.localScale.x, y = t.localScale.y, z = t.localScale.z };
+            Debug.Log($"[AnimCueCapture] Captured live transform on '{host.DisplayId}': pos={t.localPosition} rot={q.eulerAngles} scl={t.localScale}");
+        }
+
+        private static void NormalizeZeroScale(AnimationPose pose)
+        {
+            if (pose.scale.x == 0f && pose.scale.y == 0f && pose.scale.z == 0f)
+                pose.scale = new SceneFloat3 { x = 1f, y = 1f, z = 1f };
         }
 
         /// <summary>Popup that operates on string values rather than indices.</summary>

@@ -126,6 +126,20 @@ namespace OSE.Editor
             return null;
         }
 
+        /// <summary>
+        /// Group-scope variant of <c>IsCueFromPoseSameAsStart</c>. Delegates to
+        /// the shape-agnostic comparator in TTAW.Layout.cs so part and group
+        /// paths share the same tolerance semantics. Returns false when no
+        /// placement exists (can't compare — render the pill).
+        /// </summary>
+        private static bool IsGroupCueFromPoseSameAsStart(OSE.Content.AnimationCueEntry cue,
+            SubassemblyPreviewPlacement placement)
+        {
+            if (placement == null) return false;
+            return IsCueFromPoseSameAsStartPose(cue,
+                placement.startPosition, placement.startRotation, placement.startScale);
+        }
+
         // ── SyncGroupRootToActivePose ─────────────────────────────────────────
 
         /// <summary>
@@ -668,11 +682,17 @@ namespace OSE.Editor
             {
                 for (int i = 0; i < g.def.animationCues.Length; i++)
                 {
-                    if (IsAuthoredFromPoseMatch(g.def.animationCues[i], step.id)) beforeTotal++;
+                    var cue = g.def.animationCues[i];
+                    // Skip Before-cue count when the cue's fromPose equals the
+                    // group's start pose — the pill would duplicate the Start
+                    // pill. Matches the part-scope suppression.
+                    if (IsAuthoredFromPoseMatch(cue, step.id)
+                        && !IsGroupCueFromPoseSameAsStart(cue, g.placement))
+                        beforeTotal++;
                     // Only count After for cues that also have a baked synth
                     // stepPose — we render the pill from that synth's pose,
                     // so no synth = no pill.
-                    if (IsAuthoredToPoseMatch(g.def.animationCues[i], step.id)
+                    if (IsAuthoredToPoseMatch(cue, step.id)
                         && FindSynthStepPoseForCue(poses, i) >= 0)
                         afterTotal++;
                 }
@@ -720,6 +740,7 @@ namespace OSE.Editor
                 {
                     var cue = g.def.animationCues[i];
                     if (!IsAuthoredFromPoseMatch(cue, step.id)) continue;
+                    if (IsGroupCueFromPoseSameAsStart(cue, g.placement)) continue;
                     ord++;
 
                     int mode = PoseModeBeforeCueBase - (ord - 1);
