@@ -50,6 +50,7 @@ namespace OSE.Content.Loading
             InflatePartTemplates(package);
             BakeStagingPoses(package);
             InferStepParentIds(package);
+            NormalizeConfirmActionTaskOrder(package);
             NormalizeTaskOrderToolActionKinds(package);
             EnsureTaskOrderCoversRequirements(package);
             MarkVisualOnlyTaskOrderEntriesOptional(package);
@@ -398,6 +399,107 @@ namespace OSE.Content.Loading
                     if (!canonical)
                         OseLog.Error($"[CueRuntime.Validate] {hostLabel} cue[{i}] has unknown trigger '{t}'. Canonical values: onActivate, afterDelay, afterPartsShown, onStepComplete, onFirstInteraction, onTaskComplete, onDuringAction.");
                 }
+            }
+        }
+
+        /// <summary>
+        /// Reconciles <c>kind="confirm_action"</c> task entries with step family
+        /// to prevent cursor deadlock at runtime.
+        ///
+        /// <para>Background: <c>confirm_action</c> is an editor-only convention
+        /// that only <see cref="Runtime.ConfirmStepHandler"/> recognizes — and
+        /// only when <c>step.IsConfirmation</c> is true. Runtime has no other
+        /// subsystem that notifies this task kind as complete. So a non-Confirm
+        /// step carrying a <c>confirm_action</c> in its taskOrder will block
+        /// the cursor forever: the Confirm handler short-circuits on the family
+        /// mismatch, and no other handler knows what to do with the entry.</para>
+        ///
+        /// <para>Root incident (2026-04-21, step_batch_carriage_clean_holes
+        /// seq 51): family=Use with a lone <c>confirm_action</c> task, no
+        /// requiredToolActions, no requiredPartIds. Nothing completed the
+        /// task — step 52 appeared stuck because the cursor was actually
+        /// still parked on 51.</para>
+        ///
+        /// <para>Repair strategy (idempotent):
+        /// <list type="bullet">
+        ///   <item>Step has zero real gating tasks (no requiredPartIds, no
+        ///         requiredToolActions with ids): semantically a
+        ///         confirmation — promote <c>family</c> to <c>"Confirm"</c>.
+        ///         The existing <c>confirm_action</c> entry is now valid.</item>
+        ///   <item>Step HAS real gating tasks: <c>confirm_action</c> was
+        ///         spurious (likely residue from a later-changed family) —
+        ///         strip those entries so real tasks alone gate completion.</item>
+        /// </list>
+        /// Runs BEFORE <see cref="NormalizeTaskOrderToolActionKinds"/> and
+        /// <see cref="EnsureTaskOrderCoversRequirements"/> so downstream passes
+        /// operate on the post-repair data.</para>
+        /// </summary>
+        private static void NormalizeConfirmActionTaskOrder(MachinePackageDefinition package)
+        {
+            if (package?.steps == null) return;
+
+            int promoted = 0;
+            int stripped = 0;
+
+            for (int si = 0; si < package.steps.Length; si++)
+            {
+                var step = package.steps[si];
+                if (step?.taskOrder == null || step.taskOrder.Length == 0) continue;
+
+                // Look for any confirm_action entry.
+                bool hasConfirmAction = false;
+                for (int ti = 0; ti < step.taskOrder.Length; ti++)
+                {
+                    var e = step.taskOrder[ti];
+                    if (e != null && string.Equals(e.kind, "confirm_action", StringComparison.Ordinal))
+                    { hasConfirmAction = true; break; }
+                }
+                if (!hasConfirmAction) continue;
+
+                // Confirm family is the only place confirm_action is valid.
+                if (step.ResolvedFamily == StepFamily.Confirm) continue;
+
+                // Count real gating tasks (requiredPartIds + non-null required
+                // tool action ids). These are the entries the runtime actually
+                // notifies to advance the cursor.
+                int realTasks = 0;
+                if (step.requiredPartIds != null) realTasks += step.requiredPartIds.Length;
+                if (step.requiredToolActions != null)
+                {
+                    for (int ai = 0; ai < step.requiredToolActions.Length; ai++)
+                    {
+                        var a = step.requiredToolActions[ai];
+                        if (a != null && !string.IsNullOrEmpty(a.id)) realTasks++;
+                    }
+                }
+
+                if (realTasks == 0)
+                {
+                    // The confirm_action is the ONLY gating task. That's Confirm
+                    // semantics — fix the family so the Confirm handler can
+                    // complete the step on button press.
+                    step.family = "Confirm";
+                    promoted++;
+                    OseLog.VerboseInfo($"[TaskOrder.Normalize] step '{step.id}': promoted family → 'Confirm' (had confirm_action with no real tasks).");
+                    continue;
+                }
+
+                // Real tasks exist — confirm_action is spurious. Strip it.
+                var filtered = new List<TaskOrderEntry>(step.taskOrder.Length);
+                for (int ti = 0; ti < step.taskOrder.Length; ti++)
+                {
+                    var e = step.taskOrder[ti];
+                    if (e != null && string.Equals(e.kind, "confirm_action", StringComparison.Ordinal)) continue;
+                    filtered.Add(e);
+                }
+                step.taskOrder = filtered.ToArray();
+                stripped++;
+                OseLog.VerboseInfo($"[TaskOrder.Normalize] step '{step.id}': stripped confirm_action entries (family={step.ResolvedFamily}, {realTasks} real task(s) gate completion).");
+            }
+
+            if (promoted > 0 || stripped > 0)
+            {
+                OseLog.Warn($"[TaskOrder.Normalize] Repaired confirm_action/family mismatch: promoted {promoted} step(s) to family=Confirm, stripped confirm_action from {stripped} step(s). Set OseLog.Verbose=true for per-step detail, or author family=Confirm when the step ends on a button press (confirm_action is valid only on Confirm family).");
             }
         }
 
