@@ -63,35 +63,16 @@ namespace OSE.Interaction
 
         public override void End(bool completed)
         {
-            // Stop the continuous weld arc particles. User reported that
-            // successive welds on the same step showed "duplicate particle
-            // with offset" — root cause: soft-stop (StopEmitting) lets
-            // in-flight particles keep rendering for ~1 s via
-            // ParticleAutoDestroy. Starting weld #N+1 before weld #N's
-            // particles fade gives two visible arcs at once (one at the
-            // previous anchor, one at the new). Hard-destroy the GO instead
-            // so each weld starts visually clean; the abrupt cut is
-            // acceptable for editor tool previews.
+            // Stop the continuous weld arc particles
             if (_arcEffect != null)
             {
-                if (Application.isPlaying) Object.Destroy(_arcEffect);
-                else                       Object.DestroyImmediate(_arcEffect);
-                _arcEffect = null;
+                var ps = _arcEffect.GetComponent<ParticleSystem>();
+                if (ps != null) ps.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+                _arcEffect = null; // ParticleAutoDestroy handles cleanup
             }
 
-            // Restore tool rotation to the captured base so subsequent welds
-            // don't compound wobble. User reported that successive welds
-            // shook progressively more — root cause: line 138 writes
-            // `_actionRot * Quaternion.Euler(wobble)` absolutely to the tool
-            // rotation, but End() never reset it. The next Begin() captured
-            // the still-wobbled rotation as its new _actionRot, and that
-            // weld's wobble applied on top. Linear growth per weld. Restoring
-            // to _actionRot here gives each Begin() a clean baseline.
-            if (_ctx != null && _ctx.ToolPreview != null)
-            {
-                _ctx.ToolPreview.transform.rotation = _actionRot;
+            if (_ctx.ToolPreview != null)
                 MaterialHelper.SetEmission(_ctx.ToolPreview, Color.black);
-            }
 
             if (_weldBeadObj != null && !completed)
             {
