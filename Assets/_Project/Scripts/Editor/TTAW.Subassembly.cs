@@ -1446,8 +1446,12 @@ namespace OSE.Editor
                 else if ((i & 1) == 0)
                     EditorGUI.DrawRect(rowRect, new Color(1f, 1f, 1f, 0.025f));
 
-                // Accent dot
-                EditorGUI.DrawRect(new Rect(rowRect.x + 6f, rowRect.y + 9f, 5f, 5f), SubAccent);
+                // Per-group accent dot — hue derived from the group id via
+                // GroupAccentColor so the same group reads as the same color
+                // in the task-row pill above AND this card row. Reinforces
+                // "the blue dot on the task row corresponds to this group."
+                EditorGUI.DrawRect(new Rect(rowRect.x + 6f, rowRect.y + 9f, 5f, 5f),
+                    GroupAccentColor(sub.id));
 
                 // Name + counts
                 var nameStyle = new GUIStyle(EditorStyles.miniLabel)

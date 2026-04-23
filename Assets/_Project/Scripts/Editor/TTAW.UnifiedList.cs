@@ -874,6 +874,40 @@ namespace OSE.Editor
         }
 
         /// <summary>
+        /// Deterministic per-group accent color. Derives a hue from the group
+        /// id's FNV-1a hash (stable across sessions, language-agnostic), and
+        /// fixes saturation + value so every color lands in the same
+        /// perceptual bucket (saturated enough to differentiate, not so bright
+        /// that it hurts the eye on dark UI).
+        ///
+        /// <para>Used for the task-row group pill's dot + background tint and
+        /// the GROUPS panel's row accent dot. Keeps color mapping consistent
+        /// everywhere a group identity shows up.</para>
+        /// </summary>
+        private static Color GroupAccentColor(string groupId)
+        {
+            if (string.IsNullOrEmpty(groupId))
+                return new Color(0.20f, 0.62f, 0.95f); // fallback SubAccent
+
+            // FNV-1a 32-bit hash — stable across runtimes, not affected by
+            // .NET's string-hash randomization.
+            const uint FnvOffset = 2166136261u;
+            const uint FnvPrime  = 16777619u;
+            uint h = FnvOffset;
+            foreach (char c in groupId)
+            {
+                h ^= c;
+                h *= FnvPrime;
+            }
+
+            float hue = (h % 360u) / 360f;
+            // S=0.58, V=0.88 — saturated enough to differentiate adjacent
+            // groups, desaturated enough to preserve text legibility at 22 %
+            // fill alpha and to match the Inspector's muted dark theme.
+            return Color.HSVToRGB(hue, 0.58f, 0.88f);
+        }
+
+        /// <summary>
         /// Computes short codes for each pill in a part's group list. When two
         /// codes collide, disambiguates with <c>·1</c> / <c>·2</c> suffixes in
         /// pill order so the colored dot is never the only differentiator.
@@ -1571,39 +1605,101 @@ namespace OSE.Editor
                             bool isSelected = !string.IsNullOrEmpty(_canvasSelectedSubId)
                                               && string.Equals(g.GroupId, _canvasSelectedSubId, StringComparison.Ordinal);
                             var pillRect = new Rect(cursorX, rect.y + 3f, pillWidths[p2], rect.height - 4f);
-                            Color pillBg = isSelected
-                                ? new Color(SubAccent.r, SubAccent.g, SubAccent.b, 0.45f)
-                                : new Color(0.20f, 0.62f, 0.95f, 0.18f);
-                            EditorGUI.DrawRect(pillRect, pillBg);
 
-                            // Slice ME-D: colored dot on the left edge of the
-                            // pill. Single accent for this slice (SubAccent);
-                            // per-group hue deferred. Dot centers vertically
-                            // inside the pill with 3 px left margin.
+                            // Per-group hue (FNV-1a hash → HSV). Stable across
+                            // sessions. Selected pills use a stronger fill so
+                            // the "editing this group" state reads across the
+                            // whole row; non-selected task rows use a soft
+                            // accent tint; NO-TASK rows use an outlined
+                            // variant (border only, no fill) so membership
+                            // reads as "visual presence" vs "task claim".
+                            Color accent = GroupAccentColor(g.GroupId);
+                            if (isSelected)
+                            {
+                                EditorGUI.DrawRect(pillRect,
+                                    new Color(accent.r, accent.g, accent.b, 0.55f));
+                            }
+                            else if (isNoTask)
+                            {
+                                // Outlined — no fill, 1 px accent border.
+                                Color border = new Color(accent.r, accent.g, accent.b, 0.70f);
+                                EditorGUI.DrawRect(new Rect(pillRect.x, pillRect.y,              pillRect.width, 1f),           border);
+                                EditorGUI.DrawRect(new Rect(pillRect.x, pillRect.yMax - 1f,      pillRect.width, 1f),           border);
+                                EditorGUI.DrawRect(new Rect(pillRect.x, pillRect.y,              1f,             pillRect.height), border);
+                                EditorGUI.DrawRect(new Rect(pillRect.xMax - 1f, pillRect.y,      1f,             pillRect.height), border);
+                            }
+                            else
+                            {
+                                EditorGUI.DrawRect(pillRect,
+                                    new Color(accent.r, accent.g, accent.b, 0.22f));
+                            }
+
+                            // Colored dot uses the per-group hue. For selected
+                            // and task-filled pills the dot sits on top of a
+                            // tinted bg, so the dot color is the full accent;
+                            // for outlined NO-TASK pills, same full accent.
                             var dotRect = new Rect(
                                 pillRect.x + 3f,
                                 pillRect.y + (pillRect.height - 6f) * 0.5f,
                                 6f, 6f);
-                            EditorGUI.DrawRect(dotRect, SubAccent);
+                            EditorGUI.DrawRect(dotRect, accent);
 
+                            // Text color: white on the strong selected fill,
+                            // accent-colored otherwise so it reads with the
+                            // pill's identity without requiring the filled
+                            // background. Bolded at all times.
+                            Color txt = isSelected
+                                ? Color.white
+                                : new Color(
+                                    Mathf.Lerp(accent.r, 1f, 0.25f),
+                                    Mathf.Lerp(accent.g, 1f, 0.25f),
+                                    Mathf.Lerp(accent.b, 1f, 0.25f));
                             var pillStyle = new GUIStyle(EditorStyles.miniLabel)
                             {
-                                normal    = { textColor = isSelected ? Color.white : new Color(0.50f, 0.78f, 0.98f) },
+                                normal    = { textColor = txt },
                                 fontSize  = 10,
                                 alignment = TextAnchor.MiddleCenter,
                                 fontStyle = FontStyle.Bold,
                             };
-                            // Text rect sits right of the dot.
                             var textRect = new Rect(
                                 pillRect.x + pillDotWidth,
                                 pillRect.y,
                                 pillRect.width - pillDotWidth,
                                 pillRect.height);
-                            // Tooltip keeps the full display name + chain so
-                            // authors never lose information to abbreviation.
                             string fullName = !string.IsNullOrEmpty(g.Chain) ? g.Chain : g.DisplayName;
-                            string tooltip = isSelected ? $"{fullName}  (editing)" : fullName;
+                            string tooltip = isSelected
+                                ? $"{fullName}  (editing) — click a different pill to switch groups."
+                                : $"{fullName}  — click to edit this group.";
                             GUI.Label(textRect, new GUIContent(pillLabels[p2], tooltip), pillStyle);
+
+                            // Click-to-jump: pill click selects the group (same
+                            // behavior as clicking a GROUPS-card row). Handled
+                            // on MouseDown so it fires BEFORE the row-click
+                            // handler below; Event.current.Use() prevents the
+                            // row from also selecting. Kept raw (not GUI.Button)
+                            // because GUI.Button fires on MouseUp and would
+                            // race the row's MouseDown handler.
+                            if (Event.current.type == EventType.MouseDown
+                                && Event.current.button == 0
+                                && pillRect.Contains(Event.current.mousePosition))
+                            {
+                                _canvasSelectedSubId = g.GroupId;
+                                _selectedTaskSeqIdx = -1;
+                                _multiSelectedTaskSeqIdxs.Clear();
+                                _selectedPartIdx    = -1;
+                                _selectedIdx        = -1;
+                                _multiSelectedParts.Clear();
+                                _multiSelected.Clear();
+                                if (_subassemblyRootGOs != null
+                                    && _subassemblyRootGOs.TryGetValue(g.GroupId, out var rootGO)
+                                    && rootGO != null)
+                                    EditorGUIUtility.PingObject(rootGO);
+                                Selection.activeGameObject = null;
+                                Event.current.Use();
+                                SceneView.RepaintAll();
+                                Repaint();
+                            }
+
                             cursorX += pillWidths[p2] + 2f;
                         }
 
