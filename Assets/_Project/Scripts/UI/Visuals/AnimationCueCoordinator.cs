@@ -774,6 +774,18 @@ namespace OSE.UI.Root
         /// </summary>
         public void FireDuringActionStart(string stepId)
         {
+            // Defensive: stop any onDuringAction cues that are still active
+            // from a previous tool-action instance on the same step. Without
+            // this, successive welds / tightens / cuts accumulate — each new
+            // action appends fresh cues while the prior ones keep running,
+            // stacking vibration amplitude and spawning duplicate particles
+            // on the second, third, Nth repetition. OnToolActionProgress
+            // stops individual ranged cues when progress crosses endProgress,
+            // but (a) the tool action can end without progress reaching 1.0
+            // and (b) StopDuringAction has no external callers — so without
+            // this guard the cleanup contract is never enforced.
+            StopDuringAction(stepId);
+
             _lastToolProgress = 0f;
 
             var package = _ctx.Spawner?.CurrentPackage;
