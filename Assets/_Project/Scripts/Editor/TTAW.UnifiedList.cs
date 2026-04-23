@@ -1297,15 +1297,28 @@ namespace OSE.Editor
                     // display name + chain. Short-code derivation handles
                     // collisions with "·1"/"·2" suffixes so the colored dot
                     // is never the only differentiator.
+                    //
+                    // Width uses GUIStyle.CalcSize on the actual pill text
+                    // style rather than a char-count heuristic, otherwise
+                    // 3-char codes like "Y-L" get clipped on some DPI
+                    // configurations (the earlier *5.5 multiplier undershot).
                     float tagW = 0f;
                     string[] shortCodes = ComputeGroupShortCodes(partGroups);
                     string[] pillLabels = visiblePills > 0 ? new string[visiblePills] : System.Array.Empty<string>();
                     float[]  pillWidths = visiblePills > 0 ? new float[visiblePills]  : System.Array.Empty<float>();
                     const float pillDotWidth = 10f; // colored dot + pad
+                    const float pillTextPad  = 8f;  // left/right text padding
+                    var pillMeasureStyle = new GUIStyle(EditorStyles.miniLabel)
+                    {
+                        fontSize  = 9,
+                        fontStyle = FontStyle.Bold,
+                    };
                     for (int p2 = 0; p2 < visiblePills; p2++)
                     {
                         pillLabels[p2] = shortCodes[p2];
-                        pillWidths[p2] = pillDotWidth + 6f + pillLabels[p2].Length * 5.5f;
+                        float textW = pillMeasureStyle.CalcSize(
+                            new GUIContent(pillLabels[p2])).x;
+                        pillWidths[p2] = pillDotWidth + textW + pillTextPad;
                         tagW += pillWidths[p2] + (p2 > 0 ? 2f : 0f);
                     }
                     float overflowW = 0f;
