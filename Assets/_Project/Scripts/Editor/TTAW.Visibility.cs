@@ -39,6 +39,15 @@ namespace OSE.Editor
         private bool _visibilityAddAsOptional; // Phase 7 — toggle on the add picker
         private bool _visibilityBucketsExpanded; // collapsed by default — just count pills
 
+        // Slice ME-B: per-(stepId, kindTag, transitionLabel) expand state for
+        // WHAT'S CHANGING aggregate rows. When 3+ rows share a (kind, label),
+        // they collapse into one summary row with a chevron that unfolds the
+        // children. Cleared whenever the cached step changes so expansion
+        // state doesn't leak across steps.
+        private readonly HashSet<string> _whatsChangingExpandedKeys =
+            new(StringComparer.Ordinal);
+        private int _whatsChangingExpandedForStepSeq = int.MinValue;
+
         private readonly List<string> _visScratchOwnedHere       = new();
         private readonly List<string> _visScratchOptionalHere  = new();
         private readonly List<string> _visScratchOwnedSubHere    = new();
@@ -313,64 +322,223 @@ namespace OSE.Editor
                 if (total == 0) return;
             }
 
-            // Rows.
+            // Slice ME-B: aggregate rows by (kindTag, transitionLabel). When
+            // 3+ rows share a key, render one summary row "[kind] N parts —
+            // transitionLabel [▸]" that expands to the children. Threshold
+            // 3 chosen because 2 rows fit on screen and reading them costs
+            // less than a click; at 3+, scanning breaks down.
+            if (_whatsChangingExpandedForStepSeq != currentSeq)
+            {
+                _whatsChangingExpandedKeys.Clear();
+                _whatsChangingExpandedForStepSeq = currentSeq;
+            }
+
+            var groupIndices = new Dictionary<string, List<int>>(StringComparer.Ordinal);
+            var groupOrder   = new List<string>();
             for (int i = 0; i < rows.Count; i++)
             {
-                var r = rows[i];
-                EditorGUILayout.BeginHorizontal();
-
-                // Kind pill.
-                Color pillCol = r.kindTag switch
+                string gKey = rows[i].kindTag + "\u0001" + rows[i].transitionLabel;
+                if (!groupIndices.TryGetValue(gKey, out var list))
                 {
-                    "ENTERED" => new Color(0.30f, 0.78f, 0.36f, 0.30f),
-                    "LEFT"    => new Color(0.85f, 0.40f, 0.40f, 0.30f),
-                    "STACKED" => new Color(0.95f, 0.65f, 0.30f, 0.30f),
-                    "VALUE"   => new Color(0.95f, 0.95f, 0.45f, 0.30f),
-                    _         => new Color(0.55f, 0.78f, 0.95f, 0.30f), // SOURCE
-                };
-                Color pillTxt = r.kindTag switch
-                {
-                    "ENTERED" => new Color(0.55f, 0.95f, 0.55f),
-                    "LEFT"    => new Color(1.00f, 0.60f, 0.60f),
-                    "STACKED" => new Color(1.00f, 0.80f, 0.45f),
-                    "VALUE"   => new Color(1.00f, 1.00f, 0.55f),
-                    _         => new Color(0.70f, 0.88f, 1.00f),
-                };
-                var pillRect = GUILayoutUtility.GetRect(62f, 16f, GUILayout.Width(62f), GUILayout.Height(16f));
-                EditorGUI.DrawRect(pillRect, pillCol);
-                var pillStyle = new GUIStyle(EditorStyles.miniLabel)
-                {
-                    normal    = { textColor = pillTxt },
-                    fontSize  = 8,
-                    alignment = TextAnchor.MiddleCenter,
-                    fontStyle = FontStyle.Bold,
-                };
-                GUI.Label(pillRect, r.kindTag, pillStyle);
-
-                // Part id (narrow column), transition label (wide column).
-                var idStyle = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleLeft };
-                GUILayout.Label(r.partId, idStyle, GUILayout.MinWidth(160));
-
-                var traceStyle = new GUIStyle(EditorStyles.miniLabel)
-                {
-                    normal    = { textColor = new Color(0.80f, 0.82f, 0.85f) },
-                    alignment = TextAnchor.MiddleLeft,
-                };
-                GUILayout.Label(new GUIContent(r.transitionLabel, r.tooltip), traceStyle, GUILayout.ExpandWidth(true));
-
-                EditorGUI.BeginDisabledGroup(string.IsNullOrEmpty(r.gotoStepId));
-                if (GUILayout.Button("Go", EditorStyles.miniButton, GUILayout.Width(28)))
-                {
-                    if (_stepIds != null)
-                    {
-                        for (int k = 0; k < _stepIds.Length; k++)
-                            if (string.Equals(_stepIds[k], r.gotoStepId, StringComparison.Ordinal))
-                            { ApplyStepFilter(k); break; }
-                    }
+                    groupIndices[gKey] = list = new List<int>();
+                    groupOrder.Add(gKey);
                 }
-                EditorGUI.EndDisabledGroup();
-                EditorGUILayout.EndHorizontal();
+                list.Add(i);
             }
+
+            const int aggregateThreshold = 3;
+            foreach (var gKey in groupOrder)
+            {
+                var indices = groupIndices[gKey];
+                if (indices.Count < aggregateThreshold)
+                {
+                    foreach (int idx in indices)
+                        DrawWhatsChangingRow(rows[idx], indent: 0f);
+                    continue;
+                }
+
+                // Aggregate row.
+                string expandKey = step.id + "\u0002" + gKey;
+                bool isExpanded = _whatsChangingExpandedKeys.Contains(expandKey);
+                DrawWhatsChangingAggregateRow(rows, indices, isExpanded,
+                    onToggle: () =>
+                    {
+                        if (isExpanded) _whatsChangingExpandedKeys.Remove(expandKey);
+                        else            _whatsChangingExpandedKeys.Add(expandKey);
+                    });
+
+                if (isExpanded)
+                {
+                    foreach (int idx in indices)
+                        DrawWhatsChangingRow(rows[idx], indent: 18f);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Draws a single WHAT'S CHANGING row — kind pill, part id, transition
+        /// label, Go button. Slice ME-B extracted from the original inline
+        /// loop so the aggregate path can reuse it for indented children.
+        /// </summary>
+        private void DrawWhatsChangingRow(WhatsChangingRow r, float indent)
+        {
+            EditorGUILayout.BeginHorizontal();
+            if (indent > 0f) GUILayout.Space(indent);
+
+            Color pillCol = r.kindTag switch
+            {
+                "ENTERED" => new Color(0.30f, 0.78f, 0.36f, 0.30f),
+                "LEFT"    => new Color(0.85f, 0.40f, 0.40f, 0.30f),
+                "STACKED" => new Color(0.95f, 0.65f, 0.30f, 0.30f),
+                "VALUE"   => new Color(0.95f, 0.95f, 0.45f, 0.30f),
+                _         => new Color(0.55f, 0.78f, 0.95f, 0.30f), // SOURCE
+            };
+            Color pillTxt = r.kindTag switch
+            {
+                "ENTERED" => new Color(0.55f, 0.95f, 0.55f),
+                "LEFT"    => new Color(1.00f, 0.60f, 0.60f),
+                "STACKED" => new Color(1.00f, 0.80f, 0.45f),
+                "VALUE"   => new Color(1.00f, 1.00f, 0.55f),
+                _         => new Color(0.70f, 0.88f, 1.00f),
+            };
+            var pillRect = GUILayoutUtility.GetRect(62f, 16f, GUILayout.Width(62f), GUILayout.Height(16f));
+            EditorGUI.DrawRect(pillRect, pillCol);
+            var pillStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                normal    = { textColor = pillTxt },
+                fontSize  = 8,
+                alignment = TextAnchor.MiddleCenter,
+                fontStyle = FontStyle.Bold,
+            };
+            GUI.Label(pillRect, r.kindTag, pillStyle);
+
+            var idStyle = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleLeft };
+            GUILayout.Label(r.partId, idStyle, GUILayout.MinWidth(160));
+
+            var traceStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                normal    = { textColor = new Color(0.80f, 0.82f, 0.85f) },
+                alignment = TextAnchor.MiddleLeft,
+            };
+            GUILayout.Label(new GUIContent(r.transitionLabel, r.tooltip), traceStyle, GUILayout.ExpandWidth(true));
+
+            EditorGUI.BeginDisabledGroup(string.IsNullOrEmpty(r.gotoStepId));
+            if (GUILayout.Button("Go", EditorStyles.miniButton, GUILayout.Width(28)))
+            {
+                if (_stepIds != null)
+                {
+                    for (int k = 0; k < _stepIds.Length; k++)
+                        if (string.Equals(_stepIds[k], r.gotoStepId, StringComparison.Ordinal))
+                        { ApplyStepFilter(k); break; }
+                }
+            }
+            EditorGUI.EndDisabledGroup();
+            EditorGUILayout.EndHorizontal();
+        }
+
+        /// <summary>
+        /// Draws the Slice-ME-B aggregate row that collapses N rows sharing a
+        /// (kindTag, transitionLabel) pair into one line: kind pill +
+        /// "N parts" count + transition label + Go button (enabled only when
+        /// every child shares the same gotoStepId) + chevron that toggles
+        /// the children's visibility.
+        /// </summary>
+        private void DrawWhatsChangingAggregateRow(List<WhatsChangingRow> rows,
+            List<int> indices, bool isExpanded, Action onToggle)
+        {
+            if (indices == null || indices.Count == 0) return;
+            var sample = rows[indices[0]];
+
+            EditorGUILayout.BeginHorizontal();
+
+            // Kind pill — same palette as individual rows.
+            Color pillCol = sample.kindTag switch
+            {
+                "ENTERED" => new Color(0.30f, 0.78f, 0.36f, 0.30f),
+                "LEFT"    => new Color(0.85f, 0.40f, 0.40f, 0.30f),
+                "STACKED" => new Color(0.95f, 0.65f, 0.30f, 0.30f),
+                "VALUE"   => new Color(0.95f, 0.95f, 0.45f, 0.30f),
+                _         => new Color(0.55f, 0.78f, 0.95f, 0.30f),
+            };
+            Color pillTxt = sample.kindTag switch
+            {
+                "ENTERED" => new Color(0.55f, 0.95f, 0.55f),
+                "LEFT"    => new Color(1.00f, 0.60f, 0.60f),
+                "STACKED" => new Color(1.00f, 0.80f, 0.45f),
+                "VALUE"   => new Color(1.00f, 1.00f, 0.55f),
+                _         => new Color(0.70f, 0.88f, 1.00f),
+            };
+            var pillRect = GUILayoutUtility.GetRect(62f, 16f, GUILayout.Width(62f), GUILayout.Height(16f));
+            EditorGUI.DrawRect(pillRect, pillCol);
+            var pillStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                normal    = { textColor = pillTxt },
+                fontSize  = 8,
+                alignment = TextAnchor.MiddleCenter,
+                fontStyle = FontStyle.Bold,
+            };
+            GUI.Label(pillRect, sample.kindTag, pillStyle);
+
+            // "N parts" count in the id column (bold to signal aggregation).
+            var countStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                alignment = TextAnchor.MiddleLeft,
+                fontStyle = FontStyle.Bold,
+                normal    = { textColor = new Color(0.92f, 0.92f, 0.95f) },
+            };
+            GUILayout.Label($"{indices.Count} parts", countStyle, GUILayout.MinWidth(160));
+
+            // Shared transition label.
+            var traceStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                normal    = { textColor = new Color(0.80f, 0.82f, 0.85f) },
+                alignment = TextAnchor.MiddleLeft,
+            };
+            GUILayout.Label(new GUIContent(sample.transitionLabel,
+                $"{indices.Count} parts share this pose transition. Click ▸ to expand."),
+                traceStyle, GUILayout.ExpandWidth(true));
+
+            // Go button: enabled only when every child shares the same
+            // gotoStepId. Otherwise disabled with an explanatory tooltip —
+            // expand and use a specific row's Go.
+            string sharedGotoStepId = sample.gotoStepId;
+            bool allShareGoto = true;
+            for (int i = 1; i < indices.Count; i++)
+            {
+                string g = rows[indices[i]].gotoStepId;
+                if (!string.Equals(g, sharedGotoStepId, StringComparison.Ordinal))
+                { allShareGoto = false; break; }
+            }
+            EditorGUI.BeginDisabledGroup(!allShareGoto || string.IsNullOrEmpty(sharedGotoStepId));
+            string goTip = allShareGoto
+                ? (string.IsNullOrEmpty(sharedGotoStepId) ? "No gotoStep on this aggregate." : $"Jump to step '{sharedGotoStepId}'.")
+                : "Children have different gotoStepIds — expand and use a specific row's Go.";
+            if (GUILayout.Button(new GUIContent("Go", goTip), EditorStyles.miniButton, GUILayout.Width(28)))
+            {
+                if (_stepIds != null)
+                {
+                    for (int k = 0; k < _stepIds.Length; k++)
+                        if (string.Equals(_stepIds[k], sharedGotoStepId, StringComparison.Ordinal))
+                        { ApplyStepFilter(k); break; }
+                }
+            }
+            EditorGUI.EndDisabledGroup();
+
+            // Chevron toggles the aggregate's expanded state.
+            var chevStyle = new GUIStyle(EditorStyles.miniButton)
+            {
+                fontStyle = FontStyle.Bold,
+                normal    = { textColor = new Color(0.95f, 0.70f, 0.30f) },
+            };
+            string chev = isExpanded ? "▾" : "▸";
+            if (GUILayout.Button(new GUIContent(chev,
+                    isExpanded ? "Collapse aggregate." : $"Expand {indices.Count} individual rows."),
+                chevStyle, GUILayout.Width(22)))
+            {
+                onToggle?.Invoke();
+            }
+
+            EditorGUILayout.EndHorizontal();
         }
 
         private List<WhatsChangingRow> BuildWhatsChangingRows(int currentSeq)
