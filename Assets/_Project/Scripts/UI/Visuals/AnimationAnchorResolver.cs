@@ -51,17 +51,21 @@ namespace OSE.UI.Root
                     return false;
 
                 case "weldStart":
-                    if (info != null && info.WeldAxis.sqrMagnitude > 0f)
+                    if (info != null)
                     {
-                        worldPos = info.SurfaceWorldPos - info.WeldAxis.normalized * (info.WeldLength * 0.5f);
+                        Vector3 dirS = ResolveSeamDir(info);
+                        float lenS  = info.WeldLength > 0f ? info.WeldLength : 0.03f;
+                        worldPos = info.SurfaceWorldPos - dirS * (lenS * 0.5f);
                         return true;
                     }
                     return false;
 
                 case "weldEnd":
-                    if (info != null && info.WeldAxis.sqrMagnitude > 0f)
+                    if (info != null)
                     {
-                        worldPos = info.SurfaceWorldPos + info.WeldAxis.normalized * (info.WeldLength * 0.5f);
+                        Vector3 dirE = ResolveSeamDir(info);
+                        float lenE  = info.WeldLength > 0f ? info.WeldLength : 0.03f;
+                        worldPos = info.SurfaceWorldPos + dirE * (lenE * 0.5f);
                         return true;
                     }
                     return false;
@@ -99,6 +103,29 @@ namespace OSE.UI.Root
         }
 
         // ── Helpers ──────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Returns a normalized weld-seam direction. Prefers the authored
+        /// <see cref="ToolActionTargetInfo.WeldAxis"/>; when that's zero
+        /// (content didn't author a seam direction), falls back to a
+        /// camera-aligned horizontal axis — same convention WeldPreview
+        /// uses so seam-travel still has a visible 3 cm spread even on
+        /// point-welds that didn't author a direction.
+        /// </summary>
+        private static Vector3 ResolveSeamDir(ToolActionTargetInfo info)
+        {
+            if (info.WeldAxis.sqrMagnitude > 0.001f)
+                return info.WeldAxis.normalized;
+            var cam = Camera.main;
+            if (cam != null)
+            {
+                Vector3 r = cam.transform.right;
+                Vector3 horiz = new Vector3(r.x, 0f, r.z);
+                if (horiz.sqrMagnitude > 0.001f)
+                    return horiz.normalized;
+            }
+            return Vector3.right;
+        }
 
         private static bool TryParseLiteral(string body, out Vector3 worldPos)
         {

@@ -143,6 +143,7 @@ namespace OSE.UI.Root
                 { "poseWobble",           () => new PoseWobblePlayer() },
                 { "toolVibration",        () => new ToolVibrationPlayer() },
                 { "lineBetweenAnchors",   () => new LineBetweenAnchorsPlayer() },
+                { "moveBetweenAnchors",   () => new MoveBetweenAnchorsPlayer() },
                 { "drawSpline",           () => new DrawSplinePlayer() },
                 { "measureLine",          () => new MeasureLinePlayer() },
                 { "screwSpin",            () => new ScrewSpinPlayer() },
@@ -152,12 +153,24 @@ namespace OSE.UI.Root
             // ToolActionPreviewController so progress-ranged onDuringAction
             // cues advance in lockstep with the action.
             OSE.Core.RuntimeEventBus.Subscribe<OSE.Core.ToolActionProgressTick>(OnToolProgressEvent);
+
+            // Register onDuringAction cues when the Action phase opens —
+            // guaranteed to run BEFORE the first progress tick of the
+            // same action. Replaces the off-by-one registration that
+            // used to fire from UseStepHandler's onComplete path.
+            OSE.Core.RuntimeEventBus.Subscribe<OSE.Core.ToolActionStarted>(OnToolActionStartedEvent);
         }
 
         private void OnToolProgressEvent(OSE.Core.ToolActionProgressTick evt)
         {
             if (string.IsNullOrEmpty(_currentStepId)) return;
             OnToolActionProgress(_currentStepId, evt.Progress);
+        }
+
+        private void OnToolActionStartedEvent(OSE.Core.ToolActionStarted evt)
+        {
+            if (string.IsNullOrEmpty(_currentStepId)) return;
+            FireDuringActionStart(_currentStepId);
         }
 
         /// <summary>
@@ -916,9 +929,12 @@ namespace OSE.UI.Root
         private static bool IsBurstType(string type)
         {
             // Burst types fire once at startProgress and don't receive
-            // TickProgress updates. Everything else is a tween.
-            return string.Equals(type, "particle",   StringComparison.OrdinalIgnoreCase)
-                || string.Equals(type, "clickPop",   StringComparison.OrdinalIgnoreCase)
+            // TickProgress updates. "particle" used to be here but is now
+            // a tween — ParticlePlayer.TickProgress lerps the spawned
+            // instance along anchorA → anchorB when both anchors resolve
+            // (the weld_arc seam-travel path). Non-travel particle cues
+            // get a no-op TickProgress, which is cheap.
+            return string.Equals(type, "clickPop",   StringComparison.OrdinalIgnoreCase)
                 || string.Equals(type, "drawSpline", StringComparison.OrdinalIgnoreCase);
         }
 

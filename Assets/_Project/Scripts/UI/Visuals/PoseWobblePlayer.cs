@@ -5,10 +5,11 @@ namespace OSE.UI.Root
 {
     /// <summary>
     /// Continuous sine-based rotation perturbation. Recreates WeldPreview's
-    /// torch wobble (amp 0.12 rad, freq 40 rad/s on pitch + yaw) and any
-    /// similar perturbation. Adds an Euler delta derived from
-    /// <c>sin(progress * frequency)</c> to the host's local rotation each
-    /// tick, restoring the baseline on Stop.
+    /// torch wobble (amp 0.12°, freq 40 cycles/progress on pitch + yaw)
+    /// and any similar perturbation. <c>wobbleAmplitude</c> is in DEGREES
+    /// — passed straight into <see cref="Quaternion.Euler"/>. Adds an Euler
+    /// delta derived from <c>sin(progress * frequency)</c> to the host's
+    /// local rotation each tick, restoring the baseline on Stop.
     /// </summary>
     public sealed class PoseWobblePlayer : IAnimationCuePlayer
     {
@@ -69,10 +70,14 @@ namespace OSE.UI.Root
                 e.wobbleAxis.y != 0f ? e.wobbleAxis.y : 1f,
                 e.wobbleAxis.z);
 
+            // amp is interpreted in DEGREES to match WeldPreview's original
+            // Quaternion.Euler(wobble, 0, wobble*0.5) — which took 0.12 as
+            // degrees directly. The prior * Rad2Deg conversion multiplied
+            // the intended amplitude by ~57×, producing a violent shake.
             float phase = progress01 * freq;
             float s = Mathf.Sin(phase);
-            Vector3 eulerRad = new Vector3(s * amp * axis.x, s * amp * axis.y, s * amp * axis.z);
-            Quaternion delta = Quaternion.Euler(eulerRad * Mathf.Rad2Deg);
+            Vector3 eulerDeg = new Vector3(s * amp * axis.x, s * amp * axis.y, s * amp * axis.z);
+            Quaternion delta = Quaternion.Euler(eulerDeg);
 
             if (_ctx.Targets == null || _baselineRot == null) return;
             for (int i = 0; i < _ctx.Targets.Count && i < _baselineRot.Length; i++)

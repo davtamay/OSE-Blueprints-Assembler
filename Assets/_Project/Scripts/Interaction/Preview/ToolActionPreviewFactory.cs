@@ -14,7 +14,11 @@ namespace OSE.Interaction
             new Dictionary<PreviewStyle, Func<IToolActionPreview>>
             {
                 [PreviewStyle.Torque]      = () => new TorquePreview(),
-                [PreviewStyle.Weld]        = () => new WeldPreview(),
+                // PreviewStyle.Weld intentionally unmapped — falls through to
+                // DefaultPreview. Every weld visual (arc, emission, wobble,
+                // seam travel, bead line, bead fade) is cue-driven via
+                // tool_mig_torch.animationCues in shared.json. The old
+                // WeldPreview class was deleted 2026-04-23.
                 [PreviewStyle.Cut]         = () => new CutPreview(),
                 [PreviewStyle.SquareCheck] = () => new SquareCheckPreview(),
                 [PreviewStyle.Drill]       = () => new DrillPreview(),

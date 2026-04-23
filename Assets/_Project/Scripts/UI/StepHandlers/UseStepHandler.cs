@@ -210,9 +210,9 @@ namespace OSE.UI.Root
             handled = false;
 
             // Phase 2: end anchor tap — spawn effect before clearing targets
+            // (cue registration moved to ToolActionStarted event — see below)
             if (_measure.IsActive && _measure.TryCompletePhase2(interactedTargetId, out shouldCompleteStep, out _))
             {
-                _ctx.AnimationCues?.FireDuringActionStart(_activeStepId);
                 _animator.SpawnClickEffect(
                     interactedTargetId, _activeProfile, _activeProfileEnum,
                     _completionEffectColor, _completionPulseScale, _completionParticleId,
@@ -244,7 +244,11 @@ namespace OSE.UI.Root
             OseLog.Info($"[UseStepHandler] Tool action succeeded on '{interactedTargetId}'. shouldComplete={shouldCompleteStep}, profile={_activeProfile}.");
 
             string measureStartAnchor = _measure.Payload?.startAnchorTargetId;
-            _ctx.AnimationCues?.FireDuringActionStart(_activeStepId);
+            // Cue registration (FireDuringActionStart) now fires from
+            // AnimationCueCoordinator's ToolActionStarted handler, which runs
+            // when the preview's Action phase opens — i.e. BEFORE the first
+            // progress tick of the current action. Firing it here (from the
+            // preview's onComplete path) registered cues one action too late.
             _animator.SpawnClickEffect(
                 interactedTargetId, _activeProfile, _activeProfileEnum,
                 _completionEffectColor, _completionPulseScale, _completionParticleId,

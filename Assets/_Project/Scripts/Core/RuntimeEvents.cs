@@ -467,6 +467,21 @@ namespace OSE.Core
     }
 
     /// <summary>
+    /// Published by <c>ToolActionPreviewController</c> when the Action phase
+    /// opens (after Approach completes, before the first progress tick).
+    /// Consumed by <c>AnimationCueCoordinator</c> to register onDuringAction
+    /// cues so progress-ranged cues see ticks for the CURRENT action. The
+    /// old call site in <c>UseStepHandler.TryExecuteToolPrimaryAction</c>
+    /// fires off the preview's onComplete callback (Return phase end), which
+    /// registered cues one action late — this event fixes that off-by-one.
+    /// </summary>
+    public readonly struct ToolActionStarted
+    {
+        public readonly string Profile;
+        public ToolActionStarted(string profile) => Profile = profile;
+    }
+
+    /// <summary>
     /// Published each frame by <c>ToolActionPreviewController</c> during the
     /// action phase with the normalised 0..1 progress. Consumed by the
     /// animation cue coordinator to drive progress-ranged

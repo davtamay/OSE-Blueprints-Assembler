@@ -257,6 +257,24 @@ namespace OSE.Content
         /// </summary>
         public float endProgress;
 
+        /// <summary>
+        /// Progress value (0..1 GLOBAL action progress) at which a particle
+        /// travel / lineBetweenAnchors sub-tween begins. Before this, the
+        /// effect holds at its start anchor. When 0, defaults to
+        /// <see cref="startProgress"/> — travel begins with the cue.
+        /// Used to recreate WeldPreview's hold-at-start-then-travel profile:
+        /// cue active 0.1–1.0, but travel only 0.15–0.9.
+        /// </summary>
+        public float travelStartProgress;
+
+        /// <summary>
+        /// Progress value (0..1 GLOBAL action progress) at which a particle
+        /// travel / lineBetweenAnchors sub-tween ends. After this, the
+        /// effect holds at its end anchor. When 0, defaults to
+        /// <see cref="endProgress"/>.
+        /// </summary>
+        public float travelEndProgress;
+
         // ── Phase 2: emissionPulse / colorTween / materialFade ──
 
         /// <summary>Start colour of a color/emission tween (RGBA).</summary>

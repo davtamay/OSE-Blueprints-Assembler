@@ -283,6 +283,14 @@ namespace OSE.Interaction
                 _preview.Begin(ctx);
                 _partEffect?.Begin();
 
+                // Announce the Action phase opening so listeners (notably
+                // AnimationCueCoordinator) can register onDuringAction cues
+                // BEFORE progress ticks begin. Without this, the cue
+                // registration sat in UseStepHandler.TryExecuteToolPrimaryAction
+                // which runs off the preview's onComplete callback — one
+                // action too late — so cues for weld #N fired during weld #N+1.
+                OSE.Core.RuntimeEventBus.Publish(new OSE.Core.ToolActionStarted(_profile));
+
                 // Activate visual guide now that the action phase is starting
                 Vector2 dragDir = _preview.GetExpectedDragDirection(ctx);
                 var previewStyle = ToolProfileRegistry.Get(_profile).PreviewStyle;

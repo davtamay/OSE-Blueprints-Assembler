@@ -9,7 +9,10 @@ namespace OSE.Interaction
     /// </summary>
     public sealed class DefaultPreview : ToolActionPreviewBase
     {
-        public override float Duration => 0.6f;
+        // Fallback 1.5 s so weld (and any other cue-driven profile that
+        // maps to DefaultPreview) gets enough time for its animationCues
+        // to unfold. Per-action previewConfig.duration wins when authored.
+        public override float Duration => Override(Cfg?.duration ?? 0f, 1.5f);
 
         protected override float AutoAssistDelay => 2f;
         protected override float AutoAssistRate => 1f;

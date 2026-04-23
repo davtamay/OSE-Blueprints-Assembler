@@ -25,6 +25,13 @@ namespace OSE.UI.Root
         private float _elapsed;
         private GameObject[] _instances;
 
+        // Anchor travel state: when BOTH anchorARef and anchorBRef resolve,
+        // the spawned instance migrates along A → B over action progress
+        // (TickProgress). Recreates WeldPreview's arc-moves-along-seam.
+        private bool _hasAnchorTravel;
+        private Vector3 _anchorPosA;
+        private Vector3 _anchorPosB;
+
         public void Start(AnimationCueContext context)
         {
             _ctx = context;
@@ -54,6 +61,37 @@ namespace OSE.UI.Root
             else if (string.IsNullOrEmpty(entry.particlePresetId))
             {
                 IsPlaying = false;
+                return;
+            }
+
+            // Anchor-driven spawn: when anchorARef resolves (e.g. "weldMid",
+            // "targetSurface", "toolTip"), the particle anchors to that world
+            // point instead of the cue host's transform. This lets the weld
+            // arc spawn exactly at the weld surface even though the cue is
+            // authored on the tool host — the tool transform is elsewhere at
+            // action start. Single-anchor → single instance (not per-target),
+            // which matches the semantic of a weld-point / target-surface
+            // effect. Fall through to per-target host spawning when the
+            // anchor ref is empty or can't resolve.
+            if (!string.IsNullOrEmpty(entry.anchorARef)
+                && AnimationAnchorResolver.TryResolveAnchor(entry.anchorARef, context, out Vector3 anchorWorldPos))
+            {
+                _anchorPosA = anchorWorldPos;
+                // If anchorBRef also resolves, the particle travels A → B
+                // over progress (see TickProgress). Otherwise it stays at A.
+                _hasAnchorTravel = !string.IsNullOrEmpty(entry.anchorBRef)
+                    && AnimationAnchorResolver.TryResolveAnchor(entry.anchorBRef, context, out _anchorPosB);
+
+                _instances = new GameObject[1];
+                GameObject instance = mode == "preset"
+                    ? SpawnPresetAtWorld(anchorWorldPos, entry.particlePresetId, scale)
+                    : SpawnPrefabAtWorld(anchorWorldPos, prefab, entry.particlePrefabRef, scale);
+                if (instance != null)
+                {
+                    ApplyColorTint(instance, entry.particleColorTint);
+                    ForceLoopInEditor(instance);
+                    _instances[0] = instance;
+                }
                 return;
             }
 
@@ -152,6 +190,35 @@ namespace OSE.UI.Root
             return true;
         }
 
+        public void TickProgress(float progress01)
+        {
+            if (!_hasAnchorTravel) return;
+            if (_instances == null || _instances.Length == 0) return;
+            var go = _instances[0];
+            if (go == null) return;
+
+            // progress01 arrives normalized to the cue's active window
+            // [startProgress, endProgress]. If the author set a travel
+            // sub-window (travelStartProgress / travelEndProgress in GLOBAL
+            // progress), map those into cue-local space and InverseLerp so
+            // the particle holds at anchorA before the sub-window, lerps
+            // across, then holds at anchorB after. Recreates WeldPreview's
+            // travel profile: active 0.1-1.0, travel only 0.15-0.9.
+            float t = progress01;
+            var e = _ctx.Entry;
+            float cueRange = Mathf.Max(0.0001f, e.endProgress - e.startProgress);
+            float travelStartLocal = e.travelStartProgress > 0f
+                ? Mathf.Clamp01((e.travelStartProgress - e.startProgress) / cueRange)
+                : 0f;
+            float travelEndLocal = e.travelEndProgress > 0f
+                ? Mathf.Clamp01((e.travelEndProgress - e.startProgress) / cueRange)
+                : 1f;
+            if (travelEndLocal > travelStartLocal)
+                t = Mathf.InverseLerp(travelStartLocal, travelEndLocal, progress01);
+
+            go.transform.position = Vector3.Lerp(_anchorPosA, _anchorPosB, Mathf.Clamp01(t));
+        }
+
         public void Stop()
         {
             if (_instances != null)
@@ -216,7 +283,11 @@ namespace OSE.UI.Root
         private static GameObject SpawnPreset(Transform host, Vector3 localPivot, string presetId, float scale)
         {
             Vector3 worldPos = host.TransformPoint(localPivot);
+            return SpawnPresetAtWorld(worldPos, presetId, scale);
+        }
 
+        private static GameObject SpawnPresetAtWorld(Vector3 worldPos, string presetId, float scale)
+        {
             // Configure the preset at WeldPreview's reference size (0.06 m).
             // At particleScale = 1 the effect looks exactly like weld_arc
             // does today. The slider scales the whole transform hierarchy
@@ -244,6 +315,21 @@ namespace OSE.UI.Root
                 var m = systems[s].main;
                 m.scalingMode = ParticleSystemScalingMode.Hierarchy;
             }
+            return instance;
+        }
+
+        private static GameObject SpawnPrefabAtWorld(Vector3 worldPos, GameObject prefab, string prefabRef, float scale)
+        {
+            GameObject instance = prefab != null
+                ? Object.Instantiate(prefab)
+                : new GameObject($"Particle_{prefabRef}");
+
+            instance.transform.position = worldPos;
+            instance.transform.rotation = Quaternion.identity;
+            instance.transform.localScale = Vector3.one * scale;
+
+            var ps = instance.GetComponentInChildren<ParticleSystem>();
+            if (ps != null) ps.Play(true);
             return instance;
         }
 
