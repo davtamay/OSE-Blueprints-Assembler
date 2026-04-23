@@ -824,6 +824,88 @@ namespace OSE.Editor
             { GroupId = id; DisplayName = name; Chain = chain; }
         }
 
+        // ── Group short-code derivation (Slice ME-D) ─────────────────────────
+        //
+        // Renders each group pill as a colored dot + short code (e.g. "Y-L",
+        // "Z-B", "UB") instead of a truncated display name ("Carriage 1 (Y-L…").
+        // The full display name + chain remains in the pill's tooltip.
+        //
+        // Derivation rule:
+        //   1. If the name matches `^.*\(([^)]+)\)\s*$`, use the parenthesized
+        //      suffix. Otherwise use the whole name.
+        //   2. Split on hyphens and whitespace.
+        //   3. If only one token: first 2-3 chars (upper-cased).
+        //   4. Multi-token: first char of each token, joined with hyphens,
+        //      capped at 5 chars.
+        //   5. Collision resolution — when two of a part's groups share a
+        //      code, suffix with "·1", "·2" in pill order.
+
+        private static string GroupShortCode(string displayName)
+        {
+            if (string.IsNullOrEmpty(displayName)) return "?";
+
+            // Rule 1: parenthesized suffix when present.
+            string source = displayName;
+            int openParen  = displayName.LastIndexOf('(');
+            int closeParen = displayName.LastIndexOf(')');
+            if (openParen >= 0 && closeParen > openParen)
+                source = displayName.Substring(openParen + 1, closeParen - openParen - 1).Trim();
+
+            var tokens = source.Split(new[] { '-', ' ', '\t' },
+                StringSplitOptions.RemoveEmptyEntries);
+            if (tokens.Length == 0) return "?";
+
+            if (tokens.Length == 1)
+            {
+                string t = tokens[0];
+                int take = Math.Min(t.Length, 3);
+                return t.Substring(0, take).ToUpperInvariant();
+            }
+
+            // Multi-token — first char of each, hyphen-joined, capped at 5.
+            var sb = new System.Text.StringBuilder(5);
+            for (int i = 0; i < tokens.Length && sb.Length < 5; i++)
+            {
+                if (tokens[i].Length == 0) continue;
+                if (sb.Length > 0 && sb.Length < 4) sb.Append('-');
+                sb.Append(char.ToUpperInvariant(tokens[i][0]));
+            }
+            return sb.Length > 0 ? sb.ToString() : "?";
+        }
+
+        /// <summary>
+        /// Computes short codes for each pill in a part's group list. When two
+        /// codes collide, disambiguates with <c>·1</c> / <c>·2</c> suffixes in
+        /// pill order so the colored dot is never the only differentiator.
+        /// </summary>
+        private static string[] ComputeGroupShortCodes(List<PartGroupRef> groups)
+        {
+            if (groups == null || groups.Count == 0)
+                return Array.Empty<string>();
+
+            string[] codes = new string[groups.Count];
+            var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+
+            for (int i = 0; i < groups.Count; i++)
+            {
+                string code = GroupShortCode(groups[i].DisplayName);
+                codes[i] = code;
+                counts[code] = counts.TryGetValue(code, out int c) ? c + 1 : 1;
+            }
+
+            var seen = new Dictionary<string, int>(StringComparer.Ordinal);
+            for (int i = 0; i < groups.Count; i++)
+            {
+                string baseCode = codes[i];
+                if (!counts.TryGetValue(baseCode, out int total) || total <= 1) continue;
+                int seq = seen.TryGetValue(baseCode, out int s) ? s + 1 : 1;
+                seen[baseCode] = seq;
+                codes[i] = $"{baseCode}·{seq}";
+            }
+
+            return codes;
+        }
+
         private void DrawTaskSequenceDragList(StepDefinition step, List<TaskOrderEntry> order)
         {
             // Rebuild the ReorderableList whenever the step changes or the list is null
@@ -1210,15 +1292,20 @@ namespace OSE.Editor
                     int visiblePills = Mathf.Min(totalGroups, 2);
                     int overflow     = totalGroups - visiblePills;
 
+                    // Slice ME-D: pills render as a colored dot + short code
+                    // (e.g. "Y-L", "Z-B", "UB"). Tooltip carries the full
+                    // display name + chain. Short-code derivation handles
+                    // collisions with "·1"/"·2" suffixes so the colored dot
+                    // is never the only differentiator.
                     float tagW = 0f;
-                    const int pillMaxChars = 16;
+                    string[] shortCodes = ComputeGroupShortCodes(partGroups);
                     string[] pillLabels = visiblePills > 0 ? new string[visiblePills] : System.Array.Empty<string>();
                     float[]  pillWidths = visiblePills > 0 ? new float[visiblePills]  : System.Array.Empty<float>();
+                    const float pillDotWidth = 10f; // colored dot + pad
                     for (int p2 = 0; p2 < visiblePills; p2++)
                     {
-                        string nm = partGroups[p2].DisplayName ?? "";
-                        pillLabels[p2] = nm.Length > pillMaxChars ? nm.Substring(0, pillMaxChars - 1) + "…" : nm;
-                        pillWidths[p2] = 8f + pillLabels[p2].Length * 5.2f;
+                        pillLabels[p2] = shortCodes[p2];
+                        pillWidths[p2] = pillDotWidth + 6f + pillLabels[p2].Length * 5.5f;
                         tagW += pillWidths[p2] + (p2 > 0 ? 2f : 0f);
                     }
                     float overflowW = 0f;
@@ -1449,16 +1536,35 @@ namespace OSE.Editor
                                 ? new Color(SubAccent.r, SubAccent.g, SubAccent.b, 0.45f)
                                 : new Color(0.20f, 0.62f, 0.95f, 0.18f);
                             EditorGUI.DrawRect(pillRect, pillBg);
+
+                            // Slice ME-D: colored dot on the left edge of the
+                            // pill. Single accent for this slice (SubAccent);
+                            // per-group hue deferred. Dot centers vertically
+                            // inside the pill with 3 px left margin.
+                            var dotRect = new Rect(
+                                pillRect.x + 3f,
+                                pillRect.y + (pillRect.height - 6f) * 0.5f,
+                                6f, 6f);
+                            EditorGUI.DrawRect(dotRect, SubAccent);
+
                             var pillStyle = new GUIStyle(EditorStyles.miniLabel)
                             {
                                 normal    = { textColor = isSelected ? Color.white : new Color(0.50f, 0.78f, 0.98f) },
-                                fontSize  = 8,
+                                fontSize  = 9,
                                 alignment = TextAnchor.MiddleCenter,
                                 fontStyle = isSelected ? FontStyle.Bold : FontStyle.Normal,
                             };
-                            GUI.Label(pillRect,
-                                new GUIContent(pillLabels[p2], isSelected ? g.Chain + "  (editing)" : g.Chain),
-                                pillStyle);
+                            // Text rect sits right of the dot.
+                            var textRect = new Rect(
+                                pillRect.x + pillDotWidth,
+                                pillRect.y,
+                                pillRect.width - pillDotWidth,
+                                pillRect.height);
+                            // Tooltip keeps the full display name + chain so
+                            // authors never lose information to abbreviation.
+                            string fullName = !string.IsNullOrEmpty(g.Chain) ? g.Chain : g.DisplayName;
+                            string tooltip = isSelected ? $"{fullName}  (editing)" : fullName;
+                            GUI.Label(textRect, new GUIContent(pillLabels[p2], tooltip), pillStyle);
                             cursorX += pillWidths[p2] + 2f;
                         }
 
