@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using OSE.App;
 using OSE.Content;
 using OSE.Core;
+using OSE.Runtime;
 using UnityEngine;
 
 namespace OSE.Interaction
@@ -39,6 +41,13 @@ namespace OSE.Interaction
         {
             _settings = settings;
             _cameraRig = cameraRig;
+
+            // Re-frame after each individual tool action completes so the
+            // camera follows the next incomplete target across a multi-target
+            // Use step (e.g. 4-corner weld). Without this, ReturnFromToolAction
+            // snaps back to the step-activation home — which was framed on
+            // the FIRST target — so targets #2-N stay out of view.
+            RuntimeEventBus.Subscribe<ToolActionCompleted>(OnToolActionCompleted);
         }
 
         /// <summary>
@@ -78,15 +87,92 @@ namespace OSE.Interaction
             if (_hasHome)
                 _homeStack.Push(_currentHome);
 
-            // Frame the camera using bounds from the part bridge.
-            // The bridge resolves bounds from actual scene renderers (previews,
-            // spawned parts, tool targets) which are the most accurate source.
-            FrameStep(evt.StepId);
+            // For Use steps with tool-action targets (weld / tack / drill /
+            // torque / etc.), frame tight on the first tool target so the
+            // user immediately sees WHERE to click. The broader step-focus
+            // bounds pulls back to fit the whole assembly, which hides the
+            // active work point — especially on multi-target weld steps
+            // where 4 corners force a wide view. Falls back to FrameStep
+            // when the step has no tool actions.
+            if (!TryFrameActiveToolTarget(evt.StepId))
+                FrameStep(evt.StepId);
 
             _currentHome = _cameraRig.TargetState;
             _hasHome = true;
 
             OseLog.Info($"[StepGuidance] Step '{evt.StepId}' — framed + captured home, dist={_currentHome.Distance:F2}");
+        }
+
+        /// <summary>
+        /// Subscribed to <see cref="ToolActionCompleted"/>. Re-frames the
+        /// camera on the next incomplete tool target in the same step AND
+        /// updates the captured home so <see cref="ReturnFromToolAction"/>
+        /// returns to that target (not the original first-target framing).
+        /// </summary>
+        private void OnToolActionCompleted(ToolActionCompleted evt)
+        {
+            if (_cameraRig == null || string.IsNullOrEmpty(_activeStepId)) return;
+            if (!string.Equals(evt.StepId, _activeStepId, StringComparison.Ordinal)) return;
+
+            if (TryFrameActiveToolTarget(_activeStepId))
+            {
+                // Update home so ReturnFromToolAction snaps to the NEW
+                // active target after the next preview finishes its Return
+                // phase, instead of the stale step-activation home.
+                _currentHome = _cameraRig.TargetState;
+                _hasHome = true;
+            }
+        }
+
+        /// <summary>
+        /// If the step has <c>requiredToolActions</c>, frame tightly on the
+        /// first INCOMPLETE target using the step's profile framing distance.
+        /// Skips already-completed actions via the session snapshot so
+        /// subsequent welds / tightens / cuts advance the camera instead of
+        /// sitting on a done target. Returns true when it framed; false when
+        /// the step has no tool actions, all are completed, or no target
+        /// placement resolves.
+        /// </summary>
+        private bool TryFrameActiveToolTarget(string stepId)
+        {
+            if (_package == null || _findTarget == null) return false;
+            if (!_package.TryGetStep(stepId, out var step)) return false;
+            if (step.requiredToolActions == null || step.requiredToolActions.Length == 0) return false;
+
+            // Collect completed targetIds from the session snapshot so we
+            // skip past any already-welded corners.
+            HashSet<string> completedTargets = null;
+            if (ServiceRegistry.TryGet<IMachineSessionController>(out var session) &&
+                session?.ToolController != null &&
+                session.ToolController.TryGetActionSnapshots(out var snapshots) &&
+                snapshots != null)
+            {
+                completedTargets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                for (int i = 0; i < snapshots.Length; i++)
+                {
+                    var s = snapshots[i];
+                    if (s.IsCompleted && !string.IsNullOrWhiteSpace(s.TargetId))
+                        completedTargets.Add(s.TargetId);
+                }
+            }
+
+            foreach (var a in step.requiredToolActions)
+            {
+                if (a == null || string.IsNullOrWhiteSpace(a.targetId)) continue;
+                if (completedTargets != null && completedTargets.Contains(a.targetId)) continue;
+
+                TargetPreviewPlacement placement = _findTarget(a.targetId);
+                if (placement == null) continue;
+
+                Vector3 localPos = new Vector3(placement.position.x, placement.position.y, placement.position.z);
+                Vector3 worldPos = _previewRoot != null ? _previewRoot.TransformPoint(localPos) : localPos;
+
+                float distance = ToolProfileRegistry.Get(step.profile).FramingDistance;
+                _cameraRig.FocusOn(worldPos, distance);
+                OseLog.Info($"[StepGuidance] Framed to tool target '{a.targetId}' world={worldPos} distance={distance:F2} profile='{step.profile}'");
+                return true;
+            }
+            return false;
         }
 
         /// <summary>
