@@ -774,14 +774,6 @@ namespace OSE.UI.Root
         /// </summary>
         public void FireDuringActionStart(string stepId)
         {
-            // Diagnostic — confirms the cue-system cleanup is reached before
-            // each new onDuringAction fire. If the user reports cue-system
-            // accumulation (weld #N > weld #1 shake), this log should show
-            // StopDuringAction ran between Fire calls.
-            int activeBefore = _activeCues.Count;
-            int rangedBefore = _rangedCues.Count;
-            OseLog.Info($"[WeldDiag] FireDuringActionStart  t={UnityEngine.Time.time:F3}  step='{stepId}'  activeCuesBefore={activeBefore}  rangedCuesBefore={rangedBefore}");
-
             // Defensive: stop any onDuringAction cues that are still active
             // from a previous tool-action instance on the same step. Without
             // this, successive welds / tightens / cuts accumulate — each new
@@ -793,7 +785,6 @@ namespace OSE.UI.Root
             // and (b) StopDuringAction has no external callers — so without
             // this guard the cleanup contract is never enforced.
             StopDuringAction(stepId);
-            OseLog.Info($"[WeldDiag]   after StopDuringAction  activeCues={_activeCues.Count}  rangedCues={_rangedCues.Count}");
 
             _lastToolProgress = 0f;
 

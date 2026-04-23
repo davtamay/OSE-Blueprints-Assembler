@@ -85,10 +85,8 @@ namespace OSE.Interaction
             // preview are intentionally NOT invoked — the new Enter assigns
             // fresh callbacks immediately below; the old action was cut short,
             // neither completed nor cancelled by the session-layer semantics.
-            OseLog.Info($"[WeldDiag] Enter  t={Time.time:F3}  phaseAtEntry={_phase}  target='{ctx.TargetId}'  profile='{profile}'");
             if (_phase != Phase.Inactive)
             {
-                OseLog.Info("[WeldDiag] Enter → re-entry guard finalizing in-flight preview");
                 _partEffect?.End();
                 _partEffect = null;
                 if (_preview != null)
