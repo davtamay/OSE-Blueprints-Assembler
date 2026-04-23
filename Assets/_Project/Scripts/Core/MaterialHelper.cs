@@ -402,11 +402,15 @@ namespace OSE.Core
             var shader = UrpLitShader;
             if (shader == null) return;
 
-            // Semi-transparent so the tool action behind/inside is visible
+            // Near-transparent fill so the target surface shows through when
+            // the camera frames tight on the marker. The rim glow from
+            // emission does the work of telling the user where to click.
+            // Previous α=0.18 obscured the weld surface at close framing.
             Color visibleColor = markerColor;
-            visibleColor.a = 0.18f;
+            visibleColor.a = 0.05f;
 
-            // Stronger emission so the rim glows even though base is transparent
+            // Boosted emission so the rim stays unmistakable even though
+            // base is almost fully transparent.
             Color emissionColor = markerColor;
             emissionColor.a = 1f;
 
@@ -419,7 +423,7 @@ namespace OSE.Core
 
                 SetBaseColor(markerMat, visibleColor);
                 if (markerMat.HasProperty("_EmissionColor"))
-                    markerMat.SetColor("_EmissionColor", emissionColor * 1.2f);
+                    markerMat.SetColor("_EmissionColor", emissionColor * 2.2f);
                 markerMat.EnableKeyword("_EMISSION");
 
                 renderer.sharedMaterial = markerMat;
