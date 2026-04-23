@@ -54,36 +54,44 @@ namespace OSE.Editor
             var order = GetOrDeriveTaskOrder(step);
 
             // ── TASK SEQUENCE ──────────────────────────────────────────────────
-            string taskSeqHeader = _multiSelectedTaskSeqIdxs.Count > 1
-                ? $"TASK SEQUENCE ({order.Count})  —  {_multiSelectedTaskSeqIdxs.Count} selected  (Ctrl+click / Shift+click)"
-                : $"TASK SEQUENCE ({order.Count})";
-            DrawUnifiedSectionHeader(taskSeqHeader, order.Count,
-                () =>
-                {
-                    var menu = new GenericMenu();
-                    menu.AddItem(new GUIContent("Part"),           false, () => { _addTaskPicker = AddTaskPicker.Part;       _addPickerPartIdx = 0; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
-                    menu.AddItem(new GUIContent("Tool Target"),    false, () => { _addTaskPicker = AddTaskPicker.ToolTarget; _addPickerTargetIdx = 0; _addPickerToolIdx = 0; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
-                    menu.AddItem(new GUIContent("Wire Connection"),false, () => { _addTaskPicker = AddTaskPicker.Wire;       _addPickerTargetIdx = 0; _addPickerWireColor = new Color(0.15f, 0.15f, 0.15f, 1f); _addPickerWireRadius = 0.003f; _addPickerPolarityA = ""; _addPickerPolarityB = ""; _addPickerConnectorA = ""; _addPickerConnectorB = ""; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
-                    menu.AddItem(new GUIContent("Part (Group)"), false, () => { _addTaskPicker = AddTaskPicker.Group; _addPickerGroupIdx = 0; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
-                    menu.AddSeparator("");
-                    menu.AddItem(new GUIContent("Confirm (button press)"), false, () => { CommitAddConfirmAction(step); _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
-                    menu.AddItem(new GUIContent("Observe (target position)"), false, () => { _addTaskPicker = AddTaskPicker.ToolTarget; _addPickerTargetIdx = 0; _addPickerToolIdx = 0; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
-                    menu.ShowAsContext();
-                });
+            // Slice ME-C: wrapped in DrawCard with the add-task menu bound to
+            // the card's "+" button. Default expanded because this is the
+            // primary authoring surface; authors rarely want it collapsed.
+            string taskSeqTitle = _multiSelectedTaskSeqIdxs.Count > 1
+                ? $"TASK SEQUENCE — {_multiSelectedTaskSeqIdxs.Count} selected  (Ctrl+click / Shift+click)"
+                : "TASK SEQUENCE";
 
-            if (order.Count == 0)
+            Action showAddTaskMenu = () =>
             {
-                EditorGUILayout.LabelField("  No tasks yet. Press + to add or drag a part below.",
-                    EditorStyles.miniLabel);
-                // Always render the drop zone — otherwise an empty sequence
-                // becomes un-droppable and the only way to add is via the +
-                // menu.
-                DrawTaskSequenceDropZone(step, order);
-            }
-            else
+                var menu = new GenericMenu();
+                menu.AddItem(new GUIContent("Part"),           false, () => { _addTaskPicker = AddTaskPicker.Part;       _addPickerPartIdx = 0; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
+                menu.AddItem(new GUIContent("Tool Target"),    false, () => { _addTaskPicker = AddTaskPicker.ToolTarget; _addPickerTargetIdx = 0; _addPickerToolIdx = 0; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
+                menu.AddItem(new GUIContent("Wire Connection"),false, () => { _addTaskPicker = AddTaskPicker.Wire;       _addPickerTargetIdx = 0; _addPickerWireColor = new Color(0.15f, 0.15f, 0.15f, 1f); _addPickerWireRadius = 0.003f; _addPickerPolarityA = ""; _addPickerPolarityB = ""; _addPickerConnectorA = ""; _addPickerConnectorB = ""; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
+                menu.AddItem(new GUIContent("Part (Group)"), false, () => { _addTaskPicker = AddTaskPicker.Group; _addPickerGroupIdx = 0; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
+                menu.AddSeparator("");
+                menu.AddItem(new GUIContent("Confirm (button press)"), false, () => { CommitAddConfirmAction(step); _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
+                menu.AddItem(new GUIContent("Observe (target position)"), false, () => { _addTaskPicker = AddTaskPicker.ToolTarget; _addPickerTargetIdx = 0; _addPickerToolIdx = 0; _selectedTaskSeqIdx = -1; _multiSelectedTaskSeqIdxs.Clear(); });
+                menu.ShowAsContext();
+            };
+
+            DrawCard(taskSeqTitle, "canvas/task-sequence", CardAccentNeutral,
+                defaultExpanded: true, count: order.Count, onAddClick: showAddTaskMenu,
+                body: () =>
             {
-                DrawTaskSequenceDragList(step, order);
-            }
+                if (order.Count == 0)
+                {
+                    EditorGUILayout.LabelField("  No tasks yet. Press + to add or drag a part below.",
+                        EditorStyles.miniLabel);
+                    // Always render the drop zone — otherwise an empty sequence
+                    // becomes un-droppable and the only way to add is via the +
+                    // menu.
+                    DrawTaskSequenceDropZone(step, order);
+                }
+                else
+                {
+                    DrawTaskSequenceDragList(step, order);
+                }
+            });
 
             // ── Add-task picker (shown below sequence list) ────────────────────
             if (_addTaskPicker == AddTaskPicker.Part)       DrawAddPartPicker();
@@ -108,21 +116,29 @@ namespace OSE.Editor
                 DrawTaskInspectorBody(step, order);
             }
 
-            // ── GROUPS (Phase A4) ──────────────────────────────────────────────
-            // Clickable list of groups (subassemblies) in this step. Clicking
-            // one selects it — the inspector shows its properties and the
-            // SceneView shows the rotation/position gizmo on its root GO.
-            EditorGUILayout.Space(4);
-            DrawCanvasSubassemblyList(step);
+            // ── GROUPS (Slice ME-C) ─────────────────────────────────────────
+            // Wrapped in DrawCard. The "+" button on the card header binds to
+            // the existing group-creation action (seed from requiredPartIds
+            // or empty subassembly). Default expanded — authors edit groups
+            // frequently on multi-group steps.
+            var relevantGroups = CollectRelevantSubassembliesForStep(step);
+            DrawCard("GROUPS", "canvas/groups", SubAccent,
+                defaultExpanded: true, count: relevantGroups.Count,
+                onAddClick: () => TryCreateGroupForStep(step),
+                body: () => DrawCanvasSubassemblyList(step, drawOwnChrome: false));
 
-            // ── WHAT'S SHOWING — collapsed by default, just count pills ─────
-            // Full bucket detail + add picker open on click. Most authors
-            // only need the pills to confirm "yes, 12 parts are on screen."
-            EditorGUILayout.Space(4);
-            DrawVisibilitySection(step);
+            // ── WHAT'S SHOWING (Slice ME-C) ─────────────────────────────────
+            // Diagnostic bucket summary — collapsed by default. Card chrome
+            // replaces the inner foldout so there's one collapse state.
+            DrawCard("WHAT'S SHOWING", "canvas/whats-showing", CardAccentNeutral,
+                defaultExpanded: false,
+                body: () => DrawVisibilitySection(step, drawOwnChrome: false));
 
-            // ── WHAT'S CHANGING — diagnostic delta vs the previous step ─────
-            DrawWhatsChangingSection(step);
+            // ── WHAT'S CHANGING (Slice ME-C) ────────────────────────────────
+            // Per-step delta — collapsed by default (same rationale).
+            DrawCard("WHAT'S CHANGING", "canvas/whats-changing", CardAccentNeutral,
+                defaultExpanded: false,
+                body: () => DrawWhatsChangingSection(step, drawOwnChrome: false));
 
             // Groups, Part×Tool, Animation Cues, and Particle Effects moved
             // to the inspector pane (right side) as of the canvas redesign.

@@ -1330,23 +1330,23 @@ namespace OSE.Editor
         /// that include it). Clicking a row selects it — the inspector shows
         /// its detail and the SceneView shows the gizmo.
         /// </summary>
-        private void DrawCanvasSubassemblyList(StepDefinition step)
+        /// <summary>
+        /// Collects the subassemblies relevant to <paramref name="step"/> (owner
+        /// aggregate, required leaf, and any sub whose stepIds include this
+        /// step). Sorted leaves-first, aggregates-last. Helper exposed so the
+        /// Slice-ME-C card wrapper can pre-compute the count for its header pill
+        /// without re-running the filter inside the body.
+        /// </summary>
+        private List<SubassemblyDefinition> CollectRelevantSubassembliesForStep(StepDefinition step)
         {
-            if (_pkg == null) return;
-
-            var allSubs = _pkg.GetSubassemblies();
-            if (allSubs == null || allSubs.Length == 0) return;
-
-            // Collect subassemblies relevant to this step. A step can reference
-            // TWO groups simultaneously: its owning aggregate (step.subassemblyId,
-            // e.g. "cube joining") and the leaf being placed in this step
-            // (step.requiredSubassemblyId, e.g. "left frame side"). Both must
-            // surface in GROUPS so the author can edit the leaf's pose while
-            // seeing its parent aggregate context.
-            string ownerSubId     = step?.subassemblyId;
-            string requiredSubId  = step?.requiredSubassemblyId;
-
             var relevant = new List<SubassemblyDefinition>();
+            if (_pkg == null) return relevant;
+            var allSubs = _pkg.GetSubassemblies();
+            if (allSubs == null || allSubs.Length == 0) return relevant;
+
+            string ownerSubId    = step?.subassemblyId;
+            string requiredSubId = step?.requiredSubassemblyId;
+
             for (int i = 0; i < allSubs.Length; i++)
             {
                 var sub = allSubs[i];
@@ -1366,45 +1366,63 @@ namespace OSE.Editor
                     relevant.Add(sub);
             }
 
-            // Leaves first, aggregates (phase scopes) last — authorable things
-            // should be the default click target.
             relevant.Sort((a, b) =>
             {
                 int aScore = a.isAggregate ? 1 : 0;
                 int bScore = b.isAggregate ? 1 : 0;
                 return aScore.CompareTo(bScore);
             });
+            return relevant;
+        }
 
-            // Header — always show, even when 0 groups (so the create-drop-zone is reachable)
-            EditorGUILayout.BeginHorizontal();
-            var titleStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 11 };
-            GUILayout.Label(new GUIContent($"GROUPS ({relevant.Count})",
-                "Part groups that this step belongs to. Click to inspect. " +
-                "Drag parts from the Hierarchy onto the drop zone to create/add."),
-                titleStyle);
-            GUILayout.FlexibleSpace();
-            // [+] unified create button. Kind is decided by what the author
-            // drops next: parts → part-group; [G] groups → scope. When the
-            // step has requiredPartIds, seeds a part-group with those for
-            // one-click "group these parts" flow. Otherwise creates an empty
-            // subassembly whose kind is determined at first drop.
-            var addBtnStyle = new GUIStyle(EditorStyles.miniButton)
+        /// <summary>
+        /// "+"-button action for the GROUPS card. Seeds a part-group with the
+        /// step's requiredPartIds when present, otherwise creates an empty
+        /// subassembly whose kind is decided at first drop.
+        /// </summary>
+        private void TryCreateGroupForStep(StepDefinition step)
+        {
+            if (step == null) return;
+            var seedParts = step.requiredPartIds;
+            if (seedParts != null && seedParts.Length > 0)
+                CreateGroupFromSelection(step, new List<string>(seedParts));
+            else
+                CreateEmptySubassemblyForStep(step);
+        }
+
+        private void DrawCanvasSubassemblyList(StepDefinition step, bool drawOwnChrome = true)
+        {
+            if (_pkg == null) return;
+
+            var allSubs = _pkg.GetSubassemblies();
+            if (allSubs == null || allSubs.Length == 0) return;
+
+            var relevant = CollectRelevantSubassembliesForStep(step);
+
+            // Header + "+" button — drawn only when the caller isn't already
+            // providing card chrome (the Slice-ME-C card wrapper supplies both).
+            if (drawOwnChrome)
             {
-                fontStyle = FontStyle.Bold,
-                normal = { textColor = SubAccent },
-            };
-            if (GUILayout.Button(new GUIContent("+",
-                    "Create a group for this step. Drop parts to make a part-group, or drop [G] groups to make a scope."),
-                    addBtnStyle, GUILayout.Width(22), GUILayout.Height(16)))
-            {
-                var seedParts = step.requiredPartIds;
-                if (seedParts != null && seedParts.Length > 0)
-                    CreateGroupFromSelection(step, new List<string>(seedParts));
-                else
-                    CreateEmptySubassemblyForStep(step);
+                EditorGUILayout.BeginHorizontal();
+                var titleStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 11 };
+                GUILayout.Label(new GUIContent($"GROUPS ({relevant.Count})",
+                    "Part groups that this step belongs to. Click to inspect. " +
+                    "Drag parts from the Hierarchy onto the drop zone to create/add."),
+                    titleStyle);
+                GUILayout.FlexibleSpace();
+                var addBtnStyle = new GUIStyle(EditorStyles.miniButton)
+                {
+                    fontStyle = FontStyle.Bold,
+                    normal    = { textColor = SubAccent },
+                };
+                if (GUILayout.Button(new GUIContent("+",
+                        "Create a group for this step. Drop parts to make a part-group, or drop [G] groups to make a scope."),
+                        addBtnStyle, GUILayout.Width(22), GUILayout.Height(16)))
+                {
+                    TryCreateGroupForStep(step);
+                }
+                EditorGUILayout.EndHorizontal();
             }
-
-            EditorGUILayout.EndHorizontal();
 
             if (relevant.Count == 0)
             {

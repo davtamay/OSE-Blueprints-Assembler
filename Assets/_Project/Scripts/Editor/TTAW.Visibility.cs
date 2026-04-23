@@ -69,7 +69,7 @@ namespace OSE.Editor
 
         // ── Section drawer (called from DrawUnifiedList) ──────────────────────
 
-        private void DrawVisibilitySection(StepDefinition step)
+        private void DrawVisibilitySection(StepDefinition step, bool drawOwnChrome = true)
         {
             if (_pkg == null || step == null) return;
 
@@ -81,28 +81,48 @@ namespace OSE.Editor
                                      out int totalVisible,
                                      out HashSet<string> ownedSubPartIds);
 
-            // ── Section header — count pills are always visible (1 line) ─────
-            // The full bucket detail is collapsed by default. Click the
-            // header to expand. This keeps the canvas compact on most steps
-            // while still showing "yes, 12 parts are on screen" at a glance.
-            EditorGUILayout.BeginHorizontal();
-            string chevron = _visibilityBucketsExpanded ? "▼" : "▶";
-            var titleStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 11 };
-            if (GUILayout.Button($"{chevron} WHAT'S SHOWING", titleStyle, GUILayout.ExpandWidth(false)))
-                _visibilityBucketsExpanded = !_visibilityBucketsExpanded;
-            GUILayout.FlexibleSpace();
             int toolCount = step.requiredToolActions?.Length ?? 0;
             int wireCount = string.Equals(step.ResolvedFamily.ToString(), "Connect", StringComparison.Ordinal)
                 ? (step.targetIds?.Length ?? 0) : 0;
-            DrawCountPill(VisColorOwned,                    _visScratchOwnedHere.Count,  "parts");
-            DrawCountPill(new Color(0.80f, 0.55f, 0.95f),  toolCount,                   "tools");
-            DrawCountPill(new Color(0.95f, 0.55f, 0.35f),  wireCount,                   "wires");
-            DrawCountPill(VisColorOptional,                 _visScratchOptionalHere.Count,"optional");
-            DrawCountPill(VisColorSub,                      _visScratchOwnedSubHere.Count,"group");
-            DrawCountPill(VisColorEarlier,                  _visScratchInheritedEarlier.Count, "earlier");
-            EditorGUILayout.EndHorizontal();
 
-            if (!_visibilityBucketsExpanded) return;
+            // Internal header + foldout — drawn only when the caller isn't
+            // already providing card chrome. The Slice-ME-C card wrapper
+            // supplies its own chevron + collapse state, so drawOwnChrome=false
+            // skips the inner foldout entirely (no double-nested collapse) and
+            // renders the count pills + body unconditionally.
+            if (drawOwnChrome)
+            {
+                EditorGUILayout.BeginHorizontal();
+                string chevron = _visibilityBucketsExpanded ? "▼" : "▶";
+                var titleStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 11 };
+                if (GUILayout.Button($"{chevron} WHAT'S SHOWING", titleStyle, GUILayout.ExpandWidth(false)))
+                    _visibilityBucketsExpanded = !_visibilityBucketsExpanded;
+                GUILayout.FlexibleSpace();
+                DrawCountPill(VisColorOwned,                    _visScratchOwnedHere.Count,  "parts");
+                DrawCountPill(new Color(0.80f, 0.55f, 0.95f),  toolCount,                   "tools");
+                DrawCountPill(new Color(0.95f, 0.55f, 0.35f),  wireCount,                   "wires");
+                DrawCountPill(VisColorOptional,                 _visScratchOptionalHere.Count,"optional");
+                DrawCountPill(VisColorSub,                      _visScratchOwnedSubHere.Count,"group");
+                DrawCountPill(VisColorEarlier,                  _visScratchInheritedEarlier.Count, "earlier");
+                EditorGUILayout.EndHorizontal();
+
+                if (!_visibilityBucketsExpanded) return;
+            }
+            else
+            {
+                // Count pills still render at the top of the body (they're
+                // information, not chrome) so authors see the summary without
+                // needing to read each bucket.
+                EditorGUILayout.BeginHorizontal();
+                DrawCountPill(VisColorOwned,                    _visScratchOwnedHere.Count,  "parts");
+                DrawCountPill(new Color(0.80f, 0.55f, 0.95f),  toolCount,                   "tools");
+                DrawCountPill(new Color(0.95f, 0.55f, 0.35f),  wireCount,                   "wires");
+                DrawCountPill(VisColorOptional,                 _visScratchOptionalHere.Count,"optional");
+                DrawCountPill(VisColorSub,                      _visScratchOwnedSubHere.Count,"group");
+                DrawCountPill(VisColorEarlier,                  _visScratchInheritedEarlier.Count, "earlier");
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.EndHorizontal();
+            }
 
             // Compact one-line legend
             var legendStyle = new GUIStyle(EditorStyles.miniLabel)
@@ -224,7 +244,7 @@ namespace OSE.Editor
         /// step. Surfaces "why did this part move" at a glance — the source
         /// tag identifies which field in previewConfig drove the pose.
         /// </summary>
-        private void DrawWhatsChangingSection(StepDefinition step)
+        private void DrawWhatsChangingSection(StepDefinition step, bool drawOwnChrome = true)
         {
             if (_pkg == null || step == null) return;
             int currentSeq = step.sequenceIndex;
@@ -252,31 +272,46 @@ namespace OSE.Editor
                 }
             }
 
-            // Header row with count pill + foldout toggle.
-            EditorGUILayout.Space(4);
-            bool open = EditorPrefs.GetBool(PrefWhatsChangingOpen, false);
-
-            EditorGUILayout.BeginHorizontal();
-            var arrow = open ? "▼" : "▶";
-            var hdrStyle = new GUIStyle(EditorStyles.miniBoldLabel)
-            {
-                normal = { textColor = total > 0 ? new Color(0.95f, 0.70f, 0.30f) : new Color(0.62f, 0.62f, 0.66f) },
-            };
-            if (GUILayout.Button($"{arrow} WHAT'S CHANGING ({total})", hdrStyle, GUILayout.ExpandWidth(false)))
-            {
-                open = !open;
-                EditorPrefs.SetBool(PrefWhatsChangingOpen, open);
-            }
+            string summary = $"  {cSource} source · {cEntered} entered · {cLeft} left · {cStacked} stacked · {cValue} value";
             var summaryStyle = new GUIStyle(EditorStyles.miniLabel)
             {
                 normal    = { textColor = new Color(0.68f, 0.68f, 0.72f) },
                 alignment = TextAnchor.MiddleLeft,
             };
-            string summary = $"  {cSource} source · {cEntered} entered · {cLeft} left · {cStacked} stacked · {cValue} value";
-            GUILayout.Label(summary, summaryStyle);
-            EditorGUILayout.EndHorizontal();
 
-            if (!open || total == 0) return;
+            // Internal header + foldout — drawn only when the caller isn't
+            // providing card chrome. The Slice-ME-C card wrapper supplies its
+            // own chevron + collapse state, so drawOwnChrome=false renders
+            // the summary line inline and then the body directly.
+            if (drawOwnChrome)
+            {
+                EditorGUILayout.Space(4);
+                bool open = EditorPrefs.GetBool(PrefWhatsChangingOpen, false);
+
+                EditorGUILayout.BeginHorizontal();
+                var arrow = open ? "▼" : "▶";
+                var hdrStyle = new GUIStyle(EditorStyles.miniBoldLabel)
+                {
+                    normal = { textColor = total > 0 ? new Color(0.95f, 0.70f, 0.30f) : new Color(0.62f, 0.62f, 0.66f) },
+                };
+                if (GUILayout.Button($"{arrow} WHAT'S CHANGING ({total})", hdrStyle, GUILayout.ExpandWidth(false)))
+                {
+                    open = !open;
+                    EditorPrefs.SetBool(PrefWhatsChangingOpen, open);
+                }
+                GUILayout.Label(summary, summaryStyle);
+                EditorGUILayout.EndHorizontal();
+
+                if (!open || total == 0) return;
+            }
+            else
+            {
+                // Card chrome handled outside. Render the summary line at the
+                // top of the body, then bail early on zero rows so the card
+                // shows an empty state naturally.
+                EditorGUILayout.LabelField(summary, summaryStyle);
+                if (total == 0) return;
+            }
 
             // Rows.
             for (int i = 0; i < rows.Count; i++)
