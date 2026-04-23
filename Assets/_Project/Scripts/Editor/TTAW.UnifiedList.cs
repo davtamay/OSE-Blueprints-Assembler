@@ -1268,16 +1268,19 @@ namespace OSE.Editor
                         reqOptW += awaitW + 2f;
                     }
 
-                    // Phase I.f.a — unorderedSet label field. Shown only on
-                    // set leaders and on ordered singleton rows; hidden on
-                    // non-leader members (the leader above owns the label
-                    // for the whole span, and editing a member's label in
-                    // isolation would break the contiguity+kind invariants
-                    // the normalizer enforces).
-                    //
-                    // NO TASK rows also hide the field — those are visual-
-                    // only part introductions and don't participate in task
-                    // sequencing; the NO TASK pill takes the slot.
+                    // Phase I.f.a — unorderedSet label field. Shown on rows
+                    // where set-membership is semantically meaningful:
+                    //   • Set leaders and ordered singletons (part / toolAction /
+                    //     wire kinds, including NO-TASK rows after Slice ME-A).
+                    //   • Hidden on non-leader members (the leader above owns
+                    //     the label for the whole span, and editing a member's
+                    //     label in isolation would break the contiguity+kind
+                    //     invariants the normalizer enforces).
+                    //   • Hidden on confirm / confirm_action rows — these are
+                    //     terminal button-press tasks at the end of Confirm
+                    //     steps. Grouping them with other tasks into an
+                    //     unordered set doesn't make sense (a Confirm is always
+                    //     the sequential end-state).
                     //
                     // On leaders, a small "\u257e" (loop/shuffle-ish) prefix
                     // sits to the left of the field so the unordered-set
@@ -1289,7 +1292,10 @@ namespace OSE.Editor
                     // as a power-user escape hatch and a paste target for
                     // bulk edits.
                     const float setFieldW = 58f;
-                    if (!isNoTask && !isNonLeaderMember)
+                    bool isConfirmKind = string.Equals(entry.kind, "confirm", StringComparison.Ordinal)
+                                          || string.Equals(entry.kind, "confirm_action", StringComparison.Ordinal);
+                    bool showsSetField = !isNonLeaderMember && !isConfirmKind;
+                    if (showsSetField)
                     {
                         float setFieldX = rect.x + 78f + reqOptW + 2f + indent;
                         // Chevron prefix (~12px) for leader rows only — makes
@@ -1412,13 +1418,11 @@ namespace OSE.Editor
                     // be set members, closing a prior authoring gap.
 
                     // setFieldW (58) + 2 px gap reserves space for the
-                    // unorderedSet label field. Drawn on leaders and ordered
-                    // singletons; hidden on non-leader set members so the id
-                    // label can run closer to the indented badge. After Slice
-                    // ME-A, NO-TASK rows also reserve the slot — previously
-                    // the NO TASK pill occupied it.
-                    bool reservesSetField = !isNonLeaderMember;
-                    float setFieldReserve = reservesSetField ? (setFieldW + 2f) : 0f;
+                    // unorderedSet label field. Matches the showsSetField
+                    // predicate above so the slot is reserved iff the field
+                    // is actually drawn (non-leader members and confirm-kind
+                    // rows skip it, freeing horizontal room for the id label).
+                    float setFieldReserve = showsSetField ? (setFieldW + 2f) : 0f;
                     float idX    = rect.x + 80f + reqOptW + setFieldReserve + indent;
                     float idW    = rect.width - 110f - tagW - dirtyW - reqOptW - setFieldReserve - indent;
                     var idRect   = new Rect(idX, rect.y + 1f, idW, rect.height);
