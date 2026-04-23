@@ -1240,39 +1240,27 @@ namespace OSE.Editor
 
                     float dirtyW = entryDirty ? 14f : 0f;
 
-                    // Reserve a dedicated slot for the "NO TASK" pill so it
-                    // never overlaps the ID label. Drawn in the gap between
-                    // the R|O|N toggle and the part-id text.
-                    const float noTaskW = 58f;
-                    float leadPad = isNoTask ? (noTaskW + 4f) : 0f;
-                    if (isNoTask)
-                    {
-                        float ntX = rect.x + 80f + reqOptW - 18f; // sits right after the toggle
-                        var ntRect = new Rect(ntX, rect.y + 3f, noTaskW, rect.height - 6f);
-                        EditorGUI.DrawRect(ntRect, new Color(0.55f, 0.78f, 0.95f, 0.28f));
-                        var ntStyle = new GUIStyle(EditorStyles.miniLabel)
-                        {
-                            normal    = { textColor = new Color(0.70f, 0.88f, 1f) },
-                            fontSize  = 8,
-                            alignment = TextAnchor.MiddleCenter,
-                            fontStyle = FontStyle.Bold,
-                        };
-                        GUI.Label(ntRect,
-                            new GUIContent("NO TASK",
-                                "Introduced here — no task attached. This part becomes visible at this step but the trainee is not required to interact with it."),
-                            ntStyle);
-                    }
+                    // Slice ME-A: "NO TASK" pill retired. The N chip (pale-
+                    // cyan tri-state toggle) already conveys visualPartIds
+                    // membership via its letter + color + tooltip; showing a
+                    // second non-clickable badge that says the same thing is
+                    // redundant. leadPad stays zero for every row so id
+                    // labels align consistently regardless of role. The
+                    // ~62 px previously reserved for the pill is now
+                    // available for the set-label field on NO-TASK rows
+                    // (see reservesSetField below) — NO-TASK rows can now
+                    // be set members, closing a prior authoring gap.
 
-                    // setFieldW (58) + 2px gap reserves space for the set-label
-                    // field — but only on rows that actually draw it (leaders
-                    // and ordered singletons; NO TASK rows use the slot for
-                    // the NO TASK pill via leadPad; non-leader set members
-                    // hide the field so the id label can run closer to the
-                    // indented badge).
-                    bool reservesSetField = !isNoTask && !isNonLeaderMember;
+                    // setFieldW (58) + 2 px gap reserves space for the
+                    // unorderedSet label field. Drawn on leaders and ordered
+                    // singletons; hidden on non-leader set members so the id
+                    // label can run closer to the indented badge. After Slice
+                    // ME-A, NO-TASK rows also reserve the slot — previously
+                    // the NO TASK pill occupied it.
+                    bool reservesSetField = !isNonLeaderMember;
                     float setFieldReserve = reservesSetField ? (setFieldW + 2f) : 0f;
-                    float idX    = rect.x + 80f + reqOptW + setFieldReserve + leadPad + indent;
-                    float idW    = rect.width - 110f - tagW - dirtyW - reqOptW - setFieldReserve - leadPad - indent;
+                    float idX    = rect.x + 80f + reqOptW + setFieldReserve + indent;
+                    float idW    = rect.width - 110f - tagW - dirtyW - reqOptW - setFieldReserve - indent;
                     var idRect   = new Rect(idX, rect.y + 1f, idW, rect.height);
                     // Show group display name + member count for [G] tasks, raw id for everything else.
                     // The count badge ("14 parts") makes group scope visible at a glance so authors
@@ -1505,9 +1493,16 @@ namespace OSE.Editor
                         EditorGUI.LabelField(new Rect(dotX, rect.y + 1f, 14f, rect.height), "●", dotStyle);
                     }
 
+                    // Slice ME-A: × button is now selection-reveal (only visible
+                    // on the currently-selected row). When hidden, the row-click
+                    // rect extends to full width; when visible, it carves out
+                    // 26 px on the right edge so clicks on × don't double-fire.
+                    bool isSelectedRow_MEA = _selectedTaskSeqIdx == index;
+                    float rowClickWidth = isSelectedRow_MEA ? (rect.width - 26f) : rect.width;
+
                     // Whole-row click (excluding × button) — MouseDown so it fires before
                     // onMouseUpCallback and can call Event.current.Use() to block it.
-                    var rowClickRect = new Rect(rect.x, rect.y, rect.width - 26f, rect.height);
+                    var rowClickRect = new Rect(rect.x, rect.y, rowClickWidth, rect.height);
                     if (Event.current.type == EventType.MouseDown
                         && Event.current.button == 0 // left-click only; right-click → context menu
                         && rowClickRect.Contains(Event.current.mousePosition))
@@ -1705,10 +1700,17 @@ namespace OSE.Editor
                         }
                     }
 
-                    var removeRect = new Rect(rect.xMax - 22f, rect.y + 1f, 22f, rect.height - 2f);
-                    if (GUI.Button(removeRect, "×", EditorStyles.miniButton))
+                    // Slice ME-A: × delete shown only on the currently-selected
+                    // row. Keeps unselected rows visually quiet; still
+                    // discoverable because clicking the row reveals the button
+                    // on the same frame.
+                    if (isSelectedRow_MEA)
                     {
-                        RemoveTaskRowsAt(step, order, new List<int> { index });
+                        var removeRect = new Rect(rect.xMax - 22f, rect.y + 1f, 22f, rect.height - 2f);
+                        if (GUI.Button(removeRect, "×", EditorStyles.miniButton))
+                        {
+                            RemoveTaskRowsAt(step, order, new List<int> { index });
+                        }
                     }
                 };
 

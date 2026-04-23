@@ -180,5 +180,27 @@ namespace OSE.Editor
             int keep = (maxLen - 1) / 2;
             return s.Substring(0, keep) + "…" + s.Substring(s.Length - keep);
         }
+
+        /// <summary>
+        /// Draws a small accent-tinted pill (family label, tool summary, etc.)
+        /// used in the Slice-ME-A consolidated step meta row. Auto-sizes to
+        /// the label content + 12 px padding; fills behind the text at 22 %
+        /// accent alpha and renders the text in the full accent color.
+        /// </summary>
+        private static void DrawStepMetaPill(string label, Color accent, string tooltip)
+        {
+            var style = new GUIStyle(EditorStyles.miniBoldLabel)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                normal    = { textColor = accent },
+                fontSize  = 10,
+            };
+            var content = new GUIContent(label, tooltip);
+            float w = style.CalcSize(content).x + 14f;
+            var rect = GUILayoutUtility.GetRect(w, 18f, GUILayout.Width(w), GUILayout.Height(18f));
+            EditorGUI.DrawRect(rect, new Color(accent.r, accent.g, accent.b, 0.22f));
+            GUI.Label(rect, content, style);
+            GUILayout.Space(4);
+        }
     }
 }

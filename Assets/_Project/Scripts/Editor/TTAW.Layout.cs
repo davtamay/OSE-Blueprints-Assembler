@@ -590,19 +590,20 @@ namespace OSE.Editor
                     int    tCount     = step.targetIds?.Length ?? 0;
 
                     EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-                    // Family row — always visible so the author can see at a
-                    // glance whether this step is "Place" (placement-owning)
-                    // vs "Use / Confirm / Connect". Matches the Rule-2
-                    // constraint surfaced by PartOwnershipExclusivityPass.
-                    var familyStyle = new GUIStyle(EditorStyles.miniBoldLabel)
-                    {
-                        normal = { textColor = step.ResolvedFamily == StepFamily.Place
-                            ? new Color(0.30f, 0.78f, 0.36f) : new Color(0.72f, 0.72f, 0.78f) },
-                    };
-                    EditorGUILayout.LabelField($"Family: {step.ResolvedFamily}", familyStyle);
-                    EditorGUILayout.LabelField(
-                        $"Tool: {toolName}{profileStr}  ·  {tCount} target{(tCount == 1 ? "" : "s")}",
-                        EditorStyles.miniLabel);
+                    // Slice ME-A: step meta consolidated to one horizontal pill
+                    // row (was two labeled lines — Family / Tool). Family pill
+                    // uses FamilyAccentFor(step) so the color matches the
+                    // Inspector breadcrumb above. Tool + targets share a second
+                    // muted pill. Total vertical savings: one row per step.
+                    EditorGUILayout.BeginHorizontal();
+                    Color famAccent = FamilyAccentFor(step);
+                    DrawStepMetaPill($"● {FamilyLabelFor(step)}", famAccent,
+                        $"Step family: {step.ResolvedFamily}. Drives the handler that advances the step.");
+                    string toolPillText = $"⚒ {toolName}{profileStr}  ·  {tCount} target{(tCount == 1 ? "" : "s")}";
+                    DrawStepMetaPill(toolPillText, new Color(0.72f, 0.72f, 0.78f),
+                        "Tool + profile + target count for this step. '(no tool)' means hand-only.");
+                    GUILayout.FlexibleSpace();
+                    EditorGUILayout.EndHorizontal();
                     // "Owns" row — only on Place-family steps, lists the parts
                     // this step is the Place owner of, with an inline red chip
                     // for any part that also appears in another Place step
