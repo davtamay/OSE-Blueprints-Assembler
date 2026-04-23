@@ -3299,6 +3299,18 @@ namespace OSE.Editor
         private void DrawTaskInspectorBodyInner(StepDefinition step, List<TaskOrderEntry> order)
         {
             var selEntry = order[_selectedTaskSeqIdx];
+
+            // Slice D: sticky breadcrumb at the very top of the Inspector
+            // body. Shows "Step N · Scope · Entity" with a family-colored
+            // left rule so the author always knows what they're editing
+            // without reading the dispatcher's section header further down.
+            // Skipped for multi-select since the BATCH header already labels
+            // the scope.
+            bool singleSel = !(_multiSelectedTaskSeqIdxs.Count > 1
+                && (_multiSelectedParts.Count > 1 || _multiSelected.Count > 1));
+            if (singleSel)
+                DrawInspectorBreadcrumb(step, selEntry);
+
             EditorGUILayout.Space(4);
 
             // Multi-selection → batch panel (parts first, then targets, then
