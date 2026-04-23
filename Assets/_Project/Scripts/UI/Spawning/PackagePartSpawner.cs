@@ -410,6 +410,19 @@ namespace OSE.UI.Root
                     continue;
                 }
 
+                // Play-mode user-placement / grab preserve: a part in
+                // Grabbed / PlacedVirtually / Completed state owns its own
+                // transform for the rest of the session. PartPositionResolver
+                // honours this via its shouldPreserveTransform guard, but
+                // ApplyStepAwarePositions was overriding the live transform
+                // on every step activation — the root cause of "parts don't
+                // persist after placement in play mode". The placed part
+                // stays wherever the user put it; ShouldPreservePartTransform
+                // gates both the reposition AND the hide path below (a
+                // placed part should stay visible even if PoseTable's
+                // IsVisibleAt says Hidden at the next step).
+                bool preserveLive = ShouldPreservePartTransform(partGo.name);
+
                 // Visibility is authoritative: PoseTable.IsVisibleAt decides.
                 // Future-step parts (no entry at lookupSeq, or explicitly
                 // Hidden) are deactivated — no startPosition fallback for
@@ -419,6 +432,15 @@ namespace OSE.UI.Root
                 // every future part at its startPosition.
                 if (!poseTable.IsVisibleAt(partGo.name, lookupSeq))
                 {
+                    if (preserveLive)
+                    {
+                        // User-placed / grabbed parts override authored
+                        // visibility — once the user has touched the part
+                        // this session, it stays in place until session
+                        // state is reset.
+                        if (!partGo.activeSelf) partGo.SetActive(true);
+                        continue;
+                    }
                     if (partGo.activeSelf) partGo.SetActive(false);
                     continue;
                 }
@@ -441,9 +463,18 @@ namespace OSE.UI.Root
                     if (rscl.sqrMagnitude < 0.00001f) rscl = Vector3.one;
                 }
 
-                partGo.SetActive(true);
-                partGo.transform.SetLocalPositionAndRotation(rpos, rrot);
-                partGo.transform.localScale = rscl;
+                if (preserveLive)
+                {
+                    // User placement / grab owns the live transform — make
+                    // the part visible but don't touch its pose.
+                    if (!partGo.activeSelf) partGo.SetActive(true);
+                }
+                else
+                {
+                    partGo.SetActive(true);
+                    partGo.transform.SetLocalPositionAndRotation(rpos, rrot);
+                    partGo.transform.localScale = rscl;
+                }
 
                 if (!Application.isPlaying)
                 {
