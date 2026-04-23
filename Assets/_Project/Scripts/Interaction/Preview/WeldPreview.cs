@@ -43,6 +43,12 @@ namespace OSE.Interaction
             _weldBeadObj = null;
             _weldLine = null;
 
+            // Diagnostic — confirm Begin captures a clean _actionRot each weld.
+            // If this value compounds across welds (non-identity + wobble-like
+            // non-zero pitch/yaw), the prior weld's End() never ran or failed
+            // to restore the rotation. t = Time.time in seconds.
+            OseLog.Info($"[WeldDiag] Begin  t={Time.time:F3}  target='{context.TargetId}'  _actionRot.euler={_actionRot.eulerAngles}  toolName='{(context.ToolPreview != null ? context.ToolPreview.name : "null")}'");
+
             Vector3 toolPos = context.ToolPreview != null ? context.ToolPreview.transform.position : context.TargetWorldPos;
             _approachDir = (toolPos - context.TargetWorldPos).normalized;
             _standoff = Vector3.Distance(toolPos, context.TargetWorldPos);
@@ -63,6 +69,18 @@ namespace OSE.Interaction
 
         public override void End(bool completed)
         {
+            // Diagnostic — confirm End() is actually reached AND what state it sees.
+            // If duplicate-particle/compound-shake persists after my fixes, either
+            // (a) this line doesn't fire between welds (End never called), or
+            // (b) it fires but _arcEffect is already null (prior arc leaked
+            // somewhere else), or (c) the tool rotation at entry contains
+            // accumulated wobble from prior weld (the restore at line 94
+            // is necessary).
+            string rotAtEntry = _ctx.ToolPreview != null
+                ? _ctx.ToolPreview.transform.rotation.eulerAngles.ToString()
+                : "<no-tool>";
+            OseLog.Info($"[WeldDiag] End    t={Time.time:F3}  completed={completed}  _arcEffect={( _arcEffect != null ? "ALIVE" : "null")}  _weldBeadObj={( _weldBeadObj != null ? "ALIVE" : "null")}  tool.rotation={rotAtEntry}  _actionRot={_actionRot.eulerAngles}");
+
             // Stop the continuous weld arc particles. User reported that
             // successive welds on the same step showed "duplicate particle
             // with offset" — root cause: soft-stop (StopEmitting) lets

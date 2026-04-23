@@ -1,5 +1,6 @@
 using UnityEngine;
 using OSE.Content;
+using OSE.Core;
 
 namespace OSE.UI.Root
 {
@@ -30,6 +31,15 @@ namespace OSE.UI.Root
                 for (int i = 0; i < context.Targets.Count; i++)
                     _baselinePos[i] = context.Targets[i] != null ? context.Targets[i].transform.localPosition : Vector3.zero;
             }
+
+            // Diagnostic — if two vibration players are running simultaneously
+            // on the same tool (the 2nd weld's "shakes quicker" symptom), two
+            // Start lines will appear for the same target between Stop calls.
+            int targetCount = context.Targets != null ? context.Targets.Count : 0;
+            string firstTargetName = targetCount > 0 && context.Targets[0] != null
+                ? context.Targets[0].name : "<none>";
+            Vector3 baseline0 = _baselinePos != null && _baselinePos.Length > 0 ? _baselinePos[0] : Vector3.zero;
+            OseLog.Info($"[WeldDiag] Vib.Start  t={Time.time:F3}  targets={targetCount}  first='{firstTargetName}'  baseline0={baseline0}  hash=0x{GetHashCode():X}");
         }
 
         public bool Tick(float deltaTime)
@@ -47,6 +57,16 @@ namespace OSE.UI.Root
 
         public void Stop()
         {
+            // Diagnostic — if Stop doesn't fire between welds, StopDuringAction
+            // failed to reach this player, and the prior vibration keeps
+            // running on top of the new one (visible as accumulating shake).
+            // The hash lets us pair a Stop with its Start.
+            int targetCount = _ctx.Targets != null ? _ctx.Targets.Count : 0;
+            string firstTargetName = targetCount > 0 && _ctx.Targets[0] != null
+                ? _ctx.Targets[0].name : "<none>";
+            Vector3 baseline0 = _baselinePos != null && _baselinePos.Length > 0 ? _baselinePos[0] : Vector3.zero;
+            OseLog.Info($"[WeldDiag] Vib.Stop   t={Time.time:F3}  targets={targetCount}  first='{firstTargetName}'  baseline0={baseline0}  hash=0x{GetHashCode():X}  wasPlaying={IsPlaying}");
+
             if (_ctx.Targets != null && _baselinePos != null)
             {
                 for (int i = 0; i < _ctx.Targets.Count && i < _baselinePos.Length; i++)
