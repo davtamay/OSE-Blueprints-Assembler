@@ -76,30 +76,6 @@ namespace OSE.Interaction
                 return;
             }
 
-            // Defensive: if a previous preview is still in flight (user tapped
-            // the next target before Approach → Action → Return completed),
-            // finalize its state now instead of silently overwriting _preview.
-            // Without this, WeldPreview's _arcEffect stays alive (duplicate
-            // particles on the prior anchor) and its absolute rotation writes
-            // never reset (tool wobble compounds). Callbacks from the preempted
-            // preview are intentionally NOT invoked — the new Enter assigns
-            // fresh callbacks immediately below; the old action was cut short,
-            // neither completed nor cancelled by the session-layer semantics.
-            if (_phase != Phase.Inactive)
-            {
-                _partEffect?.End();
-                _partEffect = null;
-                if (_preview != null)
-                {
-                    _preview.End(false);
-                    _preview = null;
-                }
-                _visualGuide?.Exit();
-                _visualGuide = null;
-                RestoreTargetSphere();
-                _phase = Phase.Inactive;
-            }
-
             _targetId = ctx.TargetId;
             _toolPreview = toolPreview;
             _mode = mode;
