@@ -191,15 +191,11 @@ namespace OSE.Editor
                 seedProfile = ResolveToolProfileForStep(step, scopeKey);
             bool showSeedBtn = !string.IsNullOrEmpty(seedProfile) && !StepHasApplicableCues(step, scope, scopeKey);
 
-            // Seed-from-preview button (Tool scope only). Slice-C replaced
-            // the adjacent "+ Add timing panel ▾" popup with the horizontal
-            // timeline strip below, so this button now sits alone at the
-            // header's right edge.
+            float addBtnWidth = 146f;
+            float addBtnXMax  = headerRect.xMax - 4f;
             if (showSeedBtn)
             {
-                float seedBtnWidth = 118f;
-                var seedRect = new Rect(headerRect.xMax - seedBtnWidth - 4f, headerRect.y + 2f,
-                    seedBtnWidth, headerRect.height - 4f);
+                var seedRect = new Rect(addBtnXMax - 118f, headerRect.y + 2f, 118f, headerRect.height - 4f);
                 var seedStyle = new GUIStyle(EditorStyles.miniButton)
                 {
                     fontStyle = FontStyle.Normal,
@@ -212,6 +208,19 @@ namespace OSE.Editor
                 {
                     PopulateFromToolPreview(step, scope, scopeKey, seedProfile);
                 }
+                addBtnXMax -= 122f;
+            }
+
+            var addBtnRect = new Rect(addBtnXMax - addBtnWidth, headerRect.y + 2f, addBtnWidth, headerRect.height - 4f);
+            var addStyle   = new GUIStyle(EditorStyles.miniButton)
+            {
+                fontStyle = FontStyle.Bold,
+                normal    = { textColor = CueContextAccent },
+            };
+            if (GUI.Button(addBtnRect, new GUIContent("+ Add timing panel ▾",
+                "Create a panel that groups cues by when they fire."), addStyle))
+            {
+                ShowAddTimingPanelMenu(step, scope, scopeKey);
             }
 
             // Collect cue indices per panel (trigger), filtered to this
@@ -246,12 +255,6 @@ namespace OSE.Editor
                     if (!panels.ContainsKey(t)) panels[t] = new List<int>();
             }
 
-            // Timeline strip (Slice C) — replaces "+ Add timing panel ▾" menu.
-            // Horizontal row of cells, one per trigger in _timingPanelDefs.
-            // Empty cell → click creates a panel. Populated cell → click
-            // toggles the panel's foldout open/closed.
-            DrawTimingPanelTimeline(step, scope, scopeKey, panels);
-
             if (panels.Count == 0)
             {
                 var empty = new GUIStyle(EditorStyles.miniLabel)
@@ -259,7 +262,7 @@ namespace OSE.Editor
                     normal    = { textColor = new Color(0.55f, 0.55f, 0.58f) },
                     fontStyle = FontStyle.Italic,
                 };
-                EditorGUILayout.LabelField("    No timing panels yet. Click a cell above to create one.", empty);
+                EditorGUILayout.LabelField("    No timing panels yet. Use + Add timing panel.", empty);
                 return;
             }
 
@@ -277,127 +280,47 @@ namespace OSE.Editor
                 DrawTimingPanel(step, scope, scopeKey, kv.Key, kv.Key, kv.Value);
         }
 
-        // ── Timeline strip (Slice C) ─────────────────────────────────────────
-        //
-        // Horizontal row of timing-panel cells — one per trigger in
-        // _timingPanelDefs. At-a-glance summary of which panels have cues
-        // (count pill + accent tint) plus the "add panel" affordance (click
-        // an empty cell). Replaces the legacy "+ Add timing panel ▾" popup
-        // menu so authors can scan all seven panel types without opening a
-        // submenu.
-
-        private void DrawTimingPanelTimeline(StepDefinition step, CueScope scope, string scopeKey,
-                                             Dictionary<string, List<int>> panels)
-        {
-            EditorGUILayout.Space(2);
-
-            var row = GUILayoutUtility.GetRect(0, 24f, GUILayout.ExpandWidth(true));
-            // Subtle bg behind the strip so it reads as one widget.
-            EditorGUI.DrawRect(row, new Color(1f, 1f, 1f, 0.03f));
-
-            const float cellSpacing = 3f;
-            int cellCount = _timingPanelDefs.Length;
-            float totalSpacing = cellSpacing * (cellCount - 1);
-            float cellWidth = Mathf.Floor((row.width - 8f - totalSpacing) / cellCount);
-
-            float x = row.x + 4f;
-            float y = row.y + 2f;
-            float h = row.height - 4f;
-
-            for (int i = 0; i < cellCount; i++)
-            {
-                var def = _timingPanelDefs[i];
-                bool hasPanel = panels != null && panels.ContainsKey(def.trigger);
-                int cueCount = hasPanel ? panels[def.trigger].Count : 0;
-                bool isOpen = IsTimingPanelOpen(step.id, scope, scopeKey, def.trigger);
-
-                var cell = new Rect(x, y, cellWidth, h);
-
-                // Cell background + border.
-                Color cellBg, cellBorder, textColor;
-                if (hasPanel)
-                {
-                    // Has cues OR is an empty placeholder — tinted with the
-                    // cue accent, stronger when expanded.
-                    float fillA = isOpen ? 0.55f : 0.28f;
-                    cellBg     = new Color(CueContextAccent.r, CueContextAccent.g, CueContextAccent.b, fillA);
-                    cellBorder = CueContextAccent;
-                    textColor  = Color.white;
-                }
-                else
-                {
-                    cellBg     = new Color(1f, 1f, 1f, 0.04f);
-                    cellBorder = new Color(0.55f, 0.55f, 0.58f, 0.55f);
-                    textColor  = new Color(0.70f, 0.72f, 0.76f);
-                }
-                EditorGUI.DrawRect(cell, cellBg);
-                DrawRectBorder(cell, cellBorder);
-
-                // Label — short form, bold when active.
-                var labelStyle = new GUIStyle(EditorStyles.miniLabel)
-                {
-                    alignment = TextAnchor.MiddleCenter,
-                    fontStyle = hasPanel ? FontStyle.Bold : FontStyle.Normal,
-                    fontSize  = 10,
-                    normal    = { textColor = textColor },
-                };
-
-                string cellText = cueCount > 0
-                    ? $"{def.shortLabel}  ·  {cueCount}"
-                    : def.shortLabel;
-                GUI.Label(cell, cellText, labelStyle);
-
-                // Clickable overlay.
-                string tooltip = hasPanel
-                    ? $"{def.label}  ({def.trigger})\n" +
-                      (cueCount == 0
-                          ? "Empty panel placeholder — click to toggle expand."
-                          : $"{cueCount} cue(s). Click to expand/collapse this panel.")
-                    : $"Add '{def.label}' panel ({def.trigger}). Click to create.";
-                if (GUI.Button(cell, new GUIContent("", tooltip), GUIStyle.none))
-                {
-                    if (hasPanel)
-                    {
-                        // Toggle foldout state.
-                        string openKey = $"{ScopeKeyPrefix(step.id, scope, scopeKey)}/panel/{def.trigger}";
-                        if (isOpen) _cueContextOpenKeys.Remove(openKey);
-                        else        _cueContextOpenKeys.Add(openKey);
-                    }
-                    else
-                    {
-                        AddEmptyPanel(step, scope, scopeKey, def.trigger);
-                    }
-                    Event.current.Use();
-                }
-
-                x += cellWidth + cellSpacing;
-            }
-
-            EditorGUILayout.Space(2);
-        }
-
-        /// <summary>True when the timing panel for this trigger is currently expanded.</summary>
-        private bool IsTimingPanelOpen(string stepId, CueScope scope, string scopeKey, string trigger)
-        {
-            string key = $"{ScopeKeyPrefix(stepId, scope, scopeKey)}/panel/{trigger}";
-            return _cueContextOpenKeys.Contains(key);
-        }
-
-        /// <summary>Draws a 1 px border inside the given rect. Shared by timeline cells.</summary>
-        private static void DrawRectBorder(Rect r, Color c)
-        {
-            EditorGUI.DrawRect(new Rect(r.x,           r.y,           r.width, 1f),     c);
-            EditorGUI.DrawRect(new Rect(r.x,           r.yMax - 1f,   r.width, 1f),     c);
-            EditorGUI.DrawRect(new Rect(r.x,           r.y,           1f,      r.height), c);
-            EditorGUI.DrawRect(new Rect(r.xMax - 1f,   r.y,           1f,      r.height), c);
-        }
-
         // ── Menus ─────────────────────────────────────────────────────────────
-        //
-        // The "+ Add timing panel ▾" menu renderer was retired in Slice C when
-        // the timeline strip (DrawTimingPanelTimeline) took over as the single
-        // add-panel affordance. ShowAddCueMenuInPanel below is the remaining
-        // menu — it adds individual cue rows inside an expanded panel.
+
+        private void ShowAddTimingPanelMenu(StepDefinition step, CueScope scope, string scopeKey)
+        {
+            var menu    = new GenericMenu();
+            var emptyKey = EmptyPanelKey(step.id, scope, scopeKey);
+            if (!_emptyPanels.TryGetValue(emptyKey, out var existingEmpty))
+                existingEmpty = new HashSet<string>(StringComparer.Ordinal);
+
+            foreach (var def in _timingPanelDefs)
+            {
+                bool present = PanelHasCuesOrPlaceholder(step, scope, scopeKey, def.trigger, existingEmpty);
+                // Menu text uses the short label up front so the list scans
+                // quickly, followed by the long phrase for clarity. Advanced
+                // entries group under an "Advanced/" submenu.
+                string menuText = $"{def.shortLabel} — {def.label}";
+                string label = def.advanced ? $"Advanced/{menuText}" : menuText;
+                if (present)
+                    menu.AddDisabledItem(new GUIContent($"{label}  (already present)"));
+                else
+                    menu.AddItem(new GUIContent(label), false,
+                        () => AddEmptyPanel(step, scope, scopeKey, def.trigger));
+            }
+            menu.ShowAsContext();
+        }
+
+        private bool PanelHasCuesOrPlaceholder(StepDefinition step, CueScope scope, string scopeKey,
+                                               string trigger, HashSet<string> emptySet)
+        {
+            if (emptySet != null && emptySet.Contains(trigger)) return true;
+            var storage = GetHostCueStorage(step, scope, scopeKey);
+            if (storage.cues == null) return false;
+            foreach (var c in storage.cues)
+            {
+                if (c == null) continue;
+                if (!CueAppliesHere(c, step, scope, scopeKey)) continue;
+                string t = string.IsNullOrEmpty(c.trigger) ? "onActivate" : c.trigger;
+                if (string.Equals(t, trigger, StringComparison.Ordinal)) return true;
+            }
+            return false;
+        }
 
         private void ShowAddCueMenuInPanel(StepDefinition step, CueScope scope, string scopeKey, string trigger)
         {
@@ -705,11 +628,6 @@ namespace OSE.Editor
             _cueContextOpenKeys.Add($"{ScopeKeyPrefix(step.id, scope, scopeKey)}/panel/{trigger}");
             Repaint();
         }
-
-        // PanelHasCuesOrPlaceholder: retired with ShowAddTimingPanelMenu in
-        // Slice C. The timeline strip (DrawTimingPanelTimeline) reads the
-        // pre-computed `panels` dictionary directly, which already includes
-        // empty placeholders — no separate probe method needed.
 
         private void AddCueInPanel(StepDefinition step, CueScope scope, string scopeKey,
                                    string trigger, string type)
