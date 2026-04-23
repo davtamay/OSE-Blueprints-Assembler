@@ -87,7 +87,9 @@ namespace OSE.Interaction
             // the still-wobbled rotation as its new _actionRot, and that
             // weld's wobble applied on top. Linear growth per weld. Restoring
             // to _actionRot here gives each Begin() a clean baseline.
-            if (_ctx != null && _ctx.ToolPreview != null)
+            // (_ctx is a struct — check its ToolPreview field directly; the
+            // Unity-managed null check on GameObject stays correct.)
+            if (_ctx.ToolPreview != null)
             {
                 _ctx.ToolPreview.transform.rotation = _actionRot;
                 MaterialHelper.SetEmission(_ctx.ToolPreview, Color.black);
