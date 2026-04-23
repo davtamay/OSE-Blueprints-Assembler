@@ -1179,25 +1179,51 @@ namespace OSE.Editor
                     // During / …), so the toggle is hidden there to avoid
                     // authoring a no-op flag. Loop cues never block —
                     // they're fire-and-forget ambient decoration.
-                    const float awaitW = 18f;
+                    //
+                    // UX polish: state is unambiguous — ON renders as a
+                    // filled green pill with bold white "⏱ await" label;
+                    // OFF renders as a muted outlined pill with gray
+                    // "⏱ await" label. The explicit word "await" makes
+                    // the stopwatch glyph's meaning discoverable without
+                    // requiring hover.
+                    const float awaitW = 58f;
                     bool awaitEligible = isOptional || isNoTask;
                     if (awaitEligible)
                     {
                         bool awaitOn = entry.awaitCues;
-                        var awaitStyle = new GUIStyle(EditorStyles.miniButton)
+                        var awaitRect = new Rect(rect.x + 78f + reqOptW + indent, rect.y + 2f, awaitW, rect.height - 4f);
+
+                        // Filled vs outlined background.
+                        Color onFill   = new Color(0.30f, 0.78f, 0.36f, 0.32f);
+                        Color offFill  = new Color(1f, 1f, 1f, 0.03f);
+                        Color border   = new Color(0.55f, 0.55f, 0.60f, 0.55f);
+                        EditorGUI.DrawRect(awaitRect, awaitOn ? onFill : offFill);
+                        if (!awaitOn)
                         {
-                            fontSize  = 10,
-                            fontStyle = FontStyle.Bold,
+                            EditorGUI.DrawRect(new Rect(awaitRect.x, awaitRect.y, awaitRect.width, 1f), border);
+                            EditorGUI.DrawRect(new Rect(awaitRect.x, awaitRect.yMax - 1f, awaitRect.width, 1f), border);
+                            EditorGUI.DrawRect(new Rect(awaitRect.x, awaitRect.y, 1f, awaitRect.height), border);
+                            EditorGUI.DrawRect(new Rect(awaitRect.xMax - 1f, awaitRect.y, 1f, awaitRect.height), border);
+                        }
+
+                        var awaitStyle = new GUIStyle(EditorStyles.miniLabel)
+                        {
+                            fontSize  = 9,
+                            fontStyle = awaitOn ? FontStyle.Bold : FontStyle.Normal,
                             alignment = TextAnchor.MiddleCenter,
                             normal    = { textColor = awaitOn
-                                ? new Color(0.30f, 0.78f, 0.36f)
-                                : new Color(0.55f, 0.55f, 0.60f) },
+                                ? new Color(0.75f, 1.00f, 0.78f)
+                                : new Color(0.60f, 0.60f, 0.64f) },
                         };
-                        var awaitRect = new Rect(rect.x + 78f + reqOptW + indent, rect.y + 2f, awaitW, rect.height - 4f);
                         string awaitTip = awaitOn
-                            ? "awaitCues ON — cursor waits for every non-loop cue hosted by this entry to complete before advancing. Loop cues don't block."
-                            : "awaitCues OFF — cues fire at step activation, cursor doesn't wait. Click to hold the cursor on this span until the cue finishes.";
-                        if (GUI.Button(awaitRect, new GUIContent("\u23F1", awaitTip), awaitStyle))
+                            ? "await ON — cursor waits for every non-loop cue hosted by this entry to finish before advancing. Loop cues don't block. Click to turn OFF."
+                            : "await OFF — cursor advances as soon as requirements are met, even if cues are still playing. Click to turn ON (hold cursor until cues finish).";
+                        GUI.Label(awaitRect, new GUIContent("\u23F1 await", awaitTip), awaitStyle);
+
+                        // Invisible click zone on top — Unity's GUI.Button with
+                        // GUIStyle.none doesn't paint over the label but still
+                        // captures clicks reliably.
+                        if (GUI.Button(awaitRect, new GUIContent("", awaitTip), GUIStyle.none))
                         {
                             entry.awaitCues = !entry.awaitCues;
                             step.taskOrder = order.ToArray();
@@ -1306,11 +1332,11 @@ namespace OSE.Editor
                     string[] shortCodes = ComputeGroupShortCodes(partGroups);
                     string[] pillLabels = visiblePills > 0 ? new string[visiblePills] : System.Array.Empty<string>();
                     float[]  pillWidths = visiblePills > 0 ? new float[visiblePills]  : System.Array.Empty<float>();
-                    const float pillDotWidth = 10f; // colored dot + pad
-                    const float pillTextPad  = 8f;  // left/right text padding
+                    const float pillDotWidth = 12f; // colored dot + pad
+                    const float pillTextPad  = 12f; // horizontal text padding (increased for legibility)
                     var pillMeasureStyle = new GUIStyle(EditorStyles.miniLabel)
                     {
-                        fontSize  = 9,
+                        fontSize  = 10,
                         fontStyle = FontStyle.Bold,
                     };
                     for (int p2 = 0; p2 < visiblePills; p2++)
@@ -1563,9 +1589,9 @@ namespace OSE.Editor
                             var pillStyle = new GUIStyle(EditorStyles.miniLabel)
                             {
                                 normal    = { textColor = isSelected ? Color.white : new Color(0.50f, 0.78f, 0.98f) },
-                                fontSize  = 9,
+                                fontSize  = 10,
                                 alignment = TextAnchor.MiddleCenter,
-                                fontStyle = isSelected ? FontStyle.Bold : FontStyle.Normal,
+                                fontStyle = FontStyle.Bold,
                             };
                             // Text rect sits right of the dot.
                             var textRect = new Rect(
