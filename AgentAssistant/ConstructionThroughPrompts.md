@@ -285,4 +285,99 @@ After merging the generated JSON into an assembly file, run
 
 ---
 
-*Last updated: 2026-04-24. Add new templates here as they are implemented in `generate_steps.py`.*
+## Step Configuration Prefabs (YAML, data-defined)
+
+Prefabs are the data-defined sibling of the Python templates. A prefab is a YAML file
+in `AgentAssistant/prefabs/<name>.yaml` that captures a step sequence as data — no
+Python required. An instantiation YAML in `AgentAssistant/inputs/` references the
+prefab by name and supplies the part roles + start sequence.
+
+The Python templates (`BearingCarriage`, `IdlerHalves`, etc.) keep working unchanged.
+Prefabs are additive — new patterns can be authored by humans or LLMs as YAML without
+touching code.
+
+### Prefab schema
+
+```yaml
+prefab: CarriageBuild               # unique name (used by instantiation YAMLs)
+description: "..."
+
+roles:                              # slots the instantiator must fill
+  half_a:    { kind: part }                        # single partId
+  bearings:  { kind: part_list, count: 4 }         # list of partIds
+  bolts_top: { kind: part_list, count: 2 }
+  ...
+
+options:                            # knobs with defaults; instantiator may override
+  tool:           { type: string, default: tool_power_drill }
+  torque_setting: { type: string, default: lowest }
+  milestone:      { type: string, default: "Carriage assembly complete." }
+
+derived:                            # computed roles (e.g. concat lists)
+  all_bolts: { kind: part_list, combine: [bolts_top, bolts_bot] }
+
+steps:                              # ordered step templates
+  - id_suffix: place_bearings       # final id = step_<prefix>_<id_suffix>
+    family: Place
+    name: "Seat {bearings.count} Bearings in Carriage Half A"
+    requiredPartIds:
+      - "{half_a}"                  # single role
+      - "*{bearings}"               # expand list role inline
+    guidance:
+      instructionText: "Place all {bearings.count} bearings into ({half_a}). Orient {orientation_cue}."
+      whyItMattersText: "..."
+    validation:
+      successCriteria: "..."
+      failureCriteria: "..."
+    feedback:
+      successMessage: "..."
+      failureMessage: "..."
+  - id_suffix: tighten
+    family: Use
+    requiredToolActions:
+      - { toolId: "{tool}", actionType: Tighten, profile: Torque }
+    ...
+```
+
+**Substitution rules** (any string field):
+- `{role}` — single role value (or option value)
+- `{role.count}` — length of a list role
+- Plain text passes through
+
+**Array-of-references rules** (`requiredPartIds`, `optionalPartIds`, etc.):
+- `"{role}"` — insert single role value
+- `"*{role}"` — expand list role inline
+- Any other string is a literal
+
+### Instantiation YAML
+
+```yaml
+prefab: CarriageBuild
+prefix: y_left_carriage             # used in step IDs
+start_seq: 87
+parts:
+  half_a: y_left_carriage_half_a
+  half_b: y_left_carriage_half_b
+  bearings: [y_left_lm8uu_a, y_left_lm8uu_b, y_left_lm8uu_c, y_left_lm8uu_d]
+  bolts_top: [y_left_m6x18_a, y_left_carriage_m6x18_b]
+  bolts_bot: [y_left_m6x30_a, y_left_m6x30_b]
+  nuts: [y_left_m6_nut_a, y_left_m6_nut_b, y_left_m6_nut_c, y_left_m6_nut_d]
+options:
+  milestone: "Y-Left carriage complete — 1 of 4"
+```
+
+### CLI
+
+```bash
+python Tools/instantiate_prefab.py --list-prefabs
+python Tools/instantiate_prefab.py AgentAssistant/inputs/<file>.yaml
+```
+
+Available today (P1): `CarriageBuild` (port of the Python `BearingCarriage` template).
+
+Worked example: `AgentAssistant/inputs/example_prefab_carriage.yaml` produces output
+byte-equivalent to the Python `BearingCarriage` template for the same inputs.
+
+---
+
+*Last updated: 2026-04-25. Add new templates here as they are implemented in `generate_steps.py`. Add new prefabs as YAML files in `AgentAssistant/prefabs/`.*

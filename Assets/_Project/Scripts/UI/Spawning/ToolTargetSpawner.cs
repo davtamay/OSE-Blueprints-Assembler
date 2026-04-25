@@ -43,6 +43,58 @@ namespace OSE.UI.Root
                 collectionCheck: false,
                 defaultCapacity: 8,
                 maxSize: 32);
+
+            // Live-edit hot-reload listener. Authoring tools (TTAW) call
+            // IMachineSessionController.HotReloadTargetPlacement when the
+            // author edits a target's transform during Play; that publishes
+            // this event, which we apply to the live marker GameObject. Owner
+            // (UseStepHandler) calls Cleanup() to unsubscribe.
+            RuntimeEventBus.Subscribe<TargetPlacementHotReloaded>(OnTargetPlacementHotReloaded);
+        }
+
+        /// <summary>
+        /// Releases pooled markers and unsubscribes from runtime events. Call
+        /// from <see cref="UseStepHandler.Cleanup"/> when the handler is being
+        /// torn down (e.g. session end / package reload).
+        /// </summary>
+        public void Cleanup()
+        {
+            RuntimeEventBus.Unsubscribe<TargetPlacementHotReloaded>(OnTargetPlacementHotReloaded);
+        }
+
+        private void OnTargetPlacementHotReloaded(TargetPlacementHotReloaded evt)
+        {
+            if (string.IsNullOrEmpty(evt.TargetId)) return;
+            if (_spawnedToolActionTargets == null || _spawnedToolActionTargets.Count == 0) return;
+
+            // Linear scan — packages have at most a handful of markers spawned
+            // for the active step at any time, and this fires on author edits,
+            // not per-frame.
+            for (int i = 0; i < _spawnedToolActionTargets.Count; i++)
+            {
+                GameObject marker = _spawnedToolActionTargets[i];
+                if (marker == null) continue;
+
+                ToolActionTargetInfo info = marker.GetComponent<ToolActionTargetInfo>();
+                if (info == null || !string.Equals(info.TargetId, evt.TargetId, StringComparison.Ordinal))
+                    continue;
+
+                Transform previewRoot = _ctx?.Setup?.PreviewRoot;
+                if (previewRoot == null) return;
+
+                // Placements are PreviewRoot-local; convert to world for the
+                // live marker. Mirror the same transform path
+                // TrySpawnToolActionTargetMarker uses on initial spawn.
+                Vector3 localPos = new Vector3(evt.PosX, evt.PosY, evt.PosZ);
+                Quaternion localRot = new Quaternion(evt.RotX, evt.RotY, evt.RotZ, evt.RotW);
+                Vector3 localScl = new Vector3(evt.SclX, evt.SclY, evt.SclZ);
+
+                marker.transform.SetPositionAndRotation(
+                    previewRoot.TransformPoint(localPos),
+                    previewRoot.rotation * localRot);
+                marker.transform.localScale = localScl;
+                return;
+            }
         }
 
         /// <summary>Read-only access to the live spawned marker list.</summary>
@@ -352,10 +404,19 @@ namespace OSE.UI.Root
                 : localPos;
         }
 
+        // Tool-target markers are aiming dots (bolt heads, screw heads, weld/clamp
+        // points), not part-sized blobs. When a target has no own scale, the
+        // caller's source is the associated part's scale — which for "unit"
+        // parts (e.g. d3d_x_axis_idler_unit at 1×1×1) would produce a 40cm
+        // sphere that occludes the workpiece. Cap at 3cm — large enough to
+        // see, small enough to never block the part being worked on.
+        public const float MaxToolTargetMarkerExtent = 0.03f;
+        public const float MinToolTargetMarkerExtent = 0.008f;
+
         public static Vector3 ResolveToolTargetMarkerScale(Vector3 sourceScale)
         {
             float dominant = Mathf.Max(sourceScale.x, Mathf.Max(sourceScale.y, sourceScale.z));
-            float uniform = Mathf.Clamp(dominant, 0.008f, 0.40f);
+            float uniform = Mathf.Clamp(dominant, MinToolTargetMarkerExtent, MaxToolTargetMarkerExtent);
             return Vector3.one * uniform;
         }
 

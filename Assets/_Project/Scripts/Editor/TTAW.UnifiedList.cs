@@ -3242,7 +3242,12 @@ namespace OSE.Editor
             { rot = new Vector3(90, 0, 0); posOffset = Vector3.zero; GUI.changed = true; }
             if (GUILayout.Button("Clear", EditorStyles.miniButton))
             {
-                if (hasWO)
+                // Editor/runtime isolation: never mutate the shared
+                // StepDefinition while Play is running — it persists
+                // for the rest of the play session and on the next
+                // domain reload silently overwrites the on-disk JSON
+                // model the runtime believed it loaded.
+                if (hasWO && !Application.isPlaying)
                 {
                     step.workingOrientation = null;
                     _dirtyStepIds.Add(step.id);
@@ -3261,7 +3266,8 @@ namespace OSE.Editor
             hint = EditorGUILayout.TextField("Hint Text", hint);
             bool changed = EditorGUI.EndChangeCheck() || GUI.changed;
 
-            if (changed)
+            // Editor/runtime isolation: same reason as the Clear button above.
+            if (changed && !Application.isPlaying)
             {
                 if (step.workingOrientation == null)
                     step.workingOrientation = new StepWorkingOrientationPayload();

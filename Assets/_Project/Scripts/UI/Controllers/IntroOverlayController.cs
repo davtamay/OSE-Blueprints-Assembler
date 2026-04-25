@@ -316,8 +316,13 @@ namespace OSE.UI.Controllers
             // Progress display (only when saved progress exists)
             if (hasSavedProgress)
             {
+                // Floor (not round) so 100% is reserved for actual completion.
+                // 304/305 = 99.67% must NOT display as "100% Complete" — that
+                // would let a single skipped step look fully done.
                 float percent = (float)savedCompletedSteps / savedTotalSteps;
-                int percentInt = Mathf.RoundToInt(percent * 100f);
+                int percentInt = savedCompletedSteps >= savedTotalSteps
+                    ? 100
+                    : Mathf.Min(99, Mathf.FloorToInt(percent * 100f));
 
                 var percentLabel = new Label($"{percentInt}% Complete");
                 percentLabel.style.fontSize = 15f;

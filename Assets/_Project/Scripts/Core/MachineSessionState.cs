@@ -22,6 +22,16 @@ namespace OSE.Core
         public string CurrentStepId;
         public float ElapsedSeconds;
 
+        // Resume marker — id of the most recently first-time-completed step.
+        // Distinct from CurrentStepId, which tracks the *viewing* step (and
+        // can be advanced by navigation: StepBack/Forward/SkipToEnd/jump). The
+        // resume display and Resume button must use this field, not
+        // CurrentStepId, or skipping ahead persists as fake progress. Only
+        // updated by HandleStepStateChanged.Completed under the
+        // LastAdvanceWasFirstTime gate. May be null/empty on old saves and
+        // for sessions with no completions yet — caller falls back gracefully.
+        public string LastCompletedStepId;
+
         // Challenge
         public bool ChallengeActive;
         public int MistakeCount;

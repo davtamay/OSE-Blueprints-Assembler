@@ -17,6 +17,19 @@ namespace OSE.Content
         /// ghosts appear. 0 = spawn immediately (default).
         /// </summary>
         public float previewDelaySeconds;
+
+        /// <summary>
+        /// True when the payload carries no authored content. JsonUtility creates
+        /// a default instance for any [Serializable] reference field that's
+        /// absent from JSON; the normalizer uses this to drop those phantoms so
+        /// downstream <c>!= null</c> checks behave like the JSON intends.
+        /// </summary>
+        public bool IsEmpty()
+        {
+            if (cues != null && cues.Length > 0) return false;
+            if (previewDelaySeconds != 0f) return false;
+            return true;
+        }
     }
 
     /// <summary>

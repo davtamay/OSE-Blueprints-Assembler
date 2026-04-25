@@ -26,6 +26,14 @@ namespace OSE.Editor
 
         private void OnSceneGUI(SceneView sv)
         {
+            // Editor/runtime isolation: TTAW manipulates the live scene
+            // GameObjects (PartHandles, WriteBackSubassembly*, hierarchy
+            // polling, gizmo drags). During Play, those same GameObjects
+            // are owned by the runtime — any TTAW write here fights the
+            // runtime's visibility / transform writers and corrupts the
+            // play-mode visual state. Authoring is inert during Play.
+            if (Application.isPlaying) return;
+
             Transform root = GetPreviewRoot();
             if (root == null) return;
 

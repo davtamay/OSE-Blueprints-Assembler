@@ -583,6 +583,14 @@ namespace OSE.UI.Root
                 }
             }
 
+            // Diagnostic: how many parts does the poseTable consider visible
+            // at this step's seq? Surfaced in verbose logs to triage "parts
+            // not rendering at step X" — small visiblePartIds means the
+            // poseTable bake didn't include those parts (usually because
+            // BakeStagingPoses didn't synthesize a partPlacement for them;
+            // see [Normalizer.BakeStagingPoses] for the count tripwire).
+            OseLog.VerboseInfo($"[PartInteraction] RevealStepParts step='{stepId}' seq={currentSeq} subassemblyId='{subassemblyId}' visiblePartIds={subassemblyPartIds.Count} (source={(poseTable != null ? "poseTable" : "step-fields-fallback")})");
+
             if (subassemblyPartIds.Count == 0)
                 return;
 

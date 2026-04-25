@@ -75,6 +75,14 @@ namespace OSE.Editor
         [SerializeField] private int        _stepFilterIdx;
         [SerializeField] private int        _navigatorViewMode;     // 0 = tree, 1 = flat
         [SerializeField] private bool       _inspectorVisible = true; // toolbar toggle for the right pane
+        // Live-edit toggle. When true AND Application.isPlaying, the
+        // play-mode DisabledScope is selectively bypassed for a curated
+        // allowlist of safe fields (currently: target position/rotation/scale).
+        // Edits to those fields call IMachineSessionController.HotReloadTargetPlacement
+        // so the live target marker snaps to the new pose without disrupting
+        // step state. Auto-save persists to JSON in the usual debounced flow.
+        // Off by default — authors must opt in per Play session.
+        [SerializeField] private bool       _liveEditEnabled;
         private bool       _suppressStepSync;   // prevent circular sync with SessionDriver
         private int        _lastPolledDriverStep = -1; // last SessionDriver step seen during poll
         // Note: the IMGUI scrub-drag fields (_stepNumRect, _stepDragging, _stepDragAccum,

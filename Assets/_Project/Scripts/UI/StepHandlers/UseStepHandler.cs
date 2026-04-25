@@ -156,6 +156,7 @@ namespace OSE.UI.Root
         public void Cleanup()
         {
             _spawner.Clear();
+            _spawner.Cleanup();
             _measure.Reset();
             _activeProfile = null;
             _activeProfileEnum = StepProfile.None;

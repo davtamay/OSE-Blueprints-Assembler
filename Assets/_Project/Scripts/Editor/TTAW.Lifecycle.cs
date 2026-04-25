@@ -67,6 +67,13 @@ namespace OSE.Editor
             SessionDriver.EditModeStepChanged += OnSessionDriverStepChanged;
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
             RuntimeEventBus.Subscribe<SpawnerPartsReady>(OnSpawnerPartsReady);
+            // Play → TTAW step sync. The runtime publishes StepActivated when
+            // the trainee navigates (toolbar, in-app input field, auto-advance
+            // on completion). Mirroring it into _stepFilterIdx keeps the
+            // authoring window's hierarchy/list in step with whatever the
+            // runtime is showing — same UX the EditModePreviewDriver sync gives
+            // in edit mode, but for Play.
+            RuntimeEventBus.Subscribe<StepActivated>(OnRuntimeStepActivated);
 
             // Resolve _pkg / _targets here rather than deferring to the first
             // OnGUI. Any exception (e.g. corrupt JSON) sets _pendingLoadRetry
@@ -119,6 +126,7 @@ namespace OSE.Editor
             SessionDriver.EditModeStepChanged -= OnSessionDriverStepChanged;
             EditorApplication.playModeStateChanged -= OnPlayModeChanged;
             RuntimeEventBus.Unsubscribe<SpawnerPartsReady>(OnSpawnerPartsReady);
+            RuntimeEventBus.Unsubscribe<StepActivated>(OnRuntimeStepActivated);
             // Destroy scene objects but do NOT reset serialized state (_selectedIdx,
             // _selectedTargetId, etc.) — OnDisable runs BEFORE Unity serializes
             // [SerializeField] fields during domain reload, so resetting here
@@ -270,6 +278,36 @@ namespace OSE.Editor
             _suppressStepSync = true;
             ApplyStepFilter(newFilterIdx);
             _suppressStepSync = false;
+        }
+
+        /// <summary>
+        /// Play-mode step sync. Runtime publishes StepActivated whenever the
+        /// trainee advances, navigates back, or jumps via the in-app input.
+        /// We mirror it into _stepFilterIdx so the authoring panel always
+        /// shows the step the trainee is on. _suppressStepSync prevents an
+        /// echo loop with the TTAW→Play push in ApplyStepFilter.
+        /// </summary>
+        private void OnRuntimeStepActivated(StepActivated evt)
+        {
+            if (!Application.isPlaying) return;
+            if (_suppressStepSync) return;
+            if (_stepIds == null || _stepIds.Length == 0) return;
+            if (string.IsNullOrEmpty(evt.StepId)) return;
+
+            int newFilterIdx = -1;
+            for (int i = 1; i < _stepIds.Length; i++)
+            {
+                if (string.Equals(_stepIds[i], evt.StepId, StringComparison.Ordinal))
+                {
+                    newFilterIdx = i;
+                    break;
+                }
+            }
+            if (newFilterIdx < 0 || newFilterIdx == _stepFilterIdx) return;
+
+            _suppressStepSync = true;
+            try { ApplyStepFilter(newFilterIdx); }
+            finally { _suppressStepSync = false; }
         }
 
         private void OnDestroy()

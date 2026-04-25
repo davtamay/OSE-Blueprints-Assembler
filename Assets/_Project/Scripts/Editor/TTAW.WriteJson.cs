@@ -379,6 +379,23 @@ namespace OSE.Editor
 
             // Step 3: Write previewConfig block to the correct file.
             _pkg.previewConfig.targetRotationFormat = "mesh";
+
+            // Persist the bake. BakeStagingPoses synthesizes a partPlacement
+            // entry for every part with a stagingPose that doesn't already
+            // have one. The runtime calls this on every load, but that means
+            // the on-disk JSON can lag behind the bake — and any consumer
+            // that reads the file directly (TTAW preview, agent tools,
+            // validators outside the Normalize pipeline) sees the stale
+            // shape. Running the bake here keeps the disk in sync with what
+            // the runtime would produce, removing that whole class of
+            // "parts mysteriously don't render" bugs at the source.
+            // See feedback_previewconfig_must_match_bake.md.
+            int placementsBefore = _pkg.previewConfig.partPlacements?.Length ?? 0;
+            OSE.Content.Loading.MachinePackageNormalizer.BakeStagingPoses(_pkg);
+            int placementsAfter = _pkg.previewConfig.partPlacements?.Length ?? 0;
+            if (placementsAfter > placementsBefore)
+                OseLog.Info($"[TTAW.WriteJson] Bake added {placementsAfter - placementsBefore} placement(s) on save (now {placementsAfter}).");
+
             if (previewCfgPath != null)
                 PackageJsonUtils.WritePreviewConfig(previewCfgPath, _pkg.previewConfig);
 

@@ -92,9 +92,16 @@ namespace OSE.Runtime
             if (string.IsNullOrEmpty(partId) || _package == null)
                 return false;
 
+            // No NotIntroduced gate: visibility is enforced upstream by
+            // InteractionOrchestrator.ValidatePartHit, which only passes
+            // partIds with a live scene transform. Gating here on state was
+            // redundantly defensive and forced authors to add parts to a
+            // step's requiredPartIds purely for selectability — which
+            // coupled selection to pose state (start→assembled transition)
+            // and broke group composition. DeselectPart preserves the
+            // original state on round-trip, so selecting a NotIntroduced
+            // part doesn't creep it into Available.
             var currentState = GetPartState(partId);
-            if (currentState == PartPlacementState.NotIntroduced)
-                return false;
 
             // Deselect previous
             if (_selectedPartId != null && _selectedPartId != partId)
@@ -127,11 +134,18 @@ namespace OSE.Runtime
                 state == PartPlacementState.Inspected ||
                 state == PartPlacementState.Grabbed)
             {
-                // Restore to original state if it was Completed or PlacedVirtually
-                var restoreState = (previousState == PartPlacementState.Completed ||
-                                    previousState == PartPlacementState.PlacedVirtually)
-                    ? previousState
-                    : PartPlacementState.Available;
+                // Restore to the original state. Completed / PlacedVirtually
+                // / NotIntroduced must be preserved verbatim — falling through
+                // to Available would creep NotIntroduced parts into Available
+                // (triggering the start→assembled pose transition we don't
+                // want) and would lose the placed/completed lock semantics.
+                PartPlacementState restoreState = previousState switch
+                {
+                    PartPlacementState.Completed         => PartPlacementState.Completed,
+                    PartPlacementState.PlacedVirtually   => PartPlacementState.PlacedVirtually,
+                    PartPlacementState.NotIntroduced     => PartPlacementState.NotIntroduced,
+                    _                                    => PartPlacementState.Available,
+                };
                 TransitionPart(partId, restoreState);
             }
         }

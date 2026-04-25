@@ -410,7 +410,7 @@ namespace OSE.Tests.EditMode
             public float LastNavigationTime => -1f;
             public bool CanStepBack => false;
             public bool CanStepForward => true;
-            public Task<bool> StartSessionAsync(string packageId, SessionMode mode, int restoreStepCount = 0, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+            public Task<bool> StartSessionAsync(string packageId, SessionMode mode, int restoreStepCount = 0, string lastCompletedStepId = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
             public void PauseSession() { }
             public void ResumeSession() { }
             public void EndSession() { }
@@ -423,6 +423,7 @@ namespace OSE.Tests.EditMode
             public bool NavigateToGlobalStep(int globalIndex) => false;
             public bool RestoreToStep(int completedStepCount) => false;
             public void ResumeAfterTransition() { }
+            public bool HotReloadTargetPlacement(string targetId, SceneFloat3 position, SceneQuaternion rotation, SceneFloat3 scale) => false;
         }
 
         // ── Helpers ──

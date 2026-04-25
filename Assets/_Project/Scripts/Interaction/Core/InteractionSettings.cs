@@ -94,5 +94,17 @@ namespace OSE.Interaction
 
         [Header("Raycast")]
         public LayerMask PartLayerMask = ~0; // Default: all layers
+
+        // ── Vantage Solver ──
+
+        [Header("Camera — Vantage Solver")]
+        [Tooltip("When auto-framing on a tool target, layers treated as occluders. Exclude particle/effect/UI layers.")]
+        public LayerMask VantageOccluderMask = ~0;
+
+        [Tooltip("SphereCast radius (meters) used to probe line-of-sight from candidate camera positions to the target. Larger = more conservative.")]
+        [Range(0.005f, 0.2f)] public float VantageProbeRadius = 0.05f;
+
+        [Tooltip("Distance (meters) before the target where the cast stops, so the target part itself and tools clustered at it don't register as occluders. Tune to typical part extent.")]
+        [Range(0.02f, 0.5f)] public float VantageNearTargetIgnore = 0.15f;
     }
 }

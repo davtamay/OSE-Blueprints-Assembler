@@ -87,9 +87,31 @@ namespace OSE.UI.Root
             bool hasTargets = targetIds != null && targetIds.Length > 0;
 
             // Cursor-driven Place family: already attached above, OnSpanOpened
-            // handles the spawn path. Defer.
+            // handles the spawn path. Defer — UNLESS the cursor has already
+            // started (and thus already fired the initial TaskSpanOpened
+            // before we subscribed). That happens whenever SpawnPreviewsForStep
+            // runs from a *late* path: AnimationCueCoordinator's deferred
+            // OnStepActivated callback (rebuildPreviewDelay > 0), navigation,
+            // session restore. In those flows StepController.ActivateStep
+            // (which calls cursor.Start) has already executed by the time we
+            // get here, so the natural TaskSpanOpened delivery has already
+            // happened to whoever was subscribed at that moment — not us.
+            // Replay it manually so the ghost spawns. Mirrors the same
+            // late-attach pattern in AnimationCueCoordinator.OnStepActivated.
             if (_attachedCursor != null)
+            {
+                if (_attachedCursor.HasStarted
+                    && _attachedCursor.OpenTasks != null
+                    && _attachedCursor.OpenTasks.Count > 0)
+                {
+                    OnSpanOpened(new TaskSpanOpenedInfo(
+                        _attachedCursor.OpenTasks,
+                        _attachedCursor.CurrentSetLabel,
+                        _attachedCursor.SpanIndex,
+                        _attachedCursor.TotalSpans));
+                }
                 return;
+            }
 
             // Legacy fallback — content without taskOrder. Steps shipped
             // through MachinePackageNormalizer.EnsureTaskOrderCoversRequirements

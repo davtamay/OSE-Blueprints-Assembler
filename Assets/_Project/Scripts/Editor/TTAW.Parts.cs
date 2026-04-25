@@ -792,6 +792,14 @@ namespace OSE.Editor
 
         private void SyncAllPartMeshesToActivePose()
         {
+            // Editor/runtime isolation: this method directly toggles
+            // SetActive and writes transforms on live spawned parts —
+            // the same GameObjects the runtime owns during Play. A
+            // single tick of this in Play-mode hides / repositions
+            // parts that the runtime expects to be active and at
+            // their runtime-resolved poses. Authoring is inert during Play.
+            if (Application.isPlaying) return;
+
             if (_parts == null) return;
             for (int i = 0; i < _parts.Length; i++)
             {

@@ -611,4 +611,33 @@ namespace OSE.Core
         }
     }
 
+    /// <summary>
+    /// Published by <see cref="OSE.Runtime.IMachineSessionController.HotReloadTargetPlacement"/>
+    /// when an authoring tool (TTAW) edits a target's preview placement during
+    /// Play. Spawned target marker hosts subscribe to this event and re-apply
+    /// the new transform to the live marker GameObject for the matching target
+    /// id. Cosmetic / spatial only — no step-state implications.
+    /// </summary>
+    public readonly struct TargetPlacementHotReloaded
+    {
+        public readonly string TargetId;
+        // Position/rotation/scale carried as raw floats so the event lives in
+        // OSE.Core (which has no UnityEngine reference). The subscriber
+        // converts to Vector3/Quaternion at the call site.
+        public readonly float PosX, PosY, PosZ;
+        public readonly float RotX, RotY, RotZ, RotW;
+        public readonly float SclX, SclY, SclZ;
+
+        public TargetPlacementHotReloaded(
+            string targetId,
+            float posX, float posY, float posZ,
+            float rotX, float rotY, float rotZ, float rotW,
+            float sclX, float sclY, float sclZ)
+        {
+            TargetId = targetId;
+            PosX = posX; PosY = posY; PosZ = posZ;
+            RotX = rotX; RotY = rotY; RotZ = rotZ; RotW = rotW;
+            SclX = sclX; SclY = sclY; SclZ = sclZ;
+        }
+    }
 }

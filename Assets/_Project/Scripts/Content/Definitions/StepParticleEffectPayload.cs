@@ -10,6 +10,16 @@ namespace OSE.Content
     public sealed class StepParticleEffectPayload
     {
         public ParticleEffectEntry[] effects;
+
+        /// <summary>
+        /// True when the payload carries no effects. JsonUtility creates a
+        /// default instance for any [Serializable] reference field that's
+        /// absent from JSON; the normalizer uses this to drop those phantoms.
+        /// </summary>
+        public bool IsEmpty()
+        {
+            return effects == null || effects.Length == 0;
+        }
     }
 
     /// <summary>

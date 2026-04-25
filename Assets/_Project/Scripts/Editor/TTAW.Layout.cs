@@ -7,6 +7,7 @@ using OSE.Content;
 using OSE.Content.Loading;
 using OSE.Core;
 using OSE.Interaction;
+using OSE.Runtime;
 using OSE.Runtime.Preview;
 using OSE.UI.Root;
 using UnityEditor;
@@ -172,6 +173,43 @@ namespace OSE.Editor
             }
 
             EditorGUILayout.Space(4);
+
+            // Editor/runtime isolation banner. During Play the runtime owns
+            // the in-memory MachinePackageDefinition and the live PreviewRoot
+            // GameObjects. Authoring fields render below for read-only review
+            // (and so step-sync still navigates) but the EditorGUI.DisabledScope
+            // wrapping the body keeps every BeginChangeCheck/Button handler
+            // from firing model writes. Stop Play to resume authoring.
+            //
+            // Exception: the "Allow Live Edits" toggle. When enabled, target
+            // transform fields (and only those) become editable mid-Play and
+            // route through IMachineSessionController.HotReloadTargetPlacement
+            // so the live marker snaps to the new pose immediately.
+            bool isPlay = Application.isPlaying;
+            if (isPlay)
+            {
+                var prevColor = GUI.backgroundColor;
+                GUI.backgroundColor = new Color(0.95f, 0.75f, 0.35f);
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                EditorGUILayout.LabelField(
+                    _liveEditEnabled
+                        ? "Live Edit ON — target position/rotation/scale are editable. All other fields stay locked. Edits persist to JSON via auto-save."
+                        : "Authoring is paused — Play is active. Step navigation is synced with the runtime; all edits are locked. Toggle Live Edit to author target transforms in real time.",
+                    EditorStyles.wordWrappedLabel);
+                bool newLiveEdit = EditorGUILayout.ToggleLeft(
+                    new GUIContent("Allow Live Edits (target transforms only)",
+                        "When on, dragging or typing into a target's position/rotation/scale field calls the runtime hot-reload API so the live marker snaps to the new pose. Auto-save persists the change to preview_config.json. Other fields remain locked."),
+                    _liveEditEnabled);
+                if (newLiveEdit != _liveEditEnabled)
+                {
+                    _liveEditEnabled = newLiveEdit;
+                    Repaint();
+                }
+                EditorGUILayout.EndVertical();
+                GUI.backgroundColor = prevColor;
+                EditorGUILayout.Space(2);
+            }
+
             DrawStepHeaderIMGUI();
             EditorGUILayout.Space(2);
 
@@ -185,14 +223,17 @@ namespace OSE.Editor
             // top content and the actions bar.
             const float kActionsH = 54f;
             float listH = Mathf.Max(position.height - _topContentHeight - kActionsH - 14f, 60f);
-            DrawUnifiedList(listH);
+            using (new EditorGUI.DisabledScope(isPlay))
+            {
+                DrawUnifiedList(listH);
 
-            // ── Pinned actions bar (at the bottom of the canvas pane) ─────────
-            EditorGUILayout.Space(4);
-            EditorGUI.DrawRect(GUILayoutUtility.GetRect(0f, 1f, GUILayout.ExpandWidth(true)),
-                               new Color(0.13f, 0.13f, 0.13f));
-            EditorGUILayout.Space(3);
-            DrawUnifiedActions();
+                // ── Pinned actions bar (at the bottom of the canvas pane) ─────────
+                EditorGUILayout.Space(4);
+                EditorGUI.DrawRect(GUILayoutUtility.GetRect(0f, 1f, GUILayout.ExpandWidth(true)),
+                                   new Color(0.13f, 0.13f, 0.13f));
+                EditorGUILayout.Space(3);
+                DrawUnifiedActions();
+            }
         }
 
         // ── Inspector GUI (right pane) ────────────────────────────────────────
@@ -220,14 +261,21 @@ namespace OSE.Editor
 
             _detailScroll = EditorGUILayout.BeginScrollView(_detailScroll);
 
-            // Entity-level detail (part transform, target transform, wire, batch)
-            DrawBottomEditPanel();
+            // Editor/runtime isolation: same DisabledScope as the canvas pane.
+            // All editable detail panels (transforms, animation cues, particle
+            // effects, etc.) inherit the disable, so their BeginChangeCheck
+            // calls never fire write blocks during Play.
+            using (new EditorGUI.DisabledScope(Application.isPlaying))
+            {
+                // Entity-level detail (part transform, target transform, wire, batch)
+                DrawBottomEditPanel();
 
-            // ── Contextual sections (moved from canvas in the redesign) ───────
-            // These appear BELOW the entity detail so the primary authoring
-            // surface (position/rotation/scale) is always visible without
-            // scrolling. The sections that appear depend on what's selected.
-            DrawInspectorContextualSections();
+                // ── Contextual sections (moved from canvas in the redesign) ───────
+                // These appear BELOW the entity detail so the primary authoring
+                // surface (position/rotation/scale) is always visible without
+                // scrolling. The sections that appear depend on what's selected.
+                DrawInspectorContextualSections();
+            }
 
             EditorGUILayout.EndScrollView();
         }
@@ -672,6 +720,38 @@ namespace OSE.Editor
             _activeTaskKind         = null;
             _taskSeqReorderList     = null;
             _taskSeqReorderListForStepId = null;
+
+            // PLAY MODE: route the step change through the runtime navigation
+            // API and stop. The runtime owns the live scene during Play; TTAW
+            // updated its own UI state above but must not run RespawnScene,
+            // SyncAllPartMeshesToActivePose, or SyncSessionDriverStep here —
+            // those would fight the runtime's own step-transition pipeline.
+            //
+            // _suppressStepSync indicates we got here from a Play→TTAW sync
+            // push (subscribed StepActivated handler) — never bounce back to
+            // the runtime in that case or we'd echo-loop on every step change.
+            if (Application.isPlaying)
+            {
+                if (!_suppressStepSync && _stepSequenceIdxs != null
+                    && newIdx > 0 && newIdx < _stepSequenceIdxs.Length)
+                {
+                    int seqIndex = _stepSequenceIdxs[newIdx];
+                    if (ServiceRegistry.TryGet<IMachineSessionController>(out var session) && session != null)
+                    {
+                        // NavigateToGlobalStep takes 0-based global index; seqIndex is 1-based.
+                        _suppressStepSync = true;
+                        try { session.NavigateToGlobalStep(seqIndex - 1); }
+                        finally { _suppressStepSync = false; }
+                    }
+                }
+                // Refresh local UI lists for display (no scene mutation).
+                InvalidateTaskOrderCache();
+                UpdateActiveStep();
+                BuildTargetList();
+                BuildPartList();
+                Repaint();
+                return;
+            }
             // Clear group selection on step change — a stale selection from
             // an earlier step can drive the first pose-sync pass before the
             // current step's context settles, producing "Start pose on jump,
@@ -741,6 +821,30 @@ namespace OSE.Editor
             if (order.Count == 0) return;
             _selectedTaskSeqIdx = 0;
             ApplyTaskEntrySelection(step, order[0]);
+        }
+
+        /// <summary>
+        /// Live-edit hook. Pushes the in-memory edit state of a target's
+        /// position/rotation/scale to the runtime via
+        /// <see cref="IMachineSessionController.HotReloadTargetPlacement"/> so
+        /// the spawned target marker GameObject snaps to the new pose.
+        /// Auto-save persists the same values to <c>preview_config.json</c>
+        /// in parallel via <c>WriteJson</c>'s debounce. No-op outside Play
+        /// or when the live-edit toggle is off (callers gate on those).
+        /// </summary>
+        private void PushTargetPlacementToRuntime(ref TargetEditState t)
+        {
+            if (t.def == null || string.IsNullOrEmpty(t.def.id)) return;
+            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session) || session == null) return;
+
+            // Build SceneFloat3 / SceneQuaternion from the editor's Vector3 / Quaternion edit state.
+            var pos = new SceneFloat3 { x = t.position.x, y = t.position.y, z = t.position.z };
+            var rot = new SceneQuaternion { x = t.rotation.x, y = t.rotation.y, z = t.rotation.z, w = t.rotation.w };
+            var scl = new SceneFloat3 { x = t.scale.x, y = t.scale.y, z = t.scale.z };
+
+            bool ok = session.HotReloadTargetPlacement(t.def.id, pos, rot, scl);
+            if (!ok)
+                OseLog.VerboseInfo($"[TTAW.LiveEdit] HotReloadTargetPlacement('{t.def.id}') returned false — placement entry not found in previewConfig (target may be authored but never spawned at runtime).");
         }
 
         /// <summary>
@@ -966,26 +1070,61 @@ namespace OSE.Editor
             // ── Fields driven by TaskFieldProfile ────────────────────────────
             var fieldProfile = TaskFieldRegistry.Get(_activeTaskKind ?? "");
 
+            // Live-edit override. Outside Play, GUI.enabled is already true.
+            // Inside Play, the parent DrawInspectorIMGUI wraps us in a
+            // DisabledScope, but GUI.enabled is a static property — directly
+            // setting it back to true re-enables the next control. We restore
+            // the previous value after the three transform fields so the rest
+            // of DrawDetailPanel (weld axis, ports, etc.) remains locked.
+            bool liveEditActive = Application.isPlaying && _liveEditEnabled;
+            bool prevGUIEnabled = GUI.enabled;
+            if (liveEditActive) GUI.enabled = true;
+
             if (fieldProfile.ShowPosition)
             {
                 EditorGUI.BeginChangeCheck();
                 Vector3 newPos = Vector3FieldClip("Position (local)", t.position);
-                if (EditorGUI.EndChangeCheck()) { BeginEdit(); t.position = newPos; t.isDirty = true; EndEdit(); SceneView.RepaintAll(); }
+                if (EditorGUI.EndChangeCheck())
+                {
+                    BeginEdit();
+                    t.position = newPos;
+                    t.isDirty = true;
+                    EndEdit();
+                    SceneView.RepaintAll();
+                    if (liveEditActive) PushTargetPlacementToRuntime(ref t);
+                }
             }
 
             if (fieldProfile.ShowRotation)
             {
                 EditorGUI.BeginChangeCheck();
                 Vector3 newEuler = Vector3FieldClip("Rotation (euler)", t.rotation.eulerAngles);
-                if (EditorGUI.EndChangeCheck()) { BeginEdit(); t.rotation = Quaternion.Euler(newEuler); t.isDirty = true; EndEdit(); SceneView.RepaintAll(); }
+                if (EditorGUI.EndChangeCheck())
+                {
+                    BeginEdit();
+                    t.rotation = Quaternion.Euler(newEuler);
+                    t.isDirty = true;
+                    EndEdit();
+                    SceneView.RepaintAll();
+                    if (liveEditActive) PushTargetPlacementToRuntime(ref t);
+                }
             }
 
             if (fieldProfile.ShowScale)
             {
                 EditorGUI.BeginChangeCheck();
                 Vector3 newScale = Vector3FieldClip("Scale", t.scale);
-                if (EditorGUI.EndChangeCheck()) { BeginEdit(); t.scale = newScale; t.isDirty = true; EndEdit(); }
+                if (EditorGUI.EndChangeCheck())
+                {
+                    BeginEdit();
+                    t.scale = newScale;
+                    t.isDirty = true;
+                    EndEdit();
+                    if (liveEditActive) PushTargetPlacementToRuntime(ref t);
+                }
             }
+
+            GUI.enabled = prevGUIEnabled;
 
             if (!fieldProfile.ShowPosition && !fieldProfile.ShowRotation && !fieldProfile.ShowScale)
                 return; // nothing left to render for this task kind

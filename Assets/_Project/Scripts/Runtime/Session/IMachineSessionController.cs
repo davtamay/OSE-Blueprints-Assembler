@@ -39,6 +39,7 @@ namespace OSE.Runtime
             string packageId,
             SessionMode mode,
             int restoreStepCount = 0,
+            string lastCompletedStepId = null,
             CancellationToken cancellationToken = default);
 
         void PauseSession();
@@ -57,5 +58,18 @@ namespace OSE.Runtime
         bool RestoreToStep(int completedStepCount);
 
         void ResumeAfterTransition();
+
+        /// <summary>
+        /// Live-edit hook for authoring tools (TTAW). Updates the in-memory
+        /// preview placement for one <paramref name="targetId"/> and notifies
+        /// the spawned target marker GameObject to re-apply its transform.
+        /// Strictly cosmetic / spatial — does NOT touch step state, task
+        /// cursor, completed steps, or any other entity. The on-disk JSON
+        /// is NOT read or written by this method; persistence is the caller's
+        /// responsibility (TTAW's auto-save handles it via WriteJson). Returns
+        /// false when the target id isn't found in the live preview config.
+        /// Safe to call outside Play (no-op).
+        /// </summary>
+        bool HotReloadTargetPlacement(string targetId, SceneFloat3 position, SceneQuaternion rotation, SceneFloat3 scale);
     }
 }

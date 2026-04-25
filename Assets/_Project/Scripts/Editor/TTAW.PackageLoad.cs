@@ -428,6 +428,14 @@ namespace OSE.Editor
         {
             // No hidden preview root — we work directly with the live spawned parts.
             // Just compute the step-aware context cache and position live parts accordingly.
+            //
+            // Editor/runtime isolation: a "respawn" repositions live spawned
+            // parts based on the editor's selected step. During Play, those
+            // GameObjects are owned by the runtime — a respawn here yanks
+            // every part to the editor's authored pose, overriding whatever
+            // step the trainee is actually on. Authoring is inert during Play.
+            if (Application.isPlaying) return;
+
             if (_pkg?.previewConfig?.partPlacements == null) return;
 
             _previewAssembled = 0;

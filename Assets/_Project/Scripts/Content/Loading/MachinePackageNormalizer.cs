@@ -46,11 +46,24 @@ namespace OSE.Content.Loading
         {
             if (package == null) return;
 
+            // Phantom-payload purge MUST run first. Unity's JsonUtility creates
+            // a default instance for any [Serializable] reference field absent
+            // from the JSON — so `step.workingOrientation`, `step.animationCues`,
+            // `step.particleEffects` come back non-null on every step that
+            // didn't author them. Downstream code checks `!= null` to decide
+            // whether to apply a rotation, append "rotated to expose the work
+            // area" to the instruction text, schedule cues, or spawn particles.
+            // Without this pass the runtime treats every step as if it had
+            // authored intent for all three subsystems (the step-263
+            // phantom-orientation bug). Caught by `EditorRuntimeIsolationTests`.
+            DropEmptyStepPayloads(package);
+
             InferAggregateFlag(package);
             InflatePartTemplates(package);
             BakeStagingPoses(package);
             InferStepParentIds(package);
             NormalizeConfirmActionTaskOrder(package);
+            EnsureConfirmActionForConfirmSteps(package);
             NormalizeTaskOrderToolActionKinds(package);
             EnsureTaskOrderCoversRequirements(package);
             MarkVisualOnlyTaskOrderEntriesOptional(package);
@@ -73,6 +86,49 @@ namespace OSE.Content.Loading
             BakeHoldAtEndEndPoses(package);
 
             BakePoseTable(package);
+        }
+
+        /// <summary>
+        /// Sets <see cref="StepDefinition.workingOrientation"/>,
+        /// <see cref="StepDefinition.animationCues"/>, and
+        /// <see cref="StepDefinition.particleEffects"/> back to null when their
+        /// in-memory instance carries no authored content. JsonUtility creates
+        /// these as default instances when the JSON field is absent — see the
+        /// comment in <see cref="Normalize"/> for the full rationale.
+        /// Idempotent. Logs the count when any phantom is dropped so future
+        /// regressions surface in build logs. Public so EditMode tests can
+        /// invoke it directly without building a fully-populated package.
+        /// </summary>
+        public static void DropEmptyStepPayloads(MachinePackageDefinition package)
+        {
+            if (package?.steps == null) return;
+
+            int droppedOrient = 0, droppedCues = 0, droppedParticles = 0;
+
+            for (int i = 0; i < package.steps.Length; i++)
+            {
+                var s = package.steps[i];
+                if (s == null) continue;
+
+                if (s.workingOrientation != null && s.workingOrientation.IsEmpty())
+                {
+                    s.workingOrientation = null;
+                    droppedOrient++;
+                }
+                if (s.animationCues != null && s.animationCues.IsEmpty())
+                {
+                    s.animationCues = null;
+                    droppedCues++;
+                }
+                if (s.particleEffects != null && s.particleEffects.IsEmpty())
+                {
+                    s.particleEffects = null;
+                    droppedParticles++;
+                }
+            }
+
+            if (droppedOrient + droppedCues + droppedParticles > 0)
+                OseLog.Info($"[Normalizer.DropEmptyStepPayloads] '{package.packageId}': dropped {droppedOrient} workingOrientation, {droppedCues} animationCues, {droppedParticles} particleEffects phantom payloads (JsonUtility default-instance noise).");
         }
 
         // Canonical trigger names for AnimationCueEntry.trigger. Every alias
@@ -500,6 +556,66 @@ namespace OSE.Content.Loading
             if (promoted > 0 || stripped > 0)
             {
                 OseLog.Warn($"[TaskOrder.Normalize] Repaired confirm_action/family mismatch: promoted {promoted} step(s) to family=Confirm, stripped confirm_action from {stripped} step(s). Set OseLog.Verbose=true for per-step detail, or author family=Confirm when the step ends on a button press (confirm_action is valid only on Confirm family).");
+            }
+        }
+
+        /// <summary>
+        /// Appends a <c>kind="confirm_action"</c> task to any Confirm-family
+        /// step whose taskOrder lacks one. Confirm steps complete only when
+        /// the user fires the Continue button — that button maps to a
+        /// confirm_action entry in the cursor. Without it the cursor has no
+        /// gating task and the Continue button is either disabled (when other
+        /// non-optional task entries hold the cursor) or enabled-but-inert
+        /// (no confirm_action to fire). Observed 2026-04-25 — 74 Confirm
+        /// steps in d3d_v18_10 missing the entry, blocking session progression
+        /// past step 57.
+        ///
+        /// <para>Pairs with <see cref="NormalizeConfirmActionTaskOrder"/>
+        /// which handles the inverse case (confirm_action present on non-
+        /// Confirm family).</para>
+        /// </summary>
+        private static void EnsureConfirmActionForConfirmSteps(MachinePackageDefinition package)
+        {
+            if (package?.steps == null) return;
+
+            int added = 0;
+            for (int si = 0; si < package.steps.Length; si++)
+            {
+                var step = package.steps[si];
+                if (step == null) continue;
+                if (step.ResolvedFamily != StepFamily.Confirm) continue;
+
+                bool hasConfirm = false;
+                if (step.taskOrder != null)
+                {
+                    for (int ti = 0; ti < step.taskOrder.Length; ti++)
+                    {
+                        var e = step.taskOrder[ti];
+                        if (e != null && string.Equals(e.kind, "confirm_action", StringComparison.Ordinal))
+                        { hasConfirm = true; break; }
+                    }
+                }
+                if (hasConfirm) continue;
+
+                var entry = new TaskOrderEntry { kind = "confirm_action", id = "confirm" };
+                if (step.taskOrder == null || step.taskOrder.Length == 0)
+                {
+                    step.taskOrder = new[] { entry };
+                }
+                else
+                {
+                    var augmented = new TaskOrderEntry[step.taskOrder.Length + 1];
+                    Array.Copy(step.taskOrder, augmented, step.taskOrder.Length);
+                    augmented[step.taskOrder.Length] = entry;
+                    step.taskOrder = augmented;
+                }
+                added++;
+                OseLog.VerboseInfo($"[TaskOrder.Normalize] step '{step.id}': appended missing confirm_action (Confirm-family step needs a Continue button task to complete).");
+            }
+
+            if (added > 0)
+            {
+                OseLog.Warn($"[TaskOrder.Normalize] Added missing confirm_action to {added} Confirm-family step(s). Author should add `kind: confirm_action` to taskOrder on every Confirm step that ends with a Continue button press.");
             }
         }
 
@@ -1829,7 +1945,13 @@ namespace OSE.Content.Loading
         /// <c>previewConfig.partPlacements.startPosition</c> values (if present in an
         /// un-migrated package) continue to work as the fallback.
         /// </summary>
-        private static void BakeStagingPoses(MachinePackageDefinition package)
+        /// <summary>
+        /// Public so TTAW's WriteJson can call it before persisting
+        /// preview_config.json — keeps the on-disk partPlacements in sync
+        /// with whatever the runtime's bake would produce, eliminating the
+        /// "preview_config.json stale vs bake" bug class.
+        /// </summary>
+        public static void BakeStagingPoses(MachinePackageDefinition package)
         {
             if (package.parts == null) return;
             if (package.previewConfig == null)
@@ -1891,6 +2013,24 @@ namespace OSE.Content.Loading
             if (addedNew)
                 package.previewConfig.partPlacements = new System.Collections.Generic.List<PartPreviewPlacement>(
                     placementById.Values).ToArray();
+
+            // Diagnostic: surface the bake's headcount so silent
+            // "preview_config.json is incomplete + bake didn't fix it"
+            // scenarios are visible in the console at load time. Counts
+            // how many parts have stagingPose vs. how many partPlacement
+            // entries exist after the bake — should match.
+            int partsWithStaging = 0;
+            for (int i = 0; i < package.parts.Length; i++)
+                if (package.parts[i]?.stagingPose != null) partsWithStaging++;
+            int placementsAfter = package.previewConfig.partPlacements?.Length ?? 0;
+            // Tripwire: if placementsAfter < partsWithStaging, the bake didn't
+            // synthesize entries for some parts and the runtime will hide them.
+            // Promoted to Warn for that case so it surfaces without verbose
+            // logging on. Otherwise stays VerboseInfo (silent in normal play).
+            if (placementsAfter < partsWithStaging)
+                OseLog.Warn($"[Normalizer.BakeStagingPoses] parts={package.parts.Length} partsWithStagingPose={partsWithStaging} placementsAfterBake={placementsAfter} addedNew={addedNew} — placement count below stagingPose count, parts will fail to render. Run OSE → Package → Persist Bake to Disk.");
+            else
+                OseLog.VerboseInfo($"[Normalizer.BakeStagingPoses] parts={package.parts.Length} partsWithStagingPose={partsWithStaging} placementsAfterBake={placementsAfter} addedNew={addedNew}");
         }
 
         // ── Part Templates ──

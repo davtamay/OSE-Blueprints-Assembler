@@ -70,6 +70,8 @@ namespace OSE.Runtime.Preview
         private int _savedTotalSteps;
         private string _savedMachineVersion;
         private string _savedStepStructureHash;
+        private string _savedCurrentStepId;
+        private string _savedLastCompletedStepId;
 
         // --------------------------------------------------------------------
         // Lifecycle
@@ -271,6 +273,8 @@ namespace OSE.Runtime.Preview
             _savedTotalSteps = 0;
             _savedMachineVersion = null;
             _savedStepStructureHash = null;
+            _savedCurrentStepId = null;
+            _savedLastCompletedStepId = null;
 
             OseLog.Info($"[SessionDriver] Restarting session with package '{_packageId}'.");
             await StartSessionAsync();
@@ -311,6 +315,8 @@ namespace OSE.Runtime.Preview
             // step 1 first and patching up afterward.
             _savedCompletedSteps = 0;
             _savedTotalSteps = 0;
+            _savedCurrentStepId = null;
+            _savedLastCompletedStepId = null;
             if (ServiceRegistry.TryGet<IPersistenceService>(out var persistence)
                 && persistence.HasSavedSession(_packageId))
             {
@@ -323,6 +329,8 @@ namespace OSE.Runtime.Preview
                     // We cannot check package version yet (not loaded), so store
                     // the saved version/hash and validate after load below.
                     _savedCompletedSteps = saved.CompletedStepCount;
+                    _savedCurrentStepId = saved.CurrentStepId;
+                    _savedLastCompletedStepId = saved.LastCompletedStepId;
                     _savedMachineVersion = savedVersion;
                     _savedStepStructureHash = savedHash;
                 }
@@ -331,7 +339,17 @@ namespace OSE.Runtime.Preview
             OseLog.Info($"[SessionDriver] Starting session for '{_packageId}' in {_sessionMode} mode" +
                 (_savedCompletedSteps > 0 ? $" (restoring {_savedCompletedSteps} steps)" : "") + ".");
 
-            bool success = await _session.StartSessionAsync(_packageId, _sessionMode, _savedCompletedSteps);
+            // Pass LastCompletedStepId so StartSessionAsync can truth-up the
+            // restore boundary from the id's position before BeginCurrentAssemblyRestored
+            // runs. Only LastCompletedStepId has the right semantic for this
+            // (idx+1 = count). CurrentStepId is the viewing position which can
+            // be advanced by navigation, and its semantic differs (idx = count
+            // before active step) — so it's NOT safe to fall back to here.
+            // Old saves without LastCompletedStepId pass null, falling through
+            // to the existing (corrupt-prone) path; user must Reset Progress
+            // once to seed the new field.
+            bool success = await _session.StartSessionAsync(
+                _packageId, _sessionMode, _savedCompletedSteps, _savedLastCompletedStepId);
 
             // Subscribe to runtime events now that startup step events have already fired.
             RuntimeEventBus.Subscribe<StepStateChanged>(HandleStepStateChanged);
@@ -362,6 +380,50 @@ namespace OSE.Runtime.Preview
                 // Resolve total steps now that the package is loaded
                 _savedTotalSteps = _session.Package?.GetOrderedSteps().Length ?? 0;
 
+                // CompletedStepCount is known-corrupt (observed inflated past
+                // total — 741 in a 305-step package). Derive the true count
+                // from saved IDs. Prefer LastCompletedStepId (only updated on
+                // first-time completion, never by navigation). Fall back to
+                // CurrentStepId for older saves that predate the field —
+                // imperfect (it advances on navigation too) but better than
+                // trusting the count blindly. Memory:
+                // feedback_completedstepcount_is_corrupt_use_position,
+                // feedback_session_currentstepid_drifts_during_navigation.
+                int derivedCount = -1;
+                StepDefinition[] orderedSteps = _session.Package?.GetOrderedSteps();
+                if (orderedSteps != null && orderedSteps.Length > 0)
+                {
+                    if (!string.IsNullOrEmpty(_savedLastCompletedStepId))
+                    {
+                        int idx = IndexOfStepId(orderedSteps, _savedLastCompletedStepId);
+                        if (idx >= 0)
+                            derivedCount = idx + 1;  // user completed this step → count includes it
+                    }
+                    if (derivedCount < 0 && !string.IsNullOrEmpty(_savedCurrentStepId))
+                    {
+                        int idx = IndexOfStepId(orderedSteps, _savedCurrentStepId);
+                        if (idx >= 0)
+                            derivedCount = idx;  // user is *on* this step → count is steps before it
+                    }
+                }
+                if (derivedCount >= 0)
+                {
+                    if (_savedCompletedSteps != derivedCount)
+                    {
+                        OseLog.Warn($"[SessionDriver] Saved CompletedStepCount={_savedCompletedSteps} disagrees with " +
+                            $"position-derived count={derivedCount} (LastCompleted='{_savedLastCompletedStepId}', " +
+                            $"Current='{_savedCurrentStepId}', total={_savedTotalSteps}). Trusting position.");
+                        _savedCompletedSteps = derivedCount;
+                    }
+                }
+                else if (_savedTotalSteps > 0 && _savedCompletedSteps > _savedTotalSteps)
+                {
+                    // No usable ID — clamp the corrupt count so the intro can't display >100%.
+                    OseLog.Warn($"[SessionDriver] No resolvable saved step id; clamping " +
+                        $"CompletedStepCount {_savedCompletedSteps} → {_savedTotalSteps}.");
+                    _savedCompletedSteps = _savedTotalSteps;
+                }
+
                 // Structure guard: if the step structure changed (steps added, removed,
                 // or reordered), the saved CompletedStepCount is invalid. Auto-discard
                 // and restart fresh to prevent silent navigation bugs.
@@ -385,6 +447,8 @@ namespace OSE.Runtime.Preview
 
                         _savedCompletedSteps = 0;
                         _savedStepStructureHash = null;
+                        _savedCurrentStepId = null;
+                        _savedLastCompletedStepId = null;
                         _ = RestartSession(clearSavedProgress: true);
                         return;
                     }
@@ -532,6 +596,8 @@ namespace OSE.Runtime.Preview
             _savedTotalSteps = 0;
             _savedMachineVersion = null;
             _savedStepStructureHash = null;
+            _savedCurrentStepId = null;
+            _savedLastCompletedStepId = null;
 
             OseLog.Info("[SessionDriver] Progress reset. Restarting session.");
             _ = RestartSession(clearSavedProgress: true);
@@ -680,6 +746,20 @@ namespace OSE.Runtime.Preview
         // --------------------------------------------------------------------
         // Helpers
         // --------------------------------------------------------------------
+
+        private static int IndexOfStepId(StepDefinition[] orderedSteps, string stepId)
+        {
+            if (orderedSteps == null || string.IsNullOrEmpty(stepId)) return -1;
+            for (int i = 0; i < orderedSteps.Length; i++)
+            {
+                if (orderedSteps[i] != null
+                    && string.Equals(orderedSteps[i].id, stepId, StringComparison.Ordinal))
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
 
         private static bool ResolveChallengeActive(SessionMode mode, MachinePackageDefinition package)
         {

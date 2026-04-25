@@ -48,6 +48,14 @@ namespace OSE.Interaction
             // snaps back to the step-activation home — which was framed on
             // the FIRST target — so targets #2-N stay out of view.
             RuntimeEventBus.Subscribe<ToolActionCompleted>(OnToolActionCompleted);
+
+            // Re-frame after a part-translating animation cue ends so the
+            // camera doesn't sit on the animated part's final position
+            // (e.g. step 57 "return rod" — pivot stayed on the rod's end
+            // pose). Priority is the active task subject: tool target, then
+            // step bounds (parts/ghosts/groups/targets) — same path used at
+            // step activation.
+            RuntimeEventBus.Subscribe<CueCameraFollowStopped>(OnCueCameraFollowStopped);
         }
 
         /// <summary>
@@ -121,6 +129,26 @@ namespace OSE.Interaction
         }
 
         /// <summary>
+        /// Subscribed to <see cref="CueCameraFollowStopped"/>. When a
+        /// part-translating animation cue ends (e.g. a "return rod"
+        /// pose-transition with holdAtEnd), the camera rig leaves the pivot
+        /// on the animated part's final position. Re-run the step framing
+        /// so priority returns to the active task subject — tool target,
+        /// then step bounds (parts/ghosts/groups/targets).
+        /// </summary>
+        private void OnCueCameraFollowStopped(CueCameraFollowStopped evt)
+        {
+            if (_cameraRig == null || string.IsNullOrEmpty(_activeStepId)) return;
+
+            FrameStep(_activeStepId);
+
+            // Refresh home so GoStepHome / ReturnFromToolAction snap to the
+            // post-animation framing, not the rod's final position.
+            _currentHome = _cameraRig.TargetState;
+            _hasHome = true;
+        }
+
+        /// <summary>
         /// If the step has <c>requiredToolActions</c>, frame tightly on the
         /// first INCOMPLETE target using the step's profile framing distance.
         /// Skips already-completed actions via the session snapshot so
@@ -164,11 +192,38 @@ namespace OSE.Interaction
                 Vector3 worldPos = _previewRoot != null ? _previewRoot.TransformPoint(localPos) : localPos;
 
                 float distance = ToolProfileRegistry.Get(step.profile).FramingDistance;
-                _cameraRig.FocusOn(worldPos, distance);
-                OseLog.Info($"[StepGuidance] Framed to tool target '{a.targetId}' world={worldPos} distance={distance:F2} profile='{step.profile}'");
+                FrameToolTargetUnobstructed(a.targetId, worldPos, distance, step.profile);
                 return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// Drives the camera to <paramref name="worldPos"/> via the vantage solver,
+        /// then falls back to plain <see cref="AssemblyCameraRig.FocusOn"/> if no
+        /// unobstructed angle was found in any tier. Worst-case ~14 SphereCasts
+        /// on a discrete StepActivated/ToolActionCompleted event — no caching
+        /// needed.
+        /// </summary>
+        private void FrameToolTargetUnobstructed(string targetId, Vector3 worldPos, float distance, string profile)
+        {
+            LayerMask occluderMask = _settings != null ? _settings.VantageOccluderMask : (LayerMask)~0;
+            float probeRadius = _settings != null ? _settings.VantageProbeRadius : 0.05f;
+            float nearTargetIgnore = _settings != null ? _settings.VantageNearTargetIgnore : 0.15f;
+
+            bool solved = _cameraRig.TryFocusOnUnobstructed(
+                worldPos, distance, occluderMask, probeRadius, nearTargetIgnore,
+                ignoreRoots: null, out var result);
+
+            if (solved)
+            {
+                OseLog.Info($"[StepGuidance] Framed tool target '{targetId}' world={worldPos} dist={result.Distance:F2} yaw={result.Yaw:F1}° tier={result.Tier} casts={result.CastsPerformed} profile='{profile}'");
+            }
+            else
+            {
+                _cameraRig.FocusOn(worldPos, distance);
+                OseLog.Warn($"[StepGuidance] Vantage solver found NO clear angle for tool target '{targetId}' (casts={result.CastsPerformed}) — fell back to FocusOn at current yaw. profile='{profile}'");
+            }
         }
 
         /// <summary>

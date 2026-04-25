@@ -27,6 +27,7 @@ namespace OSE.Interaction
         private CameraConstraintSphere _constraint;
         private CameraSmoothing _smoothing;
         private CameraPivotResolver _pivotResolver;
+        private CameraVantageSolver _vantageSolver;
 
         private bool _initialized;
 
@@ -56,6 +57,7 @@ namespace OSE.Interaction
         private void Awake()
         {
             _pivotResolver = new CameraPivotResolver();
+            _vantageSolver = new CameraVantageSolver();
         }
 
         private void OnEnable()
@@ -181,6 +183,67 @@ namespace OSE.Interaction
             _targetState.PivotPosition = worldPosition;
             if (distance > 0f)
                 _targetState.Distance = distance;
+        }
+
+        /// <summary>
+        /// Like <see cref="FocusOn"/> but also picks an orbital yaw/pitch/distance with
+        /// line-of-sight to <paramref name="worldPosition"/>, walking through three tiers
+        /// (current angle → yaw sweep → distance bump). When all tiers fail, falls back
+        /// to <see cref="FocusOn"/> behavior (pivot + distance, current yaw/pitch
+        /// unchanged) and returns false so callers can log / diagnose. The chosen
+        /// state is clamped by <see cref="CameraConstraintSphere"/>.
+        /// </summary>
+        public bool TryFocusOnUnobstructed(
+            Vector3 worldPosition,
+            float distance,
+            LayerMask occluderMask,
+            float probeRadius,
+            float nearTargetIgnore,
+            Transform[] ignoreRoots,
+            out CameraVantageResult result)
+        {
+            result = default;
+            if (!_initialized) return false;
+
+            float reqDistance = distance > 0f ? distance : _targetState.Distance;
+
+            // Solver works against current yaw/pitch so the choice minimizes
+            // disorientation from where the user is already looking.
+            float minDist = _constraint != null ? _constraint.MinDistance : 0.3f;
+            float maxDist = _constraint != null ? _constraint.MaxDistance : 10f;
+
+            bool solved = _vantageSolver.TrySolve(
+                worldPosition,
+                reqDistance,
+                _targetState.Yaw,
+                _targetState.Pitch,
+                occluderMask,
+                probeRadius,
+                nearTargetIgnore,
+                ignoreRoots,
+                minDist,
+                maxDist,
+                out result);
+
+            _targetState.PivotPosition = worldPosition;
+
+            if (solved)
+            {
+                _targetState.Yaw = result.Yaw;
+                _targetState.Pitch = result.Pitch;
+                _targetState.Distance = result.Distance;
+            }
+            else
+            {
+                _targetState.Distance = reqDistance;
+            }
+
+            // Clamp regardless of tier so a tier-3 distance bump still respects the
+            // constraint sphere on the off-chance MaxDistance was tightened at runtime.
+            if (_constraint != null)
+                _targetState = _constraint.Clamp(_targetState);
+
+            return solved;
         }
 
         /// <summary>Frame an axis-aligned bounding box so all contents are visible.</summary>

@@ -83,6 +83,7 @@ namespace OSE.Runtime
             string packageId,
             SessionMode mode,
             int restoreStepCount = 0,
+            string lastCompletedStepId = null,
             CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(packageId))
@@ -188,6 +189,40 @@ namespace OSE.Runtime
 
             // Notify listeners before any step events fire
             PackageReady?.Invoke(_package);
+
+            // Truth-up the restore count from lastCompletedStepId before the
+            // restore path runs. The caller-supplied restoreStepCount comes
+            // from MachineSessionState.CompletedStepCount which is known-
+            // corrupt (observed inflated past total — e.g. 741 in 305-step
+            // package). The id is the unambiguous source: position + 1 = the
+            // count of completed steps.
+            if (!string.IsNullOrEmpty(lastCompletedStepId))
+            {
+                StepDefinition[] orderedSteps = _package.GetOrderedSteps();
+                int idx = -1;
+                if (orderedSteps != null)
+                {
+                    for (int i = 0; i < orderedSteps.Length; i++)
+                    {
+                        if (orderedSteps[i] != null
+                            && string.Equals(orderedSteps[i].id, lastCompletedStepId, StringComparison.Ordinal))
+                        {
+                            idx = i;
+                            break;
+                        }
+                    }
+                }
+                if (idx >= 0)
+                {
+                    int derived = idx + 1;
+                    if (derived != restoreStepCount)
+                    {
+                        OseLog.Warn($"[MachineSessionController] restoreStepCount={restoreStepCount} disagrees with " +
+                            $"position of lastCompletedStepId='{lastCompletedStepId}' (derived={derived}). Trusting position.");
+                        restoreStepCount = derived;
+                    }
+                }
+            }
 
             // Begin the first assembly — restore path skips directly to the
             // saved step boundary so step 1 is never spuriously activated.
@@ -518,6 +553,11 @@ namespace OSE.Runtime
                 if (progression != null && progression.LastAdvanceWasFirstTime)
                 {
                     _sessionState.CompletedStepCount++;
+                    // Resume marker — only advances on legitimate first-time
+                    // completion, never via navigation. Used by the intro
+                    // overlay and Resume button to drop the user back at the
+                    // right place without being fooled by skip-step views.
+                    _sessionState.LastCompletedStepId = evt.StepId;
                     AutoSave();
                 }
             }
@@ -742,6 +782,47 @@ namespace OSE.Runtime
             for (int i = 0; i < assemblies.Length; i++)
                 ids[i] = assemblies[i].id;
             return ids;
+        }
+
+        public bool HotReloadTargetPlacement(
+            string targetId, SceneFloat3 position, SceneQuaternion rotation, SceneFloat3 scale)
+        {
+            if (string.IsNullOrEmpty(targetId)) return false;
+            if (_package?.previewConfig?.targetPlacements == null) return false;
+
+            // Find the placement entry. previewConfig.targetPlacements is a flat
+            // array; sequential scan is fine — packages have at most a few hundred
+            // targets and this fires on author edits, not per-frame.
+            TargetPreviewPlacement[] placements = _package.previewConfig.targetPlacements;
+            int idx = -1;
+            for (int i = 0; i < placements.Length; i++)
+            {
+                if (placements[i] != null && string.Equals(placements[i].targetId, targetId, StringComparison.Ordinal))
+                {
+                    idx = i;
+                    break;
+                }
+            }
+            if (idx < 0) return false;
+
+            // Update the in-memory placement so any subsequent re-spawn (step
+            // navigation, Play→Edit→Play) reflects the live edit. The on-disk
+            // JSON is the caller's responsibility — TTAW's auto-save writes it
+            // out independently, and the runtime re-reads the file on the next
+            // package load. No file I/O on this path.
+            placements[idx].position = position;
+            placements[idx].rotation = rotation;
+            placements[idx].scale = scale;
+
+            // Notify the spawned-marker host so the live GameObject snaps to the
+            // new pose. The event is in OSE.Core to avoid a UnityEngine
+            // reference here (carries raw floats; subscribers convert).
+            RuntimeEventBus.Publish(new TargetPlacementHotReloaded(
+                targetId,
+                position.x, position.y, position.z,
+                rotation.x, rotation.y, rotation.z, rotation.w,
+                scale.x, scale.y, scale.z));
+            return true;
         }
     }
 }
