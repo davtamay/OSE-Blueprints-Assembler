@@ -1,0 +1,71 @@
+# Example Translator Input — CarriageBatchUnit × 4 via instances: repeater
+# Run: python Tools/generate_steps.py AgentAssistant/inputs/example_carriage_batch.yaml
+#
+# Demonstrates the two new authoring features:
+#   - instances:        fan out the same template across N variants in one YAML
+#   - CarriageBatchUnit wraps BearingCarriage; supports `skip:` (suffix-matched)
+#                       to drop confirmation steps already verified on a prior unit
+#
+# Each instance produces a contiguous block of steps; sequenceIndex flows from
+# the YAML-level start_seq through every instance with no gaps.
+#
+# Documentation only — NOT merged into any package. Replace the part IDs with
+# your real partIds before consuming the generated JSON.
+
+assembly: assembly_d3d_batch_carriage_build
+subassembly: subassembly_batch_carriages
+template: CarriageBatchUnit
+start_seq: 200
+
+# YAML-level defaults — every instance inherits unless it overrides.
+tool: tool_power_drill
+torque_setting: lowest
+orientation_cue: "small ribbed belt hole beside large smooth belt hole"
+
+instances:
+  # Carriage 1 — full sequence, sets the verification baseline.
+  - prefix: batch_c1
+    parts:
+      half_a: c1_carriage_half_a
+      half_b: c1_carriage_half_b
+      bearings: [c1_lm8uu_a, c1_lm8uu_b, c1_lm8uu_c, c1_lm8uu_d]
+      bolts_top: [c1_m6x18_a, c1_m6x18_b]
+      bolts_bot: [c1_m6x30_a, c1_m6x30_b]
+      nuts: [c1_m6_nut_a, c1_m6_nut_b, c1_m6_nut_c, c1_m6_nut_d]
+    milestone: "Carriage 1 of 4 complete — verification baseline set."
+
+  # Carriage 2 — full sequence again so trainee re-confirms shake + rod-slide.
+  - prefix: batch_c2
+    parts:
+      half_a: c2_carriage_half_a
+      half_b: c2_carriage_half_b
+      bearings: [c2_lm8uu_a, c2_lm8uu_b, c2_lm8uu_c, c2_lm8uu_d]
+      bolts_top: [c2_m6x18_a, c2_m6x18_b]
+      bolts_bot: [c2_m6x30_a, c2_m6x30_b]
+      nuts: [c2_m6_nut_a, c2_m6_nut_b, c2_m6_nut_c, c2_m6_nut_d]
+    milestone: "Carriage 2 of 4 complete."
+
+  # Carriage 3 — skip close_halves + place_bolts (collapse to a single bolt step
+  # is authored separately). The `skip:` suffixes match BearingCarriage step IDs.
+  - prefix: batch_c3
+    skip: [close_halves, place_bolts]
+    parts:
+      half_a: c3_carriage_half_a
+      half_b: c3_carriage_half_b
+      bearings: [c3_lm8uu_a, c3_lm8uu_b, c3_lm8uu_c, c3_lm8uu_d]
+      bolts_top: [c3_m6x18_a, c3_m6x18_b]
+      bolts_bot: [c3_m6x30_a, c3_m6x30_b]
+      nuts: [c3_m6_nut_a, c3_m6_nut_b, c3_m6_nut_c, c3_m6_nut_d]
+    milestone: "Carriage 3 of 4 complete."
+
+  # Carriage 4 — same trim as carriage 3.
+  - prefix: batch_c4
+    skip: [close_halves, place_bolts]
+    parts:
+      half_a: c4_carriage_half_a
+      half_b: c4_carriage_half_b
+      bearings: [c4_lm8uu_a, c4_lm8uu_b, c4_lm8uu_c, c4_lm8uu_d]
+      bolts_top: [c4_m6x18_a, c4_m6x18_b]
+      bolts_bot: [c4_m6x30_a, c4_m6x30_b]
+      nuts: [c4_m6_nut_a, c4_m6_nut_b, c4_m6_nut_c, c4_m6_nut_d]
+    milestone: "Carriage 4 of 4 complete — batch carriages done."

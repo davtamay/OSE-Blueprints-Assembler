@@ -240,7 +240,49 @@ You are an assembly authoring agent. Your working conventions:
 | `MotorHolder` | Assemble motor + pulley + belt into motor holder | motor, pulley, belt, half_nuts[3], belt_bolt, motor_screws[4], close_bolts[3] | 7 |
 | `RodAssembly` | Thread rods through idler, carriage, motor holder | rod_a, rod_b, idler, carriage, motor_holder | 5 |
 | `BeltThread` | Route and tension drive belt | belt, idler, peg_1, peg_2 | 7 |
+| `CarriageBatchUnit` | BearingCarriage with `skip:` (suffix-matched) for batch builds | same as BearingCarriage | 6 − len(skip) |
 
 ---
 
-*Last updated: 2026-04-10. Add new templates here as they are implemented in `generate_steps.py`.*
+## Repeater Syntax — `instances:` for Replicated Patterns
+
+When the same template applies N times with different part-id maps (4 carriages, 6 panel sides),
+use the top-level `instances:` array. Each entry overrides `prefix`, `parts`, and any of
+`orientation_cue` / `tool` / `torque_setting` / `milestone` / `skip` (template-specific). The
+expander assigns contiguous `sequenceIndex` across all instances starting from `start_seq`.
+Step IDs must be unique across instances — enforce uniqueness via distinct `prefix:` values
+(the expander aborts on collision).
+
+```yaml
+template: CarriageBatchUnit
+start_seq: 200
+tool: tool_power_drill           # YAML-level default — every instance inherits
+orientation_cue: "small ribbed belt hole beside large smooth belt hole"
+
+instances:
+  - prefix: batch_c1
+    parts: { half_a: c1_half_a, half_b: c1_half_b, bearings: [...], bolts_top: [...], bolts_bot: [...], nuts: [...] }
+    milestone: "Carriage 1 of 4."
+
+  - prefix: batch_c2
+    parts: { ... }
+    milestone: "Carriage 2 of 4."
+
+  - prefix: batch_c3
+    skip: [close_halves, place_bolts]   # drop the named BearingCarriage steps
+    parts: { ... }
+
+  - prefix: batch_c4
+    skip: [close_halves, place_bolts]
+    parts: { ... }
+```
+
+A YAML without `instances:` is unchanged from the prior single-instance behavior. See
+`AgentAssistant/inputs/example_carriage_batch.yaml` for a complete worked example.
+
+After merging the generated JSON into an assembly file, run
+`python tools/package_health.py <packageId> --fix-seqindex` to collapse any seqIndex gap.
+
+---
+
+*Last updated: 2026-04-24. Add new templates here as they are implemented in `generate_steps.py`.*

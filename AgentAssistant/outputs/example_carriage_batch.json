@@ -1,0 +1,502 @@
+[
+  {
+    "id": "step_batch_c1_place_bearings",
+    "name": "Seat 4 Bearings in Carriage Half A",
+    "sequenceIndex": 200,
+    "family": "Place",
+    "guidance": {
+      "instructionText": "Place all 4 LM8UU linear bearings into carriage half A (c1_carriage_half_a). Orient each bearing with small ribbed belt hole beside large smooth belt hole.",
+      "whyItMattersText": "Flanges prevent axial migration of bearings under load. An inverted bearing will walk out of its pocket within the first few print cycles."
+    },
+    "validation": {
+      "successCriteria": "All 4 bearings seated flush. Flanges visible on both sides of each pocket.",
+      "failureCriteria": "Any bearing recessed, flipped, or able to rock in its pocket."
+    },
+    "feedback": {
+      "successMessage": "Bearings seated correctly — ready to close the carriage.",
+      "failureMessage": "Re-seat any loose or inverted bearings before closing."
+    },
+    "requiredPartIds": [
+      "c1_carriage_half_a",
+      "c1_lm8uu_a",
+      "c1_lm8uu_b",
+      "c1_lm8uu_c",
+      "c1_lm8uu_d"
+    ]
+  },
+  {
+    "id": "step_batch_c1_close_halves",
+    "name": "Close Carriage Half B — Align Belt Holes",
+    "sequenceIndex": 201,
+    "family": "Place",
+    "guidance": {
+      "instructionText": "Press carriage half B (c1_carriage_half_b) firmly against half A, trapping all 4 bearings. Align so the small ribbed belt hole sits beside the large smooth belt hole — this is the ONLY correct orientation.",
+      "whyItMattersText": "Belt-hole alignment must be confirmed before bolting. If small-ribbed ≠ beside large-smooth, the peg holes misalign and the belt cannot thread through."
+    },
+    "validation": {
+      "successCriteria": "Both halves flush along the full seam. Small ribbed hole is directly beside the large smooth hole.",
+      "failureCriteria": "Gap visible along seam, or belt holes on wrong sides relative to each other."
+    },
+    "feedback": {
+      "successMessage": "Halves closed and belt holes aligned.",
+      "failureMessage": "Flip half B 180° and retry — small ribbed hole must be adjacent to the large smooth hole."
+    },
+    "requiredPartIds": [
+      "c1_carriage_half_a",
+      "c1_carriage_half_b"
+    ]
+  },
+  {
+    "id": "step_batch_c1_shake_test",
+    "name": "Shake Test — Bearing Retention Check",
+    "sequenceIndex": 202,
+    "family": "Confirm",
+    "guidance": {
+      "instructionText": "Hold both halves compressed firmly by hand — do not bolt yet. Shake the closed assembly firmly for 2–3 seconds. Listen and feel for any bearing rattle or movement.",
+      "whyItMattersText": "A rattle means at least one bearing is not fully seated in its pocket. Bolting before fixing locks in the defect — the carriage will develop play under load and the axis will lose positional accuracy."
+    },
+    "validation": {
+      "successCriteria": "No audible rattle, no felt movement from bearings while halves are hand-compressed.",
+      "failureCriteria": "Any rattle, clicking, or loose feeling during the shake."
+    },
+    "feedback": {
+      "successMessage": "Shake test passed — bearings are solid.",
+      "failureMessage": "Open the halves and identify the loose bearing. Re-seat it and retest before proceeding."
+    },
+    "requiredPartIds": [
+      "c1_carriage_half_a",
+      "c1_carriage_half_b"
+    ]
+  },
+  {
+    "id": "step_batch_c1_rod_slide_test",
+    "name": "Rod Slide Test — Bearing Alignment Check",
+    "sequenceIndex": 203,
+    "family": "Confirm",
+    "guidance": {
+      "instructionText": "While still holding halves compressed, slide a smooth 8mm rod vertically through all 4 bearings. It should pass with slight, even resistance — not too stiff, not freely loose.",
+      "whyItMattersText": "Uneven resistance exposes bearing misalignment. If left uncorrected, the axis will bind under motor load and cause missed steps or stalls."
+    },
+    "validation": {
+      "successCriteria": "Rod slides through all 4 bearings with slight, consistent resistance. No binding or tight spots.",
+      "failureCriteria": "Rod catches or sticks at any bearing, OR drops through with zero resistance."
+    },
+    "feedback": {
+      "successMessage": "Rod slide test passed — bearings aligned.",
+      "failureMessage": "Open halves. Check that all bearings are fully seated and coplanar. Re-close and retest."
+    },
+    "requiredPartIds": [
+      "c1_carriage_half_a",
+      "c1_carriage_half_b"
+    ]
+  },
+  {
+    "id": "step_batch_c1_place_bolts",
+    "name": "Insert Bolts and Thread 4 Nuts Finger-Tight",
+    "sequenceIndex": 204,
+    "family": "Place",
+    "guidance": {
+      "instructionText": "Insert the 2 shorter M6×18 bolts through the TOP holes and the 2 longer M6×30 bolts through the BOTTOM holes. Thread all 4 M6 nuts finger-tight — hand only, no drill yet.",
+      "whyItMattersText": "Short bolts top, long bolts bottom — this is the load-distribution pattern. Swapping them puts longer threads in the high-stress joint, which can strip faster under Y-axis acceleration."
+    },
+    "validation": {
+      "successCriteria": "All 4 bolts inserted and 4 nuts threaded finger-tight. Short M6×18 bolts are in the top holes, long M6×30 in the bottom holes.",
+      "failureCriteria": "Wrong bolt length in wrong hole, any nut cross-threaded, or any bolt not yet threaded."
+    },
+    "feedback": {
+      "successMessage": "Bolts and nuts placed correctly — ready to tighten.",
+      "failureMessage": "Verify bolt lengths: M6×18 (shorter) → top holes, M6×30 (longer) → bottom holes."
+    },
+    "requiredPartIds": [
+      "c1_m6x18_a",
+      "c1_m6x18_b",
+      "c1_m6x30_a",
+      "c1_m6x30_b",
+      "c1_m6_nut_a",
+      "c1_m6_nut_b",
+      "c1_m6_nut_c",
+      "c1_m6_nut_d"
+    ]
+  },
+  {
+    "id": "step_batch_c1_tighten",
+    "name": "Tighten Carriage Bolts — Cross Pattern",
+    "sequenceIndex": 205,
+    "family": "Use",
+    "guidance": {
+      "instructionText": "Using the power drill at lowest torque setting, tighten all 4 carriage bolts in a cross pattern: top-left → bottom-right → top-right → bottom-left. Repeat the pattern once to equalize clamping.",
+      "whyItMattersText": "Cross-pattern tightening ensures even clamping force across the carriage body. Sequential (one side first) tightening distorts the bearing bores and causes axis binding."
+    },
+    "validation": {
+      "successCriteria": "All 4 bolts tight at lowest torque. Carriage halves fully closed — no gap along seam. Rod still slides smoothly through bearings after tightening. Carriage 1 of 4 complete — verification baseline set.",
+      "failureCriteria": "Any bolt loose, gap visible between halves, or rod now binds after tightening."
+    },
+    "feedback": {
+      "successMessage": "Carriage 1 of 4 complete — verification baseline set.",
+      "failureMessage": "If rod now binds: back off all bolts ¼ turn, re-run cross pattern at lower torque. If gap persists: check for bearing oversize or debris between halves."
+    },
+    "requiredPartIds": [
+      "c1_m6x18_a",
+      "c1_m6x18_b",
+      "c1_m6x30_a",
+      "c1_m6x30_b"
+    ],
+    "requiredToolActions": [
+      {
+        "toolId": "tool_power_drill",
+        "actionType": "Tighten",
+        "profile": "Torque"
+      }
+    ]
+  },
+  {
+    "id": "step_batch_c2_place_bearings",
+    "name": "Seat 4 Bearings in Carriage Half A",
+    "sequenceIndex": 206,
+    "family": "Place",
+    "guidance": {
+      "instructionText": "Place all 4 LM8UU linear bearings into carriage half A (c2_carriage_half_a). Orient each bearing with small ribbed belt hole beside large smooth belt hole.",
+      "whyItMattersText": "Flanges prevent axial migration of bearings under load. An inverted bearing will walk out of its pocket within the first few print cycles."
+    },
+    "validation": {
+      "successCriteria": "All 4 bearings seated flush. Flanges visible on both sides of each pocket.",
+      "failureCriteria": "Any bearing recessed, flipped, or able to rock in its pocket."
+    },
+    "feedback": {
+      "successMessage": "Bearings seated correctly — ready to close the carriage.",
+      "failureMessage": "Re-seat any loose or inverted bearings before closing."
+    },
+    "requiredPartIds": [
+      "c2_carriage_half_a",
+      "c2_lm8uu_a",
+      "c2_lm8uu_b",
+      "c2_lm8uu_c",
+      "c2_lm8uu_d"
+    ]
+  },
+  {
+    "id": "step_batch_c2_close_halves",
+    "name": "Close Carriage Half B — Align Belt Holes",
+    "sequenceIndex": 207,
+    "family": "Place",
+    "guidance": {
+      "instructionText": "Press carriage half B (c2_carriage_half_b) firmly against half A, trapping all 4 bearings. Align so the small ribbed belt hole sits beside the large smooth belt hole — this is the ONLY correct orientation.",
+      "whyItMattersText": "Belt-hole alignment must be confirmed before bolting. If small-ribbed ≠ beside large-smooth, the peg holes misalign and the belt cannot thread through."
+    },
+    "validation": {
+      "successCriteria": "Both halves flush along the full seam. Small ribbed hole is directly beside the large smooth hole.",
+      "failureCriteria": "Gap visible along seam, or belt holes on wrong sides relative to each other."
+    },
+    "feedback": {
+      "successMessage": "Halves closed and belt holes aligned.",
+      "failureMessage": "Flip half B 180° and retry — small ribbed hole must be adjacent to the large smooth hole."
+    },
+    "requiredPartIds": [
+      "c2_carriage_half_a",
+      "c2_carriage_half_b"
+    ]
+  },
+  {
+    "id": "step_batch_c2_shake_test",
+    "name": "Shake Test — Bearing Retention Check",
+    "sequenceIndex": 208,
+    "family": "Confirm",
+    "guidance": {
+      "instructionText": "Hold both halves compressed firmly by hand — do not bolt yet. Shake the closed assembly firmly for 2–3 seconds. Listen and feel for any bearing rattle or movement.",
+      "whyItMattersText": "A rattle means at least one bearing is not fully seated in its pocket. Bolting before fixing locks in the defect — the carriage will develop play under load and the axis will lose positional accuracy."
+    },
+    "validation": {
+      "successCriteria": "No audible rattle, no felt movement from bearings while halves are hand-compressed.",
+      "failureCriteria": "Any rattle, clicking, or loose feeling during the shake."
+    },
+    "feedback": {
+      "successMessage": "Shake test passed — bearings are solid.",
+      "failureMessage": "Open the halves and identify the loose bearing. Re-seat it and retest before proceeding."
+    },
+    "requiredPartIds": [
+      "c2_carriage_half_a",
+      "c2_carriage_half_b"
+    ]
+  },
+  {
+    "id": "step_batch_c2_rod_slide_test",
+    "name": "Rod Slide Test — Bearing Alignment Check",
+    "sequenceIndex": 209,
+    "family": "Confirm",
+    "guidance": {
+      "instructionText": "While still holding halves compressed, slide a smooth 8mm rod vertically through all 4 bearings. It should pass with slight, even resistance — not too stiff, not freely loose.",
+      "whyItMattersText": "Uneven resistance exposes bearing misalignment. If left uncorrected, the axis will bind under motor load and cause missed steps or stalls."
+    },
+    "validation": {
+      "successCriteria": "Rod slides through all 4 bearings with slight, consistent resistance. No binding or tight spots.",
+      "failureCriteria": "Rod catches or sticks at any bearing, OR drops through with zero resistance."
+    },
+    "feedback": {
+      "successMessage": "Rod slide test passed — bearings aligned.",
+      "failureMessage": "Open halves. Check that all bearings are fully seated and coplanar. Re-close and retest."
+    },
+    "requiredPartIds": [
+      "c2_carriage_half_a",
+      "c2_carriage_half_b"
+    ]
+  },
+  {
+    "id": "step_batch_c2_place_bolts",
+    "name": "Insert Bolts and Thread 4 Nuts Finger-Tight",
+    "sequenceIndex": 210,
+    "family": "Place",
+    "guidance": {
+      "instructionText": "Insert the 2 shorter M6×18 bolts through the TOP holes and the 2 longer M6×30 bolts through the BOTTOM holes. Thread all 4 M6 nuts finger-tight — hand only, no drill yet.",
+      "whyItMattersText": "Short bolts top, long bolts bottom — this is the load-distribution pattern. Swapping them puts longer threads in the high-stress joint, which can strip faster under Y-axis acceleration."
+    },
+    "validation": {
+      "successCriteria": "All 4 bolts inserted and 4 nuts threaded finger-tight. Short M6×18 bolts are in the top holes, long M6×30 in the bottom holes.",
+      "failureCriteria": "Wrong bolt length in wrong hole, any nut cross-threaded, or any bolt not yet threaded."
+    },
+    "feedback": {
+      "successMessage": "Bolts and nuts placed correctly — ready to tighten.",
+      "failureMessage": "Verify bolt lengths: M6×18 (shorter) → top holes, M6×30 (longer) → bottom holes."
+    },
+    "requiredPartIds": [
+      "c2_m6x18_a",
+      "c2_m6x18_b",
+      "c2_m6x30_a",
+      "c2_m6x30_b",
+      "c2_m6_nut_a",
+      "c2_m6_nut_b",
+      "c2_m6_nut_c",
+      "c2_m6_nut_d"
+    ]
+  },
+  {
+    "id": "step_batch_c2_tighten",
+    "name": "Tighten Carriage Bolts — Cross Pattern",
+    "sequenceIndex": 211,
+    "family": "Use",
+    "guidance": {
+      "instructionText": "Using the power drill at lowest torque setting, tighten all 4 carriage bolts in a cross pattern: top-left → bottom-right → top-right → bottom-left. Repeat the pattern once to equalize clamping.",
+      "whyItMattersText": "Cross-pattern tightening ensures even clamping force across the carriage body. Sequential (one side first) tightening distorts the bearing bores and causes axis binding."
+    },
+    "validation": {
+      "successCriteria": "All 4 bolts tight at lowest torque. Carriage halves fully closed — no gap along seam. Rod still slides smoothly through bearings after tightening. Carriage 2 of 4 complete.",
+      "failureCriteria": "Any bolt loose, gap visible between halves, or rod now binds after tightening."
+    },
+    "feedback": {
+      "successMessage": "Carriage 2 of 4 complete.",
+      "failureMessage": "If rod now binds: back off all bolts ¼ turn, re-run cross pattern at lower torque. If gap persists: check for bearing oversize or debris between halves."
+    },
+    "requiredPartIds": [
+      "c2_m6x18_a",
+      "c2_m6x18_b",
+      "c2_m6x30_a",
+      "c2_m6x30_b"
+    ],
+    "requiredToolActions": [
+      {
+        "toolId": "tool_power_drill",
+        "actionType": "Tighten",
+        "profile": "Torque"
+      }
+    ]
+  },
+  {
+    "id": "step_batch_c3_place_bearings",
+    "name": "Seat 4 Bearings in Carriage Half A",
+    "sequenceIndex": 212,
+    "family": "Place",
+    "guidance": {
+      "instructionText": "Place all 4 LM8UU linear bearings into carriage half A (c3_carriage_half_a). Orient each bearing with small ribbed belt hole beside large smooth belt hole.",
+      "whyItMattersText": "Flanges prevent axial migration of bearings under load. An inverted bearing will walk out of its pocket within the first few print cycles."
+    },
+    "validation": {
+      "successCriteria": "All 4 bearings seated flush. Flanges visible on both sides of each pocket.",
+      "failureCriteria": "Any bearing recessed, flipped, or able to rock in its pocket."
+    },
+    "feedback": {
+      "successMessage": "Bearings seated correctly — ready to close the carriage.",
+      "failureMessage": "Re-seat any loose or inverted bearings before closing."
+    },
+    "requiredPartIds": [
+      "c3_carriage_half_a",
+      "c3_lm8uu_a",
+      "c3_lm8uu_b",
+      "c3_lm8uu_c",
+      "c3_lm8uu_d"
+    ]
+  },
+  {
+    "id": "step_batch_c3_shake_test",
+    "name": "Shake Test — Bearing Retention Check",
+    "sequenceIndex": 213,
+    "family": "Confirm",
+    "guidance": {
+      "instructionText": "Hold both halves compressed firmly by hand — do not bolt yet. Shake the closed assembly firmly for 2–3 seconds. Listen and feel for any bearing rattle or movement.",
+      "whyItMattersText": "A rattle means at least one bearing is not fully seated in its pocket. Bolting before fixing locks in the defect — the carriage will develop play under load and the axis will lose positional accuracy."
+    },
+    "validation": {
+      "successCriteria": "No audible rattle, no felt movement from bearings while halves are hand-compressed.",
+      "failureCriteria": "Any rattle, clicking, or loose feeling during the shake."
+    },
+    "feedback": {
+      "successMessage": "Shake test passed — bearings are solid.",
+      "failureMessage": "Open the halves and identify the loose bearing. Re-seat it and retest before proceeding."
+    },
+    "requiredPartIds": [
+      "c3_carriage_half_a",
+      "c3_carriage_half_b"
+    ]
+  },
+  {
+    "id": "step_batch_c3_rod_slide_test",
+    "name": "Rod Slide Test — Bearing Alignment Check",
+    "sequenceIndex": 214,
+    "family": "Confirm",
+    "guidance": {
+      "instructionText": "While still holding halves compressed, slide a smooth 8mm rod vertically through all 4 bearings. It should pass with slight, even resistance — not too stiff, not freely loose.",
+      "whyItMattersText": "Uneven resistance exposes bearing misalignment. If left uncorrected, the axis will bind under motor load and cause missed steps or stalls."
+    },
+    "validation": {
+      "successCriteria": "Rod slides through all 4 bearings with slight, consistent resistance. No binding or tight spots.",
+      "failureCriteria": "Rod catches or sticks at any bearing, OR drops through with zero resistance."
+    },
+    "feedback": {
+      "successMessage": "Rod slide test passed — bearings aligned.",
+      "failureMessage": "Open halves. Check that all bearings are fully seated and coplanar. Re-close and retest."
+    },
+    "requiredPartIds": [
+      "c3_carriage_half_a",
+      "c3_carriage_half_b"
+    ]
+  },
+  {
+    "id": "step_batch_c3_tighten",
+    "name": "Tighten Carriage Bolts — Cross Pattern",
+    "sequenceIndex": 215,
+    "family": "Use",
+    "guidance": {
+      "instructionText": "Using the power drill at lowest torque setting, tighten all 4 carriage bolts in a cross pattern: top-left → bottom-right → top-right → bottom-left. Repeat the pattern once to equalize clamping.",
+      "whyItMattersText": "Cross-pattern tightening ensures even clamping force across the carriage body. Sequential (one side first) tightening distorts the bearing bores and causes axis binding."
+    },
+    "validation": {
+      "successCriteria": "All 4 bolts tight at lowest torque. Carriage halves fully closed — no gap along seam. Rod still slides smoothly through bearings after tightening. Carriage 3 of 4 complete.",
+      "failureCriteria": "Any bolt loose, gap visible between halves, or rod now binds after tightening."
+    },
+    "feedback": {
+      "successMessage": "Carriage 3 of 4 complete.",
+      "failureMessage": "If rod now binds: back off all bolts ¼ turn, re-run cross pattern at lower torque. If gap persists: check for bearing oversize or debris between halves."
+    },
+    "requiredPartIds": [
+      "c3_m6x18_a",
+      "c3_m6x18_b",
+      "c3_m6x30_a",
+      "c3_m6x30_b"
+    ],
+    "requiredToolActions": [
+      {
+        "toolId": "tool_power_drill",
+        "actionType": "Tighten",
+        "profile": "Torque"
+      }
+    ]
+  },
+  {
+    "id": "step_batch_c4_place_bearings",
+    "name": "Seat 4 Bearings in Carriage Half A",
+    "sequenceIndex": 216,
+    "family": "Place",
+    "guidance": {
+      "instructionText": "Place all 4 LM8UU linear bearings into carriage half A (c4_carriage_half_a). Orient each bearing with small ribbed belt hole beside large smooth belt hole.",
+      "whyItMattersText": "Flanges prevent axial migration of bearings under load. An inverted bearing will walk out of its pocket within the first few print cycles."
+    },
+    "validation": {
+      "successCriteria": "All 4 bearings seated flush. Flanges visible on both sides of each pocket.",
+      "failureCriteria": "Any bearing recessed, flipped, or able to rock in its pocket."
+    },
+    "feedback": {
+      "successMessage": "Bearings seated correctly — ready to close the carriage.",
+      "failureMessage": "Re-seat any loose or inverted bearings before closing."
+    },
+    "requiredPartIds": [
+      "c4_carriage_half_a",
+      "c4_lm8uu_a",
+      "c4_lm8uu_b",
+      "c4_lm8uu_c",
+      "c4_lm8uu_d"
+    ]
+  },
+  {
+    "id": "step_batch_c4_shake_test",
+    "name": "Shake Test — Bearing Retention Check",
+    "sequenceIndex": 217,
+    "family": "Confirm",
+    "guidance": {
+      "instructionText": "Hold both halves compressed firmly by hand — do not bolt yet. Shake the closed assembly firmly for 2–3 seconds. Listen and feel for any bearing rattle or movement.",
+      "whyItMattersText": "A rattle means at least one bearing is not fully seated in its pocket. Bolting before fixing locks in the defect — the carriage will develop play under load and the axis will lose positional accuracy."
+    },
+    "validation": {
+      "successCriteria": "No audible rattle, no felt movement from bearings while halves are hand-compressed.",
+      "failureCriteria": "Any rattle, clicking, or loose feeling during the shake."
+    },
+    "feedback": {
+      "successMessage": "Shake test passed — bearings are solid.",
+      "failureMessage": "Open the halves and identify the loose bearing. Re-seat it and retest before proceeding."
+    },
+    "requiredPartIds": [
+      "c4_carriage_half_a",
+      "c4_carriage_half_b"
+    ]
+  },
+  {
+    "id": "step_batch_c4_rod_slide_test",
+    "name": "Rod Slide Test — Bearing Alignment Check",
+    "sequenceIndex": 218,
+    "family": "Confirm",
+    "guidance": {
+      "instructionText": "While still holding halves compressed, slide a smooth 8mm rod vertically through all 4 bearings. It should pass with slight, even resistance — not too stiff, not freely loose.",
+      "whyItMattersText": "Uneven resistance exposes bearing misalignment. If left uncorrected, the axis will bind under motor load and cause missed steps or stalls."
+    },
+    "validation": {
+      "successCriteria": "Rod slides through all 4 bearings with slight, consistent resistance. No binding or tight spots.",
+      "failureCriteria": "Rod catches or sticks at any bearing, OR drops through with zero resistance."
+    },
+    "feedback": {
+      "successMessage": "Rod slide test passed — bearings aligned.",
+      "failureMessage": "Open halves. Check that all bearings are fully seated and coplanar. Re-close and retest."
+    },
+    "requiredPartIds": [
+      "c4_carriage_half_a",
+      "c4_carriage_half_b"
+    ]
+  },
+  {
+    "id": "step_batch_c4_tighten",
+    "name": "Tighten Carriage Bolts — Cross Pattern",
+    "sequenceIndex": 219,
+    "family": "Use",
+    "guidance": {
+      "instructionText": "Using the power drill at lowest torque setting, tighten all 4 carriage bolts in a cross pattern: top-left → bottom-right → top-right → bottom-left. Repeat the pattern once to equalize clamping.",
+      "whyItMattersText": "Cross-pattern tightening ensures even clamping force across the carriage body. Sequential (one side first) tightening distorts the bearing bores and causes axis binding."
+    },
+    "validation": {
+      "successCriteria": "All 4 bolts tight at lowest torque. Carriage halves fully closed — no gap along seam. Rod still slides smoothly through bearings after tightening. Carriage 4 of 4 complete — batch carriages done.",
+      "failureCriteria": "Any bolt loose, gap visible between halves, or rod now binds after tightening."
+    },
+    "feedback": {
+      "successMessage": "Carriage 4 of 4 complete — batch carriages done.",
+      "failureMessage": "If rod now binds: back off all bolts ¼ turn, re-run cross pattern at lower torque. If gap persists: check for bearing oversize or debris between halves."
+    },
+    "requiredPartIds": [
+      "c4_m6x18_a",
+      "c4_m6x18_b",
+      "c4_m6x30_a",
+      "c4_m6x30_b"
+    ],
+    "requiredToolActions": [
+      {
+        "toolId": "tool_power_drill",
+        "actionType": "Tighten",
+        "profile": "Torque"
+      }
+    ]
+  }
+]

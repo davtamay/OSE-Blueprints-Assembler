@@ -42,6 +42,12 @@ def load_yaml(path):
     text = Path(path).read_text(encoding="utf-8")
     if yaml is not None:
         return yaml.safe_load(text)
+    if any(line.strip().startswith("instances:") for line in text.splitlines()):
+        raise RuntimeError(
+            "YAML uses 'instances:' but PyYAML is not installed. "
+            "The fallback parser cannot read nested instance lists. "
+            "Install PyYAML with: pip install pyyaml"
+        )
     return _simple_yaml_parse(text)
 
 
@@ -102,7 +108,7 @@ def _simple_yaml_parse(text):
 
 # ── Template: BearingCarriage ─────────────────────────────────────────────────
 
-def template_bearing_carriage(parts, start_seq, pfx, orientation_cue, tool, torque, milestone):
+def template_bearing_carriage(parts, start_seq, pfx, orientation_cue, tool, torque, milestone, **_kwargs):
     """
     BearingCarriage(half_a, half_b, bearings[4], bolts_top[2], bolts_bot[2], nuts[4])
 
@@ -311,7 +317,7 @@ def template_bearing_carriage(parts, start_seq, pfx, orientation_cue, tool, torq
 
 # ── Template: IdlerHalves ─────────────────────────────────────────────────────
 
-def template_idler_halves(parts, start_seq, pfx, orientation_cue, tool, torque, milestone):
+def template_idler_halves(parts, start_seq, pfx, orientation_cue, tool, torque, milestone, **_kwargs):
     """
     IdlerHalves(half_a, half_b, bearings[2], bolt_inner, bolt_frame_mount)
 
@@ -440,7 +446,7 @@ def template_idler_halves(parts, start_seq, pfx, orientation_cue, tool, torque, 
 
 # ── Template: MotorHolder ─────────────────────────────────────────────────────
 
-def template_motor_holder(parts, start_seq, pfx, orientation_cue, tool, torque, milestone):
+def template_motor_holder(parts, start_seq, pfx, orientation_cue, tool, torque, milestone, **_kwargs):
     """
     MotorHolder(motor, pulley, belt, half_nuts[3], belt_bolt, motor_screws[4], close_bolts[3])
 
@@ -671,7 +677,7 @@ def template_motor_holder(parts, start_seq, pfx, orientation_cue, tool, torque, 
 
 # ── Template: RodAssembly ─────────────────────────────────────────────────────
 
-def template_rod_assembly(parts, start_seq, pfx, orientation_cue, tool, torque, milestone):
+def template_rod_assembly(parts, start_seq, pfx, orientation_cue, tool, torque, milestone, **_kwargs):
     """
     RodAssembly(rod_a, rod_b, idler, carriage, motor_holder)
 
@@ -841,7 +847,7 @@ def template_rod_assembly(parts, start_seq, pfx, orientation_cue, tool, torque, 
 
 # ── Template: BeltThread ──────────────────────────────────────────────────────
 
-def template_belt_thread(parts, start_seq, pfx, orientation_cue, tool, torque, milestone):
+def template_belt_thread(parts, start_seq, pfx, orientation_cue, tool, torque, milestone, **_kwargs):
     """
     BeltThread(belt, carriage, idler, peg_1, peg_2)
 
@@ -1057,6 +1063,52 @@ def template_belt_thread(parts, start_seq, pfx, orientation_cue, tool, torque, m
     ]
 
 
+# ── Template: CarriageBatchUnit ──────────────────────────────────────────────
+
+def template_carriage_batch_unit(parts, start_seq, pfx, orientation_cue, tool, torque, milestone, skip=None, **_kwargs):
+    """
+    CarriageBatchUnit(<BearingCarriage parts>, skip=[suffixes])
+
+    Wraps BearingCarriage and drops steps whose ID suffix matches any entry in `skip`,
+    then renumbers seqIndex contiguously starting at start_seq. Suffix-matched (not
+    index-based) so it stays robust if BearingCarriage grows or reorders steps.
+
+    Suffixes available for `skip`:
+      place_bearings, close_halves, shake_test, rod_slide_test, place_bolts, tighten
+
+    Use this for batch carriage builds where later carriages collapse or omit
+    confirmation steps that were already verified on the first carriage.
+    """
+    skip_set = set(skip or [])
+    full_steps = template_bearing_carriage(
+        parts, start_seq, pfx, orientation_cue, tool, torque, milestone
+    )
+
+    id_prefix = f"step_{pfx}_"
+    kept = []
+    unknown_skips = list(skip_set)
+    for step in full_steps:
+        sid = step["id"]
+        suffix = sid[len(id_prefix):] if sid.startswith(id_prefix) else sid
+        if suffix in skip_set:
+            if suffix in unknown_skips:
+                unknown_skips.remove(suffix)
+            continue
+        kept.append(step)
+
+    if unknown_skips:
+        valid = ", ".join(s["id"][len(id_prefix):] for s in full_steps)
+        raise ValueError(
+            f"CarriageBatchUnit: skip suffix(es) {unknown_skips} did not match any "
+            f"BearingCarriage step. Valid suffixes: {valid}"
+        )
+
+    for i, step in enumerate(kept):
+        step["sequenceIndex"] = start_seq + i
+
+    return kept
+
+
 # ── Template registry ─────────────────────────────────────────────────────────
 
 TEMPLATES = {
@@ -1065,6 +1117,7 @@ TEMPLATES = {
     "MotorHolder": template_motor_holder,
     "RodAssembly": template_rod_assembly,
     "BeltThread": template_belt_thread,
+    "CarriageBatchUnit": template_carriage_batch_unit,
 }
 
 
@@ -1097,6 +1150,14 @@ def _subassembly_prefix(config):
 
 # ── Main ─────────────────────────────────────────────────────────────────────
 
+def _extra_template_kwargs(source):
+    """Pull template-specific extras (e.g. CarriageBatchUnit's `skip:`) from a config dict."""
+    extras = {}
+    if "skip" in source:
+        extras["skip"] = source["skip"]
+    return extras
+
+
 def generate(input_path, output_path=None):
     config = load_yaml(input_path)
 
@@ -1109,15 +1170,63 @@ def generate(input_path, output_path=None):
         available = ", ".join(TEMPLATES.keys())
         raise ValueError(f"Unknown template '{template_name}'. Available: {available}")
 
-    parts       = config.get("parts", {})
-    start_seq   = int(config.get("start_seq", 1))
-    pfx         = _subassembly_prefix(config)
-    orient_cue  = config.get("orientation_cue", "")
-    tool        = config.get("tool", "tool_power_drill")
-    torque      = config.get("torque_setting", "lowest")
-    milestone   = config.get("milestone", "")
+    base_start_seq = int(config.get("start_seq", 1))
+    base_orient    = config.get("orientation_cue", "")
+    base_tool      = config.get("tool", "tool_power_drill")
+    base_torque    = config.get("torque_setting", "lowest")
+    base_milestone = config.get("milestone", "")
+    base_extras    = _extra_template_kwargs(config)
 
-    steps = fn(parts, start_seq, pfx, orient_cue, tool, torque, milestone)
+    instances = config.get("instances")
+
+    breakdown = []  # list of (prefix, first_seq, last_seq) per instance
+
+    if instances is None:
+        # Single-instance path — UNCHANGED behavior.
+        parts = config.get("parts", {})
+        pfx   = _subassembly_prefix(config)
+        steps = fn(parts, base_start_seq, pfx, base_orient, base_tool, base_torque, base_milestone, **base_extras)
+        breakdown.append((pfx, steps[0]["sequenceIndex"], steps[-1]["sequenceIndex"]))
+    else:
+        if not isinstance(instances, list) or len(instances) == 0:
+            raise ValueError("'instances:' must be a non-empty list of instance dicts")
+
+        steps = []
+        cursor = base_start_seq
+        for i, inst in enumerate(instances):
+            if not isinstance(inst, dict):
+                raise ValueError(f"instances[{i}] must be a mapping with at least 'prefix' and 'parts'")
+            pfx = inst.get("prefix")
+            if not pfx:
+                raise ValueError(f"instances[{i}] missing required 'prefix:' field")
+            parts = inst.get("parts")
+            if not parts:
+                raise ValueError(f"instances[{i}] (prefix='{pfx}') missing or empty 'parts:' mapping")
+
+            inst_orient    = inst.get("orientation_cue", base_orient)
+            inst_tool      = inst.get("tool", base_tool)
+            inst_torque    = inst.get("torque_setting", base_torque)
+            inst_milestone = inst.get("milestone", base_milestone)
+            inst_extras    = dict(base_extras)
+            inst_extras.update(_extra_template_kwargs(inst))
+
+            inst_steps = fn(parts, cursor, pfx, inst_orient, inst_tool, inst_torque, inst_milestone, **inst_extras)
+            if not inst_steps:
+                raise ValueError(f"instances[{i}] (prefix='{pfx}') produced zero steps")
+            steps.extend(inst_steps)
+            breakdown.append((pfx, inst_steps[0]["sequenceIndex"], inst_steps[-1]["sequenceIndex"]))
+            cursor += len(inst_steps)
+
+        # Pre-flight: duplicate step IDs across instances are almost always a prefix collision.
+        seen = {}
+        for step in steps:
+            sid = step["id"]
+            if sid in seen:
+                raise ValueError(
+                    f"Duplicate step ID '{sid}' across instances. "
+                    f"Each instance must have a unique 'prefix:' so generated step IDs do not collide."
+                )
+            seen[sid] = True
 
     if output_path is None:
         stem = Path(input_path).stem
@@ -1132,7 +1241,12 @@ def generate(input_path, output_path=None):
     print(f"Generated {len(steps)} steps  ->  {output_path}")
     print(f"  seqIndex range: {steps[0]['sequenceIndex']} – {steps[-1]['sequenceIndex']}")
     print(f"  Template: {template_name}")
-    print(f"  Prefix: {pfx}")
+    if instances is None:
+        print(f"  Prefix: {breakdown[0][0]}")
+    else:
+        print(f"  Instances: {len(breakdown)}")
+        for pfx, lo, hi in breakdown:
+            print(f"    {pfx}: seq {lo}–{hi}")
     print()
     print("Next steps:")
     print(f"  1. Review {output_path}")
