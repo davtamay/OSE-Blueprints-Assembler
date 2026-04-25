@@ -23,6 +23,14 @@ namespace OSE.UI.Root
         private readonly List<GameObject> _spawnedToolActionTargets = new();
         private readonly ObjectPool<GameObject> _markerPool;
 
+        // Targets the user has already clicked in the current step. Refresh
+        // skips spawning markers for these IDs even if the runtime snapshot
+        // hasn't yet flipped IsCompleted=true (the snapshot can lag a frame
+        // or two behind the click → onComplete callback chain). Cleared
+        // when the step ID changes.
+        private readonly HashSet<string> _hiddenForCurrentStep = new(StringComparer.OrdinalIgnoreCase);
+        private string _hiddenSetStepId;
+
         public ToolTargetSpawner(ISpawnerContext ctx, IPreviewContext preview)
         {
             _ctx = ctx;
@@ -71,6 +79,13 @@ namespace OSE.UI.Root
             if (currentStep?.requiredToolActions == null || currentStep.requiredToolActions.Length == 0)
                 return;
 
+            // Reset the "already-clicked" guard when crossing step boundaries.
+            if (!string.Equals(_hiddenSetStepId, currentStep.id, StringComparison.OrdinalIgnoreCase))
+            {
+                _hiddenForCurrentStep.Clear();
+                _hiddenSetStepId = currentStep.id;
+            }
+
             IMachineSessionController session = earlySession;
             bool spawnedAny = false;
 
@@ -81,7 +96,10 @@ namespace OSE.UI.Root
             if (runtimeMatchesStep &&
                 TryGetActionSnapshots(out ToolActionSnapshot[] actionSnapshots, out session))
             {
-                string sequentialTargetId = ResolveSequentialTargetId(currentStep, actionSnapshots);
+                // Cursor-driven filter: only spawn markers for target IDs
+                // that are actionable RIGHT NOW (current span). Null set
+                // = no cursor / no taskOrder → spawn all (legacy content).
+                HashSet<string> actionable = GetActionableTargetIdSet(currentStep);
 
                 for (int i = 0; i < actionSnapshots.Length; i++)
                 {
@@ -89,14 +107,18 @@ namespace OSE.UI.Root
                     if (!action.IsConfigured || action.IsCompleted || string.IsNullOrWhiteSpace(action.TargetId))
                         continue;
 
+                    // Race guard: snapshot.IsCompleted can lag a frame
+                    // behind the click. _hiddenForCurrentStep tracks ids
+                    // the user just clicked so the marker doesn't briefly
+                    // re-spawn during that lag window.
+                    if (_hiddenForCurrentStep.Contains(action.TargetId))
+                        continue;
+
                     if (!StepDefinesToolAction(currentStep, action.ToolId, action.TargetId))
                         continue;
 
-                    if (!string.IsNullOrWhiteSpace(sequentialTargetId) &&
-                        !string.Equals(action.TargetId, sequentialTargetId, StringComparison.OrdinalIgnoreCase))
-                    {
+                    if (actionable != null && !actionable.Contains(action.TargetId))
                         continue;
-                    }
 
                     if (TrySpawnToolActionTargetMarker(session.Package, setup, action.ToolId, action.TargetId))
                         spawnedAny = true;
@@ -122,6 +144,19 @@ namespace OSE.UI.Root
                 RetryPending = true;
         }
 
+        /// <summary>
+        /// Records that the user clicked / selected <paramref name="targetId"/>
+        /// in the current step. Future <see cref="Refresh"/> calls within
+        /// the same step will not re-spawn a marker for this id, even if
+        /// the runtime snapshot's <c>IsCompleted</c> flag hasn't propagated
+        /// yet. Cleared automatically on step transition.
+        /// </summary>
+        public void MarkTargetClicked(string targetId)
+        {
+            if (string.IsNullOrEmpty(targetId)) return;
+            _hiddenForCurrentStep.Add(targetId);
+        }
+
         /// <summary>Releases all spawned tool action target markers back to the pool.</summary>
         public void Clear()
         {
@@ -133,6 +168,7 @@ namespace OSE.UI.Root
             }
 
             _spawnedToolActionTargets.Clear();
+            ToolActionTargetInfo.CurrentActionTarget = null;
         }
 
         /// <summary>Destroys all pooled markers and disposes the pool. Call once on session end.</summary>
@@ -158,8 +194,7 @@ namespace OSE.UI.Root
             guide.name = $"MeasureEndGuide_{endAnchorTargetId}";
             guide.transform.SetLocalPositionAndRotation(localPos, localRot);
             guide.transform.localScale = ResolveToolTargetMarkerScale(scale);
-            float lift = Mathf.Max(scale.y * 0.75f, guide.transform.localScale.y * 0.6f);
-            guide.transform.position += Vector3.up * lift;
+            // No lift — ZTest=Always (OSE/ToolTargetMarker) handles depth.
 
             PackagePartSpawner.EnsureColliders(guide);
             var col = guide.GetComponent<SphereCollider>();
@@ -176,70 +211,45 @@ namespace OSE.UI.Root
         }
 
         // ====================================================================
-        //  Sequential target resolution
+        //  Actionable target set (cursor-driven)
         // ====================================================================
 
-        public string ResolveSequentialTargetId(
-            StepDefinition currentStep,
-            ToolActionSnapshot[] actionSnapshots = null)
+        /// <summary>
+        /// Returns the set of tool-action target IDs that are actionable in
+        /// the current cursor span, or <c>null</c> when no cursor filtering
+        /// applies (legacy content with no taskOrder — callers spawn every
+        /// target). Driven by <see cref="PreviewSpawnManager.GetActionableToolActionTargetIds"/>,
+        /// which sources from <see cref="TaskCursor.OpenTasks"/>. Cursor is
+        /// the single source of truth for "which target is now" — this
+        /// method never maintains its own index / state.
+        /// </summary>
+        public HashSet<string> GetActionableTargetIdSet(StepDefinition currentStep)
         {
-            if (currentStep == null || !currentStep.IsSequential)
-                return null;
-
-            string sequentialTargetId = _preview.PreviewManager?.GetCurrentSequentialTargetId();
-            if (!string.IsNullOrWhiteSpace(sequentialTargetId))
-                return sequentialTargetId;
-
-            if (actionSnapshots != null)
-            {
-                for (int i = 0; i < actionSnapshots.Length; i++)
-                {
-                    ToolActionSnapshot action = actionSnapshots[i];
-                    if (!action.IsConfigured || action.IsCompleted || string.IsNullOrWhiteSpace(action.TargetId))
-                        continue;
-
-                    if (!StepDefinesToolAction(currentStep, action.ToolId, action.TargetId))
-                        continue;
-
-                    return action.TargetId.Trim();
-                }
-            }
-
-            ToolActionDefinition[] requiredActions = currentStep.requiredToolActions;
-            if (requiredActions == null)
-                return null;
-
-            for (int i = 0; i < requiredActions.Length; i++)
-            {
-                ToolActionDefinition action = requiredActions[i];
-                if (action == null || string.IsNullOrWhiteSpace(action.targetId))
-                    continue;
-
-                return action.targetId.Trim();
-            }
-
-            return null;
+            if (currentStep == null) return null;
+            string[] ids = _preview.PreviewManager?.GetActionableToolActionTargetIds();
+            if (ids == null || ids.Length == 0) return null;
+            return new HashSet<string>(ids, StringComparer.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// If <paramref name="interactedTargetId"/> is not actionable in the
+        /// current cursor span, substitute the first actionable target so
+        /// the tool action routes to the right place. Pass-through when
+        /// cursor filtering is inactive (legacy) or the interaction already
+        /// matches.
+        /// </summary>
         public string NormalizeSequentialExecutionTargetId(StepDefinition currentStep, string interactedTargetId)
         {
-            if (string.IsNullOrWhiteSpace(interactedTargetId) || currentStep == null || !currentStep.IsSequential)
+            if (string.IsNullOrWhiteSpace(interactedTargetId) || currentStep == null)
                 return interactedTargetId;
 
-            string sequentialTargetId = null;
-            if (TryGetActionSnapshots(out ToolActionSnapshot[] actionSnapshots, out _))
-                sequentialTargetId = ResolveSequentialTargetId(currentStep, actionSnapshots);
+            HashSet<string> actionable = GetActionableTargetIdSet(currentStep);
+            if (actionable == null || actionable.Count == 0) return interactedTargetId;
+            if (actionable.Contains(interactedTargetId)) return interactedTargetId;
 
-            if (string.IsNullOrWhiteSpace(sequentialTargetId))
-                sequentialTargetId = ResolveSequentialTargetId(currentStep);
-
-            if (string.IsNullOrWhiteSpace(sequentialTargetId) ||
-                string.Equals(interactedTargetId, sequentialTargetId, StringComparison.OrdinalIgnoreCase))
-            {
-                return interactedTargetId;
-            }
-
-            return sequentialTargetId;
+            // Not in the actionable set — route to the first one.
+            foreach (var tid in actionable) return tid;
+            return interactedTargetId;
         }
 
         // ====================================================================
@@ -333,11 +343,13 @@ namespace OSE.UI.Root
 
         public Vector3 ResolveMarkerWorldPos(Vector3 localPos, Vector3 scale)
         {
-            float lift = Mathf.Max(scale.y * 0.75f, ResolveToolTargetMarkerScale(scale).y * 0.6f);
+            // No lift — marker sits exactly at the authored target point.
+            // ZTest=Always (OSE/ToolTargetMarker.shader) renders the marker
+            // on top of the surface even when they're co-planar.
             PreviewSceneSetup setup = _ctx.Setup;
-            if (setup?.PreviewRoot != null)
-                return setup.PreviewRoot.TransformPoint(localPos) + Vector3.up * lift;
-            return localPos + Vector3.up * lift;
+            return setup?.PreviewRoot != null
+                ? setup.PreviewRoot.TransformPoint(localPos)
+                : localPos;
         }
 
         public static Vector3 ResolveToolTargetMarkerScale(Vector3 sourceScale)
@@ -422,7 +434,7 @@ namespace OSE.UI.Root
                 return false;
 
             bool spawnedAny = false;
-            string sequentialTargetId = ResolveSequentialTargetId(step);
+            HashSet<string> actionable = GetActionableTargetIdSet(step);
 
             for (int i = 0; i < step.requiredToolActions.Length; i++)
             {
@@ -430,11 +442,12 @@ namespace OSE.UI.Root
                 if (action == null || string.IsNullOrWhiteSpace(action.toolId) || string.IsNullOrWhiteSpace(action.targetId))
                     continue;
 
-                if (!string.IsNullOrWhiteSpace(sequentialTargetId) &&
-                    !string.Equals(action.targetId, sequentialTargetId, StringComparison.OrdinalIgnoreCase))
-                {
+                // Race guard — see Refresh's primary path.
+                if (_hiddenForCurrentStep.Contains(action.targetId))
                     continue;
-                }
+
+                if (actionable != null && !actionable.Contains(action.targetId))
+                    continue;
 
                 if (TrySpawnToolActionTargetMarker(package, setup, action.toolId.Trim(), action.targetId.Trim()))
                     spawnedAny = true;
@@ -477,8 +490,11 @@ namespace OSE.UI.Root
             Vector3 surfaceLocalPos = marker.transform.localPosition;
             Vector3 surfaceWorldPos = marker.transform.position;
 
-            float markerLift = Mathf.Max(markerScale.y * 0.75f, marker.transform.localScale.y * 0.6f);
-            marker.transform.position += Vector3.up * markerLift;
+            // No lift — marker sits exactly at the authored target position.
+            // Previously +0.75 × markerScale.y was added to avoid z-fighting
+            // with the surface; ZTest=Always in OSE/ToolTargetMarker.shader
+            // makes the marker render on top regardless, so the lift was
+            // pure visual offset that the user (correctly) saw as wrong.
 
             PackagePartSpawner.EnsureColliders(marker);
             SphereCollider toolCol = marker.GetComponent<SphereCollider>();
@@ -493,7 +509,7 @@ namespace OSE.UI.Root
             info.BaseLocalPosition = marker.transform.localPosition;
             info.SurfaceLocalPosition = surfaceLocalPos;
             info.SurfaceWorldPos = surfaceWorldPos;
-            info.MarkerLift = markerLift;
+            info.MarkerLift = 0f;
             info.TargetWorldRotation = marker.transform.rotation;
 
             if (package.TryGetTarget(targetId, out TargetDefinition targetDef))
@@ -541,7 +557,15 @@ namespace OSE.UI.Root
 
         private static GameObject CreateMarkerInstance()
         {
+            // Solid sphere primitive. Reliable from any camera angle —
+            // no billboard, no edge-on degradation, no procedural-mesh
+            // surface-orientation issues. The sphere is intentionally
+            // small (ToolTargetAnimator scales it down at close camera
+            // distance) and semi-transparent (alpha fade modulates per
+            // distance), so the workpiece underneath stays visible at
+            // the click range.
             GameObject go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            go.name = "ToolTargetMarker";
             go.AddComponent<ToolActionTargetInfo>();
             go.SetActive(false);
             return go;

@@ -36,6 +36,15 @@ namespace OSE.Core
         // Cached shader — resolved on first use. Unity clears this on domain reload.
         private static Shader _urpLitShader;
 
+        // Cached tool target marker base material loaded from
+        // Resources/ToolTargetMarker.mat. Cloned per spawn — matches the
+        // GhostOverlay pattern. Loading the material asset (vs.
+        // Shader.Find + new Material(shader)) ensures URP's SRP-Batcher
+        // initialization runs over an asset whose properties are
+        // pre-serialized inside UnityPerMaterial, which is what the
+        // overlay shader's CBUFFER expects.
+        private static Material _toolTargetMarkerBase;
+
         // Cached ghost overlay material loaded from Resources/GhostOverlay.mat.
         private static Material _ghostOverlayBase;
 
@@ -75,6 +84,10 @@ namespace OSE.Core
         private static Shader UrpLitShader =>
             _urpLitShader != null ? _urpLitShader
                 : (_urpLitShader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
+
+        private static Material ToolTargetMarkerBase =>
+            _toolTargetMarkerBase != null ? _toolTargetMarkerBase
+                : (_toolTargetMarkerBase = Resources.Load<Material>("ToolTargetMarker"));
 
         // ── Renderer caching ──────────────────────────────────────────────
 
@@ -392,40 +405,41 @@ namespace OSE.Core
 
         /// <summary>
         /// Applies a high-visibility marker style for tool action targets.
-        /// This is intentionally brighter and less transparent than the tool cursor.
+        /// Clones the <c>Resources/ToolTargetMarker.mat</c> asset (whose
+        /// shader bakes Queue=Overlay, Blend SrcAlpha OneMinusSrcAlpha,
+        /// ZWrite Off, ZTest Always into a single Pass) and overrides the
+        /// per-spawn colors. Loading the asset (vs Shader.Find +
+        /// new Material(shader)) is the same pattern GhostOverlay uses
+        /// successfully — it ensures URP's SRP-Batcher and CBUFFER
+        /// initialization runs over a serialized material.
         /// </summary>
         public static void ApplyToolTargetMarker(GameObject target, Color markerColor)
         {
             var renderers = GetRenderers(target);
             if (renderers == null || renderers.Length == 0) return;
 
-            var shader = UrpLitShader;
-            if (shader == null) return;
+            var baseMat = ToolTargetMarkerBase;
+            if (baseMat == null)
+            {
+                OseLog.Warn(OseErrorCode.ContentLoadFailed,
+                    "[MaterialHelper] Resources/ToolTargetMarker.mat missing — marker will be invisible.");
+                return;
+            }
 
-            // Near-transparent fill so the target surface shows through when
-            // the camera frames tight on the marker. The rim glow from
-            // emission does the work of telling the user where to click.
-            // Previous α=0.18 obscured the weld surface at close framing.
+            // Authored base alpha for the sphere fill — ToolTargetAnimator
+            // modulates per-frame via a MaterialPropertyBlock (camera-distance
+            // fade + pulse), so this is the upper bound, not the runtime value.
             Color visibleColor = markerColor;
-            visibleColor.a = 0.05f;
+            visibleColor.a = 0.30f;
 
-            // Boosted emission so the rim stays unmistakable even though
-            // base is almost fully transparent.
             Color emissionColor = markerColor;
             emissionColor.a = 1f;
 
             foreach (var renderer in renderers)
             {
-                Material markerMat = new Material(shader) { name = "Tool Target Marker Material" };
-                ConfigureTransparent(markerMat, TransparentRenderQueue);
-                markerMat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-                markerMat.EnableKeyword("_ALPHAPREMULTIPLY_ON");
-
-                SetBaseColor(markerMat, visibleColor);
-                if (markerMat.HasProperty("_EmissionColor"))
-                    markerMat.SetColor("_EmissionColor", emissionColor * 2.2f);
-                markerMat.EnableKeyword("_EMISSION");
-
+                Material markerMat = new Material(baseMat) { name = "Tool Target Marker Material" };
+                markerMat.SetColor(ID_BaseColor, visibleColor);
+                markerMat.SetColor(ID_EmissionColor, emissionColor * 2.2f);
                 renderer.sharedMaterial = markerMat;
             }
         }

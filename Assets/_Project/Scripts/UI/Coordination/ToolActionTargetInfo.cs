@@ -9,6 +9,16 @@ namespace OSE.UI.Root
     /// </summary>
     internal sealed class ToolActionTargetInfo : MonoBehaviour
     {
+        /// <summary>
+        /// The most recently clicked / hidden marker. Stays valid after
+        /// SetActive(false) so AnimationAnchorResolver picks the right
+        /// anchor for in-flight cues (successive welds produce multiple
+        /// inactive markers parented to PreviewRoot — without this hint
+        /// the resolver latches onto all[0], which is the oldest).
+        /// Cleared when the spawner clears all markers (step transition).
+        /// </summary>
+        public static ToolActionTargetInfo CurrentActionTarget;
+
         public string TargetId;
         public string RequiredToolId;
         public Vector3 BaseScale;

@@ -87,15 +87,11 @@ namespace OSE.Interaction
             if (_hasHome)
                 _homeStack.Push(_currentHome);
 
-            // For Use steps with tool-action targets (weld / tack / drill /
-            // torque / etc.), frame tight on the first tool target so the
-            // user immediately sees WHERE to click. The broader step-focus
-            // bounds pulls back to fit the whole assembly, which hides the
-            // active work point — especially on multi-target weld steps
-            // where 4 corners force a wide view. Falls back to FrameStep
-            // when the step has no tool actions.
-            if (!TryFrameActiveToolTarget(evt.StepId))
-                FrameStep(evt.StepId);
+            // FrameStep already prefers tool-target tight focus on Use
+            // steps and falls back to step-bounds otherwise — same path
+            // used by StepGuidanceCoordinator's deferred reframe so the
+            // initial frame and the post-transition reframe match.
+            FrameStep(evt.StepId);
 
             _currentHome = _cameraRig.TargetState;
             _hasHome = true;
@@ -204,11 +200,20 @@ namespace OSE.Interaction
 
         /// <summary>
         /// Frame the camera for the given step. Can be called externally
-        /// for session restore or startup sync.
+        /// for session restore, startup sync, or deferred reframing after
+        /// transition visuals settle. Tries the tool-target tight focus
+        /// first so multi-target Use steps stay framed on the active
+        /// corner even when called from non-OnStepActivated paths (e.g.
+        /// StepGuidanceCoordinator's deferred coroutine, which used to
+        /// override OnStepActivated's tight target framing with the
+        /// wider all-bounds frame).
         /// </summary>
         public void FrameStep(string stepId)
         {
             if (_cameraRig == null || _partBridge == null)
+                return;
+
+            if (TryFrameActiveToolTarget(stepId))
                 return;
 
             if (!_partBridge.TryGetStepFocusBounds(stepId, out Bounds bounds))

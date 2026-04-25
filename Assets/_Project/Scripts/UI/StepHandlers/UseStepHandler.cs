@@ -170,6 +170,15 @@ namespace OSE.UI.Root
         /// <summary>Re-spawns tool action target markers for the current step.</summary>
         public void RefreshToolActionTargets() => _spawner.Refresh(_activeProfile, _activeProfileEnum);
 
+        public void HideToolActionTarget(string targetId)
+        {
+            _animator.HideToolActionTarget(targetId);
+            // Tell the spawner so its Refresh path doesn't re-spawn the
+            // marker before the runtime snapshot's IsCompleted flag
+            // catches up.
+            _spawner.MarkTargetClicked(targetId);
+        }
+
         /// <summary>Destroys all spawned tool action target markers.</summary>
         public void ClearToolActionTargets() => _spawner.Clear();
 
@@ -267,14 +276,11 @@ namespace OSE.UI.Root
                 return true;
             }
 
-            bool actionCompletedButStepContinues =
-                !shouldCompleteStep &&
-                toolResult.CurrentCount > 0 &&
-                toolResult.CurrentCount >= toolResult.RequiredCount;
-
-            if (actionCompletedButStepContinues)
-                _ctx.PreviewManager?.AdvanceSequentialTarget();
-
+            // Cursor-driven progression: when an action completes mid-step,
+            // the TaskCursor advances via NotifyTaskCompleted and
+            // ToolTargetSpawner.Refresh picks up the new actionable target
+            // set by querying PreviewManager.GetActionableToolActionTargetIds.
+            // No explicit "advance" call here — just re-render.
             _spawner.Refresh(_activeProfile, _activeProfileEnum);
             return true;
         }

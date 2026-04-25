@@ -43,6 +43,7 @@ namespace OSE.Content.Validation
             new OrphanDetectionPass(),
             new PartOwnershipExclusivityPass(),
             new SpatialContractPass(),       // Layer 3: staging collision, ordering, Use tool coverage
+            new StepRuntimeSimulationPass(), // Layer 4: simulates runtime preconditions to catch deadlocks at validation time (taskOrder gaps, tool drops, missing parts under tool targets, mixed-tool Use steps)
         };
 
         /// <summary>

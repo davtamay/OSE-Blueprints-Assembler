@@ -67,8 +67,11 @@ namespace OSE.UI.Root
             if (string.IsNullOrWhiteSpace(activeStepId))
                 return;
 
-            int completedCount = session.SessionState != null ? session.SessionState.CompletedStepCount : 0;
-            StepDefinition[] completedSteps = GetCompletedSteps(session, completedCount);
+            // Derive completed-set from the active step's position in the global
+            // ordered list — never from session.CompletedStepCount, which has
+            // been observed inflated (540 / 305 vs ~305 total) and would re-mark
+            // every part Completed every frame, defeating per-event rebuilds.
+            StepDefinition[] completedSteps = DeriveCompletedStepsBeforeActive(session, activeStepId);
             RebuildVisualStateForActiveStep(completedSteps, activeStepId, resetToDefaultView: true);
 
             _startupSyncPending = false;
@@ -95,7 +98,6 @@ namespace OSE.UI.Root
             {
                 _ctx.ClearHintHighlight();
                 _ctx.ToolAction?.ClearToolActionTargets();
-                _ctx.PreviewManager?.ResetSequentialState();
                 _ctx.ConnectHandler?.ClearTransientVisuals();
             }
 
@@ -112,50 +114,18 @@ namespace OSE.UI.Root
                     // Clear stale selection so same part is selectable on the next step.
                     _selection.DeselectFromSelectionService();
 
-                    _ctx.VisualFeedback?.HideNonIntroducedParts();
-                    _ctx.VisualFeedback?.RevealStepParts(evt.StepId);
-                    _ctx.VisualFeedback?.ApplyStepPartHighlighting(evt.StepId);
-                    _ctx.SubassemblyController?.RefreshForStep(evt.StepId);
-                    _ctx.SubassemblyController?.HideNonActivePendingProxyBars();
-
-                    // Final-pass guarantee: any panels stacked in prior steps stay at
-                    // their integrated cube positions after reveal/refresh have run.
-                    // Cap by the active step's index: backward navigation should NOT
-                    // re-assemble bars that belong to future steps.
-                    if (ServiceRegistry.TryGet<IMachineSessionController>(out var liveSession))
+                    // Centralised rebuild — same path used by HandleAssemblyStarted,
+                    // HandleSessionRestored, and TrySyncStartupState. This is the
+                    // single source of truth for "set visual state to match
+                    // <completed steps before active, active step>". Inlining a
+                    // parallel rebuild here was the source of skip-step / Continue
+                    // divergence: any pass added to one but not the other left a
+                    // visible-state bug for the missing path.
+                    if (ServiceRegistry.TryGet<IMachineSessionController>(out var sessionForRebuild))
                     {
-                        int liveCompleted = liveSession.SessionState?.CompletedStepCount ?? 0;
-                        int cappedCompleted = GetCompletedCountCappedByNavigation(liveSession, liveCompleted, evt.StepId);
-                        if (cappedCompleted > 0)
-                        {
-                            StepDefinition[] liveCompletedSteps = GetCompletedSteps(liveSession, cappedCompleted);
-                            _ctx.SubassemblyController?.EnforceIntegratedPositions(liveCompletedSteps);
-                        }
+                        StepDefinition[] completedSteps = DeriveCompletedStepsBeforeActive(sessionForRebuild, evt.StepId);
+                        RebuildVisualStateForActiveStep(completedSteps, evt.StepId, resetToDefaultView: false);
                     }
-
-                    // Check if animation cues want to defer preview spawning
-                    float previewDelay = GetPreviewDelay(evt.StepId);
-                    if (previewDelay > 0f && _ctx.AnimationCues != null)
-                    {
-                        // Previews deferred — coordinator will spawn them after delay
-                        string capturedStepId = evt.StepId;
-                        _ctx.AnimationCues.OnStepActivated(evt.StepId, () =>
-                        {
-                            _ctx.PreviewManager?.SpawnPreviewsForStep(capturedStepId);
-                            _ctx.AnimationCues?.TransformDeferredPreviews();
-                            if (TryBuildHandlerContext(out var deferredCtx))
-                                _ctx.Router?.OnStepActivated(in deferredCtx);
-                        });
-                    }
-                    else
-                    {
-                        _ctx.PreviewManager?.SpawnPreviewsForStep(evt.StepId);
-                        if (TryBuildHandlerContext(out var activatedCtx))
-                            _ctx.Router?.OnStepActivated(in activatedCtx);
-                        _ctx.AnimationCues?.OnStepActivated(evt.StepId);
-                    }
-                    ApplyFinalAssemblyOverviewIfLastStep(evt.StepId);
-                    _ctx.FocusComputer?.FocusCameraOnStepArea(evt.StepId);
 
                     OseLog.VerboseInfo(
                         $"[PartInteraction] Step '{evt.StepId}' active: spawned " +
@@ -234,9 +204,13 @@ namespace OSE.UI.Root
                 Array.Copy(orderedSteps, completedSteps, targetGlobalIndex);
             }
 
+            string navTargetStepId = (targetGlobalIndex >= 0 && targetGlobalIndex < orderedSteps.Length)
+                ? orderedSteps[targetGlobalIndex]?.id
+                : null;
+
             if (completedSteps.Length > 0)
             {
-                _ctx.VisualFeedback?.RestoreCompletedStepParts(completedSteps);
+                _ctx.VisualFeedback?.RestoreCompletedStepParts(completedSteps, navTargetStepId);
                 _ctx.SubassemblyController?.RestoreCompletedPlacements(completedSteps);
                 _ctx.ConnectHandler?.RenderCompletedWires(completedSteps);
             }
@@ -273,16 +247,125 @@ namespace OSE.UI.Root
 
         public void HandleSessionRestored(SessionRestored evt)
         {
-            if (evt.CompletedStepCount <= 0) return;
-
             if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return;
 
-            StepDefinition[] completedSteps = GetCompletedSteps(session, evt.CompletedStepCount);
+            // Derive completedSteps from the active step's GLOBAL INDEX,
+            // not from evt.CompletedStepCount. The count can accumulate
+            // across replays/navigations and exceed the total step count
+            // (observed 2026-04-24: CompletedStepCount=540 with only 305
+            // steps in the package). Using an out-of-range count clamps
+            // to all-steps-completed, which marks every part Completed
+            // and defeats HideNonIntroducedParts for the active step —
+            // trainee sees the fully-assembled machine at an early step.
             string activeStepId = GetActiveStepId(session);
+            StepDefinition[] completedSteps = DeriveCompletedStepsBeforeActive(session, activeStepId);
             RebuildVisualStateForActiveStep(completedSteps, activeStepId, resetToDefaultView: true);
 
-            OseLog.Info($"[PartInteraction] Restored visual state for {completedSteps.Length} completed steps.");
+            OseLog.Info($"[PartInteraction] Restored visual state for {completedSteps.Length} completed steps (derived from active step '{activeStepId}').");
+        }
+
+        /// <summary>
+        /// Returns the subset of the package's ordered steps that come
+        /// BEFORE <paramref name="activeStepId"/>. This is the definitive
+        /// "completed" set for the session at restore time, independent
+        /// of any accumulated step-count fields. When the active step
+        /// can't be resolved or isn't in the ordered list, returns an
+        /// empty array (nothing before an unknown step is "completed").
+        /// </summary>
+        private StepDefinition[] DeriveCompletedStepsBeforeActive(IMachineSessionController session, string activeStepId)
+        {
+            if (string.IsNullOrWhiteSpace(activeStepId)) return Array.Empty<StepDefinition>();
+            MachinePackageDefinition package = _ctx.Spawner?.CurrentPackage ?? session?.Package;
+            StepDefinition[] orderedSteps = package?.GetOrderedSteps();
+            if (orderedSteps == null || orderedSteps.Length == 0) return Array.Empty<StepDefinition>();
+
+            int activeIdx = -1;
+            for (int i = 0; i < orderedSteps.Length; i++)
+            {
+                if (orderedSteps[i] != null && string.Equals(orderedSteps[i].id, activeStepId, StringComparison.Ordinal))
+                {
+                    activeIdx = i;
+                    break;
+                }
+            }
+            if (activeIdx <= 0) return Array.Empty<StepDefinition>();
+
+            StepDefinition[] result = new StepDefinition[activeIdx];
+            Array.Copy(orderedSteps, result, activeIdx);
+            return result;
+        }
+
+        /// <summary>
+        /// Clears visual state that was valid for the PRIOR assembly but is
+        /// stale now that a new assembly is starting. Most importantly: the
+        /// final-step overview path (<c>ShowAllPartsAssembled</c>) sets every
+        /// part's state to <see cref="PartPlacementState.Completed"/> so the
+        /// machine renders fully assembled. Without clearing that here, the
+        /// next assembly's first step activation sees "all parts completed"
+        /// and <c>HideNonIntroducedParts</c> keeps every part visible —
+        /// trainee starts step 50 with the entire printer already on screen.
+        ///
+        /// <para>Parts actually completed in prior steps get restored
+        /// immediately after the clear so HideNonIntroducedParts (which fires
+        /// on the subsequent StepStateChanged for the new assembly's first
+        /// step) leaves them alone.</para>
+        /// </summary>
+        public void HandleAssemblyStarted(AssemblyStarted evt)
+        {
+            // Run the SAME comprehensive rebuild used by manual navigation
+            // (see HandleStepNavigated), targeting the new assembly's first
+            // step. Without this, the flow "module-complete → press Continue
+            // → next assembly's first step" doesn't go through
+            // HandleStepNavigated (the transition is via BeginCurrentAssembly,
+            // not navigation), and HandleStepStateChanged's lighter Active
+            // branch misses the full clear-and-restore pass. Result: prior
+            // state (ShowAllPartsAssembled's all-Completed marking, leftover
+            // _revealedPartIds) sticks around and HideNonIntroducedParts
+            // keeps every part visible.
+            //
+            // RebuildVisualStateForActiveStep takes care of: clearing
+            // PartStates / RevealedPartIds / guards, restoring Completed
+            // state for steps before the new assembly, hiding future
+            // parts, revealing the new step, and spawning previews. It's
+            // the single source of truth for "set visual state to match
+            // <completed steps, active step>" — same path manual navigation
+            // uses.
+            var package = _ctx.Spawner?.CurrentPackage;
+            if (package == null) return;
+
+            StepDefinition[] orderedSteps = package.GetOrderedSteps();
+            if (orderedSteps == null || orderedSteps.Length == 0) return;
+
+            int firstStepIdx = -1;
+            for (int i = 0; i < orderedSteps.Length; i++)
+            {
+                if (orderedSteps[i] != null &&
+                    string.Equals(orderedSteps[i].assemblyId, evt.AssemblyId, StringComparison.Ordinal))
+                {
+                    firstStepIdx = i;
+                    break;
+                }
+            }
+            if (firstStepIdx < 0) return;
+
+            StepDefinition firstStep = orderedSteps[firstStepIdx];
+            StepDefinition[] completedSteps;
+            if (firstStepIdx > 0)
+            {
+                completedSteps = new StepDefinition[firstStepIdx];
+                Array.Copy(orderedSteps, completedSteps, firstStepIdx);
+            }
+            else
+            {
+                completedSteps = Array.Empty<StepDefinition>();
+            }
+
+            RebuildVisualStateForActiveStep(completedSteps, firstStep.id, resetToDefaultView: true);
+
+            OseLog.Info(
+                $"[PartInteraction] AssemblyStarted '{evt.AssemblyId}' — rebuilt visual state: " +
+                $"{completedSteps.Length} step(s) Completed, active='{firstStep.id}'.");
         }
 
         /// <summary>
@@ -492,6 +575,16 @@ namespace OSE.UI.Root
             _ctx.ToolAction?.ClearToolActionTargets();
             _ctx.PlaceHandler?.ClearRequiredPartEmission();
             _ctx.ConnectHandler?.ClearTransientVisuals();
+            // CRITICAL: clear PartStates BEFORE Restore. ShowAllPartsAssembled
+            // (final-step overview) leaves every spawned part flagged Completed.
+            // HideNonIntroducedParts AND RevealStepParts' deactivation pass
+            // both treat Completed as "keep visible", so any rebuild that
+            // doesn't first wipe PartStates can't hide future-assembly parts —
+            // 100+ parts stay rendered through Hide / Revert / Reveal because
+            // the Completed-skip clause fires for every one of them. Restore
+            // will re-mark the 32 prior-step parts Completed; the rest must
+            // start at Available (default) so the deactivation passes work.
+            _ctx.PartStates.Clear();
             _ctx.VisualFeedback?.RevealedPartIds.Clear();
             _ctx.VisualFeedback?.ActiveStepPartIds.Clear();
             _ctx.VisualFeedback?.ClearPartHoverVisual();
@@ -499,7 +592,7 @@ namespace OSE.UI.Root
 
             if (completedSteps != null && completedSteps.Length > 0)
             {
-                _ctx.VisualFeedback?.RestoreCompletedStepParts(completedSteps);
+                _ctx.VisualFeedback?.RestoreCompletedStepParts(completedSteps, activeStepId);
                 _ctx.SubassemblyController?.RestoreCompletedPlacements(completedSteps);
                 _ctx.ConnectHandler?.RenderCompletedWires(completedSteps);
             }
@@ -508,6 +601,32 @@ namespace OSE.UI.Root
             // actually re-hides parts (e.g. after async GLB swap replaced models).
             _ctx.VisualFeedback?.ResetHiddenOnSpawnGuard();
             _ctx.VisualFeedback?.HideNonIntroducedParts();
+
+            // RevertFutureStepParts hides every part required by a step AT or
+            // AFTER the active step's global index. Without this, parts
+            // authored as "visible at seq N" for a LATER step (and left
+            // SetActive by a prior ShowAllPartsAssembled / completion state)
+            // stay rendered. HandleStepNavigated has done this since forever
+            // and is why manual skip fixes the "all parts visible" bug —
+            // but HandleStepStateChanged / Continue-after-module-complete
+            // never called it, so the same state leak survived across those
+            // paths. Centralising here means every rebuild hides future
+            // parts consistently.
+            MachinePackageDefinition rebuildPkg = _ctx.Spawner?.CurrentPackage;
+            StepDefinition[] rebuildOrderedSteps = rebuildPkg?.GetOrderedSteps();
+            if (rebuildOrderedSteps != null && rebuildOrderedSteps.Length > 0)
+            {
+                int activeIdx = -1;
+                for (int i = 0; i < rebuildOrderedSteps.Length; i++)
+                {
+                    if (rebuildOrderedSteps[i] != null &&
+                        string.Equals(rebuildOrderedSteps[i].id, activeStepId, StringComparison.Ordinal))
+                    { activeIdx = i; break; }
+                }
+                if (activeIdx >= 0 && activeIdx < rebuildOrderedSteps.Length)
+                    _ctx.VisualFeedback?.RevertFutureStepParts(rebuildOrderedSteps, activeIdx);
+            }
+
             _ctx.VisualFeedback?.RevealStepParts(activeStepId);
             _ctx.VisualFeedback?.ApplyStepPartHighlighting(activeStepId);
             _ctx.SubassemblyController?.RefreshForStep(activeStepId);
@@ -543,6 +662,7 @@ namespace OSE.UI.Root
             _ctx.FocusComputer?.FocusCameraOnStepArea(activeStepId, resetToDefaultView);
             _ctx.ToolAction?.RefreshToolPreviewIndicator();
             _ctx.RefreshToolActionTargets();
+
         }
 
         private bool TryBuildHandlerContextForStep(string stepId, out StepHandlerContext context)

@@ -315,6 +315,10 @@ namespace OSE.Runtime
 
             SetLifecycle(SessionLifecycle.StepActive);
 
+            // BeginAssembly internally calls IPartRuntimeController.RecomputePartsForNavigation
+            // before publishing AssemblyStarted. See AssemblyRuntimeController.BeginAssembly
+            // for why this is load-bearing and structurally enforced there
+            // rather than at every call site.
             _assemblyController.BeginAssembly(assemblyId, () => _sessionState.ElapsedSeconds);
 
             // Update session state with the first step id

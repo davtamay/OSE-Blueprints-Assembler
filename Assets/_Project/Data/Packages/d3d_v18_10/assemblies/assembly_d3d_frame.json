@@ -1029,20 +1029,8 @@
       "assetRef": "compound007_approved.glb",
       "id": "compound007_lower_fl",
       "function": "Reinforces and aligns cube frame corners after welding",
-      "stagingPose": {
-        "position": {
-          "x": 0.8,
-          "y": 0.5512,
-          "z": -0.1523
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        }
-      }
-    },
+      "stagingPose": {"position":{"x":0.54,"y":0.5512,"z":-0.1523},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.0,"g":0.0,"b":0.0,"a":0.0}}
+  },
     {
       "name": "Frame Corner Bracket",
       "displayName": "Frame Corner Bracket",
@@ -1075,20 +1063,8 @@
       "assetRef": "compound007_approved.glb",
       "id": "compound007_lower_rl",
       "function": "Reinforces and aligns cube frame corners after welding",
-      "stagingPose": {
-        "position": {
-          "x": 0.8,
-          "y": 0.5515,
-          "z": 0.1531
-        },
-        "rotation": {
-          "x": 0.0,
-          "y": 0.0,
-          "z": 0.0,
-          "w": 1.0
-        }
-      }
-    },
+      "stagingPose": {"position":{"x":0.549,"y":0.5515,"z":0.1531},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.0,"g":0.0,"b":0.0,"a":0.0}}
+  },
     {
       "name": "Frame Corner Bracket",
       "displayName": "Frame Corner Bracket",
@@ -1491,11 +1467,11 @@
       },
       "removePersistentToolIds": [],
       "targetIds": [ "target_bottom_weld_upper_left", "target_bottom_weld_lower_right", "target_bottom_weld_upper_right", "target_bottom_weld_lower_left" ],
-      "requiredToolActions": [ {"id":"action_bottom_weld_upper_left","toolId":"tool_mig_torch","actionType":"weld_pass","targetId":"target_bottom_weld_upper_left","requiredCount":1,"successMessage":"Bottom Frame Side upper-left corner tack complete.","failureMessage":"Equip the MIG torch and use it on the highlighted corner tack target.","interaction":{"archetype":"","axis":{"space":"","vec":{"x":0.0,"y":0.0,"z":0.0}},"distance":0.0,"totalRotationsDeg":0.0,"rotationDegPerUnit":0.0,"followPart":true,"easing":"","toPose":""}}, {"id":"action_bottom_weld_lower_right","toolId":"tool_mig_torch","actionType":"weld_pass","targetId":"target_bottom_weld_lower_right","requiredCount":1,"successMessage":"Bottom Frame Side lower-right corner tack complete.","failureMessage":"Equip the MIG torch and use it on the highlighted corner tack target.","interaction":{"archetype":"","axis":{"space":"","vec":{"x":0.0,"y":0.0,"z":0.0}},"distance":0.0,"totalRotationsDeg":0.0,"rotationDegPerUnit":0.0,"followPart":true,"easing":"","toPose":""}}, {"id":"action_bottom_weld_upper_right","toolId":"tool_mig_torch","actionType":"weld_pass","targetId":"target_bottom_weld_upper_right","requiredCount":1,"successMessage":"Bottom Frame Side upper-right corner tack complete.","failureMessage":"Equip the MIG torch and use it on the highlighted corner tack target.","interaction":{"archetype":"","axis":{"space":"","vec":{"x":0.0,"y":0.0,"z":0.0}},"distance":0.0,"totalRotationsDeg":0.0,"rotationDegPerUnit":0.0,"followPart":true,"easing":"","toPose":""}}, {"id":"action_bottom_weld_lower_left","toolId":"tool_mig_torch","actionType":"weld_pass","targetId":"target_bottom_weld_lower_left","requiredCount":1,"successMessage":"Bottom Frame Side lower-left corner tack complete.","failureMessage":"Equip the MIG torch and use it on the highlighted corner tack target.","interaction":{"archetype":"","axis":{"space":"","vec":{"x":0.0,"y":0.0,"z":0.0}},"distance":0.0,"totalRotationsDeg":0.0,"rotationDegPerUnit":0.0,"followPart":true,"easing":"","toPose":""}} ],
-      "taskOrder": [{"kind":"target","id":"target_bottom_weld_upper_left","unorderedSet":"t"},
-        {"kind":"target","id":"target_bottom_weld_lower_right","unorderedSet":"t"},
-        {"kind":"target","id":"target_bottom_weld_upper_right","unorderedSet":"t"},
-        {"kind":"target","id":"target_bottom_weld_lower_left","unorderedSet":"t"}],
+      "requiredToolActions": [ {"id":"action_bottom_weld_upper_left","toolId":"tool_mig_torch","actionType":"weld_pass","targetId":"target_bottom_weld_upper_left","requiredCount":1,"successMessage":"Bottom Frame Side upper-left corner tack complete.","failureMessage":"Equip the MIG torch and use it on the highlighted corner tack target.","interaction":{"archetype":"","axis":{"space":"","vec":{"x":0.0,"y":0.0,"z":0.0}},"distance":0.0,"totalRotationsDeg":0.0,"rotationDegPerUnit":0.0,"followPart":true,"easing":"","toPose":""},"previewConfig":{"duration":0.0,"approachDuration":0.0,"returnDuration":0.0,"guidedDragScale":0.0,"autoAssistDelay":0.0,"autoAssistRate":0.0,"framingDistance":0.0,"workingDistance":0.0,"approachTiltDegrees":0.0,"weldArcSpawnThreshold":0.0,"weldBeadSpawnThreshold":0.0,"weldBeadWidth":0.0,"weldBeadWindowStart":0.0,"weldBeadWindowEnd":0.0,"weldWobbleAmplitude":0.0,"weldWobbleFrequency":0.0,"weldBeadHotColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldBeadCoolColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldCoolerDuration":0.0,"drillShakeFrequency":0.0,"drillShakeAmplitude":0.0,"drillRampUpEnd":0.0,"drillRampDownStart":0.0,"drillSpark1Threshold":0.0,"drillSpark1Scale":0.0,"drillSpark2Threshold":0.0,"drillSpark2Scale":0.0,"drillGlowIntensity":0.0,"drillGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"torqueTargetAngle":0.0,"torqueGestureArc":0.0,"torqueMinRadius":0.0,"torqueDragFallbackScale":0.0,"torqueSparkThreshold":0.0,"torqueSparkScale":0.0,"cutEmissionThreshold":0.0,"cutGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"cutSpark1Threshold":0.0,"cutSpark1Scale":0.0,"cutSpark2Threshold":0.0,"cutSpark2Scale":0.0,"cutLineSpawn":0.0,"cutLineWindowEnd":0.0,"cutVibrationWindowStart":0.0,"cutVibrationWindowEnd":0.0,"cutVibrationFrequency":0.0,"cutVibrationAmplitude":0.0,"cutLineColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squareSettleDistance":0.0,"squareSettleEnd":0.0,"squareHoldEnd":0.0,"squareGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squarePulseFrequency":0.0}}, {"id":"action_bottom_weld_lower_right","toolId":"tool_mig_torch","actionType":"weld_pass","targetId":"target_bottom_weld_lower_right","requiredCount":1,"successMessage":"Bottom Frame Side lower-right corner tack complete.","failureMessage":"Equip the MIG torch and use it on the highlighted corner tack target.","interaction":{"archetype":"","axis":{"space":"","vec":{"x":0.0,"y":0.0,"z":0.0}},"distance":0.0,"totalRotationsDeg":0.0,"rotationDegPerUnit":0.0,"followPart":true,"easing":"","toPose":""},"previewConfig":{"duration":0.0,"approachDuration":0.0,"returnDuration":0.0,"guidedDragScale":0.0,"autoAssistDelay":0.0,"autoAssistRate":0.0,"framingDistance":0.0,"workingDistance":0.0,"approachTiltDegrees":0.0,"weldArcSpawnThreshold":0.0,"weldBeadSpawnThreshold":0.0,"weldBeadWidth":0.0,"weldBeadWindowStart":0.0,"weldBeadWindowEnd":0.0,"weldWobbleAmplitude":0.0,"weldWobbleFrequency":0.0,"weldBeadHotColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldBeadCoolColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldCoolerDuration":0.0,"drillShakeFrequency":0.0,"drillShakeAmplitude":0.0,"drillRampUpEnd":0.0,"drillRampDownStart":0.0,"drillSpark1Threshold":0.0,"drillSpark1Scale":0.0,"drillSpark2Threshold":0.0,"drillSpark2Scale":0.0,"drillGlowIntensity":0.0,"drillGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"torqueTargetAngle":0.0,"torqueGestureArc":0.0,"torqueMinRadius":0.0,"torqueDragFallbackScale":0.0,"torqueSparkThreshold":0.0,"torqueSparkScale":0.0,"cutEmissionThreshold":0.0,"cutGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"cutSpark1Threshold":0.0,"cutSpark1Scale":0.0,"cutSpark2Threshold":0.0,"cutSpark2Scale":0.0,"cutLineSpawn":0.0,"cutLineWindowEnd":0.0,"cutVibrationWindowStart":0.0,"cutVibrationWindowEnd":0.0,"cutVibrationFrequency":0.0,"cutVibrationAmplitude":0.0,"cutLineColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squareSettleDistance":0.0,"squareSettleEnd":0.0,"squareHoldEnd":0.0,"squareGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squarePulseFrequency":0.0}}, {"id":"action_bottom_weld_upper_right","toolId":"tool_mig_torch","actionType":"weld_pass","targetId":"target_bottom_weld_upper_right","requiredCount":1,"successMessage":"Bottom Frame Side upper-right corner tack complete.","failureMessage":"Equip the MIG torch and use it on the highlighted corner tack target.","interaction":{"archetype":"","axis":{"space":"","vec":{"x":0.0,"y":0.0,"z":0.0}},"distance":0.0,"totalRotationsDeg":0.0,"rotationDegPerUnit":0.0,"followPart":true,"easing":"","toPose":""},"previewConfig":{"duration":0.0,"approachDuration":0.0,"returnDuration":0.0,"guidedDragScale":0.0,"autoAssistDelay":0.0,"autoAssistRate":0.0,"framingDistance":0.0,"workingDistance":0.0,"approachTiltDegrees":0.0,"weldArcSpawnThreshold":0.0,"weldBeadSpawnThreshold":0.0,"weldBeadWidth":0.0,"weldBeadWindowStart":0.0,"weldBeadWindowEnd":0.0,"weldWobbleAmplitude":0.0,"weldWobbleFrequency":0.0,"weldBeadHotColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldBeadCoolColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldCoolerDuration":0.0,"drillShakeFrequency":0.0,"drillShakeAmplitude":0.0,"drillRampUpEnd":0.0,"drillRampDownStart":0.0,"drillSpark1Threshold":0.0,"drillSpark1Scale":0.0,"drillSpark2Threshold":0.0,"drillSpark2Scale":0.0,"drillGlowIntensity":0.0,"drillGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"torqueTargetAngle":0.0,"torqueGestureArc":0.0,"torqueMinRadius":0.0,"torqueDragFallbackScale":0.0,"torqueSparkThreshold":0.0,"torqueSparkScale":0.0,"cutEmissionThreshold":0.0,"cutGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"cutSpark1Threshold":0.0,"cutSpark1Scale":0.0,"cutSpark2Threshold":0.0,"cutSpark2Scale":0.0,"cutLineSpawn":0.0,"cutLineWindowEnd":0.0,"cutVibrationWindowStart":0.0,"cutVibrationWindowEnd":0.0,"cutVibrationFrequency":0.0,"cutVibrationAmplitude":0.0,"cutLineColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squareSettleDistance":0.0,"squareSettleEnd":0.0,"squareHoldEnd":0.0,"squareGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squarePulseFrequency":0.0}}, {"id":"action_bottom_weld_lower_left","toolId":"tool_mig_torch","actionType":"weld_pass","targetId":"target_bottom_weld_lower_left","requiredCount":1,"successMessage":"Bottom Frame Side lower-left corner tack complete.","failureMessage":"Equip the MIG torch and use it on the highlighted corner tack target.","interaction":{"archetype":"","axis":{"space":"","vec":{"x":0.0,"y":0.0,"z":0.0}},"distance":0.0,"totalRotationsDeg":0.0,"rotationDegPerUnit":0.0,"followPart":true,"easing":"","toPose":""},"previewConfig":{"duration":0.0,"approachDuration":0.0,"returnDuration":0.0,"guidedDragScale":0.0,"autoAssistDelay":0.0,"autoAssistRate":0.0,"framingDistance":0.0,"workingDistance":0.0,"approachTiltDegrees":0.0,"weldArcSpawnThreshold":0.0,"weldBeadSpawnThreshold":0.0,"weldBeadWidth":0.0,"weldBeadWindowStart":0.0,"weldBeadWindowEnd":0.0,"weldWobbleAmplitude":0.0,"weldWobbleFrequency":0.0,"weldBeadHotColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldBeadCoolColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"weldCoolerDuration":0.0,"drillShakeFrequency":0.0,"drillShakeAmplitude":0.0,"drillRampUpEnd":0.0,"drillRampDownStart":0.0,"drillSpark1Threshold":0.0,"drillSpark1Scale":0.0,"drillSpark2Threshold":0.0,"drillSpark2Scale":0.0,"drillGlowIntensity":0.0,"drillGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"torqueTargetAngle":0.0,"torqueGestureArc":0.0,"torqueMinRadius":0.0,"torqueDragFallbackScale":0.0,"torqueSparkThreshold":0.0,"torqueSparkScale":0.0,"cutEmissionThreshold":0.0,"cutGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"cutSpark1Threshold":0.0,"cutSpark1Scale":0.0,"cutSpark2Threshold":0.0,"cutSpark2Scale":0.0,"cutLineSpawn":0.0,"cutLineWindowEnd":0.0,"cutVibrationWindowStart":0.0,"cutVibrationWindowEnd":0.0,"cutVibrationFrequency":0.0,"cutVibrationAmplitude":0.0,"cutLineColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squareSettleDistance":0.0,"squareSettleEnd":0.0,"squareHoldEnd":0.0,"squareGlowColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"squarePulseFrequency":0.0}} ],
+      "taskOrder": [{"kind":"toolAction","id":"action_bottom_weld_upper_left","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"toolAction","id":"action_bottom_weld_lower_right","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"toolAction","id":"action_bottom_weld_upper_right","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"toolAction","id":"action_bottom_weld_lower_left","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}],
       "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
   },
     {
@@ -3737,7 +3713,6 @@
       "whyItMattersText": "Starting with the lower corners establishes the base geometry of the cube before the upper corners are locked in.",
       "targetOrder": "sequential",
       "family": "Place",
-      "viewMode": "WorkZone",
       "hintIds": [
         "hint_bracket_lower_placement"
       ],
@@ -3887,7 +3862,6 @@
       "whyItMattersText": "Upper brackets complete the structural lock of all eight cube corners.",
       "targetOrder": "sequential",
       "family": "Place",
-      "viewMode": "WorkZone",
       "hintIds": [
         "hint_bracket_upper_placement"
       ],

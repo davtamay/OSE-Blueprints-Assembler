@@ -152,15 +152,30 @@ namespace OSE.UI.Root
                     if (info != null) return info;
                 }
             }
-            // Scene-wide fallback — first active marker.
-            var all = Object.FindObjectsByType<ToolActionTargetInfo>(FindObjectsSortMode.None);
-            return (all != null && all.Length > 0) ? all[0] : null;
+            // Most-recently-clicked hint wins — tool-hosted cues (ctx.Targets
+            // is the tool GO) would otherwise hit the scene-wide fallback and
+            // latch onto the OLDEST inactive marker (welds N-1, N-2 …
+            // accumulate under PreviewRoot until step transition).
+            if (ToolActionTargetInfo.CurrentActionTarget != null)
+                return ToolActionTargetInfo.CurrentActionTarget;
+
+            // Scene-wide last resort. INCLUDE inactive so markers hidden at
+            // click time still resolve; prefer active when any exist.
+            var all = Object.FindObjectsByType<ToolActionTargetInfo>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            if (all == null || all.Length == 0) return null;
+            for (int i = 0; i < all.Length; i++)
+            {
+                if (all[i] != null && all[i].gameObject.activeInHierarchy) return all[i];
+            }
+            return all[0];
         }
 
         private static bool TryFindTargetInfoByName(string markerName, out Vector3 worldPos)
         {
             worldPos = Vector3.zero;
-            var all = Object.FindObjectsByType<ToolActionTargetInfo>(FindObjectsSortMode.None);
+            // INCLUDE inactive so cue anchors still resolve after marker
+            // hide-on-click (SetActive(false) keeps the component alive).
+            var all = Object.FindObjectsByType<ToolActionTargetInfo>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             if (all == null) return false;
             for (int i = 0; i < all.Length; i++)
             {

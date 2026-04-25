@@ -19,21 +19,23 @@ namespace OSE.UI.Root
     {
         private readonly IBridgeContext _ctx;
 
-        private bool _isSequentialStep;
-        private int _sequentialTargetIndex;
         private string _activeStepId;
 
-        // Phase I.g — attached to the StepController's active TaskCursor
-        // when a step has a non-empty taskOrder. Ghost previews are scoped
-        // to the parts in the currently-open span; subsequent spans get
-        // their own previews on TaskSpanOpened. Null when no cursor is
-        // active OR when the step has no taskOrder (legacy path runs).
+        // Attached to the StepController's active TaskCursor. The cursor
+        // is the SINGLE SOURCE OF TRUTH for span progression: its
+        // TaskSpanOpened event is the sole trigger for preview spawning
+        // (via OnSpanOpened → SpawnPreviewsForCurrentSpan). Its
+        // StepTasksComplete event is the sole trigger for step completion
+        // (via StepController.HandleCursorStepComplete). Any handler that
+        // tracks "current target index" or calls CompleteStep directly
+        // for a cursor-driven step will race the cursor and produce
+        // phantom ghosts / double-completion (see 2026-04-24 step-41
+        // regression — parallel legacy-sequential path spawned an extra
+        // ghost at the wrong corner).
         private TaskCursor _attachedCursor;
 
         /// <summary>The shared preview list. Passed by reference to PlaceStepHandler / UseStepHandler.</summary>
         public List<GameObject> SpawnedPreviews => _ctx.SpawnedPreviews;
-
-        public bool IsSequentialStep => _isSequentialStep;
 
         public PreviewSpawnManager(IBridgeContext context)
         {
@@ -50,6 +52,17 @@ namespace OSE.UI.Root
             var package = _ctx.Spawner.CurrentPackage;
             if (package == null || !package.TryGetStep(stepId, out var step))
                 return;
+
+            // Attach to the cursor FIRST, before any early returns. Even
+            // steps that don't need ghost previews (Use, Confirm, Pipe)
+            // still need the cursor attached so GetActionableToolActionTargetIds
+            // can answer "which tool-target is actionable right now" — the
+            // ToolTargetSpawner relies on it to filter sequential Use-step
+            // markers to one-at-a-time. Without this, tool-action steps
+            // fall back to "show every target" because their actionable
+            // set reads empty.
+            if (TryGetActiveCursor(out var cursor) && cursor.TotalSpans > 0)
+                AttachToStepCursor(cursor);
 
             // Pipe connection steps are handled entirely by ConnectStepHandler via the router.
             if (step.IsPipeConnection)
@@ -73,39 +86,21 @@ namespace OSE.UI.Root
             string[] targetIds = step.targetIds;
             bool hasTargets = targetIds != null && targetIds.Length > 0;
 
-            _isSequentialStep = step.IsSequential;
-            _sequentialTargetIndex = 0;
-
-            // Phase I.g — when a TaskCursor is active with spans, scope
-            // previews to the parts in the currently-open span. This lets
-            // an unordered set of N Part tasks show all N ghosts
-            // simultaneously (the author's intent), and strict-sequential
-            // singletons show only one ghost at a time (cursor advances on
-            // each placement, re-spawning for the next span).
-            //
-            // The legacy path below (step.IsSequential / parallel) only
-            // runs when the step has no cursor spans — older content that
-            // authored targetOrder directly without migrating to taskOrder.
-            if (TryGetActiveCursor(out var cursor) && cursor.TotalSpans > 0)
-            {
-                AttachToStepCursor(cursor);
-                SpawnPreviewsForCurrentSpan(package, step);
+            // Cursor-driven Place family: already attached above, OnSpanOpened
+            // handles the spawn path. Defer.
+            if (_attachedCursor != null)
                 return;
-            }
 
+            // Legacy fallback — content without taskOrder. Steps shipped
+            // through MachinePackageNormalizer.EnsureTaskOrderCoversRequirements
+            // always get a taskOrder that covers requiredPartIds, so this
+            // branch only fires for pre-normalization code paths, tests,
+            // or degenerate content. Always spawns all target ghosts at
+            // once — no ordering (no cursor = no notion of "current task").
             if (hasTargets)
             {
-                if (_isSequentialStep)
-                {
-                    // Sequential: spawn only the first target's preview.
-                    SpawnPreviewForTarget(package, targetIds[0]);
-                }
-                else
-                {
-                    // Parallel (default): spawn all previews at once.
-                    foreach (string targetId in targetIds)
-                        SpawnPreviewForTarget(package, targetId);
-                }
+                foreach (string targetId in targetIds)
+                    SpawnPreviewForTarget(package, targetId);
                 return;
             }
 
@@ -153,6 +148,18 @@ namespace OSE.UI.Root
             // safe because ClearPreviews precedes SpawnPreviewsForCurrentSpan.
             if (_ctx?.Spawner?.CurrentPackage == null || string.IsNullOrEmpty(_activeStepId)) return;
             if (!_ctx.Spawner.CurrentPackage.TryGetStep(_activeStepId, out var step)) return;
+
+            // Mirror SpawnPreviewsForStep's family gating. The cursor is
+            // attached for Confirm / Use / Pipe steps too (so other systems
+            // can read OpenTasks for filtering), but those families must
+            // NEVER spawn drag-to-place ghosts. Without this gate, a Confirm
+            // step that authors a kind="part" taskOrder entry (e.g.
+            // step_batch_c1_shake_test referencing the carriage subassembly
+            // for cursor gating) would surface a placement ghost over a
+            // part the trainee has nothing to place.
+            if (step.IsPipeConnection || step.IsToolAction || step.IsConfirmation)
+                return;
+
             ClearPreviews();
             SpawnPreviewsForCurrentSpan(_ctx.Spawner.CurrentPackage, step);
         }
@@ -205,6 +212,7 @@ namespace OSE.UI.Root
                 if (!matchedPartIds.Contains(pid))
                     SpawnPreviewForAssembledPart(package, pid);
             }
+
         }
 
         /// <summary>
@@ -235,50 +243,47 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
-        /// Called after a part is placed on a preview in sequential mode.
-        /// Advances to the next target and spawns its preview/tool-target,
-        /// or returns true if all targets are done.
+        /// Returns the target IDs that are currently actionable, sourced
+        /// from the attached <see cref="TaskCursor"/>'s current span. For
+        /// each open toolAction entry in the span, resolves the backing
+        /// <see cref="ToolActionDefinition.targetId"/> from the step's
+        /// <c>requiredToolActions</c>. Empty array when no cursor, no
+        /// open spans, or no toolAction entries. Callers use this to
+        /// decide "which tool-target marker(s) should be visible right
+        /// now" — always ask the cursor, never track a separate index.
         /// </summary>
-        public bool AdvanceSequentialTarget()
+        public string[] GetActionableToolActionTargetIds()
         {
-            if (!_isSequentialStep) return false;
+            if (_attachedCursor == null || _attachedCursor.IsComplete)
+                return System.Array.Empty<string>();
+
+            var open = _attachedCursor.OpenTasks;
+            if (open == null || open.Count == 0)
+                return System.Array.Empty<string>();
 
             if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
-                return true;
+                return System.Array.Empty<string>();
+            StepDefinition step = session?.AssemblyController?.StepController?.CurrentStepDefinition;
+            if (step?.requiredToolActions == null || step.requiredToolActions.Length == 0)
+                return System.Array.Empty<string>();
 
-            var package = session.Package;
-            StepController stepController = session.AssemblyController?.StepController;
-            if (package == null || stepController == null || !stepController.HasActiveStep)
-                return true;
-
-            StepDefinition step = stepController.CurrentStepDefinition;
-            if (step?.targetIds == null) return true;
-
-            _sequentialTargetIndex++;
-            if (_sequentialTargetIndex >= step.targetIds.Length)
-                return true; // all targets done
-
-            SpawnPreviewForTarget(package, step.targetIds[_sequentialTargetIndex]);
-            _ctx.RefreshToolActionTargets();
-            return false;
-        }
-
-        /// <summary>
-        /// Returns the target ID that is currently active in sequential mode,
-        /// or null if not in sequential mode or index is out of range.
-        /// </summary>
-        public string GetCurrentSequentialTargetId()
-        {
-            if (!_isSequentialStep) return null;
-
-            if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
-                return null;
-
-            StepDefinition step = session.AssemblyController?.StepController?.CurrentStepDefinition;
-            if (step?.targetIds == null || _sequentialTargetIndex >= step.targetIds.Length)
-                return null;
-
-            return step.targetIds[_sequentialTargetIndex];
+            var result = new List<string>(open.Count);
+            for (int i = 0; i < open.Count; i++)
+            {
+                var entry = open[i];
+                if (entry == null || !string.Equals(entry.kind, "toolAction", StringComparison.Ordinal)) continue;
+                if (string.IsNullOrEmpty(entry.id)) continue;
+                for (int a = 0; a < step.requiredToolActions.Length; a++)
+                {
+                    var action = step.requiredToolActions[a];
+                    if (action == null) continue;
+                    if (!string.Equals(action.id, entry.id, StringComparison.Ordinal)) continue;
+                    if (!string.IsNullOrWhiteSpace(action.targetId))
+                        result.Add(action.targetId.Trim());
+                    break;
+                }
+            }
+            return result.ToArray();
         }
 
         public GameObject FindPreviewForTarget(string targetId)
@@ -305,6 +310,16 @@ namespace OSE.UI.Root
             foreach (var preview in _ctx.SpawnedPreviews)
             {
                 if (preview == null) continue;
+                // SetActive(false) + reparent-out-of-PreviewRoot first.
+                // Unity's Destroy() is end-of-frame deferred, so without
+                // this, the doomed preview renders once more in the frame
+                // that spawned its replacement and looks like "2 ghosts"
+                // to the user. Deactivating instantly hides it; reparenting
+                // to null guarantees PreviewRoot doesn't drag it along even
+                // if active state somehow doesn't propagate; Destroy() then
+                // reclaims the memory at frame end.
+                preview.SetActive(false);
+                preview.transform.SetParent(null, worldPositionStays: false);
                 _ctx.DestroyObject(preview);
             }
             _ctx.SpawnedPreviews.Clear();
@@ -317,12 +332,6 @@ namespace OSE.UI.Root
             // early-returns when isPlaying. Step navigation is the right hook
             // because it's the cleanup point for everything else.
             _ctx.Spawner?.ClearGhosts();
-        }
-
-        public void ResetSequentialState()
-        {
-            _isSequentialStep = false;
-            _sequentialTargetIndex = 0;
         }
 
         // ── Preview spawning ──

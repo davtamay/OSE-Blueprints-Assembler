@@ -76,6 +76,20 @@ namespace OSE.Interaction
                 return;
             }
 
+            // Re-entry guard: if the user taps the next target before the
+            // current preview's Approach → Action → Return cycle completes,
+            // finalize the in-flight state instead of silently overwriting
+            // every field. Without this, the previous preview's tool GO
+            // stays detached in world space (the user sees TWO tools), the
+            // previous WeldPreview's _arcEffect stays alive, and tool
+            // wobble compounds because the absolute rotation never resets.
+            // Callbacks (_onComplete / _onCancel) are intentionally NOT
+            // invoked — the new Enter assigns fresh callbacks immediately
+            // below; semantically the old action was preempted, not
+            // completed or user-cancelled.
+            if (_phase != Phase.Inactive)
+                FinalizeInFlightForReentry();
+
             _targetId = ctx.TargetId;
             _toolPreview = toolPreview;
             _mode = mode;
@@ -199,6 +213,21 @@ namespace OSE.Interaction
                 _completed = false;
                 BeginReturn();
             }
+        }
+
+        /// <summary>
+        /// Synchronously snap any in-flight preview back to the cursor and
+        /// reset state. Use when an external event (step navigation, scene
+        /// change, session cleanup) needs the tool back in the cursor RIGHT
+        /// NOW rather than after the Return animation. The tool GO is
+        /// re-parented to its original parent in the same frame, so a
+        /// follow-up <c>ToolCursorManager.RefreshAsync</c> sees a clean
+        /// cursor state and won't leave a detached tool in world space.
+        /// </summary>
+        public void ForceFinalize()
+        {
+            if (_phase == Phase.Inactive) return;
+            FinalizeInFlightForReentry();
         }
 
         /// <summary>
@@ -415,6 +444,52 @@ namespace OSE.Interaction
 
             _phase = Phase.Return;
             _elapsed = 0f;
+        }
+
+        /// <summary>
+        /// Cleanup path for the case where <see cref="Enter"/> is called
+        /// while a previous preview is still mid-cycle. Mirrors what
+        /// <see cref="FinishExit"/> + <see cref="CleanupAndNotify"/> do
+        /// EXCEPT for invoking the prior callbacks — the new Enter call
+        /// immediately overwrites them, so the prior action is treated
+        /// as preempted (neither completed nor cancelled). Critically
+        /// re-parents the old tool GO back to the camera; without this,
+        /// the user sees two tools floating in the scene.
+        /// </summary>
+        private void FinalizeInFlightForReentry()
+        {
+            _partEffect?.End();
+            _partEffect = null;
+
+            if (_preview != null)
+            {
+                _preview.End(false);
+                _preview = null;
+            }
+
+            _visualGuide?.Exit();
+            _visualGuide = null;
+
+            RestoreTargetSphere();
+
+            if (_toolPreview != null)
+            {
+                MaterialHelper.MakeTransparent(_toolPreview, 0.55f);
+
+                Transform parent = _originalParent != null
+                    ? _originalParent
+                    : (CameraUtil.GetMain() != null ? CameraUtil.GetMain().transform : null);
+
+                if (parent != null)
+                {
+                    _toolPreview.transform.SetParent(parent, worldPositionStays: false);
+                    _toolPreview.transform.localPosition = _originalLocalPos;
+                    _toolPreview.transform.localRotation = _originalLocalRot;
+                    _toolPreview.transform.localScale    = Vector3.one * _startScale;
+                }
+            }
+
+            _phase = Phase.Inactive;
         }
 
         private void FinishExit()

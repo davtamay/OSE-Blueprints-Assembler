@@ -291,6 +291,9 @@ namespace OSE.UI.Root
         public void RefreshToolActionTargets()
             => _ctx.UseHandler?.RefreshToolActionTargets();
 
+        public void HideToolActionTarget(string targetId)
+            => _ctx.UseHandler?.HideToolActionTarget(targetId);
+
         public void ClearToolActionTargets()
             => _ctx.UseHandler?.ClearToolActionTargets();
 

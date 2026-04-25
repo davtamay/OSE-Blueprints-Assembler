@@ -821,8 +821,17 @@ namespace OSE.Runtime
                 string toolId = tool.id.Trim();
                 if (string.IsNullOrWhiteSpace(tool.assetRef))
                 {
-                    OseLog.Warn($"[ToolRuntime] Tool '{toolId}' ignored because it has no assetRef.");
-                    continue;
+                    // Conceptual tools (bare hand, pointing finger, etc.) have
+                    // no discrete mesh — the validator's PartsAndToolsPass
+                    // explicitly allows empty assetRef for category=="conceptual"
+                    // and ToolCursorManager renders a primitive-capsule fallback
+                    // for them. Dropping them here was the last gap: the tool
+                    // would never land in the available-tool set, EquipTool
+                    // would fail with "Cannot equip unknown tool", and the
+                    // step would deadlock with no cursor + clicks ignored.
+                    // Keep all tools, regardless of category — let the cursor
+                    // manager + capsule fallback handle render concerns.
+                    OseLog.VerboseInfo($"[ToolRuntime] Tool '{toolId}' has no assetRef — using primitive-cursor fallback (category='{tool.category}').");
                 }
 
                 bool duplicate = false;

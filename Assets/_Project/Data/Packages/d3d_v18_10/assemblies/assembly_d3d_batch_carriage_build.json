@@ -317,7 +317,7 @@
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [],
-      "visualPartIds": [ "y_left_carriage_half_a", "y_right_carriage_half_a", "y_right_carriage_half_b", "z_back_carriage_half_a", "z_back_carriage_half_b", "z_front_carriage_half_a", "z_front_carriage_half_b", "y_left_carriage_half_b" ],
+      "visualPartIds": [ "y_right_carriage_half_a", "y_right_carriage_half_b", "z_back_carriage_half_a", "z_back_carriage_half_b", "z_front_carriage_half_a", "z_front_carriage_half_b", "y_left_carriage_half_b", "y_left_carriage_half_a" ],
       "requiredToolActions": [],
       "taskOrder": [{"kind":"part","id":"y_left_carriage_half_a","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
         {"kind":"part","id":"y_left_carriage_half_b","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},

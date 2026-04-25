@@ -671,40 +671,22 @@ namespace OSE.UI.Root
             if (HasPendingToolActions(session))
                 return;
 
-            if (ServiceRegistry.TryGet<ISubassemblyPlacementService>(out var subassemblyController) &&
+            // Cursor-driven steps (anything with a non-empty taskOrder) are
+            // completed by the cursor itself: NotifyTaskCompleted cascades
+            // through AttemptPlacement → StepTasksComplete →
+            // StepController.HandleCursorStepComplete → CompleteStep.
+            // This handler only handles the legacy fallback — steps with no
+            // cursor/taskOrder (pre-normalization content, tests). Guarding
+            // on AreActiveStepRequiredPartsPlaced is the single completion
+            // trigger here. Calling CompleteStep for cursor-driven content
+            // would race the cursor's own call and double-fire.
+            bool subassemblyDone =
+                ServiceRegistry.TryGet<ISubassemblyPlacementService>(out var subassemblyController) &&
                 subassemblyController != null &&
                 !string.IsNullOrWhiteSpace(currentStepId) &&
-                subassemblyController.IsActiveStepPlacementSatisfied(currentStepId))
-            {
-                if ((_ctx.PreviewManager?.IsSequentialStep ?? false))
-                {
-                    if ((_ctx.PreviewManager?.AdvanceSequentialTarget() ?? true))
-                    {
-                        if (ServiceRegistry.TryGet<IEffectPlayer>(out var fxSeqSub))
-                            fxSeqSub.PlayHaptic(EffectRole.HapticFeedback);
-                        session.AssemblyController?.StepController?.CompleteStep(session.GetElapsedSeconds());
-                    }
-                }
-                else
-                {
-                    if (ServiceRegistry.TryGet<IEffectPlayer>(out var fxSub))
-                        fxSub.PlayHaptic(EffectRole.HapticFeedback);
-                    session.AssemblyController?.StepController?.CompleteStep(session.GetElapsedSeconds());
-                }
+                subassemblyController.IsActiveStepPlacementSatisfied(currentStepId);
 
-                return;
-            }
-
-            if ((_ctx.PreviewManager?.IsSequentialStep ?? false))
-            {
-                if ((_ctx.PreviewManager?.AdvanceSequentialTarget() ?? true))
-                {
-                    if (ServiceRegistry.TryGet<IEffectPlayer>(out var fxSeq))
-                        fxSeq.PlayHaptic(EffectRole.HapticFeedback);
-                    session.AssemblyController?.StepController?.CompleteStep(session.GetElapsedSeconds());
-                }
-            }
-            else if (partController.AreActiveStepRequiredPartsPlaced())
+            if (subassemblyDone || partController.AreActiveStepRequiredPartsPlaced())
             {
                 if (ServiceRegistry.TryGet<IEffectPlayer>(out var fx))
                     fx.PlayHaptic(EffectRole.HapticFeedback);

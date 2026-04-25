@@ -52,6 +52,15 @@ namespace OSE.Interaction
         bool TryResolveToolActionTarget(Vector2 screenPos, out ToolActionContext context);
         bool TryPipeConnection(Vector2 screenPos);
 
+        /// <summary>
+        /// Hide the tool-action target marker for <paramref name="targetId"/>
+        /// immediately. Called when the user clicks/selects a target so the
+        /// marker doesn't keep showing during the action animation. The
+        /// next <c>Refresh</c> on step state change will reconcile the
+        /// pool — completed targets stay hidden, others re-spawn.
+        /// </summary>
+        void HideToolActionTarget(string targetId);
+
         // ── Spatial Queries ──
 
         Vector3 LastToolActionWorldPos { get; }

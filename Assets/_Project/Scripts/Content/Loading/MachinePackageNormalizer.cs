@@ -691,9 +691,14 @@ namespace OSE.Content.Loading
 
                 totalStepsTouched++;
                 totalEntriesAppended += missing.Count;
-                // Per-step detail is Verbose (gated) to avoid console spam on
-                // every load. One summary Warn is emitted below.
-                OseLog.VerboseInfo($"[TaskOrder.Normalize] step '{step.id}': appended {missing.Count} missing taskOrder entr{(missing.Count == 1 ? "y" : "ies")}.");
+                // Per-step Warn so authors immediately see WHICH step had its
+                // taskOrder auto-fixed. The console gets one Warn per affected
+                // step plus the rollup Warn below — slightly noisy when many
+                // steps need fixing, but that's the point: silent auto-fix
+                // masked the step 83 deadlock for a long time. Update source
+                // so taskOrder explicitly covers requirements and these Warns
+                // disappear.
+                OseLog.Warn($"[TaskOrder.Normalize] step '{step.id}': appended {missing.Count} missing taskOrder entr{(missing.Count == 1 ? "y" : "ies")} — update authoring source to remove this auto-fix.");
             }
 
             if (totalStepsTouched > 0)

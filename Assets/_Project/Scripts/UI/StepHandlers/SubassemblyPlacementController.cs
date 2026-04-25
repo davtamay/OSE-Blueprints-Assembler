@@ -423,7 +423,20 @@ namespace OSE.UI.Root
                     ToVector3(imp.position),
                     ToQuaternion(imp.rotation));
                 partGo.transform.localScale = SanitizeScale(ToVector3(imp.scale), Vector3.one);
-                partGo.SetActive(true);
+
+                // Only activate parts that should be visible at the current step.
+                // The rebuild pipeline (Hide → Revert → Reveal) is the sole
+                // authority on visibility; this function "enforces integrated
+                // POSITIONS" only. Without this gate, TickPendingIntegration
+                // (running every frame from PartInteractionBridge.Update AFTER
+                // TrySyncStartupState) re-activates every member of every prior
+                // step's subassembly — including future-assembly parts whose
+                // subassembly happens to share members with completed steps —
+                // wiping the rebuild's correct hide work and showing 100+
+                // future parts at e.g. step 50.
+                PartPlacementState st = _ctx.GetPartState(pid);
+                if (st == PartPlacementState.Completed || st == PartPlacementState.PlacedVirtually)
+                    partGo.SetActive(true);
                 anyMoved = true;
             }
 

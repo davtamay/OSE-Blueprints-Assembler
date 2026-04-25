@@ -101,7 +101,8 @@ namespace OSE.UI.Root
                 () => CursorManager.ToolPreview,
                 () => CursorManager.DetachPreview(),
                 () => _setup != null ? _setup.PreviewRoot : null,
-                RefreshToolPreviewIndicator);
+                RefreshToolPreviewIndicator,
+                () => _spawner);
             // All extracted sub-systems share a single IBridgeContext back to this bridge.
             _mgr ??= new BridgeSubsystemManager(this, () => _setup);
             _mgr.EnsureInitialized();
@@ -113,6 +114,7 @@ namespace OSE.UI.Root
             RuntimeEventBus.Subscribe<ActiveToolChanged>(HandleActiveToolChanged);
             RuntimeEventBus.Subscribe<SessionRestored>(HandleSessionRestored);
             RuntimeEventBus.Subscribe<StepNavigated>(HandleStepNavigated);
+            RuntimeEventBus.Subscribe<AssemblyStarted>(HandleAssemblyStarted);
             RuntimeEventBus.Subscribe<CanonicalActionDispatched>(HandleCanonicalActionDispatched);
             RuntimeEventBus.Subscribe<PartSelected>(HandlePartSelected);
             RuntimeEventBus.Subscribe<PartDeselected>(HandlePartDeselected);
@@ -133,6 +135,7 @@ namespace OSE.UI.Root
             RuntimeEventBus.Unsubscribe<ActiveToolChanged>(HandleActiveToolChanged);
             RuntimeEventBus.Unsubscribe<SessionRestored>(HandleSessionRestored);
             RuntimeEventBus.Unsubscribe<StepNavigated>(HandleStepNavigated);
+            RuntimeEventBus.Unsubscribe<AssemblyStarted>(HandleAssemblyStarted);
             RuntimeEventBus.Unsubscribe<CanonicalActionDispatched>(HandleCanonicalActionDispatched);
             RuntimeEventBus.Unsubscribe<PartSelected>(HandlePartSelected);
             RuntimeEventBus.Unsubscribe<PartDeselected>(HandlePartDeselected);
@@ -505,6 +508,9 @@ namespace OSE.UI.Root
         bool IPartActionBridge.TryPipeConnection(Vector2 screenPos)
             => TryExternalPipeConnection(screenPos);
 
+        void IPartActionBridge.HideToolActionTarget(string targetId)
+            => _mgr?.ToolAction?.HideToolActionTarget(targetId);
+
         void IPartActionBridge.SetHoveredPart(GameObject part)
             => SetExternalHoveredPart(part);
 
@@ -784,8 +790,49 @@ namespace OSE.UI.Root
         private void HandleSessionRestored(SessionRestored evt)
             => _mgr?.StepResponder?.HandleSessionRestored(evt);
 
+        private void HandleAssemblyStarted(AssemblyStarted evt)
+            => _mgr?.StepResponder?.HandleAssemblyStarted(evt);
+
         private void HandleStepNavigated(StepNavigated evt)
-            => _mgr?.StepResponder?.HandleStepNavigated(evt);
+        {
+            _mgr?.StepResponder?.HandleStepNavigated(evt);
+            SyncPersistentToolsForNavigation(evt);
+        }
+
+        /// <summary>
+        /// Reconciles persistent tools (clamps, fixtures) against the
+        /// replayed step history so skipped-forward clamps appear at the
+        /// target step and walked-back clamps get removed. Matches the
+        /// "completedSteps = steps[0..targetIndex]" slice used by
+        /// <see cref="StepStateResponder.HandleStepNavigated"/>.
+        /// </summary>
+        private void SyncPersistentToolsForNavigation(StepNavigated evt)
+        {
+            var package = _spawner?.CurrentPackage;
+            if (package == null || _persistentToolMgr == null) return;
+
+            StepDefinition[] orderedSteps = package.GetOrderedSteps();
+            if (orderedSteps == null || orderedSteps.Length == 0) return;
+
+            int targetIndex = Mathf.Clamp(evt.TargetStepIndex, 0, orderedSteps.Length);
+            StepDefinition[] completedSteps;
+            if (targetIndex <= 0)
+            {
+                completedSteps = System.Array.Empty<StepDefinition>();
+            }
+            else
+            {
+                completedSteps = new StepDefinition[targetIndex];
+                System.Array.Copy(orderedSteps, completedSteps, targetIndex);
+            }
+
+            if (_persistentToolSyncCoroutine != null)
+                StopCoroutine(_persistentToolSyncCoroutine);
+            _persistentToolSyncCoroutine = StartCoroutine(
+                _persistentToolMgr.SyncForCompletedSteps(completedSteps, package));
+        }
+
+        private Coroutine _persistentToolSyncCoroutine;
 
         private void HandleStepStateChanged(StepStateChanged evt)
             => _mgr?.StepResponder?.HandleStepStateChanged(evt);
@@ -837,9 +884,6 @@ namespace OSE.UI.Root
 
 
         // ── Preview parts ──
-
-        private bool AdvanceSequentialTarget()
-            => _mgr?.PreviewManager?.AdvanceSequentialTarget() ?? true;
 
         private void RefreshToolPreviewIndicator()
             => _mgr?.ToolAction?.RefreshToolPreviewIndicator();
@@ -972,12 +1016,10 @@ namespace OSE.UI.Root
             bool stepStillActive = string.IsNullOrEmpty(placingForStepId)
                                    || string.Equals(placingForStepId, currentStepId, StringComparison.Ordinal);
 
-            if (_mgr?.PreviewManager != null && _mgr.PreviewManager.IsSequentialStep)
-            {
-                if (stepStillActive && AdvanceSequentialTarget())
-                    session.AssemblyController?.StepController?.CompleteStep(session.GetElapsedSeconds());
-            }
-            else if (stepStillActive && partController.AreActiveStepRequiredPartsPlaced())
+            // Cursor-driven steps complete themselves via NotifyTaskCompleted
+            // → StepTasksComplete → StepController.CompleteStep. This fallback
+            // only fires for legacy/no-cursor content.
+            if (stepStillActive && partController.AreActiveStepRequiredPartsPlaced())
             {
                 session.AssemblyController?.StepController?.CompleteStep(session.GetElapsedSeconds());
             }

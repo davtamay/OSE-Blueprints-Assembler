@@ -143,6 +143,22 @@ namespace OSE.Editor
 
         private void RefreshToolPreview(ref TargetEditState t)
         {
+            // Hard gate: never spawn the editor's authoring tool preview
+            // while the runtime is in Play mode. TTAW's window keeps
+            // running OnGUI during Play, and any of the many call sites
+            // that drive RefreshToolPreview (panel selection, layout
+            // redraw, target re-select, etc.) would re-instantiate the
+            // editor tool mesh into the runtime scene — the user sees
+            // the authoring tool floating alongside the runtime cursor
+            // tool. The preview is a pure edit-time aid; in Play, the
+            // runtime ToolCursorManager owns the only tool that should
+            // exist.
+            if (Application.isPlaying)
+            {
+                ClearToolPreview();
+                return;
+            }
+
             string diagTargetId = t.def != null ? t.def.id : "<null def>";
             LogRefreshDiag($"enter target='{diagTargetId}' showPreview={_showToolPreview} pkgId='{_pkgId ?? "<null>"}' toolPreviewGO={(_toolPreviewGO != null ? "live" : "null")} selectedIdx={_selectedIdx}");
 

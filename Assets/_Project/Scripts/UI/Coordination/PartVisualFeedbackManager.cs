@@ -884,9 +884,35 @@ namespace OSE.UI.Root
         }
 
         public void RestoreCompletedStepParts(StepDefinition[] steps)
+            => RestoreCompletedStepParts(steps, activeStepId: null);
+
+        public void RestoreCompletedStepParts(StepDefinition[] steps, string activeStepId)
         {
             var package = _ctx.Spawner?.CurrentPackage;
             if (package == null || steps == null) return;
+
+            // Resolve the active step's seq for poseTable lookups. When known,
+            // we use poseTable.TryGet(partId, activeSeq) instead of writing the
+            // part's raw assembledPosition/Rotation. The poseTable bake composes
+            // the group's holdAtEnd stepPose onto each member, so a part placed
+            // at step N (which authors no group transform) will land at the
+            // CORRECT rotated position when the active view is step N+M (which
+            // does have a group transform from a holdAtEnd cue at step N+1).
+            // Without this, MovePartToPlayPosition writes assembledRotation
+            // raw and the group rotation is silently dropped — only parts that
+            // restore never touches (those without a Place-family ownership)
+            // keep the group-rotated transform from the last animation cue.
+            // That's the bug where Y-Left carriage step 56 showed half_a /
+            // bearings / bolts at un-rotated assembledRotation while half_b
+            // (never placed by any Place step) stayed at the rotated pose.
+            int activeViewSeq = -1;
+            if (!string.IsNullOrEmpty(activeStepId)
+                && package.TryGetStep(activeStepId, out var activeStep)
+                && activeStep != null)
+            {
+                activeViewSeq = activeStep.sequenceIndex;
+            }
+            var poseTable = package.poseTable;
 
             // Parts are intentionally touched by multiple steps in sequence
             // (place → snug → torque → final tighten), and stepPoses are
@@ -915,7 +941,28 @@ namespace OSE.UI.Root
                         // leave per-part transforms alone during restore
                         // so holdAtEnd / group-level poses survive.
                         if (ShouldRepositionOnTaskComplete(step, partId))
-                            MovePartToStepPose(partId, step.id);
+                        {
+                            // Prefer the group-composed pose at the ACTIVE view
+                            // seq (handles holdAtEnd group rotations); fall
+                            // back to the per-step authored pose if poseTable
+                            // is absent or doesn't have the part at this seq.
+                            if (activeViewSeq >= 0 && poseTable != null
+                                && poseTable.TryGet(partId, activeViewSeq, out var resolved)
+                                && !resolved.IsHidden)
+                            {
+                                GameObject partGoR = _ctx.FindSpawnedPart(partId);
+                                if (partGoR != null)
+                                {
+                                    partGoR.transform.SetLocalPositionAndRotation(resolved.pos, resolved.rot);
+                                    if (resolved.scl.sqrMagnitude > 0.00001f)
+                                        partGoR.transform.localScale = resolved.scl;
+                                }
+                            }
+                            else
+                            {
+                                MovePartToStepPose(partId, step.id);
+                            }
+                        }
 
                         GameObject partGo = _ctx.FindSpawnedPart(partId);
                         if (partGo != null) partGo.SetActive(true);
@@ -959,6 +1006,17 @@ namespace OSE.UI.Root
         {
             if (string.IsNullOrEmpty(partId)) return;
 
+            // Group-compose path: ALWAYS prefer poseTable.TryGet at the active
+            // step's seq when available. The poseTable bake composes group
+            // hold-at-end stepPoses (authored on the SUBASSEMBLY's placement
+            // by SynthesizeGroupHoldAtEnd) onto each member via
+            // PoseResolver.ApplyGroupStepPose. Writing assembledRotation raw
+            // bypasses that composition and silently drops any active group
+            // rotation — every caller of this helper is now protected by
+            // default (no parameter threading required). See
+            // feedback_restore_must_use_posetable_for_group_compose.md.
+            if (TryWriteGroupComposedPose(partId)) return;
+
             PartPreviewPlacement pp = _ctx.Spawner.FindPartPlacement(partId);
             if (pp == null) return;
 
@@ -983,6 +1041,11 @@ namespace OSE.UI.Root
         {
             if (string.IsNullOrEmpty(partId)) return;
 
+            // Same group-compose protection as MovePartToPlayPosition. Reading
+            // a per-step authored stepPose entry directly bypasses the group
+            // transform — must go through poseTable when active step is known.
+            if (TryWriteGroupComposedPose(partId)) return;
+
             StepPoseEntry stepPose = _ctx.Spawner.FindPartStepPose(partId, completedStepId);
             if (stepPose != null)
             {
@@ -1001,6 +1064,46 @@ namespace OSE.UI.Root
             }
 
             MovePartToPlayPosition(partId);
+        }
+
+        /// <summary>
+        /// Single source of truth for "set this part to its end-of-current-view
+        /// pose with all per-step + group-hold-at-end transforms composed."
+        /// Returns true on success (transform written from poseTable) — caller
+        /// must NOT also write a raw assembledRotation, which would clobber.
+        /// Returns false when poseTable / active step / spawned GameObject are
+        /// not yet available; callers fall back to their raw-write path.
+        ///
+        /// <para>This is the structural safeguard against the class of bug
+        /// where a per-part write bypasses <see cref="PoseResolver.ApplyGroupStepPose"/>:
+        /// any future helper that needs to reposition a part during a
+        /// step rebuild should call this first. Don't add new raw-write paths
+        /// without this preamble.</para>
+        /// </summary>
+        private bool TryWriteGroupComposedPose(string partId)
+        {
+            var package = _ctx.Spawner?.CurrentPackage;
+            var poseTable = package?.poseTable;
+            if (poseTable == null) return false;
+
+            if (!OSE.App.ServiceRegistry.TryGet<OSE.Runtime.IMachineSessionController>(out var session)
+                || session == null) return false;
+            var stepCtrl = session.AssemblyController?.StepController;
+            if (stepCtrl == null || !stepCtrl.HasActiveStep) return false;
+            string activeStepId = stepCtrl.CurrentStepState.StepId;
+            if (string.IsNullOrEmpty(activeStepId)) return false;
+            if (!package.TryGetStep(activeStepId, out var activeStep) || activeStep == null) return false;
+
+            if (!poseTable.TryGet(partId, activeStep.sequenceIndex, out var resolved) || resolved.IsHidden)
+                return false;
+
+            GameObject partGo = _ctx.FindSpawnedPart(partId);
+            if (partGo == null) return false;
+
+            partGo.transform.SetLocalPositionAndRotation(resolved.pos, resolved.rot);
+            if (resolved.scl.sqrMagnitude > 0.00001f)
+                partGo.transform.localScale = resolved.scl;
+            return true;
         }
 
         /// <summary>
@@ -1026,6 +1129,17 @@ namespace OSE.UI.Root
                 ApplyPartVisualForState(partGo, partId, PartPlacementState.Completed);
                 _revealedPartIds.Add(partId);
             }
+
+            // Invalidate the one-shot hide guard. Once we've forced every
+            // part visible at its assembled pose, the previously-latched
+            // "hide done" state no longer reflects reality — the next
+            // step activation (e.g. after pressing Continue on the
+            // module-complete overlay to begin the next assembly) needs
+            // HideNonIntroducedParts to run again and hide future-step
+            // parts that ShowAll just forced active. Without this,
+            // the next assembly's first step opens with every part in
+            // the machine still visible.
+            _partsHiddenOnSpawn = false;
 
             OseLog.Info($"[ShowAllPartsAssembled] Placed {parts.Count} parts at assembled positions.");
         }

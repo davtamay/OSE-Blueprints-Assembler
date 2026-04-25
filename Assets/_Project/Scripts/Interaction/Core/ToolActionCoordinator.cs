@@ -264,6 +264,13 @@ namespace OSE.Interaction
             // Stop target sphere pulsing during preview
             _targetSphereAnimator?.Stop();
 
+            // Hide the clicked target marker NOW — the user has selected
+            // it, the action preview is starting. Without this, the marker
+            // stays visible during the entire approach + action + return
+            // animation (~1.5s+) and reappears for the gap before the
+            // next Refresh fires on step state change.
+            _partBridge?.HideToolActionTarget(ctx.TargetId);
+
             // Update instruction text for the preview mode
             UpdateInstructionForPreview(mode, _toolPreview?.GetActiveToolId());
 

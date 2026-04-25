@@ -150,6 +150,15 @@ namespace OSE.Editor
 
                 StopAllPreviews();
                 StopParticlePreview();
+                // Destroy the tool/wire preview meshes too — without this
+                // the editor-spawned tool GO (HideAndDontSave) carries
+                // into the Play scene and the user sees the authored
+                // tool floating in the workspace alongside the runtime
+                // cursor tool. OnDisable also clears these but isn't
+                // guaranteed to fire before Play starts (it fires when
+                // the window closes / domain reloads, not on Play entry).
+                ClearToolPreview();
+                ClearWirePreview();
                 return;
             }
 

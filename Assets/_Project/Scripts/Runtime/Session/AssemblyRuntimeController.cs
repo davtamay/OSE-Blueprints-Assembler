@@ -1,4 +1,5 @@
 using System;
+using OSE.App;
 using OSE.Content;
 using OSE.Core;
 
@@ -56,6 +57,16 @@ namespace OSE.Runtime
 
             ProgressionController.Initialize(assemblySteps);
 
+            // Recompute PartRuntimeController._partStates BEFORE publishing
+            // AssemblyStarted, mirroring what skip-step navigation does. This is
+            // load-bearing — without it, the runtime PartStates dict carries
+            // stale Completed entries from the prior assembly's
+            // ShowAllPartsAssembled, and downstream consumers re-activate
+            // future-step parts every frame. Centralised here so EVERY caller
+            // of BeginAssembly is protected; do not move back to the call site.
+            // See feedback_continue_must_recompute_parts_like_skip.md.
+            RecomputePartStatesForAssemblyStart(assemblySteps[0]);
+
             OseLog.Info($"[AssemblyRuntimeController] Beginning assembly '{assemblyId}' with {assemblySteps.Length} steps.");
             RuntimeEventBus.Publish(new AssemblyStarted(assemblyId));
 
@@ -64,6 +75,56 @@ namespace OSE.Runtime
             _preflightValidator.Validate(_package, firstStep);
             StepController.ActivateStep(firstStep, getElapsed());
             PublishStepActivated(firstStep);
+        }
+
+        /// <summary>
+        /// Recomputes the runtime <see cref="IPartRuntimeController"/>'s
+        /// <c>_partStates</c> dictionary so it matches "every step BEFORE the
+        /// new assembly's first step is Completed; the first step's parts are
+        /// Available; everything else is absent." This is the same call
+        /// SessionNavigationController makes for skip-step jumps, lifted into
+        /// BeginAssembly / RestoreAssemblyState so any future entry point that
+        /// starts an assembly automatically gets the right runtime state — no
+        /// caller-must-remember invariant.
+        /// </summary>
+        private void RecomputePartStatesForAssemblyStart(StepDefinition firstStep)
+        {
+            if (firstStep == null) return;
+            if (!ServiceRegistry.TryGet<IPartRuntimeController>(out var partController) || partController == null)
+                return;
+
+            StepDefinition[] orderedSteps = _package?.GetOrderedSteps();
+            if (orderedSteps == null || orderedSteps.Length == 0)
+            {
+                partController.RecomputePartsForNavigation(Array.Empty<StepDefinition>(), firstStep);
+                return;
+            }
+
+            int firstStepIdx = -1;
+            for (int i = 0; i < orderedSteps.Length; i++)
+            {
+                if (orderedSteps[i] != null &&
+                    string.Equals(orderedSteps[i].id, firstStep.id, StringComparison.Ordinal))
+                { firstStepIdx = i; break; }
+            }
+            if (firstStepIdx < 0)
+            {
+                partController.RecomputePartsForNavigation(Array.Empty<StepDefinition>(), firstStep);
+                return;
+            }
+
+            StepDefinition[] completedGlobalSteps;
+            if (firstStepIdx > 0)
+            {
+                completedGlobalSteps = new StepDefinition[firstStepIdx];
+                Array.Copy(orderedSteps, completedGlobalSteps, firstStepIdx);
+            }
+            else
+            {
+                completedGlobalSteps = Array.Empty<StepDefinition>();
+            }
+
+            partController.RecomputePartsForNavigation(completedGlobalSteps, firstStep);
         }
 
         public void RestoreAssemblyState(string assemblyId, int stepIndex, Func<float> getElapsed)
@@ -87,9 +148,6 @@ namespace OSE.Runtime
 
             ProgressionController.Initialize(assemblySteps);
 
-            OseLog.Info($"[AssemblyRuntimeController] Restoring assembly '{assemblyId}' at step index {stepIndex} of {assemblySteps.Length}.");
-            RuntimeEventBus.Publish(new AssemblyStarted(assemblyId));
-
             int clampedIndex = System.Math.Max(0, System.Math.Min(stepIndex, assemblySteps.Length - 1));
             if (clampedIndex > 0)
                 ProgressionController.SkipToIndex(clampedIndex);
@@ -100,6 +158,15 @@ namespace OSE.Runtime
                 CompleteAssembly();
                 return;
             }
+
+            // Same invariant as BeginAssembly: recompute runtime PartStates
+            // BEFORE publishing AssemblyStarted. Restore lands at an arbitrary
+            // step within the assembly (not necessarily index 0), so the active
+            // step here is `step`, not `assemblySteps[0]`.
+            RecomputePartStatesForAssemblyStart(step);
+
+            OseLog.Info($"[AssemblyRuntimeController] Restoring assembly '{assemblyId}' at step index {stepIndex} of {assemblySteps.Length}.");
+            RuntimeEventBus.Publish(new AssemblyStarted(assemblyId));
 
             _preflightValidator.Validate(_package, step);
             StepController.ActivateStep(step, getElapsed());

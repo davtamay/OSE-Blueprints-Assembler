@@ -21,13 +21,24 @@ namespace OSE.UI.Root
         // ── Tuning ──
         private const float ToolTargetPulseSpeed       = 3.6f;
         private const float ToolTargetScalePulse       = 0.12f;
-        private const float ToolTargetFadeStartDistance = 3.0f;
-        private const float ToolTargetFadeEndDistance   = 0.8f;
+        // Distance fade — full alpha when surveying (>= ~0.8m), softer
+        // as the user zooms in past the framing distance so the surface
+        // shows through the marker. Floored at MinAlphaUpClose so the
+        // marker is reliably visible (sphere is fuller than a ring, so
+        // we keep more opacity at close than for a hollow shape).
+        private const float ToolTargetFadeStartDistance = 0.8f;
+        private const float ToolTargetFadeEndDistance   = 0.3f;
+        private const float MinAlphaUpClose             = 0.40f;
 
         // ── Camera-adaptive scale ──
-        private const float DistanceClose          = 0.3f;   // at this distance → actual size
-        private const float DistanceFar            = 2.0f;   // at this distance → max scale-up
-        private const float DistantScaleMultiplier = 6f;     // how much bigger when far away
+        // Sphere shrinks at close so it doesn't dominate the workpiece,
+        // grows at far so the silhouette is readable. CloseScaleMultiplier
+        // floored at 0.30 so the sphere doesn't become microscopic and
+        // miss-able when zoomed in.
+        private const float DistanceClose          = 0.3f;
+        private const float DistanceFar            = 2.0f;
+        private const float CloseScaleMultiplier   = 0.30f;
+        private const float DistantScaleMultiplier = 1.5f;
 
         // ── Emission glow ──
         private static readonly Color EmissionLow  = new Color(0f, 0.6f, 0.9f, 1f) * 0.4f;
@@ -99,7 +110,10 @@ namespace OSE.UI.Root
                     if (dist < ToolTargetFadeStartDistance)
                     {
                         float t = Mathf.InverseLerp(ToolTargetFadeEndDistance, ToolTargetFadeStartDistance, dist);
-                        targetColor.a *= t;
+                        // Floor the fade so the marker stays visible when
+                        // the camera is close. Pure t was fading to 0 at
+                        // ≤ 0.8 m which is exactly the framing distance.
+                        targetColor.a *= Mathf.Lerp(MinAlphaUpClose, 1f, t);
                     }
                 }
 
@@ -110,27 +124,30 @@ namespace OSE.UI.Root
                     ? info.BaseScale
                     : target.transform.localScale;
 
-                // Camera-adaptive scale: large when far, shrinks to actual size when close.
-                // At DistanceFar or beyond → DistantScaleMultiplier × base size.
-                // At DistanceClose or nearer → 1× base size (actual asset size).
-                float distScale = 1f;
+                // Camera-adaptive scale: roughly proportional to distance
+                // so the marker covers a near-constant fraction of screen
+                // at every zoom level. Hard-shrink at close (don't cover
+                // the workpiece), grow gently at far (silhouette readable).
+                float distScale = CloseScaleMultiplier;
                 if (cam != null)
                 {
                     float dist = Vector3.Distance(cam.transform.position, target.transform.position);
-                    float t = Mathf.InverseLerp(DistanceClose, DistanceFar, dist);
-                    distScale = Mathf.Lerp(1f, DistantScaleMultiplier, t);
+                    distScale = Mathf.Clamp(CloseScaleMultiplier + dist * 0.5f,
+                                            CloseScaleMultiplier,
+                                            DistantScaleMultiplier);
                 }
 
                 float scaleFactor = distScale * (1f + (ToolTargetScalePulse * pulse));
                 target.transform.localScale = baseScale * scaleFactor;
 
-                // Height pulse proportional to current marker size
-                float markerSize = Mathf.Max(baseScale.x, Mathf.Max(baseScale.y, baseScale.z)) * distScale;
-                float heightPulse = Mathf.Max(markerSize * 0.3f, 0.002f);
+                // Position pulse REMOVED — the marker should sit STILL at
+                // the click point. Bobbing up and down implies the click
+                // target itself moves, which is misleading. Color + scale
+                // pulse alone are enough to capture attention.
                 Vector3 baseLocalPosition = info != null
                     ? info.BaseLocalPosition
                     : target.transform.localPosition;
-                target.transform.localPosition = baseLocalPosition + (Vector3.up * (heightPulse * (pulse - 0.5f)));
+                target.transform.localPosition = baseLocalPosition;
 
                 // Emission glow so small targets remain visible
                 MaterialHelper.SetEmission(target, Color.Lerp(EmissionLow, EmissionHigh, pulse));
@@ -194,13 +211,12 @@ namespace OSE.UI.Root
         {
             anchorWorldPos = null;
 
-            if (string.IsNullOrEmpty(activeProfile))
-                return;
-
-            if (!ToolProfileRegistry.Get(activeProfile).SpawnClickEffect)
-                return;
-
-            bool isMeasure = activeProfileEnum == StepProfile.Measure;
+            // Whether the profile produces a click-effect visual (ring
+            // pulse + completion particle burst). Some profiles author
+            // their own visuals via cues, so they opt out here.
+            bool spawnVisual = !string.IsNullOrEmpty(activeProfile)
+                            && ToolProfileRegistry.Get(activeProfile).SpawnClickEffect;
+            bool isMeasure   = activeProfileEnum == StepProfile.Measure;
 
             for (int i = 0; i < _spawnedTargets.Count; i++)
             {
@@ -212,10 +228,13 @@ namespace OSE.UI.Root
 
                 Vector3 markerWorldPos = marker.transform.position;
 
-                ToolActionClickEffect.Spawn(markerWorldPos, marker.transform.localScale,
-                    completionEffectColor, completionPulseScale);
-                CompletionParticleEffect.TrySpawn(completionParticleId,
-                    markerWorldPos, marker.transform.localScale);
+                if (spawnVisual)
+                {
+                    ToolActionClickEffect.Spawn(markerWorldPos, marker.transform.localScale,
+                        completionEffectColor, completionPulseScale);
+                    CompletionParticleEffect.TrySpawn(completionParticleId,
+                        markerWorldPos, marker.transform.localScale);
+                }
 
                 if (isMeasure && !string.IsNullOrEmpty(measureStartAnchorTargetId) &&
                     string.Equals(targetId, measureStartAnchorTargetId, StringComparison.OrdinalIgnoreCase))
@@ -223,6 +242,49 @@ namespace OSE.UI.Root
                     anchorWorldPos = markerWorldPos;
                 }
 
+                // Belt-and-suspenders hide for the no-preview path — when
+                // the user's click bypasses TryEnterToolActionPreview
+                // (e.g. EnableToolActionPreview=false), the click-time
+                // HideToolActionTarget call doesn't fire and this is the
+                // only hide point. SetActive(false) + remove from the
+                // tracked list so UpdateVisuals stops touching the marker;
+                // CurrentActionTarget hint lets AnimationAnchorResolver
+                // find this marker over older inactive siblings.
+                ToolActionTargetInfo.CurrentActionTarget = info;
+                marker.SetActive(false);
+                _spawnedTargets.RemoveAt(i);
+                if (_hoveredTarget == marker) _hoveredTarget = null;
+                if (_readyTarget != null && _readyTarget.gameObject == marker) _readyTarget = null;
+
+                return;
+            }
+        }
+
+        /// <summary>
+        /// Hide the marker for <paramref name="targetId"/> immediately by
+        /// deactivating its GameObject and removing it from the active
+        /// tracking list. The GameObject stays alive in the scene so
+        /// <see cref="AnimationAnchorResolver"/> (which now uses
+        /// <c>FindObjectsInactive.Include</c>) can still resolve its
+        /// position for in-flight cue anchors. Renderer-disable was
+        /// insufficient because the per-frame UpdateVisuals loop kept
+        /// rewriting material colour + scale, which reset visibility.
+        /// </summary>
+        public void HideToolActionTarget(string targetId)
+        {
+            for (int i = 0; i < _spawnedTargets.Count; i++)
+            {
+                GameObject marker = _spawnedTargets[i];
+                if (marker == null) continue;
+                var info = marker.GetComponent<ToolActionTargetInfo>();
+                if (info == null || !string.Equals(info.TargetId, targetId, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                ToolActionTargetInfo.CurrentActionTarget = info;
+                marker.SetActive(false);
+                _spawnedTargets.RemoveAt(i);
+                if (_hoveredTarget == marker) _hoveredTarget = null;
+                if (_readyTarget != null && _readyTarget.gameObject == marker) _readyTarget = null;
                 return;
             }
         }

@@ -328,6 +328,14 @@ namespace OSE.Interaction
             OseLog.Info($"[Interaction] HandleStepActivated '{evt.StepId}' bootstrapped={_bootstrapped}");
             if (!_bootstrapped) return;
 
+            // Snap any in-flight preview back to the cursor BEFORE the new
+            // step's setup runs. Without this, the prior weld's tool stays
+            // detached in world space if the prior step auto-completed
+            // during the preview's Return animation (~0.35s) and
+            // ToolCursorManager's idempotent RefreshAsync sees the same
+            // tool id for the new step and short-circuits without a swap.
+            _previewController?.ForceFinalize();
+
             // Remove persistent tools (clamps) if the new step no longer needs them
             _toolAction?.CleanUpPersistentToolsForStep(evt.StepId);
 
