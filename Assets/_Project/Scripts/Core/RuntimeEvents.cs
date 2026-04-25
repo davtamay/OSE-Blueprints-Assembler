@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 
 namespace OSE.Core
 {
@@ -55,6 +56,17 @@ namespace OSE.Core
             Listener<T>.Handler?.Invoke(evt);
         }
 
+        /// <summary>
+        /// Resets all handlers. <b>Test-only.</b> Production code must Unsubscribe
+        /// in symmetric pairs with Subscribe — never bulk-clear, or in-flight
+        /// systems will silently lose their listeners.
+        /// </summary>
+        /// <remarks>
+        /// Hidden from IntelliSense (<see cref="EditorBrowsableAttribute"/>) so it
+        /// does not surface in autocompletion outside test code. Still callable
+        /// for the test fixtures that legitimately depend on it.
+        /// </remarks>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void Clear()
         {
             // Reset all handlers. Keep _clearActions and IsTracked so re-subscribing

@@ -38,5 +38,18 @@ namespace OSE.UI.Root
                 rb.useGravity  = false;
             }
         }
+
+        public void StripInteractables(GameObject target)
+        {
+            if (target == null) return;
+
+            // Walk children too — cloned parts often hold interactables on
+            // sub-renderers. Object.Destroy is null-safe, so we don't guard.
+            foreach (var interactable in target
+                         .GetComponentsInChildren<UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable>(includeInactive: true))
+            {
+                Object.Destroy(interactable);
+            }
+        }
     }
 }

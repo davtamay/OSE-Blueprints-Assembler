@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
+using OSE.App;
 using OSE.Content;
 using OSE.Content.Loading;
 using OSE.Core;
 using OSE.Runtime.Preview;
 using UnityEngine;
-using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 namespace OSE.UI.Root
 {
@@ -222,8 +222,7 @@ namespace OSE.UI.Root
 
                 foreach (var col in ghost.GetComponentsInChildren<Collider>(true))
                     SafeDestroy(col);
-                foreach (var interactable in ghost.GetComponentsInChildren<XRBaseInteractable>(true))
-                    SafeDestroy(interactable);
+                StripXRInteractables(ghost);
 
                 MaterialHelper.ApplyPreviewMaterial(ghost);
                 _ghosts.Add(ghost);
@@ -357,8 +356,7 @@ namespace OSE.UI.Root
 
                 foreach (var col in childGhost.GetComponentsInChildren<Collider>(true))
                     SafeDestroy(col);
-                foreach (var interactable in childGhost.GetComponentsInChildren<XRBaseInteractable>(true))
-                    SafeDestroy(interactable);
+                StripXRInteractables(childGhost);
             }
 
             if (isAxisFitPreview && fitPreviewChildren != null && fitPreviewChildren.Count > 0)
@@ -430,6 +428,18 @@ namespace OSE.UI.Root
             if (target == null) return;
             if (Application.isPlaying) UnityEngine.Object.Destroy(target);
             else UnityEngine.Object.DestroyImmediate(target);
+        }
+
+        /// <summary>
+        /// Strips XR interactable components from <paramref name="ghost"/> via the
+        /// <see cref="IXRGrabSetup"/> abstraction (ADR 005). Resolved through
+        /// ServiceRegistry so this file does not import XRI types directly.
+        /// </summary>
+        private static void StripXRInteractables(GameObject ghost)
+        {
+            if (ghost == null) return;
+            if (ServiceRegistry.TryGet<IXRGrabSetup>(out var xrGrab))
+                xrGrab.StripInteractables(ghost);
         }
 
         private static StepPoseEntry FindStepPoseInline(PartPreviewPlacement pp, string stepId)

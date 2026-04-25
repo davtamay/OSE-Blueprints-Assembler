@@ -32,5 +32,12 @@ namespace OSE.UI.Root
         /// No-op if no interactable component is present.
         /// </summary>
         void SetGrabEnabled(GameObject target, bool enabled);
+
+        /// <summary>
+        /// Strips every XR interactable component from <paramref name="target"/>
+        /// and its children. Used when a part GameObject is cloned to produce a
+        /// non-interactive ghost. No-op if no XR backend is registered.
+        /// </summary>
+        void StripInteractables(GameObject target);
     }
 }

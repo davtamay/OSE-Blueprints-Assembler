@@ -14,9 +14,24 @@ namespace OSE.Runtime
     public sealed class StepExecutionRouter
     {
         private readonly Dictionary<StepFamily, IStepFamilyHandler> _handlers = new();
+        private readonly HashSet<StepFamily> _missingHandlerWarned = new();
 
         public void Register(StepFamily family, IStepFamilyHandler handler)
         {
+            if (handler == null)
+            {
+                OseLog.Error(OseErrorCode.StepFsmInvalidTransition,
+                    $"[StepRouter] Refusing to register a null handler for {family}.");
+                return;
+            }
+
+            if (_handlers.TryGetValue(family, out var existing))
+            {
+                OseLog.Warn(OseErrorCode.StepFsmInvalidTransition,
+                    $"[StepRouter] Replacing handler for {family}: {existing.GetType().Name} → {handler.GetType().Name}. " +
+                    "Duplicate registration usually masks a configuration bug.");
+            }
+
             _handlers[family] = handler;
             OseLog.Info($"[StepRouter] Registered handler for {family}: {handler.GetType().Name}");
         }
@@ -30,10 +45,29 @@ namespace OSE.Runtime
             return handler;
         }
 
+        /// <summary>
+        /// Logs once per family when a step activates without a registered handler so a
+        /// misconfigured family surfaces in the console instead of silently no-opping.
+        /// Caller fallback semantics are unchanged — every routing method still returns
+        /// <c>false</c>/no-op when the lookup misses.
+        /// </summary>
+        private void WarnMissingHandlerOnce(StepFamily family, string callSite)
+        {
+            if (_missingHandlerWarned.Add(family))
+            {
+                OseLog.Warn(OseErrorCode.StepFsmInvalidTransition,
+                    $"[StepRouter] No handler registered for {family} (first seen via {callSite}). " +
+                    "Caller will fall back to inline logic. Register one in Bootstrap if this is unexpected.");
+            }
+        }
+
         public void OnStepActivated(in StepHandlerContext context)
         {
-            if (_handlers.TryGetValue(context.Step.ResolvedFamily, out var handler))
+            var family = context.Step.ResolvedFamily;
+            if (_handlers.TryGetValue(family, out var handler))
                 handler.OnStepActivated(in context);
+            else
+                WarnMissingHandlerOnce(family, nameof(OnStepActivated));
         }
 
         /// <summary>

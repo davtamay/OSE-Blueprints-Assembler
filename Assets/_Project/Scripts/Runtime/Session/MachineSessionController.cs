@@ -128,6 +128,12 @@ namespace OSE.Runtime
                 return false;
             }
 
+            // Cancellation may have fired between the loader returning and us starting
+            // wire-up. Bail before allocating controllers / publishing events so a
+            // canceled load never leaves PartialAssembly state behind.
+            if (BailIfCanceled(cancellationToken, "after package load"))
+                return false;
+
             _package = result.Package;
             _sessionState.MachineVersion = _package.packageVersion ?? string.Empty;
             _sessionState.StepStructureHash = _package.StepStructureHash;
@@ -159,6 +165,18 @@ namespace OSE.Runtime
                 _toolController.Initialize(_package);
             }
 
+            // Last cancellation gate before we publish externally observable
+            // events (PackageReady, AssemblyStarted via BeginCurrentAssembly).
+            // Tear down only the partially-initialised controllers — do NOT
+            // route through EndSession because that flushes a half-written
+            // session to persistence and would overwrite a real saved session.
+            if (cancellationToken.IsCancellationRequested)
+            {
+                OseLog.Info("[MachineSessionController] Session start canceled before wire-up — tearing down partial state.");
+                TearDownPartialSession();
+                return false;
+            }
+
             // Subscribe to step events to keep session state current
             RuntimeEventBus.Subscribe<StepStateChanged>(HandleStepStateChanged);
             RuntimeEventBus.Subscribe<HintRequested>(HandleHintRequested);
@@ -185,6 +203,61 @@ namespace OSE.Runtime
             {
                 _isLoading = false;
             }
+        }
+
+        /// <summary>
+        /// Returns true and sets the session to <see cref="SessionLifecycle.Error"/>
+        /// when the caller's token has been canceled. The caller short-circuits
+        /// before any externally observable side-effects (events, controller
+        /// allocation) take place. Logged with the call-site phase so a canceled
+        /// load is greppable.
+        /// </summary>
+        private bool BailIfCanceled(CancellationToken cancellationToken, string phase)
+        {
+            if (!cancellationToken.IsCancellationRequested)
+                return false;
+
+            OseLog.Info($"[MachineSessionController] Session start canceled ({phase}).");
+            SetLifecycle(SessionLifecycle.Error);
+            return true;
+        }
+
+        /// <summary>
+        /// Surgical cleanup for cancellation that lands AFTER child controllers
+        /// were allocated but BEFORE event subscriptions, persistence, or the
+        /// first AssemblyStarted publish. Disposes the controllers we created,
+        /// detaches the one event handler we attached, and clears tag/state —
+        /// without persisting a half-initialised session. <see cref="EndSession"/>
+        /// is the path for fully-active sessions; this path skips its
+        /// FlushPersistenceSnapshot side-effect.
+        /// </summary>
+        private void TearDownPartialSession()
+        {
+            if (_partController != null)
+            {
+                _partController.Dispose();
+                _partController = null;
+            }
+
+            if (_toolController != null)
+            {
+                _toolController.Dispose();
+                _toolController = null;
+            }
+
+            if (_assemblyController != null)
+            {
+                _assemblyController.OnAssemblyCompleted -= HandleAssemblyCompleted;
+                _assemblyController.Dispose();
+                _assemblyController = null;
+            }
+
+            OseLog.SetSessionTag(null);
+            SetLifecycle(SessionLifecycle.Error);
+
+            _package = null;
+            _assemblyOrder = null;
+            _sessionState = null;
         }
 
         private static bool ResolveChallengeActive(SessionMode mode, MachinePackageDefinition package)
