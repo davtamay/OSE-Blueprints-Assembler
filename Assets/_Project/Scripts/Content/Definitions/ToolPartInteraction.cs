@@ -56,11 +56,16 @@ namespace OSE.Content
         public float rotationDegPerUnit;
 
         /// <summary>
-        /// When true (default), the tool transform tracks the part's world-space
-        /// displacement each frame. Set false for effects like <c>clamp_hold</c>
-        /// where the tool should stay put even as the part is adjusted.
+        /// When true, the tool and part move together — both at runtime
+        /// (the tool transform tracks the part's world-space displacement
+        /// each frame during the action animation) and at authoring time
+        /// (dragging the target gizmo in TTAW also moves
+        /// <see cref="TaskOrderEntry.endTransform"/> by the same delta).
+        /// Default false — the author opts in deliberately when the bolt's
+        /// end pose should follow the target. Existing JSON content with
+        /// <c>"followPart": true</c> explicit keeps its prior behavior.
         /// </summary>
-        public bool followPart = true;
+        public bool followPart;
 
         /// <summary>
         /// Easing applied to the normalized progress before motion is computed.

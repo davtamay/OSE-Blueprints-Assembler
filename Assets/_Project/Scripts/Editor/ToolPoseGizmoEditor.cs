@@ -85,7 +85,12 @@ namespace OSE.Editor
         private Vector3 _cursorLocal, _cursorRot;          // model-local points (follow tool)
         private string _handedness = "right", _pose = "power_grip";
         private bool _dirty;
-        private bool _showLabels = true;
+        private bool _showLabels  = true;
+        // When false, the colored sphere markers (HAND/TIP/Cursor Offset/Cursor
+        // Preview) are hidden so the author can read the underlying mesh
+        // precisely while dragging position handles. Position/rotation handles
+        // remain — they're the editing affordance.
+        private bool _showMarkers = true;
 
         // Undo/redo for pose edits (in-editor, before writing to disk)
         private struct PoseSnapshot
@@ -446,7 +451,8 @@ namespace OSE.Editor
 
             // ── Hand marker (blue sphere — fixed, never moves) ──
             Handles.color = ColGrip;
-            Handles.SphereHandleCap(0, handW, Quaternion.identity, baseSize * 2.5f, EventType.Repaint);
+            if (_showMarkers)
+                Handles.SphereHandleCap(0, handW, Quaternion.identity, baseSize * 2.5f, EventType.Repaint);
             if (_showLabels)
             {
                 var s = new GUIStyle(EditorStyles.boldLabel) { normal = { textColor = ColGrip } };
@@ -493,7 +499,8 @@ namespace OSE.Editor
                 // ── Tip handle (red, draggable on tool) ──
                 Vector3 tipW = root.TransformPoint(_tip);
                 Handles.color = ColTip;
-                Handles.SphereHandleCap(0, tipW, Quaternion.identity, baseSize * 2.5f, EventType.Repaint);
+                if (_showMarkers)
+                    Handles.SphereHandleCap(0, tipW, Quaternion.identity, baseSize * 2.5f, EventType.Repaint);
                 EditorGUI.BeginChangeCheck();
                 Vector3 newTip = Handles.PositionHandle(tipW, root.rotation);
                 if (EditorGUI.EndChangeCheck())
@@ -531,7 +538,8 @@ namespace OSE.Editor
                 // ── Cursor offset handle (yellow, model-local like tip) ──
                 Vector3 cursorW = root.TransformPoint(_cursorLocal);
                 Handles.color = ColCursor;
-                Handles.SphereHandleCap(0, cursorW, Quaternion.identity, baseSize * 2f, EventType.Repaint);
+                if (_showMarkers)
+                    Handles.SphereHandleCap(0, cursorW, Quaternion.identity, baseSize * 2f, EventType.Repaint);
                 EditorGUI.BeginChangeCheck();
                 Vector3 newCursor = Handles.PositionHandle(cursorW, root.rotation);
                 if (EditorGUI.EndChangeCheck())
@@ -560,7 +568,8 @@ namespace OSE.Editor
                 Vector3 runtimeCursorW = root.position + previewRot * (_cursorLocal * _scale);
                 Color colPreview = new Color(1f, 0.5f, 0f, 0.9f);
                 Handles.color = colPreview;
-                Handles.SphereHandleCap(0, runtimeCursorW, Quaternion.identity, baseSize * 2f, EventType.Repaint);
+                if (_showMarkers)
+                    Handles.SphereHandleCap(0, runtimeCursorW, Quaternion.identity, baseSize * 2f, EventType.Repaint);
                 Handles.DrawDottedLine(cursorW, runtimeCursorW, 2f);
                 // Orientation axes at Cursor Preview — visualizes Cursor Rotation
                 float axLen = baseSize * 4f;
@@ -647,7 +656,8 @@ namespace OSE.Editor
                 Vector3 tipWorld = _model.transform.TransformPoint(_tip);
                 float baseSize = HandleUtility.GetHandleSize(tipWorld) * 0.06f;
                 Handles.color = ColTip;
-                Handles.SphereHandleCap(0, tipWorld, Quaternion.identity, baseSize * 2f, EventType.Repaint);
+                if (_showMarkers)
+                    Handles.SphereHandleCap(0, tipWorld, Quaternion.identity, baseSize * 2f, EventType.Repaint);
                 if (_showLabels)
                 {
                     var st = new GUIStyle(EditorStyles.boldLabel) { normal = { textColor = ColTip } };
@@ -661,7 +671,8 @@ namespace OSE.Editor
             Vector3 cursorAnchorW = _model.transform.TransformPoint(_cursorLocal);
             float dotSize = HandleUtility.GetHandleSize(cursorAnchorW) * 0.04f;
             Handles.color = ColCursor;
-            Handles.SphereHandleCap(0, cursorAnchorW, Quaternion.identity, dotSize, EventType.Repaint);
+            if (_showMarkers)
+                Handles.SphereHandleCap(0, cursorAnchorW, Quaternion.identity, dotSize, EventType.Repaint);
             if (_showLabels)
             {
                 var ls = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = ColCursor } };
@@ -689,7 +700,8 @@ namespace OSE.Editor
             Vector3 gw = root.TransformPoint(grip);
             Quaternion gripRotW = root.rotation * Quaternion.Euler(gripRot);
             Handles.color = ColGrip;
-            Handles.SphereHandleCap(0, gw, Quaternion.identity, sz, EventType.Repaint);
+            if (_showMarkers)
+                Handles.SphereHandleCap(0, gw, Quaternion.identity, sz, EventType.Repaint);
 
             // Grip orientation frame
             float axLen = sz * 3f;
@@ -706,7 +718,8 @@ namespace OSE.Editor
 
             Vector3 tw = root.TransformPoint(_tip);
             Handles.color = ColTip;
-            Handles.SphereHandleCap(0, tw, Quaternion.identity, sz, EventType.Repaint);
+            if (_showMarkers)
+                Handles.SphereHandleCap(0, tw, Quaternion.identity, sz, EventType.Repaint);
             if (_showLabels) EmbLabel(tw, "TIP", ColTip);
 
             Handles.color = ColLine;
@@ -726,7 +739,8 @@ namespace OSE.Editor
             // Cursor offset marker (yellow sphere + dashed line from hand)
             Vector3 cw = root.TransformPoint(_cursorLocal);
             Handles.color = ColCursor;
-            Handles.SphereHandleCap(0, cw, Quaternion.identity, sz, EventType.Repaint);
+            if (_showMarkers)
+                Handles.SphereHandleCap(0, cw, Quaternion.identity, sz, EventType.Repaint);
             Handles.color = ColCursor * 0.7f;
             Handles.DrawDottedLine(gw, cw, 2f);
             if (_showLabels) EmbLabel(cw, "Cursor Offset", ColCursor);
@@ -739,7 +753,8 @@ namespace OSE.Editor
             Vector3 rcw = root.position + previewRot * (_cursorLocal * _scale);
             Color colPreview = new(1f, 0.5f, 0f, 0.9f);
             Handles.color = colPreview;
-            Handles.SphereHandleCap(0, rcw, Quaternion.identity, sz, EventType.Repaint);
+            if (_showMarkers)
+                Handles.SphereHandleCap(0, rcw, Quaternion.identity, sz, EventType.Repaint);
             Handles.DrawDottedLine(cw, rcw, 2f);
             axLen = sz * 3f;
             Handles.color = new Color(1f, 0.3f, 0.3f, 0.8f);
@@ -859,7 +874,10 @@ namespace OSE.Editor
             if (GUILayout.Button("Redo ►", EditorStyles.miniButtonRight, GUILayout.Width(60))) RedoPose();
             EditorGUI.EndDisabledGroup();
             GUILayout.FlexibleSpace();
-            _showLabels = GUILayout.Toggle(_showLabels, "Labels", EditorStyles.miniButton, GUILayout.Width(50));
+            _showMarkers = GUILayout.Toggle(_showMarkers, new GUIContent("Markers",
+                "Hide the colored sphere markers (HAND/TIP/Cursor) so the underlying mesh is visible while you drag handles."),
+                EditorStyles.miniButton, GUILayout.Width(64));
+            _showLabels  = GUILayout.Toggle(_showLabels, "Labels", EditorStyles.miniButton, GUILayout.Width(50));
             EditorGUILayout.EndHorizontal();
 
             EditorGUI.BeginChangeCheck();

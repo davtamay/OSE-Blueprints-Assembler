@@ -43,6 +43,7 @@ namespace OSE.Interaction
         private bool _instantPlacement;
         private IPartEffect _partEffect;
         private Vector3 _partEffectOffset;
+        private bool _followPart;
         private float _startScale, _targetScale;
         private ToolActionVisualGuide _visualGuide;
 
@@ -105,6 +106,7 @@ namespace OSE.Interaction
             _instantPlacement = ctx.InstantPlacement;
             _partEffect = ctx.PartEffect;
             _partEffectOffset = Vector3.zero;
+            _followPart = ctx.FollowPart;
 
             // Snapshot current preview state and detach from camera
             _originalParent = toolPreview.transform.parent;
@@ -359,8 +361,12 @@ namespace OSE.Interaction
             // writer when part-follow is active.
             if (_partEffect != null && _toolPreview != null)
             {
+                // Drive the part transform every frame regardless of follow
+                // mode — the part should still animate to its end pose even
+                // when the tool stays put. Only the *tool's* world position
+                // accumulates the part-displacement when followPart is true.
                 Vector3 delta = _partEffect.Apply(progress);
-                _partEffectOffset += delta;
+                if (_followPart) _partEffectOffset += delta;
                 Vector3 overlay = _preview?.ComputeOverlayOffset(progress) ?? Vector3.zero;
                 _toolPreview.transform.position = _workingPos + _partEffectOffset + overlay;
             }

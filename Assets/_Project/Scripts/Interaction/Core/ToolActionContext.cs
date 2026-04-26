@@ -51,6 +51,16 @@ namespace OSE.Interaction
         public IPartEffect PartEffect;
 
         /// <summary>
+        /// When true (default), the tool preview's world position tracks the
+        /// part's world-space displacement returned each frame by
+        /// <see cref="IPartEffect.Apply"/>. Source: <c>ToolPartInteraction.followPart</c>.
+        /// Set false for "tool stationary at the working pose, part moves
+        /// alone" interactions (e.g. heat gun warming a part — drill never
+        /// uses this; bolt-driven plunge always uses true).
+        /// </summary>
+        public bool FollowPart;
+
+        /// <summary>
         /// When true, <see cref="ToolActionRotation"/> is already a direct mesh rotation —
         /// no <c>Inverse(gripRotation)</c> correction should be applied.
         /// False (legacy) means <c>ToolActionRotation</c> is an approach vector and the

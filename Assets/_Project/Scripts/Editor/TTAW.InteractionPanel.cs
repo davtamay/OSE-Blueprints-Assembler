@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using OSE.Content;
+using OSE.Core;
 using OSE.Interaction;
 using UnityEditor;
 using UnityEngine;
@@ -383,64 +384,56 @@ namespace OSE.Editor
                 }
             }
 
-            bool hasInline = taskEntry.endTransform != null;
-
-            // Header row — status + live-scene capture.
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField(
-                hasInline ? "🔩 End Transform (inline):" : "🔩 End Transform:",
-                EditorStyles.boldLabel);
-            GUILayout.FlexibleSpace();
-            if (hasInline && GUILayout.Button(
-                new GUIContent("Clear", "Clear the inline transform. Runtime falls back to assembledPosition."),
-                GUILayout.Width(56)))
-            {
-                taskEntry.endTransform = null;
-                _dirtyStepIds.Add(step.id);
-                Repaint();
-            }
-            if (GUILayout.Button(
-                new GUIContent("From scene",
-                    "Capture the part's live scene transform into this task's inline end-transform."),
-                GUILayout.Width(kBtnW)))
-            {
-                CaptureLiveTransformIntoTaskEndTransform(step, taskEntry, partId);
-            }
-            if (!hasInline && GUILayout.Button(
-                new GUIContent("From assembled",
-                    "Initialize the inline transform from the part's assembledPosition."),
-                GUILayout.Width(kBtnWAssembled)))
+            // Auto-seed the end transform from assembledPosition on first
+            // selection so the pill row + scene gizmo always have a pose
+            // anchor. Authors then drag the gizmo (or edit numeric fields
+            // below) to refine. Replaces the old Clear / From scene / From
+            // assembled buttons — the gizmo is the primary authoring path.
+            //
+            // Skip when a legacy toPose is set; the migration banner above
+            // owns that flow (one-click migrate button) so authored intent
+            // isn't silently overwritten with assembled.
+            if (taskEntry.endTransform == null && string.IsNullOrEmpty(legacyToPose))
             {
                 CaptureAssembledIntoTaskEndTransform(step, taskEntry, partId);
             }
-            EditorGUILayout.EndHorizontal();
 
-            if (!hasInline)
+            // Legacy content with no inline pose yet — pill / gizmo can't run
+            // until the author migrates. Bail with the banner already shown.
+            if (taskEntry.endTransform == null) return;
+
+            EditorGUILayout.LabelField("🔩 End Transform:", EditorStyles.boldLabel);
+
+            // Phase A: pose pill row (Start | End) for tool×part interactions.
+            // Translucent ghost overlays of part + tool render at the play-end
+            // pose; the End pill enables a SceneView gizmo
+            // (DrawEndPoseHandleForActiveInteractionTask) that authors
+            // endTransform via drag. Pill renders only for interaction
+            // archetypes that drive part motion (lerp / thread_in).
+            bool interactionPillVisible = taskAction.interaction != null
+                && (taskAction.interaction.archetype == "lerp"
+                 || taskAction.interaction.archetype == "thread_in");
+            if (interactionPillVisible)
             {
-                EditorGUILayout.HelpBox(
-                    "No inline end-transform set. On task completion the runtime snaps the part to its assembled pose " +
-                    "(unless a legacy toPose token resolves otherwise). Use the buttons above to author one.",
-                    MessageType.None);
+                DrawInteractionPosePillRow(step, taskAction, taskEntry);
+                EditorGUILayout.Space(2);
             }
+
+            // Start pill on a tool×part task: show read-only inherited start
+            // values (chain → previous step's endTransform). Editing routes
+            // through the banner's "→ Edit source" jump button so the chain
+            // stays the single source of truth. End pill (or non-interaction
+            // tasks) keeps the editable endTransform fields.
+            if (interactionPillVisible && IsActivePosePillStart())
+                DrawInheritedStartReadOnly(step, taskAction, taskEntry);
             else
-            {
                 DrawInlineTransformEditor(step, taskEntry.endTransform);
-            }
 
             // Motion readout — plain English, always shows "(inherited)" on the left.
-            string endLabel = hasInline ? "inline transform" : "Assembled";
             EditorGUILayout.LabelField(
-                $"ℹ  Motion: (inherited from previous task)  →  {endLabel}",
+                "ℹ  Motion: (inherited from previous task)  →  inline transform",
                 EditorStyles.miniLabel);
 
-            if (GUILayout.Button(
-                new GUIContent("Edit the Part's own Start / Assembled poses →",
-                    "Jumps the task-sequence selection to the Part task for this part so you can " +
-                    "author its intrinsic Start and Assembled poses."),
-                GUILayout.Height(20)))
-            {
-                JumpSelectionToPart(partId);
-            }
         }
 
         /// <summary>
@@ -699,7 +692,152 @@ namespace OSE.Editor
                     Repaint();
                 });
             }
+
+            // "Set from Selection" — short-circuit the dropdown when the
+            // author already has the part GameObject selected in the
+            // Hierarchy. Walks up parents (ten levels max) until it finds
+            // one whose name matches a known partId in _pkg.GetParts().
+            // Mirrors the precedent in TTAW.Subassembly.cs:345-376.
+            if (GUILayout.Button(
+                    new GUIContent("From Selection",
+                        "Use the GameObject selected in the Hierarchy as this target's part. " +
+                        "Walks up parents to find the matching part if a child mesh is selected."),
+                    GUILayout.Width(110)))
+            {
+                TrySetAssociatedPartFromSelection(targetId, targetDef);
+            }
             EditorGUILayout.EndHorizontal();
+        }
+
+        /// <summary>
+        /// Resolves <see cref="Selection.activeGameObject"/> to a partId by
+        /// walking up the transform hierarchy looking for a GO whose name
+        /// matches an entry in <c>_pkg.GetParts()</c>. Writes the matched
+        /// id to <paramref name="targetDef"/>.<c>associatedPartId</c>, marks
+        /// the target dirty, and refreshes the tool preview. Mirrors the
+        /// dropdown's success path so auto-save persists the change.
+        /// </summary>
+        private void TrySetAssociatedPartFromSelection(string targetId, TargetDefinition targetDef)
+        {
+            var sel = UnityEditor.Selection.activeGameObject;
+            if (sel == null)
+            {
+                EditorUtility.DisplayDialog(
+                    "No Selection",
+                    "Select a part GameObject in the Hierarchy or scene first, then click \"From Selection\" again.",
+                    "OK");
+                return;
+            }
+
+            var parts = _pkg?.GetParts();
+            if (parts == null || parts.Length == 0)
+            {
+                EditorUtility.DisplayDialog(
+                    "No Parts in Package",
+                    "The package has no parts to choose from.",
+                    "OK");
+                return;
+            }
+
+            // Build a quick set for O(1) name → partId checks. Match by id
+            // (ordinal) — same convention as TTAW.Subassembly.cs:354.
+            var byId = new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal);
+            foreach (var p in parts) if (p?.id != null) byId.Add(p.id);
+
+            // Walk up the transform hierarchy. The author may have clicked a
+            // deep child mesh ("model_0", etc.); the part GO higher up has
+            // the matching name. Defensive depth bound (10) to avoid any
+            // pathological case.
+            string matchedPartId = null;
+            var t = sel.transform;
+            for (int depth = 0; depth < 10 && t != null; depth++, t = t.parent)
+            {
+                if (byId.Contains(t.name)) { matchedPartId = t.name; break; }
+            }
+
+            if (matchedPartId == null)
+            {
+                EditorUtility.DisplayDialog(
+                    "Selection Doesn't Match a Part",
+                    $"The selected GameObject '{sel.name}' (and its parents) don't match any partId in this package. " +
+                    "Select a spawned part GameObject under the PreviewRoot.",
+                    "OK");
+                return;
+            }
+
+            targetDef.associatedPartId = matchedPartId;
+            if (_targets != null)
+            {
+                for (int i = 0; i < _targets.Length; i++)
+                {
+                    if (_targets[i].def?.id == targetId)
+                    {
+                        _targets[i].isDirty = true;
+                        RefreshToolPreview(ref _targets[i]);
+                        break;
+                    }
+                }
+            }
+
+            // Also seed every interaction-task endTransform that points at
+            // this target with the part's CURRENT live transform — so the
+            // lime end-pose ghost starts coincident with the live bolt
+            // (where the author just placed it) rather than off at the
+            // part's distant assembledPosition. The author then drags the
+            // target gizmo to move the bolt's tightened position.
+            ReseedInteractionEndTransformsFromLivePart(targetId, matchedPartId);
+
+            OseLog.VerboseInfo($"[TTAW.InteractionPanel] Set associatedPartId='{matchedPartId}' for target '{targetId}' from Hierarchy selection.");
+            SceneView.RepaintAll();
+            Repaint();
+        }
+
+        /// <summary>
+        /// Walks every step's <c>requiredToolActions</c> + matching taskOrder
+        /// entries that target <paramref name="targetId"/>; for any whose
+        /// interaction archetype is lerp/thread_in, snaps the entry's
+        /// <c>endTransform</c> to the live part's current local TRS. Called
+        /// after "From Selection" so the end-pose ghost starts at the same
+        /// place as the live part, not at the assembled-position default.
+        /// </summary>
+        private void ReseedInteractionEndTransformsFromLivePart(string targetId, string partId)
+        {
+            if (_pkg?.steps == null || string.IsNullOrEmpty(targetId) || string.IsNullOrEmpty(partId)) return;
+
+            // Resolve the live part's current local transform (parent-local —
+            // matches the frame CaptureLiveTransformIntoTaskEndTransform writes).
+            var partGo = FindLivePartGO(partId);
+            if (partGo == null) return;
+            var tf = partGo.transform;
+            var pos   = new SceneFloat3 { x = tf.localPosition.x, y = tf.localPosition.y, z = tf.localPosition.z };
+            var rot   = new SceneQuaternion { x = tf.localRotation.x, y = tf.localRotation.y, z = tf.localRotation.z, w = tf.localRotation.w };
+            var scale = new SceneFloat3 { x = tf.localScale.x, y = tf.localScale.y, z = tf.localScale.z };
+
+            int seeded = 0;
+            foreach (var step in _pkg.steps)
+            {
+                if (step?.requiredToolActions == null || step.taskOrder == null) continue;
+                foreach (var action in step.requiredToolActions)
+                {
+                    if (action?.targetId != targetId) continue;
+                    if (action.interaction == null) continue;
+                    if (action.interaction.archetype != "lerp"
+                        && action.interaction.archetype != "thread_in") continue;
+
+                    foreach (var entry in step.taskOrder)
+                    {
+                        if (entry == null || entry.kind != "toolAction" || entry.id != action.id) continue;
+                        entry.endTransform ??= new TaskEndTransform();
+                        entry.endTransform.position = pos;
+                        entry.endTransform.rotation = rot;
+                        entry.endTransform.scale    = scale;
+                        _dirtyStepIds.Add(step.id);
+                        seeded++;
+                    }
+                }
+            }
+            if (seeded > 0)
+                OseLog.VerboseInfo($"[TTAW.InteractionPanel] Seeded endTransform on {seeded} interaction task(s) from live part '{partId}'.");
         }
 
         private string ResolvePartDisplayLabel(string partId)
@@ -889,9 +1027,15 @@ namespace OSE.Editor
             var payload = EnsureInteraction(taskAction);
             EditorGUI.BeginChangeCheck();
             bool newVal = EditorGUILayout.ToggleLeft(
-                new GUIContent("🔧 Tool follows part",
-                    "When on (default), the tool transform tracks the part's world-space " +
-                    "displacement each frame. Off for clamp_hold-style interactions."),
+                new GUIContent("🔗 Move tool & part together",
+                    "When ON, the tool and part are linked:\n" +
+                    "  • Runtime: the tool transform tracks the part's world-space\n" +
+                    "    displacement each frame during the action animation.\n" +
+                    "  • Authoring: dragging the target gizmo in the SceneView ALSO\n" +
+                    "    moves the part's endTransform by the same delta — so the\n" +
+                    "    bolt's end pose stays at wherever you drag the target.\n" +
+                    "OFF for clamp_hold-style interactions and for any case where\n" +
+                    "you want the target and part end pose to differ."),
                 payload.followPart);
             if (EditorGUI.EndChangeCheck() && newVal != payload.followPart)
             {
@@ -973,28 +1117,6 @@ namespace OSE.Editor
             return $"Downstream: inherited by {inheritedCount} step(s); overridden in {overrideStepId}.";
         }
 
-        /// <summary>
-        /// Jumps the task-sequence selection to the Part task matching
-        /// <paramref name="partId"/>, so the author can edit start/end poses in the
-        /// existing Part UI without leaving the window.
-        /// </summary>
-        private void JumpSelectionToPart(string partId)
-        {
-            if (_stepFilterIdx <= 0 || _stepIds == null || _stepFilterIdx >= _stepIds.Length) return;
-            var step = FindStep(_stepIds[_stepFilterIdx]);
-            var order = step != null ? GetOrDeriveTaskOrder(step) : null;
-            if (order == null) return;
-            for (int i = 0; i < order.Count; i++)
-            {
-                var e = order[i];
-                if (e != null && e.kind == "part" && TaskInstanceId.ToPartId(e.id) == partId)
-                {
-                    _selectedTaskSeqIdx = i;
-                    Repaint();
-                    return;
-                }
-            }
-        }
 
         private void DrawInteractionBandHeader(string title)
         {

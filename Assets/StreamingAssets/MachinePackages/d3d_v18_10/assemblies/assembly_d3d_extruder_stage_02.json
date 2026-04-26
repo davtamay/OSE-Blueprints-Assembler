@@ -28,22 +28,11 @@
     {
       "id": "subassembly_extruder_carriage_mount_stack",
       "name": "Extruder Carriage Mount Stack",
+      "stepIds": [ "step_stage_extruder_simplified_carriage", "step_place_titan_aero_mount_bracket", "step_secure_titan_aero_mount_bracket", "step_place_titan_aero_mount_top_plate", "step_secure_titan_aero_mount_top_plate" ],
       "assemblyId": "assembly_d3d_extruder_stage_02",
       "description": "Stages the simplified carriage and assembles the first carriage-side Titan Aero bracket and top-plate stack before the nozzle module is mounted.",
-      "partIds": [
-        "d3d_extruder_simplified_carriage",
-        "d3d_extruder_mount_bracket",
-        "d3d_extruder_mount_top_plate"
-      ],
-      "stepIds": [
-        "step_stage_extruder_simplified_carriage",
-        "step_place_titan_aero_mount_bracket",
-        "step_secure_titan_aero_mount_bracket",
-        "step_place_titan_aero_mount_top_plate",
-        "step_secure_titan_aero_mount_top_plate"
-      ],
       "milestoneMessage": "Simplified carriage, bracket, and top plate assembled into the first carriage-side Titan Aero mount stack."
-    },
+  },
     {
       "id": "subassembly_extruder_carriage_unit",
       "name": "Extruder Carriage Unit",
@@ -102,7 +91,10 @@
           "b": 0.5,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_extruder_carriage_mount_stack"
+      ]
     },
     {
       "id": "d3d_extruder_simplified_carriage",
@@ -133,7 +125,10 @@
           "b": 0.48,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_extruder_carriage_mount_stack"
+      ]
     },
     {
       "id": "d3d_extruder_mount_top_plate",
@@ -165,7 +160,10 @@
           "b": 0.6,
           "a": 1.0
         }
-      }
+      },
+      "subassemblyIds": [
+        "subassembly_extruder_carriage_mount_stack"
+      ]
     }
   ],
   "steps": [
@@ -174,43 +172,83 @@
       "name": "Stage the simplified carriage",
       "assemblyId": "assembly_d3d_extruder_stage_02",
       "subassemblyId": "subassembly_extruder_carriage_mount_stack",
-      "sequenceIndex": 94,
+      "sequenceIndex": 95,
       "instructionText": "Place the simplified carriage into the carriage-mount work zone before the printed bracket and top plate are added.",
       "family": "Place",
-      "requiredPartIds": [
-        "d3d_extruder_simplified_carriage"
+      "hintIds": [
+        "hint_stage_simplified_carriage"
       ],
+      "removePersistentToolIds": [],
       "targetIds": [
         "target_extruder_simplified_carriage_stage"
       ],
-      "hintIds": [
-        "hint_stage_simplified_carriage"
-      ]
+      "requiredPartIds": [
+        "d3d_extruder_simplified_carriage"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "d3d_extruder_simplified_carriage"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
     },
     {
       "id": "step_place_titan_aero_mount_bracket",
       "name": "Place the Titan Aero mount bracket",
       "assemblyId": "assembly_d3d_extruder_stage_02",
       "subassemblyId": "subassembly_extruder_carriage_mount_stack",
-      "sequenceIndex": 95,
+      "sequenceIndex": 96,
       "instructionText": "Place the stock Titan Aero mount bracket onto the staged simplified carriage before any fasteners are tightened.",
       "family": "Place",
-      "requiredPartIds": [
-        "d3d_extruder_mount_bracket"
+      "hintIds": [
+        "hint_place_mount_bracket"
       ],
+      "removePersistentToolIds": [],
       "targetIds": [
         "target_extruder_mount_bracket_attach"
       ],
-      "hintIds": [
-        "hint_place_mount_bracket"
-      ]
+      "requiredPartIds": [
+        "d3d_extruder_mount_bracket"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "d3d_extruder_mount_bracket"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
     },
     {
       "id": "step_secure_titan_aero_mount_bracket",
       "name": "Secure the mount bracket",
       "assemblyId": "assembly_d3d_extruder_stage_02",
       "subassemblyId": "subassembly_extruder_carriage_mount_stack",
-      "sequenceIndex": 96,
+      "sequenceIndex": 97,
       "instructionText": "Use the metric Allen key to tighten the two bracket fasteners only after the bracket sits flat on the simplified carriage.",
       "family": "Use",
       "profile": "Torque",
@@ -247,25 +285,45 @@
       "name": "Place the Titan Aero mount top plate",
       "assemblyId": "assembly_d3d_extruder_stage_02",
       "subassemblyId": "subassembly_extruder_carriage_mount_stack",
-      "sequenceIndex": 97,
+      "sequenceIndex": 98,
       "instructionText": "Place the top plate over the bracket stack so the carriage-side mount can be locked before the completed nozzle module is added.",
       "family": "Place",
-      "requiredPartIds": [
-        "d3d_extruder_mount_top_plate"
+      "hintIds": [
+        "hint_place_mount_top_plate"
       ],
+      "removePersistentToolIds": [],
       "targetIds": [
         "target_extruder_mount_top_plate_attach"
       ],
-      "hintIds": [
-        "hint_place_mount_top_plate"
-      ]
+      "requiredPartIds": [
+        "d3d_extruder_mount_top_plate"
+      ],
+      "requiredToolActions": [],
+      "taskOrder": [
+        {
+          "kind": "part",
+          "id": "d3d_extruder_mount_top_plate"
+        }
+      ],
+      "workingOrientation": {
+        "subassemblyRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "subassemblyPositionOffset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
     },
     {
       "id": "step_secure_titan_aero_mount_top_plate",
       "name": "Secure the mount top plate",
       "assemblyId": "assembly_d3d_extruder_stage_02",
       "subassemblyId": "subassembly_extruder_carriage_mount_stack",
-      "sequenceIndex": 98,
+      "sequenceIndex": 99,
       "instructionText": "Use the small hex driver to tighten the top-plate fasteners so the bracket stack is locked before the completed nozzle module is mounted.",
       "family": "Use",
       "profile": "Torque",
@@ -302,7 +360,7 @@
       "name": "Mount the completed nozzle module to the carriage stack",
       "assemblyId": "assembly_d3d_extruder_stage_02",
       "subassemblyId": "subassembly_extruder_carriage_unit",
-      "sequenceIndex": 99,
+      "sequenceIndex": 100,
       "instructionText": "Move the completed Titan Aero nozzle module onto the prepared carriage-side bracket stack. Keep the module square to the mount and let the rigid subassembly target guide the final seated pose.",
       "family": "Place",
       "requiredSubassemblyId": "subassembly_extruder_nozzle_module",
@@ -318,7 +376,7 @@
       "name": "Check carriage-mount clearance and access",
       "assemblyId": "assembly_d3d_extruder_stage_02",
       "subassemblyId": "subassembly_extruder_carriage_unit",
-      "sequenceIndex": 100,
+      "sequenceIndex": 101,
       "instructionText": "Inspect the completed carriage-side Titan Aero mount and confirm the body, nozzle, and sensor side all keep basic service access before later printer-wide integration is authored.",
       "family": "Confirm",
       "viewMode": "Inspect",

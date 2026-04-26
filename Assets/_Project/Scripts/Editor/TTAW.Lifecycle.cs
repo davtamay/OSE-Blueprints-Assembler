@@ -156,6 +156,11 @@ namespace OSE.Editor
                 // TTAW is always what Play runs.
                 FlushDirtyEditsBeforePlay();
 
+                // Phase A pose-pill: clear cached active-task identity so the
+                // ghost + gizmo stop rendering at Play start. Live mesh is not
+                // touched (the ghost is purely overlay rendering).
+                RestoreLiveMeshToInheritedPose();
+
                 StopAllPreviews();
                 StopParticlePreview();
                 // Destroy the tool/wire preview meshes too — without this

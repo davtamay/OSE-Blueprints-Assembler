@@ -196,12 +196,20 @@ namespace OSE.Editor
                 foreach (var td in _pkg.tools)
                     if (td != null && td.id == toolId) { toolDef = td; break; }
 
-            if (toolDef == null || string.IsNullOrEmpty(toolDef.assetRef))
+            if (toolDef == null)
             {
-                LogRefreshDiag($"SEMANTIC bail: toolDef={(toolDef == null ? "null" : $"'{toolId}' assetRef='{toolDef?.assetRef ?? "<null>"}'")} — Clear+return");
+                LogRefreshDiag($"SEMANTIC bail: toolDef null for '{toolId}' — Clear+return");
                 ClearToolPreview();
                 return;
             }
+
+            // Conceptual tools (category="conceptual") have no GLB asset —
+            // they're abstract gestures (bare hand, pointing finger). The
+            // runtime falls back to a primitive capsule so the trainee sees
+            // *something* (per feedback_conceptual_tools_must_load_at_runtime);
+            // mirror that here so TTAW shows the same fallback during
+            // authoring instead of leaving the tool invisible.
+            bool isConceptual = string.IsNullOrEmpty(toolDef.assetRef);
 
             // ── Transient guards (silently bail, keep old preview) ───────────
             Transform previewRoot = GetPreviewRoot();
@@ -211,25 +219,31 @@ namespace OSE.Editor
                 return;
             }
 
-            string path = $"Assets/_Project/Data/Packages/{_pkgId}/{toolDef.assetRef}";
-            var pfb = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            GameObject pfb = null;
+            string path = null;
 
-            // Fallback: try assets/tools/ prefix when assetRef is a bare filename
-            if (pfb == null && !toolDef.assetRef.Contains("/"))
+            if (!isConceptual)
             {
-                string prefixed = $"Assets/_Project/Data/Packages/{_pkgId}/assets/tools/{toolDef.assetRef}";
-                pfb = AssetDatabase.LoadAssetAtPath<GameObject>(prefixed);
+                path = $"Assets/_Project/Data/Packages/{_pkgId}/{toolDef.assetRef}";
+                pfb = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+
+                // Fallback: try assets/tools/ prefix when assetRef is a bare filename
+                if (pfb == null && !toolDef.assetRef.Contains("/"))
+                {
+                    string prefixed = $"Assets/_Project/Data/Packages/{_pkgId}/assets/tools/{toolDef.assetRef}";
+                    pfb = AssetDatabase.LoadAssetAtPath<GameObject>(prefixed);
+                    if (pfb == null)
+                        foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(prefixed))
+                            if (asset is GameObject go2) { pfb = go2; break; }
+                    if (pfb != null) path = prefixed;
+                }
+
                 if (pfb == null)
-                    foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(prefixed))
-                        if (asset is GameObject go2) { pfb = go2; break; }
-                if (pfb != null) path = prefixed;
-            }
-
-            if (pfb == null)
-            {
-                LogRefreshDiag($"TRANSIENT bail: asset not found at '{path}'");
-                Debug.LogWarning($"[ToolTargetAuthoring] Tool asset not found: {path}");
-                return;
+                {
+                    LogRefreshDiag($"TRANSIENT bail: asset not found at '{path}'");
+                    Debug.LogWarning($"[ToolTargetAuthoring] Tool asset not found: {path}");
+                    return;
+                }
             }
 
             // Idempotent: if the active preview is already for this exact tool,
@@ -241,14 +255,29 @@ namespace OSE.Editor
                 return;
             }
 
-            LogRefreshDiag($"SPAWN new preview for '{toolId}' at '{path}'");
+            LogRefreshDiag(isConceptual
+                ? $"SPAWN primitive-sphere preview for conceptual tool '{toolId}'"
+                : $"SPAWN new preview for '{toolId}' at '{path}'");
 
             // All resources resolved — now we can safely swap. Destroy the
             // previous preview (if any) and spawn the replacement.
             ClearToolPreview();
 
-            // Spawn as a child of previewRoot so it lives in the same coordinate space
-            _toolPreviewGO           = Instantiate(pfb, previewRoot);
+            if (isConceptual)
+            {
+                // Sphere primitive (1m diameter at scale 1) is shrunk below
+                // to ~3 cm so it stands in for a finger/pinch contact point
+                // without occluding the workpiece. Replace by setting
+                // assetRef to a real hand GLB in shared.json once one
+                // exists in assets/tools/.
+                _toolPreviewGO = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                _toolPreviewGO.transform.SetParent(previewRoot, false);
+            }
+            else
+            {
+                // Spawn as a child of previewRoot so it lives in the same coordinate space
+                _toolPreviewGO = Instantiate(pfb, previewRoot);
+            }
             _toolPreviewGO.name      = "[ToolTargetAuthoring] ToolPreview";
             _toolPreviewGO.hideFlags = HideFlags.HideAndDontSave;
 
@@ -261,6 +290,16 @@ namespace OSE.Editor
                 : RuntimeCursorScale;
             float rootS = previewRoot.lossyScale.x;
             float localToolScale = Mathf.Approximately(rootS, 0f) ? toolCursorScale : toolCursorScale / rootS;
+
+            // Conceptual tools use a primitive that's a 1m mesh by default;
+            // shrink hard so the placeholder fingertip-sphere doesn't dominate
+            // the scene. The previous capsule was getting amplified by the
+            // 1/rootS division and ended up many times the size of the bolts
+            // it was supposed to touch — observed on step 58 where the hand
+            // covered most of the carriage area.
+            const float ConceptualToolScaleFactor = 0.20f;
+            if (isConceptual) localToolScale *= ConceptualToolScaleFactor;
+
             _toolPreviewGO.transform.localScale = Vector3.one * localToolScale;
             _lastRefreshDiagKey = null; // reset so next bail re-logs fresh
 
@@ -306,18 +345,48 @@ namespace OSE.Editor
         {
             if (!_showToolPreview || _toolPreviewGO == null || GetPreviewRoot() == null) return;
 
-            ComputeToolLocalTransform(ref sel, out Vector3 localPos, out Quaternion localRot);
-            _toolPreviewGO.transform.localPosition = localPos;
-            _toolPreviewGO.transform.localRotation = localRot;
-
-            // Yellow dot at the tip contact point
-            if (_toolPreviewDef?.toolPose?.HasTipPoint == true)
+            // Display position resolution mirrors the SceneView icon/gizmo
+            // logic so all four (icon, gizmo, tool tip, snapped part) stay
+            // aligned. Priority: pill override → live anchor part → static
+            // sel.position. Authoring data isn't dirtied; sel.position is
+            // restored after ComputeToolLocalTransform reads it.
+            Vector3 savedPos = sel.position;
+            bool overrode = false;
+            if (TryGetActivePosePillPositionForTarget(sel.def?.id, out Vector3 pillPos))
             {
-                Vector3 tipWorld = _toolPreviewGO.transform.TransformPoint(
-                    _toolPreviewDef.toolPose.GetTipPoint());
-                float tipSize = HandleUtility.GetHandleSize(tipWorld) * 0.06f;
-                Handles.color = new Color(1f, 0.85f, 0.1f, 1f);
-                Handles.SphereHandleCap(0, tipWorld, Quaternion.identity, tipSize, EventType.Repaint);
+                sel.position = pillPos;
+                overrode = true;
+            }
+            else if (sel.def != null && !string.IsNullOrEmpty(sel.def.anchorRef))
+            {
+                var anchorGO = FindLivePartGO(sel.def.anchorRef);
+                var pr = GetPreviewRoot();
+                if (anchorGO != null && pr != null)
+                {
+                    sel.position = pr.InverseTransformPoint(anchorGO.transform.position);
+                    overrode = true;
+                }
+            }
+
+            try
+            {
+                ComputeToolLocalTransform(ref sel, out Vector3 localPos, out Quaternion localRot);
+                _toolPreviewGO.transform.localPosition = localPos;
+                _toolPreviewGO.transform.localRotation = localRot;
+
+                // Yellow dot at the tip contact point
+                if (_toolPreviewDef?.toolPose?.HasTipPoint == true)
+                {
+                    Vector3 tipWorld = _toolPreviewGO.transform.TransformPoint(
+                        _toolPreviewDef.toolPose.GetTipPoint());
+                    float tipSize = HandleUtility.GetHandleSize(tipWorld) * 0.06f;
+                    Handles.color = new Color(1f, 0.85f, 0.1f, 1f);
+                    Handles.SphereHandleCap(0, tipWorld, Quaternion.identity, tipSize, EventType.Repaint);
+                }
+            }
+            finally
+            {
+                if (overrode) sel.position = savedPos;
             }
         }
 

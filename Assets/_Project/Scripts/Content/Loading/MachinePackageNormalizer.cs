@@ -64,6 +64,7 @@ namespace OSE.Content.Loading
             InferStepParentIds(package);
             NormalizeConfirmActionTaskOrder(package);
             EnsureConfirmActionForConfirmSteps(package);
+            EnsureProfileForUseTightenSteps(package);
             NormalizeTaskOrderToolActionKinds(package);
             EnsureTaskOrderCoversRequirements(package);
             MarkVisualOnlyTaskOrderEntriesOptional(package);
@@ -616,6 +617,55 @@ namespace OSE.Content.Loading
             if (added > 0)
             {
                 OseLog.Warn($"[TaskOrder.Normalize] Added missing confirm_action to {added} Confirm-family step(s). Author should add `kind: confirm_action` to taskOrder on every Confirm step that ends with a Continue button press.");
+            }
+        }
+
+        /// <summary>
+        /// Use-family steps that drive a "tighten" tool action need
+        /// <c>profile = "Torque"</c> so the runtime descriptor sets
+        /// <c>PartFollowsTool = true</c> — without it,
+        /// <see cref="UI.Coordination.ToolActionExecutor"/>'s BuildPartEffect
+        /// gate at "fail-closed: only build a PartEffect when the profile
+        /// opts in" returns null, the LerpPosePartEffect is never
+        /// instantiated, and the trainee sees the bolt jump from start to
+        /// completed with no animation.
+        ///
+        /// CLAUDE.md documents the convention ("Tighten steps include
+        /// `profile: 'Torque'`") but it's an authoring rule that's easy to
+        /// forget. Auto-fill it once at load so every existing and future
+        /// tighten step gets the lerp visual without manual JSON edits.
+        /// </summary>
+        private static void EnsureProfileForUseTightenSteps(MachinePackageDefinition package)
+        {
+            if (package?.steps == null) return;
+
+            int filled = 0;
+            for (int si = 0; si < package.steps.Length; si++)
+            {
+                var step = package.steps[si];
+                if (step == null) continue;
+                if (step.ResolvedFamily != StepFamily.Use) continue;
+                if (!string.IsNullOrEmpty(step.profile)) continue;
+                if (step.requiredToolActions == null || step.requiredToolActions.Length == 0) continue;
+
+                bool anyTighten = false;
+                for (int ai = 0; ai < step.requiredToolActions.Length; ai++)
+                {
+                    var a = step.requiredToolActions[ai];
+                    if (a == null) continue;
+                    if (string.Equals(a.actionType, "tighten", StringComparison.OrdinalIgnoreCase))
+                    { anyTighten = true; break; }
+                }
+                if (!anyTighten) continue;
+
+                step.profile = "Torque";
+                filled++;
+                OseLog.VerboseInfo($"[Profile.Normalize] step '{step.id}' (seq {step.sequenceIndex}): inferred profile='Torque' (family=Use + actionType=tighten). Author should set this explicitly in JSON.");
+            }
+
+            if (filled > 0)
+            {
+                OseLog.Warn($"[Profile.Normalize] Auto-inferred profile='Torque' on {filled} Use-family tighten step(s). Without it, ToolActionExecutor skips the LerpPosePartEffect and the bolt visibly jumps to its end pose without animation.");
             }
         }
 

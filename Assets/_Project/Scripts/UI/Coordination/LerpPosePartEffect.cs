@@ -18,13 +18,15 @@ namespace OSE.UI.Root
         private readonly Vector3 _startScale, _endScale;
         private readonly bool _lerpRotation;
         private readonly bool _lerpScale;
+        private readonly string _easing;
         private Vector3 _prevWorldPos;
 
         public LerpPosePartEffect(
             Transform partTransform,
             Transform previewRoot,
             Vector3 startLocalPos, Quaternion startLocalRot, Vector3 startLocalScale,
-            Vector3 endLocalPos, Quaternion endLocalRot, Vector3 endLocalScale)
+            Vector3 endLocalPos, Quaternion endLocalRot, Vector3 endLocalScale,
+            string easing = null)
         {
             _part = partTransform;
             _previewRoot = previewRoot;
@@ -36,6 +38,7 @@ namespace OSE.UI.Root
             _endScale = endLocalScale;
             _lerpRotation = Quaternion.Angle(startLocalRot, endLocalRot) > 0.01f;
             _lerpScale = Vector3.Distance(startLocalScale, endLocalScale) > 0.0001f;
+            _easing = easing;
         }
 
         public void Begin()
@@ -50,11 +53,16 @@ namespace OSE.UI.Root
 
         public Vector3 Apply(float progress)
         {
-            _part.localPosition = Vector3.Lerp(_startPos, _endPos, progress);
+            // Apply authored easing curve to progress before any lerp/slerp —
+            // mirrors ThreadInPartEffect.Apply. Without this, easing="easeInOut"
+            // on the payload would be silently ignored and the lerp ran linear.
+            float t = InteractionEasing.Apply(_easing, progress);
+
+            _part.localPosition = Vector3.Lerp(_startPos, _endPos, t);
             if (_lerpRotation)
-                _part.localRotation = Quaternion.Slerp(_startRot, _endRot, progress);
+                _part.localRotation = Quaternion.Slerp(_startRot, _endRot, t);
             if (_lerpScale)
-                _part.localScale = Vector3.Lerp(_startScale, _endScale, progress);
+                _part.localScale = Vector3.Lerp(_startScale, _endScale, t);
 
             Vector3 currentWorld = _previewRoot != null
                 ? _previewRoot.TransformPoint(_part.localPosition)

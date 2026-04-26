@@ -35,7 +35,8 @@ namespace OSE.UI.Root
             return new LerpPosePartEffect(
                 args.PartTransform, args.PreviewRoot,
                 args.Start.Position, args.Start.Rotation, args.Start.Scale,
-                args.End.Position,   args.End.Rotation,   args.End.Scale);
+                args.End.Position,   args.End.Rotation,   args.End.Scale,
+                args.Payload?.easing);
         }
 
         private static IPartEffect BuildThreadIn(in PartEffectBuildArgs args)

@@ -17163,8 +17163,8 @@
         {
             "targetId": "target_c1_bolt_tighten_a",
             "position": {
-                "x": 0.8351,
-                "y": 0.576,
+                "x": 0.5383,
+                "y": 0.5566,
                 "z": 0.0158
             },
             "rotation": {
@@ -17338,8 +17338,8 @@
         {
             "targetId": "target_c1_bolt_tighten_b",
             "position": {
-                "x": 0.8351,
-                "y": 0.576,
+                "x": 0.5383,
+                "y": 0.5566,
                 "z": -0.0145
             },
             "rotation": {
@@ -17373,8 +17373,8 @@
         {
             "targetId": "target_c1_bolt_tighten_c",
             "position": {
-                "x": 0.8048,
-                "y": 0.576,
+                "x": 0.508,
+                "y": 0.5566,
                 "z": 0.015
             },
             "rotation": {
@@ -17408,8 +17408,8 @@
         {
             "targetId": "target_c1_bolt_tighten_d",
             "position": {
-                "x": 0.8048,
-                "y": 0.576,
+                "x": 0.508,
+                "y": 0.5566,
                 "z": -0.0149
             },
             "rotation": {

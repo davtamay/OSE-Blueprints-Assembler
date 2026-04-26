@@ -31,8 +31,11 @@ namespace OSE.Editor
             // polling, gizmo drags). During Play, those same GameObjects
             // are owned by the runtime — any TTAW write here fights the
             // runtime's visibility / transform writers and corrupts the
-            // play-mode visual state. Authoring is inert during Play.
-            if (Application.isPlaying) return;
+            // play-mode visual state. Authoring is inert during Play, BUT
+            // read-only display (target icons, connection overlay) still
+            // renders so the author can see what task is selected without
+            // losing context when they click into a tool task during Play.
+            bool isPlaying = Application.isPlaying;
 
             Transform root = GetPreviewRoot();
             if (root == null) return;
@@ -60,24 +63,36 @@ namespace OSE.Editor
             bool hasTaskFilter   = _selectedTaskSeqIdx >= 0;
             bool isConfirmAction = hasTaskFilter && _activeTaskKind == "confirm_action";
 
-            DrawPartSceneHandles(sv);
+            // Write-capable / poll-based sections — runtime owns these GameObjects
+            // during Play, so authoring is inert there. Read-only display below
+            // still runs so target icons remain visible during Play.
+            if (!isPlaying)
+            {
+                DrawPartSceneHandles(sv);
 
-            // ── Tool × Part interaction axis gizmo ────────────────────────────
-            // Renders a yellow arrow along the authored motion axis when a
-            // tool-action task with an interaction payload is selected.
-            DrawInteractionAxisGizmo();
+                // ── Tool × Part interaction axis gizmo ────────────────────────────
+                // Renders a yellow arrow along the authored motion axis when a
+                // tool-action task with an interaction payload is selected.
+                DrawInteractionAxisGizmo();
 
-            // ── Phase A3: subassembly root rotation gizmo ─────────────────────
-            DrawSubassemblyRootGizmo();
+                // ── Phase A3: subassembly root rotation gizmo ─────────────────────
+                DrawSubassemblyRootGizmo();
 
-            // Animation-cue pivot-offset gizmos — one PositionHandle per cue
-            // whose pivotOffsetOverride is set. Lets authors drag the rotation
-            // / effect origin in-scene instead of typing numbers.
-            DrawCuePivotGizmos();
+                // Animation-cue pivot-offset gizmos — one PositionHandle per cue
+                // whose pivotOffsetOverride is set. Lets authors drag the rotation
+                // / effect origin in-scene instead of typing numbers.
+                DrawCuePivotGizmos();
 
-            // Detect if the author rearranged parts between group roots in the
-            // Hierarchy and update partIds[] accordingly.
-            PollHierarchyGroupChanges();
+                // Detect if the author rearranged parts between group roots in the
+                // Hierarchy and update partIds[] accordingly.
+                PollHierarchyGroupChanges();
+
+                // Phase A: pose-pill end-transform gizmo for the active
+                // tool×part interaction task. Renders only when the End pill
+                // is active and the active task has an authored endTransform —
+                // otherwise no-ops.
+                DrawEndPoseHandleForActiveInteractionTask();
+            }
 
             // confirm_action = terminal button-press — no targets, skip all target gizmos.
             if (isConfirmAction) return;
@@ -93,7 +108,32 @@ namespace OSE.Editor
             for (int i = 0; i < _targets.Length; i++)
             {
                 ref TargetEditState t = ref _targets[i];
-                Vector3 worldPos = root.TransformPoint(t.position);
+                // Display position resolution (priority order):
+                //   1. Pill override — when a tool×part pose pill is active
+                //      and this target backs the selected/multi-selected
+                //      task, snap to the pill's chosen pose so icon + gizmo
+                //      + tool tip stay glued.
+                //   2. Live anchor part — for anchor-resolved targets
+                //      (no static .position field, anchorRef = part), follow
+                //      the part's current PreviewRoot-local pose so the
+                //      icon tracks the bolt as it moves through the chain.
+                //      Mirrors how the runtime tool-target spawner places
+                //      its sphere at the anchor part's resolved pose.
+                //   3. Static t.position — fallback for targets whose
+                //      placement was authored explicitly.
+                Vector3 localForDisplay = t.position;
+                bool selectionScope = i == _selectedIdx || _multiSelected.Contains(i);
+                if (selectionScope && TryGetActivePosePillPositionForTarget(t.def?.id, out Vector3 pillIconPos))
+                {
+                    localForDisplay = pillIconPos;
+                }
+                else if (t.def != null && !string.IsNullOrEmpty(t.def.anchorRef))
+                {
+                    var anchorGO = FindLivePartGO(t.def.anchorRef);
+                    if (anchorGO != null)
+                        localForDisplay = root.InverseTransformPoint(anchorGO.transform.position);
+                }
+                Vector3 worldPos = root.TransformPoint(localForDisplay);
                 // Always derive gizmo size from camera distance so it stays readable
                 // at any zoom level. Using t.scale directly caused giant 1-metre spheres
                 // on targets whose scale was never explicitly reduced from (1,1,1).
@@ -105,8 +145,11 @@ namespace OSE.Editor
                 // When a step is selected but this target doesn't belong to it, skip entirely.
                 if (!inStep) continue;
 
-                // When a task is selected, only draw that task's own target.
-                if (hasTaskFilter && !isSelected) continue;
+                // When a task is selected, keep ALL of the step's target icons
+                // visible (cyan dots) — only the selected one gets the brighter
+                // ColSelected color + wire-disc + PositionHandle below. Hiding
+                // the non-selected dots loses the spatial context of where the
+                // other tool targets sit relative to the active one.
 
                 Color col = isSelected ? ColSelected
                           : t.isDirty  ? ColDirty
@@ -141,16 +184,47 @@ namespace OSE.Editor
                 Event.current.Use();
             }
 
-            // Handles for selected target
-            if (_selectedIdx >= 0 && _selectedIdx < _targets.Length)
+            // Handles for selected target — write-capable PositionHandle /
+            // RotationHandle drag updates target.position / target.rotation,
+            // so disable during Play to avoid fighting the runtime. The
+            // wire disc above is purely indicator-style and stays visible.
+            if (!isPlaying && _selectedIdx >= 0 && _selectedIdx < _targets.Length)
             {
                 ref TargetEditState sel     = ref _targets[_selectedIdx];
-                Vector3    worldPos = root.TransformPoint(sel.position);
+                // Display priority — pill override → live anchor part →
+                // static placement. Same chain the per-target sphere icon
+                // loop uses, so the gizmo never desynchs from the icon.
+                Vector3 displayLocal = sel.position;
+                if (TryGetActivePosePillPositionForTarget(sel.def?.id, out Vector3 pillGizmoPos))
+                {
+                    displayLocal = pillGizmoPos;
+                }
+                else if (sel.def != null && !string.IsNullOrEmpty(sel.def.anchorRef))
+                {
+                    var anchorGO = FindLivePartGO(sel.def.anchorRef);
+                    if (anchorGO != null)
+                        displayLocal = root.InverseTransformPoint(anchorGO.transform.position);
+                }
+                Vector3    worldPos = root.TransformPoint(displayLocal);
                 Quaternion worldRot = Quaternion.Normalize(root.rotation * sel.rotation);
                 float      size = HandleUtility.GetHandleSize(worldPos) * 0.15f;
 
                 Handles.color = ColSelected;
                 Handles.DrawWireDisc(worldPos, sv.camera.transform.forward, size * 1.6f);
+
+                // Visual hint when followPart authoring sync is active —
+                // tells the author that dragging the target will also move
+                // the part's end pose. Tiny label just above the wire disc.
+                if (IsActiveTaskFollowedInteraction())
+                {
+                    var hintStyle = new GUIStyle(EditorStyles.miniLabel)
+                    {
+                        normal = { textColor = new Color(0.55f, 1.00f, 0.20f, 0.95f) },
+                        fontStyle = FontStyle.Bold,
+                    };
+                    Handles.Label(worldPos + sv.camera.transform.up * (size * 2.2f),
+                        "🔗 part follows", hintStyle);
+                }
 
                 EditorGUI.BeginChangeCheck();
                 Quaternion handleRot = Tools.pivotRotation == PivotRotation.Local ? worldRot : Quaternion.identity;
@@ -159,19 +233,31 @@ namespace OSE.Editor
                 {
                     BeginEdit();
                     Vector3 newLocal = root.InverseTransformPoint(newWorldPos);
-                    Vector3 delta = newLocal - sel.position;
-                    sel.position = newLocal;
+                    // Delta is computed against the displayed local (which may
+                    // be the pill-overridden pose), not sel.position. Without
+                    // this, an active pill override would inject a (pillPos -
+                    // sel.position) jump into the first drag — sel.position
+                    // would suddenly snap to the pill pose, dirtying the
+                    // authored target with the override offset.
+                    Vector3 delta = newLocal - displayLocal;
+                    sel.position += delta;
                     sel.isDirty  = true;
+
                     if (_multiSelected.Count > 1)
                     {
                         foreach (int idx in _multiSelected)
                         {
                             if (idx == _selectedIdx) continue;
+                            if (idx < 0 || idx >= _targets.Length) continue;
                             ref var t = ref _targets[idx];
                             t.position += delta;
                             t.isDirty = true;
                         }
                     }
+                    // followPart authoring sync — when on, also move the
+                    // part's end pose by the same delta so the bolt stays
+                    // glued to wherever the author drags the target.
+                    TryApplyTargetPositionDeltaToFollowedPart(delta);
                     Repaint();
                 }
 
@@ -214,6 +300,10 @@ namespace OSE.Editor
                                 t.isDirty = true;
                             }
                         }
+                        // followPart authoring sync — rotation delta also
+                        // applied to the part's end pose so the part stays
+                        // oriented to wherever the author rotates the target.
+                        TryApplyTargetRotationDeltaToFollowedPart(localDelta);
                         Repaint();
                     }
                     else if (_rotDragActive)

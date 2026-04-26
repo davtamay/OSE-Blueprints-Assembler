@@ -214,24 +214,67 @@ namespace OSE.Content.Loading
             //     ordering — that's the authoring intent.
             if (idx.taskSeqsByPart.TryGetValue(partId, out var taskSeqs) && taskSeqs.Contains(viewSeq))
             {
-                bool wantAssembled;
-                if (mode == PoseMode.Committed)
+                // Mode dispatch — three distinct semantics:
+                //   AssembledPreview (editor): show THIS step's exit pose
+                //     (= endTransform of viewSeq if a tool task wrote it,
+                //     else the static assembledPosition).
+                //   StartPreview (editor): show THIS step's entry pose
+                //     (= chain → previous step's authored endTransform on
+                //     this part, else the static startPosition).
+                //   Committed (runtime spawn / "step has completed"): for
+                //     the FIRST task step on the part, return staging
+                //     startPosition so the trainee has something to pick
+                //     up. For SUBSEQUENT task steps, return the chain (=
+                //     entry pose) so the trainee lerps from that pose to
+                //     this step's endTransform — without this the runtime
+                //     spawn would land the part already at endTransform
+                //     and ToolActionExecutor would skip the lerp ("startPos
+                //     ≈ endPos → return null").
+                if (mode == PoseMode.AssembledPreview)
                 {
-                    int firstTaskSeq = idx.firstTaskSeqByPart.TryGetValue(partId, out int ft2) ? ft2 : int.MaxValue;
-                    wantAssembled = viewSeq > firstTaskSeq;
-                }
-                else
-                {
-                    wantAssembled = mode == PoseMode.AssembledPreview;
-                }
-
-                if (wantAssembled)
+                    if (TryGetEndTransformAt(partId, viewSeq, idx, out var endT))
+                        return new PoseResolution(
+                            ToVec3(endT.position), ToQuat(endT.rotation),
+                            NormalizeScale(ToVec3(endT.scale), pp),
+                            PoseSource.Assembled, "endTransform-this");
                     return new PoseResolution(
                         ToVec3(pp.assembledPosition),
                         ToQuat(pp.assembledRotation),
                         NormalizeScale(ToVec3(pp.assembledScale), pp),
                         PoseSource.Assembled,
                         string.Empty);
+                }
+                if (mode == PoseMode.StartPreview)
+                {
+                    if (TryGetLatestEndTransformBefore(partId, viewSeq, idx, out var prevEnd))
+                        return new PoseResolution(
+                            ToVec3(prevEnd.position), ToQuat(prevEnd.rotation),
+                            NormalizeScale(ToVec3(prevEnd.scale), pp),
+                            PoseSource.Start, "endTransform-chain");
+                    return new PoseResolution(
+                        ToVec3(pp.startPosition),
+                        ToQuat(pp.startRotation),
+                        NormalizeScale(ToVec3(pp.startScale), pp),
+                        PoseSource.Start,
+                        string.Empty);
+                }
+                // Committed
+                int firstTaskSeq = idx.firstTaskSeqByPart.TryGetValue(partId, out int ft2) ? ft2 : int.MaxValue;
+                bool isSubsequent = viewSeq > firstTaskSeq;
+                if (isSubsequent)
+                {
+                    if (TryGetLatestEndTransformBefore(partId, viewSeq, idx, out var prevEnd))
+                        return new PoseResolution(
+                            ToVec3(prevEnd.position), ToQuat(prevEnd.rotation),
+                            NormalizeScale(ToVec3(prevEnd.scale), pp),
+                            PoseSource.Assembled, "endTransform-chain");
+                    return new PoseResolution(
+                        ToVec3(pp.assembledPosition),
+                        ToQuat(pp.assembledRotation),
+                        NormalizeScale(ToVec3(pp.assembledScale), pp),
+                        PoseSource.Assembled,
+                        string.Empty);
+                }
                 return new PoseResolution(
                     ToVec3(pp.startPosition),
                     ToQuat(pp.startRotation),
@@ -241,10 +284,18 @@ namespace OSE.Content.Loading
             }
 
             // [5] Past-placed: viewSeq is after the part's last task step →
-            //     assembledPosition is the committed resting pose.
+            //     assembledPosition is the committed resting pose. If the
+            //     author wrote endTransforms on tool tasks, prefer the most
+            //     recent one over the static anchor (chain stays the source
+            //     of truth even past the last task seq).
             int lastTask = idx.lastTaskSeqByPart.TryGetValue(partId, out int lt) ? lt : int.MinValue;
             if (lastTask > int.MinValue && viewSeq > lastTask)
             {
+                if (TryGetLatestEndTransformBefore(partId, viewSeq, idx, out var prevEnd))
+                    return new PoseResolution(
+                        ToVec3(prevEnd.position), ToQuat(prevEnd.rotation),
+                        NormalizeScale(ToVec3(prevEnd.scale), pp),
+                        PoseSource.Assembled, "endTransform-chain");
                 return new PoseResolution(
                     ToVec3(pp.assembledPosition),
                     ToQuat(pp.assembledRotation),
@@ -276,6 +327,44 @@ namespace OSE.Content.Loading
                 NormalizeScale(ToVec3(pp.assembledScale), pp),
                 PoseSource.Assembled,
                 "fallback");
+        }
+
+        // ── Tool-task endTransform chain lookups ─────────────────────────────
+
+        /// <summary>
+        /// Returns the largest-seq endTransform with <c>seq &lt; viewSeq</c>
+        /// for the given part — the part's "entry pose" for viewSeq, derived
+        /// purely from authored data (no synthetic stepPose duplication).
+        /// </summary>
+        private static bool TryGetLatestEndTransformBefore(
+            string partId, int viewSeq, PoseResolverIndex idx, out TaskEndTransform endT)
+        {
+            endT = null;
+            if (idx.endTransformsByPart == null) return false;
+            if (!idx.endTransformsByPart.TryGetValue(partId, out var list) || list.Count == 0) return false;
+            for (int i = list.Count - 1; i >= 0; i--)
+            {
+                if (list[i].seq < viewSeq) { endT = list[i].endT; return true; }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Returns the endTransform whose seq exactly matches viewSeq (the
+        /// part's "exit pose" for the current step).
+        /// </summary>
+        private static bool TryGetEndTransformAt(
+            string partId, int viewSeq, PoseResolverIndex idx, out TaskEndTransform endT)
+        {
+            endT = null;
+            if (idx.endTransformsByPart == null) return false;
+            if (!idx.endTransformsByPart.TryGetValue(partId, out var list) || list.Count == 0) return false;
+            for (int i = list.Count - 1; i >= 0; i--)
+            {
+                if (list[i].seq == viewSeq) { endT = list[i].endT; return true; }
+                if (list[i].seq < viewSeq) return false;
+            }
+            return false;
         }
 
         private static Vector3 ToVec3(SceneFloat3 v) => new Vector3(v.x, v.y, v.z);

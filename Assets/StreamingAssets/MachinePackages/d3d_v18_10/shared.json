@@ -4,6 +4,7 @@
       "id": "tool_framing_square",
       "name": "Framing Square",
       "category": "measurement",
+      "primaryActionType": "measure",
       "purpose": "Confirms that each D3D frame side stays square before clamping and tack welding.",
       "usageNotes": "Seat both legs of the square against adjacent flat bars before any tack weld is placed.",
       "assetRef": "tool_framing_square.glb",
@@ -46,10 +47,29 @@
       "scaleOverride": 1
     },
     {
+      "id": "tool_hand",
+      "name": "Hand",
+      "category": "conceptual",
+      "assetRef": "assets/tools/tool_hand.glb",
+      "primaryActionType": "tighten",
+      "purpose": "Finger-tightens fasteners before a powered tool delivers final torque. Represents bare-hand engagement \u2014 threading a nut, snugging a bolt, or holding a part in place.",
+      "usageNotes": "Use at steps that call for finger-tight / hand-tight engagement. The bolt or nut should seat firmly but not be driven to final torque.",
+      "safetyNotes": "Keep hands clear of moving tools or pinch points when subsequent steps apply power-tool torque.",
+      "toolPose": {
+        "gripPoint": { "x": 0.0, "y": 0.0, "z": -0.06 },
+        "tipPoint":  { "x": 0.0, "y": 0.0, "z":  0.05 }
+      },
+      "searchTerms": [
+        "hand",
+        "finger tight",
+        "hand tighten"
+      ]
+    },
+    {
       "id": "tool_locking_clamp",
       "name": "Locking Clamp",
       "category": "hand_tool",
-      "persistent": true,
+      "primaryActionType": "tighten",
       "purpose": "Pins a verified frame side flat so the overlapped bars cannot shift while tack welds are added.",
       "usageNotes": "Clamp near the panel center after the square check passes, then keep the bars flat while you tack opposite corners.",
       "safetyNotes": "Keep fingers clear of the jaws and release clamping force slowly.",
@@ -88,12 +108,656 @@
         "handedness": "right",
         "poseHint": "power_grip"
       },
-      "scaleOverride": 0.8
+      "scaleOverride": 0.8,
+      "persistent": true,
+      "animationCues": [
+        {
+          "type": "screwSpin",
+          "targetPartIds": [],
+          "targetToolIds": [],
+          "targetSubassemblyId": "",
+          "stepIds": [
+            "step_top_clamp_panel"
+          ],
+          "always": false,
+          "particlePrefabRef": "",
+          "particleSourceMode": "",
+          "particlePresetId": "",
+          "particleScale": 0.0,
+          "particleColorTint": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "trigger": "onDuringAction",
+          "delaySeconds": 0.0,
+          "durationSeconds": 0.0,
+          "loop": false,
+          "easing": "",
+          "target": "",
+          "fromPose": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          },
+          "toPose": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          },
+          "subassemblyRotation": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "pulseColorA": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseColorB": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseSpeed": 0.0,
+          "spinRevolutions": 0.0,
+          "spinAxis": {
+            "x": 0.0,
+            "y": 1.0,
+            "z": 0.0
+          },
+          "shakeAmplitude": 0.0,
+          "shakeFrequency": 0.0,
+          "shakeAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "animationClipName": "",
+          "panelOrder": 0,
+          "sequenceAfterPrevious": false,
+          "animationClipAssetPath": "",
+          "pivotOffsetOverride": false,
+          "pivotOffset": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "holdAtEnd": false,
+          "startProgress": 0.0,
+          "endProgress": 1.0,
+          "fromColor": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "toColor": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "fromEmission": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "toEmission": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "fromIntensity": 0.0,
+          "toIntensity": 0.0,
+          "pulseScale": 0.0,
+          "wobbleAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "wobbleAmplitude": 0.0,
+          "wobbleFrequency": 0.0,
+          "vibrationAxes": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "vibrationFrequency": 0.0,
+          "vibrationRampIn": 0.0,
+          "vibrationRampOut": 0.0,
+          "anchorARef": "",
+          "anchorBRef": "",
+          "lineWidth": 0.0,
+          "lineEmissionIntensity": 0.0,
+          "splineRadius": 0.0,
+          "splineMetallic": 0.0,
+          "splineSmoothness": 0.0,
+          "splineAnchorRefs": [],
+          "spinAngleDegrees": 120.0,
+          "measureUnit": "",
+          "travelStartProgress": 0.0,
+          "travelEndProgress": 0.0
+        },
+        {
+          "type": "particle",
+          "targetPartIds": [],
+          "targetToolIds": [],
+          "targetSubassemblyId": "",
+          "stepIds": [
+            "step_top_clamp_panel"
+          ],
+          "always": false,
+          "particlePrefabRef": "",
+          "particleSourceMode": "preset",
+          "particlePresetId": "torque_sparks",
+          "particleScale": 1.67,
+          "particleColorTint": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "trigger": "onDuringAction",
+          "delaySeconds": 0.0,
+          "durationSeconds": 0.0,
+          "loop": false,
+          "easing": "",
+          "target": "",
+          "fromPose": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          },
+          "toPose": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          },
+          "subassemblyRotation": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "pulseColorA": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseColorB": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseSpeed": 0.0,
+          "spinRevolutions": 0.0,
+          "spinAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "shakeAmplitude": 0.0,
+          "shakeFrequency": 0.0,
+          "shakeAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "animationClipName": "",
+          "panelOrder": 1,
+          "sequenceAfterPrevious": false,
+          "animationClipAssetPath": "",
+          "pivotOffsetOverride": false,
+          "pivotOffset": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "holdAtEnd": false,
+          "startProgress": 0.5,
+          "endProgress": 0.6,
+          "fromColor": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "toColor": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "fromEmission": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "toEmission": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "fromIntensity": 0.0,
+          "toIntensity": 0.0,
+          "pulseScale": 0.0,
+          "wobbleAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "wobbleAmplitude": 0.0,
+          "wobbleFrequency": 0.0,
+          "vibrationAxes": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "vibrationFrequency": 0.0,
+          "vibrationRampIn": 0.0,
+          "vibrationRampOut": 0.0,
+          "anchorARef": "",
+          "anchorBRef": "",
+          "lineWidth": 0.0,
+          "lineEmissionIntensity": 0.0,
+          "splineRadius": 0.0,
+          "splineMetallic": 0.0,
+          "splineSmoothness": 0.0,
+          "splineAnchorRefs": [],
+          "spinAngleDegrees": 0.0,
+          "measureUnit": "",
+          "travelStartProgress": 0.0,
+          "travelEndProgress": 0.0
+        },
+        {
+          "type": "screwSpin",
+          "targetPartIds": [],
+          "targetToolIds": [],
+          "targetSubassemblyId": "",
+          "stepIds": [
+            "step_bottom_clamp_panel"
+          ],
+          "always": false,
+          "particlePrefabRef": "",
+          "particleSourceMode": "",
+          "particlePresetId": "",
+          "particleScale": 0.0,
+          "particleColorTint": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "trigger": "onDuringAction",
+          "delaySeconds": 0.0,
+          "durationSeconds": 0.0,
+          "loop": false,
+          "easing": "",
+          "target": "",
+          "fromPose": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          },
+          "toPose": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          },
+          "subassemblyRotation": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "pulseColorA": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseColorB": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseSpeed": 0.0,
+          "spinRevolutions": 0.0,
+          "spinAxis": {
+            "x": 0.0,
+            "y": 1.0,
+            "z": 0.0
+          },
+          "shakeAmplitude": 0.0,
+          "shakeFrequency": 0.0,
+          "shakeAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "animationClipName": "",
+          "panelOrder": 2,
+          "sequenceAfterPrevious": false,
+          "animationClipAssetPath": "",
+          "pivotOffsetOverride": false,
+          "pivotOffset": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "holdAtEnd": false,
+          "startProgress": 0.0,
+          "endProgress": 1.0,
+          "fromColor": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "toColor": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "fromEmission": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "toEmission": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "fromIntensity": 0.0,
+          "toIntensity": 0.0,
+          "pulseScale": 0.0,
+          "wobbleAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "wobbleAmplitude": 0.0,
+          "wobbleFrequency": 0.0,
+          "vibrationAxes": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "vibrationFrequency": 0.0,
+          "vibrationRampIn": 0.0,
+          "vibrationRampOut": 0.0,
+          "anchorARef": "",
+          "anchorBRef": "",
+          "lineWidth": 0.0,
+          "lineEmissionIntensity": 0.0,
+          "splineRadius": 0.0,
+          "splineMetallic": 0.0,
+          "splineSmoothness": 0.0,
+          "splineAnchorRefs": [],
+          "spinAngleDegrees": 120.0,
+          "measureUnit": "",
+          "travelStartProgress": 0.0,
+          "travelEndProgress": 0.0
+        },
+        {
+          "type": "particle",
+          "targetPartIds": [],
+          "targetToolIds": [],
+          "targetSubassemblyId": "",
+          "stepIds": [
+            "step_bottom_clamp_panel"
+          ],
+          "always": false,
+          "particlePrefabRef": "",
+          "particleSourceMode": "preset",
+          "particlePresetId": "torque_sparks",
+          "particleScale": 1.67,
+          "particleColorTint": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "trigger": "onDuringAction",
+          "delaySeconds": 0.0,
+          "durationSeconds": 0.0,
+          "loop": false,
+          "easing": "",
+          "target": "",
+          "fromPose": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          },
+          "toPose": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          },
+          "subassemblyRotation": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "pulseColorA": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseColorB": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseSpeed": 0.0,
+          "spinRevolutions": 0.0,
+          "spinAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "shakeAmplitude": 0.0,
+          "shakeFrequency": 0.0,
+          "shakeAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "animationClipName": "",
+          "panelOrder": 3,
+          "sequenceAfterPrevious": false,
+          "animationClipAssetPath": "",
+          "pivotOffsetOverride": false,
+          "pivotOffset": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "holdAtEnd": false,
+          "startProgress": 0.5,
+          "endProgress": 0.6,
+          "fromColor": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "toColor": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "fromEmission": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "toEmission": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "fromIntensity": 0.0,
+          "toIntensity": 0.0,
+          "pulseScale": 0.0,
+          "wobbleAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "wobbleAmplitude": 0.0,
+          "wobbleFrequency": 0.0,
+          "vibrationAxes": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "vibrationFrequency": 0.0,
+          "vibrationRampIn": 0.0,
+          "vibrationRampOut": 0.0,
+          "anchorARef": "",
+          "anchorBRef": "",
+          "lineWidth": 0.0,
+          "lineEmissionIntensity": 0.0,
+          "splineRadius": 0.0,
+          "splineMetallic": 0.0,
+          "splineSmoothness": 0.0,
+          "splineAnchorRefs": [],
+          "spinAngleDegrees": 0.0,
+          "measureUnit": "",
+          "travelStartProgress": 0.0,
+          "travelEndProgress": 0.0
+        }
+      ]
     },
     {
       "id": "tool_mig_torch",
       "name": "MIG Torch",
       "category": "power_tool",
+      "primaryActionType": "weld_pass",
       "purpose": "Places short tack welds at the overlapped frame-side corners.",
       "usageNotes": "Use brief tacks in the authored order so the panel stays square and heat input remains controlled.",
       "safetyNotes": "Use welding PPE, protect nearby surfaces, and maintain ventilation before striking an arc.",
@@ -137,12 +801,964 @@
         },
         "handedness": "right",
         "poseHint": "power_grip"
-      }
+      },
+      "persistent": false,
+      "animationCues": [
+        {
+          "type": "particle",
+          "targetPartIds": [],
+          "targetToolIds": [],
+          "targetSubassemblyId": "",
+          "stepIds": [],
+          "always": false,
+          "particlePrefabRef": "",
+          "particleSourceMode": "preset",
+          "particlePresetId": "weld_arc",
+          "particleScale": 1.0,
+          "particleColorTint": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "trigger": "onDuringAction",
+          "delaySeconds": 0.0,
+          "durationSeconds": 0.0,
+          "loop": true,
+          "easing": "",
+          "target": "",
+          "fromPose": {
+            "position": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 0
+            },
+            "scale": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            }
+          },
+          "toPose": {
+            "position": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 0
+            },
+            "scale": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            }
+          },
+          "subassemblyRotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "pulseColorA": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 0
+          },
+          "pulseColorB": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 0
+          },
+          "pulseSpeed": 0.0,
+          "spinRevolutions": 0.0,
+          "spinAxis": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "shakeAmplitude": 0.0,
+          "shakeFrequency": 0.0,
+          "shakeAxis": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "animationClipName": "",
+          "panelOrder": 0,
+          "sequenceAfterPrevious": false,
+          "animationClipAssetPath": "",
+          "pivotOffsetOverride": false,
+          "pivotOffset": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "holdAtEnd": false,
+          "startProgress": 0.1,
+          "endProgress": 1.0,
+          "fromColor": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 0
+          },
+          "toColor": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 0
+          },
+          "fromEmission": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 0
+          },
+          "toEmission": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 0
+          },
+          "fromIntensity": 0.0,
+          "toIntensity": 0.0,
+          "pulseScale": 0.0,
+          "wobbleAxis": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "wobbleAmplitude": 0.0,
+          "wobbleFrequency": 0.0,
+          "vibrationAxes": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "vibrationFrequency": 0.0,
+          "vibrationRampIn": 0.0,
+          "vibrationRampOut": 0.0,
+          "anchorARef": "weldStart",
+          "anchorBRef": "weldEnd",
+          "lineWidth": 0.0,
+          "lineEmissionIntensity": 0.0,
+          "splineRadius": 0.0,
+          "splineMetallic": 0.0,
+          "splineSmoothness": 0.0,
+          "splineAnchorRefs": [],
+          "spinAngleDegrees": 0.0,
+          "measureUnit": "",
+          "travelStartProgress": 0.15,
+          "travelEndProgress": 0.9
+        },
+        {
+          "type": "emissionPulse",
+          "targetPartIds": [],
+          "targetToolIds": [],
+          "targetSubassemblyId": "",
+          "stepIds": [],
+          "always": false,
+          "particlePrefabRef": "",
+          "particleSourceMode": "",
+          "particlePresetId": "",
+          "particleScale": 0.0,
+          "particleColorTint": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "trigger": "onDuringAction",
+          "delaySeconds": 0.0,
+          "durationSeconds": 0.0,
+          "loop": false,
+          "easing": "",
+          "target": "",
+          "fromPose": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          },
+          "toPose": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          },
+          "subassemblyRotation": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "pulseColorA": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseColorB": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseSpeed": 0.0,
+          "spinRevolutions": 0.0,
+          "spinAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "shakeAmplitude": 0.0,
+          "shakeFrequency": 0.0,
+          "shakeAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "animationClipName": "",
+          "panelOrder": 1,
+          "sequenceAfterPrevious": false,
+          "animationClipAssetPath": "",
+          "pivotOffsetOverride": false,
+          "pivotOffset": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "holdAtEnd": false,
+          "startProgress": 0.1,
+          "endProgress": 1.0,
+          "fromColor": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "toColor": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "fromEmission": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 1.0
+          },
+          "toEmission": {
+            "r": 0.9,
+            "g": 0.95,
+            "b": 1.0,
+            "a": 1.0
+          },
+          "fromIntensity": 0.0,
+          "toIntensity": 1.5,
+          "pulseScale": 0.0,
+          "wobbleAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "wobbleAmplitude": 0.0,
+          "wobbleFrequency": 0.0,
+          "vibrationAxes": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "vibrationFrequency": 0.0,
+          "vibrationRampIn": 0.0,
+          "vibrationRampOut": 0.0,
+          "anchorARef": "",
+          "anchorBRef": "",
+          "lineWidth": 0.0,
+          "lineEmissionIntensity": 0.0,
+          "splineRadius": 0.0,
+          "splineMetallic": 0.0,
+          "splineSmoothness": 0.0,
+          "splineAnchorRefs": [],
+          "spinAngleDegrees": 0.0,
+          "measureUnit": "",
+          "travelStartProgress": 0.0,
+          "travelEndProgress": 0.0
+        },
+        {
+          "type": "poseWobble",
+          "targetPartIds": [],
+          "targetToolIds": [],
+          "targetSubassemblyId": "",
+          "stepIds": [],
+          "always": false,
+          "particlePrefabRef": "",
+          "particleSourceMode": "",
+          "particlePresetId": "",
+          "particleScale": 0.0,
+          "particleColorTint": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "trigger": "onDuringAction",
+          "delaySeconds": 0.0,
+          "durationSeconds": 0.0,
+          "loop": false,
+          "easing": "",
+          "target": "",
+          "fromPose": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          },
+          "toPose": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          },
+          "subassemblyRotation": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "pulseColorA": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseColorB": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseSpeed": 0.0,
+          "spinRevolutions": 0.0,
+          "spinAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "shakeAmplitude": 0.0,
+          "shakeFrequency": 0.0,
+          "shakeAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "animationClipName": "",
+          "panelOrder": 2,
+          "sequenceAfterPrevious": false,
+          "animationClipAssetPath": "",
+          "pivotOffsetOverride": false,
+          "pivotOffset": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "holdAtEnd": false,
+          "startProgress": 0.05,
+          "endProgress": 0.95,
+          "fromColor": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "toColor": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "fromEmission": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "toEmission": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "fromIntensity": 0.0,
+          "toIntensity": 0.0,
+          "pulseScale": 0.0,
+          "wobbleAxis": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 0.0
+          },
+          "wobbleAmplitude": 0.12,
+          "wobbleFrequency": 40.0,
+          "vibrationAxes": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "vibrationFrequency": 0.0,
+          "vibrationRampIn": 0.0,
+          "vibrationRampOut": 0.0,
+          "anchorARef": "",
+          "anchorBRef": "",
+          "lineWidth": 0.0,
+          "lineEmissionIntensity": 0.0,
+          "splineRadius": 0.0,
+          "splineMetallic": 0.0,
+          "splineSmoothness": 0.0,
+          "splineAnchorRefs": [],
+          "spinAngleDegrees": 0.0,
+          "measureUnit": "",
+          "travelStartProgress": 0.0,
+          "travelEndProgress": 0.0
+        },
+        {
+          "type": "lineBetweenAnchors",
+          "targetPartIds": [],
+          "targetToolIds": [],
+          "targetSubassemblyId": "",
+          "stepIds": [],
+          "always": false,
+          "particlePrefabRef": "",
+          "particleSourceMode": "",
+          "particlePresetId": "",
+          "particleScale": 0.0,
+          "particleColorTint": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "trigger": "onDuringAction",
+          "delaySeconds": 0.0,
+          "durationSeconds": 0.0,
+          "loop": false,
+          "easing": "",
+          "target": "",
+          "fromPose": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          },
+          "toPose": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          },
+          "subassemblyRotation": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "pulseColorA": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseColorB": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseSpeed": 0.0,
+          "spinRevolutions": 0.0,
+          "spinAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "shakeAmplitude": 0.0,
+          "shakeFrequency": 0.0,
+          "shakeAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "animationClipName": "",
+          "panelOrder": 3,
+          "sequenceAfterPrevious": false,
+          "animationClipAssetPath": "",
+          "pivotOffsetOverride": false,
+          "pivotOffset": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "holdAtEnd": false,
+          "startProgress": 0.2,
+          "endProgress": 0.9,
+          "fromColor": {
+            "r": 0.85,
+            "g": 0.82,
+            "b": 0.72,
+            "a": 1.0
+          },
+          "toColor": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "fromEmission": {
+            "r": 1.0,
+            "g": 0.9,
+            "b": 0.7,
+            "a": 1.0
+          },
+          "toEmission": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "fromIntensity": 0.0,
+          "toIntensity": 0.0,
+          "pulseScale": 0.0,
+          "wobbleAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "wobbleAmplitude": 0.0,
+          "wobbleFrequency": 0.0,
+          "vibrationAxes": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "vibrationFrequency": 0.0,
+          "vibrationRampIn": 0.0,
+          "vibrationRampOut": 0.0,
+          "anchorARef": "weldStart",
+          "anchorBRef": "weldEnd",
+          "lineWidth": 0.004,
+          "lineEmissionIntensity": 1.5,
+          "splineRadius": 0.0,
+          "splineMetallic": 0.0,
+          "splineSmoothness": 0.0,
+          "splineAnchorRefs": [],
+          "spinAngleDegrees": 0.0,
+          "measureUnit": "",
+          "travelStartProgress": 0.0,
+          "travelEndProgress": 0.0
+        },
+        {
+          "type": "materialFade",
+          "targetPartIds": [],
+          "targetToolIds": [],
+          "targetSubassemblyId": "",
+          "stepIds": [],
+          "always": false,
+          "particlePrefabRef": "",
+          "particleSourceMode": "",
+          "particlePresetId": "",
+          "particleScale": 0.0,
+          "particleColorTint": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "trigger": "onStepComplete",
+          "delaySeconds": 0.0,
+          "durationSeconds": 2.0,
+          "loop": false,
+          "easing": "",
+          "target": "",
+          "fromPose": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          },
+          "toPose": {
+            "position": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "rotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.0
+            },
+            "scale": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            }
+          },
+          "subassemblyRotation": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "pulseColorA": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseColorB": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 0.0
+          },
+          "pulseSpeed": 0.0,
+          "spinRevolutions": 0.0,
+          "spinAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "shakeAmplitude": 0.0,
+          "shakeFrequency": 0.0,
+          "shakeAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "animationClipName": "",
+          "panelOrder": 0,
+          "sequenceAfterPrevious": false,
+          "animationClipAssetPath": "",
+          "pivotOffsetOverride": false,
+          "pivotOffset": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "holdAtEnd": false,
+          "startProgress": 0.0,
+          "endProgress": 0.0,
+          "fromColor": {
+            "r": 0.85,
+            "g": 0.82,
+            "b": 0.72,
+            "a": 1.0
+          },
+          "toColor": {
+            "r": 0.55,
+            "g": 0.55,
+            "b": 0.52,
+            "a": 1.0
+          },
+          "fromEmission": {
+            "r": 1.0,
+            "g": 0.9,
+            "b": 0.7,
+            "a": 1.0
+          },
+          "toEmission": {
+            "r": 0.0,
+            "g": 0.0,
+            "b": 0.0,
+            "a": 1.0
+          },
+          "fromIntensity": 1.5,
+          "toIntensity": 0.0,
+          "pulseScale": 0.0,
+          "wobbleAxis": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "wobbleAmplitude": 0.0,
+          "wobbleFrequency": 0.0,
+          "vibrationAxes": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "vibrationFrequency": 0.0,
+          "vibrationRampIn": 0.0,
+          "vibrationRampOut": 0.0,
+          "anchorARef": "",
+          "anchorBRef": "",
+          "lineWidth": 0.0,
+          "lineEmissionIntensity": 0.0,
+          "splineRadius": 0.0,
+          "splineMetallic": 0.0,
+          "splineSmoothness": 0.0,
+          "splineAnchorRefs": [],
+          "spinAngleDegrees": 0.0,
+          "measureUnit": "",
+          "travelStartProgress": 0.0,
+          "travelEndProgress": 0.0
+        },
+        {
+          "type": "moveBetweenAnchors",
+          "targetPartIds": [],
+          "targetToolIds": [],
+          "targetSubassemblyId": "",
+          "stepIds": [],
+          "always": false,
+          "particlePrefabRef": "",
+          "particleSourceMode": "",
+          "particlePresetId": "",
+          "particleScale": 0.0,
+          "particleColorTint": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 0
+          },
+          "trigger": "onDuringAction",
+          "delaySeconds": 0.0,
+          "durationSeconds": 0.0,
+          "loop": false,
+          "easing": "",
+          "target": "",
+          "fromPose": {
+            "position": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 0
+            },
+            "scale": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            }
+          },
+          "toPose": {
+            "position": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 0
+            },
+            "scale": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            }
+          },
+          "subassemblyRotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "pulseColorA": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 0
+          },
+          "pulseColorB": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 0
+          },
+          "pulseSpeed": 0.0,
+          "spinRevolutions": 0.0,
+          "spinAxis": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "shakeAmplitude": 0.0,
+          "shakeFrequency": 0.0,
+          "shakeAxis": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "animationClipName": "",
+          "panelOrder": 10,
+          "sequenceAfterPrevious": false,
+          "animationClipAssetPath": "",
+          "pivotOffsetOverride": false,
+          "pivotOffset": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "holdAtEnd": false,
+          "startProgress": 0.05,
+          "endProgress": 0.95,
+          "travelStartProgress": 0.15,
+          "travelEndProgress": 0.9,
+          "fromColor": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 0
+          },
+          "toColor": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 0
+          },
+          "fromEmission": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 0
+          },
+          "toEmission": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 0
+          },
+          "fromIntensity": 0.0,
+          "toIntensity": 0.0,
+          "pulseScale": 0.0,
+          "wobbleAxis": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "wobbleAmplitude": 0.0,
+          "wobbleFrequency": 0.0,
+          "vibrationAxes": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "vibrationFrequency": 0.0,
+          "vibrationRampIn": 0.0,
+          "vibrationRampOut": 0.0,
+          "anchorARef": "weldStart",
+          "anchorBRef": "weldEnd",
+          "lineWidth": 0.0,
+          "lineEmissionIntensity": 0.0,
+          "splineRadius": 0.0,
+          "splineMetallic": 0.0,
+          "splineSmoothness": 0.0,
+          "splineAnchorRefs": [],
+          "spinAngleDegrees": 0.0,
+          "measureUnit": ""
+        }
+      ]
     },
     {
       "id": "tool_angle_grinder",
       "name": "Angle Grinder",
       "category": "power_tool",
+      "primaryActionType": "grind_pass",
       "purpose": "Cleans proud weld metal and spatter from the frame faces that will later carry rail and bracket hardware.",
       "usageNotes": "Use light cleanup passes on the authored upper joints so later mounting faces stay usable without removing structural material.",
       "safetyNotes": "Use eye and face protection, keep the guard in place, and control sparks away from the work area.",
@@ -157,6 +1773,7 @@
       "id": "tool_allen_key_metric",
       "name": "5 mm Metric Allen Key",
       "category": "hand_tool",
+      "primaryActionType": "tighten",
       "purpose": "Starts and tightens the X-axis fitting fasteners.",
       "assetRef": "tool_allen_key_metric.glb",
       "toolPose": {
@@ -194,6 +1811,7 @@
       "id": "tool_pliers",
       "name": "Pliers",
       "category": "hand_tool",
+      "primaryActionType": "tighten",
       "purpose": "Pulls the X-axis belt to final tension.",
       "assetRef": "tool_pliers.glb"
     },
@@ -239,6 +1857,7 @@
       "id": "tool_power_drill",
       "name": "Power Drill",
       "category": "power_tool",
+      "primaryActionType": "tighten",
       "purpose": "Drills pilot holes and drives screws during D3D frame and axis assembly.",
       "usageNotes": "Use a 3 mm bit for pilot holes in flat stock. Switch to a driver bit for M3/M5 screws.",
       "safetyNotes": "Wear eye protection. Secure the workpiece before drilling.",

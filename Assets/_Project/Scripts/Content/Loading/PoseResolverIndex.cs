@@ -115,6 +115,17 @@ namespace OSE.Content.Loading
         /// </summary>
         public readonly Dictionary<string, SubassemblyPreviewPlacement> subassemblyPlacementById;
 
+        // ── Tool-task endTransform timeline ──────────────────────────────
+        /// <summary>
+        /// partId → list of (seqIndex, endTransform) pairs collected from
+        /// every tool task across the package, sorted ascending by seq.
+        /// Resolves the pose-chain invariant for the editor: "the part's
+        /// pose entering step N = the latest endTransform with seq &lt; N
+        /// for that part." Avoids baking synthetic stepPoses (single source
+        /// of truth = the authored entry.endTransform).
+        /// </summary>
+        public readonly Dictionary<string, List<(int seq, TaskEndTransform endT)>> endTransformsByPart;
+
         public PoseResolverIndex(MachinePackageDefinition pkg)
         {
             if (pkg == null) throw new ArgumentNullException(nameof(pkg));
@@ -265,6 +276,43 @@ namespace OSE.Content.Loading
                 }
                 if (list.Count > 0) groupStepPosesBySubassembly[kvp.Key] = list;
             }
+
+            // tool-task endTransform timeline — partId → ordered (seq, endT)
+            endTransformsByPart = new Dictionary<string, List<(int, TaskEndTransform)>>(StringComparer.Ordinal);
+            var partByTargetId = new Dictionary<string, string>(StringComparer.Ordinal);
+            if (pkg.targets != null)
+            {
+                foreach (var t in pkg.targets)
+                {
+                    if (t == null || string.IsNullOrEmpty(t.id) || string.IsNullOrEmpty(t.associatedPartId)) continue;
+                    partByTargetId[t.id] = t.associatedPartId;
+                }
+            }
+            foreach (var s in orderedSteps)
+            {
+                if (s.taskOrder == null || s.requiredToolActions == null) continue;
+                int seq = s.sequenceIndex;
+                Dictionary<string, string> targetByActionId = null;
+                foreach (var a in s.requiredToolActions)
+                {
+                    if (a == null || string.IsNullOrEmpty(a.id) || string.IsNullOrEmpty(a.targetId)) continue;
+                    targetByActionId ??= new Dictionary<string, string>(StringComparer.Ordinal);
+                    targetByActionId[a.id] = a.targetId;
+                }
+                if (targetByActionId == null) continue;
+                foreach (var entry in s.taskOrder)
+                {
+                    if (entry == null || entry.endTransform == null) continue;
+                    if (!string.Equals(entry.kind, "toolAction", StringComparison.Ordinal)) continue;
+                    if (!targetByActionId.TryGetValue(entry.id, out var targetId)) continue;
+                    if (!partByTargetId.TryGetValue(targetId, out var pid)) continue;
+                    if (!endTransformsByPart.TryGetValue(pid, out var list))
+                        endTransformsByPart[pid] = list = new List<(int, TaskEndTransform)>();
+                    list.Add((seq, entry.endTransform));
+                }
+            }
+            foreach (var kvp in endTransformsByPart)
+                kvp.Value.Sort((a, b) => a.seq.CompareTo(b.seq));
 
             // integrated placements
             integratedBySubTarget          = new Dictionary<string, IntegratedSubassemblyPreviewPlacement>(StringComparer.Ordinal);

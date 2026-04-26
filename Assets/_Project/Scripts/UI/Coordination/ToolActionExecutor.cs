@@ -166,8 +166,10 @@ namespace OSE.UI.Root
                 PreviewConfig = previewCfg,
             };
 
-            // Resolve optional part effect for progress-driven part movement
-            context.PartEffect = TryResolvePartEffect(context.TargetId);
+            // Resolve optional part effect for progress-driven part movement.
+            // followPart honors the authored payload toggle (default true).
+            context.PartEffect = TryResolvePartEffect(context.TargetId, out bool followPart);
+            context.FollowPart = followPart;
 
             return !string.IsNullOrWhiteSpace(context.TargetId);
         }
@@ -426,8 +428,12 @@ namespace OSE.UI.Root
         /// local pose to the step-scoped or assembled end pose in sync with progress.
         /// Returns null when no part is associated or no movement is needed.
         /// </summary>
-        private IPartEffect TryResolvePartEffect(string targetId)
+        private IPartEffect TryResolvePartEffect(string targetId, out bool followPart)
         {
+            // Default true preserves pre-existing behavior — every IPartEffect
+            // historically caused the tool to follow the part's displacement.
+            // Payload-authored false opts out (tool stays at the working pose).
+            followPart = true;
             var spawner = _ctx.Spawner;
             var package = spawner?.CurrentPackage;
             if (package == null) return null;
@@ -452,25 +458,34 @@ namespace OSE.UI.Root
             var activeStep = stepCtrl.CurrentStepDefinition;
             string currentStepId = activeStep.id;
 
-            // Fail-closed: only build a PartEffect when the profile's
-            // descriptor explicitly opts in via PartFollowsTool. Every other
-            // profile (Weld, SquareCheck, Measure, Cut, Strike, Clamp, AxisFit,
-            // WireConnect, and any new profile that hasn't been classified)
-            // keeps the part stationary during the action. Without this gate
-            // the controller drags the tool along with the part's step-to-step
-            // pose lerp, visible as "tool flies off-screen on action start"
-            // (seen 2026-04-18 on step 27 tack-weld, 1.9m drift over 1.5s).
+            // Two-layer gate (fail-closed by default, per-task opt-in wins):
+            //   1. Profile descriptor's PartFollowsTool — coarse default.
+            //      Only the Torque profile sets this true today.
+            //   2. Per-task payload.followPart == true — explicit author
+            //      opt-in via TTAW Interaction Panel's "Move tool & part
+            //      together" toggle. Wins over the profile default.
             //
-            // To add follow behavior for a new profile: set PartFollowsTool = true
-            // on its ToolProfileRegistry entry. One source of truth, no string
-            // matching scattered across call sites.
+            // Without #2, every step that needs lerp visualization had to
+            // map to a PartFollowsTool=true profile or invent a new one;
+            // authors couldn't trust the inspector toggle. With #2, the
+            // toggle IS the authoritative signal — matches the principle
+            // that explicit per-entity fields beat blanket profile rules.
+            //
+            // The 2026-04-18 "tool flies off-screen on tack-weld" incident
+            // is still guarded: that step had no payload (default false),
+            // so #1's profile gate (Weld → PartFollowsTool=false) still
+            // returns null. Only an author who explicitly toggles followPart
+            // on a Weld task gets follow behavior — by design.
             var profileDesc = ToolProfileRegistry.Get(activeStep.profile);
-            if (!profileDesc.PartFollowsTool)
-                return null;
 
             // Resolve the authored interaction payload (Phase B) from the
             // current step's requiredToolActions. Null means "no payload → lerp / auto".
             ToolPartInteraction payload = TryResolveInteractionPayload(stepCtrl.CurrentStepDefinition, targetId, out var toolPose);
+            if (payload != null) followPart = payload.followPart;
+
+            bool authorOptedIn = payload != null && payload.followPart;
+            if (!profileDesc.PartFollowsTool && !authorOptedIn)
+                return null;
 
             // G.2.3: end-pose precedence is
             //   (1) the task's own TaskOrderEntry.endTransform  (Phase G inline)

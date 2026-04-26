@@ -1788,7 +1788,7 @@ namespace OSE.Editor
 
                         // For multi-select, resolve part indices for batch editing
                         if (_multiSelectedTaskSeqIdxs.Count > 1)
-                            ApplyTaskMultiSelection(order);
+                            ApplyTaskMultiSelection(step, order);
 
                         Event.current.Use();
                         SceneView.RepaintAll();
@@ -2470,6 +2470,13 @@ namespace OSE.Editor
         private void ApplyTaskEntrySelection(StepDefinition step, TaskOrderEntry entry)
         {
             if (entry == null) return;
+
+            // Restore any prior pose-pill snap before changing the active task,
+            // so a part that was snapped to End for the previous tool task
+            // returns to its inherited pose. The new task's pose-pill state
+            // re-initializes when DrawInteractionPosePillRow runs on next OnGUI.
+            RestoreLiveMeshToInheritedPose();
+
             _activeTaskKind = entry.kind;
             _canvasSelectedSubId = null; // clear subassembly selection when a task is clicked
             _poseSwitchCooldownUntil = EditorApplication.timeSinceStartup + 0.5; // suppress false dirty from handle re-init after selection change
@@ -2537,6 +2544,28 @@ namespace OSE.Editor
                         foreach (var a in step.requiredToolActions)
                             if (a?.id == entry.id) { targetId = a.targetId; break; }
 
+                    // Stamp the active step's tool for this target onto
+                    // _targetToolIdMap before refreshing the preview.
+                    // BuildTargetToolMap uses first-step-wins semantics
+                    // (PackageLoad.cs:165 `ContainsKey continue`), so a
+                    // target reused across steps with different tools
+                    // (e.g. step 58 hand-tighten + step 59 drill-tighten of
+                    // the same bolt) only ever shows the FIRST step's
+                    // tool. Override here so each task click reflects its
+                    // own step's tool.
+                    if (entry.kind == "toolAction" && _targetToolIdMap != null
+                        && step.requiredToolActions != null)
+                    {
+                        foreach (var a in step.requiredToolActions)
+                        {
+                            if (a == null || string.IsNullOrEmpty(a.id)) continue;
+                            if (a.id != entry.id) continue;
+                            if (string.IsNullOrEmpty(a.targetId) || string.IsNullOrEmpty(a.toolId)) break;
+                            _targetToolIdMap[a.targetId] = a.toolId;
+                            break;
+                        }
+                    }
+
                     _selectedPartIdx = -1;
                     _multiSelectedParts.Clear();
                     _multiSelected.Clear();
@@ -2547,6 +2576,15 @@ namespace OSE.Editor
                         for (int i = 0; i < _targets.Length; i++)
                             if (_targets[i].def?.id == targetId) { _selectedIdx = i; break; }
                         _selectedTargetId = _selectedIdx >= 0 ? _targets[_selectedIdx].def?.id : null;
+
+                        // Spawn / position the live tool preview for this
+                        // target so the tool ghost (drawn at the play-end
+                        // pose by TTAW.InteractionPosePill) has something to
+                        // mirror. Without this, clicking a tool task in the
+                        // unified list leaves _toolPreviewGO null until the
+                        // author also clicks the target's icon in the scene.
+                        if (_selectedIdx >= 0)
+                            RefreshToolPreview(ref _targets[_selectedIdx]);
                     }
                     break;
                 }
@@ -2558,7 +2596,7 @@ namespace OSE.Editor
         /// for batch editing. Collects all parts and all targets from the selection
         /// regardless of kind, so the batch panel always has content.
         /// </summary>
-        private void ApplyTaskMultiSelection(List<TaskOrderEntry> order)
+        private void ApplyTaskMultiSelection(StepDefinition step, List<TaskOrderEntry> order)
         {
             _multiSelectedParts.Clear();
             _multiSelected.Clear();
@@ -2584,8 +2622,20 @@ namespace OSE.Editor
                 }
                 else if (_targets != null)
                 {
-                    // wire, toolAction, target, confirm — resolve to target index
+                    // wire, toolAction, target, confirm — resolve to target index.
+                    // For toolAction, entry.id is the *action* id (e.g.
+                    // "action_target_c1_bolt_hand_tighten_a"); the matching
+                    // _targets[].def.id is the *target* id behind that action.
+                    // Same indirection the single-select path applies in
+                    // ApplyTaskEntrySelection — without it, _multiSelected stays
+                    // empty for tool tasks and the PositionHandle's batch-drag
+                    // loop has nothing to apply.
                     string targetId = entry.id;
+                    if (entry.kind == "toolAction" && step?.requiredToolActions != null)
+                    {
+                        foreach (var a in step.requiredToolActions)
+                            if (a?.id == entry.id) { targetId = a.targetId; break; }
+                    }
                     for (int i = 0; i < _targets.Length; i++)
                     {
                         if (_targets[i].def?.id == targetId)
@@ -3594,6 +3644,17 @@ namespace OSE.Editor
             if (_multiSelectedTaskSeqIdxs.Count > 1 && _multiSelected.Count > 1)
             {
                 DrawUnifiedSectionHeader($"BATCH — {_multiSelected.Count} targets", 0);
+
+                // Pose pill row for tool×part interactions — shown when any
+                // selected target backs a followPart tool action. The pill's
+                // own multi-select branch (TTAW.InteractionPosePill) handles
+                // lock-all / unlock-all / re-snap-all from here.
+                if (TryFindAnyFollowedToolTaskInMultiSelection(step, out var primaryAction, out var primaryEntry))
+                {
+                    DrawInteractionPosePillRow(step, primaryAction, primaryEntry);
+                    EditorGUILayout.Space(4);
+                }
+
                 DrawBatchPanel();
                 return;
             }
@@ -3926,9 +3987,36 @@ namespace OSE.Editor
                             }
                             _dirtyStepIds.Add(step.id);
                             BuildTargetToolMap();
-                            if (_targets != null)
+
+                            // Resolve the actual TARGET id (not selEntry.id —
+                            // for kind="toolAction" rows that's the ACTION id
+                            // per the comment at line 3920). The map + _targets
+                            // are keyed by target id, so any lookup needs
+                            // taskAction.targetId.
+                            string resolvedTargetId = taskAction?.targetId;
+                            if (string.IsNullOrEmpty(resolvedTargetId))
+                                resolvedTargetId = selEntry.id; // fallback for "target" rows
+
+                            // Override the map for this target with the
+                            // just-picked toolId — BuildTargetToolMap is
+                            // global first-step-wins (PackageLoad.cs:165),
+                            // so without this stamp the rebuild restores
+                            // the FIRST step's tool whenever a target is
+                            // shared across steps (hand-tighten + drill-
+                            // tighten of the same bolts). RefreshToolPreview
+                            // would then spawn the wrong tool. Same pattern
+                            // used by ApplyTaskEntrySelection's toolAction
+                            // branch — see feedback_targettoolidmap_first_
+                            // step_wins_is_buggy.
+                            if (_targetToolIdMap != null
+                                && !string.IsNullOrEmpty(resolvedTargetId))
+                            {
+                                _targetToolIdMap[resolvedTargetId] = pickedToolId;
+                            }
+
+                            if (_targets != null && !string.IsNullOrEmpty(resolvedTargetId))
                                 for (int ti = 0; ti < _targets.Length; ti++)
-                                    if (_targets[ti].def?.id == selEntry.id)
+                                    if (_targets[ti].def?.id == resolvedTargetId)
                                     { RefreshToolPreview(ref _targets[ti]); break; }
                             Repaint();
                         }
