@@ -850,19 +850,155 @@ namespace OSE.Content.Loading
             cursor.Map[lastKey] = ParseOverrideValue(valueJson);
         }
 
-        // Slice 3a is string-only: PrefabOverride.valueJson is a quoted
-        // string ("...") in the common case. Strip the JSON quotes if
-        // present; otherwise keep the literal value. Numeric and complex
-        // (vector3, etc.) overrides extend this in Slice 3b.
+        // PrefabOverride.valueJson encodings handled by Slice 3b:
+        //   "Custom text"               → scalar string (quotes stripped)
+        //   42                          → scalar number (preserved as text;
+        //                                 JsonUtility parses on FromJson)
+        //   true / false                → scalar bool
+        //   { "x": 0.5, "y": 0, "z": 0.3 }  → block-map (vector3 / payload)
+        //   [ "a", "b" ]                → block-sequence of scalars
+        //   null / empty                → empty scalar (clears the field)
+        //
+        // Slice 3a shipped string-only; this round adds numeric / boolean
+        // / block-map / block-sequence so overrides can target offsets,
+        // counts, and structured payloads. The implementation walks the
+        // valueJson string once with a tiny recursive-descent JSON parser
+        // — JsonUtility can't parse a top-level non-object scalar, and
+        // Newtonsoft isn't available in the runtime asmdef.
         private static YamlNode ParseOverrideValue(string valueJson)
         {
-            string s = valueJson ?? string.Empty;
-            s = s.Trim();
-            if (s.Length >= 2 && s[0] == '"' && s[s.Length - 1] == '"')
-                s = s.Substring(1, s.Length - 2)
-                    .Replace("\\\"", "\"")
-                    .Replace("\\\\", "\\");
-            return new YamlNode { Scalar = s };
+            string s = (valueJson ?? string.Empty).Trim();
+            if (s.Length == 0) return new YamlNode { Scalar = string.Empty };
+
+            int idx = 0;
+            try
+            {
+                var node = ParseJsonValue(s, ref idx);
+                SkipWhitespace(s, ref idx);
+                if (idx < s.Length)
+                {
+                    // Trailing junk — fall back to literal scalar so the
+                    // author isn't punished for a malformed override.
+                    return new YamlNode { Scalar = s };
+                }
+                return node;
+            }
+            catch
+            {
+                // Anything we can't parse degrades to a literal scalar so
+                // simple unquoted text overrides keep working.
+                return new YamlNode { Scalar = s };
+            }
+        }
+
+        private static YamlNode ParseJsonValue(string s, ref int i)
+        {
+            SkipWhitespace(s, ref i);
+            if (i >= s.Length) throw new FormatException("Unexpected end of override value.");
+            char c = s[i];
+            if (c == '"')   return new YamlNode { Scalar = ParseJsonString(s, ref i) };
+            if (c == '{')   return ParseJsonObject(s, ref i);
+            if (c == '[')   return ParseJsonArray(s, ref i);
+            return ParseJsonLiteral(s, ref i);
+        }
+
+        private static string ParseJsonString(string s, ref int i)
+        {
+            if (s[i] != '"') throw new FormatException("Expected '\"' in override value.");
+            i++;
+            var sb = new StringBuilder();
+            while (i < s.Length)
+            {
+                char c = s[i];
+                if (c == '"') { i++; return sb.ToString(); }
+                if (c == '\\' && i + 1 < s.Length)
+                {
+                    char esc = s[i + 1];
+                    switch (esc)
+                    {
+                        case '"':  sb.Append('"');  break;
+                        case '\\': sb.Append('\\'); break;
+                        case '/':  sb.Append('/');  break;
+                        case 'n':  sb.Append('\n'); break;
+                        case 'r':  sb.Append('\r'); break;
+                        case 't':  sb.Append('\t'); break;
+                        case 'b':  sb.Append('\b'); break;
+                        case 'f':  sb.Append('\f'); break;
+                        default:   sb.Append(esc); break;
+                    }
+                    i += 2;
+                    continue;
+                }
+                sb.Append(c);
+                i++;
+            }
+            throw new FormatException("Unterminated string in override value.");
+        }
+
+        private static YamlNode ParseJsonObject(string s, ref int i)
+        {
+            if (s[i] != '{') throw new FormatException("Expected '{' in override value.");
+            i++;
+            var map = new Dictionary<string, YamlNode>(StringComparer.Ordinal);
+            SkipWhitespace(s, ref i);
+            if (i < s.Length && s[i] == '}') { i++; return new YamlNode { Map = map }; }
+            while (i < s.Length)
+            {
+                SkipWhitespace(s, ref i);
+                string key = ParseJsonString(s, ref i);
+                SkipWhitespace(s, ref i);
+                if (i >= s.Length || s[i] != ':') throw new FormatException("Expected ':' after key in override value.");
+                i++;
+                map[key] = ParseJsonValue(s, ref i);
+                SkipWhitespace(s, ref i);
+                if (i < s.Length && s[i] == ',') { i++; continue; }
+                if (i < s.Length && s[i] == '}') { i++; return new YamlNode { Map = map }; }
+                throw new FormatException("Expected ',' or '}' in override value object.");
+            }
+            throw new FormatException("Unterminated object in override value.");
+        }
+
+        private static YamlNode ParseJsonArray(string s, ref int i)
+        {
+            if (s[i] != '[') throw new FormatException("Expected '[' in override value.");
+            i++;
+            var seq = new List<YamlNode>();
+            SkipWhitespace(s, ref i);
+            if (i < s.Length && s[i] == ']') { i++; return new YamlNode { Seq = seq }; }
+            while (i < s.Length)
+            {
+                seq.Add(ParseJsonValue(s, ref i));
+                SkipWhitespace(s, ref i);
+                if (i < s.Length && s[i] == ',') { i++; continue; }
+                if (i < s.Length && s[i] == ']') { i++; return new YamlNode { Seq = seq }; }
+                throw new FormatException("Expected ',' or ']' in override value array.");
+            }
+            throw new FormatException("Unterminated array in override value.");
+        }
+
+        // JSON literals: numbers (-?\d+(\.\d+)?(e-?\d+)?), true / false, null.
+        // Stored as scalar strings so the YamlNode → JSON round-trip keeps
+        // them readable on serialization; JsonUtility happily parses
+        // numeric-looking strings on its FromJson path.
+        private static YamlNode ParseJsonLiteral(string s, ref int i)
+        {
+            int start = i;
+            while (i < s.Length)
+            {
+                char c = s[i];
+                if (c == ',' || c == '}' || c == ']' || char.IsWhiteSpace(c)) break;
+                i++;
+            }
+            string token = s.Substring(start, i - start);
+            if (token.Length == 0) throw new FormatException("Empty literal in override value.");
+            if (string.Equals(token, "null", StringComparison.Ordinal))
+                return new YamlNode { Scalar = string.Empty };
+            return new YamlNode { Scalar = token };
+        }
+
+        private static void SkipWhitespace(string s, ref int i)
+        {
+            while (i < s.Length && char.IsWhiteSpace(s[i])) i++;
         }
 
         // ── Helpers ───────────────────────────────────────────────────────
