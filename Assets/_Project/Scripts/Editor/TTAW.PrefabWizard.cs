@@ -49,10 +49,18 @@ namespace OSE.Editor
 
         // ── Public entry ─────────────────────────────────────────────────────
 
+        private PrefabExpander.Summary _summary;
+
         public static void Open(ToolTargetAuthoringWindow owner, string prefabYamlPath, string targetStepId,
             PrefabRoleBinding[] recordedBindings = null, int startSeqOverride = -1)
         {
-            var w = GetWindow<PrefabWizardWindow>(true, "Instantiate Prefab", true);
+            var summary = PrefabExpander.Analyze(prefabYamlPath);
+            string name = Path.GetFileNameWithoutExtension(prefabYamlPath ?? "");
+            string title = string.IsNullOrEmpty(name)
+                ? "Instantiate Prefab"
+                : $"Instantiate {name}  ·  {summary.FormatSummaryLine()}";
+            var w = GetWindow<PrefabWizardWindow>(true, title, true);
+            w._summary = summary;
             w.minSize = new Vector2(420, 320);
             w._owner             = owner;
             w._prefabYamlPath    = prefabYamlPath;
@@ -203,6 +211,8 @@ namespace OSE.Editor
         {
             EditorGUILayout.LabelField($"Prefab: {_prefabName}",
                 new GUIStyle(EditorStyles.largeLabel) { fontStyle = FontStyle.Bold });
+            if (_summary != null)
+                EditorGUILayout.LabelField(_summary.FormatSummaryLine(), EditorStyles.miniLabel);
             if (!string.IsNullOrEmpty(_prefabDescription))
                 EditorGUILayout.LabelField(_prefabDescription, EditorStyles.wordWrappedMiniLabel);
             EditorGUILayout.LabelField($"Target step: {_targetStepId ?? "(none)"}", EditorStyles.miniLabel);

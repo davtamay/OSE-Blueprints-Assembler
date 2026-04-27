@@ -763,6 +763,116 @@ namespace OSE.Content.Loading
             };
         }
 
+        // ── Summary helpers (UI scaffolding) ───────────────────────────────
+
+        /// <summary>
+        /// Layer-count breakdown for a prefab YAML. Used by editor surfaces
+        /// (PREFABS panel rows, wizard title, linked banner) to show the
+        /// author exactly which package layers each prefab brings without
+        /// having to peek inside the YAML. Self-contained prefabs surface
+        /// non-zero <see cref="PartCount"/> + <see cref="PartGroupCount"/>;
+        /// procedure-only prefabs surface only <see cref="StepCount"/>.
+        /// </summary>
+        public sealed class Summary
+        {
+            public int  StepCount;
+            public int  PartCount;
+            public int  PartGroupCount;
+            public bool ParseFailed;
+
+            /// <summary>True when the prefab brings parts and / or a part group — not just steps.</summary>
+            public bool IsSelfContained => PartCount > 0 || PartGroupCount > 0;
+
+            /// <summary>
+            /// One-line human description of the layers the prefab emits.
+            /// Examples:
+            ///   "1 step  ·  uses existing parts"
+            ///   "7 steps  ·  uses existing parts"
+            ///   "7 steps + 14 parts + 1 part group  ·  self-contained"
+            /// </summary>
+            public string FormatSummaryLine()
+            {
+                if (ParseFailed) return "(prefab failed to parse)";
+                var sb = new StringBuilder();
+                AppendCount(sb, StepCount, "step");
+                if (PartCount > 0)
+                {
+                    if (sb.Length > 0) sb.Append(" + ");
+                    AppendCount(sb, PartCount, "part");
+                }
+                if (PartGroupCount > 0)
+                {
+                    if (sb.Length > 0) sb.Append(" + ");
+                    AppendCount(sb, PartGroupCount, "part group");
+                }
+                if (sb.Length == 0) sb.Append("(empty)");
+                sb.Append("  ·  ");
+                sb.Append(IsSelfContained ? "self-contained" : "uses existing parts");
+                return sb.ToString();
+            }
+
+            private static void AppendCount(StringBuilder sb, int n, string singular)
+            {
+                if (n == 0) return;
+                sb.Append(n).Append(' ').Append(singular);
+                if (n != 1) sb.Append('s');
+            }
+        }
+
+        /// <summary>
+        /// Reads a prefab YAML and counts the layers it emits per instance —
+        /// useful for editor UI without paying the full expansion cost.
+        /// Roles + bindings are unresolved (the prefab is the data, not an
+        /// instance), so list-role parts are counted by their declared
+        /// <c>count:</c>; absent counts default to 1.
+        /// </summary>
+        public static Summary Analyze(string prefabYamlPath)
+        {
+            var summary = new Summary();
+            if (string.IsNullOrEmpty(prefabYamlPath) || !File.Exists(prefabYamlPath))
+            {
+                summary.ParseFailed = true;
+                return summary;
+            }
+            try
+            {
+                var root = PrefabYamlReader.ReadFile(prefabYamlPath);
+                if (root == null || !root.IsMap) { summary.ParseFailed = true; return summary; }
+
+                if (root.TryGet("steps", out var stepsNode) && stepsNode != null && stepsNode.IsSeq)
+                    summary.StepCount = stepsNode.Seq.Count;
+
+                if (root.TryGet("partGroupDefinition", out var pg) && pg != null && pg.IsMap)
+                    summary.PartGroupCount = 1;
+
+                if (root.TryGet("partDefinitions", out var defs) && defs != null && defs.IsMap)
+                {
+                    foreach (var kv in defs.Map)
+                    {
+                        if (kv.Value == null || !kv.Value.IsMap) continue;
+                        string kind = kv.Value.GetScalar("kind", "part") ?? "part";
+                        if (string.Equals(kind, "part_list", StringComparison.OrdinalIgnoreCase))
+                        {
+                            string c = kv.Value.GetScalar("count", null);
+                            if (int.TryParse(c, out int n) && n > 0) summary.PartCount += n;
+                            else if (kv.Value.TryGet("placements", out var pls) && pls != null && pls.IsSeq)
+                                summary.PartCount += pls.Seq.Count;
+                            else summary.PartCount += 1;
+                        }
+                        else
+                        {
+                            summary.PartCount += 1;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                summary.ParseFailed = true;
+            }
+            return summary;
+        }
+
         public static string ResolvePrefabPath(string prefabsDir, string prefabId)
         {
             if (string.IsNullOrEmpty(prefabsDir) || string.IsNullOrEmpty(prefabId)) return null;

@@ -23,6 +23,7 @@ namespace OSE.Editor
         // user clicks the refresh button. Avoids re-listing the directory on
         // every OnGUI tick (would spam the disk for an editor-only feature).
         private string[] _prefabPaths;
+        private PrefabExpander.Summary[] _prefabSummaries;
         private double  _prefabCatalogScannedAt = -1;
         private const double PrefabCatalogStaleAfterSec = 5.0;
 
@@ -72,15 +73,28 @@ namespace OSE.Editor
             }
             else
             {
-                foreach (var path in _prefabPaths)
+                for (int i = 0; i < _prefabPaths.Length; i++)
                 {
-                    EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
-                    Rect rowRect = GUILayoutUtility.GetRect(0, 22, GUILayout.ExpandWidth(true));
-                    Rect labelRect  = new Rect(rowRect.x,            rowRect.y, rowRect.width - 84f, rowRect.height);
-                    Rect buttonRect = new Rect(rowRect.xMax - 80f,   rowRect.y, 78f, rowRect.height);
-                    GUI.Label(labelRect, new GUIContent("≡  " + Path.GetFileNameWithoutExtension(path),
+                    string path = _prefabPaths[i];
+                    PrefabExpander.Summary summary = (_prefabSummaries != null && i < _prefabSummaries.Length)
+                        ? _prefabSummaries[i] : null;
+
+                    EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                    Rect rowRect = GUILayoutUtility.GetRect(0, 36, GUILayout.ExpandWidth(true));
+                    Rect titleRect  = new Rect(rowRect.x,           rowRect.y,        rowRect.width - 84f, 16f);
+                    Rect summaryRect= new Rect(rowRect.x + 18f,     rowRect.y + 18f,  rowRect.width - 100f, 14f);
+                    Rect buttonRect = new Rect(rowRect.xMax - 80f,  rowRect.y + 4f,   78f, 28f);
+
+                    string name = Path.GetFileNameWithoutExtension(path);
+                    GUI.Label(titleRect, new GUIContent("📦  " + name,
                         "Drag this row onto the canvas drop zone to instantiate the prefab."),
                         new GUIStyle(EditorStyles.label) { fontStyle = FontStyle.Bold });
+
+                    string summaryLine = summary != null
+                        ? summary.FormatSummaryLine()
+                        : "(scanning…)";
+                    GUI.Label(summaryRect, summaryLine, EditorStyles.miniLabel);
+
                     if (GUI.Button(buttonRect, new GUIContent("Open YAML",
                             "Reveal the prefab file in your OS file explorer to read or edit."),
                             EditorStyles.miniButton))
@@ -88,7 +102,7 @@ namespace OSE.Editor
                         EditorUtility.RevealInFinder(path);
                     }
                     HandlePrefabRowDragSource(rowRect, path);
-                    EditorGUILayout.EndHorizontal();
+                    EditorGUILayout.EndVertical();
                 }
             }
         }
@@ -204,6 +218,13 @@ namespace OSE.Editor
         private void ScanPrefabCatalog()
         {
             _prefabPaths = SafeListYaml(GetPrefabsDir());
+            // Pre-compute the layer summary per prefab so PREFABS rows can
+            // render `7 steps + 14 parts + 1 part group · self-contained`
+            // without re-parsing on every OnGUI tick.
+            int n = _prefabPaths?.Length ?? 0;
+            _prefabSummaries = new PrefabExpander.Summary[n];
+            for (int i = 0; i < n; i++)
+                _prefabSummaries[i] = PrefabExpander.Analyze(_prefabPaths[i]);
             _prefabCatalogScannedAt = EditorApplication.timeSinceStartup;
         }
 

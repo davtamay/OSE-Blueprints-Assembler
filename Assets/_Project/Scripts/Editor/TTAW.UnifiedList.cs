@@ -51,7 +51,17 @@ namespace OSE.Editor
                 normal    = { textColor = SubAccent },
             };
             string instanceLabel = string.IsNullOrEmpty(pr.instanceId) ? "(unnamed)" : pr.instanceId;
-            EditorGUILayout.LabelField($"🔗 Linked to prefab '{pr.prefabId}' · instance '{instanceLabel}'", lbl);
+            string prefabPath = !string.IsNullOrEmpty(pr.prefabId)
+                ? System.IO.Path.Combine(System.IO.Path.GetFullPath(System.IO.Path.Combine(Application.dataPath, "..")),
+                                         "AgentAssistant", "prefabs", pr.prefabId + ".yaml")
+                : null;
+            string summaryFragment = "";
+            if (!string.IsNullOrEmpty(prefabPath) && System.IO.File.Exists(prefabPath))
+            {
+                var s = OSE.Content.Loading.PrefabExpander.Analyze(prefabPath);
+                if (!s.ParseFailed) summaryFragment = "  ·  " + s.FormatSummaryLine();
+            }
+            EditorGUILayout.LabelField($"🔗 Linked to '{pr.prefabId}' · instance '{instanceLabel}'{summaryFragment}", lbl);
             GUILayout.FlexibleSpace();
             if (GUILayout.Button(new GUIContent("🔓 Bake",
                     "Persist every virtual step for this instance into the assembly JSON " +
