@@ -56,12 +56,15 @@ namespace OSE.Editor
                                          "AgentAssistant", "prefabs", pr.prefabId + ".yaml")
                 : null;
             string summaryFragment = "";
+            bool isStale = false;
             if (!string.IsNullOrEmpty(prefabPath) && System.IO.File.Exists(prefabPath))
             {
                 var s = OSE.Content.Loading.PrefabExpander.Analyze(prefabPath);
                 if (!s.ParseFailed) summaryFragment = "  ·  " + s.FormatSummaryLine();
+                isStale = IsPrefabSourceStale(prefabPath, pr.sourceMtime);
             }
-            EditorGUILayout.LabelField($"🔗 Linked to '{pr.prefabId}' · instance '{instanceLabel}'{summaryFragment}", lbl);
+            string staleFragment = isStale ? "  ·  ⚠ source updated" : "";
+            EditorGUILayout.LabelField($"🔗 Linked to '{pr.prefabId}' · instance '{instanceLabel}'{summaryFragment}{staleFragment}", lbl);
             GUILayout.FlexibleSpace();
             if (GUILayout.Button(new GUIContent("🔓 Bake",
                     "Persist every virtual step for this instance into the assembly JSON " +
@@ -78,6 +81,18 @@ namespace OSE.Editor
             {
                 DiscardPrefabInstance(pr.instanceId);
             }
+            using (new EditorGUI.DisabledScope(!isStale))
+            {
+                if (GUILayout.Button(new GUIContent("🔄 Reload",
+                        "Re-expand every instance from the latest source YAML. " +
+                        "Available when the prefab YAML mtime is newer than this " +
+                        "instance's recorded sourceMtime. No bindings change — just " +
+                        "the prefab content propagates."),
+                        EditorStyles.miniButton, GUILayout.Width(72), GUILayout.Height(18)))
+                {
+                    ReloadStalePrefabInstances();
+                }
+            }
             if (GUILayout.Button(new GUIContent("↻ Re-instantiate",
                     "Re-run the wizard with the recorded bindings. Use after editing " +
                     "the source prefab YAML to pull updates."),
@@ -87,6 +102,56 @@ namespace OSE.Editor
             }
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space(2);
+        }
+
+        /// <summary>
+        /// True when <paramref name="prefabPath"/> on disk has a newer
+        /// mtime than the supplied recorded sourceMtime. Compares ISO-8601
+        /// strings via <see cref="System.DateTime"/>; missing or unparseable
+        /// values are treated as fresh (no stale banner).
+        /// </summary>
+        private static bool IsPrefabSourceStale(string prefabPath, string recordedMtime)
+        {
+            if (string.IsNullOrEmpty(prefabPath) || string.IsNullOrEmpty(recordedMtime)) return false;
+            if (!System.IO.File.Exists(prefabPath)) return false;
+            if (!System.DateTime.TryParse(recordedMtime,
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.RoundtripKind,
+                out var recorded)) return false;
+            var current = System.IO.File.GetLastWriteTimeUtc(prefabPath);
+            // Allow a sub-second tolerance — file mtimes round differently
+            // depending on filesystem (NTFS vs WSL) and we don't want a
+            // sub-second drift to fire the banner.
+            return (current - recorded).TotalSeconds > 1.0;
+        }
+
+        /// <summary>
+        /// Re-runs <see cref="MachinePackageNormalizer.Normalize"/> against
+        /// the in-memory package. The normalizer's
+        /// <c>ExpandPrefabInstances</c> pass strips every previously-emitted
+        /// virtual entity and re-expands from the current YAML on disk —
+        /// so prefab edits (text, options, additions) propagate to every
+        /// instance in one click. Bindings + per-instance options on
+        /// <c>_pkg.prefabInstances</c> are untouched.
+        /// </summary>
+        private void ReloadStalePrefabInstances()
+        {
+            if (_pkg == null || _pkgId == null) return;
+            try
+            {
+                OSE.Content.Loading.MachinePackageNormalizer.Normalize(_pkg);
+                Debug.Log($"[TTAW.Prefabs] Reloaded prefab instances against current YAML mtimes.");
+                BuildStepOptions();
+                BuildTargetList();
+                BuildPartList();
+                BuildGroupList();
+                RespawnScene();
+                Repaint();
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[TTAW.Prefabs] Reload failed: {ex.Message}");
+            }
         }
 
         /// <summary>
