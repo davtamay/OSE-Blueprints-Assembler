@@ -34,6 +34,21 @@ namespace OSE.Editor
         private Vector2 _scroll;
         private string  _statusMessage;
         private bool    _statusIsError;
+        // Slice 2g — optional emission of partDefinitions + partGroupDefinition
+        // sections so the captured prefab is self-contained (instantiating
+        // it brings the parts AND the group AND the steps). Defaults
+        // follow what the captured steps reference: if every role partId
+        // resolves to a real part in the package, _includeParts defaults
+        // true; if every step shares a single partGroupId, _includePartGroup
+        // defaults true. Author can untick either to produce a steps-only
+        // prefab that depends on the target package already supplying the
+        // ingredients.
+        private bool _includePartDefinitions = true;
+        private bool _includePartGroupDef    = true;
+        // Common partGroupId across the captured steps, if any. Used as
+        // the partGroupDefinition.id substitution + as the implicit
+        // membership check.
+        private string _commonPartGroupId;
 
         // Inferred role table — partId → suggested role name. Author edits
         // role names in the modal; the emitter substitutes literal partIds
@@ -49,8 +64,32 @@ namespace OSE.Editor
             w._prefabId       = "NewPrefab";
             w._description    = "";
             w.InferRoles();
+            w.InferCommonPartGroup();
             w.Show();
             w.Focus();
+        }
+
+        // Walks the captured steps and records the partGroupId every step
+        // shares — empty when steps belong to different groups (or none).
+        // Drives the default value of _includePartGroupDef and supplies
+        // the partGroupDefinition.id used at emission time.
+        private void InferCommonPartGroup()
+        {
+            _commonPartGroupId = null;
+            if (_capturedSteps == null) return;
+            string candidate = null;
+            foreach (var s in _capturedSteps)
+            {
+                if (s == null) continue;
+                if (string.IsNullOrEmpty(s.partGroupId))
+                { _commonPartGroupId = null; return; }
+                if (candidate == null) candidate = s.partGroupId;
+                else if (!string.Equals(candidate, s.partGroupId, System.StringComparison.Ordinal))
+                { _commonPartGroupId = null; return; }
+            }
+            _commonPartGroupId = candidate;
+            if (string.IsNullOrEmpty(_commonPartGroupId))
+                _includePartGroupDef = false;
         }
 
         // ── GUI ──────────────────────────────────────────────────────────────
@@ -69,6 +108,28 @@ namespace OSE.Editor
                 "Short summary shown in the PREFABS panel and as a YAML comment."),
                 _description);
             EditorGUILayout.Space(6);
+
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField("Sections to include", EditorStyles.boldLabel);
+            _includePartDefinitions = EditorGUILayout.ToggleLeft(new GUIContent(
+                $"partDefinitions  ({_roles.Count} role{(_roles.Count == 1 ? "" : "s")})",
+                "Emit a partDefinitions: section so instantiating this prefab brings " +
+                "the parts (with category / material / assetRef + inline placements). " +
+                "Untick when the target package already declares these parts."),
+                _includePartDefinitions);
+            using (new EditorGUI.DisabledScope(string.IsNullOrEmpty(_commonPartGroupId)))
+            {
+                _includePartGroupDef = EditorGUILayout.ToggleLeft(new GUIContent(
+                    string.IsNullOrEmpty(_commonPartGroupId)
+                        ? "partGroupDefinition  (steps span multiple groups — disabled)"
+                        : $"partGroupDefinition  ({_commonPartGroupId})",
+                    "Emit a partGroupDefinition: section so instantiating this prefab " +
+                    "creates the part group too. Disabled when the captured steps " +
+                    "belong to multiple groups (or none)."),
+                    _includePartGroupDef);
+            }
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.Space(4);
 
             EditorGUILayout.LabelField("Roles (rename to suit the prefab)", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
@@ -199,6 +260,18 @@ namespace OSE.Editor
             }
             sb.AppendLine();
 
+            // partDefinitions: (Slice 2g — self-contained capture)
+            if (_includePartDefinitions && _roles.Count > 0 && _owner != null)
+            {
+                EmitPartDefinitions(sb);
+            }
+
+            // partGroupDefinition: (Slice 2g)
+            if (_includePartGroupDef && !string.IsNullOrEmpty(_commonPartGroupId) && _owner != null)
+            {
+                EmitPartGroupDefinition(sb);
+            }
+
             // steps:
             sb.AppendLine("steps:");
             foreach (var step in _capturedSteps)
@@ -249,6 +322,85 @@ namespace OSE.Editor
             _statusIsError = false;
             EditorUtility.RevealInFinder(outPath);
         }
+
+        // Slice 2g — emit one partDefinitions entry per role. Each entry
+        // pulls category / material / assetRef from the live PartDefinition
+        // and inline startPosition / assembledPosition from the matching
+        // PartPreviewPlacement. Roles that don't resolve to a real part in
+        // the package are skipped with a TODO comment so the author can
+        // finish them by hand.
+        private void EmitPartDefinitions(StringBuilder sb)
+        {
+            var pkg = _owner._pkgPublic;
+            if (pkg == null) return;
+            sb.AppendLine("partDefinitions:");
+            foreach (var r in _roles)
+            {
+                if (string.IsNullOrEmpty(r.RoleName) || string.IsNullOrEmpty(r.PartId)) continue;
+                if (!pkg.TryGetPart(r.PartId, out var part) || part == null)
+                {
+                    sb.AppendLine($"  # TODO: role '{r.RoleName}' references unknown partId '{r.PartId}'.");
+                    continue;
+                }
+                sb.AppendLine($"  {r.RoleName}:");
+                sb.AppendLine($"    kind: part");
+                if (!string.IsNullOrEmpty(part.category)) sb.AppendLine($"    category:    {part.category}");
+                if (!string.IsNullOrEmpty(part.material)) sb.AppendLine($"    material:    {part.material}");
+                if (!string.IsNullOrEmpty(part.assetRef)) sb.AppendLine($"    assetRef:    \"{part.assetRef}\"");
+
+                // Inline placement — pull startPosition / assembledPosition
+                // from previewConfig.partPlacements. No translation /
+                // offset adjustment: the captured positions are PreviewRoot-
+                // local and round-trip directly.
+                var placement = FindPlacement(pkg, r.PartId);
+                if (placement != null)
+                {
+                    sb.AppendLine($"    startPosition:     {{ x: {F(placement.startPosition.x)}, y: {F(placement.startPosition.y)}, z: {F(placement.startPosition.z)} }}");
+                    sb.AppendLine($"    assembledPosition: {{ x: {F(placement.assembledPosition.x)}, y: {F(placement.assembledPosition.y)}, z: {F(placement.assembledPosition.z)} }}");
+                }
+            }
+            sb.AppendLine();
+        }
+
+        private void EmitPartGroupDefinition(StringBuilder sb)
+        {
+            var pkg = _owner._pkgPublic;
+            if (pkg == null || string.IsNullOrEmpty(_commonPartGroupId)) return;
+            string id = _commonPartGroupId;
+            string name = id;
+            string description = "";
+            if (pkg.TryGetPartGroup(_commonPartGroupId, out var group) && group != null)
+            {
+                if (!string.IsNullOrEmpty(group.name))         name        = group.name;
+                if (!string.IsNullOrEmpty(group.description))  description = group.description;
+            }
+            sb.AppendLine("partGroupDefinition:");
+            sb.AppendLine($"  id: \"{id}\"");
+            sb.AppendLine($"  name: \"{name.Replace("\"", "\\\"")}\"");
+            if (!string.IsNullOrEmpty(description))
+                sb.AppendLine($"  description: \"{description.Replace("\"", "\\\"")}\"");
+            sb.AppendLine();
+        }
+
+        private static OSE.Content.PartPreviewPlacement FindPlacement(MachinePackageDefinition pkg, string partId)
+        {
+            var placements = pkg?.previewConfig?.partPlacements;
+            if (placements == null) return null;
+            for (int i = 0; i < placements.Length; i++)
+            {
+                var pp = placements[i];
+                if (pp != null && string.Equals(pp.partId, partId, System.StringComparison.Ordinal)) return pp;
+            }
+            return null;
+        }
+
+        // Round to 4 decimal places (matches the package's float-precision
+        // policy) and emit using the invariant culture so the YAML
+        // doesn't accidentally pick up a comma decimal separator on
+        // non-English Windows locales.
+        private static string F(float v)
+            => System.Math.Round((double)v, 4)
+                .ToString("0.####", System.Globalization.CultureInfo.InvariantCulture);
 
         private static string DeriveIdSuffix(string stepId)
         {

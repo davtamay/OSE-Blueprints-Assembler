@@ -259,6 +259,14 @@ namespace OSE.Editor
         internal StepDefinition FindStepPublic(string stepId) => FindStep(stepId);
 
         /// <summary>
+        /// Public read-only accessor for the active in-memory package.
+        /// Used by the capture / wizard windows to walk parts + groups +
+        /// placements without re-loading from disk. Returns null between
+        /// loads.
+        /// </summary>
+        internal MachinePackageDefinition _pkgPublic => _pkg;
+
+        /// <summary>
         /// Returns the maximum sequenceIndex among steps belonging to the
         /// given partGroup, or -1 if none. Used by the wizard's
         /// "drop on step → instantiate at end of partGroup" default.
