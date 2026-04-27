@@ -161,6 +161,14 @@ namespace OSE.Content.Loading
                     YamlNode rendered = RenderStep(template, ctx, instance, seq + i, result.Errors);
                     if (rendered == null) continue;
 
+                    // Slice 3 — apply per-instance field overrides AFTER
+                    // role + option substitution but BEFORE serializing
+                    // to JSON. Overrides target a specific step by its
+                    // id_suffix so the same path applies regardless of
+                    // the prefix; see ApplyOverridesToStep for the path
+                    // syntax.
+                    ApplyOverridesToStep(rendered, idSuffix, instance.overrides, result.Errors);
+
                     string json = rendered.ToJson();
                     StepDefinition step;
                     try
@@ -756,6 +764,105 @@ namespace OSE.Content.Loading
                 return true;
             }
             catch { return false; }
+        }
+
+        // ── Slice 3: per-instance overrides ───────────────────────────────
+
+        // Override path syntax (Slice 3a — steps only):
+        //   step:<id_suffix>.<field>
+        //   step:<id_suffix>.<map>.<nestedField>
+        //
+        // Examples:
+        //   step:tighten.guidance.instructionText
+        //   step:place_bearings.feedback.successMessage
+        //
+        // <c>valueJson</c> carries the new value as a JSON-encoded scalar
+        // (a quoted string is the common case). Slice 3a supports string
+        // overrides — leaf scalars get their text replaced wholesale.
+        // Nested-map traversal with autovivification (creating missing
+        // intermediate maps) keeps the path syntax forgiving when the
+        // underlying YAML omits an optional payload.
+        //
+        // Slices 3b+ will extend the path syntax to <c>part:</c> /
+        // <c>partGroup:</c> entities and array-index syntax for repeating
+        // collections.
+        private static void ApplyOverridesToStep(
+            YamlNode rendered, string idSuffix, PrefabOverride[] overrides, List<string> errors)
+        {
+            if (overrides == null || overrides.Length == 0) return;
+            if (rendered == null || !rendered.IsMap || string.IsNullOrEmpty(idSuffix)) return;
+
+            string prefix = "step:" + idSuffix + ".";
+            foreach (var ov in overrides)
+            {
+                if (ov == null || string.IsNullOrEmpty(ov.path)) continue;
+                if (!ov.path.StartsWith(prefix, StringComparison.Ordinal)) continue;
+
+                string subPath = ov.path.Substring(prefix.Length);
+                if (string.IsNullOrEmpty(subPath))
+                {
+                    errors?.Add($"Override '{ov.path}' has no field path after the entity prefix.");
+                    continue;
+                }
+                ApplyOverrideAtPath(rendered, subPath, ov.valueJson, errors);
+            }
+        }
+
+        private static void ApplyOverrideAtPath(
+            YamlNode root, string dottedPath, string valueJson, List<string> errors)
+        {
+            if (root == null || !root.IsMap || string.IsNullOrEmpty(dottedPath)) return;
+
+            string[] parts = dottedPath.Split('.');
+            YamlNode cursor = root;
+            for (int i = 0; i < parts.Length - 1; i++)
+            {
+                string seg = parts[i];
+                if (string.IsNullOrEmpty(seg))
+                {
+                    errors?.Add($"Override path '{dottedPath}' has an empty segment.");
+                    return;
+                }
+                if (!cursor.TryGet(seg, out var next) || next == null)
+                {
+                    // Autovivify: create the missing nested map so the
+                    // override can land even when the prefab's step
+                    // template omitted the parent payload (e.g. authoring
+                    // a guidance.whyItMattersText where the prefab only
+                    // declares guidance.instructionText).
+                    next = new YamlNode { Map = new Dictionary<string, YamlNode>(StringComparer.Ordinal) };
+                    cursor.Map[seg] = next;
+                }
+                else if (!next.IsMap)
+                {
+                    errors?.Add($"Override path '{dottedPath}' segment '{seg}' is not a map.");
+                    return;
+                }
+                cursor = next;
+            }
+
+            string lastKey = parts[parts.Length - 1];
+            if (string.IsNullOrEmpty(lastKey))
+            {
+                errors?.Add($"Override path '{dottedPath}' ends in an empty segment.");
+                return;
+            }
+            cursor.Map[lastKey] = ParseOverrideValue(valueJson);
+        }
+
+        // Slice 3a is string-only: PrefabOverride.valueJson is a quoted
+        // string ("...") in the common case. Strip the JSON quotes if
+        // present; otherwise keep the literal value. Numeric and complex
+        // (vector3, etc.) overrides extend this in Slice 3b.
+        private static YamlNode ParseOverrideValue(string valueJson)
+        {
+            string s = valueJson ?? string.Empty;
+            s = s.Trim();
+            if (s.Length >= 2 && s[0] == '"' && s[s.Length - 1] == '"')
+                s = s.Substring(1, s.Length - 2)
+                    .Replace("\\\"", "\"")
+                    .Replace("\\\\", "\\");
+            return new YamlNode { Scalar = s };
         }
 
         // ── Helpers ───────────────────────────────────────────────────────
