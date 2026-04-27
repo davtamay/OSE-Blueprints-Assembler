@@ -532,13 +532,13 @@ namespace OSE.Content.Loading
                         string pid = list.Items[i];
                         if (string.IsNullOrEmpty(pid)) continue;
 
+                        YamlNode pNode = (placementSeq != null && i < placementSeq.Count) ? placementSeq[i] : null;
+                        var placement = BuildPlacement(pid, pNode, offset, ctx, result.Errors,
+                            instance.prefabId, roleName, i);
+                        placements.Add(placement);
                         parts.Add(BuildPartDefinition(pid, category, material,
                             ResolveAssetRef(assetTpl, roleName, pid, ctx, result.Errors),
-                            instance, prefabPath));
-
-                        YamlNode pNode = (placementSeq != null && i < placementSeq.Count) ? placementSeq[i] : null;
-                        placements.Add(BuildPlacement(pid, pNode, offset, ctx, result.Errors,
-                            instance.prefabId, roleName, i));
+                            placement.startPosition, instance, prefabPath));
                     }
                 }
                 else
@@ -548,11 +548,12 @@ namespace OSE.Content.Loading
                         result.Errors.Add($"partDefinitions.{roleName}: kind=part but role binding is empty / not a string.");
                         continue;
                     }
+                    var placement = BuildPlacement(single, def, offset, ctx, result.Errors,
+                        instance.prefabId, roleName, -1);
+                    placements.Add(placement);
                     parts.Add(BuildPartDefinition(single, category, material,
                         ResolveAssetRef(assetTpl, roleName, single, ctx, result.Errors),
-                        instance, prefabPath));
-                    placements.Add(BuildPlacement(single, def, offset, ctx, result.Errors,
-                        instance.prefabId, roleName, -1));
+                        placement.startPosition, instance, prefabPath));
                 }
             }
 
@@ -562,15 +563,21 @@ namespace OSE.Content.Loading
 
         private static PartDefinition BuildPartDefinition(
             string partId, string category, string material, string assetRef,
-            PrefabInstance instance, string prefabPath)
+            SceneFloat3 startPosition, PrefabInstance instance, string prefabPath)
         {
+            // Mirror the start position into stagingPose so the part
+            // round-trips through Bake → save → reload: the loader's
+            // BakeStagingPoses pass overwrites previewConfig.partPlacements
+            // [].startPosition from this field, so authored content stays
+            // anchored to where the prefab placed it.
             var part = new PartDefinition
             {
-                id        = partId,
-                category  = category,
-                material  = material,
-                assetRef  = assetRef,
-                prefabRef = MakePrefabRef(instance, prefabPath),
+                id          = partId,
+                category    = category,
+                material    = material,
+                assetRef    = assetRef,
+                stagingPose = new StagingPose { position = startPosition },
+                prefabRef   = MakePrefabRef(instance, prefabPath),
             };
             return part;
         }

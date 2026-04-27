@@ -244,6 +244,24 @@ namespace OSE.Editor
                 }
             }
 
+            // Persist the in-memory preview_config.json so the virtual
+            // PartPreviewPlacements emitted by the expander (now without
+            // prefabRef on their parts) survive the upcoming reload. The
+            // expander stamped startPosition + assembledPosition with the
+            // placementOffset already applied — without this flush, the
+            // baked parts spawn at the origin until the next manual
+            // "Write to machine.json".
+            if (insertedParts > 0 && _pkg?.previewConfig != null)
+            {
+                string previewPath = PackageJsonUtils.GetPreviewConfigJsonPath(_pkgId);
+                if (!string.IsNullOrEmpty(previewPath))
+                {
+                    try { PackageJsonUtils.WritePreviewConfig(previewPath, _pkg.previewConfig); }
+                    catch (System.Exception ex)
+                    { Debug.LogError($"[TTAW.Prefabs] Bake: WritePreviewConfig failed: {ex.Message}"); }
+                }
+            }
+
             Debug.Log($"[TTAW.Prefabs] Baked instance '{instanceId}': " +
                       $"{insertedParts} part(s), {insertedGroups} group(s), {insertedSteps} step(s) across {touchedFiles.Count} file(s).");
 
