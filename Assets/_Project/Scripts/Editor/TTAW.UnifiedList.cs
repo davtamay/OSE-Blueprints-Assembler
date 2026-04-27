@@ -95,56 +95,131 @@ namespace OSE.Editor
         {
             if (_pkg == null || string.IsNullOrEmpty(instanceId) || string.IsNullOrEmpty(_pkgId)) return;
 
-            var virtualSteps = new List<StepDefinition>();
+            // Resolve the instance up front so we can route emitted
+            // partGroups + parts to the same assembly file even when the
+            // virtual entities themselves carry no assemblyId.
+            PrefabInstance bakingInstance = null;
+            if (_pkg.prefabInstances != null)
+            {
+                foreach (var inst in _pkg.prefabInstances)
+                    if (inst != null && string.Equals(inst.instanceId, instanceId, System.StringComparison.Ordinal))
+                    { bakingInstance = inst; break; }
+            }
+            string instanceAssemblyId = bakingInstance?.assemblyId;
+
+            var virtualSteps  = new List<StepDefinition>();
+            var virtualParts  = new List<PartDefinition>();
+            var virtualGroups = new List<PartGroupDefinition>();
+
             if (_pkg.steps != null)
             {
                 foreach (var s in _pkg.steps)
                 {
-                    if (s == null || s.prefabRef == null) continue;
+                    if (s?.prefabRef == null) continue;
                     if (!string.Equals(s.prefabRef.instanceId, instanceId, System.StringComparison.Ordinal)) continue;
                     virtualSteps.Add(s);
                 }
             }
-            if (virtualSteps.Count == 0)
+            if (_pkg.parts != null)
             {
-                Debug.LogWarning($"[TTAW.Prefabs] Bake: no virtual steps found for instance '{instanceId}'.");
+                foreach (var p in _pkg.parts)
+                {
+                    if (p?.prefabRef == null) continue;
+                    if (!string.Equals(p.prefabRef.instanceId, instanceId, System.StringComparison.Ordinal)) continue;
+                    virtualParts.Add(p);
+                }
+            }
+            if (_pkg.partGroups != null)
+            {
+                foreach (var g in _pkg.partGroups)
+                {
+                    if (g?.prefabRef == null) continue;
+                    if (!string.Equals(g.prefabRef.instanceId, instanceId, System.StringComparison.Ordinal)) continue;
+                    virtualGroups.Add(g);
+                }
+            }
+
+            if (virtualSteps.Count + virtualParts.Count + virtualGroups.Count == 0)
+            {
+                Debug.LogWarning($"[TTAW.Prefabs] Bake: no virtual entities found for instance '{instanceId}'.");
                 return;
             }
 
-            foreach (var s in virtualSteps) s.prefabRef = null;
+            foreach (var s in virtualSteps)  s.prefabRef = null;
+            foreach (var p in virtualParts)  p.prefabRef = null;
+            foreach (var g in virtualGroups) g.prefabRef = null;
 
-            var byFile = new Dictionary<string, List<StepDefinition>>(System.StringComparer.Ordinal);
+            // Group every entity by destination file. Steps + groups carry
+            // their own assemblyId; parts inherit the instance's assembly.
+            string FileFor(string asmId) => string.IsNullOrEmpty(asmId)
+                ? null : PackageJsonUtils.FindEntityFilePath(_pkgId, asmId);
+            string instanceFile = FileFor(instanceAssemblyId);
+
+            var stepsByFile  = new Dictionary<string, List<StepDefinition>>(System.StringComparer.Ordinal);
             foreach (var s in virtualSteps)
             {
-                string fp = PackageJsonUtils.FindEntityFilePath(_pkgId, s.assemblyId);
-                if (string.IsNullOrEmpty(fp))
-                {
-                    Debug.LogWarning($"[TTAW.Prefabs] Bake: no file resolved for step '{s.id}' (assemblyId='{s.assemblyId}'); skipping.");
-                    continue;
-                }
-                if (!byFile.TryGetValue(fp, out var bucket))
-                    byFile[fp] = bucket = new List<StepDefinition>();
-                bucket.Add(s);
+                string fp = FileFor(s.assemblyId) ?? instanceFile;
+                if (string.IsNullOrEmpty(fp)) { Debug.LogWarning($"[TTAW.Prefabs] Bake: no file resolved for step '{s.id}'; skipping."); continue; }
+                if (!stepsByFile.TryGetValue(fp, out var b)) stepsByFile[fp] = b = new List<StepDefinition>();
+                b.Add(s);
+            }
+            var partsByFile  = new Dictionary<string, List<PartDefinition>>(System.StringComparer.Ordinal);
+            foreach (var p in virtualParts)
+            {
+                string fp = instanceFile;
+                if (string.IsNullOrEmpty(fp)) { Debug.LogWarning($"[TTAW.Prefabs] Bake: no file resolved for part '{p.id}'; skipping."); continue; }
+                if (!partsByFile.TryGetValue(fp, out var b)) partsByFile[fp] = b = new List<PartDefinition>();
+                b.Add(p);
+            }
+            var groupsByFile = new Dictionary<string, List<PartGroupDefinition>>(System.StringComparer.Ordinal);
+            foreach (var g in virtualGroups)
+            {
+                string fp = FileFor(g.assemblyId) ?? instanceFile;
+                if (string.IsNullOrEmpty(fp)) { Debug.LogWarning($"[TTAW.Prefabs] Bake: no file resolved for partGroup '{g.id}'; skipping."); continue; }
+                if (!groupsByFile.TryGetValue(fp, out var b)) groupsByFile[fp] = b = new List<PartGroupDefinition>();
+                b.Add(g);
             }
 
-            int inserted = 0;
-            foreach (var kv in byFile)
+            int insertedSteps = 0, insertedParts = 0, insertedGroups = 0;
+            // Insert order: parts → groups → steps. Parts must exist before
+            // groups reference them; groups before steps that target them.
+            foreach (var kv in partsByFile)
+            {
+                foreach (var p in kv.Value)
+                {
+                    try { PackageJsonUtils.InsertPart(kv.Key, p); insertedParts++; }
+                    catch (System.Exception ex) { Debug.LogError($"[TTAW.Prefabs] Bake: InsertPart failed for '{p.id}' in '{kv.Key}': {ex.Message}"); }
+                }
+            }
+            foreach (var kv in groupsByFile)
+            {
+                foreach (var g in kv.Value)
+                {
+                    try { PackageJsonUtils.InsertPartGroup(kv.Key, g); insertedGroups++; }
+                    catch (System.Exception ex) { Debug.LogError($"[TTAW.Prefabs] Bake: InsertPartGroup failed for '{g.id}' in '{kv.Key}': {ex.Message}"); }
+                }
+            }
+            foreach (var kv in stepsByFile)
             {
                 foreach (var s in kv.Value)
                 {
-                    try { PackageJsonUtils.InsertStep(kv.Key, s); inserted++; }
-                    catch (System.Exception ex)
-                    {
-                        Debug.LogError($"[TTAW.Prefabs] Bake: InsertStep failed for '{s.id}' in '{kv.Key}': {ex.Message}");
-                    }
+                    try { PackageJsonUtils.InsertStep(kv.Key, s); insertedSteps++; }
+                    catch (System.Exception ex) { Debug.LogError($"[TTAW.Prefabs] Bake: InsertStep failed for '{s.id}' in '{kv.Key}': {ex.Message}"); }
                 }
+            }
 
-                // Trim the PrefabInstance entry from this file's
-                // prefabInstances[] so the next load doesn't re-expand
-                // virtual copies on top of the literal steps we just wrote.
+            // Trim the PrefabInstance entry from every file it touched so the
+            // next load doesn't re-expand virtual copies on top of the
+            // literal entries we just wrote.
+            var touchedFiles = new HashSet<string>(System.StringComparer.Ordinal);
+            foreach (var fp in stepsByFile.Keys)  touchedFiles.Add(fp);
+            foreach (var fp in partsByFile.Keys)  touchedFiles.Add(fp);
+            foreach (var fp in groupsByFile.Keys) touchedFiles.Add(fp);
+            foreach (string fp in touchedFiles)
+            {
                 try
                 {
-                    string content = File.ReadAllText(kv.Key);
+                    string content = File.ReadAllText(fp);
                     var keep = new List<PrefabInstance>();
                     if (_pkg.prefabInstances != null)
                     {
@@ -155,21 +230,22 @@ namespace OSE.Editor
                             string instFile = !string.IsNullOrEmpty(inst.assemblyId)
                                 ? PackageJsonUtils.FindEntityFilePath(_pkgId, inst.assemblyId)
                                 : null;
-                            if (string.Equals(instFile, kv.Key, System.StringComparison.Ordinal))
+                            if (string.Equals(instFile, fp, System.StringComparison.Ordinal))
                                 keep.Add(inst);
                         }
                     }
                     string arrJson = BuildPrefabInstancesArrayJson(keep);
                     if (PackageJsonUtils.TryReplaceTopLevelArray(ref content, "prefabInstances", arrJson))
-                        File.WriteAllText(kv.Key, content);
+                        File.WriteAllText(fp, content);
                 }
                 catch (System.Exception ex)
                 {
-                    Debug.LogError($"[TTAW.Prefabs] Bake: trim prefabInstances in '{kv.Key}' threw: {ex.Message}");
+                    Debug.LogError($"[TTAW.Prefabs] Bake: trim prefabInstances in '{fp}' threw: {ex.Message}");
                 }
             }
 
-            Debug.Log($"[TTAW.Prefabs] Baked {inserted} step(s) for instance '{instanceId}' across {byFile.Count} file(s).");
+            Debug.Log($"[TTAW.Prefabs] Baked instance '{instanceId}': " +
+                      $"{insertedParts} part(s), {insertedGroups} group(s), {insertedSteps} step(s) across {touchedFiles.Count} file(s).");
 
             AssetDatabase.Refresh();
             LoadPkg(_pkgId, restoring: true);

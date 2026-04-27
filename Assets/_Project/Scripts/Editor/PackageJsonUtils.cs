@@ -623,6 +623,87 @@ namespace OSE.Editor
         }
 
         /// <summary>
+        /// Inserts a new <see cref="PartDefinition"/> into the
+        /// <c>"parts"</c> array of the given JSON file. Mirrors
+        /// <see cref="InsertPartGroup"/> — same algorithm, different
+        /// label. Used by the Slice 2 Bake path when promoting a virtual
+        /// part to authored content.
+        /// </summary>
+        internal static void InsertPart(string jsonPath, PartDefinition part)
+        {
+            string original = File.ReadAllText(jsonPath);
+            string partJson = RoundFloatsInJson(JsonUtility.ToJson(part));
+
+            const string label = "\"parts\"";
+            int labelIdx = original.IndexOf(label, System.StringComparison.Ordinal);
+
+            string modified;
+            if (labelIdx >= 0)
+            {
+                int arrayOpen = original.IndexOf('[', labelIdx);
+                if (arrayOpen < 0)
+                    throw new System.Exception("Found \"parts\" but no opening '['.");
+
+                int depth = 0, arrayClose = -1;
+                for (int i = arrayOpen; i < original.Length; i++)
+                {
+                    char c = original[i];
+                    if (c == '[' || c == '{') depth++;
+                    else if (c == ']' || c == '}')
+                    {
+                        depth--;
+                        if (depth == 0) { arrayClose = i; break; }
+                    }
+                }
+                if (arrayClose < 0)
+                    throw new System.Exception("Could not find closing ']' of parts array.");
+
+                int insertAfter = -1;
+                {
+                    int d = 0;
+                    for (int i = arrayOpen + 1; i < arrayClose; i++)
+                    {
+                        char c = original[i];
+                        if (c == '{') d++;
+                        else if (c == '}') { d--; if (d == 0) insertAfter = i; }
+                    }
+                }
+
+                if (insertAfter < 0)
+                    modified = original.Substring(0, arrayOpen + 1)
+                             + "\n    " + partJson
+                             + original.Substring(arrayOpen + 1);
+                else
+                    modified = original.Substring(0, insertAfter + 1)
+                             + ",\n    " + partJson
+                             + original.Substring(insertAfter + 1);
+            }
+            else
+            {
+                int lastBrace = original.LastIndexOf('}');
+                if (lastBrace < 0)
+                    throw new System.Exception("JSON file has no closing '}'.");
+
+                int beforeBrace = lastBrace - 1;
+                while (beforeBrace >= 0 && char.IsWhiteSpace(original[beforeBrace])) beforeBrace--;
+                bool needComma = beforeBrace >= 0 && original[beforeBrace] != ',';
+
+                string prefix = needComma ? ",\n  " : "\n  ";
+                modified = original.Substring(0, lastBrace)
+                         + prefix + "\"parts\": [\n    " + partJson + "\n  ]\n}"
+                         + (lastBrace + 1 < original.Length ? original.Substring(lastBrace + 1) : "");
+            }
+
+            string dir    = Path.GetDirectoryName(jsonPath);
+            string backup = Path.Combine(dir, ".pose_backups",
+                $"{Path.GetFileNameWithoutExtension(jsonPath)}_{System.DateTime.Now:yyyyMMdd_HHmmss}_before_new_part.json");
+            Directory.CreateDirectory(Path.GetDirectoryName(backup));
+            File.WriteAllText(backup, original);
+            File.WriteAllText(jsonPath, modified);
+            AssetDatabase.Refresh();
+        }
+
+        /// <summary>
         /// Replaces the top-level array <paramref name="fieldName"/> with
         /// <paramref name="arrayJson"/> (a complete <c>[ ... ]</c> string,
         /// including the brackets). When the array is absent, inserts it
