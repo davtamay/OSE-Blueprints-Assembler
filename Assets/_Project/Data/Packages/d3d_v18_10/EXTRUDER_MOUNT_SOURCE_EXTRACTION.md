@@ -95,7 +95,7 @@ while the exact final overslung/underslung integration path changes across revis
 - `5015blower.fcstd`
 - `Extruderspacer.fcstd`
 
-This is enough to lock a carriage-side mount subassembly.
+This is enough to lock a carriage-side mount partGroup.
 
 It is not enough to claim the final `v18.10` printer-wide extruder orientation without
 explicitly marking the remaining inference boundary.
@@ -126,7 +126,7 @@ This slice is the right next move because:
 - the carriage-side mount parts are explicitly listed in source
 - v18.10 explicitly calls out mount-space optimization as a real issue
 - the completed nozzle module from Stage 01 is already authored and available as an
-  input subassembly
+  input partGroup
 - the exact printer-wide mounted orientation is still variant-sensitive
 
 So the mount-stack assembly itself is strong enough to author now, while the final
@@ -148,8 +148,8 @@ The next authored expansion should lock these assumptions:
 ## Recommended Next Top-Level Ids
 
 - `assembly_d3d_extruder_stage_02`
-- `subassembly_extruder_carriage_mount_stack`
-- `subassembly_extruder_carriage_unit`
+- `partGroup_extruder_carriage_mount_stack`
+- `partGroup_extruder_carriage_unit`
 
 ## Recommended First-Pass Parts
 
@@ -167,9 +167,9 @@ Already-authored Stage 01 inputs:
 - `d3d_extruder_sensor_holder`
 - `d3d_extruder_8mm_sensor`
 
-Resulting Stage 02 input subassembly:
+Resulting Stage 02 input partGroup:
 
-- `subassembly_extruder_nozzle_module`
+- `partGroup_extruder_nozzle_module`
 
 ## Recommended Tool Set
 
@@ -260,7 +260,7 @@ This slice should remain inside the current family set:
 
 No new interaction contract is required yet.
 
-That is important: the next slice is still a normal carriage-side subassembly build,
+That is important: the next slice is still a normal carriage-side partGroup build,
 not a new runtime feature.
 
 ## Remaining Deferred Boundary

@@ -15,7 +15,7 @@ namespace OSE.Content.Loading
     /// <see cref="MachinePackageDefinition"/> — no additional authoring. The
     /// point of pre-computation is to prevent live resolvers from re-walking
     /// arrays on every lookup and to give one canonical answer to questions
-    /// like "is this part a NO-TASK intro?" or "when is this subassembly
+    /// like "is this part a NO-TASK intro?" or "when is this partGroup
     /// stacked?".
     /// </summary>
     public sealed class PoseResolverIndex
@@ -32,8 +32,8 @@ namespace OSE.Content.Loading
 
         /// <summary>
         /// partId → smallest seq at which this part is referenced by ANY source
-        /// (requiredPartIds / optionalPartIds / visualPartIds / subassembly member
-        /// via a step's requiredSubassemblyId). <see cref="int.MaxValue"/> if unseen.
+        /// (requiredPartIds / optionalPartIds / visualPartIds / partGroup member
+        /// via a step's requiredPartGroupId). <see cref="int.MaxValue"/> if unseen.
         /// </summary>
         public readonly Dictionary<string, int> firstVisibleSeqByPart;
 
@@ -68,52 +68,52 @@ namespace OSE.Content.Loading
         /// </summary>
         public readonly Dictionary<string, List<ResolvedAuthorSpan>> authorSpansByPart;
 
-        // ── Subassembly / groups ─────────────────────────────────────────
+        // ── PartGroup / groups ─────────────────────────────────────────
         /// <summary>
-        /// partId → id of the (non-aggregate) subassembly that owns it, if any.
+        /// partId → id of the (non-aggregate) partGroup that owns it, if any.
         /// Used to detect group rigid-body membership.
         /// </summary>
-        public readonly Dictionary<string, string> subassemblyIdByMember;
+        public readonly Dictionary<string, string> partGroupIdByMember;
 
         /// <summary>
-        /// (subassemblyId, targetId) → committed integrated placement. Lookup
+        /// (partGroupId, targetId) → committed integrated placement. Lookup
         /// key built via <see cref="PackKey"/> for allocation-free access.
         /// </summary>
-        public readonly Dictionary<string, IntegratedSubassemblyPreviewPlacement> integratedBySubTarget;
+        public readonly Dictionary<string, IntegratedPartGroupPreviewPlacement> integratedBySubTarget;
 
         /// <summary>
-        /// (subassemblyId, targetId, partId) → integrated member placement.
+        /// (partGroupId, targetId, partId) → integrated member placement.
         /// Flat key so lookup is one hash.
         /// </summary>
         public readonly Dictionary<string, IntegratedMemberPreviewPlacement> integratedMemberBySubTargetPart;
 
         /// <summary>
-        /// Ordered list of "a subassembly was stacked onto a target at this seq"
-        /// events, one per step with <c>requiredSubassemblyId</c> + <c>targetIds[0]</c>.
+        /// Ordered list of "a partGroup was stacked onto a target at this seq"
+        /// events, one per step with <c>requiredPartGroupId</c> + <c>targetIds[0]</c>.
         /// Ordered ascending by seq.
         /// </summary>
         public readonly List<StackingEvent> stackingEvents;
 
         /// <summary>
-        /// subassemblyId → author-written (or synthesized) group-level stepPose
-        /// entries from <see cref="SubassemblyPreviewPlacement.stepPoses"/>,
+        /// partGroupId → author-written (or synthesized) group-level stepPose
+        /// entries from <see cref="PartGroupPreviewPlacement.stepPoses"/>,
         /// pre-resolved with each entry's effective <c>[fromSeq..throughSeq]</c>
-        /// span. Empty when a subassembly has no temporal group transform —
+        /// span. Empty when a partGroup has no temporal group transform —
         /// the resolver's composition branch short-circuits in that case.
         ///
         /// <para>Distinct from <see cref="authorSpansByPart"/> (per-part spans).
         /// When both apply, per-part spans win over group spans — author
         /// intent for a specific member always overrides group motion. This
         /// matches the Phase-A design: group stepPoses describe the
-        /// subassembly's transform; a member's own stepPose is a local
+        /// partGroup's transform; a member's own stepPose is a local
         /// override relative to that transform.</para>
         /// </summary>
-        public readonly Dictionary<string, List<ResolvedAuthorSpan>> groupStepPosesBySubassembly;
+        public readonly Dictionary<string, List<ResolvedAuthorSpan>> groupStepPosesByPartGroup;
 
         /// <summary>
-        /// subassemblyId → its <see cref="SubassemblyPreviewPlacement"/> (or null).
+        /// partGroupId → its <see cref="PartGroupPreviewPlacement"/> (or null).
         /// </summary>
-        public readonly Dictionary<string, SubassemblyPreviewPlacement> subassemblyPlacementById;
+        public readonly Dictionary<string, PartGroupPreviewPlacement> partGroupPlacementById;
 
         // ── Tool-task endTransform timeline ──────────────────────────────
         /// <summary>
@@ -179,13 +179,13 @@ namespace OSE.Content.Loading
                 if (s.optionalPartIds != null) foreach (var pid in s.optionalPartIds) NoteTask(pid, seq);
                 if (s.visualPartIds   != null) foreach (var pid in s.visualPartIds)   NoteVisible(pid, seq);
 
-                if (!string.IsNullOrEmpty(s.requiredSubassemblyId)
-                    && pkg.TryGetSubassembly(s.requiredSubassemblyId, out var subDef)
+                if (!string.IsNullOrEmpty(s.requiredPartGroupId)
+                    && pkg.TryGetPartGroup(s.requiredPartGroupId, out var subDef)
                     && subDef?.partIds != null)
                 {
                     string targetId = s.targetIds != null && s.targetIds.Length > 0 ? s.targetIds[0] : null;
                     if (!string.IsNullOrEmpty(targetId))
-                        stackingEvents.Add(new StackingEvent(seq, s.requiredSubassemblyId, targetId));
+                        stackingEvents.Add(new StackingEvent(seq, s.requiredPartGroupId, targetId));
                     foreach (var pid in subDef.partIds) NoteVisible(pid, seq);
                 }
             }
@@ -231,33 +231,33 @@ namespace OSE.Content.Loading
                 if (list.Count > 0) authorSpansByPart[kvp.Key] = list;
             }
 
-            // subassembly membership (non-aggregate only — aggregates don't drive poses)
-            subassemblyIdByMember = new Dictionary<string, string>(StringComparer.Ordinal);
-            if (pkg.subassemblies != null)
+            // partGroup membership (non-aggregate only — aggregates don't drive poses)
+            partGroupIdByMember = new Dictionary<string, string>(StringComparer.Ordinal);
+            if (pkg.partGroups != null)
             {
-                foreach (var sub in pkg.subassemblies)
+                foreach (var sub in pkg.partGroups)
                 {
                     if (sub == null || sub.isAggregate || sub.partIds == null) continue;
                     foreach (var pid in sub.partIds)
-                        if (!string.IsNullOrEmpty(pid) && !subassemblyIdByMember.ContainsKey(pid))
-                            subassemblyIdByMember[pid] = sub.id;
+                        if (!string.IsNullOrEmpty(pid) && !partGroupIdByMember.ContainsKey(pid))
+                            partGroupIdByMember[pid] = sub.id;
                 }
             }
 
-            // subassembly placement by id
-            subassemblyPlacementById = new Dictionary<string, SubassemblyPreviewPlacement>(StringComparer.Ordinal);
-            if (pkg.previewConfig?.subassemblyPlacements != null)
+            // partGroup placement by id
+            partGroupPlacementById = new Dictionary<string, PartGroupPreviewPlacement>(StringComparer.Ordinal);
+            if (pkg.previewConfig?.partGroupPlacements != null)
             {
-                foreach (var sp in pkg.previewConfig.subassemblyPlacements)
+                foreach (var sp in pkg.previewConfig.partGroupPlacements)
                 {
-                    if (sp == null || string.IsNullOrEmpty(sp.subassemblyId)) continue;
-                    subassemblyPlacementById[sp.subassemblyId] = sp;
+                    if (sp == null || string.IsNullOrEmpty(sp.partGroupId)) continue;
+                    partGroupPlacementById[sp.partGroupId] = sp;
                 }
             }
 
-            // group step-pose spans — same resolution as per-part spans but keyed by subassembly
-            groupStepPosesBySubassembly = new Dictionary<string, List<ResolvedAuthorSpan>>(StringComparer.Ordinal);
-            foreach (var kvp in subassemblyPlacementById)
+            // group step-pose spans — same resolution as per-part spans but keyed by partGroup
+            groupStepPosesByPartGroup = new Dictionary<string, List<ResolvedAuthorSpan>>(StringComparer.Ordinal);
+            foreach (var kvp in partGroupPlacementById)
             {
                 var sp = kvp.Value;
                 if (sp.stepPoses == null || sp.stepPoses.Length == 0) continue;
@@ -274,7 +274,7 @@ namespace OSE.Content.Loading
                         : (seqByStepId.TryGetValue(entry.propagateThroughStep, out int t) ? t : int.MaxValue);
                     list.Add(new ResolvedAuthorSpan(entry, anchorSeq, fromSeq, throughSeq));
                 }
-                if (list.Count > 0) groupStepPosesBySubassembly[kvp.Key] = list;
+                if (list.Count > 0) groupStepPosesByPartGroup[kvp.Key] = list;
             }
 
             // tool-task endTransform timeline — partId → ordered (seq, endT)
@@ -315,20 +315,20 @@ namespace OSE.Content.Loading
                 kvp.Value.Sort((a, b) => a.seq.CompareTo(b.seq));
 
             // integrated placements
-            integratedBySubTarget          = new Dictionary<string, IntegratedSubassemblyPreviewPlacement>(StringComparer.Ordinal);
+            integratedBySubTarget          = new Dictionary<string, IntegratedPartGroupPreviewPlacement>(StringComparer.Ordinal);
             integratedMemberBySubTargetPart = new Dictionary<string, IntegratedMemberPreviewPlacement>(StringComparer.Ordinal);
-            var integrated = pkg.previewConfig?.integratedSubassemblyPlacements;
+            var integrated = pkg.previewConfig?.integratedPartGroupPlacements;
             if (integrated != null)
             {
                 foreach (var pl in integrated)
                 {
-                    if (pl == null || string.IsNullOrEmpty(pl.subassemblyId) || string.IsNullOrEmpty(pl.targetId)) continue;
-                    integratedBySubTarget[PackKey(pl.subassemblyId, pl.targetId)] = pl;
+                    if (pl == null || string.IsNullOrEmpty(pl.partGroupId) || string.IsNullOrEmpty(pl.targetId)) continue;
+                    integratedBySubTarget[PackKey(pl.partGroupId, pl.targetId)] = pl;
                     if (pl.memberPlacements == null) continue;
                     foreach (var mp in pl.memberPlacements)
                     {
                         if (mp == null || string.IsNullOrEmpty(mp.partId)) continue;
-                        integratedMemberBySubTargetPart[PackKey(pl.subassemblyId, pl.targetId, mp.partId)] = mp;
+                        integratedMemberBySubTargetPart[PackKey(pl.partGroupId, pl.targetId, mp.partId)] = mp;
                     }
                 }
             }
@@ -339,19 +339,19 @@ namespace OSE.Content.Loading
     }
 
     /// <summary>
-    /// A single stacking moment in the step timeline: at seq S, subassembly
-    /// <see cref="subassemblyId"/> is committed onto target <see cref="targetId"/>.
+    /// A single stacking moment in the step timeline: at seq S, partGroup
+    /// <see cref="partGroupId"/> is committed onto target <see cref="targetId"/>.
     /// Used by the resolver to decide "is this part an IntegratedMember at seq N?"
     /// </summary>
     public readonly struct StackingEvent
     {
         public readonly int seq;
-        public readonly string subassemblyId;
+        public readonly string partGroupId;
         public readonly string targetId;
-        public StackingEvent(int seq, string subassemblyId, string targetId)
+        public StackingEvent(int seq, string partGroupId, string targetId)
         {
             this.seq = seq;
-            this.subassemblyId = subassemblyId;
+            this.partGroupId = partGroupId;
             this.targetId = targetId;
         }
     }

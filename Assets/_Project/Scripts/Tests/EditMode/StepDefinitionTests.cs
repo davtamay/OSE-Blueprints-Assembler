@@ -231,19 +231,19 @@ namespace OSE.Tests.EditMode
             Assert.IsFalse(new StepDefinition { targetOrder = "parallel" }.IsSequential);
         }
 
-        // ── RequiresSubassemblyPlacement ──────────────────────────────────────
+        // ── RequiresPartGroupPlacement ──────────────────────────────────────
 
         [Test]
-        public void RequiresSubassemblyPlacement_TrueWhen_IdPresent()
+        public void RequiresPartGroupPlacement_TrueWhen_IdPresent()
         {
-            var step = new StepDefinition { requiredSubassemblyId = "extruder" };
-            Assert.IsTrue(step.RequiresSubassemblyPlacement);
+            var step = new StepDefinition { requiredPartGroupId = "extruder" };
+            Assert.IsTrue(step.RequiresPartGroupPlacement);
         }
 
         [Test]
-        public void RequiresSubassemblyPlacement_FalseWhen_IdAbsent()
+        public void RequiresPartGroupPlacement_FalseWhen_IdAbsent()
         {
-            Assert.IsFalse(new StepDefinition().RequiresSubassemblyPlacement);
+            Assert.IsFalse(new StepDefinition().RequiresPartGroupPlacement);
         }
 
         // ── GetDisplayName ────────────────────────────────────────────────────

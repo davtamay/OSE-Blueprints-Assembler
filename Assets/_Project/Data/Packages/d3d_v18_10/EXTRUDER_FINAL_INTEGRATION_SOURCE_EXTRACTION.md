@@ -73,7 +73,7 @@ The `3D Printer Genealogy` page records:
 - that recovery should come with horizontal X-axis mounting
 
 That is strong evidence that the next slice must involve real printer-side
-extruder mounting, not another detached bench subassembly.
+extruder mounting, not another detached bench partGroup.
 
 ### Strongest stable part-set signal
 
@@ -216,7 +216,7 @@ But it is now safe to define the first authored Stage 03 pass around:
 
 - carriage side
 - half carriage
-- completed carriage-unit subassembly
+- completed carriage-unit partGroup
 - travel-clearance QC
 
 ## Locked Working Conclusion

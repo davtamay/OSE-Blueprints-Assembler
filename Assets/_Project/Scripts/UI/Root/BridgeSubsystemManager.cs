@@ -18,7 +18,7 @@ namespace OSE.UI.Root
         public UseStepHandler                   UseHandler            { get; private set; }
         public ConnectStepHandler               ConnectHandler        { get; private set; }
         public PlaceStepHandler                 PlaceHandler          { get; private set; }
-        public SubassemblyPlacementController   SubassemblyController { get; private set; }
+        public PartGroupPlacementController   PartGroupController { get; private set; }
         public StepExecutionRouter              Router                { get; private set; }
         public PartVisualFeedbackManager        VisualFeedback        { get; private set; }
         public DragController                   Drag                  { get; private set; }
@@ -50,8 +50,8 @@ namespace OSE.UI.Root
             Router.Register(StepFamily.Confirm, new ConfirmStepHandler());
             ConnectHandler ??= new ConnectStepHandler(_ctx);
             Router.Register(StepFamily.Connect, ConnectHandler);
-            SubassemblyController ??= new SubassemblyPlacementController(_ctx);
-            ServiceRegistry.Register<ISubassemblyPlacementService>(SubassemblyController);
+            PartGroupController ??= new PartGroupPlacementController(_ctx);
+            ServiceRegistry.Register<IPartGroupPlacementService>(PartGroupController);
             VisualFeedback  ??= new PartVisualFeedbackManager(_ctx);
             Drag            ??= new DragController(_getSetup);
             HintManager     ??= new HintManager(_ctx);
@@ -83,9 +83,9 @@ namespace OSE.UI.Root
             ToolAction?.ClearToolPreviewIndicator();
             ToolAction?.ClearToolActionTargets();
             Router?.CleanupAll();
-            SubassemblyController?.Dispose();
-            SubassemblyController = null;
-            ServiceRegistry.Unregister<ISubassemblyPlacementService>();
+            PartGroupController?.Dispose();
+            PartGroupController = null;
+            ServiceRegistry.Unregister<IPartGroupPlacementService>();
             StepResponder?.SetStartupSyncPending(false);
             ConfirmInspection?.ClearMarkers();
             ConfirmInspection = null;

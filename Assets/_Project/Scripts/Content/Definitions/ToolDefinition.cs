@@ -28,7 +28,7 @@ namespace OSE.Content
         /// Animation &amp; effect cues owned by this tool. Cues fire on the
         /// tool's cursor preview GameObject. Authored in TTAW via the
         /// unified "Animation &amp; Effect Cues" panel — same UX as parts
-        /// and subassemblies.
+        /// and partGroups.
         /// </summary>
         public AnimationCueEntry[] animationCues;
 

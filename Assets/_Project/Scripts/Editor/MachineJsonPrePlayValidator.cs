@@ -218,7 +218,7 @@ namespace OSE.Editor
                 if (asmChunk == null) continue;
 
                 pkg.assemblies      = MergeArrays(pkg.assemblies,      asmChunk.assemblies);
-                pkg.subassemblies   = MergeArrays(pkg.subassemblies,   asmChunk.subassemblies);
+                pkg.partGroups   = MergeArrays(pkg.partGroups,   asmChunk.partGroups);
                 pkg.parts           = MergeArrays(pkg.parts,           asmChunk.parts);
                 pkg.steps           = MergeArrays(pkg.steps,           asmChunk.steps);
                 pkg.targets         = MergeArrays(pkg.targets,         asmChunk.targets);

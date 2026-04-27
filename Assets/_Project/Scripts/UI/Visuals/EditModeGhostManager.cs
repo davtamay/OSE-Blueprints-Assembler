@@ -28,9 +28,9 @@ namespace OSE.UI.Root
 
         private readonly Func<Transform>                                                    _getPreviewRoot;
         private readonly Func<string, PartPreviewPlacement>                                 _findPartPlacement;
-        private readonly Func<string, SubassemblyPreviewPlacement>                          _findSubassemblyPlacement;
-        private readonly Func<string, string, IntegratedSubassemblyPreviewPlacement>        _findIntegratedPlacement;
-        private readonly Func<string, string, ConstrainedSubassemblyFitPreviewPlacement>    _findConstrainedFitPlacement;
+        private readonly Func<string, PartGroupPreviewPlacement>                          _findPartGroupPlacement;
+        private readonly Func<string, string, IntegratedPartGroupPreviewPlacement>        _findIntegratedPlacement;
+        private readonly Func<string, string, ConstrainedPartGroupFitPreviewPlacement>    _findConstrainedFitPlacement;
         private readonly PackageAssetResolver                                               _resolver;
         private readonly Func<string, GameObject>                                           _tryLoadAsset;
 
@@ -38,16 +38,16 @@ namespace OSE.UI.Root
             IReadOnlyList<GameObject> spawnedParts,
             Func<Transform> getPreviewRoot,
             Func<string, PartPreviewPlacement> findPartPlacement,
-            Func<string, SubassemblyPreviewPlacement> findSubassemblyPlacement,
-            Func<string, string, IntegratedSubassemblyPreviewPlacement> findIntegratedPlacement,
-            Func<string, string, ConstrainedSubassemblyFitPreviewPlacement> findConstrainedFitPlacement,
+            Func<string, PartGroupPreviewPlacement> findPartGroupPlacement,
+            Func<string, string, IntegratedPartGroupPreviewPlacement> findIntegratedPlacement,
+            Func<string, string, ConstrainedPartGroupFitPreviewPlacement> findConstrainedFitPlacement,
             PackageAssetResolver resolver,
             Func<string, GameObject> tryLoadAsset)
         {
             _spawnedParts              = spawnedParts;
             _getPreviewRoot            = getPreviewRoot;
             _findPartPlacement         = findPartPlacement;
-            _findSubassemblyPlacement  = findSubassemblyPlacement;
+            _findPartGroupPlacement  = findPartGroupPlacement;
             _findIntegratedPlacement   = findIntegratedPlacement;
             _findConstrainedFitPlacement = findConstrainedFitPlacement;
             _resolver                  = resolver;
@@ -72,7 +72,7 @@ namespace OSE.UI.Root
             int targetSequenceIndex,
             bool fullyAssembled,
             Dictionary<string, int> partStepSeq,
-            HashSet<string> subassemblyParts)
+            HashSet<string> partGroupParts)
         {
             Clear();
 
@@ -103,17 +103,17 @@ namespace OSE.UI.Root
             if (targetIds == null || targetIds.Length == 0)
                 return;
 
-            // Build the set of subassembly IDs that were already committed in
+            // Build the set of partGroup IDs that were already committed in
             // prior steps. Later steps (Confirm / tacking / acceptance) often
             // reuse those same targets for framing/hints, but the ghost
             // silhouette should NOT re-appear — the real parts are already
-            // there. Matches PackagePartSpawner.stackedSubassemblyIds.
-            var alreadyPlacedSubassemblyIds = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+            // there. Matches PackagePartSpawner.stackedPartGroupIds.
+            var alreadyPlacedPartGroupIds = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
             foreach (var s in orderedSteps)
             {
-                if (s == null || string.IsNullOrEmpty(s.requiredSubassemblyId)) continue;
+                if (s == null || string.IsNullOrEmpty(s.requiredPartGroupId)) continue;
                 if (s.sequenceIndex < targetSequenceIndex)
-                    alreadyPlacedSubassemblyIds.Add(s.requiredSubassemblyId);
+                    alreadyPlacedPartGroupIds.Add(s.requiredPartGroupId);
             }
 
             // Build the set of part IDs that this step is actively placing.
@@ -130,15 +130,15 @@ namespace OSE.UI.Root
                 if (string.IsNullOrEmpty(targetId)) continue;
                 if (!pkg.TryGetTarget(targetId, out var target)) continue;
 
-                // Subassembly target — spawn composite ghost with all member parts,
-                // but skip when the subassembly was already committed earlier
+                // PartGroup target — spawn composite ghost with all member parts,
+                // but skip when the partGroup was already committed earlier
                 // (avoids phantom ghosts on Confirm/tack/acceptance steps that
                 // reuse the target for framing but not placement).
-                if (!string.IsNullOrWhiteSpace(target.associatedSubassemblyId))
+                if (!string.IsNullOrWhiteSpace(target.associatedPartGroupId))
                 {
-                    if (alreadyPlacedSubassemblyIds.Contains(target.associatedSubassemblyId))
+                    if (alreadyPlacedPartGroupIds.Contains(target.associatedPartGroupId))
                         continue;
-                    SpawnSubassemblyGhost(pkg, targetId, target, previewRoot);
+                    SpawnPartGroupGhost(pkg, targetId, target, previewRoot);
                     continue;
                 }
 
@@ -148,7 +148,7 @@ namespace OSE.UI.Root
                 bool isCurrentStepPart = false;
                 if (partStepSeq.TryGetValue(partId, out int partSeq) &&
                     partSeq == targetSequenceIndex &&
-                    !subassemblyParts.Contains(partId))
+                    !partGroupParts.Contains(partId))
                 {
                     isCurrentStepPart = true;
                 }
@@ -232,25 +232,25 @@ namespace OSE.UI.Root
 
         // ── Private helpers ──
 
-        private void SpawnSubassemblyGhost(
+        private void SpawnPartGroupGhost(
             MachinePackageDefinition pkg,
             string targetId,
             TargetDefinition target,
             Transform previewRoot)
         {
-            string subassemblyId = target.associatedSubassemblyId;
-            if (!pkg.TryGetSubassembly(subassemblyId, out SubassemblyDefinition subassembly) ||
-                subassembly?.partIds == null || subassembly.partIds.Length == 0)
+            string partGroupId = target.associatedPartGroupId;
+            if (!pkg.TryGetPartGroup(partGroupId, out PartGroupDefinition partGroup) ||
+                partGroup?.partIds == null || partGroup.partIds.Length == 0)
                 return;
 
-            SubassemblyPreviewPlacement frame = _findSubassemblyPlacement(subassemblyId);
+            PartGroupPreviewPlacement frame = _findPartGroupPlacement(partGroupId);
             if (frame == null)
             {
-                OseLog.VerboseInfo($"[EditGhost] Subassembly '{subassemblyId}' has no authored preview frame — skipping ghost.");
+                OseLog.VerboseInfo($"[EditGhost] PartGroup '{partGroupId}' has no authored preview frame — skipping ghost.");
                 return;
             }
 
-            var subGhostRoot = new GameObject($"EditGhost_{subassemblyId}");
+            var subGhostRoot = new GameObject($"EditGhost_{partGroupId}");
             subGhostRoot.transform.SetParent(previewRoot, false);
 
             Vector3    framePos   = PreviewSpawnManager.ToVector3(frame.position);
@@ -260,11 +260,11 @@ namespace OSE.UI.Root
             subGhostRoot.transform.SetLocalPositionAndRotation(framePos, frameRot);
             subGhostRoot.transform.localScale = frameScale;
 
-            IntegratedSubassemblyPreviewPlacement integratedPlacement =
-                _findIntegratedPlacement(subassemblyId, targetId);
+            IntegratedPartGroupPreviewPlacement integratedPlacement =
+                _findIntegratedPlacement(partGroupId, targetId);
 
-            ConstrainedSubassemblyFitPreviewPlacement fitPlacement =
-                _findConstrainedFitPlacement(subassemblyId, targetId);
+            ConstrainedPartGroupFitPreviewPlacement fitPlacement =
+                _findConstrainedFitPlacement(partGroupId, targetId);
 
             Vector3 fitAxisLocal = fitPlacement != null
                 ? PreviewSpawnManager.ToVector3(fitPlacement.fitAxisLocal) : Vector3.zero;
@@ -281,9 +281,9 @@ namespace OSE.UI.Root
             bool isAxisFitPreview = fitPlacement?.drivenPartIds != null && fitPlacement.drivenPartIds.Length > 0;
             var fitPreviewChildren = isAxisFitPreview ? new List<Transform>() : null;
 
-            for (int i = 0; i < subassembly.partIds.Length; i++)
+            for (int i = 0; i < partGroup.partIds.Length; i++)
             {
-                string memberId = subassembly.partIds[i];
+                string memberId = partGroup.partIds[i];
                 if (string.IsNullOrWhiteSpace(memberId) || !pkg.TryGetPart(memberId, out PartDefinition part))
                     continue;
                 if (isAxisFitPreview && System.Array.IndexOf(fitPlacement.drivenPartIds, memberId) < 0)
@@ -378,7 +378,7 @@ namespace OSE.UI.Root
 
             MaterialHelper.ApplyPreviewMaterial(subGhostRoot);
             _ghosts.Add(subGhostRoot);
-            OseLog.VerboseInfo($"[EditGhost] Spawned subassembly ghost for '{subassemblyId}' at target '{targetId}'.");
+            OseLog.VerboseInfo($"[EditGhost] Spawned partGroup ghost for '{partGroupId}' at target '{targetId}'.");
         }
 
         private GameObject FindSpawnedPart(string partId)
@@ -392,7 +392,7 @@ namespace OSE.UI.Root
         }
 
         private static bool TryFindIntegratedMember(
-            IntegratedSubassemblyPreviewPlacement intPlacement,
+            IntegratedPartGroupPreviewPlacement intPlacement,
             string partId,
             out Vector3 position, out Quaternion rotation, out Vector3 scale)
         {

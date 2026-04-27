@@ -61,7 +61,7 @@ namespace OSE.Editor
 
             int sig = (_dirtyStepIds?.Count ?? 0)
                     + (_dirtyToolIds?.Count ?? 0)
-                    + (_dirtySubassemblyIds?.Count ?? 0)
+                    + (_dirtyPartGroupIds?.Count ?? 0)
                     + (_dirtyTaskOrderStepIds?.Count ?? 0)
                     + (_dirtyPartAssetRefIds?.Count ?? 0)
                     + CountDirtyPartsForAutoSave()
@@ -307,7 +307,7 @@ namespace OSE.Editor
                             // strip is rendered by DrawTaskInspectorBody — don't
                             // double up with a part-scope strip here.
                             bool entryIsGroup = _pkg != null
-                                && _pkg.TryGetSubassembly(entry.id, out var _grp)
+                                && _pkg.TryGetPartGroup(entry.id, out var _grp)
                                 && _grp != null;
 
                             // Slice A: DrawInspectorGroupLabel and DrawCuesForPart
@@ -360,13 +360,13 @@ namespace OSE.Editor
             }
             else if (!string.IsNullOrEmpty(_canvasSelectedSubId) && step != null)
             {
-                // A subassembly is selected in the canvas list
-                DrawInspectorForSubassembly(step, _canvasSelectedSubId);
+                // A partGroup is selected in the canvas list
+                DrawInspectorForPartGroup(step, _canvasSelectedSubId);
             }
             else if (step != null)
             {
                 // Step-level animation authoring is removed. Cues now live
-                // on the host (part / subassembly / aggregate) — select a
+                // on the host (part / partGroup / aggregate) — select a
                 // part or group to author its Animations & Effects. The
                 // legacy step.animationCues / particle-effects blocks
                 // remain readable at runtime as a fallback for unmigrated
@@ -380,15 +380,15 @@ namespace OSE.Editor
         }
 
         /// <summary>
-        /// Full inspector panel for a selected subassembly from the canvas list.
+        /// Full inspector panel for a selected partGroup from the canvas list.
         /// Shows: name, orientation (read-only values from the gizmo), part
         /// membership, step membership, and inline editor for name/description.
         /// </summary>
-        private void DrawInspectorForSubassembly(StepDefinition step, string subId)
+        private void DrawInspectorForPartGroup(StepDefinition step, string subId)
         {
-            if (!_pkg.TryGetSubassembly(subId, out SubassemblyDefinition sub) || sub == null)
+            if (!_pkg.TryGetPartGroup(subId, out PartGroupDefinition sub) || sub == null)
             {
-                EditorGUILayout.LabelField($"Subassembly '{subId}' not found.", EditorStyles.miniLabel);
+                EditorGUILayout.LabelField($"PartGroup '{subId}' not found.", EditorStyles.miniLabel);
                 return;
             }
 
@@ -409,8 +409,8 @@ namespace OSE.Editor
                 {
                     normal = { textColor = new Color(0.65f, 0.70f, 0.80f) },
                 };
-                string rotText = $"Orientation: ({wo.subassemblyRotation.x:F1}°, {wo.subassemblyRotation.y:F1}°, {wo.subassemblyRotation.z:F1}°)";
-                string ofsText = $"Offset: ({wo.subassemblyPositionOffset.x:F3}, {wo.subassemblyPositionOffset.y:F3}, {wo.subassemblyPositionOffset.z:F3})";
+                string rotText = $"Orientation: ({wo.partGroupRotation.x:F1}°, {wo.partGroupRotation.y:F1}°, {wo.partGroupRotation.z:F1}°)";
+                string ofsText = $"Offset: ({wo.partGroupPositionOffset.x:F3}, {wo.partGroupPositionOffset.y:F3}, {wo.partGroupPositionOffset.z:F3})";
                 EditorGUILayout.LabelField(rotText, rotStyle);
                 EditorGUILayout.LabelField(ofsText, rotStyle);
                 EditorGUILayout.LabelField("Use the gizmo in the SceneView to adjust.",
@@ -426,28 +426,28 @@ namespace OSE.Editor
             EditorGUILayout.Space(4);
 
             // Inline editor (name, description, parts, steps)
-            DrawSubassemblyInlineEditor(sub, step);
+            DrawPartGroupInlineEditor(sub, step);
 
-            // Animation cue authoring for the selected subassembly is handled
-            // by DrawCuesForSubassembly in the task-sequence inspector
+            // Animation cue authoring for the selected partGroup is handled
+            // by DrawCuesForPartGroup in the task-sequence inspector
             // (TTAW.UnifiedList.cs:DrawTaskInspectorBody). No host-section
             // editor here — one authoring surface keeps cues off the "two
             // systems" split.
         }
 
         /// <summary>
-        /// Shows a compact "Group: X" label with the part's subassembly
+        /// Shows a compact "Group: X" label with the part's partGroup
         /// membership. Expandable on click to show the full group detail.
         /// </summary>
         private void DrawInspectorGroupLabel(string partId)
         {
             if (_pkg == null || string.IsNullOrEmpty(partId)) return;
 
-            var allSubs = _pkg.GetSubassemblies();
+            var allSubs = _pkg.GetPartGroups();
             if (allSubs == null || allSubs.Length == 0) return;
 
-            // Find which subassembly contains this part
-            SubassemblyDefinition ownerSub = null;
+            // Find which partGroup contains this part
+            PartGroupDefinition ownerSub = null;
             foreach (var sub in allSubs)
             {
                 if (sub?.partIds == null) continue;
@@ -778,7 +778,7 @@ namespace OSE.Editor
                                                          // can't match the stale step/def.
             // Also clear the cue-preview context so a stale _afterCueGroupDef
             // from the previous step can't bind the resolver to a mismatched
-            // subassembly on the new step.
+            // partGroup on the new step.
             _beforeCuePartDef = null; _beforeCueStepId = null;
             _afterCuePartDef = null; _afterCueStepId = null;
             _beforeCueGroupDef = null;
@@ -1445,7 +1445,7 @@ namespace OSE.Editor
         /// <summary>
         /// Ownership summary for the Part Context inspector. Answers
         /// "where does this part live?" at a glance: which Place-family
-        /// step physically places it, which subassembly owns it, and every
+        /// step physically places it, which partGroup owns it, and every
         /// step that Requires / makes Optional / renders it as a visual.
         /// Each seq chip is clickable and jumps the step filter.
         ///
@@ -1459,7 +1459,7 @@ namespace OSE.Editor
         {
             if (string.IsNullOrEmpty(partId) || _ownership == null) return;
             var own = _ownership.ForPart(partId);
-            if (!own.IsReferenced && !own.HasAnyConflict && string.IsNullOrEmpty(own.subassemblyId))
+            if (!own.IsReferenced && !own.HasAnyConflict && string.IsNullOrEmpty(own.partGroupId))
                 return; // nothing to show — part authored but unused.
 
             EditorGUILayout.Space(4);
@@ -1469,12 +1469,12 @@ namespace OSE.Editor
             var lblStyle = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleLeft };
             var valStyle = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleLeft };
 
-            // Subassembly
-            if (!string.IsNullOrEmpty(own.subassemblyId))
+            // PartGroup
+            if (!string.IsNullOrEmpty(own.partGroupId))
             {
                 EditorGUILayout.BeginHorizontal();
-                GUILayout.Label("  Subassembly:", lblStyle, GUILayout.Width(110));
-                GUILayout.Label(own.subassemblyId, valStyle);
+                GUILayout.Label("  PartGroup:", lblStyle, GUILayout.Width(110));
+                GUILayout.Label(own.partGroupId, valStyle);
                 EditorGUILayout.EndHorizontal();
             }
 
@@ -1518,9 +1518,9 @@ namespace OSE.Editor
                     wordWrap  = true,
                 };
                 EditorGUILayout.LabelField(
-                    "  ⚠ Subassembly conflict: claimed by " +
-                    string.Join(", ", own.conflictingSubassemblyIds) +
-                    ". Each partId must belong to exactly one non-aggregate subassembly.",
+                    "  ⚠ PartGroup conflict: claimed by " +
+                    string.Join(", ", own.conflictingPartGroupIds) +
+                    ". Each partId must belong to exactly one non-aggregate partGroup.",
                     warn);
             }
         }
@@ -1817,7 +1817,7 @@ namespace OSE.Editor
         /// tolerance. Used to suppress redundant "Before cue" pills whose
         /// visual state is already covered by the Start / NO TASK pose pill.
         /// Thin shim over <see cref="IsCueFromPoseSameAsStartPose"/> so the
-        /// group (subassembly) call site can share the same comparator.
+        /// group (partGroup) call site can share the same comparator.
         /// </summary>
         private static bool IsCueFromPoseSameAsStart(OSE.Content.AnimationCueEntry cue,
             PartPreviewPlacement placement)
@@ -1829,7 +1829,7 @@ namespace OSE.Editor
 
         /// <summary>
         /// Shape-agnostic variant — takes raw startPosition/Rotation/Scale so
-        /// part (PartPreviewPlacement) and group (SubassemblyPreviewPlacement)
+        /// part (PartPreviewPlacement) and group (PartGroupPreviewPlacement)
         /// paths can share one comparator. Tolerances match the 4-decimal
         /// authoring precision enforced by <c>PackageJsonUtils</c>: ±0.0005 m
         /// on position, ±0.001 on scale, ≥0.99995 on quaternion dot (~0.5° cone).
@@ -2453,7 +2453,7 @@ namespace OSE.Editor
             string partId = p.def?.id;
             _propagationFilterSamePart = EditorGUILayout.ToggleLeft(
                 new GUIContent("Only steps using this part",
-                    "When on, the From/Through pickers list only steps whose requiredPartIds, visualPartIds, optionalPartIds, or requiredSubassemblyId reference this part. Flip off to pick from every step."),
+                    "When on, the From/Through pickers list only steps whose requiredPartIds, visualPartIds, optionalPartIds, or requiredPartGroupId reference this part. Flip off to pick from every step."),
                 _propagationFilterSamePart, EditorStyles.miniLabel);
 
             // From / Through buttons — stacked on two rows (each row only
@@ -2497,9 +2497,9 @@ namespace OSE.Editor
             if (step.requiredPartIds != null)  foreach (var pid in step.requiredPartIds)  if (string.Equals(pid, partId, StringComparison.Ordinal)) return true;
             if (step.visualPartIds != null)    foreach (var pid in step.visualPartIds)    if (string.Equals(pid, partId, StringComparison.Ordinal)) return true;
             if (step.optionalPartIds != null)  foreach (var pid in step.optionalPartIds)  if (string.Equals(pid, partId, StringComparison.Ordinal)) return true;
-            // Subassembly-member reach: a step placing a group covers every member part.
-            if (!string.IsNullOrEmpty(step.requiredSubassemblyId) && _pkg != null
-                && _pkg.TryGetSubassembly(step.requiredSubassemblyId, out var sub) && sub?.partIds != null)
+            // PartGroup-member reach: a step placing a group covers every member part.
+            if (!string.IsNullOrEmpty(step.requiredPartGroupId) && _pkg != null
+                && _pkg.TryGetPartGroup(step.requiredPartGroupId, out var sub) && sub?.partIds != null)
             {
                 foreach (var pid in sub.partIds)
                     if (string.Equals(pid, partId, StringComparison.Ordinal)) return true;
@@ -3258,15 +3258,15 @@ namespace OSE.Editor
         }
 
         /// <summary>
-        /// Finds the subassembly that owns this part (first match in
+        /// Finds the partGroup that owns this part (first match in
         /// <c>sub.partIds</c>). Prefers non-aggregate groups so stripping
-        /// affects the actual integrated-placement subassembly rather than a
+        /// affects the actual integrated-placement partGroup rather than a
         /// phase scope. Returns null if the part isn't in any group.
         /// </summary>
-        private string ResolveOwningSubassemblyId(PartEditState p)
+        private string ResolveOwningPartGroupId(PartEditState p)
         {
             if (p.def == null || _pkg == null) return null;
-            var subs = _pkg.GetSubassemblies();
+            var subs = _pkg.GetPartGroups();
             if (subs == null) return null;
             string aggregateMatch = null;
             foreach (var s in subs)
@@ -3282,50 +3282,50 @@ namespace OSE.Editor
             return aggregateMatch;
         }
 
-        private int CountIntegratedPlacementsForSubassembly(string subId)
+        private int CountIntegratedPlacementsForPartGroup(string subId)
         {
             if (string.IsNullOrEmpty(subId)) return 0;
-            var placements = _pkg?.previewConfig?.integratedSubassemblyPlacements;
+            var placements = _pkg?.previewConfig?.integratedPartGroupPlacements;
             if (placements == null) return 0;
             int n = 0;
             foreach (var pl in placements)
-                if (pl != null && string.Equals(pl.subassemblyId, subId, StringComparison.Ordinal))
+                if (pl != null && string.Equals(pl.partGroupId, subId, StringComparison.Ordinal))
                     n++;
             return n;
         }
 
         /// <summary>
-        /// Removes every <c>integratedSubassemblyPlacements</c> entry whose
-        /// <c>subassemblyId</c> matches <paramref name="subId"/>. Dirties the
+        /// Removes every <c>integratedPartGroupPlacements</c> entry whose
+        /// <c>partGroupId</c> matches <paramref name="subId"/>. Dirties the
         /// package so Write-to-JSON persists the removal. The runtime spawner
         /// will then skip the integrated lookup and fall through to
         /// startPosition / assembledPosition for the group's members.
         /// </summary>
-        private void StripIntegratedPlacementsForSubassembly(string subId)
+        private void StripIntegratedPlacementsForPartGroup(string subId)
         {
             if (string.IsNullOrEmpty(subId)) return;
             var pc = _pkg?.previewConfig;
-            if (pc?.integratedSubassemblyPlacements == null) return;
-            var kept = new List<IntegratedSubassemblyPreviewPlacement>();
+            if (pc?.integratedPartGroupPlacements == null) return;
+            var kept = new List<IntegratedPartGroupPreviewPlacement>();
             int removed = 0;
-            foreach (var pl in pc.integratedSubassemblyPlacements)
+            foreach (var pl in pc.integratedPartGroupPlacements)
             {
-                if (pl != null && string.Equals(pl.subassemblyId, subId, StringComparison.Ordinal))
+                if (pl != null && string.Equals(pl.partGroupId, subId, StringComparison.Ordinal))
                 { removed++; continue; }
                 kept.Add(pl);
             }
             if (removed == 0) return;
 
-            pc.integratedSubassemblyPlacements = kept.ToArray();
-            _dirtySubassemblyIds.Add(subId);
+            pc.integratedPartGroupPlacements = kept.ToArray();
+            _dirtyPartGroupIds.Add(subId);
             // Also mark any step that referenced this group for re-serialisation.
             if (_pkg?.steps != null)
             {
                 foreach (var s in _pkg.steps)
                 {
                     if (s == null) continue;
-                    if (string.Equals(s.requiredSubassemblyId, subId, StringComparison.Ordinal)
-                        || string.Equals(s.subassemblyId, subId, StringComparison.Ordinal))
+                    if (string.Equals(s.requiredPartGroupId, subId, StringComparison.Ordinal)
+                        || string.Equals(s.partGroupId, subId, StringComparison.Ordinal))
                         _dirtyStepIds.Add(s.id);
                 }
             }
@@ -3439,11 +3439,11 @@ namespace OSE.Editor
             // Prune buttons removed alongside the propagation UI. Per-row
             // × buttons below are sufficient for one-off cleanup.
 
-            // Strip integrated placements for this part's owning subassembly.
+            // Strip integrated placements for this part's owning partGroup.
             // Lets the author remove the per-target integrated poses that
             // otherwise override NO TASK's startPosition on later steps.
-            string ownerSubId = ResolveOwningSubassemblyId(p);
-            int integratedCount = CountIntegratedPlacementsForSubassembly(ownerSubId);
+            string ownerSubId = ResolveOwningPartGroupId(p);
+            int integratedCount = CountIntegratedPlacementsForPartGroup(ownerSubId);
             if (integratedCount > 0)
             {
                 var warnStyle = new GUIStyle(EditorStyles.miniLabel)
@@ -3456,10 +3456,10 @@ namespace OSE.Editor
                     $"  {integratedCount} integrated placement(s) on group '{ownerSubId}' may override later steps.",
                     warnStyle);
                 if (GUILayout.Button(new GUIContent("Strip integrated",
-                        "Removes every integratedSubassemblyPlacements entry for this part's owning subassembly. The spawner will then fall back to startPosition / assembledPosition, letting NO TASK pose dominate."),
+                        "Removes every integratedPartGroupPlacements entry for this part's owning partGroup. The spawner will then fall back to startPosition / assembledPosition, letting NO TASK pose dominate."),
                     EditorStyles.miniButton, GUILayout.Width(112)))
                 {
-                    StripIntegratedPlacementsForSubassembly(ownerSubId);
+                    StripIntegratedPlacementsForPartGroup(ownerSubId);
                     return;
                 }
             }

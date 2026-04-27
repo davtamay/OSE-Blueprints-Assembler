@@ -19,9 +19,9 @@ It answers:
 What was implemented directly from this brief:
 
 - `assembly_d3d_extruder_stage_01`
-- `subassembly_titan_aero_core`
-- `subassembly_extruder_sensor_and_fan_attachment`
-- `subassembly_extruder_nozzle_module`
+- `partGroup_titan_aero_core`
+- `partGroup_extruder_sensor_and_fan_attachment`
+- `partGroup_extruder_nozzle_module`
 - staged Titan Aero core placement
 - nozzle assembly placement
 - blower placement plus secure step
@@ -160,15 +160,15 @@ The next authored expansion should lock these assumptions:
 ## Recommended Top-Level Ids
 
 - `assembly_d3d_extruder_stage_01`
-- `subassembly_extruder_nozzle_module`
-- `subassembly_titan_aero_core`
-- `subassembly_extruder_sensor_and_fan_attachment`
+- `partGroup_extruder_nozzle_module`
+- `partGroup_titan_aero_core`
+- `partGroup_extruder_sensor_and_fan_attachment`
 
 Meaning:
 
-- `subassembly_titan_aero_core` is the sourced Titan Aero + motor unit
-- `subassembly_extruder_sensor_and_fan_attachment` covers the cooling / sensing side
-- `subassembly_extruder_nozzle_module` is the completed first authored output of this
+- `partGroup_titan_aero_core` is the sourced Titan Aero + motor unit
+- `partGroup_extruder_sensor_and_fan_attachment` covers the cooling / sensing side
+- `partGroup_extruder_nozzle_module` is the completed first authored output of this
   slice
 
 ## Concrete Authored-Slice Brief

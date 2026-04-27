@@ -5,7 +5,7 @@ namespace OSE.Content.Validation
 {
     /// <summary>
     /// Validates <see cref="StepDefinition"/> entries including profile checks,
-    /// tool actions, sequence indices, payload sub-objects, and subassembly constraints.
+    /// tool actions, sequence indices, payload sub-objects, and partGroup constraints.
     /// </summary>
     internal sealed class StepsPass : IPackageValidationPass
     {
@@ -15,7 +15,7 @@ namespace OSE.Content.Validation
             TargetDefinition[] targets = ctx.Package.GetTargets();
             var issues = ctx.Issues;
 
-            // Build target lookup for subassembly constraint checks
+            // Build target lookup for partGroup constraint checks
             var targetLookup = new Dictionary<string, TargetDefinition>(StringComparer.OrdinalIgnoreCase);
             if (targets != null)
                 foreach (var t in targets)
@@ -32,7 +32,7 @@ namespace OSE.Content.Validation
 
                 ValidationPassHelpers.ValidateRequiredText(step.name, $"{path}.name", issues);
                 ValidationPassHelpers.ValidateSingleReference(step.assemblyId,   ctx.AssemblyIds,    $"{path}.assemblyId",   issues);
-                ValidationPassHelpers.ValidateOptionalReference(step.subassemblyId, ctx.SubassemblyIds, $"{path}.subassemblyId", issues);
+                ValidationPassHelpers.ValidateOptionalReference(step.partGroupId, ctx.PartGroupIds, $"{path}.partGroupId", issues);
                 // Validate resolved instruction text so steps using guidance payload pass the check.
                 ValidationPassHelpers.ValidateRequiredText(step.ResolvedInstructionText, $"{path}.instructionText (resolved)", issues);
 
@@ -53,7 +53,7 @@ namespace OSE.Content.Validation
                 ValidationPassHelpers.ValidateOptionalEnum(step.viewMode,    ValidationPassHelpers.ViewModeValues,    $"{path}.viewMode",    issues);
                 ValidationPassHelpers.ValidateOptionalEnum(step.targetOrder, ValidationPassHelpers.TargetOrderValues, $"{path}.targetOrder", issues);
                 ValidationPassHelpers.ValidateOptionalReferences(step.requiredPartIds,        ctx.PartIds,            $"{path}.requiredPartIds",        issues);
-                ValidationPassHelpers.ValidateOptionalReference (step.requiredSubassemblyId,  ctx.SubassemblyIds,     $"{path}.requiredSubassemblyId",  issues);
+                ValidationPassHelpers.ValidateOptionalReference (step.requiredPartGroupId,  ctx.PartGroupIds,     $"{path}.requiredPartGroupId",  issues);
                 ValidationPassHelpers.ValidateOptionalReferences(step.optionalPartIds,        ctx.PartIds,            $"{path}.optionalPartIds",        issues);
                 ValidationPassHelpers.ValidateOptionalReferences(step.relevantToolIds,        ctx.ToolIds,            $"{path}.relevantToolIds",        issues);
                 ValidationPassHelpers.ValidateOptionalReferences(step.targetIds,              ctx.TargetIds,          $"{path}.targetIds",              issues);
@@ -89,40 +89,40 @@ namespace OSE.Content.Validation
 
                 ValidateToolActionCrossReferences(step, path, issues);
 
-                if (!string.IsNullOrWhiteSpace(step.requiredSubassemblyId) &&
+                if (!string.IsNullOrWhiteSpace(step.requiredPartGroupId) &&
                     ValidationPassHelpers.HasAnyValues(step.requiredPartIds))
                 {
                     issues.Add(ValidationPassHelpers.Error(path,
-                        "A step may define either requiredPartIds or requiredSubassemblyId, not both."));
+                        "A step may define either requiredPartIds or requiredPartGroupId, not both."));
                 }
 
-                if (!string.IsNullOrWhiteSpace(step.requiredSubassemblyId))
+                if (!string.IsNullOrWhiteSpace(step.requiredPartGroupId))
                 {
                     if (step.ResolvedFamily != StepFamily.Place)
                     {
-                        issues.Add(ValidationPassHelpers.Error($"{path}.requiredSubassemblyId",
-                            "Subassembly placement is only supported on Place-family steps."));
+                        issues.Add(ValidationPassHelpers.Error($"{path}.requiredPartGroupId",
+                            "PartGroup placement is only supported on Place-family steps."));
                     }
 
                     if (step.targetIds == null || step.targetIds.Length != 1)
                     {
                         issues.Add(ValidationPassHelpers.Error($"{path}.targetIds",
-                            "A subassembly placement step must reference exactly one target in v1."));
+                            "A partGroup placement step must reference exactly one target in v1."));
                     }
                     else if (targetLookup.TryGetValue(step.targetIds[0], out TargetDefinition target))
                     {
-                        if (!string.Equals(target.associatedSubassemblyId, step.requiredSubassemblyId, StringComparison.OrdinalIgnoreCase))
+                        if (!string.Equals(target.associatedPartGroupId, step.requiredPartGroupId, StringComparison.OrdinalIgnoreCase))
                         {
                             issues.Add(ValidationPassHelpers.Error($"{path}.targetIds[0]",
-                                $"Target '{target.id}' must reference associatedSubassemblyId '{step.requiredSubassemblyId}'."));
+                                $"Target '{target.id}' must reference associatedPartGroupId '{step.requiredPartGroupId}'."));
                         }
                     }
                 }
 
-                if (step.IsAxisFitPlacement && string.IsNullOrWhiteSpace(step.requiredSubassemblyId))
+                if (step.IsAxisFitPlacement && string.IsNullOrWhiteSpace(step.requiredPartGroupId))
                 {
                     issues.Add(ValidationPassHelpers.Error($"{path}.profile",
-                        "AxisFit is only supported on Place-family subassembly placement steps."));
+                        "AxisFit is only supported on Place-family partGroup placement steps."));
                 }
 
                 // Clamp and AxisFit steps place a persistent tool — tool must have persistent = true.

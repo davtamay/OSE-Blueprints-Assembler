@@ -43,32 +43,32 @@ namespace OSE.Content
         public TargetPreviewPlacement[] targetPlacements;
 
         /// <summary>
-        /// Authored fabrication-space reference frames for completed subassemblies that
+        /// Authored fabrication-space reference frames for completed partGroups that
         /// later become learner-placeable units during stacking/integration steps.
         /// </summary>
-        public SubassemblyPreviewPlacement[] subassemblyPlacements;
+        public PartGroupPreviewPlacement[] partGroupPlacements;
 
         /// <summary>
-        /// Optional constrained-fit payloads for completed subassemblies that need one
-        /// or more member parts to slide along a single axis while the subassembly root
+        /// Optional constrained-fit payloads for completed partGroups that need one
+        /// or more member parts to slide along a single axis while the partGroup root
         /// remains anchored to a target pose.
         /// </summary>
-        public ConstrainedSubassemblyFitPreviewPlacement[] constrainedSubassemblyFitPlacements;
+        public ConstrainedPartGroupFitPreviewPlacement[] constrainedPartGroupFitPlacements;
 
         /// <summary>
-        /// Optional parking frames for finished subassemblies that should persist in the
+        /// Optional parking frames for finished partGroups that should persist in the
         /// scene after fabrication, but should no longer occupy the active fabrication bay.
         /// Used to keep one near-camera working area while preserving visible progress.
         /// </summary>
-        public SubassemblyPreviewPlacement[] completedSubassemblyParkingPlacements;
+        public PartGroupPreviewPlacement[] completedPartGroupParkingPlacements;
 
         /// <summary>
-        /// Optional canonical integrated member poses for completed subassemblies after
+        /// Optional canonical integrated member poses for completed partGroups after
         /// they are placed into a later assembly target. This allows stacking to teach
         /// panel movement while the final visible machine uses explicit non-overlapping
         /// member poses.
         /// </summary>
-        public IntegratedSubassemblyPreviewPlacement[] integratedSubassemblyPlacements;
+        public IntegratedPartGroupPreviewPlacement[] integratedPartGroupPlacements;
     }
 
     /// <summary>
@@ -192,13 +192,13 @@ namespace OSE.Content
     }
 
     /// <summary>
-    /// Authored reference frame for a completed subassembly in its fabrication pose.
+    /// Authored reference frame for a completed partGroup in its fabrication pose.
     /// Member-part local offsets are derived from this frame and the parts' assembled transforms.
     /// </summary>
     [Serializable]
-    public sealed class SubassemblyPreviewPlacement
+    public sealed class PartGroupPreviewPlacement
     {
-        public string subassemblyId;
+        public string partGroupId;
 
         /// <summary>Legacy single-position field. Prefer startPosition for new content.</summary>
         public SceneFloat3 position;
@@ -223,14 +223,14 @@ namespace OSE.Content
     }
 
     /// <summary>
-    /// Constrained-fit preview payload for a finished subassembly that must remain
+    /// Constrained-fit preview payload for a finished partGroup that must remain
     /// anchored to a target pose while a driven member subset slides along a single
     /// authored local axis.
     /// </summary>
     [Serializable]
-    public sealed class ConstrainedSubassemblyFitPreviewPlacement
+    public sealed class ConstrainedPartGroupFitPreviewPlacement
     {
-        public string subassemblyId;
+        public string partGroupId;
         public string targetId;
         public SceneFloat3 fitAxisLocal;
         public float minTravel;
@@ -241,20 +241,20 @@ namespace OSE.Content
     }
 
     /// <summary>
-    /// Canonical post-placement member poses for a subassembly when committed to a
+    /// Canonical post-placement member poses for a partGroup when committed to a
     /// specific target. Positions, rotations, and scales are authored in PreviewRoot
     /// local space.
     /// </summary>
     [Serializable]
-    public sealed class IntegratedSubassemblyPreviewPlacement
+    public sealed class IntegratedPartGroupPreviewPlacement
     {
-        public string subassemblyId;
+        public string partGroupId;
         public string targetId;
         public IntegratedMemberPreviewPlacement[] memberPlacements;
     }
 
     /// <summary>
-    /// Canonical integrated pose for a single member part of a completed subassembly.
+    /// Canonical integrated pose for a single member part of a completed partGroup.
     /// </summary>
     [Serializable]
     public sealed class IntegratedMemberPreviewPlacement

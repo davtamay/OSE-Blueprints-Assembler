@@ -319,13 +319,13 @@ namespace OSE.Editor
             // ── GROUPS (Slice ME-C) ─────────────────────────────────────────
             // Wrapped in DrawCard. The "+" button on the card header binds to
             // the existing group-creation action (seed from requiredPartIds
-            // or empty subassembly). Default expanded — authors edit groups
+            // or empty partGroup). Default expanded — authors edit groups
             // frequently on multi-group steps.
-            var relevantGroups = CollectRelevantSubassembliesForStep(step);
+            var relevantGroups = CollectRelevantPartGroupsForStep(step);
             DrawCard("GROUPS", "canvas/groups", SubAccent,
                 defaultExpanded: true, count: relevantGroups.Count,
                 onAddClick: () => TryCreateGroupForStep(step),
-                body: () => DrawCanvasSubassemblyList(step, drawOwnChrome: false));
+                body: () => DrawCanvasPartGroupList(step, drawOwnChrome: false));
 
             // ── PREFABS (Slice P3) ──────────────────────────────────────────
             // Catalog of authored Step Configuration Prefabs + ready-to-run
@@ -457,12 +457,12 @@ namespace OSE.Editor
                             order.Add(new TaskOrderEntry { kind = "toolAction", id = a.id });
             }
 
-            // Auto-derive a group task entry from requiredSubassemblyId if not
+            // Auto-derive a group task entry from requiredPartGroupId if not
             // already present in the order. This ensures the [G] row shows up
             // for steps that have a group placement but no explicit taskOrder.
-            if (!string.IsNullOrEmpty(step.requiredSubassemblyId))
+            if (!string.IsNullOrEmpty(step.requiredPartGroupId))
             {
-                string subId = step.requiredSubassemblyId;
+                string subId = step.requiredPartGroupId;
                 bool found = false;
                 foreach (var e in order)
                     if (e.kind == "part" && string.Equals(TaskInstanceId.ToPartId(e.id), subId, StringComparison.Ordinal))
@@ -510,7 +510,7 @@ namespace OSE.Editor
                     presentPartIds.Add(TaskInstanceId.ToPartId(e.id));
                 }
                 if (e.kind == "part" && _pkg != null
-                    && _pkg.TryGetSubassembly(TaskInstanceId.ToPartId(e.id), out var subDef) && subDef?.partIds != null)
+                    && _pkg.TryGetPartGroup(TaskInstanceId.ToPartId(e.id), out var subDef) && subDef?.partIds != null)
                 {
                     foreach (var mpid in subDef.partIds)
                         if (!string.IsNullOrEmpty(mpid)) suppressedByGroup.Add(mpid);
@@ -591,7 +591,7 @@ namespace OSE.Editor
                 foreach (var e in step.taskOrder)
                 {
                     if (e == null || e.kind != "part" || string.IsNullOrEmpty(e.id)) continue;
-                    if (_pkg.TryGetSubassembly(e.id, out var subDef) && subDef?.partIds != null)
+                    if (_pkg.TryGetPartGroup(e.id, out var subDef) && subDef?.partIds != null)
                         foreach (var mpid in subDef.partIds)
                             if (!string.IsNullOrEmpty(mpid)) suppressedByGroup.Add(mpid);
                 }
@@ -623,9 +623,9 @@ namespace OSE.Editor
                         if (e.isOptional) { e.isOptional = false; changed = true; }
                         newOrder.Add(e);
                     }
-                    else if (_pkg != null && _pkg.TryGetSubassembly(e.id, out _))
+                    else if (_pkg != null && _pkg.TryGetPartGroup(e.id, out _))
                     {
-                        // Group [G] entries: id is a subassemblyId, not a
+                        // Group [G] entries: id is a partGroupId, not a
                         // partId, so it never lives in the role arrays. Keep
                         // the row — it's how NO TASK group drag-drops surface.
                         newOrder.Add(e);
@@ -788,7 +788,7 @@ namespace OSE.Editor
 
             AnimationCueEntry[] cues = null;
             string hostLabel = null;
-            if (_pkg.TryGetSubassembly(entry.id, out var sub) && sub != null)
+            if (_pkg.TryGetPartGroup(entry.id, out var sub) && sub != null)
             {
                 cues = sub.animationCues;
                 hostLabel = $"group '{sub.GetDisplayName()}'";
@@ -1162,15 +1162,15 @@ namespace OSE.Editor
                 _partToGroupName   = new Dictionary<string, string>(StringComparer.Ordinal);
                 _partToLeafGroupId = new Dictionary<string, string>(StringComparer.Ordinal);
                 _partToGroupsAll   = new Dictionary<string, List<PartGroupRef>>(StringComparer.Ordinal);
-                var allSubs = _pkg?.GetSubassemblies();
+                var allSubs = _pkg?.GetPartGroups();
                 if (allSubs != null)
                 {
-                    // Build child→parent map from memberSubassemblyIds
-                    var childToParent = new Dictionary<string, SubassemblyDefinition>(StringComparer.Ordinal);
+                    // Build child→parent map from memberPartGroupIds
+                    var childToParent = new Dictionary<string, PartGroupDefinition>(StringComparer.Ordinal);
                     foreach (var sub in allSubs)
                     {
-                        if (sub?.memberSubassemblyIds == null) continue;
-                        foreach (var childId in sub.memberSubassemblyIds)
+                        if (sub?.memberPartGroupIds == null) continue;
+                        foreach (var childId in sub.memberPartGroupIds)
                         {
                             if (!string.IsNullOrEmpty(childId) && !childToParent.ContainsKey(childId))
                                 childToParent[childId] = sub;
@@ -1329,7 +1329,7 @@ namespace OSE.Editor
                     // Detect group-type part tasks
                     bool isGroup = entry.kind == "part"
                         && _pkg != null
-                        && _pkg.TryGetSubassembly(entry.id, out _);
+                        && _pkg.TryGetPartGroup(entry.id, out _);
 
                     string badge = entry.kind switch
                     {
@@ -1641,7 +1641,7 @@ namespace OSE.Editor
                     // The count badge ("14 parts") makes group scope visible at a glance so authors
                     // don't need to expand members individually to know what the group contains.
                     string displayId = entry.id ?? "—";
-                    if (isGroup && _pkg != null && _pkg.TryGetSubassembly(entry.id, out var dispSub) && dispSub != null)
+                    if (isGroup && _pkg != null && _pkg.TryGetPartGroup(entry.id, out var dispSub) && dispSub != null)
                     {
                         int memberCount = dispSub.partIds?.Length ?? 0;
                         displayId = memberCount > 0
@@ -1681,7 +1681,7 @@ namespace OSE.Editor
                                     string refId = t.associatedPartId;
                                     string refName = refId;
                                     string groupMark = "";
-                                    if (_pkg.TryGetSubassembly(refId, out var refSub) && refSub != null)
+                                    if (_pkg.TryGetPartGroup(refId, out var refSub) && refSub != null)
                                     {
                                         refName = refSub.GetDisplayName();
                                         groupMark = "[g]";
@@ -1712,7 +1712,7 @@ namespace OSE.Editor
                     // ── Ownership-conflict / orphan badge (quiet when clean) ──
                     // Three possible states, one badge slot:
                     //   • red ⚠ — Rule-2 Place-family ownership conflict
-                    //   • amber ⚠ — Rule-1 subassembly conflict
+                    //   • amber ⚠ — Rule-1 partGroup conflict
                     //   • blue ↺ — "orphan": part is Required/Optional/Visual
                     //     but not in step.taskOrder (shown because taskOrder
                     //     drifted out of sync with role arrays; author needs
@@ -1748,8 +1748,8 @@ namespace OSE.Editor
                                 badgeFg   = new Color(0.90f, 0.68f, 0.25f);
                                 badgeBg   = new Color(0.90f, 0.68f, 0.25f, 0.28f);
                                 badgeText = "⚠";
-                                badgeTip  = "Subassembly conflict: also claimed by "
-                                          + string.Join(", ", own.conflictingSubassemblyIds);
+                                badgeTip  = "PartGroup conflict: also claimed by "
+                                          + string.Join(", ", own.conflictingPartGroupIds);
                             }
                         }
                         if (badgeText == null && isOrphanRow)
@@ -1905,8 +1905,8 @@ namespace OSE.Editor
                                 _selectedIdx        = -1;
                                 _multiSelectedParts.Clear();
                                 _multiSelected.Clear();
-                                if (_subassemblyRootGOs != null
-                                    && _subassemblyRootGOs.TryGetValue(g.GroupId, out var rootGO)
+                                if (_partGroupRootGOs != null
+                                    && _partGroupRootGOs.TryGetValue(g.GroupId, out var rootGO)
                                     && rootGO != null)
                                     EditorGUIUtility.PingObject(rootGO);
                                 Selection.activeGameObject = null;
@@ -2084,14 +2084,14 @@ namespace OSE.Editor
                                 () => CreateGroupFromSelection(capturedStep, capturedParts));
 
                             // "Add to [existing group]" — split into relevant (top) + rest (submenu)
-                            var allSubs = _pkg?.GetSubassemblies();
+                            var allSubs = _pkg?.GetPartGroups();
                             if (allSubs != null && allSubs.Length > 0)
                             {
                                 // Relevant = same assembly OR already contains a selected part
                                 var partSet = new HashSet<string>(capturedParts, StringComparer.Ordinal);
                                 string stepAsm = capturedStep.assemblyId ?? "";
-                                var relevant = new List<SubassemblyDefinition>();
-                                var others   = new List<SubassemblyDefinition>();
+                                var relevant = new List<PartGroupDefinition>();
+                                var others   = new List<PartGroupDefinition>();
 
                                 foreach (var sub in allSubs)
                                 {
@@ -2106,7 +2106,7 @@ namespace OSE.Editor
                                     else                    others.Add(sub);
                                 }
 
-                                System.Action<SubassemblyDefinition, string> addMenuItem = (capturedSub, path) =>
+                                System.Action<PartGroupDefinition, string> addMenuItem = (capturedSub, path) =>
                                 {
                                     int existing = capturedSub.partIds?.Length ?? 0;
                                     menu.AddItem(
@@ -2123,7 +2123,7 @@ namespace OSE.Editor
                                             if (added > 0)
                                             {
                                                 capturedSub.partIds = currentSet.ToArray();
-                                                _dirtySubassemblyIds.Add(capturedSub.id);
+                                                _dirtyPartGroupIds.Add(capturedSub.id);
                                                 ShowNotification(new GUIContent(
                                                     $"Added {added} part(s) to {capturedSub.GetDisplayName()}"));
                                                 Repaint();
@@ -2502,12 +2502,12 @@ namespace OSE.Editor
                 }
             }
 
-            // Subassembly (group) drop — adds a [G] task row + introduces every
+            // PartGroup (group) drop — adds a [G] task row + introduces every
             // member as NO TASK (visualPartIds) so the runtime renders them at
             // this step. Group GOs are named "Group_{displayName}", not the
-            // subassembly id; resolve via the live root-GO dictionary first,
+            // partGroup id; resolve via the live root-GO dictionary first,
             // then by display name as a fallback.
-            var subResolved = ResolveDroppedSubassembly(name);
+            var subResolved = ResolveDroppedPartGroup(name);
             if (subResolved != null)
             {
                 bool already = false;
@@ -2528,32 +2528,32 @@ namespace OSE.Editor
         }
 
         /// <summary>
-        /// Resolves a dragged GameObject's name to a <see cref="SubassemblyDefinition"/>.
+        /// Resolves a dragged GameObject's name to a <see cref="PartGroupDefinition"/>.
         /// Tries the live group-root-GO dictionary first (where keys are
-        /// subassembly ids and values are the spawned GO that the user
+        /// partGroup ids and values are the spawned GO that the user
         /// actually dragged), then falls back to matching by id and finally
         /// by display name. Returns null when nothing matches.
         /// </summary>
-        private SubassemblyDefinition ResolveDroppedSubassembly(string droppedName)
+        private PartGroupDefinition ResolveDroppedPartGroup(string droppedName)
         {
-            if (string.IsNullOrEmpty(droppedName) || _pkg?.subassemblies == null) return null;
+            if (string.IsNullOrEmpty(droppedName) || _pkg?.partGroups == null) return null;
 
-            // Reverse-lookup: which subassembly id has a root GO with this name?
-            if (_subassemblyRootGOs != null)
+            // Reverse-lookup: which partGroup id has a root GO with this name?
+            if (_partGroupRootGOs != null)
             {
-                foreach (var kvp in _subassemblyRootGOs)
+                foreach (var kvp in _partGroupRootGOs)
                 {
                     if (kvp.Value == null) continue;
                     if (!string.Equals(kvp.Value.name, droppedName, StringComparison.Ordinal)) continue;
-                    if (_pkg.TryGetSubassembly(kvp.Key, out var found) && found != null) return found;
+                    if (_pkg.TryGetPartGroup(kvp.Key, out var found) && found != null) return found;
                 }
             }
 
-            foreach (var sub in _pkg.subassemblies)
+            foreach (var sub in _pkg.partGroups)
             {
                 if (sub == null) continue;
                 if (string.Equals(sub.id, droppedName, StringComparison.Ordinal)) return sub;
-                // "Group_{displayName}" naming convention from EnsureAllSubassemblyRoots
+                // "Group_{displayName}" naming convention from EnsureAllPartGroupRoots
                 if (string.Equals("Group_" + sub.GetDisplayName(), droppedName, StringComparison.Ordinal)) return sub;
                 if (string.Equals(sub.GetDisplayName(), droppedName, StringComparison.Ordinal)) return sub;
             }
@@ -2564,13 +2564,13 @@ namespace OSE.Editor
         /// Adds <paramref name="sub"/> to <paramref name="step"/> as a NO TASK
         /// group: every member partId joins <c>step.visualPartIds</c> (so the
         /// runtime shows them at this step without a placement task) and a
-        /// task-order entry with the subassembly id is appended so the [G]
+        /// task-order entry with the partGroup id is appended so the [G]
         /// row renders in authoring. Does NOT set
-        /// <c>step.requiredSubassemblyId</c> — that field means "this step
+        /// <c>step.requiredPartGroupId</c> — that field means "this step
         /// stacks the group onto a target", which is a placement action, not
         /// a NO TASK display.
         /// </summary>
-        private void CommitAddGroupAsNoTask(StepDefinition step, SubassemblyDefinition sub)
+        private void CommitAddGroupAsNoTask(StepDefinition step, PartGroupDefinition sub)
         {
             if (step == null || sub == null || string.IsNullOrEmpty(sub.id)) return;
 
@@ -2653,9 +2653,9 @@ namespace OSE.Editor
                 }
             }
 
-            // Subassembly (group) drop probe — same resolution as the commit
+            // PartGroup (group) drop probe — same resolution as the commit
             // path so the drop zone shows the right colour pre-release.
-            var subResolved = ResolveDroppedSubassembly(name);
+            var subResolved = ResolveDroppedPartGroup(name);
             if (subResolved != null)
             {
                 if (step.taskOrder != null)
@@ -2689,7 +2689,7 @@ namespace OSE.Editor
             RestoreLiveMeshToInheritedPose();
 
             _activeTaskKind = entry.kind;
-            _canvasSelectedSubId = null; // clear subassembly selection when a task is clicked
+            _canvasSelectedSubId = null; // clear partGroup selection when a task is clicked
             _poseSwitchCooldownUntil = EditorApplication.timeSinceStartup + 0.5; // suppress false dirty from handle re-init after selection change
             switch (entry.kind)
             {
@@ -2698,8 +2698,8 @@ namespace OSE.Editor
                     _multiSelected.Clear();
                     _multiSelectedParts.Clear();
 
-                    // Check if this "part" entry is actually a group (subassembly)
-                    bool isGroupEntry = _pkg != null && _pkg.TryGetSubassembly(entry.id, out _);
+                    // Check if this "part" entry is actually a group (partGroup)
+                    bool isGroupEntry = _pkg != null && _pkg.TryGetPartGroup(entry.id, out _);
                     if (isGroupEntry)
                     {
                         // Group task — keep _selectedTaskSeqIdx active (set by caller)
@@ -2710,7 +2710,7 @@ namespace OSE.Editor
                         _selectedPartId  = null;
                         _selectedGroupIdx = FindGroupIdx(entry.id);
                         // Ping the root in Hierarchy without selecting it
-                        if (_subassemblyRootGOs.TryGetValue(entry.id, out var rootGO) && rootGO != null)
+                        if (_partGroupRootGOs.TryGetValue(entry.id, out var rootGO) && rootGO != null)
                             EditorGUIUtility.PingObject(rootGO);
                         Selection.activeGameObject = null;
                     }
@@ -2866,16 +2866,16 @@ namespace OSE.Editor
             switch (entry.kind)
             {
                 case "part":
-                    // A kind="part" entry whose id resolves to a subassembly
+                    // A kind="part" entry whose id resolves to a partGroup
                     // is a group task (part[g]). Route it to the group
                     // inspector so it gets pose pills (Start / Before cue /
                     // After cue / Assembled / NO TASK) that mirror the
                     // individual-part inspector. Without this branch,
                     // DrawPartContextPanel searches _parts[] for the id,
-                    // misses (subassemblies aren't in _parts), and drops
+                    // misses (partGroups aren't in _parts), and drops
                     // the row to a "Part '…' not in current step filter"
                     // hint — losing every pose affordance.
-                    if (_pkg != null && _pkg.TryGetSubassembly(entry.id, out _))
+                    if (_pkg != null && _pkg.TryGetPartGroup(entry.id, out _))
                         DrawGroupTaskContextPanel(step, entry.id);
                     else
                         DrawPartContextPanel(step, TaskInstanceId.ToPartId(entry.id));
@@ -2892,10 +2892,10 @@ namespace OSE.Editor
 
         /// <summary>
         /// Inspector for a group task (task entry whose kind="part" but id
-        /// resolves to a subassembly). Shows the group pose editor with the
+        /// resolves to a partGroup). Shows the group pose editor with the
         /// same pill convention as individual parts. Synthesized hold-at-end
-        /// stepPoses on the subassembly surface as "After cue"; poseTransition
-        /// cues with authored fromPose hosted on the subassembly surface as
+        /// stepPoses on the partGroup surface as "After cue"; poseTransition
+        /// cues with authored fromPose hosted on the partGroup surface as
         /// "Before cue".
         /// </summary>
         private void DrawGroupTaskContextPanel(StepDefinition step, string subId)
@@ -3239,11 +3239,11 @@ namespace OSE.Editor
         private void DrawAddGroupPicker(StepDefinition step)
         {
             if (_pkg == null) return;
-            var allSubs = _pkg.GetSubassemblies();
+            var allSubs = _pkg.GetPartGroups();
             if (allSubs == null || allSubs.Length == 0) { _addTaskPicker = AddTaskPicker.None; return; }
 
-            // Filter: non-aggregate groups only, not already set as requiredSubassemblyId
-            var candidates = new List<SubassemblyDefinition>();
+            // Filter: non-aggregate groups only, not already set as requiredPartGroupId
+            var candidates = new List<PartGroupDefinition>();
             foreach (var sub in allSubs)
             {
                 if (sub == null || sub.isAggregate || string.IsNullOrEmpty(sub.id)) continue;
@@ -3278,7 +3278,7 @@ namespace OSE.Editor
         private void CommitAddGroup(StepDefinition step, string subId)
         {
             if (step == null || string.IsNullOrEmpty(subId)) return;
-            step.requiredSubassemblyId = subId;
+            step.requiredPartGroupId = subId;
             var order = GetOrDeriveTaskOrder(step);
             // Only add if not already present (strip instance suffix so the dedup
             // check still works once G.2.6 introduces multi-instance entries)
@@ -3369,7 +3369,7 @@ namespace OSE.Editor
             // offers auto-fix, but blocking at input time was too aggressive
             // for authoring — the user may be moving ownership from one step
             // to another and needs the add to land first. Rule-1 multi-
-            // subassembly already behaves this way (warn-only at input, fire
+            // partGroup already behaves this way (warn-only at input, fire
             // at save); this brings Rule 2 in line.
             if (step.ResolvedFamily == StepFamily.Place && _pkg?.steps != null)
             {
@@ -3482,14 +3482,14 @@ namespace OSE.Editor
 
             bool hasWO = step.workingOrientation != null;
             Vector3 rot = hasWO
-                ? new Vector3(step.workingOrientation.subassemblyRotation.x,
-                              step.workingOrientation.subassemblyRotation.y,
-                              step.workingOrientation.subassemblyRotation.z)
+                ? new Vector3(step.workingOrientation.partGroupRotation.x,
+                              step.workingOrientation.partGroupRotation.y,
+                              step.workingOrientation.partGroupRotation.z)
                 : Vector3.zero;
             Vector3 posOffset = hasWO
-                ? new Vector3(step.workingOrientation.subassemblyPositionOffset.x,
-                              step.workingOrientation.subassemblyPositionOffset.y,
-                              step.workingOrientation.subassemblyPositionOffset.z)
+                ? new Vector3(step.workingOrientation.partGroupPositionOffset.x,
+                              step.workingOrientation.partGroupPositionOffset.y,
+                              step.workingOrientation.partGroupPositionOffset.z)
                 : Vector3.zero;
             string hint = hasWO ? (step.workingOrientation.hint ?? "") : "";
 
@@ -3533,8 +3533,8 @@ namespace OSE.Editor
                 if (step.workingOrientation == null)
                     step.workingOrientation = new StepWorkingOrientationPayload();
 
-                step.workingOrientation.subassemblyRotation = new SceneFloat3 { x = rot.x, y = rot.y, z = rot.z };
-                step.workingOrientation.subassemblyPositionOffset = new SceneFloat3 { x = posOffset.x, y = posOffset.y, z = posOffset.z };
+                step.workingOrientation.partGroupRotation = new SceneFloat3 { x = rot.x, y = rot.y, z = rot.z };
+                step.workingOrientation.partGroupPositionOffset = new SceneFloat3 { x = posOffset.x, y = posOffset.y, z = posOffset.z };
                 step.workingOrientation.hint = string.IsNullOrWhiteSpace(hint) ? null : hint;
                 _dirtyStepIds.Add(step.id);
                 SyncAllPartMeshesToActivePose();
@@ -3874,10 +3874,10 @@ namespace OSE.Editor
             {
                 case "part":
                 {
-                    // Detect if this "part" task is actually a group (subassembly)
-                    SubassemblyDefinition groupDef = null;
+                    // Detect if this "part" task is actually a group (partGroup)
+                    PartGroupDefinition groupDef = null;
                     bool isGroupTask = _pkg != null
-                        && _pkg.TryGetSubassembly(selEntry.id, out groupDef)
+                        && _pkg.TryGetPartGroup(selEntry.id, out groupDef)
                         && groupDef != null;
 
                     if (isGroupTask)
@@ -3885,7 +3885,7 @@ namespace OSE.Editor
                         // Show group pose fields + group detail
                         DrawUnifiedSectionHeader($"GROUP: {groupDef.GetDisplayName()}", 0);
 
-                        // Find the GroupEditState for this subassembly
+                        // Find the GroupEditState for this partGroup
                         int gIdx = FindGroupIdx(selEntry.id);
                         if (gIdx >= 0 && _groups != null && gIdx < _groups.Length)
                         {
@@ -3914,7 +3914,7 @@ namespace OSE.Editor
                         // ANIMATION & EFFECT CUES — own rich header, not card-
                         // wrapped. Moved up from the end of the group block so
                         // cues sit directly under Pose.
-                        DrawCuesForSubassembly(step, selEntry.id);
+                        DrawCuesForPartGroup(step, selEntry.id);
 
                         // MEMBERS — parts list + build steps list + name /
                         // description. Collapsed by default; the inline
@@ -3924,7 +3924,7 @@ namespace OSE.Editor
                         DrawCard("MEMBERS (parts, build steps, metadata)", "group/members", SubAccent,
                             defaultExpanded: false, count: null, body: () =>
                         {
-                            DrawSubassemblyInlineEditor(groupDef, step);
+                            DrawPartGroupInlineEditor(groupDef, step);
                         });
                     }
                     else

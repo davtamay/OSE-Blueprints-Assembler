@@ -104,7 +104,7 @@ Includes:
 
 - machine definitions
 - assemblies
-- subassemblies
+- partGroups
 - parts
 - tools
 - metadata
@@ -250,7 +250,7 @@ The runtime should be thought of as a state-driven assembly tutor.
 At any moment, the application knows:
 
 - which machine is loaded
-- which assembly/subassembly is active
+- which assembly/partGroup is active
 - which step is current
 - which parts are required
 - which parts are already placed
@@ -300,15 +300,15 @@ Examples:
 
 Each assembly contains:
 
-- ordered subassemblies or steps
+- ordered partGroups or steps
 - dependencies
 - required parts and tools
 
 ---
 
-## 6.3 Subassembly
+## 6.3 PartGroup
 
-A subassembly groups a smaller meaningful construction unit.
+A partGroup groups a smaller meaningful construction unit.
 
 Examples:
 
@@ -316,7 +316,7 @@ Examples:
 - seat bracket
 - hinge support
 
-Subassemblies can provide intermediate mastery milestones.
+PartGroups can provide intermediate mastery milestones.
 
 ---
 
@@ -482,7 +482,7 @@ The runtime should support moments where structure becomes clear.
 Examples:
 
 - exploded-to-assembled transitions
-- subassembly completion reveals
+- partGroup completion reveals
 - visual relation maps
 - before/after comparisons
 - structural purpose explanations
@@ -756,7 +756,7 @@ WASM should be a performance tool, not a default requirement.
 Use asynchronous and staged loading for:
 
 - machine manifests
-- subassembly content
+- partGroup content
 - part metadata
 - textures
 - model data
@@ -972,7 +972,7 @@ Scale and collaboration
 
 - machine package pipeline
 - larger machines
-- subassembly progression
+- partGroup progression
 - multiplayer-ready boundaries
 - remote assistance architecture
 - shared session support

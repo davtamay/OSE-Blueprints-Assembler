@@ -13,8 +13,8 @@ namespace OSE.Content.Validation
     /// Three checks:
     ///   1. Staging pose collision — two authored parts within 0.05 m of each other
     ///      (CLAUDE.md rule 7: "Staging positions must be unique.")
-    ///   2. Subassembly ordering — Confirm-family step is the first step in its
-    ///      subassembly by sequenceIndex (nothing has been placed yet; the Confirm
+    ///   2. PartGroup ordering — Confirm-family step is the first step in its
+    ///      partGroup by sequenceIndex (nothing has been placed yet; the Confirm
     ///      has no physical state to confirm)
     ///   3. Use-step tool coverage — a Use-family step has neither
     ///      requiredToolActions nor relevantToolIds; the runtime cannot know which
@@ -31,7 +31,7 @@ namespace OSE.Content.Validation
         public void Execute(ValidationPassContext ctx)
         {
             CheckStagingPoseCollisions(ctx);
-            CheckSubassemblyOrdering(ctx);
+            CheckPartGroupOrdering(ctx);
             CheckUseStepToolCoverage(ctx);
         }
 
@@ -80,28 +80,28 @@ namespace OSE.Content.Validation
             }
         }
 
-        // ── Check 2: Subassembly ordering ─────────────────────────────────────
+        // ── Check 2: PartGroup ordering ─────────────────────────────────────
 
-        private static void CheckSubassemblyOrdering(ValidationPassContext ctx)
+        private static void CheckPartGroupOrdering(ValidationPassContext ctx)
         {
             StepDefinition[] steps = ctx.Package.GetSteps();
             var issues = ctx.Issues;
 
-            // Group steps by subassemblyId; skip steps with no subassembly.
-            var bySubassembly = new Dictionary<string, List<StepDefinition>>(StringComparer.OrdinalIgnoreCase);
+            // Group steps by partGroupId; skip steps with no partGroup.
+            var byPartGroup = new Dictionary<string, List<StepDefinition>>(StringComparer.OrdinalIgnoreCase);
             for (int i = 0; i < steps.Length; i++)
             {
                 StepDefinition step = steps[i];
-                if (step == null || string.IsNullOrWhiteSpace(step.subassemblyId)) continue;
-                if (!bySubassembly.TryGetValue(step.subassemblyId, out var list))
+                if (step == null || string.IsNullOrWhiteSpace(step.partGroupId)) continue;
+                if (!byPartGroup.TryGetValue(step.partGroupId, out var list))
                 {
                     list = new List<StepDefinition>();
-                    bySubassembly[step.subassemblyId] = list;
+                    byPartGroup[step.partGroupId] = list;
                 }
                 list.Add(step);
             }
 
-            foreach (var kvp in bySubassembly)
+            foreach (var kvp in byPartGroup)
             {
                 string saId = kvp.Key;
                 List<StepDefinition> saSteps = kvp.Value;
@@ -113,8 +113,8 @@ namespace OSE.Content.Validation
                 if (first.ResolvedFamily == StepFamily.Confirm)
                 {
                     issues.Add(ValidationPassHelpers.Warning(
-                        $"steps[*].subassemblyId={saId}",
-                        $"Subassembly '{saId}': first step by sequenceIndex is '{first.id}' " +
+                        $"steps[*].partGroupId={saId}",
+                        $"PartGroup '{saId}': first step by sequenceIndex is '{first.id}' " +
                         $"(seq {first.sequenceIndex}, family Confirm). " +
                         $"A Confirm step cannot confirm anything that has not yet been placed. " +
                         $"Expected a Place or Use step to precede it."));

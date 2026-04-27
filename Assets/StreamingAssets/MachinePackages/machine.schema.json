@@ -59,7 +59,7 @@
     },
     "assemblies": {
       "type": "array",
-      "description": "All assemblies in the package. An assembly groups related subassemblies and steps.",
+      "description": "All assemblies in the package. An assembly groups related partGroups and steps.",
       "items": {
         "type": "object",
         "required": ["id", "name"],
@@ -72,7 +72,7 @@
             "description": "Ordered step IDs within this assembly.",
             "items": { "type": "string" }
           },
-          "subassemblyIds": {
+          "partGroupIds": {
             "type": "array",
             "items": { "type": "string" }
           },
@@ -85,7 +85,7 @@
         }
       }
     },
-    "subassemblies": {
+    "partGroups": {
       "type": "array",
       "items": {
         "type": "object",
@@ -94,7 +94,7 @@
           "id": { "type": "string" },
           "name": { "type": "string" },
           "partIds": { "type": "array", "items": { "type": "string" } },
-          "assetRef": { "type": "string", "description": "Path to GLB asset for subassembly proxy." }
+          "assetRef": { "type": "string", "description": "Path to GLB asset for partGroup proxy." }
         }
       }
     },
@@ -108,7 +108,7 @@
           "id": { "type": "string" },
           "name": { "type": "string" },
           "assemblyId": { "type": "string" },
-          "subassemblyId": { "type": "string" },
+          "partGroupId": { "type": "string" },
           "sequenceIndex": { "type": "integer", "minimum": 1 },
           "family": {
             "type": "string",
@@ -134,7 +134,7 @@
             "enum": ["parallel", "sequential"]
           },
           "requiredPartIds": { "type": "array", "items": { "type": "string" } },
-          "requiredSubassemblyId": { "type": "string" },
+          "requiredPartGroupId": { "type": "string" },
           "optionalPartIds": { "type": "array", "items": { "type": "string" } },
           "relevantToolIds": { "type": "array", "items": { "type": "string" } },
           "targetIds": { "type": "array", "items": { "type": "string" } },
@@ -303,7 +303,7 @@
         "properties": {
           "id": { "type": "string" },
           "associatedPartId": { "type": "string" },
-          "associatedSubassemblyId": { "type": "string" },
+          "associatedPartGroupId": { "type": "string" },
           "position": {
             "type": "object",
             "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "z": { "type": "number" } }
@@ -369,7 +369,7 @@
     },
     "previewConfig": {
       "type": "object",
-      "description": "Edit-mode ghost placements for parts and subassemblies at different completion levels."
+      "description": "Edit-mode ghost placements for parts and partGroups at different completion levels."
     },
     "challengeConfig": {
       "type": "object",

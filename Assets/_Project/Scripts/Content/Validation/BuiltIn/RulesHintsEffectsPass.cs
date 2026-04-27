@@ -85,12 +85,12 @@ namespace OSE.Content.Validation
                     CheckHostCues(ctx, part?.animationCues, $"parts[{i}].animationCues");
                 }
 
-            var subs = package.GetSubassemblies();
+            var subs = package.GetPartGroups();
             if (subs != null)
                 for (int i = 0; i < subs.Length; i++)
                 {
                     var sub = subs[i];
-                    CheckHostCues(ctx, sub?.animationCues, $"subassemblies[{i}].animationCues");
+                    CheckHostCues(ctx, sub?.animationCues, $"partGroups[{i}].animationCues");
                 }
 
             var tools = package.GetTools();

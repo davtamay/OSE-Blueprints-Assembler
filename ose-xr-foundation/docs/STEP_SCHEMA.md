@@ -22,12 +22,12 @@ Every assembly step in `machine.json` is a `StepDefinition` object inside the to
 | `id` | `string` | Core | Unique step identifier within the package. Used as the primary key in runtime state, persistence, and event payloads. Convention: `step_<snake_case_name>`. |
 | `name` | `string` | Core | Human-readable label for the step (editor UI, audit reports). Not shown to the learner directly. |
 | `assemblyId` | `string` | Core | ID of the assembly section this step belongs to. Groups steps into modules for the assembly picker and progress tracking. |
-| `subassemblyId` | `string` | Core | ID of the subassembly this step contributes to (e.g. `extruder`, `frame`). Used for subassembly proxy placement steps. |
+| `partGroupId` | `string` | Core | ID of the partGroup this step contributes to (e.g. `extruder`, `frame`). Used for partGroup proxy placement steps. |
 | `sequenceIndex` | `int` | Core | Global zero-based index of this step across all assemblies. Determines playback order. Must be unique and contiguous. |
 | `instructionText` | `string` | Legacy | Learner-facing instruction shown in the step panel. **Superseded by `guidance.instructionText` when the `guidance` payload is present.** |
 | `whyItMattersText` | `string` | Legacy | Appended to instruction with "Why it matters: " prefix. **Superseded by `guidance.whyItMattersText`.** |
 | `requiredPartIds` | `string[]` | Core | Part IDs that must be placed (snapped to targets) to complete this step. Each ID must match a `partPlacements[].partId` entry in `previewConfig`. |
-| `requiredSubassemblyId` | `string` | Core | When set, the step expects the learner to place a completed subassembly proxy rather than individual parts. Activates the subassembly drag-dock interaction. |
+| `requiredPartGroupId` | `string` | Core | When set, the step expects the learner to place a completed partGroup proxy rather than individual parts. Activates the partGroup drag-dock interaction. |
 | `optionalPartIds` | `string[]` | Core | Parts visible during this step but not required for completion (informational only). |
 | `relevantToolIds` | `string[]` | Core | Tool IDs that should be highlighted / made available during this step. Informational; does not block completion unless `requiredToolActions` are present. |
 | `targetIds` | `string[]` | Core | Target zone IDs that define acceptable snap positions. Each ID must match a `targetPlacements[].targetId` entry in `previewConfig`. |
@@ -52,8 +52,8 @@ Every assembly step in `machine.json` is a `StepDefinition` object inside the to
 | `measurement` | `StepMeasurementPayload` | Phase 3 | Anchor-to-anchor measurement data for `Use.Measure` steps. |
 | `gesture` | `StepGesturePayload` | Phase 3 | Gesture override payload for `Use`-family steps. Overrides profile defaults. |
 | `wireConnect` | `StepWireConnectPayload` | Phase 3 | Polarity-aware wire connection data for `Connect.WireConnect` steps. |
-| `workingOrientation` | `StepWorkingOrientationPayload` | Phase 3 | Temporarily transforms the subassembly for this step (e.g., flip 180° to access underside). Reverts on step transition. Appends orientation hint to instruction text. |
-| `animationCues` | `StepAnimationCuePayload` | Phase 3 | Data-driven animation cues played on step activation. Supports placement demonstrations, pose transitions, pulses, and subassembly orientation. Can defer preview spawning. |
+| `workingOrientation` | `StepWorkingOrientationPayload` | Phase 3 | Temporarily transforms the partGroup for this step (e.g., flip 180° to access underside). Reverts on step transition. Appends orientation hint to instruction text. |
+| `animationCues` | `StepAnimationCuePayload` | Phase 3 | Data-driven animation cues played on step activation. Supports placement demonstrations, pose transitions, pulses, and partGroup orientation. Can defer preview spawning. |
 | `taskOrder` | `TaskOrderEntry[]` | Planned | Explicit cross-section task sequence within a step. Null/empty = no explicit order. |
 
 ---
@@ -147,14 +147,14 @@ Every assembly step in `machine.json` is a `StepDefinition` object inside the to
 
 ### `StepWorkingOrientationPayload` (Phase 3)
 
-Temporarily transforms the subassembly for the duration of this step (e.g., flip 180° to expose the underside for fastener insertion). The orientation reverts automatically on step transition.
+Temporarily transforms the partGroup for the duration of this step (e.g., flip 180° to expose the underside for fastener insertion). The orientation reverts automatically on step transition.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `subassemblyRotation` | `SceneFloat3` | Euler angles (degrees) applied to the subassembly proxy root relative to its authored fabrication pose. |
-| `subassemblyPositionOffset` | `SceneFloat3` | Optional position offset (meters) in PreviewRoot local space, applied after rotation. Useful for keeping a flipped assembly at a comfortable working height. |
+| `partGroupRotation` | `SceneFloat3` | Euler angles (degrees) applied to the partGroup proxy root relative to its authored fabrication pose. |
+| `partGroupPositionOffset` | `SceneFloat3` | Optional position offset (meters) in PreviewRoot local space, applied after rotation. Useful for keeping a flipped assembly at a comfortable working height. |
 | `hint` | `string` | Optional human-readable explanation shown to the learner. When null/empty, a default message is auto-generated. |
-| `partOverrides` | `StepPartPoseOverride[]` | Optional per-part pose overrides for non-rigid adjustments that can't be expressed as a single subassembly rotation. |
+| `partOverrides` | `StepPartPoseOverride[]` | Optional per-part pose overrides for non-rigid adjustments that can't be expressed as a single partGroup rotation. |
 
 #### `StepPartPoseOverride`
 
@@ -166,7 +166,7 @@ Temporarily transforms the subassembly for the duration of this step (e.g., flip
 
 ### `StepAnimationCuePayload` (Phase 3)
 
-Data-driven animation cues played when the step activates. Supports placement demonstrations (bolt drill-down), pose transitions, emission pulses, and subassembly orientation flips.
+Data-driven animation cues played when the step activates. Supports placement demonstrations (bolt drill-down), pose transitions, emission pulses, and partGroup orientation flips.
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -177,10 +177,10 @@ Data-driven animation cues played when the step activates. Supports placement de
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `type` | `string` | Animation type key. Accepted values: `"demonstratePlacement"`, `"poseTransition"`, `"pulse"`, `"orientSubassembly"`. |
+| `type` | `string` | Animation type key. Accepted values: `"demonstratePlacement"`, `"poseTransition"`, `"pulse"`, `"orientPartGroup"`. |
 | `targetPartIds` | `string[]` | Part IDs to animate (resolved via spawned part lookup). |
 | `targetToolIds` | `string[]` | Tool IDs to animate (resolved via ToolCursorManager / PersistentToolController). |
-| `targetSubassemblyId` | `string` | Subassembly ID to animate (resolved via proxy root or fabrication group). |
+| `targetPartGroupId` | `string` | PartGroup ID to animate (resolved via proxy root or fabrication group). |
 | `trigger` | `string` | When to start: `"onActivate"` (default) or `"afterDelay"`. |
 | `delaySeconds` | `float` | Delay in seconds when trigger is `"afterDelay"`. |
 | `durationSeconds` | `float` | Duration in seconds. `0` = type default. |
@@ -189,7 +189,7 @@ Data-driven animation cues played when the step activates. Supports placement de
 | `target` | `string` | `"part"` (default) = animate the actual spawned part/tool. `"ghost"` = create a transparent clone and animate that instead. |
 | `fromPose` | `AnimationPose` | Explicit start pose for `poseTransition`. Null = use start transform. |
 | `toPose` | `AnimationPose` | Explicit end pose for `poseTransition`. Null = use assembled transform. |
-| `subassemblyRotation` | `SceneFloat3` | Euler rotation for `orientSubassembly`. |
+| `partGroupRotation` | `SceneFloat3` | Euler rotation for `orientPartGroup`. |
 | `pulseColorA` | `SceneFloat4` | Pulse color A (RGBA). Alpha > 0 activates override; default is blue `(0, 0.6, 1, 1)`. |
 | `pulseColorB` | `SceneFloat4` | Pulse color B (RGBA). Alpha > 0 activates override; default is gold `(1, 0.85, 0, 1)`. |
 | `pulseSpeed` | `float` | Pulse speed in rad/s. Default: `3.0`. |

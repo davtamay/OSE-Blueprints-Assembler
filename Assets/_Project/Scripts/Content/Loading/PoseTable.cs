@@ -21,7 +21,7 @@ namespace OSE.Content.Loading
         NoTaskStart,
         /// <summary>An author-written stepPose span covers this seq.</summary>
         ExplicitSpan,
-        /// <summary>Member of a subassembly that was stacked onto a target at or before this seq.</summary>
+        /// <summary>Member of a partGroup that was stacked onto a target at or before this seq.</summary>
         IntegratedMember,
         /// <summary>Part is driven by a baked GroupRigidBody at this seq.</summary>
         GroupRigidBody,
@@ -56,7 +56,7 @@ namespace OSE.Content.Loading
         /// <summary>
         /// Context for diagnostics and the "What's Changing" panel. E.g. the
         /// stepId of an <see cref="PoseSource.ExplicitSpan"/>, or
-        /// "<c>subassemblyId|targetId</c>" for an
+        /// "<c>partGroupId|targetId</c>" for an
         /// <see cref="PoseSource.IntegratedMember"/>. Never used for behaviour.
         /// </summary>
         public readonly string meta;
@@ -223,7 +223,7 @@ namespace OSE.Content.Loading
         /// True iff <paramref name="partId"/> has a non-Hidden baked pose at
         /// <paramref name="viewSeq"/>. Single source of truth for both editor
         /// and runtime visibility — callers must not re-derive from step
-        /// fields (requiredPartIds / visualPartIds / subassembly members), or
+        /// fields (requiredPartIds / visualPartIds / partGroup members), or
         /// editor and play will diverge.
         /// </summary>
         public bool IsVisibleAt(string partId, int viewSeq)

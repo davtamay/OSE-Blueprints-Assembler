@@ -78,24 +78,24 @@ namespace OSE.Content
         public string[] tags;
 
         /// <summary>
-        /// Ids of subassemblies this part is a member of. Canonical
+        /// Ids of partGroups this part is a member of. Canonical
         /// authoring source for group membership — each part declares the
-        /// groups it belongs to. <see cref="SubassemblyDefinition.partIds"/>
+        /// groups it belongs to. <see cref="PartGroupDefinition.partIds"/>
         /// is derived from these claims at load time by
-        /// <c>MachinePackageNormalizer.DeriveSubassemblyPartIds</c>; authors
-        /// should not write <c>subassembly.partIds</c> directly. A part may
+        /// <c>MachinePackageNormalizer.DerivePartGroupPartIds</c>; authors
+        /// should not write <c>partGroup.partIds</c> directly. A part may
         /// belong to multiple groups (e.g. a bolt shared across a carriage
         /// and the aggregate left-side assembly). Empty / null = loose part,
         /// no group membership.
         /// </summary>
-        public string[] subassemblyIds;
+        public string[] partGroupIds;
 
         /// <summary>
         /// Animation / particle cues hosted on this part. Each entry may
         /// scope to specific <see cref="AnimationCueEntry.stepIds"/> or run
         /// whenever the part is visible. Step-level animation authoring is
         /// deprecated — new cues should live here (or on the owning
-        /// <see cref="SubassemblyDefinition"/>).
+        /// <see cref="PartGroupDefinition"/>).
         /// </summary>
         public AnimationCueEntry[] animationCues;
 
@@ -123,12 +123,12 @@ namespace OSE.Content
         public bool HasGrabConfig => grabConfig != null && grabConfig.HasGripPoint;
 
         /// <summary>
-        /// The unique non-aggregate subassembly that owns this part, populated by
+        /// The unique non-aggregate partGroup that owns this part, populated by
         /// <c>MachinePackageNormalizer.IndexPartOwnership</c> after deserialization.
         /// First-writer-wins during normalization; <c>PartOwnershipExclusivityPass</c>
         /// guarantees uniqueness at validation time.
         /// </summary>
-        [NonSerialized] public string owningSubassemblyId;
+        [NonSerialized] public string owningPartGroupId;
 
         /// <summary>
         /// First (lowest-sequenceIndex) Place-family step that requires this
@@ -147,7 +147,7 @@ namespace OSE.Content
         /// placement). Consumers that care about "which step placed this part
         /// at the currently-viewed seq" should walk this array and pick the
         /// most recent entry ≤ view seq — same pattern the
-        /// <see cref="PoseResolver"/> already uses for subassembly stacking.
+        /// <see cref="PoseResolver"/> already uses for partGroup stacking.
         /// </summary>
         [NonSerialized] public string[] owningPlaceStepIds;
 

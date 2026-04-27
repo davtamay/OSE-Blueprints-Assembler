@@ -32,8 +32,8 @@
       "name": "Onboarding Assembly",
       "description": "Walks the user through every core interaction one step at a time.",
       "machineId": "onboarding_tutorial",
-      "subassemblyIds": [
-        "subassembly_training_parts"
+      "partGroupIds": [
+        "partGroup_training_parts"
       ],
       "stepIds": [
         "step_select_inspect",
@@ -45,9 +45,9 @@
       "learningFocus": "Core interactions: observe, select, use tools, place, hint, progression."
     }
   ],
-  "subassemblies": [
+  "partGroups": [
     {
-      "id": "subassembly_training_parts",
+      "id": "partGroup_training_parts",
       "name": "Training Parts",
       "assemblyId": "assembly_onboarding",
       "description": "Contains the two training parts used throughout the tutorial.",
@@ -126,7 +126,7 @@
       "id": "step_select_inspect",
       "name": "Select and inspect a part",
       "assemblyId": "assembly_onboarding",
-      "subassemblyId": "subassembly_training_parts",
+      "partGroupId": "partGroup_training_parts",
       "sequenceIndex": 1,
       "instructionText": "Tap or click the orange beam on the left. Its name, material, and tool info will appear in the Part Info panel on the right. The tutorial moves on as soon as the part is selected.",
       "whyItMattersText": "Inspecting parts before placement ensures you pick the right piece for the job.",
@@ -157,7 +157,7 @@
       "id": "step_drag_place_beam",
       "name": "Drag the beam to its target",
       "assemblyId": "assembly_onboarding",
-      "subassemblyId": "subassembly_training_parts",
+      "partGroupId": "partGroup_training_parts",
       "sequenceIndex": 2,
       "instructionText": "Drag or grab the orange beam and move it toward the transparent ghost shape in the center. When it is close enough it will snap into place automatically.",
       "whyItMattersText": "Placing parts at target positions is the core assembly action.",
@@ -191,7 +191,7 @@
       "id": "step_equip_tape_measure",
       "name": "Equip the tape measure",
       "assemblyId": "assembly_onboarding",
-      "subassemblyId": "subassembly_training_parts",
+      "partGroupId": "partGroup_training_parts",
       "sequenceIndex": 3,
       "instructionText": "Open Tools and select Tape Measure. The tutorial will continue automatically once it is equipped.",
       "whyItMattersText": "Many blueprint steps require specific tools before you can continue.",
@@ -235,7 +235,7 @@
       "id": "step_use_tape_measure",
       "name": "Use the tape measure tool",
       "assemblyId": "assembly_onboarding",
-      "subassemblyId": "subassembly_training_parts",
+      "partGroupId": "partGroup_training_parts",
       "sequenceIndex": 4,
       "instructionText": "With Tape Measure equipped, find the floating pulsing orb above the bracket ghost target, move the tool cursor over it, then tap or click once to record a measurement pass.",
       "whyItMattersText": "This teaches using tools on specific targets before placing the next part.",
@@ -282,7 +282,7 @@
       "id": "step_place_bracket",
       "name": "Place the bracket",
       "assemblyId": "assembly_onboarding",
-      "subassemblyId": "subassembly_training_parts",
+      "partGroupId": "partGroup_training_parts",
       "sequenceIndex": 5,
       "instructionText": "Now drag or grab the blue bracket and move it to its ghost target. Remember: each part only fits its own target — dropping the wrong part will flash red.",
       "whyItMattersText": "Placing the correct part at the correct target is how every assembly step works.",
@@ -586,9 +586,9 @@
             }
         }
     ],
-    "subassemblyPlacements": [],
-    "constrainedSubassemblyFitPlacements": [],
-    "completedSubassemblyParkingPlacements": [],
-    "integratedSubassemblyPlacements": []
+    "partGroupPlacements": [],
+    "constrainedPartGroupFitPlacements": [],
+    "completedPartGroupParkingPlacements": [],
+    "integratedPartGroupPlacements": []
 }
 }

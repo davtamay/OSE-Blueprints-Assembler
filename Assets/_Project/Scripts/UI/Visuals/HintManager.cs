@@ -35,7 +35,7 @@ namespace OSE.UI.Root
                 return;
 
             HintDefinition hint = ResolveHintForStep(package, step, evt.TotalHintsForStep);
-            if (hint == null && !step.RequiresSubassemblyPlacement)
+            if (hint == null && !step.RequiresPartGroupPlacement)
                 return;
 
             if (ServiceRegistry.TryGet<IHintPresenter>(out var ui) && !ui.IsHintDisplayAllowed)
@@ -47,7 +47,7 @@ namespace OSE.UI.Root
             GameObject sourceProxy = null;
             GameObject targetPreview = targetTransform != null ? targetTransform.gameObject : null;
 
-            if (TryBuildSubassemblyHintPresentation(
+            if (TryBuildPartGroupHintPresentation(
                     step,
                     hint,
                     out string stackTitle,
@@ -144,7 +144,7 @@ namespace OSE.UI.Root
             return null;
         }
 
-        internal bool TryBuildSubassemblyHintPresentation(
+        internal bool TryBuildPartGroupHintPresentation(
             StepDefinition step,
             HintDefinition authoredHint,
             out string title,
@@ -159,13 +159,13 @@ namespace OSE.UI.Root
             sourceProxy = null;
             targetPreview = null;
 
-            var subCtrl = _ctx.SubassemblyController;
-            if (step == null || !step.RequiresSubassemblyPlacement || subCtrl == null)
+            var subCtrl = _ctx.PartGroupController;
+            if (step == null || !step.RequiresPartGroupPlacement || subCtrl == null)
                 return false;
 
-            string subassemblyId = step.requiredSubassemblyId;
-            if (string.IsNullOrWhiteSpace(subassemblyId) ||
-                !subCtrl.TryGetProxy(subassemblyId, out sourceProxy))
+            string partGroupId = step.requiredPartGroupId;
+            if (string.IsNullOrWhiteSpace(partGroupId) ||
+                !subCtrl.TryGetProxy(partGroupId, out sourceProxy))
             {
                 return false;
             }
@@ -195,7 +195,7 @@ namespace OSE.UI.Root
             }
 
             if (!subCtrl.TryGetDisplayInfo(sourceProxy, out string displayName, out _))
-                displayName = subassemblyId;
+                displayName = partGroupId;
 
             title = $"Move {displayName}";
             message = $"Move the completed {displayName} as one finished panel. Drag the whole frame side toward the highlighted target and it will rotate into place as it docks.";

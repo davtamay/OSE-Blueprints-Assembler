@@ -20,10 +20,10 @@ It answers:
 What was implemented directly from this brief:
 
 - `assembly_d3d_axes_stage_01`
-- `subassembly_y_left_axis`
-- `subassembly_y_right_axis`
-- `subassembly_x_axis`
-- `subassembly_x_axis_fitting`
+- `partGroup_y_left_axis`
+- `partGroup_y_right_axis`
+- `partGroup_x_axis`
+- `partGroup_x_axis_fitting`
 - constrained `AxisFit` placement for the X-axis motor-holder side
 - explicit `tool_allen_key_metric` and `tool_pliers` reuse for the first pass
 
@@ -200,17 +200,17 @@ Locked policy:
 Recommended top-level ids for that expansion:
 
 - `assembly_d3d_axes_stage_01`
-- `subassembly_y_left_axis`
-- `subassembly_y_right_axis`
-- `subassembly_x_axis`
-- `subassembly_x_axis_fitting`
+- `partGroup_y_left_axis`
+- `partGroup_y_right_axis`
+- `partGroup_x_axis`
+- `partGroup_x_axis_fitting`
 
 Meaning:
 
-- `subassembly_y_left_axis` and `subassembly_y_right_axis` are the two prerequisite
+- `partGroup_y_left_axis` and `partGroup_y_right_axis` are the two prerequisite
   mounted side-axis units
-- `subassembly_x_axis` is the completed movable X-axis unit
-- `subassembly_x_axis_fitting` is the procedural integration group that owns the fit /
+- `partGroup_x_axis` is the completed movable X-axis unit
+- `partGroup_x_axis_fitting` is the procedural integration group that owns the fit /
   tension / QC steps
 
 ## Concrete Authored-Slice Brief
@@ -240,9 +240,9 @@ This slice should not start from bare frame alone.
 It assumes these are already available:
 
 - welded D3D frame complete
-- `subassembly_y_left_axis` mounted to the frame
-- `subassembly_y_right_axis` mounted to the frame
-- `subassembly_x_axis` preassembled enough that:
+- `partGroup_y_left_axis` mounted to the frame
+- `partGroup_y_right_axis` mounted to the frame
+- `partGroup_x_axis` preassembled enough that:
   - idler side exists
   - motor-holder side exists
   - rods exist
@@ -269,12 +269,12 @@ At slice completion:
 
 ## Recommended Content Model
 
-### Subassemblies to author
+### PartGroups to author
 
-- `subassembly_y_left_axis`
-- `subassembly_y_right_axis`
-- `subassembly_x_axis`
-- `subassembly_x_axis_fitting`
+- `partGroup_y_left_axis`
+- `partGroup_y_right_axis`
+- `partGroup_x_axis`
+- `partGroup_x_axis_fitting`
 
 ### Explicit loose parts to author
 
@@ -358,7 +358,7 @@ Intent:
 ### Step 2
 
 - `family`: `Place`
-- `requiredSubassemblyId`: `subassembly_x_axis`
+- `requiredPartGroupId`: `partGroup_x_axis`
 - `name`: `Anchor the X-axis idler to the Y-right carriage`
 - `target strategy`: guided docking of the X-axis idler side to the Y-right carriage
 
@@ -399,7 +399,7 @@ Intent:
 Important:
 
 - this was the one step that did not map cleanly to the original runtime behavior
-- it is now handled by the constrained-fit subassembly placement contract
+- it is now handled by the constrained-fit partGroup placement contract
 
 ### Step 5
 
@@ -507,14 +507,14 @@ These ids are concrete enough to use in the next implementation pass.
 
 This slice exposed one new capability gap clearly:
 
-- the X-axis is not a purely rigid subassembly during fitting
+- the X-axis is not a purely rigid partGroup during fitting
 - its span changes while one side is already anchored
 
-The original finished-subassembly proxy model was not enough by itself for Step 4.
+The original finished-partGroup proxy model was not enough by itself for Step 4.
 
 ### Implemented runtime target
 
-Add a constrained adjustable-subassembly interaction:
+Add a constrained adjustable-partGroup interaction:
 
 - one end of the X-axis remains anchored
 - the motor-holder side slides along the rod axis only

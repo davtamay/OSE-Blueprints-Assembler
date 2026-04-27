@@ -248,17 +248,17 @@ namespace OSE.Editor
 
         /// <summary>
         /// Returns the maximum sequenceIndex among steps belonging to the
-        /// given subassembly, or -1 if none. Used by the wizard's
-        /// "drop on step → instantiate at end of subassembly" default.
+        /// given partGroup, or -1 if none. Used by the wizard's
+        /// "drop on step → instantiate at end of partGroup" default.
         /// </summary>
-        internal int GetSubassemblyMaxSeqPublic(string subassemblyId)
+        internal int GetPartGroupMaxSeqPublic(string partGroupId)
         {
-            if (_pkg?.steps == null || string.IsNullOrEmpty(subassemblyId)) return -1;
+            if (_pkg?.steps == null || string.IsNullOrEmpty(partGroupId)) return -1;
             int max = -1;
             foreach (var s in _pkg.steps)
             {
                 if (s == null) continue;
-                if (!string.Equals(s.subassemblyId, subassemblyId, System.StringComparison.Ordinal)) continue;
+                if (!string.Equals(s.partGroupId, partGroupId, System.StringComparison.Ordinal)) continue;
                 if (s.sequenceIndex > max) max = s.sequenceIndex;
             }
             return max;

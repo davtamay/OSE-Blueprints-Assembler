@@ -112,8 +112,8 @@ namespace OSE.Content.Loading
 
             // [4] Orphan visualPartIds: every NO-TASK id must resolve to a
             // placement — either a PartPreviewPlacement (normal part) or a
-            // SubassemblyPreviewPlacement (group NO-TASK row; TTAW already
-            // allows subassembly ids in visualPartIds for group NO-TASK
+            // PartGroupPreviewPlacement (group NO-TASK row; TTAW already
+            // allows partGroup ids in visualPartIds for group NO-TASK
             // detection — see TTAW.Groups.cs:545). Without this dual-check
             // the invariant falsely flags legitimate group NO-TASK entries.
             foreach (var s in idx.orderedSteps)
@@ -123,31 +123,31 @@ namespace OSE.Content.Loading
                 {
                     if (string.IsNullOrEmpty(pid)) continue;
                     if (idx.placementByPart.ContainsKey(pid)) continue;
-                    if (idx.subassemblyPlacementById.ContainsKey(pid)) continue;
-                    Report($"{Tag} [orphan-visualPart] step '{s.id}' visualPartIds contains '{pid}' but no partPlacement or subassemblyPlacement exists.");
+                    if (idx.partGroupPlacementById.ContainsKey(pid)) continue;
+                    Report($"{Tag} [orphan-visualPart] step '{s.id}' visualPartIds contains '{pid}' but no partPlacement or partGroupPlacement exists.");
                     violations++;
                 }
             }
 
             // [6] Integrated member closure.
-            var integrated = pkg.previewConfig?.integratedSubassemblyPlacements;
+            var integrated = pkg.previewConfig?.integratedPartGroupPlacements;
             if (integrated != null)
             {
                 var stackedSubs = new HashSet<string>(StringComparer.Ordinal);
-                foreach (var ev in idx.stackingEvents) stackedSubs.Add(ev.subassemblyId);
+                foreach (var ev in idx.stackingEvents) stackedSubs.Add(ev.partGroupId);
 
                 foreach (var pl in integrated)
                 {
                     if (pl == null) continue;
-                    if (!string.IsNullOrEmpty(pl.subassemblyId) && !stackedSubs.Contains(pl.subassemblyId))
-                    { Report($"{Tag} [integrated-orphan] integratedSubassemblyPlacement '{pl.subassemblyId}|{pl.targetId}' has no step with requiredSubassemblyId='{pl.subassemblyId}'; members will never resolve to IntegratedMember."); violations++; }
+                    if (!string.IsNullOrEmpty(pl.partGroupId) && !stackedSubs.Contains(pl.partGroupId))
+                    { Report($"{Tag} [integrated-orphan] integratedPartGroupPlacement '{pl.partGroupId}|{pl.targetId}' has no step with requiredPartGroupId='{pl.partGroupId}'; members will never resolve to IntegratedMember."); violations++; }
 
                     if (pl.memberPlacements == null) continue;
                     foreach (var mp in pl.memberPlacements)
                     {
                         if (mp == null || string.IsNullOrEmpty(mp.partId)) continue;
                         if (!idx.placementByPart.ContainsKey(mp.partId))
-                        { Report($"{Tag} [integrated-member-orphan] integrated '{pl.subassemblyId}|{pl.targetId}' references partId '{mp.partId}' with no partPlacement."); violations++; }
+                        { Report($"{Tag} [integrated-member-orphan] integrated '{pl.partGroupId}|{pl.targetId}' references partId '{mp.partId}' with no partPlacement."); violations++; }
                     }
                 }
             }

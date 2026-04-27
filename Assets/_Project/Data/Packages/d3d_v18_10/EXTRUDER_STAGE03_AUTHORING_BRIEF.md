@@ -12,7 +12,7 @@ authoring brief for `d3d_v18_10`.
 What is now implemented directly from this brief:
 
 - `d3d_x_axis_carriage_side` placement
-- completed `subassembly_extruder_carriage_unit` mount onto the X-axis
+- completed `partGroup_extruder_carriage_unit` mount onto the X-axis
 - `d3d_x_axis_half_carriage` placement
 - left-travel / right-travel / nozzle-clearance QC
 
@@ -42,7 +42,7 @@ The next slice should be built around:
 
 - `Universal axis carriage side`
 - `Axis half carriage`
-- completed `subassembly_extruder_carriage_unit`
+- completed `partGroup_extruder_carriage_unit`
 
 ### Procedure shape
 
@@ -104,9 +104,9 @@ The next authored slice should likely be:
 
 These should come from the newly acquired Stage 03 candidate meshes after review.
 
-### Reuse existing completed subassembly for:
+### Reuse existing completed partGroup for:
 
-- `subassembly_extruder_carriage_unit`
+- `partGroup_extruder_carriage_unit`
 
 This keeps Stage 03 continuous with the already authored procedure.
 
@@ -132,7 +132,7 @@ The implemented `machine.json` pass used:
 
 - carriage side
 - half carriage
-- completed carriage-unit subassembly
+- completed carriage-unit partGroup
 - travel-clearance check
 
 and explicitly left the spacer out of the first pass because stronger source

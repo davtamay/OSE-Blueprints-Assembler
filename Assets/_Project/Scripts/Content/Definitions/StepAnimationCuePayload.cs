@@ -42,7 +42,7 @@ namespace OSE.Content
     {
         /// <summary>
         /// Animation type key. Core: "demonstratePlacement", "poseTransition",
-        /// "pulse", "orientSubassembly", "shake", "particle". Phase-2 effect
+        /// "pulse", "orientPartGroup", "shake", "particle". Phase-2 effect
         /// cues: "emissionPulse", "colorTween", "materialFade", "clickPop",
         /// "poseWobble", "toolVibration", "lineBetweenAnchors", "drawSpline",
         /// "measureLine", "screwSpin". Matched to an <c>IAnimationCuePlayer</c>
@@ -53,7 +53,7 @@ namespace OSE.Content
         /// <summary>
         /// Part IDs to animate. Legacy / step-scoped authoring only — new
         /// authoring puts cues on the host (<see cref="PartDefinition.animationCues"/>
-        /// or <see cref="SubassemblyDefinition.animationCues"/>) where the
+        /// or <see cref="PartGroupDefinition.animationCues"/>) where the
         /// host is the implicit target. Runtime still reads this as a
         /// fallback so unmigrated JSON keeps working.
         /// </summary>
@@ -62,13 +62,13 @@ namespace OSE.Content
         /// <summary>Tool IDs to animate (resolved via ToolCursorManager / PersistentToolController).</summary>
         public string[] targetToolIds;
 
-        /// <summary>Subassembly ID to animate (resolved via SubassemblyPlacementController proxy).</summary>
-        public string targetSubassemblyId;
+        /// <summary>PartGroup ID to animate (resolved via PartGroupPlacementController proxy).</summary>
+        public string targetPartGroupId;
 
         /// <summary>
         /// Step ids at which this cue fires. Empty / null = every step where
         /// the host is visible. Only meaningful when the cue is authored on
-        /// a host (part / subassembly / aggregate); step-owned legacy cues
+        /// a host (part / partGroup / aggregate); step-owned legacy cues
         /// implicitly scope to their owning step.
         /// </summary>
         public string[] stepIds;
@@ -137,8 +137,8 @@ namespace OSE.Content
         /// <summary>Explicit end pose for poseTransition.</summary>
         public AnimationPose toPose;
 
-        /// <summary>Euler rotation for orientSubassembly.</summary>
-        public SceneFloat3 subassemblyRotation;
+        /// <summary>Euler rotation for orientPartGroup.</summary>
+        public SceneFloat3 partGroupRotation;
 
         /// <summary>Pulse color A (RGBA).</summary>
         public SceneFloat4 pulseColorA;
@@ -222,13 +222,13 @@ namespace OSE.Content
         public string animationClipAssetPath;
 
         // ── Pivot override (optional — default pivot is host mesh origin for
-        //    parts and member centroid for subassemblies) ──
+        //    parts and member centroid for partGroups) ──
 
         /// <summary>
         /// When true, <see cref="pivotOffset"/> is applied to this cue's
         /// rotation / effect origin. When false (default), the host's default
         /// pivot is used (mesh origin for parts, <c>GroupRigidBody.groupCenter</c>
-        /// for subassemblies) — existing content keeps identical runtime
+        /// for partGroups) — existing content keeps identical runtime
         /// behavior.
         /// </summary>
         public bool pivotOffsetOverride;

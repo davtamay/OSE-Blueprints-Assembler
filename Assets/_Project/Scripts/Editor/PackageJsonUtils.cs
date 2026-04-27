@@ -33,7 +33,7 @@ namespace OSE.Editor
         // and the author's edits silently vanished on reload.
         //
         // This map is populated at LoadPackage time by walking each chunk's
-        // parts[] / targets[] / tools[] / steps[] / subassemblies[] /
+        // parts[] / targets[] / tools[] / steps[] / partGroups[] /
         // partTemplates[] arrays and recording <entityId → sourceFilePath>.
         // It is the ONE authoritative answer to "which file contains this
         // entity's definition?" — no string matching, no alphabetical order
@@ -74,7 +74,7 @@ namespace OSE.Editor
             RecordIds(map, chunk.targets,       t => t?.id, sourceFile, "target");
             RecordIds(map, chunk.tools,         t => t?.id, sourceFile, "tool");
             RecordIds(map, chunk.steps,         s => s?.id, sourceFile, "step");
-            RecordIds(map, chunk.subassemblies, s => s?.id, sourceFile, "subassembly");
+            RecordIds(map, chunk.partGroups, s => s?.id, sourceFile, "partGroup");
             RecordIds(map, chunk.partTemplates, t => t?.id, sourceFile, "partTemplate");
         }
 
@@ -358,7 +358,7 @@ namespace OSE.Editor
                 var chunk = JsonUtility.FromJson<MachinePackageDefinition>(File.ReadAllText(asmFile));
                 if (chunk == null) continue;
                 pkg.assemblies      = MergeArrays(pkg.assemblies,      chunk.assemblies);
-                pkg.subassemblies   = MergeArrays(pkg.subassemblies,   chunk.subassemblies);
+                pkg.partGroups   = MergeArrays(pkg.partGroups,   chunk.partGroups);
                 pkg.parts           = MergeArrays(pkg.parts,           chunk.parts);
                 pkg.steps           = MergeArrays(pkg.steps,           chunk.steps);
                 pkg.targets         = MergeArrays(pkg.targets,         chunk.targets);
@@ -533,16 +533,16 @@ namespace OSE.Editor
             UnityEditor.AssetDatabase.Refresh();
         }
         /// <summary>
-        /// Inserts a new <see cref="SubassemblyDefinition"/> into the <c>"subassemblies"</c>
-        /// array of the given JSON file. If the file has no <c>"subassemblies"</c> key yet,
+        /// Inserts a new <see cref="PartGroupDefinition"/> into the <c>"partGroups"</c>
+        /// array of the given JSON file. If the file has no <c>"partGroups"</c> key yet,
         /// one is created at the top-level object.
         /// </summary>
-        internal static void InsertSubassembly(string jsonPath, SubassemblyDefinition sub)
+        internal static void InsertPartGroup(string jsonPath, PartGroupDefinition sub)
         {
             string original = File.ReadAllText(jsonPath);
             string subJson  = RoundFloatsInJson(JsonUtility.ToJson(sub));
 
-            const string label = "\"subassemblies\"";
+            const string label = "\"partGroups\"";
             int labelIdx = original.IndexOf(label, System.StringComparison.Ordinal);
 
             string modified;
@@ -551,7 +551,7 @@ namespace OSE.Editor
                 // Array exists — append to it (same algorithm as InsertStep).
                 int arrayOpen = original.IndexOf('[', labelIdx);
                 if (arrayOpen < 0)
-                    throw new System.Exception("Found \"subassemblies\" but no opening '['.");
+                    throw new System.Exception("Found \"partGroups\" but no opening '['.");
 
                 int depth = 0, arrayClose = -1;
                 for (int i = arrayOpen; i < original.Length; i++)
@@ -565,7 +565,7 @@ namespace OSE.Editor
                     }
                 }
                 if (arrayClose < 0)
-                    throw new System.Exception("Could not find closing ']' of subassemblies array.");
+                    throw new System.Exception("Could not find closing ']' of partGroups array.");
 
                 int insertAfter = -1;
                 {
@@ -589,7 +589,7 @@ namespace OSE.Editor
             }
             else
             {
-                // No "subassemblies" key yet — create one before the file's
+                // No "partGroups" key yet — create one before the file's
                 // closing '}'. Find the last '}' in the file.
                 int lastBrace = original.LastIndexOf('}');
                 if (lastBrace < 0)
@@ -604,7 +604,7 @@ namespace OSE.Editor
 
                 string prefix = needComma ? ",\n  " : "\n  ";
                 modified = original.Substring(0, lastBrace)
-                         + prefix + "\"subassemblies\": [\n    " + subJson + "\n  ]\n}"
+                         + prefix + "\"partGroups\": [\n    " + subJson + "\n  ]\n}"
                          + (lastBrace + 1 < original.Length ? original.Substring(lastBrace + 1) : "");
             }
 

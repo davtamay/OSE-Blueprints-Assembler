@@ -6,12 +6,12 @@ namespace OSE.Content.Validation
     /// <summary>
     /// Enforces "one partId ⇔ one physical GameObject" invariants that the
     /// runtime relies on but the other passes never checked. A partId that
-    /// appears in multiple non-aggregate subassemblies, or in multiple
+    /// appears in multiple non-aggregate partGroups, or in multiple
     /// Place-family steps, causes last-write-wins corruption during
-    /// navigation/scrubbing (see feedback_subassembly_part_id_collisions.md).
+    /// navigation/scrubbing (see feedback_partGroup_part_id_collisions.md).
     ///
     /// Rules:
-    /// 1. ERROR — partId in &gt;1 non-aggregate <c>subassembly.partIds</c>.
+    /// 1. ERROR — partId in &gt;1 non-aggregate <c>partGroup.partIds</c>.
     /// 2. ERROR — partId in &gt;1 Place-family <c>step.requiredPartIds</c>.
     /// 3. ERROR — <c>target.associatedPartId</c> must be in its owning
     ///            step's <c>GetAllTouchedPartIds()</c>.
@@ -27,7 +27,7 @@ namespace OSE.Content.Validation
 
         public void Execute(ValidationPassContext ctx)
         {
-            CheckSiblingSubassemblyCollisions(ctx);
+            CheckSiblingPartGroupCollisions(ctx);
             CheckMultiPlaceStepCollisions(ctx);
             CheckTargetAssociatedPartInStep(ctx);
             CheckDuplicateStartPositions(ctx);
@@ -35,15 +35,15 @@ namespace OSE.Content.Validation
         }
 
         // ── Rule 1 ────────────────────────────────────────────────────────────
-        private static void CheckSiblingSubassemblyCollisions(ValidationPassContext ctx)
+        private static void CheckSiblingPartGroupCollisions(ValidationPassContext ctx)
         {
-            SubassemblyDefinition[] subs = ctx.Package.GetSubassemblies();
+            PartGroupDefinition[] subs = ctx.Package.GetPartGroups();
             if (subs == null || subs.Length == 0) return;
 
             var partToSubs = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
             for (int s = 0; s < subs.Length; s++)
             {
-                SubassemblyDefinition sub = subs[s];
+                PartGroupDefinition sub = subs[s];
                 if (sub == null || sub.isAggregate) continue;
                 if (sub.partIds == null || string.IsNullOrWhiteSpace(sub.id)) continue;
 
@@ -67,12 +67,12 @@ namespace OSE.Content.Validation
                 if (kvp.Value.Count < 2) continue;
 
                 ctx.Issues.Add(ValidationPassHelpers.Error(
-                    "subassemblies[*].partIds",
-                    $"partId '{kvp.Key}' appears in multiple non-aggregate subassemblies: " +
+                    "partGroups[*].partIds",
+                    $"partId '{kvp.Key}' appears in multiple non-aggregate partGroups: " +
                     $"{string.Join(", ", kvp.Value)}. Each partId must belong to exactly one " +
-                    "subassembly. If these are physically distinct parts, author distinct partIds " +
-                    "with subassembly-scoped prefixes (e.g. y_left_carriage_m6_nut_a vs " +
-                    "y_left_motor_m6_nut_a). If one subassembly is an aggregate/composite of the " +
+                    "partGroup. If these are physically distinct parts, author distinct partIds " +
+                    "with partGroup-scoped prefixes (e.g. y_left_carriage_m6_nut_a vs " +
+                    "y_left_motor_m6_nut_a). If one partGroup is an aggregate/composite of the " +
                     "others, set isAggregate:true on it."));
             }
         }

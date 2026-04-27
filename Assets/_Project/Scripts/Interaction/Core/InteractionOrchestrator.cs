@@ -547,7 +547,7 @@ namespace OSE.Interaction
                 t = t.parent;
             }
 
-            // Not a spawned part � check for other selectables (e.g. subassembly proxies,
+            // Not a spawned part � check for other selectables (e.g. partGroup proxies,
             // dock arc marker spheres that redirect via DockArcMarkerProxy).
             if (_partBridge != null && _partBridge.IsSelectableTarget(hit))
                 return hit;
@@ -978,7 +978,7 @@ namespace OSE.Interaction
             if (part == null)
                 return false;
 
-            // Prefer the bridge's comprehensive check � it handles subassembly
+            // Prefer the bridge's comprehensive check � it handles partGroup
             // proxies, member-part resolution, and the local state dictionary.
             if (_partBridge != null)
             {

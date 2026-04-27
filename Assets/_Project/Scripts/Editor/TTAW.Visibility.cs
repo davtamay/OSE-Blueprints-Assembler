@@ -10,7 +10,7 @@
 //   • A part is visible in step N if its "owning step" sequence index ≤ N
 //   • The owning step is the FIRST step (lowest sequenceIndex) that lists
 //     the part in step.requiredPartIds OR includes it via
-//     step.requiredSubassemblyId → subassembly.partIds
+//     step.requiredPartGroupId → partGroup.partIds
 //   • Otherwise the part is hidden in the scene
 //
 // So the section groups everything currently visible in this step into three
@@ -732,11 +732,11 @@ namespace OSE.Editor
             ownedSubPartIds = new HashSet<string>(StringComparer.Ordinal);
             totalVisible    = 0;
 
-            // Collect this step's required-subassembly parts so we can label
+            // Collect this step's required-partGroup parts so we can label
             // them separately and exclude them from the "owned by this step"
             // bucket (the requiredPartIds bucket).
-            if (!string.IsNullOrEmpty(step.requiredSubassemblyId)
-                && _pkg.TryGetSubassembly(step.requiredSubassemblyId, out SubassemblyDefinition subDef)
+            if (!string.IsNullOrEmpty(step.requiredPartGroupId)
+                && _pkg.TryGetPartGroup(step.requiredPartGroupId, out PartGroupDefinition subDef)
                 && subDef?.partIds != null)
             {
                 foreach (var pid in subDef.partIds)

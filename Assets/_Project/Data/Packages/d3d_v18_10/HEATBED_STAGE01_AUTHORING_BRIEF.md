@@ -102,8 +102,8 @@ The first authored heated-bed pass must not claim:
 ## Recommended Top-Level Ids
 
 - `assembly_d3d_heatbed_stage_01`
-- `subassembly_heatbed_mounting_path`
-- `subassembly_heatbed_mechanical_stack`
+- `partGroup_heatbed_mounting_path`
+- `partGroup_heatbed_mechanical_stack`
 
 ## Recommended First-Pass Parts
 
@@ -218,8 +218,8 @@ installed role is isolated more cleanly than the current CAD inspection supports
 ### Assembly ids
 
 - `assembly_d3d_heatbed_stage_01`
-- `subassembly_heatbed_mounting_path`
-- `subassembly_heatbed_mechanical_stack`
+- `partGroup_heatbed_mounting_path`
+- `partGroup_heatbed_mechanical_stack`
 
 ### Parts
 

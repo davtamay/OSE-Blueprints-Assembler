@@ -697,7 +697,7 @@ namespace OSE.Editor
             // author already has the part GameObject selected in the
             // Hierarchy. Walks up parents (ten levels max) until it finds
             // one whose name matches a known partId in _pkg.GetParts().
-            // Mirrors the precedent in TTAW.Subassembly.cs:345-376.
+            // Mirrors the precedent in TTAW.PartGroup.cs:345-376.
             if (GUILayout.Button(
                     new GUIContent("From Selection",
                         "Use the GameObject selected in the Hierarchy as this target's part. " +
@@ -740,7 +740,7 @@ namespace OSE.Editor
             }
 
             // Build a quick set for O(1) name → partId checks. Match by id
-            // (ordinal) — same convention as TTAW.Subassembly.cs:354.
+            // (ordinal) — same convention as TTAW.PartGroup.cs:354.
             var byId = new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal);
             foreach (var p in parts) if (p?.id != null) byId.Add(p.id);
 

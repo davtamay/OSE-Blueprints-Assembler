@@ -4,7 +4,7 @@ namespace OSE.Content
 {
     /// <summary>
     /// Per-step working orientation payload. Temporarily transforms the
-    /// subassembly (and optionally individual parts) into a pose that makes
+    /// partGroup (and optionally individual parts) into a pose that makes
     /// the work area accessible — e.g., flip 180° to reach the underside.
     /// The orientation reverts automatically when the step changes.
     /// </summary>
@@ -12,17 +12,17 @@ namespace OSE.Content
     public sealed class StepWorkingOrientationPayload
     {
         /// <summary>
-        /// Euler angles (degrees) applied to the subassembly proxy root
+        /// Euler angles (degrees) applied to the partGroup proxy root
         /// relative to its authored fabrication pose.
         /// </summary>
-        public SceneFloat3 subassemblyRotation;
+        public SceneFloat3 partGroupRotation;
 
         /// <summary>
         /// Optional position offset (meters) in PreviewRoot local space,
         /// applied after rotation. Useful for keeping a flipped assembly
         /// at a comfortable working height.
         /// </summary>
-        public SceneFloat3 subassemblyPositionOffset;
+        public SceneFloat3 partGroupPositionOffset;
 
         /// <summary>
         /// Optional human-readable explanation shown to the learner.
@@ -33,7 +33,7 @@ namespace OSE.Content
 
         /// <summary>
         /// Optional per-part pose overrides (escape hatch for non-rigid adjustments
-        /// that can't be expressed as a single subassembly rotation).
+        /// that can't be expressed as a single partGroup rotation).
         /// </summary>
         public StepPartPoseOverride[] partOverrides;
 
@@ -48,9 +48,9 @@ namespace OSE.Content
         /// </summary>
         public bool IsEmpty()
         {
-            if (subassemblyRotation.x != 0f || subassemblyRotation.y != 0f || subassemblyRotation.z != 0f)
+            if (partGroupRotation.x != 0f || partGroupRotation.y != 0f || partGroupRotation.z != 0f)
                 return false;
-            if (subassemblyPositionOffset.x != 0f || subassemblyPositionOffset.y != 0f || subassemblyPositionOffset.z != 0f)
+            if (partGroupPositionOffset.x != 0f || partGroupPositionOffset.y != 0f || partGroupPositionOffset.z != 0f)
                 return false;
             if (!string.IsNullOrWhiteSpace(hint)) return false;
             if (partOverrides != null && partOverrides.Length > 0) return false;

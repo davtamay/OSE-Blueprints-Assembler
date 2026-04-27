@@ -77,7 +77,7 @@ namespace OSE.Content.Validation
 
             // Build id sets once — shared across all passes via context.
             HashSet<string> assemblyIds      = BuildIdSet(package.GetAssemblies(),       "assemblies",       item => item.id, issues);
-            HashSet<string> subassemblyIds   = BuildIdSet(package.GetSubassemblies(),    "subassemblies",    item => item.id, issues);
+            HashSet<string> partGroupIds   = BuildIdSet(package.GetPartGroups(),    "partGroups",    item => item.id, issues);
             HashSet<string> partIds          = BuildIdSet(package.GetParts(),            "parts",            item => item.id, issues);
             HashSet<string> toolIds          = BuildIdSet(package.GetTools(),            "tools",            item => item.id, issues);
             HashSet<string> stepIds          = BuildIdSet(package.GetSteps(),            "steps",            item => item.id, issues);
@@ -90,7 +90,7 @@ namespace OSE.Content.Validation
 
             var ctx = new ValidationPassContext(
                 package, issues,
-                assemblyIds, subassemblyIds, partIds, toolIds,
+                assemblyIds, partGroupIds, partIds, toolIds,
                 stepIds, validationRuleIds, hintIds, effectIds,
                 targetIds, toolDefsById);
 

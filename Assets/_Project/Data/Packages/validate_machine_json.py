@@ -210,7 +210,7 @@ def _validate_machine_references(machine: dict, assembly_ids: set, issues: list[
 def _validate_assemblies(
     assemblies: list,
     machine_id: str,
-    subassembly_ids: set,
+    partGroup_ids: set,
     step_ids: set,
     assembly_ids: set,
     issues: list[Issue],
@@ -226,22 +226,22 @@ def _validate_assemblies(
         if machine_id and mid and mid.lower() != machine_id.lower():
             issues.append(_err(f"{path}.machineId",
                                f"Assembly '{asm.get('id')}' references machine '{mid}', expected '{machine_id}'."))
-        _check_required_refs(asm.get("subassemblyIds"), subassembly_ids, f"{path}.subassemblyIds", issues)
+        _check_required_refs(asm.get("partGroupIds"), partGroup_ids, f"{path}.partGroupIds", issues)
         _check_required_refs(asm.get("stepIds"), step_ids, f"{path}.stepIds", issues)
         _check_optional_refs(asm.get("dependencyAssemblyIds"), assembly_ids, f"{path}.dependencyAssemblyIds", issues)
 
 
-def _validate_subassemblies(
-    subassemblies: list,
+def _validate_partGroups(
+    partGroups: list,
     assembly_ids: set,
     part_ids: set,
     step_ids: set,
     issues: list[Issue],
 ) -> None:
-    for i, sa in enumerate(subassemblies):
-        path = f"subassemblies[{i}]"
+    for i, sa in enumerate(partGroups):
+        path = f"partGroups[{i}]"
         if sa is None:
-            issues.append(_err(path, "Subassembly definition is null."))
+            issues.append(_err(path, "PartGroup definition is null."))
             continue
         _check_required_text(sa.get("name"), f"{path}.name", issues)
         _check_single_ref(sa.get("assemblyId"), assembly_ids, f"{path}.assemblyId", issues)
@@ -301,7 +301,7 @@ def _validate_tool_actions(
 def _validate_steps(
     steps: list,
     assembly_ids: set,
-    subassembly_ids: set,
+    partGroup_ids: set,
     part_ids: set,
     tool_ids: set,
     target_ids: set,
@@ -328,7 +328,7 @@ def _validate_steps(
 
         _check_required_text(step.get("name"), f"{path}.name", issues)
         _check_single_ref(step.get("assemblyId"), assembly_ids, f"{path}.assemblyId", issues)
-        _check_optional_ref(step.get("subassemblyId"), subassembly_ids, f"{path}.subassemblyId", issues)
+        _check_optional_ref(step.get("partGroupId"), partGroup_ids, f"{path}.partGroupId", issues)
         _check_required_text(step.get("instructionText"), f"{path}.instructionText", issues)
 
         family = step.get("family", "")
@@ -346,7 +346,7 @@ def _validate_steps(
         _check_optional_enum(step.get("targetOrder"), TARGET_ORDER_VALUES, f"{path}.targetOrder", issues)
 
         _check_optional_refs(step.get("requiredPartIds"), part_ids, f"{path}.requiredPartIds", issues)
-        _check_optional_ref(step.get("requiredSubassemblyId"), subassembly_ids, f"{path}.requiredSubassemblyId", issues)
+        _check_optional_ref(step.get("requiredPartGroupId"), partGroup_ids, f"{path}.requiredPartGroupId", issues)
         _check_optional_refs(step.get("optionalPartIds"), part_ids, f"{path}.optionalPartIds", issues)
         _check_optional_refs(step.get("relevantToolIds"), tool_ids, f"{path}.relevantToolIds", issues)
         _check_optional_refs(step.get("targetIds"), target_ids, f"{path}.targetIds", issues)
@@ -390,33 +390,33 @@ def _validate_steps(
         # Tool action cross-references
         _validate_tool_action_cross_references(step, path, issues)
 
-        # requiredSubassemblyId + requiredPartIds mutual exclusion
-        rsa_id = step.get("requiredSubassemblyId", "")
+        # requiredPartGroupId + requiredPartIds mutual exclusion
+        rsa_id = step.get("requiredPartGroupId", "")
         rpart_ids = step.get("requiredPartIds") or []
         if not _is_blank(rsa_id) and rpart_ids:
-            issues.append(_err(path, "A step may define either requiredPartIds or requiredSubassemblyId, not both."))
+            issues.append(_err(path, "A step may define either requiredPartIds or requiredPartGroupId, not both."))
 
         if not _is_blank(rsa_id):
             resolved_family = _resolve_family(step)
             if resolved_family != "Place":
-                issues.append(_err(f"{path}.requiredSubassemblyId",
-                                   "Subassembly placement is only supported on Place-family steps."))
+                issues.append(_err(f"{path}.requiredPartGroupId",
+                                   "PartGroup placement is only supported on Place-family steps."))
             step_target_ids = step.get("targetIds") or []
             if len(step_target_ids) != 1:
                 issues.append(_err(f"{path}.targetIds",
-                                   "A subassembly placement step must reference exactly one target in v1."))
+                                   "A partGroup placement step must reference exactly one target in v1."))
             elif step_target_ids[0] in target_lookup:
                 tgt = target_lookup[step_target_ids[0]]
-                if (tgt.get("associatedSubassemblyId") or "").lower() != rsa_id.lower():
+                if (tgt.get("associatedPartGroupId") or "").lower() != rsa_id.lower():
                     issues.append(_err(f"{path}.targetIds[0]",
-                                       f"Target '{tgt.get('id')}' must reference associatedSubassemblyId '{rsa_id}'."))
+                                       f"Target '{tgt.get('id')}' must reference associatedPartGroupId '{rsa_id}'."))
 
-        # AxisFit without subassembly
+        # AxisFit without partGroup
         profile = step.get("profile", "")
         resolved_family = _resolve_family(step)
         if profile == "AxisFit" and resolved_family == "Place" and _is_blank(rsa_id):
             issues.append(_err(f"{path}.profile",
-                               "AxisFit is only supported on Place-family subassembly placement steps."))
+                               "AxisFit is only supported on Place-family partGroup placement steps."))
 
         # Persistent tool check for Clamp / AxisFit placement
         if resolved_family == "Place" and profile in ("Clamp", "AxisFit"):
@@ -509,7 +509,7 @@ def _validate_effects(effects: list, issues: list[Issue]) -> None:
         _check_optional_enum(effect.get("triggerPolicy"), EFFECT_TRIGGER_VALUES, f"{path}.triggerPolicy", issues)
 
 
-def _validate_targets(targets: list, part_ids: set, subassembly_ids: set, issues: list[Issue]) -> None:
+def _validate_targets(targets: list, part_ids: set, partGroup_ids: set, issues: list[Issue]) -> None:
     for i, target in enumerate(targets):
         path = f"targets[{i}]"
         if target is None:
@@ -517,9 +517,9 @@ def _validate_targets(targets: list, part_ids: set, subassembly_ids: set, issues
             continue
         _check_required_text(target.get("anchorRef"), f"{path}.anchorRef", issues)
         _check_optional_ref(target.get("associatedPartId"), part_ids, f"{path}.associatedPartId", issues)
-        _check_optional_ref(target.get("associatedSubassemblyId"), subassembly_ids, f"{path}.associatedSubassemblyId", issues)
-        if not _is_blank(target.get("associatedPartId")) and not _is_blank(target.get("associatedSubassemblyId")):
-            issues.append(_err(path, "A target may define either associatedPartId or associatedSubassemblyId, not both."))
+        _check_optional_ref(target.get("associatedPartGroupId"), partGroup_ids, f"{path}.associatedPartGroupId", issues)
+        if not _is_blank(target.get("associatedPartId")) and not _is_blank(target.get("associatedPartGroupId")):
+            issues.append(_err(path, "A target may define either associatedPartId or associatedPartGroupId, not both."))
 
 
 def _detect_orphan_parts(
@@ -598,7 +598,7 @@ def _validate_preview_config(
     data: dict,
     part_ids: set,
     target_ids: set,
-    subassembly_ids: set,
+    partGroup_ids: set,
     issues: list[Issue],
 ) -> None:
     pc = data.get("previewConfig")
@@ -628,49 +628,49 @@ def _validate_preview_config(
             issues.append(_warn("previewConfig.targetPlacements",
                                 f"Target '{tid}' has no placement entry. Preview will use fallback positioning."))
 
-    # Subassembly placements
-    covered_subassemblies: set = set()
-    for i, sp in enumerate((pc.get("subassemblyPlacements") or [])):
-        if sp and not _is_blank(sp.get("subassemblyId")):
-            covered_subassemblies.add(sp["subassemblyId"])
+    # PartGroup placements
+    covered_partGroups: set = set()
+    for i, sp in enumerate((pc.get("partGroupPlacements") or [])):
+        if sp and not _is_blank(sp.get("partGroupId")):
+            covered_partGroups.add(sp["partGroupId"])
 
-    # Completed subassembly parking placements
-    for i, sp in enumerate((pc.get("completedSubassemblyParkingPlacements") or [])):
-        if sp and not _is_blank(sp.get("subassemblyId")):
-            if sp["subassemblyId"] not in subassembly_ids:
-                issues.append(_err(f"previewConfig.completedSubassemblyParkingPlacements[{i}].subassemblyId",
-                                   f"Reference '{sp['subassemblyId']}' does not resolve."))
+    # Completed partGroup parking placements
+    for i, sp in enumerate((pc.get("completedPartGroupParkingPlacements") or [])):
+        if sp and not _is_blank(sp.get("partGroupId")):
+            if sp["partGroupId"] not in partGroup_ids:
+                issues.append(_err(f"previewConfig.completedPartGroupParkingPlacements[{i}].partGroupId",
+                                   f"Reference '{sp['partGroupId']}' does not resolve."))
 
-    # Integrated subassembly placements
-    subassembly_lookup: dict[str, dict] = {}
-    for sa in (data.get("subassemblies") or []):
+    # Integrated partGroup placements
+    partGroup_lookup: dict[str, dict] = {}
+    for sa in (data.get("partGroups") or []):
         if sa and not _is_blank(sa.get("id")):
-            subassembly_lookup[sa["id"]] = sa
+            partGroup_lookup[sa["id"]] = sa
 
-    for i, isp in enumerate((pc.get("integratedSubassemblyPlacements") or [])):
-        path = f"previewConfig.integratedSubassemblyPlacements[{i}]"
+    for i, isp in enumerate((pc.get("integratedPartGroupPlacements") or [])):
+        path = f"previewConfig.integratedPartGroupPlacements[{i}]"
         if isp is None:
-            issues.append(_err(path, "Integrated subassembly placement entry is null."))
+            issues.append(_err(path, "Integrated partGroup placement entry is null."))
             continue
-        _check_required_text(isp.get("subassemblyId"), f"{path}.subassemblyId", issues)
+        _check_required_text(isp.get("partGroupId"), f"{path}.partGroupId", issues)
         _check_required_text(isp.get("targetId"), f"{path}.targetId", issues)
-        sa_id = isp.get("subassemblyId", "")
+        sa_id = isp.get("partGroupId", "")
         t_id = isp.get("targetId", "")
-        if not _is_blank(sa_id) and sa_id not in subassembly_ids:
-            issues.append(_err(f"{path}.subassemblyId", f"Reference '{sa_id}' does not resolve."))
+        if not _is_blank(sa_id) and sa_id not in partGroup_ids:
+            issues.append(_err(f"{path}.partGroupId", f"Reference '{sa_id}' does not resolve."))
         if not _is_blank(t_id) and t_id not in target_ids:
             issues.append(_err(f"{path}.targetId", f"Reference '{t_id}' does not resolve."))
         members = isp.get("memberPlacements") or []
         if not members:
             issues.append(_warn(f"{path}.memberPlacements",
-                                "Integrated subassembly placement has no member placements."))
+                                "Integrated partGroup placement has no member placements."))
             continue
         sa_part_ids: set | None = None
-        if not _is_blank(sa_id) and sa_id in subassembly_lookup:
-            sa_part_ids = set(subassembly_lookup[sa_id].get("partIds") or [])
+        if not _is_blank(sa_id) and sa_id in partGroup_lookup:
+            sa_part_ids = set(partGroup_lookup[sa_id].get("partIds") or [])
         if sa_part_ids is not None and len(members) != len(sa_part_ids):
             issues.append(_warn(f"{path}.memberPlacements",
-                                f"Integrated placement has {len(members)} member(s) but subassembly '{sa_id}' "
+                                f"Integrated placement has {len(members)} member(s) but partGroup '{sa_id}' "
                                 f"defines {len(sa_part_ids)} part(s). Some members may be missing or extraneous."))
         for j, member in enumerate(members):
             mp = f"{path}.memberPlacements[{j}]"
@@ -683,61 +683,61 @@ def _validate_preview_config(
                 issues.append(_err(f"{mp}.partId", f"Reference '{mid}' does not resolve."))
             elif sa_part_ids is not None and not _is_blank(mid) and mid not in sa_part_ids:
                 issues.append(_err(f"{mp}.partId",
-                                   f"Part '{mid}' is not a member of subassembly '{sa_id}'."))
+                                   f"Part '{mid}' is not a member of partGroup '{sa_id}'."))
 
-    # Constrained subassembly fit placements
-    for i, csp in enumerate((pc.get("constrainedSubassemblyFitPlacements") or [])):
-        path = f"previewConfig.constrainedSubassemblyFitPlacements[{i}]"
+    # Constrained partGroup fit placements
+    for i, csp in enumerate((pc.get("constrainedPartGroupFitPlacements") or [])):
+        path = f"previewConfig.constrainedPartGroupFitPlacements[{i}]"
         if csp is None:
-            issues.append(_err(path, "Constrained subassembly fit entry is null."))
+            issues.append(_err(path, "Constrained partGroup fit entry is null."))
             continue
-        _check_required_text(csp.get("subassemblyId"), f"{path}.subassemblyId", issues)
+        _check_required_text(csp.get("partGroupId"), f"{path}.partGroupId", issues)
         _check_required_text(csp.get("targetId"), f"{path}.targetId", issues)
-        sa_id = csp.get("subassemblyId", "")
+        sa_id = csp.get("partGroupId", "")
         t_id = csp.get("targetId", "")
-        if not _is_blank(sa_id) and sa_id not in subassembly_ids:
-            issues.append(_err(f"{path}.subassemblyId", f"Reference '{sa_id}' does not resolve."))
+        if not _is_blank(sa_id) and sa_id not in partGroup_ids:
+            issues.append(_err(f"{path}.partGroupId", f"Reference '{sa_id}' does not resolve."))
         if not _is_blank(t_id) and t_id not in target_ids:
             issues.append(_err(f"{path}.targetId", f"Reference '{t_id}' does not resolve."))
         driven = csp.get("drivenPartIds") or []
         if not driven:
             issues.append(_warn(f"{path}.drivenPartIds",
-                                "Constrained subassembly fit has no drivenPartIds. The fit will behave like a rigid placement."))
+                                "Constrained partGroup fit has no drivenPartIds. The fit will behave like a rigid placement."))
         sa_part_ids = None
-        if not _is_blank(sa_id) and sa_id in subassembly_lookup:
-            sa_part_ids = set(subassembly_lookup[sa_id].get("partIds") or [])
+        if not _is_blank(sa_id) and sa_id in partGroup_lookup:
+            sa_part_ids = set(partGroup_lookup[sa_id].get("partIds") or [])
         for j, dpid in enumerate(driven):
             dp = f"{path}.drivenPartIds[{j}]"
             _check_required_text(dpid, dp, issues)
             if not _is_blank(dpid) and dpid not in part_ids:
                 issues.append(_err(dp, f"Reference '{dpid}' does not resolve."))
             elif sa_part_ids is not None and not _is_blank(dpid) and dpid not in sa_part_ids:
-                issues.append(_err(dp, f"Part '{dpid}' is not a member of subassembly '{sa_id}'."))
+                issues.append(_err(dp, f"Part '{dpid}' is not a member of partGroup '{sa_id}'."))
 
-    # Steps that use subassembly placement but lack authored preview frame
+    # Steps that use partGroup placement but lack authored preview frame
     for step in (data.get("steps") or []):
         if step is None:
             continue
-        rsa = step.get("requiredSubassemblyId", "")
+        rsa = step.get("requiredPartGroupId", "")
         if _is_blank(rsa):
             continue
-        if rsa not in covered_subassemblies:
-            issues.append(_warn("previewConfig.subassemblyPlacements",
-                                f"Subassembly '{rsa}' is used by a placement step but has no authored subassembly placement frame."))
+        if rsa not in covered_partGroups:
+            issues.append(_warn("previewConfig.partGroupPlacements",
+                                f"PartGroup '{rsa}' is used by a placement step but has no authored partGroup placement frame."))
         profile = step.get("profile", "")
         resolved_family = _resolve_family(step)
         if profile == "AxisFit" and resolved_family == "Place":
             step_target_ids = step.get("targetIds") or []
             target_id = step_target_ids[0] if len(step_target_ids) == 1 else None
-            constrained = pc.get("constrainedSubassemblyFitPlacements") or []
+            constrained = pc.get("constrainedPartGroupFitPlacements") or []
             found = any(
-                c and c.get("subassemblyId") == rsa and c.get("targetId") == target_id
+                c and c.get("partGroupId") == rsa and c.get("targetId") == target_id
                 for c in constrained
             )
             if not found:
-                issues.append(_warn("previewConfig.constrainedSubassemblyFitPlacements",
+                issues.append(_warn("previewConfig.constrainedPartGroupFitPlacements",
                                     f"AxisFit step '{step.get('id')}' has no matching constrained fit preview payload "
-                                    f"for subassembly '{rsa}' and target '{target_id or '<missing>'}'."))
+                                    f"for partGroup '{rsa}' and target '{target_id or '<missing>'}'."))
 
     # Preview/play position consistency
     _validate_preview_assembled_position_consistency(data, pc, covered_parts, issues)
@@ -776,7 +776,7 @@ def _validate_preview_assembled_position_consistency(
     # targetId -> associatedPartId
     target_part_lookup: dict[str, str] = {}
     for t in (data.get("targets") or []):
-        if t and not _is_blank(t.get("id")) and not _is_blank(t.get("associatedPartId")) and _is_blank(t.get("associatedSubassemblyId")):
+        if t and not _is_blank(t.get("id")) and not _is_blank(t.get("associatedPartId")) and _is_blank(t.get("associatedPartGroupId")):
             target_part_lookup[t["id"]] = t["associatedPartId"]
 
     for tp in target_placements:
@@ -832,7 +832,7 @@ def validate(data: dict) -> ValidationResult:
 
     # Build ID sets
     assemblies       = data.get("assemblies") or []
-    subassemblies    = data.get("subassemblies") or []
+    partGroups    = data.get("partGroups") or []
     parts            = data.get("parts") or []
     tools            = data.get("tools") or []
     steps            = data.get("steps") or []
@@ -842,7 +842,7 @@ def validate(data: dict) -> ValidationResult:
     targets          = data.get("targets") or []
 
     assembly_ids       = _build_id_set(assemblies, "assemblies", issues)
-    subassembly_ids    = _build_id_set(subassemblies, "subassemblies", issues)
+    partGroup_ids    = _build_id_set(partGroups, "partGroups", issues)
     part_ids           = _build_id_set(parts, "parts", issues)
     tool_ids           = _build_id_set(tools, "tools", issues)
     step_ids           = _build_id_set(steps, "steps", issues)
@@ -854,21 +854,21 @@ def validate(data: dict) -> ValidationResult:
     machine_id = machine.get("id", "") if machine else ""
 
     _validate_machine_references(machine, assembly_ids, issues)
-    _validate_assemblies(assemblies, machine_id, subassembly_ids, step_ids, assembly_ids, issues)
-    _validate_subassemblies(subassemblies, assembly_ids, part_ids, step_ids, issues)
+    _validate_assemblies(assemblies, machine_id, partGroup_ids, step_ids, assembly_ids, issues)
+    _validate_partGroups(partGroups, assembly_ids, part_ids, step_ids, issues)
     _validate_parts(parts, tool_ids, issues)
     _validate_tools(tools, issues)
 
     tool_defs = {t["id"]: t for t in tools if t and not _is_blank(t.get("id"))}
 
-    _validate_steps(steps, assembly_ids, subassembly_ids, part_ids, tool_ids,
+    _validate_steps(steps, assembly_ids, partGroup_ids, part_ids, tool_ids,
                     target_ids, targets, validation_rule_ids, hint_ids, effect_ids,
                     tool_defs, issues)
     _validate_validation_rules(validation_rules, part_ids, step_ids, target_ids, hint_ids, issues)
     _validate_hints(hints, part_ids, tool_ids, target_ids, issues)
     _validate_effects(effects, issues)
-    _validate_targets(targets, part_ids, subassembly_ids, issues)
-    _validate_preview_config(data, part_ids, target_ids, subassembly_ids, issues)
+    _validate_targets(targets, part_ids, partGroup_ids, issues)
+    _validate_preview_config(data, part_ids, target_ids, partGroup_ids, issues)
 
     # Orphan detection
     _detect_orphan_parts(parts, steps, targets, issues)

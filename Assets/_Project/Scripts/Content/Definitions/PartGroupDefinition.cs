@@ -7,7 +7,7 @@ namespace OSE.Content
     /// <summary>
     /// Derived rigid-body representation of a group at a specific target.
     /// Populated by <see cref="Loading.MachinePackageNormalizer"/> from
-    /// <see cref="PackagePreviewConfig.integratedSubassemblyPlacements"/>. Editor
+    /// <see cref="PackagePreviewConfig.integratedPartGroupPlacements"/>. Editor
     /// and scene code consume this so a group pose behaves like a single part's
     /// pose: one transform to move, member offsets are fixed.
     /// Never serialized — always derived at load time.
@@ -23,11 +23,11 @@ namespace OSE.Content
     }
 
     [Serializable]
-    public sealed class SubassemblyDefinition : IAnimationHost
+    public sealed class PartGroupDefinition : IAnimationHost
     {
         string IAnimationHost.HostId => id;
         string IAnimationHost.HostDisplayName => GetDisplayName();
-        AnimationHostKind IAnimationHost.HostKind => AnimationHostKind.Subassembly;
+        AnimationHostKind IAnimationHost.HostKind => AnimationHostKind.PartGroup;
         AnimationCueEntry[] IAnimationHost.AnimationCues
         {
             get => animationCues;
@@ -43,27 +43,27 @@ namespace OSE.Content
         public string milestoneMessage;
 
         /// <summary>
-        /// True = this subassembly is a composite/aggregate of other child subassemblies
+        /// True = this partGroup is a composite/aggregate of other child partGroups
         /// and its <see cref="partIds"/> list may intentionally overlap with child
-        /// subassemblies' partIds (e.g. a "complete axis unit" that contains parts
-        /// already owned by carriage/idler/motor subassemblies).
-        /// Aggregate subassemblies are exempt from the
+        /// partGroups' partIds (e.g. a "complete axis unit" that contains parts
+        /// already owned by carriage/idler/motor partGroups).
+        /// Aggregate partGroups are exempt from the
         /// PartOwnershipExclusivityPass sibling-collision check and are not indexed
         /// by MachinePackageNormalizer.IndexPartOwnership.
         /// </summary>
         public bool isAggregate;
 
         /// <summary>
-        /// Optional: IDs of sub-subassemblies that this subassembly is physically built FROM.
+        /// Optional: IDs of sub-partGroups that this partGroup is physically built FROM.
         /// Enables hierarchical emergence beyond the flat partIds model:
-        /// sub-subassemblies → subassembly → assembly → machine.
-        /// Member subassembly steps play before the parent subassembly's own steps.
+        /// sub-partGroups → partGroup → assembly → machine.
+        /// Member partGroup steps play before the parent partGroup's own steps.
         /// Resolved at load time by <c>MachinePackageNormalizer</c>.
         /// </summary>
-        public string[] memberSubassemblyIds;
+        public string[] memberPartGroupIds;
 
         /// <summary>
-        /// Animation / particle cues hosted on this subassembly (or
+        /// Animation / particle cues hosted on this partGroup (or
         /// aggregate). Fires on the <c>Group_*</c> root at runtime —
         /// shake/rotate/pulse/particle covers every live member in one
         /// coordinated motion via the transient anim-group mechanism.
@@ -99,7 +99,7 @@ namespace OSE.Content
             if (!string.IsNullOrWhiteSpace(id))
                 return id.Trim();
 
-            return "Unnamed Subassembly";
+            return "Unnamed PartGroup";
         }
     }
 }

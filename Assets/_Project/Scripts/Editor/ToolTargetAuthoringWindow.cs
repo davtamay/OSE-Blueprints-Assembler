@@ -95,9 +95,9 @@ namespace OSE.Editor
         private bool                    _sceneBuildStepActive;
         private int                     _sceneBuildCurrentSeq;
         private Dictionary<string, int> _sceneBuildPartStepSeq        = new();
-        private HashSet<string>         _sceneBuildCurrentSubassembly = new();
+        private HashSet<string>         _sceneBuildCurrentPartGroup = new();
         private StepWorkingOrientationPayload _sceneBuildWorkingOrientation;
-        private Vector3                       _sceneBuildSubassemblyFramePos;
+        private Vector3                       _sceneBuildPartGroupFramePos;
         private HashSet<string>               _sceneBuildWorkingOrientationParts = new();
 
         // Measured height of top content (PkgPicker + StepFilter) — updated each Repaint
@@ -124,8 +124,8 @@ namespace OSE.Editor
         private readonly HashSet<string> _dirtyToolIds         = new HashSet<string>(StringComparer.Ordinal);
         private readonly HashSet<string> _dirtyStepIds         = new HashSet<string>(StringComparer.Ordinal);
         private readonly HashSet<string> _dirtyPartAssetRefIds = new HashSet<string>(StringComparer.Ordinal);
-        private readonly HashSet<string> _dirtySubassemblyIds  = new HashSet<string>(StringComparer.Ordinal); // Phase 7e — Subassembly writes
-        private readonly HashSet<string> _dirtyPartIds         = new HashSet<string>(StringComparer.Ordinal); // Generic part-level edits (animationCues, subassemblyIds, etc.)
+        private readonly HashSet<string> _dirtyPartGroupIds  = new HashSet<string>(StringComparer.Ordinal); // Phase 7e — PartGroup writes
+        private readonly HashSet<string> _dirtyPartIds         = new HashSet<string>(StringComparer.Ordinal); // Generic part-level edits (animationCues, partGroupIds, etc.)
         private readonly PackageAssetResolver _assetResolver = new PackageAssetResolver();
 
         // SceneView part-count summary updated by RespawnScene
@@ -182,13 +182,13 @@ namespace OSE.Editor
         // Working orientation foldout
         private bool _showWorkingOrientation;
 
-        // Phase A2 — subassembly root GOs that member parts are parented under.
+        // Phase A2 — partGroup root GOs that member parts are parented under.
         // One root per group that has visible members in the current step.
         // Created in RespawnScene; destroyed on step change or cleanup.
         // The root's localRotation IS the working orientation.
-        private readonly Dictionary<string, GameObject> _subassemblyRootGOs = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, GameObject> _partGroupRootGOs = new(StringComparer.Ordinal);
 
-        // Set during EnsureAllSubassemblyRoots if a visible group member had no
+        // Set during EnsureAllPartGroupRoots if a visible group member had no
         // live GO yet (spawner hadn't registered it). RespawnScene schedules a
         // delayed second pass so the first step click populates correctly
         // without the user having to click away and back.
@@ -208,7 +208,7 @@ namespace OSE.Editor
 
         /// <summary>
         /// Cache of per-partId ownership data (Place-owner, Required/Optional/
-        /// Visual step lists, subassembly, conflicts). Built once per
+        /// Visual step lists, partGroup, conflicts). Built once per
         /// <c>BuildPartList</c> rebuild; consumed by the four proactive-
         /// guidance surfaces so every scan runs off this single answer
         /// instead of walking <c>_pkg.steps</c> on every repaint.
@@ -307,7 +307,7 @@ namespace OSE.Editor
         private string              _previewingForStepId;
 
         private static readonly string[] _cueTypes =
-            { "transform", "shake", "pulse", "demonstratePlacement", "poseTransition", "orientSubassembly", "particle",
+            { "transform", "shake", "pulse", "demonstratePlacement", "poseTransition", "orientPartGroup", "particle",
               "emissionPulse", "colorTween", "materialFade", "clickPop", "poseWobble", "toolVibration",
               "lineBetweenAnchors", "drawSpline", "measureLine", "screwSpin",
               "animationClip" };
@@ -459,13 +459,13 @@ namespace OSE.Editor
         }
 
         // ── Group pose state (Phase G1) ──────────────────────────────────────
-        // Mirrors PartEditState but for subassembly/group root GOs.
-        // Populated by BuildGroupList from SubassemblyPreviewPlacement.
+        // Mirrors PartEditState but for partGroup/group root GOs.
+        // Populated by BuildGroupList from PartGroupPreviewPlacement.
 
         private struct GroupEditState
         {
-            public SubassemblyDefinition    def;
-            public SubassemblyPreviewPlacement placement;
+            public PartGroupDefinition    def;
+            public PartGroupPreviewPlacement placement;
             public bool      hasPlacement, isDirty;
             public Vector3    startPosition,    assembledPosition;
             public Quaternion startRotation,    assembledRotation;

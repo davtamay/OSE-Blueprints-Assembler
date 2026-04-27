@@ -76,7 +76,7 @@ This section defines which subsystem owns which categories of runtime truth.
 - active machine id
 - active mode
 - active assembly id
-- active subassembly id
+- active partGroup id
 - active step id
 - persisted machine session context
 - high-level session lifecycle state
@@ -599,7 +599,7 @@ This section defines which document is authoritative for each domain.
 
 - blueprint-to-package workflow
 - part/tool extraction
-- subassembly design
+- partGroup design
 - metadata/step authoring flow
 - content validation pass expectations
 
@@ -967,7 +967,7 @@ If a runtime truth exists only in the scene, the architecture is drifting.
 
 Machine packages and content data may own:
 
-- structured machine/assembly/subassembly/part/tool/step definitions
+- structured machine/assembly/partGroup/part/tool/step definitions
 - validation configuration
 - hints
 - effects references
@@ -993,7 +993,7 @@ Within a machine package, each file has a distinct owner and purpose:
 |------|-------|-----------------|---------|
 | `machine.json` | Agent | Yes | Package metadata: name, version, `entryAssemblyIds`, `schemaVersion` |
 | `shared.json` | Agent | Yes | Tools (with `toolPose`), `partTemplates`, global hints (no specific `targetId`/`partId`), global `validationRules` |
-| `assemblies/{id}.json` | Agent | Yes — one file per assembly | Assembly def, subassemblies, steps, parts (with `stagingPose`), targets, local hints |
+| `assemblies/{id}.json` | Agent | Yes — one file per assembly | Assembly def, partGroups, steps, parts (with `stagingPose`), targets, local hints |
 | `preview_config.json` | TTAW / Blender pipeline | **Never** | Assembled poses, `stepPoses`, `targetPlacements`, `splinePath`, `constrainedFit` — all generated, never hand-authored |
 | `assets/parts/*.glb` | Blender export pipeline | **Never** | Mesh assets — resolver hardcodes this path |
 | `assets/tools/*.glb` | Blender export pipeline | **Never** | Tool mesh assets |

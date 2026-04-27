@@ -105,7 +105,7 @@ namespace OSE.UI.Root
                 // Use the caller-provided pivot hint (PivotCentroidResolver,
                 // shared with rotation cues + authoring) when present. Hint
                 // applies to target[0] only — the same contract as other
-                // subassembly-hosted cue players. Falls back to zero (host
+                // partGroup-hosted cue players. Falls back to zero (host
                 // origin) for part/tool hosts or when no body centroid is
                 // meaningful on this step.
                 Vector3 pivot = (i == 0 && context.PivotHintLocal.HasValue)

@@ -5,7 +5,7 @@ namespace OSE.Content.Validation
 {
     /// <summary>
     /// Validates <see cref="PackagePreviewConfig"/> coverage — checks that every
-    /// part, target, and subassembly has a placement entry, and verifies that
+    /// part, target, and partGroup has a placement entry, and verifies that
     /// authored target preview positions agree with part assembledPositions.
     /// </summary>
     internal sealed class PreviewConfigPass : IPackageValidationPass
@@ -33,11 +33,11 @@ namespace OSE.Content.Validation
             CheckPartCoverage  (ctx.PartIds,   coveredParts,   issues);
             CheckTargetCoverage(ctx.TargetIds, coveredTargets, wireOwnedIds, issues);
 
-            HashSet<string> coveredSubassemblies = ValidateSubassemblyPlacements(previewConfig, ctx.SubassemblyIds, issues);
-            ValidateParkingPlacements    (previewConfig, ctx.SubassemblyIds, issues);
-            ValidateIntegratedPlacements (package, previewConfig, ctx.SubassemblyIds, ctx.TargetIds, ctx.PartIds, issues);
-            ValidateConstrainedFitPlacements(package, previewConfig, ctx.SubassemblyIds, ctx.PartIds, issues);
-            CheckAxisFitCoverage         (package, previewConfig, coveredSubassemblies, issues);
+            HashSet<string> coveredPartGroups = ValidatePartGroupPlacements(previewConfig, ctx.PartGroupIds, issues);
+            ValidateParkingPlacements    (previewConfig, ctx.PartGroupIds, issues);
+            ValidateIntegratedPlacements (package, previewConfig, ctx.PartGroupIds, ctx.TargetIds, ctx.PartIds, issues);
+            ValidateConstrainedFitPlacements(package, previewConfig, ctx.PartGroupIds, ctx.PartIds, issues);
+            CheckAxisFitCoverage         (package, previewConfig, coveredPartGroups, issues);
             ValidatePreviewPlayPositionConsistency(package, previewConfig, issues);
         }
 
@@ -87,63 +87,63 @@ namespace OSE.Content.Validation
                         $"Target '{id}' has no placement entry. Preview will use fallback positioning."));
         }
 
-        // ── Subassembly placements ────────────────────────────────────────────
+        // ── PartGroup placements ────────────────────────────────────────────
 
-        private static HashSet<string> ValidateSubassemblyPlacements(
-            PackagePreviewConfig previewConfig, HashSet<string> subassemblyIds,
+        private static HashSet<string> ValidatePartGroupPlacements(
+            PackagePreviewConfig previewConfig, HashSet<string> partGroupIds,
             List<MachinePackageValidationIssue> issues)
         {
             var covered = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            if (previewConfig.subassemblyPlacements == null) return covered;
+            if (previewConfig.partGroupPlacements == null) return covered;
 
-            for (int i = 0; i < previewConfig.subassemblyPlacements.Length; i++)
+            for (int i = 0; i < previewConfig.partGroupPlacements.Length; i++)
             {
-                SubassemblyPreviewPlacement p = previewConfig.subassemblyPlacements[i];
-                if (p == null || string.IsNullOrWhiteSpace(p.subassemblyId)) continue;
-                covered.Add(p.subassemblyId);
-                if (!subassemblyIds.Contains(p.subassemblyId))
+                PartGroupPreviewPlacement p = previewConfig.partGroupPlacements[i];
+                if (p == null || string.IsNullOrWhiteSpace(p.partGroupId)) continue;
+                covered.Add(p.partGroupId);
+                if (!partGroupIds.Contains(p.partGroupId))
                     issues.Add(ValidationPassHelpers.Error(
-                        $"previewConfig.subassemblyPlacements[{i}].subassemblyId",
-                        $"Reference '{p.subassemblyId}' does not resolve."));
+                        $"previewConfig.partGroupPlacements[{i}].partGroupId",
+                        $"Reference '{p.partGroupId}' does not resolve."));
             }
             return covered;
         }
 
         private static void ValidateParkingPlacements(
-            PackagePreviewConfig previewConfig, HashSet<string> subassemblyIds,
+            PackagePreviewConfig previewConfig, HashSet<string> partGroupIds,
             List<MachinePackageValidationIssue> issues)
         {
-            if (previewConfig.completedSubassemblyParkingPlacements == null) return;
+            if (previewConfig.completedPartGroupParkingPlacements == null) return;
 
-            for (int i = 0; i < previewConfig.completedSubassemblyParkingPlacements.Length; i++)
+            for (int i = 0; i < previewConfig.completedPartGroupParkingPlacements.Length; i++)
             {
-                SubassemblyPreviewPlacement p = previewConfig.completedSubassemblyParkingPlacements[i];
-                if (p == null || string.IsNullOrWhiteSpace(p.subassemblyId)) continue;
-                if (!subassemblyIds.Contains(p.subassemblyId))
+                PartGroupPreviewPlacement p = previewConfig.completedPartGroupParkingPlacements[i];
+                if (p == null || string.IsNullOrWhiteSpace(p.partGroupId)) continue;
+                if (!partGroupIds.Contains(p.partGroupId))
                     issues.Add(ValidationPassHelpers.Error(
-                        $"previewConfig.completedSubassemblyParkingPlacements[{i}].subassemblyId",
-                        $"Reference '{p.subassemblyId}' does not resolve."));
+                        $"previewConfig.completedPartGroupParkingPlacements[{i}].partGroupId",
+                        $"Reference '{p.partGroupId}' does not resolve."));
             }
         }
 
         private static void ValidateIntegratedPlacements(
             MachinePackageDefinition package, PackagePreviewConfig previewConfig,
-            HashSet<string> subassemblyIds, HashSet<string> targetIds, HashSet<string> partIds,
+            HashSet<string> partGroupIds, HashSet<string> targetIds, HashSet<string> partIds,
             List<MachinePackageValidationIssue> issues)
         {
-            if (previewConfig.integratedSubassemblyPlacements == null) return;
+            if (previewConfig.integratedPartGroupPlacements == null) return;
 
-            for (int i = 0; i < previewConfig.integratedSubassemblyPlacements.Length; i++)
+            for (int i = 0; i < previewConfig.integratedPartGroupPlacements.Length; i++)
             {
-                IntegratedSubassemblyPreviewPlacement p = previewConfig.integratedSubassemblyPlacements[i];
-                string path = $"previewConfig.integratedSubassemblyPlacements[{i}]";
-                if (p == null) { issues.Add(ValidationPassHelpers.Error(path, "Integrated subassembly placement entry is null.")); continue; }
+                IntegratedPartGroupPreviewPlacement p = previewConfig.integratedPartGroupPlacements[i];
+                string path = $"previewConfig.integratedPartGroupPlacements[{i}]";
+                if (p == null) { issues.Add(ValidationPassHelpers.Error(path, "Integrated partGroup placement entry is null.")); continue; }
 
-                ValidationPassHelpers.ValidateRequiredText(p.subassemblyId, $"{path}.subassemblyId", issues);
+                ValidationPassHelpers.ValidateRequiredText(p.partGroupId, $"{path}.partGroupId", issues);
                 ValidationPassHelpers.ValidateRequiredText(p.targetId,      $"{path}.targetId",      issues);
 
-                if (!string.IsNullOrWhiteSpace(p.subassemblyId) && !subassemblyIds.Contains(p.subassemblyId))
-                    issues.Add(ValidationPassHelpers.Error($"{path}.subassemblyId", $"Reference '{p.subassemblyId}' does not resolve."));
+                if (!string.IsNullOrWhiteSpace(p.partGroupId) && !partGroupIds.Contains(p.partGroupId))
+                    issues.Add(ValidationPassHelpers.Error($"{path}.partGroupId", $"Reference '{p.partGroupId}' does not resolve."));
 
                 if (!string.IsNullOrWhiteSpace(p.targetId) && !targetIds.Contains(p.targetId))
                     issues.Add(ValidationPassHelpers.Error($"{path}.targetId", $"Reference '{p.targetId}' does not resolve."));
@@ -151,17 +151,17 @@ namespace OSE.Content.Validation
                 if (p.memberPlacements == null || p.memberPlacements.Length == 0)
                 {
                     issues.Add(ValidationPassHelpers.Warning($"{path}.memberPlacements",
-                        "Integrated subassembly placement has no member placements."));
+                        "Integrated partGroup placement has no member placements."));
                     continue;
                 }
 
-                HashSet<string> subassemblyPartIds = BuildSubassemblyPartSet(package, p.subassemblyId);
+                HashSet<string> partGroupPartIds = BuildPartGroupPartSet(package, p.partGroupId);
 
-                if (subassemblyPartIds != null && p.memberPlacements.Length != subassemblyPartIds.Count)
+                if (partGroupPartIds != null && p.memberPlacements.Length != partGroupPartIds.Count)
                 {
                     issues.Add(ValidationPassHelpers.Warning($"{path}.memberPlacements",
-                        $"Integrated placement has {p.memberPlacements.Length} member(s) but subassembly " +
-                        $"'{p.subassemblyId}' defines {subassemblyPartIds.Count} part(s). Some members may be missing or extraneous."));
+                        $"Integrated placement has {p.memberPlacements.Length} member(s) but partGroup " +
+                        $"'{p.partGroupId}' defines {partGroupPartIds.Count} part(s). Some members may be missing or extraneous."));
                 }
 
                 for (int j = 0; j < p.memberPlacements.Length; j++)
@@ -175,9 +175,9 @@ namespace OSE.Content.Validation
                     {
                         if (!partIds.Contains(member.partId))
                             issues.Add(ValidationPassHelpers.Error($"{memberPath}.partId", $"Reference '{member.partId}' does not resolve."));
-                        else if (subassemblyPartIds != null && !subassemblyPartIds.Contains(member.partId))
+                        else if (partGroupPartIds != null && !partGroupPartIds.Contains(member.partId))
                             issues.Add(ValidationPassHelpers.Error($"{memberPath}.partId",
-                                $"Part '{member.partId}' is not a member of subassembly '{p.subassemblyId}'."));
+                                $"Part '{member.partId}' is not a member of partGroup '{p.partGroupId}'."));
                     }
                 }
             }
@@ -185,30 +185,30 @@ namespace OSE.Content.Validation
 
         private static void ValidateConstrainedFitPlacements(
             MachinePackageDefinition package, PackagePreviewConfig previewConfig,
-            HashSet<string> subassemblyIds, HashSet<string> partIds,
+            HashSet<string> partGroupIds, HashSet<string> partIds,
             List<MachinePackageValidationIssue> issues)
         {
-            if (previewConfig.constrainedSubassemblyFitPlacements == null) return;
+            if (previewConfig.constrainedPartGroupFitPlacements == null) return;
 
-            for (int i = 0; i < previewConfig.constrainedSubassemblyFitPlacements.Length; i++)
+            for (int i = 0; i < previewConfig.constrainedPartGroupFitPlacements.Length; i++)
             {
-                ConstrainedSubassemblyFitPreviewPlacement p = previewConfig.constrainedSubassemblyFitPlacements[i];
-                string path = $"previewConfig.constrainedSubassemblyFitPlacements[{i}]";
-                if (p == null) { issues.Add(ValidationPassHelpers.Error(path, "Constrained subassembly fit entry is null.")); continue; }
+                ConstrainedPartGroupFitPreviewPlacement p = previewConfig.constrainedPartGroupFitPlacements[i];
+                string path = $"previewConfig.constrainedPartGroupFitPlacements[{i}]";
+                if (p == null) { issues.Add(ValidationPassHelpers.Error(path, "Constrained partGroup fit entry is null.")); continue; }
 
-                ValidationPassHelpers.ValidateRequiredText(p.subassemblyId, $"{path}.subassemblyId", issues);
+                ValidationPassHelpers.ValidateRequiredText(p.partGroupId, $"{path}.partGroupId", issues);
                 ValidationPassHelpers.ValidateRequiredText(p.targetId,      $"{path}.targetId",      issues);
 
-                if (!string.IsNullOrWhiteSpace(p.subassemblyId) && !subassemblyIds.Contains(p.subassemblyId))
-                    issues.Add(ValidationPassHelpers.Error($"{path}.subassemblyId", $"Reference '{p.subassemblyId}' does not resolve."));
+                if (!string.IsNullOrWhiteSpace(p.partGroupId) && !partGroupIds.Contains(p.partGroupId))
+                    issues.Add(ValidationPassHelpers.Error($"{path}.partGroupId", $"Reference '{p.partGroupId}' does not resolve."));
 
                 if (p.drivenPartIds == null || p.drivenPartIds.Length == 0)
                 {
                     issues.Add(ValidationPassHelpers.Warning($"{path}.drivenPartIds",
-                        "Constrained subassembly fit has no drivenPartIds. The fit will behave like a rigid placement."));
+                        "Constrained partGroup fit has no drivenPartIds. The fit will behave like a rigid placement."));
                 }
 
-                HashSet<string> subassemblyPartIds = BuildSubassemblyPartSet(package, p.subassemblyId);
+                HashSet<string> partGroupPartIds = BuildPartGroupPartSet(package, p.partGroupId);
                 string[] driven = p.drivenPartIds ?? Array.Empty<string>();
 
                 for (int j = 0; j < driven.Length; j++)
@@ -220,9 +220,9 @@ namespace OSE.Content.Validation
                     {
                         if (!partIds.Contains(drivenId))
                             issues.Add(ValidationPassHelpers.Error(drivenPath, $"Reference '{drivenId}' does not resolve."));
-                        else if (subassemblyPartIds != null && !subassemblyPartIds.Contains(drivenId))
+                        else if (partGroupPartIds != null && !partGroupPartIds.Contains(drivenId))
                             issues.Add(ValidationPassHelpers.Error(drivenPath,
-                                $"Part '{drivenId}' is not a member of subassembly '{p.subassemblyId}'."));
+                                $"Part '{drivenId}' is not a member of partGroup '{p.partGroupId}'."));
                     }
                 }
             }
@@ -230,26 +230,26 @@ namespace OSE.Content.Validation
 
         private static void CheckAxisFitCoverage(
             MachinePackageDefinition package, PackagePreviewConfig previewConfig,
-            HashSet<string> coveredSubassemblies, List<MachinePackageValidationIssue> issues)
+            HashSet<string> coveredPartGroups, List<MachinePackageValidationIssue> issues)
         {
             foreach (StepDefinition step in package.GetSteps())
             {
-                if (step == null || string.IsNullOrWhiteSpace(step.requiredSubassemblyId)) continue;
+                if (step == null || string.IsNullOrWhiteSpace(step.requiredPartGroupId)) continue;
 
-                if (!coveredSubassemblies.Contains(step.requiredSubassemblyId))
-                    issues.Add(ValidationPassHelpers.Warning("previewConfig.subassemblyPlacements",
-                        $"Subassembly '{step.requiredSubassemblyId}' is used by a placement step but has no authored subassembly placement frame."));
+                if (!coveredPartGroups.Contains(step.requiredPartGroupId))
+                    issues.Add(ValidationPassHelpers.Warning("previewConfig.partGroupPlacements",
+                        $"PartGroup '{step.requiredPartGroupId}' is used by a placement step but has no authored partGroup placement frame."));
 
                 if (step.IsAxisFitPlacement)
                 {
                     string targetId = step.targetIds != null && step.targetIds.Length == 1 ? step.targetIds[0] : null;
                     if (string.IsNullOrWhiteSpace(targetId) ||
-                        previewConfig.constrainedSubassemblyFitPlacements == null ||
-                        !package.TryGetConstrainedSubassemblyFitPreviewPlacement(step.requiredSubassemblyId, targetId, out _))
+                        previewConfig.constrainedPartGroupFitPlacements == null ||
+                        !package.TryGetConstrainedPartGroupFitPreviewPlacement(step.requiredPartGroupId, targetId, out _))
                     {
-                        issues.Add(ValidationPassHelpers.Warning("previewConfig.constrainedSubassemblyFitPlacements",
+                        issues.Add(ValidationPassHelpers.Warning("previewConfig.constrainedPartGroupFitPlacements",
                             $"AxisFit step '{step.id}' has no matching constrained fit preview payload for " +
-                            $"subassembly '{step.requiredSubassemblyId}' and target '{targetId ?? "<missing>"}'."));
+                            $"partGroup '{step.requiredPartGroupId}' and target '{targetId ?? "<missing>"}'."));
                     }
                 }
             }
@@ -280,7 +280,7 @@ namespace OSE.Content.Validation
             foreach (var t in package.GetTargets())
                 if (t != null && !string.IsNullOrEmpty(t.id) &&
                     !string.IsNullOrEmpty(t.associatedPartId) &&
-                    string.IsNullOrEmpty(t.associatedSubassemblyId))
+                    string.IsNullOrEmpty(t.associatedPartGroupId))
                     targetPartLookup[t.id] = t.associatedPartId;
 
             foreach (var tp in previewConfig.targetPlacements)
@@ -310,10 +310,10 @@ namespace OSE.Content.Validation
 
         // ── Helpers ───────────────────────────────────────────────────────────
 
-        private static HashSet<string> BuildSubassemblyPartSet(MachinePackageDefinition package, string subassemblyId)
+        private static HashSet<string> BuildPartGroupPartSet(MachinePackageDefinition package, string partGroupId)
         {
-            if (string.IsNullOrWhiteSpace(subassemblyId)) return null;
-            if (!package.TryGetSubassembly(subassemblyId, out SubassemblyDefinition sub) || sub == null) return null;
+            if (string.IsNullOrWhiteSpace(partGroupId)) return null;
+            if (!package.TryGetPartGroup(partGroupId, out PartGroupDefinition sub) || sub == null) return null;
             return new HashSet<string>(sub.partIds ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
         }
     }

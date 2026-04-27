@@ -3,7 +3,7 @@
 // One button at the top ("+ Add timing panel") creates a panel keyed by a
 // trigger value ("onActivate", "afterDelay", "onStepComplete", etc.). Inside
 // each panel, "+ Add cue" inserts AnimationCueEntry rows pre-scoped to the
-// target (part / tool / subassembly). Rows are reorderable within a panel —
+// target (part / tool / partGroup). Rows are reorderable within a panel —
 // panelOrder is baked on drop — and each row has a parallel (∥) / sequenced
 // (⇣) toggle. All three scopes (part/tool/group) share this renderer so the
 // UX is identical everywhere, and the structure is designed to be reused
@@ -25,7 +25,7 @@ namespace OSE.Editor
 {
     public sealed partial class ToolTargetAuthoringWindow : EditorWindow
     {
-        private enum CueScope { Part, Tool, Subassembly }
+        private enum CueScope { Part, Tool, PartGroup }
 
         // Author-facing panel catalog. Order defines strip + panel order.
         //
@@ -48,9 +48,9 @@ namespace OSE.Editor
         // Built-in type ids + friendly menu labels. "animationClip" is a sentinel
         // for the asset-driven row (data lives in animationClipAssetPath).
         //
-        // NOTE: "orientSubassembly" is intentionally omitted from the add menu —
+        // NOTE: "orientPartGroup" is intentionally omitted from the add menu —
         // use "poseTransition" for any rotation/translation/scale. Existing
-        // orientSubassembly cues in data still render and edit; the Type popup
+        // orientPartGroup cues in data still render and edit; the Type popup
         // in DrawCueEntry still lists it for forward-compat.
         private static readonly (string type, string label)[] _timingCueTypes =
         {
@@ -80,7 +80,7 @@ namespace OSE.Editor
         //
         // Cues are authored in the task sequence UI (this file) but physically
         // live on the host that owns them — part.animationCues for part scope,
-        // sub.animationCues for subassembly scope. Tool scope remains on
+        // sub.animationCues for partGroup scope. Tool scope remains on
         // step.animationCues.cues for now (ToolDefinition doesn't have a
         // host-owned animationCues field yet). The storage struct lets every
         // read/write path stay scope-agnostic.
@@ -118,15 +118,15 @@ namespace OSE.Editor
                         markDirty: () => _dirtyPartIds.Add(captured.id),
                         isHostOwned: true);
                 }
-                case CueScope.Subassembly:
+                case CueScope.PartGroup:
                 {
-                    if (_pkg == null || !_pkg.TryGetSubassembly(scopeKey, out var sub) || sub == null)
+                    if (_pkg == null || !_pkg.TryGetPartGroup(scopeKey, out var sub) || sub == null)
                         return default;
                     var captured = sub;
                     return new HostCueStorage(
                         cues: captured.animationCues,
                         setter: arr => captured.animationCues = arr,
-                        markDirty: () => _dirtySubassemblyIds.Add(captured.id),
+                        markDirty: () => _dirtyPartGroupIds.Add(captured.id),
                         isHostOwned: true);
                 }
                 case CueScope.Tool:
@@ -144,7 +144,7 @@ namespace OSE.Editor
             return default;
         }
 
-        // All three scopes (Part / Subassembly / Tool) are now host-owned —
+        // All three scopes (Part / PartGroup / Tool) are now host-owned —
         // the cue is stored on the host itself, and stepIds gates which
         // steps it fires on (empty = always-on wherever the host is live).
         private static bool CueAppliesHere(AnimationCueEntry c, StepDefinition step,
@@ -432,7 +432,7 @@ namespace OSE.Editor
                         string hostKindStr = scope switch
                         {
                             CueScope.Part        => "part",
-                            CueScope.Subassembly => "sub",
+                            CueScope.PartGroup => "sub",
                             CueScope.Tool        => "tool",
                             _                    => null,
                         };
@@ -559,7 +559,7 @@ namespace OSE.Editor
                         {
                             CueScope.Part        => "part",
                             CueScope.Tool        => "tool",
-                            CueScope.Subassembly => "subassembly",
+                            CueScope.PartGroup => "partGroup",
                             _                    => "part",
                         };
                         StartHostCuePreview(cue, cueIdx, step, hostKindStr, scopeKey);
@@ -757,7 +757,7 @@ namespace OSE.Editor
         // ── Helpers ───────────────────────────────────────────────────────────
 
         // ApplyScope stamps the legacy target fields on a cue. Host-owned
-        // cues (Part / Subassembly) don't need this — the host itself is the
+        // cues (Part / PartGroup) don't need this — the host itself is the
         // target. Kept for Tool scope, which still writes into
         // step.animationCues.cues until ToolDefinition gains its own
         // animationCues field.
@@ -766,7 +766,7 @@ namespace OSE.Editor
             switch (scope)
             {
                 case CueScope.Tool:         cue.targetToolIds       = new[] { scopeKey }; break;
-                // Part / Subassembly: no target fields needed — host storage
+                // Part / PartGroup: no target fields needed — host storage
                 // implies the target. Left intentionally empty.
             }
         }
@@ -780,8 +780,8 @@ namespace OSE.Editor
                     cue.shakeFrequency = 8f;
                     cue.shakeAxis      = new SceneFloat3 { x = 1f, y = 0f, z = 0f };
                     break;
-                case "orientSubassembly":
-                    cue.subassemblyRotation = new SceneFloat3 { x = 0f, y = 90f, z = 0f };
+                case "orientPartGroup":
+                    cue.partGroupRotation = new SceneFloat3 { x = 0f, y = 90f, z = 0f };
                     break;
                 case "pulse":
                     cue.pulseColorA = new SceneFloat4 { r = 0.1f, g = 0.3f, b = 1f, a = 1f };
@@ -948,8 +948,8 @@ namespace OSE.Editor
                         return $"shake · slide · {cue.shakeAmplitude:0.###} m";
                     return $"shake · {mode} · {cue.shakeAmplitude:0.###} m · {cue.shakeFrequency:0.#} Hz";
                 }
-                case "orientSubassembly":
-                    return $"rotate   ·  ({cue.subassemblyRotation.x:0}°, {cue.subassemblyRotation.y:0}°, {cue.subassemblyRotation.z:0}°)";
+                case "orientPartGroup":
+                    return $"rotate   ·  ({cue.partGroupRotation.x:0}°, {cue.partGroupRotation.y:0}°, {cue.partGroupRotation.z:0}°)";
                 case "pulse":
                     return $"pulse   ·  {(cue.pulseSpeed > 0 ? cue.pulseSpeed : 3f):0.#} rad/s";
                 case "demonstratePlacement":

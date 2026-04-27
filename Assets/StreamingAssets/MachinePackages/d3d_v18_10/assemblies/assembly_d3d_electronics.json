@@ -5,8 +5,8 @@
       "name": "D3D Electronics and Wiring",
       "description": "Control panel mounting, RAMPS wiring, motor connectors, endstops, and extruder electronics.",
       "machineId": "d3d_v18_10",
-      "subassemblyIds": [
-        "subassembly_electronics_wiring"
+      "partGroupIds": [
+        "partGroup_electronics_wiring"
       ],
       "stepIds": [
         "step_mount_control_panel",
@@ -35,9 +35,9 @@
       "learningFocus": "Control panel mounting, RAMPS board installation, PSU power wiring with polarity validation, stepper motor connections, axis endstop wiring, and extruder heater/thermistor/fan connections."
     }
   ],
-  "subassemblies": [
+  "partGroups": [
     {
-      "id": "subassembly_electronics_wiring",
+      "id": "partGroup_electronics_wiring",
       "name": "Electronics and Wiring",
       "stepIds": [ "step_mount_control_panel", "step_install_ramps_board", "step_secure_control_panel", "step_connect_psu_12v", "step_connect_psu_gnd", "step_connect_psu_atx_enable", "step_verify_psu_connections", "step_connect_x_motor", "step_connect_y_left_motor", "step_connect_y_right_motor", "step_connect_z_front_motor", "step_connect_z_back_motor", "step_connect_x_endstop", "step_connect_y_endstop", "step_connect_z_endstop", "step_connect_heater_cartridge", "step_connect_thermistor", "step_connect_extruder_fan", "step_route_cables_chain" ],
       "assemblyId": "assembly_d3d_electronics",
@@ -78,8 +78,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_electronics_wiring"
+      "partGroupIds": [
+        "partGroup_electronics_wiring"
       ]
     },
     {
@@ -115,8 +115,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_electronics_wiring"
+      "partGroupIds": [
+        "partGroup_electronics_wiring"
       ]
     }
   ],
@@ -146,12 +146,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -183,12 +183,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0

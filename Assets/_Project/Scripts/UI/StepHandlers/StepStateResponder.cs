@@ -145,10 +145,10 @@ namespace OSE.UI.Root
                 if (package != null &&
                     package.TryGetStep(evt.StepId, out var completedStep) &&
                     completedStep != null &&
-                    completedStep.RequiresSubassemblyPlacement &&
-                    _ctx.SubassemblyController != null &&
-                    !string.IsNullOrWhiteSpace(completedStep.requiredSubassemblyId) &&
-                    _ctx.SubassemblyController.TryGetProxy(completedStep.requiredSubassemblyId, out GameObject completedProxy))
+                    completedStep.RequiresPartGroupPlacement &&
+                    _ctx.PartGroupController != null &&
+                    !string.IsNullOrWhiteSpace(completedStep.requiredPartGroupId) &&
+                    _ctx.PartGroupController.TryGetProxy(completedStep.requiredPartGroupId, out GameObject completedProxy))
                 {
                     _ctx.RestorePartVisual(completedProxy);
                 }
@@ -159,7 +159,7 @@ namespace OSE.UI.Root
                     partController.DeselectPart();
 
                 _ctx.VisualFeedback?.MoveStepPartsToPlayPosition(evt.StepId);
-                _ctx.SubassemblyController?.HandleStepCompleted(evt.StepId);
+                _ctx.PartGroupController?.HandleStepCompleted(evt.StepId);
                 _ctx.PreviewManager?.ClearPreviews();
             }
 
@@ -187,7 +187,7 @@ namespace OSE.UI.Root
             _ctx.PlaceHandler?.ClearRequiredPartEmission();
             _ctx.ConnectHandler?.ClearTransientVisuals();
             _ctx.VisualFeedback?.RevealedPartIds.Clear();
-            _ctx.SubassemblyController?.ResetReplayState();
+            _ctx.PartGroupController?.ResetReplayState();
 
             // Clear stale part states carried over from a prior session or navigation.
             // PartInteractionBridge._partStates is a separate dictionary from
@@ -211,7 +211,7 @@ namespace OSE.UI.Root
             if (completedSteps.Length > 0)
             {
                 _ctx.VisualFeedback?.RestoreCompletedStepParts(completedSteps, navTargetStepId);
-                _ctx.SubassemblyController?.RestoreCompletedPlacements(completedSteps);
+                _ctx.PartGroupController?.RestoreCompletedPlacements(completedSteps);
                 _ctx.ConnectHandler?.RenderCompletedWires(completedSteps);
             }
 
@@ -230,7 +230,7 @@ namespace OSE.UI.Root
             {
                 _ctx.VisualFeedback?.ShowAllPartsAssembled();
                 if (completedSteps.Length > 0)
-                    _ctx.SubassemblyController?.RestoreCompletedPlacements(completedSteps);
+                    _ctx.PartGroupController?.RestoreCompletedPlacements(completedSteps);
             }
 
             // Final-pass guarantee: stacked panel bars always end up at their integrated
@@ -238,7 +238,7 @@ namespace OSE.UI.Root
             // EnforceIntegratedPositions seeds the controller's pending-integration set so
             // any GLBs still loading will be repositioned as soon as they appear.
             if (completedSteps.Length > 0)
-                _ctx.SubassemblyController?.EnforceIntegratedPositions(completedSteps);
+                _ctx.PartGroupController?.EnforceIntegratedPositions(completedSteps);
 
             OseLog.Info(
                 $"[PartInteraction] Navigated from global step {evt.PreviousStepIndex + 1} " +
@@ -588,12 +588,12 @@ namespace OSE.UI.Root
             _ctx.VisualFeedback?.RevealedPartIds.Clear();
             _ctx.VisualFeedback?.ActiveStepPartIds.Clear();
             _ctx.VisualFeedback?.ClearPartHoverVisual();
-            _ctx.SubassemblyController?.ResetReplayState();
+            _ctx.PartGroupController?.ResetReplayState();
 
             if (completedSteps != null && completedSteps.Length > 0)
             {
                 _ctx.VisualFeedback?.RestoreCompletedStepParts(completedSteps, activeStepId);
-                _ctx.SubassemblyController?.RestoreCompletedPlacements(completedSteps);
+                _ctx.PartGroupController?.RestoreCompletedPlacements(completedSteps);
                 _ctx.ConnectHandler?.RenderCompletedWires(completedSteps);
             }
 
@@ -629,13 +629,13 @@ namespace OSE.UI.Root
 
             _ctx.VisualFeedback?.RevealStepParts(activeStepId);
             _ctx.VisualFeedback?.ApplyStepPartHighlighting(activeStepId);
-            _ctx.SubassemblyController?.RefreshForStep(activeStepId);
-            _ctx.SubassemblyController?.HideNonActivePendingProxyBars();
+            _ctx.PartGroupController?.RefreshForStep(activeStepId);
+            _ctx.PartGroupController?.HideNonActivePendingProxyBars();
 
             // Final-pass guarantee: stacked panel bars always end up at their integrated
             // cube positions after all restores/reveals/hides have run.
             if (completedSteps != null && completedSteps.Length > 0)
-                _ctx.SubassemblyController?.EnforceIntegratedPositions(completedSteps);
+                _ctx.PartGroupController?.EnforceIntegratedPositions(completedSteps);
 
             float rebuildPreviewDelay = GetPreviewDelay(activeStepId);
             if (rebuildPreviewDelay > 0f && _ctx.AnimationCues != null)
@@ -733,7 +733,7 @@ namespace OSE.UI.Root
 
             _ctx.VisualFeedback?.ShowAllPartsAssembled();
             if (completedSteps != null && completedSteps.Length > 0)
-                _ctx.SubassemblyController?.RestoreCompletedPlacements(completedSteps);
+                _ctx.PartGroupController?.RestoreCompletedPlacements(completedSteps);
 
             // The Stage 02 "simplified carriage" is a procedural surrogate for the
             // later printer-side carriage body. In the final machine overview we

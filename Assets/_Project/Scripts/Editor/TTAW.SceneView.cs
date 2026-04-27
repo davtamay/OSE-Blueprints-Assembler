@@ -27,7 +27,7 @@ namespace OSE.Editor
         private void OnSceneGUI(SceneView sv)
         {
             // Editor/runtime isolation: TTAW manipulates the live scene
-            // GameObjects (PartHandles, WriteBackSubassembly*, hierarchy
+            // GameObjects (PartHandles, WriteBackPartGroup*, hierarchy
             // polling, gizmo drags). During Play, those same GameObjects
             // are owned by the runtime — any TTAW write here fights the
             // runtime's visibility / transform writers and corrupts the
@@ -75,8 +75,8 @@ namespace OSE.Editor
                 // tool-action task with an interaction payload is selected.
                 DrawInteractionAxisGizmo();
 
-                // ── Phase A3: subassembly root rotation gizmo ─────────────────────
-                DrawSubassemblyRootGizmo();
+                // ── Phase A3: partGroup root rotation gizmo ─────────────────────
+                DrawPartGroupRootGizmo();
 
                 // Animation-cue pivot-offset gizmos — one PositionHandle per cue
                 // whose pivotOffsetOverride is set. Lets authors drag the rotation
@@ -491,21 +491,21 @@ namespace OSE.Editor
             Handles.DrawDottedLine(wA, wB, 4f);
         }
 
-        // ── Phase A3: subassembly root rotation gizmo ───────────────────────
+        // ── Phase A3: partGroup root rotation gizmo ───────────────────────
 
         /// <summary>
-        /// When a subassembly root GO exists (Phase A2 created it), draws a
+        /// When a partGroup root GO exists (Phase A2 created it), draws a
         /// rotation handle on it. Rotating the handle updates the step's
-        /// workingOrientation.subassemblyRotation and marks dirty. The author
+        /// workingOrientation.partGroupRotation and marks dirty. The author
         /// sees all member parts rotate in real-time via Unity parenting.
         /// </summary>
-        private void DrawSubassemblyRootGizmo()
+        private void DrawPartGroupRootGizmo()
         {
-            if (_subassemblyRootGOs == null || _subassemblyRootGOs.Count == 0) return;
+            if (_partGroupRootGOs == null || _partGroupRootGOs.Count == 0) return;
 
             // Only draw the full gizmo (rotation + position handles) on the
             // selected group. Other groups get a compact wire disc + label.
-            foreach (var kvp in _subassemblyRootGOs)
+            foreach (var kvp in _partGroupRootGOs)
             {
                 if (kvp.Value == null) continue;
                 // Full gizmo shows when the group is selected via either:
@@ -515,13 +515,13 @@ namespace OSE.Editor
                 if (!isSelected && _selectedGroupIdx >= 0 && _groups != null && _selectedGroupIdx < _groups.Length)
                     isSelected = string.Equals(_groups[_selectedGroupIdx].def?.id, kvp.Key, System.StringComparison.Ordinal);
                 if (isSelected)
-                    DrawSubassemblyRootGizmoFull(kvp.Value, kvp.Key);
+                    DrawPartGroupRootGizmoFull(kvp.Value, kvp.Key);
                 else
-                    DrawSubassemblyRootGizmoCompact(kvp.Value, kvp.Key);
+                    DrawPartGroupRootGizmoCompact(kvp.Value, kvp.Key);
             }
         }
 
-        private void DrawSubassemblyRootGizmoCompact(GameObject rootGO, string subId)
+        private void DrawPartGroupRootGizmoCompact(GameObject rootGO, string subId)
         {
             var rootT = rootGO.transform;
             Vector3 worldPos = rootT.position;
@@ -541,12 +541,12 @@ namespace OSE.Editor
             Handles.Label(worldPos + Vector3.up * gizmoSize * 0.35f, subId, labelStyle);
         }
 
-        private void DrawSubassemblyRootGizmoFull(GameObject rootGO, string subId)
+        private void DrawPartGroupRootGizmoFull(GameObject rootGO, string subId)
         {
             var rootT = rootGO.transform;
             Vector3 worldPos = rootT.position;
 
-            // Visual indicator: solid dot + wire ring at the subassembly centroid.
+            // Visual indicator: solid dot + wire ring at the partGroup centroid.
             // Marks the group currently being edited — this is the "● in the
             // center of the gizmo" that mirrors the task-row modifiable indicator.
             float gizmoSize = HandleUtility.GetHandleSize(worldPos);
@@ -574,7 +574,7 @@ namespace OSE.Editor
 
             if (EditorGUI.EndChangeCheck())
             {
-                Undo.RecordObject(rootGO.transform, "Rotate Subassembly");
+                Undo.RecordObject(rootGO.transform, "Rotate PartGroup");
                 rootT.rotation = newRot;
 
                 // Write to GroupEditState if a group is selected via task sequence
@@ -585,11 +585,11 @@ namespace OSE.Editor
                     Quaternion localRot = root != null ? Quaternion.Inverse(root.rotation) * newRot : newRot;
                     ApplyRotationToGroup(ref _groups[_selectedGroupIdx], localRot);
                     _groups[_selectedGroupIdx].isDirty = true;
-                    _dirtySubassemblyIds.Add(subId);
+                    _dirtyPartGroupIds.Add(subId);
                 }
                 else
                 {
-                    WriteBackSubassemblyRotation(newRot);
+                    WriteBackPartGroupRotation(newRot);
                 }
 
                 SceneView.RepaintAll();
@@ -603,7 +603,7 @@ namespace OSE.Editor
 
             if (EditorGUI.EndChangeCheck())
             {
-                Undo.RecordObject(rootGO.transform, "Move Subassembly");
+                Undo.RecordObject(rootGO.transform, "Move PartGroup");
                 rootT.position = newWorldPos;
 
                 if (_selectedGroupIdx >= 0 && _groups != null && _selectedGroupIdx < _groups.Length
@@ -613,11 +613,11 @@ namespace OSE.Editor
                     Vector3 localPos = root != null ? root.InverseTransformPoint(newWorldPos) : newWorldPos;
                     ApplyPositionToGroup(ref _groups[_selectedGroupIdx], localPos);
                     _groups[_selectedGroupIdx].isDirty = true;
-                    _dirtySubassemblyIds.Add(subId);
+                    _dirtyPartGroupIds.Add(subId);
                 }
                 else
                 {
-                    WriteBackSubassemblyOffset(newWorldPos);
+                    WriteBackPartGroupOffset(newWorldPos);
                 }
 
                 SceneView.RepaintAll();
@@ -626,10 +626,10 @@ namespace OSE.Editor
         }
 
         /// <summary>
-        /// Converts the subassembly root's world rotation back to euler angles
-        /// and writes them to step.workingOrientation.subassemblyRotation.
+        /// Converts the partGroup root's world rotation back to euler angles
+        /// and writes them to step.workingOrientation.partGroupRotation.
         /// </summary>
-        private void WriteBackSubassemblyRotation(Quaternion worldRot)
+        private void WriteBackPartGroupRotation(Quaternion worldRot)
         {
             if (_stepFilterIdx <= 0 || _stepIds == null || _stepFilterIdx >= _stepIds.Length) return;
             var step = FindStep(_stepIds[_stepFilterIdx]);
@@ -653,7 +653,7 @@ namespace OSE.Editor
             euler.z = Mathf.Round(euler.z * 100f) / 100f;
 
             step.workingOrientation ??= new StepWorkingOrientationPayload();
-            step.workingOrientation.subassemblyRotation = new SceneFloat3
+            step.workingOrientation.partGroupRotation = new SceneFloat3
             {
                 x = euler.x, y = euler.y, z = euler.z
             };
@@ -661,10 +661,10 @@ namespace OSE.Editor
         }
 
         /// <summary>
-        /// Converts the subassembly root's world position back to the offset
-        /// field on step.workingOrientation.subassemblyPositionOffset.
+        /// Converts the partGroup root's world position back to the offset
+        /// field on step.workingOrientation.partGroupPositionOffset.
         /// </summary>
-        private void WriteBackSubassemblyOffset(Vector3 worldPos)
+        private void WriteBackPartGroupOffset(Vector3 worldPos)
         {
             if (_stepFilterIdx <= 0 || _stepIds == null || _stepFilterIdx >= _stepIds.Length) return;
             var step = FindStep(_stepIds[_stepFilterIdx]);
@@ -673,15 +673,15 @@ namespace OSE.Editor
             var root = GetPreviewRoot();
             Vector3 localPos = root != null ? root.InverseTransformPoint(worldPos) : worldPos;
 
-            // The offset is relative to the subassembly frame center
-            Vector3 offset = localPos - _sceneBuildSubassemblyFramePos;
+            // The offset is relative to the partGroup frame center
+            Vector3 offset = localPos - _sceneBuildPartGroupFramePos;
 
             offset.x = Mathf.Round(offset.x * 10000f) / 10000f;
             offset.y = Mathf.Round(offset.y * 10000f) / 10000f;
             offset.z = Mathf.Round(offset.z * 10000f) / 10000f;
 
             step.workingOrientation ??= new StepWorkingOrientationPayload();
-            step.workingOrientation.subassemblyPositionOffset = new SceneFloat3
+            step.workingOrientation.partGroupPositionOffset = new SceneFloat3
             {
                 x = offset.x, y = offset.y, z = offset.z
             };
@@ -692,22 +692,22 @@ namespace OSE.Editor
 
         /// <summary>
         /// Detects when the author drags a part from one group root to another
-        /// in the Unity Hierarchy and updates the subassembly partIds[]
+        /// in the Unity Hierarchy and updates the partGroup partIds[]
         /// accordingly. Called every OnSceneGUI frame (cheap — just checks
         /// parent references against the root GO dictionary).
         /// </summary>
         private void PollHierarchyGroupChanges()
         {
-            if (_subassemblyRootGOs == null || _subassemblyRootGOs.Count == 0 || _pkg == null)
+            if (_partGroupRootGOs == null || _partGroupRootGOs.Count == 0 || _pkg == null)
                 return;
 
             if (!ServiceRegistry.TryGet<ISpawnerQueryService>(out var spawner)
                 || spawner?.SpawnedParts == null)
                 return;
 
-            // Build reverse lookup: root GO instance ID → subassembly id
+            // Build reverse lookup: root GO instance ID → partGroup id
             var rootToSubId = new Dictionary<int, string>();
-            foreach (var kvp in _subassemblyRootGOs)
+            foreach (var kvp in _partGroupRootGOs)
             {
                 if (kvp.Value != null)
                     rootToSubId[kvp.Value.GetInstanceID()] = kvp.Key;
@@ -727,7 +727,7 @@ namespace OSE.Editor
 
                 // What group does the data model say this part belongs to?
                 string authoredSubId = null;
-                foreach (var sub in _pkg.GetSubassemblies())
+                foreach (var sub in _pkg.GetPartGroups())
                 {
                     if (sub == null || sub.isAggregate || sub.partIds == null) continue;
                     foreach (var pid in sub.partIds)
@@ -744,27 +744,27 @@ namespace OSE.Editor
 
                 // Remove from old group
                 if (!string.IsNullOrEmpty(authoredSubId)
-                    && _pkg.TryGetSubassembly(authoredSubId, out var oldSub)
+                    && _pkg.TryGetPartGroup(authoredSubId, out var oldSub)
                     && oldSub?.partIds != null)
                 {
                     var list = new List<string>(oldSub.partIds);
                     if (list.Remove(partId))
                     {
                         oldSub.partIds = list.Count > 0 ? list.ToArray() : Array.Empty<string>();
-                        _dirtySubassemblyIds.Add(oldSub.id);
+                        _dirtyPartGroupIds.Add(oldSub.id);
                     }
                 }
 
                 // Add to new group
                 if (!string.IsNullOrEmpty(currentParentSubId)
-                    && _pkg.TryGetSubassembly(currentParentSubId, out var newSub)
+                    && _pkg.TryGetPartGroup(currentParentSubId, out var newSub)
                     && newSub != null)
                 {
                     var set = new HashSet<string>(newSub.partIds ?? Array.Empty<string>(), StringComparer.Ordinal);
                     if (set.Add(partId))
                     {
                         newSub.partIds = set.ToArray();
-                        _dirtySubassemblyIds.Add(newSub.id);
+                        _dirtyPartGroupIds.Add(newSub.id);
                     }
                 }
 

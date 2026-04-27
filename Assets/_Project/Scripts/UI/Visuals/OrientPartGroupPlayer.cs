@@ -3,14 +3,14 @@ using UnityEngine;
 namespace OSE.UI.Root
 {
     /// <summary>
-    /// Animates a subassembly proxy root to a target rotation specified by
-    /// <see cref="OSE.Content.AnimationCueEntry.subassemblyRotation"/>.
+    /// Animates a partGroup proxy root to a target rotation specified by
+    /// <see cref="OSE.Content.AnimationCueEntry.partGroupRotation"/>.
     /// Uses Lerp/Slerp like the existing working orientation system but
     /// driven by the cue coordinator rather than step lifecycle.
     /// </summary>
-    public sealed class OrientSubassemblyPlayer : IAnimationCuePlayer
+    public sealed class OrientPartGroupPlayer : IAnimationCuePlayer
     {
-        public string AnimationType => "orientSubassembly";
+        public string AnimationType => "orientPartGroup";
         public bool IsPlaying { get; private set; }
 
         private AnimationCueContext _ctx;
@@ -39,9 +39,9 @@ namespace OSE.UI.Root
             // Authored delta — rotate by this much, around the members' centroid.
             var entry = context.Entry;
             _deltaRot = Quaternion.Euler(
-                entry.subassemblyRotation.x,
-                entry.subassemblyRotation.y,
-                entry.subassemblyRotation.z);
+                entry.partGroupRotation.x,
+                entry.partGroupRotation.y,
+                entry.partGroupRotation.z);
 
             // Centroid C in the target's local frame. The transform identity:
             //   childWorld = root.position + root.rotation * child.localPosition

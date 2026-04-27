@@ -370,11 +370,11 @@ namespace OSE.Runtime
             if (!_package.TryGetStep(_activeStepId, out var step))
                 return false;
 
-            if (!string.IsNullOrWhiteSpace(step.requiredSubassemblyId))
+            if (!string.IsNullOrWhiteSpace(step.requiredPartGroupId))
             {
-                return ServiceRegistry.TryGet<ISubassemblyPlacementService>(out var subassemblyController) &&
-                       subassemblyController != null &&
-                       subassemblyController.IsActiveStepPlacementSatisfied(_activeStepId);
+                return ServiceRegistry.TryGet<IPartGroupPlacementService>(out var partGroupController) &&
+                       partGroupController != null &&
+                       partGroupController.IsActiveStepPlacementSatisfied(_activeStepId);
             }
 
             string[] required = step.GetEffectiveRequiredPartIds();

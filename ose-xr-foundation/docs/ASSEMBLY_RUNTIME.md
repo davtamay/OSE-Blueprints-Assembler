@@ -84,7 +84,7 @@ Responsibilities:
 - initialize runtime state
 - manage session lifecycle
 - manage persistence and restore
-- expose current machine, assembly, subassembly, and step context
+- expose current machine, assembly, partGroup, and step context
 
 Suggested module:
 - `MachineSessionController`
@@ -249,7 +249,7 @@ Responsibilities:
 - load machine manifests
 - load part metadata
 - stream models and textures
-- prepare subassemblies just-in-time
+- prepare partGroups just-in-time
 - release unused assets
 - preserve responsiveness during content transitions
 
@@ -325,7 +325,7 @@ Create a machine session object that owns:
 - machine id
 - mode
 - current assembly id
-- current subassembly id
+- current partGroup id
 - current step id
 - placed parts state
 - physical substitution state
@@ -411,7 +411,7 @@ When an assembly completes:
 - celebrate milestone
 - expose structural understanding recap
 - optionally show exploded-to-complete transition
-- record subassembly mastery milestone
+- record partGroup mastery milestone
 - unlock next assembly
 
 This is an important place for aha moments.
@@ -802,7 +802,7 @@ A step may include:
 - what tool is used and why
 - what can go wrong
 - why order matters
-- structural role of the subassembly
+- structural role of the partGroup
 - optional micro-checkpoint question
 
 ---
@@ -817,7 +817,7 @@ Examples:
 - dependency highlight
 - reveal of hydraulic flow or force path
 - before/after structural comparison
-- subassembly completion payoff
+- partGroup completion payoff
 
 ---
 
@@ -1043,7 +1043,7 @@ Persist at least:
 - machine version
 - mode
 - current assembly
-- current subassembly
+- current partGroup
 - current step
 - completed step count
 - challenge metrics if relevant

@@ -235,7 +235,7 @@ namespace OSE.Tests.EditMode
         /// Minimal shape for parsing assembly JSON files. The full
         /// <see cref="MachinePackageDefinition"/> isn't needed since each
         /// assembly file is a self-contained subset — assemblies, parts,
-        /// subassemblies, steps, targets, hints. Only `steps` is exercised
+        /// partGroups, steps, targets, hints. Only `steps` is exercised
         /// by these tests; declaring the rest would just bloat the fixture.
         /// </summary>
         [System.Serializable]

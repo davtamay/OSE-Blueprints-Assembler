@@ -33,13 +33,13 @@ namespace OSE.UI.Root
             return null;
         }
 
-        internal SubassemblyPreviewPlacement FindSubassemblyPlacement(string subassemblyId)
+        internal PartGroupPreviewPlacement FindPartGroupPlacement(string partGroupId)
         {
-            if (_config?.subassemblyPlacements == null) return null;
-            foreach (var placement in _config.subassemblyPlacements)
+            if (_config?.partGroupPlacements == null) return null;
+            foreach (var placement in _config.partGroupPlacements)
             {
                 if (placement != null &&
-                    string.Equals(placement.subassemblyId, subassemblyId, System.StringComparison.OrdinalIgnoreCase))
+                    string.Equals(placement.partGroupId, partGroupId, System.StringComparison.OrdinalIgnoreCase))
                 {
                     return placement;
                 }
@@ -47,15 +47,15 @@ namespace OSE.UI.Root
             return null;
         }
 
-        internal ConstrainedSubassemblyFitPreviewPlacement FindConstrainedSubassemblyFitPlacement(string subassemblyId, string targetId)
+        internal ConstrainedPartGroupFitPreviewPlacement FindConstrainedPartGroupFitPlacement(string partGroupId, string targetId)
         {
-            if (_config?.constrainedSubassemblyFitPlacements == null)
+            if (_config?.constrainedPartGroupFitPlacements == null)
                 return null;
 
-            foreach (var placement in _config.constrainedSubassemblyFitPlacements)
+            foreach (var placement in _config.constrainedPartGroupFitPlacements)
             {
                 if (placement != null &&
-                    string.Equals(placement.subassemblyId, subassemblyId, System.StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(placement.partGroupId, partGroupId, System.StringComparison.OrdinalIgnoreCase) &&
                     string.Equals(placement.targetId, targetId, System.StringComparison.OrdinalIgnoreCase))
                 {
                     return placement;
@@ -65,13 +65,13 @@ namespace OSE.UI.Root
             return null;
         }
 
-        internal SubassemblyPreviewPlacement FindCompletedSubassemblyParkingPlacement(string subassemblyId)
+        internal PartGroupPreviewPlacement FindCompletedPartGroupParkingPlacement(string partGroupId)
         {
-            if (_config?.completedSubassemblyParkingPlacements == null) return null;
-            foreach (var placement in _config.completedSubassemblyParkingPlacements)
+            if (_config?.completedPartGroupParkingPlacements == null) return null;
+            foreach (var placement in _config.completedPartGroupParkingPlacements)
             {
                 if (placement != null &&
-                    string.Equals(placement.subassemblyId, subassemblyId, System.StringComparison.OrdinalIgnoreCase))
+                    string.Equals(placement.partGroupId, partGroupId, System.StringComparison.OrdinalIgnoreCase))
                 {
                     return placement;
                 }
@@ -79,15 +79,15 @@ namespace OSE.UI.Root
             return null;
         }
 
-        internal IntegratedSubassemblyPreviewPlacement FindIntegratedSubassemblyPlacement(string subassemblyId, string targetId)
+        internal IntegratedPartGroupPreviewPlacement FindIntegratedPartGroupPlacement(string partGroupId, string targetId)
         {
-            if (_config?.integratedSubassemblyPlacements == null)
+            if (_config?.integratedPartGroupPlacements == null)
                 return null;
 
-            foreach (var placement in _config.integratedSubassemblyPlacements)
+            foreach (var placement in _config.integratedPartGroupPlacements)
             {
                 if (placement != null &&
-                    string.Equals(placement.subassemblyId, subassemblyId, System.StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(placement.partGroupId, partGroupId, System.StringComparison.OrdinalIgnoreCase) &&
                     string.Equals(placement.targetId, targetId, System.StringComparison.OrdinalIgnoreCase))
                 {
                     return placement;
@@ -226,11 +226,11 @@ namespace OSE.UI.Root
 
         /// <summary>
         /// Same range-covering resolution as <see cref="TryResolvePartPoseAtStep"/>
-        /// but for a subassembly's authored <c>stepPoses</c>. Returns false when
+        /// but for a partGroup's authored <c>stepPoses</c>. Returns false when
         /// no group-level span covers the viewing step.
         /// </summary>
         internal bool TryResolveGroupPoseAtStep(
-            string subassemblyId,
+            string partGroupId,
             StepDefinition[] orderedSteps,
             int viewingStepIndex,
             out SceneFloat3 position,
@@ -238,7 +238,7 @@ namespace OSE.UI.Root
             out SceneFloat3 scale)
         {
             position = default; rotation = default; scale = default;
-            SubassemblyPreviewPlacement sp = FindSubassemblyPlacement(subassemblyId);
+            PartGroupPreviewPlacement sp = FindPartGroupPlacement(partGroupId);
             if (sp?.stepPoses == null || sp.stepPoses.Length == 0) return false;
             if (!TryPickStepPose(sp.stepPoses, orderedSteps, viewingStepIndex, out StepPoseEntry picked)) return false;
             position = picked.position;
@@ -252,13 +252,13 @@ namespace OSE.UI.Root
             if (string.IsNullOrEmpty(partId))
                 return null;
 
-            IntegratedSubassemblyPreviewPlacement[] intPlacements = _config?.integratedSubassemblyPlacements;
+            IntegratedPartGroupPreviewPlacement[] intPlacements = _config?.integratedPartGroupPlacements;
             if (intPlacements == null)
                 return null;
 
             for (int ip = 0; ip < intPlacements.Length; ip++)
             {
-                IntegratedSubassemblyPreviewPlacement intPlacement = intPlacements[ip];
+                IntegratedPartGroupPreviewPlacement intPlacement = intPlacements[ip];
                 if (intPlacement?.memberPlacements == null) continue;
 
                 for (int mp = 0; mp < intPlacement.memberPlacements.Length; mp++)

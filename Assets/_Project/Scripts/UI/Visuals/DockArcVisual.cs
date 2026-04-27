@@ -3,7 +3,7 @@ using UnityEngine;
 namespace OSE.UI.Root
 {
     /// <summary>
-    /// Lightweight in-world arc used to show how a finished subassembly will dock
+    /// Lightweight in-world arc used to show how a finished partGroup will dock
     /// from its current source pose to the active target pose.
     /// </summary>
     internal sealed class DockArcVisual : MonoBehaviour

@@ -44,7 +44,7 @@ namespace OSE.Tests.EditMode
                     }
                 },
                 assemblies = System.Array.Empty<AssemblyDefinition>(),
-                subassemblies = System.Array.Empty<SubassemblyDefinition>(),
+                partGroups = System.Array.Empty<PartGroupDefinition>(),
                 steps = System.Array.Empty<StepDefinition>()
             };
 
@@ -86,7 +86,7 @@ namespace OSE.Tests.EditMode
                     }
                 },
                 assemblies = System.Array.Empty<AssemblyDefinition>(),
-                subassemblies = System.Array.Empty<SubassemblyDefinition>(),
+                partGroups = System.Array.Empty<PartGroupDefinition>(),
                 steps = System.Array.Empty<StepDefinition>()
             };
 
@@ -114,7 +114,7 @@ namespace OSE.Tests.EditMode
                     }
                 },
                 assemblies = System.Array.Empty<AssemblyDefinition>(),
-                subassemblies = System.Array.Empty<SubassemblyDefinition>(),
+                partGroups = System.Array.Empty<PartGroupDefinition>(),
                 steps = System.Array.Empty<StepDefinition>()
             };
 
@@ -135,7 +135,7 @@ namespace OSE.Tests.EditMode
                         stepIds = new[] { "step_a", "step_b" }
                     }
                 },
-                subassemblies = System.Array.Empty<SubassemblyDefinition>(),
+                partGroups = System.Array.Empty<PartGroupDefinition>(),
                 steps = new[]
                 {
                     new StepDefinition { id = "step_a" },
@@ -152,7 +152,7 @@ namespace OSE.Tests.EditMode
         }
 
         [Test]
-        public void InferStepParentIds_Sets_SubassemblyId_On_Steps()
+        public void InferStepParentIds_Sets_PartGroupId_On_Steps()
         {
             var package = new MachinePackageDefinition
             {
@@ -161,13 +161,13 @@ namespace OSE.Tests.EditMode
                     new AssemblyDefinition
                     {
                         id = "asm_1",
-                        subassemblyIds = new[] { "sub_1" },
+                        partGroupIds = new[] { "sub_1" },
                         stepIds = new[] { "step_a" }
                     }
                 },
-                subassemblies = new[]
+                partGroups = new[]
                 {
-                    new SubassemblyDefinition
+                    new PartGroupDefinition
                     {
                         id = "sub_1",
                         stepIds = new[] { "step_a" }
@@ -183,7 +183,7 @@ namespace OSE.Tests.EditMode
 
             MachinePackageNormalizer.Normalize(package);
 
-            Assert.AreEqual("sub_1", package.steps[0].subassemblyId);
+            Assert.AreEqual("sub_1", package.steps[0].partGroupId);
         }
 
         // ──────────────────────────────────────────────────────────────────
@@ -194,7 +194,7 @@ namespace OSE.Tests.EditMode
             => new MachinePackageDefinition
             {
                 assemblies    = System.Array.Empty<AssemblyDefinition>(),
-                subassemblies = System.Array.Empty<SubassemblyDefinition>(),
+                partGroups = System.Array.Empty<PartGroupDefinition>(),
                 parts         = System.Array.Empty<PartDefinition>(),
                 partTemplates = System.Array.Empty<PartTemplateDefinition>(),
                 steps = new[]

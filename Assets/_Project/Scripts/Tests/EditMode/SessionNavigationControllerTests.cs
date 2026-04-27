@@ -255,7 +255,7 @@ namespace OSE.Tests.EditMode
                         id            = "asm_1",
                         name          = "Assembly 1",
                         machineId     = "test_machine",
-                        subassemblyIds = new string[0],
+                        partGroupIds = new string[0],
                         stepIds       = System.Array.ConvertAll(steps, s => s.id)
                     }
                 },

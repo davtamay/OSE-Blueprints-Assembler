@@ -106,7 +106,7 @@ namespace OSE.Content
 
     /// <summary>
     /// Describes a motion axis in a coordinate frame. String-typed space so
-    /// future frames (e.g. "subassembly_local") add without breaking the enum.
+    /// future frames (e.g. "partGroup_local") add without breaking the enum.
     /// </summary>
     [Serializable]
     public sealed class AxisSpec

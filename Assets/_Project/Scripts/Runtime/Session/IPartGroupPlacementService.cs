@@ -4,26 +4,26 @@ using UnityEngine;
 
 namespace OSE.Runtime
 {
-    public interface ISubassemblyPlacementService
+    public interface IPartGroupPlacementService
     {
-        string ActiveSubassemblyId { get; }
+        string ActivePartGroupId { get; }
 
         void ResetReplayState();
         void RefreshForStep(string stepId);
         void HandleStepCompleted(string stepId);
         void RestoreCompletedPlacements(StepDefinition[] completedSteps);
 
-        bool IsSubassemblyReady(string subassemblyId);
+        bool IsPartGroupReady(string partGroupId);
         bool IsProxy(GameObject target);
-        bool TryGetProxy(string subassemblyId, out GameObject proxyRoot);
-        bool TryGetSubassemblyId(GameObject target, out string subassemblyId);
+        bool TryGetProxy(string partGroupId, out GameObject proxyRoot);
+        bool TryGetPartGroupId(GameObject target, out string partGroupId);
         GameObject ResolveSelectableFromHit(Transform hitTransform);
         bool TryGetDisplayInfo(GameObject target, out string displayName, out string description);
         IEnumerable<GameObject> EnumerateMemberParts(GameObject target);
         bool TryResolveTargetPose(string targetId, out Vector3 position, out Quaternion rotation, out Vector3 scale);
         bool TryApplyPlacementPreview(GameObject target, string targetId, float nearestDist, float previewRadius);
         bool IsPlacementCommitReady(GameObject target, string targetId);
-        bool TryApplyPlacement(string subassemblyId, string targetId);
+        bool TryApplyPlacement(string partGroupId, string targetId);
         void ApplyProxyTransform(GameObject target);
         bool IsActiveStepPlacementSatisfied(string stepId);
 
@@ -47,8 +47,8 @@ namespace OSE.Runtime
 
         /// <summary>
         /// Called every frame from <see cref="PartInteractionBridge"/>. Retries
-        /// integrated-position enforcement for any stacking subassembly whose member
-        /// parts haven't all loaded yet. Once all members for a subassembly are
+        /// integrated-position enforcement for any stacking partGroup whose member
+        /// parts haven't all loaded yet. Once all members for a partGroup are
         /// confirmed found and positioned, it stops being retried. The pending set is
         /// seeded by <see cref="EnforceIntegratedPositions"/> and cleared by
         /// <see cref="ResetReplayState"/>.

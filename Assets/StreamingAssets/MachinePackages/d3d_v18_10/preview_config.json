@@ -17441,9 +17441,9 @@
             }
         }
     ],
-    "subassemblyPlacements": [
+    "partGroupPlacements": [
         {
-            "subassemblyId": "subassembly_bottom_frame_side",
+            "partGroupId": "partGroup_bottom_frame_side",
             "position": {
                 "x": -0.38,
                 "y": 0.5516,
@@ -17495,7 +17495,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_top_frame_side",
+            "partGroupId": "partGroup_top_frame_side",
             "position": {
                 "x": 0.38,
                 "y": 0.5516,
@@ -17547,7 +17547,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_left_frame_side",
+            "partGroupId": "partGroup_left_frame_side",
             "position": {
                 "x": -0.38,
                 "y": 0.5516,
@@ -17599,7 +17599,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_right_frame_side",
+            "partGroupId": "partGroup_right_frame_side",
             "position": {
                 "x": 0.38,
                 "y": 0.5516,
@@ -17651,7 +17651,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_front_frame_side",
+            "partGroupId": "partGroup_front_frame_side",
             "position": {
                 "x": -0.38,
                 "y": 0.5516,
@@ -17703,7 +17703,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_rear_frame_side",
+            "partGroupId": "partGroup_rear_frame_side",
             "position": {
                 "x": 0.38,
                 "y": 0.5516,
@@ -17755,7 +17755,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_x_axis_frame_fit",
+            "partGroupId": "partGroup_x_axis_frame_fit",
             "position": {
                 "x": 0.145,
                 "y": 0.804,
@@ -17807,7 +17807,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_extruder_nozzle_module",
+            "partGroupId": "partGroup_extruder_nozzle_module",
             "position": {
                 "x": 0.0,
                 "y": 0.82,
@@ -17859,7 +17859,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_extruder_carriage_unit",
+            "partGroupId": "partGroup_extruder_carriage_unit",
             "position": {
                 "x": 0.28,
                 "y": 0.84,
@@ -17911,7 +17911,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_y_left_bench_unit",
+            "partGroupId": "partGroup_y_left_bench_unit",
             "position": {
                 "x": 0.82,
                 "y": 0.55,
@@ -17963,7 +17963,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_y_right_bench_unit",
+            "partGroupId": "partGroup_y_right_bench_unit",
             "position": {
                 "x": -0.82,
                 "y": 0.55,
@@ -18015,7 +18015,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_x_axis_bench_unit",
+            "partGroupId": "partGroup_x_axis_bench_unit",
             "position": {
                 "x": 0.0,
                 "y": 0.55,
@@ -18067,7 +18067,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_z_front_bench_unit",
+            "partGroupId": "partGroup_z_front_bench_unit",
             "position": {
                 "x": 0.5,
                 "y": 0.55,
@@ -18119,7 +18119,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_z_back_bench_unit",
+            "partGroupId": "partGroup_z_back_bench_unit",
             "position": {
                 "x": -0.5,
                 "y": 0.55,
@@ -18171,7 +18171,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_y_left_frame_mount",
+            "partGroupId": "partGroup_y_left_frame_mount",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -18223,7 +18223,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_y_right_frame_mount",
+            "partGroupId": "partGroup_y_right_frame_mount",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -18275,7 +18275,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_carriage_y_left",
+            "partGroupId": "partGroup_carriage_y_left",
             "position": {
                 "x": -0.0329,
                 "y": 0.0,
@@ -18327,7 +18327,7 @@
             "stepPoses": [
                 {
                     "stepId": "step_batch_c1_rod_slide_test",
-                    "label": "synthGroup:holdAtEnd (sub=subassembly_carriage_y_left cue=poseTransition[1])",
+                    "label": "synthGroup:holdAtEnd (sub=partGroup_carriage_y_left cue=poseTransition[1])",
                     "position": {
                         "x": 1.0733,
                         "y": 0.0281,
@@ -18349,7 +18349,7 @@
                 },
                 {
                     "stepId": "step_batch_c1_hand_tighten",
-                    "label": "synthGroup:holdAtEnd (sub=subassembly_carriage_y_left cue=poseTransition[3])",
+                    "label": "synthGroup:holdAtEnd (sub=partGroup_carriage_y_left cue=poseTransition[3])",
                     "position": {
                         "x": 0,
                         "y": 0,
@@ -18372,7 +18372,7 @@
             ]
         },
         {
-            "subassemblyId": "subassembly_carriage_y_right",
+            "partGroupId": "partGroup_carriage_y_right",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -18424,7 +18424,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_carriage_z_back",
+            "partGroupId": "partGroup_carriage_z_back",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -18476,7 +18476,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_carriage_z_front",
+            "partGroupId": "partGroup_carriage_z_front",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -18528,7 +18528,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_cable_routing",
+            "partGroupId": "partGroup_cable_routing",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -18580,7 +18580,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_electronics_wiring",
+            "partGroupId": "partGroup_electronics_wiring",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -18632,7 +18632,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_titan_aero_core",
+            "partGroupId": "partGroup_titan_aero_core",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -18684,7 +18684,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_extruder_sensor_and_fan_attachment",
+            "partGroupId": "partGroup_extruder_sensor_and_fan_attachment",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -18736,7 +18736,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_extruder_carriage_mount_stack",
+            "partGroupId": "partGroup_extruder_carriage_mount_stack",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -18788,7 +18788,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_heatbed_mechanical_stack",
+            "partGroupId": "partGroup_heatbed_mechanical_stack",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -18840,7 +18840,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_bed_platform",
+            "partGroupId": "partGroup_bed_platform",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -18892,7 +18892,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_y_bed_rods",
+            "partGroupId": "partGroup_y_bed_rods",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -18944,7 +18944,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_x_axis_carriage_build",
+            "partGroupId": "partGroup_x_axis_carriage_build",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -18996,7 +18996,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_x_axis_idler_build",
+            "partGroupId": "partGroup_x_axis_idler_build",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -19048,7 +19048,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_x_axis_motor_build",
+            "partGroupId": "partGroup_x_axis_motor_build",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -19100,7 +19100,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_x_axis_rod_assembly",
+            "partGroupId": "partGroup_x_axis_rod_assembly",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -19152,7 +19152,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_x_axis_belt_threading",
+            "partGroupId": "partGroup_x_axis_belt_threading",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -19204,7 +19204,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_y_left_idler_build",
+            "partGroupId": "partGroup_y_left_idler_build",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -19256,7 +19256,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_y_left_motor_build",
+            "partGroupId": "partGroup_y_left_motor_build",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -19308,7 +19308,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_y_left_rod_assembly",
+            "partGroupId": "partGroup_y_left_rod_assembly",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -19360,7 +19360,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_y_left_endstop_build",
+            "partGroupId": "partGroup_y_left_endstop_build",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -19412,7 +19412,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_y_right_idler_build",
+            "partGroupId": "partGroup_y_right_idler_build",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -19464,7 +19464,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_y_right_motor_build",
+            "partGroupId": "partGroup_y_right_motor_build",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -19516,7 +19516,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_y_right_rod_assembly",
+            "partGroupId": "partGroup_y_right_rod_assembly",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -19568,7 +19568,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_z_back_idler_build",
+            "partGroupId": "partGroup_z_back_idler_build",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -19620,7 +19620,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_z_back_motor_build",
+            "partGroupId": "partGroup_z_back_motor_build",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -19672,7 +19672,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_z_back_rod_assembly",
+            "partGroupId": "partGroup_z_back_rod_assembly",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -19724,7 +19724,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_z_back_belt_threading",
+            "partGroupId": "partGroup_z_back_belt_threading",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -19776,7 +19776,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_z_front_idler_build",
+            "partGroupId": "partGroup_z_front_idler_build",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -19828,7 +19828,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_z_front_motor_build",
+            "partGroupId": "partGroup_z_front_motor_build",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -19880,7 +19880,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_z_front_rod_assembly",
+            "partGroupId": "partGroup_z_front_rod_assembly",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -19932,7 +19932,7 @@
             "stepPoses": []
         },
         {
-            "subassemblyId": "subassembly_z_front_belt_threading",
+            "partGroupId": "partGroup_z_front_belt_threading",
             "position": {
                 "x": 0.0,
                 "y": 0.0,
@@ -19984,9 +19984,9 @@
             "stepPoses": []
         }
     ],
-    "constrainedSubassemblyFitPlacements": [
+    "constrainedPartGroupFitPlacements": [
         {
-            "subassemblyId": "subassembly_x_axis_frame_fit",
+            "partGroupId": "partGroup_x_axis_frame_fit",
             "targetId": "target_x_axis_span_fit",
             "fitAxisLocal": {
                 "x": -1.0,
@@ -20002,10 +20002,10 @@
             ]
         }
     ],
-    "completedSubassemblyParkingPlacements": [],
-    "integratedSubassemblyPlacements": [
+    "completedPartGroupParkingPlacements": [],
+    "integratedPartGroupPlacements": [
         {
-            "subassemblyId": "subassembly_bottom_frame_side",
+            "partGroupId": "partGroup_bottom_frame_side",
             "targetId": "target_cube_bottom_side",
             "memberPlacements": [
                 {
@@ -20087,7 +20087,7 @@
             ]
         },
         {
-            "subassemblyId": "subassembly_left_frame_side",
+            "partGroupId": "partGroup_left_frame_side",
             "targetId": "target_cube_left_side",
             "memberPlacements": [
                 {
@@ -20169,7 +20169,7 @@
             ]
         },
         {
-            "subassemblyId": "subassembly_right_frame_side",
+            "partGroupId": "partGroup_right_frame_side",
             "targetId": "target_cube_right_side",
             "memberPlacements": [
                 {
@@ -20251,7 +20251,7 @@
             ]
         },
         {
-            "subassemblyId": "subassembly_front_frame_side",
+            "partGroupId": "partGroup_front_frame_side",
             "targetId": "target_cube_front_side",
             "memberPlacements": [
                 {
@@ -20333,7 +20333,7 @@
             ]
         },
         {
-            "subassemblyId": "subassembly_rear_frame_side",
+            "partGroupId": "partGroup_rear_frame_side",
             "targetId": "target_cube_rear_side",
             "memberPlacements": [
                 {
@@ -20415,7 +20415,7 @@
             ]
         },
         {
-            "subassemblyId": "subassembly_top_frame_side",
+            "partGroupId": "partGroup_top_frame_side",
             "targetId": "target_cube_top_side",
             "memberPlacements": [
                 {
@@ -20497,7 +20497,7 @@
             ]
         },
         {
-            "subassemblyId": "subassembly_extruder_carriage_unit",
+            "partGroupId": "partGroup_extruder_carriage_unit",
             "targetId": "target_extruder_carriage_unit_to_x_axis_mount",
             "memberPlacements": [
                 {

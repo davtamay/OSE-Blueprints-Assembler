@@ -8,24 +8,24 @@ using UnityEngine;
 namespace OSE.UI.Root
 {
     /// <summary>
-    /// Builds transform-owner proxies for finished subassemblies without reparenting the
+    /// Builds transform-owner proxies for finished partGroups without reparenting the
     /// actual part GameObjects. Member part poses are recomputed from the proxy transform
     /// and cached authored local offsets.
     /// </summary>
-    public sealed class SubassemblyPlacementController : IDisposable, OSE.Runtime.ISubassemblyPlacementService
+    public sealed class PartGroupPlacementController : IDisposable, OSE.Runtime.IPartGroupPlacementService
     {
         private readonly ISpawnerContext _ctx;
         private readonly Dictionary<string, ProxyRecord> _records = new Dictionary<string, ProxyRecord>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, string> _memberToSubassembly = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, string> _memberToPartGroup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        // Tracks stacking subassemblies that must stay at cube positions until all
+        // Tracks stacking partGroups that must stay at cube positions until all
         // member parts are confirmed loaded. Seeded by EnforceIntegratedPositions;
         // cleared by ResetReplayState. No time limit — retried every frame until confirmed.
-        private readonly Dictionary<string, StepDefinition> _pendingIntegratedBySubassembly =
+        private readonly Dictionary<string, StepDefinition> _pendingIntegratedByPartGroup =
             new Dictionary<string, StepDefinition>(StringComparer.OrdinalIgnoreCase);
         private readonly List<string> _pendingRemovalBuffer = new List<string>();
 
-        private string _activeSubassemblyId;
+        private string _activePartGroupId;
 
         // ── Working orientation animation state ──
         private ProxyRecord _orientAnimRecord;
@@ -38,7 +38,7 @@ namespace OSE.UI.Root
 
         private sealed class ProxyRecord
         {
-            public string SubassemblyId;
+            public string PartGroupId;
             public GameObject Root;
             public string[] MemberPartIds;
             public Vector3[] MemberLocalPositions;
@@ -73,12 +73,12 @@ namespace OSE.UI.Root
             public HashSet<string> DrivenPartIds;
         }
 
-        internal SubassemblyPlacementController(ISpawnerContext context)
+        internal PartGroupPlacementController(ISpawnerContext context)
         {
             _ctx = context;
         }
 
-        public string ActiveSubassemblyId => _activeSubassemblyId;
+        public string ActivePartGroupId => _activePartGroupId;
 
         public void Dispose()
         {
@@ -94,8 +94,8 @@ namespace OSE.UI.Root
             }
 
             _records.Clear();
-            _memberToSubassembly.Clear();
-            _activeSubassemblyId = null;
+            _memberToPartGroup.Clear();
+            _activePartGroupId = null;
         }
 
         public void ResetReplayState()
@@ -111,8 +111,8 @@ namespace OSE.UI.Root
                 record.Root.SetActive(false);
             }
 
-            _activeSubassemblyId = null;
-            _pendingIntegratedBySubassembly.Clear();
+            _activePartGroupId = null;
+            _pendingIntegratedByPartGroup.Clear();
         }
 
         public void RefreshForStep(string stepId)
@@ -123,16 +123,16 @@ namespace OSE.UI.Root
             if (package == null || !package.TryGetStep(stepId, out StepDefinition step) || step == null)
                 return;
 
-            if (!step.IsPlacement || string.IsNullOrWhiteSpace(step.requiredSubassemblyId))
+            if (!step.IsPlacement || string.IsNullOrWhiteSpace(step.requiredPartGroupId))
                 return;
 
-            if (!IsSubassemblyReady(step.requiredSubassemblyId))
+            if (!IsPartGroupReady(step.requiredPartGroupId))
             {
-                OseLog.Warn($"[SubassemblyPlacement] Step '{stepId}' requires subassembly '{step.requiredSubassemblyId}', but not all member parts are completed.");
+                OseLog.Warn($"[PartGroupPlacement] Step '{stepId}' requires partGroup '{step.requiredPartGroupId}', but not all member parts are completed.");
                 return;
             }
 
-            if (!EnsureProxyRecord(step.requiredSubassemblyId, out ProxyRecord record))
+            if (!EnsureProxyRecord(step.requiredPartGroupId, out ProxyRecord record))
                 return;
 
             ClearFitState(record);
@@ -143,7 +143,7 @@ namespace OSE.UI.Root
             {
                 ApplyProxyTransform(record);
                 record.Root.SetActive(true);
-                _activeSubassemblyId = record.SubassemblyId;
+                _activePartGroupId = record.PartGroupId;
                 return;
             }
 
@@ -176,25 +176,25 @@ namespace OSE.UI.Root
 
             ApplyProxyTransform(record);
             record.Root.SetActive(true);
-            _activeSubassemblyId = record.SubassemblyId;
+            _activePartGroupId = record.PartGroupId;
         }
 
-        public void ApplyCompletedSubassemblyParking(string activeStepId, StepDefinition[] completedSteps)
+        public void ApplyCompletedPartGroupParking(string activeStepId, StepDefinition[] completedSteps)
         {
             MachinePackageDefinition package = _ctx.Spawner?.CurrentPackage;
             if (package == null || completedSteps == null || completedSteps.Length == 0)
                 return;
 
-            string activeFabricationSubassemblyId = null;
+            string activeFabricationPartGroupId = null;
             if (!string.IsNullOrWhiteSpace(activeStepId) &&
                 package.TryGetStep(activeStepId, out StepDefinition activeStep) &&
                 activeStep != null)
             {
-                activeFabricationSubassemblyId = activeStep.subassemblyId;
+                activeFabricationPartGroupId = activeStep.partGroupId;
             }
 
             HashSet<string> completedStepIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            HashSet<string> stackedSubassemblyIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            HashSet<string> stackedPartGroupIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             for (int i = 0; i < completedSteps.Length; i++)
             {
@@ -205,34 +205,34 @@ namespace OSE.UI.Root
                 if (!string.IsNullOrWhiteSpace(step.id))
                     completedStepIds.Add(step.id);
 
-                if (!string.IsNullOrWhiteSpace(step.requiredSubassemblyId))
-                    stackedSubassemblyIds.Add(step.requiredSubassemblyId);
+                if (!string.IsNullOrWhiteSpace(step.requiredPartGroupId))
+                    stackedPartGroupIds.Add(step.requiredPartGroupId);
             }
 
-            foreach (SubassemblyDefinition subassembly in package.GetSubassemblies())
+            foreach (PartGroupDefinition partGroup in package.GetPartGroups())
             {
-                if (subassembly == null || string.IsNullOrWhiteSpace(subassembly.id))
+                if (partGroup == null || string.IsNullOrWhiteSpace(partGroup.id))
                     continue;
 
-                if (string.Equals(subassembly.id, activeFabricationSubassemblyId, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(partGroup.id, activeFabricationPartGroupId, StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                if (stackedSubassemblyIds.Contains(subassembly.id))
+                if (stackedPartGroupIds.Contains(partGroup.id))
                 {
-                    // Stacked subassemblies don't need a visible proxy, but we still
-                    // need the member→subassembly mapping so clicking on their parts
-                    // shows subassembly info and lock checks work correctly.
-                    EnsureMemberMapping(subassembly);
+                    // Stacked partGroups don't need a visible proxy, but we still
+                    // need the member→partGroup mapping so clicking on their parts
+                    // shows partGroup info and lock checks work correctly.
+                    EnsureMemberMapping(partGroup);
                     continue;
                 }
 
-                if (!IsSubassemblyReady(subassembly.id))
+                if (!IsPartGroupReady(partGroup.id))
                     continue;
 
-                if (!AreAllSubassemblyStepsCompleted(subassembly, completedStepIds, package))
+                if (!AreAllPartGroupStepsCompleted(partGroup, completedStepIds, package))
                     continue;
 
-                if (!EnsureProxyRecord(subassembly.id, out ProxyRecord record))
+                if (!EnsureProxyRecord(partGroup.id, out ProxyRecord record))
                     continue;
 
                 if (!MoveProxyToParkingPlacement(record))
@@ -249,10 +249,10 @@ namespace OSE.UI.Root
             if (package == null || !package.TryGetStep(stepId, out StepDefinition step) || step == null)
                 return;
 
-            if (string.IsNullOrWhiteSpace(step.requiredSubassemblyId))
+            if (string.IsNullOrWhiteSpace(step.requiredPartGroupId))
                 return;
 
-            if (_records.TryGetValue(step.requiredSubassemblyId, out ProxyRecord record) && record?.Root != null)
+            if (_records.TryGetValue(step.requiredPartGroupId, out ProxyRecord record) && record?.Root != null)
             {
                 ClearFitState(record);
 
@@ -266,8 +266,8 @@ namespace OSE.UI.Root
                     record.Root.SetActive(false);
             }
 
-            if (string.Equals(_activeSubassemblyId, step.requiredSubassemblyId, StringComparison.OrdinalIgnoreCase))
-                _activeSubassemblyId = null;
+            if (string.Equals(_activePartGroupId, step.requiredPartGroupId, StringComparison.OrdinalIgnoreCase))
+                _activePartGroupId = null;
         }
 
         /// <summary>
@@ -292,7 +292,7 @@ namespace OSE.UI.Root
                     continue;
 
                 // This is the currently active proxy → its bars are shown by ApplyProxyTransform.
-                if (string.Equals(_activeSubassemblyId, pair.Key, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(_activePartGroupId, pair.Key, StringComparison.OrdinalIgnoreCase))
                     continue;
 
                 // Pending (fabrication complete, not yet stacked) → hide bars so they
@@ -334,35 +334,35 @@ namespace OSE.UI.Root
             for (int s = 0; s < completedSteps.Length; s++)
             {
                 StepDefinition step = completedSteps[s];
-                if (step == null || string.IsNullOrWhiteSpace(step.requiredSubassemblyId))
+                if (step == null || string.IsNullOrWhiteSpace(step.requiredPartGroupId))
                     continue;
 
                 // Seed persistent enforcement — retried every frame until all members load.
-                _pendingIntegratedBySubassembly[step.requiredSubassemblyId] = step;
+                _pendingIntegratedByPartGroup[step.requiredPartGroupId] = step;
 
                 // Best-effort immediate pass (some parts may not be loaded yet).
-                TryEnforceSubassemblyIntegration(step);
+                TryEnforcePartGroupIntegration(step);
             }
         }
 
         /// <summary>
         /// Called every frame from <see cref="PartInteractionBridge"/>. Retries
-        /// integrated-position enforcement for every pending stacking subassembly.
-        /// Once all member parts for a subassembly are found and positioned it is
+        /// integrated-position enforcement for every pending stacking partGroup.
+        /// Once all member parts for a partGroup are found and positioned it is
         /// removed from the pending set — no further retries until the next navigation.
         /// </summary>
         public void TickPendingIntegration()
         {
-            if (_pendingIntegratedBySubassembly.Count == 0) return;
+            if (_pendingIntegratedByPartGroup.Count == 0) return;
 
             _pendingRemovalBuffer.Clear();
-            foreach (KeyValuePair<string, StepDefinition> kvp in _pendingIntegratedBySubassembly)
+            foreach (KeyValuePair<string, StepDefinition> kvp in _pendingIntegratedByPartGroup)
             {
-                if (TryEnforceSubassemblyIntegration(kvp.Value))
+                if (TryEnforcePartGroupIntegration(kvp.Value))
                     _pendingRemovalBuffer.Add(kvp.Key);
             }
             foreach (string id in _pendingRemovalBuffer)
-                _pendingIntegratedBySubassembly.Remove(id);
+                _pendingIntegratedByPartGroup.Remove(id);
         }
 
         /// <summary>
@@ -371,15 +371,15 @@ namespace OSE.UI.Root
         /// data was found and positioned (enforcement complete); <c>false</c> when at
         /// least one such part is not yet spawned (retry next frame).
         /// </summary>
-        private bool TryEnforceSubassemblyIntegration(StepDefinition step)
+        private bool TryEnforcePartGroupIntegration(StepDefinition step)
         {
-            if (step == null || string.IsNullOrWhiteSpace(step.requiredSubassemblyId)) return true;
+            if (step == null || string.IsNullOrWhiteSpace(step.requiredPartGroupId)) return true;
 
             string[] memberIds = null;
             GameObject[] cachedObjects = null;
             GameObject proxyRoot = null;
 
-            if (_records.TryGetValue(step.requiredSubassemblyId, out ProxyRecord record) && record != null)
+            if (_records.TryGetValue(step.requiredPartGroupId, out ProxyRecord record) && record != null)
             {
                 memberIds = record.MemberPartIds;
                 cachedObjects = record.CachedMemberObjects;
@@ -389,7 +389,7 @@ namespace OSE.UI.Root
             {
                 MachinePackageDefinition package = _ctx.Spawner?.CurrentPackage;
                 if (package != null &&
-                    package.TryGetSubassembly(step.requiredSubassemblyId, out SubassemblyDefinition sub) &&
+                    package.TryGetPartGroup(step.requiredPartGroupId, out PartGroupDefinition sub) &&
                     sub?.partIds != null)
                     memberIds = sub.partIds;
             }
@@ -430,8 +430,8 @@ namespace OSE.UI.Root
                 // POSITIONS" only. Without this gate, TickPendingIntegration
                 // (running every frame from PartInteractionBridge.Update AFTER
                 // TrySyncStartupState) re-activates every member of every prior
-                // step's subassembly — including future-assembly parts whose
-                // subassembly happens to share members with completed steps —
+                // step's partGroup — including future-assembly parts whose
+                // partGroup happens to share members with completed steps —
                 // wiping the rebuild's correct hide work and showing 100+
                 // future parts at e.g. step 50.
                 PartPlacementState st = _ctx.GetPartState(pid);
@@ -454,10 +454,10 @@ namespace OSE.UI.Root
             for (int i = 0; i < completedSteps.Length; i++)
             {
                 StepDefinition step = completedSteps[i];
-                if (step == null || string.IsNullOrWhiteSpace(step.requiredSubassemblyId))
+                if (step == null || string.IsNullOrWhiteSpace(step.requiredPartGroupId))
                     continue;
 
-                if (!EnsureProxyRecord(step.requiredSubassemblyId, out ProxyRecord record))
+                if (!EnsureProxyRecord(step.requiredPartGroupId, out ProxyRecord record))
                     continue;
 
                 string targetId = step.targetIds != null && step.targetIds.Length > 0
@@ -481,16 +481,16 @@ namespace OSE.UI.Root
             }
         }
 
-        public bool IsSubassemblyReady(string subassemblyId)
+        public bool IsPartGroupReady(string partGroupId)
         {
-            if (string.IsNullOrWhiteSpace(subassemblyId))
+            if (string.IsNullOrWhiteSpace(partGroupId))
                 return false;
 
             MachinePackageDefinition package = _ctx.Spawner?.CurrentPackage;
-            if (package == null || !package.TryGetSubassembly(subassemblyId, out SubassemblyDefinition subassembly) || subassembly == null)
+            if (package == null || !package.TryGetPartGroup(partGroupId, out PartGroupDefinition partGroup) || partGroup == null)
                 return false;
 
-            string[] memberIds = subassembly.partIds ?? Array.Empty<string>();
+            string[] memberIds = partGroup.partIds ?? Array.Empty<string>();
             if (memberIds.Length == 0)
                 return false;
 
@@ -502,7 +502,7 @@ namespace OSE.UI.Root
                 PartPlacementState state = _ctx.GetPartState(memberIds[i]);
                 if (state != PartPlacementState.Completed && state != PartPlacementState.PlacedVirtually)
                 {
-                    OseLog.Warn($"[SubassemblyPlacement] IsSubassemblyReady('{subassemblyId}'): member '{memberIds[i]}' is {state}, not Completed/PlacedVirtually.");
+                    OseLog.Warn($"[PartGroupPlacement] IsPartGroupReady('{partGroupId}'): member '{memberIds[i]}' is {state}, not Completed/PlacedVirtually.");
                     return false;
                 }
             }
@@ -512,36 +512,36 @@ namespace OSE.UI.Root
 
         public bool IsProxy(GameObject target)
         {
-            return target != null && target.GetComponent<SubassemblyPlacementProxy>() != null;
+            return target != null && target.GetComponent<PartGroupPlacementProxy>() != null;
         }
 
-        public bool TryGetProxy(string subassemblyId, out GameObject proxyRoot)
+        public bool TryGetProxy(string partGroupId, out GameObject proxyRoot)
         {
             proxyRoot = null;
-            if (string.IsNullOrWhiteSpace(subassemblyId))
+            if (string.IsNullOrWhiteSpace(partGroupId))
                 return false;
 
-            if (!_records.TryGetValue(subassemblyId, out ProxyRecord record) || record?.Root == null)
+            if (!_records.TryGetValue(partGroupId, out ProxyRecord record) || record?.Root == null)
                 return false;
 
             proxyRoot = record.Root;
             return true;
         }
 
-        public bool TryGetSubassemblyId(GameObject target, out string subassemblyId)
+        public bool TryGetPartGroupId(GameObject target, out string partGroupId)
         {
-            subassemblyId = null;
+            partGroupId = null;
             if (target == null)
                 return false;
 
-            SubassemblyPlacementProxy proxy = target.GetComponent<SubassemblyPlacementProxy>();
-            if (proxy != null && !string.IsNullOrWhiteSpace(proxy.SubassemblyId))
+            PartGroupPlacementProxy proxy = target.GetComponent<PartGroupPlacementProxy>();
+            if (proxy != null && !string.IsNullOrWhiteSpace(proxy.PartGroupId))
             {
-                subassemblyId = proxy.SubassemblyId;
+                partGroupId = proxy.PartGroupId;
                 return true;
             }
 
-            return _memberToSubassembly.TryGetValue(target.name, out subassemblyId);
+            return _memberToPartGroup.TryGetValue(target.name, out partGroupId);
         }
 
         public GameObject ResolveSelectableFromHit(Transform hitTransform)
@@ -550,15 +550,15 @@ namespace OSE.UI.Root
                 return null;
 
             // Fast path: check the active proxy first (the one being dragged/placed).
-            if (!string.IsNullOrWhiteSpace(_activeSubassemblyId)
-                && _records.TryGetValue(_activeSubassemblyId, out ProxyRecord activeRecord)
+            if (!string.IsNullOrWhiteSpace(_activePartGroupId)
+                && _records.TryGetValue(_activePartGroupId, out ProxyRecord activeRecord)
                 && activeRecord?.Root != null && activeRecord.Root.activeInHierarchy)
             {
                 Transform current = hitTransform;
                 while (current != null)
                 {
-                    SubassemblyPlacementProxy proxy = current.GetComponent<SubassemblyPlacementProxy>();
-                    if (proxy != null && string.Equals(proxy.SubassemblyId, _activeSubassemblyId, StringComparison.OrdinalIgnoreCase))
+                    PartGroupPlacementProxy proxy = current.GetComponent<PartGroupPlacementProxy>();
+                    if (proxy != null && string.Equals(proxy.PartGroupId, _activePartGroupId, StringComparison.OrdinalIgnoreCase))
                         return activeRecord.Root;
                     current = current.parent;
                 }
@@ -568,24 +568,24 @@ namespace OSE.UI.Root
                     return activeRecord.Root;
             }
 
-            // Fallback: check if the hit belongs to ANY subassembly with an active proxy
-            // (e.g. parked/completed subassemblies that are visible but not currently being placed).
+            // Fallback: check if the hit belongs to ANY partGroup with an active proxy
+            // (e.g. parked/completed partGroups that are visible but not currently being placed).
             Transform walkHit = hitTransform;
             Transform previewRoot = _ctx.Setup?.PreviewRoot;
             while (walkHit != null && walkHit != previewRoot)
             {
                 // Direct proxy hit
-                SubassemblyPlacementProxy proxyComp = walkHit.GetComponent<SubassemblyPlacementProxy>();
+                PartGroupPlacementProxy proxyComp = walkHit.GetComponent<PartGroupPlacementProxy>();
                 if (proxyComp != null
-                    && !string.IsNullOrWhiteSpace(proxyComp.SubassemblyId)
-                    && _records.TryGetValue(proxyComp.SubassemblyId, out ProxyRecord hitRecord)
+                    && !string.IsNullOrWhiteSpace(proxyComp.PartGroupId)
+                    && _records.TryGetValue(proxyComp.PartGroupId, out ProxyRecord hitRecord)
                     && hitRecord?.Root != null && hitRecord.Root.activeInHierarchy)
                 {
                     return hitRecord.Root;
                 }
 
                 // Member part reverse lookup
-                if (_memberToSubassembly.TryGetValue(walkHit.name, out string ownerSubId)
+                if (_memberToPartGroup.TryGetValue(walkHit.name, out string ownerSubId)
                     && _records.TryGetValue(ownerSubId, out ProxyRecord ownerRecord)
                     && ownerRecord?.Root != null && ownerRecord.Root.activeInHierarchy)
                 {
@@ -603,25 +603,25 @@ namespace OSE.UI.Root
             displayName = null;
             description = null;
 
-            if (!TryGetSubassemblyId(target, out string subassemblyId))
+            if (!TryGetPartGroupId(target, out string partGroupId))
                 return false;
 
             MachinePackageDefinition package = _ctx.Spawner?.CurrentPackage;
-            if (package == null || !package.TryGetSubassembly(subassemblyId, out SubassemblyDefinition subassembly) || subassembly == null)
+            if (package == null || !package.TryGetPartGroup(partGroupId, out PartGroupDefinition partGroup) || partGroup == null)
                 return false;
 
-            displayName = subassembly.GetDisplayName();
-            description = subassembly.description ?? string.Empty;
+            displayName = partGroup.GetDisplayName();
+            description = partGroup.description ?? string.Empty;
             return true;
         }
 
         public IEnumerable<GameObject> EnumerateMemberParts(GameObject target)
         {
-            if (!TryGetSubassemblyId(target, out string subassemblyId))
+            if (!TryGetPartGroupId(target, out string partGroupId))
                 yield break;
 
             // Prefer proxy record if available (has cached member list).
-            if (_records.TryGetValue(subassemblyId, out ProxyRecord record) && record?.MemberPartIds != null)
+            if (_records.TryGetValue(partGroupId, out ProxyRecord record) && record?.MemberPartIds != null)
             {
                 for (int i = 0; i < record.MemberPartIds.Length; i++)
                 {
@@ -632,15 +632,15 @@ namespace OSE.UI.Root
                 yield break;
             }
 
-            // Fallback for stacked subassemblies without a proxy record:
-            // look up partIds from the subassembly definition directly.
+            // Fallback for stacked partGroups without a proxy record:
+            // look up partIds from the partGroup definition directly.
             MachinePackageDefinition package = _ctx.Spawner?.CurrentPackage;
-            if (package != null && package.TryGetSubassembly(subassemblyId, out SubassemblyDefinition subassembly) &&
-                subassembly?.partIds != null)
+            if (package != null && package.TryGetPartGroup(partGroupId, out PartGroupDefinition partGroup) &&
+                partGroup?.partIds != null)
             {
-                for (int i = 0; i < subassembly.partIds.Length; i++)
+                for (int i = 0; i < partGroup.partIds.Length; i++)
                 {
-                    GameObject partGo = _ctx.FindSpawnedPart(subassembly.partIds[i]);
+                    GameObject partGo = _ctx.FindSpawnedPart(partGroup.partIds[i]);
                     if (partGo != null)
                         yield return partGo;
                 }
@@ -652,14 +652,14 @@ namespace OSE.UI.Root
             return TryGetTargetLocalPose(targetId, out position, out rotation, out scale);
         }
 
-        public bool TryGetActiveFitGuide(string subassemblyId, out Vector3 currentWorldPos, out Vector3 finalWorldPos, out Vector3 upWorld)
+        public bool TryGetActiveFitGuide(string partGroupId, out Vector3 currentWorldPos, out Vector3 finalWorldPos, out Vector3 upWorld)
         {
             currentWorldPos = Vector3.zero;
             finalWorldPos = Vector3.zero;
             upWorld = Vector3.up;
 
-            if (string.IsNullOrWhiteSpace(subassemblyId) ||
-                !_records.TryGetValue(subassemblyId, out ProxyRecord record) ||
+            if (string.IsNullOrWhiteSpace(partGroupId) ||
+                !_records.TryGetValue(partGroupId, out ProxyRecord record) ||
                 record?.Root == null ||
                 record.ActiveFit == null ||
                 record.ActiveFit.DrivenPartIds == null ||
@@ -712,10 +712,10 @@ namespace OSE.UI.Root
 
         public bool TryApplyPlacementPreview(GameObject target, string targetId, float nearestDist, float previewRadius)
         {
-            if (!TryGetSubassemblyId(target, out string subassemblyId))
+            if (!TryGetPartGroupId(target, out string partGroupId))
                 return false;
 
-            if (!_records.TryGetValue(subassemblyId, out ProxyRecord record) ||
+            if (!_records.TryGetValue(partGroupId, out ProxyRecord record) ||
                 record?.Root == null ||
                 record.ActiveFit == null ||
                 !string.Equals(record.ActiveFit.TargetId, targetId, StringComparison.OrdinalIgnoreCase) ||
@@ -751,10 +751,10 @@ namespace OSE.UI.Root
 
         public bool IsPlacementCommitReady(GameObject target, string targetId)
         {
-            if (!TryGetSubassemblyId(target, out string subassemblyId))
+            if (!TryGetPartGroupId(target, out string partGroupId))
                 return false;
 
-            if (!_records.TryGetValue(subassemblyId, out ProxyRecord record) || record == null)
+            if (!_records.TryGetValue(partGroupId, out ProxyRecord record) || record == null)
                 return false;
 
             if (record.ActiveFit == null || !string.Equals(record.ActiveFit.TargetId, targetId, StringComparison.OrdinalIgnoreCase))
@@ -763,9 +763,9 @@ namespace OSE.UI.Root
             return Mathf.Abs(record.CurrentFitTravel - record.ActiveFit.CompletionTravel) <= record.ActiveFit.SnapTolerance;
         }
 
-        public bool TryApplyPlacement(string subassemblyId, string targetId)
+        public bool TryApplyPlacement(string partGroupId, string targetId)
         {
-            if (!EnsureProxyRecord(subassemblyId, out ProxyRecord record))
+            if (!EnsureProxyRecord(partGroupId, out ProxyRecord record))
                 return false;
 
             if (TryApplyIntegratedPlacement(record, targetId))
@@ -786,10 +786,10 @@ namespace OSE.UI.Root
 
         public void ApplyProxyTransform(GameObject target)
         {
-            if (!TryGetSubassemblyId(target, out string subassemblyId))
+            if (!TryGetPartGroupId(target, out string partGroupId))
                 return;
 
-            if (_records.TryGetValue(subassemblyId, out ProxyRecord record))
+            if (_records.TryGetValue(partGroupId, out ProxyRecord record))
                 ApplyProxyTransform(record);
         }
 
@@ -799,10 +799,10 @@ namespace OSE.UI.Root
             if (package == null || !package.TryGetStep(stepId, out StepDefinition step) || step == null)
                 return false;
 
-            if (string.IsNullOrWhiteSpace(step.requiredSubassemblyId))
+            if (string.IsNullOrWhiteSpace(step.requiredPartGroupId))
                 return false;
 
-            if (!_records.TryGetValue(step.requiredSubassemblyId, out ProxyRecord record))
+            if (!_records.TryGetValue(step.requiredPartGroupId, out ProxyRecord record))
                 return false;
 
             string targetId = step.targetIds != null && step.targetIds.Length == 1
@@ -819,45 +819,45 @@ namespace OSE.UI.Root
             _orientAnimT = -1f;
             _orientAnimRecord = null;
 
-            if (string.IsNullOrWhiteSpace(_activeSubassemblyId))
+            if (string.IsNullOrWhiteSpace(_activePartGroupId))
                 return;
 
-            if (_records.TryGetValue(_activeSubassemblyId, out ProxyRecord record) && record?.Root != null)
+            if (_records.TryGetValue(_activePartGroupId, out ProxyRecord record) && record?.Root != null)
                 record.Root.SetActive(false);
 
-            _activeSubassemblyId = null;
+            _activePartGroupId = null;
         }
 
         /// <summary>
-        /// Populates _memberToSubassembly for all parts in a subassembly without
-        /// creating a proxy GameObject. Used for stacked/completed subassemblies
+        /// Populates _memberToPartGroup for all parts in a partGroup without
+        /// creating a proxy GameObject. Used for stacked/completed partGroups
         /// that don't need a visible proxy but still need the mapping for info display.
         /// </summary>
-        private void EnsureMemberMapping(SubassemblyDefinition subassembly)
+        private void EnsureMemberMapping(PartGroupDefinition partGroup)
         {
-            if (subassembly?.partIds == null) return;
-            for (int i = 0; i < subassembly.partIds.Length; i++)
+            if (partGroup?.partIds == null) return;
+            for (int i = 0; i < partGroup.partIds.Length; i++)
             {
-                string partId = subassembly.partIds[i];
+                string partId = partGroup.partIds[i];
                 if (!string.IsNullOrWhiteSpace(partId))
-                    _memberToSubassembly[partId] = subassembly.id;
+                    _memberToPartGroup[partId] = partGroup.id;
             }
         }
 
-        private bool EnsureProxyRecord(string subassemblyId, out ProxyRecord record)
+        private bool EnsureProxyRecord(string partGroupId, out ProxyRecord record)
         {
-            if (_records.TryGetValue(subassemblyId, out record) && record?.Root != null)
+            if (_records.TryGetValue(partGroupId, out record) && record?.Root != null)
                 return true;
 
-            record = BuildProxyRecord(subassemblyId);
+            record = BuildProxyRecord(partGroupId);
             if (record == null)
                 return false;
 
-            _records[subassemblyId] = record;
+            _records[partGroupId] = record;
             return true;
         }
 
-        private ProxyRecord BuildProxyRecord(string subassemblyId)
+        private ProxyRecord BuildProxyRecord(string partGroupId)
         {
             MachinePackageDefinition package = _ctx.Spawner?.CurrentPackage;
             PreviewSceneSetup setup = _ctx.Setup;
@@ -865,27 +865,27 @@ namespace OSE.UI.Root
             if (package == null || previewRoot == null)
                 return null;
 
-            if (!package.TryGetSubassembly(subassemblyId, out SubassemblyDefinition subassembly) || subassembly == null)
+            if (!package.TryGetPartGroup(partGroupId, out PartGroupDefinition partGroup) || partGroup == null)
                 return null;
 
-            SubassemblyPreviewPlacement frame = _ctx.Spawner.FindSubassemblyPlacement(subassemblyId);
+            PartGroupPreviewPlacement frame = _ctx.Spawner.FindPartGroupPlacement(partGroupId);
             if (frame == null)
             {
-                OseLog.Warn($"[SubassemblyPlacement] Missing previewConfig.subassemblyPlacements entry for '{subassemblyId}'.");
+                OseLog.Warn($"[PartGroupPlacement] Missing previewConfig.partGroupPlacements entry for '{partGroupId}'.");
                 return null;
             }
 
-            string[] memberIds = subassembly.partIds ?? Array.Empty<string>();
+            string[] memberIds = partGroup.partIds ?? Array.Empty<string>();
             if (memberIds.Length == 0)
                 return null;
 
-            GameObject proxyRoot = new GameObject($"SubassemblyProxy_{subassemblyId}");
+            GameObject proxyRoot = new GameObject($"PartGroupProxy_{partGroupId}");
             proxyRoot.transform.SetParent(previewRoot, false);
             proxyRoot.transform.SetLocalPositionAndRotation(ToVector3(frame.position), ToQuaternion(frame.rotation));
             proxyRoot.transform.localScale = SanitizeScale(ToVector3(frame.scale), Vector3.one);
 
-            SubassemblyPlacementProxy proxy = proxyRoot.AddComponent<SubassemblyPlacementProxy>();
-            proxy.SubassemblyId = subassemblyId;
+            PartGroupPlacementProxy proxy = proxyRoot.AddComponent<PartGroupPlacementProxy>();
+            proxy.PartGroupId = partGroupId;
 
             Vector3[] localPositions = new Vector3[memberIds.Length];
             Quaternion[] localRotations = new Quaternion[memberIds.Length];
@@ -900,7 +900,7 @@ namespace OSE.UI.Root
                 PartPreviewPlacement partPlacement = _ctx.Spawner.FindPartPlacement(partId);
                 if (partPlacement == null)
                 {
-                    OseLog.Warn($"[SubassemblyPlacement] Missing part placement for subassembly member '{partId}'.");
+                    OseLog.Warn($"[PartGroupPlacement] Missing part placement for partGroup member '{partId}'.");
                     UnityEngine.Object.Destroy(proxyRoot);
                     return null;
                 }
@@ -914,7 +914,7 @@ namespace OSE.UI.Root
                 localPositions[i] = InverseTransformPoint(proxyRoot.transform.localPosition, proxyRoot.transform.localRotation, proxyRoot.transform.localScale, playPos);
                 localRotations[i] = Quaternion.Inverse(proxyRoot.transform.localRotation) * playRot;
                 localScales[i] = DivideScale(assembledScale, proxyRoot.transform.localScale);
-                _memberToSubassembly[partId] = subassemblyId;
+                _memberToPartGroup[partId] = partGroupId;
             }
 
             // Cache member GameObjects to avoid per-frame FindSpawnedPart linear scans.
@@ -927,7 +927,7 @@ namespace OSE.UI.Root
 
             ProxyRecord record = new ProxyRecord
             {
-                SubassemblyId = subassemblyId,
+                PartGroupId = partGroupId,
                 Root = proxyRoot,
                 MemberPartIds = memberIds,
                 MemberLocalPositions = localPositions,
@@ -947,7 +947,7 @@ namespace OSE.UI.Root
             if (record?.Root == null)
                 return;
 
-            SubassemblyPreviewPlacement frame = _ctx.Spawner.FindSubassemblyPlacement(record.SubassemblyId);
+            PartGroupPreviewPlacement frame = _ctx.Spawner.FindPartGroupPlacement(record.PartGroupId);
             if (frame == null)
                 return;
 
@@ -962,7 +962,7 @@ namespace OSE.UI.Root
             if (record?.Root == null)
                 return false;
 
-            SubassemblyPreviewPlacement parking = _ctx.Spawner.FindCompletedSubassemblyParkingPlacement(record.SubassemblyId);
+            PartGroupPreviewPlacement parking = _ctx.Spawner.FindCompletedPartGroupParkingPlacement(record.PartGroupId);
             if (parking == null)
                 return false;
 
@@ -977,18 +977,18 @@ namespace OSE.UI.Root
         {
             Transform root = record.Root.transform;
 
-            if (wo.subassemblyRotation.x != 0f || wo.subassemblyRotation.y != 0f || wo.subassemblyRotation.z != 0f)
+            if (wo.partGroupRotation.x != 0f || wo.partGroupRotation.y != 0f || wo.partGroupRotation.z != 0f)
             {
-                Quaternion delta = Quaternion.Euler(wo.subassemblyRotation.x, wo.subassemblyRotation.y, wo.subassemblyRotation.z);
+                Quaternion delta = Quaternion.Euler(wo.partGroupRotation.x, wo.partGroupRotation.y, wo.partGroupRotation.z);
                 root.localRotation = delta * root.localRotation;
             }
 
-            if (wo.subassemblyPositionOffset.x != 0f || wo.subassemblyPositionOffset.y != 0f || wo.subassemblyPositionOffset.z != 0f)
+            if (wo.partGroupPositionOffset.x != 0f || wo.partGroupPositionOffset.y != 0f || wo.partGroupPositionOffset.z != 0f)
             {
                 root.localPosition += new Vector3(
-                    wo.subassemblyPositionOffset.x,
-                    wo.subassemblyPositionOffset.y,
-                    wo.subassemblyPositionOffset.z);
+                    wo.partGroupPositionOffset.x,
+                    wo.partGroupPositionOffset.y,
+                    wo.partGroupPositionOffset.z);
             }
 
             if (wo.partOverrides != null)
@@ -1113,10 +1113,10 @@ namespace OSE.UI.Root
             if (record?.Root == null)
                 return false;
 
-            // Pass 1: exact (subassemblyId, targetId) lookup.
-            IntegratedSubassemblyPreviewPlacement integrated = null;
+            // Pass 1: exact (partGroupId, targetId) lookup.
+            IntegratedPartGroupPreviewPlacement integrated = null;
             if (!string.IsNullOrWhiteSpace(targetId))
-                integrated = _ctx.Spawner.FindIntegratedSubassemblyPlacement(record.SubassemblyId, targetId);
+                integrated = _ctx.Spawner.FindIntegratedPartGroupPlacement(record.PartGroupId, targetId);
 
             if (integrated != null && integrated.memberPlacements != null && integrated.memberPlacements.Length > 0)
             {
@@ -1139,12 +1139,12 @@ namespace OSE.UI.Root
 
                 record.CurrentTargetId = targetId;
                 record.Root.SetActive(false);
-                if (string.Equals(_activeSubassemblyId, record.SubassemblyId, StringComparison.OrdinalIgnoreCase))
-                    _activeSubassemblyId = null;
+                if (string.Equals(_activePartGroupId, record.PartGroupId, StringComparison.OrdinalIgnoreCase))
+                    _activePartGroupId = null;
                 return true;
             }
 
-            // Pass 2: per-member fallback — searches all integratedSubassemblyPlacements
+            // Pass 2: per-member fallback — searches all integratedPartGroupPlacements
             // by partId alone, so it works even when targetId is null/mismatched.
             if (record.MemberPartIds == null || record.MemberPartIds.Length == 0)
                 return false;
@@ -1182,8 +1182,8 @@ namespace OSE.UI.Root
             if (!string.IsNullOrWhiteSpace(targetId))
                 record.CurrentTargetId = targetId;
             record.Root.SetActive(false);
-            if (string.Equals(_activeSubassemblyId, record.SubassemblyId, StringComparison.OrdinalIgnoreCase))
-                _activeSubassemblyId = null;
+            if (string.Equals(_activePartGroupId, record.PartGroupId, StringComparison.OrdinalIgnoreCase))
+                _activePartGroupId = null;
             return true;
         }
 
@@ -1196,8 +1196,8 @@ namespace OSE.UI.Root
             record.CurrentTargetId = targetId;
             ApplyProxyTransform(record);
             record.Root.SetActive(false);
-            if (string.Equals(_activeSubassemblyId, record.SubassemblyId, StringComparison.OrdinalIgnoreCase))
-                _activeSubassemblyId = null;
+            if (string.Equals(_activePartGroupId, record.PartGroupId, StringComparison.OrdinalIgnoreCase))
+                _activePartGroupId = null;
             return true;
         }
 
@@ -1222,7 +1222,7 @@ namespace OSE.UI.Root
             if (record?.Root == null || string.IsNullOrWhiteSpace(targetId))
                 return false;
 
-            ConstrainedSubassemblyFitPreviewPlacement placement = _ctx.Spawner.FindConstrainedSubassemblyFitPlacement(record.SubassemblyId, targetId);
+            ConstrainedPartGroupFitPreviewPlacement placement = _ctx.Spawner.FindConstrainedPartGroupFitPlacement(record.PartGroupId, targetId);
             if (placement == null)
                 return false;
 
@@ -1331,18 +1331,18 @@ namespace OSE.UI.Root
             collider.size = record.CachedLocalBounds.size;
         }
 
-        private static bool AreAllSubassemblyStepsCompleted(
-            SubassemblyDefinition subassembly,
+        private static bool AreAllPartGroupStepsCompleted(
+            PartGroupDefinition partGroup,
             HashSet<string> completedStepIds,
             MachinePackageDefinition package = null)
         {
-            if (subassembly == null)
+            if (partGroup == null)
                 return false;
 
-            // Prefer derived steps from step.subassemblyId when package is available
+            // Prefer derived steps from step.partGroupId when package is available
             if (package != null)
             {
-                StepDefinition[] derivedSteps = package.GetStepsForSubassembly(subassembly.id);
+                StepDefinition[] derivedSteps = package.GetStepsForPartGroup(partGroup.id);
                 if (derivedSteps.Length == 0)
                     return false;
 
@@ -1354,13 +1354,13 @@ namespace OSE.UI.Root
                 return true;
             }
 
-            // Fallback to subassembly.stepIds
-            if (subassembly.stepIds == null || subassembly.stepIds.Length == 0)
+            // Fallback to partGroup.stepIds
+            if (partGroup.stepIds == null || partGroup.stepIds.Length == 0)
                 return false;
 
-            for (int i = 0; i < subassembly.stepIds.Length; i++)
+            for (int i = 0; i < partGroup.stepIds.Length; i++)
             {
-                string stepId = subassembly.stepIds[i];
+                string stepId = partGroup.stepIds[i];
                 if (string.IsNullOrWhiteSpace(stepId))
                     continue;
 
@@ -1489,8 +1489,8 @@ namespace OSE.UI.Root
         }
     }
 
-    internal sealed class SubassemblyPlacementProxy : MonoBehaviour
+    internal sealed class PartGroupPlacementProxy : MonoBehaviour
     {
-        public string SubassemblyId;
+        public string PartGroupId;
     }
 }

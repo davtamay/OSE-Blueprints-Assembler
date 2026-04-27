@@ -26,7 +26,7 @@ namespace OSE.UI.Root
         // task element(s) — the specific part(s) the trainee must touch RIGHT
         // NOW, plus the active tool-action target where applicable. The
         // context bounds = everything the old computation already included
-        // (other step parts, visual-only, subassembly fallback).
+        // (other step parts, visual-only, partGroup fallback).
         //
         // Final pivot is locked to primary.center when a primary exists, and
         // the final box SIZE interpolates between the primary extent and the
@@ -158,16 +158,16 @@ namespace OSE.UI.Root
                 }
             }
 
-            var subCtrl = _ctx.SubassemblyController;
-            if (step.RequiresSubassemblyPlacement &&
+            var subCtrl = _ctx.PartGroupController;
+            if (step.RequiresPartGroupPlacement &&
                 subCtrl != null &&
-                subCtrl.TryGetProxy(step.requiredSubassemblyId, out GameObject proxy) &&
+                subCtrl.TryGetProxy(step.requiredPartGroupId, out GameObject proxy) &&
                 proxy != null)
             {
                 Bounds pb = PreviewSpawnManager.TryGetRenderableBounds(proxy, out var prxB)
                     ? prxB : new Bounds(proxy.transform.position, Vector3.one * 0.18f);
                 EncapsulateContext(pb);
-                // Proxy is the task artifact for a subassembly-placement step.
+                // Proxy is the task artifact for a partGroup-placement step.
                 EncapsulatePrimary(pb);
             }
 
@@ -351,7 +351,7 @@ namespace OSE.UI.Root
             // cursor-gate invariant already applied to tray emission, ghosts,
             // and hints: "required this step" telegraphs must scope to what
             // the trainee has to touch RIGHT NOW, not every part in the
-            // subassembly. Without this, the camera frame encapsulates parts
+            // partGroup. Without this, the camera frame encapsulates parts
             // still sitting in the staging tray and the centroid drops below
             // the actual tool target. Fall back to step.requiredPartIds when
             // no cursor is available (bootstrap, session teardown, etc.).
@@ -381,7 +381,7 @@ namespace OSE.UI.Root
             // Visual-context parts: Confirm/Use steps that author
             // visualPartIds explicitly are saying "look at these." Pull them
             // in too so a "check every carriage half" QC step centers on the
-            // halves rather than falling through to the subassembly-member
+            // halves rather than falling through to the partGroup-member
             // fallback (which might span more than the author intended).
             if (step.visualPartIds != null)
             {
@@ -392,31 +392,31 @@ namespace OSE.UI.Root
                 }
             }
 
-            // Final fallback: step.subassemblyId members. Some Confirm / Use
+            // Final fallback: step.partGroupId members. Some Confirm / Use
             // steps describe an action that applies to "the whole group" with
             // no explicit part list — e.g. step 52 "QC: verify all carriage
             // holes are clean" has empty requiredPartIds / targets / task
-            // parts and only lives under subassembly_carriage_batch_all. With
+            // parts and only lives under partGroup_carriage_batch_all. With
             // nothing else to anchor the camera, framing falls through to
             // whatever the previous step framed (often the 3D printer frame
             // from an earlier assembly stage) instead of the carriages the
             // trainee is inspecting.
-            if (results.Count == 0 && !string.IsNullOrWhiteSpace(step.subassemblyId))
-                AddSubassemblyMembers(package, step.subassemblyId, results);
+            if (results.Count == 0 && !string.IsNullOrWhiteSpace(step.partGroupId))
+                AddPartGroupMembers(package, step.partGroupId, results);
         }
 
         /// <summary>
-        /// Recursively walks a subassembly id and adds every member partId to
+        /// Recursively walks a partGroup id and adds every member partId to
         /// <paramref name="results"/>. Aggregates (batch-all-carriages) are
-        /// expanded through <see cref="SubassemblyDefinition.memberSubassemblyIds"/>
+        /// expanded through <see cref="PartGroupDefinition.memberPartGroupIds"/>
         /// so the fallback catches every relevant carriage half, not just
         /// the top-level entry.
         /// </summary>
-        private static void AddSubassemblyMembers(
-            MachinePackageDefinition package, string subassemblyId, HashSet<string> results)
+        private static void AddPartGroupMembers(
+            MachinePackageDefinition package, string partGroupId, HashSet<string> results)
         {
-            if (string.IsNullOrEmpty(subassemblyId)) return;
-            if (!package.TryGetSubassembly(subassemblyId, out var sub) || sub == null) return;
+            if (string.IsNullOrEmpty(partGroupId)) return;
+            if (!package.TryGetPartGroup(partGroupId, out var sub) || sub == null) return;
 
             if (sub.partIds != null)
             {
@@ -427,13 +427,13 @@ namespace OSE.UI.Root
                 }
             }
 
-            if (sub.isAggregate && sub.memberSubassemblyIds != null)
+            if (sub.isAggregate && sub.memberPartGroupIds != null)
             {
-                for (int i = 0; i < sub.memberSubassemblyIds.Length; i++)
+                for (int i = 0; i < sub.memberPartGroupIds.Length; i++)
                 {
-                    string childId = sub.memberSubassemblyIds[i];
+                    string childId = sub.memberPartGroupIds[i];
                     if (!string.IsNullOrWhiteSpace(childId))
-                        AddSubassemblyMembers(package, childId, results);
+                        AddPartGroupMembers(package, childId, results);
                 }
             }
         }

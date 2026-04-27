@@ -106,10 +106,10 @@ namespace OSE.UI.Root
             if (ServiceRegistry.TryGet<IMachineSessionController>(out var queueSession))
                 queuedForStepId = queueSession.AssemblyController?.StepController?.CurrentStepDefinition?.id;
 
-            if (ServiceRegistry.TryGet<ISubassemblyPlacementService>(out var subassemblyController) &&
-                subassemblyController != null &&
-                subassemblyController.IsProxy(partGo) &&
-                subassemblyController.TryResolveTargetPose(targetId, out Vector3 proxyPos, out Quaternion proxyRot, out Vector3 proxyScale))
+            if (ServiceRegistry.TryGet<IPartGroupPlacementService>(out var partGroupController) &&
+                partGroupController != null &&
+                partGroupController.IsProxy(partGo) &&
+                partGroupController.TryResolveTargetPose(targetId, out Vector3 proxyPos, out Quaternion proxyRot, out Vector3 proxyScale))
             {
                 _activeSnaps.Add(new SnapEntry { Part = partGo, TargetPos = proxyPos, TargetRot = proxyRot, TargetScale = proxyScale, QueuedForStepId = queuedForStepId });
                 return;
@@ -207,11 +207,11 @@ namespace OSE.UI.Root
         {
             if (targetGo == null) return;
 
-            if (ServiceRegistry.TryGet<ISubassemblyPlacementService>(out var subassemblyController) &&
-                subassemblyController != null &&
-                subassemblyController.IsProxy(targetGo))
+            if (ServiceRegistry.TryGet<IPartGroupPlacementService>(out var partGroupController) &&
+                partGroupController != null &&
+                partGroupController.IsProxy(targetGo))
             {
-                foreach (GameObject member in subassemblyController.EnumerateMemberParts(targetGo))
+                foreach (GameObject member in partGroupController.EnumerateMemberParts(targetGo))
                     FlashInvalid(member, member != null ? member.name : selectionId);
                 return;
             }
@@ -364,7 +364,7 @@ namespace OSE.UI.Root
                 snap.Part.transform.localRotation = Quaternion.Slerp(snap.Part.transform.localRotation, snap.TargetRot, t);
                 snap.Part.transform.localScale    = Vector3.Lerp(snap.Part.transform.localScale, snap.TargetScale, t);
 
-                if (ServiceRegistry.TryGet<ISubassemblyPlacementService>(out var sub) &&
+                if (ServiceRegistry.TryGet<IPartGroupPlacementService>(out var sub) &&
                     sub != null && sub.IsProxy(snap.Part))
                 {
                     sub.ApplyProxyTransform(snap.Part);
@@ -374,7 +374,7 @@ namespace OSE.UI.Root
                 {
                     snap.Part.transform.SetLocalPositionAndRotation(snap.TargetPos, snap.TargetRot);
                     snap.Part.transform.localScale = snap.TargetScale;
-                    if (ServiceRegistry.TryGet<ISubassemblyPlacementService>(out var finalSub) &&
+                    if (ServiceRegistry.TryGet<IPartGroupPlacementService>(out var finalSub) &&
                         finalSub != null && finalSub.IsProxy(snap.Part))
                     {
                         finalSub.ApplyProxyTransform(snap.Part);

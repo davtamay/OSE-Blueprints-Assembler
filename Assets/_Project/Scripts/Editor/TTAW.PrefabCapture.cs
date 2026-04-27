@@ -6,7 +6,7 @@
 // **Important scope note for the draft output:** the emitter covers the
 // fields that round-trip cleanly through a prefab template — id_suffix,
 // family, profile, instructionText, requiredPartIds (with {role} /
-// *{role} placeholders), requiredSubassemblyId. It does NOT yet rewrite
+// *{role} placeholders), requiredPartGroupId. It does NOT yet rewrite
 // taskOrder, requiredToolActions, animationCues, or particleEffects;
 // emitted prefabs include a TODO banner pointing to the original captured
 // step ids so the author can finish those sections manually.
@@ -99,7 +99,7 @@ namespace OSE.Editor
             if (GUILayout.Button(new GUIContent("Write Draft YAML",
                     "Writes a starter prefab YAML to AgentAssistant/prefabs/. The " +
                     "draft covers id_suffix, family, profile, instructionText, " +
-                    "requiredPartIds, and requiredSubassemblyId. Finish task " +
+                    "requiredPartIds, and requiredPartGroupId. Finish task " +
                     "ordering, hints, validation, and cues by hand."),
                     GUILayout.Width(160)))
             {
@@ -214,8 +214,8 @@ namespace OSE.Editor
                     string escaped = instr.Replace("\\", "\\\\").Replace("\"", "\\\"");
                     sb.AppendLine($"    instructionText: \"{escaped}\"");
                 }
-                if (!string.IsNullOrEmpty(step.requiredSubassemblyId))
-                    sb.AppendLine($"    requiredSubassemblyId: {step.requiredSubassemblyId}");
+                if (!string.IsNullOrEmpty(step.requiredPartGroupId))
+                    sb.AppendLine($"    requiredPartGroupId: {step.requiredPartGroupId}");
 
                 if (step.requiredPartIds != null && step.requiredPartIds.Length > 0)
                 {

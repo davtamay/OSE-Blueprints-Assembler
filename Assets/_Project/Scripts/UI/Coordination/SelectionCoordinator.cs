@@ -10,8 +10,8 @@ namespace OSE.UI.Root
 {
     /// <summary>
     /// Owns the selection lifecycle within <see cref="PartInteractionBridge"/>:
-    /// pointer-driven part selection, deselection, subassembly proxy selection,
-    /// external hover info, and part/subassembly UI info push.
+    /// pointer-driven part selection, deselection, partGroup proxy selection,
+    /// external hover info, and part/partGroup UI info push.
     /// </summary>
     internal sealed class SelectionCoordinator
     {
@@ -47,7 +47,7 @@ namespace OSE.UI.Root
 
             if (target != null && target.GetComponent<WireSplineMarker>() != null)
                 _ctx.RestorePartVisual(target);
-            else if (_ctx.IsSubassemblyProxy(target))
+            else if (_ctx.IsPartGroupProxy(target))
                 _ctx.RestorePartVisual(target);
             else if (ServiceRegistry.TryGet<IPartRuntimeController>(out var partController))
                 partController.DeselectPart();
@@ -62,7 +62,7 @@ namespace OSE.UI.Root
         public void HandlePlacementSucceeded(GameObject target)
         {
             target = _ctx.NormalizeSelectablePlacementTarget(target);
-            if (!_ctx.IsSubassemblyProxy(target))
+            if (!_ctx.IsPartGroupProxy(target))
                 return;
 
             _ctx.VisualFeedback?.ClearPartHoverVisual();
@@ -121,15 +121,15 @@ namespace OSE.UI.Root
                 {
                     PushWireInfoToUI(wireMarker, isHoverInfo: true);
                 }
-                else if (_ctx.IsSubassemblyProxy(_externalHoveredPartForUi))
+                else if (_ctx.IsPartGroupProxy(_externalHoveredPartForUi))
                 {
-                    PushSubassemblyInfoToUI(_externalHoveredPartForUi, isHoverInfo: true);
+                    PushPartGroupInfoToUI(_externalHoveredPartForUi, isHoverInfo: true);
                 }
-                else if (_ctx.SubassemblyController != null &&
-                         _ctx.SubassemblyController.TryGetSubassemblyId(_externalHoveredPartForUi, out _) &&
-                         _ctx.SubassemblyController.TryGetDisplayInfo(_externalHoveredPartForUi, out _, out _))
+                else if (_ctx.PartGroupController != null &&
+                         _ctx.PartGroupController.TryGetPartGroupId(_externalHoveredPartForUi, out _) &&
+                         _ctx.PartGroupController.TryGetDisplayInfo(_externalHoveredPartForUi, out _, out _))
                 {
-                    PushSubassemblyInfoToUI(_externalHoveredPartForUi, isHoverInfo: true);
+                    PushPartGroupInfoToUI(_externalHoveredPartForUi, isHoverInfo: true);
                 }
                 else
                 {
@@ -148,8 +148,8 @@ namespace OSE.UI.Root
             if (selected != null)
             {
                 selected = _ctx.NormalizeSelectablePlacementTarget(selected);
-                if (_ctx.IsSubassemblyProxy(selected))
-                    PushSubassemblyInfoToUI(selected);
+                if (_ctx.IsPartGroupProxy(selected))
+                    PushPartGroupInfoToUI(selected);
                 else
                     PushPartInfoToUI(selected.name);
             }
@@ -167,7 +167,7 @@ namespace OSE.UI.Root
                 return;
 
             GameObject current = _ctx.NormalizeSelectablePlacementTarget(_ctx.SelectionService.CurrentSelection);
-            if (_ctx.IsSubassemblyProxy(current))
+            if (_ctx.IsPartGroupProxy(current))
             {
                 _ctx.RestorePartVisual(current);
                 if (_ctx.VisualFeedback?.HoveredPart == current)
@@ -205,17 +205,17 @@ namespace OSE.UI.Root
                 ui.ShowPartInfoShell(displayName, functionText, materialText, searchTerms);
         }
 
-        public void PushSubassemblyInfoToUI(GameObject target, bool isHoverInfo = false)
+        public void PushPartGroupInfoToUI(GameObject target, bool isHoverInfo = false)
         {
-            if (_ctx.SubassemblyController == null ||
-                !_ctx.SubassemblyController.TryGetDisplayInfo(target, out string displayName, out string description) ||
+            if (_ctx.PartGroupController == null ||
+                !_ctx.PartGroupController.TryGetDisplayInfo(target, out string displayName, out string description) ||
                 !ServiceRegistry.TryGet<IPresentationAdapter>(out var ui))
             {
                 return;
             }
 
             const string material = "Completed panel";
-            const string searchTerms = "finished subassembly panel cube joining";
+            const string searchTerms = "finished partGroup panel cube joining";
 
             if (isHoverInfo && ui is UIRootCoordinator hoverUi)
                 hoverUi.ShowHoverPartInfoShell(displayName, description ?? string.Empty, material, searchTerms);
@@ -271,10 +271,10 @@ namespace OSE.UI.Root
 
             bool accepted;
             string selectionId = _ctx.ResolveSelectionId(target);
-            bool isProxy = _ctx.IsSubassemblyProxy(target);
+            bool isProxy = _ctx.IsPartGroupProxy(target);
             bool isWireSpline = target.GetComponent<WireSplineMarker>() != null;
-            bool isMemberOfSubassembly = !isProxy && !isWireSpline && _ctx.SubassemblyController != null &&
-                _ctx.SubassemblyController.TryGetSubassemblyId(target, out _);
+            bool isMemberOfPartGroup = !isProxy && !isWireSpline && _ctx.PartGroupController != null &&
+                _ctx.PartGroupController.TryGetPartGroupId(target, out _);
 
             if (isWireSpline)
             {
@@ -292,7 +292,7 @@ namespace OSE.UI.Root
                 accepted = !string.IsNullOrWhiteSpace(selectionId);
                 if (accepted)
                 {
-                    PushSubassemblyInfoToUI(target, isHoverInfo: false);
+                    PushPartGroupInfoToUI(target, isHoverInfo: false);
                     _ctx.VisualFeedback?.ClearPartHoverVisual();
                     _ctx.VisualFeedback?.ApplySelectedPartVisual(target);
                     _lastSelectedVisualTarget = target;
@@ -307,10 +307,10 @@ namespace OSE.UI.Root
                     ? partController.InspectPart(target.name)
                     : partController.SelectPart(target.name);
 
-                if (accepted && isMemberOfSubassembly &&
-                    _ctx.SubassemblyController.TryGetDisplayInfo(target, out _, out _))
+                if (accepted && isMemberOfPartGroup &&
+                    _ctx.PartGroupController.TryGetDisplayInfo(target, out _, out _))
                 {
-                    PushSubassemblyInfoToUI(target, isHoverInfo: false);
+                    PushPartGroupInfoToUI(target, isHoverInfo: false);
                     _ctx.VisualFeedback?.ClearPartHoverVisual();
                 }
             }
@@ -325,7 +325,7 @@ namespace OSE.UI.Root
             _selectionTime = Time.realtimeSinceStartup;
             _lastSelectedVisualTarget = target;
             _ctx.PlaceHandler?.StartPreviewSelectionPulse(selectionId ?? target.name);
-            if (!_ctx.IsSubassemblyProxy(target))
+            if (!_ctx.IsPartGroupProxy(target))
                 TryAutoCompleteSelectionStep(target.name);
 
             if (_ctx.Drag.PointerDown && _ctx.Drag.PendingSelectPart == target)

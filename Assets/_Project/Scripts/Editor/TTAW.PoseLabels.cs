@@ -104,7 +104,7 @@ namespace OSE.Editor
         ///   <c>synthesized:holdAtEnd (part=X cue=TYPE[INDEX])</c>
         ///   <c>synthGroup:holdAtEnd  (sub=X  cue=TYPE[INDEX])</c>
         /// Returns the INDEX so callers can cross-reference back to the
-        /// source cue on the part/subassembly definition. Returns -1 when
+        /// source cue on the part/partGroup definition. Returns -1 when
         /// the label isn't a synth label or the index can't be parsed.
         /// </summary>
         public static int TryExtractCueIndexFromSynthLabel(string label)

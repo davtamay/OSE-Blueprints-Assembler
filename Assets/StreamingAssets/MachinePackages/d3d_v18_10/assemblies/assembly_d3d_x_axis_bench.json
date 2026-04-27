@@ -5,13 +5,13 @@
       "name": "X-Axis Bench Build",
       "description": "Assembles the X-axis module from individual parts: seats bearings in the carriage, builds the idler with 5 M6x18 screws and 2 half-bearings, preps the motor holder with belt channel, threads onto guide rods, routes and pegs the belt, and glues the X-axis endstop to the motor holder. Produces a labeled X-axis module ready for fitting between the Y carriages.",
       "machineId": "d3d_v18_10",
-      "subassemblyIds": [
-        "subassembly_x_axis_carriage_build",
-        "subassembly_x_axis_idler_build",
-        "subassembly_x_axis_motor_build",
-        "subassembly_x_axis_rod_assembly",
-        "subassembly_x_axis_belt_threading",
-        "subassembly_x_axis_endstop_build"
+      "partGroupIds": [
+        "partGroup_x_axis_carriage_build",
+        "partGroup_x_axis_idler_build",
+        "partGroup_x_axis_motor_build",
+        "partGroup_x_axis_rod_assembly",
+        "partGroup_x_axis_belt_threading",
+        "partGroup_x_axis_endstop_build"
       ],
       "stepIds": [
         "step_x_axis_prep_layout",
@@ -62,9 +62,9 @@
       "learningFocus": "X-axis carriage uses same bearing fit tests as Y. X-axis idler uses 5 M6x18 screws and 2 half-bearings with flanges out. Motor holder: two nuts in half-piece, belt toothed-side inward, 4 M3x25 motor screws + 3 M6x18 bolts + 1 M6x30 bolt. Second belt peg left loose \u2014 tensioned during frame fitting, not at bench."
     }
   ],
-  "subassemblies": [
+  "partGroups": [
     {
-      "id": "subassembly_x_axis_carriage_build",
+      "id": "partGroup_x_axis_carriage_build",
       "name": "X-Axis Carriage Assembly",
       "stepIds": [ "step_x_axis_prep_layout", "step_x_axis_prep_clean_holes", "step_x_axis_prep_qc_plastic", "step_x_axis_carriage_place_bearings", "step_x_axis_carriage_shake_test", "step_x_axis_carriage_rod_slide_test", "step_x_axis_carriage_bolt" ],
       "assemblyId": "assembly_d3d_x_axis_bench",
@@ -72,7 +72,7 @@
       "milestoneMessage": "X-axis carriage assembled and bearing fit verified."
   },
     {
-      "id": "subassembly_x_axis_idler_build",
+      "id": "partGroup_x_axis_idler_build",
       "name": "X-Axis Idler Assembly",
       "stepIds": [ "step_x_axis_idler_insert_bolt", "step_x_axis_idler_insert_bearings", "step_x_axis_idler_align_halves", "step_x_axis_idler_bolt" ],
       "assemblyId": "assembly_d3d_x_axis_bench",
@@ -80,7 +80,7 @@
       "milestoneMessage": "X-axis idler assembled with nuts in place for Y-carriage attachment."
   },
     {
-      "id": "subassembly_x_axis_motor_build",
+      "id": "partGroup_x_axis_motor_build",
       "name": "X-Axis Motor Holder Assembly",
       "stepIds": [ "step_x_axis_motor_pulley", "step_x_axis_motor_pulley_pop", "step_x_axis_motor_half_nuts", "step_x_axis_motor_belt_channel", "step_x_axis_motor_close_halves", "step_x_axis_motor_belt_test", "step_x_axis_motor_screws", "step_x_axis_motor_m6_bolts", "step_x_axis_motor_dangle_test" ],
       "assemblyId": "assembly_d3d_x_axis_bench",
@@ -88,7 +88,7 @@
       "milestoneMessage": "X-axis motor holder assembled."
   },
     {
-      "id": "subassembly_x_axis_rod_assembly",
+      "id": "partGroup_x_axis_rod_assembly",
       "name": "X-Axis Rod Assembly",
       "stepIds": [ "step_x_axis_rods_into_idler", "step_x_axis_idler_tighten_rods", "step_x_axis_carriage_onto_rods", "step_x_axis_motor_onto_rods", "step_x_axis_rods_qc" ],
       "assemblyId": "assembly_d3d_x_axis_bench",
@@ -96,7 +96,7 @@
       "milestoneMessage": "X-axis guide rods threaded. Carriage slides smoothly."
   },
     {
-      "id": "subassembly_x_axis_belt_threading",
+      "id": "partGroup_x_axis_belt_threading",
       "name": "X-Axis Belt Threading",
       "stepIds": [ "step_x_axis_belt_large_hole", "step_x_axis_belt_around_idler", "step_x_axis_belt_small_hole", "step_x_axis_belt_peg_orient", "step_x_axis_belt_first_peg", "step_x_axis_belt_second_peg", "step_x_axis_belt_travel_test", "step_x_axis_label_axis" ],
       "assemblyId": "assembly_d3d_x_axis_bench",
@@ -104,7 +104,7 @@
       "milestoneMessage": "X-axis belt routed and first peg locked. Second peg loose for Y-fitting tensioning."
   },
     {
-      "id": "subassembly_x_axis_endstop_build",
+      "id": "partGroup_x_axis_endstop_build",
       "name": "X-Axis Endstop Attachment",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "description": "Slides X-axis endstop into holder crevice. Super glues holder to top-left and bottom-left motor-piece holes. Adds reinforcing glue along edges. Labels axis X-Axis. Verifies X and Y axes will fit together before setting aside.",
@@ -123,7 +123,7 @@
       "isAggregate": true
     },
     {
-      "id": "subassembly_x_axis_bench_unit",
+      "id": "partGroup_x_axis_bench_unit",
       "name": "X Axis Complete Axis Unit",
       "assemblyId": "assembly_d3d_x_axis_bench",
       "description": "The fully assembled x axis axis unit, ready for staging. Contains all bench-built components: carriage, idler, motor holder, rods, and belt.",
@@ -175,8 +175,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_x_axis_rod_assembly"
+      "partGroupIds": [
+        "partGroup_x_axis_rod_assembly"
       ]
     },
     {
@@ -210,8 +210,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_x_axis_carriage_build"
+      "partGroupIds": [
+        "partGroup_x_axis_carriage_build"
       ]
     },
     {
@@ -244,8 +244,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_x_axis_idler_build"
+      "partGroupIds": [
+        "partGroup_x_axis_idler_build"
       ]
     },
     {
@@ -278,8 +278,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_x_axis_rod_assembly"
+      "partGroupIds": [
+        "partGroup_x_axis_rod_assembly"
       ]
     },
     {
@@ -315,8 +315,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_x_axis_motor_build"
+      "partGroupIds": [
+        "partGroup_x_axis_motor_build"
       ]
     },
     {
@@ -352,8 +352,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_x_axis_rod_assembly"
+      "partGroupIds": [
+        "partGroup_x_axis_rod_assembly"
       ]
     },
     {
@@ -389,8 +389,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_x_axis_rod_assembly"
+      "partGroupIds": [
+        "partGroup_x_axis_rod_assembly"
       ]
     }
   ],
@@ -399,7 +399,7 @@
       "id": "step_x_axis_prep_layout",
       "name": "Lay out axis pieces",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_carriage_build",
+      "partGroupId": "partGroup_x_axis_carriage_build",
       "sequenceIndex": 168,
       "family": "Confirm",
       "instructionText": "Gather and lay out all axis pieces: two carriage half-pieces, two idler half-pieces, two motor holder half-pieces, the stepper motor, both guide rods, and all hardware (M3x25 screws, M6x18 and M6x30 bolts, nuts)."
@@ -408,7 +408,7 @@
       "id": "step_x_axis_prep_clean_holes",
       "name": "Clean excess plastic from holes",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_carriage_build",
+      "partGroupId": "partGroup_x_axis_carriage_build",
       "sequenceIndex": 170,
       "family": "Use",
       "instructionText": "Use a box cutter or cordless power drill to clear excess plastic from all semi-circle rod holes in the carriage, idler, and motor holder half-pieces. Holes must be smooth so rods insert freely and belts do not rub."
@@ -417,7 +417,7 @@
       "id": "step_x_axis_prep_qc_plastic",
       "name": "QC: verify all plastic pieces are clean",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_carriage_build",
+      "partGroupId": "partGroup_x_axis_carriage_build",
       "sequenceIndex": 171,
       "family": "Confirm",
       "instructionText": "Verify: each carriage half has 4 clean semi-circles, each motor holder half has 6, each idler half has 8. All M6 bolt holes and M3 screw holes are clear of extra plastic."
@@ -426,7 +426,7 @@
       "id": "step_x_axis_carriage_place_bearings",
       "name": "Place 4 bearings in carriage half",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_carriage_build",
+      "partGroupId": "partGroup_x_axis_carriage_build",
       "sequenceIndex": 172,
       "family": "Place",
       "instructionText": "Place four linear bearings into one carriage half-piece with the flanges facing outward (away from each other).",
@@ -443,12 +443,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -459,7 +459,7 @@
       "id": "step_x_axis_carriage_shake_test",
       "name": "Shake test: bearings must not rattle",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_carriage_build",
+      "partGroupId": "partGroup_x_axis_carriage_build",
       "sequenceIndex": 173,
       "family": "Confirm",
       "guidance": {
@@ -480,7 +480,7 @@
       "id": "step_x_axis_carriage_rod_slide_test",
       "name": "Rod slide test: slight resistance, not too free",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_carriage_build",
+      "partGroupId": "partGroup_x_axis_carriage_build",
       "sequenceIndex": 174,
       "family": "Confirm",
       "guidance": {
@@ -501,7 +501,7 @@
       "id": "step_x_axis_carriage_bolt",
       "name": "Bolt carriage halves together",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_carriage_build",
+      "partGroupId": "partGroup_x_axis_carriage_build",
       "sequenceIndex": 175,
       "family": "Use",
       "instructionText": "Secure both halves with M6x18 bolts on top and M6x30 bolts on bottom. Critical alignment: the small ribbed belt hole must sit directly beside the large smooth belt hole. Wrong alignment mismatches the peg holes."
@@ -510,7 +510,7 @@
       "id": "step_x_axis_idler_insert_bolt",
       "name": "Insert M6x18 bolt into idler half",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_idler_build",
+      "partGroupId": "partGroup_x_axis_idler_build",
       "sequenceIndex": 176,
       "family": "Place",
       "instructionText": "Begin assembling the idler: place an M6x18 bolt through one idler half-piece from the outside.",
@@ -527,12 +527,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -543,7 +543,7 @@
       "id": "step_x_axis_idler_insert_bearings",
       "name": "Stack two flanged bearings onto bolt",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_idler_build",
+      "partGroupId": "partGroup_x_axis_idler_build",
       "sequenceIndex": 177,
       "family": "Place",
       "instructionText": "Insert two bearing pieces one on top of the other onto the bolt, flanges facing outward (away from each other)."
@@ -552,7 +552,7 @@
       "id": "step_x_axis_idler_align_halves",
       "name": "Align idler rod holes before closing",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_idler_build",
+      "partGroupId": "partGroup_x_axis_idler_build",
       "sequenceIndex": 178,
       "family": "Confirm",
       "instructionText": "Hold the second idler half against the first and confirm the circular rod holes on both halves line up correctly before pressing them together."
@@ -561,7 +561,7 @@
       "id": "step_x_axis_idler_bolt",
       "name": "Bolt idler halves and secure bearing",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_idler_build",
+      "partGroupId": "partGroup_x_axis_idler_build",
       "sequenceIndex": 179,
       "family": "Use",
       "instructionText": "Secure the idler with an M6x18 bolt through the top and one M6x30 bolt in the belt-side hole. Tighten until firm."
@@ -570,7 +570,7 @@
       "id": "step_x_axis_motor_pulley",
       "name": "Mount pulley on motor shaft with spacer",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_motor_build",
+      "partGroupId": "partGroup_x_axis_motor_build",
       "sequenceIndex": 180,
       "family": "Place",
       "instructionText": "Rest the thin spacer on the motor housing, then seat the pulley on the shaft above it. Tighten the first set screw with an Allen key \u2014 the spacer keeps the pulley off the housing.",
@@ -587,12 +587,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -603,7 +603,7 @@
       "id": "step_x_axis_motor_pulley_pop",
       "name": "Lock pulley set screw until it pops",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_motor_build",
+      "partGroupId": "partGroup_x_axis_motor_build",
       "sequenceIndex": 181,
       "family": "Use",
       "instructionText": "Remove the spacer. Tighten the second set screw as firmly as possible, pressing near the Allen key midpoint. A soft \"pop\" means fully seated. Whether or not you hear it, tighten as hard as you can."
@@ -612,7 +612,7 @@
       "id": "step_x_axis_motor_half_nuts",
       "name": "Load motor holder half with nuts and M6x30 bolt",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_motor_build",
+      "partGroupId": "partGroup_x_axis_motor_build",
       "sequenceIndex": 182,
       "family": "Place",
       "instructionText": "Orient the motor holder half with the rectangular belt channel facing you. Insert one M6x30 bolt and three nuts into the holes now \u2014 the motor will cover them and block access later."
@@ -621,7 +621,7 @@
       "id": "step_x_axis_motor_belt_channel",
       "name": "Insert belt in motor holder channel",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_motor_build",
+      "partGroupId": "partGroup_x_axis_motor_build",
       "sequenceIndex": 183,
       "family": "Place",
       "instructionText": "Insert the belt into the channel in the motor holder half-piece with the toothed side facing inward toward where the pulley will sit."
@@ -630,7 +630,7 @@
       "id": "step_x_axis_motor_close_halves",
       "name": "Close motor holder halves together",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_motor_build",
+      "partGroupId": "partGroup_x_axis_motor_build",
       "sequenceIndex": 184,
       "family": "Place",
       "instructionText": "Press the two motor holder halves together with the belt seated in the channel."
@@ -639,7 +639,7 @@
       "id": "step_x_axis_motor_belt_test",
       "name": "Confirm belt runs smoothly on pulley",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_motor_build",
+      "partGroupId": "partGroup_x_axis_motor_build",
       "sequenceIndex": 185,
       "family": "Confirm",
       "instructionText": "Hold the motor in position against the holder and give the belt a gentle pull \u2014 it should slide along the motor pulley. If it does not, reseat the belt in the channel."
@@ -648,7 +648,7 @@
       "id": "step_x_axis_motor_screws",
       "name": "Attach motor with 4 M3x25 screws",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_motor_build",
+      "partGroupId": "partGroup_x_axis_motor_build",
       "sequenceIndex": 186,
       "family": "Use",
       "instructionText": "Insert the first M3x25 motor screw and tighten 3/4 of the way. Insert the remaining three screws and tighten each the same way \u2014 leave slightly loose so the motor retains flex for belt tensioning later."
@@ -657,7 +657,7 @@
       "id": "step_x_axis_motor_m6_bolts",
       "name": "Insert M6x18 bolts into motor holder",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_motor_build",
+      "partGroupId": "partGroup_x_axis_motor_build",
       "sequenceIndex": 187,
       "family": "Use",
       "instructionText": "Insert M6x18 bolts into the three remaining motor holder holes and tighten each into the nuts with an electric drill."
@@ -666,7 +666,7 @@
       "id": "step_x_axis_motor_dangle_test",
       "name": "Dangle test: motor holder hangs securely",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_motor_build",
+      "partGroupId": "partGroup_x_axis_motor_build",
       "sequenceIndex": 188,
       "family": "Confirm",
       "instructionText": "Hold the complete motor assembly by one of its bolts. It should hang without wobble or separation. This confirms bolts are fully seated before rod insertion."
@@ -675,7 +675,7 @@
       "id": "step_x_axis_rods_into_idler",
       "name": "Insert rods into idler, ends flush",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_rod_assembly",
+      "partGroupId": "partGroup_x_axis_rod_assembly",
       "sequenceIndex": 189,
       "family": "Place",
       "instructionText": "Insert both guide rods into the completed idler piece. Rod ends must be flush against the bottom of the idler. If rods are hard to insert, loosen the idler bolts, slide rods in, then re-tighten.",
@@ -697,12 +697,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -713,7 +713,7 @@
       "id": "step_x_axis_idler_tighten_rods",
       "name": "Tighten short idler bolts onto rods",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_rod_assembly",
+      "partGroupId": "partGroup_x_axis_rod_assembly",
       "sequenceIndex": 190,
       "family": "Use",
       "instructionText": "Tighten the two shorter idler bolts with an electric drill to grip the rods firmly. Leave the longer bolt loose \u2014 it will be used to attach the axis to the frame."
@@ -722,7 +722,7 @@
       "id": "step_x_axis_carriage_onto_rods",
       "name": "Slide carriage onto rods",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_rod_assembly",
+      "partGroupId": "partGroup_x_axis_rod_assembly",
       "sequenceIndex": 191,
       "family": "Place",
       "instructionText": "Slide the completed carriage onto the rods with the long bolt ends closer to the idler. This orientation maximizes the travel distance.",
@@ -744,12 +744,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -760,7 +760,7 @@
       "id": "step_x_axis_motor_onto_rods",
       "name": "Push motor holder onto rods",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_rod_assembly",
+      "partGroupId": "partGroup_x_axis_rod_assembly",
       "sequenceIndex": 192,
       "family": "Place",
       "instructionText": "Push the motor holder piece onto the rods so the motor faces the carriage bolt heads. Loosen bolts if needed to slide on, then re-tighten."
@@ -769,7 +769,7 @@
       "id": "step_x_axis_rods_qc",
       "name": "QC: rods flush, carriage slides freely",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_rod_assembly",
+      "partGroupId": "partGroup_x_axis_rod_assembly",
       "sequenceIndex": 193,
       "family": "Confirm",
       "instructionText": "Check that rod ends are still flush at the idler bottom. Slide the carriage the full rod length \u2014 it should move with only slight bearing resistance."
@@ -778,7 +778,7 @@
       "id": "step_x_axis_belt_large_hole",
       "name": "Thread belt through large carriage hole",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_belt_threading",
+      "partGroupId": "partGroup_x_axis_belt_threading",
       "sequenceIndex": 194,
       "family": "Place",
       "instructionText": "Inspect the carriage: one belt hole is large and smooth, the other small and ribbed. Insert one belt end through the large smooth hole with the toothed side facing inward."
@@ -787,7 +787,7 @@
       "id": "step_x_axis_belt_around_idler",
       "name": "Route belt around idler bearing",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_belt_threading",
+      "partGroupId": "partGroup_x_axis_belt_threading",
       "sequenceIndex": 195,
       "family": "Place",
       "instructionText": "Feed the belt around the bearing inside the idler. Tip: curve the belt slightly in the direction of travel first \u2014 it navigates around the bearing more easily."
@@ -796,7 +796,7 @@
       "id": "step_x_axis_belt_small_hole",
       "name": "Thread belt back through small carriage hole",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_belt_threading",
+      "partGroupId": "partGroup_x_axis_belt_threading",
       "sequenceIndex": 196,
       "family": "Place",
       "instructionText": "Once the belt is around the idler bearing, pull it back through the smaller ribbed carriage hole."
@@ -805,7 +805,7 @@
       "id": "step_x_axis_belt_peg_orient",
       "name": "Confirm belt peg orientation before locking",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_belt_threading",
+      "partGroupId": "partGroup_x_axis_belt_threading",
       "sequenceIndex": 197,
       "family": "Confirm",
       "instructionText": "Thread the belt end through a belt peg. Confirm: the foot of the peg faces away from the toothed side of the belt and away from the axis center. Wrong orientation prevents the peg from locking correctly.",
@@ -822,12 +822,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -838,7 +838,7 @@
       "id": "step_x_axis_belt_first_peg",
       "name": "Lock first belt peg",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_belt_threading",
+      "partGroupId": "partGroup_x_axis_belt_threading",
       "sequenceIndex": 198,
       "family": "Use",
       "instructionText": "Insert the belt end approximately 3/4 inch into the small ribbed belt hole, then simultaneously insert the peg into the same hole and press firmly until it locks."
@@ -847,7 +847,7 @@
       "id": "step_x_axis_belt_second_peg",
       "name": "Insert second peg loosely",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_belt_threading",
+      "partGroupId": "partGroup_x_axis_belt_threading",
       "sequenceIndex": 199,
       "family": "Place",
       "instructionText": "Insert the second peg directly across from the first. Hand-tighten the belt by pulling it through the first peg as much as you can easily. Leave the second peg loose \u2014 it will be fully tensioned after mounting to the frame."
@@ -856,7 +856,7 @@
       "id": "step_x_axis_belt_travel_test",
       "name": "Travel test: carriage moves smoothly with belt",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_belt_threading",
+      "partGroupId": "partGroup_x_axis_belt_threading",
       "sequenceIndex": 200,
       "family": "Confirm",
       "instructionText": "Slide the carriage along the full rod length with the belt installed. It should move smoothly without binding. If it binds, check the belt is not twisted and both carriage holes are correctly threaded."
@@ -865,7 +865,7 @@
       "id": "step_x_axis_label_axis",
       "name": "Label completed X Axis and set aside",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_belt_threading",
+      "partGroupId": "partGroup_x_axis_belt_threading",
       "sequenceIndex": 201,
       "family": "Confirm",
       "instructionText": "Use masking tape and a marker to label this assembly as \"X Axis\". Set it aside in a safe place. It is complete and ready for frame mounting."
@@ -874,7 +874,7 @@
       "id": "step_x_axis_endstop_gather",
       "name": "Gather endstop switch and holder piece",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_endstop_build",
+      "partGroupId": "partGroup_x_axis_endstop_build",
       "sequenceIndex": 202,
       "family": "Confirm",
       "instructionText": "Gather the endstop microswitch and its 3D-printed holder piece. This endstop step applies to this axis only.",
@@ -891,12 +891,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -907,7 +907,7 @@
       "id": "step_x_axis_endstop_slide",
       "name": "Slide endstop board into holder crevice",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_endstop_build",
+      "partGroupId": "partGroup_x_axis_endstop_build",
       "sequenceIndex": 203,
       "family": "Place",
       "instructionText": "Slide the endstop board into the crevice of the holder piece. The switch arm must face toward the arrowhead direction of the holder, away from the mounting legs. The bottom of the board should be flush with the bottom of the holder."
@@ -916,7 +916,7 @@
       "id": "step_x_axis_endstop_glue_board",
       "name": "Super glue endstop into holder",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_endstop_build",
+      "partGroupId": "partGroup_x_axis_endstop_build",
       "sequenceIndex": 204,
       "family": "Confirm",
       "instructionText": "Dab super glue along the side edges of the crevice. Do not apply glue to the metal switch arm or any board contacts."
@@ -925,7 +925,7 @@
       "id": "step_x_axis_endstop_prep_motor",
       "name": "Prep motor holder holes for endstop",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_endstop_build",
+      "partGroupId": "partGroup_x_axis_endstop_build",
       "sequenceIndex": 205,
       "family": "Confirm",
       "instructionText": "Dab super glue into the two motor holder holes facing the belt (top-left and bottom-left when the motor faces you)."
@@ -934,7 +934,7 @@
       "id": "step_x_axis_endstop_attach",
       "name": "Press endstop holder onto motor holder",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_endstop_build",
+      "partGroupId": "partGroup_x_axis_endstop_build",
       "sequenceIndex": 206,
       "family": "Place",
       "instructionText": "Press and hold the endstop holder piece firmly against the motor holder piece for at least 30 seconds until bonded."
@@ -943,7 +943,7 @@
       "id": "step_x_axis_endstop_reinforce",
       "name": "Reinforce endstop joint with super glue",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_endstop_build",
+      "partGroupId": "partGroup_x_axis_endstop_build",
       "sequenceIndex": 207,
       "family": "Confirm",
       "instructionText": "Add super glue along all joint edges between the endstop holder and the motor holder to strengthen the connection."
@@ -952,9 +952,9 @@
       "id": "step_x_axis_compose_axis",
       "name": "Stage completed X axis on bench",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_bench_unit",
+      "partGroupId": "partGroup_x_axis_bench_unit",
       "family": "Place",
-      "requiredSubassemblyId": "subassembly_x_axis_bench_unit",
+      "requiredPartGroupId": "partGroup_x_axis_bench_unit",
       "targetIds": [
         "target_x_axis_bench_staged"
       ],
@@ -965,7 +965,7 @@
       "id": "step_qc_x_axis_bench",
       "name": "X-axis bench QC, dry-fit to Y axes, and label",
       "assemblyId": "assembly_d3d_x_axis_bench",
-      "subassemblyId": "subassembly_x_axis_endstop_build",
+      "partGroupId": "partGroup_x_axis_endstop_build",
       "sequenceIndex": 265,
       "instructionText": "QC checklist: carriage moves smoothly along axis rods; rods flush with idler bottom; idler and carriage bolt heads on same side; toothed side of belt inward; belt pegs in correct holes; belt peg holes line up. Dry-fit the X-axis against the completed Y axes and confirm it will fit. Label axis X-Axis with masking tape.",
       "family": "Confirm",
@@ -1000,7 +1000,7 @@
       "id": "target_x_axis_bench_staged",
       "name": "X-Axis Staging Position",
       "anchorRef": "anchors/d3d/bench/x_axis/staged",
-      "associatedSubassemblyId": "subassembly_x_axis_bench_unit",
+      "associatedPartGroupId": "partGroup_x_axis_bench_unit",
       "useToolActionRotation": true,
       "toolActionRotation": {
         "x": 0,

@@ -1,7 +1,7 @@
 // TTAW.Cards.cs — Foldable card primitive for the Inspector right pane.
 // ──────────────────────────────────────────────────────────────────────────────
 // Extracts the colored-left-rule + tinted-header + chevron-toggle pattern that
-// previously lived inline in TTAW.Subassembly.cs (DrawActiveSubassemblyCard)
+// previously lived inline in TTAW.PartGroup.cs (DrawActivePartGroupCard)
 // plus the per-foldout open-state tracking of TTAW.CueContext._cueContextOpenKeys,
 // and persists expand/collapse in EditorPrefs so state survives domain reload.
 //

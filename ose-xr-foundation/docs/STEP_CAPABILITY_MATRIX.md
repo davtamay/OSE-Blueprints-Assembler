@@ -123,7 +123,7 @@ The user acknowledges, verifies, or continues without a spatial interaction.
 **Examples:**
 - Acknowledge a safety warning before proceeding
 - Verify a measurement reading matches a spec
-- Review a completed subassembly before the next phase
+- Review a completed partGroup before the next phase
 
 **Default interaction pattern:** SingleConfirm (see `INTERACTION_PATTERN_MATRIX.md` §3.7)
 

@@ -33,8 +33,8 @@ namespace OSE.UI.Root
         private static Color PreviewReadyColor => InteractionVisualConstants.PreviewReadyColor;
         private static Color HintHighlightColorA => InteractionVisualConstants.HintHighlightColorA;
         private static Color HintHighlightColorB => InteractionVisualConstants.HintHighlightColorB;
-        private static Color HoveredSubassemblyEmission => InteractionVisualConstants.HoveredSubassemblyEmission;
-        private static Color SelectedSubassemblyEmission => InteractionVisualConstants.SelectedSubassemblyEmission;
+        private static Color HoveredPartGroupEmission => InteractionVisualConstants.HoveredPartGroupEmission;
+        private static Color SelectedPartGroupEmission => InteractionVisualConstants.SelectedPartGroupEmission;
         private const float DragThresholdPixels = InteractionVisualConstants.DragThresholdPixels;
         private const float ScrollDepthSpeed = InteractionVisualConstants.ScrollDepthSpeed;
         private const float PinchDepthSpeed = InteractionVisualConstants.PinchDepthSpeed;
@@ -95,7 +95,7 @@ namespace OSE.UI.Root
             _lookup ??= new PartLookupService(
                 () => _spawner,
                 () => _setup,
-                () => _mgr?.SubassemblyController,
+                () => _mgr?.PartGroupController,
                 _partStates);
             _persistentToolMgr ??= new PersistentToolManagerBridge(
                 () => CursorManager.ToolPreview,
@@ -152,9 +152,9 @@ namespace OSE.UI.Root
             // Startup sync must run even during intro so parts are revealed
             _mgr?.StepResponder?.TrySyncStartupState();
             // Re-apply integrated cube positions every frame until all member GLBs have
-            // loaded — controller removes a subassembly from pending once all parts confirmed.
-            _mgr?.SubassemblyController?.TickPendingIntegration();
-            _mgr?.SubassemblyController?.TickOrientationAnimation(Time.deltaTime);
+            // loaded — controller removes a partGroup from pending once all parts confirmed.
+            _mgr?.PartGroupController?.TickPendingIntegration();
+            _mgr?.PartGroupController?.TickOrientationAnimation(Time.deltaTime);
             _mgr?.AnimationCues?.Update(Time.deltaTime);
 
             // Block all interaction while the intro overlay is displayed
@@ -173,7 +173,7 @@ namespace OSE.UI.Root
             if (hoverFrame)
             {
                 _mgr?.VisualFeedback?.UpdatePartHoverVisual();
-                _mgr?.VisualFeedback?.UpdateSelectedSubassemblyVisual();
+                _mgr?.VisualFeedback?.UpdateSelectedPartGroupVisual();
                 _mgr?.DockArc?.Update();
             }
 
@@ -454,17 +454,17 @@ namespace OSE.UI.Root
                 }
             }
 
-            // Also check subassembly membership — if this part belongs to any
-            // subassembly whose other members are completed, lock it.
+            // Also check partGroup membership — if this part belongs to any
+            // partGroup whose other members are completed, lock it.
             // Uses PartRuntimeController.IsPartLockedForMovement which handles the
             // Selected-from-Completed case (previousState tracking).
-            if (!locked && _mgr?.SubassemblyController != null)
+            if (!locked && _mgr?.PartGroupController != null)
             {
                 ServiceRegistry.TryGet<IPartRuntimeController>(out var memberController);
-                if (_mgr.SubassemblyController.TryGetSubassemblyId(target, out string subId) &&
+                if (_mgr.PartGroupController.TryGetPartGroupId(target, out string subId) &&
                     !string.IsNullOrWhiteSpace(subId))
                 {
-                    foreach (GameObject member in _mgr.SubassemblyController.EnumerateMemberParts(target))
+                    foreach (GameObject member in _mgr.PartGroupController.EnumerateMemberParts(target))
                     {
                         if (member == null) continue;
                         bool memberLocked = memberController != null
@@ -472,7 +472,7 @@ namespace OSE.UI.Root
                             : IsPartStateLockedLocally(member.name);
                         if (memberLocked)
                         {
-                            OseLog.VerboseInfo($"[PartInteraction] Subassembly member '{member.name}' locked — locking '{selectionId}'.");
+                            OseLog.VerboseInfo($"[PartInteraction] PartGroup member '{member.name}' locked — locking '{selectionId}'.");
                             locked = true;
                             break;
                         }
@@ -534,14 +534,14 @@ namespace OSE.UI.Root
         void ISpawnerContext.DestroyObject(UnityEngine.Object obj) => Destroy(obj);
 
         // IPartQueryContext
-        bool IPartQueryContext.IsSubassemblyProxy(GameObject target) => IsSubassemblyProxy(target);
+        bool IPartQueryContext.IsPartGroupProxy(GameObject target) => IsPartGroupProxy(target);
         bool IPartQueryContext.ForEachProxyMember(GameObject proxy, Action<GameObject> action) { ForEachProxyMember(proxy, action); return true; }
         GameObject IPartQueryContext.NormalizeSelectablePlacementTarget(GameObject target) => NormalizeSelectablePlacementTarget(target);
         bool IPartQueryContext.IsSelectablePlacementObject(GameObject target) => IsSelectablePlacementObject(target);
         string IPartQueryContext.ResolveSelectionId(GameObject target) => ResolveSelectionId(target);
         bool IPartQueryContext.IsPartMovementLocked(string partId) => IsPartMovementLocked(partId);
         bool IPartQueryContext.IsToolModeLockedForParts() => IsToolModeLockedForParts();
-        SubassemblyPlacementController IPartQueryContext.SubassemblyController => _mgr?.SubassemblyController;
+        PartGroupPlacementController IPartQueryContext.PartGroupController => _mgr?.PartGroupController;
 
         // IInteractionStateContext
         SelectionService IInteractionStateContext.SelectionService => _selectionService;
@@ -747,9 +747,9 @@ namespace OSE.UI.Root
         private void ClearRequiredPartEmission() => _mgr?.PlaceHandler?.ClearRequiredPartEmission();
 
         /// <summary>
-        /// Shows and positions all parts belonging to the current step's subassembly.
-        /// When the first step of a subassembly activates, all parts for that entire
-        /// subassembly appear at once — matching how a real workbench is organized.
+        /// Shows and positions all parts belonging to the current step's partGroup.
+        /// When the first step of a partGroup activates, all parts for that entire
+        /// partGroup appear at once — matching how a real workbench is organized.
         /// Parts are arranged in an arc on the near side of the floor,
         /// keeping the center clear for the machine being assembled.
         /// </summary>
@@ -760,7 +760,7 @@ namespace OSE.UI.Root
 
         /// <summary>
         /// Highlights the active step's required parts with emission glow and dims
-        /// previously-revealed parts that belong to the subassembly but aren't needed
+        /// previously-revealed parts that belong to the partGroup but aren't needed
         /// for the current step.
         /// </summary>
         private void ApplyStepPartHighlighting(string stepId) => _mgr?.VisualFeedback?.ApplyStepPartHighlighting(stepId);
@@ -1111,22 +1111,22 @@ namespace OSE.UI.Root
 
 
         /// <summary>
-        /// Highlights all members of a completed subassembly when one member is selected.
+        /// Highlights all members of a completed partGroup when one member is selected.
         /// </summary>
-        private void ApplySelectedSubassemblyMemberVisual(GameObject clickedMember, string subassemblyId)
+        private void ApplySelectedPartGroupMemberVisual(GameObject clickedMember, string partGroupId)
         {
             ApplySelectedPartVisual(clickedMember);
-            MaterialHelper.SetEmission(clickedMember, SelectedSubassemblyEmission);
+            MaterialHelper.SetEmission(clickedMember, SelectedPartGroupEmission);
 
-            // Also highlight sibling members so the whole subassembly lights up.
+            // Also highlight sibling members so the whole partGroup lights up.
             // EnumerateMemberParts works with or without a proxy record.
-            if (_mgr?.SubassemblyController != null)
+            if (_mgr?.PartGroupController != null)
             {
-                foreach (GameObject member in _mgr.SubassemblyController.EnumerateMemberParts(clickedMember))
+                foreach (GameObject member in _mgr.PartGroupController.EnumerateMemberParts(clickedMember))
                 {
                     if (member == null || member == clickedMember) continue;
                     ApplySelectedPartVisual(member);
-                    MaterialHelper.SetEmission(member, SelectedSubassemblyEmission);
+                    MaterialHelper.SetEmission(member, SelectedPartGroupEmission);
                 }
             }
         }
@@ -1149,7 +1149,7 @@ namespace OSE.UI.Root
         // ── Lookup delegations (extracted to PartLookupService) ──
 
         private bool IsSpawnedPart(GameObject target) => _lookup.IsSpawnedPart(target);
-        private bool IsSubassemblyProxy(GameObject target) => _lookup.IsSubassemblyProxy(target);
+        private bool IsPartGroupProxy(GameObject target) => _lookup.IsPartGroupProxy(target);
         private bool IsSelectablePlacementObject(GameObject target) => _lookup.IsSelectablePlacementObject(target);
         private string ResolveSelectionId(GameObject target) => _lookup.ResolveSelectionId(target);
         private GameObject NormalizeSelectablePlacementTarget(GameObject target) => _lookup.NormalizeSelectablePlacementTarget(target);

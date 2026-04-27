@@ -482,14 +482,14 @@ namespace OSE.Editor
         }
 
         /// <summary>
-        /// Centroid of a subassembly's member parts from their authored
+        /// Centroid of a partGroup's member parts from their authored
         /// <c>assembledPosition</c>. Mirrors the runtime's equivalent so
         /// editor preview pivots on the same spot as Play mode. Returns
         /// null when no members have authored positions.
         /// </summary>
-        private Vector3? ComputeAuthoredCentroidLocalEditor(string subassemblyId, Transform target)
+        private Vector3? ComputeAuthoredCentroidLocalEditor(string partGroupId, Transform target)
         {
-            if (_pkg == null || !_pkg.TryGetSubassembly(subassemblyId, out var sub) || sub?.partIds == null)
+            if (_pkg == null || !_pkg.TryGetPartGroup(partGroupId, out var sub) || sub?.partIds == null)
                 return null;
             var previewCfg = _pkg.previewConfig?.partPlacements;
             if (previewCfg == null) return null;
@@ -520,7 +520,7 @@ namespace OSE.Editor
         private readonly List<(Transform child, Transform originalParent)> _previewReparents = new();
 
         // Transient wrapper GOs created when no persistent Group_ root exists
-        // for the subassembly being previewed. Destroyed on Stop.
+        // for the partGroup being previewed. Destroyed on Stop.
         private readonly List<GameObject> _previewTransientWrappers = new();
 
         // Panel-playback queue: cues scheduled to start at a given time
@@ -721,7 +721,7 @@ namespace OSE.Editor
             {
                 CueScope.Part        => "part",
                 CueScope.Tool        => "tool",
-                CueScope.Subassembly => "subassembly",
+                CueScope.PartGroup => "partGroup",
                 _                    => "part",
             };
             _suppressPanelQueueClear = true;
@@ -810,7 +810,7 @@ namespace OSE.Editor
         /// currently-selected part or group is the host: for a part,
         /// targets = [that part's live GO]; for a group, targets = its
         /// Group_* root (single target — shake/pulse/particle just move
-        /// the root, OrientSubassembly computes centroid-pivot math).
+        /// the root, OrientPartGroup computes centroid-pivot math).
         /// Reuses the existing preview update loop.
         /// </summary>
         private void StartHostCuePreview(AnimationCueEntry entry, int cueIdx, StepDefinition step, string hostKind, string hostId)
@@ -822,10 +822,10 @@ namespace OSE.Editor
             var startPoses = new List<OSE.UI.Root.AnimationCueResolvedPose>();
             var asmPoses   = new List<OSE.UI.Root.AnimationCueResolvedPose>();
 
-            if (string.Equals(hostKind, "subassembly", StringComparison.Ordinal))
+            if (string.Equals(hostKind, "partGroup", StringComparison.Ordinal))
             {
-                if (_subassemblyRootGOs != null
-                    && _subassemblyRootGOs.TryGetValue(hostId, out var root)
+                if (_partGroupRootGOs != null
+                    && _partGroupRootGOs.TryGetValue(hostId, out var root)
                     && root != null)
                 {
                     targets.Add(root);
@@ -882,7 +882,7 @@ namespace OSE.Editor
 
             if (targets.Count == 0)
             {
-                Debug.LogWarning($"[AnimCuePreview] No host target resolved. selectedGroupIdx={_selectedGroupIdx}, selectedPartIdx={_selectedPartIdx}, groups.Length={_groups?.Length ?? 0}, parts.Length={_parts?.Length ?? 0}, subassemblyRootGOs.Count={_subassemblyRootGOs?.Count ?? 0}");
+                Debug.LogWarning($"[AnimCuePreview] No host target resolved. selectedGroupIdx={_selectedGroupIdx}, selectedPartIdx={_selectedPartIdx}, groups.Length={_groups?.Length ?? 0}, parts.Length={_parts?.Length ?? 0}, partGroupRootGOs.Count={_partGroupRootGOs?.Count ?? 0}");
                 return;
             }
 
@@ -899,13 +899,13 @@ namespace OSE.Editor
                 ? entry.durationSeconds
                 : AnimationCueDefaults.GetDefaultDuration(entry.type);
 
-            // Pivot hint parity with runtime: subassembly hosts get the
+            // Pivot hint parity with runtime: partGroup hosts get the
             // body centroid from PivotCentroidResolver. Without this, the
             // editor preview rotates around the Group_ root origin (0,0,0)
             // while the runtime rotates around the centroid — exactly the
             // divergence this whole change set exists to prevent.
             Vector3? pivotHint = null;
-            if (string.Equals(hostKind, "subassembly", StringComparison.Ordinal)
+            if (string.Equals(hostKind, "partGroup", StringComparison.Ordinal)
                 && targets.Count > 0 && targets[0] != null)
             {
                 pivotHint = OSE.UI.Root.PivotCentroidResolver.ComputeBodyCentroidLocal(
@@ -953,38 +953,38 @@ namespace OSE.Editor
             var startPoses = new List<OSE.UI.Root.AnimationCueResolvedPose>();
             var asmPoses   = new List<OSE.UI.Root.AnimationCueResolvedPose>();
 
-            // Subassembly-scoped cues resolve to the Group_* root when one is
+            // PartGroup-scoped cues resolve to the Group_* root when one is
             // spawned. If no root exists for this step, fall back to the
-            // subassembly's member part GOs so Play still animates something
+            // partGroup's member part GOs so Play still animates something
             // visible instead of silently no-op'ing.
             bool groupRootResolved = false;
-            if (!string.IsNullOrEmpty(entry.targetSubassemblyId))
+            if (!string.IsNullOrEmpty(entry.targetPartGroupId))
             {
-                Debug.Log($"[AnimCuePreview] Cue scoped to subassembly '{entry.targetSubassemblyId}'.");
+                Debug.Log($"[AnimCuePreview] Cue scoped to partGroup '{entry.targetPartGroupId}'.");
                 // After editor restart, Group_ GOs (HideFlags.DontSave)
                 // are destroyed but the dictionary may hold stale keys.
                 // Trigger a package reload to recreate them if needed.
                 GameObject groupRoot = null;
-                bool hasKey = _subassemblyRootGOs != null
-                    && _subassemblyRootGOs.TryGetValue(entry.targetSubassemblyId, out groupRoot);
+                bool hasKey = _partGroupRootGOs != null
+                    && _partGroupRootGOs.TryGetValue(entry.targetPartGroupId, out groupRoot);
 
                 // If the key is missing or the GO was destroyed (editor
                 // restart clears DontSave GOs), rebuild all group roots
                 // for the current step before giving up.
                 if (!hasKey || groupRoot == null)
                 {
-                    if (hasKey) _subassemblyRootGOs.Remove(entry.targetSubassemblyId);
+                    if (hasKey) _partGroupRootGOs.Remove(entry.targetPartGroupId);
                     if (_stepIds != null && _stepFilterIdx > 0 && _stepFilterIdx < _stepIds.Length)
                     {
                         var refreshStep = FindStep(_stepIds[_stepFilterIdx]);
                         if (refreshStep != null)
                         {
-                            Debug.Log("[AnimCuePreview] Group root missing — rebuilding subassembly roots.");
-                            EnsureAllSubassemblyRoots(refreshStep);
+                            Debug.Log("[AnimCuePreview] Group root missing — rebuilding partGroup roots.");
+                            EnsureAllPartGroupRoots(refreshStep);
                         }
                     }
-                    if (_subassemblyRootGOs != null)
-                        _subassemblyRootGOs.TryGetValue(entry.targetSubassemblyId, out groupRoot);
+                    if (_partGroupRootGOs != null)
+                        _partGroupRootGOs.TryGetValue(entry.targetPartGroupId, out groupRoot);
                 }
                 // Always rebuild the group hierarchy before preview.
                 // Parts may be partially reparented, inactive, or live in
@@ -993,11 +993,11 @@ namespace OSE.Editor
                 if (_stepIds != null && _stepFilterIdx > 0 && _stepFilterIdx < _stepIds.Length)
                 {
                     var refreshStep = FindStep(_stepIds[_stepFilterIdx]);
-                    if (refreshStep != null) EnsureAllSubassemblyRoots(refreshStep);
+                    if (refreshStep != null) EnsureAllPartGroupRoots(refreshStep);
                 }
                 // Re-fetch in case roots were recreated during the rebuild.
-                if (_subassemblyRootGOs != null)
-                    _subassemblyRootGOs.TryGetValue(entry.targetSubassemblyId, out groupRoot);
+                if (_partGroupRootGOs != null)
+                    _partGroupRootGOs.TryGetValue(entry.targetPartGroupId, out groupRoot);
                 if (groupRoot != null)
                 {
                     targets.Add(groupRoot);
@@ -1015,7 +1015,7 @@ namespace OSE.Editor
                     Debug.Log($"[AnimCuePreview] Resolved group root '{groupRoot.name}' at localPos={gt.localPosition}");
                 }
                 else if (_pkg != null
-                    && _pkg.TryGetSubassembly(entry.targetSubassemblyId, out var subDef)
+                    && _pkg.TryGetPartGroup(entry.targetPartGroupId, out var subDef)
                     && subDef?.partIds != null)
                 {
                     // Fallback: no Group_ root is registered, so spawn a
@@ -1023,9 +1023,9 @@ namespace OSE.Editor
                     // parts under it, and animate the wrapper as a single
                     // group target. Cleanup on Stop restores every member's
                     // original parent.
-                    Debug.LogWarning($"[AnimCuePreview] No Group_ root for '{entry.targetSubassemblyId}'. Creating transient wrapper for the preview.");
+                    Debug.LogWarning($"[AnimCuePreview] No Group_ root for '{entry.targetPartGroupId}'. Creating transient wrapper for the preview.");
                     var previewRoot = GetPreviewRoot();
-                    var wrapperGO   = new GameObject($"PreviewGroup_{entry.targetSubassemblyId}")
+                    var wrapperGO   = new GameObject($"PreviewGroup_{entry.targetPartGroupId}")
                     {
                         hideFlags = HideFlags.DontSave,
                     };
@@ -1169,7 +1169,7 @@ namespace OSE.Editor
 
             // Pivot hint parity with runtime: when a group root resolved,
             // seed PivotHintLocal with the body centroid. Mirrors
-            // AnimationCueCoordinator.ResolveHostedSubassemblyContext so
+            // AnimationCueCoordinator.ResolveHostedPartGroupContext so
             // the editor preview rotates around the same point the runtime
             // will. Without this, the preview rotates around Group_ origin.
             Vector3? pivotHint = null;
@@ -1234,15 +1234,15 @@ namespace OSE.Editor
         // ── Host-section authoring removed ───────────────────────────────────
         //
         // The "Animations & Effects" section that used to render on the
-        // selected part / subassembly inspector was a duplicate authoring
+        // selected part / partGroup inspector was a duplicate authoring
         // surface for the same host-owned cue data. Authoring now happens in
         // the task-sequence timing panels (TTAW.TimingPanels.cs +
-        // TTAW.CueContext.cs DrawCuesForPart / DrawCuesForSubassembly /
+        // TTAW.CueContext.cs DrawCuesForPart / DrawCuesForPartGroup /
         // DrawCuesForTool), which read/write the same host storage and drive
         // the same scene preview. One surface, one storage — no drift.
         //
         // The block below was intentionally deleted:
-        //   DrawSubassemblyAnimationCuesSection
+        //   DrawPartGroupAnimationCuesSection
         //   DrawPartAnimationCuesSection
         //   DrawHostCueList
         //   HostCueTypes / HostCueTriggers dropdown constants
@@ -1343,7 +1343,7 @@ namespace OSE.Editor
         // the timing-panel caller knows the scope ("part" / "sub" / "tool")
         // and key. Without this, ResolvePoseFieldHost falls back to canvas
         // selection, which doesn't always match the cue's actual owner
-        // (e.g. a subassembly cue authored from a part task row).
+        // (e.g. a partGroup cue authored from a part task row).
         private string _poseFieldHostKindOverride;
         private string _poseFieldHostKeyOverride;
 
@@ -1420,21 +1420,21 @@ namespace OSE.Editor
             // part or group in the task sequence). The old Target Part IDs
             // toggle block has been removed — authoring is host-scoped now.
 
-            // ── Target Subassembly (orientSubassembly only) ─────────────────────
-            if (string.Equals(cue.type, "orientSubassembly", StringComparison.Ordinal))
+            // ── Target PartGroup (orientPartGroup only) ─────────────────────
+            if (string.Equals(cue.type, "orientPartGroup", StringComparison.Ordinal))
             {
-                if (string.IsNullOrEmpty(cue.targetSubassemblyId))
-                    EditorGUILayout.HelpBox("Set a Target Subassembly ID.", MessageType.Warning);
+                if (string.IsNullOrEmpty(cue.targetPartGroupId))
+                    EditorGUILayout.HelpBox("Set a Target PartGroup ID.", MessageType.Warning);
 
-                if (_pkg?.subassemblies != null && _pkg.subassemblies.Length > 0)
+                if (_pkg?.partGroups != null && _pkg.partGroups.Length > 0)
                 {
-                    string[] subIds   = Array.ConvertAll(_pkg.subassemblies, s => s?.id ?? "?");
-                    int      subIdx   = Mathf.Max(0, Array.IndexOf(subIds, cue.targetSubassemblyId));
+                    string[] subIds   = Array.ConvertAll(_pkg.partGroups, s => s?.id ?? "?");
+                    int      subIdx   = Mathf.Max(0, Array.IndexOf(subIds, cue.targetPartGroupId));
                     EditorGUI.BeginChangeCheck();
-                    int newSubIdx = EditorGUILayout.Popup("Target Subassembly", subIdx, subIds);
+                    int newSubIdx = EditorGUILayout.Popup("Target PartGroup", subIdx, subIds);
                     if (EditorGUI.EndChangeCheck())
                     {
-                        cue.targetSubassemblyId = subIds[newSubIdx];
+                        cue.targetPartGroupId = subIds[newSubIdx];
                         cues[idx]               = cue;
                         _dirtyStepIds.Add(step.id);
                     }
@@ -1442,8 +1442,8 @@ namespace OSE.Editor
                 else
                 {
                     EditorGUI.BeginChangeCheck();
-                    string newSubId = EditorGUILayout.TextField("Target Subassembly ID", cue.targetSubassemblyId ?? "");
-                    if (EditorGUI.EndChangeCheck()) { cue.targetSubassemblyId = newSubId; cues[idx] = cue; _dirtyStepIds.Add(step.id); }
+                    string newSubId = EditorGUILayout.TextField("Target PartGroup ID", cue.targetPartGroupId ?? "");
+                    if (EditorGUI.EndChangeCheck()) { cue.targetPartGroupId = newSubId; cues[idx] = cue; _dirtyStepIds.Add(step.id); }
                 }
             }
 
@@ -1609,11 +1609,11 @@ namespace OSE.Editor
                     cues[idx] = cue;
                     break;
                 }
-                case "orientSubassembly":
+                case "orientPartGroup":
                 {
-                    var rot = new Vector3(cue.subassemblyRotation.x, cue.subassemblyRotation.y, cue.subassemblyRotation.z);
+                    var rot = new Vector3(cue.partGroupRotation.x, cue.partGroupRotation.y, cue.partGroupRotation.z);
                     rot                     = Vector3FieldClip("Rotation (Euler °)", rot);
-                    cue.subassemblyRotation = new SceneFloat3 { x = rot.x, y = rot.y, z = rot.z };
+                    cue.partGroupRotation = new SceneFloat3 { x = rot.x, y = rot.y, z = rot.z };
                     break;
                 }
                 case "particle":
@@ -1695,7 +1695,7 @@ namespace OSE.Editor
             bool holdCapable =
                 string.Equals(cue.type, "transform", StringComparison.Ordinal) ||
                 string.Equals(cue.type, "poseTransition", StringComparison.Ordinal) ||
-                string.Equals(cue.type, "orientSubassembly", StringComparison.Ordinal);
+                string.Equals(cue.type, "orientPartGroup", StringComparison.Ordinal);
             if (holdCapable)
             {
                 bool newHold = EditorGUILayout.Toggle(
@@ -1716,12 +1716,12 @@ namespace OSE.Editor
             }
 
             // ── Pivot override (optional — types that rotate or emit from a point) ──
-            // Default pivot for "orientSubassembly" is the member centroid; for
+            // Default pivot for "orientPartGroup" is the member centroid; for
             // "particle" it is the host's position (centroid for groups). The
             // override lets authors nudge the rotation / effect origin with a
             // local-space offset. Only exposed for types where it is meaningful.
             bool pivotCapable =
-                string.Equals(cue.type, "orientSubassembly", StringComparison.Ordinal) ||
+                string.Equals(cue.type, "orientPartGroup", StringComparison.Ordinal) ||
                 string.Equals(cue.type, "particle", StringComparison.Ordinal) ||
                 string.Equals(cue.type, "transform", StringComparison.Ordinal) ||
                 string.Equals(cue.type, "poseTransition", StringComparison.Ordinal);
@@ -1879,7 +1879,7 @@ namespace OSE.Editor
             "demonstratePlacement" => new OSE.UI.Root.DemonstratePlacementPlayer(),
             "poseTransition"       => new OSE.UI.Root.PoseTransitionPlayer(),
             "transform"            => new OSE.UI.Root.PoseTransitionPlayer(),
-            "orientSubassembly"    => new OSE.UI.Root.OrientSubassemblyPlayer(),
+            "orientPartGroup"    => new OSE.UI.Root.OrientPartGroupPlayer(),
             // Phase 2 effect cues
             "emissionPulse"        => new OSE.UI.Root.EmissionPulsePlayer(),
             "colorTween"           => new OSE.UI.Root.ColorTweenPlayer(),
@@ -2237,7 +2237,7 @@ namespace OSE.Editor
         /// <summary>
         /// Describes the current canvas selection's "pose source" for the
         /// From/To pose dropdown. A host can be a Part (backed by a
-        /// PartPreviewPlacement), a Group (backed by a SubassemblyPreviewPlacement),
+        /// PartPreviewPlacement), a Group (backed by a PartGroupPreviewPlacement),
         /// or None (tool/no selection — only Custom + Capture Live options
         /// are offered). Carries a live Transform so the dropdown's
         /// "Capture Live Transform" option can snapshot the scene without a
@@ -2275,7 +2275,7 @@ namespace OSE.Editor
                     pp.assembledPosition, pp.assembledRotation, pp.assembledScale,
                     pp.stepPoses, live);
 
-            public static PoseFieldHost FromGroup(SubassemblyPreviewPlacement sp, Transform live, string id)
+            public static PoseFieldHost FromGroup(PartGroupPreviewPlacement sp, Transform live, string id)
                 => new PoseFieldHost(PoseFieldHostKind.Group, id,
                     sp.startPosition, sp.startRotation, sp.startScale,
                     sp.assembledPosition, sp.assembledRotation, sp.assembledScale,
@@ -2290,7 +2290,7 @@ namespace OSE.Editor
         /// Draws editable position/rotation/scale fields for an AnimationPose
         /// with a unified dropdown offering Custom (edit numbers below), Start,
         /// Assembled, This step's end pose, and Capture Live Transform. Works
-        /// identically for part and group (subassembly) scopes — only the
+        /// identically for part and group (partGroup) scopes — only the
         /// backing placement differs.
         /// </summary>
         private void DrawAnimationPoseField(string label, ref AnimationPose pose, StepDefinition step)
@@ -2332,7 +2332,7 @@ namespace OSE.Editor
 
         /// <summary>
         /// Resolves the canvas selection into a <see cref="PoseFieldHost"/>.
-        /// Priority: Group (subassembly selected on canvas) &gt; explicit Part
+        /// Priority: Group (partGroup selected on canvas) &gt; explicit Part
         /// row &gt; task-sequence Part row. The host's LiveTransform feeds the
         /// "Capture Live Transform" dropdown option. Returns Empty when the
         /// selection can't be resolved — in that case the dropdown still
@@ -2342,7 +2342,7 @@ namespace OSE.Editor
         private PoseFieldHost ResolvePoseFieldHost(StepDefinition step)
         {
             // Caller-supplied override wins (timing-panel call site knows
-            // whether this cue is authored on a part, subassembly, or tool).
+            // whether this cue is authored on a part, partGroup, or tool).
             // Canvas-selection fallback below only runs for the legacy step-
             // level cue editor that has no scope context.
             if (!string.IsNullOrEmpty(_poseFieldHostKindOverride)
@@ -2351,19 +2351,19 @@ namespace OSE.Editor
                 return ResolvePoseFieldHostFromScope(_poseFieldHostKindOverride, _poseFieldHostKeyOverride);
             }
 
-            // Group (subassembly) — takes priority because canvas selection of a
+            // Group (partGroup) — takes priority because canvas selection of a
             // group is explicit (click on group outline).
             if (!string.IsNullOrEmpty(_canvasSelectedSubId)
-                && _subassemblyRootGOs != null
-                && _subassemblyRootGOs.TryGetValue(_canvasSelectedSubId, out var groupGO)
+                && _partGroupRootGOs != null
+                && _partGroupRootGOs.TryGetValue(_canvasSelectedSubId, out var groupGO)
                 && groupGO != null)
             {
-                SubassemblyPreviewPlacement sp = null;
-                if (_pkg?.previewConfig?.subassemblyPlacements != null)
+                PartGroupPreviewPlacement sp = null;
+                if (_pkg?.previewConfig?.partGroupPlacements != null)
                 {
-                    foreach (var s in _pkg.previewConfig.subassemblyPlacements)
+                    foreach (var s in _pkg.previewConfig.partGroupPlacements)
                     {
-                        if (s != null && string.Equals(s.subassemblyId, _canvasSelectedSubId, StringComparison.Ordinal))
+                        if (s != null && string.Equals(s.partGroupId, _canvasSelectedSubId, StringComparison.Ordinal))
                         { sp = s; break; }
                     }
                 }
@@ -2391,7 +2391,7 @@ namespace OSE.Editor
         /// Resolves a PoseFieldHost from an explicit scope/key pair — used by
         /// the timing-panel call site where the cue's owner is known, and by
         /// the canvas-part fallback above once the part id is determined.
-        /// Supports "part", "sub" / "subassembly", and "tool" host kinds.
+        /// Supports "part", "sub" / "partGroup", and "tool" host kinds.
         /// </summary>
         private PoseFieldHost ResolvePoseFieldHostFromScope(string hostKind, string hostKey)
         {
@@ -2417,20 +2417,20 @@ namespace OSE.Editor
             }
 
             if (string.Equals(hostKind, "sub", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(hostKind, "subassembly", StringComparison.OrdinalIgnoreCase))
+                || string.Equals(hostKind, "partGroup", StringComparison.OrdinalIgnoreCase))
             {
-                SubassemblyPreviewPlacement sp = null;
-                if (_pkg?.previewConfig?.subassemblyPlacements != null)
+                PartGroupPreviewPlacement sp = null;
+                if (_pkg?.previewConfig?.partGroupPlacements != null)
                 {
-                    foreach (var s in _pkg.previewConfig.subassemblyPlacements)
+                    foreach (var s in _pkg.previewConfig.partGroupPlacements)
                     {
-                        if (s != null && string.Equals(s.subassemblyId, hostKey, StringComparison.Ordinal))
+                        if (s != null && string.Equals(s.partGroupId, hostKey, StringComparison.Ordinal))
                         { sp = s; break; }
                     }
                 }
                 Transform live = null;
-                if (_subassemblyRootGOs != null
-                    && _subassemblyRootGOs.TryGetValue(hostKey, out var groupGO)
+                if (_partGroupRootGOs != null
+                    && _partGroupRootGOs.TryGetValue(hostKey, out var groupGO)
                     && groupGO != null)
                     live = groupGO.transform;
                 if (sp != null) return PoseFieldHost.FromGroup(sp, live, hostKey);
@@ -2865,21 +2865,21 @@ namespace OSE.Editor
         /// Authoring-time centroid for a cue, routed through
         /// <see cref="PivotCentroidResolver"/> so the inspector readout
         /// matches the scene-view gizmo and the runtime pivot exactly.
-        /// Subassembly-owned cues often leave <c>targetSubassemblyId</c>
-        /// empty (the host IS the owning subassembly); if empty we scan
-        /// <c>_pkg.subassemblies</c> for the one whose
+        /// PartGroup-owned cues often leave <c>targetPartGroupId</c>
+        /// empty (the host IS the owning partGroup); if empty we scan
+        /// <c>_pkg.partGroups</c> for the one whose
         /// <c>animationCues</c> array contains this cue instance.
-        /// Returns null when no body centroid is meaningful (non-subassembly
+        /// Returns null when no body centroid is meaningful (non-partGroup
         /// host, or first-step-introducing-group case).
         /// </summary>
         private Vector3? ResolveCueCentroidForAuthoring(AnimationCueEntry cue, StepDefinition step)
         {
             if (cue == null || step == null) return null;
 
-            string subId = cue.targetSubassemblyId;
-            if (string.IsNullOrEmpty(subId) && _pkg?.subassemblies != null)
+            string subId = cue.targetPartGroupId;
+            if (string.IsNullOrEmpty(subId) && _pkg?.partGroups != null)
             {
-                foreach (var sub in _pkg.subassemblies)
+                foreach (var sub in _pkg.partGroups)
                 {
                     if (sub?.animationCues == null) continue;
                     for (int k = 0; k < sub.animationCues.Length; k++)
@@ -2892,8 +2892,8 @@ namespace OSE.Editor
             }
 
             if (!string.IsNullOrEmpty(subId)
-                && _subassemblyRootGOs != null
-                && _subassemblyRootGOs.TryGetValue(subId, out var groupGO)
+                && _partGroupRootGOs != null
+                && _partGroupRootGOs.TryGetValue(subId, out var groupGO)
                 && groupGO != null)
             {
                 return PivotCentroidResolver.ComputeBodyCentroidLocal(
@@ -2905,7 +2905,7 @@ namespace OSE.Editor
         /// <summary>
         /// Walks <c>_pkg.steps</c> for a step with
         /// <c>sequenceIndex == current.sequenceIndex - 1</c>, then searches
-        /// that step's host-owned cues (subassembly, part, tool) and the
+        /// that step's host-owned cues (partGroup, part, tool) and the
         /// step's own <c>animationCues.cues</c> array for a cue matching
         /// the current cue's type + host. Returns the matched cue's
         /// pivotOverride + pivotOffset when found. When no match, shows
@@ -2943,9 +2943,9 @@ namespace OSE.Editor
             }
 
             // Host-owned cues filtered by stepIds include prev step.
-            if (_pkg.subassemblies != null)
+            if (_pkg.partGroups != null)
             {
-                foreach (var sub in _pkg.subassemblies)
+                foreach (var sub in _pkg.partGroups)
                 {
                     if (sub?.animationCues == null) continue;
                     foreach (var c in sub.animationCues)
@@ -2994,8 +2994,8 @@ namespace OSE.Editor
             if (candidate == null || target == null) return false;
             if (!string.Equals(candidate.type, target.type, StringComparison.Ordinal)) return false;
 
-            bool subMatch = !string.IsNullOrEmpty(target.targetSubassemblyId)
-                            && string.Equals(candidate.targetSubassemblyId, target.targetSubassemblyId, StringComparison.Ordinal);
+            bool subMatch = !string.IsNullOrEmpty(target.targetPartGroupId)
+                            && string.Equals(candidate.targetPartGroupId, target.targetPartGroupId, StringComparison.Ordinal);
             if (subMatch) return true;
 
             string targetPid = (target.targetPartIds != null && target.targetPartIds.Length > 0)

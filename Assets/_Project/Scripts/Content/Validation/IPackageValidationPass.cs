@@ -23,7 +23,7 @@ namespace OSE.Content.Validation
         public List<MachinePackageValidationIssue> Issues { get; }
 
         public HashSet<string> AssemblyIds     { get; }
-        public HashSet<string> SubassemblyIds  { get; }
+        public HashSet<string> PartGroupIds  { get; }
         public HashSet<string> PartIds         { get; }
         public HashSet<string> ToolIds         { get; }
         public HashSet<string> StepIds         { get; }
@@ -37,7 +37,7 @@ namespace OSE.Content.Validation
             MachinePackageDefinition package,
             List<MachinePackageValidationIssue> issues,
             HashSet<string> assemblyIds,
-            HashSet<string> subassemblyIds,
+            HashSet<string> partGroupIds,
             HashSet<string> partIds,
             HashSet<string> toolIds,
             HashSet<string> stepIds,
@@ -50,7 +50,7 @@ namespace OSE.Content.Validation
             Package          = package;
             Issues           = issues;
             AssemblyIds      = assemblyIds;
-            SubassemblyIds   = subassemblyIds;
+            PartGroupIds   = partGroupIds;
             PartIds          = partIds;
             ToolIds          = toolIds;
             StepIds          = stepIds;

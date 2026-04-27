@@ -18,7 +18,7 @@ namespace OSE.Core
 
         // Progression
         public string CurrentAssemblyId;
-        public string CurrentSubassemblyId;
+        public string CurrentPartGroupId;
         public string CurrentStepId;
         public float ElapsedSeconds;
 

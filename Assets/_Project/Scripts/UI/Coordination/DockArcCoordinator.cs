@@ -8,7 +8,7 @@ namespace OSE.UI.Root
 {
     /// <summary>
     /// Owns the <see cref="DockArcVisual"/> lifecycle within <see cref="PartInteractionBridge"/>.
-    /// Resolves the active dock arc from subassembly placement state each frame and
+    /// Resolves the active dock arc from partGroup placement state each frame and
     /// drives the visual accordingly.
     /// </summary>
     internal sealed class DockArcCoordinator
@@ -19,7 +19,7 @@ namespace OSE.UI.Root
         public DockArcCoordinator(IBridgeContext ctx) => _ctx = ctx;
 
         /// <summary>
-        /// Evaluates current subassembly state and updates (or clears) the dock arc visual.
+        /// Evaluates current partGroup state and updates (or clears) the dock arc visual.
         /// Called from <see cref="PartInteractionBridge.Update"/> on the hover-poll interval.
         /// </summary>
         public void Update()
@@ -105,19 +105,19 @@ namespace OSE.UI.Root
                 : null;
 
             if (step == null ||
-                !step.RequiresSubassemblyPlacement ||
-                string.IsNullOrWhiteSpace(step.requiredSubassemblyId) ||
+                !step.RequiresPartGroupPlacement ||
+                string.IsNullOrWhiteSpace(step.requiredPartGroupId) ||
                 step.targetIds == null ||
                 step.targetIds.Length != 1 ||
-                _ctx.SubassemblyController == null ||
-                !_ctx.SubassemblyController.TryGetProxy(step.requiredSubassemblyId, out sourceProxy))
+                _ctx.PartGroupController == null ||
+                !_ctx.PartGroupController.TryGetProxy(step.requiredPartGroupId, out sourceProxy))
             {
                 return false;
             }
 
             if (step.IsAxisFitPlacement &&
-                _ctx.SubassemblyController.TryGetActiveFitGuide(
-                    step.requiredSubassemblyId,
+                _ctx.PartGroupController.TryGetActiveFitGuide(
+                    step.requiredPartGroupId,
                     out Vector3 fitCurrentWorld,
                     out Vector3 fitFinalWorld,
                     out Vector3 fitUp))
@@ -141,7 +141,7 @@ namespace OSE.UI.Root
                 return true;
             }
 
-            if (!_ctx.SubassemblyController.TryResolveTargetPose(
+            if (!_ctx.PartGroupController.TryResolveTargetPose(
                     step.targetIds[0], out Vector3 targetLocalPos, out Quaternion targetRot, out _))
             {
                 return false;

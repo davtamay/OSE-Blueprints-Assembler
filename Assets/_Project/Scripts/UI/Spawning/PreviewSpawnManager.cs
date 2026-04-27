@@ -127,7 +127,7 @@ namespace OSE.UI.Root
             }
 
             // Target-less ghost fallback: when a step declares
-            // requiredPartIds or requiredSubassemblyId but no explicit
+            // requiredPartIds or requiredPartGroupId but no explicit
             // targetIds, spawn a ghost per part at its assembledPose.
             // Matches author intent "put this thing here" without
             // requiring a manually wired target — the assembled placement
@@ -176,7 +176,7 @@ namespace OSE.UI.Root
             // can read OpenTasks for filtering), but those families must
             // NEVER spawn drag-to-place ghosts. Without this gate, a Confirm
             // step that authors a kind="part" taskOrder entry (e.g.
-            // step_batch_c1_shake_test referencing the carriage subassembly
+            // step_batch_c1_shake_test referencing the carriage partGroup
             // for cursor gating) would surface a placement ghost over a
             // part the trainee has nothing to place.
             if (step.IsPipeConnection || step.IsToolAction || step.IsConfirmation)
@@ -240,7 +240,7 @@ namespace OSE.UI.Root
         /// <summary>
         /// Ghost fallback when a step has no <c>targetIds</c>. Enumerates
         /// the parts the step requires (<c>requiredPartIds</c> plus every
-        /// member of <c>requiredSubassemblyId</c>) and spawns a ghost at
+        /// member of <c>requiredPartGroupId</c>) and spawns a ghost at
         /// each part's <c>assembledPose</c>. Idempotent re-use of
         /// <see cref="SpawnPreviewForAssembledPart"/> so visual + material
         /// + click-to-place behaviour match the targeted path.
@@ -254,8 +254,8 @@ namespace OSE.UI.Root
                     if (!string.IsNullOrEmpty(pid) && seen.Add(pid))
                         SpawnPreviewForAssembledPart(package, pid);
             }
-            if (!string.IsNullOrEmpty(step.requiredSubassemblyId)
-                && package.TryGetSubassembly(step.requiredSubassemblyId, out var sub)
+            if (!string.IsNullOrEmpty(step.requiredPartGroupId)
+                && package.TryGetPartGroup(step.requiredPartGroupId, out var sub)
                 && sub?.partIds != null)
             {
                 foreach (var pid in sub.partIds)
@@ -363,9 +363,9 @@ namespace OSE.UI.Root
             if (string.IsNullOrEmpty(targetId)) { OseLog.Warn("[PartInteraction] SpawnPreviewForTarget: targetId is null/empty."); return; }
             if (!package.TryGetTarget(targetId, out var target)) { OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: target '{targetId}' not found in package."); return; }
 
-            if (!string.IsNullOrWhiteSpace(target.associatedSubassemblyId))
+            if (!string.IsNullOrWhiteSpace(target.associatedPartGroupId))
             {
-                SpawnPreviewForSubassemblyTarget(package, targetId, target);
+                SpawnPreviewForPartGroupTarget(package, targetId, target);
                 return;
             }
 
@@ -528,7 +528,7 @@ namespace OSE.UI.Root
         /// Target-less ghost: spawns a preview at <paramref name="partId"/>'s
         /// <c>assembledPose</c> without needing a <see cref="TargetDefinition"/>.
         /// Used when a step declares <c>requiredPartIds</c> or
-        /// <c>requiredSubassemblyId</c> but no <c>targetIds</c> — the
+        /// <c>requiredPartGroupId</c> but no <c>targetIds</c> — the
         /// assembled placement IS the target visually. Click-to-place
         /// against this ghost uses the synthetic target key
         /// <c>__auto_{partId}</c> so existing placement handlers can key off
@@ -635,34 +635,34 @@ namespace OSE.UI.Root
             OseLog.Info($"[PartInteraction] Target-less ghost spawned for '{partId}' at assembledPose. Total previews: {_ctx.SpawnedPreviews.Count}");
         }
 
-        private void SpawnPreviewForSubassemblyTarget(MachinePackageDefinition package, string targetId, TargetDefinition target)
+        private void SpawnPreviewForPartGroupTarget(MachinePackageDefinition package, string targetId, TargetDefinition target)
         {
-            string subassemblyId = target.associatedSubassemblyId;
-            if (string.IsNullOrWhiteSpace(subassemblyId))
+            string partGroupId = target.associatedPartGroupId;
+            if (string.IsNullOrWhiteSpace(partGroupId))
                 return;
 
-            var subCtrl = _ctx.SubassemblyController;
-            if (subCtrl == null || !subCtrl.IsSubassemblyReady(subassemblyId))
+            var subCtrl = _ctx.PartGroupController;
+            if (subCtrl == null || !subCtrl.IsPartGroupReady(partGroupId))
             {
-                OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: subassembly '{subassemblyId}' is not ready for placement.");
+                OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: partGroup '{partGroupId}' is not ready for placement.");
                 return;
             }
 
-            if (!package.TryGetSubassembly(subassemblyId, out SubassemblyDefinition subassembly) || subassembly == null)
+            if (!package.TryGetPartGroup(partGroupId, out PartGroupDefinition partGroup) || partGroup == null)
             {
-                OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: subassembly '{subassemblyId}' not found in package.");
+                OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: partGroup '{partGroupId}' not found in package.");
                 return;
             }
 
-            SubassemblyPreviewPlacement frame = _ctx.Spawner.FindSubassemblyPlacement(subassemblyId);
+            PartGroupPreviewPlacement frame = _ctx.Spawner.FindPartGroupPlacement(partGroupId);
             if (frame == null)
             {
-                OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: subassembly '{subassemblyId}' has no authored preview frame.");
+                OseLog.Warn($"[PartInteraction] SpawnPreviewForTarget: partGroup '{partGroupId}' has no authored preview frame.");
                 return;
             }
 
             Transform previewRoot = GetPreviewRoot();
-            GameObject subPreviewRoot = new GameObject($"Preview_{subassemblyId}");
+            GameObject subPreviewRoot = new GameObject($"Preview_{partGroupId}");
             if (previewRoot != null)
                 subPreviewRoot.transform.SetParent(previewRoot, false);
 
@@ -682,8 +682,8 @@ namespace OSE.UI.Root
             Vector3 framePos = ToVector3(frame.position);
             Quaternion frameRot = ToQuaternion(frame.rotation);
             Vector3 frameScale = SanitizeScale(ToVector3(frame.scale), Vector3.one);
-            IntegratedSubassemblyPreviewPlacement integratedPlacement = _ctx.Spawner.FindIntegratedSubassemblyPlacement(subassemblyId, targetId);
-            ConstrainedSubassemblyFitPreviewPlacement fitPlacement = _ctx.Spawner.FindConstrainedSubassemblyFitPlacement(subassemblyId, targetId);
+            IntegratedPartGroupPreviewPlacement integratedPlacement = _ctx.Spawner.FindIntegratedPartGroupPlacement(partGroupId, targetId);
+            ConstrainedPartGroupFitPreviewPlacement fitPlacement = _ctx.Spawner.FindConstrainedPartGroupFitPlacement(partGroupId, targetId);
             Vector3 fitAxisLocal = fitPlacement != null ? ToVector3(fitPlacement.fitAxisLocal) : Vector3.zero;
             if (fitAxisLocal.sqrMagnitude > 0.000001f)
                 fitAxisLocal.Normalize();
@@ -699,7 +699,7 @@ namespace OSE.UI.Root
                 : null;
             var fitPreviewChildren = isAxisFitPreview ? new List<Transform>() : null;
 
-            string[] memberIds = subassembly.partIds ?? Array.Empty<string>();
+            string[] memberIds = partGroup.partIds ?? Array.Empty<string>();
             for (int i = 0; i < memberIds.Length; i++)
             {
                 string memberId = memberIds[i];
@@ -786,18 +786,18 @@ namespace OSE.UI.Root
 
             PlacementPreviewInfo info = subPreviewRoot.AddComponent<PlacementPreviewInfo>();
             info.TargetId = targetId;
-            info.SubassemblyId = subassemblyId;
+            info.PartGroupId = partGroupId;
 
             ApplyPreviewMaterialClickCollider(subPreviewRoot, minAxisSize: isAxisFitPreview ? 0.09f : 0.18f, paddingWorld: isAxisFitPreview ? 0.03f : 0.08f);
             MaterialHelper.ApplyPreviewMaterial(subPreviewRoot);
             _ctx.SpawnedPreviews.Add(subPreviewRoot);
-            OseLog.Info($"[PartInteraction] Composite preview spawned for subassembly '{subassemblyId}' at target '{targetId}'. Total previews: {_ctx.SpawnedPreviews.Count}");
+            OseLog.Info($"[PartInteraction] Composite preview spawned for partGroup '{partGroupId}' at target '{targetId}'. Total previews: {_ctx.SpawnedPreviews.Count}");
         }
 
         // ── Static helpers ──
 
         private static bool TryGetIntegratedMemberPlacement(
-            IntegratedSubassemblyPreviewPlacement integratedPlacement,
+            IntegratedPartGroupPreviewPlacement integratedPlacement,
             string partId,
             out Vector3 position,
             out Quaternion rotation,

@@ -32,8 +32,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_carriage_z_back"
+      "partGroupIds": [
+        "partGroup_carriage_z_back"
       ]
     },
     {
@@ -68,8 +68,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_carriage_z_back"
+      "partGroupIds": [
+        "partGroup_carriage_z_back"
       ]
     },
     {
@@ -104,8 +104,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_carriage_z_front"
+      "partGroupIds": [
+        "partGroup_carriage_z_front"
       ]
     },
     {
@@ -140,8 +140,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_carriage_z_front"
+      "partGroupIds": [
+        "partGroup_carriage_z_front"
       ]
     },
     {
@@ -152,7 +152,7 @@
       "material": "Steel rod",
       "quantity": 1,
       "assetRef": "rod_005_approved.glb",
-      "animationCues": [{"type":"poseTransition","targetPartIds":[],"targetToolIds":[],"targetSubassemblyId":"","stepIds":["step_batch_c1_rod_slide_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":2.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.988,"y":0.566,"z":0.027},"rotation":{"x":1.1921e-7,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0}},"toPose":{"position":{"x":0.5222,"y":0.757,"z":0.027},"rotation":{"x":-0.7071,"y":0.0,"z":0.0,"w":0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeAmplitude":0.0,"shakeFrequency":0.0,"shakeAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":true,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""},{"type":"poseTransition","targetPartIds":[],"targetToolIds":[],"targetSubassemblyId":"","stepIds":["step_batch_c1_place_bolts"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.5222,"y":0.757,"z":0.027},"rotation":{"x":-0.7071,"y":0.0,"z":0.0,"w":0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}},"toPose":{"position":{"x":0.988,"y":0.566,"z":0.027},"rotation":{"x":1.1921e-7,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeAmplitude":0.0,"shakeFrequency":0.0,"shakeAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":true,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""}],
+      "animationCues": [{"type":"poseTransition","targetPartIds":[],"targetToolIds":[],"targetPartGroupId":"","stepIds":["step_batch_c1_rod_slide_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":2.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.988,"y":0.566,"z":0.027},"rotation":{"x":1.1921e-7,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0}},"toPose":{"position":{"x":0.5222,"y":0.757,"z":0.027},"rotation":{"x":-0.7071,"y":0.0,"z":0.0,"w":0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}},"partGroupRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeAmplitude":0.0,"shakeFrequency":0.0,"shakeAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":true,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""},{"type":"poseTransition","targetPartIds":[],"targetToolIds":[],"targetPartGroupId":"","stepIds":["step_batch_c1_place_bolts"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.5222,"y":0.757,"z":0.027},"rotation":{"x":-0.7071,"y":0.0,"z":0.0,"w":0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}},"toPose":{"position":{"x":0.988,"y":0.566,"z":0.027},"rotation":{"x":1.1921e-7,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0}},"partGroupRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeAmplitude":0.0,"shakeFrequency":0.0,"shakeAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":true,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""}],
       "stagingPose": {"position":{"x":0.988,"y":0.566,"z":0.027},"rotation":{"x":1.1921e-7,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.75,"g":0.75,"b":0.8,"a":1.0}}
   }
   ],
@@ -162,8 +162,8 @@
       "name": "Batch Carriage Build \u00e2\u20ac\u201d All 4 Axes",
       "description": "Builds all four axis carriages in one production-line session before individual axis bench work begins. Lays out all eight carriage halves at once, then assembles each carriage sequentially: seat bearings, run shake and rod-slide tests, close halves, bolt and tighten. Produces four completed carriages \u00e2\u20ac\u201d Y-Left, Y-Right, Z-Back, and Z-Front \u00e2\u20ac\u201d ready to be threaded onto guide rods during per-axis bench builds.",
       "machineId": "d3d_v18_10",
-      "subassemblyIds": [
-        "subassembly_carriage_batch_all"
+      "partGroupIds": [
+        "partGroup_carriage_batch_all"
       ],
       "stepIds": [
         "step_batch_carriage_layout",
@@ -197,9 +197,9 @@
       "learningFocus": "Production-line carriage assembly: seat four LM8UU bearings per carriage with flanges out, verify fit with shake and rod-slide tests before closing, align belt holes correctly before bolting, and build all four carriages in one session to establish muscle memory before individual axis bench work."
     }
   ],
-  "subassemblies": [
+  "partGroups": [
     {
-      "id": "subassembly_carriage_batch_all",
+      "id": "partGroup_carriage_batch_all",
       "name": "All Axis Carriages \u00e2\u20ac\u201d Batch Build",
       "assemblyId": "assembly_d3d_batch_carriage_build",
       "description": "Batch assembly of all four axis carriages: Y-Left, Y-Right, Z-Back, and Z-Front. All eight carriage halves are laid out together. Each carriage is built sequentially using the same procedure: seat four LM8UU bearings with flanges facing out, shake test, rod-slide test, close halves, insert M6x18 (top) and M6x30 (bottom) bolts, tighten with power drill. Z-Back and Z-Front use a combined-half carriage model.",
@@ -265,41 +265,41 @@
         "step_batch_c4_bolt"
       ],
       "milestoneMessage": "All four axis carriages assembled: bearings seated, belt holes aligned, halves bolted. Ready for individual axis bench builds.",
-      "memberSubassemblyIds": [
-        "subassembly_carriage_y_left",
-        "subassembly_carriage_y_right",
-        "subassembly_carriage_z_back",
-        "subassembly_carriage_z_front"
+      "memberPartGroupIds": [
+        "partGroup_carriage_y_left",
+        "partGroup_carriage_y_right",
+        "partGroup_carriage_z_back",
+        "partGroup_carriage_z_front"
       ],
       "isAggregate": true
     },
     {
-      "id": "subassembly_carriage_y_left",
+      "id": "partGroup_carriage_y_left",
       "name": "Carriage 1 (Y-Left)",
       "stepIds": [ "step_batch_carriage_layout", "step_batch_carriage_clean_holes", "step_batch_carriage_qc_plastic", "step_batch_c1_place_bearings", "step_batch_c1_shake_test", "step_batch_c1_rod_slide_test", "step_batch_c1_close_halves", "step_batch_c1_place_bolts", "step_batch_c1_hand_tighten", "step_batch_c1_tighten" ],
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "animationCues": [{"type":"shake","targetPartIds":[],"targetToolIds":[],"targetSubassemblyId":"subassembly_carriage_y_left","stepIds":["step_batch_c1_shake_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.01,"shakeFrequency":8.0,"shakeAxis":{"x":1.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":2,"sequenceAfterPrevious":true,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":false,"startProgress":0.0,"endProgress":0.0,"travelStartProgress":0.0,"travelEndProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""},{"type":"poseTransition","targetPartIds":[],"targetToolIds":[],"targetSubassemblyId":"","stepIds":["step_batch_c1_shake_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.7071,"w":0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeAmplitude":0.0,"shakeFrequency":0.0,"shakeAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":true,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":true,"startProgress":0.0,"endProgress":0.0,"travelStartProgress":0.0,"travelEndProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""},{"type":"shake","targetPartIds":[],"targetToolIds":[],"targetSubassemblyId":"","stepIds":["step_batch_c1_rod_slide_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.05,"shakeFrequency":1.0,"shakeAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeMode":"slide","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":false,"startProgress":0.0,"endProgress":0.0,"travelStartProgress":0.0,"travelEndProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""},{"type":"poseTransition","targetPartIds":[],"targetToolIds":[],"targetSubassemblyId":"","stepIds":["step_batch_c1_place_bolts"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.7071,"w":-0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeAmplitude":0.0,"shakeFrequency":0.0,"shakeAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":true,"startProgress":0.0,"endProgress":0.0,"travelStartProgress":0.0,"travelEndProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""}]
+      "animationCues": [{"type":"shake","targetPartIds":[],"targetToolIds":[],"targetPartGroupId":"partGroup_carriage_y_left","stepIds":["step_batch_c1_shake_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"partGroupRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.01,"shakeFrequency":8.0,"shakeAxis":{"x":1.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":2,"sequenceAfterPrevious":true,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":false,"startProgress":0.0,"endProgress":0.0,"travelStartProgress":0.0,"travelEndProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""},{"type":"poseTransition","targetPartIds":[],"targetToolIds":[],"targetPartGroupId":"","stepIds":["step_batch_c1_shake_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.7071,"w":0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}},"partGroupRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeAmplitude":0.0,"shakeFrequency":0.0,"shakeAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":true,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":true,"startProgress":0.0,"endProgress":0.0,"travelStartProgress":0.0,"travelEndProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""},{"type":"shake","targetPartIds":[],"targetToolIds":[],"targetPartGroupId":"","stepIds":["step_batch_c1_rod_slide_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"partGroupRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.05,"shakeFrequency":1.0,"shakeAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeMode":"slide","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":false,"startProgress":0.0,"endProgress":0.0,"travelStartProgress":0.0,"travelEndProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""},{"type":"poseTransition","targetPartIds":[],"targetToolIds":[],"targetPartGroupId":"","stepIds":["step_batch_c1_place_bolts"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.7071,"w":-0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}},"partGroupRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeAmplitude":0.0,"shakeFrequency":0.0,"shakeAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":true,"startProgress":0.0,"endProgress":0.0,"travelStartProgress":0.0,"travelEndProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""}]
   },
     {
-      "id": "subassembly_carriage_y_right",
+      "id": "partGroup_carriage_y_right",
       "name": "Carriage 2 (Y-Right)",
       "stepIds": [ "step_batch_carriage_layout", "step_batch_carriage_clean_holes", "step_batch_carriage_qc_plastic", "step_batch_c2_place_bearings", "step_batch_c2_shake_test", "step_batch_c2_rod_slide_test", "step_batch_c2_close_halves", "step_batch_c2_place_bolts", "step_batch_c2_tighten" ],
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "animationCues": [{"type":"shake","targetPartIds":[],"targetToolIds":[],"targetSubassemblyId":"","stepIds":["step_batch_c2_shake_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":true,"easing":"","target":"","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.006,"shakeFrequency":8.0,"shakeAxis":{"x":1.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":false,"startProgress":0.0,"endProgress":0.0,"travelStartProgress":0.0,"travelEndProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""}]
+      "animationCues": [{"type":"shake","targetPartIds":[],"targetToolIds":[],"targetPartGroupId":"","stepIds":["step_batch_c2_shake_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":true,"easing":"","target":"","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"partGroupRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.006,"shakeFrequency":8.0,"shakeAxis":{"x":1.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":false,"startProgress":0.0,"endProgress":0.0,"travelStartProgress":0.0,"travelEndProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""}]
   },
     {
-      "id": "subassembly_carriage_z_back",
+      "id": "partGroup_carriage_z_back",
       "name": "Carriage 3 (Z-Back)",
       "stepIds": [ "step_batch_carriage_layout", "step_batch_carriage_clean_holes", "step_batch_carriage_qc_plastic", "step_batch_c3_place_bearings", "step_batch_c3_shake_test", "step_batch_c3_rod_slide_test", "step_batch_c3_bolt" ],
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "animationCues": [{"type":"shake","targetPartIds":[],"targetToolIds":[],"targetSubassemblyId":"","stepIds":["step_batch_c3_shake_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":true,"easing":"","target":"","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.006,"shakeFrequency":8.0,"shakeAxis":{"x":1.0,"y":0.0,"z":0.0},"animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":false,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""}]
+      "animationCues": [{"type":"shake","targetPartIds":[],"targetToolIds":[],"targetPartGroupId":"","stepIds":["step_batch_c3_shake_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":true,"easing":"","target":"","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"partGroupRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.006,"shakeFrequency":8.0,"shakeAxis":{"x":1.0,"y":0.0,"z":0.0},"animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":false,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""}]
   },
     {
-      "id": "subassembly_carriage_z_front",
+      "id": "partGroup_carriage_z_front",
       "name": "Carriage 4 (Z-Front)",
       "stepIds": [ "step_batch_carriage_layout", "step_batch_carriage_clean_holes", "step_batch_carriage_qc_plastic", "step_batch_c4_place_bearings", "step_batch_c4_shake_test", "step_batch_c4_rod_slide_test", "step_batch_c4_bolt" ],
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "animationCues": [{"type":"shake","targetPartIds":[],"targetToolIds":[],"targetSubassemblyId":"","stepIds":["step_batch_c4_shake_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":true,"easing":"","target":"","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"subassemblyRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.006,"shakeFrequency":8.0,"shakeAxis":{"x":1.0,"y":0.0,"z":0.0},"animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":false,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""}]
+      "animationCues": [{"type":"shake","targetPartIds":[],"targetToolIds":[],"targetPartGroupId":"","stepIds":["step_batch_c4_shake_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":true,"easing":"","target":"","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"partGroupRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.006,"shakeFrequency":8.0,"shakeAxis":{"x":1.0,"y":0.0,"z":0.0},"animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":false,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""}]
   }
   ],
   "steps": [
@@ -307,7 +307,7 @@
       "id": "step_batch_carriage_layout",
       "name": "Lay out all 8 carriage half-pieces",
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "subassemblyId": "subassembly_carriage_batch_all",
+      "partGroupId": "partGroup_carriage_batch_all",
       "sequenceIndex": 50,
       "family": "Confirm",
       "guidance": {
@@ -333,7 +333,7 @@
       "id": "step_batch_carriage_clean_holes",
       "name": "Clean excess plastic from all carriage holes",
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "subassemblyId": "subassembly_carriage_batch_all",
+      "partGroupId": "partGroup_carriage_batch_all",
       "sequenceIndex": 51,
       "family": "Confirm",
       "instructionText": "Use a box cutter or cordless power drill to clear excess plastic from all semi-circle rod holes in each carriage half-piece. Work through all 8 halves before moving on. Holes must be smooth so bearings seat fully and rods insert freely.",
@@ -346,12 +346,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -362,7 +362,7 @@
       "id": "step_batch_carriage_qc_plastic",
       "name": "QC: verify all carriage holes are clean",
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "subassemblyId": "subassembly_carriage_batch_all",
+      "partGroupId": "partGroup_carriage_batch_all",
       "sequenceIndex": 52,
       "family": "Confirm",
       "instructionText": "Check every carriage half: each half should have 4 clean semi-circle rod holes, and the M6 bolt holes must be clear of excess plastic. Run a bolt through each hole by hand to confirm clearance before starting the bearing assembly.",
@@ -372,7 +372,7 @@
       "id": "step_batch_c1_place_bearings",
       "name": "Carriage 1 (Y-Left): place 4 LM8UU bearings",
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "subassemblyId": "subassembly_carriage_y_left",
+      "partGroupId": "partGroup_carriage_y_left",
       "sequenceIndex": 53,
       "family": "Place",
       "instructionText": "Place four LM8UU linear bearings into one Y-Left carriage half-piece. Flanges must face outward \u00e2\u20ac\u201d away from each other \u00e2\u20ac\u201d so they sit flush in the lip of each pocket.",
@@ -408,12 +408,12 @@
       }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -424,7 +424,7 @@
       "id": "step_batch_c1_close_halves",
       "name": "Carriage 1: close the second carriage half",
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "subassemblyId": "subassembly_carriage_y_left",
+      "partGroupId": "partGroup_carriage_y_left",
       "sequenceIndex": 54,
       "family": "Place",
       "instructionText": "Place the second Y-Left carriage half onto the first, trapping the 4 bearings in their pockets. The small ribbed belt hole should sit directly beside the large smooth belt hole.",
@@ -441,12 +441,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -457,7 +457,7 @@
       "id": "step_batch_c1_shake_test",
       "name": "Carriage 1: shake test",
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "subassemblyId": "subassembly_carriage_y_left",
+      "partGroupId": "partGroup_carriage_y_left",
       "sequenceIndex": 55,
       "family": "Confirm",
       "guidance": {
@@ -476,16 +476,16 @@
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [],
-      "visualPartIds": [ "subassembly_carriage_y_left" ],
+      "visualPartIds": [ "partGroup_carriage_y_left" ],
       "requiredToolActions": [],
-      "taskOrder": [{"kind":"part","id":"subassembly_carriage_y_left","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+      "taskOrder": [{"kind":"part","id":"partGroup_carriage_y_left","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
         {"kind":"confirm_action","id":"confirm","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}]
   },
     {
       "id": "step_batch_c1_rod_slide_test",
       "name": "Carriage 1: rod slide test",
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "subassemblyId": "subassembly_carriage_y_left",
+      "partGroupId": "partGroup_carriage_y_left",
       "sequenceIndex": 56,
       "family": "Confirm",
       "guidance": {
@@ -504,27 +504,27 @@
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [],
-      "visualPartIds": [ "batch_test_rod", "subassembly_carriage_y_left" ],
+      "visualPartIds": [ "batch_test_rod", "partGroup_carriage_y_left" ],
       "requiredToolActions": [],
       "taskOrder": [{"kind":"part","id":"batch_test_rod","awaitCues":true,"endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
-        {"kind":"part","id":"subassembly_carriage_y_left","awaitCues":true,"endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"partGroup_carriage_y_left","awaitCues":true,"endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
         {"kind":"confirm_action","id":"confirm","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}]
   },
     {
       "id": "step_batch_c1_place_bolts",
       "name": "Carriage 1: place bolts and thread nuts",
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "subassemblyId": "subassembly_carriage_y_left",
+      "partGroupId": "partGroup_carriage_y_left",
       "sequenceIndex": 57,
       "family": "Place",
       "instructionText": "Insert 2\u00c3\u2014 M6x18 bolts into the two top holes and 2\u00c3\u2014 M6x30 bolts into the two bottom holes. Thread one M6 nut onto each bolt finger-tight.",
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [ "y_left_m6x18_a", "y_left_carriage_m6x18_b", "y_left_m6x30_a", "y_left_m6x30_b", "y_left_m6_nut_a", "y_left_m6_nut_b", "y_left_m6_nut_c", "y_left_m6_nut_d" ],
-      "visualPartIds": [ "subassembly_carriage_y_left", "batch_test_rod" ],
+      "visualPartIds": [ "partGroup_carriage_y_left", "batch_test_rod" ],
       "requiredToolActions": [],
       "taskOrder": [{"kind":"part","id":"batch_test_rod","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
-        {"kind":"part","id":"subassembly_carriage_y_left","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
+        {"kind":"part","id":"partGroup_carriage_y_left","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
         {"kind":"part","id":"y_left_m6x18_a","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
         {"kind":"part","id":"y_left_carriage_m6x18_b","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
         {"kind":"part","id":"y_left_m6x30_a","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
@@ -538,7 +538,7 @@
       "id": "step_batch_c1_hand_tighten",
       "name": "Carriage 1: hand-tighten \u00e2\u20ac\u201d prep for drill",
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "subassemblyId": "subassembly_carriage_y_left",
+      "partGroupId": "partGroup_carriage_y_left",
       "sequenceIndex": 58,
       "family": "Use",
       "instructionText": "Thread and finger-tighten all 4 bolts on the Y-Left carriage. Seat each bolt snug by hand before moving to the power drill \u00e2\u20ac\u201d this prevents cross-threading and lets the drill finish the final torque cleanly.",
@@ -701,12 +701,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -717,7 +717,7 @@
       "id": "step_batch_c1_tighten",
       "name": "Carriage 1: drill-tighten \u00e2\u20ac\u201d 1 of 4 complete",
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "subassemblyId": "subassembly_carriage_y_left",
+      "partGroupId": "partGroup_carriage_y_left",
       "sequenceIndex": 59,
       "family": "Use",
       "instructionText": "Use the power drill on the lowest torque setting to drive all 4 bolts to final torque. Set the carriage aside \u00e2\u20ac\u201d carriage 1 of 4 is complete.",
@@ -880,12 +880,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -896,7 +896,7 @@
       "id": "step_batch_c2_place_bearings",
       "name": "Carriage 2 (Y-Right): place 4 LM8UU bearings",
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "subassemblyId": "subassembly_carriage_y_right",
+      "partGroupId": "partGroup_carriage_y_right",
       "sequenceIndex": 60,
       "family": "Place",
       "instructionText": "Pick up the Y-Right carriage halves. Place four LM8UU bearings into half A with flanges facing outward \u00e2\u20ac\u201d same technique as carriage 1.",
@@ -933,12 +933,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -949,7 +949,7 @@
       "id": "step_batch_c2_close_halves",
       "name": "Carriage 2: close the second carriage half",
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "subassemblyId": "subassembly_carriage_y_right",
+      "partGroupId": "partGroup_carriage_y_right",
       "sequenceIndex": 61,
       "family": "Place",
       "instructionText": "Place the second Y-Right carriage half onto the first, trapping the 4 bearings. The small ribbed belt hole must sit directly beside the large smooth belt hole.",
@@ -966,12 +966,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -982,7 +982,7 @@
       "id": "step_batch_c2_shake_test",
       "name": "Carriage 2: shake test",
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "subassemblyId": "subassembly_carriage_y_right",
+      "partGroupId": "partGroup_carriage_y_right",
       "sequenceIndex": 62,
       "family": "Confirm",
       "guidance": {
@@ -1016,12 +1016,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -1032,7 +1032,7 @@
       "id": "step_batch_c2_rod_slide_test",
       "name": "Carriage 2: rod slide test",
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "subassemblyId": "subassembly_carriage_y_right",
+      "partGroupId": "partGroup_carriage_y_right",
       "sequenceIndex": 63,
       "family": "Confirm",
       "guidance": {
@@ -1071,12 +1071,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -1087,7 +1087,7 @@
       "id": "step_batch_c2_place_bolts",
       "name": "Carriage 2: place bolts and thread nuts",
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "subassemblyId": "subassembly_carriage_y_right",
+      "partGroupId": "partGroup_carriage_y_right",
       "sequenceIndex": 64,
       "family": "Place",
       "instructionText": "Insert 2\u00c3\u2014 M6x18 bolts into the two top holes and 2\u00c3\u2014 M6x30 bolts into the two bottom holes. Thread one M6 nut onto each bolt finger-tight.",
@@ -1139,12 +1139,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -1155,7 +1155,7 @@
       "id": "step_batch_c2_tighten",
       "name": "Carriage 2: tighten \u00e2\u20ac\u201d 2 of 4 complete",
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "subassemblyId": "subassembly_carriage_y_right",
+      "partGroupId": "partGroup_carriage_y_right",
       "sequenceIndex": 65,
       "family": "Use",
       "instructionText": "Tighten all 4 bolts on the Y-Right carriage with the power drill on lowest torque. Set it beside carriage 1 \u00e2\u20ac\u201d carriage 2 of 4 is complete.",
@@ -1217,12 +1217,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -1233,7 +1233,7 @@
       "id": "step_batch_c3_place_bearings",
       "name": "Carriage 3 (Z-Back): place 4 LM8UU bearings in half A",
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "subassemblyId": "subassembly_carriage_z_back",
+      "partGroupId": "partGroup_carriage_z_back",
       "sequenceIndex": 66,
       "family": "Place",
       "instructionText": "Pick up the Z-Back carriage half A. Place four LM8UU bearings into the bearing pockets with flanges facing outward. Same technique as the Y-axis carriages.",
@@ -1250,12 +1250,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -1266,7 +1266,7 @@
       "id": "step_batch_c3_shake_test",
       "name": "Carriage 3: shake test",
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "subassemblyId": "subassembly_carriage_z_back",
+      "partGroupId": "partGroup_carriage_z_back",
       "sequenceIndex": 67,
       "family": "Confirm",
       "guidance": {
@@ -1300,12 +1300,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -1316,7 +1316,7 @@
       "id": "step_batch_c3_rod_slide_test",
       "name": "Carriage 3: rod slide test",
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "subassemblyId": "subassembly_carriage_z_back",
+      "partGroupId": "partGroup_carriage_z_back",
       "sequenceIndex": 68,
       "family": "Confirm",
       "guidance": {
@@ -1355,12 +1355,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -1371,7 +1371,7 @@
       "id": "step_batch_c3_bolt",
       "name": "Carriage 3: close halves, bolt and tighten \u00e2\u20ac\u201d 3 of 4 complete",
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "subassemblyId": "subassembly_carriage_z_back",
+      "partGroupId": "partGroup_carriage_z_back",
       "sequenceIndex": 69,
       "family": "Place",
       "instructionText": "Press Z-Back carriage half B onto half A to trap the bearings. Align so the small ribbed belt hole sits beside the large smooth belt hole. Secure with M6x18 bolts on top and M6x30 bolts on bottom. Tighten with the power drill on lowest torque. Set it aside \u00e2\u20ac\u201d carriage 3 of 4 is complete.",
@@ -1388,12 +1388,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -1404,7 +1404,7 @@
       "id": "step_batch_c4_place_bearings",
       "name": "Carriage 4 (Z-Front): place 4 LM8UU bearings in half A",
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "subassemblyId": "subassembly_carriage_z_front",
+      "partGroupId": "partGroup_carriage_z_front",
       "sequenceIndex": 70,
       "family": "Place",
       "instructionText": "Pick up the Z-Front carriage half A. Place four LM8UU bearings into the bearing pockets with flanges facing outward.",
@@ -1421,12 +1421,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -1437,7 +1437,7 @@
       "id": "step_batch_c4_shake_test",
       "name": "Carriage 4: shake test",
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "subassemblyId": "subassembly_carriage_z_front",
+      "partGroupId": "partGroup_carriage_z_front",
       "sequenceIndex": 71,
       "family": "Confirm",
       "guidance": {
@@ -1471,12 +1471,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -1487,7 +1487,7 @@
       "id": "step_batch_c4_rod_slide_test",
       "name": "Carriage 4: rod slide test",
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "subassemblyId": "subassembly_carriage_z_front",
+      "partGroupId": "partGroup_carriage_z_front",
       "sequenceIndex": 72,
       "family": "Confirm",
       "guidance": {
@@ -1526,12 +1526,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -1542,7 +1542,7 @@
       "id": "step_batch_c4_bolt",
       "name": "Carriage 4: close halves, bolt and tighten \u00e2\u20ac\u201d 4 of 4 complete",
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "subassemblyId": "subassembly_carriage_z_front",
+      "partGroupId": "partGroup_carriage_z_front",
       "sequenceIndex": 73,
       "family": "Place",
       "instructionText": "Press Z-Front carriage half B onto half A to trap the bearings. Align the small ribbed belt hole directly beside the large smooth belt hole. Secure with M6x18 bolts on top and M6x30 bolts on bottom. Tighten with the power drill on lowest torque. All four axis carriages are now complete \u00e2\u20ac\u201d set the Z-Front carriage with the others.",
@@ -1559,12 +1559,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0

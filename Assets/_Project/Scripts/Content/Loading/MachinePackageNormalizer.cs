@@ -11,7 +11,7 @@ namespace OSE.Content.Loading
     ///
     /// Handles:
     /// - Part templates: fills empty PartDefinition fields from the referenced template.
-    /// - Step parent refs: infers assemblyId / subassemblyId from assembly and subassembly stepIds.
+    /// - Step parent refs: infers assemblyId / partGroupId from assembly and partGroup stepIds.
     /// - Tool action defaults: auto-generates missing id, defaults requiredCount to 1.
     /// - Null arrays: replaces null arrays with empty arrays so callers never need null checks.
     /// </summary>
@@ -74,7 +74,7 @@ namespace OSE.Content.Loading
             ResolveToolActionPartIds(package);
             ResolveDirectTargetPartIds(package);
             IndexPartOwnership(package);
-            DeriveSubassemblyPartIds(package);
+            DerivePartGroupPartIds(package);
             BakeGroupRigidBody(package);
 
             // Cue passes run BEFORE BakePoseTable so synthesized stepPoses
@@ -151,7 +151,7 @@ namespace OSE.Content.Loading
         /// Rewrites legacy / typo trigger aliases to their canonical names so
         /// cues land in the same scheduling bucket regardless of how they
         /// were authored. Runs on every cue across steps, parts, and
-        /// subassemblies. Protective: prevents the "onStepActivate vs
+        /// partGroups. Protective: prevents the "onStepActivate vs
         /// onActivate" divergence that caused step 55's double-fire.
         /// </summary>
         private static void NormalizeAnimationCueTriggers(MachinePackageDefinition package)
@@ -169,7 +169,7 @@ namespace OSE.Content.Loading
                 for (int i = 0; i < package.parts.Length; i++)
                     rewrites += RewriteArray(package.parts[i]?.animationCues);
 
-            var subs = package.GetSubassemblies();
+            var subs = package.GetPartGroups();
             if (subs != null)
                 for (int i = 0; i < subs.Length; i++)
                     rewrites += RewriteArray(subs[i]?.animationCues);
@@ -237,7 +237,7 @@ namespace OSE.Content.Loading
                 for (int i = 0; i < package.parts.Length; i++)
                     InferModes(package.parts[i]?.animationCues);
 
-            var subs = package.GetSubassemblies();
+            var subs = package.GetPartGroups();
             if (subs != null)
                 for (int i = 0; i < subs.Length; i++)
                     InferModes(subs[i]?.animationCues);
@@ -265,15 +265,15 @@ namespace OSE.Content.Loading
         }
 
         /// <summary>
-        /// Host-owned cues (part / subassembly) are the authoritative home.
+        /// Host-owned cues (part / partGroup) are the authoritative home.
         /// Any cues still living on <c>step.animationCues.cues</c> are
         /// migrated to their target host at load time, so the runtime only
         /// ever sees host-owned cues. Legacy content keeps working without
         /// manual JSON editing; new authoring tools write directly to hosts.
         ///
         /// Migration rules:
-        /// - If the entry has a non-empty <c>targetSubassemblyId</c>, move to
-        ///   that subassembly's <c>animationCues</c>.
+        /// - If the entry has a non-empty <c>targetPartGroupId</c>, move to
+        ///   that partGroup's <c>animationCues</c>.
         /// - Else if the entry has exactly one <c>targetPartIds[]</c> entry,
         ///   move to that part's <c>animationCues</c>.
         /// - Else: leave on the step and let the validator flag it — the
@@ -299,8 +299,8 @@ namespace OSE.Content.Loading
                     var entry = cues[ci];
                     if (entry == null) continue;
 
-                    if (!string.IsNullOrEmpty(entry.targetSubassemblyId)
-                        && TryAppendToSubassembly(package, entry.targetSubassemblyId, entry))
+                    if (!string.IsNullOrEmpty(entry.targetPartGroupId)
+                        && TryAppendToPartGroup(package, entry.targetPartGroupId, entry))
                     { moved++; continue; }
 
                     if (entry.targetPartIds != null && entry.targetPartIds.Length == 1
@@ -325,9 +325,9 @@ namespace OSE.Content.Loading
             if (left > 0)
                 OseLog.Warn($"[CueRuntime.Migrate] {left} step-level cue(s) in '{package.packageId}' have no clear host target and remain on the step. Edit them in TTAW to assign a host.");
 
-            static bool TryAppendToSubassembly(MachinePackageDefinition pkg, string subId, AnimationCueEntry entry)
+            static bool TryAppendToPartGroup(MachinePackageDefinition pkg, string subId, AnimationCueEntry entry)
             {
-                var subs = pkg.GetSubassemblies();
+                var subs = pkg.GetPartGroups();
                 if (subs == null) return false;
                 for (int i = 0; i < subs.Length; i++)
                 {
@@ -335,7 +335,7 @@ namespace OSE.Content.Loading
                     if (!string.Equals(subs[i].id, subId, StringComparison.Ordinal)) continue;
                     if (HasEquivalentCue(subs[i].animationCues, entry))
                     {
-                        OseLog.Error($"[CueRuntime.Migrate] subassembly '{subId}' already has a (type='{entry.type}', trigger='{entry.trigger}') cue. Refusing to migrate a duplicate from the step level — delete one in TTAW.");
+                        OseLog.Error($"[CueRuntime.Migrate] partGroup '{subId}' already has a (type='{entry.type}', trigger='{entry.trigger}') cue. Refusing to migrate a duplicate from the step level — delete one in TTAW.");
                         return false;
                     }
                     subs[i].animationCues = Append(subs[i].animationCues, entry);
@@ -427,7 +427,7 @@ namespace OSE.Content.Loading
                     var s = package.steps[i];
                     var cues = s?.animationCues?.cues;
                     if (cues != null && cues.Length > 0)
-                        OseLog.Error($"[CueRuntime.Validate] step '{s.id}' still has {cues.Length} step-level cue(s) after migration. Assign a target host (part/subassembly) in TTAW.");
+                        OseLog.Error($"[CueRuntime.Validate] step '{s.id}' still has {cues.Length} step-level cue(s) after migration. Assign a target host (part/partGroup) in TTAW.");
                 }
             }
 
@@ -436,10 +436,10 @@ namespace OSE.Content.Loading
                 for (int i = 0; i < package.parts.Length; i++)
                     CheckTriggers(package.parts[i]?.animationCues, $"part '{package.parts[i]?.id}'");
 
-            var subs = package.GetSubassemblies();
+            var subs = package.GetPartGroups();
             if (subs != null)
                 for (int i = 0; i < subs.Length; i++)
-                    CheckTriggers(subs[i]?.animationCues, $"subassembly '{subs[i]?.id}'");
+                    CheckTriggers(subs[i]?.animationCues, $"partGroup '{subs[i]?.id}'");
 
             if (package.tools != null)
                 for (int i = 0; i < package.tools.Length; i++)
@@ -1105,7 +1105,7 @@ namespace OSE.Content.Loading
 
         /// <summary>
         /// Dedicated label prefix for group-level synthesized stepPoses emitted
-        /// onto <see cref="SubassemblyPreviewPlacement.stepPoses"/> by the
+        /// onto <see cref="PartGroupPreviewPlacement.stepPoses"/> by the
         /// Phase-B refactor. Carefully chosen to NOT share a common prefix
         /// with the legacy per-member prefix — strips key off StartsWith, and
         /// the legacy strip (<c>SynthesizedStepPoseLabelPrefix</c>) must not
@@ -1155,16 +1155,16 @@ namespace OSE.Content.Loading
             foreach (var pp in placementByPart.Values)
                 pp.stepPoses = StripSynthesizedStepPoses(pp.stepPoses);
 
-            // Lookup / ensure SubassemblyPreviewPlacement entries so the
+            // Lookup / ensure PartGroupPreviewPlacement entries so the
             // baker can write group stepPoses onto them. Absent placements
-            // are materialised on the fly — cue-bearing subassemblies may
+            // are materialised on the fly — cue-bearing partGroups may
             // not have authored a placement entry yet.
-            var placementBySub = EnsureSubassemblyPlacements(package);
+            var placementBySub = EnsurePartGroupPlacements(package);
             foreach (var sp in placementBySub.Values)
                 sp.stepPoses = StripSynthesizedGroupStepPoses(sp.stepPoses);
 
             // Resolver index for effective-pose lookups. Cycle-free — only
-            // reads package, placements, and subassembly membership; does
+            // reads package, placements, and partGroup membership; does
             // not touch poseTable.
             var idx = new PoseResolverIndex(package);
 
@@ -1181,8 +1181,8 @@ namespace OSE.Content.Loading
             int synthesizedOnSubs  = 0;
             int synthesizedOnParts = 0;
 
-            // ── Subassembly-hosted cues ──
-            var subs = package.GetSubassemblies();
+            // ── PartGroup-hosted cues ──
+            var subs = package.GetPartGroups();
             if (subs != null)
             {
                 for (int si = 0; si < subs.Length; si++)
@@ -1216,8 +1216,8 @@ namespace OSE.Content.Loading
         /// <summary>
         /// Phase-B group-centric bake. Instead of fanning the cue's rotation
         /// into N per-member <see cref="StepPoseEntry"/> rows, emit a single
-        /// <see cref="StepPoseEntry"/> onto the subassembly's
-        /// <see cref="SubassemblyPreviewPlacement.stepPoses"/>. At resolve
+        /// <see cref="StepPoseEntry"/> onto the partGroup's
+        /// <see cref="PartGroupPreviewPlacement.stepPoses"/>. At resolve
         /// time <c>PoseResolver.ApplyGroupStepPose</c> composes the group's
         /// transform onto each member's per-part pose.
         ///
@@ -1229,12 +1229,12 @@ namespace OSE.Content.Loading
         /// </summary>
         private static int SynthesizeGroupHoldAtEnd(
             MachinePackageDefinition package,
-            SubassemblyDefinition sub,
+            PartGroupDefinition sub,
             PoseResolverIndex idx,
             StepDefinition[] orderedSteps,
             Dictionary<string, int> seqByStepId,
             Dictionary<string, PartPreviewPlacement> placementByPart,
-            Dictionary<string, SubassemblyPreviewPlacement> placementBySub)
+            Dictionary<string, PartGroupPreviewPlacement> placementBySub)
         {
             int count = 0;
 
@@ -1249,12 +1249,12 @@ namespace OSE.Content.Loading
                 if (!cue.holdAtEnd) continue;
                 if (cue.stepIds == null || cue.stepIds.Length == 0)
                 {
-                    OseLog.Warn($"[CueRuntime.BakeHoldAtEnd] subassembly '{sub.id}' cue[{ci}]: holdAtEnd=true but empty stepIds — skipping.");
+                    OseLog.Warn($"[CueRuntime.BakeHoldAtEnd] partGroup '{sub.id}' cue[{ci}]: holdAtEnd=true but empty stepIds — skipping.");
                     continue;
                 }
                 if (cue.toPose == null || IsZeroQuaternion(cue.toPose.rotation))
                 {
-                    OseLog.Warn($"[CueRuntime.BakeHoldAtEnd] subassembly '{sub.id}' cue[{ci}]: toPose.rotation is zero quaternion — skipping.");
+                    OseLog.Warn($"[CueRuntime.BakeHoldAtEnd] partGroup '{sub.id}' cue[{ci}]: toPose.rotation is zero quaternion — skipping.");
                     continue;
                 }
 
@@ -1278,7 +1278,7 @@ namespace OSE.Content.Loading
                     }
                     if (nextStep == null)
                     {
-                        OseLog.Warn($"[CueRuntime.BakeHoldAtEnd] subassembly '{sub.id}' cue[{ci}] anchors to final step '{cueStepId}' — no next step to persist into.");
+                        OseLog.Warn($"[CueRuntime.BakeHoldAtEnd] partGroup '{sub.id}' cue[{ci}] anchors to final step '{cueStepId}' — no next step to persist into.");
                         continue;
                     }
 
@@ -1331,7 +1331,7 @@ namespace OSE.Content.Loading
                     }
                     if (!anyVisible)
                     {
-                        OseLog.Warn($"[CueRuntime.BakeHoldAtEnd] subassembly '{sub.id}' cue[{ci}] at '{cueStepId}': no non-origin members visible — skipping group synthesis.");
+                        OseLog.Warn($"[CueRuntime.BakeHoldAtEnd] partGroup '{sub.id}' cue[{ci}] at '{cueStepId}': no non-origin members visible — skipping group synthesis.");
                         continue;
                     }
                     Vector3 centroid;
@@ -1342,7 +1342,7 @@ namespace OSE.Content.Loading
                         // No established body members at this step —
                         // runtime uses Vector3.zero as pivot; match it.
                         centroid = Vector3.zero;
-                        OseLog.VerboseInfo($"[CueRuntime.BakeHoldAtEnd] subassembly '{sub.id}' cue[{ci}] at '{cueStepId}': no established body members (all introduced this step); using Vector3.zero pivot to match runtime fallback.");
+                        OseLog.VerboseInfo($"[CueRuntime.BakeHoldAtEnd] partGroup '{sub.id}' cue[{ci}] at '{cueStepId}': no established body members (all introduced this step); using Vector3.zero pivot to match runtime fallback.");
                     }
 
                     // Compose with any prior group stepPose covering cueStep —
@@ -1512,7 +1512,7 @@ namespace OSE.Content.Loading
         /// <summary>
         /// Strips previously-synthesized GROUP stepPoses
         /// (<see cref="SynthesizedGroupStepPoseLabelPrefix"/>) from a
-        /// <see cref="SubassemblyPreviewPlacement.stepPoses"/> array so the
+        /// <see cref="PartGroupPreviewPlacement.stepPoses"/> array so the
         /// Phase-B bake is idempotent. Author-written group stepPoses are
         /// preserved (they use neither prefix).
         /// </summary>
@@ -1539,43 +1539,43 @@ namespace OSE.Content.Loading
         }
 
         /// <summary>
-        /// Ensures every non-aggregate subassembly with animationCues has a
-        /// <see cref="SubassemblyPreviewPlacement"/> in
-        /// <see cref="PackagePreviewConfig.subassemblyPlacements"/>. Existing
+        /// Ensures every non-aggregate partGroup with animationCues has a
+        /// <see cref="PartGroupPreviewPlacement"/> in
+        /// <see cref="PackagePreviewConfig.partGroupPlacements"/>. Existing
         /// placements are reused; missing ones are created with identity
         /// transforms so the baker has a write target. Returns a lookup
-        /// keyed by subassemblyId.
+        /// keyed by partGroupId.
         ///
-        /// <para>Rationale: authors may define a subassembly (partIds +
+        /// <para>Rationale: authors may define a partGroup (partIds +
         /// animationCues) without authoring a placement — before Phase B
-        /// nothing read <c>subassemblyPlacements[].stepPoses</c>, so there
+        /// nothing read <c>partGroupPlacements[].stepPoses</c>, so there
         /// was no need. The baker now writes there, so the placement must
         /// exist.</para>
         /// </summary>
-        private static Dictionary<string, SubassemblyPreviewPlacement> EnsureSubassemblyPlacements(
+        private static Dictionary<string, PartGroupPreviewPlacement> EnsurePartGroupPlacements(
             MachinePackageDefinition package)
         {
-            var byId = new Dictionary<string, SubassemblyPreviewPlacement>(StringComparer.Ordinal);
+            var byId = new Dictionary<string, PartGroupPreviewPlacement>(StringComparer.Ordinal);
             if (package?.previewConfig == null) return byId;
 
-            var existing = package.previewConfig.subassemblyPlacements;
+            var existing = package.previewConfig.partGroupPlacements;
             if (existing != null)
             {
                 foreach (var sp in existing)
                 {
-                    if (sp == null || string.IsNullOrEmpty(sp.subassemblyId)) continue;
-                    byId[sp.subassemblyId] = sp;
+                    if (sp == null || string.IsNullOrEmpty(sp.partGroupId)) continue;
+                    byId[sp.partGroupId] = sp;
                 }
             }
 
-            // Materialize missing placements for subassemblies with cues. The
-            // baker only writes to subassemblies that actually have
+            // Materialize missing placements for partGroups with cues. The
+            // baker only writes to partGroups that actually have
             // holdAtEnd cues, but we populate eagerly here to give the index
             // a consistent view regardless of whether the cue fires this run.
-            var subs = package.GetSubassemblies();
+            var subs = package.GetPartGroups();
             if (subs == null) return byId;
 
-            var toAppend = new List<SubassemblyPreviewPlacement>();
+            var toAppend = new List<PartGroupPreviewPlacement>();
             for (int i = 0; i < subs.Length; i++)
             {
                 var sub = subs[i];
@@ -1583,9 +1583,9 @@ namespace OSE.Content.Loading
                 if (sub.isAggregate) continue;
                 if (byId.ContainsKey(sub.id)) continue;
 
-                var sp = new SubassemblyPreviewPlacement
+                var sp = new PartGroupPreviewPlacement
                 {
-                    subassemblyId     = sub.id,
+                    partGroupId     = sub.id,
                     position          = default,
                     rotation          = new SceneQuaternion { x = 0f, y = 0f, z = 0f, w = 1f },
                     scale             = new SceneFloat3 { x = 1f, y = 1f, z = 1f },
@@ -1602,10 +1602,10 @@ namespace OSE.Content.Loading
 
             if (toAppend.Count > 0)
             {
-                var combined = new List<SubassemblyPreviewPlacement>();
+                var combined = new List<PartGroupPreviewPlacement>();
                 if (existing != null) combined.AddRange(existing);
                 combined.AddRange(toAppend);
-                package.previewConfig.subassemblyPlacements = combined.ToArray();
+                package.previewConfig.partGroupPlacements = combined.ToArray();
             }
 
             return byId;
@@ -1661,23 +1661,23 @@ namespace OSE.Content.Loading
             => new Quaternion(q.x, q.y, q.z, q.w);
 
         /// <summary>
-        /// Derives each non-aggregate subassembly's <c>partIds</c> list from
-        /// the canonical <see cref="PartDefinition.subassemblyIds"/> claims on
+        /// Derives each non-aggregate partGroup's <c>partIds</c> list from
+        /// the canonical <see cref="PartDefinition.partGroupIds"/> claims on
         /// each part. Parts are the single source of truth for group
-        /// membership — authors set membership per part, and every subassembly
-        /// recomputes its roster at load time. If a subassembly's legacy
+        /// membership — authors set membership per part, and every partGroup
+        /// recomputes its roster at load time. If a partGroup's legacy
         /// authored <c>partIds</c> array is present (older packages), it is
         /// merged in as a fallback so the migration is non-breaking; new
-        /// authoring tools should stop writing <c>subassembly.partIds</c>.
+        /// authoring tools should stop writing <c>partGroup.partIds</c>.
         /// Aggregates are left alone here — their <c>partIds</c>/
-        /// <c>memberSubassemblyIds</c> composition is curated, not derived.
+        /// <c>memberPartGroupIds</c> composition is curated, not derived.
         /// Order: runs AFTER <see cref="IndexPartOwnership"/> (so parts are
         /// known) and BEFORE <see cref="BakeGroupRigidBody"/> /
         /// <see cref="BakePoseTable"/> (which query <c>sub.partIds</c>).
         /// </summary>
-        private static void DeriveSubassemblyPartIds(MachinePackageDefinition package)
+        private static void DerivePartGroupPartIds(MachinePackageDefinition package)
         {
-            var subs = package.GetSubassemblies();
+            var subs = package.GetPartGroups();
             if (subs == null || subs.Length == 0) return;
             var parts = package.parts;
             if (parts == null || parts.Length == 0) return;
@@ -1688,10 +1688,10 @@ namespace OSE.Content.Loading
             for (int i = 0; i < parts.Length; i++)
             {
                 var p = parts[i];
-                if (p == null || string.IsNullOrEmpty(p.id) || p.subassemblyIds == null) continue;
-                for (int k = 0; k < p.subassemblyIds.Length; k++)
+                if (p == null || string.IsNullOrEmpty(p.id) || p.partGroupIds == null) continue;
+                for (int k = 0; k < p.partGroupIds.Length; k++)
                 {
-                    string subId = p.subassemblyIds[k];
+                    string subId = p.partGroupIds[k];
                     if (string.IsNullOrEmpty(subId)) continue;
                     if (!rosterBySub.TryGetValue(subId, out var list))
                     {
@@ -1708,7 +1708,7 @@ namespace OSE.Content.Loading
                 if (sub == null || string.IsNullOrEmpty(sub.id) || sub.isAggregate) continue;
 
                 // Legacy fallback: merge any authored partIds that don't already
-                // appear via part.subassemblyIds. Lets old packages load until
+                // appear via part.partGroupIds. Lets old packages load until
                 // migration populates the canonical claims.
                 if (sub.partIds != null && sub.partIds.Length > 0)
                 {
@@ -1787,9 +1787,9 @@ namespace OSE.Content.Loading
         public const string AutoNoTaskLabel = "__notask_auto";
 
         /// <summary>
-        /// Auto-derives <see cref="SubassemblyDefinition.isAggregate"/> from the
-        /// presence of <c>memberSubassemblyIds</c>. The flag is redundant with
-        /// the data — if a subassembly's members are other subassemblies, it IS
+        /// Auto-derives <see cref="PartGroupDefinition.isAggregate"/> from the
+        /// presence of <c>memberPartGroupIds</c>. The flag is redundant with
+        /// the data — if a partGroup's members are other partGroups, it IS
         /// an aggregate by definition. Authors no longer need to set the flag
         /// manually; existing JSON with explicit <c>isAggregate: true</c> still
         /// works unchanged. Must run BEFORE any pass that branches on the flag
@@ -1797,20 +1797,20 @@ namespace OSE.Content.Loading
         /// </summary>
         private static void InferAggregateFlag(MachinePackageDefinition package)
         {
-            var subs = package.GetSubassemblies();
+            var subs = package.GetPartGroups();
             if (subs == null) return;
             for (int i = 0; i < subs.Length; i++)
             {
                 var sub = subs[i];
                 if (sub == null) continue;
-                if (!sub.isAggregate && sub.memberSubassemblyIds != null && sub.memberSubassemblyIds.Length > 0)
+                if (!sub.isAggregate && sub.memberPartGroupIds != null && sub.memberPartGroupIds.Length > 0)
                     sub.isAggregate = true;
             }
         }
 
         /// <summary>
-        /// Derives per-(subassembly, target) rigid-body representations from
-        /// <see cref="PackagePreviewConfig.integratedSubassemblyPlacements"/>.
+        /// Derives per-(partGroup, target) rigid-body representations from
+        /// <see cref="PackagePreviewConfig.integratedPartGroupPlacements"/>.
         /// For each placement, computes the centroid of member positions and
         /// each member's offset from that centroid. The editor consumes this
         /// so a group pose is ONE transform (center + fixed offsets), parallel
@@ -1819,7 +1819,7 @@ namespace OSE.Content.Loading
         /// </summary>
         private static void BakeGroupRigidBody(MachinePackageDefinition package)
         {
-            var subs = package.GetSubassemblies();
+            var subs = package.GetPartGroups();
             if (subs == null || subs.Length == 0) return;
 
             // ── Start pose: fabrication centroid from partPlacements[].assembledPosition ──
@@ -1878,23 +1878,23 @@ namespace OSE.Content.Loading
 
                 // ── Aggregate start pose: centroid of member leaves' centers ──
                 // An aggregate's "start pose" is the geometric center of the
-                // child-subassembly group centers, with each child treated as
+                // child-partGroup group centers, with each child treated as
                 // a rigid offset. Enables moving the whole phase (e.g. the
                 // Frame Cube) as a single rigid unit for integration into
                 // larger assemblies.
                 for (int i = 0; i < subs.Length; i++)
                 {
                     var agg = subs[i];
-                    if (agg == null || !agg.isAggregate || agg.memberSubassemblyIds == null || agg.memberSubassemblyIds.Length == 0) continue;
+                    if (agg == null || !agg.isAggregate || agg.memberPartGroupIds == null || agg.memberPartGroupIds.Length == 0) continue;
 
                     Vector3 aggSum = Vector3.zero;
                     int aggN = 0;
                     var childCenters = new Dictionary<string, Vector3>(StringComparer.Ordinal);
-                    for (int k = 0; k < agg.memberSubassemblyIds.Length; k++)
+                    for (int k = 0; k < agg.memberPartGroupIds.Length; k++)
                     {
-                        string cid = agg.memberSubassemblyIds[k];
+                        string cid = agg.memberPartGroupIds[k];
                         if (string.IsNullOrEmpty(cid)) continue;
-                        SubassemblyDefinition child = null;
+                        PartGroupDefinition child = null;
                         for (int j = 0; j < subs.Length; j++)
                             if (subs[j] != null && string.Equals(subs[j].id, cid, StringComparison.Ordinal))
                             { child = subs[j]; break; }
@@ -1915,7 +1915,7 @@ namespace OSE.Content.Loading
                         memberRotationOffsets = new Dictionary<string, Quaternion>(StringComparer.Ordinal),
                         memberScales          = new Dictionary<string, Vector3>(StringComparer.Ordinal),
                     };
-                    // Member offsets are per child-subassembly-id (not partId),
+                    // Member offsets are per child-partGroup-id (not partId),
                     // marking where each child's root sits relative to the aggregate.
                     foreach (var kvp in childCenters)
                         aggRb.memberPositionOffsets[kvp.Key] = kvp.Value - aggCenter;
@@ -1924,18 +1924,18 @@ namespace OSE.Content.Loading
             }
 
             // ── Assembled pose: integrated-target centroid per (subId, targetId) ──
-            var placements = package.previewConfig?.integratedSubassemblyPlacements;
+            var placements = package.previewConfig?.integratedPartGroupPlacements;
             if (placements == null || placements.Length == 0) return;
 
             for (int p = 0; p < placements.Length; p++)
             {
                 var pl = placements[p];
                 if (pl == null || pl.memberPlacements == null || pl.memberPlacements.Length == 0) continue;
-                if (string.IsNullOrEmpty(pl.subassemblyId) || string.IsNullOrEmpty(pl.targetId)) continue;
+                if (string.IsNullOrEmpty(pl.partGroupId) || string.IsNullOrEmpty(pl.targetId)) continue;
 
-                SubassemblyDefinition sub = null;
+                PartGroupDefinition sub = null;
                 for (int i = 0; i < subs.Length; i++)
-                    if (subs[i] != null && string.Equals(subs[i].id, pl.subassemblyId, StringComparison.Ordinal))
+                    if (subs[i] != null && string.Equals(subs[i].id, pl.partGroupId, StringComparison.Ordinal))
                     { sub = subs[i]; break; }
                 if (sub == null) continue;
 
@@ -2164,20 +2164,20 @@ namespace OSE.Content.Loading
                 }
             }
 
-            // Fill subassemblyId from subassembly.stepIds
-            SubassemblyDefinition[] subs = package.subassemblies;
+            // Fill partGroupId from partGroup.stepIds
+            PartGroupDefinition[] subs = package.partGroups;
             if (subs != null)
             {
                 for (int sa = 0; sa < subs.Length; sa++)
                 {
-                    SubassemblyDefinition sub = subs[sa];
+                    PartGroupDefinition sub = subs[sa];
                     if (sub?.stepIds == null) continue;
                     for (int s = 0; s < sub.stepIds.Length; s++)
                     {
                         if (stepIndex.TryGetValue(sub.stepIds[s], out int idx))
                         {
-                            if (string.IsNullOrEmpty(steps[idx].subassemblyId))
-                                steps[idx].subassemblyId = sub.id;
+                            if (string.IsNullOrEmpty(steps[idx].partGroupId))
+                                steps[idx].partGroupId = sub.id;
                         }
                     }
                 }
@@ -2354,16 +2354,16 @@ namespace OSE.Content.Loading
         /// <summary>
         /// Bakes the authoritative "who owns this part" answers onto each
         /// <see cref="PartDefinition"/> so runtime callers don't re-scan
-        /// subassemblies/steps every time.
+        /// partGroups/steps every time.
         ///
-        /// For every non-aggregate subassembly, sets <c>part.owningSubassemblyId</c>
-        /// to the subassembly id. For every Place-family step, appends the
+        /// For every non-aggregate partGroup, sets <c>part.owningPartGroupId</c>
+        /// to the partGroup id. For every Place-family step, appends the
         /// step id to <see cref="PartDefinition.owningPlaceStepIds"/> and (on
         /// first write) also sets the scalar <see cref="PartDefinition.owningPlaceStepId"/>
         /// as the canonical "first placement" for legacy callers. Multi-Place
         /// is now supported: a part can be Required by several Place steps
         /// representing distinct physical placements (e.g. loose alignment
-        /// followed by final placement). Aggregate subassemblies are
+        /// followed by final placement). Aggregate partGroups are
         /// intentionally skipped (they may contain child parts).
         /// </summary>
         private static void IndexPartOwnership(MachinePackageDefinition package)
@@ -2381,18 +2381,18 @@ namespace OSE.Content.Loading
 
                 // Clear any stale state from a prior Normalize call on the
                 // same in-memory package (editor reload path).
-                p.owningSubassemblyId = null;
+                p.owningPartGroupId = null;
                 p.owningPlaceStepId   = null;
                 p.owningPlaceStepIds  = null;
                 partById[p.id] = p;
             }
 
-            SubassemblyDefinition[] subs = package.subassemblies;
+            PartGroupDefinition[] subs = package.partGroups;
             if (subs != null)
             {
                 for (int sa = 0; sa < subs.Length; sa++)
                 {
-                    SubassemblyDefinition sub = subs[sa];
+                    PartGroupDefinition sub = subs[sa];
                     if (sub == null || sub.isAggregate) continue;
                     if (sub.partIds == null || string.IsNullOrWhiteSpace(sub.id)) continue;
 
@@ -2401,8 +2401,8 @@ namespace OSE.Content.Loading
                         string pid = sub.partIds[i];
                         if (string.IsNullOrEmpty(pid)) continue;
                         if (!partById.TryGetValue(pid, out PartDefinition part)) continue;
-                        if (string.IsNullOrEmpty(part.owningSubassemblyId))
-                            part.owningSubassemblyId = sub.id;
+                        if (string.IsNullOrEmpty(part.owningPartGroupId))
+                            part.owningPartGroupId = sub.id;
                     }
                 }
             }

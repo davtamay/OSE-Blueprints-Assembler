@@ -13,7 +13,7 @@ namespace OSE.Tests.EditMode
     /// consumer migration regresses resolver behaviour, one of these fires.
     /// The scenarios mirror the real-world bug classes this session hit:
     /// NO-TASK-first parts reaching their task step, author spans with
-    /// bounded ranges, integrated subassembly stacking, and the Start vs
+    /// bounded ranges, integrated partGroup stacking, and the Start vs
     /// Assembled toggle on Required steps.
     /// </summary>
     [TestFixture]
@@ -38,7 +38,7 @@ namespace OSE.Tests.EditMode
             => new StepDefinition {
                 id = id, sequenceIndex = seq,
                 requiredPartIds = required, visualPartIds = visual,
-                requiredSubassemblyId = requiredSub, targetIds = targetIds,
+                requiredPartGroupId = requiredSub, targetIds = targetIds,
             };
 
         // ──────────────────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ namespace OSE.Tests.EditMode
                     Step(2, "s2", required: new[] { "bolt" }),
                 },
                 parts = new[] { new PartDefinition { id = "bolt" } },
-                subassemblies = System.Array.Empty<SubassemblyDefinition>(),
+                partGroups = System.Array.Empty<PartGroupDefinition>(),
                 previewConfig = new PackagePreviewConfig {
                     partPlacements = new[] { PP("bolt", V(1,0,0), V(2,0,0)) }
                 }
@@ -76,7 +76,7 @@ namespace OSE.Tests.EditMode
                 machine = new MachineDefinition { id = "m" },
                 steps = new[] { Step(1, "s1", required: new[] { "bolt" }) },
                 parts = new[] { new PartDefinition { id = "bolt" } },
-                subassemblies = System.Array.Empty<SubassemblyDefinition>(),
+                partGroups = System.Array.Empty<PartGroupDefinition>(),
                 previewConfig = new PackagePreviewConfig {
                     partPlacements = new[] { PP("bolt", V(10,0,0), V(20,0,0)) }
                 }
@@ -98,7 +98,7 @@ namespace OSE.Tests.EditMode
                 machine = new MachineDefinition { id = "m" },
                 steps = new[] { Step(1, "s1", required: new[] { "bolt" }) },
                 parts = new[] { new PartDefinition { id = "bolt" } },
-                subassemblies = System.Array.Empty<SubassemblyDefinition>(),
+                partGroups = System.Array.Empty<PartGroupDefinition>(),
                 previewConfig = new PackagePreviewConfig {
                     partPlacements = new[] { PP("bolt", V(10,0,0), V(20,0,0)) }
                 }
@@ -134,7 +134,7 @@ namespace OSE.Tests.EditMode
                     Step(3, "close",  required: new[] { "half_b" }),
                 },
                 parts = new[] { new PartDefinition { id = "half_b" } },
-                subassemblies = System.Array.Empty<SubassemblyDefinition>(),
+                partGroups = System.Array.Empty<PartGroupDefinition>(),
                 previewConfig = new PackagePreviewConfig {
                     partPlacements = new[] { PP("half_b", V(0.5228f, 0.55f, 0), V(0.82f, 0.55f, 0)) }
                 }
@@ -167,7 +167,7 @@ namespace OSE.Tests.EditMode
                     new PartDefinition { id = "decor" },
                     new PartDefinition { id = "bolt" },
                 },
-                subassemblies = System.Array.Empty<SubassemblyDefinition>(),
+                partGroups = System.Array.Empty<PartGroupDefinition>(),
                 previewConfig = new PackagePreviewConfig {
                     partPlacements = new[] {
                         PP("decor", V(3,0,0), V(9,0,0)),
@@ -197,7 +197,7 @@ namespace OSE.Tests.EditMode
                     Step(3, "idle2"),
                 },
                 parts = new[] { new PartDefinition { id = "bolt" } },
-                subassemblies = System.Array.Empty<SubassemblyDefinition>(),
+                partGroups = System.Array.Empty<PartGroupDefinition>(),
                 previewConfig = new PackagePreviewConfig {
                     partPlacements = new[] { PP("bolt", V(0,0,0), V(5,0,0)) }
                 }
@@ -224,7 +224,7 @@ namespace OSE.Tests.EditMode
                     Step(3, "s3"),
                 },
                 parts = new[] { new PartDefinition { id = "bolt" } },
-                subassemblies = System.Array.Empty<SubassemblyDefinition>(),
+                partGroups = System.Array.Empty<PartGroupDefinition>(),
                 previewConfig = new PackagePreviewConfig {
                     partPlacements = new[] {
                         new PartPreviewPlacement {
@@ -270,7 +270,7 @@ namespace OSE.Tests.EditMode
                     Step(54, "close", required: new[] { "half_b" }),
                 },
                 parts = new[] { new PartDefinition { id = "half_b" } },
-                subassemblies = System.Array.Empty<SubassemblyDefinition>(),
+                partGroups = System.Array.Empty<PartGroupDefinition>(),
                 previewConfig = new PackagePreviewConfig {
                     partPlacements = new[] { PP("half_b", V(0.5228f, 0.55f, 0), V(0.82f, 0.55f, 0)) }
                 }
@@ -289,7 +289,7 @@ namespace OSE.Tests.EditMode
         }
 
         // ──────────────────────────────────────────────────────────────────
-        // Integrated subassembly member
+        // Integrated partGroup member
         // ──────────────────────────────────────────────────────────────────
 
         [Test]
@@ -303,17 +303,17 @@ namespace OSE.Tests.EditMode
                     Step(3, "idle"),
                 },
                 parts = new[] { new PartDefinition { id = "half_a" } },
-                subassemblies = new[] {
-                    new SubassemblyDefinition {
+                partGroups = new[] {
+                    new PartGroupDefinition {
                         id = "carriage",
                         partIds = new[] { "half_a" },
                     },
                 },
                 previewConfig = new PackagePreviewConfig {
                     partPlacements = new[] { PP("half_a", V(0,0,0), V(1,0,0)) },
-                    integratedSubassemblyPlacements = new[] {
-                        new IntegratedSubassemblyPreviewPlacement {
-                            subassemblyId = "carriage",
+                    integratedPartGroupPlacements = new[] {
+                        new IntegratedPartGroupPreviewPlacement {
+                            partGroupId = "carriage",
                             targetId = "cube_top",
                             memberPlacements = new[] {
                                 new IntegratedMemberPreviewPlacement {
@@ -389,7 +389,7 @@ namespace OSE.Tests.EditMode
                     Step(3, "c"),
                 },
                 parts = new[] { new PartDefinition { id = "p" } },
-                subassemblies = System.Array.Empty<SubassemblyDefinition>(),
+                partGroups = System.Array.Empty<PartGroupDefinition>(),
                 previewConfig = new PackagePreviewConfig {
                     partPlacements = new[] {
                         new PartPreviewPlacement {
@@ -447,8 +447,8 @@ namespace OSE.Tests.EditMode
                     Step(3, "s3"),
                 },
                 parts = new[] { new PartDefinition { id = "half_a" } },
-                subassemblies = new[] {
-                    new SubassemblyDefinition {
+                partGroups = new[] {
+                    new PartGroupDefinition {
                         id            = "carriage",
                         partIds       = new[] { "half_a" },
                         animationCues = new[] { cue },
@@ -506,7 +506,7 @@ namespace OSE.Tests.EditMode
                 machine = new MachineDefinition { id = "m" },
                 steps = new[] { Step(1, "s1", required: new[] { "bolt" }) },
                 parts = new[] { new PartDefinition { id = "bolt" } },
-                subassemblies = System.Array.Empty<SubassemblyDefinition>(),
+                partGroups = System.Array.Empty<PartGroupDefinition>(),
                 previewConfig = new PackagePreviewConfig {
                     partPlacements = new[] {
                         new PartPreviewPlacement {
@@ -545,7 +545,7 @@ namespace OSE.Tests.EditMode
                 machine = new MachineDefinition { id = "m" },
                 steps = new[] { Step(1, "s1", required: new[] { "bolt" }) },
                 parts = new[] { new PartDefinition { id = "bolt" } },
-                subassemblies = System.Array.Empty<SubassemblyDefinition>(),
+                partGroups = System.Array.Empty<PartGroupDefinition>(),
                 previewConfig = new PackagePreviewConfig {
                     partPlacements = new[] { PP("bolt", V(10, 0, 0), V(20, 0, 0)) }
                 }

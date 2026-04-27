@@ -16,18 +16,18 @@ namespace OSE.UI.Root
     {
         private readonly Func<PackagePartSpawner> _spawner;
         private readonly Func<PreviewSceneSetup> _setup;
-        private readonly Func<SubassemblyPlacementController> _subassembly;
+        private readonly Func<PartGroupPlacementController> _partGroup;
         private readonly Dictionary<string, PartPlacementState> _partStates;
 
         internal PartLookupService(
             Func<PackagePartSpawner> spawner,
             Func<PreviewSceneSetup> setup,
-            Func<SubassemblyPlacementController> subassembly,
+            Func<PartGroupPlacementController> partGroup,
             Dictionary<string, PartPlacementState> partStates)
         {
             _spawner = spawner;
             _setup = setup;
-            _subassembly = subassembly;
+            _partGroup = partGroup;
             _partStates = partStates;
         }
 
@@ -58,26 +58,26 @@ namespace OSE.UI.Root
             return false;
         }
 
-        public bool IsSubassemblyProxy(GameObject target) =>
-            _subassembly() != null && _subassembly().IsProxy(target);
+        public bool IsPartGroupProxy(GameObject target) =>
+            _partGroup() != null && _partGroup().IsProxy(target);
 
         public bool IsWireSpline(GameObject target) =>
             target != null && target.GetComponent<WireSplineMarker>() != null;
 
         public bool IsSelectablePlacementObject(GameObject target) =>
-            IsSpawnedPart(target) || IsSubassemblyProxy(target) || IsWireSpline(target);
+            IsSpawnedPart(target) || IsPartGroupProxy(target) || IsWireSpline(target);
 
         // ── Selection ID resolution ──
 
         public string ResolveSelectionId(GameObject target)
         {
             if (target == null) return null;
-            var sub = _subassembly();
+            var sub = _partGroup();
             if (sub != null &&
-                sub.TryGetSubassemblyId(target, out string subassemblyId) &&
-                IsSubassemblyProxy(target))
+                sub.TryGetPartGroupId(target, out string partGroupId) &&
+                IsPartGroupProxy(target))
             {
-                return subassemblyId;
+                return partGroupId;
             }
             if (IsSpawnedPart(target)) return target.name;
             var wireMarker = target.GetComponent<WireSplineMarker>();
@@ -88,7 +88,7 @@ namespace OSE.UI.Root
         public GameObject NormalizeSelectablePlacementTarget(GameObject target)
         {
             if (target == null) return target;
-            var sub = _subassembly();
+            var sub = _partGroup();
             if (sub == null) return target;
             GameObject proxyTarget = sub.ResolveSelectableFromHit(target.transform);
             return proxyTarget != null ? proxyTarget : target;
@@ -97,7 +97,7 @@ namespace OSE.UI.Root
         public void ForEachProxyMember(GameObject proxy, Action<GameObject> visitor)
         {
             if (proxy == null || visitor == null) return;
-            var sub = _subassembly();
+            var sub = _partGroup();
             if (sub == null) return;
             foreach (GameObject member in sub.EnumerateMemberParts(proxy))
             {
@@ -120,7 +120,7 @@ namespace OSE.UI.Root
             if (hits == null || hits.Length == 0) return null;
             Array.Sort(hits, (left, right) => left.distance.CompareTo(right.distance));
 
-            var sub = _subassembly();
+            var sub = _partGroup();
             for (int i = 0; i < hits.Length; i++)
             {
                 // Dock arc sphere endpoints redirect to their linked selectable part.
@@ -166,17 +166,17 @@ namespace OSE.UI.Root
             if (string.IsNullOrWhiteSpace(partId)) return false;
 
             ServiceRegistry.TryGet<IPartRuntimeController>(out var partController);
-            var sub = _subassembly();
+            var sub = _partGroup();
 
             if (sub != null)
             {
                 var package = _spawner()?.CurrentPackage;
                 GameObject partGo = FindSpawnedPart(partId);
-                bool isSubassemblyId = partGo == null && sub.TryGetProxy(partId, out _);
-                if (!isSubassemblyId)
-                    isSubassemblyId = package != null && package.TryGetSubassembly(partId, out _);
+                bool isPartGroupId = partGo == null && sub.TryGetProxy(partId, out _);
+                if (!isPartGroupId)
+                    isPartGroupId = package != null && package.TryGetPartGroup(partId, out _);
 
-                if (isSubassemblyId)
+                if (isPartGroupId)
                 {
                     if (ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                     {
@@ -184,15 +184,15 @@ namespace OSE.UI.Root
                         if (stepCtrl != null && stepCtrl.HasActiveStep)
                         {
                             var currentStep = stepCtrl.CurrentStepDefinition;
-                            if (currentStep != null && currentStep.RequiresSubassemblyPlacement &&
-                                string.Equals(currentStep.requiredSubassemblyId, partId, StringComparison.OrdinalIgnoreCase))
+                            if (currentStep != null && currentStep.RequiresPartGroupPlacement &&
+                                string.Equals(currentStep.requiredPartGroupId, partId, StringComparison.OrdinalIgnoreCase))
                                 return false;
                         }
                     }
 
                     bool anyMemberFound = false;
                     bool anyMemberLocked = false;
-                    if (package != null && package.TryGetSubassembly(partId, out var subDef) && subDef?.partIds != null)
+                    if (package != null && package.TryGetPartGroup(partId, out var subDef) && subDef?.partIds != null)
                     {
                         foreach (string memberId in subDef.partIds)
                         {

@@ -138,7 +138,7 @@ namespace OSE.Editor
 
         /// <summary>
         /// Resolves a scope word and friendly entity name for the breadcrumb.
-        /// Part tasks whose id matches a subassembly render as "Group".
+        /// Part tasks whose id matches a partGroup render as "Group".
         /// </summary>
         private (string scopeWord, string entityName) ResolveBreadcrumbScope(
             StepDefinition step, TaskOrderEntry selEntry)
@@ -150,10 +150,10 @@ namespace OSE.Editor
 
             if (string.Equals(kind, "part", StringComparison.Ordinal))
             {
-                // A "part" entry can refer to a subassembly when the id
+                // A "part" entry can refer to a partGroup when the id
                 // matches a group — match the dispatcher's own isGroupTask
                 // probe so the crumb and the body agree on scope.
-                if (_pkg != null && _pkg.TryGetSubassembly(id, out var sub) && sub != null)
+                if (_pkg != null && _pkg.TryGetPartGroup(id, out var sub) && sub != null)
                     return ("Group", sub.GetDisplayName());
                 return ("Part", TaskInstanceId.ToPartId(id));
             }

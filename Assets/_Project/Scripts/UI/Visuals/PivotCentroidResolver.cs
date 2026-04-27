@@ -5,7 +5,7 @@ using UnityEngine;
 namespace OSE.UI.Root
 {
     /// <summary>
-    /// Single source of truth for the "body centroid" of a subassembly group
+    /// Single source of truth for the "body centroid" of a partGroup group
     /// root used as a rotation pivot by cue players and authoring gizmos.
     ///
     /// <para>A group's rotation should pivot around its established body
@@ -32,7 +32,7 @@ namespace OSE.UI.Root
         /// <summary>
         /// Returns the group-local body centroid, or null when no body
         /// members are present (e.g. the first step introducing the
-        /// subassembly — callers should display "no body yet" rather
+        /// partGroup — callers should display "no body yet" rather
         /// than fabricate a fake centroid).
         /// </summary>
         public static Vector3? ComputeBodyCentroidLocal(

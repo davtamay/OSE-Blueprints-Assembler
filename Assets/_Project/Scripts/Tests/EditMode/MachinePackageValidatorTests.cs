@@ -257,10 +257,10 @@ namespace OSE.Tests.EditMode
         }
 
         [Test]
-        public void Assembly_Referencing_Missing_Subassembly_Reported()
+        public void Assembly_Referencing_Missing_PartGroup_Reported()
         {
             var package = CreateMinimalValidPackage();
-            package.assemblies[0].subassemblyIds = new[] { "nonexistent_sub" };
+            package.assemblies[0].partGroupIds = new[] { "nonexistent_sub" };
 
             var result = MachinePackageValidator.Validate(package);
 
@@ -521,26 +521,26 @@ namespace OSE.Tests.EditMode
         }
 
         [Test]
-        public void Step_Both_RequiredParts_And_RequiredSubassembly_Reported()
+        public void Step_Both_RequiredParts_And_RequiredPartGroup_Reported()
         {
             var package = CreateMinimalValidPackage();
-            // Add a subassembly with part
-            package.subassemblies = new[]
+            // Add a partGroup with part
+            package.partGroups = new[]
             {
-                new SubassemblyDefinition
+                new PartGroupDefinition
                 {
                     id = "sub_1", name = "Sub 1", assemblyId = "asm_1",
                     partIds = new[] { "part_1" }, stepIds = new[] { "step_1" }
                 }
             };
-            package.assemblies[0].subassemblyIds = new[] { "sub_1" };
+            package.assemblies[0].partGroupIds = new[] { "sub_1" };
             package.steps[0].requiredPartIds = new[] { "part_1" };
-            package.steps[0].requiredSubassemblyId = "sub_1";
+            package.steps[0].requiredPartGroupId = "sub_1";
 
             var result = MachinePackageValidator.Validate(package);
 
             Assert.IsTrue(result.HasErrors);
-            AssertHasIssueContaining(result, "requiredPartIds or requiredSubassemblyId");
+            AssertHasIssueContaining(result, "requiredPartIds or requiredPartGroupId");
         }
 
         // ── Tool Action Validation ──
@@ -788,25 +788,25 @@ namespace OSE.Tests.EditMode
         }
 
         [Test]
-        public void Target_Both_Part_And_Subassembly_Reported()
+        public void Target_Both_Part_And_PartGroup_Reported()
         {
             var package = CreateMinimalValidPackage();
-            package.subassemblies = new[]
+            package.partGroups = new[]
             {
-                new SubassemblyDefinition
+                new PartGroupDefinition
                 {
                     id = "sub_1", name = "Sub 1", assemblyId = "asm_1",
                     partIds = new[] { "part_1" }, stepIds = new[] { "step_1" }
                 }
             };
-            package.assemblies[0].subassemblyIds = new[] { "sub_1" };
-            package.targets[0].associatedSubassemblyId = "sub_1";
+            package.assemblies[0].partGroupIds = new[] { "sub_1" };
+            package.targets[0].associatedPartGroupId = "sub_1";
             // associatedPartId is already set to "part_1"
 
             var result = MachinePackageValidator.Validate(package);
 
             Assert.IsTrue(result.HasErrors);
-            AssertHasIssueContaining(result, "associatedPartId or associatedSubassemblyId");
+            AssertHasIssueContaining(result, "associatedPartId or associatedPartGroupId");
         }
 
         // ── Validation Rule Validation ──
@@ -976,13 +976,13 @@ namespace OSE.Tests.EditMode
                 $"Expected no errors but got:\n{result.FormatSummary(20)}");
         }
 
-        // ── Subassembly Validation ──
+        // ── PartGroup Validation ──
 
         [Test]
-        public void Subassembly_Missing_Name_Reported()
+        public void PartGroup_Missing_Name_Reported()
         {
-            var package = CreatePackageWithSubassembly();
-            package.subassemblies[0].name = null;
+            var package = CreatePackageWithPartGroup();
+            package.partGroups[0].name = null;
 
             var result = MachinePackageValidator.Validate(package);
 
@@ -991,10 +991,10 @@ namespace OSE.Tests.EditMode
         }
 
         [Test]
-        public void Subassembly_Referencing_Missing_Assembly_Reported()
+        public void PartGroup_Referencing_Missing_Assembly_Reported()
         {
-            var package = CreatePackageWithSubassembly();
-            package.subassemblies[0].assemblyId = "nonexistent_asm";
+            var package = CreatePackageWithPartGroup();
+            package.partGroups[0].assemblyId = "nonexistent_asm";
 
             var result = MachinePackageValidator.Validate(package);
 
@@ -1003,10 +1003,10 @@ namespace OSE.Tests.EditMode
         }
 
         [Test]
-        public void Subassembly_Referencing_Missing_Part_Reported()
+        public void PartGroup_Referencing_Missing_Part_Reported()
         {
-            var package = CreatePackageWithSubassembly();
-            package.subassemblies[0].partIds = new[] { "nonexistent_part" };
+            var package = CreatePackageWithPartGroup();
+            package.partGroups[0].partIds = new[] { "nonexistent_part" };
 
             var result = MachinePackageValidator.Validate(package);
 
@@ -1158,18 +1158,18 @@ namespace OSE.Tests.EditMode
             };
         }
 
-        private static MachinePackageDefinition CreatePackageWithSubassembly()
+        private static MachinePackageDefinition CreatePackageWithPartGroup()
         {
             var package = CreateMinimalValidPackage();
-            package.subassemblies = new[]
+            package.partGroups = new[]
             {
-                new SubassemblyDefinition
+                new PartGroupDefinition
                 {
                     id = "sub_1", name = "Sub 1", assemblyId = "asm_1",
                     partIds = new[] { "part_1" }, stepIds = new[] { "step_1" }
                 }
             };
-            package.assemblies[0].subassemblyIds = new[] { "sub_1" };
+            package.assemblies[0].partGroupIds = new[] { "sub_1" };
             return package;
         }
 

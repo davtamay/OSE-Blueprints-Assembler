@@ -8,7 +8,7 @@ namespace OSE.UI.Root
             "poseTransition"      => 1.0f,
             "transform"           => 1.5f,
             "pulse"               => 0f,
-            "orientSubassembly"   => 0.6f,
+            "orientPartGroup"   => 0.6f,
             "particle"            => 0f,
             _                     => 1.0f,
         };

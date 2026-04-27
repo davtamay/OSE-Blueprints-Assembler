@@ -10,7 +10,7 @@ This schema covers:
 
 - machine definitions
 - assemblies
-- subassemblies
+- partGroups
 - parts
 - tools
 - steps
@@ -93,7 +93,7 @@ Examples:
 
 - machine id
 - assembly id
-- subassembly id
+- partGroup id
 - part id
 - tool id
 - step id
@@ -146,7 +146,7 @@ This is the top-level package container.
 - `assemblies` : array<AssemblyDefinition>  
   Major assemblies within the machine.
 
-- `subassemblies` : array<SubassemblyDefinition>  
+- `partGroups` : array<PartGroupDefinition>  
   Meaningful grouped construction units.
 
 - `parts` : array<PartDefinition>  
@@ -171,7 +171,7 @@ This is the top-level package container.
   Asset reference metadata.
 
 - `previewConfig` : PackagePreviewConfigDefinition (optional)  
-  Authored preview and presentation metadata, including finished-subassembly stacking frames.
+  Authored preview and presentation metadata, including finished-partGroup stacking frames.
 
 ### Example
 
@@ -181,7 +181,7 @@ This is the top-level package container.
   "packageVersion": "0.1.0",
   "machine": { "id": "power_cube_frame_corner", "name": "Power Cube Frame Corner" },
   "assemblies": [],
-  "subassemblies": [],
+  "partGroups": [],
   "parts": [],
   "tools": [],
   "steps": []
@@ -266,7 +266,7 @@ Represents a major machine section.
 - `name` : string
 - `description` : string (optional)
 - `machineId` : string
-- `subassemblyIds` : array<string>
+- `partGroupIds` : array<string>
 - `stepIds` : array<string>
 - `dependencyAssemblyIds` : array<string> (optional)
 - `learningFocus` : string (optional)
@@ -278,7 +278,7 @@ Represents a major machine section.
   "id": "assembly_frame_corner",
   "name": "Frame Corner Assembly",
   "machineId": "power_cube_frame_corner",
-  "subassemblyIds": ["subassembly_corner_bracket_unit"],
+  "partGroupIds": ["partGroup_corner_bracket_unit"],
   "stepIds": ["step_place_plate", "step_attach_bracket", "step_insert_bolts"],
   "learningFocus": "Structural alignment and reinforcement"
 }
@@ -286,9 +286,9 @@ Represents a major machine section.
 
 ---
 
-# 7. Subassembly Schema
+# 7. PartGroup Schema
 
-## 7.1 SubassemblyDefinition
+## 7.1 PartGroupDefinition
 
 Represents a smaller grouped construction unit.
 
@@ -306,7 +306,7 @@ Represents a smaller grouped construction unit.
 
 ```json
 {
-  "id": "subassembly_corner_bracket_unit",
+  "id": "partGroup_corner_bracket_unit",
   "name": "Corner Bracket Unit",
   "assemblyId": "assembly_frame_corner",
   "partIds": ["frame_plate_a", "corner_bracket_a", "m8_hex_bolt"],
@@ -420,12 +420,12 @@ Represents one coherent learner action.
 - `id` : string
 - `name` : string
 - `assemblyId` : string
-- `subassemblyId` : string (optional)
+- `partGroupId` : string (optional)
 - `sequenceIndex` : integer
 - `instructionText` : string
 - `whyItMattersText` : string (optional)
 - `requiredPartIds` : array<string>
-- `requiredSubassemblyId` : string (optional)
+- `requiredPartGroupId` : string (optional)
 - `optionalPartIds` : array<string> (optional)
 - `relevantToolIds` : array<string> (optional)
 - `targetIds` : array<string> (optional)
@@ -480,19 +480,19 @@ Important:
 - that behavior should resolve from `Place` + an appropriate profile plus step data
   shape
 
-##### Finished Subassembly Placement
+##### Finished PartGroup Placement
 
-- `requiredSubassemblyId` : string (optional)
+- `requiredPartGroupId` : string (optional)
 
-  Use this when the learner must move a previously completed subassembly as one rigid
+  Use this when the learner must move a previously completed partGroup as one rigid
   unit.
 
   Rules:
 
   - mutually exclusive with `requiredPartIds` in the current contract
   - used on normal `Place` steps; do not create a separate stack family
-  - must resolve to an authored subassembly
-  - should pair with a target that references the same subassembly through `associatedSubassemblyId`
+  - must resolve to an authored partGroup
+  - should pair with a target that references the same partGroup through `associatedPartGroupId`
 
   See `STACKING_ARCHITECTURE.md` for the runtime model and authoring rules.
 
@@ -537,7 +537,7 @@ The target direction replaces `completionType` with `family` + `profile`. When `
   "id": "step_attach_bracket",
   "name": "Attach Corner Bracket",
   "assemblyId": "assembly_frame_corner",
-  "subassemblyId": "subassembly_corner_bracket_unit",
+  "partGroupId": "partGroup_corner_bracket_unit",
   "sequenceIndex": 2,
   "instructionText": "Align the corner bracket against the frame plate and move it into position.",
   "whyItMattersText": "The bracket reinforces the corner and helps the frame resist deformation.",
@@ -705,7 +705,7 @@ Represents a logical assembly target.
 
 - `description` : string (optional)
 - `associatedPartId` : string (optional)
-- `associatedSubassemblyId` : string (optional)
+- `associatedPartGroupId` : string (optional)
 - `tags` : array<string> (optional)
 
 ### Example
@@ -727,23 +727,23 @@ Represents authored preview and presentation metadata used by the runtime.
 ### Fields
 
 - `defaultAssemblyScaleMultiplier` : number (optional)
-- `subassemblyPlacements` : array<SubassemblyPreviewPlacement> (optional)  
-  Authored fabrication reference frames for completed subassemblies that may later move as one rigid unit.
-- `completedSubassemblyParkingPlacements` : array<SubassemblyPreviewPlacement> (optional)  
-  Presentation-space parking poses for completed subassemblies that should persist after fabrication but before later stacking.
-- `integratedSubassemblyPlacements` : array<IntegratedSubassemblyPreviewPlacement> (optional)  
+- `partGroupPlacements` : array<PartGroupPreviewPlacement> (optional)  
+  Authored fabrication reference frames for completed partGroups that may later move as one rigid unit.
+- `completedPartGroupParkingPlacements` : array<PartGroupPreviewPlacement> (optional)  
+  Presentation-space parking poses for completed partGroups that should persist after fabrication but before later stacking.
+- `integratedPartGroupPlacements` : array<IntegratedPartGroupPreviewPlacement> (optional)  
   Canonical final member poses used after a stacking step is committed.
 
-### SubassemblyPreviewPlacement
+### PartGroupPreviewPlacement
 
-- `subassemblyId` : string
+- `partGroupId` : string
 - `position` : Vector3Like
 - `rotation` : QuaternionLike
 - `scale` : Vector3Like (optional, default `1,1,1`)
 
-### IntegratedSubassemblyPreviewPlacement
+### IntegratedPartGroupPreviewPlacement
 
-- `subassemblyId` : string
+- `partGroupId` : string
 - `targetId` : string
 - `memberPlacements` : array<IntegratedMemberPreviewPlacement>
 
@@ -756,10 +756,10 @@ Represents authored preview and presentation metadata used by the runtime.
 
 ### Notes
 
-- `subassemblyPlacements` defines the fabrication reference frame of the finished unit.
-- `completedSubassemblyParkingPlacements` defines where a finished unit should persist after fabrication when one shared work bay is used.
-- `integratedSubassemblyPlacements` defines the canonical committed display after the finished unit has been placed.
-- Use `integratedSubassemblyPlacements` when leaving the fabrication panel shell in place would create overlap, z-fighting, or misleading final geometry.
+- `partGroupPlacements` defines the fabrication reference frame of the finished unit.
+- `completedPartGroupParkingPlacements` defines where a finished unit should persist after fabrication when one shared work bay is used.
+- `integratedPartGroupPlacements` defines the canonical committed display after the finished unit has been placed.
+- Use `integratedPartGroupPlacements` when leaving the fabrication panel shell in place would create overlap, z-fighting, or misleading final geometry.
 - See `STACKING_ARCHITECTURE.md` for the full rationale and runtime behavior.
 
 ---
@@ -1007,7 +1007,7 @@ The first authentic package should remain small.
 
 Recommended first real package:
 
-- one Power Cube-aligned frame corner or bracket subassembly
+- one Power Cube-aligned frame corner or bracket partGroup
 - modest part count
 - simple tool story
 - clear targets
@@ -1044,11 +1044,11 @@ That is how the data layer becomes strong enough to support the long-term vision
 
 ## Content Hierarchy
 
-Machine > Assembly > Subassembly > Step (Part / Tool / Instruction)
+Machine > Assembly > PartGroup > Step (Part / Tool / Instruction)
 
 - **Machine** - complete buildable machine (Power Cube, D3D Printer, CEB Press). Contains metadata, assemblies, asset manifests.
 - **Assembly** - major subsystem (frame, hydraulic system, electrical system).
-- **Subassembly** - mechanical grouping inside an assembly (wheel hub, pump mount, frame cross-brace).
+- **PartGroup** - mechanical grouping inside an assembly (wheel hub, pump mount, frame cross-brace).
 - **Step** - single instructional action. Belongs to one family: Place, Use, Connect, Confirm. May declare a profile. Resolves an interaction pattern and view mode at runtime.
 
 ## Physical Fidelity Standard
@@ -1086,17 +1086,17 @@ For each authored slice keep a source record identifying which document informed
 
 ---
 
-# Subassembly Stacking Architecture
+# PartGroup Stacking Architecture
 
 *Merged from STACKING_ARCHITECTURE.md*
 
-Defines the canonical model for steps that move a previously completed subassembly as one finished unit (e.g., stand a welded frame side upright, place a finished panel onto a cube face).
+Defines the canonical model for steps that move a previously completed partGroup as one finished unit (e.g., stand a welded frame side upright, place a finished panel onto a cube face).
 
 ## Core Rule
 
-Do not replace finished subassemblies with fake composite parts. The canonical model:
+Do not replace finished partGroups with fake composite parts. The canonical model:
 - Parts keep their original identities for metadata, history, validation, and replay
-- A finished subassembly gets a runtime placement proxy
+- A finished partGroup gets a runtime placement proxy
 - The proxy temporarily owns the transform for the whole completed unit
 - Member part poses are derived from the proxy plus authored local offsets
 
@@ -1114,26 +1114,26 @@ Do not replace finished subassemblies with fake composite parts. The canonical m
 
 **TargetDefinition:** use  (optional; v1: mutually exclusive with )
 
-**previewConfig.subassemblyPlacements** - authored fabrication reference frame for each stackable subassembly.
+**previewConfig.partGroupPlacements** - authored fabrication reference frame for each stackable partGroup.
 
-**previewConfig.completedSubassemblyParkingPlacements** - parking pose for completed units before stacking.
+**previewConfig.completedPartGroupParkingPlacements** - parking pose for completed units before stacking.
 
-**previewConfig.integratedSubassemblyPlacements** - canonical final display after commit, keyed by (subassemblyId, targetId), with explicit memberPlacements per part.
+**previewConfig.integratedPartGroupPlacements** - canonical final display after commit, keyed by (partGroupId, targetId), with explicit memberPlacements per part.
 
 ## Authoring Rules
 
 Use when the learner must move a previously completed unit as one rigid object. Do NOT use when the step is still placing loose parts one by one.
 
-Required: keep original part IDs, one requiredSubassemblyId per v1 stack step, author subassemblyPlacements for every stackable unit, author integratedSubassemblyPlacements whenever final display would overlap or z-fight.
+Required: keep original part IDs, one requiredPartGroupId per v1 stack step, author partGroupPlacements for every stackable unit, author integratedPartGroupPlacements whenever final display would overlap or z-fight.
 
 ## Validation Rules
 
-Reject or warn on: step uses both requiredPartIds and requiredSubassemblyId; target uses both associatedPartId and associatedSubassemblyId; requiredSubassemblyId does not resolve; stacking step has no valid target; stackable subassembly has no subassemblyPlacements entry; integrated placement references a missing part or part outside the referenced subassembly.
+Reject or warn on: step uses both requiredPartIds and requiredPartGroupId; target uses both associatedPartId and associatedPartGroupId; requiredPartGroupId does not resolve; stacking step has no valid target; stackable partGroup has no partGroupPlacements entry; integrated placement references a missing part or part outside the referenced partGroup.
 
 ## Adjustable Fitting Extension
 
-For steps that fit a completed subassembly with one side anchored and the other moving along a constrained axis (e.g., D3D X-axis fitting between the Y axes): keep the step in the normal Place family, keep the movable unit as a real subassembly, do not invent a separate Adjust family. Resolve special behavior from family + profile + step data shape.
+For steps that fit a completed partGroup with one side anchored and the other moving along a constrained axis (e.g., D3D X-axis fitting between the Y axes): keep the step in the normal Place family, keep the movable unit as a real partGroup, do not invent a separate Adjust family. Resolve special behavior from family + profile + step data shape.
 
 ## Reference Implementation
 
- is the canonical reference: completed square frame sides as stackable subassemblies, one shared near-camera fabrication bay with parked finished-panel slots, guided docking into cube position, and canonical integrated member poses after commit.
+ is the canonical reference: completed square frame sides as stackable partGroups, one shared near-camera fabrication bay with parked finished-panel slots, guided docking into cube position, and canonical integrated member poses after commit.

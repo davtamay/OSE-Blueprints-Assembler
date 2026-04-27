@@ -44,8 +44,8 @@ namespace OSE.Content.Loading
 
         /// <summary>
         /// Composes the member's per-part resolved pose with any group
-        /// stepPose active for the owning subassembly at <paramref name="viewSeq"/>.
-        /// No-op when the part has no owning subassembly OR the subassembly has
+        /// stepPose active for the owning partGroup at <paramref name="viewSeq"/>.
+        /// No-op when the part has no owning partGroup OR the partGroup has
         /// no group stepPose covering this seq — keeps existing content byte-
         /// identical with the pre-Phase-A resolver.
         ///
@@ -63,8 +63,8 @@ namespace OSE.Content.Loading
         private static PoseResolution ApplyGroupStepPose(
             string partId, int viewSeq, PoseResolverIndex idx, PoseResolution memberLocal)
         {
-            if (!idx.subassemblyIdByMember.TryGetValue(partId, out string subId)) return memberLocal;
-            if (!idx.groupStepPosesBySubassembly.TryGetValue(subId, out var spans)) return memberLocal;
+            if (!idx.partGroupIdByMember.TryGetValue(partId, out string subId)) return memberLocal;
+            if (!idx.groupStepPosesByPartGroup.TryGetValue(subId, out var spans)) return memberLocal;
 
             // Membership filter: a group stepPose only applies to members that
             // were already visible when the group transform kicked in. Members
@@ -164,25 +164,25 @@ namespace OSE.Content.Loading
                 }
             }
 
-            // [3] Integrated subassembly member — part rides with a group
+            // [3] Integrated partGroup member — part rides with a group
             //     that has been stacked onto a target at or before viewSeq.
             //     We want the *most recent* stacking event ≤ viewSeq for the
-            //     part's subassembly (if any), then compose the authored
+            //     part's partGroup (if any), then compose the authored
             //     integrated member pose directly.
-            if (idx.subassemblyIdByMember.TryGetValue(partId, out string subId))
+            if (idx.partGroupIdByMember.TryGetValue(partId, out string subId))
             {
                 StackingEvent? active = null;
                 for (int i = idx.stackingEvents.Count - 1; i >= 0; i--)
                 {
                     var ev = idx.stackingEvents[i];
                     if (ev.seq > viewSeq) continue;
-                    if (!string.Equals(ev.subassemblyId, subId, StringComparison.Ordinal)) continue;
+                    if (!string.Equals(ev.partGroupId, subId, StringComparison.Ordinal)) continue;
                     active = ev;
                     break;
                 }
                 if (active.HasValue)
                 {
-                    string memberKey = PoseResolverIndex.PackKey(active.Value.subassemblyId, active.Value.targetId, partId);
+                    string memberKey = PoseResolverIndex.PackKey(active.Value.partGroupId, active.Value.targetId, partId);
                     if (idx.integratedMemberBySubTargetPart.TryGetValue(memberKey, out var member))
                     {
                         return new PoseResolution(
@@ -190,7 +190,7 @@ namespace OSE.Content.Loading
                             ToQuat(member.rotation),
                             NormalizeScale(ToVec3(member.scale), pp),
                             PoseSource.IntegratedMember,
-                            active.Value.subassemblyId + "|" + active.Value.targetId);
+                            active.Value.partGroupId + "|" + active.Value.targetId);
                     }
                     // Falls through to later branches if memberPlacement absent —
                     // invariant #6 at load catches authoring gaps.

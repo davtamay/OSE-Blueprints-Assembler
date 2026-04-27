@@ -14,7 +14,7 @@ namespace OSE.Editor
     /// — same open pattern, same state shape.
     ///
     /// Supports:
-    /// - Optional grouping by category / subassembly (falls back to a flat list when unset).
+    /// - Optional grouping by category / partGroup (falls back to a flat list when unset).
     /// - A leading "(clear)" item that sets the associated part to null.
     /// - Labels include both the id and the display name so search matches either.
     /// </summary>

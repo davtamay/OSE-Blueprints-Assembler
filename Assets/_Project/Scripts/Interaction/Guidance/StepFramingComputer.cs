@@ -236,11 +236,11 @@ namespace OSE.Interaction
 
             if (package?.previewConfig?.partPlacements != null)
             {
-                if (!string.IsNullOrWhiteSpace(step.subassemblyId) &&
-                    package.TryGetSubassembly(step.subassemblyId, out SubassemblyDefinition subassembly) &&
-                    subassembly?.partIds != null)
+                if (!string.IsNullOrWhiteSpace(step.partGroupId) &&
+                    package.TryGetPartGroup(step.partGroupId, out PartGroupDefinition partGroup) &&
+                    partGroup?.partIds != null)
                 {
-                    foreach (string partId in subassembly.partIds)
+                    foreach (string partId in partGroup.partIds)
                     {
                         if (string.IsNullOrWhiteSpace(partId))
                             continue;
@@ -277,11 +277,11 @@ namespace OSE.Interaction
             }
 
             if (!hasPoint &&
-                !string.IsNullOrWhiteSpace(step.requiredSubassemblyId) &&
+                !string.IsNullOrWhiteSpace(step.requiredPartGroupId) &&
                 package != null &&
-                package.TryGetSubassemblyPreviewPlacement(step.requiredSubassemblyId, out SubassemblyPreviewPlacement subassemblyPlacement))
+                package.TryGetPartGroupPreviewPlacement(step.requiredPartGroupId, out PartGroupPreviewPlacement partGroupPlacement))
             {
-                AddPoint(new Vector3(subassemblyPlacement.position.x, subassemblyPlacement.position.y, subassemblyPlacement.position.z));
+                AddPoint(new Vector3(partGroupPlacement.position.x, partGroupPlacement.position.y, partGroupPlacement.position.z));
             }
 
             if (hasPoint)

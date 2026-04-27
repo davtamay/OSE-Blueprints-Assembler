@@ -38,7 +38,7 @@ namespace OSE.UI.Root
         /// <summary>The raw cue entry from machine.json.</summary>
         public readonly AnimationCueEntry Entry;
 
-        /// <summary>Resolved target GameObjects (parts, tools, or subassembly roots).</summary>
+        /// <summary>Resolved target GameObjects (parts, tools, or partGroup roots).</summary>
         public readonly List<GameObject> Targets;
 
         /// <summary>
@@ -66,7 +66,7 @@ namespace OSE.UI.Root
         /// <summary>
         /// Optional pivot hint in the first target's local frame. When set
         /// (non-null), players that do centroid-pivot rotation (e.g.
-        /// PoseTransitionPlayer, OrientSubassemblyPlayer) should use this
+        /// PoseTransitionPlayer, OrientPartGroupPlayer) should use this
         /// instead of computing centroid from live children. Lets callers
         /// pass a stable pivot derived from authored data (e.g. the average
         /// of member parts' assembledPosition) so rotation pivots correctly

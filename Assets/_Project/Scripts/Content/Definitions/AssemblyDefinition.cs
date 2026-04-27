@@ -9,7 +9,7 @@ namespace OSE.Content
         public string name;
         public string description;
         public string machineId;
-        public string[] subassemblyIds;
+        public string[] partGroupIds;
         public string[] stepIds;
         public string[] dependencyAssemblyIds;
         public string learningFocus;

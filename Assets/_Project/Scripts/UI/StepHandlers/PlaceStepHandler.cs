@@ -36,8 +36,8 @@ namespace OSE.UI.Root
 
         // ── Constants ──
         private const float SnapZoneRadius = 0.8f;
-        private const float SubassemblySnapZoneRadius = 1.35f;
-        private const float SubassemblyDockPreviewRadius = 1.9f;
+        private const float PartGroupSnapZoneRadius = 1.35f;
+        private const float PartGroupDockPreviewRadius = 1.9f;
         private static readonly Color PreviewReadyColor = new Color(0.3f, 1.0f, 0.5f, 0.4f);
 
         // ── Animation sub-system ──
@@ -124,26 +124,26 @@ namespace OSE.UI.Root
             if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return;
 
-            bool isSubassemblySelection = TryGetSubassemblySelection(partGo, out var subassemblyController, out string subassemblyId);
+            bool isPartGroupSelection = TryGetPartGroupSelection(partGo, out var partGroupController, out string partGroupId);
 
             // Phase I.i — cross-placement target search. When the dragged
             // part belongs to an interchangeable unorderedSet, any ghost in
             // the set accepts the drop. Non-set drags use the strict per-
             // part match as before.
             HashSet<string> setPartIds = null;
-            bool cross = !isSubassemblySelection &&
+            bool cross = !isPartGroupSelection &&
                          TryGetInterchangeableSet(selectionId, out setPartIds);
             float nearestDist;
             PlacementPreviewInfo nearestInfo = cross
                 ? FindNearestPreviewInSet(setPartIds, partGo.transform.position, out nearestDist)
                 : FindNearestPreviewForSelection(selectionId, partGo.transform.position, out nearestDist);
-            float snapZoneRadius = isSubassemblySelection ? SubassemblySnapZoneRadius : SnapZoneRadius;
+            float snapZoneRadius = isPartGroupSelection ? PartGroupSnapZoneRadius : SnapZoneRadius;
             bool inSnapZone = nearestInfo != null && nearestDist <= snapZoneRadius;
 
             if (!inSnapZone)
             {
                 string targetId = nearestInfo != null ? nearestInfo.TargetId : "unknown";
-                if (!isSubassemblySelection)
+                if (!isPartGroupSelection)
                 {
                     var invalid = PlacementValidationResult.Invalid(
                         ValidationFailureReason.PositionOutOfTolerance,
@@ -172,13 +172,13 @@ namespace OSE.UI.Root
             // AreActiveStepRequiredPartsPlaced on the next step spuriously completes it when
             // that step has empty requiredPartIds (e.g. Confirm-family shake-test steps).
             string placingForStepId = session.AssemblyController?.StepController?.CurrentStepDefinition?.id;
-            if (!isSubassemblySelection)
+            if (!isPartGroupSelection)
                 partController.AttemptPlacement(selectionId, matchedTargetId, result);
 
             if (!result.IsValid)
             {
                 _animator.FlashInvalidSelection(partGo, selectionId);
-                if (!isSubassemblySelection)
+                if (!isPartGroupSelection)
                     partController.SelectPart(selectionId);
                 _ctx.SelectionService?.NotifySelected(partGo);
                 StartPreviewSelectionPulse(selectionId);
@@ -190,9 +190,9 @@ namespace OSE.UI.Root
 
             OseLog.Info($"[PlaceHandler] Dropped '{selectionId}' in snap zone -> snapping to target.");
 
-            if (isSubassemblySelection)
+            if (isPartGroupSelection)
             {
-                if (!subassemblyController.IsPlacementCommitReady(partGo, matchedTargetId))
+                if (!partGroupController.IsPlacementCommitReady(partGo, matchedTargetId))
                 {
                     _animator.FlashInvalidSelection(partGo, selectionId);
                     _ctx.SelectionService?.NotifySelected(partGo);
@@ -203,7 +203,7 @@ namespace OSE.UI.Root
                     return;
                 }
 
-                if (!subassemblyController.TryApplyPlacement(subassemblyId, matchedTargetId))
+                if (!partGroupController.TryApplyPlacement(partGroupId, matchedTargetId))
                 {
                     _animator.FlashInvalidSelection(partGo, selectionId);
                     _ctx.SelectionService?.NotifySelected(partGo);
@@ -268,7 +268,7 @@ namespace OSE.UI.Root
             if (partGo == null || _ctx.SpawnedPreviews.Count == 0)
                 return;
 
-            bool isSubassemblySelection = TryGetSubassemblySelection(partGo, out var subassemblyController, out _);
+            bool isPartGroupSelection = TryGetPartGroupSelection(partGo, out var partGroupController, out _);
 
             // Phase I.i — interchangeable cross-placement detection. When
             // the dragged part sits inside an authored unorderedSet span
@@ -276,7 +276,7 @@ namespace OSE.UI.Root
             // widen the proximity match across the whole set so any target
             // in the set can accept any member.
             HashSet<string> setPartIds = null;
-            bool cross = !isSubassemblySelection &&
+            bool cross = !isPartGroupSelection &&
                          TryGetInterchangeableSet(selectionId, out setPartIds);
 
             float nearestDist;
@@ -284,18 +284,18 @@ namespace OSE.UI.Root
                 ? FindNearestPreviewInSet(setPartIds, partGo.transform.position, out nearestDist)
                 : FindNearestPreviewForSelection(selectionId, partGo.transform.position, out nearestDist);
 
-            float snapZoneRadius = isSubassemblySelection ? SubassemblySnapZoneRadius : SnapZoneRadius;
-            float previewRadius = isSubassemblySelection ? SubassemblyDockPreviewRadius : snapZoneRadius;
+            float snapZoneRadius = isPartGroupSelection ? PartGroupSnapZoneRadius : SnapZoneRadius;
+            float previewRadius = isPartGroupSelection ? PartGroupDockPreviewRadius : snapZoneRadius;
             GameObject nearest = (nearestInfo != null && nearestDist <= previewRadius) ? nearestInfo.gameObject : null;
 
-            if (isSubassemblySelection &&
+            if (isPartGroupSelection &&
                 nearestInfo != null &&
                 nearestDist <= previewRadius &&
-                subassemblyController != null)
+                partGroupController != null)
             {
-                if (!subassemblyController.TryApplyPlacementPreview(partGo, nearestInfo.TargetId, nearestDist, previewRadius))
+                if (!partGroupController.TryApplyPlacementPreview(partGo, nearestInfo.TargetId, nearestDist, previewRadius))
                 {
-                    ApplySubassemblyDockPreview(partGo, nearestInfo.TargetId, nearestDist, previewRadius, subassemblyController);
+                    ApplyPartGroupDockPreview(partGo, nearestInfo.TargetId, nearestDist, previewRadius, partGroupController);
                 }
             }
 
@@ -346,7 +346,7 @@ namespace OSE.UI.Root
             }
 
             if (nearestInfo != null && nearest != null && isDragging)
-                TryAutoSnapCurrentTarget(partGo, selectionId, nearestInfo, isSubassemblySelection, subassemblyController);
+                TryAutoSnapCurrentTarget(partGo, selectionId, nearestInfo, isPartGroupSelection, partGroupController);
         }
 
         public void ClearPreviewHighlight()
@@ -472,27 +472,27 @@ namespace OSE.UI.Root
             GameObject partGo,
             string selectionId,
             PlacementPreviewInfo nearestInfo,
-            bool isSubassemblySelection,
-            ISubassemblyPlacementService subassemblyController)
+            bool isPartGroupSelection,
+            IPartGroupPlacementService partGroupController)
         {
             if (partGo == null || nearestInfo == null)
                 return;
 
-            bool commitReady = !isSubassemblySelection ||
-                               subassemblyController == null ||
-                               subassemblyController.IsPlacementCommitReady(partGo, nearestInfo.TargetId);
+            bool commitReady = !isPartGroupSelection ||
+                               partGroupController == null ||
+                               partGroupController.IsPlacementCommitReady(partGo, nearestInfo.TargetId);
             if (!commitReady)
                 return;
 
             OseLog.Info($"[PlaceHandler] Auto-snap: '{selectionId}' committed in snap zone of '{nearestInfo.TargetId}'.");
 
-            if (isSubassemblySelection &&
-                subassemblyController != null &&
-                subassemblyController.TryResolveTargetPose(nearestInfo.TargetId, out Vector3 proxyPos, out Quaternion proxyRot, out Vector3 proxyScale))
+            if (isPartGroupSelection &&
+                partGroupController != null &&
+                partGroupController.TryResolveTargetPose(nearestInfo.TargetId, out Vector3 proxyPos, out Quaternion proxyRot, out Vector3 proxyScale))
             {
                 partGo.transform.SetLocalPositionAndRotation(proxyPos, proxyRot);
                 partGo.transform.localScale = proxyScale;
-                subassemblyController.ApplyProxyTransform(partGo);
+                partGroupController.ApplyProxyTransform(partGo);
             }
             else
             {
@@ -597,14 +597,14 @@ namespace OSE.UI.Root
             if (!ServiceRegistry.TryGet<IMachineSessionController>(out var session))
                 return;
 
-            bool isSubassemblySelection = TryGetSubassemblySelection(partGo, out var subassemblyController, out string subassemblyId);
+            bool isPartGroupSelection = TryGetPartGroupSelection(partGo, out var partGroupController, out string partGroupId);
 
             string targetId = previewInfo.TargetId;
             PlacementValidationResult result = PlacementValidator.ValidateExact();
             // Capture step id before AttemptPlacement — see AttemptPlacement() above for
             // why this matters (synchronous cascading step completion).
             string placingForStepId = session.AssemblyController?.StepController?.CurrentStepDefinition?.id;
-            if (!isSubassemblySelection)
+            if (!isPartGroupSelection)
                 partController.AttemptPlacement(selectionId, targetId, result);
 
             if (!result.IsValid)
@@ -617,9 +617,9 @@ namespace OSE.UI.Root
 
             OseLog.Info($"[PlaceHandler] Click-to-place '{selectionId}' at preview target '{targetId}'.");
 
-            if (isSubassemblySelection)
+            if (isPartGroupSelection)
             {
-                if (!subassemblyController.IsPlacementCommitReady(partGo, targetId))
+                if (!partGroupController.IsPlacementCommitReady(partGo, targetId))
                 {
                     _animator.FlashInvalidSelection(partGo, selectionId);
                     if (ServiceRegistry.TryGet<IEffectPlayer>(out var fxClickNotReady))
@@ -627,7 +627,7 @@ namespace OSE.UI.Root
                     return;
                 }
 
-                if (!subassemblyController.TryApplyPlacement(subassemblyId, targetId))
+                if (!partGroupController.TryApplyPlacement(partGroupId, targetId))
                 {
                     _animator.FlashInvalidSelection(partGo, selectionId);
                     if (ServiceRegistry.TryGet<IEffectPlayer>(out var fxClickNoPlace))
@@ -680,13 +680,13 @@ namespace OSE.UI.Root
             // on AreActiveStepRequiredPartsPlaced is the single completion
             // trigger here. Calling CompleteStep for cursor-driven content
             // would race the cursor's own call and double-fire.
-            bool subassemblyDone =
-                ServiceRegistry.TryGet<ISubassemblyPlacementService>(out var subassemblyController) &&
-                subassemblyController != null &&
+            bool partGroupDone =
+                ServiceRegistry.TryGet<IPartGroupPlacementService>(out var partGroupController) &&
+                partGroupController != null &&
                 !string.IsNullOrWhiteSpace(currentStepId) &&
-                subassemblyController.IsActiveStepPlacementSatisfied(currentStepId);
+                partGroupController.IsActiveStepPlacementSatisfied(currentStepId);
 
-            if (subassemblyDone || partController.AreActiveStepRequiredPartsPlaced())
+            if (partGroupDone || partController.AreActiveStepRequiredPartsPlaced())
             {
                 if (ServiceRegistry.TryGet<IEffectPlayer>(out var fx))
                     fx.PlayHaptic(EffectRole.HapticFeedback);
@@ -759,8 +759,8 @@ namespace OSE.UI.Root
             Camera cam = CameraUtil.GetMain();
             if (cam == null) return null;
 
-            bool isSubassemblySelection = IsSubassemblySelectionId(selectionId);
-            float threshold = StepHandlerConstants.Proximity.GetThreshold(isSubassemblySelection);
+            bool isPartGroupSelection = IsPartGroupSelectionId(selectionId);
+            float threshold = StepHandlerConstants.Proximity.GetThreshold(isPartGroupSelection);
             float closestDist = threshold;
             PlacementPreviewInfo best = null;
 
@@ -784,22 +784,22 @@ namespace OSE.UI.Root
             return best;
         }
 
-        private bool TryGetSubassemblySelection(
+        private bool TryGetPartGroupSelection(
             GameObject targetGo,
-            out ISubassemblyPlacementService subassemblyController,
-            out string subassemblyId)
+            out IPartGroupPlacementService partGroupController,
+            out string partGroupId)
         {
-            subassemblyController = null;
-            subassemblyId = null;
+            partGroupController = null;
+            partGroupId = null;
 
             return targetGo != null &&
-                   ServiceRegistry.TryGet<ISubassemblyPlacementService>(out subassemblyController) &&
-                   subassemblyController != null &&
-                   subassemblyController.IsProxy(targetGo) &&
-                   subassemblyController.TryGetSubassemblyId(targetGo, out subassemblyId);
+                   ServiceRegistry.TryGet<IPartGroupPlacementService>(out partGroupController) &&
+                   partGroupController != null &&
+                   partGroupController.IsProxy(targetGo) &&
+                   partGroupController.TryGetPartGroupId(targetGo, out partGroupId);
         }
 
-        private bool IsSubassemblySelectionId(string selectionId)
+        private bool IsPartGroupSelectionId(string selectionId)
         {
             if (string.IsNullOrWhiteSpace(selectionId))
                 return false;
@@ -811,24 +811,24 @@ namespace OSE.UI.Root
                     continue;
 
                 PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
-                if (info != null && info.MatchesSubassembly(selectionId))
+                if (info != null && info.MatchesPartGroup(selectionId))
                     return true;
             }
 
             return false;
         }
 
-        private static void ApplySubassemblyDockPreview(
+        private static void ApplyPartGroupDockPreview(
             GameObject partGo,
             string targetId,
             float nearestDist,
             float previewRadius,
-            ISubassemblyPlacementService subassemblyController)
+            IPartGroupPlacementService partGroupController)
         {
             if (partGo == null ||
-                subassemblyController == null ||
+                partGroupController == null ||
                 string.IsNullOrWhiteSpace(targetId) ||
-                !subassemblyController.TryResolveTargetPose(targetId, out Vector3 targetPos, out Quaternion targetRot, out Vector3 targetScale))
+                !partGroupController.TryResolveTargetPose(targetId, out Vector3 targetPos, out Quaternion targetRot, out Vector3 targetScale))
             {
                 return;
             }
@@ -844,7 +844,7 @@ namespace OSE.UI.Root
             partGo.transform.localRotation = Quaternion.Slerp(partGo.transform.localRotation, targetRot, rotationBlend);
             partGo.transform.localPosition = Vector3.Lerp(partGo.transform.localPosition, targetPos, positionBlend);
             partGo.transform.localScale = Vector3.Lerp(partGo.transform.localScale, targetScale, scaleBlend);
-            subassemblyController.ApplyProxyTransform(partGo);
+            partGroupController.ApplyProxyTransform(partGo);
         }
 
     }

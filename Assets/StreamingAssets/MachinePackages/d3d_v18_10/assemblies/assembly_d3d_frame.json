@@ -5,14 +5,14 @@
       "name": "D3D Frame",
       "description": "Complete set of six D3D frame sides authored as source-backed layup, clamp-up, tack-welded panels, stacked cube targets, bracket-based cube joining with staged bolt tightening, post-bracket square verification, and frame acceptance before motion hardware.",
       "machineId": "d3d_v18_10",
-      "subassemblyIds": [
-        "subassembly_bottom_frame_side",
-        "subassembly_top_frame_side",
-        "subassembly_left_frame_side",
-        "subassembly_right_frame_side",
-        "subassembly_front_frame_side",
-        "subassembly_rear_frame_side",
-        "subassembly_cube_joining"
+      "partGroupIds": [
+        "partGroup_bottom_frame_side",
+        "partGroup_top_frame_side",
+        "partGroup_left_frame_side",
+        "partGroup_right_frame_side",
+        "partGroup_front_frame_side",
+        "partGroup_rear_frame_side",
+        "partGroup_cube_joining"
       ],
       "stepIds": [
         "step_bottom_place_bars",
@@ -68,9 +68,9 @@
       "learningFocus": "Repeatable frame-side geometry, square verification, stable hold-down, correct spatial stacking of the finished frame sides into the cube, bracket-based cube joining with staged bolt tightening, square verification between stages, and the acceptance logic used before motion hardware is added."
     }
   ],
-  "subassemblies": [
+  "partGroups": [
     {
-      "id": "subassembly_bottom_frame_side",
+      "id": "partGroup_bottom_frame_side",
       "name": "Bottom Frame Side",
       "stepIds": [ "step_bottom_place_bars", "step_bottom_verify_square", "step_bottom_clamp_panel", "step_bottom_tack_weld_corners" ],
       "assemblyId": "assembly_d3d_frame",
@@ -78,7 +78,7 @@
       "milestoneMessage": "Bottom Frame Side laid out, held, and tack-welded."
   },
     {
-      "id": "subassembly_top_frame_side",
+      "id": "partGroup_top_frame_side",
       "name": "Top Frame Side",
       "stepIds": [ "step_top_place_bars", "step_top_verify_square", "step_top_clamp_panel", "step_top_tack_weld_corners" ],
       "assemblyId": "assembly_d3d_frame",
@@ -86,7 +86,7 @@
       "milestoneMessage": "Top Frame Side laid out, held, and tack-welded."
   },
     {
-      "id": "subassembly_left_frame_side",
+      "id": "partGroup_left_frame_side",
       "name": "Left Frame Side",
       "stepIds": [ "step_left_place_bars", "step_left_verify_square", "step_left_clamp_panel", "step_left_tack_weld_corners" ],
       "assemblyId": "assembly_d3d_frame",
@@ -94,7 +94,7 @@
       "milestoneMessage": "Left Frame Side laid out, held, and tack-welded."
   },
     {
-      "id": "subassembly_right_frame_side",
+      "id": "partGroup_right_frame_side",
       "name": "Right Frame Side",
       "stepIds": [ "step_right_place_bars", "step_right_verify_square", "step_right_clamp_panel", "step_right_tack_weld_corners" ],
       "assemblyId": "assembly_d3d_frame",
@@ -102,7 +102,7 @@
       "milestoneMessage": "Right Frame Side laid out, held, and tack-welded."
   },
     {
-      "id": "subassembly_front_frame_side",
+      "id": "partGroup_front_frame_side",
       "name": "Front Frame Side",
       "stepIds": [ "step_front_place_bars", "step_front_verify_square", "step_front_clamp_panel", "step_front_tack_weld_corners" ],
       "assemblyId": "assembly_d3d_frame",
@@ -110,7 +110,7 @@
       "milestoneMessage": "Front Frame Side laid out, held, and tack-welded."
   },
     {
-      "id": "subassembly_rear_frame_side",
+      "id": "partGroup_rear_frame_side",
       "name": "Rear Frame Side",
       "stepIds": [ "step_rear_place_bars", "step_rear_verify_square", "step_rear_clamp_panel", "step_rear_tack_weld_corners" ],
       "assemblyId": "assembly_d3d_frame",
@@ -118,7 +118,7 @@
       "milestoneMessage": "Rear Frame Side laid out, held, and tack-welded."
   },
     {
-      "id": "subassembly_cube_joining",
+      "id": "partGroup_cube_joining",
       "name": "Frame Cube Joining",
       "assemblyId": "assembly_d3d_frame",
       "description": "Uses the six completed frame-side panels as rigid learner-placeable units, positions them into the open printer cube, checks the stacked frame, attaches 8 printed PLA corner brackets with M6 bolts in a staged finger-tight then final-tighten sequence, verifies squareness between stages, and accepts the frame before later subsystems are mounted.",
@@ -211,8 +211,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_bottom_frame_side"
+      "partGroupIds": [
+        "partGroup_bottom_frame_side"
       ]
     },
     {
@@ -246,8 +246,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_bottom_frame_side"
+      "partGroupIds": [
+        "partGroup_bottom_frame_side"
       ]
     },
     {
@@ -281,8 +281,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_bottom_frame_side"
+      "partGroupIds": [
+        "partGroup_bottom_frame_side"
       ]
     },
     {
@@ -316,8 +316,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_bottom_frame_side"
+      "partGroupIds": [
+        "partGroup_bottom_frame_side"
       ]
     },
     {
@@ -351,8 +351,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_front_frame_side"
+      "partGroupIds": [
+        "partGroup_front_frame_side"
       ]
     },
     {
@@ -386,8 +386,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_front_frame_side"
+      "partGroupIds": [
+        "partGroup_front_frame_side"
       ]
     },
     {
@@ -421,8 +421,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_front_frame_side"
+      "partGroupIds": [
+        "partGroup_front_frame_side"
       ]
     },
     {
@@ -456,8 +456,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_front_frame_side"
+      "partGroupIds": [
+        "partGroup_front_frame_side"
       ]
     },
     {
@@ -491,8 +491,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_left_frame_side"
+      "partGroupIds": [
+        "partGroup_left_frame_side"
       ]
     },
     {
@@ -526,8 +526,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_left_frame_side"
+      "partGroupIds": [
+        "partGroup_left_frame_side"
       ]
     },
     {
@@ -561,8 +561,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_left_frame_side"
+      "partGroupIds": [
+        "partGroup_left_frame_side"
       ]
     },
     {
@@ -596,8 +596,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_left_frame_side"
+      "partGroupIds": [
+        "partGroup_left_frame_side"
       ]
     },
     {
@@ -631,8 +631,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_rear_frame_side"
+      "partGroupIds": [
+        "partGroup_rear_frame_side"
       ]
     },
     {
@@ -666,8 +666,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_rear_frame_side"
+      "partGroupIds": [
+        "partGroup_rear_frame_side"
       ]
     },
     {
@@ -701,8 +701,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_rear_frame_side"
+      "partGroupIds": [
+        "partGroup_rear_frame_side"
       ]
     },
     {
@@ -736,8 +736,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_rear_frame_side"
+      "partGroupIds": [
+        "partGroup_rear_frame_side"
       ]
     },
     {
@@ -771,8 +771,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_right_frame_side"
+      "partGroupIds": [
+        "partGroup_right_frame_side"
       ]
     },
     {
@@ -806,8 +806,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_right_frame_side"
+      "partGroupIds": [
+        "partGroup_right_frame_side"
       ]
     },
     {
@@ -841,8 +841,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_right_frame_side"
+      "partGroupIds": [
+        "partGroup_right_frame_side"
       ]
     },
     {
@@ -876,8 +876,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_right_frame_side"
+      "partGroupIds": [
+        "partGroup_right_frame_side"
       ]
     },
     {
@@ -911,8 +911,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_top_frame_side"
+      "partGroupIds": [
+        "partGroup_top_frame_side"
       ]
     },
     {
@@ -946,8 +946,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_top_frame_side"
+      "partGroupIds": [
+        "partGroup_top_frame_side"
       ]
     },
     {
@@ -981,8 +981,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_top_frame_side"
+      "partGroupIds": [
+        "partGroup_top_frame_side"
       ]
     },
     {
@@ -1016,8 +1016,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_top_frame_side"
+      "partGroupIds": [
+        "partGroup_top_frame_side"
       ]
     },
     {
@@ -1217,7 +1217,7 @@
       "id": "step_bottom_place_bars",
       "name": "Place all four bottom frame side bars",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_bottom_frame_side",
+      "partGroupId": "partGroup_bottom_frame_side",
       "sequenceIndex": 1,
       "instructionText": "Place all four bars of the bottom frame side into their target positions. Keep each bar flat and preserve the 1 inch overlap that produces the 14 inch outer square.",
       "whyItMattersText": "All four edges of the bottom frame side must stay true to the 14 inch square geometry or the final D3D frame will accumulate twist before assembly.",
@@ -1293,12 +1293,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -1309,7 +1309,7 @@
       "id": "step_bottom_verify_square",
       "name": "Verify the bottom frame side is square",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_bottom_frame_side",
+      "partGroupId": "partGroup_bottom_frame_side",
       "sequenceIndex": 2,
       "instructionText": "Equip the framing square and check the upper-left corner marker on the bottom frame side before any clamp load or heat is introduced.",
       "whyItMattersText": "Verifying the bottom frame side before welding catches layout error while the bars can still be shifted freely.",
@@ -1362,7 +1362,7 @@
       "id": "step_bottom_clamp_panel",
       "name": "Clamp the bottom frame side",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_bottom_frame_side",
+      "partGroupId": "partGroup_bottom_frame_side",
       "sequenceIndex": 3,
       "instructionText": "Equip the locking clamp and pin the verified bottom frame side at the center hold-down marker so the bars stay flat while the corner tacks go in.",
       "whyItMattersText": "Stable hold-down prevents the overlapped bars from walking out of square once tack weld heat is added.",
@@ -1416,7 +1416,7 @@
       "id": "step_bottom_tack_weld_corners",
       "name": "Tack-weld the bottom frame side corners",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_bottom_frame_side",
+      "partGroupId": "partGroup_bottom_frame_side",
       "sequenceIndex": 4,
       "instructionText": "Equip the MIG torch and place four short tack welds on the bottom frame side in this order: upper-left, lower-right, upper-right, then lower-left. Keep the panel flat and avoid a long heat soak.",
       "whyItMattersText": "Short tacks lock the overlap geometry in place while limiting distortion before the full frame cube is assembled.",
@@ -1472,13 +1472,13 @@
         {"kind":"toolAction","id":"action_bottom_weld_lower_right","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
         {"kind":"toolAction","id":"action_bottom_weld_upper_right","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}},
         {"kind":"toolAction","id":"action_bottom_weld_lower_left","endTransform":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}}}],
-      "workingOrientation": {"subassemblyRotation":{"x":0,"y":0,"z":0},"subassemblyPositionOffset":{"x":0,"y":0,"z":0}}
+      "workingOrientation": {"partGroupRotation":{"x":0,"y":0,"z":0},"partGroupPositionOffset":{"x":0,"y":0,"z":0}}
   },
     {
       "id": "step_top_place_bars",
       "name": "Place all four top frame side bars",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_top_frame_side",
+      "partGroupId": "partGroup_top_frame_side",
       "sequenceIndex": 5,
       "instructionText": "Place the four top frame bars. Same 1-inch overlap, same 14-inch square.",
       "whyItMattersText": "Same geometry rules apply â€” keep the 14-inch outer square consistent across every side.",
@@ -1556,12 +1556,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -1572,7 +1572,7 @@
       "id": "step_top_verify_square",
       "name": "Verify the top frame side is square",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_top_frame_side",
+      "partGroupId": "partGroup_top_frame_side",
       "sequenceIndex": 6,
       "instructionText": "Check the corner with the framing square before clamping.",
       "whyItMattersText": "Catching errors before clamping saves time.",
@@ -1625,7 +1625,7 @@
       "id": "step_top_clamp_panel",
       "name": "Clamp the top frame side",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_top_frame_side",
+      "partGroupId": "partGroup_top_frame_side",
       "sequenceIndex": 7,
       "instructionText": "Pin the panel flat at the center hold-down.",
       "whyItMattersText": "Hold-down keeps the bars from shifting during welding.",
@@ -1679,7 +1679,7 @@
       "id": "step_top_tack_weld_corners",
       "name": "Tack-weld the top frame side corners",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_top_frame_side",
+      "partGroupId": "partGroup_top_frame_side",
       "sequenceIndex": 8,
       "instructionText": "Tack the four corners: upper-left, lower-right, upper-right, lower-left.",
       "whyItMattersText": "Diagonal order balances heat and prevents warping.",
@@ -1777,7 +1777,7 @@
       "id": "step_left_place_bars",
       "name": "Place all four left frame side bars",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_left_frame_side",
+      "partGroupId": "partGroup_left_frame_side",
       "sequenceIndex": 9,
       "instructionText": "Place the left side bars.",
       "targetOrder": "parallel",
@@ -1854,12 +1854,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -1870,7 +1870,7 @@
       "id": "step_left_verify_square",
       "name": "Verify the left frame side is square",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_left_frame_side",
+      "partGroupId": "partGroup_left_frame_side",
       "sequenceIndex": 10,
       "instructionText": "Verify square.",
       "optionalPartIds": [],
@@ -1922,7 +1922,7 @@
       "id": "step_left_clamp_panel",
       "name": "Clamp the left frame side",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_left_frame_side",
+      "partGroupId": "partGroup_left_frame_side",
       "sequenceIndex": 11,
       "instructionText": "Clamp the panel.",
       "optionalPartIds": [],
@@ -1975,7 +1975,7 @@
       "id": "step_left_tack_weld_corners",
       "name": "Tack-weld the left frame side corners",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_left_frame_side",
+      "partGroupId": "partGroup_left_frame_side",
       "sequenceIndex": 12,
       "instructionText": "Tack-weld all four corners in diagonal order.",
       "optionalPartIds": [],
@@ -2072,7 +2072,7 @@
       "id": "step_right_place_bars",
       "name": "Place all four right frame side bars",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_right_frame_side",
+      "partGroupId": "partGroup_right_frame_side",
       "sequenceIndex": 13,
       "instructionText": "Place bars.",
       "targetOrder": "parallel",
@@ -2149,12 +2149,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -2165,7 +2165,7 @@
       "id": "step_right_verify_square",
       "name": "Verify the right frame side is square",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_right_frame_side",
+      "partGroupId": "partGroup_right_frame_side",
       "sequenceIndex": 14,
       "instructionText": "Check square.",
       "optionalPartIds": [],
@@ -2217,7 +2217,7 @@
       "id": "step_right_clamp_panel",
       "name": "Clamp the right frame side",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_right_frame_side",
+      "partGroupId": "partGroup_right_frame_side",
       "sequenceIndex": 15,
       "instructionText": "Clamp.",
       "optionalPartIds": [],
@@ -2270,7 +2270,7 @@
       "id": "step_right_tack_weld_corners",
       "name": "Tack-weld the right frame side corners",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_right_frame_side",
+      "partGroupId": "partGroup_right_frame_side",
       "sequenceIndex": 16,
       "instructionText": "Tack-weld corners.",
       "optionalPartIds": [],
@@ -2367,7 +2367,7 @@
       "id": "step_front_place_bars",
       "name": "Place all four front frame side bars",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_front_frame_side",
+      "partGroupId": "partGroup_front_frame_side",
       "sequenceIndex": 17,
       "instructionText": "Place bars.",
       "targetOrder": "parallel",
@@ -2444,12 +2444,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -2460,7 +2460,7 @@
       "id": "step_front_verify_square",
       "name": "Verify the front frame side is square",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_front_frame_side",
+      "partGroupId": "partGroup_front_frame_side",
       "sequenceIndex": 18,
       "instructionText": "Check square.",
       "optionalPartIds": [],
@@ -2512,7 +2512,7 @@
       "id": "step_front_clamp_panel",
       "name": "Clamp the front frame side",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_front_frame_side",
+      "partGroupId": "partGroup_front_frame_side",
       "sequenceIndex": 19,
       "instructionText": "Clamp.",
       "optionalPartIds": [],
@@ -2565,7 +2565,7 @@
       "id": "step_front_tack_weld_corners",
       "name": "Tack-weld the front frame side corners",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_front_frame_side",
+      "partGroupId": "partGroup_front_frame_side",
       "sequenceIndex": 20,
       "instructionText": "Tack-weld corners.",
       "optionalPartIds": [],
@@ -2662,7 +2662,7 @@
       "id": "step_rear_place_bars",
       "name": "Place all four rear frame side bars",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_rear_frame_side",
+      "partGroupId": "partGroup_rear_frame_side",
       "sequenceIndex": 21,
       "instructionText": "Place bars.",
       "targetOrder": "parallel",
@@ -2739,12 +2739,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -2755,7 +2755,7 @@
       "id": "step_rear_verify_square",
       "name": "Verify the rear frame side is square",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_rear_frame_side",
+      "partGroupId": "partGroup_rear_frame_side",
       "sequenceIndex": 22,
       "instructionText": "Check square.",
       "optionalPartIds": [],
@@ -2807,7 +2807,7 @@
       "id": "step_rear_clamp_panel",
       "name": "Clamp the rear frame side",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_rear_frame_side",
+      "partGroupId": "partGroup_rear_frame_side",
       "sequenceIndex": 23,
       "instructionText": "Clamp.",
       "optionalPartIds": [],
@@ -2860,7 +2860,7 @@
       "id": "step_rear_tack_weld_corners",
       "name": "Tack-weld the rear frame side corners",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_rear_frame_side",
+      "partGroupId": "partGroup_rear_frame_side",
       "sequenceIndex": 24,
       "instructionText": "Tack-weld corners.",
       "optionalPartIds": [],
@@ -2957,11 +2957,11 @@
       "id": "step_stack_bottom_frame_side",
       "name": "Place the bottom frame side",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 25,
       "instructionText": "Move the completed bottom frame side from its fabrication station to the cube bottom target.",
       "whyItMattersText": "The bottom panel establishes the base footprint for the remaining frame sides.",
-      "requiredSubassemblyId": "subassembly_bottom_frame_side",
+      "requiredPartGroupId": "partGroup_bottom_frame_side",
       "removePersistentToolIds": [
         "tool_locking_clamp"
       ],
@@ -2978,11 +2978,11 @@
       "id": "step_stack_left_frame_side",
       "name": "Place the left frame side",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 26,
       "instructionText": "Lift the completed left frame side and place it on the left cube target.",
       "whyItMattersText": "The left panel establishes one of the first vertical faces of the printer frame.",
-      "requiredSubassemblyId": "subassembly_left_frame_side",
+      "requiredPartGroupId": "partGroup_left_frame_side",
       "targetIds": [
         "target_cube_left_side"
       ],
@@ -2996,7 +2996,7 @@
       "id": "step_tack_left_to_bottom",
       "name": "Tack-weld left panel to bottom",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 27,
       "instructionText": "Equip the MIG torch and place a short tack weld at the front-left and rear-left cube corners to secure the left panel to the bottom.",
       "whyItMattersText": "Tacking each panel immediately after placement prevents it from shifting or falling as the next panels are added.",
@@ -3053,11 +3053,11 @@
       "id": "step_stack_right_frame_side",
       "name": "Place the right frame side",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 28,
       "instructionText": "Lift the completed right frame side and place it on the right cube target.",
       "whyItMattersText": "The right panel locks the cube width opposite the left face.",
-      "requiredSubassemblyId": "subassembly_right_frame_side",
+      "requiredPartGroupId": "partGroup_right_frame_side",
       "targetIds": [
         "target_cube_right_side"
       ],
@@ -3071,7 +3071,7 @@
       "id": "step_tack_right_to_bottom",
       "name": "Tack-weld right panel to bottom",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 29,
       "instructionText": "Place a short tack weld at the front-right and rear-right cube corners to secure the right panel to the bottom.",
       "whyItMattersText": "Both vertical side panels are now tacked to the bottom, forming a rigid U-channel that captures the front and rear panels.",
@@ -3128,11 +3128,11 @@
       "id": "step_stack_front_frame_side",
       "name": "Place the front frame side",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 30,
       "instructionText": "Lift the completed front frame side and place it on the front cube target.",
       "whyItMattersText": "The front panel starts closing the cube depth and establishes the front opening plane.",
-      "requiredSubassemblyId": "subassembly_front_frame_side",
+      "requiredPartGroupId": "partGroup_front_frame_side",
       "targetIds": [
         "target_cube_front_side"
       ],
@@ -3146,7 +3146,7 @@
       "id": "step_tack_front_to_sides",
       "name": "Tack-weld front panel to side panels",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 31,
       "instructionText": "Place a short tack weld at the front-left and front-right mid-height edges to secure the front panel to the left and right side panels.",
       "whyItMattersText": "Tacking immediately after placement prevents the front panel from shifting when the rear panel is added.",
@@ -3203,11 +3203,11 @@
       "id": "step_stack_rear_frame_side",
       "name": "Place the rear frame side",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 32,
       "instructionText": "Lift the completed rear frame side and place it on the rear cube target.",
       "whyItMattersText": "The rear panel completes the four vertical faces before the top closes the frame.",
-      "requiredSubassemblyId": "subassembly_rear_frame_side",
+      "requiredPartGroupId": "partGroup_rear_frame_side",
       "targetIds": [
         "target_cube_rear_side"
       ],
@@ -3221,7 +3221,7 @@
       "id": "step_tack_rear_to_sides",
       "name": "Tack-weld rear panel to side panels",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 33,
       "instructionText": "Place a short tack weld at the rear-left and rear-right mid-height edges to secure the rear panel to the left and right side panels.",
       "whyItMattersText": "All four vertical panels are now tacked at their mid-height edges. The cube base is rigid enough for the top panel.",
@@ -3278,11 +3278,11 @@
       "id": "step_stack_top_frame_side",
       "name": "Place the top frame side",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 34,
       "instructionText": "Move the completed top frame side to the upper cube target to close the frame layout.",
       "whyItMattersText": "The top panel completes the first-pass cube stack and exposes any remaining alignment issues before final joining.",
-      "requiredSubassemblyId": "subassembly_top_frame_side",
+      "requiredPartGroupId": "partGroup_top_frame_side",
       "targetIds": [
         "target_cube_top_side"
       ],
@@ -3296,7 +3296,7 @@
       "id": "step_tack_top_to_verticals",
       "name": "Tack-weld top panel to vertical panels",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 35,
       "instructionText": "Place short tacks at all four upper cube corners in diagonal order: front-left, rear-right, front-right, rear-left. This locks the top panel to all four vertical sides.",
       "whyItMattersText": "All eight corners are now tacked. The cube is structurally held and ready for squareness verification before seam welding.",
@@ -3375,7 +3375,7 @@
       "id": "step_verify_stacked_cube_square",
       "name": "Verify the tacked cube is square",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 36,
       "instructionText": "Equip the framing square and check the top-front-left cube corner. All six panels are now tacked in place â€” verify the cube is square before running the seam welds.",
       "whyItMattersText": "This catches accumulated twist or panel drift before the seam welds permanently lock the cube geometry.",
@@ -3421,7 +3421,7 @@
       "id": "step_seam_weld_lower_cube_edges",
       "name": "Seam-weld the 4 lower cube edges",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 37,
       "instructionText": "Run a continuous weld bead along each of the four lower vertical corner edges. Start from the bottom and travel upward on each seam.",
       "whyItMattersText": "Seam welds create the permanent structural bond between frame sides. A continuous bead distributes load evenly along the full joint length.",
@@ -3500,7 +3500,7 @@
       "id": "step_seam_weld_upper_cube_edges",
       "name": "Seam-weld the 4 upper cube edges",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 38,
       "instructionText": "Run a continuous weld bead along each of the four upper vertical corner edges. Same bottom-to-top travel direction.",
       "whyItMattersText": "Upper seams complete the cube weld structure. All eight vertical edges are now fully welded.",
@@ -3583,7 +3583,7 @@
       "id": "step_grind_upper_cube_joints",
       "name": "Grind the 4 upper cube seam joints",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 39,
       "instructionText": "Equip the angle grinder and clean up the four upper corner seam joints. Remove spatter and proud weld bead so the upper brackets will sit flush.",
       "whyItMattersText": "Upper bracket faces must be flat. Weld spatter or proud bead under a bracket creates a gap that lets the bolt loosen over time.",
@@ -3654,7 +3654,7 @@
       "id": "step_verify_cube_post_weld",
       "name": "Verify cube is square after welding",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 40,
       "instructionText": "Use the framing square on the front-left and rear-right cube corners to confirm weld heat did not rack the frame.",
       "whyItMattersText": "Weld shrinkage can pull corners out of square. Catching it now is far easier to correct than after brackets are installed.",
@@ -3707,7 +3707,7 @@
       "id": "step_place_lower_corner_brackets",
       "name": "Place 4 lower corner brackets",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 41,
       "instructionText": "Slide a 3D-printed corner bracket onto each of the four lower cube corners â€” the three bracket arms wrap around the outside faces of the three frame tubes meeting at that corner. Push each bracket flush until it seats against the frame. Thread two M6x18 bolts per bracket in by hand until finger-tight â€” do not use the allen key yet. Work in this order: front-left, rear-right, front-right, rear-left.",
       "whyItMattersText": "Starting with the lower corners establishes the base geometry of the cube before the upper corners are locked in.",
@@ -3762,12 +3762,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -3778,7 +3778,7 @@
       "id": "step_snug_lower_bracket_bolts",
       "name": "Snug lower bracket bolts with allen key",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 42,
       "instructionText": "Use the M5 allen key to snug all 8 bolts across the four lower brackets. Snug means the bolt is fully seated and the bracket cannot rock on the frame â€” not final torque. Keep the frame slightly adjustable for the upper brackets to align.",
       "whyItMattersText": "Leaving bolts finger-tight allows minor adjustments when the upper brackets are added, ensuring the cube stays square.",
@@ -3856,7 +3856,7 @@
       "id": "step_place_upper_corner_brackets",
       "name": "Place 4 upper corner brackets",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 43,
       "instructionText": "Slide a corner bracket onto each of the four upper cube corners. Push flush until seated, then thread two M6x18 bolts per bracket in by hand. Work in the same order: front-left, rear-right, front-right, rear-left.",
       "whyItMattersText": "Upper brackets complete the structural lock of all eight cube corners.",
@@ -3910,12 +3910,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -3926,7 +3926,7 @@
       "id": "step_snug_upper_bracket_bolts",
       "name": "Snug upper bracket bolts with allen key",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 44,
       "instructionText": "Use the allen key to snug all 8 bolts on the four upper brackets. All 8 brackets should now hold the cube shape loosely â€” bolts seated but frame still adjustable for squaring.",
       "whyItMattersText": "With all brackets finger-tight the cube can still be nudged square before the final tightening pass.",
@@ -4004,7 +4004,7 @@
       "id": "step_verify_bracketed_cube_square",
       "name": "Verify bracketed cube is square",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 45,
       "instructionText": "Equip the framing square and check the top-front-left cube corner. Tap any out-of-square sides into alignment while the bolts are still finger-tight.",
       "whyItMattersText": "This is the last chance to adjust the cube geometry before the bolts are fully tightened.",
@@ -4050,7 +4050,7 @@
       "id": "step_final_tighten_all_bracket_bolts",
       "name": "Final-tighten all bracket bolts",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 46,
       "instructionText": "Use the allen key to fully tighten all 16 bracket bolts across all 8 corners. Work in alternating diagonal pairs (lower front-left then upper rear-right, etc.) to distribute clamping force evenly.",
       "whyItMattersText": "Even tightening prevents one corner from pulling the frame out of square while the opposite corner is still loose.",
@@ -4167,7 +4167,7 @@
       "id": "step_verify_tightened_cube_square",
       "name": "Verify cube after final tightening",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 47,
       "instructionText": "Equip the framing square and recheck the top-front-left cube corner after all bolts are fully tightened. Confirm the frame stayed true through the tightening sequence.",
       "whyItMattersText": "A post-tightening square check catches any shift introduced by bolt clamping forces.",
@@ -4213,7 +4213,7 @@
       "id": "step_recheck_cube_corners",
       "name": "Recheck opposite cube corners",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 48,
       "instructionText": "Equip the framing square and verify both the top-front-left and top-rear-right cube corners. This cross-check confirms the cube is true on opposite diagonals.",
       "whyItMattersText": "Checking opposite corners catches twist that a single-corner check might miss.",
@@ -4270,7 +4270,7 @@
       "id": "step_accept_frame_for_motion_hardware",
       "name": "Accept the frame for motion hardware",
       "assemblyId": "assembly_d3d_frame",
-      "subassemblyId": "subassembly_cube_joining",
+      "partGroupId": "partGroup_cube_joining",
       "sequenceIndex": 49,
       "instructionText": "Make a final acceptance check on the bracketed frame and continue only when it is ready for the first rail, gantry, and motion-hardware installation steps.",
       "whyItMattersText": "Closing the frame phase explicitly helps prevent structural errors from propagating into the next subsystem.",
@@ -5611,7 +5611,7 @@
       "anchorRef": "anchors/d3d/cube/bottom_side",
       "description": "Bottom panel position for the D3D frame cube.",
       "associatedPartId": null,
-      "associatedSubassemblyId": "subassembly_bottom_frame_side",
+      "associatedPartGroupId": "partGroup_bottom_frame_side",
       "tags": [
         "d3d",
         "frame",
@@ -5631,7 +5631,7 @@
       "anchorRef": "anchors/d3d/cube/left_side",
       "description": "Left side panel position for the D3D frame cube.",
       "associatedPartId": null,
-      "associatedSubassemblyId": "subassembly_left_frame_side",
+      "associatedPartGroupId": "partGroup_left_frame_side",
       "tags": [
         "d3d",
         "frame",
@@ -5651,7 +5651,7 @@
       "anchorRef": "anchors/d3d/cube/right_side",
       "description": "Right side panel position for the D3D frame cube.",
       "associatedPartId": null,
-      "associatedSubassemblyId": "subassembly_right_frame_side",
+      "associatedPartGroupId": "partGroup_right_frame_side",
       "tags": [
         "d3d",
         "frame",
@@ -5671,7 +5671,7 @@
       "anchorRef": "anchors/d3d/cube/front_side",
       "description": "Front side panel position for the D3D frame cube.",
       "associatedPartId": null,
-      "associatedSubassemblyId": "subassembly_front_frame_side",
+      "associatedPartGroupId": "partGroup_front_frame_side",
       "tags": [
         "d3d",
         "frame",
@@ -5691,7 +5691,7 @@
       "anchorRef": "anchors/d3d/cube/rear_side",
       "description": "Rear side panel position for the D3D frame cube.",
       "associatedPartId": null,
-      "associatedSubassemblyId": "subassembly_rear_frame_side",
+      "associatedPartGroupId": "partGroup_rear_frame_side",
       "tags": [
         "d3d",
         "frame",
@@ -5711,7 +5711,7 @@
       "anchorRef": "anchors/d3d/cube/top_side",
       "description": "Top panel position for the D3D frame cube.",
       "associatedPartId": null,
-      "associatedSubassemblyId": "subassembly_top_frame_side",
+      "associatedPartGroupId": "partGroup_top_frame_side",
       "tags": [
         "d3d",
         "frame",

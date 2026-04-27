@@ -449,19 +449,19 @@ namespace OSE.Editor
 
             int currentSeq  = int.MaxValue;
             var partStepSeq = new Dictionary<string, int>(StringComparer.Ordinal);
-            var currentStepSubassemblyPartIds = new HashSet<string>(StringComparer.Ordinal);
+            var currentStepPartGroupPartIds = new HashSet<string>(StringComparer.Ordinal);
 
             if (stepSelected && _pkg.steps != null)
             {
                 var sel = FindStep(_stepIds[_stepFilterIdx]);
                 if (sel != null) currentSeq = sel.sequenceIndex;
 
-                if (sel != null && !string.IsNullOrEmpty(sel.requiredSubassemblyId)
-                    && _pkg.TryGetSubassembly(sel.requiredSubassemblyId, out SubassemblyDefinition curSubDef)
+                if (sel != null && !string.IsNullOrEmpty(sel.requiredPartGroupId)
+                    && _pkg.TryGetPartGroup(sel.requiredPartGroupId, out PartGroupDefinition curSubDef)
                     && curSubDef?.partIds != null)
                 {
                     foreach (string pid in curSubDef.partIds)
-                        if (!string.IsNullOrEmpty(pid)) currentStepSubassemblyPartIds.Add(pid);
+                        if (!string.IsNullOrEmpty(pid)) currentStepPartGroupPartIds.Add(pid);
                 }
 
                 foreach (var step in _pkg.steps)
@@ -497,8 +497,8 @@ namespace OSE.Editor
                         }
                     }
 
-                    if (!string.IsNullOrEmpty(step?.requiredSubassemblyId)
-                        && _pkg.TryGetSubassembly(step.requiredSubassemblyId, out SubassemblyDefinition subDef)
+                    if (!string.IsNullOrEmpty(step?.requiredPartGroupId)
+                        && _pkg.TryGetPartGroup(step.requiredPartGroupId, out PartGroupDefinition subDef)
                         && subDef?.partIds != null)
                     {
                         foreach (string pid in subDef.partIds)
@@ -518,22 +518,22 @@ namespace OSE.Editor
             if (stepSelected)
             {
                 var sel = FindStep(_stepIds[_stepFilterIdx]);
-                if (sel?.workingOrientation != null && !string.IsNullOrWhiteSpace(sel.subassemblyId))
+                if (sel?.workingOrientation != null && !string.IsNullOrWhiteSpace(sel.partGroupId))
                 {
                     wo = sel.workingOrientation;
-                    // Collect all parts belonging to this subassembly
-                    if (_pkg.TryGetSubassembly(sel.subassemblyId, out SubassemblyDefinition woSubDef)
+                    // Collect all parts belonging to this partGroup
+                    if (_pkg.TryGetPartGroup(sel.partGroupId, out PartGroupDefinition woSubDef)
                         && woSubDef?.partIds != null)
                     {
                         foreach (string pid in woSubDef.partIds)
                             if (!string.IsNullOrEmpty(pid)) woParts.Add(pid);
                     }
-                    // Look up subassembly frame center for rotation pivot
-                    if (_pkg.previewConfig?.subassemblyPlacements != null)
+                    // Look up partGroup frame center for rotation pivot
+                    if (_pkg.previewConfig?.partGroupPlacements != null)
                     {
-                        foreach (var sp in _pkg.previewConfig.subassemblyPlacements)
+                        foreach (var sp in _pkg.previewConfig.partGroupPlacements)
                         {
-                            if (sp != null && string.Equals(sp.subassemblyId, sel.subassemblyId, System.StringComparison.OrdinalIgnoreCase))
+                            if (sp != null && string.Equals(sp.partGroupId, sel.partGroupId, System.StringComparison.OrdinalIgnoreCase))
                             {
                                 subFramePos = new Vector3(sp.position.x, sp.position.y, sp.position.z);
                                 break;
@@ -546,17 +546,17 @@ namespace OSE.Editor
             _sceneBuildStepActive          = stepSelected;
             _sceneBuildCurrentSeq          = currentSeq;
             _sceneBuildPartStepSeq         = partStepSeq;
-            _sceneBuildCurrentSubassembly  = currentStepSubassemblyPartIds;
+            _sceneBuildCurrentPartGroup  = currentStepPartGroupPartIds;
             _sceneBuildWorkingOrientation      = wo;
-            _sceneBuildSubassemblyFramePos     = subFramePos;
+            _sceneBuildPartGroupFramePos     = subFramePos;
             _sceneBuildWorkingOrientationParts = woParts;
 
-            // ── Phase A2: subassembly root GOs + reparenting ──────────────────
+            // ── Phase A2: partGroup root GOs + reparenting ──────────────────
             // Create a root GO for EVERY group that has visible members in this
-            // step — not just the step's own subassemblyId. This means the
+            // step — not just the step's own partGroupId. This means the
             // Hierarchy shows all groups and their member parts as children.
             _pendingRespawnForMissingMembers = false;
-            EnsureAllSubassemblyRoots(stepSelected ? FindStep(_stepIds[_stepFilterIdx]) : null);
+            EnsureAllPartGroupRoots(stepSelected ? FindStep(_stepIds[_stepFilterIdx]) : null);
 
             // If any expected group member wasn't live yet, schedule a delayed
             // second pass so the Hierarchy self-heals on the first click.
@@ -631,26 +631,26 @@ namespace OSE.Editor
             UnityEditor.ActiveEditorTracker.sharedTracker.ForceRebuild();
         }
 
-        // ── Phase A2: subassembly root GO lifecycle ───────────────────────────
+        // ── Phase A2: partGroup root GO lifecycle ───────────────────────────
 
         /// <summary>
-        /// Creates a root GO for every group (subassembly) that has at least one
+        /// Creates a root GO for every group (partGroup) that has at least one
         /// visible member part in the current step. Each visible part is parented
         /// under its group's root. Parts not in any group stay under PreviewRoot.
         /// </summary>
-        private void EnsureAllSubassemblyRoots(StepDefinition step)
+        private void EnsureAllPartGroupRoots(StepDefinition step)
         {
             var previewRoot = GetPreviewRoot();
             if (previewRoot == null || _pkg == null)
             {
-                DestroyAllSubassemblyRoots();
+                DestroyAllPartGroupRoots();
                 return;
             }
 
-            var allSubs = _pkg.GetSubassemblies();
+            var allSubs = _pkg.GetPartGroups();
             if (allSubs == null || allSubs.Length == 0)
             {
-                DestroyAllSubassemblyRoots();
+                DestroyAllPartGroupRoots();
                 return;
             }
 
@@ -678,12 +678,12 @@ namespace OSE.Editor
                         { hasVisibleMember = true; break; }
                     }
                 }
-                if (!hasVisibleMember && sub.isAggregate && sub.memberSubassemblyIds != null)
+                if (!hasVisibleMember && sub.isAggregate && sub.memberPartGroupIds != null)
                 {
-                    foreach (var childId in sub.memberSubassemblyIds)
+                    foreach (var childId in sub.memberPartGroupIds)
                     {
                         if (string.IsNullOrEmpty(childId)) continue;
-                        if (!_pkg.TryGetSubassembly(childId, out var childSub) || childSub?.partIds == null) continue;
+                        if (!_pkg.TryGetPartGroup(childId, out var childSub) || childSub?.partIds == null) continue;
                         foreach (var pid in childSub.partIds)
                         {
                             if (!string.IsNullOrEmpty(pid) && visibleParts.Contains(pid))
@@ -698,7 +698,7 @@ namespace OSE.Editor
                 neededIds.Add(sub.id);
 
                 // Create or reuse root GO
-                if (!_subassemblyRootGOs.TryGetValue(sub.id, out var rootGO) || rootGO == null)
+                if (!_partGroupRootGOs.TryGetValue(sub.id, out var rootGO) || rootGO == null)
                 {
                     rootGO = new GameObject($"Group_{sub.GetDisplayName()}");
                     rootGO.hideFlags = HideFlags.DontSave;
@@ -706,7 +706,7 @@ namespace OSE.Editor
                     rootGO.transform.localPosition = Vector3.zero;
                     rootGO.transform.localRotation = Quaternion.identity;
                     rootGO.transform.localScale    = Vector3.one;
-                    _subassemblyRootGOs[sub.id] = rootGO;
+                    _partGroupRootGOs[sub.id] = rootGO;
                 }
 
                 // Group roots always sit at the PreviewRoot origin with identity
@@ -739,13 +739,13 @@ namespace OSE.Editor
             // child groups and their parts (free via Unity parenting).
             foreach (var sub in allSubs)
             {
-                if (sub == null || !sub.isAggregate || sub.memberSubassemblyIds == null) continue;
-                if (!_subassemblyRootGOs.TryGetValue(sub.id, out var parentGO) || parentGO == null) continue;
+                if (sub == null || !sub.isAggregate || sub.memberPartGroupIds == null) continue;
+                if (!_partGroupRootGOs.TryGetValue(sub.id, out var parentGO) || parentGO == null) continue;
 
-                foreach (var childId in sub.memberSubassemblyIds)
+                foreach (var childId in sub.memberPartGroupIds)
                 {
                     if (string.IsNullOrEmpty(childId)) continue;
-                    if (!_subassemblyRootGOs.TryGetValue(childId, out var childGO) || childGO == null) continue;
+                    if (!_partGroupRootGOs.TryGetValue(childId, out var childGO) || childGO == null) continue;
                     if (childGO.transform.parent != parentGO.transform)
                         childGO.transform.SetParent(parentGO.transform, worldPositionStays: true);
                 }
@@ -753,27 +753,27 @@ namespace OSE.Editor
 
             // Destroy roots that are no longer needed
             var toRemove = new List<string>();
-            foreach (var kvp in _subassemblyRootGOs)
+            foreach (var kvp in _partGroupRootGOs)
             {
                 if (!neededIds.Contains(kvp.Key))
                     toRemove.Add(kvp.Key);
             }
             foreach (var id in toRemove)
             {
-                if (_subassemblyRootGOs.TryGetValue(id, out var go) && go != null)
+                if (_partGroupRootGOs.TryGetValue(id, out var go) && go != null)
                 {
                     for (int i = go.transform.childCount - 1; i >= 0; i--)
                         go.transform.GetChild(i).SetParent(previewRoot, worldPositionStays: true);
                     DestroyImmediate(go);
                 }
-                _subassemblyRootGOs.Remove(id);
+                _partGroupRootGOs.Remove(id);
             }
         }
 
         /// <summary>
         /// Authoring-time override: force every visible member of every live group
         /// root to be active AND reparented under the root. The spawner's
-        /// ApplyStepAwarePositions hides subassembly members that are ghost-
+        /// ApplyStepAwarePositions hides partGroup members that are ghost-
         /// replaced (so play mode shows only the ghost silhouette), but the
         /// authoring window needs those same parts visible as group children so
         /// the author can edit group poses. Call this AFTER any path that may
@@ -781,14 +781,14 @@ namespace OSE.Editor
         /// </summary>
         private void ActivateAllVisibleGroupMembers()
         {
-            if (_subassemblyRootGOs == null || _subassemblyRootGOs.Count == 0) return;
+            if (_partGroupRootGOs == null || _partGroupRootGOs.Count == 0) return;
             if (_pkg == null) return;
 
-            foreach (var kvp in _subassemblyRootGOs)
+            foreach (var kvp in _partGroupRootGOs)
             {
                 var rootGO = kvp.Value;
                 if (rootGO == null) continue;
-                if (!_pkg.TryGetSubassembly(kvp.Key, out var sub) || sub == null || sub.isAggregate) continue;
+                if (!_pkg.TryGetPartGroup(kvp.Key, out var sub) || sub == null || sub.isAggregate) continue;
                 if (sub.partIds == null) continue;
 
                 foreach (var pid in sub.partIds)
@@ -821,13 +821,13 @@ namespace OSE.Editor
                 && placedAt <= _sceneBuildCurrentSeq;
         }
 
-        private Vector3 GetSubassemblyFramePos(string subId)
+        private Vector3 GetPartGroupFramePos(string subId)
         {
-            if (_pkg?.previewConfig?.subassemblyPlacements != null)
+            if (_pkg?.previewConfig?.partGroupPlacements != null)
             {
-                foreach (var sp in _pkg.previewConfig.subassemblyPlacements)
+                foreach (var sp in _pkg.previewConfig.partGroupPlacements)
                 {
-                    if (sp != null && string.Equals(sp.subassemblyId, subId, System.StringComparison.OrdinalIgnoreCase))
+                    if (sp != null && string.Equals(sp.partGroupId, subId, System.StringComparison.OrdinalIgnoreCase))
                         return new Vector3(sp.position.x, sp.position.y, sp.position.z);
                 }
             }
@@ -892,7 +892,7 @@ namespace OSE.Editor
             }
         }
 
-        private static void ApplySubassemblyRootOrientation(
+        private static void ApplyPartGroupRootOrientation(
             Transform rootTransform,
             StepWorkingOrientationPayload wo,
             Vector3 subFramePos)
@@ -904,19 +904,19 @@ namespace OSE.Editor
                 return;
             }
 
-            bool hasRot = wo.subassemblyRotation.x != 0f
-                       || wo.subassemblyRotation.y != 0f
-                       || wo.subassemblyRotation.z != 0f;
+            bool hasRot = wo.partGroupRotation.x != 0f
+                       || wo.partGroupRotation.y != 0f
+                       || wo.partGroupRotation.z != 0f;
 
             rootTransform.localRotation = hasRot
-                ? Quaternion.Euler(wo.subassemblyRotation.x, wo.subassemblyRotation.y, wo.subassemblyRotation.z)
+                ? Quaternion.Euler(wo.partGroupRotation.x, wo.partGroupRotation.y, wo.partGroupRotation.z)
                 : Quaternion.identity;
 
             Vector3 offset = Vector3.zero;
-            if (wo.subassemblyPositionOffset.x != 0f
-                || wo.subassemblyPositionOffset.y != 0f
-                || wo.subassemblyPositionOffset.z != 0f)
-                offset = new Vector3(wo.subassemblyPositionOffset.x, wo.subassemblyPositionOffset.y, wo.subassemblyPositionOffset.z);
+            if (wo.partGroupPositionOffset.x != 0f
+                || wo.partGroupPositionOffset.y != 0f
+                || wo.partGroupPositionOffset.z != 0f)
+                offset = new Vector3(wo.partGroupPositionOffset.x, wo.partGroupPositionOffset.y, wo.partGroupPositionOffset.z);
 
             rootTransform.localPosition = subFramePos + offset;
         }
@@ -925,7 +925,7 @@ namespace OSE.Editor
         /// Unparents all member parts and destroys all root GOs. Safe to call
         /// when no roots exist.
         /// </summary>
-        private void DestroyAllSubassemblyRoots()
+        private void DestroyAllPartGroupRoots()
         {
             var previewRoot = GetPreviewRoot();
             // Unparent all spawned parts back to PreviewRoot first (regardless of
@@ -938,12 +938,12 @@ namespace OSE.Editor
                         go.transform.SetParent(previewRoot, worldPositionStays: true);
                 }
             }
-            foreach (var kvp in _subassemblyRootGOs)
+            foreach (var kvp in _partGroupRootGOs)
             {
                 if (kvp.Value != null)
                     DestroyImmediate(kvp.Value);
             }
-            _subassemblyRootGOs.Clear();
+            _partGroupRootGOs.Clear();
         }
     }
 }

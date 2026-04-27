@@ -16,7 +16,7 @@ namespace OSE.Content
         public string packageVersion;
         public MachineDefinition machine;
         public AssemblyDefinition[] assemblies;
-        public SubassemblyDefinition[] subassemblies;
+        public PartGroupDefinition[] partGroups;
         public PartTemplateDefinition[] partTemplates;
         public PartDefinition[] parts;
         public ToolDefinition[] tools;
@@ -38,7 +38,7 @@ namespace OSE.Content
         [NonSerialized] private Dictionary<string, HintDefinition> _hintsById;
         [NonSerialized] private Dictionary<string, EffectDefinition> _effectsById;
         [NonSerialized] private Dictionary<string, StepDefinition[]> _stepsByAssemblyId;
-        [NonSerialized] private Dictionary<string, StepDefinition[]> _stepsBySubassemblyId;
+        [NonSerialized] private Dictionary<string, StepDefinition[]> _stepsByPartGroupId;
         [NonSerialized] private string _stepStructureHash;
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace OSE.Content
 
         public AssemblyDefinition[] GetAssemblies() => assemblies ?? Array.Empty<AssemblyDefinition>();
 
-        public SubassemblyDefinition[] GetSubassemblies() => subassemblies ?? Array.Empty<SubassemblyDefinition>();
+        public PartGroupDefinition[] GetPartGroups() => partGroups ?? Array.Empty<PartGroupDefinition>();
 
         public PartDefinition[] GetParts() => parts ?? Array.Empty<PartDefinition>();
 
@@ -102,18 +102,18 @@ namespace OSE.Content
         }
 
         /// <summary>
-        /// Returns all steps belonging to the given subassembly, sorted by sequenceIndex.
-        /// Derived from each step's <see cref="StepDefinition.subassemblyId"/>.
+        /// Returns all steps belonging to the given partGroup, sorted by sequenceIndex.
+        /// Derived from each step's <see cref="StepDefinition.partGroupId"/>.
         /// </summary>
-        public StepDefinition[] GetStepsForSubassembly(string subassemblyId)
+        public StepDefinition[] GetStepsForPartGroup(string partGroupId)
         {
-            if (string.IsNullOrWhiteSpace(subassemblyId))
+            if (string.IsNullOrWhiteSpace(partGroupId))
                 return Array.Empty<StepDefinition>();
 
-            if (_stepsBySubassemblyId == null)
+            if (_stepsByPartGroupId == null)
                 BuildStepsByOwnerCaches();
 
-            return _stepsBySubassemblyId.TryGetValue(subassemblyId, out var result)
+            return _stepsByPartGroupId.TryGetValue(partGroupId, out var result)
                 ? result
                 : Array.Empty<StepDefinition>();
         }
@@ -164,12 +164,12 @@ namespace OSE.Content
                     asmList.Add(step);
                 }
 
-                if (!string.IsNullOrWhiteSpace(step.subassemblyId))
+                if (!string.IsNullOrWhiteSpace(step.partGroupId))
                 {
-                    if (!bySub.TryGetValue(step.subassemblyId, out var subList))
+                    if (!bySub.TryGetValue(step.partGroupId, out var subList))
                     {
                         subList = new List<StepDefinition>();
-                        bySub[step.subassemblyId] = subList;
+                        bySub[step.partGroupId] = subList;
                     }
                     subList.Add(step);
                 }
@@ -179,9 +179,9 @@ namespace OSE.Content
             foreach (var kvp in byAsm)
                 _stepsByAssemblyId[kvp.Key] = kvp.Value.ToArray();
 
-            _stepsBySubassemblyId = new Dictionary<string, StepDefinition[]>(bySub.Count, StringComparer.OrdinalIgnoreCase);
+            _stepsByPartGroupId = new Dictionary<string, StepDefinition[]>(bySub.Count, StringComparer.OrdinalIgnoreCase);
             foreach (var kvp in bySub)
-                _stepsBySubassemblyId[kvp.Key] = kvp.Value.ToArray();
+                _stepsByPartGroupId[kvp.Key] = kvp.Value.ToArray();
         }
 
         public string GetDisplayMachineName() =>
@@ -190,8 +190,8 @@ namespace OSE.Content
         public bool TryGetAssembly(string assemblyId, out AssemblyDefinition assembly) =>
             TryFindById(GetAssemblies(), assemblyId, item => item.id, out assembly);
 
-        public bool TryGetSubassembly(string subassemblyId, out SubassemblyDefinition subassembly) =>
-            TryFindById(GetSubassemblies(), subassemblyId, item => item.id, out subassembly);
+        public bool TryGetPartGroup(string partGroupId, out PartGroupDefinition partGroup) =>
+            TryFindById(GetPartGroups(), partGroupId, item => item.id, out partGroup);
 
         public bool TryGetPart(string partId, out PartDefinition part) =>
             TryGetByIdFast(ref _partsById, GetParts(), p => p.id, partId, out part);
@@ -214,33 +214,33 @@ namespace OSE.Content
         public bool TryGetTarget(string targetId, out TargetDefinition target) =>
             TryGetByIdFast(ref _targetsById, GetTargets(), t => t.id, targetId, out target);
 
-        public bool TryGetSubassemblyPreviewPlacement(string subassemblyId, out SubassemblyPreviewPlacement placement)
+        public bool TryGetPartGroupPreviewPlacement(string partGroupId, out PartGroupPreviewPlacement placement)
         {
-            SubassemblyPreviewPlacement[] placements = previewConfig?.subassemblyPlacements ?? Array.Empty<SubassemblyPreviewPlacement>();
-            return TryFindById(placements, subassemblyId, item => item.subassemblyId, out placement);
+            PartGroupPreviewPlacement[] placements = previewConfig?.partGroupPlacements ?? Array.Empty<PartGroupPreviewPlacement>();
+            return TryFindById(placements, partGroupId, item => item.partGroupId, out placement);
         }
 
-        public bool TryGetCompletedSubassemblyParkingPlacement(string subassemblyId, out SubassemblyPreviewPlacement placement)
+        public bool TryGetCompletedPartGroupParkingPlacement(string partGroupId, out PartGroupPreviewPlacement placement)
         {
-            SubassemblyPreviewPlacement[] placements = previewConfig?.completedSubassemblyParkingPlacements ?? Array.Empty<SubassemblyPreviewPlacement>();
-            return TryFindById(placements, subassemblyId, item => item.subassemblyId, out placement);
+            PartGroupPreviewPlacement[] placements = previewConfig?.completedPartGroupParkingPlacements ?? Array.Empty<PartGroupPreviewPlacement>();
+            return TryFindById(placements, partGroupId, item => item.partGroupId, out placement);
         }
 
-        public bool TryGetConstrainedSubassemblyFitPreviewPlacement(
-            string subassemblyId,
+        public bool TryGetConstrainedPartGroupFitPreviewPlacement(
+            string partGroupId,
             string targetId,
-            out ConstrainedSubassemblyFitPreviewPlacement placement)
+            out ConstrainedPartGroupFitPreviewPlacement placement)
         {
-            ConstrainedSubassemblyFitPreviewPlacement[] placements = previewConfig?.constrainedSubassemblyFitPlacements ?? Array.Empty<ConstrainedSubassemblyFitPreviewPlacement>();
-            if (!string.IsNullOrWhiteSpace(subassemblyId) && !string.IsNullOrWhiteSpace(targetId))
+            ConstrainedPartGroupFitPreviewPlacement[] placements = previewConfig?.constrainedPartGroupFitPlacements ?? Array.Empty<ConstrainedPartGroupFitPreviewPlacement>();
+            if (!string.IsNullOrWhiteSpace(partGroupId) && !string.IsNullOrWhiteSpace(targetId))
             {
                 for (int i = 0; i < placements.Length; i++)
                 {
-                    ConstrainedSubassemblyFitPreviewPlacement candidate = placements[i];
+                    ConstrainedPartGroupFitPreviewPlacement candidate = placements[i];
                     if (candidate == null)
                         continue;
 
-                    if (string.Equals(candidate.subassemblyId, subassemblyId, StringComparison.OrdinalIgnoreCase) &&
+                    if (string.Equals(candidate.partGroupId, partGroupId, StringComparison.OrdinalIgnoreCase) &&
                         string.Equals(candidate.targetId, targetId, StringComparison.OrdinalIgnoreCase))
                     {
                         placement = candidate;
@@ -253,21 +253,21 @@ namespace OSE.Content
             return false;
         }
 
-        public bool TryGetIntegratedSubassemblyPreviewPlacement(
-            string subassemblyId,
+        public bool TryGetIntegratedPartGroupPreviewPlacement(
+            string partGroupId,
             string targetId,
-            out IntegratedSubassemblyPreviewPlacement placement)
+            out IntegratedPartGroupPreviewPlacement placement)
         {
-            IntegratedSubassemblyPreviewPlacement[] placements = previewConfig?.integratedSubassemblyPlacements ?? Array.Empty<IntegratedSubassemblyPreviewPlacement>();
-            if (!string.IsNullOrWhiteSpace(subassemblyId) && !string.IsNullOrWhiteSpace(targetId))
+            IntegratedPartGroupPreviewPlacement[] placements = previewConfig?.integratedPartGroupPlacements ?? Array.Empty<IntegratedPartGroupPreviewPlacement>();
+            if (!string.IsNullOrWhiteSpace(partGroupId) && !string.IsNullOrWhiteSpace(targetId))
             {
                 for (int i = 0; i < placements.Length; i++)
                 {
-                    IntegratedSubassemblyPreviewPlacement candidate = placements[i];
+                    IntegratedPartGroupPreviewPlacement candidate = placements[i];
                     if (candidate == null)
                         continue;
 
-                    if (string.Equals(candidate.subassemblyId, subassemblyId, StringComparison.OrdinalIgnoreCase) &&
+                    if (string.Equals(candidate.partGroupId, partGroupId, StringComparison.OrdinalIgnoreCase) &&
                         string.Equals(candidate.targetId, targetId, StringComparison.OrdinalIgnoreCase))
                     {
                         placement = candidate;

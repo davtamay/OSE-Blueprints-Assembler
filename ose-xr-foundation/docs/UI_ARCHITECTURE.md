@@ -307,7 +307,7 @@ Displays:
 Displays:
 
 - current progress
-- current assembly/subassembly
+- current assembly/partGroup
 - optional challenge timer
 - optional milestone state
 

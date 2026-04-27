@@ -115,7 +115,7 @@ These rules are enforced by the docs in this folder and by the current code layo
 
 ### Phase 6: Content Model Implementation
 
-- Machine package definitions now exist for machines, assemblies, subassemblies, parts, tools, steps, validation rules, hints, effects, targets, challenge config, asset manifests, and source references.
+- Machine package definitions now exist for machines, assemblies, partGroups, parts, tools, steps, validation rules, hints, effects, targets, challenge config, asset manifests, and source references.
 - `MachinePackageValidator` validates ids, required fields, enum-like schema values, and cross-definition references.
 - `MachinePackageLoader` loads `machine.json` packages from `Assets/StreamingAssets/MachinePackages/`.
 - Two sample packages now exist:

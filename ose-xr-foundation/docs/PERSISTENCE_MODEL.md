@@ -67,7 +67,7 @@ These fields are persisted and required for restore:
 | `MachineVersion` | Detects content version mismatch on restore |
 | `Mode` | Session mode (tutorial, guided, standard, challenge) |
 | `CurrentAssemblyId` | Which assembly is active |
-| `CurrentSubassemblyId` | Which subassembly is active |
+| `CurrentPartGroupId` | Which partGroup is active |
 | `CurrentStepId` | Which step was last active |
 | `CompletedStepCount` | How many steps were completed (restore cursor) |
 | `Lifecycle` | Session lifecycle state |

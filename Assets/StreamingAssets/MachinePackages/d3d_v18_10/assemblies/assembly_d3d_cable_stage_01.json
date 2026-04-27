@@ -5,17 +5,17 @@
       "name": "D3D Cable Management",
       "machineId": "d3d_v18_10",
       "description": "Cable chain routing for X-axis and Y-axis wiring. Protects wiring from motion-induced wear and keeps cables organized during printer operation.",
-      "subassemblyIds": [
-        "subassembly_cable_routing"
+      "partGroupIds": [
+        "partGroup_cable_routing"
       ],
       "stepIds": [
         "step_place_cable_management"
       ]
     }
   ],
-  "subassemblies": [
+  "partGroups": [
     {
-      "id": "subassembly_cable_routing",
+      "id": "partGroup_cable_routing",
       "name": "Cable Routing",
       "stepIds": [ "step_place_cable_management" ],
       "assemblyId": "assembly_d3d_cable_stage_01",
@@ -56,8 +56,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_cable_routing"
+      "partGroupIds": [
+        "partGroup_cable_routing"
       ]
     },
     {
@@ -93,8 +93,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_cable_routing"
+      "partGroupIds": [
+        "partGroup_cable_routing"
       ]
     },
     {
@@ -130,8 +130,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_cable_routing"
+      "partGroupIds": [
+        "partGroup_cable_routing"
       ]
     }
   ],
@@ -173,12 +173,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0

@@ -99,23 +99,23 @@ namespace OSE.Editor
             _targetStep = _owner != null ? _owner.FindStepPublic(_targetStepId) : null;
             if (_targetStep != null)
             {
-                _prefix = DerivePrefix(_targetStep.subassemblyId ?? _targetStep.id ?? "");
+                _prefix = DerivePrefix(_targetStep.partGroupId ?? _targetStep.id ?? "");
 
                 // Default start_seq priority:
                 //   1. Explicit override (drop-divider top/bottom gestures
                 //      pass the exact seq the author asked for).
-                //   2. End-of-subassembly + 1 — when the target step has a
-                //      subassemblyId, "drop on this step" means "append to
-                //      this subassembly," matching Unity's "drop on parent →
+                //   2. End-of-partGroup + 1 — when the target step has a
+                //      partGroupId, "drop on this step" means "append to
+                //      this partGroup," matching Unity's "drop on parent →
                 //      add as last child" mental model.
                 //   3. Fallback: target step's sequenceIndex + 1.
                 if (_startSeqOverride > 0)
                 {
                     _startSeq = _startSeqOverride;
                 }
-                else if (_owner != null && !string.IsNullOrEmpty(_targetStep.subassemblyId))
+                else if (_owner != null && !string.IsNullOrEmpty(_targetStep.partGroupId))
                 {
-                    int subaMax = _owner.GetSubassemblyMaxSeqPublic(_targetStep.subassemblyId);
+                    int subaMax = _owner.GetPartGroupMaxSeqPublic(_targetStep.partGroupId);
                     _startSeq = subaMax > 0 ? subaMax + 1 : _targetStep.sequenceIndex + 1;
                 }
                 else
@@ -202,7 +202,7 @@ namespace OSE.Editor
             EditorGUILayout.BeginHorizontal();
             _prefix = EditorGUILayout.TextField(new GUIContent("Prefix",
                 "Prepended to every step ID emitted by this prefab. Step ids become " +
-                "step_<prefix>_<id_suffix>. Defaults to the target step's subassemblyId."),
+                "step_<prefix>_<id_suffix>. Defaults to the target step's partGroupId."),
                 _prefix ?? "");
             _startSeq = EditorGUILayout.IntField(new GUIContent("Start seq",
                 "First sequenceIndex assigned to the emitted steps. Defaults to target step + 1."),
@@ -428,8 +428,8 @@ namespace OSE.Editor
             {
                 if (!string.IsNullOrEmpty(_targetStep.assemblyId))
                     sb.AppendLine($"assembly: {_targetStep.assemblyId}");
-                if (!string.IsNullOrEmpty(_targetStep.subassemblyId))
-                    sb.AppendLine($"subassembly: {_targetStep.subassemblyId}");
+                if (!string.IsNullOrEmpty(_targetStep.partGroupId))
+                    sb.AppendLine($"partGroup: {_targetStep.partGroupId}");
             }
             sb.AppendLine("parts:");
             foreach (var role in _roles)
@@ -562,10 +562,10 @@ namespace OSE.Editor
 
         private static string DerivePrefix(string idLike)
         {
-            // Strip common "subassembly_" / "step_" prefixes; the prefab's
+            // Strip common "partGroup_" / "step_" prefixes; the prefab's
             // step ids will already prepend "step_<prefix>_<id_suffix>".
             string s = idLike ?? "";
-            const string subPfx  = "subassembly_";
+            const string subPfx  = "partGroup_";
             const string stepPfx = "step_";
             if (s.StartsWith(subPfx,  System.StringComparison.Ordinal)) s = s.Substring(subPfx.Length);
             if (s.StartsWith(stepPfx, System.StringComparison.Ordinal)) s = s.Substring(stepPfx.Length);

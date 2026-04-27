@@ -15,16 +15,16 @@ namespace OSE.UI.Root
         {
             public const float DesktopPixels = 120f;
             public const float MobilePixels = 180f;
-            public const float SubassemblyDesktopPixels = 220f;
-            public const float SubassemblyMobilePixels = 300f;
+            public const float PartGroupDesktopPixels = 220f;
+            public const float PartGroupMobilePixels = 300f;
 
             /// <summary>
             /// Returns the platform-appropriate screen proximity threshold in pixels.
             /// </summary>
-            public static float GetThreshold(bool isSubassembly = false)
+            public static float GetThreshold(bool isPartGroup = false)
             {
-                if (isSubassembly)
-                    return Application.isMobilePlatform ? SubassemblyMobilePixels : SubassemblyDesktopPixels;
+                if (isPartGroup)
+                    return Application.isMobilePlatform ? PartGroupMobilePixels : PartGroupDesktopPixels;
                 return Application.isMobilePlatform ? MobilePixels : DesktopPixels;
             }
         }

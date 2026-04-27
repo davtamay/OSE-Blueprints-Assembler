@@ -166,7 +166,7 @@ namespace OSE.Editor
         /// When a step is selected:
         ///   - Past parts  → always assembledPosition  (already assembled)
         ///   - Current part → startPosition unless <c>_editAssembledPose</c> or part is a
-        ///                    subassembly member (which arrives pre-assembled)
+        ///                    partGroup member (which arrives pre-assembled)
         ///   - Future parts → caller should skip; returns false
         ///
         /// When no step selected (All Steps mode): always obeys <c>_editAssembledPose</c>.
@@ -295,7 +295,7 @@ namespace OSE.Editor
         /// When the author drags a part in the SceneView and the part is not
         /// referenced by the current step's <c>requiredPartIds</c>,
         /// <c>optionalPartIds</c>, <c>visualPartIds</c>, or
-        /// <c>requiredSubassemblyId</c> members, automatically:
+        /// <c>requiredPartGroupId</c> members, automatically:
         ///  1. add it to <c>step.visualPartIds</c> (NO TASK),
         ///  2. create (or reuse) an author-authored <see cref="StepPoseEntry"/>
         ///     anchored at this step with span "from this step → end" so the
@@ -355,11 +355,11 @@ namespace OSE.Editor
         {
             public readonly PoseSourceKind kind;
             public readonly string anchorStepId;   // StepPose
-            public readonly string subassemblyId;  // Integrated
+            public readonly string partGroupId;  // Integrated
             public readonly string targetId;       // Integrated
 
             public PoseSourceTag(PoseSourceKind k, string anchor = null, string sub = null, string tgt = null)
-            { kind = k; anchorStepId = anchor; subassemblyId = sub; targetId = tgt; }
+            { kind = k; anchorStepId = anchor; partGroupId = sub; targetId = tgt; }
 
             public string PrettyLabel()
             {
@@ -370,7 +370,7 @@ namespace OSE.Editor
                     case PoseSourceKind.AssembledPosition:  return "assembledPosition";
                     case PoseSourceKind.NoTaskDefault:      return "noTaskDefault(startPosition)";
                     case PoseSourceKind.StepPose:           return $"stepPose[{anchorStepId ?? "?"}]";
-                    case PoseSourceKind.Integrated:         return $"integrated[{subassemblyId ?? "?"},{targetId ?? "?"}]";
+                    case PoseSourceKind.Integrated:         return $"integrated[{partGroupId ?? "?"},{targetId ?? "?"}]";
                 }
                 return "?";
             }
@@ -378,7 +378,7 @@ namespace OSE.Editor
             public bool ValueEquals(PoseSourceTag other)
                 => kind == other.kind
                 && string.Equals(anchorStepId,  other.anchorStepId,  StringComparison.Ordinal)
-                && string.Equals(subassemblyId, other.subassemblyId, StringComparison.Ordinal)
+                && string.Equals(partGroupId, other.partGroupId, StringComparison.Ordinal)
                 && string.Equals(targetId,      other.targetId,      StringComparison.Ordinal);
         }
 
@@ -399,7 +399,7 @@ namespace OSE.Editor
             if (_pkg?.steps == null || string.IsNullOrEmpty(partId)) return false;
 
             // 1) First-appearance sequenceIndex across requiredPartIds /
-            //    optionalPartIds / visualPartIds / requiredSubassemblyId.
+            //    optionalPartIds / visualPartIds / requiredPartGroupId.
             int placedAt = ResolvePartFirstAppearance(partId);
             if (placedAt < 0) { tag = new PoseSourceTag(PoseSourceKind.Hidden); return false; }
             if (placedAt > viewingSeq) { tag = new PoseSourceTag(PoseSourceKind.Hidden); return false; }
@@ -472,8 +472,8 @@ namespace OSE.Editor
                 if (s.requiredPartIds != null) foreach (var x in s.requiredPartIds) if (string.Equals(x, partId, StringComparison.Ordinal)) { hit = true; break; }
                 if (!hit && s.optionalPartIds != null) foreach (var x in s.optionalPartIds) if (string.Equals(x, partId, StringComparison.Ordinal)) { hit = true; break; }
                 if (!hit && s.visualPartIds != null)   foreach (var x in s.visualPartIds)   if (string.Equals(x, partId, StringComparison.Ordinal)) { hit = true; break; }
-                if (!hit && !string.IsNullOrEmpty(s.requiredSubassemblyId)
-                    && _pkg.TryGetSubassembly(s.requiredSubassemblyId, out var sub)
+                if (!hit && !string.IsNullOrEmpty(s.requiredPartGroupId)
+                    && _pkg.TryGetPartGroup(s.requiredPartGroupId, out var sub)
                     && sub?.partIds != null)
                 {
                     foreach (var x in sub.partIds) if (string.Equals(x, partId, StringComparison.Ordinal)) { hit = true; break; }
@@ -530,24 +530,24 @@ namespace OSE.Editor
         {
             pos = Vector3.zero; rot = Quaternion.identity; scl = Vector3.one;
             subId = null; targetId = null;
-            var placements = _pkg?.previewConfig?.integratedSubassemblyPlacements;
+            var placements = _pkg?.previewConfig?.integratedPartGroupPlacements;
             if (placements == null || placements.Length == 0) return false;
 
             // Walk steps whose sequenceIndex ≤ viewingSeq and have a
-            // requiredSubassemblyId, find the LATEST one whose integrated
+            // requiredPartGroupId, find the LATEST one whose integrated
             // placement includes this part. Latest-wins mirrors the runtime
             // closest-anchor semantics for stacking.
             int bestSeq = int.MinValue;
             foreach (var step in _pkg.steps)
             {
                 if (step == null || step.sequenceIndex > viewingSeq) continue;
-                if (string.IsNullOrEmpty(step.requiredSubassemblyId)) continue;
+                if (string.IsNullOrEmpty(step.requiredPartGroupId)) continue;
                 string tgt = step.targetIds != null && step.targetIds.Length > 0 ? step.targetIds[0] : null;
                 if (string.IsNullOrEmpty(tgt)) continue;
                 foreach (var pl in placements)
                 {
                     if (pl == null || pl.memberPlacements == null) continue;
-                    if (!string.Equals(pl.subassemblyId, step.requiredSubassemblyId, StringComparison.Ordinal)) continue;
+                    if (!string.Equals(pl.partGroupId, step.requiredPartGroupId, StringComparison.Ordinal)) continue;
                     if (!string.Equals(pl.targetId, tgt, StringComparison.Ordinal)) continue;
                     foreach (var m in pl.memberPlacements)
                     {
@@ -560,7 +560,7 @@ namespace OSE.Editor
                             : PackageJsonUtils.ToUnityQuaternion(m.rotation);
                         scl = PackageJsonUtils.ToVector3(m.scale);
                         if (scl.sqrMagnitude < 0.00001f) scl = Vector3.one;
-                        subId = pl.subassemblyId;
+                        subId = pl.partGroupId;
                         targetId = pl.targetId;
                     }
                 }
@@ -667,17 +667,17 @@ namespace OSE.Editor
         // All authored positions are in PreviewRoot local space. These helpers
         // convert between PreviewRoot space and world space so part transforms
         // work correctly regardless of whether the part is a direct child of
-        // PreviewRoot or nested under a subassembly root GO.
+        // PreviewRoot or nested under a partGroup root GO.
         //
         // Phase A1: with parts still flat under PreviewRoot, these are identity
         // transforms (PreviewRoot.TransformPoint of a local pos = the child's
-        // localPosition). Phase A2 reparents parts under subassembly roots and
+        // localPosition). Phase A2 reparents parts under partGroup roots and
         // these helpers become load-bearing.
 
         /// <summary>
         /// Sets a part's transform from PreviewRoot-local authored data.
         /// If the part is directly under PreviewRoot, localPosition/Rotation
-        /// are set directly. If the part is under a group root (subassembly
+        /// are set directly. If the part is under a group root (partGroup
         /// hierarchy), the position is set relative to PreviewRoot so the
         /// group root's transform (working orientation) can apply on top.
         /// </summary>
@@ -771,7 +771,7 @@ namespace OSE.Editor
             }
 
             // Only cede positioning to the group root when the current step
-            // is actually stacking this group (requiredSubassemblyId matches).
+            // is actually stacking this group (requiredPartGroupId matches).
             // During mid-group fabrication steps (e.g. bearing place, close
             // halves), each member part's own Start/Assembled toggle must
             // drive its pose — ceding to the root would blank out the part
@@ -780,7 +780,7 @@ namespace OSE.Editor
                 ? FindStep(_stepIds[_stepFilterIdx]) : null;
             bool currentStepStacksThisGroup = curStep != null
                 && g.def != null
-                && string.Equals(curStep.requiredSubassemblyId, g.def.id, StringComparison.Ordinal);
+                && string.Equals(curStep.requiredPartGroupId, g.def.id, StringComparison.Ordinal);
             if (!currentStepStacksThisGroup) return false;
 
             // Only match the SELECTED group's member parts, not all groups
@@ -1074,7 +1074,7 @@ namespace OSE.Editor
             // Native Move-tool polling on selected part only (matches PPAW).
             // Skipped during multi-select — our custom handle drives all parts.
             // Uses TryGetStepAwarePose for comparison so the expected pose matches
-            // what SyncPartMeshToActivePose set — prevents false re-dirty on past/subassembly parts.
+            // what SyncPartMeshToActivePose set — prevents false re-dirty on past/partGroup parts.
             //
             // Two-stage detection: first check if the GO drifted from the expected pose
             // (e.g. external driver repositioned it). If so, re-sync it back rather than

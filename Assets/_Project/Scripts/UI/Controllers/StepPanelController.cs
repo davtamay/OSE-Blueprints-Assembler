@@ -151,24 +151,24 @@ namespace OSE.UI.Controllers
                 !stepController.HasActiveStep ||
                 step == null ||
                 !step.IsPlacement ||
-                !step.RequiresSubassemblyPlacement ||
+                !step.RequiresPartGroupPlacement ||
                 step.targetIds == null ||
                 step.targetIds.Length != 1)
             {
                 return;
             }
 
-            if (!ServiceRegistry.TryGet<ISubassemblyPlacementService>(out var subassemblyController) ||
-                subassemblyController == null ||
-                !subassemblyController.IsSubassemblyReady(step.requiredSubassemblyId))
+            if (!ServiceRegistry.TryGet<IPartGroupPlacementService>(out var partGroupController) ||
+                partGroupController == null ||
+                !partGroupController.IsPartGroupReady(step.requiredPartGroupId))
             {
                 return;
             }
 
             string targetId = step.targetIds[0];
-            if (!subassemblyController.TryApplyPlacement(step.requiredSubassemblyId, targetId))
+            if (!partGroupController.TryApplyPlacement(step.requiredPartGroupId, targetId))
             {
-                OseLog.Warn($"[StepPanel] Guided stack placement failed for subassembly '{step.requiredSubassemblyId}' on target '{targetId}'.");
+                OseLog.Warn($"[StepPanel] Guided stack placement failed for partGroup '{step.requiredPartGroupId}' on target '{targetId}'.");
                 return;
             }
 

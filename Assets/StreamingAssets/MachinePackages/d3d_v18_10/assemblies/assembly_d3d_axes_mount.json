@@ -5,12 +5,12 @@
       "name": "D3D Axes Frame Mount",
       "description": "Mounts all five completed axis modules to the welded frame in sequence: Y-left and Y-right directly to frame side faces, X-axis fitted and tensioned between the Y carriages, then Z-front and Z-back to the front and back frame faces. All bench-built axis modules must be complete before this assembly begins.",
       "machineId": "d3d_v18_10",
-      "subassemblyIds": [
-        "subassembly_y_left_frame_mount",
-        "subassembly_y_right_frame_mount",
-        "subassembly_x_axis_frame_fit",
-        "subassembly_z_front_frame_mount",
-        "subassembly_z_back_frame_mount"
+      "partGroupIds": [
+        "partGroup_y_left_frame_mount",
+        "partGroup_y_right_frame_mount",
+        "partGroup_x_axis_frame_fit",
+        "partGroup_z_front_frame_mount",
+        "partGroup_z_back_frame_mount"
       ],
       "stepIds": [
         "step_mount_y_left_axis_to_frame",
@@ -49,9 +49,9 @@
       "learningFocus": "Y-left idler orientation through left-face hole, all 8 motor-holder bolts tightened before mounting (inaccessible after), Y-right mirroring Y-left with motors at back, five-step X-axis fitting procedure between Y carriages, Z-front idler at front-face bottom hole offset right for print area, Z-back aligned directly behind Z-front."
     }
   ],
-  "subassemblies": [
+  "partGroups": [
     {
-      "id": "subassembly_y_left_frame_mount",
+      "id": "partGroup_y_left_frame_mount",
       "name": "Y-Left Axis Frame Mount",
       "stepIds": [ "step_mount_y_left_axis_to_frame", "step_verify_y_left_axis_motion" ],
       "assemblyId": "assembly_d3d_axes_mount",
@@ -59,7 +59,7 @@
       "milestoneMessage": "Y-left axis mounted and motion verified."
   },
     {
-      "id": "subassembly_y_right_frame_mount",
+      "id": "partGroup_y_right_frame_mount",
       "name": "Y-Right Axis Frame Mount",
       "stepIds": [ "step_mount_y_right_axis_to_frame", "step_verify_y_axis_pair_alignment" ],
       "assemblyId": "assembly_d3d_axes_mount",
@@ -67,7 +67,7 @@
       "milestoneMessage": "Y-right axis mounted. Both Y axes are parallel with motors at back."
   },
     {
-      "id": "subassembly_x_axis_frame_fit",
+      "id": "partGroup_x_axis_frame_fit",
       "name": "X-Axis Frame Fit",
       "assemblyId": "assembly_d3d_axes_mount",
       "description": "Fits the completed bench-built X-axis module between the Y carriages using the five-step source-backed procedure: tighten idler screws, anchor idler to Y-right, loosen motor holder, span to Y-left, lock and tension.",
@@ -91,7 +91,7 @@
       "isAggregate": true
     },
     {
-      "id": "subassembly_z_front_frame_mount",
+      "id": "partGroup_z_front_frame_mount",
       "name": "Z-Front Axis Frame Mount",
       "assemblyId": "assembly_d3d_axes_mount",
       "description": "Mounts the completed bench-built Z-front axis module to the front frame face. Idler attaches at bottom hole offset right for print area, motor holder at top hole. Belt tensioned after mounting.",
@@ -115,7 +115,7 @@
       "isAggregate": true
     },
     {
-      "id": "subassembly_z_back_frame_mount",
+      "id": "partGroup_z_back_frame_mount",
       "name": "Z-Back Axis Frame Mount",
       "assemblyId": "assembly_d3d_axes_mount",
       "description": "Mounts the completed bench-built Z-back axis module to the back frame face directly behind Z-front. Both Z carriages must be at the same height before locking.",
@@ -170,8 +170,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_y_left_frame_mount"
+      "partGroupIds": [
+        "partGroup_y_left_frame_mount"
       ]
     },
     {
@@ -204,8 +204,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_y_right_frame_mount"
+      "partGroupIds": [
+        "partGroup_y_right_frame_mount"
       ]
     },
     {
@@ -239,8 +239,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_x_axis_belt_threading"
+      "partGroupIds": [
+        "partGroup_x_axis_belt_threading"
       ]
     },
     {
@@ -466,8 +466,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_z_front_belt_threading"
+      "partGroupIds": [
+        "partGroup_z_front_belt_threading"
       ]
     },
     {
@@ -565,8 +565,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_z_back_belt_threading"
+      "partGroupIds": [
+        "partGroup_z_back_belt_threading"
       ]
     }
   ],
@@ -575,7 +575,7 @@
       "id": "step_mount_y_left_axis_to_frame",
       "name": "Mount the Y-left axis to the frame",
       "assemblyId": "assembly_d3d_axes_mount",
-      "subassemblyId": "subassembly_y_left_frame_mount",
+      "partGroupId": "partGroup_y_left_frame_mount",
       "sequenceIndex": 74,
       "instructionText": "Place the completed Y-left axis unit onto the welded frame at the authored left-side mount.",
       "family": "Place",
@@ -597,12 +597,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -613,7 +613,7 @@
       "id": "step_verify_y_left_axis_motion",
       "name": "Confirm the Y-left axis seats cleanly on the frame",
       "assemblyId": "assembly_d3d_axes_mount",
-      "subassemblyId": "subassembly_y_left_frame_mount",
+      "partGroupId": "partGroup_y_left_frame_mount",
       "sequenceIndex": 75,
       "instructionText": "Inspect the mounted Y-left axis and confirm its travel direction is clear and the unit sits flat on the frame-side mount.",
       "family": "Confirm",
@@ -630,7 +630,7 @@
       "id": "step_mount_y_right_axis_to_frame",
       "name": "Mount the Y-right axis to the frame",
       "assemblyId": "assembly_d3d_axes_mount",
-      "subassemblyId": "subassembly_y_right_frame_mount",
+      "partGroupId": "partGroup_y_right_frame_mount",
       "sequenceIndex": 76,
       "instructionText": "Place the completed Y-right axis unit onto the welded frame at the authored right-side mount.",
       "family": "Place",
@@ -652,12 +652,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -668,7 +668,7 @@
       "id": "step_verify_y_axis_pair_alignment",
       "name": "Confirm the Y-axis pair establishes the X-axis span",
       "assemblyId": "assembly_d3d_axes_mount",
-      "subassemblyId": "subassembly_y_right_frame_mount",
+      "partGroupId": "partGroup_y_right_frame_mount",
       "sequenceIndex": 77,
       "instructionText": "Inspect the mounted Y-left and Y-right axes together and confirm they establish a clean span for the X-axis between them.",
       "family": "Confirm",
@@ -685,7 +685,7 @@
       "id": "step_tighten_x_axis_idler_screws",
       "name": "Tighten the X-axis idler screws",
       "assemblyId": "assembly_d3d_axes_mount",
-      "subassemblyId": "subassembly_x_axis_frame_fit",
+      "partGroupId": "partGroup_x_axis_frame_fit",
       "sequenceIndex": 78,
       "instructionText": "Tighten the X-axis idler screws while the module is still staged in the work area.",
       "family": "Use",
@@ -730,7 +730,7 @@
       "id": "step_anchor_x_axis_idler_to_y_right",
       "name": "Place the X-axis assembly with the idler side anchored on Y-right",
       "assemblyId": "assembly_d3d_axes_mount",
-      "subassemblyId": "subassembly_x_axis_frame_fit",
+      "partGroupId": "partGroup_x_axis_frame_fit",
       "sequenceIndex": 79,
       "instructionText": "Place the X-axis idler side, rod pair, motor-holder side, and the two Y-right M6x30 bolts into their pre-fit positions so the idler side anchors on Y-right first.",
       "family": "Place",
@@ -761,12 +761,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -777,7 +777,7 @@
       "id": "step_snug_x_axis_idler_mount_bolts",
       "name": "Snug the Y-right M6x30 anchor bolts",
       "assemblyId": "assembly_d3d_axes_mount",
-      "subassemblyId": "subassembly_x_axis_frame_fit",
+      "partGroupId": "partGroup_x_axis_frame_fit",
       "sequenceIndex": 80,
       "instructionText": "Use the metric Allen key to snug the two Y-right M6x30 bolts so the idler side stays anchored while the motor-holder side still remains adjustable.",
       "family": "Use",
@@ -814,7 +814,7 @@
       "id": "step_loosen_start_x_axis_motor_holder_bolts",
       "name": "Loosely start the X-axis motor-holder bolts on the Y-left carriage",
       "assemblyId": "assembly_d3d_axes_mount",
-      "subassemblyId": "subassembly_x_axis_frame_fit",
+      "partGroupId": "partGroup_x_axis_frame_fit",
       "sequenceIndex": 81,
       "instructionText": "Place the two Y-left M6x30 motor-holder bolts by hand only loosely so the X-axis span can still be adjusted.",
       "family": "Place",
@@ -842,12 +842,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -858,12 +858,12 @@
       "id": "step_fit_x_axis_span_between_y_axes",
       "name": "Lengthen the X-axis to fit tightly between the Y axes",
       "assemblyId": "assembly_d3d_axes_mount",
-      "subassemblyId": "subassembly_x_axis_frame_fit",
+      "partGroupId": "partGroup_x_axis_frame_fit",
       "sequenceIndex": 82,
       "instructionText": "Drag the yellow motor-holder side left along the fit guide until it reaches the green final-fit marker and seats against the Y-left side.",
       "family": "Place",
       "profile": "AxisFit",
-      "requiredSubassemblyId": "subassembly_x_axis_frame_fit",
+      "requiredPartGroupId": "partGroup_x_axis_frame_fit",
       "targetIds": [
         "target_x_axis_span_fit"
       ],
@@ -875,7 +875,7 @@
       "id": "step_lock_x_axis_motor_holder_screws",
       "name": "Lock the Y-left mount bolts and motor-holder screws",
       "assemblyId": "assembly_d3d_axes_mount",
-      "subassemblyId": "subassembly_x_axis_frame_fit",
+      "partGroupId": "partGroup_x_axis_frame_fit",
       "sequenceIndex": 83,
       "instructionText": "After the X-axis span is seated tightly, tighten the two Y-left M6x30 mount bolts first, then lock the motor-holder-side internal screws.",
       "family": "Use",
@@ -968,7 +968,7 @@
       "id": "step_tension_x_axis_belt",
       "name": "Tension the X-axis belt",
       "assemblyId": "assembly_d3d_axes_mount",
-      "subassemblyId": "subassembly_x_axis_frame_fit",
+      "partGroupId": "partGroup_x_axis_frame_fit",
       "sequenceIndex": 84,
       "instructionText": "Pull the X-axis belt to final hand tension only after the span and fasteners are locked.",
       "family": "Use",
@@ -1018,12 +1018,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -1034,7 +1034,7 @@
       "id": "step_check_x_axis_tightness_and_travel",
       "name": "Check X-axis tightness and travel",
       "assemblyId": "assembly_d3d_axes_mount",
-      "subassemblyId": "subassembly_x_axis_frame_fit",
+      "partGroupId": "partGroup_x_axis_frame_fit",
       "sequenceIndex": 86,
       "instructionText": "Inspect the fitted X-axis and confirm it can travel along the mounted Y axes without binding, without a visible gap at the left interface, and with the Y-left end-stop relationship preserved.",
       "family": "Confirm",
@@ -1052,7 +1052,7 @@
       "id": "step_tighten_z_front_idler_screws",
       "name": "Tighten the Z-front idler screws",
       "assemblyId": "assembly_d3d_axes_mount",
-      "subassemblyId": "subassembly_z_front_frame_mount",
+      "partGroupId": "partGroup_z_front_frame_mount",
       "sequenceIndex": 270,
       "instructionText": "Tighten the two shorter M6x18 bolts on the Z-front idler using an electric drill on low torque. This locks the rods flush against the back of the idler. Leave the longer M6x30 bolt loose \u00e2\u20ac\u201d it will attach to the frame.",
       "profile": "Torque",
@@ -1089,7 +1089,7 @@
       "id": "step_mount_z_front_axis_to_frame",
       "name": "Mount the Z-front axis to the front frame face",
       "assemblyId": "assembly_d3d_axes_mount",
-      "subassemblyId": "subassembly_z_front_frame_mount",
+      "partGroupId": "partGroup_z_front_frame_mount",
       "sequenceIndex": 271,
       "instructionText": "Pop the loose belt peg out and set aside. Tighten all 8 motor-piece bolts before mounting (they become inaccessible after). Lengthen the axis and fit the idler long bolt through the bottom hole of the front frame face; fit the motor long bolt through the top hole. Fasten both with nuts.",
       "hintIds": [
@@ -1118,12 +1118,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -1134,7 +1134,7 @@
       "id": "step_lock_z_front_motor_holder",
       "name": "Lock the Z-front motor holder bolts",
       "assemblyId": "assembly_d3d_axes_mount",
-      "subassemblyId": "subassembly_z_front_frame_mount",
+      "partGroupId": "partGroup_z_front_frame_mount",
       "sequenceIndex": 272,
       "instructionText": "With the Z-front axis at the correct frame length, tighten the two motor-piece bolts fully. This locks the rods in place so the belt can be properly tensioned.",
       "profile": "Torque",
@@ -1171,7 +1171,7 @@
       "id": "step_tension_z_front_belt",
       "name": "Tension the Z-front axis belt",
       "assemblyId": "assembly_d3d_axes_mount",
-      "subassemblyId": "subassembly_z_front_frame_mount",
+      "partGroupId": "partGroup_z_front_frame_mount",
       "sequenceIndex": 273,
       "instructionText": "Grip the loose belt end with pliers and pull until the belt is taut enough to twang like a guitar string when plucked. Do not overtighten \u00e2\u20ac\u201d the belt can snap. Hold tension and proceed to insert the belt peg.",
       "profile": "Torque",
@@ -1200,7 +1200,7 @@
       "id": "step_reinsert_z_front_belt_peg",
       "name": "Reinsert the Z-front belt peg",
       "assemblyId": "assembly_d3d_axes_mount",
-      "subassemblyId": "subassembly_z_front_frame_mount",
+      "partGroupId": "partGroup_z_front_frame_mount",
       "sequenceIndex": 274,
       "instructionText": "Insert the belt end approximately \u00c2\u00be inch through the peg, foot facing away from the axis center. Push the peg firmly into the small ribbed belt-catcher hole to lock the belt tension.",
       "hintIds": [
@@ -1223,12 +1223,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -1239,7 +1239,7 @@
       "id": "step_check_z_front_axis_travel",
       "name": "Check Z-front axis travel and QC",
       "assemblyId": "assembly_d3d_axes_mount",
-      "subassemblyId": "subassembly_z_front_frame_mount",
+      "partGroupId": "partGroup_z_front_frame_mount",
       "sequenceIndex": 275,
       "instructionText": "Run the Z-front QC checklist: carriage moves smoothly along full travel; rods flush with idler bottom; idler and carriage bolt heads on the same side; toothed side of belt faces inward.",
       "targetIds": [
@@ -1255,7 +1255,7 @@
       "id": "step_tighten_z_back_idler_screws",
       "name": "Tighten the Z-back idler screws",
       "assemblyId": "assembly_d3d_axes_mount",
-      "subassemblyId": "subassembly_z_back_frame_mount",
+      "partGroupId": "partGroup_z_back_frame_mount",
       "sequenceIndex": 276,
       "instructionText": "Tighten the two shorter M6x18 bolts on the Z-back idler using an electric drill on low torque. Leave the longer M6x30 bolt loose for frame attachment.",
       "profile": "Torque",
@@ -1292,7 +1292,7 @@
       "id": "step_mount_z_back_axis_to_frame",
       "name": "Mount the Z-back axis to the back frame face",
       "assemblyId": "assembly_d3d_axes_mount",
-      "subassemblyId": "subassembly_z_back_frame_mount",
+      "partGroupId": "partGroup_z_back_frame_mount",
       "sequenceIndex": 277,
       "instructionText": "Tighten all 8 motor-piece bolts first. Lengthen the Z-back axis and fit the idler bolt through the bottom hole of the back frame face; fit the motor bolt through the top hole. Fasten both. Align directly behind Z-front.",
       "hintIds": [
@@ -1321,12 +1321,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -1337,7 +1337,7 @@
       "id": "step_lock_z_back_motor_holder",
       "name": "Lock the Z-back motor holder bolts",
       "assemblyId": "assembly_d3d_axes_mount",
-      "subassemblyId": "subassembly_z_back_frame_mount",
+      "partGroupId": "partGroup_z_back_frame_mount",
       "sequenceIndex": 278,
       "instructionText": "Tighten the two motor-piece bolts on the Z-back axis. Verify both Z columns are aligned \u00e2\u20ac\u201d Z-back carriage should be at the same height as Z-front carriage before locking.",
       "profile": "Torque",
@@ -1374,7 +1374,7 @@
       "id": "step_tension_z_back_belt",
       "name": "Tension the Z-back axis belt",
       "assemblyId": "assembly_d3d_axes_mount",
-      "subassemblyId": "subassembly_z_back_frame_mount",
+      "partGroupId": "partGroup_z_back_frame_mount",
       "sequenceIndex": 279,
       "instructionText": "Tension the Z-back belt with pliers until it twangs like a guitar string. Hold tension and proceed to the belt peg step.",
       "profile": "Torque",
@@ -1403,7 +1403,7 @@
       "id": "step_reinsert_z_back_belt_peg",
       "name": "Reinsert the Z-back belt peg",
       "assemblyId": "assembly_d3d_axes_mount",
-      "subassemblyId": "subassembly_z_back_frame_mount",
+      "partGroupId": "partGroup_z_back_frame_mount",
       "sequenceIndex": 280,
       "instructionText": "Insert belt end ~\u00c2\u00be inch through the peg, foot facing away from axis center. Push peg firmly into the ribbed belt-catcher hole.",
       "hintIds": [
@@ -1426,12 +1426,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -1442,7 +1442,7 @@
       "id": "step_check_z_back_axis_travel",
       "name": "Check Z-back axis travel and QC",
       "assemblyId": "assembly_d3d_axes_mount",
-      "subassemblyId": "subassembly_z_back_frame_mount",
+      "partGroupId": "partGroup_z_back_frame_mount",
       "sequenceIndex": 281,
       "instructionText": "QC: carriage moves smoothly; rods flush; bolt heads same side; toothed belt faces inward; Z-back carriage level with Z-front carriage.",
       "targetIds": [
@@ -1663,7 +1663,7 @@
       "id": "target_x_axis_span_fit",
       "name": "X-Axis Span Fit",
       "anchorRef": "anchors/d3d/axes/x_axis/span_fit",
-      "associatedSubassemblyId": "subassembly_x_axis_frame_fit",
+      "associatedPartGroupId": "partGroup_x_axis_frame_fit",
       "useToolActionRotation": true,
       "toolActionRotation": {
         "x": 0,

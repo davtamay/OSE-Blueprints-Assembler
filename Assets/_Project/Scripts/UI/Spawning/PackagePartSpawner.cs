@@ -36,9 +36,9 @@ namespace OSE.UI.Root
         private PackagePreviewConfig _currentPreviewConfig;
         private readonly List<GameObject> _spawnedParts = new List<GameObject>();
 
-        // Subassembly root GO lifecycle — mirrors TTAW Phase A2 so play-mode
-        // hierarchy matches the authoring view. Keyed by subassembly id.
-        private readonly Dictionary<string, GameObject> _subassemblyRoots =
+        // PartGroup root GO lifecycle — mirrors TTAW Phase A2 so play-mode
+        // hierarchy matches the authoring view. Keyed by partGroup id.
+        private readonly Dictionary<string, GameObject> _partGroupRoots =
             new Dictionary<string, GameObject>(System.StringComparer.Ordinal);
         private readonly PackageAssetResolver _resolver = new PackageAssetResolver();
         private readonly PreviewConfigLookup _configLookup = new PreviewConfigLookup();
@@ -164,9 +164,9 @@ namespace OSE.UI.Root
                 _spawnedParts,
                 () => _setup?.PreviewRoot,
                 FindPartPlacement,
-                FindSubassemblyPlacement,
-                FindIntegratedSubassemblyPlacement,
-                FindConstrainedSubassemblyFitPlacement,
+                FindPartGroupPlacement,
+                FindIntegratedPartGroupPlacement,
+                FindConstrainedPartGroupFitPlacement,
                 _resolver,
                 TryLoadPackageAsset);
 
@@ -209,7 +209,7 @@ namespace OSE.UI.Root
                     if (_spawnedParts[i] != null) trackedNames.Add(_spawnedParts[i].name);
 
                 // First pass: evict stale transient GOs left over from the
-                // pre-compile session. Domain reload wipes _subassemblyRoots
+                // pre-compile session. Domain reload wipes _partGroupRoots
                 // (PackagePartSpawner) and _fabricationGroupRoot
                 // (AnimationCueCoordinator) — the C# fields reset to empty /
                 // null, but the scene GameObjects survive. On the next step
@@ -379,21 +379,21 @@ namespace OSE.UI.Root
                 return;
             }
 
-            // Subassembly ghost suppression was previously applied here, hiding
+            // PartGroup ghost suppression was previously applied here, hiding
             // member parts behind a translucent ghost silhouette during a
             // stacking step. The editor authoring view doesn't apply this, so
             // suppressing at runtime made play diverge from what the author
             // sees in TTAW. Authoring is the source of truth for visibility —
             // every part the resolver places gets shown.
-            var ghostedSubassemblyPartIds = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+            var ghostedPartGroupPartIds = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
 
-            // Phase-A2 hierarchy parity: mirror TTAW's subassembly root GO
+            // Phase-A2 hierarchy parity: mirror TTAW's partGroup root GO
             // lifecycle so the runtime scene graph matches the authoring view.
             // Creates a root per visible group, reparents member parts, nests
             // aggregates, applies the step's working-orientation. Runs BEFORE
             // positioning so subsequent SetLocalPositionAndRotation calls
             // resolve against the correct parent transform.
-            EnsureSubassemblyRoots(pkg, currentStepDef);
+            EnsurePartGroupRoots(pkg, currentStepDef);
 
             foreach (var partGo in _spawnedParts)
             {
@@ -404,7 +404,7 @@ namespace OSE.UI.Root
 
                 // Ghost suppression still hides members that are replaced by a
                 // translucent ghost silhouette.
-                if (ghostedSubassemblyPartIds.Contains(partGo.name))
+                if (ghostedPartGroupPartIds.Contains(partGo.name))
                 {
                     partGo.SetActive(false);
                     continue;
@@ -510,11 +510,11 @@ namespace OSE.UI.Root
             // the active step). This mirrors what PreviewSpawnManager does at runtime.
             //
             // EditModeGhostManager still expects the legacy partStepSeq +
-            // subassemblyParts maps (it uses them for ghost visibility timing,
+            // partGroupParts maps (it uses them for ghost visibility timing,
             // not pose resolution). We rebuild small versions here; when the
             // ghost manager migrates to PoseTable these can go away.
             var ghostPartStepSeq   = new Dictionary<string, int>(System.StringComparer.Ordinal);
-            var ghostSubassemblyParts = new HashSet<string>(System.StringComparer.Ordinal);
+            var ghostPartGroupParts = new HashSet<string>(System.StringComparer.Ordinal);
             foreach (var step in orderedSteps)
             {
                 if (step == null) continue;
@@ -527,14 +527,14 @@ namespace OSE.UI.Root
                 if (step.requiredPartIds != null) foreach (var p in step.requiredPartIds) Note(p);
                 if (step.optionalPartIds != null) foreach (var p in step.optionalPartIds) Note(p);
                 if (step.visualPartIds   != null) foreach (var p in step.visualPartIds)   Note(p);
-                if (!string.IsNullOrEmpty(step.requiredSubassemblyId)
-                    && pkg.TryGetSubassembly(step.requiredSubassemblyId, out var subDef)
+                if (!string.IsNullOrEmpty(step.requiredPartGroupId)
+                    && pkg.TryGetPartGroup(step.requiredPartGroupId, out var subDef)
                     && subDef?.partIds != null)
                 {
-                    foreach (var p in subDef.partIds) { Note(p); if (!string.IsNullOrEmpty(p)) ghostSubassemblyParts.Add(p); }
+                    foreach (var p in subDef.partIds) { Note(p); if (!string.IsNullOrEmpty(p)) ghostPartGroupParts.Add(p); }
                 }
             }
-            _ghostManager?.SpawnGhosts(pkg, orderedSteps, targetSequenceIndex, fullyAssembled, ghostPartStepSeq, ghostSubassemblyParts);
+            _ghostManager?.SpawnGhosts(pkg, orderedSteps, targetSequenceIndex, fullyAssembled, ghostPartStepSeq, ghostPartGroupParts);
         }
 
         // ── Edit-mode visual helpers ────────────────────────────────────
@@ -562,34 +562,34 @@ namespace OSE.UI.Root
             => _configLookup.FindTargetPlacement(targetId);
 
         /// <summary>
-        /// Finds the <see cref="SubassemblyPreviewPlacement"/> for a given subassembly id.
+        /// Finds the <see cref="PartGroupPreviewPlacement"/> for a given partGroup id.
         /// </summary>
-        public SubassemblyPreviewPlacement FindSubassemblyPlacement(string subassemblyId)
-            => _configLookup.FindSubassemblyPlacement(subassemblyId);
+        public PartGroupPreviewPlacement FindPartGroupPlacement(string partGroupId)
+            => _configLookup.FindPartGroupPlacement(partGroupId);
 
         /// <summary>
-        /// Finds the constrained-fit payload for a subassembly placement target.
+        /// Finds the constrained-fit payload for a partGroup placement target.
         /// </summary>
-        public ConstrainedSubassemblyFitPreviewPlacement FindConstrainedSubassemblyFitPlacement(string subassemblyId, string targetId)
-            => _configLookup.FindConstrainedSubassemblyFitPlacement(subassemblyId, targetId);
+        public ConstrainedPartGroupFitPreviewPlacement FindConstrainedPartGroupFitPlacement(string partGroupId, string targetId)
+            => _configLookup.FindConstrainedPartGroupFitPlacement(partGroupId, targetId);
 
         /// <summary>
-        /// Finds the optional parking frame for a completed fabricated subassembly.
+        /// Finds the optional parking frame for a completed fabricated partGroup.
         /// </summary>
-        public SubassemblyPreviewPlacement FindCompletedSubassemblyParkingPlacement(string subassemblyId)
-            => _configLookup.FindCompletedSubassemblyParkingPlacement(subassemblyId);
+        public PartGroupPreviewPlacement FindCompletedPartGroupParkingPlacement(string partGroupId)
+            => _configLookup.FindCompletedPartGroupParkingPlacement(partGroupId);
 
         /// <summary>
-        /// Finds the canonical integrated placement authored for a completed subassembly
+        /// Finds the canonical integrated placement authored for a completed partGroup
         /// when it is committed to a specific assembly target.
         /// </summary>
-        public IntegratedSubassemblyPreviewPlacement FindIntegratedSubassemblyPlacement(string subassemblyId, string targetId)
-            => _configLookup.FindIntegratedSubassemblyPlacement(subassemblyId, targetId);
+        public IntegratedPartGroupPreviewPlacement FindIntegratedPartGroupPlacement(string partGroupId, string targetId)
+            => _configLookup.FindIntegratedPartGroupPlacement(partGroupId, targetId);
 
         /// <summary>
         /// Returns the integrated member placement for a specific partId, or null if the
-        /// part is not covered by any <c>integratedSubassemblyPlacements</c> entry.
-        /// Used by play-mode restore paths to place completed subassembly members at their
+        /// part is not covered by any <c>integratedPartGroupPlacements</c> entry.
+        /// Used by play-mode restore paths to place completed partGroup members at their
         /// canonical assembled poses instead of individual <c>assembledPosition</c>.
         /// </summary>
         public IntegratedMemberPreviewPlacement FindIntegratedMemberPlacement(string partId)
@@ -724,7 +724,7 @@ namespace OSE.UI.Root
                         ApplyStepAwarePositions(stepSeq, pkg);
                 }
             }
-            // Eagerly create Group_* roots so the subassembly hierarchy is
+            // Eagerly create Group_* roots so the partGroup hierarchy is
             // in place before any external subscriber reacts to
             // SpawnerPartsReady. See the detailed comment in the async path
             // below (same rationale applies in editor-Play mode — the sync
@@ -732,7 +732,7 @@ namespace OSE.UI.Root
             // a script recompile would show no carriages until the user
             // stopped and played again).
             if (_currentPackage != null)
-                EnsureSubassemblyRoots(_currentPackage, step: null);
+                EnsurePartGroupRoots(_currentPackage, step: null);
             RuntimeEventBus.Publish(new SpawnerPartsReady());
 #else
             _ = SpawnPackagePartsAsync(_spawnCts.Token);
@@ -761,10 +761,10 @@ namespace OSE.UI.Root
             // consistent hierarchy regardless of who fires first. Uses
             // null step → roots created with grab disabled (safe default);
             // the active step's ApplyStepAwarePositions will re-run
-            // EnsureSubassemblyRoots with the real step and enable grab
+            // EnsurePartGroupRoots with the real step and enable grab
             // where appropriate.
             if (_currentPackage != null)
-                EnsureSubassemblyRoots(_currentPackage, step: null);
+                EnsurePartGroupRoots(_currentPackage, step: null);
 
             RuntimeEventBus.Publish(new SpawnerPartsReady());
         }
@@ -1000,7 +1000,7 @@ namespace OSE.UI.Root
 
         /// <summary>
         /// Public entry for runtime callers (step activation, reveal pass) to
-        /// refresh the subassembly root hierarchy. Creates/destroys Group_*
+        /// refresh the partGroup root hierarchy. Creates/destroys Group_*
         /// roots, reparents visible members, nests aggregates. Roots stay at
         /// PreviewRoot origin + identity rotation — the baked poses on
         /// placements are PreviewRoot-space, so roots must NOT have a
@@ -1008,28 +1008,28 @@ namespace OSE.UI.Root
         /// orientation is an editor-gizmo authoring concept; at runtime the
         /// poses already encode whatever the author intended.
         /// </summary>
-        public void SyncSubassemblyHierarchy(MachinePackageDefinition pkg, StepDefinition currentStep)
+        public void SyncPartGroupHierarchy(MachinePackageDefinition pkg, StepDefinition currentStep)
         {
-            EnsureSubassemblyRoots(pkg, currentStep);
+            EnsurePartGroupRoots(pkg, currentStep);
         }
 
         /// <summary>
-        /// Returns the persistent Group_* root GameObject for a subassembly,
+        /// Returns the persistent Group_* root GameObject for a partGroup,
         /// or null if none exists (no visible members at the current step).
         /// Other systems — notably AnimationCueCoordinator — target this root
         /// so per-group animations play on the same hierarchy the user sees
         /// and grabs, rather than creating a parallel temporary parent.
         /// </summary>
-        public GameObject GetSubassemblyRoot(string subassemblyId)
+        public GameObject GetPartGroupRoot(string partGroupId)
         {
-            if (string.IsNullOrEmpty(subassemblyId)) return null;
-            return _subassemblyRoots.TryGetValue(subassemblyId, out var go) ? go : null;
+            if (string.IsNullOrEmpty(partGroupId)) return null;
+            return _partGroupRoots.TryGetValue(partGroupId, out var go) ? go : null;
         }
 
-        // ── Phase-A2 parity: subassembly root GO lifecycle ────────────────────
+        // ── Phase-A2 parity: partGroup root GO lifecycle ────────────────────
         //
-        // Matches TTAW.PackageLoad.cs EnsureAllSubassemblyRoots. For every
-        // subassembly with at least one visible member, we create a "Group_*"
+        // Matches TTAW.PackageLoad.cs EnsureAllPartGroupRoots. For every
+        // partGroup with at least one visible member, we create a "Group_*"
         // GameObject under PreviewRoot (at origin, identity rotation),
         // reparent the member parts under it, nest aggregate→child groups,
         // and apply the current step's workingOrientation to the matching
@@ -1041,19 +1041,19 @@ namespace OSE.UI.Root
         // geometrically. The working-orientation rotation is the ONLY thing
         // that sets a non-identity transform on the root, and that naturally
         // rotates all members via Unity parenting.
-        private void EnsureSubassemblyRoots(MachinePackageDefinition pkg, StepDefinition step)
+        private void EnsurePartGroupRoots(MachinePackageDefinition pkg, StepDefinition step)
         {
             var previewRoot = _setup?.PreviewRoot;
             if (previewRoot == null || pkg == null)
             {
-                DestroyAllSubassemblyRoots();
+                DestroyAllPartGroupRoots();
                 return;
             }
 
-            var allSubs = pkg.GetSubassemblies();
+            var allSubs = pkg.GetPartGroups();
             if (allSubs == null || allSubs.Length == 0)
             {
-                DestroyAllSubassemblyRoots();
+                DestroyAllPartGroupRoots();
                 return;
             }
 
@@ -1068,7 +1068,7 @@ namespace OSE.UI.Root
 
             var neededIds = new HashSet<string>(System.StringComparer.Ordinal);
 
-            // Pass 1 — create a root per subassembly with any visible member.
+            // Pass 1 — create a root per partGroup with any visible member.
             foreach (var sub in allSubs)
             {
                 if (sub == null || string.IsNullOrEmpty(sub.id)) continue;
@@ -1080,12 +1080,12 @@ namespace OSE.UI.Root
                         if (!string.IsNullOrEmpty(pid) && visiblePartIds.Contains(pid))
                         { hasVisibleMember = true; break; }
                 }
-                if (!hasVisibleMember && sub.isAggregate && sub.memberSubassemblyIds != null)
+                if (!hasVisibleMember && sub.isAggregate && sub.memberPartGroupIds != null)
                 {
-                    foreach (var childId in sub.memberSubassemblyIds)
+                    foreach (var childId in sub.memberPartGroupIds)
                     {
                         if (string.IsNullOrEmpty(childId)) continue;
-                        if (!pkg.TryGetSubassembly(childId, out var childSub) || childSub?.partIds == null) continue;
+                        if (!pkg.TryGetPartGroup(childId, out var childSub) || childSub?.partIds == null) continue;
                         foreach (var pid in childSub.partIds)
                             if (!string.IsNullOrEmpty(pid) && visiblePartIds.Contains(pid))
                             { hasVisibleMember = true; break; }
@@ -1097,11 +1097,11 @@ namespace OSE.UI.Root
                 neededIds.Add(sub.id);
 
                 bool freshRoot = false;
-                if (!_subassemblyRoots.TryGetValue(sub.id, out var rootGO) || rootGO == null)
+                if (!_partGroupRoots.TryGetValue(sub.id, out var rootGO) || rootGO == null)
                 {
                     // Protective adopt: if an orphan Group_* with this exact
                     // name already lives under PreviewRoot (leftover from a
-                    // domain reload that wiped _subassemblyRoots), adopt it
+                    // domain reload that wiped _partGroupRoots), adopt it
                     // into the dict instead of creating a duplicate. Without
                     // this, the dict-miss path below would instantiate a
                     // new GO beside the orphan and the user sees two copies.
@@ -1110,13 +1110,13 @@ namespace OSE.UI.Root
                     if (existing != null)
                     {
                         rootGO = existing.gameObject;
-                        _subassemblyRoots[sub.id] = rootGO;
+                        _partGroupRoots[sub.id] = rootGO;
                     }
                     else
                     {
                         rootGO = new GameObject(expectedName);
                         rootGO.transform.SetParent(previewRoot, false);
-                        _subassemblyRoots[sub.id] = rootGO;
+                        _partGroupRoots[sub.id] = rootGO;
                         freshRoot = true;
                     }
                 }
@@ -1125,12 +1125,12 @@ namespace OSE.UI.Root
                 rootGO.transform.localScale    = Vector3.one;
 
                 // Group root grab is only enabled when the current step's
-                // task IS this subassembly (requiredSubassemblyId match, or a
-                // target's associatedSubassemblyId match). Otherwise the group
+                // task IS this partGroup (requiredPartGroupId match, or a
+                // target's associatedPartGroupId match). Otherwise the group
                 // is scene context — no-task — and must not be grabbable.
                 // This prevents the user from dragging a past-placed group
                 // like the carriage frame around by grabbing the root.
-                bool groupIsTaskTarget = StepTargetsSubassembly(pkg, step, sub.id);
+                bool groupIsTaskTarget = StepTargetsPartGroup(pkg, step, sub.id);
                 if (freshRoot && Application.isPlaying && _xrGrabSetup != null)
                     EnsureGroupRootCollider(rootGO);
                 if (Application.isPlaying && _xrGrabSetup != null)
@@ -1142,7 +1142,7 @@ namespace OSE.UI.Root
                 }
 
                 // Reparent visible members (non-aggregates only — aggregates own
-                // parts indirectly through child subassemblies).
+                // parts indirectly through child partGroups).
                 if (!sub.isAggregate && sub.partIds != null)
                 {
                     foreach (var pid in sub.partIds)
@@ -1166,13 +1166,13 @@ namespace OSE.UI.Root
             // Pass 2 — nest child group roots under aggregate parent roots.
             foreach (var sub in allSubs)
             {
-                if (sub == null || !sub.isAggregate || sub.memberSubassemblyIds == null) continue;
-                if (!_subassemblyRoots.TryGetValue(sub.id, out var parentGO) || parentGO == null) continue;
+                if (sub == null || !sub.isAggregate || sub.memberPartGroupIds == null) continue;
+                if (!_partGroupRoots.TryGetValue(sub.id, out var parentGO) || parentGO == null) continue;
 
-                foreach (var childId in sub.memberSubassemblyIds)
+                foreach (var childId in sub.memberPartGroupIds)
                 {
                     if (string.IsNullOrEmpty(childId)) continue;
-                    if (!_subassemblyRoots.TryGetValue(childId, out var childGO) || childGO == null) continue;
+                    if (!_partGroupRoots.TryGetValue(childId, out var childGO) || childGO == null) continue;
                     if (childGO.transform.parent != parentGO.transform)
                         childGO.transform.SetParent(parentGO.transform, worldPositionStays: true);
                 }
@@ -1180,7 +1180,7 @@ namespace OSE.UI.Root
 
             // Pass 3 — destroy roots no longer needed; move orphaned members back under PreviewRoot.
             List<string> toRemove = null;
-            foreach (var kv in _subassemblyRoots)
+            foreach (var kv in _partGroupRoots)
                 if (!neededIds.Contains(kv.Key))
                     (toRemove ??= new List<string>()).Add(kv.Key);
 
@@ -1188,8 +1188,8 @@ namespace OSE.UI.Root
             {
                 foreach (var id in toRemove)
                 {
-                    if (!_subassemblyRoots.TryGetValue(id, out var go) || go == null)
-                    { _subassemblyRoots.Remove(id); continue; }
+                    if (!_partGroupRoots.TryGetValue(id, out var go) || go == null)
+                    { _partGroupRoots.Remove(id); continue; }
 
                     for (int i = go.transform.childCount - 1; i >= 0; i--)
                     {
@@ -1201,21 +1201,21 @@ namespace OSE.UI.Root
                             _xrGrabSetup?.SetGrabEnabled(child.gameObject, true);
                     }
                     SafeDestroy(go);
-                    _subassemblyRoots.Remove(id);
+                    _partGroupRoots.Remove(id);
                 }
             }
         }
 
-        private static bool StepTargetsSubassembly(MachinePackageDefinition pkg, StepDefinition step, string subId)
+        private static bool StepTargetsPartGroup(MachinePackageDefinition pkg, StepDefinition step, string subId)
         {
             if (step == null || string.IsNullOrEmpty(subId)) return false;
-            if (string.Equals(step.requiredSubassemblyId, subId, System.StringComparison.Ordinal)) return true;
+            if (string.Equals(step.requiredPartGroupId, subId, System.StringComparison.Ordinal)) return true;
             if (pkg != null && step.targetIds != null)
             {
                 foreach (var tid in step.targetIds)
                 {
                     if (string.IsNullOrWhiteSpace(tid) || !pkg.TryGetTarget(tid, out var tgt) || tgt == null) continue;
-                    if (string.Equals(tgt.associatedSubassemblyId, subId, System.StringComparison.Ordinal)) return true;
+                    if (string.Equals(tgt.associatedPartGroupId, subId, System.StringComparison.Ordinal)) return true;
                 }
             }
             return false;
@@ -1233,12 +1233,12 @@ namespace OSE.UI.Root
             sc.isTrigger = true;
         }
 
-        private void DestroyAllSubassemblyRoots()
+        private void DestroyAllPartGroupRoots()
         {
             var previewRoot = _setup?.PreviewRoot;
 
             // Destroy the roots we're tracking in the dict.
-            foreach (var kv in _subassemblyRoots)
+            foreach (var kv in _partGroupRoots)
             {
                 var go = kv.Value;
                 if (go == null) continue;
@@ -1254,17 +1254,17 @@ namespace OSE.UI.Root
                 }
                 SafeDestroy(go);
             }
-            _subassemblyRoots.Clear();
+            _partGroupRoots.Clear();
 
             // Sweep any orphan Group_* / _AnimCue_* GOs that are NOT in the
-            // dict — domain reload wipes _subassemblyRoots (and the
+            // dict — domain reload wipes _partGroupRoots (and the
             // AnimationCueCoordinator's _fabricationGroupRoot), leaving the
             // scene GOs dangling. Without this sweep they survive into the
-            // first play/spawn cycle and EnsureSubassemblyRoots creates
+            // first play/spawn cycle and EnsurePartGroupRoots creates
             // duplicates alongside them. Belt-and-suspenders: the OnEnable
             // rehydration does the same sweep, but that only covers the
             // enable path. This covers every call site (ClearSpawnedParts,
-            // EnsureSubassemblyRoots, HandlePackageChanged).
+            // EnsurePartGroupRoots, HandlePackageChanged).
             if (previewRoot != null)
             {
                 for (int i = previewRoot.childCount - 1; i >= 0; i--)
@@ -1331,7 +1331,7 @@ namespace OSE.UI.Root
             }
 #endif
             _ghostManager?.Clear();
-            DestroyAllSubassemblyRoots();
+            DestroyAllPartGroupRoots();
             foreach (var go in _spawnedParts)
             {
                 if (go == null) continue;

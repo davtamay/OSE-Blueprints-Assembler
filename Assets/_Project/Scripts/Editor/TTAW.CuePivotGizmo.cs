@@ -9,7 +9,7 @@
 //     offset back into the cue.
 //
 // Default-pivot source:
-//   Subassembly hosts → PivotCentroidResolver.ComputeBodyCentroidLocal
+//   PartGroup hosts → PivotCentroidResolver.ComputeBodyCentroidLocal
 //     (the SAME function the runtime uses; gizmo parity is guaranteed
 //     by construction). When the resolver returns null (no body members
 //     yet at this step — e.g. the first step introducing the group),
@@ -41,24 +41,24 @@ namespace OSE.Editor
             int cueOrdinal = 0;
 
             // Step-scoped cues (legacy payload) — host is whatever the cue
-            // itself points at via targetSubassemblyId / targetPartIds.
+            // itself points at via targetPartGroupId / targetPartIds.
             if (step.animationCues?.cues != null)
                 foreach (var cue in step.animationCues.cues)
-                    TryDrawPivotGizmo(cue, step, hostSubassemblyId: null, hostPartId: null, ref cueOrdinal);
+                    TryDrawPivotGizmo(cue, step, hostPartGroupId: null, hostPartId: null, ref cueOrdinal);
 
-            // Host-owned cues: the owning subassembly/part/tool IS the host.
-            // The cue entry's targetSubassemblyId / targetPartIds may be
+            // Host-owned cues: the owning partGroup/part/tool IS the host.
+            // The cue entry's targetPartGroupId / targetPartIds may be
             // empty (common — authors rely on ownership) so we pass the
             // owner id down explicitly; the runtime does the same thing
-            // via ResolveHostedSubassemblyContext.
-            if (_pkg.subassemblies != null)
+            // via ResolveHostedPartGroupContext.
+            if (_pkg.partGroups != null)
             {
-                foreach (var sub in _pkg.subassemblies)
+                foreach (var sub in _pkg.partGroups)
                 {
                     if (sub?.animationCues == null) continue;
                     foreach (var cue in sub.animationCues)
                         if (CueAppliesToStep(cue, step))
-                            TryDrawPivotGizmo(cue, step, hostSubassemblyId: sub.id, hostPartId: null, ref cueOrdinal);
+                            TryDrawPivotGizmo(cue, step, hostPartGroupId: sub.id, hostPartId: null, ref cueOrdinal);
                 }
             }
             if (_pkg.parts != null)
@@ -68,7 +68,7 @@ namespace OSE.Editor
                     if (part?.animationCues == null) continue;
                     foreach (var cue in part.animationCues)
                         if (CueAppliesToStep(cue, step))
-                            TryDrawPivotGizmo(cue, step, hostSubassemblyId: null, hostPartId: part.id, ref cueOrdinal);
+                            TryDrawPivotGizmo(cue, step, hostPartGroupId: null, hostPartId: part.id, ref cueOrdinal);
                 }
             }
             if (_pkg.tools != null)
@@ -78,7 +78,7 @@ namespace OSE.Editor
                     if (tool?.animationCues == null) continue;
                     foreach (var cue in tool.animationCues)
                         if (CueAppliesToStep(cue, step))
-                            TryDrawPivotGizmo(cue, step, hostSubassemblyId: null, hostPartId: null, ref cueOrdinal);
+                            TryDrawPivotGizmo(cue, step, hostPartGroupId: null, hostPartId: null, ref cueOrdinal);
                 }
             }
         }
@@ -93,12 +93,12 @@ namespace OSE.Editor
         }
 
         private void TryDrawPivotGizmo(AnimationCueEntry cue, StepDefinition step,
-            string hostSubassemblyId, string hostPartId, ref int cueOrdinal)
+            string hostPartGroupId, string hostPartId, ref int cueOrdinal)
         {
             cueOrdinal++;
             if (cue == null) return;
             if (!IsPivotCapable(cue.type)) return;
-            if (!TryResolveCueHostRoot(cue, step, hostSubassemblyId, hostPartId,
+            if (!TryResolveCueHostRoot(cue, step, hostPartGroupId, hostPartId,
                     out Transform hostRoot, out Vector3? defaultPivotLocal))
                 return;
 
@@ -178,25 +178,25 @@ namespace OSE.Editor
         private static bool IsPivotCapable(string cueType)
         {
             return string.Equals(cueType, "poseTransition", StringComparison.Ordinal)
-                || string.Equals(cueType, "orientSubassembly", StringComparison.Ordinal)
+                || string.Equals(cueType, "orientPartGroup", StringComparison.Ordinal)
                 || string.Equals(cueType, "particle", StringComparison.Ordinal)
                 || string.Equals(cueType, "transform", StringComparison.Ordinal);
         }
 
         /// <summary>
         /// Resolves the host transform + default pivot (in host-local space)
-        /// for a cue. Subassembly-owned cues often leave
-        /// <c>targetSubassemblyId</c> empty (the host IS the owning
-        /// subassembly); this overload accepts explicit host-owner ids so
+        /// for a cue. PartGroup-owned cues often leave
+        /// <c>targetPartGroupId</c> empty (the host IS the owning
+        /// partGroup); this overload accepts explicit host-owner ids so
         /// the gizmo resolves hosts the same way the runtime does.
-        /// <para>Subassembly host → centroid from
+        /// <para>PartGroup host → centroid from
         /// <see cref="PivotCentroidResolver"/> (single source of truth). Returns null
         /// for <paramref name="defaultPivotLocal"/> when the resolver has no
         /// body members yet (first step introducing the group).</para>
         /// <para>Part host → mesh origin (zero).</para>
         /// </summary>
         private bool TryResolveCueHostRoot(AnimationCueEntry cue, StepDefinition step,
-                                           string hostSubassemblyId,
+                                           string hostPartGroupId,
                                            string hostPartId,
                                            out Transform hostRoot,
                                            out Vector3? defaultPivotLocal)
@@ -207,13 +207,13 @@ namespace OSE.Editor
 
             // Prefer explicit owner context (host-owned cue) over the
             // cue's own target fields, which may be empty.
-            string subId = !string.IsNullOrEmpty(hostSubassemblyId)
-                ? hostSubassemblyId
-                : cue.targetSubassemblyId;
+            string subId = !string.IsNullOrEmpty(hostPartGroupId)
+                ? hostPartGroupId
+                : cue.targetPartGroupId;
 
             if (!string.IsNullOrEmpty(subId)
-                && _subassemblyRootGOs != null
-                && _subassemblyRootGOs.TryGetValue(subId, out var groupGO)
+                && _partGroupRootGOs != null
+                && _partGroupRootGOs.TryGetValue(subId, out var groupGO)
                 && groupGO != null)
             {
                 hostRoot = groupGO.transform;

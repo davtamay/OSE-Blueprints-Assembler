@@ -139,16 +139,16 @@
       "name": "Power Cube Assembly",
       "description": "Complete Power Cube assembly from cut steel tubing through module installation and commissioning.",
       "machineId": "power_cube_frame",
-      "subassemblyIds": [
-        "subassembly_base_frame",
-        "subassembly_vertical_posts",
-        "subassembly_top_ring",
-        "subassembly_engine_mount",
-        "subassembly_hydraulic_drive",
-        "subassembly_hydraulic_plumbing",
-        "subassembly_fuel_system",
-        "subassembly_electrical",
-        "subassembly_commissioning"
+      "partGroupIds": [
+        "partGroup_base_frame",
+        "partGroup_vertical_posts",
+        "partGroup_top_ring",
+        "partGroup_engine_mount",
+        "partGroup_hydraulic_drive",
+        "partGroup_hydraulic_plumbing",
+        "partGroup_fuel_system",
+        "partGroup_electrical",
+        "partGroup_commissioning"
       ],
       "stepIds": [
         "step_measure_base_long_tubes",
@@ -198,9 +198,9 @@
       "learningFocus": "Steel cutting, layout, tack-welding, squareness checks, full welding, engine and pump mounting, hydraulic plumbing, torque specifications, fuel system installation, electrical wiring, and first-start commissioning."
     }
   ],
-  "subassemblies": [
+  "partGroups": [
     {
-      "id": "subassembly_base_frame",
+      "id": "partGroup_base_frame",
       "name": "Base Frame Rectangle",
       "assemblyId": "assembly_frame",
       "description": "Four tubes forming the flat bottom rectangle of the Power Cube frame.",
@@ -223,7 +223,7 @@
       "milestoneMessage": "Base frame rectangle is welded and square. Ready for vertical posts!"
     },
     {
-      "id": "subassembly_vertical_posts",
+      "id": "partGroup_vertical_posts",
       "name": "Vertical Corner Posts",
       "assemblyId": "assembly_frame",
       "description": "Four vertical tubes at each corner of the base rectangle.",
@@ -241,7 +241,7 @@
       "milestoneMessage": "All four vertical posts are welded to the base. Almost there!"
     },
     {
-      "id": "subassembly_top_ring",
+      "id": "partGroup_top_ring",
       "name": "Top Ring",
       "assemblyId": "assembly_frame",
       "description": "Four tubes forming the top rectangle, completing the cube frame.",
@@ -259,7 +259,7 @@
       "milestoneMessage": "The Power Cube frame is complete! All 12 tubes are welded into a rigid cube."
     },
     {
-      "id": "subassembly_engine_mount",
+      "id": "partGroup_engine_mount",
       "name": "Engine Mounting",
       "assemblyId": "assembly_frame",
       "description": "Steel mounting plate welded to frame top and engine bolted to it.",
@@ -277,7 +277,7 @@
       "milestoneMessage": "Engine is mounted and torqued to spec. Ready for the hydraulic drive!"
     },
     {
-      "id": "subassembly_hydraulic_drive",
+      "id": "partGroup_hydraulic_drive",
       "name": "Hydraulic Pump & Coupling",
       "assemblyId": "assembly_frame",
       "description": "Spider coupling connects engine output shaft to a 2-section hydraulic gear pump.",
@@ -293,7 +293,7 @@
       "milestoneMessage": "Hydraulic pump is coupled to the engine and torqued. Time to plumb the hydraulics!"
     },
     {
-      "id": "subassembly_hydraulic_plumbing",
+      "id": "partGroup_hydraulic_plumbing",
       "name": "Reservoir, Hoses & Cooler",
       "assemblyId": "assembly_frame",
       "description": "Hydraulic oil reservoir, pressure and return hoses, and oil cooler complete the hydraulic circuit.",
@@ -314,7 +314,7 @@
       "milestoneMessage": "Hydraulic circuit is complete! The Power Cube is ready for tool connections."
     },
     {
-      "id": "subassembly_fuel_system",
+      "id": "partGroup_fuel_system",
       "name": "Fuel System",
       "assemblyId": "assembly_frame",
       "description": "Fuel tank, fuel line, and shutoff valve â€” delivers gasoline from tank to engine carburetor.",
@@ -332,7 +332,7 @@
       "milestoneMessage": "Fuel system is installed and leak-free. Ready for electrical wiring!"
     },
     {
-      "id": "subassembly_electrical",
+      "id": "partGroup_electrical",
       "name": "Electrical Wiring Harness",
       "assemblyId": "assembly_frame",
       "description": "Battery, key switch, starter wiring, choke and throttle cables â€” everything needed to start and control the engine.",
@@ -355,7 +355,7 @@
       "milestoneMessage": "Wiring harness complete! The engine can now be started and controlled."
     },
     {
-      "id": "subassembly_commissioning",
+      "id": "partGroup_commissioning",
       "name": "Testing & Commissioning",
       "assemblyId": "assembly_frame",
       "description": "Fill fluids, install gauges, first start, pressure test, and final sign-off.",
@@ -7733,9 +7733,9 @@
         }
       }
     ],
-    "subassemblyPlacements": [],
-    "constrainedSubassemblyFitPlacements": [],
-    "completedSubassemblyParkingPlacements": [],
-    "integratedSubassemblyPlacements": []
+    "partGroupPlacements": [],
+    "constrainedPartGroupFitPlacements": [],
+    "completedPartGroupParkingPlacements": [],
+    "integratedPartGroupPlacements": []
   }
 }

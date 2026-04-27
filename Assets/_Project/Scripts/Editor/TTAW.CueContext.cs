@@ -6,7 +6,7 @@
 // the panel inserts AnimationCueEntry rows pre-scoped to this target.
 //
 // This file used to host a flat list with a single "+ Add cue" button and
-// Rotate/Shake-only menu (for subassemblies). That UX has been replaced by the
+// Rotate/Shake-only menu (for partGroups). That UX has been replaced by the
 // timing-panel strip so parts, tools, and groups share one authoring model.
 // Particle-effect authoring will plug into the same strip later — see the plan.
 
@@ -52,15 +52,15 @@ namespace OSE.Editor
                 title: $"ANIMATION & EFFECT CUES FOR  {toolName}");
         }
 
-        private void DrawCuesForSubassembly(StepDefinition step, string subassemblyId)
+        private void DrawCuesForPartGroup(StepDefinition step, string partGroupId)
         {
-            if (step == null || string.IsNullOrEmpty(subassemblyId)) return;
+            if (step == null || string.IsNullOrEmpty(partGroupId)) return;
 
-            string subName = subassemblyId;
-            if (_pkg != null && _pkg.TryGetSubassembly(subassemblyId, out var sub) && sub != null)
+            string subName = partGroupId;
+            if (_pkg != null && _pkg.TryGetPartGroup(partGroupId, out var sub) && sub != null)
                 subName = sub.GetDisplayName();
 
-            DrawTimingPanelsStrip(step, CueScope.Subassembly, subassemblyId,
+            DrawTimingPanelsStrip(step, CueScope.PartGroup, partGroupId,
                 title: $"ANIMATION & EFFECT CUES FOR  {subName}");
         }
 

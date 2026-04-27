@@ -93,7 +93,7 @@ The content pipeline should follow this sequence:
 2. gather and organize source material
 3. define assembly teaching scope
 4. extract part and tool lists
-5. define subassemblies
+5. define partGroups
 6. create or acquire assets
 7. author metadata
 8. author step flow
@@ -119,7 +119,7 @@ Always choose the smallest meaningful scope first.
 For early work, that means:
 
 - tutorial micro-build first
-- then one authentic OSE-aligned subassembly
+- then one authentic OSE-aligned partGroup
 - not a full machine
 - not a giant system
 - not a house-scale workflow
@@ -142,14 +142,14 @@ If those are unclear, the scope is still too vague.
 
 Before authoring later integration steps, answer this directly:
 
-- Does the learner ever move a previously completed subassembly as one rigid unit?
+- Does the learner ever move a previously completed partGroup as one rigid unit?
 
 If yes:
 
 - author the fabrication slice first
-- then author the stacking/integration slice using `requiredSubassemblyId`
-- define a subassembly reference frame in `previewConfig.subassemblyPlacements`
-- define `integratedSubassemblyPlacements` when the final display should not remain a literal panel shell
+- then author the stacking/integration slice using `requiredPartGroupId`
+- define a partGroup reference frame in `previewConfig.partGroupPlacements`
+- define `integratedPartGroupPlacements` when the final display should not remain a literal panel shell
 
 Do not solve this by:
 
@@ -177,7 +177,7 @@ Possible sources:
 
 ## 5.2 Source Package Folder
 
-Each machine/subassembly should have a source folder or research record containing:
+Each machine/partGroup should have a source folder or research record containing:
 
 - reference images
 - blueprint captures
@@ -263,13 +263,13 @@ Part identity matters for instruction and validation.
 
 ---
 
-# 8. Subassembly Definition
+# 8. PartGroup Definition
 
-Before step authoring, group the content into meaningful subassemblies.
+Before step authoring, group the content into meaningful partGroups.
 
-## 8.1 Why Subassemblies Matter
+## 8.1 Why PartGroups Matter
 
-Subassemblies help:
+PartGroups help:
 
 - reduce cognitive load
 - create milestones
@@ -277,9 +277,9 @@ Subassemblies help:
 - support scalable machine growth
 - create clearer aha moments
 
-## 8.2 Good Subassembly Characteristics
+## 8.2 Good PartGroup Characteristics
 
-A good subassembly is:
+A good partGroup is:
 
 - structurally meaningful
 - teachable in a short sequence
@@ -288,7 +288,7 @@ A good subassembly is:
 
 ## 8.3 Rule
 
-Do not define subassemblies purely by file organization.
+Do not define partGroups purely by file organization.
 
 Define them by instructional and structural meaning.
 
@@ -1084,7 +1084,7 @@ A machine package should include structured data such as:
 
 - machine manifest
 - assemblies
-- subassemblies
+- partGroups
 - parts
 - tools
 - steps
@@ -1174,8 +1174,8 @@ Do not assume the first authored version is the best teaching version.
 
 For the first authentic slice, the recommended target remains:
 
-- a small **Power Cube-aligned subassembly**
-- likely a **frame corner or bracket-style subassembly**
+- a small **Power Cube-aligned partGroup**
+- likely a **frame corner or bracket-style partGroup**
 - modest part count
 - clear bolts / brackets / plate relationships
 - simple tool story
@@ -1202,7 +1202,7 @@ Owns:
 Owns:
 
 - educational framing
-- subassembly definition
+- partGroup definition
 - step design
 - hint design
 
@@ -1253,7 +1253,7 @@ Use this order:
 2. gather sources
 3. write educational goals
 4. extract parts and tools
-5. define subassemblies
+5. define partGroups
 6. author rough content schema
 7. create rough placeholder assets
 8. author step flow
@@ -1302,7 +1302,7 @@ The correct strategy is:
 
 - start from scope and learning goals
 - organize source material honestly
-- define parts, tools, subassemblies, and steps clearly
+- define parts, tools, partGroups, and steps clearly
 - keep assets separate from instructional logic
 - author metadata, validation, hints, and effects deliberately
 - package content in a reusable data-driven way

@@ -89,7 +89,7 @@ Examples:
 - StepHintRequested
 - StepHintDisplayed
 - StepCompleted
-- SubAssemblyCompleted
+- PartGroupCompleted
 - AssemblyCompleted
 
 ---

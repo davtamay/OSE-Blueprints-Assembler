@@ -1,24 +1,24 @@
-// TTAW.Subassembly.cs — Subassembly authoring section (MVP).
+// TTAW.PartGroup.cs — PartGroup authoring section (MVP).
 // ──────────────────────────────────────────────────────────────────────────────
-// Phase 6 of the UX redesign. Surfaces the existing SubassemblyDefinition data
-// (already in MachinePackageDefinition.subassemblies[]) as a first-class
-// section in the canvas so authors can SEE what subassemblies the current step
-// belongs to, which parts are members of which subassemblies, and how many
-// subassemblies the package has overall.
+// Phase 6 of the UX redesign. Surfaces the existing PartGroupDefinition data
+// (already in MachinePackageDefinition.partGroups[]) as a first-class
+// section in the canvas so authors can SEE what partGroups the current step
+// belongs to, which parts are members of which partGroups, and how many
+// partGroups the package has overall.
 //
 // MVP scope (per the user's "we can build it up" sign-off):
-//   • Per-step section showing the active subassembly + its part membership
-//   • All-subassemblies foldout listing every subassembly in the package
-//   • "Copy stub JSON to clipboard" button on each subassembly so the author
+//   • Per-step section showing the active partGroup + its part membership
+//   • All-partGroups foldout listing every partGroup in the package
+//   • "Copy stub JSON to clipboard" button on each partGroup so the author
 //     has a starting template for hand-editing assembly files
-//   • "New subassembly stub" button — generates a fresh stub keyed to the
+//   • "New partGroup stub" button — generates a fresh stub keyed to the
 //     current step's assemblyId, copied straight to the clipboard
 //
 // NOT in this MVP:
-//   • Direct JSON writes (subassemblies live in 17 split-layout files for
+//   • Direct JSON writes (partGroups live in 17 split-layout files for
 //     d3d_v18_10; serialising back is a Phase-7 job)
-//   • Drag-drop part assignment, inline rename, member-subassembly editing
-//   • Aggregate / member-subassembly hierarchy editing (still authored by hand)
+//   • Drag-drop part assignment, inline rename, member-partGroup editing
+//   • Aggregate / member-partGroup hierarchy editing (still authored by hand)
 //
 // Part of the ToolTargetAuthoringWindow partial class split.
 // See ToolTargetAuthoringWindow.cs for fields, constants, and nested types.
@@ -37,12 +37,12 @@ namespace OSE.Editor
     {
         // ── State ─────────────────────────────────────────────────────────────
 
-        private bool _subassemblyAllFoldout;
-        private bool _subassemblyShowAdvanced;
-        private readonly HashSet<string> _subassemblyOpenIds = new(StringComparer.Ordinal);
+        private bool _partGroupAllFoldout;
+        private bool _partGroupShowAdvanced;
+        private readonly HashSet<string> _partGroupOpenIds = new(StringComparer.Ordinal);
 
         // Section accent — same blue as the "FROM THIS STEP'S GROUP" bucket in
-        // TTAW.Visibility.cs so the eye learns "blue = subassembly".
+        // TTAW.Visibility.cs so the eye learns "blue = partGroup".
         private static readonly Color SubAccent = new(0.20f, 0.62f, 0.95f);
 
         // ── Section drawer (called from DrawUnifiedList) ──────────────────────
@@ -51,21 +51,21 @@ namespace OSE.Editor
         // labels, no walls of help text. The author can read the structure
         // (this step is part of X, X has N parts, N steps) at a glance.
 
-        private void DrawSubassemblySection(StepDefinition step)
+        private void DrawPartGroupSection(StepDefinition step)
         {
             if (_pkg == null) return;
 
-            var allSubs = _pkg.GetSubassemblies();
+            var allSubs = _pkg.GetPartGroups();
             int count   = allSubs?.Length ?? 0;
 
-            // Resolve the subassembly the current step belongs to. The data
-            // model has two fields for historical reasons (subassemblyId is the
-            // author-facing label; requiredSubassemblyId is the runtime gate)
+            // Resolve the partGroup the current step belongs to. The data
+            // model has two fields for historical reasons (partGroupId is the
+            // author-facing label; requiredPartGroupId is the runtime gate)
             // — either one is enough to consider the step "scoped".
-            string activeId = !string.IsNullOrWhiteSpace(step?.subassemblyId)
-                ? step.subassemblyId
-                : step?.requiredSubassemblyId;
-            SubassemblyDefinition active = null;
+            string activeId = !string.IsNullOrWhiteSpace(step?.partGroupId)
+                ? step.partGroupId
+                : step?.requiredPartGroupId;
+            PartGroupDefinition active = null;
             if (!string.IsNullOrEmpty(activeId))
             {
                 for (int i = 0; i < allSubs.Length; i++)
@@ -79,7 +79,7 @@ namespace OSE.Editor
             EditorGUILayout.BeginHorizontal();
             var titleStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 11 };
             GUILayout.Label(new GUIContent("GROUPS",
-                "A subassembly is a small kit of parts (e.g. a carriage) that "
+                "A partGroup is a small kit of parts (e.g. a carriage) that "
                 + "you build as one unit and drop into the larger machine. Each "
                 + "step belongs to at most one group; the runtime treats every "
                 + "part in the group as one moving piece once the group is built."),
@@ -90,7 +90,7 @@ namespace OSE.Editor
 
             // ── "This step belongs to" card ──────────────────────────────────
             if (active != null)
-                DrawActiveSubassemblyCard(active, step);
+                DrawActivePartGroupCard(active, step);
             else
                 DrawStandaloneStepCard(step);
 
@@ -98,30 +98,30 @@ namespace OSE.Editor
             if (count > 0)
             {
                 EditorGUILayout.Space(3);
-                _subassemblyAllFoldout = EditorGUILayout.Foldout(
-                    _subassemblyAllFoldout,
+                _partGroupAllFoldout = EditorGUILayout.Foldout(
+                    _partGroupAllFoldout,
                     $"Browse all {count} group{(count == 1 ? "" : "s")}",
                     true);
-                if (_subassemblyAllFoldout)
-                    DrawSubassemblyBrowseList(allSubs, activeId);
+                if (_partGroupAllFoldout)
+                    DrawPartGroupBrowseList(allSubs, activeId);
             }
 
             // ── Advanced foldout (only when there's an active group) ─────────
             if (active != null)
             {
                 EditorGUILayout.Space(2);
-                _subassemblyShowAdvanced = EditorGUILayout.Foldout(
-                    _subassemblyShowAdvanced,
+                _partGroupShowAdvanced = EditorGUILayout.Foldout(
+                    _partGroupShowAdvanced,
                     "Advanced fields",
                     true);
-                if (_subassemblyShowAdvanced)
-                    DrawSubassemblyAdvancedFields(active);
+                if (_partGroupShowAdvanced)
+                    DrawPartGroupAdvancedFields(active);
             }
         }
 
         // ── Active group card — visual hero, no walls of text ────────────────
 
-        private void DrawActiveSubassemblyCard(SubassemblyDefinition sub, StepDefinition step)
+        private void DrawActivePartGroupCard(PartGroupDefinition sub, StepDefinition step)
         {
             int parts = sub.partIds?.Length ?? 0;
             int steps = sub.stepIds?.Length ?? 0;
@@ -163,7 +163,7 @@ namespace OSE.Editor
                     new GUIContent("Copy JSON",
                         "Copy this group's definition as a JSON template you can paste into another assembly file."),
                     EditorStyles.miniButton, GUILayout.Width(80)))
-                CopySubassemblyStubToClipboard(sub);
+                CopyPartGroupStubToClipboard(sub);
             EditorGUILayout.EndHorizontal();
 
             if (!string.IsNullOrEmpty(sub.description))
@@ -180,7 +180,7 @@ namespace OSE.Editor
             }
 
             // Phase 7e — inline editor for name, parts, steps
-            DrawSubassemblyInlineEditor(sub, step);
+            DrawPartGroupInlineEditor(sub, step);
 
             EditorGUILayout.EndVertical();
         }
@@ -204,25 +204,25 @@ namespace OSE.Editor
 
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             EditorGUILayout.BeginHorizontal();
-            // Direct-create: writes a new subassembly to the assembly file now.
+            // Direct-create: writes a new partGroup to the assembly file now.
             if (GUILayout.Button(
                     new GUIContent("+ Create group here",
-                        "Create a new subassembly in this step's assembly file, "
+                        "Create a new partGroup in this step's assembly file, "
                         + "assigned to this step. You can add parts and build steps "
                         + "inline afterwards."),
                     EditorStyles.miniButton, GUILayout.Width(140)))
-                CreateSubassemblyForStep(step);
+                CreatePartGroupForStep(step);
             GUILayout.FlexibleSpace();
             if (GUILayout.Button(
                     new GUIContent("Copy stub JSON",
-                        "Copy a fresh subassembly stub to the clipboard for hand-editing."),
+                        "Copy a fresh partGroup stub to the clipboard for hand-editing."),
                     EditorStyles.miniButton, GUILayout.Width(100)))
-                CopyNewSubassemblyStubToClipboard(step);
+                CopyNewPartGroupStubToClipboard(step);
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.EndVertical();
         }
 
-        // ── Inline editor for a subassembly's fields (name, partIds, stepIds) ─
+        // ── Inline editor for a partGroup's fields (name, partIds, stepIds) ─
 
         private int _subAddPartIdx;
         private int _subAddStepIdx;
@@ -233,7 +233,7 @@ namespace OSE.Editor
         [SerializeField] private bool _subPartsFoldout = true;
         [SerializeField] private bool _subStepsFoldout = true;
 
-        private void DrawSubassemblyInlineEditor(SubassemblyDefinition sub, StepDefinition step)
+        private void DrawPartGroupInlineEditor(PartGroupDefinition sub, StepDefinition step)
         {
             if (sub == null || _pkg == null) return;
 
@@ -245,7 +245,7 @@ namespace OSE.Editor
             if (EditorGUI.EndChangeCheck() && newName != sub.name)
             {
                 sub.name = newName;
-                _dirtySubassemblyIds.Add(sub.id);
+                _dirtyPartGroupIds.Add(sub.id);
             }
 
             // ── Description ───────────────────────────────────────────────────
@@ -254,7 +254,7 @@ namespace OSE.Editor
             if (EditorGUI.EndChangeCheck() && newDesc != sub.description)
             {
                 sub.description = string.IsNullOrWhiteSpace(newDesc) ? null : newDesc;
-                _dirtySubassemblyIds.Add(sub.id);
+                _dirtyPartGroupIds.Add(sub.id);
             }
 
             // ── Parts in this group — collapsible foldout ───────────────────
@@ -309,7 +309,7 @@ namespace OSE.Editor
                 var list = new List<string>(sub.partIds);
                 list.RemoveAt(removePartIdx);
                 sub.partIds = list.Count > 0 ? list.ToArray() : Array.Empty<string>();
-                _dirtySubassemblyIds.Add(sub.id);
+                _dirtyPartGroupIds.Add(sub.id);
             }
 
             // + Add part picker + Add from Selection + drop zone
@@ -336,7 +336,7 @@ namespace OSE.Editor
                     {
                         var list = new List<string>(sub.partIds ?? Array.Empty<string>()) { candidates[_subAddPartIdx] };
                         sub.partIds = list.ToArray();
-                        _dirtySubassemblyIds.Add(sub.id);
+                        _dirtyPartGroupIds.Add(sub.id);
                         _subAddPartIdx = 0;
                     }
                     EditorGUILayout.EndHorizontal();
@@ -366,7 +366,7 @@ namespace OSE.Editor
                     if (added > 0)
                     {
                         sub.partIds = currentSet.ToArray();
-                        _dirtySubassemblyIds.Add(sub.id);
+                        _dirtyPartGroupIds.Add(sub.id);
                         ShowNotification(new GUIContent($"Added {added} part(s) from selection"));
                     }
                     else
@@ -421,7 +421,7 @@ namespace OSE.Editor
                     if (added > 0)
                     {
                         sub.partIds = currentSet.ToArray();
-                        _dirtySubassemblyIds.Add(sub.id);
+                        _dirtyPartGroupIds.Add(sub.id);
                         ShowNotification(new GUIContent($"Added {added} part(s)"));
                     }
                     ev.Use();
@@ -463,7 +463,7 @@ namespace OSE.Editor
                 var list = new List<string>(sub.stepIds);
                 list.RemoveAt(removeStepIdx);
                 sub.stepIds = list.Count > 0 ? list.ToArray() : Array.Empty<string>();
-                _dirtySubassemblyIds.Add(sub.id);
+                _dirtyPartGroupIds.Add(sub.id);
             }
 
             // + Add step picker
@@ -497,7 +497,7 @@ namespace OSE.Editor
                     {
                         var list = new List<string>(sub.stepIds ?? Array.Empty<string>()) { candidates[_subAddStepIdx].id };
                         sub.stepIds = list.ToArray();
-                        _dirtySubassemblyIds.Add(sub.id);
+                        _dirtyPartGroupIds.Add(sub.id);
                         _subAddStepIdx = 0;
                     }
                     EditorGUILayout.EndHorizontal();
@@ -507,7 +507,7 @@ namespace OSE.Editor
 
         // ── Create ────────────────────────────────────────────────────────────
 
-        private void CreateSubassemblyForStep(StepDefinition step)
+        private void CreatePartGroupForStep(StepDefinition step)
         {
             if (step == null || _pkg == null || string.IsNullOrEmpty(_pkgId)) return;
 
@@ -519,10 +519,10 @@ namespace OSE.Editor
             // Ensure unique
             int suffix = 1;
             string candidate = subId;
-            while (_pkg.TryGetSubassembly(candidate, out _)) candidate = $"{subId}_{suffix++}";
+            while (_pkg.TryGetPartGroup(candidate, out _)) candidate = $"{subId}_{suffix++}";
             subId = candidate;
 
-            var newSub = new SubassemblyDefinition
+            var newSub = new PartGroupDefinition
             {
                 id         = subId,
                 name       = "New Group",
@@ -553,31 +553,31 @@ namespace OSE.Editor
 
             try
             {
-                PackageJsonUtils.InsertSubassembly(targetFile, newSub);
+                PackageJsonUtils.InsertPartGroup(targetFile, newSub);
             }
             catch (System.Exception ex)
             {
-                EditorUtility.DisplayDialog("Error", $"Failed to insert subassembly:\n{ex.Message}", "OK");
+                EditorUtility.DisplayDialog("Error", $"Failed to insert partGroup:\n{ex.Message}", "OK");
                 return;
             }
 
-            // Reload and wire the step to the new subassembly
+            // Reload and wire the step to the new partGroup
             LoadPkg(_pkgId);
-            // Set the step's subassemblyId to the newly created one so the UI
+            // Set the step's partGroupId to the newly created one so the UI
             // shows the active card immediately.
             var reloadedStep = FindStep(step.id);
-            if (reloadedStep != null && string.IsNullOrEmpty(reloadedStep.subassemblyId))
+            if (reloadedStep != null && string.IsNullOrEmpty(reloadedStep.partGroupId))
             {
-                reloadedStep.subassemblyId = subId;
+                reloadedStep.partGroupId = subId;
                 _dirtyStepIds.Add(reloadedStep.id);
             }
-            ShowNotification(new GUIContent($"Created subassembly '{subId}'"));
+            ShowNotification(new GUIContent($"Created partGroup '{subId}'"));
             Repaint();
         }
 
         // ── Browse list (compact rows, accent dot per group) ─────────────────
 
-        private void DrawSubassemblyBrowseList(SubassemblyDefinition[] allSubs, string activeId)
+        private void DrawPartGroupBrowseList(PartGroupDefinition[] allSubs, string activeId)
         {
             for (int i = 0; i < allSubs.Length; i++)
             {
@@ -599,7 +599,7 @@ namespace OSE.Editor
 
                 EditorGUI.DrawRect(new Rect(rowRect.x + 6f, rowRect.y + 7f, 5f, 5f), SubAccent);
 
-                bool open = _subassemblyOpenIds.Contains(sub.id);
+                bool open = _partGroupOpenIds.Contains(sub.id);
                 var nameStyle = new GUIStyle(EditorStyles.miniLabel)
                 {
                     fontStyle = isActive ? FontStyle.Bold : FontStyle.Normal,
@@ -608,8 +608,8 @@ namespace OSE.Editor
                 var nameRect = new Rect(rowRect.x + 18f, rowRect.y, rowRect.width - 110f, rowRect.height);
                 if (GUI.Button(nameRect, sub.GetDisplayName(), nameStyle))
                 {
-                    if (open) _subassemblyOpenIds.Remove(sub.id);
-                    else      _subassemblyOpenIds.Add(sub.id);
+                    if (open) _partGroupOpenIds.Remove(sub.id);
+                    else      _partGroupOpenIds.Add(sub.id);
                 }
 
                 var countsStyle = new GUIStyle(EditorStyles.miniLabel)
@@ -656,7 +656,7 @@ namespace OSE.Editor
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("Copy JSON", EditorStyles.miniButton, GUILayout.Width(80)))
-                    CopySubassemblyStubToClipboard(sub);
+                    CopyPartGroupStubToClipboard(sub);
                 EditorGUILayout.EndHorizontal();
                 EditorGUI.indentLevel--;
             }
@@ -664,7 +664,7 @@ namespace OSE.Editor
 
         // ── Advanced fields (technical, only on demand) ───────────────────────
 
-        private void DrawSubassemblyAdvancedFields(SubassemblyDefinition active)
+        private void DrawPartGroupAdvancedFields(PartGroupDefinition active)
         {
             EditorGUI.indentLevel++;
             EditorGUILayout.LabelField($"id:  {active.id}", EditorStyles.miniLabel);
@@ -674,11 +674,11 @@ namespace OSE.Editor
                                            EditorStyles.miniLabel);
             EditorGUILayout.LabelField($"isAggregate:  {active.isAggregate}",
                                        EditorStyles.miniLabel);
-            if (active.memberSubassemblyIds != null && active.memberSubassemblyIds.Length > 0)
+            if (active.memberPartGroupIds != null && active.memberPartGroupIds.Length > 0)
             {
-                EditorGUILayout.LabelField("memberSubassemblyIds:", EditorStyles.miniLabel);
+                EditorGUILayout.LabelField("memberPartGroupIds:", EditorStyles.miniLabel);
                 EditorGUI.indentLevel++;
-                foreach (var mid in active.memberSubassemblyIds)
+                foreach (var mid in active.memberPartGroupIds)
                     EditorGUILayout.LabelField("• " + mid, EditorStyles.miniLabel);
                 EditorGUI.indentLevel--;
             }
@@ -708,9 +708,9 @@ namespace OSE.Editor
 
         // ── Stub generation (clipboard, no JSON writes in MVP) ────────────────
 
-        private void CopySubassemblyStubToClipboard(SubassemblyDefinition src)
+        private void CopyPartGroupStubToClipboard(PartGroupDefinition src)
         {
-            var stub = new SubassemblyDefinition
+            var stub = new PartGroupDefinition
             {
                 id         = src.id,
                 name       = src.name,
@@ -720,14 +720,14 @@ namespace OSE.Editor
                 stepIds    = src.stepIds,
                 milestoneMessage = src.milestoneMessage,
                 isAggregate = src.isAggregate,
-                memberSubassemblyIds = src.memberSubassemblyIds,
+                memberPartGroupIds = src.memberPartGroupIds,
             };
             string json = PackageJsonUtils.RoundFloatsInJson(JsonUtility.ToJson(stub, prettyPrint: true));
             EditorGUIUtility.systemCopyBuffer = json;
             ShowNotification(new GUIContent($"Copied stub JSON for {src.GetDisplayName()}"));
         }
 
-        private void CopyNewSubassemblyStubToClipboard(StepDefinition step)
+        private void CopyNewPartGroupStubToClipboard(StepDefinition step)
         {
             // Pre-fill the assemblyId from the current step if possible so the
             // author can drop the stub straight into the matching assembly file.
@@ -736,13 +736,13 @@ namespace OSE.Editor
             // Generate a unique-ish id seed from the assemblyId so the stub is
             // immediately editable but unlikely to collide with existing ids.
             string idSeed = string.IsNullOrEmpty(assemblyId)
-                ? "new_subassembly"
-                : $"{assemblyId}_subassembly";
+                ? "new_partGroup"
+                : $"{assemblyId}_partGroup";
 
-            var stub = new SubassemblyDefinition
+            var stub = new PartGroupDefinition
             {
                 id         = idSeed,
-                name       = "New Subassembly",
+                name       = "New PartGroup",
                 assemblyId = assemblyId,
                 description = "",
                 partIds    = Array.Empty<string>(),
@@ -753,23 +753,23 @@ namespace OSE.Editor
             string json = JsonUtility.ToJson(stub, prettyPrint: true);
 
             // Wrap as a single-element JSON array snippet so the author can paste
-            // it directly inside an existing "subassemblies": [ … ] block.
+            // it directly inside an existing "partGroups": [ … ] block.
             var sb = new StringBuilder();
-            sb.AppendLine("// Paste inside the assembly file's \"subassemblies\": [ … ] array.");
+            sb.AppendLine("// Paste inside the assembly file's \"partGroups\": [ … ] array.");
             sb.AppendLine("// Make sure the id is unique across the package, then assign");
             sb.AppendLine("// partIds[] and stepIds[] to the parts and steps that belong.");
             sb.Append(json);
             EditorGUIUtility.systemCopyBuffer = sb.ToString();
-            ShowNotification(new GUIContent("Copied new subassembly stub to clipboard"));
+            ShowNotification(new GUIContent("Copied new partGroup stub to clipboard"));
         }
 
         // ── Create group from selection (right-click in task sequence) ──────
 
         /// <summary>
-        /// Creates a new subassembly from a set of selected part IDs.
+        /// Creates a new partGroup from a set of selected part IDs.
         /// Auto-populates: partIds from the selection, stepIds from every step
         /// that references any of these parts (via requiredPartIds). Writes to
-        /// disk immediately, reloads, and wires the current step's subassemblyId.
+        /// disk immediately, reloads, and wires the current step's partGroupId.
         /// </summary>
         private void CreateGroupFromSelection(StepDefinition step, List<string> partIds)
         {
@@ -787,12 +787,12 @@ namespace OSE.Editor
                 if (underscoreCount >= 2) { cutAt = i; break; }
             }
             string prefix = seed.Substring(0, cutAt);
-            string subId = $"subassembly_{prefix}_group";
+            string subId = $"partGroup_{prefix}_group";
 
             // Ensure unique
             int suffix = 1;
             string candidate = subId;
-            while (_pkg.TryGetSubassembly(candidate, out _)) candidate = $"{subId}_{suffix++}";
+            while (_pkg.TryGetPartGroup(candidate, out _)) candidate = $"{subId}_{suffix++}";
             subId = candidate;
 
             // Auto-find steps that reference any of these parts
@@ -817,7 +817,7 @@ namespace OSE.Editor
                     autoStepIds.Add(s.id);
             }
 
-            var newSub = new SubassemblyDefinition
+            var newSub = new PartGroupDefinition
             {
                 id         = subId,
                 name       = $"{prefix} group",
@@ -848,7 +848,7 @@ namespace OSE.Editor
 
             try
             {
-                PackageJsonUtils.InsertSubassembly(targetFile, newSub);
+                PackageJsonUtils.InsertPartGroup(targetFile, newSub);
             }
             catch (System.Exception ex)
             {
@@ -859,19 +859,19 @@ namespace OSE.Editor
             // Reload and wire the current step
             LoadPkg(_pkgId);
             var reloadedStep = FindStep(step.id);
-            if (reloadedStep != null && string.IsNullOrEmpty(reloadedStep.subassemblyId))
+            if (reloadedStep != null && string.IsNullOrEmpty(reloadedStep.partGroupId))
             {
-                reloadedStep.subassemblyId = subId;
+                reloadedStep.partGroupId = subId;
                 _dirtyStepIds.Add(reloadedStep.id);
             }
 
-            // Also set subassemblyId on all auto-found steps
+            // Also set partGroupId on all auto-found steps
             foreach (var sid in autoStepIds)
             {
                 var s = FindStep(sid);
-                if (s != null && string.IsNullOrEmpty(s.subassemblyId))
+                if (s != null && string.IsNullOrEmpty(s.partGroupId))
                 {
-                    s.subassemblyId = subId;
+                    s.partGroupId = subId;
                     _dirtyStepIds.Add(s.id);
                 }
             }
@@ -882,25 +882,25 @@ namespace OSE.Editor
         }
 
         /// <summary>
-        /// Creates a new empty subassembly tied to the current step. Kind
+        /// Creates a new empty partGroup tied to the current step. Kind
         /// (part-group vs scope) is undetermined until the author drops the
         /// first part or group onto its drop zone — <c>isAggregate</c> is
-        /// auto-derived at load time from <c>memberSubassemblyIds.Length > 0</c>
+        /// auto-derived at load time from <c>memberPartGroupIds.Length > 0</c>
         /// by <see cref="MachinePackageNormalizer"/>, so we leave it unset here.
         /// </summary>
-        private void CreateEmptySubassemblyForStep(StepDefinition step)
+        private void CreateEmptyPartGroupForStep(StepDefinition step)
         {
             if (step == null || _pkg == null) return;
 
             string assemblyId = step.assemblyId ?? "";
             string baseId     = string.IsNullOrEmpty(assemblyId) ? "group" : $"{assemblyId}_group";
-            string subId      = $"subassembly_{baseId}";
+            string subId      = $"partGroup_{baseId}";
             int suffix = 1;
             string candidate = subId;
-            while (_pkg.TryGetSubassembly(candidate, out _)) candidate = $"{subId}_{suffix++}";
+            while (_pkg.TryGetPartGroup(candidate, out _)) candidate = $"{subId}_{suffix++}";
             subId = candidate;
 
-            var newSub = new SubassemblyDefinition
+            var newSub = new PartGroupDefinition
             {
                 id         = subId,
                 name       = "New Group",
@@ -930,7 +930,7 @@ namespace OSE.Editor
 
             try
             {
-                PackageJsonUtils.InsertSubassembly(targetFile, newSub);
+                PackageJsonUtils.InsertPartGroup(targetFile, newSub);
             }
             catch (System.Exception ex)
             {
@@ -940,9 +940,9 @@ namespace OSE.Editor
 
             LoadPkg(_pkgId);
             var reloadedStep = FindStep(step.id);
-            if (reloadedStep != null && string.IsNullOrEmpty(reloadedStep.subassemblyId))
+            if (reloadedStep != null && string.IsNullOrEmpty(reloadedStep.partGroupId))
             {
-                reloadedStep.subassemblyId = subId;
+                reloadedStep.partGroupId = subId;
                 _dirtyStepIds.Add(reloadedStep.id);
             }
 
@@ -952,8 +952,8 @@ namespace OSE.Editor
         }
 
         /// <summary>
-        /// Creates a new subassembly seeded with <paramref name="memberSubIds"/>
-        /// as <c>memberSubassemblyIds</c>. The normalizer will flip
+        /// Creates a new partGroup seeded with <paramref name="memberSubIds"/>
+        /// as <c>memberPartGroupIds</c>. The normalizer will flip
         /// <c>isAggregate=true</c> at load time. Mirrors
         /// <see cref="CreateGroupFromSelection"/> for the group-seeded path
         /// so dropping groups onto an empty canvas creates a new scope in one
@@ -965,20 +965,20 @@ namespace OSE.Editor
 
             string assemblyId = step.assemblyId ?? "";
             string baseId     = string.IsNullOrEmpty(assemblyId) ? "scope" : $"{assemblyId}_scope";
-            string subId      = $"subassembly_{baseId}";
+            string subId      = $"partGroup_{baseId}";
             int suffix = 1;
             string candidate = subId;
-            while (_pkg.TryGetSubassembly(candidate, out _)) candidate = $"{subId}_{suffix++}";
+            while (_pkg.TryGetPartGroup(candidate, out _)) candidate = $"{subId}_{suffix++}";
             subId = candidate;
 
-            var newSub = new SubassemblyDefinition
+            var newSub = new PartGroupDefinition
             {
                 id                   = subId,
                 name                 = "New Scope",
                 assemblyId           = assemblyId,
                 partIds              = Array.Empty<string>(),
                 stepIds              = new[] { step.id },
-                memberSubassemblyIds = memberSubIds.Distinct(StringComparer.Ordinal).ToArray(),
+                memberPartGroupIds = memberSubIds.Distinct(StringComparer.Ordinal).ToArray(),
             };
 
             string targetFile;
@@ -1002,7 +1002,7 @@ namespace OSE.Editor
 
             try
             {
-                PackageJsonUtils.InsertSubassembly(targetFile, newSub);
+                PackageJsonUtils.InsertPartGroup(targetFile, newSub);
             }
             catch (System.Exception ex)
             {
@@ -1012,9 +1012,9 @@ namespace OSE.Editor
 
             LoadPkg(_pkgId);
             var reloadedStep = FindStep(step.id);
-            if (reloadedStep != null && string.IsNullOrEmpty(reloadedStep.subassemblyId))
+            if (reloadedStep != null && string.IsNullOrEmpty(reloadedStep.partGroupId))
             {
-                reloadedStep.subassemblyId = subId;
+                reloadedStep.partGroupId = subId;
                 _dirtyStepIds.Add(reloadedStep.id);
             }
 
@@ -1028,7 +1028,7 @@ namespace OSE.Editor
         /// given group. This visually highlights which tasks belong to the group
         /// the author just clicked.
         /// </summary>
-        private void SelectGroupMembersInTaskSequence(SubassemblyDefinition sub, StepDefinition step)
+        private void SelectGroupMembersInTaskSequence(PartGroupDefinition sub, StepDefinition step)
         {
             _multiSelectedTaskSeqIdxs.Clear();
             if (sub?.partIds == null || step == null) return;
@@ -1063,9 +1063,9 @@ namespace OSE.Editor
             if (step == null || _pkg == null) return;
 
             bool hasSelectedGroup = !string.IsNullOrEmpty(_canvasSelectedSubId);
-            SubassemblyDefinition selectedSub = null;
+            PartGroupDefinition selectedSub = null;
             if (hasSelectedGroup)
-                _pkg.TryGetSubassembly(_canvasSelectedSubId, out selectedSub);
+                _pkg.TryGetPartGroup(_canvasSelectedSubId, out selectedSub);
 
             EditorGUILayout.Space(2);
             var dropRect = GUILayoutUtility.GetRect(0, 24f, GUILayout.ExpandWidth(true));
@@ -1096,12 +1096,12 @@ namespace OSE.Editor
                 fontStyle = isHover && isDrag ? FontStyle.Bold : FontStyle.Italic,
             };
 
-            // Kind-lock: a subassembly is either a part-group (partIds) or a
-            // scope (memberSubassemblyIds), never both. The label reflects what
+            // Kind-lock: a partGroup is either a part-group (partIds) or a
+            // scope (memberPartGroupIds), never both. The label reflects what
             // this specific drop zone will accept right now. Empty groups and
             // the "no selection" case accept either kind.
             bool selHasParts   = selectedSub?.partIds != null && selectedSub.partIds.Length > 0;
-            bool selHasMembers = selectedSub?.memberSubassemblyIds != null && selectedSub.memberSubassemblyIds.Length > 0;
+            bool selHasMembers = selectedSub?.memberPartGroupIds != null && selectedSub.memberPartGroupIds.Length > 0;
             bool acceptsParts  = selectedSub == null || !selHasMembers;
             bool acceptsGroups = selectedSub == null || !selHasParts;
             string acceptLabel = (acceptsParts && acceptsGroups) ? "parts or [G] groups"
@@ -1132,7 +1132,7 @@ namespace OSE.Editor
                 var partIds = new List<string>();
                 var groupIds = new List<string>();
                 var allParts = _pkg.GetParts();
-                var allSubs  = _pkg.GetSubassemblies();
+                var allSubs  = _pkg.GetPartGroups();
                 foreach (var obj in DragAndDrop.objectReferences)
                 {
                     if (obj == null) continue;
@@ -1147,9 +1147,9 @@ namespace OSE.Editor
                     }
                     if (matched) continue;
 
-                    // Subassembly match — either the raw id, or the scene root
+                    // PartGroup match — either the raw id, or the scene root
                     // naming convention "Group_<DisplayName>" from
-                    // EnsureAllSubassemblyRoots. Lets the author drag group
+                    // EnsureAllPartGroupRoots. Lets the author drag group
                     // root GOs from the Hierarchy straight into an aggregate.
                     string candidateDisplay = name.StartsWith("Group_", StringComparison.Ordinal)
                         ? name.Substring("Group_".Length)
@@ -1173,8 +1173,8 @@ namespace OSE.Editor
                 else if (hasSelectedGroup && selectedSub != null)
                 {
                     // Kind-lock: reject the wrong-kind drop early. A populated
-                    // subassembly is either a part-group (partIds) or a scope
-                    // (memberSubassemblyIds) — never both. Runtime code
+                    // partGroup is either a part-group (partIds) or a scope
+                    // (memberPartGroupIds) — never both. Runtime code
                     // (spawner, pose resolver, validator) assumes this invariant.
                     if (partIds.Count > 0 && selHasMembers)
                     {
@@ -1202,19 +1202,19 @@ namespace OSE.Editor
 
                         if (groupIds.Count > 0)
                         {
-                            // Route group drops into memberSubassemblyIds. The
+                            // Route group drops into memberPartGroupIds. The
                             // aggregate flag is auto-derived by the normalizer.
-                            var currentSet = new HashSet<string>(selectedSub.memberSubassemblyIds ?? Array.Empty<string>(), StringComparer.Ordinal);
+                            var currentSet = new HashSet<string>(selectedSub.memberPartGroupIds ?? Array.Empty<string>(), StringComparer.Ordinal);
                             foreach (var gid in groupIds)
                                 if (!string.Equals(gid, selectedSub.id, StringComparison.Ordinal) && currentSet.Add(gid))
                                     groupsAdded++;
                             if (groupsAdded > 0)
-                                selectedSub.memberSubassemblyIds = currentSet.ToArray();
+                                selectedSub.memberPartGroupIds = currentSet.ToArray();
                         }
 
                         if (partsAdded + groupsAdded > 0)
                         {
-                            _dirtySubassemblyIds.Add(selectedSub.id);
+                            _dirtyPartGroupIds.Add(selectedSub.id);
                             string gLabel = groupsAdded > 0 ? $"{groupsAdded} [G] group(s)" : "";
                             string pLabel = partsAdded  > 0 ? $"{partsAdded} part(s)"      : "";
                             string joined = string.Join(" + ", new[] { pLabel, gLabel }.Where(s => !string.IsNullOrEmpty(s)));
@@ -1228,7 +1228,7 @@ namespace OSE.Editor
                 }
                 else
                 {
-                    // No group selected — the drop itself seeds a new subassembly.
+                    // No group selected — the drop itself seeds a new partGroup.
                     // Parts → part-group (isAggregate stays false).
                     // Groups → scope (normalizer flips isAggregate=true at load).
                     // Mixed drop: prefer parts; author can add the groups into
@@ -1249,7 +1249,7 @@ namespace OSE.Editor
         private void DrawGroupDropZone(string subId)
         {
             if (string.IsNullOrEmpty(subId) || _pkg == null) return;
-            if (!_pkg.TryGetSubassembly(subId, out SubassemblyDefinition sub) || sub == null)
+            if (!_pkg.TryGetPartGroup(subId, out PartGroupDefinition sub) || sub == null)
                 return;
 
             var dropRect = GUILayoutUtility.GetRect(0, 22f, GUILayout.ExpandWidth(true));
@@ -1306,7 +1306,7 @@ namespace OSE.Editor
                 if (added > 0)
                 {
                     sub.partIds = currentSet.ToArray();
-                    _dirtySubassemblyIds.Add(sub.id);
+                    _dirtyPartGroupIds.Add(sub.id);
                     ShowNotification(new GUIContent($"Added {added} part{(added == 1 ? "" : "s")} to group"));
                 }
                 else
@@ -1318,34 +1318,34 @@ namespace OSE.Editor
             }
         }
 
-        // ── Phase A4: canvas subassembly list ─────────────────────────────────
+        // ── Phase A4: canvas partGroup list ─────────────────────────────────
 
-        // Which subassembly row is "selected" in the canvas list — clicking it
+        // Which partGroup row is "selected" in the canvas list — clicking it
         // shows its properties in the inspector (orientation gizmo, membership).
         private string _canvasSelectedSubId;
 
         /// <summary>
-        /// Compact subassembly list in the canvas. Shows subassemblies that are
-        /// relevant to this step (the step's own subassembly + any aggregates
+        /// Compact partGroup list in the canvas. Shows partGroups that are
+        /// relevant to this step (the step's own partGroup + any aggregates
         /// that include it). Clicking a row selects it — the inspector shows
         /// its detail and the SceneView shows the gizmo.
         /// </summary>
         /// <summary>
-        /// Collects the subassemblies relevant to <paramref name="step"/> (owner
+        /// Collects the partGroups relevant to <paramref name="step"/> (owner
         /// aggregate, required leaf, and any sub whose stepIds include this
         /// step). Sorted leaves-first, aggregates-last. Helper exposed so the
         /// Slice-ME-C card wrapper can pre-compute the count for its header pill
         /// without re-running the filter inside the body.
         /// </summary>
-        private List<SubassemblyDefinition> CollectRelevantSubassembliesForStep(StepDefinition step)
+        private List<PartGroupDefinition> CollectRelevantPartGroupsForStep(StepDefinition step)
         {
-            var relevant = new List<SubassemblyDefinition>();
+            var relevant = new List<PartGroupDefinition>();
             if (_pkg == null) return relevant;
-            var allSubs = _pkg.GetSubassemblies();
+            var allSubs = _pkg.GetPartGroups();
             if (allSubs == null || allSubs.Length == 0) return relevant;
 
-            string ownerSubId    = step?.subassemblyId;
-            string requiredSubId = step?.requiredSubassemblyId;
+            string ownerSubId    = step?.partGroupId;
+            string requiredSubId = step?.requiredPartGroupId;
 
             for (int i = 0; i < allSubs.Length; i++)
             {
@@ -1378,7 +1378,7 @@ namespace OSE.Editor
         /// <summary>
         /// "+"-button action for the GROUPS card. Seeds a part-group with the
         /// step's requiredPartIds when present, otherwise creates an empty
-        /// subassembly whose kind is decided at first drop.
+        /// partGroup whose kind is decided at first drop.
         /// </summary>
         private void TryCreateGroupForStep(StepDefinition step)
         {
@@ -1387,17 +1387,17 @@ namespace OSE.Editor
             if (seedParts != null && seedParts.Length > 0)
                 CreateGroupFromSelection(step, new List<string>(seedParts));
             else
-                CreateEmptySubassemblyForStep(step);
+                CreateEmptyPartGroupForStep(step);
         }
 
-        private void DrawCanvasSubassemblyList(StepDefinition step, bool drawOwnChrome = true)
+        private void DrawCanvasPartGroupList(StepDefinition step, bool drawOwnChrome = true)
         {
             if (_pkg == null) return;
 
-            var allSubs = _pkg.GetSubassemblies();
+            var allSubs = _pkg.GetPartGroups();
             if (allSubs == null || allSubs.Length == 0) return;
 
-            var relevant = CollectRelevantSubassembliesForStep(step);
+            var relevant = CollectRelevantPartGroupsForStep(step);
 
             // Header + "+" button — drawn only when the caller isn't already
             // providing card chrome (the Slice-ME-C card wrapper supplies both).
@@ -1493,7 +1493,7 @@ namespace OSE.Editor
                 DrawCueCountBadges(badgeArea, sub);
 
                 var countRect = new Rect(rowRect.xMax - 80f, rowRect.y, 74f, rowRect.height);
-                int groupChildren = sub.memberSubassemblyIds?.Length ?? 0;
+                int groupChildren = sub.memberPartGroupIds?.Length ?? 0;
                 string countText = sub.isAggregate && groupChildren > 0
                     ? $"{groupChildren}g · {steps}s"
                     : $"{parts}p · {steps}s";
@@ -1508,7 +1508,7 @@ namespace OSE.Editor
                     if (!isSelected)
                     {
                         // Clear task-sequence selection so the inspector
-                        // switches to the subassembly view.
+                        // switches to the partGroup view.
                         _selectedTaskSeqIdx = -1;
                         _multiSelectedTaskSeqIdxs.Clear();
                         _selectedPartIdx = -1;
@@ -1520,7 +1520,7 @@ namespace OSE.Editor
                         // author can see all children at a glance.
                         // Ping the group root in Hierarchy but don't select it
                         // (HideFlags.DontSave causes Inspector NullReferenceException).
-                        if (_subassemblyRootGOs.TryGetValue(sub.id, out var rootGO) && rootGO != null)
+                        if (_partGroupRootGOs.TryGetValue(sub.id, out var rootGO) && rootGO != null)
                             EditorGUIUtility.PingObject(rootGO);
                         Selection.activeGameObject = null;
 

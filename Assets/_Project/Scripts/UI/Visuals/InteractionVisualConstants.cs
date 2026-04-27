@@ -23,9 +23,9 @@ namespace OSE.UI.Root
         public const float HintHighlightDuration = 6f;
         public const float HintHighlightPulseSpeed = 4f;
 
-        // ── Subassembly emission ──
-        public static readonly Color HoveredSubassemblyEmission = new Color(0.05f, 0.16f, 0.28f);
-        public static readonly Color SelectedSubassemblyEmission = new Color(0.35f, 0.22f, 0.02f);
+        // ── PartGroup emission ──
+        public static readonly Color HoveredPartGroupEmission = new Color(0.05f, 0.16f, 0.28f);
+        public static readonly Color SelectedPartGroupEmission = new Color(0.35f, 0.22f, 0.02f);
 
         // ── Drag tuning ──
         public const float DragThresholdPixels = 5f;

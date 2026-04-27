@@ -114,7 +114,7 @@ namespace OSE.Editor
             if (_dirtyToolIds.Count > 0 || _dirtyStepIds.Count > 0) return true;
             if (_dirtyTaskOrderStepIds.Count > 0) return true;
             if (_dirtyPartAssetRefIds.Count > 0)  return true;
-            if (_dirtySubassemblyIds.Count > 0)   return true;
+            if (_dirtyPartGroupIds.Count > 0)   return true;
             if (_dirtyPartIds.Count > 0)          return true;
             if (_targets != null) foreach (var t in _targets) if (t.isDirty) return true;
             if (_parts   != null) foreach (var p in _parts)   if (p.isDirty) return true;
@@ -328,18 +328,18 @@ namespace OSE.Editor
                 _pkg.previewConfig.partPlacements = pp.ToArray();
             }
 
-            // Step 1c: Merge dirty _groups into previewConfig.subassemblyPlacements
+            // Step 1c: Merge dirty _groups into previewConfig.partGroupPlacements
             if (_groups != null)
             {
-                var gp = _pkg.previewConfig.subassemblyPlacements != null
-                    ? new List<SubassemblyPreviewPlacement>(_pkg.previewConfig.subassemblyPlacements)
-                    : new List<SubassemblyPreviewPlacement>();
+                var gp = _pkg.previewConfig.partGroupPlacements != null
+                    ? new List<PartGroupPreviewPlacement>(_pkg.previewConfig.partGroupPlacements)
+                    : new List<PartGroupPreviewPlacement>();
                 foreach (ref GroupEditState g in _groups.AsSpan())
                 {
                     if (!g.isDirty || g.def == null) continue;
                     string gid = g.def.id;
-                    int gidx = gp.FindIndex(e => e != null && e.subassemblyId == gid);
-                    var entry = gidx >= 0 ? gp[gidx] : new SubassemblyPreviewPlacement { subassemblyId = gid };
+                    int gidx = gp.FindIndex(e => e != null && e.partGroupId == gid);
+                    var entry = gidx >= 0 ? gp[gidx] : new PartGroupPreviewPlacement { partGroupId = gid };
                     entry.startPosition     = PackageJsonUtils.ToFloat3(g.startPosition);
                     entry.startRotation     = PackageJsonUtils.ToQuaternion(g.startRotation);
                     entry.startScale        = PackageJsonUtils.ToFloat3(g.startScale);
@@ -358,7 +358,7 @@ namespace OSE.Editor
                     entry.scale    = entry.startScale;
                     if (gidx >= 0) gp[gidx] = entry; else gp.Add(entry);
                 }
-                _pkg.previewConfig.subassemblyPlacements = gp.ToArray();
+                _pkg.previewConfig.partGroupPlacements = gp.ToArray();
             }
 
             // Determine whether this package uses split-layout (assemblies/ folder).
@@ -508,11 +508,11 @@ namespace OSE.Editor
                     InjectField(stepId, "requiredPartIds", pJson);
                 }
 
-                // requiredSubassemblyId — group placement
-                if (!string.IsNullOrEmpty(step.requiredSubassemblyId))
-                    InjectField(stepId, "requiredSubassemblyId", $"\"{step.requiredSubassemblyId}\"");
+                // requiredPartGroupId — group placement
+                if (!string.IsNullOrEmpty(step.requiredPartGroupId))
+                    InjectField(stepId, "requiredPartGroupId", $"\"{step.requiredPartGroupId}\"");
                 else
-                    RemoveField(stepId, "requiredSubassemblyId");
+                    RemoveField(stepId, "requiredPartGroupId");
 
                 // visualPartIds — show-without-require (Phase 7, legacy)
                 if (step.visualPartIds != null && step.visualPartIds.Length > 0)
@@ -611,8 +611,8 @@ namespace OSE.Editor
                 {
                     var wo2 = step.workingOrientation;
                     var sb = new System.Text.StringBuilder("{");
-                    sb.Append($"\"subassemblyRotation\":{{\"x\":{R(wo2.subassemblyRotation.x).ToString(inv)},\"y\":{R(wo2.subassemblyRotation.y).ToString(inv)},\"z\":{R(wo2.subassemblyRotation.z).ToString(inv)}}},");
-                    sb.Append($"\"subassemblyPositionOffset\":{{\"x\":{R(wo2.subassemblyPositionOffset.x).ToString(inv)},\"y\":{R(wo2.subassemblyPositionOffset.y).ToString(inv)},\"z\":{R(wo2.subassemblyPositionOffset.z).ToString(inv)}}}");
+                    sb.Append($"\"partGroupRotation\":{{\"x\":{R(wo2.partGroupRotation.x).ToString(inv)},\"y\":{R(wo2.partGroupRotation.y).ToString(inv)},\"z\":{R(wo2.partGroupRotation.z).ToString(inv)}}},");
+                    sb.Append($"\"partGroupPositionOffset\":{{\"x\":{R(wo2.partGroupPositionOffset.x).ToString(inv)},\"y\":{R(wo2.partGroupPositionOffset.y).ToString(inv)},\"z\":{R(wo2.partGroupPositionOffset.z).ToString(inv)}}}");
                     if (!string.IsNullOrEmpty(wo2.hint))
                         sb.Append($",\"hint\":\"{wo2.hint.Replace("\"", "\\\"")}\"");
                     sb.Append("}");
@@ -679,12 +679,12 @@ namespace OSE.Editor
             }
             _dirtyPartAssetRefIds.Clear();
 
-            // Step 5c-ter: Inject fields for dirty subassemblies (Phase 7e).
-            // The subassembly object already exists in the file (inserted by
-            // InsertSubassembly or loaded from disk); we just update its fields.
-            foreach (string subId in _dirtySubassemblyIds)
+            // Step 5c-ter: Inject fields for dirty partGroups (Phase 7e).
+            // The partGroup object already exists in the file (inserted by
+            // InsertPartGroup or loaded from disk); we just update its fields.
+            foreach (string subId in _dirtyPartGroupIds)
             {
-                if (!_pkg.TryGetSubassembly(subId, out SubassemblyDefinition sub) || sub == null)
+                if (!_pkg.TryGetPartGroup(subId, out PartGroupDefinition sub) || sub == null)
                     continue;
 
                 // name
@@ -692,9 +692,9 @@ namespace OSE.Editor
                     InjectField(subId, "name", $"\"{sub.name}\"");
 
                 // partIds is now derived at load time from each
-                // PartDefinition.subassemblyIds claim (see
-                // MachinePackageNormalizer.DeriveSubassemblyPartIds). Authors
-                // edit membership per part, not per subassembly — so TTAW
+                // PartDefinition.partGroupIds claim (see
+                // MachinePackageNormalizer.DerivePartGroupPartIds). Authors
+                // edit membership per part, not per partGroup — so TTAW
                 // must never write this field. Always strip any legacy value
                 // so the file stays clean across save cycles.
                 RemoveField(subId, "partIds");
@@ -721,32 +721,32 @@ namespace OSE.Editor
                 else
                     RemoveField(subId, "description");
 
-                // isAggregate is redundant ONLY when memberSubassemblyIds is
+                // isAggregate is redundant ONLY when memberPartGroupIds is
                 // populated (InferAggregateFlag can re-derive it on load). For
-                // partId-overlap aggregates with no memberSubassemblyIds, the
+                // partId-overlap aggregates with no memberPartGroupIds, the
                 // explicit flag remains the only structural signal — keep it.
-                bool hasMembers = sub.memberSubassemblyIds != null && sub.memberSubassemblyIds.Length > 0;
+                bool hasMembers = sub.memberPartGroupIds != null && sub.memberPartGroupIds.Length > 0;
                 if (sub.isAggregate && !hasMembers)
                     InjectField(subId, "isAggregate", "true");
                 else
                     RemoveField(subId, "isAggregate");
 
-                // memberSubassemblyIds — persist the aggregate's child groups
+                // memberPartGroupIds — persist the aggregate's child groups
                 // so drag-and-drop additions survive save/reload.
                 if (hasMembers)
                 {
                     var msb = new System.Text.StringBuilder("[");
-                    for (int m = 0; m < sub.memberSubassemblyIds.Length; m++)
+                    for (int m = 0; m < sub.memberPartGroupIds.Length; m++)
                     {
                         if (m > 0) msb.Append(", ");
-                        msb.Append('"').Append(sub.memberSubassemblyIds[m]).Append('"');
+                        msb.Append('"').Append(sub.memberPartGroupIds[m]).Append('"');
                     }
                     msb.Append("]");
-                    InjectField(subId, "memberSubassemblyIds", msb.ToString());
+                    InjectField(subId, "memberPartGroupIds", msb.ToString());
                 }
                 else
                 {
-                    RemoveField(subId, "memberSubassemblyIds");
+                    RemoveField(subId, "memberPartGroupIds");
                 }
 
                 // milestoneMessage
@@ -755,7 +755,7 @@ namespace OSE.Editor
                 else
                     RemoveField(subId, "milestoneMessage");
 
-                // animationCues — host-owned cues on this subassembly / aggregate.
+                // animationCues — host-owned cues on this partGroup / aggregate.
                 // Each entry is a full AnimationCueEntry serialized as an array
                 // element. JsonUtility wraps arrays behind a holder, so we
                 // hand-build the array JSON element-by-element.
@@ -777,9 +777,9 @@ namespace OSE.Editor
                     RemoveField(subId, "animationCues");
                 }
             }
-            _dirtySubassemblyIds.Clear();
+            _dirtyPartGroupIds.Clear();
 
-            // ── Part-level edits: animationCues, subassemblyIds ──
+            // ── Part-level edits: animationCues, partGroupIds ──
             // Generic write pass for fields edited from the selection-scoped
             // inspector (Animations & Effects on a part, membership claims).
             // Parts live in many files; FindPart locates the right one.
@@ -811,15 +811,15 @@ namespace OSE.Editor
                         RemoveField(partId, "animationCues");
                     }
 
-                    if (part.subassemblyIds != null && part.subassemblyIds.Length > 0)
+                    if (part.partGroupIds != null && part.partGroupIds.Length > 0)
                     {
                         string sJson = "[ " + string.Join(", ",
-                            Array.ConvertAll(part.subassemblyIds, id => $"\"{id}\"")) + " ]";
-                        InjectField(partId, "subassemblyIds", sJson);
+                            Array.ConvertAll(part.partGroupIds, id => $"\"{id}\"")) + " ]";
+                        InjectField(partId, "partGroupIds", sJson);
                     }
                     else
                     {
-                        RemoveField(partId, "subassemblyIds");
+                        RemoveField(partId, "partGroupIds");
                     }
                 }
                 _dirtyPartIds.Clear();

@@ -93,9 +93,9 @@ namespace OSE.UI.Root
                     }
 
                     // Pivot policy: always use the caller-provided hint when
-                    // present (subassembly hosts get one from
+                    // present (partGroup hosts get one from
                     // PivotCentroidResolver, the single source of truth).
-                    // When absent (part/tool hosts, or a subassembly with no
+                    // When absent (part/tool hosts, or a partGroup with no
                     // "body" members yet on this step), fall back to the
                     // target's local origin — a single-part rotation pivots
                     // around its own origin; the counter-translate in Tick
@@ -122,7 +122,7 @@ namespace OSE.UI.Root
                     }
 
                     // Precompute rotation delta: same concept as
-                    // OrientSubassemblyPlayer._deltaRot but derived from
+                    // OrientPartGroupPlayer._deltaRot but derived from
                     // authored from/to poses instead of a single Euler.
                     _totalRotDelta[i] = Quaternion.Inverse(_fromPoses[i].Rotation)
                                         * _toPoses[i].Rotation;

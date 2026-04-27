@@ -6,7 +6,7 @@ namespace OSE.Editor
 {
     /// <summary>
     /// Per-partId snapshot of where a part lives across the authored package:
-    /// which subassembly owns it, which Place step physically places it, and
+    /// which partGroup owns it, which Place step physically places it, and
     /// every other step that requires / makes-optional / renders it as a
     /// visual. Populated by <see cref="PartOwnershipIndex.Build"/> once per
     /// authoring-window rebuild so the four proactive-guidance surfaces
@@ -17,13 +17,13 @@ namespace OSE.Editor
     /// Mirrors the load-time
     /// <see cref="OSE.Content.Validation.PartOwnershipExclusivityPass"/>
     /// rules 1 and 2. Stays in sync via the editor's <c>BuildPartList</c>
-    /// call which re-builds this whenever parts / steps / subassemblies
+    /// call which re-builds this whenever parts / steps / partGroups
     /// change.
     /// </summary>
     internal readonly struct PartOwnership
     {
-        /// <summary>Non-aggregate subassembly that contains this part, or null.</summary>
-        public readonly string subassemblyId;
+        /// <summary>Non-aggregate partGroup that contains this part, or null.</summary>
+        public readonly string partGroupId;
 
         /// <summary>
         /// Sequence index of the FIRST Place-family step that places this
@@ -55,22 +55,22 @@ namespace OSE.Editor
         /// </summary>
         public readonly string[] conflictingPlaceStepIds;
 
-        /// <summary>Rule-1 conflict: multiple non-aggregate subassemblies claim this partId. Empty when clean.</summary>
-        public readonly string[] conflictingSubassemblyIds;
+        /// <summary>Rule-1 conflict: multiple non-aggregate partGroups claim this partId. Empty when clean.</summary>
+        public readonly string[] conflictingPartGroupIds;
 
         public PartOwnership(
-            string subassemblyId,
+            string partGroupId,
             int[] placeStepSeqs, string[] placeStepIds,
             int[] requiredAtSeqs, int[] optionalAtSeqs, int[] visualAtSeqs,
-            string[] conflictingSubassemblyIds)
+            string[] conflictingPartGroupIds)
         {
-            this.subassemblyId              = subassemblyId;
+            this.partGroupId              = partGroupId;
             this.placeStepSeqs              = placeStepSeqs              ?? Array.Empty<int>();
             this.placeStepIds               = placeStepIds               ?? Array.Empty<string>();
             this.requiredAtSeqs             = requiredAtSeqs             ?? Array.Empty<int>();
             this.optionalAtSeqs             = optionalAtSeqs             ?? Array.Empty<int>();
             this.visualAtSeqs               = visualAtSeqs               ?? Array.Empty<int>();
-            this.conflictingSubassemblyIds  = conflictingSubassemblyIds  ?? Array.Empty<string>();
+            this.conflictingPartGroupIds  = conflictingPartGroupIds  ?? Array.Empty<string>();
             if (this.placeStepSeqs.Length > 0)
             {
                 this.placeStepSeq = this.placeStepSeqs[0];
@@ -101,7 +101,7 @@ namespace OSE.Editor
         public bool HasMultiplePlaces => placeStepSeqs.Length > 1;
         [Obsolete("Use HasMultiplePlaces; multi-placement is supported, not a conflict.")]
         public bool HasPlaceConflict  => HasMultiplePlaces;
-        public bool HasSubConflict    => conflictingSubassemblyIds.Length > 0;
+        public bool HasSubConflict    => conflictingPartGroupIds.Length > 0;
         public bool HasAnyConflict    => HasSubConflict; // multi-place no longer counted as conflict
 
         /// <summary>True when at least one step (any role) references this part.</summary>
@@ -151,13 +151,13 @@ namespace OSE.Editor
                     if (s != null && !string.IsNullOrEmpty(s.id)) stepIdBySeq[s.sequenceIndex] = s.id;
             }
 
-            // Subassembly membership: which non-aggregate sub owns each part, and
+            // PartGroup membership: which non-aggregate sub owns each part, and
             // whether multiple subs claim the same part (Rule 1 conflict).
             var subByPart       = new Dictionary<string, string>(StringComparer.Ordinal);
             var subConflictList = new Dictionary<string, List<string>>(StringComparer.Ordinal);
-            if (pkg.subassemblies != null)
+            if (pkg.partGroups != null)
             {
-                foreach (var sub in pkg.subassemblies)
+                foreach (var sub in pkg.partGroups)
                 {
                     if (sub == null || sub.isAggregate || sub.partIds == null || string.IsNullOrEmpty(sub.id)) continue;
                     foreach (var pid in sub.partIds)

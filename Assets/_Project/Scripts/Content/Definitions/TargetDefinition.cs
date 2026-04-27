@@ -11,7 +11,7 @@ namespace OSE.Content
         public string anchorRef;
         public string description;
         public string associatedPartId;
-        public string associatedSubassemblyId;
+        public string associatedPartGroupId;
         public string[] tags;
 
         /// <summary>

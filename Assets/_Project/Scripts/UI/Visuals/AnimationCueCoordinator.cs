@@ -32,7 +32,7 @@ namespace OSE.UI.Root
         // can be routed without the controller needing to know the stepId.
         private string _currentStepId;
 
-        // Fabrication grouping: temp parent for ungrouped subassembly members
+        // Fabrication grouping: temp parent for ungrouped partGroup members
         private GameObject _fabricationGroupRoot;
         private readonly List<FabricationGroupEntry> _fabricationGroupEntries = new List<FabricationGroupEntry>();
 
@@ -131,7 +131,7 @@ namespace OSE.UI.Root
                 { "demonstratePlacement", () => new DemonstratePlacementPlayer() },
                 { "poseTransition",       () => new PoseTransitionPlayer() },
                 { "pulse",                () => new PulsePlayer() },
-                { "orientSubassembly",    () => new OrientSubassemblyPlayer() },
+                { "orientPartGroup",    () => new OrientPartGroupPlayer() },
                 { "shake",                () => new ShakePlayer() },
                 { "particle",             () => new ParticlePlayer() },
                 { "transform",            () => new PoseTransitionPlayer() },
@@ -226,7 +226,7 @@ namespace OSE.UI.Root
             // Host-owned cues are the authoritative source. Step-level cues
             // are migrated onto their target host at load time by
             // MachinePackageNormalizer.MigrateStepAnimationCuesToHosts, so
-            // the runtime only reads from parts and subassemblies here.
+            // the runtime only reads from parts and partGroups here.
             // Any step-level leftovers are flagged as errors by the
             // normalizer's validator and intentionally do not fire.
             var gathered = new List<GatheredCue>();
@@ -276,7 +276,7 @@ namespace OSE.UI.Root
                 AnimationCueContext context = g.HostKind switch
                 {
                     HostKind.Part        => ResolveHostedPartContext(g.HostId, entry, step),
-                    HostKind.Subassembly => ResolveHostedSubassemblyContext(g.HostId, entry, step),
+                    HostKind.PartGroup => ResolveHostedPartGroupContext(g.HostId, entry, step),
                     HostKind.Tool        => ResolveHostedToolContext(g.HostId, entry, step),
                     _                    => ResolveContext(entry, step),
                 };
@@ -397,7 +397,7 @@ namespace OSE.UI.Root
         /// Looks up the taskOrder entry whose (kind, host-id) matches this
         /// cue's host AND has <c>awaitCues=true</c>. Returns null when no
         /// such entry exists — the cue will fire normally. Part-entry id
-        /// can be either a partId or a subassemblyId (group task); both
+        /// can be either a partId or a partGroupId (group task); both
         /// resolve via HostKind matching.
         ///
         /// <para><b>Required entries are deliberately excluded.</b>
@@ -445,12 +445,12 @@ namespace OSE.UI.Root
                 // fire their cues in parallel with adjacent awaitCues
                 // entries, breaking the sequential-NO-TASK invariant.
 
-                // Part-kind entry: host is a Part OR Subassembly with that id.
+                // Part-kind entry: host is a Part OR PartGroup with that id.
                 if (string.Equals(e.kind, "part", StringComparison.Ordinal))
                 {
                     string partId = TaskInstanceId.ToPartId(e.id);
                     if ((cueHostKind == HostKind.Part         && string.Equals(cueHostId, partId, StringComparison.Ordinal))
-                     || (cueHostKind == HostKind.Subassembly  && string.Equals(cueHostId, e.id,   StringComparison.Ordinal)))
+                     || (cueHostKind == HostKind.PartGroup  && string.Equals(cueHostId, e.id,   StringComparison.Ordinal)))
                     {
                         return (e.kind, e.id);
                     }
@@ -807,7 +807,7 @@ namespace OSE.UI.Root
                 AnimationCueContext context = g.HostKind switch
                 {
                     HostKind.Part        => ResolveHostedPartContext(g.HostId, entry, step),
-                    HostKind.Subassembly => ResolveHostedSubassemblyContext(g.HostId, entry, step),
+                    HostKind.PartGroup => ResolveHostedPartGroupContext(g.HostId, entry, step),
                     HostKind.Tool        => ResolveHostedToolContext(g.HostId, entry, step),
                     _                    => ResolveContext(entry, step),
                 };
@@ -968,11 +968,11 @@ namespace OSE.UI.Root
                 if (matchId != null)
                 {
                     bool idMatch;
-                    if (g.HostKind == HostKind.Part || g.HostKind == HostKind.Subassembly || g.HostKind == HostKind.Tool)
+                    if (g.HostKind == HostKind.Part || g.HostKind == HostKind.PartGroup || g.HostKind == HostKind.Tool)
                         idMatch = string.Equals(g.HostId, matchId, StringComparison.Ordinal);
                     else
                         idMatch = (entry.targetPartIds != null && System.Array.IndexOf(entry.targetPartIds, matchId) >= 0)
-                               || string.Equals(entry.targetSubassemblyId, matchId, StringComparison.Ordinal);
+                               || string.Equals(entry.targetPartGroupId, matchId, StringComparison.Ordinal);
                     if (!idMatch) continue;
                 }
 
@@ -985,7 +985,7 @@ namespace OSE.UI.Root
                 AnimationCueContext context = g.HostKind switch
                 {
                     HostKind.Part        => ResolveHostedPartContext(g.HostId, entry, step),
-                    HostKind.Subassembly => ResolveHostedSubassemblyContext(g.HostId, entry, step),
+                    HostKind.PartGroup => ResolveHostedPartGroupContext(g.HostId, entry, step),
                     HostKind.Tool        => ResolveHostedToolContext(g.HostId, entry, step),
                     _                    => ResolveContext(entry, step),
                 };
@@ -1091,7 +1091,7 @@ namespace OSE.UI.Root
             }
         }
 
-        private enum HostKind { Step, Part, Subassembly, Tool }
+        private enum HostKind { Step, Part, PartGroup, Tool }
 
         private struct GatheredCue
         {
@@ -1114,8 +1114,8 @@ namespace OSE.UI.Root
         /// appends its <c>animationCues</c> entries to <paramref name="out_"/>
         /// when the entry's <see cref="AnimationCueEntry.stepIds"/> is empty
         /// (fire everywhere) or contains <c>step.id</c> (scoped match).
-        /// Part hosts: every part active at this seq. Subassembly hosts:
-        /// every subassembly with at least one visible member. Aggregates
+        /// Part hosts: every part active at this seq. PartGroup hosts:
+        /// every partGroup with at least one visible member. Aggregates
         /// inherit naturally — same check, descendants' visibility bubbles
         /// up through shared partIds.
         /// </summary>
@@ -1148,8 +1148,8 @@ namespace OSE.UI.Root
                 }
             }
 
-            // Subassembly / aggregate-hosted cues
-            var subs = package.GetSubassemblies();
+            // PartGroup / aggregate-hosted cues
+            var subs = package.GetPartGroups();
             if (subs != null)
             {
                 for (int i = 0; i < subs.Length; i++)
@@ -1170,7 +1170,7 @@ namespace OSE.UI.Root
                     {
                         var e = sub.animationCues[k];
                         if (!MatchesStepScope(e, step.id)) continue;
-                        out_.Add(new GatheredCue { Entry = e, HostKind = HostKind.Subassembly, HostId = sub.id });
+                        out_.Add(new GatheredCue { Entry = e, HostKind = HostKind.PartGroup, HostId = sub.id });
                     }
                 }
             }
@@ -1272,29 +1272,29 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
-        /// Subassembly-hosted cue target: always the persistent
+        /// PartGroup-hosted cue target: always the persistent
         /// <c>Group_*</c> root — single target, no transient anim group,
         /// no scene-graph duplication. Players that need to rotate around
-        /// the members' centroid (rotate / orientSubassembly /
+        /// the members' centroid (rotate / orientPartGroup /
         /// poseTransition) compute a counter-translation themselves so
         /// the visible pivot is the centroid even though Group_ sits at
-        /// PreviewRoot origin (see OrientSubassemblyPlayer for the math).
+        /// PreviewRoot origin (see OrientPartGroupPlayer for the math).
         /// Players that translate (shake) just move Group_ — children
         /// inherit. Particle cues parent the prefab to Group_, which
         /// keeps it under one persistent parent. Particles handle their
         /// own positioning via the prefab.
         /// </summary>
-        private AnimationCueContext ResolveHostedSubassemblyContext(string subId, AnimationCueEntry entry, StepDefinition step)
+        private AnimationCueContext ResolveHostedPartGroupContext(string subId, AnimationCueEntry entry, StepDefinition step)
         {
             var targets = new List<GameObject>();
             var startPoses = new List<AnimationCueResolvedPose>();
             var assembledPoses = new List<AnimationCueResolvedPose>();
 
             var pkg = _ctx.Spawner?.CurrentPackage;
-            if (pkg == null || !pkg.TryGetSubassembly(subId, out var sub))
+            if (pkg == null || !pkg.TryGetPartGroup(subId, out var sub))
                 return new AnimationCueContext(entry, targets, startPoses, assembledPoses, DurationOrDefault(entry), null);
 
-            GameObject root = _ctx.Spawner?.GetSubassemblyRoot(subId);
+            GameObject root = _ctx.Spawner?.GetPartGroupRoot(subId);
             if (root == null)
                 return new AnimationCueContext(entry, targets, startPoses, assembledPoses, DurationOrDefault(entry), null);
 
@@ -1354,19 +1354,19 @@ namespace OSE.UI.Root
 
             bool isGhostMode = string.Equals(entry.target, "ghost", StringComparison.OrdinalIgnoreCase);
 
-            // ── Resolve subassembly target FIRST ──────────────────────────────────
+            // ── Resolve partGroup target FIRST ──────────────────────────────────
             // This may create the fabrication group (_fabricationGroupRoot). When both
-            // targetSubassemblyId and targetPartIds are authored on the same cue, the
+            // targetPartGroupId and targetPartIds are authored on the same cue, the
             // extra parts are absorbed into the fabrication group so everything moves
             // as one unit — no separate per-part targets are registered.
             bool partsAbsorbedIntoGroup = false;
-            if (!string.IsNullOrEmpty(entry.targetSubassemblyId))
+            if (!string.IsNullOrEmpty(entry.targetPartGroupId))
             {
-                GameObject subassemblyRoot = ResolveSubassemblyTarget(entry.targetSubassemblyId, step);
-                if (subassemblyRoot != null)
+                GameObject partGroupRoot = ResolvePartGroupTarget(entry.targetPartGroupId, step);
+                if (partGroupRoot != null)
                 {
-                    targets.Add(subassemblyRoot);
-                    var t = subassemblyRoot.transform;
+                    targets.Add(partGroupRoot);
+                    var t = partGroupRoot.transform;
                     var pose = new AnimationCueResolvedPose
                     {
                         Position = t.localPosition,
@@ -1388,7 +1388,7 @@ namespace OSE.UI.Root
 
             // ── Step-scoped promotion (transient animation root) ─────────────────
             // When a cue targets multiple partIds that all belong to the
-            // step's scoped subassembly, animate them as one rigid unit by
+            // step's scoped partGroup, animate them as one rigid unit by
             // wrapping them in a transient root at their world centroid —
             // WITHOUT touching the persistent Group_* root (that one drives
             // interactions/selection/drag/ghost and must stay at identity).
@@ -1397,24 +1397,24 @@ namespace OSE.UI.Root
             // their original parents via UngroupFabricationMembers().
             //
             // Conditions mirror the design doc: ≥2 partIds, no explicit
-            // targetSubassemblyId, not ghost mode, step has group scope,
+            // targetPartGroupId, not ghost mode, step has group scope,
             // every partId is a member. Single-part cues and cross-group
             // cues fall through to the per-part branch unchanged.
             if (!partsAbsorbedIntoGroup
                 && !isGhostMode
                 && _fabricationGroupRoot == null
-                && string.IsNullOrEmpty(entry.targetSubassemblyId)
+                && string.IsNullOrEmpty(entry.targetPartGroupId)
                 && entry.targetPartIds != null
                 && entry.targetPartIds.Length >= 2
                 && step != null)
             {
-                string stepSubId = !string.IsNullOrEmpty(step.requiredSubassemblyId)
-                    ? step.requiredSubassemblyId
-                    : step.subassemblyId;
+                string stepSubId = !string.IsNullOrEmpty(step.requiredPartGroupId)
+                    ? step.requiredPartGroupId
+                    : step.partGroupId;
                 var pkg = _ctx.Spawner?.CurrentPackage;
                 if (!string.IsNullOrEmpty(stepSubId)
                     && pkg != null
-                    && pkg.TryGetSubassembly(stepSubId, out var stepSub)
+                    && pkg.TryGetPartGroup(stepSubId, out var stepSub)
                     && stepSub?.partIds != null
                     && stepSub.partIds.Length > 0)
                 {
@@ -1434,7 +1434,7 @@ namespace OSE.UI.Root
 
                     if (allMembers)
                     {
-                        // Use the FULL subassembly member list, not just the
+                        // Use the FULL partGroup member list, not just the
                         // partIds named in the cue. The cue's partIds act as
                         // the "all parts belong to this group" trigger; the
                         // animation should move the whole group (every
@@ -1567,15 +1567,15 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
-        /// Computes the centroid of a subassembly's member parts from their
+        /// Computes the centroid of a partGroup's member parts from their
         /// authored <c>assembledPosition</c> values (stored in the package).
         /// Returns the centroid in the target's local frame. Null when no
         /// member has an authored position.
         /// </summary>
-        private Vector3? ComputeAuthoredCentroidLocal(string subassemblyId, Transform target)
+        private Vector3? ComputeAuthoredCentroidLocal(string partGroupId, Transform target)
         {
             var pkg = _ctx.Spawner?.CurrentPackage;
-            if (pkg == null || !pkg.TryGetSubassembly(subassemblyId, out var sub) || sub?.partIds == null)
+            if (pkg == null || !pkg.TryGetPartGroup(partGroupId, out var sub) || sub?.partIds == null)
                 return null;
 
             Vector3 sum = Vector3.zero;
@@ -1600,14 +1600,14 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
-        /// Resolves a subassembly target. For stacking steps that have a proxy, returns the proxy root.
+        /// Resolves a partGroup target. For stacking steps that have a proxy, returns the proxy root.
         /// For fabrication steps with no proxy, groups the completed member parts under a temp parent.
         /// </summary>
-        private GameObject ResolveSubassemblyTarget(string subassemblyId, StepDefinition step)
+        private GameObject ResolvePartGroupTarget(string partGroupId, StepDefinition step)
         {
             // Try proxy first (stacking steps)
-            if (_ctx.SubassemblyController != null &&
-                _ctx.SubassemblyController.TryGetProxy(subassemblyId, out GameObject proxyRoot))
+            if (_ctx.PartGroupController != null &&
+                _ctx.PartGroupController.TryGetProxy(partGroupId, out GameObject proxyRoot))
             {
                 return proxyRoot;
             }
@@ -1617,16 +1617,16 @@ namespace OSE.UI.Root
             // animations (rotate, shake) should play on it too. The root is
             // at origin+identity so rotations pivot around origin, matching
             // how the author authored poses in TTAW.
-            var groupRoot = _ctx.Spawner?.GetSubassemblyRoot(subassemblyId);
+            var groupRoot = _ctx.Spawner?.GetPartGroupRoot(partGroupId);
             if (groupRoot != null)
                 return groupRoot;
 
             // Fabrication fallback: group completed member parts under a temp parent
             var package = _ctx.Spawner?.CurrentPackage;
-            if (package == null || !package.TryGetSubassembly(subassemblyId, out var subassemblyDef))
+            if (package == null || !package.TryGetPartGroup(partGroupId, out var partGroupDef))
                 return null;
 
-            string[] memberPartIds = subassemblyDef.partIds;
+            string[] memberPartIds = partGroupDef.partIds;
             if (memberPartIds == null || memberPartIds.Length == 0)
                 return null;
 
@@ -1671,7 +1671,7 @@ namespace OSE.UI.Root
             Vector3 pivot = pivotSum / pivotCount;
 
             // Create temporary parent at the pivot (in PreviewRoot local space)
-            _fabricationGroupRoot = new GameObject($"_AnimCue_FabGroup_{subassemblyId}");
+            _fabricationGroupRoot = new GameObject($"_AnimCue_FabGroup_{partGroupId}");
             var setup = _ctx.Setup;
             if (setup != null && setup.PreviewRoot != null)
                 _fabricationGroupRoot.transform.SetParent(setup.PreviewRoot, false);
@@ -1706,7 +1706,7 @@ namespace OSE.UI.Root
                 ct.SetParent(_fabricationGroupRoot.transform, true);
             }
 
-            OseLog.VerboseInfo($"[AnimCue] Grouped {completedMembers.Count} fabrication members for '{subassemblyId}' under temp parent.");
+            OseLog.VerboseInfo($"[AnimCue] Grouped {completedMembers.Count} fabrication members for '{partGroupId}' under temp parent.");
             return _fabricationGroupRoot;
         }
 
@@ -1796,9 +1796,9 @@ namespace OSE.UI.Root
 
         /// <summary>
         /// Reparents extra parts named in <paramref name="partIds"/> into the active
-        /// fabrication group so they animate as one unit with the subassembly.
-        /// Called when a cue authors both <c>targetSubassemblyId</c> AND <c>targetPartIds</c>.
-        /// Parts already in the group (subassembly members) are skipped.
+        /// fabrication group so they animate as one unit with the partGroup.
+        /// Called when a cue authors both <c>targetPartGroupId</c> AND <c>targetPartIds</c>.
+        /// Parts already in the group (partGroup members) are skipped.
         /// </summary>
         private void AbsorbPartsIntoFabricationGroup(string[] partIds)
         {
@@ -1814,7 +1814,7 @@ namespace OSE.UI.Root
                 if (go == null) continue;
 
                 Transform ct = go.transform;
-                // Skip if already a child of the fabrication group (subassembly member)
+                // Skip if already a child of the fabrication group (partGroup member)
                 if (ct.parent == groupTransform) continue;
 
                 // Save original transform for cleanup restoration

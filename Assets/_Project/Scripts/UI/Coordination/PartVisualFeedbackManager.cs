@@ -40,8 +40,8 @@ namespace OSE.UI.Root
         private static Color PreviewReadyColor => InteractionVisualConstants.PreviewReadyColor;
         private static Color HintHighlightColorA => InteractionVisualConstants.HintHighlightColorA;
         private static Color HintHighlightColorB => InteractionVisualConstants.HintHighlightColorB;
-        private static Color HoveredSubassemblyEmission => InteractionVisualConstants.HoveredSubassemblyEmission;
-        private static Color SelectedSubassemblyEmission => InteractionVisualConstants.SelectedSubassemblyEmission;
+        private static Color HoveredPartGroupEmission => InteractionVisualConstants.HoveredPartGroupEmission;
+        private static Color SelectedPartGroupEmission => InteractionVisualConstants.SelectedPartGroupEmission;
 
         public PartVisualFeedbackManager(IBridgeContext context)
         {
@@ -136,7 +136,7 @@ namespace OSE.UI.Root
             if (selectionService != null && selectionService.CurrentSelection == partGo)
                 return false;
 
-            if (_ctx.IsSubassemblyProxy(partGo))
+            if (_ctx.IsPartGroupProxy(partGo))
                 return true;
 
             PartPlacementState state = GetPartState(partId);
@@ -145,7 +145,7 @@ namespace OSE.UI.Root
                    state == PartPlacementState.PlacedVirtually;
         }
 
-        public void UpdateSelectedSubassemblyVisual()
+        public void UpdateSelectedPartGroupVisual()
         {
             if (!Application.isPlaying)
                 return;
@@ -155,7 +155,7 @@ namespace OSE.UI.Root
                 return;
 
             GameObject selected = _ctx.NormalizeSelectablePlacementTarget(selectionService.CurrentSelection);
-            if (!_ctx.IsSubassemblyProxy(selected))
+            if (!_ctx.IsPartGroupProxy(selected))
                 return;
 
             ApplySelectedPartVisual(selected);
@@ -176,12 +176,12 @@ namespace OSE.UI.Root
 
         public void ApplyHoveredPartVisual(GameObject partGo)
         {
-            if (_ctx.IsSubassemblyProxy(partGo))
+            if (_ctx.IsPartGroupProxy(partGo))
             {
                 _ctx.ForEachProxyMember(partGo, member =>
                 {
                     ApplyHoveredPartVisual(member);
-                    MaterialHelper.SetEmission(member, HoveredSubassemblyEmission);
+                    MaterialHelper.SetEmission(member, HoveredPartGroupEmission);
                 });
                 return;
             }
@@ -194,12 +194,12 @@ namespace OSE.UI.Root
 
         public void ApplySelectedPartVisual(GameObject partGo)
         {
-            if (_ctx.IsSubassemblyProxy(partGo))
+            if (_ctx.IsPartGroupProxy(partGo))
             {
                 _ctx.ForEachProxyMember(partGo, member =>
                 {
                     ApplySelectedPartVisual(member);
-                    MaterialHelper.SetEmission(member, SelectedSubassemblyEmission);
+                    MaterialHelper.SetEmission(member, SelectedPartGroupEmission);
                 });
                 return;
             }
@@ -215,7 +215,7 @@ namespace OSE.UI.Root
             if (partGo == null)
                 return;
 
-            if (_ctx.IsSubassemblyProxy(partGo))
+            if (_ctx.IsPartGroupProxy(partGo))
             {
                 _ctx.ForEachProxyMember(partGo, member => ApplyPartVisualForState(member, member.name, GetPartState(member.name)));
                 return;
@@ -230,7 +230,7 @@ namespace OSE.UI.Root
             if (partGo == null)
                 return;
 
-            if (_ctx.IsSubassemblyProxy(partGo))
+            if (_ctx.IsPartGroupProxy(partGo))
             {
                 switch (state)
                 {
@@ -276,7 +276,7 @@ namespace OSE.UI.Root
 
         public void ApplyAvailablePartVisual(GameObject partGo, string partId)
         {
-            if (_ctx.IsSubassemblyProxy(partGo))
+            if (_ctx.IsPartGroupProxy(partGo))
             {
                 _ctx.ForEachProxyMember(partGo, member => ApplyPartVisualForState(member, member.name, GetPartState(member.name)));
                 return;
@@ -348,7 +348,7 @@ namespace OSE.UI.Root
 
         public void SyncPartGrabInteractivity(GameObject partGo, string partId)
         {
-            if (partGo == null || string.IsNullOrWhiteSpace(partId) || _ctx.IsSubassemblyProxy(partGo))
+            if (partGo == null || string.IsNullOrWhiteSpace(partId) || _ctx.IsPartGroupProxy(partGo))
                 return;
 
             bool shouldEnableGrab = !_ctx.IsPartMovementLocked(partId);
@@ -374,7 +374,7 @@ namespace OSE.UI.Root
         /// True when <paramref name="partId"/> is a task part of the current
         /// step. Uses the <see cref="_activeStepPartIds"/> set populated by
         /// <see cref="ApplyStepPartHighlighting"/> — that already includes
-        /// requiredPartIds and requiredSubassembly members. If no step is
+        /// requiredPartIds and requiredPartGroup members. If no step is
         /// active (set is empty) we don't restrict grab. NO-TASK visualPartIds
         /// entries are never added to the set, so they're not grabbable.
         /// </summary>
@@ -518,7 +518,7 @@ namespace OSE.UI.Root
                 return;
 
             int currentSeq    = step.sequenceIndex;
-            string subassemblyId = step.subassemblyId;
+            string partGroupId = step.partGroupId;
 
             // Reveal set = every part whose baked poseTable entry is
             // non-Hidden at currentSeq. This is the *same* source the TTAW
@@ -533,15 +533,15 @@ namespace OSE.UI.Root
             // Target-associated parts and step-scoped task parts are
             // guaranteed to be in the visible set: PoseResolverIndex seeds
             // firstVisibleSeqByPart from requiredPartIds / optionalPartIds /
-            // visualPartIds / requiredSubassemblyId members, and the
+            // visualPartIds / requiredPartGroupId members, and the
             // "loose-placement" fallback pins anything with a placement to
             // the first step's seq.
             var poseTable = package.poseTable;
-            var subassemblyPartIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var partGroupPartIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (poseTable != null)
             {
                 foreach (var pid in poseTable.EnumerateVisiblePartsAt(currentSeq))
-                    if (!string.IsNullOrWhiteSpace(pid)) subassemblyPartIds.Add(pid);
+                    if (!string.IsNullOrWhiteSpace(pid)) partGroupPartIds.Add(pid);
             }
             else
             {
@@ -550,19 +550,19 @@ namespace OSE.UI.Root
                 // so this code path still works.
                 if (step.requiredPartIds != null)
                     foreach (var pid in step.requiredPartIds)
-                        if (!string.IsNullOrWhiteSpace(pid)) subassemblyPartIds.Add(pid);
+                        if (!string.IsNullOrWhiteSpace(pid)) partGroupPartIds.Add(pid);
                 if (step.optionalPartIds != null)
                     foreach (var pid in step.optionalPartIds)
-                        if (!string.IsNullOrWhiteSpace(pid)) subassemblyPartIds.Add(pid);
+                        if (!string.IsNullOrWhiteSpace(pid)) partGroupPartIds.Add(pid);
                 if (step.visualPartIds != null)
                     foreach (var pid in step.visualPartIds)
-                        if (!string.IsNullOrWhiteSpace(pid)) subassemblyPartIds.Add(pid);
-                if (!string.IsNullOrEmpty(step.requiredSubassemblyId)
-                    && package.TryGetSubassembly(step.requiredSubassemblyId, out var stepSubDef)
+                        if (!string.IsNullOrWhiteSpace(pid)) partGroupPartIds.Add(pid);
+                if (!string.IsNullOrEmpty(step.requiredPartGroupId)
+                    && package.TryGetPartGroup(step.requiredPartGroupId, out var stepSubDef)
                     && stepSubDef?.partIds != null)
                 {
                     foreach (var pid in stepSubDef.partIds)
-                        if (!string.IsNullOrWhiteSpace(pid)) subassemblyPartIds.Add(pid);
+                        if (!string.IsNullOrWhiteSpace(pid)) partGroupPartIds.Add(pid);
                 }
                 if (step.targetIds != null)
                 {
@@ -571,13 +571,13 @@ namespace OSE.UI.Root
                         if (string.IsNullOrWhiteSpace(tid) || !package.TryGetTarget(tid, out var tgt) || tgt == null)
                             continue;
                         if (!string.IsNullOrWhiteSpace(tgt.associatedPartId))
-                            subassemblyPartIds.Add(tgt.associatedPartId);
-                        if (!string.IsNullOrWhiteSpace(tgt.associatedSubassemblyId)
-                            && package.TryGetSubassembly(tgt.associatedSubassemblyId, out var subDef)
+                            partGroupPartIds.Add(tgt.associatedPartId);
+                        if (!string.IsNullOrWhiteSpace(tgt.associatedPartGroupId)
+                            && package.TryGetPartGroup(tgt.associatedPartGroupId, out var subDef)
                             && subDef?.partIds != null)
                         {
                             foreach (var pid in subDef.partIds)
-                                if (!string.IsNullOrWhiteSpace(pid)) subassemblyPartIds.Add(pid);
+                                if (!string.IsNullOrWhiteSpace(pid)) partGroupPartIds.Add(pid);
                         }
                     }
                 }
@@ -589,9 +589,9 @@ namespace OSE.UI.Root
             // poseTable bake didn't include those parts (usually because
             // BakeStagingPoses didn't synthesize a partPlacement for them;
             // see [Normalizer.BakeStagingPoses] for the count tripwire).
-            OseLog.VerboseInfo($"[PartInteraction] RevealStepParts step='{stepId}' seq={currentSeq} subassemblyId='{subassemblyId}' visiblePartIds={subassemblyPartIds.Count} (source={(poseTable != null ? "poseTable" : "step-fields-fallback")})");
+            OseLog.VerboseInfo($"[PartInteraction] RevealStepParts step='{stepId}' seq={currentSeq} partGroupId='{partGroupId}' visiblePartIds={partGroupPartIds.Count} (source={(poseTable != null ? "poseTable" : "step-fields-fallback")})");
 
-            if (subassemblyPartIds.Count == 0)
+            if (partGroupPartIds.Count == 0)
                 return;
 
             // Hierarchy sync FIRST — creates/updates Group_* roots (at
@@ -600,11 +600,11 @@ namespace OSE.UI.Root
             // at identity, so localPos == the authored PreviewRoot-space
             // pose. If we positioned first and reparented afterward, the
             // reparent would leave parts at stale world positions.
-            _ctx.Spawner?.SyncSubassemblyHierarchy(package, step);
+            _ctx.Spawner?.SyncPartGroupHierarchy(package, step);
 
             // Filter to parts not yet revealed
             var toReveal = new List<string>();
-            foreach (string partId in subassemblyPartIds)
+            foreach (string partId in partGroupPartIds)
             {
                 if (_ctx.PartStates.TryGetValue(partId, out var state) &&
                     state is PartPlacementState.Completed or PartPlacementState.PlacedVirtually)
@@ -742,7 +742,7 @@ namespace OSE.UI.Root
             // Second hierarchy sync — catches any members that became active
             // via the reveal loop but weren't at the first pass (spawner
             // hadn't registered them yet). No-op for already-reparented ones.
-            _ctx.Spawner?.SyncSubassemblyHierarchy(package, step);
+            _ctx.Spawner?.SyncPartGroupHierarchy(package, step);
 
             // Deactivation pass: any spawned part NOT in the visible set at
             // currentSeq must be hidden, unless it's Completed/PlacedVirtually
@@ -758,7 +758,7 @@ namespace OSE.UI.Root
                     var go = spawnedParts[i];
                     if (go == null) continue;
                     string pid = go.name;
-                    if (subassemblyPartIds.Contains(pid)) continue;
+                    if (partGroupPartIds.Contains(pid)) continue;
                     if (_ctx.PartStates.TryGetValue(pid, out var st)
                         && st is PartPlacementState.Completed or PartPlacementState.PlacedVirtually)
                         continue;
@@ -767,7 +767,7 @@ namespace OSE.UI.Root
                 }
             }
 
-            OseLog.Info($"[PartInteraction] Revealed {toReveal.Count} part(s) for subassembly '{subassemblyId}'.");
+            OseLog.Info($"[PartInteraction] Revealed {toReveal.Count} part(s) for partGroup '{partGroupId}'.");
         }
 
         public void ApplyStepPartHighlighting(string stepId)
@@ -778,14 +778,14 @@ namespace OSE.UI.Root
 
             _activeStepPartIds.Clear();
             _stepHighlightingApplied = true;
-            if (step.RequiresSubassemblyPlacement &&
-                package.TryGetSubassembly(step.requiredSubassemblyId, out var requiredSubassembly) &&
-                requiredSubassembly?.partIds != null)
+            if (step.RequiresPartGroupPlacement &&
+                package.TryGetPartGroup(step.requiredPartGroupId, out var requiredPartGroup) &&
+                requiredPartGroup?.partIds != null)
             {
-                for (int i = 0; i < requiredSubassembly.partIds.Length; i++)
+                for (int i = 0; i < requiredPartGroup.partIds.Length; i++)
                 {
-                    if (!string.IsNullOrEmpty(requiredSubassembly.partIds[i]))
-                        _activeStepPartIds.Add(requiredSubassembly.partIds[i]);
+                    if (!string.IsNullOrEmpty(requiredPartGroup.partIds[i]))
+                        _activeStepPartIds.Add(requiredPartGroup.partIds[i]);
                 }
             }
             else
@@ -1016,7 +1016,7 @@ namespace OSE.UI.Root
 
             // Group-compose path: ALWAYS prefer poseTable.TryGet at the active
             // step's seq when available. The poseTable bake composes group
-            // hold-at-end stepPoses (authored on the SUBASSEMBLY's placement
+            // hold-at-end stepPoses (authored on the PART_GROUP's placement
             // by SynthesizeGroupHoldAtEnd) onto each member via
             // PoseResolver.ApplyGroupStepPose. Writing assembledRotation raw
             // bypasses that composition and silently drops any active group
@@ -1155,7 +1155,7 @@ namespace OSE.UI.Root
         private void MovePartToIntegratedOrPlayPosition(string partId, GameObject partGo)
         {
             // In the fully-assembled view, prefer integrated member placement
-            // (canonical cube pose) so subassembly members appear at their stacked
+            // (canonical cube pose) so partGroup members appear at their stacked
             // positions rather than their fabrication-station assembledPositions.
             IntegratedMemberPreviewPlacement imp = _ctx.Spawner?.FindIntegratedMemberPlacement(partId);
             if (imp != null)

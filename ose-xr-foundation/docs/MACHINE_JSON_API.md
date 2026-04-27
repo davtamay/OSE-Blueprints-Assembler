@@ -11,7 +11,7 @@ Complete keyword reference for `machine.json` — the single data file that defi
 - [Root Object](#root-object)
 - [machine](#machine)
 - [assemblies](#assemblies)
-- [subassemblies](#subassemblies)
+- [partGroups](#partGroups)
 - [partTemplates](#parttemplates)
 - [parts](#parts)
 - [tools](#tools)
@@ -38,7 +38,7 @@ Complete keyword reference for `machine.json` — the single data file that defi
 | `packageVersion` | `string` | Yes | Content version (e.g. `"0.6.4"`). |
 | `machine` | `MachineDefinition` | Yes | Machine metadata. |
 | `assemblies` | `AssemblyDefinition[]` | Yes | Assembly groupings. |
-| `subassemblies` | `SubassemblyDefinition[]` | No | Subassembly groupings. |
+| `partGroups` | `PartGroupDefinition[]` | No | PartGroup groupings. |
 | `partTemplates` | `PartTemplateDefinition[]` | No | Reusable part templates. Parts reference via `templateId`. |
 | `parts` | `PartDefinition[]` | Yes | All parts in the package. |
 | `tools` | `ToolDefinition[]` | No | All tools in the package. |
@@ -94,30 +94,30 @@ Complete keyword reference for `machine.json` — the single data file that defi
 | `name` | `string` | Display name. |
 | `description` | `string` | Assembly description. |
 | `machineId` | `string` | Parent machine ID. |
-| `subassemblyIds` | `string[]` | Subassemblies belonging to this assembly. |
+| `partGroupIds` | `string[]` | PartGroups belonging to this assembly. |
 | `stepIds` | `string[]` | Legacy step ID list. Runtime derives steps from `steps[].assemblyId` instead. |
 | `dependencyAssemblyIds` | `string[]` | Assemblies that must be completed before this one. |
 | `learningFocus` | `string` | Learning focus description for this assembly section. |
 
 ---
 
-## subassemblies
+## partGroups
 
-`SubassemblyDefinition[]` — groups of parts that form a placeable unit.
+`PartGroupDefinition[]` — groups of parts that form a placeable unit.
 
 | Key | Type | Description |
 |-----|------|-------------|
-| `id` | `string` | Unique subassembly ID. Referenced by `steps[].subassemblyId` and `steps[].requiredSubassemblyId`. |
+| `id` | `string` | Unique partGroup ID. Referenced by `steps[].partGroupId` and `steps[].requiredPartGroupId`. |
 | `name` | `string` | Display name. |
 | `assemblyId` | `string` | Parent assembly ID. |
-| `description` | `string` | Subassembly description. |
+| `description` | `string` | PartGroup description. |
 | `partIds` | `string[]` | Member part IDs. |
-| `stepIds` | `string[]` | Steps that build this subassembly. |
-| `milestoneMessage` | `string` | Message shown when subassembly is completed. |
+| `stepIds` | `string[]` | Steps that build this partGroup. |
+| `milestoneMessage` | `string` | Message shown when partGroup is completed. |
 
-**Two subassembly modes:**
-- **Fabrication** (`subassemblyId` on steps): Parts are built individually within a subassembly context. No proxy object. Parts remain as individual GOs.
-- **Stacking** (`requiredSubassemblyId` on a step): A completed subassembly becomes a single draggable proxy. Requires a `subassemblyPlacements` entry in `previewConfig`.
+**Two partGroup modes:**
+- **Fabrication** (`partGroupId` on steps): Parts are built individually within a partGroup context. No proxy object. Parts remain as individual GOs.
+- **Stacking** (`requiredPartGroupId` on a step): A completed partGroup becomes a single draggable proxy. Requires a `partGroupPlacements` entry in `previewConfig`.
 
 ---
 
@@ -237,7 +237,7 @@ Agent-authored staging position for a part. Lives in `parts[].stagingPose`, not 
 | `anchorRef` | `string` | Anchor reference for positioning. |
 | `description` | `string` | Target description. |
 | `associatedPartId` | `string` | Part ID this target accepts. |
-| `associatedSubassemblyId` | `string` | Subassembly ID this target accepts. |
+| `associatedPartGroupId` | `string` | PartGroup ID this target accepts. |
 | `tags` | `string[]` | Freeform tags. |
 | `weldAxis` | `SceneFloat3` | Direction of weld/cut line in local space (normalized). Zero = point target. |
 | `weldLength` | `float` | Length of weld/cut line in scene units. `0` = default (0.03). |
@@ -257,14 +257,14 @@ Agent-authored staging position for a part. Lives in `parts[].stagingPose`, not 
 | `id` | `string` | Unique step ID. Convention: `step_<snake_case>`. |
 | `name` | `string` | Human-readable label (editor/audit only). |
 | `assemblyId` | `string` | Parent assembly ID. |
-| `subassemblyId` | `string` | Parent subassembly ID (fabrication context). |
+| `partGroupId` | `string` | Parent partGroup ID (fabrication context). |
 | `sequenceIndex` | `int` | Ordering index. Must be unique per assembly and ordered. |
 | `family` | `string` | Interaction family. Values: `"Place"`, `"Use"`, `"Connect"`, `"Confirm"`. |
 | `profile` | `string` | Family-scoped profile. Values: `"Clamp"`, `"AxisFit"`, `"Torque"`, `"Weld"`, `"Cut"`, `"Strike"`, `"Measure"`, `"SquareCheck"`, `"Cable"`, `"WireConnect"`. Omit for family default. |
 | `viewMode` | `string` | Camera framing. Values: `"SourceAndTarget"`, `"PairEndpoints"`, `"WorkZone"`, `"PathView"`, `"Overview"`, `"Inspect"`, `"ToolFocus"`. Null = auto-resolved. |
 | `targetOrder` | `string` | `"parallel"` (default/null) or `"sequential"`. |
 | `requiredPartIds` | `string[]` | Parts that must be placed to complete this step. |
-| `requiredSubassemblyId` | `string` | Subassembly proxy to place (stacking step). |
+| `requiredPartGroupId` | `string` | PartGroup proxy to place (stacking step). |
 | `optionalPartIds` | `string[]` | Parts visible but not required. |
 | `relevantToolIds` | `string[]` | Tools highlighted during this step. |
 | `targetIds` | `string[]` | Target zone IDs for this step. |
@@ -285,7 +285,7 @@ Agent-authored staging position for a part. Lives in `parts[].stagingPose`, not 
 | `measurement` | object | Anchor-to-anchor measurement data (`Use.Measure`). |
 | `gesture` | object | Gesture type and thresholds (`Use` family). |
 | `wireConnect` | object | Polarity-aware wire data (`Connect.WireConnect`). |
-| `workingOrientation` | object | Temporary subassembly rotation for this step. |
+| `workingOrientation` | object | Temporary partGroup rotation for this step. |
 | `animationCues` | object | Data-driven animation cues on step activation. |
 
 See [STEP_SCHEMA.md](STEP_SCHEMA.md) for full payload field tables.
@@ -438,10 +438,10 @@ Per-step challenge tuning (used in `difficulty.challengeFlags`).
 | `targetRotationFormat` | `string` | `"mesh"` = direct mesh rotation. Null = legacy approach-vector format. |
 | `partPlacements` | `PartPreviewPlacement[]` | Per-part start and assembled transforms. |
 | `targetPlacements` | `TargetPreviewPlacement[]` | Per-target placement transforms. |
-| `subassemblyPlacements` | `SubassemblyPreviewPlacement[]` | Fabrication-space frames for stacking subassemblies. |
-| `constrainedSubassemblyFitPlacements` | `ConstrainedSubassemblyFitPreviewPlacement[]` | Axis-constrained fit data. |
-| `completedSubassemblyParkingPlacements` | `SubassemblyPreviewPlacement[]` | Parking frames for finished subassemblies. |
-| `integratedSubassemblyPlacements` | `IntegratedSubassemblyPreviewPlacement[]` | Final member poses after integration. |
+| `partGroupPlacements` | `PartGroupPreviewPlacement[]` | Fabrication-space frames for stacking partGroups. |
+| `constrainedPartGroupFitPlacements` | `ConstrainedPartGroupFitPreviewPlacement[]` | Axis-constrained fit data. |
+| `completedPartGroupParkingPlacements` | `PartGroupPreviewPlacement[]` | Parking frames for finished partGroups. |
+| `integratedPartGroupPlacements` | `IntegratedPartGroupPreviewPlacement[]` | Final member poses after integration. |
 
 ### PartPreviewPlacement
 
@@ -484,20 +484,20 @@ Author them in `parts[].stagingPose` instead — the normalizer bakes them here 
 | `portA` | `SceneFloat3` | Port A position (pipe/cable connections). |
 | `portB` | `SceneFloat3` | Port B position (pipe/cable connections). |
 
-### SubassemblyPreviewPlacement
+### PartGroupPreviewPlacement
 
 | Key | Type | Description |
 |-----|------|-------------|
-| `subassemblyId` | `string` | Subassembly ID. |
+| `partGroupId` | `string` | PartGroup ID. |
 | `position` | `SceneFloat3` | Reference frame position. |
 | `rotation` | `SceneQuaternion` | Reference frame rotation. |
 | `scale` | `SceneFloat3` | Reference frame scale. |
 
-### ConstrainedSubassemblyFitPreviewPlacement
+### ConstrainedPartGroupFitPreviewPlacement
 
 | Key | Type | Description |
 |-----|------|-------------|
-| `subassemblyId` | `string` | Subassembly ID. |
+| `partGroupId` | `string` | PartGroup ID. |
 | `targetId` | `string` | Anchor target ID. |
 | `fitAxisLocal` | `SceneFloat3` | Local axis for constrained slide. |
 | `minTravel` | `float` | Minimum travel distance. |
@@ -506,11 +506,11 @@ Author them in `parts[].stagingPose` instead — the normalizer bakes them here 
 | `snapTolerance` | `float` | Snap tolerance. |
 | `drivenPartIds` | `string[]` | Parts that slide along the axis. |
 
-### IntegratedSubassemblyPreviewPlacement
+### IntegratedPartGroupPreviewPlacement
 
 | Key | Type | Description |
 |-----|------|-------------|
-| `subassemblyId` | `string` | Subassembly ID. |
+| `partGroupId` | `string` | PartGroup ID. |
 | `targetId` | `string` | Integration target ID. |
 | `memberPlacements` | `IntegratedMemberPreviewPlacement[]` | Per-member canonical poses. |
 
@@ -627,7 +627,7 @@ Quick-lookup for every accepted string value across all definition types.
 | `"demonstratePlacement"` | Lerp start to assembled with optional bolt spin |
 | `"poseTransition"` | Arbitrary from/to pose animation |
 | `"pulse"` | Emission color pulse |
-| `"orientSubassembly"` | Rotate subassembly to expose work area |
+| `"orientPartGroup"` | Rotate partGroup to expose work area |
 
 ### Animation Cue Trigger
 

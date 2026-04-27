@@ -9,7 +9,7 @@ file layout:
       machine.json          ← metadata only (machine, version, challengeConfig, assetManifest)
       shared.json           ← tools, partTemplates, global hints, global validationRules, effects
       assemblies/
-        {assemblyId}.json   ← one file per assembly (assembly def, subassemblies, steps,
+        {assemblyId}.json   ← one file per assembly (assembly def, partGroups, steps,
                                parts, targets, local hints)
       preview_config.json   ← previewConfig object extracted verbatim (TTAW-generated)
 
@@ -88,7 +88,7 @@ def main(dry_run: bool = False):
 
     # ── index source arrays ────────────────────────────────────────────────────
     assemblies    = safe_list(data.get("assemblies"))
-    subassemblies = safe_list(data.get("subassemblies"))
+    partGroups = safe_list(data.get("partGroups"))
     parts         = safe_list(data.get("parts"))
     tools         = safe_list(data.get("tools"))
     part_templates= safe_list(data.get("partTemplates"))
@@ -117,11 +117,11 @@ def main(dry_run: bool = False):
         if asm_id:
             steps_by_assembly[asm_id].append(step)
 
-    # subassembly → assemblyId (from its own assemblyId field)
-    subassembly_to_assembly = {}
-    for sub in subassemblies:
+    # partGroup → assemblyId (from its own assemblyId field)
+    partGroup_to_assembly = {}
+    for sub in partGroups:
         if sub and sub.get("id") and sub.get("assemblyId"):
-            subassembly_to_assembly[sub["id"]] = sub["assemblyId"]
+            partGroup_to_assembly[sub["id"]] = sub["assemblyId"]
 
     # targetId → assemblyId (from first step that references it)
     target_to_assembly = {}
@@ -206,21 +206,21 @@ def main(dry_run: bool = False):
             continue
         asm_by_id[asm["id"]] = {
             "_def":         asm,
-            "subassemblies":[],
+            "partGroups":[],
             "parts":        [],
             "steps":        [],
             "targets":      [],
             "hints":        [],
         }
 
-    # distribute subassemblies
-    for sub in subassemblies:
+    # distribute partGroups
+    for sub in partGroups:
         if not sub: continue
         asm_id = sub.get("assemblyId", "")
         if asm_id in asm_by_id:
-            asm_by_id[asm_id]["subassemblies"].append(sub)
+            asm_by_id[asm_id]["partGroups"].append(sub)
         else:
-            print(f"  WARN: subassembly '{sub.get('id')}' has unknown assemblyId '{asm_id}' — skipping")
+            print(f"  WARN: partGroup '{sub.get('id')}' has unknown assemblyId '{asm_id}' — skipping")
 
     # distribute steps
     for step in steps:
@@ -331,7 +331,7 @@ def main(dry_run: bool = False):
     for asm_id, bucket in sorted(asm_by_id.items()):
         asm_content = omit_none_and_empty({
             "assemblies":    [bucket["_def"]],
-            "subassemblies": bucket["subassemblies"] if bucket["subassemblies"] else None,
+            "partGroups": bucket["partGroups"] if bucket["partGroups"] else None,
             "parts":         bucket["parts"]         if bucket["parts"]         else None,
             "steps":         bucket["steps"]         if bucket["steps"]         else None,
             "targets":       bucket["targets"]       if bucket["targets"]       else None,

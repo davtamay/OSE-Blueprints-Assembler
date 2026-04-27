@@ -51,7 +51,7 @@ The current version (Power Cube VII / 7s) uses a 28 HP Briggs & Stratton Profess
 
 | Package ID | Scope | Parts | Steps | Tools | Status |
 |------------|-------|-------|-------|-------|--------|
-| ~~`power_cube_frame_corner`~~ | ~~Frame corner subassembly (stage 2 subset)~~ | ~~3~~ | ~~3~~ | ~~2~~ | Deleted (superseded by full package) |
+| ~~`power_cube_frame_corner`~~ | ~~Frame corner partGroup (stage 2 subset)~~ | ~~3~~ | ~~3~~ | ~~2~~ | Deleted (superseded by full package) |
 | `power_cube_frame` | **Complete Power Cube build - all 12 stages** | 29 | 43 | 10 | **Authored (primitive shapes, legacy package id retained for compatibility)** |
 
 ### Current Package Coverage (`power_cube_frame`)
@@ -99,7 +99,7 @@ available OSE source material is strongest there: 1/8 inch x 1 inch flat stock c
 
 ### Current Package Coverage (`d3d_v18_10`)
 
-- Covers all six frame sides as separate fabrication subassemblies.
+- Covers all six frame sides as separate fabrication partGroups.
 - Uses source-backed stock dimensions: 13 inch x 1 inch x 1/8 inch mild-steel flat bar.
 - Encodes the real 14 inch square side geometry and 1 inch corner overlap for every panel.
 - Cube stacking now bakes to canonical integrated member poses so the final visible cube avoids overlapping coplanar panel-shell geometry.
@@ -239,14 +239,14 @@ This means you can have a **fully functional assembly trainer** with placeholder
 
 *Merged from MACHINE_SELECTION_RESEARCH.md*
 
-When selecting a machine or subassembly as a first authoring target, apply these criteria:
+When selecting a machine or partGroup as a first authoring target, apply these criteria:
 
 | Criterion | Requirement |
 |-----------|-------------|
 | **Complexity** | 5–15 parts maximum for a first authentic slice |
 | **Documentation** | Clear blueprint diagrams, identifiable parts, tool references |
 | **Mechanical clarity** | Visually understandable assembly logic (structural alignment, bracket mounting, frame construction) |
-| **Modular subassemblies** | Naturally breaks into subassemblies — supports nested architecture |
+| **Modular partGroups** | Naturally breaks into partGroups — supports nested architecture |
 | **Educational value** | Teaches how parts relate, why order matters, how tools are used |
 | **XR suitability** | Works well with hand placement, rotation, snapping, alignment — avoid extremely precise internal geometry |
 
@@ -258,4 +258,4 @@ When selecting a machine or subassembly as a first authoring target, apply these
 | CEB Press Linkage | Medium | Medium | Medium | Medium |
 | MicroHouse Joint | Low | Medium | Medium | High |
 
-The Power Cube was selected as the first target because it is central to many OSE machines (learning it gives foundational knowledge), has natural subassemblies, and scales incrementally from a small frame corner slice to the full cube.
+The Power Cube was selected as the first target because it is central to many OSE machines (learning it gives foundational knowledge), has natural partGroups, and scales incrementally from a small frame corner slice to the full cube.

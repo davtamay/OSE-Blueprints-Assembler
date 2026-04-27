@@ -1,9 +1,9 @@
-// TTAW.Groups.cs — Group (subassembly) pose authoring: BuildGroupList,
+// TTAW.Groups.cs — Group (partGroup) pose authoring: BuildGroupList,
 //                   SyncGroupRootToActivePose, group pose helpers.
 // ──────────────────────────────────────────────────────────────────────────────
 // Phase G1-G3 of the group pose authoring plan. Groups mirror the same pose
 // system as individual parts (start / assembled / custom step poses) but
-// operate on the subassembly root GO — all member parts follow via Unity
+// operate on the partGroup root GO — all member parts follow via Unity
 // parenting.
 //
 // Part of the ToolTargetAuthoringWindow partial class split.
@@ -30,7 +30,7 @@ namespace OSE.Editor
                 return;
             }
 
-            var allSubs = _pkg.GetSubassemblies();
+            var allSubs = _pkg.GetPartGroups();
             if (allSubs == null || allSubs.Length == 0)
             {
                 _groups = Array.Empty<GroupEditState>();
@@ -42,7 +42,7 @@ namespace OSE.Editor
             {
                 if (sub == null || sub.isAggregate) continue;
 
-                var sp = FindSubassemblyPlacement(sub.id);
+                var sp = FindPartGroupPlacement(sub.id);
                 bool hasP = sp != null;
 
                 // Prefer the new start/assembled fields; fall back to legacy position
@@ -117,11 +117,11 @@ namespace OSE.Editor
             _selectedGroupIdx = -1;
         }
 
-        private SubassemblyPreviewPlacement FindSubassemblyPlacement(string subId)
+        private PartGroupPreviewPlacement FindPartGroupPlacement(string subId)
         {
-            if (_pkg?.previewConfig?.subassemblyPlacements == null) return null;
-            foreach (var sp in _pkg.previewConfig.subassemblyPlacements)
-                if (sp != null && string.Equals(sp.subassemblyId, subId, StringComparison.Ordinal))
+            if (_pkg?.previewConfig?.partGroupPlacements == null) return null;
+            foreach (var sp in _pkg.previewConfig.partGroupPlacements)
+                if (sp != null && string.Equals(sp.partGroupId, subId, StringComparison.Ordinal))
                     return sp;
             return null;
         }
@@ -133,7 +133,7 @@ namespace OSE.Editor
         /// placement exists (can't compare — render the pill).
         /// </summary>
         private static bool IsGroupCueFromPoseSameAsStart(OSE.Content.AnimationCueEntry cue,
-            SubassemblyPreviewPlacement placement)
+            PartGroupPreviewPlacement placement)
         {
             if (placement == null) return false;
             return IsCueFromPoseSameAsStartPose(cue,
@@ -170,7 +170,7 @@ namespace OSE.Editor
             {
                 ref GroupEditState g = ref _groups[i];
                 if (g.def == null) continue;
-                if (!_subassemblyRootGOs.TryGetValue(g.def.id, out var rootGO) || rootGO == null)
+                if (!_partGroupRootGOs.TryGetValue(g.def.id, out var rootGO) || rootGO == null)
                 {
                     // Log once if the selected group's root GO is missing —
                     // that would silently skip every pose-preview branch.
@@ -180,7 +180,7 @@ namespace OSE.Editor
                         if (mkey != _lastGroupSyncEntryKey)
                         {
                             _lastGroupSyncEntryKey = mkey;
-                            OSE.Core.OseLog.Warn($"[TTAW.GroupSync.Entry] root GO missing for selected group '{g.def.id}' — dict has {_subassemblyRootGOs.Count} entries. Every pose preview will silently skip.");
+                            OSE.Core.OseLog.Warn($"[TTAW.GroupSync.Entry] root GO missing for selected group '{g.def.id}' — dict has {_partGroupRootGOs.Count} entries. Every pose preview will silently skip.");
                         }
                     }
                     continue;
@@ -209,7 +209,7 @@ namespace OSE.Editor
                                           && _stepFilterIdx > 0 && _stepFilterIdx < _stepIds.Length
                     ? FindStep(_stepIds[_stepFilterIdx]) : null;
                 bool currentStepPlacesThisGroup = curStep != null && g.def != null
-                    && string.Equals(curStep.requiredSubassemblyId, g.def.id, StringComparison.Ordinal);
+                    && string.Equals(curStep.requiredPartGroupId, g.def.id, StringComparison.Ordinal);
                 bool applyPoseOverride = isThisGroupSelected && currentStepPlacesThisGroup;
 
                 Vector3 pos = Vector3.zero;
@@ -407,9 +407,9 @@ namespace OSE.Editor
         /// </summary>
         private void ResetAllGroupRootsToOriginPreservingChildren()
         {
-            if (_subassemblyRootGOs == null || _subassemblyRootGOs.Count == 0) return;
+            if (_partGroupRootGOs == null || _partGroupRootGOs.Count == 0) return;
             var previewRoot = GetPreviewRoot();
-            foreach (var kvp in _subassemblyRootGOs)
+            foreach (var kvp in _partGroupRootGOs)
             {
                 var rootGO = kvp.Value;
                 if (rootGO == null) continue;
@@ -608,7 +608,7 @@ namespace OSE.Editor
                 ApplyPositionToGroup(ref g, newPos);
                 ApplyRotationToGroup(ref g, Quaternion.Euler(newEuler));
                 g.isDirty = true;
-                _dirtySubassemblyIds.Add(g.def.id);
+                _dirtyPartGroupIds.Add(g.def.id);
                 SyncAllGroupRootsToActivePose();
                 SceneView.RepaintAll();
             }
@@ -629,7 +629,7 @@ namespace OSE.Editor
             // for this group).
             if (g.def != null)
             {
-                int integratedCount = CountIntegratedPlacementsForSubassembly(g.def.id);
+                int integratedCount = CountIntegratedPlacementsForPartGroup(g.def.id);
                 EditorGUILayout.BeginHorizontal();
                 var labelStyle = new GUIStyle(EditorStyles.miniLabel)
                 {
@@ -643,10 +643,10 @@ namespace OSE.Editor
                 GUILayout.FlexibleSpace();
                 EditorGUI.BeginDisabledGroup(integratedCount == 0);
                 if (GUILayout.Button(new GUIContent("Strip integrated",
-                        "Removes every integratedSubassemblyPlacements entry for this group. Members fall back to startPosition / assembledPosition so NO TASK poses dominate."),
+                        "Removes every integratedPartGroupPlacements entry for this group. Members fall back to startPosition / assembledPosition so NO TASK poses dominate."),
                     EditorStyles.miniButton, GUILayout.Width(112)))
                 {
-                    StripIntegratedPlacementsForSubassembly(g.def.id);
+                    StripIntegratedPlacementsForPartGroup(g.def.id);
                 }
                 EditorGUI.EndDisabledGroup();
                 EditorGUILayout.EndHorizontal();
@@ -657,8 +657,8 @@ namespace OSE.Editor
 
         /// <summary>
         /// Renders "After cue N" pills for every synthesized holdAtEnd stepPose
-        /// on the subassembly and "Before cue N" pills for every poseTransition
-        /// cue hosted on this subassembly with authored fromPose scoped to the
+        /// on the partGroup and "Before cue N" pills for every poseTransition
+        /// cue hosted on this partGroup with authored fromPose scoped to the
         /// current step. Clicking a pill switches <see cref="_editingGroupPoseMode"/>
         /// so <see cref="SyncAllGroupRootsToActivePose"/> can pose the group
         /// root at the matching preview pose.
@@ -668,7 +668,7 @@ namespace OSE.Editor
             if (step == null) return;
 
             // Source of truth for After-cue pills on groups — the baker
-            // writes synthesized stepPoses onto SubassemblyPreviewPlacement.
+            // writes synthesized stepPoses onto PartGroupPreviewPlacement.
             // Declared here so both the count scan and the render loop
             // reference the same array.
             var poses = g.placement?.stepPoses;
@@ -727,7 +727,7 @@ namespace OSE.Editor
 
             EditorGUILayout.BeginHorizontal();
 
-            // Before cue pills — poseTransition cues on the subassembly with
+            // Before cue pills — poseTransition cues on the partGroup with
             // authored fromPose scoped to current step. Uses
             // PoseModeBeforeCueBase - ord sentinel range (shared with parts).
             if (beforeTotal > 0)
@@ -758,7 +758,7 @@ namespace OSE.Editor
             }
 
             // After cue pills — one per poseTransition cue on the
-            // subassembly with authored toPose scoped to the current step.
+            // partGroup with authored toPose scoped to the current step.
             //
             // Reads cue.toPose DIRECTLY (not the baker's synth stepPose).
             // Why: at runtime PoseTransitionPlayer.ResolveFrom uses the
@@ -902,7 +902,7 @@ namespace OSE.Editor
                 if (child == null)
                 {
                     // Also look under PreviewRoot directly (member might not be
-                    // parented under the group root — e.g. if EnsureSubassemblyRoots
+                    // parented under the group root — e.g. if EnsurePartGroupRoots
                     // hasn't reparented yet on this step's tick).
                     if (previewRoot != null)
                     {
@@ -959,7 +959,7 @@ namespace OSE.Editor
         // rotation composition) gives the correct visual landing — reading
         // cue.toPose directly would show the raw delta input, wrong for
         // groups whose cues rotate members around a centroid.
-        private OSE.Content.SubassemblyDefinition _afterCueGroupDef;
+        private OSE.Content.PartGroupDefinition _afterCueGroupDef;
         private int _afterCueGroupSynthIdx = -1;
         // One-shot diagnostic keys — prevent sync-logs from spamming every OnGUI.
         private string _lastAfterCueGroupSyncKey;
@@ -1036,7 +1036,7 @@ namespace OSE.Editor
         // Before-cue preview state for groups (parallel to _beforeCuePartDef).
         // Set when a group Before-cue pill is clicked; read by
         // TryResolveBeforeCuePoseForGroup inside SyncAllGroupRootsToActivePose.
-        private OSE.Content.SubassemblyDefinition _beforeCueGroupDef;
+        private OSE.Content.PartGroupDefinition _beforeCueGroupDef;
 
         /// <summary>
         /// Resolves the Before-cue preview pose for the current
@@ -1087,12 +1087,12 @@ namespace OSE.Editor
         /// </summary>
         private void SyncAggregateRootsToActivePose(Transform previewRoot)
         {
-            if (_subassemblyRootGOs == null || _pkg == null) return;
-            foreach (var kvp in _subassemblyRootGOs)
+            if (_partGroupRootGOs == null || _pkg == null) return;
+            foreach (var kvp in _partGroupRootGOs)
             {
                 var rootGO = kvp.Value;
                 if (rootGO == null) continue;
-                if (!_pkg.TryGetSubassembly(kvp.Key, out var sub) || sub == null || !sub.isAggregate) continue;
+                if (!_pkg.TryGetPartGroup(kvp.Key, out var sub) || sub == null || !sub.isAggregate) continue;
 
                 bool isSelected = string.Equals(_canvasSelectedSubId, sub.id, StringComparison.Ordinal);
                 Vector3 worldPos; Quaternion worldRot; Vector3 scl = Vector3.one;
@@ -1134,7 +1134,7 @@ namespace OSE.Editor
             // members at their individual assembled positions — must fall back
             // to the legacy per-part assembled fields.
             if (step == null) return false;
-            if (!string.Equals(step.requiredSubassemblyId, g.def.id, StringComparison.Ordinal)) return false;
+            if (!string.Equals(step.requiredPartGroupId, g.def.id, StringComparison.Ordinal)) return false;
             string targetId = step.targetIds != null && step.targetIds.Length > 0 ? step.targetIds[0] : null;
             if (string.IsNullOrEmpty(targetId)) return false;
             return g.def.rigidBodyByTargetId.TryGetValue(targetId, out rb) && rb != null;
@@ -1163,7 +1163,7 @@ namespace OSE.Editor
             }
         }
 
-        // ── Find group index by subassembly ID ───────────────────────────────
+        // ── Find group index by partGroup ID ───────────────────────────────
 
         private int FindGroupIdx(string subId)
         {

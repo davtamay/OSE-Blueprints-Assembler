@@ -479,7 +479,7 @@ This likely includes:
 
 - machine manifest
 - assemblies
-- subassemblies
+- partGroups
 - parts
 - tools
 - steps

@@ -5,9 +5,9 @@
       "name": "D3D Heated Bed Stage 02 (Bed Platform)",
       "machineId": "d3d_v18_10",
       "description": "Bed platform assembly: six standoff raisers, two bed guide rods, and three Y-axis bed travel rods. The platform rides on the Y carriages and supports the heated bed at the correct height.",
-      "subassemblyIds": [
-        "subassembly_bed_platform",
-        "subassembly_y_bed_rods"
+      "partGroupIds": [
+        "partGroup_bed_platform",
+        "partGroup_y_bed_rods"
       ],
       "stepIds": [
         "step_mount_bed_guide_rods",
@@ -17,16 +17,16 @@
       ]
     }
   ],
-  "subassemblies": [
+  "partGroups": [
     {
-      "id": "subassembly_bed_platform",
+      "id": "partGroup_bed_platform",
       "name": "Heated Bed Platform",
       "stepIds": [ "step_mount_bed_guide_rods", "step_place_bed_raisers", "step_check_bed_platform_alignment" ],
       "assemblyId": "assembly_d3d_heatbed_stage_02",
       "description": "Bed standoff raisers and guide rods that support the heated bed above the Z carriages."
   },
     {
-      "id": "subassembly_y_bed_rods",
+      "id": "partGroup_y_bed_rods",
       "name": "Y-Axis Bed Guide Rods",
       "stepIds": [ "step_place_y_bed_rods" ],
       "assemblyId": "assembly_d3d_heatbed_stage_02",
@@ -67,8 +67,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_bed_platform"
+      "partGroupIds": [
+        "partGroup_bed_platform"
       ]
     },
     {
@@ -104,8 +104,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_bed_platform"
+      "partGroupIds": [
+        "partGroup_bed_platform"
       ]
     },
     {
@@ -141,8 +141,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_bed_platform"
+      "partGroupIds": [
+        "partGroup_bed_platform"
       ]
     },
     {
@@ -178,8 +178,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_bed_platform"
+      "partGroupIds": [
+        "partGroup_bed_platform"
       ]
     },
     {
@@ -215,8 +215,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_bed_platform"
+      "partGroupIds": [
+        "partGroup_bed_platform"
       ]
     },
     {
@@ -252,8 +252,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_bed_platform"
+      "partGroupIds": [
+        "partGroup_bed_platform"
       ]
     },
     {
@@ -289,8 +289,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_bed_platform"
+      "partGroupIds": [
+        "partGroup_bed_platform"
       ]
     },
     {
@@ -326,8 +326,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_bed_platform"
+      "partGroupIds": [
+        "partGroup_bed_platform"
       ]
     },
     {
@@ -363,8 +363,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_y_bed_rods"
+      "partGroupIds": [
+        "partGroup_y_bed_rods"
       ]
     },
     {
@@ -400,8 +400,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_y_bed_rods"
+      "partGroupIds": [
+        "partGroup_y_bed_rods"
       ]
     },
     {
@@ -437,8 +437,8 @@
           "a": 1.0
         }
       },
-      "subassemblyIds": [
-        "subassembly_y_bed_rods"
+      "partGroupIds": [
+        "partGroup_y_bed_rods"
       ]
     }
   ],
@@ -475,12 +475,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -538,12 +538,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0
@@ -602,12 +602,12 @@
         }
       ],
       "workingOrientation": {
-        "subassemblyRotation": {
+        "partGroupRotation": {
           "x": 0,
           "y": 0,
           "z": 0
         },
-        "subassemblyPositionOffset": {
+        "partGroupPositionOffset": {
           "x": 0,
           "y": 0,
           "z": 0

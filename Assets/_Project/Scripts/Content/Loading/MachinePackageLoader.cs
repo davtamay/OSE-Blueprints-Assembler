@@ -179,7 +179,7 @@ namespace OSE.Content.Loading
         /// Loads a package that uses the split-layout (A+++ architecture):
         ///   machine.json        — metadata (machine, version, challengeConfig, assetManifest)
         ///   shared.json         — tools, partTemplates, global hints, global validationRules, effects
-        ///   assemblies/*.json   — per-assembly content (assemblies, subassemblies, parts, steps, targets, hints)
+        ///   assemblies/*.json   — per-assembly content (assemblies, partGroups, parts, steps, targets, hints)
         ///   preview_config.json — TTAW/Blender-generated positional data (previewConfig)
         ///
         /// All files are merged into a single <see cref="MachinePackageDefinition"/> before
@@ -227,7 +227,7 @@ namespace OSE.Content.Loading
                 if (asmChunk == null) continue;
 
                 package.assemblies    = MergeArrays(package.assemblies,    asmChunk.assemblies);
-                package.subassemblies = MergeArrays(package.subassemblies, asmChunk.subassemblies);
+                package.partGroups = MergeArrays(package.partGroups, asmChunk.partGroups);
                 package.parts         = MergeArrays(package.parts,         asmChunk.parts);
                 package.steps         = MergeArrays(package.steps,         asmChunk.steps);
                 package.targets       = MergeArrays(package.targets,       asmChunk.targets);

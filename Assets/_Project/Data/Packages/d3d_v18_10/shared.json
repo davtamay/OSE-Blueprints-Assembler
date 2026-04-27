@@ -115,7 +115,7 @@
           "type": "screwSpin",
           "targetPartIds": [],
           "targetToolIds": [],
-          "targetSubassemblyId": "",
+          "targetPartGroupId": "",
           "stepIds": [
             "step_top_clamp_panel"
           ],
@@ -172,7 +172,7 @@
               "z": 0.0
             }
           },
-          "subassemblyRotation": {
+          "partGroupRotation": {
             "x": 0.0,
             "y": 0.0,
             "z": 0.0
@@ -275,7 +275,7 @@
           "type": "particle",
           "targetPartIds": [],
           "targetToolIds": [],
-          "targetSubassemblyId": "",
+          "targetPartGroupId": "",
           "stepIds": [
             "step_top_clamp_panel"
           ],
@@ -332,7 +332,7 @@
               "z": 0.0
             }
           },
-          "subassemblyRotation": {
+          "partGroupRotation": {
             "x": 0.0,
             "y": 0.0,
             "z": 0.0
@@ -435,7 +435,7 @@
           "type": "screwSpin",
           "targetPartIds": [],
           "targetToolIds": [],
-          "targetSubassemblyId": "",
+          "targetPartGroupId": "",
           "stepIds": [
             "step_bottom_clamp_panel"
           ],
@@ -492,7 +492,7 @@
               "z": 0.0
             }
           },
-          "subassemblyRotation": {
+          "partGroupRotation": {
             "x": 0.0,
             "y": 0.0,
             "z": 0.0
@@ -595,7 +595,7 @@
           "type": "particle",
           "targetPartIds": [],
           "targetToolIds": [],
-          "targetSubassemblyId": "",
+          "targetPartGroupId": "",
           "stepIds": [
             "step_bottom_clamp_panel"
           ],
@@ -652,7 +652,7 @@
               "z": 0.0
             }
           },
-          "subassemblyRotation": {
+          "partGroupRotation": {
             "x": 0.0,
             "y": 0.0,
             "z": 0.0
@@ -808,7 +808,7 @@
           "type": "particle",
           "targetPartIds": [],
           "targetToolIds": [],
-          "targetSubassemblyId": "",
+          "targetPartGroupId": "",
           "stepIds": [],
           "always": false,
           "particlePrefabRef": "",
@@ -863,7 +863,7 @@
               "z": 0
             }
           },
-          "subassemblyRotation": {
+          "partGroupRotation": {
             "x": 0,
             "y": 0,
             "z": 0
@@ -966,7 +966,7 @@
           "type": "emissionPulse",
           "targetPartIds": [],
           "targetToolIds": [],
-          "targetSubassemblyId": "",
+          "targetPartGroupId": "",
           "stepIds": [],
           "always": false,
           "particlePrefabRef": "",
@@ -1021,7 +1021,7 @@
               "z": 0.0
             }
           },
-          "subassemblyRotation": {
+          "partGroupRotation": {
             "x": 0.0,
             "y": 0.0,
             "z": 0.0
@@ -1124,7 +1124,7 @@
           "type": "poseWobble",
           "targetPartIds": [],
           "targetToolIds": [],
-          "targetSubassemblyId": "",
+          "targetPartGroupId": "",
           "stepIds": [],
           "always": false,
           "particlePrefabRef": "",
@@ -1179,7 +1179,7 @@
               "z": 0.0
             }
           },
-          "subassemblyRotation": {
+          "partGroupRotation": {
             "x": 0.0,
             "y": 0.0,
             "z": 0.0
@@ -1282,7 +1282,7 @@
           "type": "lineBetweenAnchors",
           "targetPartIds": [],
           "targetToolIds": [],
-          "targetSubassemblyId": "",
+          "targetPartGroupId": "",
           "stepIds": [],
           "always": false,
           "particlePrefabRef": "",
@@ -1337,7 +1337,7 @@
               "z": 0.0
             }
           },
-          "subassemblyRotation": {
+          "partGroupRotation": {
             "x": 0.0,
             "y": 0.0,
             "z": 0.0
@@ -1440,7 +1440,7 @@
           "type": "materialFade",
           "targetPartIds": [],
           "targetToolIds": [],
-          "targetSubassemblyId": "",
+          "targetPartGroupId": "",
           "stepIds": [],
           "always": false,
           "particlePrefabRef": "",
@@ -1495,7 +1495,7 @@
               "z": 0.0
             }
           },
-          "subassemblyRotation": {
+          "partGroupRotation": {
             "x": 0.0,
             "y": 0.0,
             "z": 0.0
@@ -1598,7 +1598,7 @@
           "type": "moveBetweenAnchors",
           "targetPartIds": [],
           "targetToolIds": [],
-          "targetSubassemblyId": "",
+          "targetPartGroupId": "",
           "stepIds": [],
           "always": false,
           "particlePrefabRef": "",
@@ -1653,7 +1653,7 @@
               "z": 0
             }
           },
-          "subassemblyRotation": {
+          "partGroupRotation": {
             "x": 0,
             "y": 0,
             "z": 0

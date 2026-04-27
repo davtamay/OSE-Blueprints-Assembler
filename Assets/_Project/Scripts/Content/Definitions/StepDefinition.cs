@@ -10,7 +10,7 @@ namespace OSE.Content
         public string id;
         public string name;
         public string assemblyId;
-        public string subassemblyId;
+        public string partGroupId;
         public int sequenceIndex;
 
         /// <summary>Legacy flat field. Use <see cref="guidance"/>.instructionText and read via <see cref="ResolvedInstructionText"/>.</summary>
@@ -52,7 +52,7 @@ namespace OSE.Content
         [NonSerialized]
         public string[] derivedTargetPartIds;
 
-        public string requiredSubassemblyId;
+        public string requiredPartGroupId;
         public string[] optionalPartIds;
 
         /// <summary>
@@ -80,7 +80,7 @@ namespace OSE.Content
         ///
         /// The runtime spawner reads this list when building its part-to-step
         /// visibility map (alongside <see cref="requiredPartIds"/> and the
-        /// step's required subassembly), so a part referenced here will appear
+        /// step's required partGroup), so a part referenced here will appear
         /// in this step and every later step.
         /// </summary>
         public string[] visualPartIds;
@@ -176,7 +176,7 @@ namespace OSE.Content
         public StepWireConnectPayload wireConnect;
 
         /// <summary>
-        /// Optional working orientation that temporarily transforms the subassembly
+        /// Optional working orientation that temporarily transforms the partGroup
         /// for this step (e.g., flip 180° to access underside). Reverts automatically
         /// on step transition.
         /// </summary>
@@ -248,9 +248,9 @@ namespace OSE.Content
         public bool IsSequential =>
             string.Equals(targetOrder, "sequential", System.StringComparison.OrdinalIgnoreCase);
 
-        /// <summary>True when this place step expects a completed subassembly proxy instead of loose parts.</summary>
-        public bool RequiresSubassemblyPlacement =>
-            !string.IsNullOrWhiteSpace(requiredSubassemblyId);
+        /// <summary>True when this place step expects a completed partGroup proxy instead of loose parts.</summary>
+        public bool RequiresPartGroupPlacement =>
+            !string.IsNullOrWhiteSpace(requiredPartGroupId);
 
         private static readonly Dictionary<string, StepProfile> ProfileLookup =
             new Dictionary<string, StepProfile>(StringComparer.Ordinal)
@@ -425,7 +425,7 @@ namespace OSE.Content
                 ? "Instruction text is missing from this step definition."
                 : resolvedInstruction.Trim();
 
-            if (RequiresSubassemblyPlacement)
+            if (RequiresPartGroupPlacement)
             {
                 instruction += Environment.NewLine + Environment.NewLine +
                     "Move the completed panel as one finished unit. Drag it toward the highlighted target and it will rotate into place as it docks.";

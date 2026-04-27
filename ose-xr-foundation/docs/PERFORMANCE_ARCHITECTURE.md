@@ -265,7 +265,7 @@ The app should load:
 Suggested staged loading:
 
 1. machine/package metadata
-2. first assembly/subassembly metadata
+2. first assembly/partGroup metadata
 3. first required part models
 4. current UI data and hints
 5. next-step likely assets
@@ -614,7 +614,7 @@ Authors should:
 - keep materials intentional
 - keep texture usage controlled
 - avoid unnecessary duplicates
-- think in subassemblies and streaming chunks
+- think in partGroups and streaming chunks
 - consider low-end readability, not just beauty
 
 ## 20.2 Pipeline Rule
@@ -668,7 +668,7 @@ Prioritize:
 
 Avoid:
 
-- loading whole machines when only one subassembly is needed
+- loading whole machines when only one partGroup is needed
 - large per-frame searches of scene objects
 - rebuilding UI constantly
 - effect spam for basic interactions

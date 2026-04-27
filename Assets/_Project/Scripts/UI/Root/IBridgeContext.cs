@@ -26,14 +26,14 @@ namespace OSE.UI.Root
     /// <summary>Part resolution, proxy queries, and movement lock checks.</summary>
     internal interface IPartQueryContext
     {
-        bool IsSubassemblyProxy(GameObject target);
+        bool IsPartGroupProxy(GameObject target);
         bool ForEachProxyMember(GameObject proxy, Action<GameObject> action);
         GameObject NormalizeSelectablePlacementTarget(GameObject target);
         bool IsSelectablePlacementObject(GameObject target);
         string ResolveSelectionId(GameObject target);
         bool IsPartMovementLocked(string partId);
         bool IsToolModeLockedForParts();
-        SubassemblyPlacementController SubassemblyController { get; }
+        PartGroupPlacementController PartGroupController { get; }
     }
 
     /// <summary>Selection, drag, and hover state.</summary>

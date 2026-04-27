@@ -20,7 +20,7 @@ namespace OSE.Interaction
 
         /// <summary>
         /// Returns true if <paramref name="target"/> is a selectable object — either a
-        /// spawned part or a subassembly proxy. Used by <see cref="InteractionOrchestrator"/>
+        /// spawned part or a partGroup proxy. Used by <see cref="InteractionOrchestrator"/>
         /// to validate raycast hits that are not in the spawned-parts list (e.g. proxies).
         /// </summary>
         bool IsSelectableTarget(GameObject target);
@@ -28,7 +28,7 @@ namespace OSE.Interaction
         // ── Movement Lock ──
 
         /// <summary>
-        /// Returns true when a part (or subassembly proxy) should be immovable
+        /// Returns true when a part (or partGroup proxy) should be immovable
         /// because it has already been placed or completed.
         /// </summary>
         bool IsPartMovementLocked(GameObject target);
