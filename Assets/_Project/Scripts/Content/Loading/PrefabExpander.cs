@@ -113,9 +113,19 @@ namespace OSE.Content.Loading
                 // partIds bound from partDefinitions if needed (Slice 1
                 // bindings are typically the source though). The normalizer
                 // merges the emitted entities into the package alongside
-                // the virtual steps below.
-                ExpandPartDefinitions(instance, prefab, ctx, prefabPathForLogs, result);
-                ExpandPartGroupDefinition(instance, prefab, ctx, prefabPathForLogs, result);
+                // the virtual steps below. Per-section skip flags let the
+                // author opt out of a layer when the target package
+                // already supplies it — see PrefabInstance.skipParts /
+                // skipPartGroup / skipSteps.
+                if (!instance.skipParts)
+                    ExpandPartDefinitions(instance, prefab, ctx, prefabPathForLogs, result);
+                if (!instance.skipPartGroup)
+                    ExpandPartGroupDefinition(instance, prefab, ctx, prefabPathForLogs, result);
+
+                if (instance.skipSteps)
+                {
+                    return result;
+                }
 
                 if (!prefab.TryGet("steps", out var stepsNode) || stepsNode == null || !stepsNode.IsSeq || stepsNode.Seq.Count == 0)
                 {

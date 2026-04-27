@@ -70,6 +70,22 @@ namespace OSE.Content
         /// </summary>
         public PrefabOverride[] overrides;
 
+        /// <summary>
+        /// When true, the expander emits no <see cref="PartDefinition"/>s
+        /// (or sibling <see cref="PartPreviewPlacement"/>s) for this
+        /// instance — used when the target package already declares the
+        /// parts and the prefab should only contribute groupings + steps.
+        /// Slice 2e: per-section import toggles surfaced in the wizard's
+        /// "what will be created" preview.
+        /// </summary>
+        public bool skipParts;
+
+        /// <summary>When true, the expander emits no <see cref="PartGroupDefinition"/> for this instance.</summary>
+        public bool skipPartGroup;
+
+        /// <summary>When true, the expander emits no <see cref="StepDefinition"/>s for this instance.</summary>
+        public bool skipSteps;
+
         public bool IsEmpty()
             => string.IsNullOrEmpty(prefabId)
             && string.IsNullOrEmpty(instanceId);

@@ -34,6 +34,19 @@ namespace OSE.Editor
         private string _prefix;
         private int    _startSeq;
 
+        // Slice 2e — section toggles for selective import. Each maps to
+        // PrefabInstance.skip* on Confirm. Default unchecked = include
+        // (matches user intent: drag a self-contained prefab → bring in
+        // everything by default; tick off layers the package already has).
+        private bool _includeParts     = true;
+        private bool _includePartGroup = true;
+        private bool _includeSteps     = true;
+        private bool _previewExpanded  = true;
+        // Read-only preview rows, rebuilt from the parsed YAML in Initialise.
+        private List<string> _previewPartRows  = new();
+        private List<string> _previewGroupRows = new();
+        private List<string> _previewStepRows  = new();
+
         private readonly Dictionary<string, string>   _singleBindings = new();
         private readonly Dictionary<string, string[]> _listBindings   = new();
         // Per-instance option values keyed by option name. String values
@@ -103,7 +116,9 @@ namespace OSE.Editor
 
             try
             {
-                ParsePrefabRoles(PrefabYamlReader.ReadFile(_prefabYamlPath));
+                var root = PrefabYamlReader.ReadFile(_prefabYamlPath);
+                ParsePrefabRoles(root);
+                BuildPreviewRows(root);
             }
             catch (System.Exception ex)
             {
@@ -229,6 +244,8 @@ namespace OSE.Editor
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space(6);
 
+            DrawSectionPreview();
+
             EditorGUILayout.LabelField("Roles", EditorStyles.boldLabel);
             _scroll = EditorGUILayout.BeginScrollView(_scroll);
             if (_roles == null || _roles.Count == 0)
@@ -303,6 +320,48 @@ namespace OSE.Editor
             EditorGUILayout.Space(2);
         }
 
+        // Slice 2e — visible-by-design preview of what the prefab will
+        // emit. Three section toggles (Parts / PartGroup / Steps) drive
+        // the corresponding skip flags on the PrefabInstance. The body
+        // of each section lists its leaves (read-only) so the author can
+        // confirm the layer's contents at a glance without re-opening
+        // the YAML. Sections that the prefab doesn't include are grayed
+        // and locked off — there's nothing to skip for those layers.
+        private void DrawSectionPreview()
+        {
+            bool hasParts  = _previewPartRows.Count  > 0;
+            bool hasGroup  = _previewGroupRows.Count > 0;
+            bool hasSteps  = _previewStepRows.Count  > 0;
+            if (!hasParts && !hasGroup && !hasSteps) return;
+
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            _previewExpanded = EditorGUILayout.Foldout(_previewExpanded,
+                "Will create — uncheck a section to skip it on import", true);
+            if (_previewExpanded)
+            {
+                if (hasParts)  DrawSectionToggleAndLeaves("Parts",      ref _includeParts,     _previewPartRows);
+                if (hasGroup)  DrawSectionToggleAndLeaves("Part Group", ref _includePartGroup, _previewGroupRows);
+                if (hasSteps)  DrawSectionToggleAndLeaves("Steps",      ref _includeSteps,     _previewStepRows);
+            }
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.Space(2);
+        }
+
+        private void DrawSectionToggleAndLeaves(string sectionLabel, ref bool included, List<string> leaves)
+        {
+            EditorGUILayout.BeginHorizontal();
+            included = EditorGUILayout.ToggleLeft(
+                $"{sectionLabel}  ({leaves.Count})",
+                included,
+                new GUIStyle(EditorStyles.label) { fontStyle = FontStyle.Bold });
+            EditorGUILayout.EndHorizontal();
+            using (new EditorGUI.DisabledScope(!included))
+            {
+                foreach (var row in leaves)
+                    EditorGUILayout.LabelField("    └ " + row, EditorStyles.miniLabel);
+            }
+        }
+
         private void DrawOptionRow(OptionSpec opt)
         {
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
@@ -353,14 +412,20 @@ namespace OSE.Editor
             {
                 var instance = new PrefabInstance
                 {
-                    prefabId    = _prefabName,
-                    instanceId  = $"{_prefabName}_{_prefix}_{System.Guid.NewGuid().ToString("N").Substring(0, 6)}",
-                    prefix      = _prefix,
-                    startSeq    = _startSeq,
-                    assemblyId  = _targetStep?.assemblyId,
-                    partGroupId = _targetStep?.partGroupId,
-                    bindings    = SnapshotBindings(),
-                    options     = SnapshotOptions(),
+                    prefabId      = _prefabName,
+                    instanceId    = $"{_prefabName}_{_prefix}_{System.Guid.NewGuid().ToString("N").Substring(0, 6)}",
+                    prefix        = _prefix,
+                    startSeq      = _startSeq,
+                    assemblyId    = _targetStep?.assemblyId,
+                    partGroupId   = _targetStep?.partGroupId,
+                    bindings      = SnapshotBindings(),
+                    options       = SnapshotOptions(),
+                    // Section toggles in the "Will create" preview map to
+                    // expander skip flags so layers the author unchecked
+                    // don't get emitted at expansion time.
+                    skipParts     = !_includeParts,
+                    skipPartGroup = !_includePartGroup,
+                    skipSteps     = !_includeSteps,
                 };
 
                 int merged = _owner.MergePrefabInstancePublic(instance);
@@ -497,6 +562,59 @@ namespace OSE.Editor
         {
             return float.TryParse(s, System.Globalization.NumberStyles.Float,
                 System.Globalization.CultureInfo.InvariantCulture, out float v) ? v : 0f;
+        }
+
+        // Builds the read-only preview rows surfaced under each section
+        // checkbox. Walks the YAML once and produces human-readable
+        // bullets for the wizard. The actual partIds aren't resolved here
+        // (that requires running the expander) — role + count is enough
+        // for the author to spot which layers belong to which sections.
+        private void BuildPreviewRows(YamlNode root)
+        {
+            _previewPartRows.Clear();
+            _previewGroupRows.Clear();
+            _previewStepRows.Clear();
+            if (root == null || !root.IsMap) return;
+
+            if (root.TryGet("partDefinitions", out var defs) && defs != null && defs.IsMap)
+            {
+                foreach (var kv in defs.Map)
+                {
+                    if (kv.Value == null || !kv.Value.IsMap) continue;
+                    string kind = kv.Value.GetScalar("kind", "part") ?? "part";
+                    if (string.Equals(kind, "part_list", System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        int count = 1;
+                        string c = kv.Value.GetScalar("count", null);
+                        if (int.TryParse(c, out int n) && n > 0) count = n;
+                        else if (kv.Value.TryGet("placements", out var pls) && pls != null && pls.IsSeq) count = pls.Seq.Count;
+                        _previewPartRows.Add($"{kv.Key}  ·  {count} part{(count == 1 ? "" : "s")}");
+                    }
+                    else
+                    {
+                        _previewPartRows.Add($"{kv.Key}  ·  1 part");
+                    }
+                }
+            }
+
+            if (root.TryGet("partGroupDefinition", out var pg) && pg != null && pg.IsMap)
+            {
+                string id   = pg.GetScalar("id",   "(derived)") ?? "(derived)";
+                string name = pg.GetScalar("name", id)          ?? id;
+                _previewGroupRows.Add($"{id}  ·  {name}");
+            }
+
+            if (root.TryGet("steps", out var steps) && steps != null && steps.IsSeq)
+            {
+                foreach (var s in steps.Seq)
+                {
+                    if (s == null || !s.IsMap) continue;
+                    string suffix = s.GetScalar("id_suffix", "") ?? "";
+                    string family = s.GetScalar("family", "") ?? "";
+                    string label  = string.IsNullOrEmpty(family) ? suffix : $"{family}  ·  {suffix}";
+                    if (!string.IsNullOrEmpty(label)) _previewStepRows.Add(label);
+                }
+            }
         }
 
         private static string DerivePrefix(string idLike)
