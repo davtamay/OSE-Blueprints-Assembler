@@ -240,9 +240,13 @@ namespace OSE.Editor
             var sb = new StringBuilder();
             sb.AppendLine($"# Step Configuration Prefab — {_prefabId}");
             sb.AppendLine("# Captured from the TTAW canvas. Roles auto-extracted from the");
-            sb.AppendLine("# selected steps' requiredPartIds; rename in this file as needed.");
-            sb.AppendLine("# TODO: finish taskOrder, requiredToolActions, hints, validationRules,");
-            sb.AppendLine("# animationCues, particleEffects sections by hand for each step block.");
+            sb.AppendLine("# selected steps' partId references; rename in this file as needed.");
+            sb.AppendLine("# Coverage: id_suffix, name, family, profile, requiredPartGroupId,");
+            sb.AppendLine("# requiredPartIds (with role substitution), optional/visualPartIds,");
+            sb.AppendLine("# targetIds, requiredToolActions, guidance / validation / feedback");
+            sb.AppendLine("# payloads. Animation cues, particle effects, taskOrder, working");
+            sb.AppendLine("# orientation, and reinforcement / difficulty payloads are not yet");
+            sb.AppendLine("# round-tripped — finish those sections by hand if needed.");
             sb.AppendLine($"# Source steps: {string.Join(", ", _capturedSteps.ConvertAll(s => s?.id ?? "?"))}");
             sb.AppendLine();
             sb.AppendLine($"prefab: {_prefabId}");
@@ -277,30 +281,7 @@ namespace OSE.Editor
             foreach (var step in _capturedSteps)
             {
                 if (step == null) continue;
-                string idSuffix = DeriveIdSuffix(step.id);
-                sb.AppendLine($"  - id_suffix: {idSuffix}");
-                if (!string.IsNullOrEmpty(step.family))  sb.AppendLine($"    family: {step.family}");
-                if (!string.IsNullOrEmpty(step.profile)) sb.AppendLine($"    profile: {step.profile}");
-                string instr = step.ResolvedInstructionText;
-                if (!string.IsNullOrEmpty(instr))
-                {
-                    string escaped = instr.Replace("\\", "\\\\").Replace("\"", "\\\"");
-                    sb.AppendLine($"    instructionText: \"{escaped}\"");
-                }
-                if (!string.IsNullOrEmpty(step.requiredPartGroupId))
-                    sb.AppendLine($"    requiredPartGroupId: {step.requiredPartGroupId}");
-
-                if (step.requiredPartIds != null && step.requiredPartIds.Length > 0)
-                {
-                    sb.Append("    requiredPartIds: [");
-                    for (int i = 0; i < step.requiredPartIds.Length; i++)
-                    {
-                        if (i > 0) sb.Append(", ");
-                        string pid = step.requiredPartIds[i] ?? "";
-                        sb.Append(partToRole.TryGetValue(pid, out var role) ? $"\"{{{role}}}\"" : pid);
-                    }
-                    sb.AppendLine("]");
-                }
+                EmitStepBlock(sb, step, partToRole);
                 sb.AppendLine();
             }
 
@@ -322,6 +303,130 @@ namespace OSE.Editor
             _statusIsError = false;
             EditorUtility.RevealInFinder(outPath);
         }
+
+        // Slice 2h — emit a single step block with full payload coverage:
+        //   id_suffix, name, family, profile, requiredPartGroupId, *PartIds
+        //   (with role substitution), requiredToolActions, guidance,
+        //   validation, feedback. Produces payload-first YAML — flat
+        //   legacy fields are NEVER emitted (per CLAUDE.md "new content
+        //   uses payloads, not flat fields"). The capture's job is to
+        //   produce content that loads back cleanly without manual cleanup.
+        private void EmitStepBlock(StringBuilder sb, StepDefinition step,
+            Dictionary<string, string> partToRole)
+        {
+            string idSuffix = DeriveIdSuffix(step.id);
+            sb.AppendLine($"  - id_suffix: {idSuffix}");
+            EmitScalarIfPresent(sb, "    name",    step.name);
+            EmitScalarIfPresent(sb, "    family",  step.family);
+            EmitScalarIfPresent(sb, "    profile", step.profile);
+            EmitScalarIfPresent(sb, "    viewMode", step.viewMode);
+
+            if (!string.IsNullOrEmpty(step.requiredPartGroupId))
+                sb.AppendLine($"    requiredPartGroupId: {step.requiredPartGroupId}");
+
+            EmitPartIdArray(sb, "    requiredPartIds", step.requiredPartIds, partToRole);
+            EmitPartIdArray(sb, "    optionalPartIds", step.optionalPartIds, partToRole);
+            EmitPartIdArray(sb, "    visualPartIds",   step.visualPartIds,   partToRole);
+            EmitStringArray(sb, "    targetIds",       step.targetIds);
+            EmitStringArray(sb, "    relevantToolIds", step.relevantToolIds);
+            EmitStringArray(sb, "    eventTags",       step.eventTags);
+            EmitStringArray(sb, "    removePersistentToolIds", step.removePersistentToolIds);
+
+            // Required tool actions — emit as YAML sequence-of-maps so the
+            // expander's per-step requiredToolActions reader picks them up.
+            if (step.requiredToolActions != null && step.requiredToolActions.Length > 0)
+            {
+                sb.AppendLine("    requiredToolActions:");
+                foreach (var ta in step.requiredToolActions)
+                {
+                    if (ta == null) continue;
+                    sb.AppendLine($"      - toolId: \"{Esc(ta.toolId)}\"");
+                    EmitScalarIfPresent(sb, "        actionType",     ta.actionType);
+                    EmitScalarIfPresent(sb, "        targetId",       ta.targetId);
+                    EmitScalarIfPresent(sb, "        successMessage", ta.successMessage);
+                    EmitScalarIfPresent(sb, "        failureMessage", ta.failureMessage);
+                    if (ta.requiredCount > 1)
+                        sb.AppendLine($"        requiredCount: {ta.requiredCount}");
+                }
+            }
+
+            // Capability payloads (payload-first per CLAUDE.md). Use the
+            // Resolved* accessors so legacy flat-field captures still
+            // round-trip into payload form — fixing the schema migration
+            // for free.
+            string instr = step.ResolvedInstructionText;
+            string why   = step.ResolvedWhyItMattersText;
+            string[] hints = step.ResolvedHintIds;
+            bool hasGuidance = !string.IsNullOrEmpty(instr)
+                            || !string.IsNullOrEmpty(why)
+                            || (hints != null && hints.Length > 0);
+            if (hasGuidance)
+            {
+                sb.AppendLine("    guidance:");
+                EmitScalarIfPresent(sb, "      instructionText",   instr);
+                EmitScalarIfPresent(sb, "      whyItMattersText", why);
+                EmitStringArray   (sb, "      hintIds",           hints);
+            }
+
+            string[] validationRuleIds = step.ResolvedValidationRuleIds;
+            if (validationRuleIds != null && validationRuleIds.Length > 0)
+            {
+                sb.AppendLine("    validation:");
+                EmitStringArray(sb, "      validationRuleIds", validationRuleIds);
+            }
+
+            if (step.feedback != null && (
+                (step.feedback.effectTriggerIds != null && step.feedback.effectTriggerIds.Length > 0)
+                || !string.IsNullOrEmpty(step.feedback.completionEffectColor)
+                || !string.IsNullOrEmpty(step.feedback.completionParticleId)
+                || step.feedback.completionPulseScale != 0f))
+            {
+                sb.AppendLine("    feedback:");
+                EmitStringArray   (sb, "      effectTriggerIds",     step.feedback.effectTriggerIds);
+                EmitScalarIfPresent(sb, "      completionEffectColor", step.feedback.completionEffectColor);
+                EmitScalarIfPresent(sb, "      completionParticleId",  step.feedback.completionParticleId);
+                if (step.feedback.completionPulseScale != 0f)
+                    sb.AppendLine($"      completionPulseScale: {F((float)step.feedback.completionPulseScale)}");
+            }
+        }
+
+        private static void EmitScalarIfPresent(StringBuilder sb, string indentedKey, string value)
+        {
+            if (string.IsNullOrEmpty(value)) return;
+            sb.AppendLine($"{indentedKey}: \"{Esc(value)}\"");
+        }
+
+        private static void EmitStringArray(StringBuilder sb, string indentedKey, string[] arr)
+        {
+            if (arr == null || arr.Length == 0) return;
+            sb.Append(indentedKey).Append(": [");
+            for (int i = 0; i < arr.Length; i++)
+            {
+                if (i > 0) sb.Append(", ");
+                sb.Append('"').Append(Esc(arr[i] ?? "")).Append('"');
+            }
+            sb.AppendLine("]");
+        }
+
+        private static void EmitPartIdArray(StringBuilder sb, string indentedKey, string[] arr,
+            Dictionary<string, string> partToRole)
+        {
+            if (arr == null || arr.Length == 0) return;
+            sb.Append(indentedKey).Append(": [");
+            for (int i = 0; i < arr.Length; i++)
+            {
+                if (i > 0) sb.Append(", ");
+                string pid = arr[i] ?? "";
+                if (partToRole.TryGetValue(pid, out var role))
+                    sb.Append('"').Append('{').Append(role).Append('}').Append('"');
+                else
+                    sb.Append('"').Append(Esc(pid)).Append('"');
+            }
+            sb.AppendLine("]");
+        }
+
+        private static string Esc(string s) =>
+            (s ?? string.Empty).Replace("\\", "\\\\").Replace("\"", "\\\"");
 
         // Slice 2g — emit one partDefinitions entry per role. Each entry
         // pulls category / material / assetRef from the live PartDefinition
