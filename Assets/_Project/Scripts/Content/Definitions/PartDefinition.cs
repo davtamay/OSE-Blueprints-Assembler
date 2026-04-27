@@ -119,6 +119,18 @@ namespace OSE.Content
         /// </summary>
         public PartGrabConfig grabConfig;
 
+        /// <summary>
+        /// Provenance link to the Step Configuration Prefab instance that
+        /// emitted this part (Slice 2). Set on every part the
+        /// <see cref="Loading.PrefabExpander"/> creates from a
+        /// <c>partDefinitions:</c> section so the editor can show a "linked"
+        /// badge + the loader can strip + re-emit virtual entries on the next
+        /// normalize pass. Stripped from disk by
+        /// <c>MachinePackageNormalizer.DropEmptyStepPayloads</c>-equivalent
+        /// when empty so authored parts stay clean in source control.
+        /// </summary>
+        public PrefabRef prefabRef;
+
         /// <summary>True when <see cref="grabConfig"/> carries any authored spatial data.</summary>
         public bool HasGrabConfig => grabConfig != null && grabConfig.HasGripPoint;
 

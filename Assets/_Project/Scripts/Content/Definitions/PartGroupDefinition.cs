@@ -72,6 +72,15 @@ namespace OSE.Content
         public AnimationCueEntry[] animationCues;
 
         /// <summary>
+        /// Provenance link to the Step Configuration Prefab instance that
+        /// emitted this part group (Slice 2). Set when
+        /// <see cref="Loading.PrefabExpander"/> creates the group from a
+        /// <c>partGroupDefinition:</c> section. Stripped from disk by the
+        /// normalizer when empty so authored groups stay clean.
+        /// </summary>
+        public PrefabRef prefabRef;
+
+        /// <summary>
         /// Derived rigid-body cache keyed by targetId. Populated by
         /// <see cref="Loading.MachinePackageNormalizer.BakeGroupRigidBody"/>.
         /// Never persisted. Enables the editor to treat a group-at-target as

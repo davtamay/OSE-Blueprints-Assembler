@@ -114,34 +114,61 @@ namespace OSE.Content.Loading
         /// </summary>
         public static void DropEmptyStepPayloads(MachinePackageDefinition package)
         {
-            if (package?.steps == null) return;
+            if (package == null) return;
 
             int droppedOrient = 0, droppedCues = 0, droppedParticles = 0, droppedPrefabRef = 0;
 
-            for (int i = 0; i < package.steps.Length; i++)
+            if (package.steps != null)
             {
-                var s = package.steps[i];
-                if (s == null) continue;
+                for (int i = 0; i < package.steps.Length; i++)
+                {
+                    var s = package.steps[i];
+                    if (s == null) continue;
 
-                if (s.workingOrientation != null && s.workingOrientation.IsEmpty())
-                {
-                    s.workingOrientation = null;
-                    droppedOrient++;
+                    if (s.workingOrientation != null && s.workingOrientation.IsEmpty())
+                    {
+                        s.workingOrientation = null;
+                        droppedOrient++;
+                    }
+                    if (s.animationCues != null && s.animationCues.IsEmpty())
+                    {
+                        s.animationCues = null;
+                        droppedCues++;
+                    }
+                    if (s.particleEffects != null && s.particleEffects.IsEmpty())
+                    {
+                        s.particleEffects = null;
+                        droppedParticles++;
+                    }
+                    if (s.prefabRef != null && s.prefabRef.IsEmpty())
+                    {
+                        s.prefabRef = null;
+                        droppedPrefabRef++;
+                    }
                 }
-                if (s.animationCues != null && s.animationCues.IsEmpty())
+            }
+
+            if (package.parts != null)
+            {
+                foreach (var p in package.parts)
                 {
-                    s.animationCues = null;
-                    droppedCues++;
+                    if (p?.prefabRef != null && p.prefabRef.IsEmpty())
+                    {
+                        p.prefabRef = null;
+                        droppedPrefabRef++;
+                    }
                 }
-                if (s.particleEffects != null && s.particleEffects.IsEmpty())
+            }
+
+            if (package.partGroups != null)
+            {
+                foreach (var g in package.partGroups)
                 {
-                    s.particleEffects = null;
-                    droppedParticles++;
-                }
-                if (s.prefabRef != null && s.prefabRef.IsEmpty())
-                {
-                    s.prefabRef = null;
-                    droppedPrefabRef++;
+                    if (g?.prefabRef != null && g.prefabRef.IsEmpty())
+                    {
+                        g.prefabRef = null;
+                        droppedPrefabRef++;
+                    }
                 }
             }
 
@@ -169,28 +196,39 @@ namespace OSE.Content.Loading
 
             string prefabsDir = PrefabExpander.GetPrefabsDir();
 
-            // Drop every previously-expanded virtual step. Re-emitted
+            // Drop every previously-expanded virtual entity. Re-emitted
             // below from the current instance set; this also clears
             // orphans whose source instance was Discarded between calls.
-            // Authored steps (no prefabRef, or prefabRef cleared by
-            // DropEmptyStepPayloads above) pass through untouched.
-            if (package.steps != null && package.steps.Length > 0)
+            // Authored entities (no prefabRef, or prefabRef cleared by
+            // DropEmptyPrefabRef above) pass through untouched.
+            package.steps      = StripVirtual(package.steps,      s => s?.prefabRef);
+            package.parts      = StripVirtual(package.parts,      p => p?.prefabRef);
+            package.partGroups = StripVirtual(package.partGroups, g => g?.prefabRef);
+            // Placements are stripped indirectly: any placement whose
+            // partId no longer exists in `package.parts` after the strip
+            // above is treated as virtual and discarded.
+            if (package.previewConfig?.partPlacements != null && package.previewConfig.partPlacements.Length > 0)
             {
-                var keep = new List<StepDefinition>(package.steps.Length);
-                foreach (var s in package.steps)
+                var liveParts = new HashSet<string>(StringComparer.Ordinal);
+                if (package.parts != null)
+                    foreach (var p in package.parts)
+                        if (p != null && !string.IsNullOrEmpty(p.id)) liveParts.Add(p.id);
+                var keepP = new List<PartPreviewPlacement>(package.previewConfig.partPlacements.Length);
+                foreach (var pp in package.previewConfig.partPlacements)
                 {
-                    if (s == null) continue;
-                    if (s.prefabRef != null && !string.IsNullOrEmpty(s.prefabRef.instanceId))
-                        continue;
-                    keep.Add(s);
+                    if (pp == null) continue;
+                    if (string.IsNullOrEmpty(pp.partId) || liveParts.Contains(pp.partId)) keepP.Add(pp);
                 }
-                if (keep.Count != package.steps.Length)
-                    package.steps = keep.ToArray();
+                if (keepP.Count != package.previewConfig.partPlacements.Length)
+                    package.previewConfig.partPlacements = keepP.ToArray();
             }
 
-            int totalExpanded = 0;
             int totalErrors   = 0;
-            var emitted       = new List<StepDefinition>();
+            int totalSteps = 0, totalParts = 0, totalGroups = 0, totalPlacements = 0;
+            var emittedSteps      = new List<StepDefinition>();
+            var emittedParts      = new List<PartDefinition>();
+            var emittedGroups     = new List<PartGroupDefinition>();
+            var emittedPlacements = new List<PartPreviewPlacement>();
             foreach (var instance in instances)
             {
                 if (instance == null || instance.IsEmpty()) continue;
@@ -201,25 +239,50 @@ namespace OSE.Content.Loading
                     foreach (var err in result.Errors)
                         OseLog.Warn($"[Normalizer.ExpandPrefabInstances] {instance.instanceId} ({instance.prefabId}): {err}");
                 }
-                if (result.Steps != null && result.Steps.Length > 0)
-                {
-                    emitted.AddRange(result.Steps);
-                    totalExpanded += result.Steps.Length;
-                }
+                if (result.Steps      != null && result.Steps.Length      > 0) { emittedSteps.AddRange(result.Steps);           totalSteps      += result.Steps.Length; }
+                if (result.Parts      != null && result.Parts.Length      > 0) { emittedParts.AddRange(result.Parts);           totalParts      += result.Parts.Length; }
+                if (result.PartGroups != null && result.PartGroups.Length > 0) { emittedGroups.AddRange(result.PartGroups);     totalGroups     += result.PartGroups.Length; }
+                if (result.Placements != null && result.Placements.Length > 0) { emittedPlacements.AddRange(result.Placements); totalPlacements += result.Placements.Length; }
             }
 
-            if (emitted.Count > 0)
+            package.steps      = AppendArray(package.steps,      emittedSteps);
+            package.parts      = AppendArray(package.parts,      emittedParts);
+            package.partGroups = AppendArray(package.partGroups, emittedGroups);
+            if (emittedPlacements.Count > 0)
             {
-                int existing = package.steps?.Length ?? 0;
-                var merged = new StepDefinition[existing + emitted.Count];
-                if (existing > 0) Array.Copy(package.steps, 0, merged, 0, existing);
-                emitted.CopyTo(merged, existing);
-                package.steps = merged;
+                package.previewConfig ??= new PackagePreviewConfig();
+                package.previewConfig.partPlacements = AppendArray(package.previewConfig.partPlacements, emittedPlacements);
             }
 
             OseLog.Info(
                 $"[Normalizer.ExpandPrefabInstances] '{package.packageId}': " +
-                $"expanded {instances.Length} instance(s) → {totalExpanded} virtual step(s), {totalErrors} error(s).");
+                $"expanded {instances.Length} instance(s) → {totalSteps} step(s), {totalParts} part(s), " +
+                $"{totalGroups} partGroup(s), {totalPlacements} placement(s), {totalErrors} error(s).");
+        }
+
+        private static T[] StripVirtual<T>(T[] source, Func<T, PrefabRef> refSelector) where T : class
+        {
+            if (source == null || source.Length == 0) return source;
+            var keep = new List<T>(source.Length);
+            for (int i = 0; i < source.Length; i++)
+            {
+                T item = source[i];
+                if (item == null) continue;
+                PrefabRef pr = refSelector(item);
+                if (pr != null && !string.IsNullOrEmpty(pr.instanceId)) continue;
+                keep.Add(item);
+            }
+            return keep.Count == source.Length ? source : keep.ToArray();
+        }
+
+        private static T[] AppendArray<T>(T[] source, List<T> additions)
+        {
+            if (additions == null || additions.Count == 0) return source;
+            int existing = source?.Length ?? 0;
+            var merged = new T[existing + additions.Count];
+            if (existing > 0) Array.Copy(source, 0, merged, 0, existing);
+            additions.CopyTo(merged, existing);
+            return merged;
         }
 
         // Canonical trigger names for AnimationCueEntry.trigger. Every alias

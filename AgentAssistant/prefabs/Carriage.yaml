@@ -1,0 +1,238 @@
+# Step Configuration Prefab — Carriage (self-contained)
+# =====================================================
+# Same procedure as CarriageBuild but bundles its own parts +
+# partGroupDefinition so dropping it on a bench creates the WHOLE
+# carriage (14 parts + 1 part group + 7 steps). Pair with the
+# `placementOffset` option to drop multiple identical carriages at
+# distinct world positions without the YAML changing.
+#
+# Schema reference: see CarriageBuild.yaml header for substitution rules.
+# Slice 2 additions:
+#   options: { type: vector3, default: { x:..., y:..., z:... } }
+#   partDefinitions: per-role part metadata (with inline placements)
+#   partGroupDefinition: the logical grouping
+#
+# Inline placements are applied in PreviewRoot-local space and then
+# offset by `placementOffset` at expansion time, so a Y-Right carriage
+# can carry placementOffset=(-0.50, 0, 0.30) and a Y-Left carriage
+# placementOffset=(0.50, 0, 0.30) without any YAML differences.
+
+prefab: Carriage
+description: "Self-contained carriage — 14 parts + 1 part group + 7 procedure steps."
+
+roles:
+  half_a:
+    kind: part
+    description: "First carriage half — receives the bearings."
+  half_b:
+    kind: part
+    description: "Closing carriage half."
+  bearings:
+    kind: part_list
+    count: 4
+    description: "LM8UU linear bearings, flanges outward."
+  bolts_top:
+    kind: part_list
+    count: 2
+    description: "Short bolts (M6×18) — top of carriage."
+  bolts_bot:
+    kind: part_list
+    count: 2
+    description: "Long bolts (M6×30) — bottom of carriage."
+  nuts:
+    kind: part_list
+    count: 4
+    description: "M6 nuts — finger-tightened then torqued."
+
+options:
+  orientation_cue:
+    type: string
+    default: "flanges facing outward"
+    description: "Bearing orientation hint included in the place-bearings instruction."
+  tool:
+    type: string
+    default: "tool_power_drill"
+    description: "Tool used for the final torque step."
+  torque_setting:
+    type: string
+    default: "lowest"
+    description: "Torque setting passed to the final step's instruction text."
+  milestone:
+    type: string
+    default: "Carriage assembly complete."
+    description: "Milestone message shown on the final step."
+  placementOffset:
+    type: vector3
+    default: { x: 0, y: 0, z: 0 }
+    description: "World offset added to every emitted partPlacement. Use this to drop multiple identical carriages at distinct bench positions."
+
+derived:
+  all_bolts:
+    kind: part_list
+    combine: [bolts_top, bolts_bot]
+    description: "All carriage bolts concatenated (top first, bottom second)."
+
+# Each role bundles its own asset metadata + inline staging / assembled
+# positions. The expander emits a PartDefinition + a sibling
+# PartPreviewPlacement per resolved partId; the placementOffset option
+# is added to every position before emission.
+partDefinitions:
+  half_a:
+    kind: part
+    category:    carriage_half
+    material:    pla
+    assetRef:    "assets/parts/{half_a}.glb"
+    startPosition:     { x:  0.000, y:  0.080, z:  0.000 }
+    assembledPosition: { x:  0.000, y:  0.000, z:  0.000 }
+  half_b:
+    kind: part
+    category:    carriage_half
+    material:    pla
+    assetRef:    "assets/parts/{half_b}.glb"
+    startPosition:     { x:  0.060, y:  0.080, z:  0.000 }
+    assembledPosition: { x:  0.000, y:  0.020, z:  0.000 }
+  bearings:
+    kind: part_list
+    count: 4
+    category: linear_bearing
+    material: stainless
+    assetRef: "assets/parts/lm8uu.glb"
+    placements:
+      - { startPosition: { x: -0.020, y: 0.080, z:  0.040 }, assembledPosition: { x: -0.020, y: 0.010, z:  0.040 } }
+      - { startPosition: { x: -0.020, y: 0.080, z: -0.040 }, assembledPosition: { x: -0.020, y: 0.010, z: -0.040 } }
+      - { startPosition: { x:  0.020, y: 0.080, z:  0.040 }, assembledPosition: { x:  0.020, y: 0.010, z:  0.040 } }
+      - { startPosition: { x:  0.020, y: 0.080, z: -0.040 }, assembledPosition: { x:  0.020, y: 0.010, z: -0.040 } }
+  bolts_top:
+    kind: part_list
+    count: 2
+    category: bolt_m6x18
+    material: steel
+    placements:
+      - { startPosition: { x: -0.030, y: 0.110, z:  0.020 }, assembledPosition: { x: -0.030, y: 0.030, z:  0.020 } }
+      - { startPosition: { x:  0.030, y: 0.110, z:  0.020 }, assembledPosition: { x:  0.030, y: 0.030, z:  0.020 } }
+  bolts_bot:
+    kind: part_list
+    count: 2
+    category: bolt_m6x30
+    material: steel
+    placements:
+      - { startPosition: { x: -0.030, y: 0.110, z: -0.020 }, assembledPosition: { x: -0.030, y: -0.020, z: -0.020 } }
+      - { startPosition: { x:  0.030, y: 0.110, z: -0.020 }, assembledPosition: { x:  0.030, y: -0.020, z: -0.020 } }
+  nuts:
+    kind: part_list
+    count: 4
+    category: nut_m6
+    material: steel
+    placements:
+      - { startPosition: { x: -0.045, y: 0.090, z:  0.020 }, assembledPosition: { x: -0.040, y: 0.030, z:  0.020 } }
+      - { startPosition: { x:  0.045, y: 0.090, z:  0.020 }, assembledPosition: { x:  0.040, y: 0.030, z:  0.020 } }
+      - { startPosition: { x: -0.045, y: 0.090, z: -0.020 }, assembledPosition: { x: -0.040, y: -0.020, z: -0.020 } }
+      - { startPosition: { x:  0.045, y: 0.090, z: -0.020 }, assembledPosition: { x:  0.040, y: -0.020, z: -0.020 } }
+
+# Logical grouping. partIds are derived from the union of every
+# partDefinitions role at expansion time — explicit `partIds:` here
+# would override that.
+partGroupDefinition:
+  id: "partGroup_carriage_{prefix}"
+  name: "Carriage ({prefix})"
+  description: "Linear bearing carriage built from {bearings.count} bearings + 4 bolts + 4 nuts between two halves."
+
+steps:
+  - id_suffix: place_bearings
+    family: Place
+    name: "Seat {bearings.count} Bearings in Carriage Half A"
+    requiredPartIds:
+      - "{half_a}"
+      - "*{bearings}"
+    guidance:
+      instructionText: "Place all {bearings.count} LM8UU linear bearings into carriage half A ({half_a}). Orient each bearing with {orientation_cue}."
+      whyItMattersText: "Flanges prevent axial migration of bearings under load. An inverted bearing will walk out of its pocket within the first few print cycles."
+    validation:
+      successCriteria: "All {bearings.count} bearings seated flush. Flanges visible on both sides of each pocket."
+      failureCriteria: "Any bearing recessed, flipped, or able to rock in its pocket."
+    feedback:
+      successMessage: "Bearings seated correctly — ready to close the carriage."
+      failureMessage: "Re-seat any loose or inverted bearings before closing."
+
+  - id_suffix: close_halves
+    family: Place
+    name: "Close Carriage Half B — Align Belt Holes"
+    requiredPartIds:
+      - "{half_a}"
+      - "{half_b}"
+    guidance:
+      instructionText: "Press carriage half B ({half_b}) firmly against half A, trapping all {bearings.count} bearings. Align so the small ribbed belt hole sits beside the large smooth belt hole — this is the ONLY correct orientation."
+      whyItMattersText: "Belt-hole alignment must be confirmed before bolting. If small-ribbed ≠ beside large-smooth, the peg holes misalign and the belt cannot thread through."
+    validation:
+      successCriteria: "Both halves flush along the full seam. Small ribbed hole is directly beside the large smooth hole."
+      failureCriteria: "Gap visible along seam, or belt holes on wrong sides relative to each other."
+    feedback:
+      successMessage: "Halves closed and belt holes aligned."
+      failureMessage: "Flip half B 180° and retry — small ribbed hole must be adjacent to the large smooth hole."
+
+  - id_suffix: shake_test
+    family: Confirm
+    name: "Shake Test — Bearing Retention Check"
+    requiredPartIds:
+      - "{half_a}"
+      - "{half_b}"
+    guidance:
+      instructionText: "Hold both halves compressed firmly by hand — do not bolt yet. Shake the closed assembly firmly for 2–3 seconds. Listen and feel for any bearing rattle or movement."
+      whyItMattersText: "A rattle means at least one bearing is not fully seated in its pocket. Bolting before fixing locks in the defect — the carriage will develop play under load and the axis will lose positional accuracy."
+    validation:
+      successCriteria: "No audible rattle, no felt movement from bearings while halves are hand-compressed."
+      failureCriteria: "Any rattle, clicking, or loose feeling during the shake."
+    feedback:
+      successMessage: "Shake test passed — bearings are solid."
+      failureMessage: "Open the halves and identify the loose bearing. Re-seat it and retest before proceeding."
+
+  - id_suffix: rod_slide_test
+    family: Confirm
+    name: "Rod Slide Test — Bearing Alignment Check"
+    requiredPartIds:
+      - "{half_a}"
+      - "{half_b}"
+    guidance:
+      instructionText: "While still holding halves compressed, slide a smooth 8mm rod vertically through all {bearings.count} bearings. It should pass with slight, even resistance — not too stiff, not freely loose."
+      whyItMattersText: "Uneven resistance exposes bearing misalignment. If left uncorrected, the axis will bind under motor load and cause missed steps or stalls."
+    validation:
+      successCriteria: "Rod slides through all {bearings.count} bearings with slight, consistent resistance. No binding or tight spots."
+      failureCriteria: "Rod catches or sticks at any bearing, OR drops through with zero resistance."
+    feedback:
+      successMessage: "Rod slide test passed — bearings aligned."
+      failureMessage: "Open halves. Check that all bearings are fully seated and coplanar. Re-close and retest."
+
+  - id_suffix: place_bolts
+    family: Place
+    name: "Insert Bolts and Thread {nuts.count} Nuts Finger-Tight"
+    requiredPartIds:
+      - "*{all_bolts}"
+      - "*{nuts}"
+    guidance:
+      instructionText: "Insert the {bolts_top.count} shorter M6×18 bolts through the TOP holes and the {bolts_bot.count} longer M6×30 bolts through the BOTTOM holes. Thread all {nuts.count} M6 nuts finger-tight — hand only, no drill yet."
+      whyItMattersText: "Short bolts top, long bolts bottom — this is the load-distribution pattern. Swapping them puts longer threads in the high-stress joint, which can strip faster under Y-axis acceleration."
+    validation:
+      successCriteria: "All {all_bolts.count} bolts inserted and {nuts.count} nuts threaded finger-tight. Short M6×18 bolts are in the top holes, long M6×30 in the bottom holes."
+      failureCriteria: "Wrong bolt length in wrong hole, any nut cross-threaded, or any bolt not yet threaded."
+    feedback:
+      successMessage: "Bolts and nuts placed correctly — ready to tighten."
+      failureMessage: "Verify bolt lengths: M6×18 (shorter) → top holes, M6×30 (longer) → bottom holes."
+
+  - id_suffix: tighten
+    family: Use
+    name: "Tighten Carriage Bolts — Cross Pattern"
+    requiredPartIds:
+      - "*{all_bolts}"
+    requiredToolActions:
+      - toolId: "{tool}"
+        actionType: Tighten
+        profile: Torque
+    guidance:
+      instructionText: "Using the power drill at {torque_setting} torque setting, tighten all {all_bolts.count} carriage bolts in a cross pattern: top-left → bottom-right → top-right → bottom-left. Repeat the pattern once to equalize clamping."
+      whyItMattersText: "Cross-pattern tightening ensures even clamping force across the carriage body. Sequential (one side first) tightening distorts the bearing bores and causes axis binding."
+    validation:
+      successCriteria: "All {all_bolts.count} bolts tight at {torque_setting} torque. Carriage halves fully closed — no gap along seam. Rod still slides smoothly through bearings after tightening. {milestone}"
+      failureCriteria: "Any bolt loose, gap visible between halves, or rod now binds after tightening."
+    feedback:
+      successMessage: "{milestone}"
+      failureMessage: "If rod now binds: back off all bolts ¼ turn, re-run cross pattern at lower torque. If gap persists: check for bearing oversize or debris between halves."

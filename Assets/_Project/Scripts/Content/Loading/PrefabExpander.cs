@@ -31,9 +31,12 @@ namespace OSE.Content.Loading
         /// <summary>Result of expanding a single instance.</summary>
         public sealed class Result
         {
-            public StepDefinition[] Steps;
-            public List<string>     Errors;
-            public List<string>     Warnings;
+            public StepDefinition[]      Steps;
+            public PartDefinition[]      Parts;
+            public PartPreviewPlacement[] Placements;
+            public PartGroupDefinition[] PartGroups;
+            public List<string>          Errors;
+            public List<string>          Warnings;
         }
 
         /// <summary>
@@ -47,9 +50,12 @@ namespace OSE.Content.Loading
         {
             var result = new Result
             {
-                Steps    = Array.Empty<StepDefinition>(),
-                Errors   = new List<string>(),
-                Warnings = new List<string>(),
+                Steps      = Array.Empty<StepDefinition>(),
+                Parts      = Array.Empty<PartDefinition>(),
+                Placements = Array.Empty<PartPreviewPlacement>(),
+                PartGroups = Array.Empty<PartGroupDefinition>(),
+                Errors     = new List<string>(),
+                Warnings   = new List<string>(),
             };
 
             if (instance == null || string.IsNullOrEmpty(instance.prefabId))
@@ -89,12 +95,27 @@ namespace OSE.Content.Loading
         /// <summary>Same as <see cref="Expand"/> but takes a pre-parsed YAML tree (used by the normalizer's parse cache).</summary>
         public static Result ExpandParsed(PrefabInstance instance, YamlNode prefab, string prefabPathForLogs, Result result = null)
         {
-            result ??= new Result { Errors = new List<string>(), Warnings = new List<string>(), Steps = Array.Empty<StepDefinition>() };
+            result ??= new Result {
+                Errors = new List<string>(), Warnings = new List<string>(),
+                Steps = Array.Empty<StepDefinition>(),
+                Parts = Array.Empty<PartDefinition>(),
+                Placements = Array.Empty<PartPreviewPlacement>(),
+                PartGroups = Array.Empty<PartGroupDefinition>(),
+            };
 
             try
             {
                 Dictionary<string, object> ctx = BuildContext(instance, prefab, result.Errors);
                 if (result.Errors.Count > 0) return result;
+
+                // Slice 2 sections — additive, all optional. Walk them
+                // BEFORE steps so the steps' role substitutions can refer to
+                // partIds bound from partDefinitions if needed (Slice 1
+                // bindings are typically the source though). The normalizer
+                // merges the emitted entities into the package alongside
+                // the virtual steps below.
+                ExpandPartDefinitions(instance, prefab, ctx, prefabPathForLogs, result);
+                ExpandPartGroupDefinition(instance, prefab, ctx, prefabPathForLogs, result);
 
                 if (!prefab.TryGet("steps", out var stepsNode) || stepsNode == null || !stepsNode.IsSeq || stepsNode.Seq.Count == 0)
                 {
@@ -428,18 +449,7 @@ namespace OSE.Content.Loading
 
         private static void StampProvenance(StepDefinition step, PrefabInstance instance, string prefabPath)
         {
-            try
-            {
-                step.prefabRef = new PrefabRef
-                {
-                    prefabId    = instance.prefabId,
-                    instanceId  = instance.instanceId,
-                    bindings    = CloneBindings(instance.bindings),
-                    sourceMtime = !string.IsNullOrEmpty(prefabPath) && File.Exists(prefabPath)
-                        ? File.GetLastWriteTimeUtc(prefabPath).ToString("o")
-                        : null,
-                };
-            }
+            try { step.prefabRef = MakePrefabRef(instance, prefabPath); }
             catch (Exception ex)
             {
                 OseLog.Warn($"[PrefabExpander] Failed stamping prefabRef on '{step?.id}': {ex.Message}");
@@ -462,6 +472,288 @@ namespace OSE.Content.Loading
                 };
             }
             return clone;
+        }
+
+        // ── Slice 2: partDefinitions section ──────────────────────────────
+
+        // Walks the optional `partDefinitions:` section and emits one
+        // PartDefinition per role-bound partId, plus a sibling
+        // PartPreviewPlacement per part. Single-part roles consume a single
+        // `startPosition` / `assembledPosition`; part_list roles consume a
+        // `placements:` array indexed by binding order. Each emitted
+        // placement is offset by the resolved `placementOffset` option (if
+        // present) so the same prefab can drop multiple identical instances
+        // at distinct bench positions without the YAML changing.
+        private static void ExpandPartDefinitions(
+            PrefabInstance instance, YamlNode prefab, Dictionary<string, object> ctx,
+            string prefabPath, Result result)
+        {
+            if (!prefab.TryGet("partDefinitions", out var defsNode) || defsNode == null || !defsNode.IsMap)
+                return;
+
+            Vector3 offset = ResolveVector3Option(prefab, instance, "placementOffset");
+            var parts      = new List<PartDefinition>();
+            var placements = new List<PartPreviewPlacement>();
+
+            foreach (var kv in defsNode.Map)
+            {
+                string roleName = kv.Key;
+                YamlNode def    = kv.Value;
+                if (def == null || !def.IsMap)
+                {
+                    result.Errors.Add($"partDefinitions.{roleName}: expected a map.");
+                    continue;
+                }
+                if (!ctx.TryGetValue(roleName, out var bound))
+                {
+                    result.Errors.Add($"partDefinitions.{roleName}: no role binding found for this name.");
+                    continue;
+                }
+
+                string kind     = def.GetScalar("kind", "part") ?? "part";
+                string category = SubstituteScalar(def.GetScalar("category", null), ctx, result.Errors);
+                string material = SubstituteScalar(def.GetScalar("material", null), ctx, result.Errors);
+                string assetTpl = def.GetScalar("assetRef", null);
+
+                if (string.Equals(kind, "part_list", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!(bound is ListRole list))
+                    {
+                        result.Errors.Add($"partDefinitions.{roleName}: kind=part_list but role binding is not a list.");
+                        continue;
+                    }
+
+                    List<YamlNode> placementSeq = null;
+                    if (def.TryGet("placements", out var pn) && pn != null && pn.IsSeq)
+                        placementSeq = pn.Seq;
+
+                    for (int i = 0; i < list.Items.Length; i++)
+                    {
+                        string pid = list.Items[i];
+                        if (string.IsNullOrEmpty(pid)) continue;
+
+                        parts.Add(BuildPartDefinition(pid, category, material,
+                            ResolveAssetRef(assetTpl, roleName, pid, ctx, result.Errors),
+                            instance, prefabPath));
+
+                        YamlNode pNode = (placementSeq != null && i < placementSeq.Count) ? placementSeq[i] : null;
+                        placements.Add(BuildPlacement(pid, pNode, offset, ctx, result.Errors,
+                            instance.prefabId, roleName, i));
+                    }
+                }
+                else
+                {
+                    if (!(bound is string single) || string.IsNullOrEmpty(single))
+                    {
+                        result.Errors.Add($"partDefinitions.{roleName}: kind=part but role binding is empty / not a string.");
+                        continue;
+                    }
+                    parts.Add(BuildPartDefinition(single, category, material,
+                        ResolveAssetRef(assetTpl, roleName, single, ctx, result.Errors),
+                        instance, prefabPath));
+                    placements.Add(BuildPlacement(single, def, offset, ctx, result.Errors,
+                        instance.prefabId, roleName, -1));
+                }
+            }
+
+            if (parts.Count > 0)      result.Parts      = parts.ToArray();
+            if (placements.Count > 0) result.Placements = placements.ToArray();
+        }
+
+        private static PartDefinition BuildPartDefinition(
+            string partId, string category, string material, string assetRef,
+            PrefabInstance instance, string prefabPath)
+        {
+            var part = new PartDefinition
+            {
+                id        = partId,
+                category  = category,
+                material  = material,
+                assetRef  = assetRef,
+                prefabRef = MakePrefabRef(instance, prefabPath),
+            };
+            return part;
+        }
+
+        private static PartPreviewPlacement BuildPlacement(
+            string partId, YamlNode source, Vector3 offset,
+            Dictionary<string, object> ctx, List<string> errors,
+            string prefabId, string roleName, int index)
+        {
+            SceneFloat3 start     = ReadFloat3(source, "startPosition",     errors, prefabId, roleName, index);
+            SceneFloat3 assembled = ReadFloat3(source, "assembledPosition", errors, prefabId, roleName, index);
+            start     = ApplyOffset(start, offset);
+            assembled = ApplyOffset(assembled, offset);
+            return new PartPreviewPlacement
+            {
+                partId            = partId,
+                startPosition     = start,
+                assembledPosition = assembled,
+            };
+        }
+
+        private static SceneFloat3 ReadFloat3(
+            YamlNode source, string key, List<string> errors,
+            string prefabId, string roleName, int index)
+        {
+            if (source == null || !source.IsMap || !source.TryGet(key, out var node) || node == null || !node.IsMap)
+                return new SceneFloat3();
+            float x = ParseFloat(node.GetScalar("x", "0"));
+            float y = ParseFloat(node.GetScalar("y", "0"));
+            float z = ParseFloat(node.GetScalar("z", "0"));
+            return new SceneFloat3 { x = x, y = y, z = z };
+        }
+
+        private static float ParseFloat(string s)
+        {
+            return float.TryParse(s, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out float v) ? v : 0f;
+        }
+
+        private static SceneFloat3 ApplyOffset(SceneFloat3 v, Vector3 offset)
+            => new SceneFloat3 { x = v.x + offset.x, y = v.y + offset.y, z = v.z + offset.z };
+
+        private static string ResolveAssetRef(string template, string roleName, string partId,
+            Dictionary<string, object> ctx, List<string> errors)
+        {
+            if (string.IsNullOrEmpty(template)) return null;
+            // Common shape: "assets/parts/{<role>}.glb" — substitute via the
+            // shared scalar substituter so {role} expands to the bound id.
+            return SubstituteScalar(template, ctx, errors);
+        }
+
+        // ── Slice 2: partGroupDefinition section ──────────────────────────
+
+        // Walks the optional `partGroupDefinition:` section and emits a
+        // single PartGroupDefinition. partIds default to the union of
+        // every partId resolved from `partDefinitions` (so the author
+        // doesn't have to hand-list role members); explicit `partIds:`
+        // overrides this.
+        private static void ExpandPartGroupDefinition(
+            PrefabInstance instance, YamlNode prefab, Dictionary<string, object> ctx,
+            string prefabPath, Result result)
+        {
+            if (!prefab.TryGet("partGroupDefinition", out var defNode) || defNode == null || !defNode.IsMap)
+                return;
+
+            string id          = SubstituteScalar(defNode.GetScalar("id", null), ctx, result.Errors);
+            string name        = SubstituteScalar(defNode.GetScalar("name", null), ctx, result.Errors);
+            string description = SubstituteScalar(defNode.GetScalar("description", null), ctx, result.Errors);
+
+            if (string.IsNullOrEmpty(id))
+            {
+                if (!string.IsNullOrEmpty(instance.partGroupId)) id = instance.partGroupId;
+                else
+                {
+                    result.Errors.Add($"partGroupDefinition.id is empty and instance.partGroupId is unset.");
+                    return;
+                }
+            }
+
+            string[] partIds;
+            if (defNode.TryGet("partIds", out var pidNode) && pidNode != null && pidNode.IsSeq)
+            {
+                var explicitIds = new List<string>(pidNode.Seq.Count);
+                foreach (var e in pidNode.Seq)
+                    if (e != null && !string.IsNullOrEmpty(e.Scalar))
+                        explicitIds.Add(SubstituteScalar(e.Scalar, ctx, result.Errors));
+                partIds = explicitIds.ToArray();
+            }
+            else
+            {
+                // Default: union of every partId emitted by partDefinitions.
+                var allIds = new List<string>();
+                if (result.Parts != null)
+                    foreach (var p in result.Parts)
+                        if (p != null && !string.IsNullOrEmpty(p.id)) allIds.Add(p.id);
+                partIds = allIds.ToArray();
+            }
+
+            var group = new PartGroupDefinition
+            {
+                id          = id,
+                name        = string.IsNullOrEmpty(name) ? id : name,
+                assemblyId  = instance.assemblyId,
+                description = description,
+                partIds     = partIds,
+                prefabRef   = MakePrefabRef(instance, prefabPath),
+            };
+            result.PartGroups = new[] { group };
+
+            // Echo the group id back onto the instance so steps emitted
+            // later carry the right partGroupId without the wizard having
+            // to know it. Authored instances that already pin a partGroupId
+            // win — author intent first.
+            if (string.IsNullOrEmpty(instance.partGroupId))
+                instance.partGroupId = id;
+        }
+
+        // ── Slice 2: typed option resolution ──────────────────────────────
+
+        // Looks up an option of declared type=vector3, returning Vector3.zero
+        // when the option is absent or any field fails to parse. Instance
+        // values are JSON-encoded vector3 objects (`{"x":..,"y":..,"z":..}`);
+        // the prefab default may be either the same JSON shape or an inline
+        // YAML map — both decoded here.
+        private static Vector3 ResolveVector3Option(YamlNode prefab, PrefabInstance instance, string optionName)
+        {
+            if (string.IsNullOrEmpty(optionName)) return Vector3.zero;
+
+            // Instance override first.
+            if (instance.options != null)
+            {
+                foreach (var o in instance.options)
+                {
+                    if (o == null || !string.Equals(o.key, optionName, StringComparison.Ordinal)) continue;
+                    if (TryParseVector3Json(o.valueJson, out var v)) return v;
+                }
+            }
+
+            // Prefab default.
+            if (prefab.TryGet("options", out var optsNode) && optsNode != null && optsNode.IsMap
+                && optsNode.Map.TryGetValue(optionName, out var optDecl) && optDecl != null && optDecl.IsMap
+                && optDecl.TryGet("default", out var defNode) && defNode != null)
+            {
+                if (defNode.IsMap)
+                {
+                    return new Vector3(
+                        ParseFloat(defNode.GetScalar("x", "0")),
+                        ParseFloat(defNode.GetScalar("y", "0")),
+                        ParseFloat(defNode.GetScalar("z", "0")));
+                }
+                if (defNode.IsScalar && TryParseVector3Json(defNode.Scalar, out var v))
+                    return v;
+            }
+
+            return Vector3.zero;
+        }
+
+        private static bool TryParseVector3Json(string json, out Vector3 v)
+        {
+            v = Vector3.zero;
+            if (string.IsNullOrEmpty(json)) return false;
+            try
+            {
+                var parsed = UnityEngine.JsonUtility.FromJson<SceneFloat3>(json);
+                v = new Vector3(parsed.x, parsed.y, parsed.z);
+                return true;
+            }
+            catch { return false; }
+        }
+
+        // ── Helpers ───────────────────────────────────────────────────────
+
+        private static PrefabRef MakePrefabRef(PrefabInstance instance, string prefabPath)
+        {
+            return new PrefabRef
+            {
+                prefabId    = instance.prefabId,
+                instanceId  = instance.instanceId,
+                bindings    = CloneBindings(instance.bindings),
+                sourceMtime = !string.IsNullOrEmpty(prefabPath) && File.Exists(prefabPath)
+                    ? File.GetLastWriteTimeUtc(prefabPath).ToString("o")
+                    : null,
+            };
         }
 
         public static string ResolvePrefabPath(string prefabsDir, string prefabId)

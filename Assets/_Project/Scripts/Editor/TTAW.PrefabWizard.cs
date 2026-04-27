@@ -30,11 +30,18 @@ namespace OSE.Editor
         private string  _targetStepId;
         private StepDefinition _targetStep;
         private List<RoleSpec> _roles;
+        private List<OptionSpec> _options;
         private string _prefix;
         private int    _startSeq;
 
         private readonly Dictionary<string, string>   _singleBindings = new();
         private readonly Dictionary<string, string[]> _listBindings   = new();
+        // Per-instance option values keyed by option name. String values
+        // are stored verbatim; vector3 values are stored as their
+        // JSON-encoded SceneFloat3 shape so the in-memory representation
+        // round-trips into the PrefabInstance.options array unchanged.
+        private readonly Dictionary<string, string>   _stringOptionValues  = new();
+        private readonly Dictionary<string, Vector3>  _vector3OptionValues = new();
 
         private Vector2 _scroll;
         private string  _statusMessage;
@@ -72,8 +79,11 @@ namespace OSE.Editor
             _prefabName        = Path.GetFileNameWithoutExtension(_prefabYamlPath ?? "");
             _prefabDescription = "";
             _roles             = new List<RoleSpec>();
+            _options           = new List<OptionSpec>();
             _singleBindings.Clear();
             _listBindings.Clear();
+            _stringOptionValues.Clear();
+            _vector3OptionValues.Clear();
             _statusMessage     = null;
 
             if (!File.Exists(_prefabYamlPath))
@@ -221,6 +231,13 @@ namespace OSE.Editor
             {
                 foreach (var role in _roles) DrawRoleRow(role);
             }
+
+            if (_options != null && _options.Count > 0)
+            {
+                EditorGUILayout.Space(8);
+                EditorGUILayout.LabelField("Options", EditorStyles.boldLabel);
+                foreach (var opt in _options) DrawOptionRow(opt);
+            }
             EditorGUILayout.EndScrollView();
 
             // Status / footer
@@ -276,6 +293,29 @@ namespace OSE.Editor
             EditorGUILayout.Space(2);
         }
 
+        private void DrawOptionRow(OptionSpec opt)
+        {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField($"{opt.Name}  [{opt.Type}]",
+                new GUIStyle(EditorStyles.label) { fontStyle = FontStyle.Bold });
+            if (!string.IsNullOrEmpty(opt.Description))
+                EditorGUILayout.LabelField(opt.Description, EditorStyles.wordWrappedMiniLabel);
+
+            if (string.Equals(opt.Type, "vector3", System.StringComparison.Ordinal))
+            {
+                _vector3OptionValues.TryGetValue(opt.Name, out var v);
+                _vector3OptionValues[opt.Name] =
+                    EditorGUILayout.Vector3Field("  value", v);
+            }
+            else
+            {
+                _stringOptionValues.TryGetValue(opt.Name, out var s);
+                _stringOptionValues[opt.Name] = EditorGUILayout.TextField("  value", s ?? "");
+            }
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.Space(2);
+        }
+
         // ── Instantiation pipeline ───────────────────────────────────────────
 
         private void RunInstantiation()
@@ -310,6 +350,7 @@ namespace OSE.Editor
                     assemblyId  = _targetStep?.assemblyId,
                     partGroupId = _targetStep?.partGroupId,
                     bindings    = SnapshotBindings(),
+                    options     = SnapshotOptions(),
                 };
 
                 int merged = _owner.MergePrefabInstancePublic(instance);
@@ -332,6 +373,37 @@ namespace OSE.Editor
             }
         }
 
+        /// <summary>
+        /// Captures every option value that differs from its prefab default
+        /// into a <see cref="PrefabOptionValue"/> array. Vector3 values are
+        /// JSON-encoded as <c>SceneFloat3</c>; string values pass through as
+        /// JSON-quoted scalars. Defaults are omitted so the on-disk
+        /// PrefabInstance stays minimal — the expander pulls the default
+        /// from the prefab YAML.
+        /// </summary>
+        private PrefabOptionValue[] SnapshotOptions()
+        {
+            if (_options == null || _options.Count == 0) return null;
+            var list = new List<PrefabOptionValue>();
+            foreach (var opt in _options)
+            {
+                if (string.Equals(opt.Type, "vector3", System.StringComparison.Ordinal))
+                {
+                    if (!_vector3OptionValues.TryGetValue(opt.Name, out var v)) continue;
+                    if (v == opt.DefaultVector3) continue;
+                    var sf3 = new OSE.Content.SceneFloat3 { x = v.x, y = v.y, z = v.z };
+                    list.Add(new PrefabOptionValue { key = opt.Name, valueJson = JsonUtility.ToJson(sf3) });
+                }
+                else
+                {
+                    if (!_stringOptionValues.TryGetValue(opt.Name, out var s)) continue;
+                    if (string.Equals(s, opt.DefaultString, System.StringComparison.Ordinal)) continue;
+                    list.Add(new PrefabOptionValue { key = opt.Name, valueJson = "\"" + (s ?? string.Empty).Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"" });
+                }
+            }
+            return list.Count == 0 ? null : list.ToArray();
+        }
+
         /// <summary>Captures the current role bindings as <see cref="PrefabRoleBinding"/> entries for the merged step's prefabRef.</summary>
         private PrefabRoleBinding[] SnapshotBindings()
         {
@@ -352,10 +424,10 @@ namespace OSE.Editor
             return list.ToArray();
         }
 
-        // Pulls the prefab's name + description + role list out of the
-        // shared YamlNode tree. Step + option + derived sections are
-        // consumed at expansion time by <see cref="PrefabExpander"/>; the
-        // wizard only needs roles to render its picker.
+        // Pulls the prefab's name + description + role list + options out of
+        // the shared YamlNode tree. Step + derived sections are consumed at
+        // expansion time by <see cref="PrefabExpander"/>; the wizard only
+        // needs roles + options to render its picker.
         private void ParsePrefabRoles(YamlNode root)
         {
             if (root == null || !root.IsMap) return;
@@ -364,17 +436,57 @@ namespace OSE.Editor
             string desc = root.GetScalar("description", null);
             if (!string.IsNullOrEmpty(desc)) _prefabDescription = desc;
 
-            if (!root.TryGet("roles", out var rolesNode) || rolesNode == null || !rolesNode.IsMap) return;
-            foreach (var kv in rolesNode.Map)
+            if (root.TryGet("roles", out var rolesNode) && rolesNode != null && rolesNode.IsMap)
             {
-                if (string.IsNullOrEmpty(kv.Key) || kv.Value == null || !kv.Value.IsMap) continue;
-                var spec = new RoleSpec { Name = kv.Key };
-                string kind = kv.Value.GetScalar("kind", "part") ?? "part";
-                spec.IsList = string.Equals(kind, "part_list", System.StringComparison.OrdinalIgnoreCase);
-                if (int.TryParse(kv.Value.GetScalar("count", "0"), out int count)) spec.Count = count;
-                spec.Description = kv.Value.GetScalar("description", "") ?? "";
-                _roles.Add(spec);
+                foreach (var kv in rolesNode.Map)
+                {
+                    if (string.IsNullOrEmpty(kv.Key) || kv.Value == null || !kv.Value.IsMap) continue;
+                    var spec = new RoleSpec { Name = kv.Key };
+                    string kind = kv.Value.GetScalar("kind", "part") ?? "part";
+                    spec.IsList = string.Equals(kind, "part_list", System.StringComparison.OrdinalIgnoreCase);
+                    if (int.TryParse(kv.Value.GetScalar("count", "0"), out int count)) spec.Count = count;
+                    spec.Description = kv.Value.GetScalar("description", "") ?? "";
+                    _roles.Add(spec);
+                }
             }
+
+            if (root.TryGet("options", out var optsNode) && optsNode != null && optsNode.IsMap)
+            {
+                foreach (var kv in optsNode.Map)
+                {
+                    if (string.IsNullOrEmpty(kv.Key) || kv.Value == null || !kv.Value.IsMap) continue;
+                    var opt = new OptionSpec
+                    {
+                        Name        = kv.Key,
+                        Type        = (kv.Value.GetScalar("type", "string") ?? "string").ToLowerInvariant(),
+                        Description = kv.Value.GetScalar("description", "") ?? "",
+                    };
+
+                    if (string.Equals(opt.Type, "vector3", System.StringComparison.Ordinal))
+                    {
+                        if (kv.Value.TryGet("default", out var d) && d != null && d.IsMap)
+                        {
+                            opt.DefaultVector3 = new Vector3(
+                                ParseFloat(d.GetScalar("x", "0")),
+                                ParseFloat(d.GetScalar("y", "0")),
+                                ParseFloat(d.GetScalar("z", "0")));
+                        }
+                        _vector3OptionValues[opt.Name] = opt.DefaultVector3;
+                    }
+                    else
+                    {
+                        opt.DefaultString = kv.Value.GetScalar("default", "") ?? "";
+                        _stringOptionValues[opt.Name] = opt.DefaultString;
+                    }
+                    _options.Add(opt);
+                }
+            }
+        }
+
+        private static float ParseFloat(string s)
+        {
+            return float.TryParse(s, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out float v) ? v : 0f;
         }
 
         private static string DerivePrefix(string idLike)
@@ -387,6 +499,18 @@ namespace OSE.Editor
             if (s.StartsWith(subPfx,  System.StringComparison.Ordinal)) s = s.Substring(subPfx.Length);
             if (s.StartsWith(stepPfx, System.StringComparison.Ordinal)) s = s.Substring(stepPfx.Length);
             return s;
+        }
+
+        // Single option definition pulled from the prefab YAML's
+        // `options:` section. Only string + vector3 are surfaced in
+        // Slice 2's wizard UI; future types fall back to a string field.
+        private sealed class OptionSpec
+        {
+            public string  Name;
+            public string  Type;
+            public string  Description;
+            public string  DefaultString;
+            public Vector3 DefaultVector3;
         }
 
         // Single role definition pulled from the prefab YAML.
