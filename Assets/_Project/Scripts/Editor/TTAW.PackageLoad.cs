@@ -266,6 +266,7 @@ namespace OSE.Editor
             _selectedTargetId = (_selectedIdx >= 0 && _selectedIdx < _targets.Length)
                 ? _targets[_selectedIdx].def.id : null;
             _multiSelected.Clear();
+            _multiSelectedStepIds.Clear();
             if (_selectedIdx >= 0) RefreshToolPreview(ref _targets[_selectedIdx]);
             else ClearToolPreview();
         }

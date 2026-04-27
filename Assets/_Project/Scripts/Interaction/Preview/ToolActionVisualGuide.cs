@@ -15,7 +15,8 @@ namespace OSE.Interaction
         private CurvedArrowOverlay _curvedArrow;
         private PreviewMode _mode;
 
-        public void Enter(PreviewMode mode, PreviewStyle style, Vector3 targetWorldPos, Vector2 expectedDragDir)
+        public void Enter(PreviewMode mode, PreviewStyle style, Vector3 targetWorldPos,
+            Vector2 expectedDragDir, bool preferDirectional = false)
         {
             _mode = mode;
             _progressRing = GestureProgressVisual.Spawn(targetWorldPos);
@@ -23,7 +24,13 @@ namespace OSE.Interaction
 
             if (mode == PreviewMode.Guided)
             {
-                if (style == PreviewStyle.Torque)
+                // Torque profile defaults to a rotational arc, but when the
+                // caller wires a meaningful part-motion direction (e.g. the
+                // bolt's lerp toward endTransform), prefer the straight
+                // directional arrow so the trainee swipes toward the end
+                // pose instead of rotating in a circle. Other profiles get
+                // their style-specific overlay.
+                if (style == PreviewStyle.Torque && !preferDirectional)
                     _curvedArrow = CurvedArrowOverlay.Spawn(targetWorldPos);
                 else
                     _arrow = DirectionalArrowOverlay.Spawn(targetWorldPos, expectedDragDir);

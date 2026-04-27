@@ -54,6 +54,11 @@ namespace OSE.Interaction
 
         public override Vector2 GetExpectedDragDirection(PreviewContext context)
         {
+            // Priority: lerp/thread_in part-motion direction (so the swipe
+            // arrow points the trainee toward where the part needs to end
+            // up — bolt down, pin in, etc.) → weld axis fallback → up.
+            if (context.PartMotionDirectionWorld.sqrMagnitude > 0.001f)
+                return context.ProjectDirectionToScreen(context.PartMotionDirectionWorld, Vector2.up);
             return context.ProjectDirectionToScreen(
                 context.WeldAxis.sqrMagnitude > 0.001f ? context.WeldAxis : Vector3.up,
                 Vector2.up);

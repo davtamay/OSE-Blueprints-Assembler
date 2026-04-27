@@ -56,6 +56,17 @@ namespace OSE.Content
         public string[] optionalPartIds;
 
         /// <summary>
+        /// Provenance link for steps emitted by the Step Configuration Prefab
+        /// engine (see <c>Tools/instantiate_prefab.py</c>). Populated when an
+        /// author drag-drops a prefab into the timeline; non-null means
+        /// "this step was authored as part of an instantiated prefab and
+        /// the runtime should render a 'linked' badge so the author can
+        /// Bake (clear the ref) or Re-instantiate (rerun the prefab to pull
+        /// updates)." Null on hand-authored steps.
+        /// </summary>
+        public PrefabRef prefabRef;
+
+        /// <summary>
         /// Part IDs that should be VISIBLE in the scene during this step but are
         /// NOT required for completion. These parts spawn at their assembled pose
         /// (or current step pose) like any normal part, but they don't count

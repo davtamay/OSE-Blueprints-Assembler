@@ -29,6 +29,17 @@ namespace OSE.Interaction
         public float WeldLength;
 
         /// <summary>
+        /// World-space direction the part will travel during the lerp /
+        /// thread_in part effect (normalized end - start). Zero when no
+        /// part effect is active. <see cref="DefaultPreview.GetExpectedDragDirection"/>
+        /// projects this to screen space so the guided-mode swipe arrow
+        /// points the trainee toward the end pose, instead of the legacy
+        /// "always-up" fallback. Other previews (Drill, Cut, Square, Torque)
+        /// keep their profile-specific directions.
+        /// </summary>
+        public Vector3 PartMotionDirectionWorld;
+
+        /// <summary>
         /// Per-tool-action override payload. Preview classes read via
         /// <c>ToolActionPreviewBase.Override(authored, fallback)</c>; any
         /// unset field (0 / empty / alpha-zero) falls back to the preview's

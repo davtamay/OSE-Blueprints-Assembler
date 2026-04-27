@@ -104,7 +104,7 @@ namespace OSE.Content.Loading
         {
             if (package?.steps == null) return;
 
-            int droppedOrient = 0, droppedCues = 0, droppedParticles = 0;
+            int droppedOrient = 0, droppedCues = 0, droppedParticles = 0, droppedPrefabRef = 0;
 
             for (int i = 0; i < package.steps.Length; i++)
             {
@@ -126,10 +126,15 @@ namespace OSE.Content.Loading
                     s.particleEffects = null;
                     droppedParticles++;
                 }
+                if (s.prefabRef != null && s.prefabRef.IsEmpty())
+                {
+                    s.prefabRef = null;
+                    droppedPrefabRef++;
+                }
             }
 
-            if (droppedOrient + droppedCues + droppedParticles > 0)
-                OseLog.Info($"[Normalizer.DropEmptyStepPayloads] '{package.packageId}': dropped {droppedOrient} workingOrientation, {droppedCues} animationCues, {droppedParticles} particleEffects phantom payloads (JsonUtility default-instance noise).");
+            if (droppedOrient + droppedCues + droppedParticles + droppedPrefabRef > 0)
+                OseLog.Info($"[Normalizer.DropEmptyStepPayloads] '{package.packageId}': dropped {droppedOrient} workingOrientation, {droppedCues} animationCues, {droppedParticles} particleEffects, {droppedPrefabRef} prefabRef phantom payloads (JsonUtility default-instance noise).");
         }
 
         // Canonical trigger names for AnimationCueEntry.trigger. Every alias

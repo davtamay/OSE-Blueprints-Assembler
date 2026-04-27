@@ -168,8 +168,9 @@ namespace OSE.UI.Root
 
             // Resolve optional part effect for progress-driven part movement.
             // followPart honors the authored payload toggle (default true).
-            context.PartEffect = TryResolvePartEffect(context.TargetId, out bool followPart);
+            context.PartEffect = TryResolvePartEffect(context.TargetId, out bool followPart, out Vector3 motionDirWorld);
             context.FollowPart = followPart;
+            context.PartMotionDirectionWorld = motionDirWorld;
 
             return !string.IsNullOrWhiteSpace(context.TargetId);
         }
@@ -428,12 +429,13 @@ namespace OSE.UI.Root
         /// local pose to the step-scoped or assembled end pose in sync with progress.
         /// Returns null when no part is associated or no movement is needed.
         /// </summary>
-        private IPartEffect TryResolvePartEffect(string targetId, out bool followPart)
+        private IPartEffect TryResolvePartEffect(string targetId, out bool followPart, out Vector3 motionDirWorld)
         {
             // Default true preserves pre-existing behavior — every IPartEffect
             // historically caused the tool to follow the part's displacement.
             // Payload-authored false opts out (tool stays at the working pose).
             followPart = true;
+            motionDirWorld = Vector3.zero;
             var spawner = _ctx.Spawner;
             var package = spawner?.CurrentPackage;
             if (package == null) return null;
@@ -534,6 +536,23 @@ namespace OSE.UI.Root
                 Payload       = payload,
                 ToolPose      = toolPose,
             };
+
+            // Capture the world-space motion direction so the guided-drag
+            // arrow points the trainee toward the end pose. startPos is the
+            // part's localPosition (relative to its actual parent — which
+            // may be a Group root, not PreviewRoot), so the live worldspace
+            // pose is read directly from the transform. endPos is in
+            // PreviewRoot-local (where endTransform is authored), so it
+            // converts via previewRoot.TransformPoint. Mismatching the
+            // frames would produce a sideways/skewed direction even when
+            // the actual motion is straight down.
+            if (previewRoot != null)
+            {
+                Vector3 startWorld = partGo.transform.position;
+                Vector3 endWorld   = previewRoot.TransformPoint(endPos);
+                Vector3 dir = endWorld - startWorld;
+                if (dir.sqrMagnitude > 1e-6f) motionDirWorld = dir.normalized;
+            }
 
             string archetype = !string.IsNullOrEmpty(payload?.archetype)
                 ? payload.archetype

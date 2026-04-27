@@ -319,6 +319,42 @@ namespace OSE.UI.Root
             rotation = Quaternion.identity;
             scale = Vector3.one * 0.25f;
 
+            // Anchor-resolved targets (anchorRef set) must track the live
+            // spawned part — the static targetPlacement.position is baked
+            // once at load and goes stale as the part moves through the
+            // step chain. TTAW's editor display uses the same priority
+            // (live anchor → static placement) so editor and Play stay
+            // visually in sync. Without this, Play shows the marker at
+            // the bake-time pose while the editor shows it on the bolt.
+            TargetDefinition targetDef = null;
+            bool hasDef = package != null && package.TryGetTarget(targetId, out targetDef);
+            if (hasDef && targetDef != null && !string.IsNullOrWhiteSpace(targetDef.anchorRef))
+            {
+                Transform liveAnchor = TryGetLivePartTransform(targetDef.anchorRef);
+                Transform pr = _ctx.Spawner.PreviewRoot;
+                if (liveAnchor != null && pr != null)
+                {
+                    // Position tracks the live anchor part. Rotation + scale
+                    // stay from the static targetPlacement — the authored
+                    // rotation describes the tool's approach direction
+                    // (e.g. drill perpendicular to bolt head, set via
+                    // useToolActionRotation/toolActionRotation), independent
+                    // of how the part itself is currently oriented. Mixing
+                    // them would spin the tool 90° off whenever the part's
+                    // intrinsic rotation differs from the action approach.
+                    position = pr.InverseTransformPoint(liveAnchor.position);
+                    var anchorPlacement = _ctx.Spawner.FindTargetPlacement(targetId);
+                    if (anchorPlacement != null)
+                    {
+                        rotation = !anchorPlacement.rotation.IsIdentity
+                            ? new Quaternion(anchorPlacement.rotation.x, anchorPlacement.rotation.y, anchorPlacement.rotation.z, anchorPlacement.rotation.w)
+                            : Quaternion.identity;
+                        scale = new Vector3(anchorPlacement.scale.x, anchorPlacement.scale.y, anchorPlacement.scale.z);
+                    }
+                    return true;
+                }
+            }
+
             TargetPreviewPlacement targetPlacement = _ctx.Spawner.FindTargetPlacement(targetId);
             if (targetPlacement != null)
             {
@@ -330,9 +366,7 @@ namespace OSE.UI.Root
                 return true;
             }
 
-            if (package != null &&
-                package.TryGetTarget(targetId, out TargetDefinition targetDef) &&
-                !string.IsNullOrWhiteSpace(targetDef.associatedPartId))
+            if (hasDef && targetDef != null && !string.IsNullOrWhiteSpace(targetDef.associatedPartId))
             {
                 PartPreviewPlacement partPlacement = _ctx.Spawner.FindPartPlacement(targetDef.associatedPartId);
                 if (partPlacement != null)
@@ -347,6 +381,28 @@ namespace OSE.UI.Root
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Looks up the spawned part GO whose name matches the given partId
+        /// (the spawner names each spawned mesh after its part definition id)
+        /// and returns its Transform. Used by anchor-resolved target pose
+        /// resolution so the marker tracks the part's CURRENT pose at the
+        /// active step instead of a stale bake.
+        /// </summary>
+        private Transform TryGetLivePartTransform(string partId)
+        {
+            if (string.IsNullOrEmpty(partId)) return null;
+            var spawned = _ctx.Spawner.SpawnedParts;
+            if (spawned == null) return null;
+            for (int i = 0; i < spawned.Count; i++)
+            {
+                var go = spawned[i];
+                if (go == null) continue;
+                if (string.Equals(go.name, partId, System.StringComparison.Ordinal))
+                    return go.transform;
+            }
+            return null;
         }
 
         public bool TryGetPreviewTargetPose(

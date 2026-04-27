@@ -44,6 +44,10 @@ namespace OSE.Interaction
         private IPartEffect _partEffect;
         private Vector3 _partEffectOffset;
         private bool _followPart;
+        // World-space direction the part will travel during the lerp. Captured
+        // from PartEffect-build time so DefaultPreview's guided-drag arrow
+        // can point the trainee toward the end pose.
+        private Vector3 _partMotionDirWorld;
         private float _startScale, _targetScale;
         private ToolActionVisualGuide _visualGuide;
 
@@ -107,6 +111,7 @@ namespace OSE.Interaction
             _partEffect = ctx.PartEffect;
             _partEffectOffset = Vector3.zero;
             _followPart = ctx.FollowPart;
+            _partMotionDirWorld = ctx.PartMotionDirectionWorld;
 
             // Snapshot current preview state and detach from camera
             _originalParent = toolPreview.transform.parent;
@@ -310,6 +315,7 @@ namespace OSE.Interaction
                     WeldAxis = _weldAxis,
                     WeldLength = _weldLength,
                     PreviewConfig = _previewConfig,
+                    PartMotionDirectionWorld = _partMotionDirWorld,
                 };
                 _preview.Begin(ctx);
                 _partEffect?.Begin();
@@ -322,10 +328,15 @@ namespace OSE.Interaction
                 // action too late — so cues for weld #N fired during weld #N+1.
                 OSE.Core.RuntimeEventBus.Publish(new OSE.Core.ToolActionStarted(_profile));
 
-                // Activate visual guide now that the action phase is starting
+                // Activate visual guide now that the action phase is starting.
+                // preferDirectional flips the Torque-profile default (curved
+                // rotational arc → straight arrow) when a part-motion lerp is
+                // wired, so the trainee's gesture cue points toward the end
+                // pose instead of rotating in a circle.
                 Vector2 dragDir = _preview.GetExpectedDragDirection(ctx);
                 var previewStyle = ToolProfileRegistry.Get(_profile).PreviewStyle;
-                _visualGuide?.Enter(_mode, previewStyle, _surfacePos, dragDir);
+                bool preferDirectional = _partMotionDirWorld.sqrMagnitude > 0.001f;
+                _visualGuide?.Enter(_mode, previewStyle, _surfacePos, dragDir, preferDirectional);
             }
         }
 

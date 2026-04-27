@@ -54,12 +54,14 @@ namespace OSE.Interaction
 
         public override Vector2 GetExpectedDragDirection(PreviewContext context)
         {
-            // Drag should follow the drill's plunge direction — i.e. from the
-            // tool's current position toward the target surface. This is the
-            // direction the bit is heading, regardless of how the tool model
-            // is internally oriented (Drill profile aligns actionAxis, not
-            // tipDirection, so multiplying by transform.rotation * tipDir is
-            // unreliable here).
+            // When a part-motion lerp is wired (endTransform authored on the
+            // task), the trainee should swipe toward where the part will end
+            // up — same direction they see during the auto-play observe
+            // phase. Falls back to the legacy "drill plunge from tool to
+            // target" heuristic when no part motion is set.
+            if (context.PartMotionDirectionWorld.sqrMagnitude > 0.001f)
+                return context.ProjectDirectionToScreen(context.PartMotionDirectionWorld, Vector2.right);
+
             Vector3 plungeDir = Vector3.down;
             if (context.ToolPreview != null)
             {

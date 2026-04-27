@@ -388,6 +388,7 @@ namespace OSE.Editor
             _selectedGroupIdx = -1;
             _multiSelectedParts.Clear();
             _multiSelectedTaskSeqIdxs.Clear();
+            _multiSelectedStepIds.Clear();
             // Destroy the subassembly root GO so parts unparent back to PreviewRoot.
             DestroyAllSubassemblyRoots();
             // Invalidate the task-sequence cache so stale order entries from

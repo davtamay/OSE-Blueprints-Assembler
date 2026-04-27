@@ -138,6 +138,16 @@ namespace OSE.Editor
         [SerializeField] private int _selectedIdx = -1;
         private readonly HashSet<int> _multiSelected = new HashSet<int>();
 
+        // Cross-step multi-selection (Phase 0 of the prefab drag-drop feature).
+        // Populated by the Navigator's selectionChanged when SelectionType.Multiple
+        // returns more than one item. The primary step (driving the canvas /
+        // inspector) remains whichever step is the active _stepFilterIdx — the
+        // multi-set is purely an additional set used by:
+        //   • the "N steps selected" canvas banner
+        //   • Slice 2 "Capture as Prefab" button
+        // Reset on package reload + plain navigator click (single-select path).
+        private readonly HashSet<string> _multiSelectedStepIds = new HashSet<string>(System.StringComparer.Ordinal);
+
         private Vector2 _listScroll;
         private Vector2 _detailScroll;
 

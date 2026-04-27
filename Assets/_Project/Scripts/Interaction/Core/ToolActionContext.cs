@@ -51,6 +51,14 @@ namespace OSE.Interaction
         public IPartEffect PartEffect;
 
         /// <summary>
+        /// World-space direction (normalized) the part will travel during the
+        /// lerp / thread_in effect (= endWorld - startWorld). Zero when no
+        /// part effect is active. Forwarded into <see cref="PreviewContext.PartMotionDirectionWorld"/>
+        /// so the guided-drag arrow points toward the end pose.
+        /// </summary>
+        public Vector3 PartMotionDirectionWorld;
+
+        /// <summary>
         /// When true (default), the tool preview's world position tracks the
         /// part's world-space displacement returned each frame by
         /// <see cref="IPartEffect.Apply"/>. Source: <c>ToolPartInteraction.followPart</c>.

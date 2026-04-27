@@ -713,6 +713,11 @@ namespace OSE.Editor
             _selectedPartIdx  = -1;
             _multiSelected.Clear();
             _multiSelectedParts.Clear();
+            // Cross-step multi-selection (Phase 0). Programmatic navigation
+            // (toolbar prev/next, Jump-to-step, etc.) clears the set so it
+            // doesn't drift stale; HandleNavigatorMultiSelection populates
+            // it AFTER calling this so navigator multi-clicks survive.
+            _multiSelectedStepIds.Clear();
             _clickToSnapActive = false;
             _addTaskPicker          = AddTaskPicker.None;
             _selectedTaskSeqIdx     = -1;

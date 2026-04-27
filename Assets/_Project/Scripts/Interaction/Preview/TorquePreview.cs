@@ -135,6 +135,14 @@ namespace OSE.Interaction
 
         public override Vector2 GetExpectedDragDirection(PreviewContext context)
         {
+            // When the action authored a lerp endTransform, the trainee's
+            // swipe should point the bolt toward its end pose (down for
+            // bolt-down, in for press, etc.) — matches what they see during
+            // the auto-play observe phase. Falls back to the rotational
+            // gesture (circle around target) when no part-motion is wired.
+            if (context.PartMotionDirectionWorld.sqrMagnitude > 0.001f)
+                return context.ProjectDirectionToScreen(context.PartMotionDirectionWorld, Vector2.up);
+
             float angleDeg = _accumulatedAngle;
             float rad = (-90f - angleDeg) * Mathf.Deg2Rad;
             return new Vector2(Mathf.Cos(rad), Mathf.Sin(rad));

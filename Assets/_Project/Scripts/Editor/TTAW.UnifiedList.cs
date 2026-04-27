@@ -24,6 +24,186 @@ namespace OSE.Editor
 {
     public sealed partial class ToolTargetAuthoringWindow : EditorWindow
     {
+        // ── Prefab-linked banner (Slice 1d) ──────────────────────────────────
+
+        /// <summary>
+        /// Banner shown above the task sequence when the active step carries
+        /// a non-empty <see cref="PrefabRef"/>. Surfaces provenance + offers
+        /// two actions:
+        ///   • Bake — clears the ref on every step in the same instance
+        ///     (matched by <c>prefabRef.instanceId</c>) so the author can
+        ///     edit them freely with no further prefab linkage.
+        ///   • Re-instantiate — opens the wizard pre-bound to the recorded
+        ///     bindings so the author can pull updates from the source YAML
+        ///     after editing it externally.
+        /// </summary>
+        private void DrawPrefabLinkedBanner(StepDefinition step)
+        {
+            var pr = step.prefabRef;
+            EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
+            var lbl = new GUIStyle(EditorStyles.miniLabel)
+            {
+                fontStyle = FontStyle.Bold,
+                normal    = { textColor = SubAccent },
+            };
+            string instanceLabel = string.IsNullOrEmpty(pr.instanceId) ? "(unnamed)" : pr.instanceId;
+            EditorGUILayout.LabelField($"🔗 Linked to prefab '{pr.prefabId}' · instance '{instanceLabel}'", lbl);
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button(new GUIContent("🔓 Bake",
+                    "Clear the prefab link on every step that shares this instance id. " +
+                    "Steps stay where they are; future prefab edits won't propagate."),
+                    EditorStyles.miniButton, GUILayout.Width(72), GUILayout.Height(18)))
+            {
+                BakePrefabInstance(pr.instanceId);
+            }
+            if (GUILayout.Button(new GUIContent("↻ Re-instantiate",
+                    "Re-run the wizard with the recorded bindings. Use after editing " +
+                    "the source prefab YAML to pull updates."),
+                    EditorStyles.miniButton, GUILayout.Width(120), GUILayout.Height(18)))
+            {
+                ReInstantiatePrefab(step);
+            }
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space(2);
+        }
+
+        /// <summary>
+        /// Clears the <see cref="StepDefinition.prefabRef"/> on every step in
+        /// the package whose ref shares the supplied instance id. Marks each
+        /// step dirty so the auto-save pass writes the cleared field to disk
+        /// (the WriteJson path emits the field only when non-empty).
+        /// </summary>
+        private void BakePrefabInstance(string instanceId)
+        {
+            if (_pkg?.steps == null || string.IsNullOrEmpty(instanceId)) return;
+            int cleared = 0;
+            foreach (var s in _pkg.steps)
+            {
+                if (s == null || s.prefabRef == null) continue;
+                if (!string.Equals(s.prefabRef.instanceId, instanceId, System.StringComparison.Ordinal)) continue;
+                s.prefabRef = null;
+                _dirtyStepIds.Add(s.id);
+                cleared++;
+            }
+            if (cleared > 0)
+            {
+                Debug.Log($"[TTAW.Prefabs] Baked {cleared} step(s) sharing instance '{instanceId}'.");
+                Repaint();
+            }
+        }
+
+        /// <summary>
+        /// Re-runs the prefab wizard pre-bound to the step's recorded bindings.
+        /// </summary>
+        private void ReInstantiatePrefab(StepDefinition step)
+        {
+            var pr = step?.prefabRef;
+            if (pr == null || string.IsNullOrEmpty(pr.prefabId)) return;
+            string repoRoot   = System.IO.Path.GetFullPath(System.IO.Path.Combine(Application.dataPath, ".."));
+            string prefabPath = System.IO.Path.Combine(repoRoot, "AgentAssistant", "prefabs", pr.prefabId + ".yaml");
+            if (!System.IO.File.Exists(prefabPath))
+            {
+                EditorUtility.DisplayDialog("Re-instantiate failed",
+                    $"Source prefab YAML not found at:\n{prefabPath}", "OK");
+                return;
+            }
+            PrefabWizardWindow.Open(this, prefabPath, step.id, pr.bindings);
+        }
+
+        // ── Cross-step selection banner (Phase 0 of prefab drag-drop) ────────
+
+        /// <summary>
+        /// Header shown above the canvas when the navigator has multiple steps
+        /// selected. Lets the author see + clear the multi-selection at a
+        /// glance. Slice 2 will add a "Capture as Prefab" button here.
+        /// </summary>
+        private void DrawCrossStepSelectionBanner()
+        {
+            // Render the banner inside a positioned rect so we can host both a
+            // standard EditorGUILayout content AND a drag-source rect that
+            // initiates a Unity DragAndDrop operation carrying the selected
+            // step ids onto the PREFABS panel.
+            EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
+            Rect rowRect = GUILayoutUtility.GetRect(0, 22, GUILayout.ExpandWidth(true));
+
+            // Drag handle (left third of the rect). Any mouse-drag inside it
+            // starts a DragAndDrop operation with DragKeySelectedStepIds set
+            // to the snapshotted ids. The PREFABS drop zone accepts.
+            Rect handleRect = new Rect(rowRect.x, rowRect.y, 220, rowRect.height);
+            var handleStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                fontStyle = FontStyle.Bold,
+                normal    = { textColor = SubAccent },
+            };
+            GUI.Label(handleRect, $"≡ 📍 {_multiSelectedStepIds.Count} steps selected · drag here", handleStyle);
+            HandleSelectedStepsDragSource(handleRect);
+
+            // Right side: explicit Capture + Clear buttons (button = the
+            // discoverable affordance; drag = the power-user gesture).
+            float btnY = rowRect.y;
+            Rect captureRect = new Rect(rowRect.xMax - 218f, btnY, 150, rowRect.height);
+            Rect clearRect   = new Rect(rowRect.xMax - 64f,  btnY, 60,  rowRect.height);
+            if (GUI.Button(captureRect, new GUIContent("📦 Capture as Prefab",
+                    "Walk every part referenced by the selected steps, infer roles, and emit a " +
+                    "draft prefab YAML in AgentAssistant/prefabs/."),
+                    EditorStyles.miniButton))
+            {
+                OpenCapturePrefabModal();
+            }
+            if (GUI.Button(clearRect, "Clear", EditorStyles.miniButton))
+            {
+                _multiSelectedStepIds.Clear();
+                Repaint();
+                if (_navigatorTreeView != null) _navigatorTreeView.ClearSelection();
+                if (_navigatorListView != null) _navigatorListView.ClearSelection();
+            }
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space(2);
+        }
+
+        /// <summary>
+        /// Initiates a <c>DragAndDrop</c> operation carrying the current
+        /// cross-step selection as a <c>string[]</c> under the
+        /// <see cref="DragKeySelectedStepIds"/> key. PREFABS panel's
+        /// <c>HandleCapturePrefabDropZone</c> is the receiving side.
+        /// Mirrors the IMGUI drag-source pattern used by
+        /// <c>HandlePrefabRowDragSource</c>.
+        /// </summary>
+        private void HandleSelectedStepsDragSource(Rect handleRect)
+        {
+            if (Event.current.type != EventType.MouseDrag) return;
+            if (!handleRect.Contains(Event.current.mousePosition)) return;
+            if (Event.current.button != 0) return;
+            if (_multiSelectedStepIds.Count == 0) return;
+
+            var arr = new string[_multiSelectedStepIds.Count];
+            int i = 0;
+            foreach (var id in _multiSelectedStepIds) arr[i++] = id;
+
+            DragAndDrop.PrepareStartDrag();
+            DragAndDrop.SetGenericData(DragKeySelectedStepIds, arr);
+            DragAndDrop.objectReferences = System.Array.Empty<UnityEngine.Object>();
+            DragAndDrop.paths = System.Array.Empty<string>();
+            DragAndDrop.StartDrag($"Steps × {arr.Length}");
+            Event.current.Use();
+        }
+
+        /// <summary>
+        /// Resolves the cross-step selection's current step ids into actual
+        /// <see cref="StepDefinition"/> objects (in the order they appear
+        /// in <c>_pkg.steps</c>) and hands off to <c>PrefabCaptureWindow</c>.
+        /// </summary>
+        private void OpenCapturePrefabModal()
+        {
+            if (_pkg?.steps == null) return;
+            var ordered = new List<StepDefinition>();
+            foreach (var s in _pkg.steps)
+                if (s != null && _multiSelectedStepIds.Contains(s.id)) ordered.Add(s);
+            if (ordered.Count == 0) return;
+            ordered.Sort((a, b) => a.sequenceIndex.CompareTo(b.sequenceIndex));
+            PrefabCaptureWindow.Open(this, ordered);
+        }
+
         // ── Unified list ──────────────────────────────────────────────────────
 
         private void DrawUnifiedList(float height)
@@ -50,6 +230,26 @@ namespace OSE.Editor
 
             var step = FindStep(_stepIds[_stepFilterIdx]);
             if (step == null) { EditorGUILayout.EndScrollView(); return; }
+
+            // ── Cross-step multi-select banner (Phase 0 prefab feature) ─────
+            // Surfaces when the author has Ctrl/Shift-selected multiple steps
+            // in the navigator. Clear button resets the set; Slice 2 drops a
+            // "Capture as Prefab" button + a drag handle that lets the
+            // author drag the selection onto the PREFABS panel.
+            if (_multiSelectedStepIds.Count > 1)
+                DrawCrossStepSelectionBanner();
+
+            // ── Prefab-linked banner (Slice 1d) ─────────────────────────────
+            // When the active step carries a non-empty prefabRef, surface the
+            // provenance so the author sees at a glance that this step was
+            // emitted by a prefab — and offers Bake (clear ref) /
+            // Re-instantiate (re-run wizard) actions.
+            if (step.prefabRef != null && !step.prefabRef.IsEmpty())
+                DrawPrefabLinkedBanner(step);
+
+            // Prefab drop zones live in the navigator (Unity-hierarchy
+            // pattern — top-half/bottom-half of each step row + dividers
+            // between them). Wired in TTAW.Navigator's MakeNavigatorRow.
 
             var order = GetOrDeriveTaskOrder(step);
 
@@ -127,18 +327,29 @@ namespace OSE.Editor
                 onAddClick: () => TryCreateGroupForStep(step),
                 body: () => DrawCanvasSubassemblyList(step, drawOwnChrome: false));
 
-            // ── WHAT'S SHOWING (Slice ME-C) ─────────────────────────────────
-            // Diagnostic bucket summary — collapsed by default. Card chrome
-            // replaces the inner foldout so there's one collapse state.
+            // ── PREFABS (Slice P3) ──────────────────────────────────────────
+            // Catalog of authored Step Configuration Prefabs + ready-to-run
+            // instantiations. Run button shells out to instantiate_prefab.py,
+            // emits step JSON to AgentAssistant/outputs/ for manual merge.
+            DrawPrefabsPanelCard(step);
+
+            // ── WHAT'S SHOWING + WHAT'S CHANGING (compressed row) ──────────
+            // Both are diagnostic / read-only summaries that don't need full
+            // canvas width — laying them side-by-side reclaims the vertical
+            // real estate so PREFABS sits closer to the rest of the canvas
+            // when the diagnostic cards are collapsed.
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.BeginVertical(GUILayout.Width(EditorGUIUtility.currentViewWidth * 0.5f - 8f));
             DrawCard("WHAT'S SHOWING", "canvas/whats-showing", CardAccentNeutral,
                 defaultExpanded: false,
                 body: () => DrawVisibilitySection(step, drawOwnChrome: false));
-
-            // ── WHAT'S CHANGING (Slice ME-C) ────────────────────────────────
-            // Per-step delta — collapsed by default (same rationale).
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.BeginVertical();
             DrawCard("WHAT'S CHANGING", "canvas/whats-changing", CardAccentNeutral,
                 defaultExpanded: false,
                 body: () => DrawWhatsChangingSection(step, drawOwnChrome: false));
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.EndHorizontal();
 
             // Groups, Part×Tool, Animation Cues, and Particle Effects moved
             // to the inspector pane (right side) as of the canvas redesign.

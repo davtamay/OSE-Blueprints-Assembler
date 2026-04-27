@@ -181,7 +181,7 @@ namespace OSE.Editor
             _navigatorTreeView.fixedItemHeight = 20;
             _navigatorTreeView.makeItem        = MakeNavigatorRow;
             _navigatorTreeView.bindItem        = BindNavigatorTreeRow;
-            _navigatorTreeView.selectionType   = SelectionType.Single;
+            _navigatorTreeView.selectionType   = SelectionType.Multiple;
             _navigatorTreeView.selectionChanged += OnNavigatorTreeSelectionChanged;
 
             // Keyboard: Enter/Return on the focused tree item jumps to the step.
@@ -201,7 +201,7 @@ namespace OSE.Editor
             _navigatorListView.fixedItemHeight = 20;
             _navigatorListView.makeItem        = MakeNavigatorRow;
             _navigatorListView.bindItem        = BindNavigatorListRow;
-            _navigatorListView.selectionType   = SelectionType.Single;
+            _navigatorListView.selectionType   = SelectionType.Multiple;
             _navigatorListView.itemsSource     = _navigatorFlatItems;
             _navigatorListView.selectionChanged += OnNavigatorListSelectionChanged;
 
@@ -219,7 +219,7 @@ namespace OSE.Editor
             RebuildNavigatorData();
         }
 
-        private static VisualElement MakeNavigatorRow()
+        private VisualElement MakeNavigatorRow()
         {
             var row = new VisualElement();
             row.style.flexDirection = FlexDirection.Row;
@@ -245,18 +245,135 @@ namespace OSE.Editor
             label.style.whiteSpace       = WhiteSpace.NoWrap;
             row.Add(label);
 
+            // Top + bottom divider visualisations — 2 px tall absolute-
+            // positioned bars that turn cyan when a prefab drag hovers over
+            // the corresponding half of the row. Mirrors Unity's hierarchy
+            // drop indicators. Stacked above the row content so they don't
+            // re-flow the layout.
+            var topDivider = new VisualElement { name = "drop-divider-top" };
+            topDivider.style.position = Position.Absolute;
+            topDivider.style.left     = 0;
+            topDivider.style.right    = 0;
+            topDivider.style.top      = 0;
+            topDivider.style.height   = 2;
+            topDivider.style.backgroundColor = new StyleColor(StyleKeyword.None);
+            topDivider.pickingMode    = PickingMode.Ignore;
+            row.Add(topDivider);
+
+            var botDivider = new VisualElement { name = "drop-divider-bot" };
+            botDivider.style.position = Position.Absolute;
+            botDivider.style.left     = 0;
+            botDivider.style.right    = 0;
+            botDivider.style.bottom   = 0;
+            botDivider.style.height   = 2;
+            botDivider.style.backgroundColor = new StyleColor(StyleKeyword.None);
+            botDivider.pickingMode    = PickingMode.Ignore;
+            row.Add(botDivider);
+
+            // Drag-enter / drag-update / drag-leave / drag-perform handlers
+            // registered with TrickleDown so they fire BEFORE TreeView's
+            // built-in drag handlers (which used to swallow our payload).
+            // localMousePosition.y partitions the row into top half (insert
+            // before) vs bottom half (insert after), Unity-hierarchy-style.
+            row.RegisterCallback<DragUpdatedEvent>(evt => OnRowDragUpdated(row, evt),
+                TrickleDown.TrickleDown);
+            row.RegisterCallback<DragLeaveEvent>(evt =>
+            {
+                ClearDropDividers(row);
+            }, TrickleDown.TrickleDown);
+            row.RegisterCallback<DragPerformEvent>(evt => OnRowDragPerform(row, evt),
+                TrickleDown.TrickleDown);
+            row.RegisterCallback<DragExitedEvent>(evt =>
+            {
+                ClearDropDividers(row);
+            }, TrickleDown.TrickleDown);
+
             return row;
         }
+
+        private static readonly StyleColor _dropIndicator = new StyleColor(new Color(0.35f, 0.78f, 1f, 1f));
+
+        private void OnRowDragUpdated(VisualElement row, DragUpdatedEvent evt)
+        {
+            if (!(DragAndDrop.GetGenericData(DragKeyPrefabYamlPath) is string yamlPath)
+                || string.IsNullOrEmpty(yamlPath))
+                return;
+            if (!(row.userData is NavigatorItem item)) return;
+            if (item.IsAssembly || item.IsAllSteps || string.IsNullOrEmpty(item.Id)) return;
+
+            // Top third / bottom third → divider; middle → drop on row.
+            float h = row.resolvedStyle.height > 0 ? row.resolvedStyle.height : 20f;
+            float y = evt.localMousePosition.y;
+            ClearDropDividers(row);
+            if (y < h * 0.33f)
+                row.Q<VisualElement>("drop-divider-top").style.backgroundColor = _dropIndicator;
+            else if (y > h * 0.66f)
+                row.Q<VisualElement>("drop-divider-bot").style.backgroundColor = _dropIndicator;
+            else
+                row.style.backgroundColor = new StyleColor(new Color(0.30f, 0.62f, 0.95f, 0.20f));
+
+            DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+            evt.StopPropagation();
+        }
+
+        private void OnRowDragPerform(VisualElement row, DragPerformEvent evt)
+        {
+            if (!(DragAndDrop.GetGenericData(DragKeyPrefabYamlPath) is string yamlPath)
+                || string.IsNullOrEmpty(yamlPath)) return;
+            if (!(row.userData is NavigatorItem item)) return;
+            if (item.IsAssembly || item.IsAllSteps || string.IsNullOrEmpty(item.Id)) return;
+
+            DragAndDrop.AcceptDrag();
+            evt.StopPropagation();
+            ClearDropDividers(row);
+
+            // Determine drop semantics from where in the row the cursor
+            // released. Top → insert before; middle → drop on row (associate);
+            // bottom → insert after.
+            float h  = row.resolvedStyle.height > 0 ? row.resolvedStyle.height : 20f;
+            float y  = evt.localMousePosition.y;
+            string dropStepId = item.Id;
+            int    seqOverride = -1;
+            var stepDef = FindStepLocal(dropStepId);
+            if (stepDef != null)
+            {
+                if (y < h * 0.33f)      seqOverride = stepDef.sequenceIndex;       // before
+                else if (y > h * 0.66f) seqOverride = stepDef.sequenceIndex + 1;   // after
+                // middle: leave -1 → wizard defaults to step.sequenceIndex + 1
+            }
+
+            string capturedId  = dropStepId;
+            int    capturedSeq = seqOverride;
+            // Defer the modal so UIElements finishes the drop dispatch first.
+            EditorApplication.delayCall += () =>
+            {
+                PrefabWizardWindow.Open(this, yamlPath, capturedId, null, capturedSeq);
+            };
+        }
+
+        private static void ClearDropDividers(VisualElement row)
+        {
+            row.style.backgroundColor = new StyleColor(StyleKeyword.None);
+            var top = row.Q<VisualElement>("drop-divider-top");
+            var bot = row.Q<VisualElement>("drop-divider-bot");
+            if (top != null) top.style.backgroundColor = new StyleColor(StyleKeyword.None);
+            if (bot != null) bot.style.backgroundColor = new StyleColor(StyleKeyword.None);
+        }
+
+        /// <summary>Local step lookup that compiles inside this partial without name-collision risks.</summary>
+        private StepDefinition FindStepLocal(string stepId) => FindStep(stepId);
 
         private void BindNavigatorTreeRow(VisualElement element, int index)
         {
             var data = _navigatorTreeView.GetItemDataForIndex<NavigatorItem>(index);
+            element.userData = data; // for the drag-drop closures registered in MakeNavigatorRow
             BindNavigatorRow(element, data);
         }
 
         private void BindNavigatorListRow(VisualElement element, int index)
         {
             if (index < 0 || index >= _navigatorFlatItems.Count) return;
+            element.userData = _navigatorFlatItems[index];
             BindNavigatorRow(element, _navigatorFlatItems[index]);
         }
 
@@ -265,7 +382,19 @@ namespace OSE.Editor
             if (item == null) return;
             var dot   = element.Q<VisualElement>("dirty-dot");
             var label = element.Q<Label>("label");
-            label.text = item.Display ?? string.Empty;
+
+            // Prefab provenance — color step rows cyan + prepend a 🔗 chip
+            // when the step carries a non-empty prefabRef. Mirrors Unity's
+            // blue-text convention for linked-prefab instances. Lets the
+            // author scan a long timeline and see which ranges came from
+            // which instantiation without clicking each step.
+            bool isLinkedStep = false;
+            if (!item.IsAssembly && !item.IsAllSteps && !string.IsNullOrEmpty(item.Id))
+            {
+                var stepDef = FindStep(item.Id);
+                isLinkedStep = stepDef?.prefabRef != null && !stepDef.prefabRef.IsEmpty();
+            }
+            label.text = (isLinkedStep ? "🔗 " : "") + (item.Display ?? string.Empty);
 
             if (item.IsAssembly)
             {
@@ -282,7 +411,10 @@ namespace OSE.Editor
             else
             {
                 label.style.unityFontStyleAndWeight = FontStyle.Normal;
-                label.style.color                   = new Color(0.78f, 0.78f, 0.78f);
+                // Linked steps wear cyan; free steps stay neutral grey.
+                label.style.color = isLinkedStep
+                    ? new Color(0.35f, 0.78f, 1.0f)
+                    : new Color(0.78f, 0.78f, 0.78f);
                 bool isDirty = !string.IsNullOrEmpty(item.Id)
                                && _dirtyStepIds != null
                                && _dirtyStepIds.Contains(item.Id);
@@ -572,29 +704,46 @@ namespace OSE.Editor
         // ── Selection event handlers ──────────────────────────────────────────
 
         private void OnNavigatorTreeSelectionChanged(IEnumerable<object> selected)
-        {
-            if (_suppressNavigatorSelection) return;
-            foreach (var obj in selected)
-            {
-                if (obj is NavigatorItem item)
-                {
-                    JumpToNavigatorItem(item);
-                    break;
-                }
-            }
-        }
+            => HandleNavigatorMultiSelection(selected);
 
         private void OnNavigatorListSelectionChanged(IEnumerable<object> selected)
+            => HandleNavigatorMultiSelection(selected);
+
+        /// <summary>
+        /// Both navigator views (tree + flat list) feed selection changes
+        /// here. Iterates every selected NavigatorItem to:
+        ///   • Populate <see cref="_multiSelectedStepIds"/> with valid step
+        ///     ids (skipping assembly headers + the All-Steps row).
+        ///   • Treat the LAST item in the enumerable as the primary —
+        ///     <see cref="JumpToNavigatorItem"/> drives the canvas filter
+        ///     to that step, mirroring the prior single-select behavior.
+        /// Solo-click resets the set to a single id (size 1) so Slice 2's
+        /// "Capture as Prefab" button stays disabled in the normal case.
+        /// </summary>
+        private void HandleNavigatorMultiSelection(IEnumerable<object> selected)
         {
             if (_suppressNavigatorSelection) return;
+
+            // Collect ids first; JumpToNavigatorItem below calls
+            // ApplyStepFilter which clears _multiSelectedStepIds (so toolbar /
+            // programmatic navigation always starts clean). Re-populate AFTER
+            // the jump so navigator multi-click survives.
+            var collected = new List<string>();
+            NavigatorItem primary = null;
             foreach (var obj in selected)
             {
-                if (obj is NavigatorItem item)
-                {
-                    JumpToNavigatorItem(item);
-                    break;
-                }
+                if (!(obj is NavigatorItem item)) continue;
+                if (item.IsAssembly || item.IsAllSteps) continue;
+                if (string.IsNullOrEmpty(item.Id))     continue;
+                collected.Add(item.Id);
+                primary = item; // last non-header wins
             }
+
+            if (primary != null) JumpToNavigatorItem(primary);
+
+            _multiSelectedStepIds.Clear();
+            for (int i = 0; i < collected.Count; i++) _multiSelectedStepIds.Add(collected[i]);
+            Repaint();
         }
 
         private void JumpToNavigatorItem(NavigatorItem item)

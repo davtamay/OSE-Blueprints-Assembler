@@ -646,6 +646,21 @@ namespace OSE.Editor
                 {
                     RemoveField(stepId, "particleEffects");
                 }
+
+                // prefabRef — provenance link for steps emitted by the
+                // Step Configuration Prefab engine. Per IsEmpty(), only
+                // emit when at least one of (prefabId, instanceId,
+                // bindings, sourceMtime) is set; remove otherwise so
+                // hand-authored steps stay clean in source control.
+                if (step.prefabRef != null && !step.prefabRef.IsEmpty())
+                {
+                    string prRaw = JsonUtility.ToJson(step.prefabRef);
+                    InjectField(stepId, "prefabRef", prRaw);
+                }
+                else
+                {
+                    RemoveField(stepId, "prefabRef");
+                }
             }
             _dirtyStepIds.Clear();
             _dirtyTaskOrderStepIds.Clear();
