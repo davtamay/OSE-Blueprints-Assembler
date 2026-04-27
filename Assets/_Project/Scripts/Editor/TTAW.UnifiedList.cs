@@ -29,13 +29,17 @@ namespace OSE.Editor
         /// <summary>
         /// Banner shown above the task sequence when the active step carries
         /// a non-empty <see cref="PrefabRef"/>. Surfaces provenance + offers
-        /// two actions:
-        ///   • Bake — clears the ref on every step in the same instance
-        ///     (matched by <c>prefabRef.instanceId</c>) so the author can
-        ///     edit them freely with no further prefab linkage.
+        /// three actions:
+        ///   • Bake — write every virtual step for this instance into the
+        ///     assembly JSON as authored steps, then remove the
+        ///     <see cref="PrefabInstance"/> entry. One-way escape hatch
+        ///     after which prefab edits no longer propagate.
+        ///   • Discard — drop the <see cref="PrefabInstance"/> entry from
+        ///     in-memory state. Virtual steps disappear on the next
+        ///     normalize. JSON is unaffected until "Write to machine.json".
         ///   • Re-instantiate — opens the wizard pre-bound to the recorded
-        ///     bindings so the author can pull updates from the source YAML
-        ///     after editing it externally.
+        ///     bindings so the author can replace this instance with a
+        ///     fresh expansion after editing the source YAML externally.
         /// </summary>
         private void DrawPrefabLinkedBanner(StepDefinition step)
         {
@@ -50,11 +54,19 @@ namespace OSE.Editor
             EditorGUILayout.LabelField($"🔗 Linked to prefab '{pr.prefabId}' · instance '{instanceLabel}'", lbl);
             GUILayout.FlexibleSpace();
             if (GUILayout.Button(new GUIContent("🔓 Bake",
-                    "Clear the prefab link on every step that shares this instance id. " +
-                    "Steps stay where they are; future prefab edits won't propagate."),
+                    "Persist every virtual step for this instance into the assembly JSON " +
+                    "as a regular authored step, then remove the prefab instance. " +
+                    "One-way: future YAML edits will no longer propagate to these steps."),
                     EditorStyles.miniButton, GUILayout.Width(72), GUILayout.Height(18)))
             {
                 BakePrefabInstance(pr.instanceId);
+            }
+            if (GUILayout.Button(new GUIContent("🗑 Discard",
+                    "Remove the prefab instance from the active package. The virtual steps " +
+                    "vanish from the canvas; press \"Write to machine.json\" to persist the removal."),
+                    EditorStyles.miniButton, GUILayout.Width(72), GUILayout.Height(18)))
+            {
+                DiscardPrefabInstance(pr.instanceId);
             }
             if (GUILayout.Button(new GUIContent("↻ Re-instantiate",
                     "Re-run the wizard with the recorded bindings. Use after editing " +
@@ -68,28 +80,114 @@ namespace OSE.Editor
         }
 
         /// <summary>
-        /// Clears the <see cref="StepDefinition.prefabRef"/> on every step in
-        /// the package whose ref shares the supplied instance id. Marks each
-        /// step dirty so the auto-save pass writes the cleared field to disk
-        /// (the WriteJson path emits the field only when non-empty).
+        /// Persists every virtual step for <paramref name="instanceId"/> into
+        /// its assembly JSON as a regular authored step (clearing
+        /// <see cref="StepDefinition.prefabRef"/> first), removes the
+        /// <see cref="PrefabInstance"/> entry from disk, and reloads the
+        /// package so the in-memory state matches.
+        ///
+        /// <para>Disk-touching by design — Bake's semantics are "commit me
+        /// to the assembly file as authored content". The "in-memory until
+        /// Write to machine.json" guarantee belongs to drag-drop and
+        /// Discard, not Bake.</para>
         /// </summary>
         private void BakePrefabInstance(string instanceId)
         {
-            if (_pkg?.steps == null || string.IsNullOrEmpty(instanceId)) return;
-            int cleared = 0;
-            foreach (var s in _pkg.steps)
+            if (_pkg == null || string.IsNullOrEmpty(instanceId) || string.IsNullOrEmpty(_pkgId)) return;
+
+            var virtualSteps = new List<StepDefinition>();
+            if (_pkg.steps != null)
             {
-                if (s == null || s.prefabRef == null) continue;
-                if (!string.Equals(s.prefabRef.instanceId, instanceId, System.StringComparison.Ordinal)) continue;
-                s.prefabRef = null;
-                _dirtyStepIds.Add(s.id);
-                cleared++;
+                foreach (var s in _pkg.steps)
+                {
+                    if (s == null || s.prefabRef == null) continue;
+                    if (!string.Equals(s.prefabRef.instanceId, instanceId, System.StringComparison.Ordinal)) continue;
+                    virtualSteps.Add(s);
+                }
             }
-            if (cleared > 0)
+            if (virtualSteps.Count == 0)
             {
-                Debug.Log($"[TTAW.Prefabs] Baked {cleared} step(s) sharing instance '{instanceId}'.");
-                Repaint();
+                Debug.LogWarning($"[TTAW.Prefabs] Bake: no virtual steps found for instance '{instanceId}'.");
+                return;
             }
+
+            foreach (var s in virtualSteps) s.prefabRef = null;
+
+            var byFile = new Dictionary<string, List<StepDefinition>>(System.StringComparer.Ordinal);
+            foreach (var s in virtualSteps)
+            {
+                string fp = PackageJsonUtils.FindEntityFilePath(_pkgId, s.assemblyId);
+                if (string.IsNullOrEmpty(fp))
+                {
+                    Debug.LogWarning($"[TTAW.Prefabs] Bake: no file resolved for step '{s.id}' (assemblyId='{s.assemblyId}'); skipping.");
+                    continue;
+                }
+                if (!byFile.TryGetValue(fp, out var bucket))
+                    byFile[fp] = bucket = new List<StepDefinition>();
+                bucket.Add(s);
+            }
+
+            int inserted = 0;
+            foreach (var kv in byFile)
+            {
+                foreach (var s in kv.Value)
+                {
+                    try { PackageJsonUtils.InsertStep(kv.Key, s); inserted++; }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogError($"[TTAW.Prefabs] Bake: InsertStep failed for '{s.id}' in '{kv.Key}': {ex.Message}");
+                    }
+                }
+
+                // Trim the PrefabInstance entry from this file's
+                // prefabInstances[] so the next load doesn't re-expand
+                // virtual copies on top of the literal steps we just wrote.
+                try
+                {
+                    string content = File.ReadAllText(kv.Key);
+                    var keep = new List<PrefabInstance>();
+                    if (_pkg.prefabInstances != null)
+                    {
+                        foreach (var inst in _pkg.prefabInstances)
+                        {
+                            if (inst == null) continue;
+                            if (string.Equals(inst.instanceId, instanceId, System.StringComparison.Ordinal)) continue;
+                            string instFile = !string.IsNullOrEmpty(inst.assemblyId)
+                                ? PackageJsonUtils.FindEntityFilePath(_pkgId, inst.assemblyId)
+                                : null;
+                            if (string.Equals(instFile, kv.Key, System.StringComparison.Ordinal))
+                                keep.Add(inst);
+                        }
+                    }
+                    string arrJson = BuildPrefabInstancesArrayJson(keep);
+                    if (PackageJsonUtils.TryReplaceTopLevelArray(ref content, "prefabInstances", arrJson))
+                        File.WriteAllText(kv.Key, content);
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError($"[TTAW.Prefabs] Bake: trim prefabInstances in '{kv.Key}' threw: {ex.Message}");
+                }
+            }
+
+            Debug.Log($"[TTAW.Prefabs] Baked {inserted} step(s) for instance '{instanceId}' across {byFile.Count} file(s).");
+
+            AssetDatabase.Refresh();
+            LoadPkg(_pkgId, restoring: true);
+            Repaint();
+        }
+
+        /// <summary>
+        /// In-memory only: removes the <see cref="PrefabInstance"/> entry so
+        /// its virtual steps disappear from the canvas. JSON is untouched
+        /// until the user presses "Write to machine.json".
+        /// </summary>
+        private void DiscardPrefabInstance(string instanceId)
+        {
+            if (string.IsNullOrEmpty(instanceId)) return;
+            if (DiscardPrefabInstancePublic(instanceId))
+                Debug.Log($"[TTAW.Prefabs] Discarded prefab instance '{instanceId}' from in-memory state. Save to persist.");
+            else
+                Debug.LogWarning($"[TTAW.Prefabs] Discard: instance '{instanceId}' not found.");
         }
 
         /// <summary>

@@ -21,6 +21,14 @@ namespace OSE.Content
         public PartDefinition[] parts;
         public ToolDefinition[] tools;
         public StepDefinition[] steps;
+        /// <summary>
+        /// Prefab instances declared per-assembly. Each entry is expanded into
+        /// virtual <see cref="StepDefinition"/>s by
+        /// <see cref="OSE.Content.Loading.MachinePackageNormalizer.ExpandPrefabInstances"/>
+        /// at load time and merged into <see cref="steps"/>. Edits to the
+        /// source prefab YAML propagate on next load — no JSON duplication.
+        /// </summary>
+        public PrefabInstance[] prefabInstances;
         public ValidationRuleDefinition[] validationRules;
         public EffectDefinition[] effects;
         public HintDefinition[] hints;
@@ -58,6 +66,8 @@ namespace OSE.Content
         public ToolDefinition[] GetTools() => tools ?? Array.Empty<ToolDefinition>();
 
         public StepDefinition[] GetSteps() => steps ?? Array.Empty<StepDefinition>();
+
+        public PrefabInstance[] GetPrefabInstances() => prefabInstances ?? Array.Empty<PrefabInstance>();
 
         public ValidationRuleDefinition[] GetValidationRules() => validationRules ?? Array.Empty<ValidationRuleDefinition>();
 

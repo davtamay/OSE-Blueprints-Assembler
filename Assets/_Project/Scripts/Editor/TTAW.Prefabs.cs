@@ -1,12 +1,15 @@
-// TTAW.Prefabs.cs — Step Configuration Prefab catalog panel (P3-lite).
-// Lists prefabs in AgentAssistant/prefabs/ and instantiations in
-// AgentAssistant/inputs/. Run button shells out to instantiate_prefab.py;
-// emitted step JSON lands in AgentAssistant/outputs/ for manual merge.
+// TTAW.Prefabs.cs — Step Configuration Prefab catalog panel.
+// Lists prefabs in AgentAssistant/prefabs/. Drop-on-canvas opens the
+// PrefabWizard which appends a PrefabInstance to the active package in
+// memory; the normalizer's ExpandPrefabInstances pass renders the
+// virtual steps. WriteJson flushes the per-assembly prefabInstances[]
+// array on save — no JSON duplication, edits to the source prefab YAML
+// propagate to every instance on next load.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using OSE.Content;
+using OSE.Content.Loading;
 using OSE.Core;
 using UnityEditor;
 using UnityEngine;
@@ -201,9 +204,6 @@ namespace OSE.Editor
         private void ScanPrefabCatalog()
         {
             _prefabPaths = SafeListYaml(GetPrefabsDir());
-            // _inputPaths section was removed when the wizard superseded the
-            // CLI workflow. GetInputsDir() is still used internally by the
-            // wizard's temp-input writer.
             _prefabCatalogScannedAt = EditorApplication.timeSinceStartup;
         }
 
@@ -232,16 +232,7 @@ namespace OSE.Editor
         private static string GetPrefabsDir()
             => Path.Combine(GetRepoRoot(), "AgentAssistant", "prefabs");
 
-        private static string GetInputsDir()
-            => Path.Combine(GetRepoRoot(), "AgentAssistant", "inputs");
-
-        private static string GetOutputsDir()
-            => Path.Combine(GetRepoRoot(), "AgentAssistant", "outputs");
-
-        private static string GetInstantiateScriptPath()
-            => Path.Combine(GetRepoRoot(), "Tools", "instantiate_prefab.py");
-
-        // ── Wizard entry (Slice 1c will flesh this out) ─────────────────────
+        // ── Wizard entry ────────────────────────────────────────────────────
 
         /// <summary>Public proxy for the wizard to look up a step by id.</summary>
         internal StepDefinition FindStepPublic(string stepId) => FindStep(stepId);
@@ -264,180 +255,113 @@ namespace OSE.Editor
             return max;
         }
 
-        /// <summary>Public proxy for the wizard to invoke the existing subprocess plumbing.</summary>
-        internal void RunInstantiatePrefabPublic(string inputYamlPath) => RunInstantiatePrefab(inputYamlPath);
+        /// <summary>
+        /// In-memory merge entry for the wizard. Appends the supplied
+        /// <see cref="PrefabInstance"/> to <c>_pkg.prefabInstances</c>, reruns
+        /// <see cref="MachinePackageNormalizer.ExpandPrefabInstances"/> so the
+        /// virtual steps appear in the canvas immediately, and marks the
+        /// instance dirty so <c>WriteJson</c> flushes the JSON on the next
+        /// "Write to machine.json" press. Nothing touches disk until then.
+        /// Returns the number of virtual steps emitted (0 on failure).
+        /// </summary>
+        internal int MergePrefabInstancePublic(PrefabInstance instance)
+        {
+            if (instance == null || _pkg == null || string.IsNullOrEmpty(_pkgId)) return 0;
+            if (string.IsNullOrEmpty(instance.prefabId) || string.IsNullOrEmpty(instance.instanceId))
+            {
+                Debug.LogError("[TTAW.Prefabs] PrefabInstance missing prefabId or instanceId.");
+                return 0;
+            }
 
-        /// <summary>Public proxy exposing the python-interpreter resolver for the wizard's inline subprocess.</summary>
-        internal static string ResolvePythonExecutablePublic() => ResolvePythonExecutable();
+            // Backfill assemblyId from the active step when the wizard
+            // didn't already pin one — every emitted step needs an assembly.
+            if (string.IsNullOrEmpty(instance.assemblyId))
+            {
+                if (_stepFilterIdx > 0 && _stepIds != null && _stepFilterIdx < _stepIds.Length)
+                {
+                    var anchor = FindStep(_stepIds[_stepFilterIdx]);
+                    if (anchor != null) instance.assemblyId = anchor.assemblyId;
+                }
+            }
+            if (string.IsNullOrEmpty(instance.assemblyId))
+            {
+                Debug.LogError($"[TTAW.Prefabs] PrefabInstance '{instance.instanceId}' has no assemblyId; aborting merge.");
+                return 0;
+            }
+
+            int existing = _pkg.prefabInstances?.Length ?? 0;
+            var merged = new PrefabInstance[existing + 1];
+            if (existing > 0) System.Array.Copy(_pkg.prefabInstances, 0, merged, 0, existing);
+            merged[existing] = instance;
+            _pkg.prefabInstances = merged;
+
+            // Re-run the normalizer so the new instance's virtual steps
+            // appear in _pkg.steps without a full reload. Idempotent —
+            // ExpandPrefabInstances strips previously-expanded entries
+            // before re-emitting.
+            try
+            {
+                MachinePackageNormalizer.Normalize(_pkg);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[TTAW.Prefabs] Normalize after merge threw: {ex.Message}");
+            }
+
+            _dirtyPrefabInstanceIds.Add(instance.instanceId);
+
+            // Refresh editor state so the canvas + navigator pick up the
+            // virtual steps without going through a full LoadPkg cycle.
+            BuildStepOptions();
+            BuildTargetList();
+            BuildPartList();
+            BuildGroupList();
+            RespawnScene();
+            Repaint();
+
+            int emittedCount = 0;
+            if (_pkg.steps != null)
+                foreach (var s in _pkg.steps)
+                    if (s?.prefabRef != null
+                        && string.Equals(s.prefabRef.instanceId, instance.instanceId, System.StringComparison.Ordinal))
+                        emittedCount++;
+            return emittedCount;
+        }
 
         /// <summary>
-        /// Auto-merge entry for the wizard. Parses the emitted step JSON
-        /// array, stamps each step with a <see cref="PrefabRef"/>, appends
-        /// to the active package's source assembly file via
-        /// <see cref="PackageJsonUtils.InsertStep"/>, then reloads the
-        /// package so the canvas + navigator pick up the new steps.
-        /// Returns the number of steps merged (0 = nothing happened, e.g.
-        /// JSON was empty or parse failed).
+        /// Removes a prefab instance from <c>_pkg.prefabInstances</c> and
+        /// re-runs the normalizer so its virtual steps disappear from the
+        /// canvas. Used by the linked-banner Discard button.
         /// </summary>
-        internal int MergeInstantiatedStepsPublic(
-            string emittedJson, string prefabId, string instanceId,
-            PrefabRoleBinding[] bindings, string sourceMtime)
+        internal bool DiscardPrefabInstancePublic(string instanceId)
         {
-            if (string.IsNullOrEmpty(emittedJson) || _pkg == null || string.IsNullOrEmpty(_pkgId))
-                return 0;
-
-            // The engine emits a bare JSON array of step objects. JsonUtility
-            // can't parse a top-level array, so wrap it in a temporary object
-            // for FromJson, then extract.
-            var wrapper = new EmittedStepsWrapper();
-            try
+            if (_pkg == null || string.IsNullOrEmpty(instanceId) || _pkg.prefabInstances == null) return false;
+            int found = -1;
+            for (int i = 0; i < _pkg.prefabInstances.Length; i++)
             {
-                string wrappedJson = "{\"steps\":" + emittedJson + "}";
-                JsonUtility.FromJsonOverwrite(wrappedJson, wrapper);
+                if (_pkg.prefabInstances[i] != null
+                    && string.Equals(_pkg.prefabInstances[i].instanceId, instanceId, System.StringComparison.Ordinal))
+                { found = i; break; }
             }
-            catch (System.Exception ex)
-            {
-                Debug.LogError($"[TTAW.Prefabs] Failed to parse emitted step JSON: {ex.Message}");
-                return 0;
-            }
-            if (wrapper.steps == null || wrapper.steps.Length == 0) return 0;
+            if (found < 0) return false;
 
-            // The active step gives us an authoritative file path on disk —
-            // reuse it for every emitted step so they all land in the same
-            // assembly file as their target. Falls back to the package's
-            // primary assembly file if the lookup fails.
-            string fallbackPath = null;
-            if (_stepFilterIdx > 0 && _stepIds != null && _stepFilterIdx < _stepIds.Length)
-                fallbackPath = PackageJsonUtils.FindEntityFilePath(_pkgId, _stepIds[_stepFilterIdx]);
+            var trimmed = new PrefabInstance[_pkg.prefabInstances.Length - 1];
+            if (found > 0) System.Array.Copy(_pkg.prefabInstances, 0, trimmed, 0, found);
+            if (found < trimmed.Length) System.Array.Copy(_pkg.prefabInstances, found + 1, trimmed, found, trimmed.Length - found);
+            _pkg.prefabInstances = trimmed;
 
-            int merged = 0;
-            foreach (var step in wrapper.steps)
-            {
-                if (step == null || string.IsNullOrEmpty(step.id)) continue;
-                step.prefabRef = new PrefabRef
-                {
-                    prefabId    = prefabId,
-                    instanceId  = instanceId,
-                    bindings    = bindings,
-                    sourceMtime = sourceMtime,
-                };
-                string filePath = !string.IsNullOrEmpty(fallbackPath)
-                    ? fallbackPath
-                    : PackageJsonUtils.FindEntityFilePath(_pkgId, step.assemblyId);
-                if (string.IsNullOrEmpty(filePath))
-                {
-                    Debug.LogWarning($"[TTAW.Prefabs] No assembly file resolved for step '{step.id}' (assemblyId='{step.assemblyId}'); skipping.");
-                    continue;
-                }
-                try { PackageJsonUtils.InsertStep(filePath, step); merged++; }
-                catch (System.Exception ex)
-                {
-                    Debug.LogError($"[TTAW.Prefabs] InsertStep failed for '{step.id}': {ex.Message}");
-                }
-            }
+            try { MachinePackageNormalizer.Normalize(_pkg); }
+            catch (System.Exception ex) { Debug.LogError($"[TTAW.Prefabs] Normalize after discard threw: {ex.Message}"); }
 
-            if (merged > 0)
-            {
-                AssetDatabase.Refresh();
-                LoadPkg(_pkgId, restoring: true);
-                Repaint();
-            }
-            return merged;
-        }
+            _dirtyPrefabInstanceIds.Add(instanceId);
 
-        [System.Serializable]
-        private sealed class EmittedStepsWrapper
-        {
-            public StepDefinition[] steps;
-        }
-
-        // ── Subprocess: instantiate_prefab.py ───────────────────────────────
-
-        private void RunInstantiatePrefab(string inputYamlPath)
-        {
-            string scriptPath = GetInstantiateScriptPath();
-            if (!File.Exists(scriptPath))
-            {
-                EditorUtility.DisplayDialog("Prefab instantiator missing",
-                    $"Could not find {scriptPath}. The Step Configuration Prefab engine ships at Tools/instantiate_prefab.py.",
-                    "OK");
-                return;
-            }
-
-            string repoRoot = GetRepoRoot();
-            string py = ResolvePythonExecutable();
-            if (string.IsNullOrEmpty(py))
-            {
-                EditorUtility.DisplayDialog("Python not found",
-                    "Could not find a Python interpreter on PATH. Install Python 3 (with PyYAML) and try again.",
-                    "OK");
-                return;
-            }
-
-            var psi = new ProcessStartInfo
-            {
-                FileName  = py,
-                Arguments = $"\"{scriptPath}\" \"{inputYamlPath}\"",
-                WorkingDirectory       = repoRoot,
-                UseShellExecute        = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError  = true,
-                CreateNoWindow         = true,
-            };
-
-            try
-            {
-                EditorUtility.DisplayProgressBar("Prefabs", $"Running instantiate_prefab.py on '{Path.GetFileName(inputYamlPath)}'…", 0.5f);
-                using (var proc = Process.Start(psi))
-                {
-                    string stdout = proc.StandardOutput.ReadToEnd();
-                    string stderr = proc.StandardError.ReadToEnd();
-                    proc.WaitForExit(30_000);
-
-                    if (proc.ExitCode == 0)
-                    {
-                        OseLog.Info($"[TTAW.Prefabs] instantiate_prefab.py succeeded for '{Path.GetFileName(inputYamlPath)}'.\n{stdout}");
-                        EditorUtility.RevealInFinder(GetOutputsDir());
-                        EditorUtility.DisplayDialog("Prefab instantiated",
-                            $"Step JSON written to AgentAssistant/outputs/. Review the file and merge into the appropriate assembly_*.json under Assets/_Project/Data/Packages/.",
-                            "OK");
-                    }
-                    else
-                    {
-                        Debug.LogError($"[TTAW.Prefabs] instantiate_prefab.py exit={proc.ExitCode}\nstdout: {stdout}\nstderr: {stderr}");
-                        EditorUtility.DisplayDialog("Prefab instantiation failed",
-                            $"instantiate_prefab.py exited with code {proc.ExitCode}.\n\nSee Console for details.\n\nstderr:\n{stderr}",
-                            "OK");
-                    }
-                }
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogError($"[TTAW.Prefabs] Failed to launch python: {ex}");
-                EditorUtility.DisplayDialog("Subprocess failed", ex.Message, "OK");
-            }
-            finally
-            {
-                EditorUtility.ClearProgressBar();
-            }
-        }
-
-        private static string ResolvePythonExecutable()
-        {
-            // Try a few common names — the user likely has at least one.
-            string[] candidates = { "python", "python3", "py" };
-            string pathEnv = System.Environment.GetEnvironmentVariable("PATH") ?? "";
-            char sep = Path.PathSeparator;
-            foreach (var dir in pathEnv.Split(sep))
-            {
-                if (string.IsNullOrEmpty(dir)) continue;
-                foreach (var name in candidates)
-                {
-                    string full = Path.Combine(dir, name);
-                    if (File.Exists(full) || File.Exists(full + ".exe")) return name;
-                }
-            }
-            return null;
+            BuildStepOptions();
+            BuildTargetList();
+            BuildPartList();
+            BuildGroupList();
+            RespawnScene();
+            Repaint();
+            return true;
         }
 
         private static void OpenInOSExplorer(string dir)

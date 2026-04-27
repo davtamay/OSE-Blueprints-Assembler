@@ -116,6 +116,7 @@ namespace OSE.Editor
             if (_dirtyPartAssetRefIds.Count > 0)  return true;
             if (_dirtyPartGroupIds.Count > 0)   return true;
             if (_dirtyPartIds.Count > 0)          return true;
+            if (_dirtyPrefabInstanceIds.Count > 0) return true;
             if (_targets != null) foreach (var t in _targets) if (t.isDirty) return true;
             if (_parts   != null) foreach (var p in _parts)   if (p.isDirty) return true;
             return false;
@@ -850,6 +851,58 @@ namespace OSE.Editor
                 }
             }
 
+            // Step 5d-bis: Flush per-assembly prefabInstances[] arrays for
+            // any instances dirtied since the last save. Whole-array
+            // replacement keeps the writer simple — each assembly file owns
+            // a small list of instances (~12 lines apiece) that authors edit
+            // rarely, so the cost of regenerating the array on every save is
+            // negligible compared to splice-precision bugs.
+            if (_dirtyPrefabInstanceIds.Count > 0)
+            {
+                var dirtyByFile = new Dictionary<string, List<PrefabInstance>>(StringComparer.Ordinal);
+                if (_pkg.prefabInstances != null)
+                {
+                    foreach (var inst in _pkg.prefabInstances)
+                    {
+                        if (inst == null || string.IsNullOrEmpty(inst.instanceId)) continue;
+                        string fp = !string.IsNullOrEmpty(inst.assemblyId)
+                            ? PackageJsonUtils.FindEntityFilePath(_pkgId, inst.assemblyId)
+                            : null;
+                        if (string.IsNullOrEmpty(fp))
+                        {
+                            Debug.LogWarning($"[TTAW.WriteJson] PrefabInstance '{inst.instanceId}' has no resolvable assembly file (assemblyId='{inst.assemblyId}'); skipping save.");
+                            continue;
+                        }
+                        if (!dirtyByFile.TryGetValue(fp, out var bucket))
+                            dirtyByFile[fp] = bucket = new List<PrefabInstance>();
+                        bucket.Add(inst);
+                    }
+                }
+
+                // Touch every file that previously held instances we removed
+                // (Discard) too — its bucket may now be empty, in which case
+                // the writer emits an empty array which is then dropped on
+                // load by the JsonUtility default-array convention.
+                foreach (string instanceId in _dirtyPrefabInstanceIds)
+                {
+                    string mapped = PackageJsonUtils.FindEntityFilePath(_pkgId, instanceId);
+                    if (string.IsNullOrEmpty(mapped)) continue;
+                    if (!dirtyByFile.ContainsKey(mapped))
+                        dirtyByFile[mapped] = new List<PrefabInstance>();
+                }
+
+                foreach (var kv in dirtyByFile)
+                {
+                    string fp = kv.Key;
+                    if (!fileContents.TryGetValue(fp, out string cnt))
+                        fileContents[fp] = cnt = File.ReadAllText(fp);
+                    string arrJson = BuildPrefabInstancesArrayJson(kv.Value);
+                    if (PackageJsonUtils.TryReplaceTopLevelArray(ref cnt, "prefabInstances", arrJson))
+                        fileContents[fp] = cnt;
+                }
+                _dirtyPrefabInstanceIds.Clear();
+            }
+
             // Step 5e: Validate result (monolithic only)
             if (!isSplit && fileContents.TryGetValue(jsonPath, out string monoJson))
             {
@@ -1055,6 +1108,28 @@ namespace OSE.Editor
         }
 
         private static float R(float v) => Mathf.Round(v * 100000f) / 100000f;
+
+        // Serialises a per-file PrefabInstance bucket as a pretty-printed
+        // JSON array. JsonUtility doesn't pretty-print, so we drive the
+        // formatting by hand to match the surrounding file's indentation.
+        // Empty buckets emit `[]` so the field is preserved on disk;
+        // JsonUtility deserialises it back as a zero-length array which the
+        // normalizer treats as no-op.
+        private static string BuildPrefabInstancesArrayJson(List<PrefabInstance> instances)
+        {
+            if (instances == null || instances.Count == 0) return "[]";
+            var sb = new System.Text.StringBuilder();
+            sb.Append("[\n");
+            for (int i = 0; i < instances.Count; i++)
+            {
+                if (i > 0) sb.Append(",\n");
+                sb.Append("    ");
+                string raw = JsonUtility.ToJson(instances[i]);
+                sb.Append(PackageJsonUtils.RoundFloatsInJson(raw));
+            }
+            sb.Append("\n  ]");
+            return sb.ToString();
+        }
 
         // ── JSON injection helpers ────────────────────────────────────────────
 

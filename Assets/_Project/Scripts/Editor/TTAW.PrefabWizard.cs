@@ -1,20 +1,19 @@
 // TTAW.PrefabWizard.cs — Role-binding modal for instantiating Step
-// Configuration Prefabs (Slice 1c of the prefab drag-drop feature).
+// Configuration Prefabs.
 //
 // Opens when an author drops a prefab from the PREFABS panel onto a step row
-// in the Navigator. Reads the prefab YAML's `roles:` section, renders one
-// part picker per role (pre-filled from the target step's requiredPartIds
-// when the role name name-matches a part id stem), then writes a temporary
-// instantiation YAML to AgentAssistant/inputs/.tmp_<guid>.yaml and runs
-// instantiate_prefab.py via the existing subprocess plumbing in
-// TTAW.Prefabs.cs. Output JSON lands in AgentAssistant/outputs/ for review
-// and merge — auto-merge into the active assembly file is deferred (Slice
-// 1d will add it alongside the linked-badge UI).
+// in the Navigator. Reads the prefab YAML's `roles:` section (via the shared
+// PrefabYamlReader), renders one part picker per role pre-filled from the
+// target step's requiredPartIds, then on Confirm builds a PrefabInstance and
+// hands it to ToolTargetAuthoringWindow.MergePrefabInstancePublic. The
+// merge is in-memory only — disk writes happen on the next "Write to
+// machine.json" press, by which point the user has had a chance to inspect
+// the virtual steps in the canvas.
 
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using OSE.Content;
+using OSE.Content.Loading;
 using OSE.Core;
 using UnityEditor;
 using UnityEngine;
@@ -86,7 +85,7 @@ namespace OSE.Editor
 
             try
             {
-                ParsePrefab(File.ReadAllText(_prefabYamlPath));
+                ParsePrefabRoles(PrefabYamlReader.ReadFile(_prefabYamlPath));
             }
             catch (System.Exception ex)
             {
@@ -236,8 +235,9 @@ namespace OSE.Editor
             using (new EditorGUI.DisabledScope(_roles == null || _roles.Count == 0))
             {
                 if (GUILayout.Button(new GUIContent("Instantiate",
-                        "Write a temp input YAML, run instantiate_prefab.py, and reveal " +
-                        "the emitted step JSON in AgentAssistant/outputs/."),
+                        "Append a PrefabInstance to the active package and expand it into " +
+                        "virtual steps in memory. Disk save happens on the next " +
+                        "\"Write to machine.json\" press."),
                         GUILayout.Width(140)))
                 {
                     RunInstantiation();
@@ -292,108 +292,43 @@ namespace OSE.Editor
                 _statusIsError = true;
                 return;
             }
-
-            string tempInputPath = WriteTempInputYaml();
-            if (string.IsNullOrEmpty(tempInputPath))
+            if (_owner == null)
             {
-                _statusMessage = "Failed to write temp input YAML.";
+                _statusMessage = "Owning TTAW window is gone — close and re-open the wizard.";
                 _statusIsError = true;
                 return;
             }
-
-            // Subprocess inline (rather than going through
-            // ToolTargetAuthoringWindow.RunInstantiatePrefabPublic) so the
-            // wizard can capture the emitted JSON path and pipe it directly
-            // into the auto-merge step below.
-            string repoRoot     = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-            string scriptPath   = Path.Combine(repoRoot, "Tools", "instantiate_prefab.py");
-            string py           = ToolTargetAuthoringWindow.ResolvePythonExecutablePublic();
-            if (string.IsNullOrEmpty(py))
-            {
-                _statusMessage = "Python interpreter not found on PATH.";
-                _statusIsError = true;
-                return;
-            }
-            if (!File.Exists(scriptPath))
-            {
-                _statusMessage = $"Engine missing: {scriptPath}";
-                _statusIsError = true;
-                return;
-            }
-
-            string outputPath = Path.Combine(repoRoot, "AgentAssistant", "outputs",
-                Path.GetFileNameWithoutExtension(tempInputPath) + ".json");
 
             try
             {
-                EditorUtility.DisplayProgressBar("Instantiate Prefab",
-                    "Running instantiate_prefab.py …", 0.5f);
-                var psi = new System.Diagnostics.ProcessStartInfo
+                var instance = new PrefabInstance
                 {
-                    FileName  = py,
-                    Arguments = $"\"{scriptPath}\" \"{tempInputPath}\"",
-                    WorkingDirectory       = repoRoot,
-                    UseShellExecute        = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError  = true,
-                    CreateNoWindow         = true,
+                    prefabId    = _prefabName,
+                    instanceId  = $"{_prefabName}_{_prefix}_{System.Guid.NewGuid().ToString("N").Substring(0, 6)}",
+                    prefix      = _prefix,
+                    startSeq    = _startSeq,
+                    assemblyId  = _targetStep?.assemblyId,
+                    partGroupId = _targetStep?.partGroupId,
+                    bindings    = SnapshotBindings(),
                 };
-                using (var proc = System.Diagnostics.Process.Start(psi))
-                {
-                    string stdout = proc.StandardOutput.ReadToEnd();
-                    string stderr = proc.StandardError.ReadToEnd();
-                    proc.WaitForExit(30_000);
-                    if (proc.ExitCode != 0)
-                    {
-                        _statusMessage = $"instantiate_prefab.py failed (exit {proc.ExitCode}). stderr: {stderr}";
-                        _statusIsError = true;
-                        OseLog.Warn($"[TTAW.PrefabWizard] Subprocess failed:\nstdout: {stdout}\nstderr: {stderr}");
-                        return;
-                    }
-                }
 
-                // Read emitted JSON, stamp prefabRef on each step, hand off to
-                // owner for assembly-file merge + reload.
-                if (!File.Exists(outputPath))
+                int merged = _owner.MergePrefabInstancePublic(instance);
+                if (merged > 0)
                 {
-                    _statusMessage = $"Subprocess succeeded but output JSON not found at: {outputPath}";
-                    _statusIsError = true;
+                    _statusMessage = $"Expanded {merged} virtual step(s). Press \"Write to machine.json\" to persist.";
+                    _statusIsError = false;
+                    Close();
                     return;
                 }
-                string emitted = File.ReadAllText(outputPath);
-                if (_owner != null)
-                {
-                    string instanceId = $"{_prefabName}_{_prefix}_{System.Guid.NewGuid().ToString("N").Substring(0, 6)}";
-                    var bindings     = SnapshotBindings();
-                    string mtime     = File.GetLastWriteTimeUtc(_prefabYamlPath).ToString("o");
-                    int merged = _owner.MergeInstantiatedStepsPublic(
-                        emitted, _prefabName, instanceId, bindings, mtime);
-                    if (merged > 0)
-                    {
-                        _statusMessage = $"Merged {merged} step(s) into the active package. Reloading.";
-                        _statusIsError = false;
-                        Close();
-                        return;
-                    }
-                    else
-                    {
-                        _statusMessage = "Subprocess succeeded but auto-merge produced 0 steps. See Console.";
-                        _statusIsError = true;
-                    }
-                }
+
+                _statusMessage = "Merge produced 0 steps — see Console for prefab parse / role-binding errors.";
+                _statusIsError = true;
             }
             catch (System.Exception ex)
             {
                 _statusMessage = $"Instantiation failed: {ex.Message}";
                 _statusIsError = true;
                 OseLog.Warn($"[TTAW.PrefabWizard] Exception: {ex}");
-            }
-            finally
-            {
-                EditorUtility.ClearProgressBar();
-                // Temp input + output kept on disk so author can inspect the
-                // engine I/O. Housekeeping pass to clean .tmp_*.yaml is out
-                // of scope for this slice.
             }
         }
 
@@ -417,147 +352,29 @@ namespace OSE.Editor
             return list.ToArray();
         }
 
-        private string WriteTempInputYaml()
+        // Pulls the prefab's name + description + role list out of the
+        // shared YamlNode tree. Step + option + derived sections are
+        // consumed at expansion time by <see cref="PrefabExpander"/>; the
+        // wizard only needs roles to render its picker.
+        private void ParsePrefabRoles(YamlNode root)
         {
-            var sb = new StringBuilder();
-            sb.AppendLine($"# Temp input written by TTAW PrefabWizard at {System.DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-            sb.AppendLine($"prefab: {_prefabName}");
-            sb.AppendLine($"prefix: {_prefix}");
-            sb.AppendLine($"start_seq: {_startSeq}");
-            if (_targetStep != null)
+            if (root == null || !root.IsMap) return;
+            string prefab = root.GetScalar("prefab", null);
+            if (!string.IsNullOrEmpty(prefab)) _prefabName = prefab;
+            string desc = root.GetScalar("description", null);
+            if (!string.IsNullOrEmpty(desc)) _prefabDescription = desc;
+
+            if (!root.TryGet("roles", out var rolesNode) || rolesNode == null || !rolesNode.IsMap) return;
+            foreach (var kv in rolesNode.Map)
             {
-                if (!string.IsNullOrEmpty(_targetStep.assemblyId))
-                    sb.AppendLine($"assembly: {_targetStep.assemblyId}");
-                if (!string.IsNullOrEmpty(_targetStep.partGroupId))
-                    sb.AppendLine($"partGroup: {_targetStep.partGroupId}");
+                if (string.IsNullOrEmpty(kv.Key) || kv.Value == null || !kv.Value.IsMap) continue;
+                var spec = new RoleSpec { Name = kv.Key };
+                string kind = kv.Value.GetScalar("kind", "part") ?? "part";
+                spec.IsList = string.Equals(kind, "part_list", System.StringComparison.OrdinalIgnoreCase);
+                if (int.TryParse(kv.Value.GetScalar("count", "0"), out int count)) spec.Count = count;
+                spec.Description = kv.Value.GetScalar("description", "") ?? "";
+                _roles.Add(spec);
             }
-            sb.AppendLine("parts:");
-            foreach (var role in _roles)
-            {
-                if (role.IsList)
-                {
-                    if (!_listBindings.TryGetValue(role.Name, out var arr) || arr == null) continue;
-                    sb.Append($"  {role.Name}: [");
-                    for (int i = 0; i < arr.Length; i++)
-                    {
-                        if (i > 0) sb.Append(", ");
-                        sb.Append(arr[i] ?? "");
-                    }
-                    sb.AppendLine("]");
-                }
-                else
-                {
-                    _singleBindings.TryGetValue(role.Name, out var v);
-                    sb.AppendLine($"  {role.Name}: {v ?? ""}");
-                }
-            }
-
-            string repoRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-            string inputsDir = Path.Combine(repoRoot, "AgentAssistant", "inputs");
-            try { Directory.CreateDirectory(inputsDir); } catch { }
-            string tempPath = Path.Combine(inputsDir,
-                $".tmp_{_prefabName}_{System.Guid.NewGuid().ToString("N").Substring(0, 8)}.yaml");
-            try { File.WriteAllText(tempPath, sb.ToString()); }
-            catch (System.Exception ex)
-            {
-                OseLog.Warn($"[TTAW.PrefabWizard] Failed writing temp input '{tempPath}': {ex.Message}");
-                return null;
-            }
-            return tempPath;
-        }
-
-        // ── Tiny YAML reader (covers just the prefab schema we need) ─────────
-
-        private void ParsePrefab(string text)
-        {
-            string[] lines = text.Replace("\r\n", "\n").Split('\n');
-            bool inRoles = false;
-            RoleSpec current = null;
-            foreach (var rawLine in lines)
-            {
-                string line = StripComment(rawLine);
-                if (string.IsNullOrWhiteSpace(line)) continue;
-
-                int indent = CountLeadingSpaces(line);
-                string trimmed = line.TrimStart();
-
-                // Top-level keys
-                if (indent == 0)
-                {
-                    inRoles = false; current = null;
-                    if (trimmed.StartsWith("prefab:", System.StringComparison.Ordinal))
-                    {
-                        string v = trimmed.Substring("prefab:".Length).Trim();
-                        if (!string.IsNullOrEmpty(v)) _prefabName = StripQuotes(v);
-                    }
-                    else if (trimmed.StartsWith("description:", System.StringComparison.Ordinal))
-                    {
-                        _prefabDescription = StripQuotes(trimmed.Substring("description:".Length).Trim());
-                    }
-                    else if (trimmed.StartsWith("roles:", System.StringComparison.Ordinal))
-                    {
-                        inRoles = true;
-                    }
-                    continue;
-                }
-
-                if (!inRoles) continue;
-
-                // Role header line: "  <name>:"
-                if (indent == 2 && trimmed.EndsWith(":", System.StringComparison.Ordinal))
-                {
-                    string name = trimmed.Substring(0, trimmed.Length - 1).Trim();
-                    current = new RoleSpec { Name = name };
-                    _roles.Add(current);
-                    continue;
-                }
-
-                // Role attribute line: "    kind: part" / "    count: 4" / "    description: ..."
-                if (indent == 4 && current != null)
-                {
-                    int colon = trimmed.IndexOf(':');
-                    if (colon < 0) continue;
-                    string key = trimmed.Substring(0, colon).Trim();
-                    string val = trimmed.Substring(colon + 1).Trim();
-                    val = StripQuotes(val);
-                    switch (key)
-                    {
-                        case "kind":
-                            current.IsList = string.Equals(val, "part_list", System.StringComparison.OrdinalIgnoreCase);
-                            break;
-                        case "count":
-                            int.TryParse(val, out current.Count);
-                            break;
-                        case "description":
-                            current.Description = val;
-                            break;
-                    }
-                }
-            }
-        }
-
-        private static string StripComment(string line)
-        {
-            // Lazy comment strip: split on ' #'. Doesn't handle '#' inside quoted strings
-            // — fine for the schema we author. If a prefab description has a '#' it's
-            // already enclosed in quotes; the leading char check below skips quoted lines.
-            int idx = line.IndexOf(" #", System.StringComparison.Ordinal);
-            if (idx < 0) return line.TrimEnd();
-            return line.Substring(0, idx).TrimEnd();
-        }
-
-        private static int CountLeadingSpaces(string s)
-        {
-            int n = 0;
-            while (n < s.Length && s[n] == ' ') n++;
-            return n;
-        }
-
-        private static string StripQuotes(string s)
-        {
-            if (s.Length >= 2 && s[0] == '"' && s[s.Length - 1] == '"') return s.Substring(1, s.Length - 2);
-            if (s.Length >= 2 && s[0] == '\'' && s[s.Length - 1] == '\'') return s.Substring(1, s.Length - 2);
-            return s;
         }
 
         private static string DerivePrefix(string idLike)

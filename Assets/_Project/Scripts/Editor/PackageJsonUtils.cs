@@ -76,6 +76,9 @@ namespace OSE.Editor
             RecordIds(map, chunk.steps,         s => s?.id, sourceFile, "step");
             RecordIds(map, chunk.partGroups, s => s?.id, sourceFile, "partGroup");
             RecordIds(map, chunk.partTemplates, t => t?.id, sourceFile, "partTemplate");
+            // Prefab instances live per-assembly; saving one needs the
+            // origin file so the writer doesn't relocate the entry.
+            RecordIds(map, chunk.prefabInstances, p => p?.instanceId, sourceFile, "prefabInstance");
         }
 
         private static void RecordIds<T>(
@@ -361,6 +364,7 @@ namespace OSE.Editor
                 pkg.partGroups   = MergeArrays(pkg.partGroups,   chunk.partGroups);
                 pkg.parts           = MergeArrays(pkg.parts,           chunk.parts);
                 pkg.steps           = MergeArrays(pkg.steps,           chunk.steps);
+                pkg.prefabInstances = MergeArrays(pkg.prefabInstances, chunk.prefabInstances);
                 pkg.targets         = MergeArrays(pkg.targets,         chunk.targets);
                 pkg.hints           = MergeArrays(pkg.hints,           chunk.hints);
                 pkg.validationRules = MergeArrays(pkg.validationRules, chunk.validationRules);
@@ -616,6 +620,91 @@ namespace OSE.Editor
             File.WriteAllText(backup, original);
             File.WriteAllText(jsonPath, modified);
             AssetDatabase.Refresh();
+        }
+
+        /// <summary>
+        /// Replaces the top-level array <paramref name="fieldName"/> with
+        /// <paramref name="arrayJson"/> (a complete <c>[ ... ]</c> string,
+        /// including the brackets). When the array is absent, inserts it
+        /// just before the file's closing brace. Returns true when the JSON
+        /// was modified.
+        ///
+        /// <para>Used by the Slice 1 prefab-instance save path
+        /// (<c>TTAW.WriteJson.cs</c>) to flush the per-assembly
+        /// <c>"prefabInstances"</c> block. Whole-array replacement is fine
+        /// because a single instance is only ~12 lines and authors edit
+        /// them rarely; the cost of regenerating the array is negligible
+        /// compared to the precision required to splice individual entries.</para>
+        /// </summary>
+        internal static bool TryReplaceTopLevelArray(ref string json, string fieldName, string arrayJson)
+        {
+            if (string.IsNullOrEmpty(json) || string.IsNullOrEmpty(fieldName) || arrayJson == null) return false;
+
+            string label = $"\"{fieldName}\"";
+            int labelIdx = FindTopLevelLabel(json, label);
+            if (labelIdx >= 0)
+            {
+                int arrayOpen = json.IndexOf('[', labelIdx);
+                if (arrayOpen < 0) return false;
+                int depth = 0, arrayClose = -1;
+                for (int i = arrayOpen; i < json.Length; i++)
+                {
+                    char c = json[i];
+                    if (c == '[' || c == '{') depth++;
+                    else if (c == ']' || c == '}')
+                    {
+                        depth--;
+                        if (depth == 0) { arrayClose = i; break; }
+                    }
+                }
+                if (arrayClose < 0) return false;
+                json = json.Substring(0, arrayOpen) + arrayJson + json.Substring(arrayClose + 1);
+                return true;
+            }
+
+            int lastBrace = json.LastIndexOf('}');
+            if (lastBrace < 0) return false;
+            int beforeBrace = lastBrace - 1;
+            while (beforeBrace >= 0 && char.IsWhiteSpace(json[beforeBrace])) beforeBrace--;
+            bool needComma = beforeBrace >= 0 && json[beforeBrace] != ',' && json[beforeBrace] != '{';
+            string prefix = needComma ? ",\n  " : "\n  ";
+            json = json.Substring(0, lastBrace)
+                 + prefix + $"\"{fieldName}\": " + arrayJson + "\n}"
+                 + (lastBrace + 1 < json.Length ? json.Substring(lastBrace + 1) : "");
+            return true;
+        }
+
+        // Outer-scope label search. Returns the index of <paramref name="label"/>
+        // (which already includes the surrounding quotes) when it appears as a
+        // top-level key inside the JSON object — i.e. at brace-depth 1 and
+        // outside any other string literal. Required because labels like
+        // `"prefabInstances"` could legally appear inside nested values
+        // (descriptions, payloads, etc.); only the top-level definition is
+        // safe to splice.
+        private static int FindTopLevelLabel(string json, string label)
+        {
+            int depth = 0;
+            bool inDouble = false;
+            for (int i = 0; i < json.Length; i++)
+            {
+                char c = json[i];
+                if (inDouble)
+                {
+                    if (c == '\\' && i + 1 < json.Length) { i++; continue; }
+                    if (c == '"') inDouble = false;
+                    continue;
+                }
+                if (c == '{' || c == '[')      { depth++; continue; }
+                if (c == '}' || c == ']')      { depth--; continue; }
+                if (c == '"')
+                {
+                    if (depth == 1 && i + label.Length <= json.Length
+                        && json.Substring(i, label.Length) == label)
+                        return i;
+                    inDouble = true;
+                }
+            }
+            return -1;
         }
     }
 }

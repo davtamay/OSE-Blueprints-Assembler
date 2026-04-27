@@ -58,6 +58,18 @@ namespace OSE.Content.Loading
             // phantom-orientation bug). Caught by `EditorRuntimeIsolationTests`.
             DropEmptyStepPayloads(package);
 
+            // Expand Step Configuration Prefab instances into virtual steps
+            // BEFORE every downstream pass so template inheritance, parent-id
+            // inference, validation, and pose baking treat them identically
+            // to authored steps. Edits to a prefab YAML propagate to every
+            // instance on next load — see Slice 1 of the prefab plan.
+            ExpandPrefabInstances(package);
+            // Re-run the phantom-payload purge so the freshly-expanded
+            // virtual steps don't inherit JsonUtility's default-instance
+            // noise on workingOrientation / animationCues / particleEffects.
+            // Idempotent for the authored steps already cleaned above.
+            DropEmptyStepPayloads(package);
+
             InferAggregateFlag(package);
             InflatePartTemplates(package);
             BakeStagingPoses(package);
@@ -135,6 +147,79 @@ namespace OSE.Content.Loading
 
             if (droppedOrient + droppedCues + droppedParticles + droppedPrefabRef > 0)
                 OseLog.Info($"[Normalizer.DropEmptyStepPayloads] '{package.packageId}': dropped {droppedOrient} workingOrientation, {droppedCues} animationCues, {droppedParticles} particleEffects, {droppedPrefabRef} prefabRef phantom payloads (JsonUtility default-instance noise).");
+        }
+
+        /// <summary>
+        /// Walks <see cref="MachinePackageDefinition.prefabInstances"/> and
+        /// appends one expanded <see cref="StepDefinition"/> per
+        /// step template per instance, each tagged with a matching
+        /// <see cref="PrefabRef"/>. The instance entry stays in the package
+        /// so editors can show provenance + offer Bake / Discard, while the
+        /// virtual steps are merged into <see cref="MachinePackageDefinition.steps"/>
+        /// so every downstream consumer treats them as ordinary steps.
+        /// Idempotent: removes previously-expanded virtual steps for an
+        /// instance before re-expanding (so editor mutations to bindings or
+        /// the source YAML take effect on the next call without duplicates).
+        /// </summary>
+        public static void ExpandPrefabInstances(MachinePackageDefinition package)
+        {
+            if (package == null) return;
+            var instances = package.prefabInstances;
+            if (instances == null || instances.Length == 0) return;
+
+            string prefabsDir = PrefabExpander.GetPrefabsDir();
+
+            // Drop every previously-expanded virtual step. Re-emitted
+            // below from the current instance set; this also clears
+            // orphans whose source instance was Discarded between calls.
+            // Authored steps (no prefabRef, or prefabRef cleared by
+            // DropEmptyStepPayloads above) pass through untouched.
+            if (package.steps != null && package.steps.Length > 0)
+            {
+                var keep = new List<StepDefinition>(package.steps.Length);
+                foreach (var s in package.steps)
+                {
+                    if (s == null) continue;
+                    if (s.prefabRef != null && !string.IsNullOrEmpty(s.prefabRef.instanceId))
+                        continue;
+                    keep.Add(s);
+                }
+                if (keep.Count != package.steps.Length)
+                    package.steps = keep.ToArray();
+            }
+
+            int totalExpanded = 0;
+            int totalErrors   = 0;
+            var emitted       = new List<StepDefinition>();
+            foreach (var instance in instances)
+            {
+                if (instance == null || instance.IsEmpty()) continue;
+                var result = PrefabExpander.Expand(instance, prefabsDir);
+                if (result.Errors != null && result.Errors.Count > 0)
+                {
+                    totalErrors += result.Errors.Count;
+                    foreach (var err in result.Errors)
+                        OseLog.Warn($"[Normalizer.ExpandPrefabInstances] {instance.instanceId} ({instance.prefabId}): {err}");
+                }
+                if (result.Steps != null && result.Steps.Length > 0)
+                {
+                    emitted.AddRange(result.Steps);
+                    totalExpanded += result.Steps.Length;
+                }
+            }
+
+            if (emitted.Count > 0)
+            {
+                int existing = package.steps?.Length ?? 0;
+                var merged = new StepDefinition[existing + emitted.Count];
+                if (existing > 0) Array.Copy(package.steps, 0, merged, 0, existing);
+                emitted.CopyTo(merged, existing);
+                package.steps = merged;
+            }
+
+            OseLog.Info(
+                $"[Normalizer.ExpandPrefabInstances] '{package.packageId}': " +
+                $"expanded {instances.Length} instance(s) → {totalExpanded} virtual step(s), {totalErrors} error(s).");
         }
 
         // Canonical trigger names for AnimationCueEntry.trigger. Every alias

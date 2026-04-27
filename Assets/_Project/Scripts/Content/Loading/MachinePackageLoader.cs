@@ -230,6 +230,7 @@ namespace OSE.Content.Loading
                 package.partGroups = MergeArrays(package.partGroups, asmChunk.partGroups);
                 package.parts         = MergeArrays(package.parts,         asmChunk.parts);
                 package.steps         = MergeArrays(package.steps,         asmChunk.steps);
+                package.prefabInstances = MergeArrays(package.prefabInstances, asmChunk.prefabInstances);
                 package.targets       = MergeArrays(package.targets,       asmChunk.targets);
                 package.hints         = MergeArrays(package.hints,         asmChunk.hints);
                 package.validationRules = MergeArrays(package.validationRules, asmChunk.validationRules);

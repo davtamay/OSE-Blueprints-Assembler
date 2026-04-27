@@ -126,6 +126,11 @@ namespace OSE.Editor
         private readonly HashSet<string> _dirtyPartAssetRefIds = new HashSet<string>(StringComparer.Ordinal);
         private readonly HashSet<string> _dirtyPartGroupIds  = new HashSet<string>(StringComparer.Ordinal); // Phase 7e — PartGroup writes
         private readonly HashSet<string> _dirtyPartIds         = new HashSet<string>(StringComparer.Ordinal); // Generic part-level edits (animationCues, partGroupIds, etc.)
+        // Slice 1 — prefab drag-drop. Wizard appends a PrefabInstance to
+        // _pkg.prefabInstances and adds its instanceId here; WriteJson flushes
+        // the entire prefabInstances[] array of every assembly file that
+        // contains a dirty instance.
+        internal readonly HashSet<string> _dirtyPrefabInstanceIds = new HashSet<string>(StringComparer.Ordinal);
         private readonly PackageAssetResolver _assetResolver = new PackageAssetResolver();
 
         // SceneView part-count summary updated by RespawnScene
