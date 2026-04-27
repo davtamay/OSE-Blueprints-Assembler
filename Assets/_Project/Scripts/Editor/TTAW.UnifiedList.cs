@@ -316,13 +316,13 @@ namespace OSE.Editor
                 DrawTaskInspectorBody(step, order);
             }
 
-            // ── GROUPS (Slice ME-C) ─────────────────────────────────────────
+            // ── PART GROUPS (Slice ME-C) ────────────────────────────────────
             // Wrapped in DrawCard. The "+" button on the card header binds to
             // the existing group-creation action (seed from requiredPartIds
             // or empty partGroup). Default expanded — authors edit groups
             // frequently on multi-group steps.
             var relevantGroups = CollectRelevantPartGroupsForStep(step);
-            DrawCard("GROUPS", "canvas/groups", SubAccent,
+            DrawCard("PART GROUPS", "canvas/groups", SubAccent,
                 defaultExpanded: true, count: relevantGroups.Count,
                 onAddClick: () => TryCreateGroupForStep(step),
                 body: () => DrawCanvasPartGroupList(step, drawOwnChrome: false));

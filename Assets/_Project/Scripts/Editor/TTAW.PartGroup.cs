@@ -78,7 +78,7 @@ namespace OSE.Editor
             // ── Section header — title + tooltip + count pill ────────────────
             EditorGUILayout.BeginHorizontal();
             var titleStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 11 };
-            GUILayout.Label(new GUIContent("GROUPS",
+            GUILayout.Label(new GUIContent("PART GROUPS",
                 "A partGroup is a small kit of parts (e.g. a carriage) that "
                 + "you build as one unit and drop into the larger machine. Each "
                 + "step belongs to at most one group; the runtime treats every "
@@ -1405,7 +1405,7 @@ namespace OSE.Editor
             {
                 EditorGUILayout.BeginHorizontal();
                 var titleStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 11 };
-                GUILayout.Label(new GUIContent($"GROUPS ({relevant.Count})",
+                GUILayout.Label(new GUIContent($"PART GROUPS ({relevant.Count})",
                     "Part groups that this step belongs to. Click to inspect. " +
                     "Drag parts from the Hierarchy onto the drop zone to create/add."),
                     titleStyle);
