@@ -12,15 +12,22 @@ Checks:
   5. Broken target references: step references a target ID not defined in targets[]
   6. Invalid part category: category not in the Unity validator's allowed list
   7. Part placed by multiple Place steps: same partId in requiredPartIds of >1 Place-family step
+  8. Prefab instances: prefab YAML exists, role bindings cover declared roles,
+                       override paths reference real step id_suffixes
 
 Reference locations for parts (all 5 must be checked):
   a. steps[].requiredPartIds / optionalPartIds
-  b. subassemblies[].partIds
+  b. partGroups[].partIds
   c. targets[].associatedPartId
-  d. previewConfig.constrainedSubassemblyFitPlacements[].drivenPartIds
+  d. previewConfig.constrainedPartGroupFitPlacements[].drivenPartIds
   e. parts[] definition itself (the source of truth)
 
 With --fix-seqindex: renumbers all steps globally (preserving order) to fill gaps.
+
+Slice 0 alias note: legacy machine.json files using `subassemblies`,
+`subassemblyId`, or `constrainedSubassemblyFitPlacements` are still read
+for backwards compatibility — the loader and this script accept both names.
+New content uses the partGroup vocabulary.
 """
 
 import json, os, sys
@@ -35,12 +42,20 @@ BASE_DIR = os.path.join(os.path.dirname(__file__), "..", "Assets", "_Project", "
 
 
 def load_package(package_dir):
-    """Load and merge all assembly files into one flat dict."""
+    """Load and merge all assembly files into one flat dict.
+
+    Returns
+    -------
+    parts, targets, steps, part_groups, preview_driven, prefab_instances
+        prefab_instances is a list of (instance_dict, source_filename) so
+        the prefab validator can report which file each issue lives in.
+    """
     parts = []
     targets = []
     steps = []
-    subassemblies = []
+    part_groups = []
     preview_driven = []
+    prefab_instances = []
 
     asm_dir = os.path.join(package_dir, "assemblies")
     if not os.path.isdir(asm_dir):
@@ -56,30 +71,34 @@ def load_package(package_dir):
         parts.extend(data.get("parts", []))
         targets.extend(data.get("targets", []))
         steps.extend(data.get("steps", []))
-        subassemblies.extend(data.get("subassemblies", []))
+        # Slice 0 alias — accept both names so legacy and new content load.
+        part_groups.extend(data.get("partGroups", []))
+        part_groups.extend(data.get("subassemblies", []))
+        for inst in data.get("prefabInstances", []):
+            prefab_instances.append((inst, fname))
 
     # preview_config drivenPartIds
     pc_path = os.path.join(package_dir, "preview_config.json")
     if os.path.exists(pc_path):
         with open(pc_path, encoding="utf-8") as f:
             pc = json.load(f)
-        for placement in pc.get("previewConfig", {}).get("constrainedSubassemblyFitPlacements", []):
+        cfg = pc.get("previewConfig", pc)
+        for placement in cfg.get("constrainedPartGroupFitPlacements", []):
             preview_driven.extend(placement.get("drivenPartIds", []))
-        # also top-level if not wrapped
-        for placement in pc.get("constrainedSubassemblyFitPlacements", []):
+        for placement in cfg.get("constrainedSubassemblyFitPlacements", []):
             preview_driven.extend(placement.get("drivenPartIds", []))
 
-    return parts, targets, steps, subassemblies, preview_driven
+    return parts, targets, steps, part_groups, preview_driven, prefab_instances
 
 
-def collect_referenced_part_ids(steps, subassemblies, targets, preview_driven):
+def collect_referenced_part_ids(steps, part_groups, targets, preview_driven):
     """Collect all partIds referenced in any of the 5 reference locations."""
     refs = set()
     for s in steps:
         refs.update(s.get("requiredPartIds", []))
         refs.update(s.get("optionalPartIds", []))
         refs.update(s.get("targetPartIds", []))
-    for sa in subassemblies:
+    for sa in part_groups:
         refs.update(sa.get("partIds", []))
     for t in targets:
         if t.get("associatedPartId"):
@@ -142,17 +161,123 @@ def fix_seqindex(package_dir, steps_with_files):
             print(f"  Fixed {changed} seqIndices in {fname}")
 
 
+PREFABS_DIR = os.path.join(os.path.dirname(__file__), "..", "AgentAssistant", "prefabs")
+
+
+def _load_prefab_yaml(prefab_id):
+    """Best-effort YAML load for a Step Configuration Prefab. Returns None if
+    PyYAML isn't installed or the file is missing — the caller degrades to a
+    presence-only check so the audit still runs without yaml installed."""
+    if not prefab_id:
+        return None
+    path = os.path.join(PREFABS_DIR, f"{prefab_id}.yaml")
+    if not os.path.exists(path):
+        path = os.path.join(PREFABS_DIR, f"{prefab_id}.yml")
+        if not os.path.exists(path):
+            return None
+    try:
+        import yaml  # type: ignore
+        with open(path, encoding="utf-8") as f:
+            return yaml.safe_load(f)
+    except ImportError:
+        return {"_path_only": path}  # signal: file exists, content unparsed
+    except Exception:
+        return None
+
+
+def check_prefab_instances(prefab_instances):
+    """Validate every PrefabInstance entry across all assembly files.
+
+    Checks:
+      - prefabId references a YAML in AgentAssistant/prefabs/
+      - bindings cover every role declared by the prefab (and don't add extras)
+      - list-role bindings respect the declared count when present
+      - override paths target step:<id_suffix>.<...> for an id_suffix that
+        actually appears in the prefab's steps[]
+    """
+    errors = []
+    warnings = []
+
+    for inst, fname in prefab_instances:
+        instance_id = inst.get("instanceId") or "(unnamed)"
+        prefab_id   = inst.get("prefabId")   or ""
+        ctx = f"prefab instance '{instance_id}' in {fname}"
+
+        if not prefab_id:
+            errors.append(f"{ctx}: empty prefabId.")
+            continue
+
+        prefab = _load_prefab_yaml(prefab_id)
+        if prefab is None:
+            errors.append(f"{ctx}: source YAML '{prefab_id}.yaml' not found in AgentAssistant/prefabs/.")
+            continue
+        if "_path_only" in prefab:
+            warnings.append(f"{ctx}: source YAML found but PyYAML is not installed — skipping content checks.")
+            continue
+
+        # Roles
+        declared_roles = (prefab.get("roles") or {}) or {}
+        bound = {b.get("role"): b for b in (inst.get("bindings") or []) if b.get("role")}
+
+        for role_name, role_decl in declared_roles.items():
+            kind = (role_decl or {}).get("kind", "part")
+            if role_name not in bound:
+                errors.append(f"{ctx}: missing role binding '{role_name}' (kind={kind}).")
+                continue
+            binding = bound[role_name]
+            if kind == "part_list":
+                ids = binding.get("partIds") or []
+                expected = role_decl.get("count")
+                if expected is not None and len(ids) != expected:
+                    errors.append(f"{ctx}: role '{role_name}' expects {expected} entries, got {len(ids)}.")
+                if not isinstance(ids, list):
+                    errors.append(f"{ctx}: role '{role_name}' (part_list) has non-list binding.")
+            else:
+                if not binding.get("partId"):
+                    errors.append(f"{ctx}: role '{role_name}' (part) has empty partId binding.")
+
+        extras = set(bound.keys()) - set(declared_roles.keys())
+        for extra in sorted(extras):
+            warnings.append(f"{ctx}: binding for role '{extra}' has no matching role: declaration in '{prefab_id}.yaml'.")
+
+        # Overrides
+        step_suffixes = set()
+        for st in (prefab.get("steps") or []):
+            sfx = (st or {}).get("id_suffix")
+            if sfx:
+                step_suffixes.add(sfx)
+        for ov in (inst.get("overrides") or []):
+            path = (ov or {}).get("path")
+            if not path:
+                warnings.append(f"{ctx}: override entry has empty path.")
+                continue
+            if path.startswith("step:"):
+                rest = path[len("step:"):]
+                dot  = rest.find(".")
+                suffix = rest if dot < 0 else rest[:dot]
+                if suffix not in step_suffixes:
+                    errors.append(
+                        f"{ctx}: override path '{path}' targets step '{suffix}' "
+                        f"but the prefab defines no step with that id_suffix.")
+            elif path.startswith("part:") or path.startswith("partGroup:") or path.startswith("partGroup."):
+                warnings.append(f"{ctx}: override path '{path}' uses a prefix not yet supported by the expander (steps only as of Slice 3a).")
+            else:
+                warnings.append(f"{ctx}: override path '{path}' has no recognised entity prefix (expected 'step:').")
+
+    return errors, warnings
+
+
 def run(package_id, fix_seqindex_flag=False):
     package_dir = os.path.join(BASE_DIR, package_id)
     if not os.path.isdir(package_dir):
         print(f"ERROR: package not found: {package_dir}")
         sys.exit(1)
 
-    parts, targets, steps, subassemblies, preview_driven = load_package(package_dir)
+    parts, targets, steps, part_groups, preview_driven, prefab_instances = load_package(package_dir)
 
     all_part_ids = {p["id"] for p in parts}
     all_target_ids = {t["id"] for t in targets}
-    referenced_parts = collect_referenced_part_ids(steps, subassemblies, targets, preview_driven)
+    referenced_parts = collect_referenced_part_ids(steps, part_groups, targets, preview_driven)
     referenced_targets = collect_referenced_target_ids(steps)
 
     errors = []
@@ -166,7 +291,7 @@ def run(package_id, fix_seqindex_flag=False):
     # 2. Orphan parts (defined but never referenced anywhere)
     orphan_parts = all_part_ids - referenced_parts
     for pid in sorted(orphan_parts):
-        warnings.append(f"Orphan part: '{pid}' defined but not referenced in steps, subassemblies, targets, or previewConfig")
+        warnings.append(f"Orphan part: '{pid}' defined but not referenced in steps, partGroups, targets, or previewConfig")
 
     # 3. Orphan targets
     orphan_targets = all_target_ids - referenced_targets
@@ -205,9 +330,15 @@ def run(package_id, fix_seqindex_flag=False):
                 f"{', '.join(step_ids)} — each part can only be placed once"
             )
 
+    # 8. Prefab instances — Slice 2 / 3.
+    prefab_errors, prefab_warnings = check_prefab_instances(prefab_instances)
+    errors.extend(prefab_errors)
+    warnings.extend(prefab_warnings)
+
     # Report
     print(f"\n=== {package_id} ===")
-    print(f"  Parts: {len(parts)}, Targets: {len(targets)}, Steps: {len(steps)}, Subassemblies: {len(subassemblies)}")
+    print(f"  Parts: {len(parts)}, Targets: {len(targets)}, Steps: {len(steps)}, "
+          f"PartGroups: {len(part_groups)}, PrefabInstances: {len(prefab_instances)}")
     seqs = sorted(s["sequenceIndex"] for s in steps)
     print(f"  seqIndex range: {seqs[0] if seqs else '-'} to {seqs[-1] if seqs else '-'}")
 
