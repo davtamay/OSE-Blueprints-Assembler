@@ -329,6 +329,7 @@ namespace OSE.UI.Root
             // part so off-screen "missing" parts surface as a coordinate
             // outside the camera frustum.
             int diagActive = 0, diagInactive = 0;
+            int diagWithRenderers = 0, diagNoRenderers = 0, diagRenderersDisabled = 0;
             string firstActiveSample = null;
             foreach (var go in _spawnedParts)
             {
@@ -336,13 +337,30 @@ namespace OSE.UI.Root
                 if (go.activeSelf)
                 {
                     diagActive++;
+                    var renderers = go.GetComponentsInChildren<Renderer>(includeInactive: false);
+                    if (renderers.Length == 0) diagNoRenderers++;
+                    else
+                    {
+                        bool anyEnabled = false;
+                        foreach (var r in renderers) if (r.enabled) { anyEnabled = true; break; }
+                        if (anyEnabled) diagWithRenderers++;
+                        else diagRenderersDisabled++;
+                    }
                     if (firstActiveSample == null)
-                        firstActiveSample = $"{go.name} worldPos={go.transform.position} lossyScale={go.transform.lossyScale}";
+                    {
+                        var firstR = renderers.Length > 0 ? renderers[0] : null;
+                        string mat = firstR != null && firstR.sharedMaterial != null
+                            ? firstR.sharedMaterial.name : "<none>";
+                        firstActiveSample =
+                            $"{go.name} worldPos={go.transform.position} lossyScale={go.transform.lossyScale} " +
+                            $"renderers={renderers.Length} firstEnabled={(firstR != null && firstR.enabled)} firstMaterial={mat}";
+                    }
                 }
                 else diagInactive++;
             }
             OseLog.Info($"[PackagePartSpawner] Step {targetSequenceIndex} apply: " +
-                        $"active={diagActive}, inactive={diagInactive}. " +
+                        $"active={diagActive} (renderers ok={diagWithRenderers}, none={diagNoRenderers}, all-disabled={diagRenderersDisabled}), " +
+                        $"inactive={diagInactive}. " +
                         $"First active: {firstActiveSample ?? "(none)"}");
 
             if (pkg == null || targetSequenceIndex <= 0)
