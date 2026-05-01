@@ -253,7 +253,7 @@ namespace OSE.UI.Root
                     if (nm == null) continue;
                     if (nm.StartsWith("EditGhost_", System.StringComparison.Ordinal))
                     {
-                        Destroy(child.gameObject);
+                        SafeDestroy(child.gameObject);
                         continue;
                     }
                     if (!partIdSet.Contains(nm)) continue;
