@@ -803,7 +803,13 @@ namespace OSE.UI.Root
         private async Task SpawnGlbPartsAsync(CancellationToken ct)
         {
             if (_currentPackage?.parts == null || AssetSource == null)
+            {
+                OseLog.Warn($"[PackagePartSpawner] SpawnGlbPartsAsync skipped: " +
+                            $"package={(_currentPackage == null ? "null" : "ok")}, " +
+                            $"AssetSource={(AssetSource == null ? "null" : AssetSource.GetType().Name)}.");
                 return;
+            }
+            int attempted = 0, swapped = 0, failed = 0, skipped = 0;
 
             // Editor-side cache shape (Dictionary<string, GameObject>) is preserved for the
             // PartAssetLoader signature; runtime path doesn't actually use it (the AssetSource
@@ -836,11 +842,12 @@ namespace OSE.UI.Root
                     ? resolution.AssetPath
                     : EnsurePartsSubfolder(partDef.assetRef);
                 if (string.IsNullOrWhiteSpace(assetRefToLoad))
-                    continue;
+                { skipped++; continue; }
 
                 // Skip if this is already an imported model (not a primitive placeholder)
                 if (MaterialHelper.IsImportedModel(existing))
-                    continue;
+                { skipped++; continue; }
+                attempted++;
 
                 // Skip spline parts
                 PartPreviewPlacement splinePP = FindPartPlacement(partDef.id);
@@ -861,7 +868,14 @@ namespace OSE.UI.Root
                 {
                     loaded = await LoadPackageAssetAsync(assetRefToLoad, _setup.PreviewRoot, ct);
                 }
-                if (loaded == null) continue;
+                if (loaded == null)
+                {
+                    failed++;
+                    if (failed <= 5)
+                        OseLog.Warn($"[PackagePartSpawner] GLB swap failed for '{partDef.id}' (ref='{assetRefToLoad}'). " +
+                                    $"See StreamingAssetsSource warning above for the precise cause.");
+                    continue;
+                }
 
                 // Re-check cancellation immediately after the await: a navigation or package
                 // change may have fired while the GLB was loading. Destroy the freshly-loaded
@@ -898,6 +912,7 @@ namespace OSE.UI.Root
                 // Destroy placeholder, insert real model at same list index
                 SafeDestroy(existing);
                 _spawnedParts[i] = loaded;
+                swapped++;
 
                 if (!wasActive)
                     loaded.SetActive(false);
@@ -908,6 +923,17 @@ namespace OSE.UI.Root
                 // ALL GLBs have loaded — causing a pink flash during Shader Graph compilation.
                 RuntimeEventBus.Publish(new SpawnerPartSwapped(partDef.id));
             }
+
+            // One-line summary so future "where are my parts?" debugging is one
+            // filter-search away. Runs once per package change. If failed > 0 the
+            // per-part StreamingAssetsSource warnings carry the URI that broke.
+            string summary = $"[PackagePartSpawner] GLB swap summary: " +
+                             $"attempted={attempted}, swapped={swapped}, failed={failed}, skipped={skipped}, " +
+                             $"total parts in package={_currentPackage.parts.Length}.";
+            if (failed > 0)
+                OseLog.Warn(summary);
+            else
+                OseLog.Info(summary);
         }
 
         private void SpawnPackageParts()
