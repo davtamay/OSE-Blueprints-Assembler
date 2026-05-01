@@ -934,6 +934,28 @@ namespace OSE.UI.Root
                 OseLog.Warn(summary);
             else
                 OseLog.Info(summary);
+
+            // Visibility diagnostic — answers "the parts loaded but I can't see
+            // them" with one log line. Counts active GameObjects, parts whose
+            // world scale collapsed to ~0, and reports the PreviewRoot's own
+            // active/scale state so a hidden parent doesn't pretend the
+            // visibility system is misbehaving.
+            int activeCount = 0, inactiveCount = 0, zeroScaleCount = 0;
+            foreach (var go in _spawnedParts)
+            {
+                if (go == null) continue;
+                if (go.activeSelf) activeCount++;
+                else inactiveCount++;
+                Vector3 ls = go.transform.lossyScale;
+                if (ls.sqrMagnitude < 1e-8f) zeroScaleCount++;
+            }
+            Transform pr = _setup != null ? _setup.PreviewRoot : null;
+            string prInfo = pr == null
+                ? "PreviewRoot=NULL"
+                : $"PreviewRoot.activeInHierarchy={pr.gameObject.activeInHierarchy} " +
+                  $"localScale={pr.localScale} worldPos={pr.position}";
+            OseLog.Info($"[PackagePartSpawner] Visibility snapshot: " +
+                        $"active={activeCount}, inactive={inactiveCount}, zeroScale={zeroScaleCount}. {prInfo}");
         }
 
         private void SpawnPackageParts()
