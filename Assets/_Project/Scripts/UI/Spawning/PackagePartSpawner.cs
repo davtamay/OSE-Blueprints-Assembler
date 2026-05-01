@@ -321,6 +321,30 @@ namespace OSE.UI.Root
         {
             if (_spawnedParts.Count == 0) { _ghostManager?.Clear(); return; }
 
+            // Per-step visibility diagnostic — runs every step navigation so
+            // we can see the active count grow / shrink as the user moves
+            // through the assembly. If active stays flat at the same number
+            // across many steps the visibility-update chain isn't propagating
+            // in this build. Logs the world position of the first active
+            // part so off-screen "missing" parts surface as a coordinate
+            // outside the camera frustum.
+            int diagActive = 0, diagInactive = 0;
+            string firstActiveSample = null;
+            foreach (var go in _spawnedParts)
+            {
+                if (go == null) continue;
+                if (go.activeSelf)
+                {
+                    diagActive++;
+                    if (firstActiveSample == null)
+                        firstActiveSample = $"{go.name} worldPos={go.transform.position} lossyScale={go.transform.lossyScale}";
+                }
+                else diagInactive++;
+            }
+            OseLog.Info($"[PackagePartSpawner] Step {targetSequenceIndex} apply: " +
+                        $"active={diagActive}, inactive={diagInactive}. " +
+                        $"First active: {firstActiveSample ?? "(none)"}");
+
             if (pkg == null || targetSequenceIndex <= 0)
             {
                 // All Steps mode — restore all parts to startPosition and make visible
