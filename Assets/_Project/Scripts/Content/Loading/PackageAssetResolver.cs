@@ -84,6 +84,23 @@ namespace OSE.Content.Loading
             PartDefinition[] parts,
             string partsSubfolder = "assets/parts")
         {
+            BuildCatalog(packageId, parts, manifest: null, partsSubfolder);
+        }
+
+        /// <summary>
+        /// Manifest-driven catalog build. When <paramref name="manifest"/> is non-null
+        /// and populated, file enumeration and node-name discovery come from the manifest
+        /// instead of <see cref="Directory.GetFiles"/> + <see cref="InspectGlbNodes"/>.
+        /// This is the runtime path — WebGL's StreamingAssets is HTTP-served and cannot
+        /// be enumerated as a filesystem.
+        /// Editor callers that pass <c>null</c> get the legacy live-scan behavior.
+        /// </summary>
+        public void BuildCatalog(
+            string packageId,
+            PartDefinition[] parts,
+            AssetManifestDefinition manifest,
+            string partsSubfolder = "assets/parts")
+        {
             _catalog.Clear();
             _unresolvedParts.Clear();
             if (parts == null || parts.Length == 0) return;
@@ -101,30 +118,95 @@ namespace OSE.Content.Loading
 
             if (required.Count == 0) return;
 
-            string partsDir = GetPartsDirectory(packageId, partsSubfolder);
-            if (string.IsNullOrEmpty(partsDir) || !Directory.Exists(partsDir))
-            {
-                foreach (string id in required)
-                    _unresolvedParts.Add(id);
-                return;
-            }
-
-            // Gather all GLB/glTF files and build lookup tables
+            // Build (filename → absolute-path-or-virtual-key) and per-file node-name lookups.
+            // Manifest path: paths are virtual keys ("filename"); Pass 2 reads node names
+            // from the manifest dictionary, never opens a file.
+            // Live-scan path: paths are absolute, Pass 2 calls InspectGlbNodes per file.
             var glbFiles = new List<string>();
             var stemToFile = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var nameToFile = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach (string file in Directory.GetFiles(partsDir))
-            {
-                string ext = Path.GetExtension(file);
-                if (!ext.Equals(".glb", StringComparison.OrdinalIgnoreCase) &&
-                    !ext.Equals(".gltf", StringComparison.OrdinalIgnoreCase))
-                    continue;
+            Dictionary<string, List<string>> manifestNodes = null;
 
-                glbFiles.Add(file);
-                nameToFile[Path.GetFileName(file)] = file;
-                string stem = NormalizeToPartId(Path.GetFileNameWithoutExtension(file));
-                if (!stemToFile.ContainsKey(stem))
-                    stemToFile[stem] = file;
+            // Editor: ALWAYS use live AssetDatabase scan — it's ground truth, and an
+            // older or hand-curated assetManifest in authoring/machine.json may be stale
+            // or partial. Players have no filesystem enumeration, so manifest is the only
+            // source of truth there.
+#if UNITY_EDITOR
+            bool useManifest = false;
+#else
+            bool useManifest = manifest != null
+                               && manifest.modelRefs != null
+                               && manifest.modelRefs.Length > 0;
+#endif
+
+            if (useManifest)
+            {
+                manifestNodes = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+                foreach (string raw in manifest.modelRefs)
+                {
+                    if (string.IsNullOrWhiteSpace(raw)) continue;
+                    string filename = Path.GetFileName(raw);
+                    if (string.IsNullOrEmpty(filename)) continue;
+                    if (nameToFile.ContainsKey(filename)) continue;
+
+                    string ext = Path.GetExtension(filename);
+                    if (!ext.Equals(".glb", StringComparison.OrdinalIgnoreCase) &&
+                        !ext.Equals(".gltf", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    // Store the full relative ref (e.g. "assets/parts/foo.glb")
+                    // as the virtualKey. The runtime asset source composes the
+                    // fetch URL as `streamingAssetsPath/<pkg>/<virtualKey>`, so
+                    // a bare filename would point at the package root instead
+                    // of the actual file location. Keying nameToFile + stemToFile
+                    // on filename / stem (not raw) preserves the existing lookup
+                    // semantics — callers that ask "give me foo.glb" still hit
+                    // the right entry, but get back the path-aware virtualKey.
+                    string virtualKey = raw;
+                    glbFiles.Add(virtualKey);
+                    nameToFile[filename] = virtualKey;
+                    string stem = NormalizeToPartId(Path.GetFileNameWithoutExtension(filename));
+                    if (!stemToFile.ContainsKey(stem))
+                        stemToFile[stem] = virtualKey;
+                }
+
+                if (manifest.nodes != null)
+                {
+                    foreach (var entry in manifest.nodes)
+                    {
+                        if (entry == null || string.IsNullOrWhiteSpace(entry.file) || entry.nodeNames == null)
+                            continue;
+                        string filename = Path.GetFileName(entry.file);
+                        var list = new List<string>(entry.nodeNames.Length);
+                        foreach (string n in entry.nodeNames)
+                            if (!string.IsNullOrWhiteSpace(n)) list.Add(n);
+                        manifestNodes[filename] = list;
+                    }
+                }
+            }
+            else
+            {
+                string partsDir = GetPartsDirectory(packageId, partsSubfolder);
+                if (string.IsNullOrEmpty(partsDir) || !Directory.Exists(partsDir))
+                {
+                    foreach (string id in required)
+                        _unresolvedParts.Add(id);
+                    return;
+                }
+
+                foreach (string file in Directory.GetFiles(partsDir))
+                {
+                    string ext = Path.GetExtension(file);
+                    if (!ext.Equals(".glb", StringComparison.OrdinalIgnoreCase) &&
+                        !ext.Equals(".gltf", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    glbFiles.Add(file);
+                    nameToFile[Path.GetFileName(file)] = file;
+                    string stem = NormalizeToPartId(Path.GetFileNameWithoutExtension(file));
+                    if (!stemToFile.ContainsKey(stem))
+                        stemToFile[stem] = file;
+                }
             }
 
             // Track files claimed by Pass 0/1 — these are known individual meshes
@@ -176,10 +258,23 @@ namespace OSE.Content.Loading
                     if (stillNeeded.Count == 0) break;
                     if (individualFiles.Contains(filePath)) continue;
 
-                    List<string> nodeNames = InspectGlbNodes(filePath);
-                    if (nodeNames == null || nodeNames.Count == 0) continue;
+                    string filename = Path.GetFileName(filePath);
 
-                    string relPath = partsSubfolder + "/" + Path.GetFileName(filePath);
+                    List<string> nodeNames;
+                    if (manifestNodes != null)
+                    {
+                        // Manifest path: O(1) lookup, no file I/O.
+                        if (!manifestNodes.TryGetValue(filename, out nodeNames) || nodeNames == null)
+                            continue;
+                    }
+                    else
+                    {
+                        // Live editor scan: open the GLB and walk the transform hierarchy.
+                        nodeNames = InspectGlbNodes(filePath);
+                        if (nodeNames == null || nodeNames.Count == 0) continue;
+                    }
+
+                    string relPath = partsSubfolder + "/" + filename;
 
                     foreach (string nodeName in nodeNames)
                     {
