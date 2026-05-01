@@ -234,19 +234,10 @@ namespace OSE.Core
                 if (tintMat == null) return;
 
                 SetBaseColor(tintMat, color);
-                // The previous version enabled _EMISSION here. URP's WebGL
-                // build-time shader stripping drops emission variants when
-                // no scene material uses them — runtime-created materials
-                // with EnableKeyword("_EMISSION") then end up referencing a
-                // stripped variant and silently render nothing in the build
-                // (Renderer.isVisible=false even though bounds + layer +
-                // frustum all check out). Without the keyword the material
-                // uses URP/Lit's base lit pass which is always retained.
-                // Editor / native builds are unaffected because variant
-                // stripping is far less aggressive there.
                 if (tintMat.HasProperty("_EmissionColor"))
                 {
                     tintMat.SetColor("_EmissionColor", color * 0.15f);
+                    tintMat.EnableKeyword("_EMISSION");
                 }
 
                 AddTintToCache(key, tintMat);
