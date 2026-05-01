@@ -23,6 +23,15 @@ namespace OSE.Content.Loading
             new Dictionary<string, GameObject>(StringComparer.OrdinalIgnoreCase);
         private GameObject _combinedCacheHolder;
 
+        // Retained GltfImport instances. Calling gltf.Dispose() immediately
+        // after InstantiateMainSceneAsync destroys the Mesh asset objects
+        // that the freshly-instantiated MeshFilters reference — leaving
+        // every part GameObject with a "Missing (Mesh)" filter and no
+        // draw call submission. Hold the imports alive for the lifetime
+        // of the spawned GameObjects (cleared on package change via
+        // ClearCombinedCache) so the meshes survive.
+        private readonly List<GltfImport> _retainedImports = new List<GltfImport>();
+
         public async Task<GameObject> LoadAsync(
             string packageId,
             string assetRef,
@@ -45,15 +54,19 @@ namespace OSE.Content.Loading
             wrapper.transform.SetParent(parent, false);
 
             bool instantiated = await gltf.InstantiateMainSceneAsync(wrapper.transform);
-            gltf.Dispose();
 
             if (!instantiated)
             {
+                gltf.Dispose();
                 UnityEngine.Object.Destroy(wrapper);
                 OseLog.Warn($"[StreamingAssetsSource] InstantiateMainScene failed for '{assetRef}'.");
                 return null;
             }
 
+            // Retain (do NOT Dispose). Disposing here destroys the Mesh
+            // assets the new MeshFilters point at — see _retainedImports
+            // comment above. Disposed in bulk on ClearCombinedCache.
+            _retainedImports.Add(gltf);
             return wrapper;
         }
 
@@ -114,6 +127,14 @@ namespace OSE.Content.Loading
                 UnityEngine.Object.Destroy(_combinedCacheHolder);
                 _combinedCacheHolder = null;
             }
+            // Now safe to Dispose the imports — the GameObjects that
+            // referenced their Meshes are about to be replaced by the new
+            // package's spawn pass. (If a caller clears the cache while
+            // GameObjects are still using these meshes, those GameObjects
+            // become Missing(Mesh) again — that's the intended contract.)
+            for (int i = 0; i < _retainedImports.Count; i++)
+                _retainedImports[i]?.Dispose();
+            _retainedImports.Clear();
         }
 
         private static Transform FindNodeRecursive(Transform t, string name)
