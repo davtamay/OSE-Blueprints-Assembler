@@ -53,7 +53,10 @@ def run(pkg):
     pkg_data = json.load(open(sa_machine, encoding='utf-8'))
     manifest = pkg_data.get('assetManifest', {}) or {}
     manifest_refs = set((manifest.get('modelRefs') or []))
-    manifest_lower = {m.lower() for m in manifest_refs}
+    # As of fix 98da103 the manifest stores full relative paths
+    # ("assets/parts/foo.glb"). Compare against filenames so a part's
+    # bare-filename assetRef ("foo.glb") isn't flagged as missing.
+    manifest_lower = {os.path.basename(m).lower() for m in manifest_refs}
     sa_part_lower  = {g.lower() for g in sa_part_glbs}
     sa_tool_lower  = {g.lower() for g in sa_tool_glbs}
 
