@@ -473,7 +473,20 @@ namespace OSE.UI.Root
                 {
                     partGo.SetActive(true);
                     partGo.transform.SetLocalPositionAndRotation(rpos, rrot);
-                    partGo.transform.localScale = rscl;
+                    // Missing-asset fallback: parts that fell back to the
+                    // primitive cube because no GLB was resolved get clamped
+                    // to a small marker scale + tinted, so they don't write
+                    // their authored (1, 1, 1) onto a 1m Unity primitive
+                    // and obscure the entire scene. See NoAssetMarker.cs.
+                    if (partGo.GetComponent<NoAssetMarker>() != null)
+                    {
+                        partGo.transform.localScale = Vector3.one * NoAssetMarker.MarkerScale;
+                        MaterialHelper.ApplyTint(partGo, NoAssetMarker.MarkerTint);
+                    }
+                    else
+                    {
+                        partGo.transform.localScale = rscl;
+                    }
                 }
 
                 if (!Application.isPlaying)
@@ -630,6 +643,19 @@ namespace OSE.UI.Root
             => _assetLoader.TryLoadCombinedNode(assetRef, nodeName, cache);
 
         /// <summary>
+        /// Async version of <see cref="TryLoadCombinedGlbNode"/>. Required for runtime/WebGL
+        /// where there is no AssetDatabase — delegates to <see cref="IAssetSource"/> which
+        /// streams the GLB via glTFast and clones the requested node from a session cache.
+        /// </summary>
+        private Task<GameObject> LoadCombinedGlbNodeAsync(
+            string assetRef,
+            string nodeName,
+            Dictionary<string, GameObject> cache,
+            Transform parent,
+            CancellationToken ct)
+            => _assetLoader.LoadCombinedNodeAsync(assetRef, nodeName, cache, parent, ct);
+
+        /// <summary>
         /// Guarantees a bare filename (e.g. "foo.glb") is returned as a proper
         /// package-relative path ("assets/parts/foo.glb") so that
         /// <see cref="StreamingAssetsSource"/> builds the correct URI at runtime.
@@ -690,7 +716,7 @@ namespace OSE.UI.Root
                         glbParts = System.Array.FindAll(package.parts, p => !splineIds.Contains(p.id));
                 }
 
-                _resolver.BuildCatalog(package.packageId, glbParts);
+                _resolver.BuildCatalog(package.packageId, glbParts, package.assetManifest);
                 if (_resolver.HasUnresolved)
                     _resolver.LogUnresolved(package.packageId);
                 OseLog.Info($"[PackagePartSpawner] Asset catalog: {_resolver.ResolvedCount} resolved, " +
@@ -779,6 +805,11 @@ namespace OSE.UI.Root
             if (_currentPackage?.parts == null || AssetSource == null)
                 return;
 
+            // Editor-side cache shape (Dictionary<string, GameObject>) is preserved for the
+            // PartAssetLoader signature; runtime path doesn't actually use it (the AssetSource
+            // owns its own combined-GLB cache keyed by packageId+assetRef).
+            var combinedNodeCacheRuntime = new Dictionary<string, GameObject>(System.StringComparer.OrdinalIgnoreCase);
+
             for (int i = 0; i < _spawnedParts.Count; i++)
             {
                 if (ct.IsCancellationRequested) return;
@@ -816,8 +847,20 @@ namespace OSE.UI.Root
                 if (SplinePartFactory.HasSplineData(splinePP))
                     continue;
 
-                // TODO: combined GLB node extraction at runtime (currently only individual GLBs)
-                GameObject loaded = await LoadPackageAssetAsync(assetRefToLoad, _setup.PreviewRoot, ct);
+                // Branch on combined-GLB vs individual: combined parts live as named child
+                // nodes inside a multi-part GLB (e.g. all 24 frame bars in frame_approved.glb).
+                // The combined path streams the file once per session via the AssetSource cache
+                // and clones the requested node — see StreamingAssetsSource.LoadCombinedNodeAsync.
+                GameObject loaded;
+                if (resolution.IsResolved && resolution.IsNodeInCombined)
+                {
+                    loaded = await LoadCombinedGlbNodeAsync(
+                        assetRefToLoad, resolution.NodeName, combinedNodeCacheRuntime, _setup.PreviewRoot, ct);
+                }
+                else
+                {
+                    loaded = await LoadPackageAssetAsync(assetRefToLoad, _setup.PreviewRoot, ct);
+                }
                 if (loaded == null) continue;
 
                 // Re-check cancellation immediately after the await: a navigation or package
@@ -917,9 +960,13 @@ namespace OSE.UI.Root
                 string assetRefToLoad = resolution.IsResolved ? resolution.AssetPath : part.assetRef;
                 GameObject go = null;
 
+#if UNITY_EDITOR
+                // Editor-only sync path: AssetDatabase resolves immediately so we can
+                // skip the placeholder-then-replace dance. In builds these calls always
+                // return null and emit a warning — the async pass below replaces the
+                // primitive placeholder with the real GLB / combined-GLB node.
                 if (resolution.IsResolved && resolution.IsNodeInCombined)
                 {
-                    // Combined GLB — extract the specific child node
                     go = TryLoadCombinedGlbNode(assetRefToLoad, resolution.NodeName, combinedGlbCache);
                 }
 
@@ -934,7 +981,27 @@ namespace OSE.UI.Root
                     MaterialHelper.MarkAsImported(go);
                 }
                 else
+                {
                     go = GetOrCreatePrimitive(part.id, PrimitiveType.Cube);
+                    // Editor-side missing-asset fallback: tag the cube so the
+                    // placement pass clamps its scale + tints it as a marker.
+                    // See NoAssetMarker.cs for rationale.
+                    if (string.IsNullOrEmpty(part.assetRef) && !resolution.IsResolved
+                        && go.GetComponent<NoAssetMarker>() == null)
+                        go.AddComponent<NoAssetMarker>();
+                }
+#else
+                // Runtime: always start as a primitive placeholder. SpawnGlbPartsAsync
+                // streams the real model and swaps it in. No sync loader exists outside
+                // the editor — AssetDatabase doesn't ship in the player. Parts that
+                // ship with no assetRef AND aren't in the resolver's catalog will
+                // never get a real mesh, so tag the placeholder as a marker so the
+                // placement pass doesn't write the authored 1m scale onto it.
+                go = GetOrCreatePrimitive(part.id, PrimitiveType.Cube);
+                if (string.IsNullOrEmpty(part.assetRef) && !resolution.IsResolved
+                    && go.GetComponent<NoAssetMarker>() == null)
+                    go.AddComponent<NoAssetMarker>();
+#endif
                 go.name = part.id;
                 if (enableRuntimeGrab)
                     TryEnableXRGrabInteractable(go, part.grabConfig);
