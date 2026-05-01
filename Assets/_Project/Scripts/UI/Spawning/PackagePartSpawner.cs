@@ -356,18 +356,36 @@ namespace OSE.UI.Root
                         int layer = go.layer;
                         string layerName = LayerMask.LayerToName(layer);
 
-                        // Survey every active Camera in the scene + its culling
-                        // mask to surface "no camera renders this layer" issues
-                        // — the most common reason a renderer reports
-                        // isVisible=false despite being inside a camera's frustum.
+                        // Layer / culling mask check + per-camera frustum test.
+                        // Renderer.isVisible reports the OR across all cameras
+                        // — so even with one camera the test reduces to "is
+                        // the renderer's bounds inside that camera's frustum
+                        // and on a culled-in layer". GeometryUtility.TestPlanesAABB
+                        // gives us per-camera answers.
                         var cams = Camera.allCameras;
                         var camSummaries = new System.Text.StringBuilder();
                         foreach (var c in cams)
                         {
                             if (c == null) continue;
                             bool layerIncluded = (c.cullingMask & (1 << layer)) != 0;
+                            // Distance from camera + which side of forward
+                            // axis the part falls on. If forwardDot < 0 the
+                            // part is BEHIND the camera.
+                            Vector3 camPos = c.transform.position;
+                            Vector3 toPart = (go.transform.position - camPos);
+                            float dist = toPart.magnitude;
+                            float forwardDot = Vector3.Dot(c.transform.forward, toPart.normalized);
+                            // Frustum test on the renderer's AABB
+                            bool inFrustum = false;
+                            if (firstR != null)
+                            {
+                                var planes = GeometryUtility.CalculateFrustumPlanes(c);
+                                inFrustum = GeometryUtility.TestPlanesAABB(planes, firstR.bounds);
+                            }
                             if (camSummaries.Length > 0) camSummaries.Append("; ");
-                            camSummaries.Append($"{c.name}(mask=0x{c.cullingMask:X},includesLayer={layerIncluded})");
+                            camSummaries.Append(
+                                $"{c.name}(camPos={camPos},camFwd={c.transform.forward},dist={dist:F2},fwdDot={forwardDot:F2}," +
+                                $"layerOk={layerIncluded},inFrustum={inFrustum})");
                         }
                         firstActiveSample =
                             $"{go.name} layer={layer}({layerName}) worldPos={go.transform.position} " +
