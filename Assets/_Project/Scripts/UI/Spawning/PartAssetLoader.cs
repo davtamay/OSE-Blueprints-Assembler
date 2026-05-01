@@ -54,8 +54,12 @@ namespace OSE.UI.Root
             Transform target = parent != null ? parent : _getPreviewRoot();
 
 #if UNITY_EDITOR
-            return TryLoad(assetRef);
-#else
+            // Editor EDIT mode (TTAW preview): synchronous AssetDatabase
+            // path. Editor PLAY mode falls through to the async runtime
+            // path so it matches the build's behaviour.
+            if (!Application.isPlaying)
+                return TryLoad(assetRef);
+#endif
             if (AssetSource == null)
             {
                 OseLog.Warn("[PartAssetLoader] AssetSource is null — cannot load asset at runtime.");
@@ -70,7 +74,6 @@ namespace OSE.UI.Root
             if (go != null)
                 PackagePartSpawner.EnsureColliders(go);
             return go;
-#endif
         }
 
         /// <summary>
@@ -135,6 +138,45 @@ namespace OSE.UI.Root
             OseLog.Warn("[PartAssetLoader] TryLoad called in a build — use LoadAsync instead.");
             return null;
 #endif
+        }
+
+        /// <summary>
+        /// Async version of <see cref="TryLoadCombinedNode"/>. In the Editor delegates
+        /// to the synchronous AssetDatabase path; at runtime delegates to
+        /// <see cref="IAssetSource.LoadCombinedNodeAsync"/> which streams the GLB via glTFast
+        /// and clones the requested subtree from a per-session cache.
+        /// </summary>
+        public async Task<GameObject> LoadCombinedNodeAsync(
+            string assetRef,
+            string nodeName,
+            Dictionary<string, GameObject> cache,
+            Transform parent,
+            CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(assetRef) || string.IsNullOrWhiteSpace(nodeName))
+                return null;
+
+#if UNITY_EDITOR
+            // Editor EDIT mode (TTAW): sync AssetDatabase path.
+            // Editor PLAY mode + builds: async runtime path below.
+            if (!Application.isPlaying)
+                return TryLoadCombinedNode(assetRef, nodeName, cache);
+#endif
+            if (AssetSource == null)
+            {
+                OseLog.Warn("[PartAssetLoader] AssetSource is null — cannot load combined-GLB node at runtime.");
+                return null;
+            }
+
+            string packageId = _getPackageId();
+            if (string.IsNullOrWhiteSpace(packageId))
+                return null;
+
+            Transform target = parent != null ? parent : _getPreviewRoot();
+            GameObject go = await AssetSource.LoadCombinedNodeAsync(packageId, assetRef, nodeName, target, ct);
+            if (go != null)
+                PackagePartSpawner.EnsureColliders(go);
+            return go;
         }
 
         /// <summary>

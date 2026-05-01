@@ -157,9 +157,14 @@ namespace OSE.UI.Root
             _assetLoader = new PartAssetLoader(
                 () => _currentPackage?.packageId,
                 () => _setup?.PreviewRoot);
-#if !UNITY_EDITOR
+            // Always set the runtime asset source. Used by:
+            //   - WebGL / standalone builds (no editor)
+            //   - Editor PLAY mode (so editor PLAY and build run the same
+            //     code path — bugs in the runtime loader reproduce locally
+            //     instead of "works in editor, breaks in build")
+            // Editor EDIT mode (TTAW preview) falls through to the sync
+            // AssetDatabase path; the runtime source is just unused there.
             _assetLoader.AssetSource = new StreamingAssetsSource();
-#endif
             _ghostManager = new EditModeGhostManager(
                 _spawnedParts,
                 () => _setup?.PreviewRoot,
@@ -814,12 +819,21 @@ namespace OSE.UI.Root
                 return;
 
 #if UNITY_EDITOR
-            SpawnPackageParts();
-            PositionParts();
-            // Immediately apply step-aware positions so the editor preview
-            // matches play-mode layout from the moment parts spawn.
-            if (!Application.isPlaying)
+            if (Application.isPlaying)
             {
+                // Editor PLAY uses the same async runtime path as the build,
+                // so glTFast loads bytes from StreamingAssets the same way
+                // it will in WebGL. Bugs in that path reproduce locally.
+                _ = SpawnPackagePartsAsync(_spawnCts.Token);
+            }
+            else
+            {
+                // Editor EDIT mode (TTAW preview): sync AssetDatabase path.
+                // Async coroutines don't drive reliably in edit mode, and
+                // TTAW benefits from immediate Prefab availability (with
+                // proper imported materials + bounds from .meta settings).
+                SpawnPackageParts();
+                PositionParts();
                 var driver = FindAnyObjectByType<EditModePreviewDriver>();
                 if (driver != null)
                 {
@@ -828,17 +842,10 @@ namespace OSE.UI.Root
                     if (stepSeq > 0 && pkg != null)
                         ApplyStepAwarePositions(stepSeq, pkg);
                 }
+                if (_currentPackage != null)
+                    EnsurePartGroupRoots(_currentPackage, step: null);
+                RuntimeEventBus.Publish(new SpawnerPartsReady());
             }
-            // Eagerly create Group_* roots so the partGroup hierarchy is
-            // in place before any external subscriber reacts to
-            // SpawnerPartsReady. See the detailed comment in the async path
-            // below (same rationale applies in editor-Play mode — the sync
-            // editor path used to skip this and the first play-press after
-            // a script recompile would show no carriages until the user
-            // stopped and played again).
-            if (_currentPackage != null)
-                EnsurePartGroupRoots(_currentPackage, step: null);
-            RuntimeEventBus.Publish(new SpawnerPartsReady());
 #else
             _ = SpawnPackagePartsAsync(_spawnCts.Token);
 #endif
@@ -1117,47 +1124,50 @@ namespace OSE.UI.Root
                 GameObject go = null;
 
 #if UNITY_EDITOR
-                // Editor-only sync path: AssetDatabase resolves immediately so we can
-                // skip the placeholder-then-replace dance. In builds these calls always
-                // return null and emit a warning — the async pass below replaces the
-                // primitive placeholder with the real GLB / combined-GLB node.
-                if (resolution.IsResolved && resolution.IsNodeInCombined)
+                // Editor EDIT-mode (TTAW) sync path: AssetDatabase resolves
+                // immediately so the editor preview gets real GLBs without
+                // the placeholder-then-replace dance. **Editor PLAY mode
+                // skips this branch** — same as builds — so editor PLAY
+                // and the build run the same async glTFast path.
+                if (!Application.isPlaying)
                 {
-                    go = TryLoadCombinedGlbNode(assetRefToLoad, resolution.NodeName, combinedGlbCache);
-                }
+                    if (resolution.IsResolved && resolution.IsNodeInCombined)
+                    {
+                        go = TryLoadCombinedGlbNode(assetRefToLoad, resolution.NodeName, combinedGlbCache);
+                    }
 
-                if (go == null && !string.IsNullOrWhiteSpace(assetRefToLoad))
-                {
-                    go = TryLoadPackageAsset(assetRefToLoad);
-                }
+                    if (go == null && !string.IsNullOrWhiteSpace(assetRefToLoad))
+                    {
+                        go = TryLoadPackageAsset(assetRefToLoad);
+                    }
 
-                if (go != null)
-                {
-                    MaterialHelper.EnsureFallbackMaterialForImported(go, FallbackPartColor);
-                    MaterialHelper.MarkAsImported(go);
+                    if (go != null)
+                    {
+                        MaterialHelper.EnsureFallbackMaterialForImported(go, FallbackPartColor);
+                        MaterialHelper.MarkAsImported(go);
+                    }
+                    else
+                    {
+                        go = GetOrCreatePrimitive(part.id, PrimitiveType.Cube);
+                        if (string.IsNullOrEmpty(part.assetRef) && !resolution.IsResolved
+                            && go.GetComponent<NoAssetMarker>() == null)
+                            go.AddComponent<NoAssetMarker>();
+                    }
                 }
-                else
+#endif
+                if (go == null)
                 {
+                    // Editor PLAY mode + builds: start every part as a primitive
+                    // placeholder. SpawnGlbPartsAsync streams the real model and
+                    // swaps it in. Parts that ship with no assetRef AND aren't
+                    // in the resolver's catalog never get a real mesh, so tag
+                    // the placeholder as a marker so the placement pass doesn't
+                    // write the authored 1m scale onto it.
                     go = GetOrCreatePrimitive(part.id, PrimitiveType.Cube);
-                    // Editor-side missing-asset fallback: tag the cube so the
-                    // placement pass clamps its scale + tints it as a marker.
-                    // See NoAssetMarker.cs for rationale.
                     if (string.IsNullOrEmpty(part.assetRef) && !resolution.IsResolved
                         && go.GetComponent<NoAssetMarker>() == null)
                         go.AddComponent<NoAssetMarker>();
                 }
-#else
-                // Runtime: always start as a primitive placeholder. SpawnGlbPartsAsync
-                // streams the real model and swaps it in. No sync loader exists outside
-                // the editor — AssetDatabase doesn't ship in the player. Parts that
-                // ship with no assetRef AND aren't in the resolver's catalog will
-                // never get a real mesh, so tag the placeholder as a marker so the
-                // placement pass doesn't write the authored 1m scale onto it.
-                go = GetOrCreatePrimitive(part.id, PrimitiveType.Cube);
-                if (string.IsNullOrEmpty(part.assetRef) && !resolution.IsResolved
-                    && go.GetComponent<NoAssetMarker>() == null)
-                    go.AddComponent<NoAssetMarker>();
-#endif
                 go.name = part.id;
                 if (enableRuntimeGrab)
                     TryEnableXRGrabInteractable(go, part.grabConfig);
