@@ -351,9 +351,17 @@ namespace OSE.UI.Root
                         var firstR = renderers.Length > 0 ? renderers[0] : null;
                         string mat = firstR != null && firstR.sharedMaterial != null
                             ? firstR.sharedMaterial.name : "<none>";
+                        string shader = firstR != null && firstR.sharedMaterial != null && firstR.sharedMaterial.shader != null
+                            ? firstR.sharedMaterial.shader.name : "<none>";
+                        bool shaderSupported = firstR != null && firstR.sharedMaterial != null && firstR.sharedMaterial.shader != null
+                            && firstR.sharedMaterial.shader.isSupported;
+                        Vector3 bsize = firstR != null ? firstR.bounds.size : Vector3.zero;
+                        bool isVis = firstR != null && firstR.isVisible;
                         firstActiveSample =
                             $"{go.name} worldPos={go.transform.position} lossyScale={go.transform.lossyScale} " +
-                            $"renderers={renderers.Length} firstEnabled={(firstR != null && firstR.enabled)} firstMaterial={mat}";
+                            $"renderers={renderers.Length} firstEnabled={(firstR != null && firstR.enabled)} " +
+                            $"firstMaterial={mat} shader={shader} supported={shaderSupported} " +
+                            $"bounds.size={bsize} isVisible={isVis}";
                     }
                 }
                 else diagInactive++;
