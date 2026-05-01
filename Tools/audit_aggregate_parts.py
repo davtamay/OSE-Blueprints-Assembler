@@ -133,9 +133,21 @@ def run(package_id):
     refs = collect_references(pkg_dir, set(aggregates))
     for pid in aggregates:
         sites = refs.get(pid, [])
-        print(f"  {pid}  ({len(sites)} reference site(s))")
+        # Classify per migration safety.
+        kinds = {kind for kind, _, _ in sites}
+        binds_as_part = bool(
+            kinds & {"step.requiredPartIds", "step.optionalPartIds",
+                     "step.visualPartIds", "step.targetPartIds",
+                     "target.associatedPartId"})
+        only_membership = sites and not binds_as_part
+        verdict = (
+            "DRAGGABLE — needs a real mesh, NOT a partGroup migration"
+            if binds_as_part else
+            ("MEMBERSHIP-ONLY — safe to delete + rely on partGroup.partIds"
+             if only_membership else
+             "ORPHAN — safe to delete entirely"))
+        print(f"  {pid}  ({len(sites)} site(s) — {verdict})")
         if not sites:
-            print("    +-NO REFERENCES — safe to delete entirely.")
             continue
         # Group by (kind, fname) for a compact summary.
         by_site = defaultdict(list)
