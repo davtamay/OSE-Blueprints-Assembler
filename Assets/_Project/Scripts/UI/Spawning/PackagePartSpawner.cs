@@ -955,9 +955,6 @@ namespace OSE.UI.Root
                                     $"See StreamingAssetsSource warning above for the precise cause.");
                     continue;
                 }
-                // Mesh bounds are recomputed inside StreamingAssetsSource.LoadAsync
-                // — see the comment there. Centralized so tools + parts + ghosts
-                // all benefit from the same WebGL-glTFast empty-AABB fix.
 
                 // Re-check cancellation immediately after the await: a navigation or package
                 // change may have fired while the GLB was loading. Destroy the freshly-loaded
