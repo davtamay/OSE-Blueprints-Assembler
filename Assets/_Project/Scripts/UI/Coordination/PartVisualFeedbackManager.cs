@@ -443,7 +443,7 @@ namespace OSE.UI.Root
                 // Clear the per-renderer PropertyBlock writes from the pulse
                 // pass before re-applying the state-correct visual, otherwise
                 // the lerp's last frame would leave a permanent tint.
-                _ctx.ForEachProxyMember(_hintSourceProxy, MaterialHelper.ClearRendererPropertyBlocks);
+                _ctx.ForEachProxyMember(_hintSourceProxy, ClearRendererPropertyBlocks);
                 RestorePartVisual(_hintSourceProxy);
             }
 
