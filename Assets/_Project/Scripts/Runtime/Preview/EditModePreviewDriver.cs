@@ -1,5 +1,13 @@
-// Only compiled in the editor — no runtime overhead.
-#if UNITY_EDITOR
+// Class body always compiled so scenes that reference this component
+// deserialize correctly in WebGL / standalone builds. Editor-only
+// UnityEditor.* calls are gated inline; every entry point also early-
+// returns on Application.isPlaying so the component is inert in
+// builds even if something invokes it. Wrapping the entire file in
+// #if UNITY_EDITOR (the original shape) caused a "Read 32 bytes but
+// expected 60 bytes" deserialization error in WebGL — the scene held
+// the serialized component but the class wasn't compiled, so the
+// bootstrap chain (PackageChanged → PackagePartSpawner) never fired
+// and only ghost placeholders rendered.
 using System.Threading.Tasks;
 using OSE.App;
 using OSE.Content;
@@ -83,7 +91,9 @@ namespace OSE.Runtime.Preview
             _packageId = packageId;
             _previewStepSequenceIndex = 1;
             _editModePreviewApplied = false;
+#if UNITY_EDITOR
             UnityEditor.EditorUtility.SetDirty(this);
+#endif
             RequestEditModeRefresh();
         }
 
@@ -101,7 +111,9 @@ namespace OSE.Runtime.Preview
             {
                 _previewStepSequenceIndex = sequenceIndex;
                 _editModePreviewApplied = false;
+#if UNITY_EDITOR
                 UnityEditor.EditorUtility.SetDirty(this);
+#endif
                 TryApplyEditModePreview();
                 SessionDriver.RaiseEditModeStepChanged(_previewStepSequenceIndex);
             }
@@ -220,7 +232,9 @@ namespace OSE.Runtime.Preview
             if (ServiceRegistry.TryGet<IStepAwarePositioner>(out var positioner))
             {
                 positioner.ApplyStepAwarePositions(_previewStepSequenceIndex, _editModePackage);
+#if UNITY_EDITOR
                 UnityEditor.SceneView.RepaintAll();
+#endif
             }
         }
 
@@ -242,4 +256,3 @@ namespace OSE.Runtime.Preview
         }
     }
 }
-#endif
