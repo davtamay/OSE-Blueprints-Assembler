@@ -494,15 +494,17 @@ namespace OSE.UI.Root
                     var rends = partGo.GetComponentsInChildren<Renderer>(true);
                     string shaderName = rends.Length > 0 && rends[0].sharedMaterial != null && rends[0].sharedMaterial.shader != null
                         ? rends[0].sharedMaterial.shader.name : "<none>";
-                    OseLog.Info($"[diag.pulse] '{partId}' PULSE — state={state}, renderers={rends.Length}, firstShader='{shaderName}'");
+                    OseLog.Info($"[diag.pulse] '{partId}' PULSE-BASECOLOR — state={state}, renderers={rends.Length}, firstShader='{shaderName}'");
                 }
 
-                // Always re-apply emission each frame so that any
-                // intermediate writer (PartVisualFeedbackManager hover /
-                // state-change path, tint clear, etc.) that stomped emission
-                // gets re-pulsed the next frame. The per-frame cost is
-                // trivial — one SetEmission per open-and-pending part.
-                MaterialHelper.SetEmission(partGo, emissionColor);
+                // diag(pulse): temporarily swap SetEmission → SetMaterialColor
+                // to test whether PropertyBlock writes reach this shader at all
+                // in the WebGL build. If the part tints orange/gold, the
+                // emission property is the stuck point (Shader Graph likely
+                // doesn't declare emissiveFactor as per-instance overridable).
+                // If still nothing, PropertyBlock writes aren't reaching the
+                // glTFast PBR shader at all in the build → bigger problem.
+                MaterialHelper.SetMaterialColor(partGo, emissionColor);
             }
         }
 
