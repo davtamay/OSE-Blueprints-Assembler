@@ -458,12 +458,7 @@ namespace OSE.UI.Root
             {
                 string partId = _requiredPartIdsForStep[i];
                 GameObject partGo = _ctx.FindSpawnedPart(partId);
-                if (partGo == null)
-                {
-                    if (_diagPulseLogged.Add(partId + ":no_go"))
-                        OseLog.Info($"[diag.pulse] '{partId}' SKIP — FindSpawnedPart returned null");
-                    continue;
-                }
+                if (partGo == null) continue;
 
                 PartPlacementState state = _ctx.GetPartState(partId);
                 if (state == PartPlacementState.Selected || state == PartPlacementState.Grabbed
