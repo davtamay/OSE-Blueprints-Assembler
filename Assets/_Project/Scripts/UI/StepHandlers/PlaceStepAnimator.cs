@@ -255,7 +255,6 @@ namespace OSE.UI.Root
         public void RefreshRequiredPartIds(string stepId)
         {
             _requiredPartIdsForStep = null;
-            _diagPulseLogged.Clear();
 
             var package = _ctx.Spawner?.CurrentPackage;
             if (package == null || !package.TryGetStep(stepId, out var step))
@@ -433,17 +432,19 @@ namespace OSE.UI.Root
             }
         }
 
-        // diag(pulse): one-shot per (step, partId) so we can see in build why
-        // the orange/gold required-part pulse never lands. Cleared on Refresh.
-        private readonly System.Collections.Generic.HashSet<string> _diagPulseLogged =
-            new System.Collections.Generic.HashSet<string>();
-
         private void UpdateRequiredPartPulse()
         {
             if (_requiredPartIdsForStep == null || _requiredPartIdsForStep.Length == 0)
                 return;
 
             Color emissionColor = ColorPulseHelper.Lerp(RequiredPartEmissionA, RequiredPartEmissionB, RequiredPartPulseSpeed * Mathf.PI * 2f);
+
+            // The authored constants above are EMISSION values (additive on top
+            // of diffuse). When written via PropertyBlock to baseColorFactor
+            // (multiplier on texture), they darken the part instead of glowing.
+            // Convert to a brightening multiplier so the part keeps its natural
+            // color and pulses warm on top.
+            Color baseTint = new Color(1f + emissionColor.r, 1f + emissionColor.g, 1f + emissionColor.b, 1f);
 
             // Resolve once per frame: under cursor-gated steps, the
             // "required-and-actionable-now" set is the cursor's current span's
@@ -468,43 +469,28 @@ namespace OSE.UI.Root
                 if (state == PartPlacementState.Selected || state == PartPlacementState.Grabbed
                     || state == PartPlacementState.Inspected)
                 {
-                    if (_diagPulseLogged.Add(partId + ":busy_state"))
-                        OseLog.Info($"[diag.pulse] '{partId}' SKIP-BLACK — state={state}");
-                    MaterialHelper.SetEmission(partGo, Color.black);
+                    MaterialHelper.SetMaterialColor(partGo, Color.white);
                     continue;
                 }
 
                 if (state == PartPlacementState.PlacedVirtually || state == PartPlacementState.Completed)
-                {
-                    if (_diagPulseLogged.Add(partId + ":placed"))
-                        OseLog.Info($"[diag.pulse] '{partId}' SKIP — state={state}");
                     continue;
-                }
 
                 if (openPartIds != null && !openPartIds.Contains(TaskInstanceId.ToPartId(partId)))
                 {
-                    if (_diagPulseLogged.Add(partId + ":not_open"))
-                        OseLog.Info($"[diag.pulse] '{partId}' SKIP-BLACK — not in cursor.OpenTasks (openCount={openPartIds.Count})");
-                    MaterialHelper.SetEmission(partGo, Color.black);
+                    // Cursor is active but this part is in a later span —
+                    // not selectable right now, don't telegraph it.
+                    MaterialHelper.SetMaterialColor(partGo, Color.white);
                     continue;
                 }
 
-                if (_diagPulseLogged.Add(partId + ":pulse"))
-                {
-                    var rends = partGo.GetComponentsInChildren<Renderer>(true);
-                    string shaderName = rends.Length > 0 && rends[0].sharedMaterial != null && rends[0].sharedMaterial.shader != null
-                        ? rends[0].sharedMaterial.shader.name : "<none>";
-                    OseLog.Info($"[diag.pulse] '{partId}' PULSE-BASECOLOR — state={state}, renderers={rends.Length}, firstShader='{shaderName}'");
-                }
-
-                // diag(pulse): temporarily swap SetEmission → SetMaterialColor
-                // to test whether PropertyBlock writes reach this shader at all
-                // in the WebGL build. If the part tints orange/gold, the
-                // emission property is the stuck point (Shader Graph likely
-                // doesn't declare emissiveFactor as per-instance overridable).
-                // If still nothing, PropertyBlock writes aren't reaching the
-                // glTFast PBR shader at all in the build → bigger problem.
-                MaterialHelper.SetMaterialColor(partGo, emissionColor);
+                // Pulse via baseColorFactor PropertyBlock — works in both editor
+                // and WebGL build because every shader exposes baseColor for
+                // per-instance override. Emission via PropertyBlock was editor-
+                // only; the glTFast Shader Graph's emissiveFactor doesn't accept
+                // PropertyBlock overrides in the WebGL build even when the
+                // variant ships. baseColorFactor does. Single path, both targets.
+                MaterialHelper.SetMaterialColor(partGo, baseTint);
             }
         }
 
