@@ -255,6 +255,7 @@ namespace OSE.UI.Root
         public void RefreshRequiredPartIds(string stepId)
         {
             _requiredPartIdsForStep = null;
+            _diagPulseLogged.Clear();
 
             var package = _ctx.Spawner?.CurrentPackage;
             if (package == null || !package.TryGetStep(stepId, out var step))
@@ -432,6 +433,11 @@ namespace OSE.UI.Root
             }
         }
 
+        // diag(pulse): one-shot per (step, partId) so we can see in build why
+        // the orange/gold required-part pulse never lands. Cleared on Refresh.
+        private readonly System.Collections.Generic.HashSet<string> _diagPulseLogged =
+            new System.Collections.Generic.HashSet<string>();
+
         private void UpdateRequiredPartPulse()
         {
             if (_requiredPartIdsForStep == null || _requiredPartIdsForStep.Length == 0)
@@ -451,25 +457,44 @@ namespace OSE.UI.Root
             {
                 string partId = _requiredPartIdsForStep[i];
                 GameObject partGo = _ctx.FindSpawnedPart(partId);
-                if (partGo == null) continue;
+                if (partGo == null)
+                {
+                    if (_diagPulseLogged.Add(partId + ":no_go"))
+                        OseLog.Info($"[diag.pulse] '{partId}' SKIP — FindSpawnedPart returned null");
+                    continue;
+                }
 
                 PartPlacementState state = _ctx.GetPartState(partId);
                 if (state == PartPlacementState.Selected || state == PartPlacementState.Grabbed
                     || state == PartPlacementState.Inspected)
                 {
+                    if (_diagPulseLogged.Add(partId + ":busy_state"))
+                        OseLog.Info($"[diag.pulse] '{partId}' SKIP-BLACK — state={state}");
                     MaterialHelper.SetEmission(partGo, Color.black);
                     continue;
                 }
 
                 if (state == PartPlacementState.PlacedVirtually || state == PartPlacementState.Completed)
+                {
+                    if (_diagPulseLogged.Add(partId + ":placed"))
+                        OseLog.Info($"[diag.pulse] '{partId}' SKIP — state={state}");
                     continue;
+                }
 
                 if (openPartIds != null && !openPartIds.Contains(TaskInstanceId.ToPartId(partId)))
                 {
-                    // Cursor is active but this part is in a later span —
-                    // not selectable right now, don't telegraph it as such.
+                    if (_diagPulseLogged.Add(partId + ":not_open"))
+                        OseLog.Info($"[diag.pulse] '{partId}' SKIP-BLACK — not in cursor.OpenTasks (openCount={openPartIds.Count})");
                     MaterialHelper.SetEmission(partGo, Color.black);
                     continue;
+                }
+
+                if (_diagPulseLogged.Add(partId + ":pulse"))
+                {
+                    var rends = partGo.GetComponentsInChildren<Renderer>(true);
+                    string shaderName = rends.Length > 0 && rends[0].sharedMaterial != null && rends[0].sharedMaterial.shader != null
+                        ? rends[0].sharedMaterial.shader.name : "<none>";
+                    OseLog.Info($"[diag.pulse] '{partId}' PULSE — state={state}, renderers={rends.Length}, firstShader='{shaderName}'");
                 }
 
                 // Always re-apply emission each frame so that any

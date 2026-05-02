@@ -322,15 +322,10 @@ namespace OSE.UI.Root
             if (partGo == null)
                 return;
 
-            // Per-frame pulse: write color via MaterialPropertyBlock for both
-            // imported (GLB) and primitive parts. This mirrors the ghost pulse
-            // path (MaterialHelper.SetMaterialColor) and avoids
-            // Shader.Find("Universal Render Pipeline/Lit") which silently
-            // returns null in WebGL builds when no scene material references
-            // URP/Lit — making ApplyTint's full-slot replacement a no-op there.
-            // The PropertyBlock targets whatever shader the renderer already
-            // has (glTFast PBR for imported, URP/Lit for primitives).
-            MaterialHelper.SetMaterialColor(partGo, color);
+            if (MaterialHelper.IsImportedModel(partGo))
+                MaterialHelper.ApplyTint(partGo, color);
+            else
+                MaterialHelper.Apply(partGo, "Preview Part Material", color);
         }
 
         // ════════════════════════════════════════════════════════════════════
@@ -439,13 +434,7 @@ namespace OSE.UI.Root
             }
 
             if (_hintSourceProxy != null)
-            {
-                // Clear the per-renderer PropertyBlock writes from the pulse
-                // pass before re-applying the state-correct visual, otherwise
-                // the lerp's last frame would leave a permanent tint.
-                _ctx.ForEachProxyMember(_hintSourceProxy, ClearRendererPropertyBlocks);
                 RestorePartVisual(_hintSourceProxy);
-            }
 
             _hintPreview = null;
             _hintSourceProxy = null;
