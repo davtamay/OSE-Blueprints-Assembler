@@ -92,10 +92,67 @@ namespace OSE.UI.Bindings
                 _runtimePanelSettings = ScriptableObject.CreateInstance<PanelSettings>();
                 _runtimePanelSettings.name = "OSERuntimePanelSettings";
                 _runtimePanelSettings.sortingOrder = _sortingOrder;
+                EnsureRuntimeTextSettings(_runtimePanelSettings);
             }
 
             _document.panelSettings = _runtimePanelSettings;
             OseLog.VerboseInfo("[UI] Created runtime PanelSettings for UIDocument bootstrap.");
+        }
+
+        // Cached so we only build the FontAsset + PanelTextSettings once per
+        // domain even if multiple UIDocumentBootstrap instances exist.
+        private static UnityEngine.UIElements.PanelTextSettings s_runtimeTextSettings;
+        private static bool s_textSettingsBuildAttempted;
+
+        // Assigns a project-controlled FontAsset to the runtime PanelSettings
+        // so WebGL builds don't fall back to Unity's stripped default font
+        // (which silently misses glyphs like ▶, ⚒, ⊞ — see the parts-pulse +
+        // nav-button icon investigation).
+        //
+        // Drop a TTF at Resources/Fonts/Inter-Regular.ttf (or rename the const
+        // below). If the font isn't present we log a one-time warning and
+        // leave the default in place — UI still renders, just with the same
+        // glyph gaps as before.
+        private const string FontResourcePath = "Fonts/Inter-Regular";
+
+        private static void EnsureRuntimeTextSettings(PanelSettings panel)
+        {
+            if (panel == null) return;
+            if (panel.textSettings != null) return;
+
+            if (s_runtimeTextSettings == null && !s_textSettingsBuildAttempted)
+            {
+                s_textSettingsBuildAttempted = true;
+                s_runtimeTextSettings = BuildRuntimeTextSettings();
+            }
+
+            if (s_runtimeTextSettings != null)
+                panel.textSettings = s_runtimeTextSettings;
+        }
+
+        private static UnityEngine.UIElements.PanelTextSettings BuildRuntimeTextSettings()
+        {
+            var ttf = Resources.Load<Font>(FontResourcePath);
+            if (ttf == null)
+            {
+                OseLog.Warn($"[UI] No font at Resources/{FontResourcePath}.ttf — UIToolkit will fall back to " +
+                            "Unity's default font, which misses some symbol glyphs in WebGL builds. " +
+                            "Drop a TTF (e.g. Inter Regular) at that path to fix.");
+                return null;
+            }
+
+            var fontAsset = UnityEngine.TextCore.Text.FontAsset.CreateFontAsset(ttf);
+            if (fontAsset == null)
+            {
+                OseLog.Warn($"[UI] Failed to build FontAsset from Resources/{FontResourcePath}.ttf.");
+                return null;
+            }
+            fontAsset.name = "OSE_RuntimeFontAsset";
+
+            var settings = ScriptableObject.CreateInstance<UnityEngine.UIElements.PanelTextSettings>();
+            settings.name = "OSE_RuntimePanelTextSettings";
+            settings.defaultFontAsset = fontAsset;
+            return settings;
         }
 
         private void Update()
