@@ -40,6 +40,7 @@ namespace OSE.Content.Loading
             if (package == null) return;
             BakeHoldAtEndEndPoses(package);
             BakePoseTable(package);
+            BakePartGroupLifecycle(package);
         }
 
         public static void Normalize(MachinePackageDefinition package)
@@ -99,6 +100,15 @@ namespace OSE.Content.Loading
             BakeHoldAtEndEndPoses(package);
 
             BakePoseTable(package);
+
+            // Per-partGroup lifecycle (firstBuiltSeq, lastTouchedSeq,
+            // touchedSeqs[]). Both TTAW and the runtime parts/groups
+            // overlay query this via PartGroupLifecycleResolver to
+            // present groups as accumulating tiers (Active/Recent/Built/
+            // Hidden) instead of strict per-step filtering. Runs LAST so
+            // every derived part-id field (derivedToolActionPartIds,
+            // derivedTargetPartIds, partGroups[].partIds) is populated.
+            BakePartGroupLifecycle(package);
         }
 
         /// <summary>
@@ -996,6 +1006,54 @@ namespace OSE.Content.Loading
                         if (a == null || string.IsNullOrEmpty(a.id)) continue;
                         if (existing.Contains("toolAction:" + a.id)) continue;
                         missing.Add(new TaskOrderEntry { kind = "toolAction", id = a.id });
+                    }
+                }
+
+                // Required partGroup placement — cursor gates step completion on
+                // each member partId being placed (transitions to PlacedVirtually
+                // / Completed when the proxy lands on its target). Without this,
+                // steps that have ONLY requiredPartGroupId end up with empty
+                // taskOrder, the cursor SkipFullyOptionalSpans walks past
+                // everything, and Start() fires StepTasksComplete immediately —
+                // step 25 (step_stack_bottom_frame_side) auto-skipped before the
+                // user could interact. (Cursor has no kind="partGroup"; expanding
+                // to per-member kind="part" reuses the existing notification
+                // path in PartRuntimeController.)
+                if (!string.IsNullOrEmpty(step.requiredPartGroupId) &&
+                    package.TryGetPartGroup(step.requiredPartGroupId, out var requiredGroup) &&
+                    requiredGroup?.partIds != null)
+                {
+                    for (int gi = 0; gi < requiredGroup.partIds.Length; gi++)
+                    {
+                        string memberId = requiredGroup.partIds[gi];
+                        if (string.IsNullOrEmpty(memberId)) continue;
+                        bool covered = false;
+                        if (step.taskOrder != null)
+                        {
+                            for (int ti = 0; ti < step.taskOrder.Length && !covered; ti++)
+                            {
+                                var e = step.taskOrder[ti];
+                                if (e == null || !string.Equals(e.kind, "part", StringComparison.Ordinal)) continue;
+                                if (string.IsNullOrEmpty(e.id)) continue;
+                                if (string.Equals(TaskInstanceId.ToPartId(e.id), memberId, StringComparison.Ordinal))
+                                    covered = true;
+                            }
+                        }
+                        // Also check the missing list we just built so we don't
+                        // double-add when both requiredPartIds and partGroup
+                        // reference the same id.
+                        if (!covered)
+                        {
+                            for (int mi = 0; mi < missing.Count && !covered; mi++)
+                            {
+                                var m = missing[mi];
+                                if (m == null || !string.Equals(m.kind, "part", StringComparison.Ordinal)) continue;
+                                if (string.Equals(TaskInstanceId.ToPartId(m.id), memberId, StringComparison.Ordinal))
+                                    covered = true;
+                            }
+                        }
+                        if (!covered)
+                            missing.Add(new TaskOrderEntry { kind = "part", id = memberId });
                     }
                 }
 
@@ -1921,6 +1979,181 @@ namespace OSE.Content.Loading
             // bug in either the authored data or the resolver/index; Step 6
             // of the rewrite flips these to throw. See PoseTableInvariants.
             PoseTableInvariants.Validate(package, idx, package.poseTable);
+        }
+
+        /// <summary>
+        /// Bakes <see cref="MachinePackageDefinition.partGroupLifecycleByGroupId"/>:
+        /// for every partGroup, the set of step seqIndices where it's
+        /// "touched" (group id or any member partId referenced through the
+        /// step's structural fields, animation cues, or targets), plus
+        /// FirstBuiltSeq / LastTouchedSeq summaries.
+        ///
+        /// Both TTAW and the runtime overlay use this via
+        /// <see cref="PartGroupLifecycleResolver"/> so the per-step group
+        /// list is consistent and the per-UI filter logic stops drifting.
+        /// Idempotent — overwrites the dictionary on every call.
+        /// </summary>
+        private static void BakePartGroupLifecycle(MachinePackageDefinition package)
+        {
+            var groups = package.GetPartGroups();
+            if (groups == null || groups.Length == 0)
+            {
+                package.partGroupLifecycleByGroupId =
+                    new Dictionary<string, PartGroupLifecycle>(0);
+                return;
+            }
+
+            // Membership: partId -> set of groupIds that own it. A part can
+            // belong to multiple groups (e.g., aggregate's memberPartGroups
+            // share parts with the leaf group). Hash here is cheap and
+            // shared by every step's intersection check below.
+            var groupIdsByPartId = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+            for (int g = 0; g < groups.Length; g++)
+            {
+                var grp = groups[g];
+                if (grp == null || string.IsNullOrEmpty(grp.id) || grp.partIds == null) continue;
+                for (int p = 0; p < grp.partIds.Length; p++)
+                {
+                    var pid = grp.partIds[p];
+                    if (string.IsNullOrEmpty(pid)) continue;
+                    if (!groupIdsByPartId.TryGetValue(pid, out var list))
+                    {
+                        list = new List<string>(2);
+                        groupIdsByPartId[pid] = list;
+                    }
+                    if (!list.Contains(grp.id)) list.Add(grp.id);
+                }
+            }
+
+            // Per-group touched-seq sets. SortedSet keeps inserts O(log n)
+            // and produces ascending order for free.
+            var touchedByGroup = new Dictionary<string, SortedSet<int>>(StringComparer.Ordinal);
+            for (int g = 0; g < groups.Length; g++)
+            {
+                if (groups[g] != null && !string.IsNullOrEmpty(groups[g].id))
+                    touchedByGroup[groups[g].id] = new SortedSet<int>();
+            }
+
+            // Resolve target -> partGroupId once; used for step.targetIds
+            // touch detection. associatedPartId is captured by the partId
+            // intersection path below so we only need the explicit
+            // associatedPartGroupId here.
+            var partGroupIdByTargetId = new Dictionary<string, string>(StringComparer.Ordinal);
+            var allTargets = package.GetTargets();
+            for (int t = 0; t < allTargets.Length; t++)
+            {
+                var tgt = allTargets[t];
+                if (tgt == null || string.IsNullOrEmpty(tgt.id)) continue;
+                if (!string.IsNullOrEmpty(tgt.associatedPartGroupId))
+                    partGroupIdByTargetId[tgt.id] = tgt.associatedPartGroupId;
+            }
+
+            void Touch(string groupId, int seq)
+            {
+                if (string.IsNullOrEmpty(groupId)) return;
+                if (touchedByGroup.TryGetValue(groupId, out var set))
+                    set.Add(seq);
+            }
+
+            void TouchByPartIds(string[] partIds, int seq)
+            {
+                if (partIds == null || partIds.Length == 0) return;
+                for (int i = 0; i < partIds.Length; i++)
+                {
+                    if (string.IsNullOrEmpty(partIds[i])) continue;
+                    if (groupIdsByPartId.TryGetValue(partIds[i], out var owners))
+                    {
+                        for (int o = 0; o < owners.Count; o++)
+                            Touch(owners[o], seq);
+                    }
+                }
+            }
+
+            var steps = package.GetOrderedSteps();
+            for (int s = 0; s < steps.Length; s++)
+            {
+                var step = steps[s];
+                if (step == null) continue;
+                int seq = step.sequenceIndex;
+
+                // Direct group references on the step itself.
+                Touch(step.partGroupId, seq);
+                Touch(step.requiredPartGroupId, seq);
+
+                // Member-part intersections across every part-id field the
+                // runtime treats as "this step touches part X".
+                TouchByPartIds(step.requiredPartIds, seq);
+                TouchByPartIds(step.optionalPartIds, seq);
+                TouchByPartIds(step.visualPartIds, seq);
+                TouchByPartIds(step.derivedToolActionPartIds, seq);
+                TouchByPartIds(step.derivedTargetPartIds, seq);
+
+                // Targets associated with a partGroup directly.
+                if (step.targetIds != null)
+                {
+                    for (int t = 0; t < step.targetIds.Length; t++)
+                    {
+                        if (string.IsNullOrEmpty(step.targetIds[t])) continue;
+                        if (partGroupIdByTargetId.TryGetValue(step.targetIds[t], out var grpId))
+                            Touch(grpId, seq);
+                    }
+                }
+
+                // Animation cues — both group-targeted and part-targeted.
+                if (step.animationCues?.cues != null)
+                {
+                    var cues = step.animationCues.cues;
+                    for (int c = 0; c < cues.Length; c++)
+                    {
+                        var cue = cues[c];
+                        if (cue == null) continue;
+                        Touch(cue.targetPartGroupId, seq);
+                        TouchByPartIds(cue.targetPartIds, seq);
+                    }
+                }
+            }
+
+            // Group-authored cues with stepIds also count as touches: a cue
+            // hosted on the partGroup that fires on specific steps means
+            // those steps are operating on the group even if no part-id
+            // intersection exists. (No-stepIds cues are "always on while
+            // visible" — covered by the FirstBuiltSeq forward-fill.)
+            for (int g = 0; g < groups.Length; g++)
+            {
+                var grp = groups[g];
+                if (grp == null || string.IsNullOrEmpty(grp.id)) continue;
+                if (grp.animationCues == null) continue;
+                for (int c = 0; c < grp.animationCues.Length; c++)
+                {
+                    var cue = grp.animationCues[c];
+                    if (cue?.stepIds == null) continue;
+                    for (int si = 0; si < cue.stepIds.Length; si++)
+                    {
+                        if (package.TryGetStep(cue.stepIds[si], out var stepRef))
+                            Touch(grp.id, stepRef.sequenceIndex);
+                    }
+                }
+            }
+
+            var lifecycleByGroupId = new Dictionary<string, PartGroupLifecycle>(
+                touchedByGroup.Count, StringComparer.Ordinal);
+
+            foreach (var kvp in touchedByGroup)
+            {
+                var set = kvp.Value;
+                if (set.Count == 0) continue;
+                int[] arr = new int[set.Count];
+                set.CopyTo(arr);
+                lifecycleByGroupId[kvp.Key] = new PartGroupLifecycle
+                {
+                    GroupId = kvp.Key,
+                    FirstBuiltSeq = arr[0],
+                    LastTouchedSeq = arr[arr.Length - 1],
+                    TouchedSeqs = arr,
+                };
+            }
+
+            package.partGroupLifecycleByGroupId = lifecycleByGroupId;
         }
 
         /// <summary>
