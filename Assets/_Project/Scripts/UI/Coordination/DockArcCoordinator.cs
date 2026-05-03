@@ -1,5 +1,6 @@
 using OSE.App;
 using OSE.Content;
+using OSE.Core;
 using OSE.Interaction;
 using OSE.Runtime;
 using UnityEngine;
@@ -15,6 +16,7 @@ namespace OSE.UI.Root
     {
         private readonly IBridgeContext _ctx;
         private DockArcVisual _dockArcVisual;
+        private string _diagLastReportedStepId;
 
         public DockArcCoordinator(IBridgeContext ctx) => _ctx = ctx;
 
@@ -112,6 +114,20 @@ namespace OSE.UI.Root
                 _ctx.PartGroupController == null ||
                 !_ctx.PartGroupController.TryGetProxy(step.requiredPartGroupId, out sourceProxy))
             {
+                // diag(arc): one-shot per (stepId, reason) so we can see in build/editor
+                // which DockArc gate is dropping the visual at step 25.
+                if (step != null && string.Equals(step.id, _diagLastReportedStepId, System.StringComparison.Ordinal) == false)
+                {
+                    _diagLastReportedStepId = step.id;
+                    string reason =
+                        !step.RequiresPartGroupPlacement ? "RequiresPartGroupPlacement=false" :
+                        string.IsNullOrWhiteSpace(step.requiredPartGroupId) ? "requiredPartGroupId empty" :
+                        step.targetIds == null ? "targetIds null" :
+                        step.targetIds.Length != 1 ? $"targetIds.Length={step.targetIds.Length} (expected 1)" :
+                        _ctx.PartGroupController == null ? "PartGroupController null" :
+                        "TryGetProxy returned false (no proxy registered for partGroupId)";
+                    OseLog.Info($"[diag.arc] '{step.id}' DROP — {reason}; family={step.family}, requiredPartGroupId='{step.requiredPartGroupId}', targetIds=[{string.Join(",", step.targetIds ?? System.Array.Empty<string>())}]");
+                }
                 return false;
             }
 
