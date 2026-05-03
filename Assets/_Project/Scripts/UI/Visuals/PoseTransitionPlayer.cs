@@ -150,45 +150,62 @@ namespace OSE.UI.Root
                     //     skipping would leave them un-rotated while
                     //     siblings rotate (original "mixed pre/post pose"
                     //     symptom).
-                    var poseTable = context.Package?.poseTable;
-                    int filterSeq = context.StepSeq;
-                    int kids = 0;
-                    int filteredOut = 0;
-                    System.Text.StringBuilder kept = new System.Text.StringBuilder();
-                    System.Text.StringBuilder skipped = new System.Text.StringBuilder();
-                    for (int c = 0; c < t.childCount; c++)
+                    // Group/single-target detection: only build child baselines when
+                    // the target is an actual partGroup proxy (carries a
+                    // PartGroupPlacementProxy component). Single GLB-loaded parts
+                    // also have active children — the glTFast mesh hierarchy —
+                    // and the previous "any active child" heuristic mistook
+                    // them for groups, dropping into the rotate-children-around-
+                    // centroid path with no root translation. Result: the rod
+                    // animation at step 56 only rotated, never moved.
+                    bool isPartGroupTarget = _ctx.Targets[i].GetComponent<PartGroupPlacementProxy>() != null;
+                    if (!isPartGroupTarget)
                     {
-                        var cc = t.GetChild(c);
-                        if (cc == null || !cc.gameObject.activeInHierarchy) continue;
-                        if (poseTable != null && filterSeq >= 0
-                            && poseTable.FirstVisibleSeq(cc.name) >= filterSeq)
+                        _childBaselines[i] = System.Array.Empty<ChildBaseline>();
+                        OseLog.Info($"[PoseTransition.Filter] '{t.name}' single-part target (no PartGroupPlacementProxy) — skipping child-baseline pass.");
+                    }
+                    else
+                    {
+                        var poseTable = context.Package?.poseTable;
+                        int filterSeq = context.StepSeq;
+                        int kids = 0;
+                        int filteredOut = 0;
+                        System.Text.StringBuilder kept = new System.Text.StringBuilder();
+                        System.Text.StringBuilder skipped = new System.Text.StringBuilder();
+                        for (int c = 0; c < t.childCount; c++)
                         {
-                            filteredOut++;
-                            if (skipped.Length > 0) skipped.Append(", ");
-                            skipped.Append(cc.name);
-                            continue;
+                            var cc = t.GetChild(c);
+                            if (cc == null || !cc.gameObject.activeInHierarchy) continue;
+                            if (poseTable != null && filterSeq >= 0
+                                && poseTable.FirstVisibleSeq(cc.name) >= filterSeq)
+                            {
+                                filteredOut++;
+                                if (skipped.Length > 0) skipped.Append(", ");
+                                skipped.Append(cc.name);
+                                continue;
+                            }
+                            kids++;
+                            if (kept.Length > 0) kept.Append(", ");
+                            kept.Append(cc.name);
                         }
-                        kids++;
-                        if (kept.Length > 0) kept.Append(", ");
-                        kept.Append(cc.name);
-                    }
-                    OseLog.Info($"[PoseTransition.Filter] '{t.name}' poseTable={(poseTable != null ? "ok" : "NULL")} filterSeq={filterSeq} kept={kids}[{kept}] skipped={filteredOut}[{skipped}]");
-                    var baselines = new ChildBaseline[kids];
-                    int bi = 0;
-                    for (int c = 0; c < t.childCount; c++)
-                    {
-                        var ch = t.GetChild(c);
-                        if (ch == null || !ch.gameObject.activeInHierarchy) continue;
-                        if (poseTable != null && filterSeq >= 0
-                            && poseTable.FirstVisibleSeq(ch.name) >= filterSeq) continue;
-                        baselines[bi++] = new ChildBaseline
+                        OseLog.Info($"[PoseTransition.Filter] '{t.name}' poseTable={(poseTable != null ? "ok" : "NULL")} filterSeq={filterSeq} kept={kids}[{kept}] skipped={filteredOut}[{skipped}]");
+                        var baselines = new ChildBaseline[kids];
+                        int bi = 0;
+                        for (int c = 0; c < t.childCount; c++)
                         {
-                            t = ch,
-                            localPos = ch.localPosition,
-                            localRot = ch.localRotation,
-                        };
+                            var ch = t.GetChild(c);
+                            if (ch == null || !ch.gameObject.activeInHierarchy) continue;
+                            if (poseTable != null && filterSeq >= 0
+                                && poseTable.FirstVisibleSeq(ch.name) >= filterSeq) continue;
+                            baselines[bi++] = new ChildBaseline
+                            {
+                                t = ch,
+                                localPos = ch.localPosition,
+                                localRot = ch.localRotation,
+                            };
+                        }
+                        _childBaselines[i] = baselines;
                     }
-                    _childBaselines[i] = baselines;
 
                     t.localPosition = _fromPoses[i].Position;
                     t.localRotation = _fromPoses[i].Rotation;
