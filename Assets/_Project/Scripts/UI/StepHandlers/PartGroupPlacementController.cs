@@ -121,7 +121,12 @@ namespace OSE.UI.Root
 
             MachinePackageDefinition package = _ctx.Spawner?.CurrentPackage;
             if (package == null || !package.TryGetStep(stepId, out StepDefinition step) || step == null)
+            {
+                OseLog.Info($"[diag.partgroup] RefreshForStep('{stepId}') — step not found in package (package={(package == null ? "null" : "ok")})");
                 return;
+            }
+
+            OseLog.Info($"[diag.partgroup] RefreshForStep('{stepId}') — family={step.family}, IsPlacement={step.IsPlacement}, requiredPartGroupId='{step.requiredPartGroupId}', requiredPartIds=[{string.Join(",", step.requiredPartIds ?? System.Array.Empty<string>())}]");
 
             if (!step.IsPlacement || string.IsNullOrWhiteSpace(step.requiredPartGroupId))
                 return;
