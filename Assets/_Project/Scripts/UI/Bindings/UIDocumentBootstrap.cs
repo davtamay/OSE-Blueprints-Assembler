@@ -82,21 +82,25 @@ namespace OSE.UI.Bindings
                 _document = GetComponent<UIDocument>();
             }
 
-            if (_document == null || _document.panelSettings != null)
+            if (_document == null) return;
+
+            if (_document.panelSettings == null)
             {
-                return;
+                if (_runtimePanelSettings == null)
+                {
+                    _runtimePanelSettings = ScriptableObject.CreateInstance<PanelSettings>();
+                    _runtimePanelSettings.name = "OSERuntimePanelSettings";
+                    _runtimePanelSettings.sortingOrder = _sortingOrder;
+                }
+                _document.panelSettings = _runtimePanelSettings;
+                OseLog.VerboseInfo("[UI] Created runtime PanelSettings for UIDocument bootstrap.");
             }
 
-            if (_runtimePanelSettings == null)
-            {
-                _runtimePanelSettings = ScriptableObject.CreateInstance<PanelSettings>();
-                _runtimePanelSettings.name = "OSERuntimePanelSettings";
-                _runtimePanelSettings.sortingOrder = _sortingOrder;
-                EnsureRuntimeTextSettings(_runtimePanelSettings);
-            }
-
-            _document.panelSettings = _runtimePanelSettings;
-            OseLog.VerboseInfo("[UI] Created runtime PanelSettings for UIDocument bootstrap.");
+            // Run for whichever PanelSettings is now active — runtime-created
+            // OR pre-assigned via the scene. Previously this was inside the
+            // creation branch, so a scene-assigned PanelSettings never picked
+            // up the font and WebGL builds kept missing glyphs.
+            EnsureRuntimeTextSettings(_document.panelSettings);
         }
 
         // Cached so we only build the FontAsset + PanelTextSettings once per
