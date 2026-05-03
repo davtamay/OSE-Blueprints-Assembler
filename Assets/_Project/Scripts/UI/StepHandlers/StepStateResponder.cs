@@ -266,34 +266,15 @@ namespace OSE.UI.Root
         }
 
         /// <summary>
-        /// Returns the subset of the package's ordered steps that come
-        /// BEFORE <paramref name="activeStepId"/>. This is the definitive
-        /// "completed" set for the session at restore time, independent
-        /// of any accumulated step-count fields. When the active step
-        /// can't be resolved or isn't in the ordered list, returns an
-        /// empty array (nothing before an unknown step is "completed").
+        /// Returns every step ordered BEFORE <paramref name="activeStepId"/>.
+        /// Delegates to <see cref="CompletedStepResolver.DeriveCompletedStepsBefore"/>
+        /// so all visual-state rebuild sites share the same derivation rule —
+        /// never read the unreliable persisted CompletedStepCount.
         /// </summary>
         private StepDefinition[] DeriveCompletedStepsBeforeActive(IMachineSessionController session, string activeStepId)
         {
-            if (string.IsNullOrWhiteSpace(activeStepId)) return Array.Empty<StepDefinition>();
             MachinePackageDefinition package = _ctx.Spawner?.CurrentPackage ?? session?.Package;
-            StepDefinition[] orderedSteps = package?.GetOrderedSteps();
-            if (orderedSteps == null || orderedSteps.Length == 0) return Array.Empty<StepDefinition>();
-
-            int activeIdx = -1;
-            for (int i = 0; i < orderedSteps.Length; i++)
-            {
-                if (orderedSteps[i] != null && string.Equals(orderedSteps[i].id, activeStepId, StringComparison.Ordinal))
-                {
-                    activeIdx = i;
-                    break;
-                }
-            }
-            if (activeIdx <= 0) return Array.Empty<StepDefinition>();
-
-            StepDefinition[] result = new StepDefinition[activeIdx];
-            Array.Copy(orderedSteps, result, activeIdx);
-            return result;
+            return CompletedStepResolver.DeriveCompletedStepsBefore(package, activeStepId);
         }
 
         /// <summary>
@@ -663,6 +644,51 @@ namespace OSE.UI.Root
             _ctx.ToolAction?.RefreshToolPreviewIndicator();
             _ctx.RefreshToolActionTargets();
 
+            // diag(spawn-race): post-rebuild snapshot of partGroup membership
+            // visibility, scoped per (stepId, group root). Catches the
+            // "press Play right after compile and carriage parts are missing"
+            // race — symptom is per-Group_* root having members spawned but
+            // SetActive(false). When the race fires, the count line shows
+            // 0/N active. When healthy, shows N/N. Read-only.
+            DiagSnapshotGroupMembership(activeStepId);
+        }
+
+        // Per-(step, groupName) one-shot dedup so a single step activation
+        // doesn't spam every frame. Cleared on each new activation via the
+        // composite key — different stepId == new entry.
+        private readonly System.Collections.Generic.HashSet<string> _diagGroupSnapshotsLogged
+            = new System.Collections.Generic.HashSet<string>();
+
+        private void DiagSnapshotGroupMembership(string activeStepId)
+        {
+            if (string.IsNullOrEmpty(activeStepId)) return;
+            var spawner = _ctx.Spawner;
+            var package = spawner?.CurrentPackage;
+            if (spawner == null || package == null) return;
+
+            var preview = _ctx.Setup?.PreviewRoot;
+            if (preview == null) return;
+
+            // Walk every Group_* root under PreviewRoot and report active
+            // member count. Skip entries already logged this session for
+            // this (step, group) tuple to keep noise down.
+            foreach (Transform child in preview)
+            {
+                if (child == null || !child.name.StartsWith("Group_", System.StringComparison.Ordinal))
+                    continue;
+                string dedupKey = activeStepId + "|" + child.name;
+                if (!_diagGroupSnapshotsLogged.Add(dedupKey)) continue;
+
+                int total = child.childCount;
+                int active = 0;
+                for (int i = 0; i < child.childCount; i++)
+                {
+                    var c = child.GetChild(i);
+                    if (c != null && c.gameObject.activeSelf) active++;
+                }
+                if (total == 0 || active < total)
+                    OseLog.Info($"[diag.spawn-race] step='{activeStepId}' group='{child.name}' active={active}/{total} {(active == 0 ? "ALL HIDDEN" : (active < total ? "PARTIAL" : "ok"))}");
+            }
         }
 
         private bool TryBuildHandlerContextForStep(string stepId, out StepHandlerContext context)
@@ -727,8 +753,8 @@ namespace OSE.UI.Root
 
             if (completedSteps == null && ServiceRegistry.TryGet<IMachineSessionController>(out var session))
             {
-                int completedCount = session.SessionState != null ? session.SessionState.CompletedStepCount : 0;
-                completedSteps = GetCompletedSteps(session, completedCount);
+                completedSteps = CompletedStepResolver.DeriveCompletedStepsBefore(
+                    _ctx.Spawner?.CurrentPackage ?? session.Package, activeStepId);
             }
 
             _ctx.VisualFeedback?.ShowAllPartsAssembled();
