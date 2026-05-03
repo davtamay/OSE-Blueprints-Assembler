@@ -175,6 +175,17 @@ namespace OSE.UI.Root
             }
 
             ApplyProxyTransform(record);
+            // Re-bake the collider/cached-bounds AFTER members have been moved
+            // to follow the proxy. BuildProxyRecord ran RecalculateBoundsAnd-
+            // Collider while members were still at their assembled (destination)
+            // world positions, so the local collider center compensated all the
+            // way back to the destination. With the proxy at the source, the
+            // collider then landed at the destination — DockArcCoordinator's
+            // ResolveVisualAnchor returned that destination point as the arc
+            // start, collapsing the arc to a dot and blocking the destination's
+            // center marker. Now that members orbit the proxy, the recomputed
+            // world bounds center sits ≈ proxy.pos and the local center is ≈ 0.
+            RecalculateBoundsAndCollider(record);
             record.Root.SetActive(true);
             _activePartGroupId = record.PartGroupId;
         }

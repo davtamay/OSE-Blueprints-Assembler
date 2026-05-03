@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using OSE.App;
 using OSE.Content;
@@ -46,6 +47,12 @@ namespace OSE.UI.Root
 
         // ── Required part emission pulse ──
         private string[] _requiredPartIdsForStep;
+        // Subset of _requiredPartIdsForStep that came from the active step's
+        // partGroup membership (not from requiredPartIds). For these, pulse
+        // even when state is PlacedVirtually/Completed — they're already
+        // placed in fabrication-sense but need to be re-grabbed and moved.
+        private readonly HashSet<string> _partGroupMemberSet =
+            new HashSet<string>(StringComparer.Ordinal);
         private const float RequiredPartPulseSpeed = 0.8f;
         private static readonly Color RequiredPartEmissionA = new Color(0.15f, 0.08f, 0.00f, 1f);
         private static readonly Color RequiredPartEmissionB = new Color(0.45f, 0.25f, 0.02f, 1f);
@@ -255,6 +262,7 @@ namespace OSE.UI.Root
         public void RefreshRequiredPartIds(string stepId)
         {
             _requiredPartIdsForStep = null;
+            _partGroupMemberSet.Clear();
 
             var package = _ctx.Spawner?.CurrentPackage;
             if (package == null || !package.TryGetStep(stepId, out var step))
@@ -263,17 +271,40 @@ namespace OSE.UI.Root
             if (!step.IsPlacement)
                 return;
 
-            string[] partIds = step.requiredPartIds;
-            if (partIds == null || partIds.Length == 0)
-                return;
-
             var pending = new List<string>();
-            for (int i = 0; i < partIds.Length; i++)
+
+            // 1. Direct requiredPartIds — gather pending (not yet placed) ones.
+            string[] partIds = step.requiredPartIds;
+            if (partIds != null)
             {
-                if (string.IsNullOrWhiteSpace(partIds[i])) continue;
-                PartPlacementState state = _ctx.GetPartState(partIds[i]);
-                if (state != PartPlacementState.PlacedVirtually && state != PartPlacementState.Completed)
-                    pending.Add(partIds[i]);
+                for (int i = 0; i < partIds.Length; i++)
+                {
+                    if (string.IsNullOrWhiteSpace(partIds[i])) continue;
+                    PartPlacementState state = _ctx.GetPartState(partIds[i]);
+                    if (state != PartPlacementState.PlacedVirtually && state != PartPlacementState.Completed)
+                        pending.Add(partIds[i]);
+                }
+            }
+
+            // 2. PartGroup placement steps — pulse every member of the active
+            //    group so the user sees which assembled unit needs to move.
+            //    Members are typically already Completed (placed in fabrication
+            //    steps), but for the placement step they need to telegraph as
+            //    actionable. State filter is intentionally skipped — completed
+            //    fabrication members are still the ones that need to be grabbed
+            //    and moved to the new destination.
+            if (!string.IsNullOrEmpty(step.requiredPartGroupId) &&
+                package.TryGetPartGroup(step.requiredPartGroupId, out var partGroup) &&
+                partGroup?.partIds != null)
+            {
+                for (int gi = 0; gi < partGroup.partIds.Length; gi++)
+                {
+                    string memberId = partGroup.partIds[gi];
+                    if (string.IsNullOrWhiteSpace(memberId)) continue;
+                    if (!pending.Contains(memberId))
+                        pending.Add(memberId);
+                    _partGroupMemberSet.Add(memberId);
+                }
             }
 
             _requiredPartIdsForStep = pending.Count > 0 ? pending.ToArray() : null;
@@ -468,13 +499,24 @@ namespace OSE.UI.Root
                     continue;
                 }
 
-                if (state == PartPlacementState.PlacedVirtually || state == PartPlacementState.Completed)
+                // Skip placed/completed parts UNLESS they're members of the
+                // active partGroup placement step — those need to pulse as
+                // "the assembled unit you should grab" even though their
+                // individual placement state is Completed (from the prior
+                // fabrication step).
+                if ((state == PartPlacementState.PlacedVirtually || state == PartPlacementState.Completed) &&
+                    !_partGroupMemberSet.Contains(partId))
                     continue;
 
-                if (openPartIds != null && !openPartIds.Contains(TaskInstanceId.ToPartId(partId)))
+                if (openPartIds != null &&
+                    !openPartIds.Contains(TaskInstanceId.ToPartId(partId)) &&
+                    !_partGroupMemberSet.Contains(partId))
                 {
                     // Cursor is active but this part is in a later span —
                     // not selectable right now, don't telegraph it.
+                    // PartGroup members bypass the cursor gate because the
+                    // cursor doesn't track partGroup-kind tasks; the partGroup
+                    // step has its own external completion via PlaceStepHandler.
                     MaterialHelper.SetMaterialColor(partGo, Color.white);
                     continue;
                 }

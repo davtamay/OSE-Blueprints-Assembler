@@ -1,6 +1,5 @@
 using OSE.App;
 using OSE.Content;
-using OSE.Core;
 using OSE.Interaction;
 using OSE.Runtime;
 using UnityEngine;
@@ -16,7 +15,6 @@ namespace OSE.UI.Root
     {
         private readonly IBridgeContext _ctx;
         private DockArcVisual _dockArcVisual;
-        private string _diagLastReportedStepId;
 
         public DockArcCoordinator(IBridgeContext ctx) => _ctx = ctx;
 
@@ -114,25 +112,8 @@ namespace OSE.UI.Root
                 _ctx.PartGroupController == null ||
                 !_ctx.PartGroupController.TryGetProxy(step.requiredPartGroupId, out sourceProxy))
             {
-                if (step != null && !string.Equals(step.id, _diagLastReportedStepId, System.StringComparison.Ordinal))
-                {
-                    _diagLastReportedStepId = step.id;
-                    bool gotProxy = step.requiredPartGroupId != null && _ctx.PartGroupController != null &&
-                        _ctx.PartGroupController.TryGetProxy(step.requiredPartGroupId, out _);
-                    string reason =
-                        !step.RequiresPartGroupPlacement ? "RequiresPartGroupPlacement=false" :
-                        string.IsNullOrWhiteSpace(step.requiredPartGroupId) ? "requiredPartGroupId empty" :
-                        step.targetIds == null ? "targetIds null" :
-                        step.targetIds.Length != 1 ? $"targetIds.Length={step.targetIds.Length}" :
-                        _ctx.PartGroupController == null ? "PartGroupController null" :
-                        !gotProxy ? "TryGetProxy=false (proxy not registered)" :
-                        "unknown";
-                    OseLog.Info($"[diag.arc] '{step.id}' DROP — {reason}; family={step.family}, requiredPartGroupId='{step.requiredPartGroupId}', targetIds=[{string.Join(",", step.targetIds ?? System.Array.Empty<string>())}]");
-                }
                 return false;
             }
-            // Reset dedupe so a re-resolve after a navigation re-logs DROP if it happens.
-            _diagLastReportedStepId = null;
 
             if (step.IsAxisFitPlacement &&
                 _ctx.PartGroupController.TryGetActiveFitGuide(
