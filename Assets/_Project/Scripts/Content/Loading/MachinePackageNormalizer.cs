@@ -1009,54 +1009,6 @@ namespace OSE.Content.Loading
                     }
                 }
 
-                // Required partGroup placement — cursor gates step completion on
-                // each member partId being placed (transitions to PlacedVirtually
-                // / Completed when the proxy lands on its target). Without this,
-                // steps that have ONLY requiredPartGroupId end up with empty
-                // taskOrder, the cursor SkipFullyOptionalSpans walks past
-                // everything, and Start() fires StepTasksComplete immediately —
-                // step 25 (step_stack_bottom_frame_side) auto-skipped before the
-                // user could interact. (Cursor has no kind="partGroup"; expanding
-                // to per-member kind="part" reuses the existing notification
-                // path in PartRuntimeController.)
-                if (!string.IsNullOrEmpty(step.requiredPartGroupId) &&
-                    package.TryGetPartGroup(step.requiredPartGroupId, out var requiredGroup) &&
-                    requiredGroup?.partIds != null)
-                {
-                    for (int gi = 0; gi < requiredGroup.partIds.Length; gi++)
-                    {
-                        string memberId = requiredGroup.partIds[gi];
-                        if (string.IsNullOrEmpty(memberId)) continue;
-                        bool covered = false;
-                        if (step.taskOrder != null)
-                        {
-                            for (int ti = 0; ti < step.taskOrder.Length && !covered; ti++)
-                            {
-                                var e = step.taskOrder[ti];
-                                if (e == null || !string.Equals(e.kind, "part", StringComparison.Ordinal)) continue;
-                                if (string.IsNullOrEmpty(e.id)) continue;
-                                if (string.Equals(TaskInstanceId.ToPartId(e.id), memberId, StringComparison.Ordinal))
-                                    covered = true;
-                            }
-                        }
-                        // Also check the missing list we just built so we don't
-                        // double-add when both requiredPartIds and partGroup
-                        // reference the same id.
-                        if (!covered)
-                        {
-                            for (int mi = 0; mi < missing.Count && !covered; mi++)
-                            {
-                                var m = missing[mi];
-                                if (m == null || !string.Equals(m.kind, "part", StringComparison.Ordinal)) continue;
-                                if (string.Equals(TaskInstanceId.ToPartId(m.id), memberId, StringComparison.Ordinal))
-                                    covered = true;
-                            }
-                        }
-                        if (!covered)
-                            missing.Add(new TaskOrderEntry { kind = "part", id = memberId });
-                    }
-                }
-
                 if (missing.Count == 0) continue;
 
                 // Append in declaration order. Authors can re-order in source

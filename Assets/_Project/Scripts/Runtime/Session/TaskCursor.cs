@@ -147,10 +147,21 @@ namespace OSE.Runtime
         /// <summary>Total span count for the step.</summary>
         public int TotalSpans => _spans.Count;
 
+        // PartGroup-placement steps complete via PlaceStepHandler.CheckStep-
+        // Completion → IsActiveStepPlacementSatisfied (an external trigger
+        // from the user dropping the proxy on the target). The cursor must
+        // NOT auto-fire StepTasksComplete on Start() for these steps even
+        // when their taskOrder is empty/all-optional — that would auto-skip
+        // step 25 (step_stack_bottom_frame_side) and any other partGroup-
+        // placement step before the user can interact.
+        private readonly bool _hasExternalCompletionTrigger;
+
         public TaskCursor(StepDefinition step)
         {
             _spans = BuildSpans(step?.taskOrder);
             _currentSpanIndex = 0;
+            _hasExternalCompletionTrigger =
+                step != null && !string.IsNullOrEmpty(step.requiredPartGroupId);
         }
 
         /// <summary>
@@ -173,7 +184,14 @@ namespace OSE.Runtime
             SkipFullyOptionalSpans();
             if (IsComplete)
             {
-                StepTasksComplete?.Invoke();
+                // Suppress the immediate completion fire when an external
+                // controller owns the completion trigger (currently only
+                // partGroup-placement steps via PlaceStepHandler.CheckStep-
+                // Completion). Without this guard the cursor races the
+                // external trigger and the step rolls over before the user
+                // can drop the proxy on the target.
+                if (!_hasExternalCompletionTrigger)
+                    StepTasksComplete?.Invoke();
                 return;
             }
             FireSpanOpened();
