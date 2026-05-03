@@ -152,6 +152,15 @@ namespace OSE.UI.Bindings
             var settings = ScriptableObject.CreateInstance<UnityEngine.UIElements.PanelTextSettings>();
             settings.name = "OSE_RuntimePanelTextSettings";
             settings.defaultFontAsset = fontAsset;
+            // Also wire in as a fallback so glyphs the panel theme's font
+            // doesn't have get satisfied from Inter. PanelTextSettings.default
+            // is consulted only when no other font is set on the element; the
+            // Buttons we use inherit their font from the panel theme, so
+            // fallback is the path that actually gates which glyphs render.
+            if (settings.fallbackFontAssets == null)
+                settings.fallbackFontAssets = new System.Collections.Generic.List<UnityEngine.TextCore.Text.FontAsset>();
+            settings.fallbackFontAssets.Add(fontAsset);
+            OseLog.Info($"[UI] Loaded runtime font '{ttf.name}' (face='{fontAsset.faceInfo.familyName}') and assigned to PanelTextSettings (default + fallback).");
             return settings;
         }
 
