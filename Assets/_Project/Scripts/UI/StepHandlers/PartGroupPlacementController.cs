@@ -1504,4 +1504,20 @@ namespace OSE.UI.Root
     {
         public string PartGroupId;
     }
+
+    /// <summary>
+    /// Marker added to <c>Group_*</c> roots created by
+    /// <see cref="PackagePartSpawner.EnsurePartGroupRoots"/>. Lets cue
+    /// players (notably <see cref="PoseTransitionPlayer"/>) detect that a
+    /// target is a partGroup root and should be animated by rotating its
+    /// member CHILDREN around centroid — NOT by rotating the root transform
+    /// like a single-part GLB wrapper. Without this marker, single-GLB-part
+    /// detection (which gates on PartGroupPlacementProxy) misclassifies
+    /// Group_* roots as single-part because they don't carry that proxy
+    /// component (the proxy lives on a separate PartGroupProxy_* GO).
+    /// </summary>
+    internal sealed class PartGroupAnimationRoot : MonoBehaviour
+    {
+        public string PartGroupId;
+    }
 }

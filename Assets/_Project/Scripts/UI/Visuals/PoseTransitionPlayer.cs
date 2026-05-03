@@ -150,15 +150,17 @@ namespace OSE.UI.Root
                     //     skipping would leave them un-rotated while
                     //     siblings rotate (original "mixed pre/post pose"
                     //     symptom).
-                    // Group/single-target detection: only build child baselines when
-                    // the target is an actual partGroup proxy (carries a
-                    // PartGroupPlacementProxy component). Single GLB-loaded parts
-                    // also have active children — the glTFast mesh hierarchy —
-                    // and the previous "any active child" heuristic mistook
-                    // them for groups, dropping into the rotate-children-around-
-                    // centroid path with no root translation. Result: the rod
-                    // animation at step 56 only rotated, never moved.
-                    bool isPartGroupTarget = _ctx.Targets[i].GetComponent<PartGroupPlacementProxy>() != null;
+                    // Group/single-target detection: build child baselines only
+                    // when the target is an actual partGroup container.
+                    //   • PartGroupPlacementProxy → on PartGroupProxy_* GOs
+                    //     (PartGroupPlacementController.BuildProxyRecord)
+                    //   • PartGroupAnimationRoot   → on Group_* GOs
+                    //     (PackagePartSpawner.EnsurePartGroupRoots)
+                    // Single GLB-loaded parts have active children (the
+                    // glTFast mesh hierarchy) but neither marker, so they
+                    // take the single-part translate+rotate path.
+                    bool isPartGroupTarget = _ctx.Targets[i].GetComponent<PartGroupPlacementProxy>() != null
+                                          || _ctx.Targets[i].GetComponent<PartGroupAnimationRoot>() != null;
                     if (!isPartGroupTarget)
                     {
                         _childBaselines[i] = System.Array.Empty<ChildBaseline>();

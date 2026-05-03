@@ -1357,6 +1357,20 @@ namespace OSE.UI.Root
                 rootGO.transform.localRotation = Quaternion.identity;
                 rootGO.transform.localScale    = Vector3.one;
 
+                // Tag the root so cue players can distinguish it from a
+                // single-GLB-part wrapper (which also has child renderers).
+                // PoseTransitionPlayer gates group-mode rotation on this
+                // marker: without it the cue treats the Group_* root as a
+                // single-part target and writes the cue's rotation to the
+                // root transform, leaving it offset until the next
+                // EnsurePartGroupRoots reset.
+                var animMarker = rootGO.GetComponent<PartGroupAnimationRoot>();
+                if (animMarker == null)
+                {
+                    animMarker = rootGO.AddComponent<PartGroupAnimationRoot>();
+                }
+                animMarker.PartGroupId = sub.id;
+
                 // Group root grab is only enabled when the current step's
                 // task IS this partGroup (requiredPartGroupId match, or a
                 // target's associatedPartGroupId match). Otherwise the group
