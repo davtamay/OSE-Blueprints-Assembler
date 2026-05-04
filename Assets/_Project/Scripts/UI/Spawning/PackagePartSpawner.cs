@@ -104,13 +104,25 @@ namespace OSE.UI.Root
             // Destroy spawned children of PreviewRoot (parts, ghosts, tool targets,
             // previews) but preserve the "UI Root" host — it holds the UIDocument
             // with its PanelSettings asset reference that can't be recreated from code.
+            // Container destroys go through SafeDestroyOrphanContainer so any
+            // nested partId-named leaves are lifted to PreviewRoot (and survive
+            // for the next play cycle's adopt loop) rather than cascade-killed.
             var root = _setup.PreviewRoot;
+            var partIdSet = BuildCurrentPartIdSet();
             for (int i = root.childCount - 1; i >= 0; i--)
             {
                 var child = root.GetChild(i);
                 if (child == null) continue;
                 if (child.name == "UI Root") continue;
-                DestroyImmediate(child.gameObject);
+                string nm = child.name;
+                bool isContainer = nm != null && (
+                    nm.StartsWith("Group_",              System.StringComparison.Ordinal) ||
+                    nm.StartsWith("_AnimCue_FabGroup_",  System.StringComparison.Ordinal) ||
+                    nm.StartsWith("_AnimCue_AnimGroup_", System.StringComparison.Ordinal));
+                if (isContainer)
+                    SafeDestroyOrphanContainer(child.gameObject, root, partIdSet);
+                else
+                    DestroyImmediate(child.gameObject);
             }
         }
 #endif
@@ -236,12 +248,14 @@ namespace OSE.UI.Root
                         nm.StartsWith("_AnimCue_AnimGroup_",   System.StringComparison.Ordinal);
                     if (!isOrphanGroup) continue;
 
-                    for (int c = child.childCount - 1; c >= 0; c--)
-                    {
-                        var inner = child.GetChild(c);
-                        if (inner == null) continue;
-                        inner.SetParent(root, worldPositionStays: true);
-                    }
+                    // Walk the FULL subtree (not just direct children) and lift
+                    // every leaf part (GO whose name matches a known partId) up
+                    // to PreviewRoot. The aggregate→partGroup→leaf nesting (e.g.
+                    // Group_All Axis Carriages → Group_Carriage 1 → carriage_half_a)
+                    // means a direct-child-only reparent leaves the actual parts
+                    // two levels deep — when the outer aggregate gets destroyed
+                    // they cascade-destroy with the intermediate Group_*.
+                    LiftLeafPartsRecursive(child, root, partIdSet);
                     SafeDestroy(child.gameObject);
                 }
 
@@ -1514,6 +1528,7 @@ namespace OSE.UI.Root
             // EnsurePartGroupRoots, HandlePackageChanged).
             if (previewRoot != null)
             {
+                var partIdSet = BuildCurrentPartIdSet();
                 for (int i = previewRoot.childCount - 1; i >= 0; i--)
                 {
                     Transform child = previewRoot.GetChild(i);
@@ -1526,17 +1541,75 @@ namespace OSE.UI.Root
                         nm.StartsWith("_AnimCue_AnimGroup_", System.StringComparison.Ordinal);
                     if (!isOrphanGroup) continue;
 
-                    for (int c = child.childCount - 1; c >= 0; c--)
-                    {
-                        var inner = child.GetChild(c);
-                        if (inner == null) continue;
-                        inner.SetParent(previewRoot, worldPositionStays: true);
-                        if (Application.isPlaying)
-                            _xrGrabSetup?.SetGrabEnabled(inner.gameObject, true);
-                    }
-                    SafeDestroy(child.gameObject);
+                    SafeDestroyOrphanContainer(child.gameObject, previewRoot, partIdSet);
                 }
             }
+        }
+
+        // Recursively walks `subtree` and reparents every descendant whose name
+        // matches a known partId up to `safeParent`, preserving world position.
+        // Used by the OnEnable orphan-sweep to rescue real parts before destroying
+        // the stale Group_*/_AnimCue_* container that holds them.
+        private static void LiftLeafPartsRecursive(
+            Transform subtree, Transform safeParent,
+            System.Collections.Generic.HashSet<string> partIdSet)
+        {
+            if (subtree == null || safeParent == null || partIdSet == null) return;
+            // Snapshot children — SetParent during iteration mutates childCount.
+            var children = new System.Collections.Generic.List<Transform>(subtree.childCount);
+            for (int i = 0; i < subtree.childCount; i++)
+            {
+                var c = subtree.GetChild(i);
+                if (c != null) children.Add(c);
+            }
+            foreach (var c in children)
+            {
+                if (c == null) continue;
+                // Recurse first so deeper leaves are lifted before we touch this node.
+                LiftLeafPartsRecursive(c, safeParent, partIdSet);
+                if (!string.IsNullOrEmpty(c.name) && partIdSet.Contains(c.name))
+                    c.SetParent(safeParent, worldPositionStays: true);
+            }
+        }
+
+        // Canonical destroy path for any stale Group_* / _AnimCue_* container.
+        // Lifts every partId-named descendant (at any depth) up to safeParent
+        // first, so the cascade-destroy can't take real parts with it. Every
+        // wholesale-cleanup site MUST go through this method — direct
+        // SafeDestroy/DestroyImmediate on container GOs trips a runtime warn
+        // (see SafeDestroy guard).
+        private void SafeDestroyOrphanContainer(
+            GameObject container,
+            Transform safeParent,
+            System.Collections.Generic.HashSet<string> partIdSet)
+        {
+            if (container == null) return;
+            if (safeParent != null && partIdSet != null)
+                LiftLeafPartsRecursive(container.transform, safeParent, partIdSet);
+            _inSafeOrphanDestroy = true;
+            try { SafeDestroy(container); }
+            finally { _inSafeOrphanDestroy = false; }
+        }
+
+        // Set true while SafeDestroyOrphanContainer is destroying its target;
+        // SafeDestroy reads this to suppress the unsafe-destroy warning for the
+        // sanctioned path. Single-threaded — Unity object ops run on the main
+        // thread, so a static bool is enough.
+        private static bool _inSafeOrphanDestroy;
+
+        // Builds a hashset of all known partIds for the active package. Used by
+        // wholesale-cleanup paths to know which descendants are "real parts" and
+        // must be lifted to safety before a container is destroyed. Falls back
+        // to the SessionDriver's package when the spawner's own field isn't set
+        // yet (early init / OnEnable before HandlePackageChanged).
+        private System.Collections.Generic.HashSet<string> BuildCurrentPartIdSet()
+        {
+            var set = new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal);
+            var pkg = _currentPackage ?? SessionDriver.CurrentPackage;
+            if (pkg?.parts == null) return set;
+            foreach (var p in pkg.parts)
+                if (p != null && !string.IsNullOrEmpty(p.id)) set.Add(p.id);
+            return set;
         }
 
         private GameObject FindSpawnedGo(string partId)
@@ -1611,11 +1684,13 @@ namespace OSE.UI.Root
         private void DestroyPooledParts()
         {
             if (_setup?.PreviewRoot == null) return;
+            var previewRoot = _setup.PreviewRoot;
+            var partIdSet = BuildCurrentPartIdSet();
 
-            var toDestroy = new List<Transform>(_setup.PreviewRoot.childCount);
-            for (int i = 0; i < _setup.PreviewRoot.childCount; i++)
+            var toDestroy = new List<Transform>(previewRoot.childCount);
+            for (int i = 0; i < previewRoot.childCount; i++)
             {
-                Transform child = _setup.PreviewRoot.GetChild(i);
+                Transform child = previewRoot.GetChild(i);
                 if (child != null)
                     toDestroy.Add(child);
             }
@@ -1623,7 +1698,15 @@ namespace OSE.UI.Root
             bool hadAny = toDestroy.Count > 0;
             foreach (var child in toDestroy)
             {
-                if (child != null)
+                if (child == null) continue;
+                string nm = child.name;
+                bool isContainer = nm != null && (
+                    nm.StartsWith("Group_",              System.StringComparison.Ordinal) ||
+                    nm.StartsWith("_AnimCue_FabGroup_",  System.StringComparison.Ordinal) ||
+                    nm.StartsWith("_AnimCue_AnimGroup_", System.StringComparison.Ordinal));
+                if (isContainer)
+                    SafeDestroyOrphanContainer(child.gameObject, previewRoot, partIdSet);
+                else
                     DestroyImmediate(child.gameObject);
             }
 
@@ -1686,6 +1769,25 @@ namespace OSE.UI.Root
         private static void SafeDestroy(Object target)
         {
             if (target == null) return;
+            // Tripwire: any code that directly destroys a Group_* / _AnimCue_*
+            // container without going through SafeDestroyOrphanContainer is
+            // re-introducing the cascade-destroy bug class that wiped shared-
+            // GLB carriage parts on first-Play-after-compile (see plan
+            // we-have-an-authoring-breezy-knuth.md). The flag is set by the
+            // sanctioned helper; any other path that triggers this warn needs
+            // to be converted.
+            if (Application.isPlaying && !_inSafeOrphanDestroy
+                && target is GameObject go && go != null)
+            {
+                string n = go.name;
+                if (!string.IsNullOrEmpty(n) && (
+                        n.StartsWith("Group_",              System.StringComparison.Ordinal) ||
+                        n.StartsWith("_AnimCue_FabGroup_",  System.StringComparison.Ordinal) ||
+                        n.StartsWith("_AnimCue_AnimGroup_", System.StringComparison.Ordinal)))
+                {
+                    OseLog.Warn($"[PackagePartSpawner] '{n}' destroyed without SafeDestroyOrphanContainer — leaf parts nested inside may cascade-destroy. Stack:\n{System.Environment.StackTrace}");
+                }
+            }
             if (Application.isPlaying) Destroy(target);
             else DestroyImmediate(target);
         }
