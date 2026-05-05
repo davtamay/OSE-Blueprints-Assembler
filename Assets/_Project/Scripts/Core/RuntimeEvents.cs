@@ -595,6 +595,18 @@ namespace OSE.Core
     }
 
     /// <summary>
+    /// Published when the user taps the read-aloud (TTS) button on the step panel.
+    /// Carries the active step id so a TTS service can resolve and speak the right
+    /// content. Until a runtime TTS service is wired, this event has no subscribers
+    /// and is a safe no-op.
+    /// </summary>
+    public readonly struct StepReadAloudRequested
+    {
+        public readonly string StepId;
+        public StepReadAloudRequested(string stepId) { StepId = stepId; }
+    }
+
+    /// <summary>
     /// Published when the user dismisses the assembly picker, optionally selecting a section.
     /// </summary>
     public readonly struct AssemblyPickerDismissed

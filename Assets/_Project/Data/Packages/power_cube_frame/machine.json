@@ -13,7 +13,7 @@
       "Identify which tubes form the base vs. vertical posts",
       "Lay out a rectangular base frame from four tubes",
       "Tack-weld corners before committing to full welds",
-      "Use a framing square to verify 90Â° corners",
+      "Use a framing square to verify 90° corners",
       "Full-weld all base joints for structural integrity",
       "Position vertical posts at each corner of the base",
       "Complete the top ring to form the cube frame",
@@ -42,7 +42,7 @@
       {
         "id": "source_power_cube_wiki",
         "type": "blueprint",
-        "title": "Power Cube â€” OSE Wiki",
+        "title": "Power Cube — OSE Wiki",
         "referencePath": "https://wiki.opensourceecology.org/wiki/Power_Cube",
         "notes": "Primary reference for frame dimensions and assembly order."
       },
@@ -51,7 +51,7 @@
         "type": "reference_doc",
         "title": "Power Cube VII Bill of Materials",
         "referencePath": "https://wiki.opensourceecology.org/wiki/Power_Cube_VII/Bill_of_Materials",
-        "notes": "Cut list for 4Ã—4 tubular steel."
+        "notes": "Cut list for 4×4 tubular steel."
       }
     ]
   },
@@ -59,7 +59,7 @@
     {
       "id": "template_base_tube_long",
       "category": "pipe",
-      "material": "4Ã—4 tubular steel, 11-gauge wall",
+      "material": "4×4 tubular steel, 11-gauge wall",
       "structuralRole": "Primary frame member",
       "quantity": 1,
       "assetRef": "base_tube_long.glb",
@@ -73,7 +73,7 @@
     {
       "id": "template_base_tube_short",
       "category": "pipe",
-      "material": "4Ã—4 tubular steel, 11-gauge wall",
+      "material": "4×4 tubular steel, 11-gauge wall",
       "structuralRole": "Primary frame member",
       "quantity": 1,
       "assetRef": "base_tube_short.glb",
@@ -87,7 +87,7 @@
     {
       "id": "template_vertical_post",
       "category": "pipe",
-      "material": "4Ã—4 tubular steel, 11-gauge wall",
+      "material": "4×4 tubular steel, 11-gauge wall",
       "structuralRole": "Vertical frame member",
       "quantity": 1,
       "assetRef": "vertical_post.glb",
@@ -107,7 +107,7 @@
     {
       "id": "template_top_tube_long",
       "category": "pipe",
-      "material": "4Ã—4 tubular steel, 11-gauge wall",
+      "material": "4×4 tubular steel, 11-gauge wall",
       "structuralRole": "Top frame member",
       "quantity": 1,
       "assetRef": "base_tube_long.glb",
@@ -121,7 +121,7 @@
     {
       "id": "template_top_tube_short",
       "category": "pipe",
-      "material": "4Ã—4 tubular steel, 11-gauge wall",
+      "material": "4×4 tubular steel, 11-gauge wall",
       "structuralRole": "Top frame member",
       "quantity": 1,
       "assetRef": "base_tube_short.glb",
@@ -317,7 +317,7 @@
       "id": "partGroup_fuel_system",
       "name": "Fuel System",
       "assemblyId": "assembly_frame",
-      "description": "Fuel tank, fuel line, and shutoff valve â€” delivers gasoline from tank to engine carburetor.",
+      "description": "Fuel tank, fuel line, and shutoff valve — delivers gasoline from tank to engine carburetor.",
       "partIds": [
         "fuel_tank",
         "fuel_line",
@@ -335,7 +335,7 @@
       "id": "partGroup_electrical",
       "name": "Electrical Wiring Harness",
       "assemblyId": "assembly_frame",
-      "description": "Battery, key switch, starter wiring, choke and throttle cables â€” everything needed to start and control the engine.",
+      "description": "Battery, key switch, starter wiring, choke and throttle cables — everything needed to start and control the engine.",
       "partIds": [
         "battery",
         "battery_cables",
@@ -378,7 +378,24 @@
       "name": "Base Long Tube 1",
       "displayName": "Base Long Tube (Front)",
       "function": "Front rail of the base frame rectangle.",
-      "stagingPose": {"position": {"x": -0.375, "y": 0.0, "z": 1.5}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}, "scale": {"x": 1.0, "y": 1.0, "z": 1.0}},
+      "stagingPose": {
+        "position": {
+          "x": -0.375,
+          "y": 0.0,
+          "z": 1.5
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        }
+      },
       "searchTerms": [
         "base tube",
         "long tube",
@@ -393,7 +410,24 @@
       "name": "Base Long Tube 2",
       "displayName": "Base Long Tube (Back)",
       "function": "Back rail of the base frame rectangle.",
-      "stagingPose": {"position": {"x": -0.125, "y": 0.0, "z": 1.5}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}, "scale": {"x": 1.0, "y": 1.0, "z": 1.0}},
+      "stagingPose": {
+        "position": {
+          "x": -0.125,
+          "y": 0.0,
+          "z": 1.5
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        }
+      },
       "searchTerms": [
         "base tube",
         "long tube",
@@ -408,7 +442,24 @@
       "name": "Base Short Tube 1",
       "displayName": "Base Short Tube (Left)",
       "function": "Left side of the base frame rectangle.",
-      "stagingPose": {"position": {"x": 0.125, "y": 0.0, "z": 1.5}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}, "scale": {"x": 1.0, "y": 1.0, "z": 1.0}},
+      "stagingPose": {
+        "position": {
+          "x": 0.125,
+          "y": 0.0,
+          "z": 1.5
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        }
+      },
       "searchTerms": [
         "base tube",
         "short tube",
@@ -423,7 +474,24 @@
       "name": "Base Short Tube 2",
       "displayName": "Base Short Tube (Right)",
       "function": "Right side of the base frame rectangle.",
-      "stagingPose": {"position": {"x": 0.375, "y": 0.0, "z": 1.5}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}, "scale": {"x": 1.0, "y": 1.0, "z": 1.0}},
+      "stagingPose": {
+        "position": {
+          "x": 0.375,
+          "y": 0.0,
+          "z": 1.5
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        }
+      },
       "searchTerms": [
         "base tube",
         "short tube",
@@ -438,7 +506,24 @@
       "name": "Vertical Post 1",
       "displayName": "Vertical Post (Front-Left)",
       "function": "Front-left vertical corner post.",
-      "stagingPose": {"position": {"x": -0.375, "y": 0.0, "z": 1.8}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}, "scale": {"x": 1.0, "y": 1.0, "z": 1.0}},
+      "stagingPose": {
+        "position": {
+          "x": -0.375,
+          "y": 0.0,
+          "z": 1.8
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        }
+      },
       "searchTerms": [
         "vertical post",
         "corner post",
@@ -452,7 +537,24 @@
       "name": "Vertical Post 2",
       "displayName": "Vertical Post (Front-Right)",
       "function": "Front-right vertical corner post.",
-      "stagingPose": {"position": {"x": -0.125, "y": 0.0, "z": 1.8}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}, "scale": {"x": 1.0, "y": 1.0, "z": 1.0}}
+      "stagingPose": {
+        "position": {
+          "x": -0.125,
+          "y": 0.0,
+          "z": 1.8
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        }
+      }
     },
     {
       "id": "vertical_post_3",
@@ -460,7 +562,24 @@
       "name": "Vertical Post 3",
       "displayName": "Vertical Post (Back-Left)",
       "function": "Back-left vertical corner post.",
-      "stagingPose": {"position": {"x": 0.125, "y": 0.0, "z": 1.8}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}, "scale": {"x": 1.0, "y": 1.0, "z": 1.0}}
+      "stagingPose": {
+        "position": {
+          "x": 0.125,
+          "y": 0.0,
+          "z": 1.8
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        }
+      }
     },
     {
       "id": "vertical_post_4",
@@ -468,7 +587,24 @@
       "name": "Vertical Post 4",
       "displayName": "Vertical Post (Back-Right)",
       "function": "Back-right vertical corner post.",
-      "stagingPose": {"position": {"x": 0.375, "y": 0.0, "z": 1.8}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}, "scale": {"x": 1.0, "y": 1.0, "z": 1.0}}
+      "stagingPose": {
+        "position": {
+          "x": 0.375,
+          "y": 0.0,
+          "z": 1.8
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        }
+      }
     },
     {
       "id": "top_tube_long_1",
@@ -476,7 +612,24 @@
       "name": "Top Long Tube 1",
       "displayName": "Top Long Tube (Front)",
       "function": "Front rail of the top ring.",
-      "stagingPose": {"position": {"x": -0.375, "y": 0.0, "z": 2.1}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}, "scale": {"x": 1.0, "y": 1.0, "z": 1.0}},
+      "stagingPose": {
+        "position": {
+          "x": -0.375,
+          "y": 0.0,
+          "z": 2.1
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        }
+      },
       "searchTerms": [
         "top tube",
         "long tube",
@@ -490,7 +643,24 @@
       "name": "Top Long Tube 2",
       "displayName": "Top Long Tube (Back)",
       "function": "Back rail of the top ring.",
-      "stagingPose": {"position": {"x": -0.125, "y": 0.0, "z": 2.1}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}, "scale": {"x": 1.0, "y": 1.0, "z": 1.0}},
+      "stagingPose": {
+        "position": {
+          "x": -0.125,
+          "y": 0.0,
+          "z": 2.1
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        }
+      },
       "searchTerms": [
         "top tube",
         "long tube",
@@ -504,7 +674,24 @@
       "name": "Top Short Tube 1",
       "displayName": "Top Short Tube (Left)",
       "function": "Left side of the top ring.",
-      "stagingPose": {"position": {"x": 0.125, "y": 0.0, "z": 2.1}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}, "scale": {"x": 1.0, "y": 1.0, "z": 1.0}},
+      "stagingPose": {
+        "position": {
+          "x": 0.125,
+          "y": 0.0,
+          "z": 2.1
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        }
+      },
       "searchTerms": [
         "top tube",
         "short tube",
@@ -518,7 +705,24 @@
       "name": "Top Short Tube 2",
       "displayName": "Top Short Tube (Right)",
       "function": "Right side of the top ring.",
-      "stagingPose": {"position": {"x": 0.375, "y": 0.0, "z": 2.1}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}, "scale": {"x": 1.0, "y": 1.0, "z": 1.0}},
+      "stagingPose": {
+        "position": {
+          "x": 0.375,
+          "y": 0.0,
+          "z": 2.1
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "w": 1.0
+        },
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        }
+      },
       "searchTerms": [
         "top tube",
         "short tube",
@@ -902,7 +1106,7 @@
     {
       "id": "pressure_gauge_inline",
       "name": "Pressure Gauge",
-      "displayName": "0â€“5000 PSI Hydraulic Gauge",
+      "displayName": "0–5000 PSI Hydraulic Gauge",
       "category": "custom",
       "material": "Stainless steel case, glycerin-filled, 1/4\" NPT bottom mount",
       "function": "Displays system hydraulic pressure for testing and monitoring.",
@@ -942,7 +1146,7 @@
       "id": "tool_angle_grinder",
       "name": "Angle Grinder",
       "category": "power_tool",
-      "purpose": "Cuts 4Ã—4 tubular steel to length using a cutting disc.",
+      "purpose": "Cuts 4×4 tubular steel to length using a cutting disc.",
       "usageNotes": "Wear eye and ear protection. Clamp the tube securely before cutting. Cut on the waste side of the mark.",
       "safetyNotes": "Always wear safety glasses, face shield, and hearing protection. Keep the guard in place.",
       "assetRef": "tool_angle_grinder.glb"
@@ -1016,7 +1220,7 @@
       "name": "Torque Wrench",
       "category": "hand_tool",
       "purpose": "Tightens bolts to a precise torque specification to prevent under- or over-tightening.",
-      "usageNotes": "Set the desired torque on the micrometer scale. Pull smoothly until the wrench clicks â€” stop immediately at the click. Always torque in a star pattern.",
+      "usageNotes": "Set the desired torque on the micrometer scale. Pull smoothly until the wrench clicks — stop immediately at the click. Always torque in a star pattern.",
       "safetyNotes": "Never use a torque wrench to loosen bolts. Store at the lowest torque setting to preserve calibration.",
       "assetRef": "tool_torque_wrench.glb"
     },
@@ -1026,7 +1230,7 @@
       "category": "hand_tool",
       "purpose": "Tightens hydraulic hose fittings without rounding the soft brass or steel hex nuts.",
       "usageNotes": "Slide over the hose, seat fully on the fitting hex, and turn 1/4 past finger-tight. Check for leaks before applying pressure.",
-      "safetyNotes": "Never tighten fittings while the system is pressurized. Wipe up any spilled hydraulic fluid immediately â€” it is slippery.",
+      "safetyNotes": "Never tighten fittings while the system is pressurized. Wipe up any spilled hydraulic fluid immediately — it is slippery.",
       "assetRef": "tool_line_wrench.glb"
     },
     {
@@ -1043,7 +1247,7 @@
       "name": "Socket Wrench Set",
       "category": "hand_tool",
       "purpose": "Drives bolts and nuts for mounting brackets, battery terminals, and accessories.",
-      "usageNotes": "Use the correct socket size â€” don't force an oversized socket onto a bolt head. Use a torque wrench for critical fasteners.",
+      "usageNotes": "Use the correct socket size — don't force an oversized socket onto a bolt head. Use a torque wrench for critical fasteners.",
       "assetRef": "tool_socket_set.glb",
       "useOrientationOverride": true,
       "orientationEuler": {
@@ -1075,7 +1279,7 @@
       "sequenceIndex": 1,
       "family": "Use",
       "profile": "Measure",
-      "instructionText": "Use the tape measure to mark two lengths of 4Ã—4 tubular steel at 24 inches each. These will form the front and back rails of the base frame. Hook the tape on one end and mark at 24\" with soapstone.",
+      "instructionText": "Use the tape measure to mark two lengths of 4×4 tubular steel at 24 inches each. These will form the front and back rails of the base frame. Hook the tape on one end and mark at 24\" with soapstone.",
       "whyItMattersText": "Accurate measurements prevent misalignment when the frame is welded together. Even 1/8\" off compounds at every joint.",
       "optionalPartIds": [
         "base_tube_long_1",
@@ -1297,7 +1501,7 @@
       "id": "step_tack_weld_base_corners",
       "name": "Tack-weld the base corners",
       "sequenceIndex": 6,
-      "instructionText": "Equip the welder. Place a small tack weld (about 1/2 inch) at each of the four corners where the tubes meet. Tack welds hold the geometry while you verify squareness â€” don't run full beads yet.",
+      "instructionText": "Equip the welder. Place a small tack weld (about 1/2 inch) at each of the four corners where the tubes meet. Tack welds hold the geometry while you verify squareness — don't run full beads yet.",
       "whyItMattersText": "Tack welds are easy to break and redo. Full welds are permanent. Always tack first, check square, then commit.",
       "relevantToolIds": [
         "tool_welder"
@@ -1352,8 +1556,8 @@
       "id": "step_square_check_base",
       "name": "Check the base for square",
       "sequenceIndex": 7,
-      "instructionText": "Use the framing square at each corner to verify 90Â° angles. Also measure both diagonals â€” they should be equal. If the frame is racked, break a tack weld, adjust, and re-tack.",
-      "whyItMattersText": "A frame that's even 1Â° out of square will cause every subsequent module to fit poorly. This is the critical quality gate.",
+      "instructionText": "Use the framing square at each corner to verify 90° angles. Also measure both diagonals — they should be equal. If the frame is racked, break a tack weld, adjust, and re-tack.",
+      "whyItMattersText": "A frame that's even 1° out of square will cause every subsequent module to fit poorly. This is the critical quality gate.",
       "relevantToolIds": [
         "tool_framing_square",
         "tool_tape_measure"
@@ -1368,7 +1572,7 @@
           "actionType": "measure",
           "targetId": "target_square_check_point",
           "successMessage": "Base frame is square! Diagonals match within 1/16\".",
-          "failureMessage": "Place the framing square against a corner to check for 90Â°."
+          "failureMessage": "Place the framing square against a corner to check for 90°."
         }
       ],
       "hintIds": [
@@ -1423,7 +1627,7 @@
       "id": "step_cut_vertical_posts",
       "name": "Cut the four vertical posts",
       "sequenceIndex": 9,
-      "instructionText": "Measure and cut four vertical posts at 20 inches each from 4Ã—4 tubular steel. These posts will stand upright at each corner of the base.",
+      "instructionText": "Measure and cut four vertical posts at 20 inches each from 4×4 tubular steel. These posts will stand upright at each corner of the base.",
       "whyItMattersText": "The vertical posts define the cube height. All four must be identical so the top ring sits level.",
       "optionalPartIds": [
         "vertical_post_1",
@@ -1629,7 +1833,7 @@
       "id": "step_final_square_check",
       "name": "Final squareness and plumb check",
       "sequenceIndex": 14,
-      "instructionText": "Use the framing square and tape measure to do a final quality inspection. Check corners for 90Â°, measure diagonals on all six faces, and verify the frame sits flat. Congratulations â€” the Power Cube frame is complete!",
+      "instructionText": "Use the framing square and tape measure to do a final quality inspection. Check corners for 90°, measure diagonals on all six faces, and verify the frame sits flat. Congratulations — the Power Cube frame is complete!",
       "whyItMattersText": "This final check ensures the frame will accept all modules (engine, pump, reservoir, cooler) without shimming or rework.",
       "relevantToolIds": [
         "tool_framing_square",
@@ -1771,7 +1975,7 @@
       "name": "Place the engine on the mounting plate",
       "sequenceIndex": 18,
       "instructionText": "Lift the engine onto the mounting plate. Orient it so the output shaft faces the pump side of the frame (left side). Align the engine mounting feet with the bolt holes in the plate.",
-      "whyItMattersText": "Correct shaft orientation is critical â€” the pump coupling requires precise alignment. Getting it right now prevents having to unbolt and reposition later.",
+      "whyItMattersText": "Correct shaft orientation is critical — the pump coupling requires precise alignment. Getting it right now prevents having to unbolt and reposition later.",
       "requiredPartIds": [
         "engine"
       ],
@@ -1871,7 +2075,7 @@
       "name": "Mount the hydraulic pump",
       "sequenceIndex": 21,
       "instructionText": "Position the hydraulic pump so its input shaft engages the second coupling hub. The pump body should rest on the mounting bracket welded to the frame side. Slide the pump shaft into the coupling jaws.",
-      "whyItMattersText": "Precise shaft-to-coupling alignment prevents premature bearing failure. The pump must be supported by its bracket â€” never hanging from the coupling alone.",
+      "whyItMattersText": "Precise shaft-to-coupling alignment prevents premature bearing failure. The pump must be supported by its bracket — never hanging from the coupling alone.",
       "requiredPartIds": [
         "hydraulic_pump"
       ],
@@ -1902,7 +2106,7 @@
       "family": "Use",
       "profile": "Torque",
       "sequenceIndex": 22,
-      "instructionText": "Torque the pump bracket bolts to 25 ft-lbs. Check that the pump shaft spins freely by hand after torquing â€” if it binds, loosen and realign.",
+      "instructionText": "Torque the pump bracket bolts to 25 ft-lbs. Check that the pump shaft spins freely by hand after torquing — if it binds, loosen and realign.",
       "whyItMattersText": "Over-tightening can distort the pump body and bind the gears. The free-spin check confirms alignment is correct.",
       "relevantToolIds": [
         "tool_torque_wrench"
@@ -1917,7 +2121,7 @@
           "actionType": "tighten",
           "targetId": "target_pump_bolt_point",
           "requiredCount": 2,
-          "successMessage": "Pump bolts torqued. Shaft spins freely â€” alignment is good!",
+          "successMessage": "Pump bolts torqued. Shaft spins freely — alignment is good!",
           "failureMessage": "Use the torque wrench on the pump mounting bolts."
         }
       ],
@@ -1972,7 +2176,7 @@
       "family": "Use",
       "profile": "Torque",
       "sequenceIndex": 24,
-      "instructionText": "Torque the reservoir strap bolts to 20 ft-lbs. The tank should be snug but not deformed â€” the straps should grip without crushing the tank walls.",
+      "instructionText": "Torque the reservoir strap bolts to 20 ft-lbs. The tank should be snug but not deformed — the straps should grip without crushing the tank walls.",
       "whyItMattersText": "The reservoir holds 10 gallons of oil (about 75 lbs). Loose straps let it shift under vibration; overtight straps can dent the tank and cause leaks.",
       "relevantToolIds": [
         "tool_torque_wrench"
@@ -2002,7 +2206,7 @@
       "id": "step_connect_pressure_hose",
       "name": "Connect the pressure hose",
       "sequenceIndex": 25,
-      "instructionText": "Route the high-pressure hose from the pump outlet port to the pressure manifold. Avoid sharp bends â€” maintain at least a 4-inch bend radius. Thread the fittings finger-tight for now.",
+      "instructionText": "Route the high-pressure hose from the pump outlet port to the pressure manifold. Avoid sharp bends — maintain at least a 4-inch bend radius. Thread the fittings finger-tight for now.",
       "whyItMattersText": "The pressure line carries 2500+ PSI. Sharp bends weaken the hose, and a blown pressure line is extremely dangerous.",
       "requiredPartIds": [
         "pressure_hose"
@@ -2063,7 +2267,7 @@
       "name": "Mount the oil cooler",
       "sequenceIndex": 27,
       "instructionText": "Bolt the oil cooler to the front face of the frame, oriented vertically for maximum airflow. Connect the cooler inlet hose from the return line tee and the cooler outlet to the reservoir.",
-      "whyItMattersText": "Hydraulic oil above 180Â°F degrades rapidly. The cooler keeps oil temperature in the safe range during sustained operation like brick pressing.",
+      "whyItMattersText": "Hydraulic oil above 180°F degrades rapidly. The cooler keeps oil temperature in the safe range during sustained operation like brick pressing.",
       "requiredPartIds": [
         "oil_cooler"
       ],
@@ -2093,7 +2297,7 @@
       "id": "step_tighten_fittings_check",
       "name": "Tighten all fittings and system check",
       "sequenceIndex": 28,
-      "instructionText": "Go back through every hydraulic fitting and tighten with the line wrench â€” 1/4 turn past finger-tight. Check that all hoses are routed clear of the engine exhaust and moving parts. The Power Cube is complete!",
+      "instructionText": "Go back through every hydraulic fitting and tighten with the line wrench — 1/4 turn past finger-tight. Check that all hoses are routed clear of the engine exhaust and moving parts. The Power Cube is complete!",
       "whyItMattersText": "A single loose fitting under 2500 PSI creates a dangerous injection hazard. This final pass catches any fittings that were left finger-tight during assembly.",
       "relevantToolIds": [
         "tool_line_wrench"
@@ -2157,7 +2361,7 @@
       "name": "Connect the fuel line",
       "sequenceIndex": 30,
       "instructionText": "Run the fuel line from the tank outlet nipple down to the engine carburetor. The inline fuel filter should be roughly midway along the run. Use hose clamps at both ends.",
-      "whyItMattersText": "The inline filter catches debris before it can clog the carburetor jet. A loose hose clamp will drip fuel onto hot engine surfaces â€” a fire hazard.",
+      "whyItMattersText": "The inline filter catches debris before it can clog the carburetor jet. A loose hose clamp will drip fuel onto hot engine surfaces — a fire hazard.",
       "requiredPartIds": [
         "fuel_line"
       ],
@@ -2216,7 +2420,7 @@
       "id": "step_check_fuel_leaks",
       "name": "Check fuel system for leaks",
       "sequenceIndex": 32,
-      "instructionText": "Open the shutoff valve and visually inspect every connection â€” tank outlet, filter ends, shutoff valve, and carburetor inlet. Look for drips or wet spots. Tighten any leaking hose clamps.",
+      "instructionText": "Open the shutoff valve and visually inspect every connection — tank outlet, filter ends, shutoff valve, and carburetor inlet. Look for drips or wet spots. Tighten any leaking hose clamps.",
       "whyItMattersText": "A fuel leak near a hot engine is an immediate fire hazard. Catching leaks now is far easier than after the engine is running.",
       "optionalPartIds": [],
       "relevantToolIds": [
@@ -2279,7 +2483,7 @@
       "id": "step_connect_battery_cables",
       "name": "Connect battery cables",
       "sequenceIndex": 34,
-      "instructionText": "Connect the RED positive cable from the battery + terminal to the starter solenoid B+ post. Connect the BLACK negative cable from the battery â€“ terminal to the engine block ground bolt. Always connect positive first, negative last.",
+      "instructionText": "Connect the RED positive cable from the battery + terminal to the starter solenoid B+ post. Connect the BLACK negative cable from the battery – terminal to the engine block ground bolt. Always connect positive first, negative last.",
       "whyItMattersText": "Connecting negative last prevents accidental shorts if the wrench touches the frame while tightening the positive terminal.",
       "requiredPartIds": [
         "battery_cables"
@@ -2429,7 +2633,7 @@
       "id": "step_test_electrical",
       "name": "Test electrical continuity",
       "sequenceIndex": 39,
-      "instructionText": "Set the multimeter to continuity mode. Test: (1) battery positive to solenoid B+ post â€” should beep. (2) Key switch S terminal to solenoid trigger â€” should beep. (3) Battery negative to engine block â€” should beep. Any open circuit means a loose connection.",
+      "instructionText": "Set the multimeter to continuity mode. Test: (1) battery positive to solenoid B+ post — should beep. (2) Key switch S terminal to solenoid trigger — should beep. (3) Battery negative to engine block — should beep. Any open circuit means a loose connection.",
       "whyItMattersText": "A continuity test catches wiring mistakes before you try to crank the engine. Finding an open circuit now saves time and prevents burnt starter motors.",
       "optionalPartIds": [],
       "relevantToolIds": [
@@ -2494,7 +2698,7 @@
       "id": "step_install_pressure_gauge",
       "name": "Install the pressure gauge",
       "sequenceIndex": 41,
-      "instructionText": "Thread the 0â€“5000 PSI glycerin-filled gauge into the pressure manifold test port. Tighten with the line wrench â€” 1/4 turn past finger-tight. The gauge face should be readable from the operator position.",
+      "instructionText": "Thread the 0–5000 PSI glycerin-filled gauge into the pressure manifold test port. Tighten with the line wrench — 1/4 turn past finger-tight. The gauge face should be readable from the operator position.",
       "whyItMattersText": "The pressure gauge is your primary diagnostic tool during commissioning. It tells you whether the pump is building pressure and whether the relief valve is set correctly.",
       "requiredPartIds": [
         "pressure_gauge_inline"
@@ -2524,7 +2728,7 @@
       "id": "step_first_start",
       "name": "First engine start and pressure test",
       "sequenceIndex": 42,
-      "instructionText": "Pre-start checklist: (1) Oil level at FULL. (2) Fuel shutoff OPEN. (3) Choke FULL. (4) Throttle at IDLE. Turn the key to START. Once the engine fires, push the choke in gradually. Watch the pressure gauge â€” it should rise to 500â€“800 PSI at idle. Slowly increase throttle to full; gauge should read 2500â€“3000 PSI. If gauge exceeds 3500 PSI, shut down immediately.",
+      "instructionText": "Pre-start checklist: (1) Oil level at FULL. (2) Fuel shutoff OPEN. (3) Choke FULL. (4) Throttle at IDLE. Turn the key to START. Once the engine fires, push the choke in gradually. Watch the pressure gauge — it should rise to 500–800 PSI at idle. Slowly increase throttle to full; gauge should read 2500–3000 PSI. If gauge exceeds 3500 PSI, shut down immediately.",
       "whyItMattersText": "The first start confirms every system works together. Watching the pressure gauge at idle and full throttle verifies the pump, relief valve, and plumbing are all functioning correctly.",
       "optionalPartIds": [],
       "relevantToolIds": [
@@ -2571,7 +2775,7 @@
           "toolId": "tool_socket_set",
           "actionType": "measure",
           "targetId": "target_final_signoff_point",
-          "successMessage": "Power Cube passes all checks. Build complete â€” congratulations!",
+          "successMessage": "Power Cube passes all checks. Build complete — congratulations!",
           "failureMessage": "Perform the final visual inspection at full throttle, then shut down and sign off."
         }
       ],
@@ -2888,7 +3092,7 @@
       "id": "hint_cut_safety",
       "type": "text",
       "title": "Cutting safety",
-      "message": "Clamp the tube to a stable surface. Wear safety glasses and hearing protection. Let the grinder do the work â€” don't force it through the steel.",
+      "message": "Clamp the tube to a stable surface. Wear safety glasses and hearing protection. Let the grinder do the work — don't force it through the steel.",
       "toolId": "tool_angle_grinder",
       "priority": "high"
     },
@@ -2943,7 +3147,7 @@
       "id": "hint_top_ring_layout",
       "type": "highlight",
       "title": "Top ring matches base",
-      "message": "The top ring is the same rectangle as the base â€” same tube lengths, same orientation. Long tubes front/back, short tubes left/right.",
+      "message": "The top ring is the same rectangle as the base — same tube lengths, same orientation. Long tubes front/back, short tubes left/right.",
       "priority": "medium"
     },
     {
@@ -2958,7 +3162,7 @@
       "id": "hint_center_plate",
       "type": "highlight",
       "title": "Center the mounting plate",
-      "message": "The plate should sit evenly on all four top tubes. Check that the overhang is equal on all sides â€” use the tape measure to verify.",
+      "message": "The plate should sit evenly on all four top tubes. Check that the overhang is equal on all sides — use the tape measure to verify.",
       "priority": "medium"
     },
     {
@@ -2973,14 +3177,14 @@
       "id": "hint_engine_orientation",
       "type": "highlight",
       "title": "Engine shaft direction",
-      "message": "The engine output shaft must face the left side of the frame where the pump will mount. Look for the keyway on the shaft â€” that's the output end.",
+      "message": "The engine output shaft must face the left side of the frame where the pump will mount. Look for the keyway on the shaft — that's the output end.",
       "priority": "high"
     },
     {
       "id": "hint_star_pattern",
       "type": "text",
       "title": "Star-pattern torquing",
-      "message": "Torque bolts in a cross pattern: front-left â†’ back-right â†’ front-right â†’ back-left. This seats the engine evenly and prevents the plate from flexing.",
+      "message": "Torque bolts in a cross pattern: front-left → back-right → front-right → back-left. This seats the engine evenly and prevents the plate from flexing.",
       "toolId": "tool_torque_wrench",
       "priority": "high"
     },
@@ -2988,21 +3192,21 @@
       "id": "hint_coupling_alignment",
       "type": "highlight",
       "title": "Coupling installation",
-      "message": "Push the hub onto the shaft until the set screw aligns with the shaft flat. Tighten the set screw. Insert the spider â€” it should fit snugly in the hub jaws with no force.",
+      "message": "Push the hub onto the shaft until the set screw aligns with the shaft flat. Tighten the set screw. Insert the spider — it should fit snugly in the hub jaws with no force.",
       "priority": "medium"
     },
     {
       "id": "hint_pump_shaft_engagement",
       "type": "highlight",
       "title": "Pump alignment",
-      "message": "The pump shaft should slide into the coupling hub smoothly. If you have to force it, the shafts are misaligned â€” shim the pump bracket until the shaft drops in freely.",
+      "message": "The pump shaft should slide into the coupling hub smoothly. If you have to force it, the shafts are misaligned — shim the pump bracket until the shaft drops in freely.",
       "priority": "high"
     },
     {
       "id": "hint_free_spin_check",
       "type": "text",
       "title": "Free-spin test",
-      "message": "After torquing the pump bolts, grab the coupling and spin it by hand. It should turn smoothly with no tight spots. Binding means misalignment â€” loosen and adjust.",
+      "message": "After torquing the pump bolts, grab the coupling and spin it by hand. It should turn smoothly with no tight spots. Binding means misalignment — loosen and adjust.",
       "toolId": "tool_torque_wrench",
       "priority": "high"
     },
@@ -3017,7 +3221,7 @@
       "id": "hint_hose_routing",
       "type": "text",
       "title": "Pressure hose routing",
-      "message": "Route hoses away from the engine exhaust, fan belt, and any moving parts. Maintain at least a 4-inch bend radius â€” tight bends weaken the braided reinforcement.",
+      "message": "Route hoses away from the engine exhaust, fan belt, and any moving parts. Maintain at least a 4-inch bend radius — tight bends weaken the braided reinforcement.",
       "toolId": "tool_line_wrench",
       "priority": "high"
     },
@@ -3025,7 +3229,7 @@
       "id": "hint_return_routing",
       "type": "text",
       "title": "Return line routing",
-      "message": "The return line is lower pressure but higher flow. Use the full 1\" ID hose â€” don't reduce the size. Route it below the reservoir return port so oil flows downhill.",
+      "message": "The return line is lower pressure but higher flow. Use the full 1\" ID hose — don't reduce the size. Route it below the reservoir return port so oil flows downhill.",
       "toolId": "tool_line_wrench",
       "priority": "medium"
     },
@@ -3033,14 +3237,14 @@
       "id": "hint_cooler_airflow",
       "type": "highlight",
       "title": "Cooler placement",
-      "message": "Mount the cooler where it gets maximum airflow â€” the front face of the frame is ideal. Leave at least 2 inches between the cooler and any obstruction.",
+      "message": "Mount the cooler where it gets maximum airflow — the front face of the frame is ideal. Leave at least 2 inches between the cooler and any obstruction.",
       "priority": "medium"
     },
     {
       "id": "hint_injection_hazard",
       "type": "text",
       "title": "Hydraulic injection hazard",
-      "message": "A pinhole leak at 2500 PSI can inject fluid through skin, causing severe tissue damage. Never run your hand along a pressurized hose to check for leaks â€” use cardboard instead.",
+      "message": "A pinhole leak at 2500 PSI can inject fluid through skin, causing severe tissue damage. Never run your hand along a pressurized hose to check for leaks — use cardboard instead.",
       "toolId": "tool_line_wrench",
       "priority": "high"
     },
@@ -3055,7 +3259,7 @@
       "id": "hint_fuel_routing",
       "type": "text",
       "title": "Fuel line routing",
-      "message": "Keep the fuel line away from the exhaust manifold and any moving parts. Use P-clips or zip ties to secure the line to the frame every 8â€“10 inches.",
+      "message": "Keep the fuel line away from the exhaust manifold and any moving parts. Use P-clips or zip ties to secure the line to the frame every 8–10 inches.",
       "toolId": "tool_socket_set",
       "priority": "high"
     },
@@ -3063,7 +3267,7 @@
       "id": "hint_shutoff_access",
       "type": "highlight",
       "title": "Shutoff valve accessibility",
-      "message": "Make sure the shutoff handle can be reached from outside the frame â€” you shouldn't have to reach past the engine to turn it off.",
+      "message": "Make sure the shutoff handle can be reached from outside the frame — you shouldn't have to reach past the engine to turn it off.",
       "priority": "medium"
     },
     {
@@ -3100,7 +3304,7 @@
       "id": "hint_crimp_technique",
       "type": "text",
       "title": "Good crimp technique",
-      "message": "Strip exactly 1/2 inch. Insert wire fully into the ring terminal barrel. Position the crimp tool on the barrel (not the ring). Squeeze until the tool clicks. Tug firmly â€” it should not pull out.",
+      "message": "Strip exactly 1/2 inch. Insert wire fully into the ring terminal barrel. Position the crimp tool on the barrel (not the ring). Squeeze until the tool clicks. Tug firmly — it should not pull out.",
       "toolId": "tool_wire_crimper",
       "priority": "medium"
     },
@@ -3108,7 +3312,7 @@
       "id": "hint_cable_routing",
       "type": "text",
       "title": "Cable routing best practice",
-      "message": "Route cables along frame rails using P-clips. Avoid sharp bends (minimum 2â€³ radius). Keep cables away from exhaust and moving parts. Leave a small service loop at each end.",
+      "message": "Route cables along frame rails using P-clips. Avoid sharp bends (minimum 2″ radius). Keep cables away from exhaust and moving parts. Leave a small service loop at each end.",
       "toolId": "tool_socket_set",
       "priority": "medium"
     },
@@ -3116,7 +3320,7 @@
       "id": "hint_continuity_test",
       "type": "text",
       "title": "Continuity testing",
-      "message": "Touch both meter probes to the two ends of the circuit you're testing. A beep means current can flow. No beep means an open â€” check the connection at each end and any inline crimp.",
+      "message": "Touch both meter probes to the two ends of the circuit you're testing. A beep means current can flow. No beep means an open — check the connection at each end and any inline crimp.",
       "toolId": "tool_multimeter",
       "priority": "medium"
     },
@@ -3124,21 +3328,21 @@
       "id": "hint_oil_grade",
       "type": "text",
       "title": "Hydraulic oil specification",
-      "message": "Use ISO VG 46 (AW-46) hydraulic oil. This is the standard grade for gear pumps operating between 40â€“180Â°F ambient. Do not use motor oil, ATF, or vegetable-based oil.",
+      "message": "Use ISO VG 46 (AW-46) hydraulic oil. This is the standard grade for gear pumps operating between 40–180°F ambient. Do not use motor oil, ATF, or vegetable-based oil.",
       "priority": "high"
     },
     {
       "id": "hint_gauge_orientation",
       "type": "highlight",
       "title": "Gauge readability",
-      "message": "Angle the gauge face toward the operator position so it can be read from outside the frame. Glycerin filling dampens the needle â€” don't worry if it looks sluggish compared to a dry gauge.",
+      "message": "Angle the gauge face toward the operator position so it can be read from outside the frame. Glycerin filling dampens the needle — don't worry if it looks sluggish compared to a dry gauge.",
       "priority": "medium"
     },
     {
       "id": "hint_first_start_checklist",
       "type": "text",
       "title": "Pre-start checklist",
-      "message": "Before turning the key: (1) Oil â€“ FULL. (2) Fuel valve â€“ OPEN. (3) Choke â€“ FULL. (4) Throttle â€“ IDLE. (5) All guards and covers in place. (6) No tools on the engine.",
+      "message": "Before turning the key: (1) Oil – FULL. (2) Fuel valve – OPEN. (3) Choke – FULL. (4) Throttle – IDLE. (5) All guards and covers in place. (6) No tools on the engine.",
       "priority": "high"
     },
     {
@@ -3341,7 +3545,7 @@
       "id": "target_square_check_point",
       "name": "Squareness Check Point",
       "anchorRef": "anchors/power_cube/square_check",
-      "description": "Where to place the framing square to check the base for 90Â°.",
+      "description": "Where to place the framing square to check the base for 90°.",
       "tags": [
         "power_cube",
         "frame",

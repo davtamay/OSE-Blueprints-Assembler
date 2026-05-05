@@ -1069,35 +1069,6 @@ namespace OSE.UI.Root
                 RuntimeEventBus.Publish(new SpawnerPartSwapped(partDef.id));
             }
 
-            // ── Control cube test — creates a known-good primitive at a
-            // known world position with the simplest possible URP material.
-            // If the user can see THIS cube in the WebGL build but not the
-            // spawned parts, the issue is specific to the part GameObject
-            // setup. If the user can't see this cube either, the camera /
-            // scene / rendering pipeline is broken at a level diagnostic
-            // isVisible / inFrustum checks can't surface.
-            var existingControl = GameObject.Find("OSE_ControlCube");
-            if (existingControl != null) SafeDestroy(existingControl);
-            var control = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            control.name = "OSE_ControlCube";
-            control.transform.position = new Vector3(0f, 1.5f, 3f);  // 3m forward of origin
-            control.transform.localScale = Vector3.one * 0.5f;       // 50cm cube
-            var controlR = control.GetComponent<Renderer>();
-            if (controlR != null)
-            {
-                // Use the EXACT same material path that fails for parts.
-                // If parts are invisible due to this material's variant
-                // being stripped, the control cube will be invisible too.
-                MaterialHelper.Apply(control, "OSE_ControlCubeMaterial", new Color(1f, 0.2f, 0.2f, 1f));
-            }
-            string controlMatName = controlR != null && controlR.sharedMaterial != null
-                ? controlR.sharedMaterial.name : "<none>";
-            string controlShaderName = controlR != null && controlR.sharedMaterial != null && controlR.sharedMaterial.shader != null
-                ? controlR.sharedMaterial.shader.name : "<none>";
-            OseLog.Info($"[PackagePartSpawner] Control cube spawned at {control.transform.position}, " +
-                        $"layer={control.layer}, isVisible={(controlR != null && controlR.isVisible)}, " +
-                        $"material={controlMatName}, shader={controlShaderName}");
-
             // One-line summary so future "where are my parts?" debugging is one
             // filter-search away. Runs once per package change. If failed > 0 the
             // per-part StreamingAssetsSource warnings carry the URI that broke.

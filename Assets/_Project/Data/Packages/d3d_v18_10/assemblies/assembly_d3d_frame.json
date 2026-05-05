@@ -4313,8 +4313,10 @@
         "x": 0,
         "y": 0,
         "z": 0
-      }
-    },
+      },
+      "useLocalOffsetFromPart": true,
+      "localOffsetFromPart": { "x": 2.0341, "y": 1, "z": 2.5472 }
+  },
     {
       "id": "target_bottom_right_bar",
       "name": "Bottom Frame Side Right Bar Target",
@@ -4331,8 +4333,10 @@
         "x": 0,
         "y": 90,
         "z": 0
-      }
-    },
+      },
+      "useLocalOffsetFromPart": true,
+      "localOffsetFromPart": { "x": 2.4924, "y": 0, "z": -0.9842 }
+  },
     {
       "id": "target_bottom_bottom_bar",
       "name": "Bottom Frame Side Bottom Bar Target",
@@ -4349,8 +4353,10 @@
         "x": 0,
         "y": 0,
         "z": 0
-      }
-    },
+      },
+      "useLocalOffsetFromPart": true,
+      "localOffsetFromPart": { "x": 2.0341, "y": 1, "z": -4.5157 }
+  },
     {
       "id": "target_bottom_left_bar",
       "name": "Bottom Frame Side Left Bar Target",
@@ -4367,8 +4373,10 @@
         "x": 0,
         "y": 90,
         "z": 0
-      }
-    },
+      },
+      "useLocalOffsetFromPart": true,
+      "localOffsetFromPart": { "x": 1.5758, "y": 0, "z": 2.9528 }
+  },
     {
       "id": "target_bottom_square_check",
       "name": "Bottom Frame Side Square Check",

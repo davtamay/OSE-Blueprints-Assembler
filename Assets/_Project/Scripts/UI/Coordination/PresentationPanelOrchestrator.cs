@@ -205,6 +205,8 @@ namespace OSE.UI.Root
             string assemblyName    = null;
             int    globalStepIndex = 0;
             int    globalTotalSteps = 0;
+            string activeStepIdForView = null;
+            string toolDisplayName = null;
 
             if (ServiceRegistry.TryGet<IMachineSessionController>(out var sessionForProgress))
             {
@@ -225,7 +227,9 @@ namespace OSE.UI.Root
                     string activeStepId = sessionForProgress.AssemblyController?.StepController?.HasActiveStep == true
                         ? sessionForProgress.AssemblyController.StepController.CurrentStepState.StepId
                         : sessionForProgress.SessionState?.CurrentStepId;
+                    activeStepIdForView = activeStepId;
 
+                    StepDefinition activeStep = null;
                     if (!string.IsNullOrEmpty(activeStepId) && orderedSteps != null)
                     {
                         for (int i = 0; i < orderedSteps.Length; i++)
@@ -234,8 +238,22 @@ namespace OSE.UI.Root
                                 string.Equals(orderedSteps[i].id, activeStepId, System.StringComparison.OrdinalIgnoreCase))
                             {
                                 globalStepIndex = i;
+                                activeStep = orderedSteps[i];
                                 break;
                             }
+                        }
+                    }
+
+                    if (activeStep?.relevantToolIds != null && activeStep.relevantToolIds.Length > 0)
+                    {
+                        string firstToolId = activeStep.relevantToolIds[0];
+                        if (!string.IsNullOrEmpty(firstToolId) &&
+                            pkg.TryGetTool(firstToolId, out var toolDef) &&
+                            toolDef != null)
+                        {
+                            toolDisplayName = !string.IsNullOrWhiteSpace(toolDef.name)
+                                ? toolDef.name
+                                : firstToolId;
                         }
                     }
                 }
@@ -254,7 +272,9 @@ namespace OSE.UI.Root
                 progressOverride,
                 assemblyName,
                 globalStepIndex,
-                globalTotalSteps);
+                globalTotalSteps,
+                toolDisplayName,
+                activeStepIdForView);
 
             StepPanelController.Show(viewModel);
         }

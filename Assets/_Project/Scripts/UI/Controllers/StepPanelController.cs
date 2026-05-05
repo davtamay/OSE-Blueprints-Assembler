@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using OSE.App;
 using OSE.Content;
 using OSE.Core;
@@ -34,6 +35,11 @@ namespace OSE.UI.Controllers
         private int _lastAppliedGlobalIndex = -1;
         private int _lastAppliedGlobalTotal;
 
+        // Step IDs the trainee has already seen in this session. First visit auto-expands
+        // Details; revisits stay collapsed. Marked seen on Continue click.
+        private readonly HashSet<string> _seenStepIds = new HashSet<string>();
+        private string _lastAppliedStepId;
+
         protected override void CacheView(VisualElement root)
         {
             _view = (StepPanelView)root;
@@ -45,8 +51,10 @@ namespace OSE.UI.Controllers
             _view.SkipToStartButton.clicked += HandleSkipToStartClicked;
             _view.SkipToEndButton.clicked += HandleSkipToEndClicked;
             _view.SectionsButton.clicked += HandleSectionsClicked;
+            _view.ReadAloudButton.clicked += HandleReadAloudClicked;
             _view.StepNumberField.RegisterCallback<WheelEvent>(HandleStepScroll);
             _view.StepNumberField.RegisterValueChangedCallback(HandleStepTextChanged);
+            _view.InstallClickAwayDismiss();
         }
 
         protected override void ApplyViewModel(StepPanelViewModel viewModel)
@@ -60,8 +68,23 @@ namespace OSE.UI.Controllers
             _lastAppliedGlobalTotal = displayTotal;
             _view.StepNumberField.SetValueWithoutNotify(displayStep.ToString());
             _view.StepSuffixLabel.text = $"of {displayTotal}";
+            _view.SetNavChipText(displayStep, displayTotal);
             _view.TitleLabel.text = viewModel.Title;
-            _view.InstructionLabel.text = viewModel.Instruction;
+            _view.SetToolChip(viewModel.ToolDisplayName);
+            _view.SetInstructionDetails(viewModel.InstructionDetails ?? viewModel.Instruction);
+            _view.SetWhyItMatters(viewModel.WhyItMatters);
+
+            // First-visit policy: auto-expand Details for steps the trainee hasn't seen yet.
+            string currentStepId = viewModel.StepId;
+            bool isFirstVisit = !string.IsNullOrEmpty(currentStepId) && !_seenStepIds.Contains(currentStepId);
+            // Only re-apply expansion when the step actually changed; preserves user toggles
+            // on re-renders triggered by progress / gate updates.
+            if (currentStepId != _lastAppliedStepId)
+            {
+                _view.SetDetailsExpanded(isFirstVisit);
+                _lastAppliedStepId = currentStepId;
+            }
+
             _view.SetAssemblyName(viewModel.AssemblyName);
 
             // Show sections button only when package has multiple assemblies
@@ -79,8 +102,7 @@ namespace OSE.UI.Controllers
             _view.SetConfirmButtonVisible(viewModel.ShowConfirmButton);
             _view.SetConfirmEnabled(viewModel.ConfirmUnlocked);
             _view.SetHintButtonVisible(viewModel.ShowHintButton);
-            _view.SetProgress(viewModel.ProgressRatio);
-            _view.SetGlobalProgress(viewModel.GlobalProgressRatio, viewModel.GlobalProgressLabel);
+            _view.SetMicroProgress(viewModel.GlobalProgressRatio, displayTotal > 0);
 
             // Update navigation button states
             bool canBack = Session?.CanStepBack ?? false;
@@ -103,10 +125,12 @@ namespace OSE.UI.Controllers
                 _view.SkipToStartButton.clicked -= HandleSkipToStartClicked;
                 _view.SkipToEndButton.clicked -= HandleSkipToEndClicked;
                 _view.SectionsButton.clicked -= HandleSectionsClicked;
+                _view.ReadAloudButton.clicked -= HandleReadAloudClicked;
                 _view.StepNumberField.UnregisterCallback<WheelEvent>(HandleStepScroll);
                 _view.StepNumberField.UnregisterValueChangedCallback(HandleStepTextChanged);
             }
             _view = null;
+            _lastAppliedStepId = null;
         }
 
         private void HandleStepScroll(WheelEvent evt)
@@ -184,6 +208,12 @@ namespace OSE.UI.Controllers
             if (stepController == null || !stepController.HasActiveStep)
                 return;
 
+            // Mark this step as seen the moment the trainee commits to advancing.
+            // Doing it here (rather than on render) means a quick scroll-through still
+            // surfaces details on first read.
+            if (!string.IsNullOrEmpty(_lastAppliedStepId))
+                _seenStepIds.Add(_lastAppliedStepId);
+
             if (Session.ToolController != null)
             {
                 // Check if this step requires a tool action to complete.
@@ -211,6 +241,8 @@ namespace OSE.UI.Controllers
 
         private void HandleBackClicked()
         {
+            // Don't close the popup — trainees often step through several at a time.
+            // Click-away or chip-tap dismisses when they're done.
             Session?.StepBack();
         }
 
@@ -221,6 +253,7 @@ namespace OSE.UI.Controllers
 
         private void HandleSkipToStartClicked()
         {
+            _view?.CloseNavOverlay();
             if (Session == null) return;
             bool result = Session.NavigateToGlobalStep(0);
             OseLog.Info($"[StepPanel] SkipToStart clicked — NavigateToGlobalStep(0) returned {result}");
@@ -228,6 +261,7 @@ namespace OSE.UI.Controllers
 
         private void HandleSkipToEndClicked()
         {
+            _view?.CloseNavOverlay();
             if (Session == null) return;
             bool result = Session.NavigateToLastStep();
             OseLog.Info($"[StepPanel] SkipToEnd clicked — NavigateToLastStep returned {result}");
@@ -238,15 +272,23 @@ namespace OSE.UI.Controllers
             RuntimeEventBus.Publish(new AssemblyPickerRequested());
         }
 
+        private void HandleReadAloudClicked()
+        {
+            // OS-native TTS hook — implementations differ per platform. Until a runtime
+            // service is wired, the button is informational only; it stays in place so
+            // the UI affordance ships and TTS can be added behind it without layout churn.
+            RuntimeEventBus.Publish(new StepReadAloudRequested(_lastAppliedStepId));
+        }
+
         private sealed class StepPanelView : VisualElement
         {
+            // Buttons exposed to the controller
             public Label AssemblyLabel { get; }
             public Button SectionsButton { get; }
             public Label StepLabel { get; }
             public TextField StepNumberField { get; }
             public Label StepSuffixLabel { get; }
             public Label TitleLabel { get; }
-            public Label InstructionLabel { get; }
             public Button ContextActionButton { get; }
             public Button ConfirmButton { get; }
             public Button HintButton { get; }
@@ -254,13 +296,19 @@ namespace OSE.UI.Controllers
             public Button ForwardButton { get; }
             public Button SkipToStartButton { get; }
             public Button SkipToEndButton { get; }
+            public Button ReadAloudButton { get; }
 
-            private readonly VisualElement _progressTrack;
-            private readonly VisualElement _progressFill;
-            private readonly VisualElement _globalProgressTrack;
-            private readonly VisualElement _globalProgressFill;
-            private readonly Label _globalProgressLabel;
+            // Internals
+            private readonly Button _navChipButton;
+            private readonly VisualElement _navOverlay;
+            private readonly VisualElement _microProgressTrack;
+            private readonly VisualElement _microProgressFill;
+            private readonly VisualElement _toolChip;
+            private readonly Label _toolChipLabel;
+            private readonly Disclosure _detailsDisclosure;
+            private readonly Disclosure _whyDisclosure;
 
+            // Palette (carried over from prior version for consistency)
             private static readonly Color ContextEnabledBg = new Color(0.46f, 0.34f, 0.12f, 0.96f);
             private static readonly Color ContextDisabledBg = new Color(0.28f, 0.24f, 0.18f, 0.7f);
             private static readonly Color ContextEnabledText = new Color(1f, 0.94f, 0.82f, 1f);
@@ -271,222 +319,257 @@ namespace OSE.UI.Controllers
             private static readonly Color NavBtnBg = new Color(0.15f, 0.2f, 0.28f, 0.8f);
             private static readonly Color NavBtnBorder = new Color(0.42f, 0.82f, 1f, 0.3f);
             private static readonly Color NavBtnText = new Color(0.42f, 0.82f, 1f, 1f);
+            private static readonly Color MetaText = new Color(0.65f, 0.78f, 0.95f, 0.85f);
+            private static readonly Color SubtleText = new Color(0.55f, 0.7f, 0.9f, 0.7f);
+            private static readonly Color ToolChipBg = new Color(0.20f, 0.14f, 0.06f, 0.92f);
+            private static readonly Color ToolChipBorder = new Color(0.98f, 0.82f, 0.42f, 0.95f);
+            private static readonly Color ToolChipText = new Color(1f, 0.95f, 0.75f, 1f);
 
             public StepPanelView()
             {
                 UIToolkitStyleUtility.ApplyPanelSurface(this);
                 style.alignSelf = Align.FlexStart;
+                style.maxWidth = 380f;
+                style.minWidth = 320f;
 
-                // Assembly name row (eyebrow above nav row) with optional Sections button
+                // ── Row 1: assembly name (left) · Sections (small, right, only if multi-asm) ──
                 var assemblyRow = new VisualElement();
                 assemblyRow.style.flexDirection = FlexDirection.Row;
                 assemblyRow.style.alignItems = Align.Center;
-                assemblyRow.style.justifyContent = Justify.SpaceBetween;
-                assemblyRow.style.marginBottom = 2f;
-                assemblyRow.style.display = DisplayStyle.None;
+                assemblyRow.style.marginBottom = 4f;
 
                 AssemblyLabel = new Label();
                 AssemblyLabel.style.fontSize = 11f;
-                AssemblyLabel.style.color = new Color(0.65f, 0.78f, 0.95f, 0.85f);
+                AssemblyLabel.style.color = MetaText;
                 AssemblyLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
-                AssemblyLabel.style.unityTextAlign = TextAnchor.MiddleLeft;
                 AssemblyLabel.style.flexGrow = 1f;
+                AssemblyLabel.style.flexShrink = 1f;
+                AssemblyLabel.style.overflow = Overflow.Hidden;
+                AssemblyLabel.style.textOverflow = TextOverflow.Ellipsis;
                 assemblyRow.Add(AssemblyLabel);
 
-                SectionsButton = new Button();
-                SectionsButton.text = "\u2630"; // ☰ hamburger menu
-                SectionsButton.style.width = 28f;
-                SectionsButton.style.height = 22f;
-                SectionsButton.style.fontSize = 14f;
-                SectionsButton.style.backgroundColor = new Color(0.15f, 0.2f, 0.28f, 0.8f);
-                SectionsButton.style.color = new Color(0.6f, 0.75f, 0.95f, 0.9f);
+                SectionsButton = new Button { text = "Sections" };
+                SectionsButton.tooltip = "Switch to a different section";
+                SectionsButton.style.height = 18f;
+                SectionsButton.style.fontSize = 10f;
+                SectionsButton.style.paddingLeft = 8f;
+                SectionsButton.style.paddingRight = 8f;
+                SectionsButton.style.paddingTop = 0f;
+                SectionsButton.style.paddingBottom = 0f;
+                SectionsButton.style.marginLeft = 6f;
+                SectionsButton.style.unityTextAlign = TextAnchor.MiddleCenter;
+                SectionsButton.style.color = MetaText;
+                SectionsButton.style.backgroundColor = new Color(0f, 0f, 0f, 0f);
                 SectionsButton.style.borderTopLeftRadius = 4f;
                 SectionsButton.style.borderTopRightRadius = 4f;
                 SectionsButton.style.borderBottomLeftRadius = 4f;
                 SectionsButton.style.borderBottomRightRadius = 4f;
                 SectionsButton.style.borderTopWidth = 1f;
+                SectionsButton.style.borderRightWidth = 1f;
                 SectionsButton.style.borderBottomWidth = 1f;
                 SectionsButton.style.borderLeftWidth = 1f;
-                SectionsButton.style.borderRightWidth = 1f;
-                SectionsButton.style.borderTopColor = new Color(0.3f, 0.4f, 0.6f, 0.3f);
-                SectionsButton.style.borderBottomColor = new Color(0.3f, 0.4f, 0.6f, 0.3f);
-                SectionsButton.style.borderLeftColor = new Color(0.3f, 0.4f, 0.6f, 0.3f);
-                SectionsButton.style.borderRightColor = new Color(0.3f, 0.4f, 0.6f, 0.3f);
-                SectionsButton.style.paddingLeft = 0f;
-                SectionsButton.style.paddingRight = 0f;
-                SectionsButton.style.paddingTop = 0f;
-                SectionsButton.style.paddingBottom = 0f;
-                SectionsButton.style.unityTextAlign = TextAnchor.MiddleCenter;
+                SectionsButton.style.borderTopColor = new Color(0.32f, 0.42f, 0.58f, 0.4f);
+                SectionsButton.style.borderRightColor = new Color(0.32f, 0.42f, 0.58f, 0.4f);
+                SectionsButton.style.borderBottomColor = new Color(0.32f, 0.42f, 0.58f, 0.4f);
+                SectionsButton.style.borderLeftColor = new Color(0.32f, 0.42f, 0.58f, 0.4f);
                 SectionsButton.style.display = DisplayStyle.None;
                 assemblyRow.Add(SectionsButton);
 
                 Add(assemblyRow);
 
-                StepLabel = UIToolkitStyleUtility.CreateEyebrowLabel("Current Step");
-                StepLabel.style.display = DisplayStyle.None; // hidden; replaced by input row
+                // ── Row 2: locator — [Step 85 of 305 ▼]   ▰▰▰▱▱▱▱▱  ──
+                // Single chip is the affordance. Tap opens the popup that groups ALL nav
+                // controls together (|◀ ◀ Step [#] of N ▶ ▶|) — keeps related controls
+                // visually unified and matches the original arrangement.
+                var locatorRow = new VisualElement();
+                locatorRow.style.flexDirection = FlexDirection.Row;
+                locatorRow.style.alignItems = Align.Center;
+                locatorRow.style.marginBottom = 8f;
 
-                // Navigation row: [Back] "Step" [input] "of N" [Forward]
-                var navRow = new VisualElement();
-                navRow.style.flexDirection = FlexDirection.Row;
-                navRow.style.alignItems = Align.Center;
-                navRow.style.justifyContent = Justify.SpaceBetween;
-                navRow.style.marginBottom = 2f;
+                _navChipButton = new Button { text = "Step 1 of 1  ▼" }; // ▼ U+25BC
+                _navChipButton.tooltip = "Tap to navigate steps";
+                _navChipButton.style.fontSize = 11f;
+                _navChipButton.style.unityFontStyleAndWeight = FontStyle.Bold;
+                _navChipButton.style.height = 24f;
+                _navChipButton.style.paddingLeft = 12f;
+                _navChipButton.style.paddingRight = 12f;
+                _navChipButton.style.paddingTop = 0f;
+                _navChipButton.style.paddingBottom = 0f;
+                _navChipButton.style.marginLeft = 0f;
+                _navChipButton.style.marginRight = 10f;
+                _navChipButton.style.color = NavBtnText;
+                _navChipButton.style.backgroundColor = NavBtnBg;
+                _navChipButton.style.borderTopLeftRadius = 12f;
+                _navChipButton.style.borderTopRightRadius = 12f;
+                _navChipButton.style.borderBottomLeftRadius = 12f;
+                _navChipButton.style.borderBottomRightRadius = 12f;
+                _navChipButton.style.borderTopWidth = 1f;
+                _navChipButton.style.borderRightWidth = 1f;
+                _navChipButton.style.borderBottomWidth = 1f;
+                _navChipButton.style.borderLeftWidth = 1f;
+                _navChipButton.style.borderTopColor = NavBtnBorder;
+                _navChipButton.style.borderRightColor = NavBtnBorder;
+                _navChipButton.style.borderBottomColor = NavBtnBorder;
+                _navChipButton.style.borderLeftColor = NavBtnBorder;
+                _navChipButton.clicked += ToggleNavOverlay;
+                locatorRow.Add(_navChipButton);
 
-                SkipToStartButton = CreateNavButton("|\u25C0"); // |◀
-                SkipToStartButton.style.marginRight = 4f;
-                BackButton = CreateNavButton("\u25C0"); // ◀
-                ForwardButton = CreateNavButton("\u25B6"); // ▶
-                SkipToEndButton = CreateNavButton("\u25B6|"); // ▶|
-                SkipToEndButton.style.marginLeft = 4f;
+                // Progress bar fills the remaining space.
+                _microProgressTrack = new VisualElement();
+                _microProgressTrack.style.height = 4f;
+                _microProgressTrack.style.flexGrow = 1f;
+                _microProgressTrack.style.backgroundColor = new Color(0.18f, 0.22f, 0.3f, 0.6f);
+                _microProgressTrack.style.borderTopLeftRadius = 2f;
+                _microProgressTrack.style.borderTopRightRadius = 2f;
+                _microProgressTrack.style.borderBottomLeftRadius = 2f;
+                _microProgressTrack.style.borderBottomRightRadius = 2f;
+                locatorRow.Add(_microProgressTrack);
 
-                // "Step" prefix label
-                var stepPrefixLabel = new Label("Step ");
-                stepPrefixLabel.style.fontSize = 11f;
-                stepPrefixLabel.style.color = new Color(0.65f, 0.78f, 0.95f, 0.85f);
-                stepPrefixLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
-                stepPrefixLabel.style.marginLeft = 4f;
-                stepPrefixLabel.style.marginRight = 0f;
-                stepPrefixLabel.style.paddingRight = 0f;
+                _microProgressFill = new VisualElement();
+                _microProgressFill.style.height = 4f;
+                _microProgressFill.style.backgroundColor = new Color(0.30f, 0.85f, 0.55f, 0.95f);
+                _microProgressFill.style.borderTopLeftRadius = 2f;
+                _microProgressFill.style.borderTopRightRadius = 2f;
+                _microProgressFill.style.borderBottomLeftRadius = 2f;
+                _microProgressFill.style.borderBottomRightRadius = 2f;
+                _microProgressFill.style.width = Length.Percent(0f);
+                _microProgressTrack.Add(_microProgressFill);
 
-                // Editable step number — click to type, scroll to jump
-                StepNumberField = new TextField();
-                StepNumberField.value = "1";
-                StepNumberField.style.width = 52f;
-                StepNumberField.style.height = 26f;
-                StepNumberField.style.marginLeft = 2f;
-                StepNumberField.style.marginRight = 2f;
-                StepNumberField.style.borderTopLeftRadius = 4f;
-                StepNumberField.style.borderTopRightRadius = 4f;
-                StepNumberField.style.borderBottomLeftRadius = 4f;
-                StepNumberField.style.borderBottomRightRadius = 4f;
-                StepNumberField.style.borderTopWidth = 1f;
-                StepNumberField.style.borderRightWidth = 1f;
-                StepNumberField.style.borderBottomWidth = 1f;
-                StepNumberField.style.borderLeftWidth = 1f;
-                StepNumberField.style.borderTopColor = new Color(0.42f, 0.82f, 1f, 0.4f);
-                StepNumberField.style.borderRightColor = new Color(0.42f, 0.82f, 1f, 0.4f);
-                StepNumberField.style.borderBottomColor = new Color(0.42f, 0.82f, 1f, 0.4f);
-                StepNumberField.style.borderLeftColor = new Color(0.42f, 0.82f, 1f, 0.4f);
+                Add(locatorRow);
 
-                // Style the inner input element on attach
-                StepNumberField.RegisterCallback<AttachToPanelEvent>(_ =>
-                {
-                    var inputEl = StepNumberField.Q(className: "unity-text-field__input");
-                    if (inputEl != null)
-                    {
-                        inputEl.style.backgroundColor = new Color(0.10f, 0.14f, 0.20f, 0.95f);
-                        inputEl.style.color = new Color(0.42f, 0.82f, 1f, 1f);
-                        inputEl.style.fontSize = 13f;
-                        inputEl.style.unityTextAlign = TextAnchor.MiddleCenter;
-                        inputEl.style.unityFontStyleAndWeight = FontStyle.Bold;
-                        inputEl.style.paddingLeft = 2f;
-                        inputEl.style.paddingRight = 2f;
-                        inputEl.style.paddingTop = 0f;
-                        inputEl.style.paddingBottom = 0f;
-                        inputEl.style.borderTopLeftRadius = 4f;
-                        inputEl.style.borderTopRightRadius = 4f;
-                        inputEl.style.borderBottomLeftRadius = 4f;
-                        inputEl.style.borderBottomRightRadius = 4f;
-                    }
-                    // Also hide the label element that TextField creates
-                    var labelEl = StepNumberField.Q<Label>(className: "unity-text-field__label");
-                    if (labelEl != null)
-                        labelEl.style.display = DisplayStyle.None;
-                });
+                // 1px divider — separates meta region from instructional content.
+                var divider = new VisualElement();
+                divider.style.height = 1f;
+                divider.style.marginBottom = 10f;
+                divider.style.backgroundColor = new Color(0.32f, 0.42f, 0.58f, 0.32f);
+                Add(divider);
 
-                // "of N" suffix label
-                StepSuffixLabel = new Label("of 0");
-                StepSuffixLabel.style.fontSize = 11f;
-                StepSuffixLabel.style.color = new Color(0.65f, 0.78f, 0.95f, 0.85f);
-                StepSuffixLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
-                StepSuffixLabel.style.marginLeft = 0f;
-                StepSuffixLabel.style.marginRight = 4f;
+                // ── Hero block: imperative title with left accent bar ──
+                var heroContainer = new VisualElement();
+                heroContainer.style.flexDirection = FlexDirection.Row;
+                heroContainer.style.alignItems = Align.FlexStart;
+                heroContainer.style.marginBottom = 8f;
 
-                // Center group that holds "Step [input] of N"
-                var stepGroup = new VisualElement();
-                stepGroup.style.flexDirection = FlexDirection.Row;
-                stepGroup.style.alignItems = Align.Center;
-                stepGroup.style.flexGrow = 1f;
-                stepGroup.style.justifyContent = Justify.Center;
-                stepGroup.Add(stepPrefixLabel);
-                stepGroup.Add(StepNumberField);
-                stepGroup.Add(StepSuffixLabel);
+                var accentBar = new VisualElement();
+                accentBar.style.width = 3f;
+                accentBar.style.minHeight = 28f;
+                accentBar.style.backgroundColor = new Color(0.30f, 0.85f, 0.55f, 0.95f);
+                accentBar.style.marginRight = 10f;
+                accentBar.style.borderTopLeftRadius = 1.5f;
+                accentBar.style.borderTopRightRadius = 1.5f;
+                accentBar.style.borderBottomLeftRadius = 1.5f;
+                accentBar.style.borderBottomRightRadius = 1.5f;
+                heroContainer.Add(accentBar);
 
-                navRow.Add(SkipToStartButton);
-                navRow.Add(BackButton);
-                navRow.Add(stepGroup);
-                navRow.Add(ForwardButton);
-                navRow.Add(SkipToEndButton);
-                Add(navRow);
+                TitleLabel = new Label("Awaiting Step Data");
+                TitleLabel.style.fontSize = 20f;
+                TitleLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+                TitleLabel.style.color = Color.white;
+                TitleLabel.style.whiteSpace = WhiteSpace.Normal;
+                TitleLabel.style.flexGrow = 1f;
+                TitleLabel.style.flexShrink = 1f;
+                heroContainer.Add(TitleLabel);
 
-                TitleLabel = UIToolkitStyleUtility.CreateTitleLabel("Awaiting Step Data");
-                InstructionLabel = UIToolkitStyleUtility.CreateBodyLabel(
-                    "Instruction text is provided by runtime presenters.");
+                Add(heroContainer);
 
-                // Progress bar
-                _progressTrack = new VisualElement();
-                _progressTrack.style.height = 4f;
-                _progressTrack.style.backgroundColor = new Color(0.2f, 0.24f, 0.3f, 0.6f);
-                _progressTrack.style.marginTop = 4f;
-                _progressTrack.style.marginBottom = 6f;
-                _progressTrack.style.borderTopLeftRadius = 2f;
-                _progressTrack.style.borderTopRightRadius = 2f;
-                _progressTrack.style.borderBottomLeftRadius = 2f;
-                _progressTrack.style.borderBottomRightRadius = 2f;
-                Add(_progressTrack);
+                // Tool chip row — indented to align with hero title text (past the accent bar).
+                // Listen does NOT live here anymore; it sits on the Details disclosure header so
+                // both content-access affordances (read / hear) cohabit a single row.
+                var heroRow = new VisualElement();
+                heroRow.style.flexDirection = FlexDirection.Row;
+                heroRow.style.alignItems = Align.Center;
+                heroRow.style.marginLeft = 13f;
+                heroRow.style.marginBottom = 10f;
 
-                _progressFill = new VisualElement();
-                _progressFill.style.height = 4f;
-                _progressFill.style.backgroundColor = new Color(0.3f, 0.85f, 0.5f, 1f);
-                _progressFill.style.borderTopLeftRadius = 2f;
-                _progressFill.style.borderTopRightRadius = 2f;
-                _progressFill.style.borderBottomLeftRadius = 2f;
-                _progressFill.style.borderBottomRightRadius = 2f;
-                _progressFill.style.width = Length.Percent(0f);
-                _progressTrack.Add(_progressFill);
+                _toolChip = new VisualElement();
+                _toolChip.style.flexDirection = FlexDirection.Row;
+                _toolChip.style.alignItems = Align.Center;
+                _toolChip.style.paddingLeft = 10f;
+                _toolChip.style.paddingRight = 10f;
+                _toolChip.style.paddingTop = 3f;
+                _toolChip.style.paddingBottom = 3f;
+                _toolChip.style.marginRight = 8f;
+                _toolChip.style.backgroundColor = ToolChipBg;
+                _toolChip.style.borderTopLeftRadius = 10f;
+                _toolChip.style.borderTopRightRadius = 10f;
+                _toolChip.style.borderBottomLeftRadius = 10f;
+                _toolChip.style.borderBottomRightRadius = 10f;
+                _toolChip.style.borderTopWidth = 1f;
+                _toolChip.style.borderRightWidth = 1f;
+                _toolChip.style.borderBottomWidth = 1f;
+                _toolChip.style.borderLeftWidth = 1f;
+                _toolChip.style.borderTopColor = ToolChipBorder;
+                _toolChip.style.borderRightColor = ToolChipBorder;
+                _toolChip.style.borderBottomColor = ToolChipBorder;
+                _toolChip.style.borderLeftColor = ToolChipBorder;
+                _toolChip.style.display = DisplayStyle.None;
 
-                // Global progress bar (thin, blue-tinted)
-                _globalProgressTrack = new VisualElement();
-                _globalProgressTrack.style.height = 2f;
-                _globalProgressTrack.style.backgroundColor = new Color(0.18f, 0.22f, 0.3f, 0.5f);
-                _globalProgressTrack.style.marginBottom = 4f;
-                _globalProgressTrack.style.borderTopLeftRadius = 1f;
-                _globalProgressTrack.style.borderTopRightRadius = 1f;
-                _globalProgressTrack.style.borderBottomLeftRadius = 1f;
-                _globalProgressTrack.style.borderBottomRightRadius = 1f;
-                _globalProgressTrack.style.display = DisplayStyle.None;
-                Add(_globalProgressTrack);
+                _toolChipLabel = new Label();
+                _toolChipLabel.style.fontSize = 10f;
+                _toolChipLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+                _toolChipLabel.style.color = ToolChipText;
+                _toolChipLabel.style.letterSpacing = 0.5f;
+                _toolChip.Add(_toolChipLabel);
+                heroRow.Add(_toolChip);
 
-                _globalProgressFill = new VisualElement();
-                _globalProgressFill.style.height = 2f;
-                _globalProgressFill.style.backgroundColor = new Color(0.42f, 0.68f, 1f, 0.8f);
-                _globalProgressFill.style.borderTopLeftRadius = 1f;
-                _globalProgressFill.style.borderTopRightRadius = 1f;
-                _globalProgressFill.style.borderBottomLeftRadius = 1f;
-                _globalProgressFill.style.borderBottomRightRadius = 1f;
-                _globalProgressFill.style.width = Length.Percent(0f);
-                _globalProgressTrack.Add(_globalProgressFill);
+                Add(heroRow);
 
-                _globalProgressLabel = new Label();
-                _globalProgressLabel.style.fontSize = 10f;
-                _globalProgressLabel.style.color = new Color(0.55f, 0.7f, 0.9f, 0.7f);
-                _globalProgressLabel.style.unityTextAlign = TextAnchor.MiddleRight;
-                _globalProgressLabel.style.marginBottom = 4f;
-                _globalProgressLabel.style.display = DisplayStyle.None;
-                Add(_globalProgressLabel);
+                // Listen — created here but parented into the Details disclosure header below,
+                // so the two "consume content" affordances share a row.
+                ReadAloudButton = new Button { text = "Listen" };
+                ReadAloudButton.tooltip = "Read this step aloud";
+                ReadAloudButton.style.height = 20f;
+                ReadAloudButton.style.fontSize = 10f;
+                ReadAloudButton.style.paddingLeft = 10f;
+                ReadAloudButton.style.paddingRight = 10f;
+                ReadAloudButton.style.paddingTop = 0f;
+                ReadAloudButton.style.paddingBottom = 0f;
+                ReadAloudButton.style.unityTextAlign = TextAnchor.MiddleCenter;
+                ReadAloudButton.style.backgroundColor = new Color(0f, 0f, 0f, 0f);
+                ReadAloudButton.style.color = NavBtnText;
+                ReadAloudButton.style.borderTopLeftRadius = 4f;
+                ReadAloudButton.style.borderTopRightRadius = 4f;
+                ReadAloudButton.style.borderBottomLeftRadius = 4f;
+                ReadAloudButton.style.borderBottomRightRadius = 4f;
+                ReadAloudButton.style.borderTopWidth = 1f;
+                ReadAloudButton.style.borderRightWidth = 1f;
+                ReadAloudButton.style.borderBottomWidth = 1f;
+                ReadAloudButton.style.borderLeftWidth = 1f;
+                ReadAloudButton.style.borderTopColor = NavBtnBorder;
+                ReadAloudButton.style.borderRightColor = NavBtnBorder;
+                ReadAloudButton.style.borderBottomColor = NavBtnBorder;
+                ReadAloudButton.style.borderLeftColor = NavBtnBorder;
 
-                Add(TitleLabel);
-                Add(InstructionLabel);
+                // ── Disclosures: Details + Why it matters ──
+                _detailsDisclosure = new Disclosure(
+                    "Details",
+                    bodyFontSize: 13f,
+                    bodyColor: new Color(0.92f, 0.95f, 0.98f, 1f));
+                _detailsDisclosure.HeaderActionSlot.Add(ReadAloudButton);
+                Add(_detailsDisclosure);
 
-                // Hint button (touch-friendly)
-                HintButton = new Button();
-                HintButton.text = "Request Hint";
-                HintButton.style.height = 40f;
-                HintButton.style.marginTop = 8f;
-                HintButton.style.fontSize = 14f;
-                HintButton.style.unityFontStyleAndWeight = FontStyle.Normal;
+                _whyDisclosure = new Disclosure(
+                    "Why it matters",
+                    bodyFontSize: 12f,
+                    bodyColor: SubtleText,
+                    accentBg: new Color(0.16f, 0.20f, 0.28f, 0.55f));
+                _whyDisclosure.style.display = DisplayStyle.None;
+                _whyDisclosure.style.marginTop = 4f;
+                Add(_whyDisclosure);
+
+                // Legacy StepLabel kept (hidden) so any external readers do not NRE.
+                StepLabel = new Label();
+                StepLabel.style.display = DisplayStyle.None;
+                Add(StepLabel);
+
+                // ── Hint button ──
+                HintButton = new Button { text = "Request Hint" };
+                HintButton.style.height = 36f;
+                HintButton.style.marginTop = 4f;
+                HintButton.style.marginBottom = 4f;
+                HintButton.style.fontSize = 13f;
                 HintButton.style.backgroundColor = new Color(0.15f, 0.25f, 0.4f, 0.9f);
-                HintButton.style.color = new Color(0.42f, 0.82f, 1f, 1f);
+                HintButton.style.color = NavBtnText;
                 HintButton.style.borderTopLeftRadius = 6f;
                 HintButton.style.borderTopRightRadius = 6f;
                 HintButton.style.borderBottomLeftRadius = 6f;
@@ -502,10 +585,9 @@ namespace OSE.UI.Controllers
                 HintButton.style.display = DisplayStyle.None;
                 Add(HintButton);
 
-                ContextActionButton = new Button();
-                ContextActionButton.text = "Place Assembly";
+                ContextActionButton = new Button { text = "Place Assembly" };
                 ContextActionButton.style.height = 44f;
-                ContextActionButton.style.marginTop = 10f;
+                ContextActionButton.style.marginTop = 6f;
                 ContextActionButton.style.fontSize = 15f;
                 ContextActionButton.style.unityFontStyleAndWeight = FontStyle.Bold;
                 ContextActionButton.style.borderTopLeftRadius = 6f;
@@ -515,11 +597,9 @@ namespace OSE.UI.Controllers
                 ContextActionButton.style.display = DisplayStyle.None;
                 Add(ContextActionButton);
 
-                // Confirm button (touch-friendly: 44px min height)
-                ConfirmButton = new Button();
-                ConfirmButton.text = "Continue";
+                ConfirmButton = new Button { text = "Continue" };
                 ConfirmButton.style.height = 44f;
-                ConfirmButton.style.marginTop = 10f;
+                ConfirmButton.style.marginTop = 6f;
                 ConfirmButton.style.fontSize = 16f;
                 ConfirmButton.style.unityFontStyleAndWeight = FontStyle.Bold;
                 ConfirmButton.style.backgroundColor = ConfirmEnabledBg;
@@ -530,6 +610,113 @@ namespace OSE.UI.Controllers
                 ConfirmButton.style.borderBottomRightRadius = 6f;
                 ConfirmButton.style.display = DisplayStyle.None;
                 Add(ConfirmButton);
+
+                // ── Nav overlay: floats absolutely below the locator chip, so opening it
+                // does NOT push hero / details / action buttons down. Behaves like a
+                // dropdown menu — overlays content beneath it, content stays put.
+                _navOverlay = new VisualElement();
+                _navOverlay.style.position = Position.Absolute;
+                // Anchor below the locator chip (assembly row 18 + margin 4 + chip 24 + small gap).
+                _navOverlay.style.top = 50f;
+                _navOverlay.style.left = 0f;
+                _navOverlay.style.flexDirection = FlexDirection.Row;
+                _navOverlay.style.alignItems = Align.Center;
+                _navOverlay.style.justifyContent = Justify.Center;
+                _navOverlay.style.paddingTop = 8f;
+                _navOverlay.style.paddingBottom = 8f;
+                _navOverlay.style.paddingLeft = 8f;
+                _navOverlay.style.paddingRight = 8f;
+                _navOverlay.style.backgroundColor = new Color(0.10f, 0.14f, 0.20f, 0.98f);
+                _navOverlay.style.borderTopLeftRadius = 8f;
+                _navOverlay.style.borderTopRightRadius = 8f;
+                _navOverlay.style.borderBottomLeftRadius = 8f;
+                _navOverlay.style.borderBottomRightRadius = 8f;
+                _navOverlay.style.borderTopWidth = 1f;
+                _navOverlay.style.borderRightWidth = 1f;
+                _navOverlay.style.borderBottomWidth = 1f;
+                _navOverlay.style.borderLeftWidth = 1f;
+                _navOverlay.style.borderTopColor = NavBtnBorder;
+                _navOverlay.style.borderRightColor = NavBtnBorder;
+                _navOverlay.style.borderBottomColor = NavBtnBorder;
+                _navOverlay.style.borderLeftColor = NavBtnBorder;
+                _navOverlay.style.display = DisplayStyle.None;
+
+                SkipToStartButton = CreateNavButton("|◀"); // |◀ U+25C0
+                SkipToStartButton.tooltip = "Jump to first step";
+                SkipToStartButton.style.marginRight = 4f;
+                BackButton = CreateNavButton("◀"); // ◀ U+25C0
+                BackButton.tooltip = "Previous step";
+                BackButton.style.marginRight = 4f;
+                ForwardButton = CreateNavButton("▶"); // ▶ U+25B6
+                ForwardButton.tooltip = "Next step";
+                ForwardButton.style.marginLeft = 4f;
+                SkipToEndButton = CreateNavButton("▶|"); // ▶| U+25B6
+                SkipToEndButton.tooltip = "Jump to last step";
+                SkipToEndButton.style.marginLeft = 4f;
+
+                StepNumberField = BuildStepNumberField();
+                StepSuffixLabel = new Label("of 0");
+                StepSuffixLabel.style.fontSize = 11f;
+                StepSuffixLabel.style.color = MetaText;
+                StepSuffixLabel.style.marginLeft = 0f;
+                StepSuffixLabel.style.marginRight = 4f;
+
+                var prefix = new Label("Step ");
+                prefix.style.fontSize = 11f;
+                prefix.style.color = MetaText;
+                prefix.style.marginLeft = 4f;
+
+                _navOverlay.Add(SkipToStartButton);
+                _navOverlay.Add(BackButton);
+                _navOverlay.Add(prefix);
+                _navOverlay.Add(StepNumberField);
+                _navOverlay.Add(StepSuffixLabel);
+                _navOverlay.Add(ForwardButton);
+                _navOverlay.Add(SkipToEndButton);
+                Add(_navOverlay);
+            }
+
+            // ── Public surface used by the controller ──
+
+            public void SetNavChipText(int displayStep, int displayTotal)
+            {
+                _navChipButton.text = displayTotal > 0
+                    ? $"Step {displayStep} of {displayTotal}  ▼" // ▼ U+25BC (renders in default font)
+                    : "—";
+            }
+
+            public void SetMicroProgress(float ratio, bool visible)
+            {
+                _microProgressTrack.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+                if (!visible) return;
+                float pct = Mathf.Clamp01(ratio) * 100f;
+                _microProgressFill.style.width = Length.Percent(pct);
+            }
+
+            public void SetToolChip(string toolDisplayName)
+            {
+                bool has = !string.IsNullOrWhiteSpace(toolDisplayName);
+                _toolChip.style.display = has ? DisplayStyle.Flex : DisplayStyle.None;
+                if (has) _toolChipLabel.text = $"TOOL  ·  {toolDisplayName}";
+            }
+
+            public void SetInstructionDetails(string text)
+            {
+                bool has = !string.IsNullOrWhiteSpace(text);
+                _detailsDisclosure.style.display = has ? DisplayStyle.Flex : DisplayStyle.None;
+                if (has) _detailsDisclosure.SetBody(text);
+            }
+
+            public void SetWhyItMatters(string text)
+            {
+                bool has = !string.IsNullOrWhiteSpace(text);
+                _whyDisclosure.style.display = has ? DisplayStyle.Flex : DisplayStyle.None;
+                if (has) _whyDisclosure.SetBody(text);
+            }
+
+            public void SetDetailsExpanded(bool expanded)
+            {
+                _detailsDisclosure.SetExpanded(expanded);
             }
 
             public void SetContextActionButtonVisible(bool visible)
@@ -568,18 +755,11 @@ namespace OSE.UI.Controllers
                 HintButton.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
             }
 
-            public void SetProgress(float ratio)
-            {
-                float pct = Mathf.Clamp01(ratio) * 100f;
-                _progressFill.style.width = Length.Percent(pct);
-            }
-
             public void SetAssemblyName(string name)
             {
                 bool hasName = !string.IsNullOrWhiteSpace(name);
-                AssemblyLabel.parent.style.display = hasName ? DisplayStyle.Flex : DisplayStyle.None;
-                if (hasName)
-                    AssemblyLabel.text = name;
+                AssemblyLabel.style.display = hasName ? DisplayStyle.Flex : DisplayStyle.None;
+                if (hasName) AssemblyLabel.text = name;
             }
 
             public void SetSectionsButtonVisible(bool visible)
@@ -587,41 +767,47 @@ namespace OSE.UI.Controllers
                 SectionsButton.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
             }
 
-            public void SetGlobalProgress(float ratio, string label)
+            public void SetBackEnabled(bool enabled) => SetEnabledWithFade(BackButton, enabled);
+            public void SetForwardEnabled(bool enabled) => SetEnabledWithFade(ForwardButton, enabled);
+            public void SetSkipToStartEnabled(bool enabled) => SetEnabledWithFade(SkipToStartButton, enabled);
+            public void SetSkipToEndEnabled(bool enabled) => SetEnabledWithFade(SkipToEndButton, enabled);
+
+            private static void SetEnabledWithFade(Button btn, bool enabled)
             {
-                bool hasGlobal = !string.IsNullOrEmpty(label);
-                _globalProgressTrack.style.display = hasGlobal ? DisplayStyle.Flex : DisplayStyle.None;
-                _globalProgressLabel.style.display = hasGlobal ? DisplayStyle.Flex : DisplayStyle.None;
-                if (hasGlobal)
+                btn.SetEnabled(enabled);
+                btn.style.opacity = enabled ? 1f : 0.3f;
+            }
+
+            private bool _navOverlayShown;
+
+            private void ToggleNavOverlay()
+            {
+                SetNavOverlayShown(!_navOverlayShown);
+            }
+
+            public void CloseNavOverlay() => SetNavOverlayShown(false);
+
+            private void SetNavOverlayShown(bool shown)
+            {
+                _navOverlayShown = shown;
+                _navOverlay.style.display = shown ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            // Dismiss the popup on any click outside it (and outside the chip itself, so
+            // the chip's own toggle still works). Hooked once when the view attaches.
+            public void InstallClickAwayDismiss()
+            {
+                this.RegisterCallback<MouseDownEvent>(evt =>
                 {
-                    float pct = Mathf.Clamp01(ratio) * 100f;
-                    _globalProgressFill.style.width = Length.Percent(pct);
-                    _globalProgressLabel.text = label;
-                }
-            }
-
-            public void SetBackEnabled(bool enabled)
-            {
-                BackButton.SetEnabled(enabled);
-                BackButton.style.opacity = enabled ? 1f : 0.3f;
-            }
-
-            public void SetForwardEnabled(bool enabled)
-            {
-                ForwardButton.SetEnabled(enabled);
-                ForwardButton.style.opacity = enabled ? 1f : 0.3f;
-            }
-
-            public void SetSkipToStartEnabled(bool enabled)
-            {
-                SkipToStartButton.SetEnabled(enabled);
-                SkipToStartButton.style.opacity = enabled ? 1f : 0.3f;
-            }
-
-            public void SetSkipToEndEnabled(bool enabled)
-            {
-                SkipToEndButton.SetEnabled(enabled);
-                SkipToEndButton.style.opacity = enabled ? 1f : 0.3f;
+                    if (!_navOverlayShown) return;
+                    var target = evt.target as VisualElement;
+                    while (target != null)
+                    {
+                        if (target == _navOverlay || target == _navChipButton) return;
+                        target = target.parent;
+                    }
+                    CloseNavOverlay();
+                }, TrickleDown.TrickleDown);
             }
 
             private static Button CreateNavButton(string text)
@@ -651,6 +837,148 @@ namespace OSE.UI.Controllers
                 btn.style.unityTextAlign = TextAnchor.MiddleCenter;
                 return btn;
             }
+
+            private static TextField BuildStepNumberField()
+            {
+                var field = new TextField { value = "1" };
+                field.style.width = 52f;
+                field.style.height = 26f;
+                field.style.marginLeft = 2f;
+                field.style.marginRight = 2f;
+                field.style.borderTopLeftRadius = 4f;
+                field.style.borderTopRightRadius = 4f;
+                field.style.borderBottomLeftRadius = 4f;
+                field.style.borderBottomRightRadius = 4f;
+                field.style.borderTopWidth = 1f;
+                field.style.borderRightWidth = 1f;
+                field.style.borderBottomWidth = 1f;
+                field.style.borderLeftWidth = 1f;
+                field.style.borderTopColor = new Color(0.42f, 0.82f, 1f, 0.4f);
+                field.style.borderRightColor = new Color(0.42f, 0.82f, 1f, 0.4f);
+                field.style.borderBottomColor = new Color(0.42f, 0.82f, 1f, 0.4f);
+                field.style.borderLeftColor = new Color(0.42f, 0.82f, 1f, 0.4f);
+
+                field.RegisterCallback<AttachToPanelEvent>(_ =>
+                {
+                    var inputEl = field.Q(className: "unity-text-field__input");
+                    if (inputEl != null)
+                    {
+                        inputEl.style.backgroundColor = new Color(0.10f, 0.14f, 0.20f, 0.95f);
+                        inputEl.style.color = new Color(0.42f, 0.82f, 1f, 1f);
+                        inputEl.style.fontSize = 13f;
+                        inputEl.style.unityTextAlign = TextAnchor.MiddleCenter;
+                        inputEl.style.unityFontStyleAndWeight = FontStyle.Bold;
+                        inputEl.style.paddingLeft = 2f;
+                        inputEl.style.paddingRight = 2f;
+                        inputEl.style.paddingTop = 0f;
+                        inputEl.style.paddingBottom = 0f;
+                        inputEl.style.borderTopLeftRadius = 4f;
+                        inputEl.style.borderTopRightRadius = 4f;
+                        inputEl.style.borderBottomLeftRadius = 4f;
+                        inputEl.style.borderBottomRightRadius = 4f;
+                    }
+                    var labelEl = field.Q<Label>(className: "unity-text-field__label");
+                    if (labelEl != null) labelEl.style.display = DisplayStyle.None;
+                });
+
+                return field;
+            }
+        }
+
+        // Lightweight disclosure: a clickable header with a chevron + label, plus a body
+        // panel that shows/hides. Built so we can fully control typography and contrast,
+        // which Unity's built-in Foldout makes awkward.
+        private sealed class Disclosure : VisualElement
+        {
+            private readonly Label _arrow;
+            private readonly Label _title;
+            private readonly Label _body;
+            private readonly VisualElement _bodyHost;
+            private readonly VisualElement _headerActionSlot;
+            private bool _expanded;
+
+            // Right-aligned slot on the header row for trailing controls (e.g. a Listen
+            // button on the Details disclosure). Clicks inside the slot must NOT propagate
+            // to the header toggle, so the trailing button can be tapped without expanding.
+            public VisualElement HeaderActionSlot => _headerActionSlot;
+
+            private static readonly Color HeaderText = new Color(0.78f, 0.88f, 1f, 1f);
+            private static readonly Color HeaderTextHover = new Color(1f, 1f, 1f, 1f);
+
+            public Disclosure(string title, float bodyFontSize, Color bodyColor, Color? accentBg = null)
+            {
+                style.flexDirection = FlexDirection.Column;
+                style.marginBottom = 4f;
+
+                var header = new VisualElement();
+                header.style.flexDirection = FlexDirection.Row;
+                header.style.alignItems = Align.Center;
+                header.style.height = 24f;
+                header.style.paddingLeft = 2f;
+                header.style.paddingRight = 2f;
+                header.RegisterCallback<MouseDownEvent>(_ => Toggle());
+                header.RegisterCallback<MouseEnterEvent>(_ => _title.style.color = HeaderTextHover);
+                header.RegisterCallback<MouseLeaveEvent>(_ => _title.style.color = HeaderText);
+
+                // Use the large triangles (U+25B6 ▶ / U+25BC ▼) — Unity's default font covers
+                // these but NOT the small variants (U+25B8 ▸ / U+25BE ▾), which show as ☐.
+                _arrow = new Label("▶");
+                _arrow.style.fontSize = 9f;
+                _arrow.style.color = HeaderText;
+                _arrow.style.width = 14f;
+                _arrow.style.unityTextAlign = TextAnchor.MiddleCenter;
+                header.Add(_arrow);
+
+                _title = new Label(title);
+                _title.style.fontSize = 12f;
+                _title.style.unityFontStyleAndWeight = FontStyle.Bold;
+                _title.style.color = HeaderText;
+                _title.style.flexGrow = 1f;
+                _title.style.unityTextAlign = TextAnchor.MiddleLeft;
+                header.Add(_title);
+
+                _headerActionSlot = new VisualElement();
+                _headerActionSlot.style.flexDirection = FlexDirection.Row;
+                _headerActionSlot.style.alignItems = Align.Center;
+                _headerActionSlot.RegisterCallback<MouseDownEvent>(e => e.StopPropagation());
+                header.Add(_headerActionSlot);
+
+                Add(header);
+
+                _bodyHost = new VisualElement();
+                _bodyHost.style.paddingLeft = 14f;
+                _bodyHost.style.paddingRight = 4f;
+                _bodyHost.style.paddingTop = 4f;
+                _bodyHost.style.paddingBottom = 6f;
+                _bodyHost.style.display = DisplayStyle.None;
+                if (accentBg.HasValue)
+                {
+                    _bodyHost.style.backgroundColor = accentBg.Value;
+                    _bodyHost.style.borderTopLeftRadius = 4f;
+                    _bodyHost.style.borderTopRightRadius = 4f;
+                    _bodyHost.style.borderBottomLeftRadius = 4f;
+                    _bodyHost.style.borderBottomRightRadius = 4f;
+                }
+
+                _body = new Label();
+                _body.style.fontSize = bodyFontSize;
+                _body.style.color = bodyColor;
+                _body.style.whiteSpace = WhiteSpace.Normal;
+                _bodyHost.Add(_body);
+
+                Add(_bodyHost);
+            }
+
+            public void SetBody(string text) => _body.text = text;
+
+            public void SetExpanded(bool expanded)
+            {
+                _expanded = expanded;
+                _arrow.text = expanded ? "▼" : "▶"; // ▼ U+25BC / ▶ U+25B6 — both render in default font
+                _bodyHost.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            private void Toggle() => SetExpanded(!_expanded);
         }
     }
 }

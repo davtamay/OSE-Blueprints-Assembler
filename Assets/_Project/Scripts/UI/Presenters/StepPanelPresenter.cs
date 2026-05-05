@@ -10,7 +10,9 @@ namespace OSE.UI.Presenters
             bool showContextActionButton, string contextActionLabel, bool contextActionEnabled,
             string assemblyName = null, float globalProgressRatio = 0f,
             string globalProgressLabel = null,
-            int globalStepIndex = 0, int globalTotalSteps = 0)
+            int globalStepIndex = 0, int globalTotalSteps = 0,
+            string instructionDetails = null, string whyItMatters = null,
+            string toolDisplayName = null, string stepId = null)
         {
             StepLabel = stepLabel;
             Title = title;
@@ -28,6 +30,10 @@ namespace OSE.UI.Presenters
             GlobalProgressLabel = globalProgressLabel;
             GlobalStepIndex = globalStepIndex;
             GlobalTotalSteps = globalTotalSteps;
+            InstructionDetails = instructionDetails;
+            WhyItMatters = whyItMatters;
+            ToolDisplayName = toolDisplayName;
+            StepId = stepId;
         }
 
         public string StepLabel { get; }
@@ -46,10 +52,23 @@ namespace OSE.UI.Presenters
         public string GlobalProgressLabel { get; }
         public int GlobalStepIndex { get; }
         public int GlobalTotalSteps { get; }
+
+        // Split body — InstructionDetails is the action text without the "Why it matters: …"
+        // trailer; WhyItMatters is the rationale paragraph alone. Both null when absent.
+        public string InstructionDetails { get; }
+        public string WhyItMatters { get; }
+
+        // Display name of the step's primary relevant tool (e.g. "MIG Torch"). Null when none.
+        public string ToolDisplayName { get; }
+
+        // Stable step identifier — used by the panel to track first-visit vs revisit.
+        public string StepId { get; }
     }
 
     public sealed class StepPanelPresenter
     {
+        private const string WhyItMattersMarker = "Why it matters:";
+
         public StepPanelViewModel Create(
             int currentStepNumber,
             int totalSteps,
@@ -65,7 +84,9 @@ namespace OSE.UI.Presenters
             float? progressOverride = null,
             string assemblyName = null,
             int globalStepIndex = 0,
-            int globalTotalSteps = 0)
+            int globalTotalSteps = 0,
+            string toolDisplayName = null,
+            string stepId = null)
         {
             string stepLabel = currentStepNumber > 0 && totalSteps > 0
                 ? $"Step {currentStepNumber} of {totalSteps}"
@@ -78,6 +99,8 @@ namespace OSE.UI.Presenters
             string displayInstruction = string.IsNullOrWhiteSpace(instruction)
                 ? "Instruction text is provided by runtime presenters."
                 : instruction.Trim();
+
+            SplitInstructionBody(displayInstruction, out string details, out string why);
 
             float progressRatio;
             if (progressOverride.HasValue)
@@ -104,7 +127,27 @@ namespace OSE.UI.Presenters
                 showConfirmButton, progressRatio, showHintButton, confirmGate, confirmUnlocked,
                 showContextActionButton, contextActionLabel, contextActionEnabled,
                 assemblyName, globalProgressRatio, globalProgressLabel,
-                globalStepIndex, globalTotalSteps);
+                globalStepIndex, globalTotalSteps,
+                details, why, toolDisplayName, stepId);
+        }
+
+        // Splits BuildInstructionBody output back into (details, whyItMatters).
+        // The marker is the same one StepDefinition.BuildInstructionBody appends.
+        private static void SplitInstructionBody(string body, out string details, out string why)
+        {
+            details = body;
+            why = null;
+            if (string.IsNullOrEmpty(body)) return;
+
+            int idx = body.LastIndexOf(WhyItMattersMarker, System.StringComparison.OrdinalIgnoreCase);
+            if (idx < 0) return;
+
+            string before = body.Substring(0, idx).TrimEnd();
+            string after = body.Substring(idx + WhyItMattersMarker.Length).Trim();
+            if (after.Length == 0) return;
+
+            details = before;
+            why = after;
         }
     }
 }

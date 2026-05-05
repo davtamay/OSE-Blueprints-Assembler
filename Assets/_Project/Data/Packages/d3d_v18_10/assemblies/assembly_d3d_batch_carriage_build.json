@@ -310,10 +310,7 @@
       "partGroupId": "partGroup_carriage_batch_all",
       "sequenceIndex": 50,
       "family": "Confirm",
-      "guidance": {
-        "instructionText": "Gather and lay out all six carriage pieces on the workbench: Y-Left half A, Y-Left half B, Y-Right half A, Y-Right half B, Z-Back carriage (single piece), Z-Front carriage (single piece). Also set out the hardware for each Y-axis carriage: M6\u00c3\u201418 bolts (top holes), M6\u00c3\u201430 bolts (bottom holes), and M6 nuts.",
-        "whyItMattersText": "Building all four carriages in one session creates muscle memory for the bearing-seating technique before moving to individual axis builds. Laying everything out first lets you spot missing parts before work begins."
-      },
+      "guidance": {"instructionText":"Gather and lay out all six carriage pieces on the workbench: Y-Left half A, Y-Left half B, Y-Right half A, Y-Right half B, Z-Back carriage (single piece), Z-Front carriage (single piece). Also set out the hardware for each Y-axis carriage: M6Ã—18 bolts (top holes), M6Ã—30 bolts (bottom holes), and M6 nuts.","whyItMattersText":"Building all four carriages in one session creates muscle memory for the bearing-seating technique before moving to individual axis builds. Laying everything out first lets you spot missing parts before work begins."},
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [],
@@ -460,19 +457,8 @@
       "partGroupId": "partGroup_carriage_y_left",
       "sequenceIndex": 55,
       "family": "Confirm",
-      "guidance": {
-        "instructionText": "Hold both Y-Left carriage halves firmly together and shake the assembly.",
-        "whyItMattersText": "Compress the two halves by hand until there is no gap. Shake side-to-side and up-down for 2\u00e2\u20ac\u201c3 seconds. No tools needed \u00e2\u20ac\u201d this is a hand-compression test only."
-      },
-      "validation": {
-        "successCriteria": "No audible rattle or tactile movement from the bearings.",
-        "failureCriteria": "Bearings click, rattle, or shift inside the halves when shaken."
-      },
-      "feedback": {
-        "successMessage": "Bearings are snug. Proceed to the rod slide test.",
-        "failureMessage": "Bearing fit is too loose. Swap to a slightly larger LM8UU or try the next batch of bearings. Re-test before closing the carriage."
-      },
       "difficulty": "beginner",
+      "guidance": {"instructionText":"Hold both Y-Left carriage halves firmly together and shake the assembly.","whyItMattersText":"Compress the two halves by hand until there is no gap. Shake side-to-side and up-down for 2â€“3 seconds. No tools needed â€” this is a hand-compression test only."},
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [],
@@ -488,19 +474,8 @@
       "partGroupId": "partGroup_carriage_y_left",
       "sequenceIndex": 56,
       "family": "Confirm",
-      "guidance": {
-        "instructionText": "Insert a smooth guide rod through the Y-Left carriage and hold it so the rod is vertical.",
-        "whyItMattersText": "The rod should slide or drop through with slight resistance \u00e2\u20ac\u201d if you have to shake the carriage for the rod to move through, that's correct. Motors pull 20 lbs of belt force; the carriage must not slip too freely."
-      },
-      "validation": {
-        "successCriteria": "Rod slides or drops through with slight resistance. Shaking the carriage helps it move through.",
-        "failureCriteria": "Rod slides too quickly with zero resistance (too free), OR rod jams and requires force to push (too tight)."
-      },
-      "feedback": {
-        "successMessage": "Resistance feels correct. Proceed to close the carriage halves.",
-        "failureMessage": "Too free: wrap each bearing in one layer of electrical tape and retest. Too tight: check bearings are fully seated and halves are not warped."
-      },
       "difficulty": "beginner",
+      "guidance": {"instructionText":"Insert a smooth guide rod through the Y-Left carriage and hold it so the rod is vertical.","whyItMattersText":"The rod should slide or drop through with slight resistance â€” if you have to shake the carriage for the rod to move through, that's correct. Motors pull 20 lbs of belt force; the carriage must not slip too freely."},
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [],
