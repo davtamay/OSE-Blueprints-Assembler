@@ -1,9 +1,11 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using OSE.App;
 using OSE.Content;
 using OSE.Core;
 using OSE.Interaction;
+using OSE.Runtime;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -83,8 +85,41 @@ namespace OSE.UI.Root
             }
 
             preview.name = $"PersistentTool_{toolId}_{targetId}";
-            preview.transform.SetParent(null, worldPositionStays: true);
-            preview.transform.SetPositionAndRotation(worldPos, rotation);
+
+            // Resolve the persistent scale (matches the sync-respawn path,
+            // SpawnFromAssetCoroutine line ~355). Single source of truth so
+            // a clamp placed live and the same clamp respawned via sync
+            // produce identical world transforms — no flinch on transitions.
+            float cursorScale = ToolCursorManager.CursorUniformScale;
+            ToolDefinition toolDef = null;
+            if (ServiceRegistry.TryGet<IMachineSessionController>(out var session)
+                && session?.Package != null)
+            {
+                session.Package.TryGetTool(toolId, out toolDef);
+            }
+            if (toolDef != null && toolDef.scaleOverride > 0f)
+                cursorScale *= toolDef.scaleOverride;
+
+            // Compute tip-corrected placement BEFORE reparent. Contract:
+            // callers pass the UNCORRECTED surface world position. We own
+            // scale + tip offset together so they never disagree.
+            Vector3 placementPos = worldPos;
+            if (toolDef != null && toolDef.HasToolPose && toolDef.toolPose.HasTipPoint)
+                placementPos = worldPos - rotation * (toolDef.toolPose.GetTipPoint() * cursorScale);
+
+            // Mirror the sync-path order EXACTLY: detach → set localScale
+            // (= world scale while parent is null) → set world pose →
+            // reparent worldPositionStays=true. Sync at lines 374-377 does
+            // the same dance for a reason: container's lossyScale may not
+            // be 1 (PreviewRoot can be scaled), so setting localScale AFTER
+            // reparent would make the actual world scale = cursorScale ×
+            // parent.lossyScale, breaking the tip-offset math that assumed
+            // localScale == worldScale. The user-visible bug: tool snaps
+            // off-target by factor (parent.lossyScale - 1) × tipPoint
+            // after placement.
+            preview.transform.SetParent(null, worldPositionStays: false);
+            preview.transform.localScale = Vector3.one * cursorScale;
+            preview.transform.SetPositionAndRotation(placementPos, rotation);
             preview.transform.SetParent(GetContainer(), worldPositionStays: true);
 
             foreach (var col in preview.GetComponentsInChildren<Collider>())

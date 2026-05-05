@@ -172,6 +172,16 @@ namespace OSE.UI.Root
                     ? tool.assetRef
                     : "assets/tools/" + tool.assetRef;
                 previewTool = await spawner.LoadPackageAssetAsync(toolPath, ct: ct);
+                // The async loader returns the GLB at its native scale
+                // (~1m) with no parent — visible and full-size in the
+                // scene until the parent + scale + SetActive(false) block
+                // below runs. On any frame boundary between await and
+                // those writes (which the load itself can introduce),
+                // the user sees a giant clone of the tool flash. Hide
+                // the instant it returns; the configuration block below
+                // sets pose + scale before the bridge re-activates it.
+                if (previewTool != null)
+                    previewTool.SetActive(false);
             }
 
             // Another RefreshAsync call started while we were awaiting — discard

@@ -31,6 +31,18 @@ namespace OSE.Interaction
         /// </summary>
         public bool InstantPlacement;
 
+        /// <summary>
+        /// The clean persistent scale a tool will rest at after
+        /// <see cref="InstantPlacement"/> conversion (= cursor uniform scale ×
+        /// tool.scaleOverride). The preview controller lerps Approach to this
+        /// value when InstantPlacement is true, so the lerp lands at exactly
+        /// the same scale the persistent conversion will write — no snap.
+        /// Computed by the bridge layer from the active tool definition;
+        /// 0 means "not authored / non-persistent" — controller falls back
+        /// to the assembly-matched scale in that case.
+        /// </summary>
+        public float PersistentScale;
+
         // ── Assembly scale ──
         /// <summary>
         /// Current assembly UI scale multiplier. The preview controller lerps tool

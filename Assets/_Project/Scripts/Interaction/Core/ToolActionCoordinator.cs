@@ -258,8 +258,16 @@ namespace OSE.Interaction
             // Suspend cursor position updates so the preview isn't yanked back each frame
             _toolPreview?.SetToolPreviewPositionSuspended(true);
 
-            // Profile-aware camera: tighten to close-up of the action point
-            _guidanceService?.FrameToolAction(ctx.SurfaceWorldPos, profile ?? "");
+            // Profile-aware camera: tighten to close-up of the action point.
+            // Skip for InstantPlacement (clamps, fixtures) — those convert
+            // straight from cursor to persistent in one Approach lerp; the
+            // close-up + immediate ReturnFromToolAction round-trip happens
+            // in well under a second and reads as a camera snap rather
+            // than a meaningful framing change. Keeping the camera at step
+            // home means the persistent tool simply lands where the user
+            // is already looking, no jolt.
+            if (!ctx.InstantPlacement)
+                _guidanceService?.FrameToolAction(ctx.SurfaceWorldPos, profile ?? "");
 
             // Stop target sphere pulsing during preview
             _targetSphereAnimator?.Stop();
@@ -302,8 +310,12 @@ namespace OSE.Interaction
                     {
                         _persistentToolController?.RemoveAt(completedTargetId);
                     }
-                    // Ease back to step home framing after the action
-                    _guidanceService?.ReturnFromToolAction();
+                    // Ease back to step home framing after the action.
+                    // Symmetric with the FrameToolAction skip above —
+                    // InstantPlacement never framed in, so don't fire a
+                    // return (would snap if the home pose drifted slightly).
+                    if (!ctx.InstantPlacement)
+                        _guidanceService?.ReturnFromToolAction();
                     RestoreInstructionAfterPreview();
                     _transitionTo(InteractionState.Idle);
                 },
@@ -311,8 +323,10 @@ namespace OSE.Interaction
                 {
                     _toolPreview?.SetToolPreviewPositionSuspended(false);
                     OseLog.Info("[Interaction] Tool action preview cancelled — returning to idle.");
-                    // Return to step home on cancel too
-                    _guidanceService?.ReturnFromToolAction();
+                    // Return to step home on cancel too (skip for InstantPlacement
+                    // — same reason as above; never framed in, don't fire return).
+                    if (!ctx.InstantPlacement)
+                        _guidanceService?.ReturnFromToolAction();
                     RestoreInstructionAfterPreview();
                     _transitionTo(InteractionState.Idle);
                 },
@@ -339,17 +353,28 @@ namespace OSE.Interaction
                         }
                     }
 
-                    // Offset placement so the tool's tipPoint lands at the surface,
-                    // matching the editor preview which positions the GO root at (surface - tip*scale).
-                    Vector3 placementPos = ctx.SurfaceWorldPos;
-                    if (ctx.HasToolActionRotation && ctx.ToolPose != null && ctx.ToolPose.HasTipPoint)
+                    // Pass the uncorrected surface position. ConvertPreviewToPersistent
+                    // owns scale + tip-point correction together: it normalizes the
+                    // persistent tool's localScale to cursorScale × scaleOverride
+                    // (matching the sync respawn path) and then offsets so the tool's
+                    // tipPoint lands at the surface using THAT scale. Pre-correcting
+                    // here would double-offset, since the preview's current scale
+                    // (_targetScale, assembly-matched ~1.0) differs from the final
+                    // persistent scale (~0.16 × scaleOverride) the manager applies.
+                    if (TryConvertPreviewToPersistentAtAction(doneTargetId, ctx.SurfaceWorldPos, placementRot))
                     {
-                        float s = toolPreview != null ? toolPreview.transform.localScale.x : 1f;
-                        placementPos = ctx.SurfaceWorldPos - placementRot * (ctx.ToolPose.GetTipPoint() * s);
-                    }
-
-                    if (TryConvertPreviewToPersistentAtAction(doneTargetId, placementPos, placementRot))
-                    {
+                        // ARM SUPPRESSIONS BEFORE SkipReturn. SkipReturn
+                        // synchronously cascades through CleanupAndNotify →
+                        // onComplete → TryToolAction → step complete →
+                        // ActivateStep → StepActivated event →
+                        // StepGuidanceService.OnStepActivated.FrameStep —
+                        // ALL before this method returns. If the suppress
+                        // flag is set after SkipReturn, OnStepActivated has
+                        // already framed the new step's target by then and
+                        // the user sees the camera snap. The flags MUST be
+                        // in place before any of that runs.
+                        _guidanceService?.SuppressNextActivationFrame();
+                        _cameraRig?.SuppressCueFollowFor(1.5f);
                         _previewController.SkipReturn();
                     }
                 });

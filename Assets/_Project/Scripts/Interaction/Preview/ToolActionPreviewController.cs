@@ -121,9 +121,23 @@ namespace OSE.Interaction
             _startRot = toolPreview.transform.rotation;
             _surfacePos = ctx.SurfaceWorldPos;
 
-            // Scale lerp: cursor size → assembly-matched size during approach
+            // Scale lerp setup. ToolCursorManager.UpdateReadyPulse modulates
+            // the cursor preview's localScale by ±8% every frame in ready
+            // state, so reading the live localScale picks up a pulse-skewed
+            // value. For InstantPlacement we BOTH override the start (snap
+            // the live transform to the clean scale before capture) AND
+            // lerp to the same clean target — net effect: scale is constant
+            // through the entire approach, so anything coupled to scale
+            // (camera framing, working-position math, tip offset) sees a
+            // stable value and there's no snap at conversion.
+            if (ctx.InstantPlacement && ctx.PersistentScale > 0f)
+                toolPreview.transform.localScale = Vector3.one * ctx.PersistentScale;
+
             _startScale = toolPreview.transform.localScale.x;
-            _targetScale = _startScale * Mathf.Max(ctx.AssemblyScale, 0.01f);
+            if (ctx.InstantPlacement)
+                _targetScale = ctx.PersistentScale > 0f ? ctx.PersistentScale : _startScale;
+            else
+                _targetScale = _startScale * Mathf.Max(ctx.AssemblyScale, 0.01f);
 
 
             // Compute working position and action orientation.

@@ -110,11 +110,23 @@ namespace OSE.UI.Root
             }
 
             bool isPersistent = false;
+            float persistentScale = 0f;
             if (!string.IsNullOrEmpty(activeToolId))
             {
                 var package = _ctx.Spawner?.CurrentPackage;
                 if (package != null && package.TryGetTool(activeToolId, out var toolDefForPersist))
+                {
                     isPersistent = toolDefForPersist.persistent;
+                    if (isPersistent)
+                    {
+                        // Same formula as PersistentToolManagerBridge.ConvertPreviewToPersistent
+                        // and SpawnFromAssetCoroutine. Computed up-front so the Approach
+                        // lerp ends at the exact resting scale — no snap at conversion.
+                        persistentScale = ToolCursorManager.CursorUniformScale;
+                        if (toolDefForPersist.scaleOverride > 0f)
+                            persistentScale *= toolDefForPersist.scaleOverride;
+                    }
+                }
             }
 
             // Compute stable positions from local-space snapshots (set at spawn,
@@ -162,6 +174,7 @@ namespace OSE.UI.Root
                 ToolPose = toolPose,
                 ToolActionRotationIsMesh = toolActionRotIsMesh,
                 InstantPlacement = isPersistent,
+                PersistentScale = persistentScale,
                 AssemblyScale = _ctx.CursorManager.AssemblyScale,
                 PreviewConfig = previewCfg,
             };
