@@ -734,6 +734,51 @@ namespace OSE.UI.Root
         /// </summary>
         public GameObject TryLoadPackageAsset(string assetRef) => _assetLoader.TryLoad(assetRef);
 
+        /// <summary>
+        /// Async load of a part's mesh by partId. Resolves the asset path
+        /// via the same <see cref="PackageAssetResolver"/> the part-spawn
+        /// path uses (so combined-GLB nodes route to <c>LoadCombinedNodeAsync</c>
+        /// and bare filenames get the <c>assets/parts/</c> prefix). Used by
+        /// preview ghosts so the build silhouette matches the editor's real
+        /// mesh — the editor's sync TryLoadPackageAsset doesn't exist at
+        /// runtime, so the resolver-driven async path is the right mirror.
+        /// Returns null when the part has no resolvable asset (e.g. frames
+        /// that are intentionally rendered as primitives) or the load fails.
+        /// </summary>
+        public async Task<GameObject> LoadGhostAssetAsync(
+            string partId,
+            Transform parent = null,
+            CancellationToken ct = default)
+        {
+            if (string.IsNullOrEmpty(partId)) return null;
+            if (_currentPackage?.parts == null) return null;
+
+            PartDefinition partDef = null;
+            foreach (var p in _currentPackage.parts)
+            {
+                if (p != null && string.Equals(p.id, partId, System.StringComparison.OrdinalIgnoreCase))
+                { partDef = p; break; }
+            }
+            if (partDef == null) return null;
+
+            AssetResolution resolution = _resolver.Resolve(partDef.id);
+            string assetRefToLoad = resolution.IsResolved
+                ? resolution.AssetPath
+                : EnsurePartsSubfolder(partDef.assetRef);
+            if (string.IsNullOrWhiteSpace(assetRefToLoad)) return null;
+
+            if (resolution.IsResolved && resolution.IsNodeInCombined)
+            {
+                // Combined-GLB nodes need the named-node loader. Pass an
+                // empty cache — preview ghosts are short-lived enough that
+                // a per-call cache miss is fine; the AssetSource already
+                // memoizes the parsed GLB so only the node clone runs.
+                var cache = new Dictionary<string, GameObject>(System.StringComparer.OrdinalIgnoreCase);
+                return await LoadCombinedGlbNodeAsync(assetRefToLoad, resolution.NodeName, cache, parent, ct);
+            }
+            return await LoadPackageAssetAsync(assetRefToLoad, parent, ct);
+        }
+
         private GameObject TryLoadCombinedGlbNode(
             string assetRef,
             string nodeName,
@@ -1568,7 +1613,21 @@ namespace OSE.UI.Root
                 // Recurse first so deeper leaves are lifted before we touch this node.
                 LiftLeafPartsRecursive(c, safeParent, partIdSet);
                 if (!string.IsNullOrEmpty(c.name) && partIdSet.Contains(c.name))
+                {
+                    // Unity blocks reparenting transforms that are children of
+                    // a prefab instance (it would break the prefab connection).
+                    // The orphan-sweep encountered these "bed_raiser" children
+                    // during scene/build processing — they belong to a prefab
+                    // and don't need lifting (they're not orphan-container
+                    // contents; they're authored into a real prefab). Skip
+                    // them silently rather than spamming the build log.
+                    // Editor-only check: builds have no such restriction.
+#if UNITY_EDITOR
+                    if (UnityEditor.PrefabUtility.IsPartOfPrefabInstance(c))
+                        continue;
+#endif
                     c.SetParent(safeParent, worldPositionStays: true);
+                }
             }
         }
 

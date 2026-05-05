@@ -459,10 +459,24 @@ namespace OSE.UI.Root
             }
 
             // Preview should mirror the live source part dimensions exactly.
+            // In editor, the placeholder is the actual GLB so its localScale
+            // is the right scale to mirror. In builds the placeholder is a
+            // 1m³ primitive Cube — copying the part's localScale (often
+            // (1,1,1) for unit-scale parts whose size lives in the mesh)
+            // produces a 1m cube ghost that looks like a giant block. Use
+            // the part's renderer bounds for builds so the cube is sized to
+            // match the actual mesh silhouette.
             GameObject sourcePart = _ctx.FindSpawnedPart(associatedPartId);
             if (sourcePart != null)
             {
+#if UNITY_EDITOR
                 previewScale = sourcePart.transform.localScale;
+#else
+                if (TryGetMeshLocalSize(sourcePart, out Vector3 boundsSize) && boundsSize.sqrMagnitude > 0.0001f)
+                    previewScale = boundsSize;
+                else
+                    previewScale = sourcePart.transform.localScale;
+#endif
             }
             else if (pp != null)
             {
@@ -481,6 +495,11 @@ namespace OSE.UI.Root
                 previewScale = Vector3.one * 0.5f;
             }
 
+            // Editor uses sync AssetDatabase via TryLoadPackageAsset; builds have no
+            // AssetDatabase so we go straight to a primitive placeholder. (A future
+            // enhancement could async-load the real ghost mesh here too — for now
+            // the ghost just needs the right silhouette + click target.)
+#if UNITY_EDITOR
             GameObject preview = _ctx.Spawner.TryLoadPackageAsset(previewRef);
             if (preview == null)
             {
@@ -488,6 +507,11 @@ namespace OSE.UI.Root
                 if (previewRoot != null)
                     preview.transform.SetParent(previewRoot, false);
             }
+#else
+            GameObject preview = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            if (previewRoot != null)
+                preview.transform.SetParent(previewRoot, false);
+#endif
 
             preview.name = $"Preview_{associatedPartId}";
             PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
@@ -522,6 +546,178 @@ namespace OSE.UI.Root
             MaterialHelper.ApplyPreviewMaterial(preview);
             _ctx.SpawnedPreviews.Add(preview);
             OseLog.Info($"[PartInteraction] Preview spawned for '{associatedPartId}' at target '{targetId}' pos={previewPos} scale={previewScale}. Total previews: {_ctx.SpawnedPreviews.Count}");
+
+            // Build-side mesh swap-in: editor's TryLoadPackageAsset returns
+            // the real GLB synchronously via AssetDatabase, so the cube is
+            // only used as a fallback when no asset exists (e.g. frames).
+            // Builds have no AssetDatabase, so the editor and build silhouettes
+            // diverge — same primitive cube shows in build for parts that
+            // editor renders as a real mesh. Mirrors the swap-in pattern
+            // PackagePartSpawner.SpawnGlbPartsAsync uses for actual parts:
+            // keep the placeholder for clicks + bounds, async-load the real
+            // GLB, swap it in preserving transform + click info. Editor
+            // path skips this — it already loaded the real asset above.
+#if !UNITY_EDITOR
+            _ = SwapInRealGhostAsync(preview, associatedPartId, targetId, previewRef, previewPos, previewRot, previewScale);
+#endif
+        }
+
+        /// <summary>
+        /// Build-side: replace a cube placeholder ghost with the real GLB
+        /// loaded asynchronously, preserving the placeholder's transform,
+        /// PlacementPreviewInfo, and click collider so click handling
+        /// continues to work through the swap. Mirrors the pattern
+        /// <see cref="PackagePartSpawner.SpawnGlbPartsAsync"/> uses to
+        /// upgrade primitive part placeholders into real meshes.
+        /// Fire-and-forget: if the placeholder was destroyed before the
+        /// load returns (preview cleared, step changed, package reloaded),
+        /// the freshly-loaded GLB is destroyed too so it doesn't leak.
+        /// </summary>
+        private async System.Threading.Tasks.Task SwapInRealGhostAsync(
+            GameObject placeholder,
+            string partId,
+            string targetId,
+            string assetRef,
+            Vector3 localPos,
+            Quaternion localRot,
+            Vector3 localScale)
+        {
+            if (placeholder == null) return;
+            var spawner = _ctx?.Spawner;
+            if (spawner == null) return;
+
+            // Use the resolver-aware ghost loader so combined-GLB node parts
+            // route through LoadCombinedNodeAsync and bare filenames get the
+            // assets/parts/ prefix — same logic SpawnGlbPartsAsync uses for
+            // actual parts. Passing the raw assetRef directly (as the prior
+            // version did) silently failed in builds for combined-node parts
+            // (frames, multi-part GLBs) because LoadPackageAssetAsync alone
+            // can't open a node inside a combined file.
+            GameObject loaded = null;
+            try { loaded = await spawner.LoadGhostAssetAsync(partId); }
+            catch (System.Exception ex)
+            {
+                OseLog.Warn($"[PartInteraction] Ghost swap-in: LoadGhostAssetAsync threw for '{partId}' (ref='{assetRef}'): {ex.Message}");
+                return;
+            }
+            if (loaded == null)
+            {
+                OseLog.VerboseInfo($"[PartInteraction] Ghost swap-in: no asset loaded for '{partId}' (ref='{assetRef}'). Keeping placeholder.");
+                return;
+            }
+
+            // Placeholder may have been destroyed during the load (preview
+            // cleared on step change, package reloaded, etc.). Discard the
+            // freshly-loaded GLB rather than parenting it to a stale tree.
+            if (placeholder == null)
+            {
+                UnityEngine.Object.Destroy(loaded);
+                return;
+            }
+            // Spawned-previews list mutates during ClearPreviews etc. Confirm
+            // our placeholder is still tracked before swapping; if not, the
+            // owner has already torn it down and we should not resurrect it.
+            int idx = _ctx.SpawnedPreviews.IndexOf(placeholder);
+            if (idx < 0)
+            {
+                UnityEngine.Object.Destroy(loaded);
+                return;
+            }
+
+            // Hide the loaded GLB instantly (mirrors ToolCursorManager's
+            // post-await hide). Between this point and the parent/scale
+            // writes below, the GLB is at native scale + world origin.
+            loaded.SetActive(false);
+
+            Transform previewRoot = _ctx?.Setup?.PreviewRoot;
+            loaded.name = $"Preview_{partId}";
+            if (previewRoot != null)
+                loaded.transform.SetParent(previewRoot, worldPositionStays: false);
+            loaded.transform.SetLocalPositionAndRotation(localPos, localRot);
+
+            // Use the live source part's localScale for the GLB, not the
+            // placeholder's bounds-sized scale. The cube placeholder needed
+            // bounds-size because its mesh is 1m³ (so scale must encode the
+            // part's actual size). The GLB carries its mesh dimensions
+            // internally, so it needs the same authored localScale that
+            // SpawnGlbPartsAsync applies to the real part — anything else
+            // double-counts the GLB's native size and produces an invisible
+            // (too small) or off-screen-huge ghost.
+            GameObject sourcePart = _ctx.FindSpawnedPart(partId);
+            Vector3 glbScale = sourcePart != null && sourcePart.transform.localScale.sqrMagnitude > 0.000001f
+                ? sourcePart.transform.localScale
+                : Vector3.one;
+            loaded.transform.localScale = glbScale;
+
+            // Strip incoming colliders so they don't fight the click trigger.
+            foreach (var col in loaded.GetComponentsInChildren<Collider>(true))
+                _ctx.DestroyObject(col);
+
+            // Re-fit the click trigger to the real mesh bounds.
+            var loadedRenderers = MaterialHelper.GetRenderers(loaded);
+            var clickCollider = loaded.AddComponent<BoxCollider>();
+            clickCollider.isTrigger = true;
+            if (loadedRenderers.Length > 0)
+            {
+                Bounds combined = loadedRenderers[0].bounds;
+                for (int ri = 1; ri < loadedRenderers.Length; ri++)
+                    combined.Encapsulate(loadedRenderers[ri].bounds);
+                Vector3 lossyScale = loaded.transform.lossyScale;
+                clickCollider.center = loaded.transform.InverseTransformPoint(combined.center);
+                clickCollider.size = new Vector3(
+                    lossyScale.x != 0f ? combined.size.x / lossyScale.x : 1f,
+                    lossyScale.y != 0f ? combined.size.y / lossyScale.y : 1f,
+                    lossyScale.z != 0f ? combined.size.z / lossyScale.z : 1f);
+            }
+
+            // Carry over the PlacementPreviewInfo identity so click routing
+            // resolves the same target/part as the placeholder did.
+            var loadedInfo = loaded.GetComponent<PlacementPreviewInfo>();
+            if (loadedInfo == null)
+                loadedInfo = loaded.AddComponent<PlacementPreviewInfo>();
+            loadedInfo.TargetId = targetId;
+            loadedInfo.PartId = partId;
+
+            MaterialHelper.ApplyPreviewMaterial(loaded);
+
+            // Atomic swap: replace the placeholder in the tracked list,
+            // activate the GLB, destroy the cube. Order matters — destroy
+            // last so any lingering frame doesn't see two ghosts.
+            _ctx.SpawnedPreviews[idx] = loaded;
+            loaded.SetActive(true);
+            UnityEngine.Object.Destroy(placeholder);
+
+            OseLog.Info($"[PartInteraction] Ghost swapped to real GLB for '{partId}' at target '{targetId}'.");
+        }
+
+        /// <summary>
+        /// Returns the source part's combined renderer bounds size, expressed
+        /// in the units the placeholder cube needs as <c>localScale</c> when
+        /// parented under PreviewRoot. The primitive Cube's mesh is 1m³ in
+        /// mesh-local space, so its world size = localScale × parent.lossyScale.
+        /// We invert by previewRoot.lossyScale so the rendered ghost matches
+        /// the part's actual world dimensions instead of being a 1m placeholder.
+        /// Used only by the build-side ghost path (the editor uses the real
+        /// GLB, which carries its own mesh dimensions).
+        /// </summary>
+        private bool TryGetMeshLocalSize(GameObject sourcePart, out Vector3 size)
+        {
+            size = Vector3.zero;
+            if (sourcePart == null) return false;
+            var renderers = sourcePart.GetComponentsInChildren<Renderer>(false);
+            if (renderers == null || renderers.Length == 0) return false;
+            Bounds combined = renderers[0].bounds;
+            for (int i = 1; i < renderers.Length; i++)
+                combined.Encapsulate(renderers[i].bounds);
+            if (combined.size.sqrMagnitude < 0.0001f) return false;
+
+            Transform pr = _ctx?.Spawner?.PreviewRoot;
+            Vector3 prScale = pr != null ? pr.lossyScale : Vector3.one;
+            size = new Vector3(
+                prScale.x != 0f ? combined.size.x / prScale.x : combined.size.x,
+                prScale.y != 0f ? combined.size.y / prScale.y : combined.size.y,
+                prScale.z != 0f ? combined.size.z / prScale.z : combined.size.z);
+            return true;
         }
 
         /// <summary>
@@ -592,17 +788,35 @@ namespace OSE.UI.Root
             }
 
             GameObject sourcePart = _ctx.FindSpawnedPart(partId);
-            Vector3 previewScale = sourcePart != null
-                ? sourcePart.transform.localScale
-                : new Vector3(pp.assembledScale.x, pp.assembledScale.y, pp.assembledScale.z);
+            Vector3 previewScale;
+            if (sourcePart != null)
+            {
+#if UNITY_EDITOR
+                previewScale = sourcePart.transform.localScale;
+#else
+                if (TryGetMeshLocalSize(sourcePart, out Vector3 boundsSize) && boundsSize.sqrMagnitude > 0.0001f)
+                    previewScale = boundsSize;
+                else
+                    previewScale = sourcePart.transform.localScale;
+#endif
+            }
+            else
+            {
+                previewScale = new Vector3(pp.assembledScale.x, pp.assembledScale.y, pp.assembledScale.z);
+            }
             if (previewScale.sqrMagnitude < 0.00001f) previewScale = Vector3.one;
 
+#if UNITY_EDITOR
             GameObject preview = _ctx.Spawner.TryLoadPackageAsset(part.assetRef);
             if (preview == null)
             {
                 preview = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 if (previewRoot != null) preview.transform.SetParent(previewRoot, false);
             }
+#else
+            GameObject preview = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            if (previewRoot != null) preview.transform.SetParent(previewRoot, false);
+#endif
 
             preview.name = $"Preview_{partId}";
             PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>() ?? preview.AddComponent<PlacementPreviewInfo>();
@@ -633,6 +847,11 @@ namespace OSE.UI.Root
             MaterialHelper.ApplyPreviewMaterial(preview);
             _ctx.SpawnedPreviews.Add(preview);
             OseLog.Info($"[PartInteraction] Target-less ghost spawned for '{partId}' at assembledPose. Total previews: {_ctx.SpawnedPreviews.Count}");
+
+#if !UNITY_EDITOR
+            // Build-side mesh swap-in. See SpawnPreviewForTarget for rationale.
+            _ = SwapInRealGhostAsync(preview, partId, $"__auto_{partId}", part.assetRef, previewPos, previewRot, previewScale);
+#endif
         }
 
         private void SpawnPreviewForPartGroupTarget(MachinePackageDefinition package, string targetId, TargetDefinition target)
@@ -712,16 +931,23 @@ namespace OSE.UI.Root
                 if (placement == null)
                     continue;
 
+#if UNITY_EDITOR
                 GameObject childPreview = _ctx.Spawner.TryLoadPackageAsset(part.assetRef);
                 if (childPreview == null)
                 {
-                    // Asset not imported yet — create a primitive placeholder so the
-                    // ghost silhouette still appears at the correct position/scale.
                     childPreview = GameObject.CreatePrimitive(PrimitiveType.Cube);
                     childPreview.name = $"PreviewFallback_{memberId}";
                     if (previewRoot != null)
                         childPreview.transform.SetParent(previewRoot, false);
                 }
+#else
+                // No AssetDatabase in builds — placeholder primitive keeps the ghost
+                // silhouette at the right pose; SpawnerPartsReady drives material updates.
+                GameObject childPreview = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                childPreview.name = $"PreviewFallback_{memberId}";
+                if (previewRoot != null)
+                    childPreview.transform.SetParent(previewRoot, false);
+#endif
 
                 childPreview.transform.SetParent(subPreviewRoot.transform, false);
 
