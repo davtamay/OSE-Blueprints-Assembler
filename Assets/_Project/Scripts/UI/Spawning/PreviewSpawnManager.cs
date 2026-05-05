@@ -597,6 +597,15 @@ namespace OSE.UI.Root
             var spawner = _ctx?.Spawner;
             if (spawner == null) return;
 
+            // Announce the load so a loading affordance can render at the
+            // ghost's anchor. World pos derived from the placeholder we just
+            // spawned — that's where the user's attention is. Subscribers
+            // (GhostLoadingIndicator) apply their own perceptual threshold
+            // before showing anything; we just signal start/finish.
+            Vector3 anchorWorld = placeholder.transform.position;
+            RuntimeEventBus.Publish(new GhostLoadStarted(
+                partId, targetId, anchorWorld.x, anchorWorld.y, anchorWorld.z));
+
             // Use the resolver-aware ghost loader so combined-GLB node parts
             // route through LoadCombinedNodeAsync and bare filenames get the
             // assets/parts/ prefix — same logic SpawnGlbPartsAsync uses for
@@ -610,12 +619,14 @@ namespace OSE.UI.Root
             {
                 OseLog.Warn($"[PartInteraction] Ghost swap-in: LoadGhostAssetAsync threw for '{partId}' (ref='{assetRef}'): {ex.Message}");
                 ShowPlaceholderAsCubeFallback(placeholder);
+                RuntimeEventBus.Publish(new GhostLoadCompleted(partId, targetId, success: false));
                 return;
             }
             if (loaded == null)
             {
                 OseLog.VerboseInfo($"[PartInteraction] Ghost swap-in: no asset loaded for '{partId}' (ref='{assetRef}'). Re-showing cube placeholder as fallback.");
                 ShowPlaceholderAsCubeFallback(placeholder);
+                RuntimeEventBus.Publish(new GhostLoadCompleted(partId, targetId, success: false));
                 return;
             }
 
@@ -700,6 +711,7 @@ namespace OSE.UI.Root
             loaded.SetActive(true);
             UnityEngine.Object.Destroy(placeholder);
 
+            RuntimeEventBus.Publish(new GhostLoadCompleted(partId, targetId, success: true));
             OseLog.Info($"[PartInteraction] Ghost swapped to real GLB for '{partId}' at target '{targetId}'.");
         }
 

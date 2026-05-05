@@ -612,6 +612,57 @@ namespace OSE.Core
     }
 
     /// <summary>
+    /// Fires when a preview ghost begins loading its real GLB asynchronously
+    /// (Play mode + builds; editor EDIT mode loads sync, no event). Carries
+    /// the world-space anchor where the ghost will appear so a loading
+    /// indicator can render in the user's spatial context — at the placement
+    /// target, not centered on screen — preserving the trainee's focus on
+    /// where they're working.
+    ///
+    /// <para>Pair with <see cref="GhostLoadCompleted"/>. Subscribers must
+    /// tolerate completion events for partIds they never saw a Started for
+    /// (load failed before the threshold timer fired) by treating
+    /// "completed without active indicator" as a no-op.</para>
+    /// </summary>
+    public readonly struct GhostLoadStarted
+    {
+        public readonly string PartId;
+        public readonly string TargetId;
+        public readonly float WorldX, WorldY, WorldZ;
+
+        public GhostLoadStarted(string partId, string targetId, float worldX, float worldY, float worldZ)
+        {
+            PartId = partId;
+            TargetId = targetId;
+            WorldX = worldX;
+            WorldY = worldY;
+            WorldZ = worldZ;
+        }
+    }
+
+    /// <summary>
+    /// Fires when an in-flight ghost load resolves — either to a real GLB
+    /// (<c>Success=true</c>, placeholder swapped) or to the cube fallback
+    /// (<c>Success=false</c>, frame-as-cube path). Subscribers tear down
+    /// any loading affordance they put up for this partId. The
+    /// <c>Success</c> flag is informational only; the indicator just goes
+    /// away either way.
+    /// </summary>
+    public readonly struct GhostLoadCompleted
+    {
+        public readonly string PartId;
+        public readonly string TargetId;
+        public readonly bool Success;
+
+        public GhostLoadCompleted(string partId, string targetId, bool success)
+        {
+            PartId = partId;
+            TargetId = targetId;
+            Success = success;
+        }
+    }
+
+    /// <summary>
     /// Published by <see cref="OSE.Runtime.IMachineSessionController.HotReloadTargetPlacement"/>
     /// when an authoring tool (TTAW) edits a target's preview placement during
     /// Play. Spawned target marker hosts subscribe to this event and re-apply
