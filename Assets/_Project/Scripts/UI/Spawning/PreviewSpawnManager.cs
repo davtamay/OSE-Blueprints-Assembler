@@ -495,23 +495,23 @@ namespace OSE.UI.Root
                 previewScale = Vector3.one * 0.5f;
             }
 
-            // Editor uses sync AssetDatabase via TryLoadPackageAsset; builds have no
-            // AssetDatabase so we go straight to a primitive placeholder. (A future
-            // enhancement could async-load the real ghost mesh here too — for now
-            // the ghost just needs the right silhouette + click target.)
+            // Editor EDIT mode (TTAW preview) uses sync AssetDatabase to skip
+            // the placeholder dance — the authoring workflow renders real GLBs
+            // immediately. Editor PLAY mode AND builds both go through the
+            // async path (cube placeholder + SwapInRealGhostAsync) so play
+            // mode behavior matches the build 1:1. The runtime never touches
+            // AssetDatabase; sync path is gated on !Application.isPlaying.
+            GameObject preview = null;
 #if UNITY_EDITOR
-            GameObject preview = _ctx.Spawner.TryLoadPackageAsset(previewRef);
+            if (!Application.isPlaying)
+                preview = _ctx.Spawner.TryLoadPackageAsset(previewRef);
+#endif
             if (preview == null)
             {
                 preview = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 if (previewRoot != null)
                     preview.transform.SetParent(previewRoot, false);
             }
-#else
-            GameObject preview = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            if (previewRoot != null)
-                preview.transform.SetParent(previewRoot, false);
-#endif
 
             preview.name = $"Preview_{associatedPartId}";
             PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>();
@@ -547,19 +547,17 @@ namespace OSE.UI.Root
             _ctx.SpawnedPreviews.Add(preview);
             OseLog.Info($"[PartInteraction] Preview spawned for '{associatedPartId}' at target '{targetId}' pos={previewPos} scale={previewScale}. Total previews: {_ctx.SpawnedPreviews.Count}");
 
-            // Build-side mesh swap-in: editor's TryLoadPackageAsset returns
-            // the real GLB synchronously via AssetDatabase, so the cube is
-            // only used as a fallback when no asset exists (e.g. frames).
-            // Builds have no AssetDatabase, so the editor and build silhouettes
-            // diverge — same primitive cube shows in build for parts that
-            // editor renders as a real mesh. Mirrors the swap-in pattern
-            // PackagePartSpawner.SpawnGlbPartsAsync uses for actual parts:
-            // keep the placeholder for clicks + bounds, async-load the real
-            // GLB, swap it in preserving transform + click info. Editor
-            // path skips this — it already loaded the real asset above.
-#if !UNITY_EDITOR
-            _ = SwapInRealGhostAsync(preview, associatedPartId, targetId, previewRef, previewPos, previewRot, previewScale);
-#endif
+            // Mesh swap-in. Mirrors the pattern PackagePartSpawner.SpawnGlbPartsAsync
+            // uses for actual parts: keep the placeholder for clicks + bounds,
+            // async-load the real GLB, swap it in preserving transform + click
+            // info. Runs in editor PLAY mode AND builds — both pay the same
+            // load latency, so behavior is identical and build-only async-timing
+            // bugs surface during editor iteration. Editor EDIT mode (TTAW
+            // preview) skips this — TryLoadPackageAsset above already produced
+            // a real GLB synchronously, so the cube is only used when no asset
+            // resolves and there's nothing to swap to.
+            if (Application.isPlaying)
+                _ = SwapInRealGhostAsync(preview, associatedPartId, targetId, previewRef, previewPos, previewRot, previewScale);
         }
 
         /// <summary>
@@ -806,17 +804,19 @@ namespace OSE.UI.Root
             }
             if (previewScale.sqrMagnitude < 0.00001f) previewScale = Vector3.one;
 
+            // Editor EDIT mode: sync AssetDatabase. Editor PLAY + build:
+            // cube placeholder, async swap-in below. See SpawnPreviewForTarget
+            // for rationale.
+            GameObject preview = null;
 #if UNITY_EDITOR
-            GameObject preview = _ctx.Spawner.TryLoadPackageAsset(part.assetRef);
+            if (!Application.isPlaying)
+                preview = _ctx.Spawner.TryLoadPackageAsset(part.assetRef);
+#endif
             if (preview == null)
             {
                 preview = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 if (previewRoot != null) preview.transform.SetParent(previewRoot, false);
             }
-#else
-            GameObject preview = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            if (previewRoot != null) preview.transform.SetParent(previewRoot, false);
-#endif
 
             preview.name = $"Preview_{partId}";
             PlacementPreviewInfo info = preview.GetComponent<PlacementPreviewInfo>() ?? preview.AddComponent<PlacementPreviewInfo>();
@@ -848,10 +848,8 @@ namespace OSE.UI.Root
             _ctx.SpawnedPreviews.Add(preview);
             OseLog.Info($"[PartInteraction] Target-less ghost spawned for '{partId}' at assembledPose. Total previews: {_ctx.SpawnedPreviews.Count}");
 
-#if !UNITY_EDITOR
-            // Build-side mesh swap-in. See SpawnPreviewForTarget for rationale.
-            _ = SwapInRealGhostAsync(preview, partId, $"__auto_{partId}", part.assetRef, previewPos, previewRot, previewScale);
-#endif
+            if (Application.isPlaying)
+                _ = SwapInRealGhostAsync(preview, partId, $"__auto_{partId}", part.assetRef, previewPos, previewRot, previewScale);
         }
 
         private void SpawnPreviewForPartGroupTarget(MachinePackageDefinition package, string targetId, TargetDefinition target)
@@ -931,8 +929,16 @@ namespace OSE.UI.Root
                 if (placement == null)
                     continue;
 
+                // Editor EDIT mode: sync AssetDatabase real GLB.
+                // Editor PLAY mode + build: primitive placeholder (matches
+                // build behavior so editor iteration catches build-only
+                // bugs). PartGroup-child swap-in is a follow-up — the
+                // SpawnerPartsReady flow drives material updates either way.
+                GameObject childPreview = null;
 #if UNITY_EDITOR
-                GameObject childPreview = _ctx.Spawner.TryLoadPackageAsset(part.assetRef);
+                if (!Application.isPlaying)
+                    childPreview = _ctx.Spawner.TryLoadPackageAsset(part.assetRef);
+#endif
                 if (childPreview == null)
                 {
                     childPreview = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -940,14 +946,6 @@ namespace OSE.UI.Root
                     if (previewRoot != null)
                         childPreview.transform.SetParent(previewRoot, false);
                 }
-#else
-                // No AssetDatabase in builds — placeholder primitive keeps the ghost
-                // silhouette at the right pose; SpawnerPartsReady drives material updates.
-                GameObject childPreview = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                childPreview.name = $"PreviewFallback_{memberId}";
-                if (previewRoot != null)
-                    childPreview.transform.SetParent(previewRoot, false);
-#endif
 
                 childPreview.transform.SetParent(subPreviewRoot.transform, false);
 
