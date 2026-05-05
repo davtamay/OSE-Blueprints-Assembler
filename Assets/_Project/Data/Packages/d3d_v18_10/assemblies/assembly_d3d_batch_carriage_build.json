@@ -152,7 +152,110 @@
       "material": "Steel rod",
       "quantity": 1,
       "assetRef": "rod_005_approved.glb",
-      "animationCues": [{"type":"poseTransition","targetPartIds":[],"targetToolIds":[],"targetPartGroupId":"","stepIds":["step_batch_c1_rod_slide_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":2.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.988,"y":0.566,"z":0.027},"rotation":{"x":1.1921e-7,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0}},"toPose":{"position":{"x":0.5222,"y":0.757,"z":0.027},"rotation":{"x":-0.7071,"y":0.0,"z":0.0,"w":0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}},"partGroupRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeAmplitude":0.0,"shakeFrequency":0.0,"shakeAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":true,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""},{"type":"poseTransition","targetPartIds":[],"targetToolIds":[],"targetPartGroupId":"","stepIds":["step_batch_c1_place_bolts"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.5222,"y":0.757,"z":0.027},"rotation":{"x":-0.7071,"y":0.0,"z":0.0,"w":0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}},"toPose":{"position":{"x":0.988,"y":0.566,"z":0.027},"rotation":{"x":1.1921e-7,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0}},"partGroupRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeAmplitude":0.0,"shakeFrequency":0.0,"shakeAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":true,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""}],
+      "animationCues": [{"type":"poseTransition","targetPartIds":[],"targetToolIds":[],"targetPartGroupId":"","stepIds":["step_batch_c1_rod_slide_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":2.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.988,"y":0.566,"z":0.027},"rotation":{"x":1.1921e-7,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0}},"toPose":{"position":{"x":0.5222,"y":0.757,"z":0.027},"rotation":{"x":-0.7071,"y":0.0,"z":0.0,"w":0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}},"partGroupRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeAmplitude":0.0,"shakeFrequency":0.0,"shakeAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":true,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""},{"type":"poseTransition","targetPartIds":[],"targetToolIds":[],"targetPartGroupId":"","stepIds":["step_batch_c1_place_bolts"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":false,"easing":"smoothStep","target":"part","fromPose":{"position":{"x":0.5222,"y":0.757,"z":0.027},"rotation":{"x":-0.7071,"y":0.0,"z":0.0,"w":0.7071},"scale":{"x":1.0,"y":1.0,"z":1.0}},"toPose":{"position":{"x":0.988,"y":0.566,"z":0.027},"rotation":{"x":1.1921e-7,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0}},"partGroupRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":1.0,"z":0.0},"shakeAmplitude":0.0,"shakeFrequency":0.0,"shakeAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":true,"startProgress":0.0,"endProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""},
+      {
+          "type": "poseTransition",
+          "stepIds": [
+            "step_batch_c2_rod_slide_test"
+          ],
+          "trigger": "onActivate",
+          "durationSeconds": 2.0,
+          "easing": "smoothStep",
+          "target": "part",
+          "fromPose": {
+            "position": {
+              "x": 1.288,
+              "y": 0.566,
+              "z": 0.027
+            },
+            "rotation": {
+              "x": 1.1921e-07,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 1.0
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          },
+          "toPose": {
+            "position": {
+              "x": 0.8222,
+              "y": 0.757,
+              "z": 0.027
+            },
+            "rotation": {
+              "x": -0.7071,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          },
+          "spinAxis": {
+            "x": 0.0,
+            "y": 1.0,
+            "z": 0.0
+          },
+          "holdAtEnd": true
+        },
+      {
+          "type": "poseTransition",
+          "stepIds": [
+            "step_batch_c2_place_bolts"
+          ],
+          "trigger": "onActivate",
+          "easing": "smoothStep",
+          "target": "part",
+          "fromPose": {
+            "position": {
+              "x": 0.8222,
+              "y": 0.757,
+              "z": 0.027
+            },
+            "rotation": {
+              "x": -0.7071,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 0.7071
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          },
+          "toPose": {
+            "position": {
+              "x": 1.288,
+              "y": 0.566,
+              "z": 0.027
+            },
+            "rotation": {
+              "x": 1.1921e-07,
+              "y": 0.0,
+              "z": 0.0,
+              "w": 1.0
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0
+            }
+          },
+          "spinAxis": {
+            "x": 0.0,
+            "y": 1.0,
+            "z": 0.0
+          },
+          "holdAtEnd": true
+        }],
       "stagingPose": {"position":{"x":0.988,"y":0.566,"z":0.027},"rotation":{"x":1.1921e-7,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":1.0,"y":1.0,"z":1.0},"color":{"r":0.75,"g":0.75,"b":0.8,"a":1.0}}
   }
   ],
@@ -285,7 +388,652 @@
       "name": "Carriage 2 (Y-Right)",
       "stepIds": [ "step_batch_carriage_layout", "step_batch_carriage_clean_holes", "step_batch_carriage_qc_plastic", "step_batch_c2_place_bearings", "step_batch_c2_shake_test", "step_batch_c2_rod_slide_test", "step_batch_c2_close_halves", "step_batch_c2_place_bolts", "step_batch_c2_tighten" ],
       "assemblyId": "assembly_d3d_batch_carriage_build",
-      "animationCues": [{"type":"shake","targetPartIds":[],"targetToolIds":[],"targetPartGroupId":"","stepIds":["step_batch_c2_shake_test"],"always":false,"particlePrefabRef":"","particleSourceMode":"","particlePresetId":"","particleScale":0.0,"particleColorTint":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"trigger":"onActivate","delaySeconds":0.0,"durationSeconds":0.0,"loop":true,"easing":"","target":"","fromPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"toPose":{"position":{"x":0.0,"y":0.0,"z":0.0},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":0.0},"scale":{"x":0.0,"y":0.0,"z":0.0}},"partGroupRotation":{"x":0.0,"y":0.0,"z":0.0},"pulseColorA":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseColorB":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"pulseSpeed":0.0,"spinRevolutions":0.0,"spinAxis":{"x":0.0,"y":0.0,"z":0.0},"shakeAmplitude":0.006,"shakeFrequency":8.0,"shakeAxis":{"x":1.0,"y":0.0,"z":0.0},"shakeMode":"","animationClipName":"","panelOrder":0,"sequenceAfterPrevious":false,"animationClipAssetPath":"","pivotOffsetOverride":false,"pivotOffset":{"x":0.0,"y":0.0,"z":0.0},"holdAtEnd":false,"startProgress":0.0,"endProgress":0.0,"travelStartProgress":0.0,"travelEndProgress":0.0,"fromColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toColor":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"toEmission":{"r":0.0,"g":0.0,"b":0.0,"a":0.0},"fromIntensity":0.0,"toIntensity":0.0,"pulseScale":0.0,"wobbleAxis":{"x":0.0,"y":0.0,"z":0.0},"wobbleAmplitude":0.0,"wobbleFrequency":0.0,"vibrationAxes":{"x":0.0,"y":0.0,"z":0.0},"vibrationFrequency":0.0,"vibrationRampIn":0.0,"vibrationRampOut":0.0,"anchorARef":"","anchorBRef":"","lineWidth":0.0,"lineEmissionIntensity":0.0,"splineRadius":0.0,"splineMetallic":0.0,"splineSmoothness":0.0,"splineAnchorRefs":[],"spinAngleDegrees":0.0,"measureUnit":""}]
+      "animationCues": [
+          {
+            "type": "shake",
+            "targetPartIds": [],
+            "targetToolIds": [],
+            "targetPartGroupId": "partGroup_carriage_y_right",
+            "stepIds": [
+              "step_batch_c2_shake_test"
+            ],
+            "always": false,
+            "particlePrefabRef": "",
+            "particleSourceMode": "",
+            "particlePresetId": "",
+            "particleScale": 0.0,
+            "particleColorTint": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "trigger": "onActivate",
+            "delaySeconds": 0.0,
+            "durationSeconds": 0.0,
+            "loop": false,
+            "easing": "smoothStep",
+            "target": "part",
+            "fromPose": {
+              "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.0
+              },
+              "scale": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              }
+            },
+            "toPose": {
+              "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.0
+              },
+              "scale": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              }
+            },
+            "partGroupRotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "pulseColorA": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "pulseColorB": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "pulseSpeed": 0.0,
+            "spinRevolutions": 0.0,
+            "spinAxis": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "shakeAmplitude": 0.01,
+            "shakeFrequency": 8.0,
+            "shakeAxis": {
+              "x": 1.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "shakeMode": "",
+            "animationClipName": "",
+            "panelOrder": 2,
+            "sequenceAfterPrevious": true,
+            "animationClipAssetPath": "",
+            "pivotOffsetOverride": false,
+            "pivotOffset": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "holdAtEnd": false,
+            "startProgress": 0.0,
+            "endProgress": 0.0,
+            "travelStartProgress": 0.0,
+            "travelEndProgress": 0.0,
+            "fromColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "toColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "fromEmission": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "toEmission": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "fromIntensity": 0.0,
+            "toIntensity": 0.0,
+            "pulseScale": 0.0,
+            "wobbleAxis": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "wobbleAmplitude": 0.0,
+            "wobbleFrequency": 0.0,
+            "vibrationAxes": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "vibrationFrequency": 0.0,
+            "vibrationRampIn": 0.0,
+            "vibrationRampOut": 0.0,
+            "anchorARef": "",
+            "anchorBRef": "",
+            "lineWidth": 0.0,
+            "lineEmissionIntensity": 0.0,
+            "splineRadius": 0.0,
+            "splineMetallic": 0.0,
+            "splineSmoothness": 0.0,
+            "splineAnchorRefs": [],
+            "spinAngleDegrees": 0.0,
+            "measureUnit": ""
+          },
+          {
+            "type": "poseTransition",
+            "targetPartIds": [],
+            "targetToolIds": [],
+            "targetPartGroupId": "",
+            "stepIds": [
+              "step_batch_c2_shake_test"
+            ],
+            "always": false,
+            "particlePrefabRef": "",
+            "particleSourceMode": "",
+            "particlePresetId": "",
+            "particleScale": 0.0,
+            "particleColorTint": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "trigger": "onActivate",
+            "delaySeconds": 0.0,
+            "durationSeconds": 0.0,
+            "loop": false,
+            "easing": "smoothStep",
+            "target": "part",
+            "fromPose": {
+              "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              }
+            },
+            "toPose": {
+              "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.7071,
+                "w": 0.7071
+              },
+              "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              }
+            },
+            "partGroupRotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "pulseColorA": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "pulseColorB": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "pulseSpeed": 0.0,
+            "spinRevolutions": 0.0,
+            "spinAxis": {
+              "x": 0.0,
+              "y": 1.0,
+              "z": 0.0
+            },
+            "shakeAmplitude": 0.0,
+            "shakeFrequency": 0.0,
+            "shakeAxis": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "shakeMode": "",
+            "animationClipName": "",
+            "panelOrder": 0,
+            "sequenceAfterPrevious": true,
+            "animationClipAssetPath": "",
+            "pivotOffsetOverride": false,
+            "pivotOffset": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "holdAtEnd": true,
+            "startProgress": 0.0,
+            "endProgress": 0.0,
+            "travelStartProgress": 0.0,
+            "travelEndProgress": 0.0,
+            "fromColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "toColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "fromEmission": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "toEmission": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "fromIntensity": 0.0,
+            "toIntensity": 0.0,
+            "pulseScale": 0.0,
+            "wobbleAxis": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "wobbleAmplitude": 0.0,
+            "wobbleFrequency": 0.0,
+            "vibrationAxes": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "vibrationFrequency": 0.0,
+            "vibrationRampIn": 0.0,
+            "vibrationRampOut": 0.0,
+            "anchorARef": "",
+            "anchorBRef": "",
+            "lineWidth": 0.0,
+            "lineEmissionIntensity": 0.0,
+            "splineRadius": 0.0,
+            "splineMetallic": 0.0,
+            "splineSmoothness": 0.0,
+            "splineAnchorRefs": [],
+            "spinAngleDegrees": 0.0,
+            "measureUnit": ""
+          },
+          {
+            "type": "shake",
+            "targetPartIds": [],
+            "targetToolIds": [],
+            "targetPartGroupId": "",
+            "stepIds": [
+              "step_batch_c2_rod_slide_test"
+            ],
+            "always": false,
+            "particlePrefabRef": "",
+            "particleSourceMode": "",
+            "particlePresetId": "",
+            "particleScale": 0.0,
+            "particleColorTint": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "trigger": "onActivate",
+            "delaySeconds": 0.0,
+            "durationSeconds": 0.0,
+            "loop": false,
+            "easing": "smoothStep",
+            "target": "part",
+            "fromPose": {
+              "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.0
+              },
+              "scale": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              }
+            },
+            "toPose": {
+              "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 0.0
+              },
+              "scale": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              }
+            },
+            "partGroupRotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "pulseColorA": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "pulseColorB": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "pulseSpeed": 0.0,
+            "spinRevolutions": 0.0,
+            "spinAxis": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "shakeAmplitude": 0.05,
+            "shakeFrequency": 1.0,
+            "shakeAxis": {
+              "x": 0.0,
+              "y": 1.0,
+              "z": 0.0
+            },
+            "shakeMode": "slide",
+            "animationClipName": "",
+            "panelOrder": 0,
+            "sequenceAfterPrevious": false,
+            "animationClipAssetPath": "",
+            "pivotOffsetOverride": false,
+            "pivotOffset": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "holdAtEnd": false,
+            "startProgress": 0.0,
+            "endProgress": 0.0,
+            "travelStartProgress": 0.0,
+            "travelEndProgress": 0.0,
+            "fromColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "toColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "fromEmission": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "toEmission": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "fromIntensity": 0.0,
+            "toIntensity": 0.0,
+            "pulseScale": 0.0,
+            "wobbleAxis": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "wobbleAmplitude": 0.0,
+            "wobbleFrequency": 0.0,
+            "vibrationAxes": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "vibrationFrequency": 0.0,
+            "vibrationRampIn": 0.0,
+            "vibrationRampOut": 0.0,
+            "anchorARef": "",
+            "anchorBRef": "",
+            "lineWidth": 0.0,
+            "lineEmissionIntensity": 0.0,
+            "splineRadius": 0.0,
+            "splineMetallic": 0.0,
+            "splineSmoothness": 0.0,
+            "splineAnchorRefs": [],
+            "spinAngleDegrees": 0.0,
+            "measureUnit": ""
+          },
+          {
+            "type": "poseTransition",
+            "targetPartIds": [],
+            "targetToolIds": [],
+            "targetPartGroupId": "",
+            "stepIds": [
+              "step_batch_c2_place_bolts"
+            ],
+            "always": false,
+            "particlePrefabRef": "",
+            "particleSourceMode": "",
+            "particlePresetId": "",
+            "particleScale": 0.0,
+            "particleColorTint": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "trigger": "onActivate",
+            "delaySeconds": 0.0,
+            "durationSeconds": 0.0,
+            "loop": false,
+            "easing": "smoothStep",
+            "target": "part",
+            "fromPose": {
+              "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+              },
+              "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              }
+            },
+            "toPose": {
+              "position": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+              },
+              "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.7071,
+                "w": -0.7071
+              },
+              "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+              }
+            },
+            "partGroupRotation": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "pulseColorA": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "pulseColorB": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "pulseSpeed": 0.0,
+            "spinRevolutions": 0.0,
+            "spinAxis": {
+              "x": 0.0,
+              "y": 1.0,
+              "z": 0.0
+            },
+            "shakeAmplitude": 0.0,
+            "shakeFrequency": 0.0,
+            "shakeAxis": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "shakeMode": "",
+            "animationClipName": "",
+            "panelOrder": 0,
+            "sequenceAfterPrevious": false,
+            "animationClipAssetPath": "",
+            "pivotOffsetOverride": false,
+            "pivotOffset": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "holdAtEnd": true,
+            "startProgress": 0.0,
+            "endProgress": 0.0,
+            "travelStartProgress": 0.0,
+            "travelEndProgress": 0.0,
+            "fromColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "toColor": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "fromEmission": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "toEmission": {
+              "r": 0.0,
+              "g": 0.0,
+              "b": 0.0,
+              "a": 0.0
+            },
+            "fromIntensity": 0.0,
+            "toIntensity": 0.0,
+            "pulseScale": 0.0,
+            "wobbleAxis": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "wobbleAmplitude": 0.0,
+            "wobbleFrequency": 0.0,
+            "vibrationAxes": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "vibrationFrequency": 0.0,
+            "vibrationRampIn": 0.0,
+            "vibrationRampOut": 0.0,
+            "anchorARef": "",
+            "anchorBRef": "",
+            "lineWidth": 0.0,
+            "lineEmissionIntensity": 0.0,
+            "splineRadius": 0.0,
+            "splineMetallic": 0.0,
+            "splineSmoothness": 0.0,
+            "splineAnchorRefs": [],
+            "spinAngleDegrees": 0.0,
+            "measureUnit": ""
+          }
+        ]
   },
     {
       "id": "partGroup_carriage_z_back",
@@ -558,7 +1306,6 @@
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [
-        "y_right_carriage_half_a",
         "y_right_lm8uu_a",
         "y_right_lm8uu_b",
         "y_right_lm8uu_c",
@@ -581,10 +1328,6 @@
         {
           "kind": "part",
           "id": "y_right_lm8uu_d"
-        },
-        {
-          "kind": "part",
-          "id": "y_right_carriage_half_a"
         }
       ],
       "workingOrientation": {
@@ -611,13 +1354,13 @@
       "removePersistentToolIds": [],
       "targetIds": [],
       "requiredPartIds": [
-        "y_right_carriage_half_b"
+        "y_right_carriage_half_a"
       ],
       "requiredToolActions": [],
       "taskOrder": [
         {
           "kind": "part",
-          "id": "y_right_carriage_half_b"
+          "id": "y_right_carriage_half_a"
         }
       ],
       "workingOrientation": {
@@ -655,19 +1398,26 @@
       "difficulty": "beginner",
       "removePersistentToolIds": [],
       "targetIds": [],
-      "requiredPartIds": [
-        "y_right_carriage_half_a",
-        "y_right_carriage_half_b"
-      ],
+      "requiredPartIds": [],
       "requiredToolActions": [],
       "taskOrder": [
         {
           "kind": "part",
-          "id": "y_right_carriage_half_a"
+          "id": "partGroup_carriage_y_right",
+          "endTransform": {
+            "position": {"x": 0.0, "y": 0.0, "z": 0.0},
+            "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 0.0},
+            "scale": {"x": 0.0, "y": 0.0, "z": 0.0}
+          }
         },
         {
-          "kind": "part",
-          "id": "y_right_carriage_half_b"
+          "kind": "confirm_action",
+          "id": "confirm",
+          "endTransform": {
+            "position": {"x": 0.0, "y": 0.0, "z": 0.0},
+            "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 0.0},
+            "scale": {"x": 0.0, "y": 0.0, "z": 0.0}
+          }
         }
       ],
       "workingOrientation": {
@@ -705,24 +1455,37 @@
       "difficulty": "beginner",
       "removePersistentToolIds": [],
       "targetIds": [],
-      "requiredPartIds": [
-        "y_right_carriage_half_a",
-        "y_right_carriage_half_b",
-        "batch_test_rod"
-      ],
+      "requiredPartIds": [],
       "requiredToolActions": [],
       "taskOrder": [
         {
           "kind": "part",
-          "id": "y_right_carriage_half_a"
+          "id": "batch_test_rod",
+          "awaitCues": true,
+          "endTransform": {
+            "position": {"x": 0.0, "y": 0.0, "z": 0.0},
+            "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 0.0},
+            "scale": {"x": 0.0, "y": 0.0, "z": 0.0}
+          }
         },
         {
           "kind": "part",
-          "id": "y_right_carriage_half_b"
+          "id": "partGroup_carriage_y_right",
+          "awaitCues": true,
+          "endTransform": {
+            "position": {"x": 0.0, "y": 0.0, "z": 0.0},
+            "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 0.0},
+            "scale": {"x": 0.0, "y": 0.0, "z": 0.0}
+          }
         },
         {
-          "kind": "part",
-          "id": "batch_test_rod"
+          "kind": "confirm_action",
+          "id": "confirm",
+          "endTransform": {
+            "position": {"x": 0.0, "y": 0.0, "z": 0.0},
+            "rotation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 0.0},
+            "scale": {"x": 0.0, "y": 0.0, "z": 0.0}
+          }
         }
       ],
       "workingOrientation": {
@@ -816,18 +1579,7 @@
       "instructionText": "Tighten all 4 bolts on the Y-Right carriage with the power drill on lowest torque. Set it beside carriage 1 \u00e2\u20ac\u201d carriage 2 of 4 is complete.",
       "removePersistentToolIds": [],
       "targetIds": [],
-      "requiredPartIds": [
-        "y_right_carriage_half_a",
-        "y_right_carriage_half_b",
-        "y_right_m6x18_a",
-        "y_right_m6x18_b",
-        "y_right_m6x30_a",
-        "y_right_m6x30_b",
-        "y_right_m6_nut_a",
-        "y_right_m6_nut_b",
-        "y_right_m6_nut_c",
-        "y_right_m6_nut_d"
-      ],
+      "requiredPartIds": [],
       "requiredToolActions": [],
       "taskOrder": [
         {
