@@ -76,7 +76,7 @@ namespace OSE.Editor
                         later.requiredPartIds = rem.Count > 0 ? rem.ToArray() : Array.Empty<string>();
                         _dirtyStepIds.Add(later.id);
                         removals++;
-                        Debug.LogWarning($"[TTAW] Auto-fix: removed '{kvp.Key}' from requiredPartIds of Place step '{later.id}' (kept in earlier step '{kvp.Value[0].id}').");
+                        OseLog.Warn($"[TTAW] Auto-fix: removed '{kvp.Key}' from requiredPartIds of Place step '{later.id}' (kept in earlier step '{kvp.Value[0].id}').");
                     }
                 }
             }
@@ -117,6 +117,8 @@ namespace OSE.Editor
             if (_dirtyPartGroupIds.Count > 0)   return true;
             if (_dirtyPartIds.Count > 0)          return true;
             if (_dirtyPrefabInstanceIds.Count > 0) return true;
+            if (_dirtyHintIds.Count > 0)         return true;
+            if (_newHintDefs.Count > 0)          return true;
             if (_targets != null) foreach (var t in _targets) if (t.isDirty) return true;
             if (_parts   != null) foreach (var p in _parts)   if (p.isDirty) return true;
             return false;
@@ -132,12 +134,12 @@ namespace OSE.Editor
             if (string.IsNullOrEmpty(_pkgId) || _pkg == null) return;
             if (_pkg.previewConfig?.targetPlacements == null || _pkg.previewConfig.targetPlacements.Length == 0)
             {
-                Debug.LogWarning("[ToolTargetAuthoring] SyncAllToolRotations: no targetPlacements in previewConfig.");
+                OseLog.Warn("[ToolTargetAuthoring] SyncAllToolRotations: no targetPlacements in previewConfig.");
                 return;
             }
 
             string jsonPath = PackageJsonUtils.GetJsonPath(_pkgId);
-            if (jsonPath == null) { Debug.LogError($"[ToolTargetAuthoring] machine.json not found for '{_pkgId}'"); return; }
+            if (jsonPath == null) { OseLog.Error($"[ToolTargetAuthoring] machine.json not found for '{_pkgId}'"); return; }
 
             bool   isSplit2     = PackageJsonUtils.IsSplitLayout(_pkgId);
             var    rotContents  = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -175,7 +177,7 @@ namespace OSE.Editor
                 try { JsonUtility.FromJson<MachinePackageDefinition>(rotResult); }
                 catch (Exception ex)
                 {
-                    Debug.LogError($"[ToolTargetAuthoring] SyncAllToolRotations: result would be invalid JSON, aborting.\n{ex.Message}");
+                    OseLog.Error($"[ToolTargetAuthoring] SyncAllToolRotations: result would be invalid JSON, aborting.\n{ex.Message}");
                     return;
                 }
             }
@@ -196,7 +198,7 @@ namespace OSE.Editor
 
             AssetDatabase.Refresh();
             PackageSyncTool.Sync();
-            Debug.Log($"[ToolTargetAuthoring] SyncAllToolRotations: updated toolActionRotation for {count} targets (backup: {firstRotBackup}).");
+            OseLog.Info($"[ToolTargetAuthoring] SyncAllToolRotations: updated toolActionRotation for {count} targets (backup: {firstRotBackup}).");
 
             _pkg = PackageJsonUtils.LoadPackage(_pkgId);
             BuildTargetList();
@@ -214,7 +216,7 @@ namespace OSE.Editor
         {
             if (string.IsNullOrEmpty(_pkgId) || _pkg == null || _targets == null) return;
             string jsonPath = PackageJsonUtils.GetJsonPath(_pkgId);
-            if (jsonPath == null) { Debug.LogError($"[ToolTargetAuthoring] machine.json not found for '{_pkgId}'"); return; }
+            if (jsonPath == null) { OseLog.Error($"[ToolTargetAuthoring] machine.json not found for '{_pkgId}'"); return; }
 
             // Guarantee the drift-free invariant at write time: every step's
             // taskOrder is a projection of its role arrays. Mutators already
@@ -231,7 +233,7 @@ namespace OSE.Editor
             // they meant to author multiple placements.
             if (TryFindPlaceOwnershipConflict(out string multiPlaceSummary))
             {
-                Debug.Log($"[TTAW] {multiPlaceSummary}\nMulti-placement is supported; saving.");
+                OseLog.Info($"[TTAW] {multiPlaceSummary}\nMulti-placement is supported; saving.");
             }
 
             // Step 1: Update working pkg.previewConfig.targetPlacements
@@ -373,7 +375,7 @@ namespace OSE.Editor
                 try { JsonUtility.FromJson<MachinePackageDefinition>(orig); }
                 catch (Exception ex)
                 {
-                    Debug.LogError($"[ToolTargetAuthoring] machine.json is already invalid, aborting.\n{ex.Message}");
+                    OseLog.Error($"[ToolTargetAuthoring] machine.json is already invalid, aborting.\n{ex.Message}");
                     return;
                 }
             }
@@ -433,7 +435,35 @@ namespace OSE.Editor
             var inv = System.Globalization.CultureInfo.InvariantCulture;
             foreach (var t in _targets)
             {
-                if (!t.isDirty) continue;
+                // Live-part offset auto-bake runs for every tracking-enabled
+                // target with an associatedPartId, even when the target
+                // itself isn't dirty — picks up part movements (group
+                // rotations, stepPose edits) that shifted the offset
+                // since the last bake. Cheap (one transform inverse per
+                // target) and idempotent (writes the same value when
+                // nothing moved). Migration: existing targets baked on
+                // first save without the author having to re-touch each.
+                bool autoBakeOnly =
+                    !t.isDirty
+                    && t.def != null
+                    && t.def.useLocalOffsetFromPart
+                    && !string.IsNullOrEmpty(t.def.associatedPartId);
+                if (!t.isDirty && !autoBakeOnly) continue;
+                if (autoBakeOnly)
+                {
+                    var partGO = FindLivePartGO(t.def.associatedPartId);
+                    Transform prRoot = GetPreviewRoot();
+                    if (partGO != null && prRoot != null)
+                    {
+                        Vector3 worldTargetPos = prRoot.TransformPoint(t.position);
+                        Vector3 offset = partGO.transform.InverseTransformPoint(worldTargetPos);
+                        t.def.localOffsetFromPart = new SceneFloat3 { x = offset.x, y = offset.y, z = offset.z };
+                        InjectField(t.def.id, "useLocalOffsetFromPart", "true");
+                        string offsetJson = $"{{ \"x\": {R(offset.x).ToString(inv)}, \"y\": {R(offset.y).ToString(inv)}, \"z\": {R(offset.z).ToString(inv)} }}";
+                        InjectField(t.def.id, "localOffsetFromPart", offsetJson);
+                    }
+                    continue;
+                }
 
                 string axisJson = $"{{ \"x\": {R(t.weldAxis.x).ToString(inv)}, \"y\": {R(t.weldAxis.y).ToString(inv)}, \"z\": {R(t.weldAxis.z).ToString(inv)} }}";
                 InjectField(t.def.id, "weldAxis", axisJson);
@@ -448,6 +478,43 @@ namespace OSE.Editor
                 InjectField(t.def.id, "useToolActionRotation", "true");
                 string tarJson = $"{{ \"x\": {R(worldEuler.x).ToString(inv)}, \"y\": {R(worldEuler.y).ToString(inv)}, \"z\": {R(worldEuler.z).ToString(inv)} }}";
                 InjectField(t.def.id, "toolActionRotation", tarJson);
+
+                // Auto-bake live-part offset. When the target has an
+                // associatedPartId and tracking is enabled (default), recompute
+                // localOffsetFromPart from the gizmo's current position
+                // relative to the live part. Runtime resolver prefers this
+                // over the static placement, so the marker tracks the part
+                // through group rotations / stepPoses without going stale
+                // at bake-time. Safe to skip when the part isn't currently
+                // spawned in the scene — the existing static placement
+                // remains valid as a fallback.
+                if (t.def != null
+                    && t.def.useLocalOffsetFromPart
+                    && !string.IsNullOrEmpty(t.def.associatedPartId))
+                {
+                    var partGO = FindLivePartGO(t.def.associatedPartId);
+                    Transform prRoot = GetPreviewRoot();
+                    if (partGO != null && prRoot != null)
+                    {
+                        Vector3 worldTargetPos = prRoot.TransformPoint(t.position);
+                        Vector3 offset = partGO.transform.InverseTransformPoint(worldTargetPos);
+                        t.def.localOffsetFromPart = new SceneFloat3 { x = offset.x, y = offset.y, z = offset.z };
+                        InjectField(t.def.id, "useLocalOffsetFromPart", "true");
+                        string offsetJson = $"{{ \"x\": {R(offset.x).ToString(inv)}, \"y\": {R(offset.y).ToString(inv)}, \"z\": {R(offset.z).ToString(inv)} }}";
+                        InjectField(t.def.id, "localOffsetFromPart", offsetJson);
+                    }
+                    else
+                    {
+                        OseLog.Warn($"[ToolTargetAuthoring] Auto-bake skipped for target '{t.def.id}': associatedPart '{t.def.associatedPartId}' not currently in scene.");
+                    }
+                }
+                else if (t.def != null && !t.def.useLocalOffsetFromPart)
+                {
+                    // Author explicitly opted out — strip the offset fields
+                    // so the runtime falls back to the static placement.
+                    RemoveField(t.def.id, "useLocalOffsetFromPart");
+                    RemoveField(t.def.id, "localOffsetFromPart");
+                }
             }
 
             // Step 5a: Inject ToolDefinition.persistent + animationCues for dirty tools
@@ -486,6 +553,32 @@ namespace OSE.Editor
             {
                 var step = FindStep(stepId);
                 if (step == null) continue;
+
+                // Step-text payloads (guidance / validation / feedback /
+                // reinforcement). Until these injections existed, every save
+                // silently dropped guidance.instructionText, hint refs,
+                // success/failure messages, and reinforcement text — see
+                // TaskJsonSerializer's "Step text payloads" comment for the
+                // full background. Empty payloads are removed so the file
+                // stays free of "x: {}" noise (CLAUDE.md "no empty arrays
+                // or nulls" rule).
+                {
+                    string gJson = TaskJsonSerializer.BuildGuidanceJson(step.guidance);
+                    if (gJson != null) InjectField(stepId, "guidance", gJson);
+                    else               RemoveField(stepId, "guidance");
+
+                    string vJson = TaskJsonSerializer.BuildValidationJson(step.validation);
+                    if (vJson != null) InjectField(stepId, "validation", vJson);
+                    else               RemoveField(stepId, "validation");
+
+                    string fJson = TaskJsonSerializer.BuildFeedbackJson(step.feedback);
+                    if (fJson != null) InjectField(stepId, "feedback", fJson);
+                    else               RemoveField(stepId, "feedback");
+
+                    string rJson = TaskJsonSerializer.BuildReinforcementJson(step.reinforcement);
+                    if (rJson != null) InjectField(stepId, "reinforcement", rJson);
+                    else               RemoveField(stepId, "reinforcement");
+                }
 
                 // removePersistentToolIds
                 string idsJson = step.removePersistentToolIds == null || step.removePersistentToolIds.Length == 0
@@ -666,6 +759,86 @@ namespace OSE.Editor
             _dirtyStepIds.Clear();
             _dirtyTaskOrderStepIds.Clear();
 
+            // Step 5b-bis: Hint definitions touched by StepTextAuthoringWindow.
+            // For existing hints (entry exists somewhere on disk) we inject
+            // each authored field individually so the file diff stays
+            // minimal. For brand-new hints we append a fully-formed object
+            // into the right shard's "hints" array — shared.json when the
+            // hint is global, the assembly file owning the targetId/partId
+            // when it's scoped. CLAUDE.md "Hint reuse" rule lives here:
+            // scoped hints land in the assembly that uses them, generic
+            // ones go into shared.json.
+            foreach (string hintId in _dirtyHintIds)
+            {
+                HintDefinition h = null;
+                if (_pkg?.hints != null)
+                    foreach (var hd in _pkg.hints)
+                        if (hd != null && hd.id == hintId) { h = hd; break; }
+                if (h == null) continue;
+
+                if (!string.IsNullOrEmpty(h.type))     InjectField(hintId, "type",     TaskJsonSerializer.JsonQuote(h.type));     else RemoveField(hintId, "type");
+                if (!string.IsNullOrEmpty(h.title))    InjectField(hintId, "title",    TaskJsonSerializer.JsonQuote(h.title));    else RemoveField(hintId, "title");
+                if (!string.IsNullOrEmpty(h.message))  InjectField(hintId, "message",  TaskJsonSerializer.JsonQuote(h.message));  else RemoveField(hintId, "message");
+                if (!string.IsNullOrEmpty(h.targetId)) InjectField(hintId, "targetId", TaskJsonSerializer.JsonQuote(h.targetId)); else RemoveField(hintId, "targetId");
+                if (!string.IsNullOrEmpty(h.partId))   InjectField(hintId, "partId",   TaskJsonSerializer.JsonQuote(h.partId));   else RemoveField(hintId, "partId");
+                if (!string.IsNullOrEmpty(h.toolId))   InjectField(hintId, "toolId",   TaskJsonSerializer.JsonQuote(h.toolId));   else RemoveField(hintId, "toolId");
+                if (!string.IsNullOrEmpty(h.priority)) InjectField(hintId, "priority", TaskJsonSerializer.JsonQuote(h.priority)); else RemoveField(hintId, "priority");
+            }
+            _dirtyHintIds.Clear();
+
+            if (_newHintDefs.Count > 0)
+            {
+                foreach (var h in _newHintDefs)
+                {
+                    if (h == null || string.IsNullOrEmpty(h.id)) continue;
+
+                    // Decide which file to append to. A scoped hint that
+                    // references a target/part/tool defined in an assembly
+                    // file goes into that file (so reading the assembly in
+                    // isolation is self-contained). Otherwise shared.json.
+                    string fp = null;
+                    if (isSplit)
+                    {
+                        string scopeId = !string.IsNullOrEmpty(h.targetId) ? h.targetId
+                                       : !string.IsNullOrEmpty(h.partId)   ? h.partId
+                                       : !string.IsNullOrEmpty(h.toolId)   ? h.toolId
+                                       : null;
+                        if (!string.IsNullOrEmpty(scopeId))
+                            fp = PackageJsonUtils.FindEntityFilePath(_pkgId, scopeId);
+                        if (fp == null)
+                        {
+                            string sharedPath = Path.Combine(PackageJsonUtils.AuthoringRoot, _pkgId, "shared.json");
+                            if (File.Exists(sharedPath)) fp = sharedPath;
+                        }
+                    }
+                    else
+                    {
+                        fp = jsonPath;
+                    }
+                    if (fp == null)
+                    {
+                        OseLog.Warn($"[TTAW.WriteJson] No target file for new hint '{h.id}' — skipping.");
+                        continue;
+                    }
+
+                    if (!fileContents.TryGetValue(fp, out string cnt))
+                        fileContents[fp] = cnt = File.ReadAllText(fp);
+
+                    string hintJson = TaskJsonSerializer.BuildHintJson(h);
+                    if (PackageJsonUtils.TryReplaceTopLevelArray(ref cnt, "hints", AppendHintToArray(cnt, hintJson)))
+                        fileContents[fp] = cnt;
+
+                    // Mirror into the in-memory pkg so subsequent saves see it as "existing".
+                    if (_pkg != null)
+                    {
+                        var existing = _pkg.hints != null ? new List<HintDefinition>(_pkg.hints) : new List<HintDefinition>();
+                        existing.Add(h);
+                        _pkg.hints = existing.ToArray();
+                    }
+                }
+                _newHintDefs.Clear();
+            }
+
             // Step 5c: Inject assetRef for parts whose model was changed
             foreach (string partId in _dirtyPartAssetRefIds)
             {
@@ -771,7 +944,7 @@ namespace OSE.Editor
                     }
                     sb.Append(']');
                     InjectField(subId, "animationCues", sb.ToString());
-                    Debug.Log($"[TTAW] wrote sub.animationCues for '{subId}' (count={sub.animationCues.Length}, first.duration={sub.animationCues[0].durationSeconds})");
+                    OseLog.Info($"[TTAW] wrote sub.animationCues for '{subId}' (count={sub.animationCues.Length}, first.duration={sub.animationCues[0].durationSeconds})");
                 }
                 else
                 {
@@ -870,7 +1043,7 @@ namespace OSE.Editor
                             : null;
                         if (string.IsNullOrEmpty(fp))
                         {
-                            Debug.LogWarning($"[TTAW.WriteJson] PrefabInstance '{inst.instanceId}' has no resolvable assembly file (assemblyId='{inst.assemblyId}'); skipping save.");
+                            OseLog.Warn($"[TTAW.WriteJson] PrefabInstance '{inst.instanceId}' has no resolvable assembly file (assemblyId='{inst.assemblyId}'); skipping save.");
                             continue;
                         }
                         if (!dirtyByFile.TryGetValue(fp, out var bucket))
@@ -909,7 +1082,7 @@ namespace OSE.Editor
                 try { JsonUtility.FromJson<MachinePackageDefinition>(monoJson); }
                 catch (Exception ex)
                 {
-                    Debug.LogError($"[ToolTargetAuthoring] Write would produce invalid JSON, aborting.\n{ex.Message}");
+                    OseLog.Error($"[ToolTargetAuthoring] Write would produce invalid JSON, aborting.\n{ex.Message}");
                     return;
                 }
             }
@@ -940,7 +1113,7 @@ namespace OSE.Editor
                     AssetDatabase.ImportAsset(projRel, ImportAssetOptions.ForceUpdate);
             }
 
-            Debug.Log($"[ToolTargetAuthoring] Written {_pkgId} (backup: {firstBackup})");
+            OseLog.Info($"[ToolTargetAuthoring] Written {_pkgId} (backup: {firstBackup})");
 
             if (reloadAfter)
             {
@@ -1015,7 +1188,7 @@ namespace OSE.Editor
                 string rootFile   = Path.Combine(packageDir, $"{baseName}.json");
                 if (File.Exists(asmFile))       sourceFile = asmFile;
                 else if (File.Exists(rootFile)) sourceFile = rootFile;
-                else { Debug.LogWarning($"[ToolTargetAuthoring] RevertFromBackup: cannot locate source for backup '{_lastBackupPath}'."); return; }
+                else { OseLog.Warn($"[ToolTargetAuthoring] RevertFromBackup: cannot locate source for backup '{_lastBackupPath}'."); return; }
             }
             else
             {
@@ -1025,7 +1198,7 @@ namespace OSE.Editor
 
             File.Copy(_lastBackupPath, sourceFile, true);
             AssetDatabase.Refresh();
-            Debug.Log($"[ToolTargetAuthoring] Reverted {Path.GetFileName(sourceFile)} to backup: {_lastBackupPath}");
+            OseLog.Info($"[ToolTargetAuthoring] Reverted {Path.GetFileName(sourceFile)} to backup: {_lastBackupPath}");
             _lastBackupPath = null;
             _pkg = PackageJsonUtils.LoadPackage(_pkgId);
             BuildTargetList();
@@ -1086,8 +1259,8 @@ namespace OSE.Editor
                 }
             }
 
-            if (found > 0) Debug.Log($"[ToolTargetAuthoring] Extracted {found} target(s) from GLB anchors.");
-            else           Debug.Log("[ToolTargetAuthoring] No named anchor nodes matched any targetId.");
+            if (found > 0) OseLog.Info($"[ToolTargetAuthoring] Extracted {found} target(s) from GLB anchors.");
+            else           OseLog.Info("[ToolTargetAuthoring] No named anchor nodes matched any targetId.");
 
             SceneView.RepaintAll();
             Repaint();
@@ -1131,6 +1304,26 @@ namespace OSE.Editor
             return sb.ToString();
         }
 
+        // Returns a new "hints" array literal: existing entries (parsed out
+        // of <paramref name="fileText"/>) plus the new hint JSON object.
+        // Used by the new-hint flush path so we can splice the whole array
+        // back in via PackageJsonUtils.TryReplaceTopLevelArray. When no
+        // hints array exists yet, returns a one-entry array.
+        private static string AppendHintToArray(string fileText, string newHintJson)
+        {
+            const string label = "\"hints\"";
+            int idx = fileText.IndexOf(label, StringComparison.Ordinal);
+            if (idx < 0) return "[\n    " + newHintJson + "\n  ]";
+            int open = fileText.IndexOf('[', idx);
+            if (open < 0) return "[\n    " + newHintJson + "\n  ]";
+            int close = FindMatchingClose(fileText, open);
+            if (close < 0) return "[\n    " + newHintJson + "\n  ]";
+            string inner = fileText.Substring(open + 1, close - open - 1).Trim();
+            if (inner.Length == 0)
+                return "[\n    " + newHintJson + "\n  ]";
+            return "[\n    " + inner + ",\n    " + newHintJson + "\n  ]";
+        }
+
         // ── JSON injection helpers ────────────────────────────────────────────
 
         private static bool TryInjectBlock(ref string json, string id, string block, string blockJson)
@@ -1164,7 +1357,7 @@ namespace OSE.Editor
                     searchFrom = f + 1;
                 }
             }
-            if (idPos < 0) { Debug.LogWarning($"[ToolTargetAuthoring] TryInjectBlock: id='{id}' not found"); return false; }
+            if (idPos < 0) { OseLog.Warn($"[ToolTargetAuthoring] TryInjectBlock: id='{id}' not found"); return false; }
 
             int objStart = FindObjectStart(json, idPos);
             if (objStart < 0) return false;

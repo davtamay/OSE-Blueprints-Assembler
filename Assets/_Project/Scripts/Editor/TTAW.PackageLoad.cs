@@ -231,6 +231,16 @@ namespace OSE.Editor
                 if (portA == Vector3.zero && portB == Vector3.zero && wirePortByTargetId.TryGetValue(def.id, out var wp))
                 { portA = wp.a; portB = wp.b; }
 
+                // Default tracking ON for any target with an associated
+                // part, so the auto-bake-on-save path fires without the
+                // author having to flip a toggle. Authors can still turn
+                // it off in the inspector for the rare pin-to-PreviewRoot
+                // case (note: opt-out doesn't survive reload — JsonUtility
+                // can't distinguish absent from false; if persistence
+                // becomes a real need, add a separate explicit-off field).
+                if (!string.IsNullOrEmpty(def.associatedPartId) && !def.useLocalOffsetFromPart)
+                    def.useLocalOffsetFromPart = true;
+
                 var state = new TargetEditState
                 {
                     def                     = def,
@@ -315,12 +325,12 @@ namespace OSE.Editor
                 RespawnScene();
                 SyncAllPartMeshesToActivePose();
                 WriteJson();
-                Debug.Log($"[PartAutoLink] Linked {linked} parts by filename. " +
+                OseLog.Info($"[PartAutoLink] Linked {linked} parts by filename. " +
                           $"{skipped} still need manual assetRef (shared/renamed meshes).");
             }
             else
             {
-                Debug.Log($"[PartAutoLink] No filename matches found. " +
+                OseLog.Info($"[PartAutoLink] No filename matches found. " +
                           $"{skipped} parts need manual assetRef assignment via the Model Asset field.");
             }
         }

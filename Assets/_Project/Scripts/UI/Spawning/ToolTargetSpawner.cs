@@ -128,15 +128,23 @@ namespace OSE.UI.Root
 
             StepDefinition currentStep = earlyStepCtrl.CurrentStepDefinition;
 
-            if (currentStep?.requiredToolActions == null || currentStep.requiredToolActions.Length == 0)
-                return;
-
-            // Reset the "already-clicked" guard when crossing step boundaries.
-            if (!string.Equals(_hiddenSetStepId, currentStep.id, StringComparison.OrdinalIgnoreCase))
+            // Reset the "already-clicked" guard on every step boundary —
+            // BEFORE the requiredToolActions early-return below. Doing it
+            // after the early-return meant a Use step → Place step → back
+            // to the same Use step kept the prior visit's clicked-target
+            // IDs in _hiddenForCurrentStep, suppressing every marker the
+            // user had clicked on the first pass. The set's only purpose
+            // is to bridge the click → snapshot.IsCompleted lag inside a
+            // single step entry; it must reset whenever the active step
+            // identity changes, regardless of the new step's family.
+            if (!string.Equals(_hiddenSetStepId, currentStep?.id, StringComparison.OrdinalIgnoreCase))
             {
                 _hiddenForCurrentStep.Clear();
-                _hiddenSetStepId = currentStep.id;
+                _hiddenSetStepId = currentStep?.id;
             }
+
+            if (currentStep?.requiredToolActions == null || currentStep.requiredToolActions.Length == 0)
+                return;
 
             IMachineSessionController session = earlySession;
             bool spawnedAny = false;
@@ -319,6 +327,43 @@ namespace OSE.UI.Root
             rotation = Quaternion.identity;
             scale = Vector3.one * 0.25f;
 
+            TargetDefinition targetDef = null;
+            bool hasDef = package != null && package.TryGetTarget(targetId, out targetDef);
+
+            // Live-part-anchored offset. When the target authors
+            // useLocalOffsetFromPart=true + associatedPartId, the marker
+            // position is computed every resolve from the live part's
+            // current transform, so it tracks group rotations / stepPoses
+            // automatically. Rotation and scale still come from the static
+            // placement (authored tool-approach intent, independent of
+            // the part's intrinsic orientation). This is the preferred
+            // path for anchor-tracking targets; anchorRef below is legacy
+            // and only resolves when its value happens to equal a spawned
+            // part's name.
+            if (hasDef && targetDef != null && targetDef.useLocalOffsetFromPart
+                && !string.IsNullOrWhiteSpace(targetDef.associatedPartId))
+            {
+                Transform livePart = TryGetLivePartTransform(targetDef.associatedPartId);
+                Transform pr = _ctx.Spawner.PreviewRoot;
+                if (livePart != null && pr != null)
+                {
+                    Vector3 localOffset = new Vector3(
+                        targetDef.localOffsetFromPart.x,
+                        targetDef.localOffsetFromPart.y,
+                        targetDef.localOffsetFromPart.z);
+                    position = pr.InverseTransformPoint(livePart.TransformPoint(localOffset));
+                    var staticPlacement = _ctx.Spawner.FindTargetPlacement(targetId);
+                    if (staticPlacement != null)
+                    {
+                        rotation = !staticPlacement.rotation.IsIdentity
+                            ? new Quaternion(staticPlacement.rotation.x, staticPlacement.rotation.y, staticPlacement.rotation.z, staticPlacement.rotation.w)
+                            : Quaternion.identity;
+                        scale = new Vector3(staticPlacement.scale.x, staticPlacement.scale.y, staticPlacement.scale.z);
+                    }
+                    return true;
+                }
+            }
+
             // Anchor-resolved targets (anchorRef set) must track the live
             // spawned part — the static targetPlacement.position is baked
             // once at load and goes stale as the part moves through the
@@ -326,8 +371,6 @@ namespace OSE.UI.Root
             // (live anchor → static placement) so editor and Play stay
             // visually in sync. Without this, Play shows the marker at
             // the bake-time pose while the editor shows it on the bolt.
-            TargetDefinition targetDef = null;
-            bool hasDef = package != null && package.TryGetTarget(targetId, out targetDef);
             if (hasDef && targetDef != null && !string.IsNullOrWhiteSpace(targetDef.anchorRef))
             {
                 Transform liveAnchor = TryGetLivePartTransform(targetDef.anchorRef);

@@ -56,7 +56,7 @@ namespace OSE.Editor
                 }
                 catch (System.Exception e)
                 {
-                    Debug.LogWarning($"[TTAW] Wire preview init failed: {e.Message}");
+                    OseLog.Warn($"[TTAW] Wire preview init failed: {e.Message}");
                 }
             }
 
@@ -126,6 +126,23 @@ namespace OSE.Editor
                 if (selectionScope && TryGetActivePosePillPositionForTarget(t.def?.id, out Vector3 pillIconPos))
                 {
                     localForDisplay = pillIconPos;
+                }
+                else if (t.def != null && t.def.useLocalOffsetFromPart
+                         && !string.IsNullOrEmpty(t.def.associatedPartId))
+                {
+                    // Live-part-anchored offset (preferred). Mirrors the
+                    // runtime resolver in ToolTargetSpawner so editor and
+                    // Play render the marker at identical positions.
+                    var partGO = FindLivePartGO(t.def.associatedPartId);
+                    if (partGO != null)
+                    {
+                        Vector3 localOffset = new Vector3(
+                            t.def.localOffsetFromPart.x,
+                            t.def.localOffsetFromPart.y,
+                            t.def.localOffsetFromPart.z);
+                        localForDisplay = root.InverseTransformPoint(
+                            partGO.transform.TransformPoint(localOffset));
+                    }
                 }
                 else if (t.def != null && !string.IsNullOrEmpty(t.def.anchorRef))
                 {
@@ -198,6 +215,20 @@ namespace OSE.Editor
                 if (TryGetActivePosePillPositionForTarget(sel.def?.id, out Vector3 pillGizmoPos))
                 {
                     displayLocal = pillGizmoPos;
+                }
+                else if (sel.def != null && sel.def.useLocalOffsetFromPart
+                         && !string.IsNullOrEmpty(sel.def.associatedPartId))
+                {
+                    var partGO = FindLivePartGO(sel.def.associatedPartId);
+                    if (partGO != null)
+                    {
+                        Vector3 localOffset = new Vector3(
+                            sel.def.localOffsetFromPart.x,
+                            sel.def.localOffsetFromPart.y,
+                            sel.def.localOffsetFromPart.z);
+                        displayLocal = root.InverseTransformPoint(
+                            partGO.transform.TransformPoint(localOffset));
+                    }
                 }
                 else if (sel.def != null && !string.IsNullOrEmpty(sel.def.anchorRef))
                 {

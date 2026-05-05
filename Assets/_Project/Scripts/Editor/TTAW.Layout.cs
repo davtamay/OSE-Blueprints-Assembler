@@ -651,6 +651,12 @@ namespace OSE.Editor
                     DrawStepMetaPill(toolPillText, new Color(0.72f, 0.72f, 0.78f),
                         "Tool + profile + target count for this step. '(no tool)' means hand-only.");
                     GUILayout.FlexibleSpace();
+                    if (GUILayout.Button(new GUIContent("✎ Text",
+                            "Open the Step Text editor for instruction, hints, validation, feedback, and reinforcement."),
+                            EditorStyles.miniButton, GUILayout.Width(58)))
+                    {
+                        StepTextAuthoringWindow.OpenForStep(_pkgId, step.id);
+                    }
                     EditorGUILayout.EndHorizontal();
                     // "Owns" row — only on Place-family steps, lists the parts
                     // this step is the Place owner of, with an inline red chip
@@ -1097,6 +1103,31 @@ namespace OSE.Editor
                     EndEdit();
                     SceneView.RepaintAll();
                     if (liveEditActive) PushTargetPlacementToRuntime(ref t);
+                }
+
+                // Targets with associatedPartId auto-bake their offset on
+                // save (TTAW.WriteJson computes localOffsetFromPart from the
+                // gizmo position and writes useLocalOffsetFromPart=true) so
+                // the runtime marker tracks the live part through pose
+                // changes. Toggle exposes the underlying flag — turn OFF
+                // for the rare case where the author wants the marker
+                // pinned to PreviewRoot regardless of part movement.
+                if (t.def != null && !string.IsNullOrEmpty(t.def.associatedPartId))
+                {
+                    EditorGUI.BeginChangeCheck();
+                    bool newTrack = EditorGUILayout.ToggleLeft(
+                        new GUIContent("Track live part (auto-baked on save)",
+                            "Default ON: marker follows the associated part's transform via localOffsetFromPart.\n" +
+                            "Turn OFF to pin the marker to PreviewRoot's static placement instead."),
+                        t.def.useLocalOffsetFromPart, EditorStyles.miniLabel);
+                    if (EditorGUI.EndChangeCheck() && newTrack != t.def.useLocalOffsetFromPart)
+                    {
+                        BeginEdit();
+                        t.def.useLocalOffsetFromPart = newTrack;
+                        t.isDirty = true;
+                        EndEdit();
+                        SceneView.RepaintAll();
+                    }
                 }
             }
 
@@ -2161,7 +2192,7 @@ namespace OSE.Editor
             var go = FindLivePartGO(partId);
             if (go == null)
             {
-                Debug.LogWarning($"[TTAW] Capture aborted: no live GameObject for part '{partId}'. " +
+                OseLog.Warn($"[TTAW] Capture aborted: no live GameObject for part '{partId}'. " +
                                  "Spawn the scene via the TTAW preview first.");
                 return;
             }

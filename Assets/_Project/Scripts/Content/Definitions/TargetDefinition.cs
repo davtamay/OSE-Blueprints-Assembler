@@ -35,6 +35,20 @@ namespace OSE.Content
         public bool useToolActionRotation;
         public SceneFloat3 toolActionRotation;
 
+        /// <summary>
+        /// When true, the runtime resolves this target's position by transforming
+        /// <see cref="localOffsetFromPart"/> through the live <see cref="associatedPartId"/>
+        /// part's transform — so the marker tracks the part through pose changes
+        /// (group rotation, stepPose, etc.). Preferred over <see cref="anchorRef"/>
+        /// for anchor-tracking targets; <see cref="anchorRef"/> path-style values
+        /// don't resolve to live transforms and silently fall back to bake-time
+        /// static placement, which goes stale the moment the part is re-posed.
+        /// Rotation and scale still come from the static target placement
+        /// (authored intent for tool approach).
+        /// </summary>
+        public bool useLocalOffsetFromPart;
+        public SceneFloat3 localOffsetFromPart;
+
         public Vector3 GetWeldAxisVector()
         {
             var v = new Vector3(weldAxis.x, weldAxis.y, weldAxis.z);
