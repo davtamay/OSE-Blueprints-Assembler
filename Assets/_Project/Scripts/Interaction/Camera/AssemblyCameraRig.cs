@@ -322,8 +322,27 @@ namespace OSE.Interaction
 
         // ── Cue camera-follow handlers ──
 
+        private float _suppressCueFollowUntil;
+
+        /// <summary>
+        /// Tells the rig to ignore any <see cref="CueCameraFollowStarted"/>
+        /// event that fires within <paramref name="seconds"/> of now. Used
+        /// after an instant-placement conversion (clamps, fixtures): pose-
+        /// transition cues triggered as part of completing the action would
+        /// otherwise yank the camera onto the moving part — exactly the
+        /// "settles then camera snaps to it" symptom. Time-windowed rather
+        /// than one-shot so a short cascade of cues all stay quiet.
+        /// </summary>
+        public void SuppressCueFollowFor(float seconds)
+        {
+            _suppressCueFollowUntil = Time.unscaledTime + Mathf.Max(0f, seconds);
+        }
+
         private void OnCueCameraFollowStarted(CueCameraFollowStarted evt)
         {
+            if (Time.unscaledTime < _suppressCueFollowUntil)
+                return;
+
             _followActive = true;
             _followToken = evt.Token;
             _followFromWorld = evt.FromWorld;

@@ -95,6 +95,22 @@ namespace OSE.Interaction
             if (_hasHome)
                 _homeStack.Push(_currentHome);
 
+            // Suppress one-shot frame when the prior step's instant placement
+            // just completed. The user clicked → tool snapped to the
+            // workpiece → step auto-advanced — they're already looking at
+            // the right area, so framing the next step's first target reads
+            // as a snap forward tied to the placement event. The flag is
+            // consumed exactly once; manual nav / restore still go through
+            // FrameStep normally.
+            if (_suppressNextActivationFrame)
+            {
+                _suppressNextActivationFrame = false;
+                _currentHome = _cameraRig.TargetState;
+                _hasHome = true;
+                OseLog.Info($"[StepGuidance] Step '{evt.StepId}' — frame suppressed (prior instant placement); home captured at current view.");
+                return;
+            }
+
             // FrameStep already prefers tool-target tight focus on Use
             // steps and falls back to step-bounds otherwise — same path
             // used by StepGuidanceCoordinator's deferred reframe so the
@@ -105,6 +121,34 @@ namespace OSE.Interaction
             _hasHome = true;
 
             OseLog.Info($"[StepGuidance] Step '{evt.StepId}' — framed + captured home, dist={_currentHome.Distance:F2}");
+        }
+
+        private bool _suppressNextActivationFrame;
+        private bool _suppressNextDeferredFrame;
+
+        /// <summary>True while a one-shot deferred-frame suppression is pending.
+        /// Consumed (cleared) by the coordinator's deferred reframe coroutine.</summary>
+        public bool ConsumeDeferredFrameSuppression()
+        {
+            bool wasSet = _suppressNextDeferredFrame;
+            _suppressNextDeferredFrame = false;
+            return wasSet;
+        }
+
+        /// <summary>
+        /// Marks that the next <see cref="OnStepActivated"/> firing AND the
+        /// coordinator's paired deferred reframe should NOT move the camera —
+        /// only update active step + capture home at the current view.
+        /// Called by the tool action coordinator after a successful
+        /// instant-placement conversion (clamps, fixtures): the user just
+        /// placed the tool exactly where they were looking, so auto-framing
+        /// the next step's target would read as a forward snap. One-shot —
+        /// both flags clear after their respective consumption.
+        /// </summary>
+        public void SuppressNextActivationFrame()
+        {
+            _suppressNextActivationFrame = true;
+            _suppressNextDeferredFrame = true;
         }
 
         /// <summary>
@@ -139,6 +183,23 @@ namespace OSE.Interaction
         private void OnCueCameraFollowStopped(CueCameraFollowStopped evt)
         {
             if (_cameraRig == null || string.IsNullOrEmpty(_activeStepId)) return;
+
+            // Honor the same suppression instant-placement uses for the
+            // step-activation path. A pose-transition cue triggered during
+            // the placement action can finish moments AFTER step auto-
+            // advance, and its post-cue FrameStep would yank the camera
+            // into the next step's framing — exactly the "settles then
+            // snaps" symptom. Skip the reframe here too if suppression
+            // is pending, then consume it.
+            if (_suppressNextActivationFrame || _suppressNextDeferredFrame)
+            {
+                _suppressNextActivationFrame = false;
+                _suppressNextDeferredFrame = false;
+                _currentHome = _cameraRig.TargetState;
+                _hasHome = true;
+                OseLog.Info("[StepGuidance] Cue-follow stopped — frame suppressed (prior instant placement); home captured at current view.");
+                return;
+            }
 
             FrameStep(_activeStepId);
 

@@ -157,6 +157,17 @@ namespace OSE.Interaction
             if (!string.Equals(activeStepId, stepId, StringComparison.Ordinal))
                 yield break;
 
+            // Companion to OnStepActivated's _suppressNextActivationFrame.
+            // The coordinator schedules this deferred reframe one frame after
+            // OnStepActivated regardless of whether OnStepActivated framed,
+            // so an instant-placement auto-advance would still see the snap
+            // here a frame later. Consume the deferred suppression in tandem.
+            if (_guidanceService.ConsumeDeferredFrameSuppression())
+            {
+                OseLog.Info($"[Interaction] Deferred reframe for step '{stepId}' suppressed (prior instant placement).");
+                yield break;
+            }
+
             OseLog.Info($"[Interaction] Deferred reframe for step '{stepId}' after transition visuals settled.");
             _guidanceService.FrameStep(stepId);
         }

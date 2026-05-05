@@ -640,7 +640,17 @@ namespace OSE.UI.Root
 
             ApplyFinalAssemblyOverviewIfLastStep(activeStepId, completedSteps);
 
-            _ctx.FocusComputer?.FocusCameraOnStepArea(activeStepId, resetToDefaultView);
+            // Skip step-area reframing on auto-advance (resetToDefaultView=false).
+            // Auto-advance fires the moment a tool action completes — the
+            // user is already looking at the relevant part of the workpiece,
+            // and the next step's open task is often a single nearby target,
+            // so bounds shrink and the camera lurches forward. That reads
+            // as a snap tied to the placement event. Manual nav, session
+            // restore, and assembly start (resetToDefaultView=true) still
+            // reframe — those are intentional viewpoint changes the user
+            // initiated, not a side-effect of an action they just did.
+            if (resetToDefaultView)
+                _ctx.FocusComputer?.FocusCameraOnStepArea(activeStepId, resetToDefaultView);
             _ctx.ToolAction?.RefreshToolPreviewIndicator();
             _ctx.RefreshToolActionTargets();
         }
